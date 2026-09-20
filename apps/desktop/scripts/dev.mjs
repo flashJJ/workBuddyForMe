@@ -36,9 +36,10 @@ async function main() {
   spawnManaged('pnpm --filter @wbfm/web dev', repoRoot);
   await waitForDevServer();
 
-  const bin = process.platform === 'win32'
-    ? path.join('node_modules', '.bin', 'electron.cmd')
-    : path.join('node_modules', '.bin', 'electron');
+  // hoisted（nodeLinker=hoisted）模式下 electron 只提升到仓库根 node_modules/.bin，
+  // apps/desktop/node_modules/.bin 下不存在，因此必须从 repoRoot 解析绝对路径。
+  const binName = process.platform === 'win32' ? 'electron.cmd' : 'electron';
+  const bin = path.join(repoRoot, 'node_modules', '.bin', binName);
   const electron = spawn(`"${bin}" .`, {
     cwd: desktopDir,
     shell: true,
