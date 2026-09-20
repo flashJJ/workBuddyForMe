@@ -1,0 +1,28 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# 扁平化 node_modules：
+# 1) 规避 Windows 非提权环境下 Next standalone 追踪时创建符号链接的 EPERM；
+# 2) 与 electron-builder 打包更兼容（避免虚拟仓符号链接在 asar 中失效）。
+nodeLinker: hoisted
+
+# pnpm 10+ 原生模块构建白名单（better-sqlite3 prebuild / esbuild 二进制 / electron 下载）
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild
+  - unrs-resolver
+  - electron
+
+# pnpm 11 新增的显式构建批准
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  unrs-resolver: true
+  electron: true
+
+# brace-expansion@2.1.7 引入 balanced-match@2（ESM 具名导出），与仓库内
+# minimatch@3 等仍用 balanced-match@1（默认导出）的调用方在 hoisted 布局下
+# 互相踩踏（"balanced is not a function"）；统一钉回 2.1.6（balanced-match@1）。
+overrides:
+  "brace-expansion@2": 2.1.6

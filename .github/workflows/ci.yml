@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm（读取 packageManager 字段）
+        uses: pnpm/action-setup@v4
+
+      - name: 安装 Node（读取 .nvmrc）
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 质量门禁（typecheck + lint + 300 行约束）
+        run: pnpm check
+
+      - name: 单元测试（核心包覆盖率 ≥70%）
+        run: pnpm test:unit
+
+      - name: API 集成测试
+        run: pnpm test:integration
+
+      - name: 构建 Web
+        run: pnpm build:web
+
+      - name: 安装 Playwright Chromium
+        run: pnpm --filter @wbfm/web exec playwright install --with-deps chromium
+
+      - name: Web 关键路径 E2E
+        run: pnpm test:e2e
+
+      - name: 上传 E2E 产物（失败时留存 trace/screenshot/报告）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
+          if-no-files-found: ignore

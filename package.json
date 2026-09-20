@@ -1,0 +1,40 @@
+{
+  "name": "workbuddy-for-me",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WorkBuddy For Me - 类 WorkBuddy 的私人 AI 平台（Next.js 全栈 + Electron）",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @wbfm/web dev",
+    "dev:desktop": "pnpm --filter @wbfm/desktop dev",
+    "build": "turbo run build",
+    "build:web": "pnpm --filter @wbfm/web build",
+    "dist:win": "pnpm --filter @wbfm/desktop dist:win",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "pnpm --filter @wbfm/web test:integration",
+    "test:e2e": "pnpm --filter @wbfm/web test:e2e",
+    "test:e2e:desktop": "pnpm --filter @wbfm/desktop test:e2e",
+    "check:lines": "node scripts/check-file-lines.mjs",
+    "check": "pnpm typecheck && pnpm lint && pnpm check:lines"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^3.2.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.0",
+    "tsup": "^8.5.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

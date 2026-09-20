@@ -1,0 +1,39 @@
+appId: com.wbfm.desktop
+productName: WorkBuddyForMe
+copyright: Copyright © 2025 WorkBuddy For Me
+
+directories:
+  output: release
+  buildResources: build
+
+# 仅打入编译后的主进程/preload；standalone 服务走 extraResources（原生 .node 不能进 asar）
+files:
+  - dist/**/*
+  - package.json
+  - "!**/*.map"
+
+extraResources:
+  - from: resources/server
+    to: server
+    filter:
+      - "**/*"
+
+asar: true
+asarUnpack:
+  - "**/*.node"
+
+win:
+  # 本地/CI 构建无代码签名证书：关闭签名与 rcedit，避免 signApp 阶段失败
+  signAndEditExecutable: false
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: WorkBuddyForMe

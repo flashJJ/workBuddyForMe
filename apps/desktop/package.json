@@ -1,0 +1,23 @@
+{
+  "name": "@wbfm/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WorkBuddy For Me Electron 桌面壳",
+  "author": "WorkBuddy For Me",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup && node scripts/dev.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "dist:win": "pnpm build && node scripts/prepare-server.mjs && electron-builder --win --x64",
+    "pack:dir": "pnpm build && node scripts/prepare-server.mjs && electron-builder --dir --x64"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "electron": "31.7.7",
+    "electron-builder": "^25.1.8"
+  }
+}

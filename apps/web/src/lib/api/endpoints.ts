@@ -1,0 +1,32 @@
+/** API 路径集中常量，避免页面散落魔法字符串 */
+export const API = {
+  providers: '/api/providers',
+  provider: (id: string) => `/api/providers/${id}`,
+  providerTest: (id: string) => `/api/providers/${id}/test`,
+  providerModels: (id: string) => `/api/providers/${id}/models`,
+  model: (id: string) => `/api/models/${id}`,
+  settings: '/api/settings',
+  assistants: '/api/assistants',
+  assistant: (id: string) => `/api/assistants/${id}`,
+  assistantReorder: '/api/assistants/reorder',
+  conversations: '/api/conversations',
+  conversation: (id: string) => `/api/conversations/${id}`,
+  messages: (id: string) => `/api/conversations/${id}/messages`,
+  chatStream: '/api/chat/stream',
+  knowledgeBases: '/api/knowledge-bases',
+  knowledgeBase: (id: string) => `/api/knowledge-bases/${id}`,
+  documents: (kbId: string) => `/api/knowledge-bases/${kbId}/documents`,
+  document: (id: string) => `/api/documents/${id}`,
+} as const;
+
+export const QUERY_KEYS = {
+  providers: ['providers'] as const,
+  models: (providerId: string) => ['models', providerId] as const,
+  modelsAll: ['models', 'all'] as const,
+  settings: ['settings'] as const,
+  assistants: ['assistants'] as const,
+  conversations: ['conversations'] as const,
+  messages: (conversationId: string) => ['messages', conversationId] as const,
+  knowledgeBases: ['knowledge-bases'] as const,
+  documents: (kbId: string) => ['documents', kbId] as const,
+};

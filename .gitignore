@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# turbo cache
+.turbo/
+
+# builds
+dist/
+out/
+.next/
+*.tsbuildinfo
+
+# electron
+apps/desktop/release/
+apps/desktop/.vite/
+# 打包前归集的 standalone 服务（prepare-server.mjs 产物）
+apps/desktop/resources/server/
+
+# tests
+coverage/
+playwright-report/
+test-results/
+
+# env / secrets
+.env
+.env.local
+*.local
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+
+# local data
+data/
+*.sqlite
+*.sqlite-*

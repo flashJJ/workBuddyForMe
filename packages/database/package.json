@@ -1,0 +1,38 @@
+{
+    "name":  "@wbfm/database",
+    "version":  "0.1.0",
+    "private":  true,
+    "type":  "module",
+    "main":  "./dist/index.cjs",
+    "module":  "./dist/index.mjs",
+    "types":  "./src/index.ts",
+    "exports":  {
+                    ".":  {
+                              "types":  "./src/index.ts",
+                              "development":  "./src/index.ts",
+                              "import":  "./dist/index.mjs",
+                              "require":  "./dist/index.cjs"
+                          }
+                },
+    "files":  [
+                  "dist",
+                  "src"
+              ],
+    "scripts":  {
+                    "build":  "tsup",
+                    "dev":  "tsup --watch",
+                    "typecheck":  "tsc --noEmit",
+                    "lint":  "eslint src --ext .ts",
+                    "test":  "vitest run",
+                    "test:unit":  "vitest run --coverage"
+                },
+    "dependencies":  {
+                         "@wbfm/config":  "workspace:*",
+                         "@wbfm/shared":  "workspace:*",
+                         "better-sqlite3":  "^12.4.0",
+                         "sqlite-vec":  "^0.1.6"
+                     },
+    "devDependencies":  {
+                            "@types/better-sqlite3":  "^7.6.13"
+                        }
+}
