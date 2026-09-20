@@ -5,7 +5,7 @@
   "description": "WorkBuddy For Me - 类 WorkBuddy 的私人 AI 平台（Next.js 全栈 + Electron）",
   "packageManager": "pnpm@11.24.0",
   "engines": {
-    "node": ">=20",
+    "node": ">=22.13",
     "pnpm": ">=9"
   },
   "scripts": {
