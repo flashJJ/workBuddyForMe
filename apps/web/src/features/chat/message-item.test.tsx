@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Message } from '@wbfm/shared';
 import { renderWithProviders } from '@/test/render';
@@ -17,6 +17,7 @@ function makeMessage(partial: Partial<Message> = {}): Message {
     conversationId: 'c1',
     role: 'assistant',
     content: '**你好**',
+    contentParts: [],
     status: 'completed',
     promptTokens: null,
     completionTokens: null,
@@ -31,7 +32,10 @@ function makeMessage(partial: Partial<Message> = {}): Message {
 }
 
 describe('消息项 MessageItem（TR-27.1）', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   it('助手消息按 Markdown 渲染，复制按钮写入剪贴板', async () => {
     const user = userEvent.setup();
@@ -105,5 +109,29 @@ describe('消息项 MessageItem（TR-27.1）', () => {
     expect(screen.getByTestId('citations')).toHaveTextContent('手册.pdf');
     expect(screen.getByTestId('citations')).toHaveTextContent('参见第三章');
     expect(screen.getByText('[1]')).toBeInTheDocument();
+  });
+
+  it('用户图片消息：经带令牌 fetch 拉取 blob 并渲染缩略图', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWithProviders(
+      <MessageItem
+        message={makeMessage({
+          role: 'user',
+          content: '看图',
+          contentParts: [{ type: 'image', attachmentId: 'att-9' }],
+        })}
+        assistantName="通用助手"
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('message-image')).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/attachments/att-9'),
+      expect.anything(),
+    );
   });
 });

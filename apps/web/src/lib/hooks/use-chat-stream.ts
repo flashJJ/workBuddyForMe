@@ -20,6 +20,8 @@ export interface ChatStreamInput {
   assistantId: string;
   conversationId?: string;
   content: string;
+  /** v0.3：本轮图片附件 ID（最多 4 张，需模型具备 vision 能力） */
+  attachments?: string[];
   /** 重新生成：沿用上一条用户消息，不需要新内容之外的服务端改动 */
   regenerate?: boolean;
 }

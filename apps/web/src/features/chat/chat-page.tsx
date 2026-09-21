@@ -66,6 +66,17 @@ export function ChatPage() {
     return false;
   }, [currentAssistant, settings, models]);
 
+  // v0.3：当前生效模型（助手绑定优先，否则全局默认）是否具备视觉能力
+  const visionEnabled = React.useMemo(() => {
+    const effectiveModelId = currentAssistant?.modelId ?? settings?.defaultChatModelId ?? null;
+    return Boolean(
+      effectiveModelId &&
+        (models ?? []).some(
+          (model) => model.id === effectiveModelId && model.capabilities.includes('vision'),
+        ),
+    );
+  }, [currentAssistant, settings, models]);
+
   const switchAssistant = (id: string) => {
     session.reset();
     setAssistantId(id);
@@ -144,6 +155,7 @@ export function ChatPage() {
             />
             <Composer
               streaming={session.streaming}
+              visionEnabled={visionEnabled}
               onSend={session.send}
               onStop={session.stop}
             />
