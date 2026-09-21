@@ -10,6 +10,7 @@ export interface ChatStreamHandlers {
   onMeta?: (data: SsePayloadMap['meta']) => void;
   onDelta?: (data: SsePayloadMap['delta']) => void;
   onCitations?: (data: SsePayloadMap['citations']) => void;
+  onTool?: (data: SsePayloadMap['tool']) => void;
   onDone?: (data: SsePayloadMap['done']) => void;
   onError?: (data: SsePayloadMap['error']) => void;
   onStreamingChange?: (streaming: boolean) => void;
@@ -19,6 +20,8 @@ export interface ChatStreamInput {
   assistantId: string;
   conversationId?: string;
   content: string;
+  /** 重新生成：沿用上一条用户消息，不需要新内容之外的服务端改动 */
+  regenerate?: boolean;
 }
 
 /** SSE 对话流：fetch + ReadableStream 增量解析，支持客户端主动中断 */
@@ -82,6 +85,9 @@ export function useChatStream() {
                 break;
               case 'citations':
                 handlers.onCitations?.(event.data as SsePayloadMap['citations']);
+                break;
+              case 'tool':
+                handlers.onTool?.(event.data as SsePayloadMap['tool']);
                 break;
               case 'done':
                 handlers.onDone?.(event.data as SsePayloadMap['done']);

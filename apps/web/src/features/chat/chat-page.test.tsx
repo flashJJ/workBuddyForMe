@@ -26,6 +26,8 @@ const ASSISTANT: Assistant = {
   maxTokens: null,
   modelId: null,
   knowledgeBaseId: null,
+  enabledTools: [],
+  retrieveAlways: false,
   isBuiltin: true,
   sortOrder: 0,
   createdAt: '2025-01-01T00:00:00.000Z',

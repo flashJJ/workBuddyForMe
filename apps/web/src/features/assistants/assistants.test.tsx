@@ -16,6 +16,8 @@ function makeAssistant(partial: Partial<Assistant> & { id: string; name: string 
     maxTokens: null,
     modelId: null,
     knowledgeBaseId: null,
+    enabledTools: [],
+    retrieveAlways: false,
     isBuiltin: false,
     sortOrder: 0,
     createdAt: '2025-01-01T00:00:00.000Z',

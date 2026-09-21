@@ -3,15 +3,20 @@
 import * as React from 'react';
 import type { Message } from '@wbfm/shared';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';
 import { MarkdownContent } from './markdown';
+import { ToolTrace } from './tool-trace';
 
 interface Props {
   message: Message;
   assistantName: string;
-  onRetry?: (content: string) => void;
-  /** 重试时取上一条用户消息，由列表层传入 */
-  previousUserContent?: string;
+  /** 重新生成该助手回复（仅最后一条助手消息会传入） */
+  onRetry?: () => void;
+  /** 用户消息编辑后作为新一轮重新发送 */
+  onResend?: (content: string) => void;
+  /** 流式进行中，禁用操作按钮 */
+  disabled?: boolean;
 }
 
 function CopyButton({ content }: { content: string }) {
@@ -54,8 +59,72 @@ function Citations({ message }: { message: Message }) {
   );
 }
 
-export function MessageItem({ message, assistantName, onRetry, previousUserContent }: Props) {
+function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onResend' | 'disabled'>) {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(message.content);
+
+  if (editing) {
+    const submit = () => {
+      const text = draft.trim();
+      if (!text) return;
+      setEditing(false);
+      onResend?.(text);
+    };
+    return (
+      <div className="space-y-2" data-testid="user-edit">
+        <textarea
+          className="w-full resize-y rounded-md border bg-background p-2 text-sm"
+          rows={Math.min(8, Math.max(2, draft.split('\n').length))}
+          value={draft}
+          autoFocus
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <div className="flex gap-2">
+          <Button size="sm" onClick={submit}>
+            重新发送
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setDraft(message.content);
+              setEditing(false);
+            }}
+          >
+            取消
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group/msg">
+      <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+      {onResend && !disabled && (
+        <button
+          type="button"
+          className="mt-1 text-xs text-muted-foreground opacity-0 hover:text-foreground group-hover/msg:opacity-100"
+          onClick={() => {
+            setDraft(message.content);
+            setEditing(true);
+          }}
+        >
+          编辑并重发
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function MessageItem({ message, assistantName, onRetry, onResend, disabled }: Props) {
   const isUser = message.role === 'user';
+  const canRegenerate =
+    !isUser &&
+    !disabled &&
+    Boolean(onRetry) &&
+    (message.status === 'error' || message.status === 'completed');
+  const showCopy = !isUser && message.status === 'completed' && Boolean(message.content);
 
   return (
     <div
@@ -71,7 +140,7 @@ export function MessageItem({ message, assistantName, onRetry, previousUserConte
       >
         {isUser ? '我' : 'AI'}
       </div>
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">
             {isUser ? '我' : assistantName}
@@ -79,8 +148,10 @@ export function MessageItem({ message, assistantName, onRetry, previousUserConte
           {message.status === 'stopped' && <Badge variant="warning">已停止</Badge>}
         </div>
 
+        {!isUser && message.toolTrace.length > 0 && <ToolTrace trace={message.toolTrace} />}
+
         {isUser ? (
-          <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+          <UserBody message={message} onResend={onResend} disabled={disabled} />
         ) : (
           <MarkdownContent content={message.content} />
         )}
@@ -95,21 +166,22 @@ export function MessageItem({ message, assistantName, onRetry, previousUserConte
             data-testid="message-error"
           >
             <p>生成失败：{message.errorMessage ?? message.errorCode ?? '未知错误'}</p>
-            {onRetry && previousUserContent && (
+          </div>
+        )}
+
+        {(showCopy || canRegenerate) && (
+          <div className="flex gap-3 pt-1">
+            {showCopy && <CopyButton content={message.content} />}
+            {canRegenerate && (
               <button
                 type="button"
-                className="mt-1 underline"
-                onClick={() => onRetry(previousUserContent)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => onRetry?.()}
+                data-testid="regenerate-button"
               >
                 重新生成
               </button>
             )}
-          </div>
-        )}
-
-        {!isUser && message.status !== 'streaming' && message.content && (
-          <div className="pt-1">
-            <CopyButton content={message.content} />
           </div>
         )}
         <Citations message={message} />

@@ -9,10 +9,13 @@ interface Props {
   messages: Message[];
   assistantName: string;
   streaming: boolean;
-  onRetry: (content: string) => void;
+  /** 重新生成最后一条助手回复 */
+  onRetry: () => void;
+  /** 用户消息编辑后重新发送 */
+  onResend: (content: string) => void;
 }
 
-export function MessageList({ messages, assistantName, streaming, onRetry }: Props) {
+export function MessageList({ messages, assistantName, streaming, onRetry, onResend }: Props) {
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -30,7 +33,14 @@ export function MessageList({ messages, assistantName, streaming, onRetry }: Pro
     );
   }
 
-  const lastUserContent = [...messages].reverse().find((m) => m.role === 'user')?.content;
+  // 仅最后一条助手消息允许重新生成，避免对历史轮次误操作
+  let lastAssistantIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i]!.role === 'assistant') {
+      lastAssistantIndex = i;
+      break;
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto" data-testid="message-list">
@@ -39,8 +49,9 @@ export function MessageList({ messages, assistantName, streaming, onRetry }: Pro
           key={message.id || `pending-${index}`}
           message={message}
           assistantName={assistantName}
-          previousUserContent={lastUserContent}
-          onRetry={message.role === 'assistant' && message.status === 'error' ? onRetry : undefined}
+          disabled={streaming}
+          onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
+          onResend={message.role === 'user' && !streaming ? onResend : undefined}
         />
       ))}
       <div ref={bottomRef} />
