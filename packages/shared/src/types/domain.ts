@@ -70,6 +70,8 @@ export interface Citation {
   documentName: string;
   ordinal: number;
   snippet?: string;
+  /** v0.3：网页剪藏来源；存在时引用角标可悬停看 URL、点击新开原文 */
+  sourceUrl?: string | null;
 }
 
 export interface Message {

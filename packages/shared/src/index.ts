@@ -51,8 +51,10 @@ export {
 export {
   knowledgeBaseCreateSchema,
   knowledgeBaseUpdateSchema,
+  clipRequestSchema,
   type KnowledgeBaseCreateInput,
   type KnowledgeBaseUpdateInput,
+  type ClipRequest,
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
 

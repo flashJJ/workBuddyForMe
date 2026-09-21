@@ -59,6 +59,16 @@ export function createDocumentRepository(db: DatabaseInstance) {
       return row ? mapDocument(row) : null;
     },
 
+    /** v0.3 网页剪藏：按规范化来源 URL 去重（同库内不重复入库） */
+    findBySourceUrl(knowledgeBaseId: string, sourceUrl: string): DocumentRecord | null {
+      const row = db
+        .prepare(
+          `SELECT * FROM documents WHERE knowledge_base_id = ? AND source_url = ?`,
+        )
+        .get(knowledgeBaseId, sourceUrl) as DocumentRow | undefined;
+      return row ? mapDocument(row) : null;
+    },
+
     listByKnowledgeBase(knowledgeBaseId: string): DocumentRecord[] {
       return (
         db

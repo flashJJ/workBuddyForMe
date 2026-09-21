@@ -23,6 +23,8 @@ export interface ChunkSearchResult {
   charStart: number;
   charEnd: number;
   distance: number;
+  /** v0.3：网页剪藏文档的来源 URL，命中引用时可跳回原文 */
+  sourceUrl: string | null;
 }
 
 export function normalizeVector(values: number[]): number[] {
@@ -106,7 +108,8 @@ export function searchChunks(
       `SELECT
          c.id AS chunkId, c.document_id AS documentId, d.filename AS documentName,
          c.ordinal AS ordinal, c.content AS content,
-         c.char_start AS charStart, c.char_end AS charEnd, v.distance AS distance
+         c.char_start AS charStart, c.char_end AS charEnd, v.distance AS distance,
+         d.source_url AS sourceUrl
        FROM ${VECTOR_TABLE} v
        JOIN document_chunks c ON c.id = v.rowid
        JOIN documents d ON d.id = c.document_id

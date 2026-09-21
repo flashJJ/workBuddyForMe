@@ -27,11 +27,13 @@
         "test:unit": "vitest run --coverage"
     },
     "dependencies": {
+        "@mozilla/readability": "^0.6.0",
         "@wbfm/ai": "workspace:*",
         "@wbfm/config": "workspace:*",
         "@wbfm/database": "workspace:*",
         "@wbfm/shared": "workspace:*",
         "fflate": "^0.8.3",
+        "linkedom": "^0.18.13",
         "mammoth": "^1.12.3",
         "pdfjs-dist": "^4.10.38",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
