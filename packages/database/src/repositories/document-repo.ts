@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { DocumentRecord, DocumentStatus } from '@wbfm/shared';
+import type { DocumentRecord, DocumentSource, DocumentStatus } from '@wbfm/shared';
 import { newId, nowIso, mapDocument, type DocumentRow } from './mappers';
 
 export interface DocumentCreateFields {
@@ -8,6 +8,9 @@ export interface DocumentCreateFields {
   fileType: string;
   byteSize: number;
   contentHash: string;
+  /** v0.3：来源默认本地上传；网页剪藏传 webpage + sourceUrl */
+  source?: DocumentSource;
+  sourceUrl?: string | null;
 }
 
 export type DocumentStatusPatch = Partial<{
@@ -24,8 +27,8 @@ export function createDocumentRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO documents
            (id, knowledge_base_id, filename, file_type, byte_size, content_hash,
-            status, error_message, chunk_count, created_at, indexed_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, 0, ?, NULL)`,
+            status, source, source_url, error_message, chunk_count, created_at, indexed_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, NULL, 0, ?, NULL)`,
       ).run(
         id,
         fields.knowledgeBaseId,
@@ -33,6 +36,8 @@ export function createDocumentRepository(db: DatabaseInstance) {
         fields.fileType,
         fields.byteSize,
         fields.contentHash,
+        fields.source ?? 'upload',
+        fields.sourceUrl ?? null,
         ts,
       );
       return this.findById(id)!;

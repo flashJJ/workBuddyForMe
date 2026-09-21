@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   Assistant,
   Citation,
+  ContentPart,
   Conversation,
   DocumentRecord,
   KnowledgeBase,
@@ -83,6 +84,7 @@ export interface MessageRow {
   total_tokens: number | null;
   citations: string;
   tool_trace: string;
+  content_parts: string;
   error_code: string | null;
   error_message: string | null;
   created_at: string;
@@ -107,6 +109,8 @@ export interface DocumentRow {
   byte_size: number;
   content_hash: string;
   status: DocumentRecord['status'];
+  source: DocumentRecord['source'];
+  source_url: string | null;
   error_message: string | null;
   chunk_count: number;
   created_at: string;
@@ -196,6 +200,7 @@ export function mapMessage(row: MessageRow): Message {
     totalTokens: row.total_tokens,
     citations: parseJsonArray<Citation>(row.citations),
     toolTrace: parseJsonArray<ToolTraceEntry>(row.tool_trace),
+    contentParts: parseJsonArray<ContentPart>(row.content_parts),
     errorCode: row.error_code,
     errorMessage: row.error_message,
     createdAt: row.created_at,
@@ -224,6 +229,8 @@ export function mapDocument(row: DocumentRow): DocumentRecord {
     byteSize: row.byte_size,
     contentHash: row.content_hash,
     status: row.status,
+    source: row.source,
+    sourceUrl: row.source_url,
     errorMessage: row.error_message,
     chunkCount: row.chunk_count,
     createdAt: row.created_at,

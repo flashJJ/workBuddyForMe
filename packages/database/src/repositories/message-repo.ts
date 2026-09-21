@@ -1,6 +1,7 @@
 import type { DatabaseInstance } from '../client';
 import type {
   Citation,
+  ContentPart,
   Message,
   MessageRole,
   MessageStatus,
@@ -15,6 +16,8 @@ export interface MessageAddFields {
   status: MessageStatus;
   citations?: Citation[];
   toolTrace?: ToolTraceEntry[];
+  /** v0.3：多模态片段（仅 user 消息可能携带图片） */
+  contentParts?: ContentPart[];
 }
 
 export interface MessageUsage {
@@ -30,8 +33,9 @@ export function createMessageRepository(db: DatabaseInstance) {
       const ts = nowIso();
       db.prepare(
         `INSERT INTO messages
-           (id, conversation_id, role, content, status, citations, tool_trace, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           (id, conversation_id, role, content, status, citations, tool_trace, content_parts,
+            created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         fields.conversationId,
@@ -40,6 +44,7 @@ export function createMessageRepository(db: DatabaseInstance) {
         fields.status,
         JSON.stringify(fields.citations ?? []),
         JSON.stringify(fields.toolTrace ?? []),
+        JSON.stringify(fields.contentParts ?? []),
         ts,
       );
       return this.findById(id)!;
@@ -134,16 +139,16 @@ export function createMessageRepository(db: DatabaseInstance) {
         .run(conversationId, lastUser.rowid).changes;
     },
 
-    /** 取会话最后一条用户消息内容（重新生成时沿用） */
-    findLastUserContent(conversationId: string): string | null {
+    /** 取会话最后一条用户消息（重新生成时沿用文本与图片片段） */
+    findLastUserMessage(conversationId: string): Message | null {
       const row = db
         .prepare(
-          `SELECT content FROM messages
+          `SELECT * FROM messages
              WHERE conversation_id = ? AND role = 'user'
              ORDER BY created_at DESC, rowid DESC LIMIT 1`,
         )
-        .get(conversationId) as { content: string } | undefined;
-      return row?.content ?? null;
+        .get(conversationId) as MessageRow | undefined;
+      return row ? mapMessage(row) : null;
     },
   };
 }

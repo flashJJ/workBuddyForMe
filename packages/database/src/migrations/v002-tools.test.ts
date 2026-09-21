@@ -32,7 +32,9 @@ describe('v002 迁移：工具调用字段加法升级', () => {
   it('v1 老库升级：新列就位，绑定 KB 的助手回填 knowledge_search', () => {
     const db = createV1Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([2]);
+    // 顺序迁移：v1 起步会一路应用到最新版（当前为 v3）
+    expect(result.applied.slice(0, 1)).toEqual([2]);
+    expect(result.to).toBeGreaterThanOrEqual(2);
 
     const plain = db
       .prepare(`SELECT enabled_tools, retrieve_always FROM assistants WHERE id='a-plain'`)
