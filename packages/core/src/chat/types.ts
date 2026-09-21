@@ -19,6 +19,8 @@ export interface StreamChatInput {
   /** 不传则新建会话 */
   conversationId?: string;
   content: string;
+  /** v0.3：本轮图片附件 ID（先通过 /api/attachments 上传换取），最多 4 张 */
+  attachments?: string[];
   signal?: AbortSignal;
   /** RAG 检索钩子（Task 17 注入）；返回 null 时退化为普通对话 */
   retrieve?: RagRetriever;

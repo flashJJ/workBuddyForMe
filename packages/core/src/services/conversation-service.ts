@@ -1,4 +1,4 @@
-import { ApiError, type Conversation, type Message, type MessageRole, type MessageStatus, type Citation } from '@wbfm/shared';
+import { ApiError, type Citation, type ContentPart, type Conversation, type Message, type MessageRole, type MessageStatus } from '@wbfm/shared';
 import {
   createAssistantRepository,
   createConversationRepository,
@@ -10,13 +10,15 @@ import type { ServiceDeps } from './deps';
 const DEFAULT_TITLE = '新会话';
 const TITLE_MAX_LENGTH = 30;
 
-/** 取首条用户消息首行前 30 字符作为会话标题 */
-export function deriveTitle(content: string): string {
+/** 取首条用户消息首行前 30 字符作为会话标题；纯图片消息用图片标题兜底 */
+export function deriveTitle(content: string, contentParts?: ContentPart[]): string {
   const firstLine = content.trim().split(/\r?\n/)[0] ?? '';
-  if (!firstLine) return DEFAULT_TITLE;
-  return firstLine.length > TITLE_MAX_LENGTH
-    ? `${firstLine.slice(0, TITLE_MAX_LENGTH)}…`
-    : firstLine;
+  if (firstLine) {
+    return firstLine.length > TITLE_MAX_LENGTH
+      ? `${firstLine.slice(0, TITLE_MAX_LENGTH)}…`
+      : firstLine;
+  }
+  return contentParts?.some((part) => part.type === 'image') ? '图片对话' : DEFAULT_TITLE;
 }
 
 export function createConversationService({ db }: ServiceDeps) {
@@ -68,6 +70,8 @@ export function createConversationService({ db }: ServiceDeps) {
       content: string;
       status?: MessageStatus;
       citations?: Citation[];
+      /** v0.3：多模态片段（仅用户图片消息非空） */
+      contentParts?: ContentPart[];
     }): Message {
       const conversation = requireConversation(input.conversationId);
       const saved = messages.add({
@@ -76,9 +80,10 @@ export function createConversationService({ db }: ServiceDeps) {
         content: input.content,
         status: input.status ?? 'completed',
         citations: input.citations,
+        contentParts: input.contentParts,
       });
       if (input.role === 'user' && conversation.title === DEFAULT_TITLE) {
-        conversations.rename(conversation.id, deriveTitle(input.content));
+        conversations.rename(conversation.id, deriveTitle(input.content, input.contentParts));
       }
       conversations.touch(conversation.id, saved.createdAt);
       return saved;
@@ -103,14 +108,14 @@ export function createConversationService({ db }: ServiceDeps) {
 
     /**
      * 重新生成前置处理：删除最后一条用户消息之后的助手消息，
-     * 返回该用户消息内容；没有用户消息时抛校验错误。
+     * 返回该用户消息的文本与多模态片段；没有用户消息时抛校验错误。
      */
-    prepareRegenerate(conversationId: string): string {
+    prepareRegenerate(conversationId: string): { content: string; contentParts: ContentPart[] } {
       requireConversation(conversationId);
       messages.deleteAssistantMessagesAfterLastUser(conversationId);
-      const content = messages.findLastUserContent(conversationId);
-      if (!content) throw ApiError.validation('没有可重新生成的用户消息');
-      return content;
+      const last = messages.findLastUserMessage(conversationId);
+      if (!last) throw ApiError.validation('没有可重新生成的用户消息');
+      return { content: last.content, contentParts: last.contentParts };
     },
 
     /** 取最近 n 条历史（供对话编排拼上下文） */

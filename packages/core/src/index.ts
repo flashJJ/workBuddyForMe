@@ -36,6 +36,12 @@ export {
   deriveTitle,
   type ConversationService,
 } from './services/conversation-service';
+export {
+  createAttachmentService,
+  type AttachmentService,
+  type AttachmentInput,
+  type ResolvedImage,
+} from './services/attachment-service';
 
 // 对话编排
 export { createChatOrchestrator, type ChatOrchestrator } from './chat/chat-orchestrator';

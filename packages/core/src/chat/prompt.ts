@@ -1,6 +1,8 @@
 import type { Assistant, Message } from '@wbfm/shared';
 import type { ChatMessage } from '@wbfm/ai';
 import type { RagContext } from './types';
+import type { ResolvedImage } from '../services/attachment-service';
+import { toAiContent } from './multimodal';
 
 export const HISTORY_MESSAGE_LIMIT = 20;
 
@@ -17,17 +19,21 @@ export function buildSystemPrompt(assistant: Assistant, rag: RagContext | null):
   return parts.filter(Boolean).join('\n\n');
 }
 
-/** 系统提示词 + 最近历史（含本轮用户消息），过滤空系统消息 */
+/**
+ * 系统提示词 + 最近历史（含本轮用户消息），过滤空系统消息。
+ * v0.3：图片片段经 images 映射解析为 data URL 后下发视觉模型。
+ */
 export function buildChatMessages(
   assistant: Assistant,
   history: Message[],
   rag: RagContext | null,
+  images: Map<string, ResolvedImage> = new Map(),
 ): ChatMessage[] {
   const messages: ChatMessage[] = [];
   const systemPrompt = buildSystemPrompt(assistant, rag);
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   for (const message of history) {
-    messages.push({ role: message.role, content: message.content });
+    messages.push({ role: message.role, content: toAiContent(message, images) });
   }
   return messages;
 }

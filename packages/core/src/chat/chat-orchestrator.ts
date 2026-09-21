@@ -1,5 +1,4 @@
 import {
-  ApiError,
   MAX_TOOL_ROUNDS,
   type TokenUsage,
   type ToolName,
@@ -14,9 +13,12 @@ import {
 } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
+import { createAttachmentService } from '../services/attachment-service';
 import { createConversationService } from '../services/conversation-service';
-import { resolveChatTarget } from './model-resolver';
+import { resolveChatTarget, type ResolvedChatTarget } from './model-resolver';
 import { buildChatMessages, HISTORY_MESSAGE_LIMIT } from './prompt';
+import { buildImageMap } from './multimodal';
+import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurn, type ProviderTurn } from './tool-runner';
 import type { OrchestratorEvent, RagContext, StreamChatInput } from './types';
 import {
@@ -34,28 +36,26 @@ import { toToolDefinitions, type ToolResult } from '../tools/types';
 export function createChatOrchestrator(deps: ServiceDeps) {
   const assistants = createAssistantsService(deps);
   const conversations = createConversationService(deps);
+  const attachments = createAttachmentService(deps);
   const runtime = createToolRuntime(deps);
 
   return {
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
       const assistant = assistants.get(input.assistantId);
 
+      // 开流前准备：模型解析（含 vision 门控）、附件校验、用户消息落库
+      let target: ResolvedChatTarget;
       let conversationId: string;
       let userContent: string;
       try {
-        if (input.regenerate) {
-          if (!input.conversationId) throw ApiError.validation('重新生成需要已有会话');
-          conversationId = input.conversationId;
-          conversations.get(conversationId);
-          userContent = conversations.prepareRegenerate(conversationId);
-        } else {
-          const conversation = input.conversationId
-            ? conversations.get(input.conversationId)
-            : conversations.create(assistant.id);
-          conversationId = conversation.id;
-          conversations.appendMessage({ conversationId, role: 'user', content: input.content });
-          userContent = input.content;
-        }
+        target = resolveChatTarget(deps, assistant);
+        ({ conversationId, userContent } = prepareUserTurn({
+          assistant,
+          input,
+          target,
+          conversations,
+          attachments,
+        }));
       } catch (error) {
         yield { event: 'error', data: normalizeFailure(error) };
         return;
@@ -89,10 +89,8 @@ export function createChatOrchestrator(deps: ServiceDeps) {
       let turnError: unknown = null;
 
       try {
-        let target;
         let retrieved: RagContext | null = null;
         try {
-          target = resolveChatTarget(deps, assistant);
           // 兼容路径：retrieveAlways 时保留 v0.1 每轮强制检索
           if (input.retrieve && assistant.knowledgeBaseId && assistant.retrieveAlways) {
             retrieved = await traceAsync(
@@ -135,7 +133,14 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         const history = conversations
           .recentMessages(conversationId, HISTORY_MESSAGE_LIMIT)
           .filter((m) => m.id !== assistantMessage.id);
-        const outgoing: ChatMessage[] = buildChatMessages(assistant, history, retrieved ?? null);
+        // 历史图片（含本轮新图与重生成旧图）解析为 data URL
+        const imageMap = buildImageMap(attachments, history);
+        const outgoing: ChatMessage[] = buildChatMessages(
+          assistant,
+          history,
+          retrieved ?? null,
+          imageMap,
+        );
 
         const toolMap = runtime.buildTools(assistant, target.provider.supportsTools);
         const toolDefs = toToolDefinitions([...toolMap.values()]);
