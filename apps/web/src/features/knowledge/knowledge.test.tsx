@@ -146,4 +146,46 @@ describe('知识库页面（TR-28.1）', () => {
     expect(confirmSpy).toHaveBeenCalled();
     confirmSpy.mockRestore();
   });
+
+  it('M3 网页剪藏：网页文档带标识与原文链接；弹窗提交 URL 调 /clip', async () => {
+    const page = doc({
+      id: 'w1',
+      status: 'indexed',
+      filename: '本地知识库实践指南.md',
+      source: 'webpage',
+      sourceUrl: 'https://example.com/article',
+      chunkCount: 2,
+      indexedAt: '2025-01-02T00:00:00.000Z',
+    });
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/knowledge-bases') return ok([KB]);
+      if (url === '/api/knowledge-bases/kb1/documents') return ok([page]);
+      if (url === '/api/knowledge-bases/kb1/clip' && init?.method === 'POST') {
+        return ok(doc({ id: 'w2', status: 'pending', filename: '新文章.md', source: 'webpage' }));
+      }
+      return ok(null);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<KnowledgePage />);
+
+    expect(await screen.findByTestId('webpage-badge')).toHaveTextContent('网页');
+    expect(screen.getByTestId('webpage-source-link')).toHaveAttribute(
+      'href',
+      'https://example.com/article',
+    );
+
+    await user.click(screen.getByRole('button', { name: '从网页导入' }));
+    await user.type(screen.getByTestId('clip-url-input'), 'https://example.com/post');
+    await user.click(screen.getByTestId('clip-submit'));
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(
+        (c) => String(c[0]) === '/api/knowledge-bases/kb1/clip',
+      );
+      expect(call).toBeDefined();
+      expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({
+        url: 'https://example.com/post',
+      });
+    });
+  });
 });

@@ -47,13 +47,30 @@ export function DocumentList({ kbId, documents, loading }: {
       {documents.map((document) => (
         <li key={document.id} className="flex items-center gap-3 px-4 py-3 text-sm">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium" title={document.filename}>
-              {document.filename}
+            <p className="flex items-center gap-1.5 truncate font-medium" title={document.filename}>
+              {document.source === 'webpage' && (
+                <Badge variant="outline" className="shrink-0 text-[10px]" data-testid="webpage-badge">
+                  网页
+                </Badge>
+              )}
+              <span className="truncate">{document.filename}</span>
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground" title={document.sourceUrl ?? undefined}>
               {formatSize(document.byteSize)} · {document.chunkCount > 0 ? `${document.chunkCount} 个分片` : '尚未分片'}
+              {document.sourceUrl ? ` · ${document.sourceUrl}` : ''}
             </p>
           </div>
+          {document.sourceUrl && (
+            <a
+              href={document.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 text-xs text-primary hover:underline"
+              data-testid="webpage-source-link"
+            >
+              原文
+            </a>
+          )}
           <Badge
             variant={STATUS_VARIANT[document.status]}
             title={document.status === 'failed' ? document.errorMessage ?? '索引失败' : undefined}

@@ -58,6 +58,12 @@ export function useKnowledgeMutations() {
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.kbId) }),
     }),
+    clipDocument: useMutation({
+      mutationFn: ({ kbId, url }: { kbId: string; url: string }) =>
+        apiPost<DocumentRecord>(API.clip(kbId), { url }),
+      onSuccess: (_data, variables) =>
+        qc.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.kbId) }),
+    }),
     deleteDocument: useMutation({
       mutationFn: (input: { kbId: string; documentId: string }) =>
         apiDelete<{ id: string }>(API.document(input.documentId)),

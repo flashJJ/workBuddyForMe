@@ -49,7 +49,20 @@ function Citations({ message }: { message: Message }) {
             <Badge variant="outline" className="mr-1">
               [{citation.ordinal}]
             </Badge>
-            <span className="font-medium">{citation.documentName}</span>
+            {citation.sourceUrl ? (
+              <a
+                href={citation.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                title={citation.sourceUrl}
+                className="font-medium text-primary hover:underline"
+                data-testid="citation-source-link"
+              >
+                {citation.documentName}
+              </a>
+            ) : (
+              <span className="font-medium">{citation.documentName}</span>
+            )}
             {citation.snippet && (
               <span className="ml-1 text-muted-foreground">— {citation.snippet}</span>
             )}

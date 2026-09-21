@@ -11,6 +11,7 @@ import { ApiClientError } from '@/lib/api/client';
 import { useDocuments, useKnowledgeBases, useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
 import { KnowledgeBaseFormDialog } from './kb-form-dialog';
 import { UploadDropzone } from './upload-dropzone';
+import { ClipDialog } from './clip-dialog';
 import { DocumentList } from './document-list';
 
 function KnowledgeBaseNav({
@@ -86,6 +87,7 @@ export function KnowledgePage() {
   const toast = useToast();
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [clipOpen, setClipOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<KnowledgeBase | null>(null);
 
   React.useEffect(() => {
@@ -145,7 +147,18 @@ export function KnowledgePage() {
           </div>
         ) : (
           <div className="space-y-5 p-6">
-            <PageHeader title={activeKb.name} description={activeKb.description || undefined} />
+            <div className="flex items-center justify-between gap-3">
+              <PageHeader title={activeKb.name} description={activeKb.description || undefined} />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-testid="open-clip-dialog"
+                onClick={() => setClipOpen(true)}
+              >
+                从网页导入
+              </Button>
+            </div>
             <UploadDropzone kbId={activeKb.id} />
             <DocumentList kbId={activeKb.id} documents={docs.data} loading={docs.isLoading} />
           </div>
@@ -157,6 +170,9 @@ export function KnowledgePage() {
         onOpenChange={setDialogOpen}
         knowledgeBase={editing}
       />
+      {activeKb && (
+        <ClipDialog kbId={activeKb.id} open={clipOpen} onOpenChange={setClipOpen} />
+      )}
     </div>
   );
 }

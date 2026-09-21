@@ -16,6 +16,7 @@ import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/con
 import { GET as listKb, POST as createKb } from './route';
 import { GET as getKb, PATCH, DELETE } from './[id]/route';
 import { GET as listDocs, POST as uploadDoc } from './[id]/documents/route';
+import { POST as clipDoc } from './[id]/clip/route';
 import { GET as getDoc, DELETE as deleteDoc } from '../documents/[id]/route';
 
 const jsonRequest = (body: unknown, method = 'POST') =>
@@ -155,5 +156,57 @@ describe('知识库与文档路由（TR-22.1）', () => {
     });
     expect(deletedKb.status).toBe(200);
     expect(createDocumentRepository(db).listByKnowledgeBase(kbId)).toHaveLength(0);
+  });
+
+  it('M3 网页剪藏：抓取入库 source=webpage，URL 去重；SSRF 422', async () => {
+    const sentence = '本地化知识管理让团队资料在本机完成分片与向量索引。';
+    const html = `<!doctype html><html><head><title>本地知识库实践指南</title></head>
+      <body><article><h1>本地知识库实践指南</h1>
+      <p>${sentence.repeat(8)}</p><ul><li>要点：数据不出本机</li></ul>
+      </article></body></html>`;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        // 嵌入请求带 JSON body；网页抓取是无 body 的 GET
+        if (init?.body) {
+          const body = JSON.parse(init.body as string) as { input: string[] };
+          return new Response(
+            JSON.stringify({ data: body.input.map((_t, i) => ({ index: i, embedding: [1, 0] })) }),
+            { status: 200 },
+          );
+        }
+        return new Response(html, {
+          status: 200,
+          headers: { 'content-type': 'text/html; charset=utf-8' },
+        });
+      }),
+    );
+
+    const clip = (url: string) =>
+      clipDoc(jsonRequest({ url }), { params: Promise.resolve({ id: kbId }) });
+
+    const created = await clip('http://8.8.8.8/article?utm_source=weekly#part1');
+    expect(created.status).toBe(201);
+    const document = (await created.json()).data;
+    expect(document.source).toBe('webpage');
+    expect(document.sourceUrl).toBe('http://8.8.8.8/article');
+    expect(document.filename.endsWith('.md')).toBe(true);
+
+    const indexed = await pollDocument(document.id);
+    expect(indexed.status).toBe('indexed');
+    expect(indexed.sourceUrl).toBe('http://8.8.8.8/article');
+
+    // 规范化后同 URL（不同跟踪参数）→ 409
+    const duplicate = await clip('http://8.8.8.8/article?utm_campaign=x');
+    expect(duplicate.status).toBe(409);
+
+    // 内网地址在请求发出前被 SSRF 拦截
+    const ssrf = await clip('http://127.0.0.1:11434/api/tags');
+    expect(ssrf.status).toBe(422);
+    expect((await ssrf.json()).error.message).toContain('网页地址不安全');
+
+    // 非法 URL 同样 422
+    const bad = await clip('not-a-url');
+    expect(bad.status).toBe(422);
   });
 });
