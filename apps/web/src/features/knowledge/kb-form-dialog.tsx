@@ -127,7 +127,7 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            支持 {MIN_CHUNK_SIZE}-{MAX_CHUNK_SIZE} 字符；仅支持 .txt / .md / .pdf。
+            支持 {MIN_CHUNK_SIZE}-{MAX_CHUNK_SIZE} 字符；仅支持 .txt / .md / .pdf / .docx / .xlsx / .pptx。
           </p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
