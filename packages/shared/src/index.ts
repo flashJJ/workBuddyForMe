@@ -13,9 +13,11 @@ export type {
   Citation,
   KnowledgeBase,
   DocumentRecord,
+  Attachment,
   AppSettings,
   Timestamped,
 } from './types/domain';
+export type { ContentPart, TextContentPart, ImageContentPart } from './types/content-part';
 export type { ToolTraceEntry, ToolEventPayload, ToolCallStatus } from './types/tool';
 
 // Zod 契约

@@ -1,4 +1,5 @@
 import type {
+  DocumentSource,
   DocumentStatus,
   MessageRole,
   MessageStatus,
@@ -7,6 +8,7 @@ import type {
   Theme,
   ToolName,
 } from '../constants';
+import type { ContentPart } from './content-part';
 import type { ToolTraceEntry } from './tool';
 
 export interface Timestamped {
@@ -82,8 +84,20 @@ export interface Message {
   citations: Citation[];
   /** v0.2：本轮工具调用轨迹（过程展示/上下文重建用） */
   toolTrace: ToolTraceEntry[];
+  /** v0.3：多模态片段（空数组 = 纯文本消息，回落 content） */
+  contentParts: ContentPart[];
   errorCode: string | null;
   errorMessage: string | null;
+  createdAt: string;
+}
+
+/** v0.3 聊天图片附件元数据（文件本体存数据根 attachments/，不入库） */
+export interface Attachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  byteSize: number;
+  contentHash: string;
   createdAt: string;
 }
 
@@ -104,6 +118,10 @@ export interface DocumentRecord {
   byteSize: number;
   contentHash: string;
   status: DocumentStatus;
+  /** v0.3：upload=本地上传，webpage=网页剪藏 */
+  source: DocumentSource;
+  /** v0.3：剪藏来源页地址，本地上传为 null */
+  sourceUrl: string | null;
   errorMessage: string | null;
   chunkCount: number;
   createdAt: string;
