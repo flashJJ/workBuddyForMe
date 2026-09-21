@@ -1,6 +1,13 @@
 import { z } from 'zod';
+import { TOOL_NAMES } from '../constants';
 
 const nameSchema = z.string().trim().min(1, '助手名称不能为空').max(60);
+
+const enabledToolsSchema = z
+  .array(z.enum(TOOL_NAMES))
+  .max(10, '工具数量超限')
+  .default(['current_time']);
+const retrieveAlwaysSchema = z.boolean().default(true);
 
 const samplingFields = {
   emoji: z.string().trim().max(8).nullable().default(null),
@@ -16,6 +23,8 @@ const samplingFields = {
   maxTokens: z.number().int().positive().max(1_000_000).nullable().default(null),
   modelId: z.string().trim().min(1).nullable().default(null),
   knowledgeBaseId: z.string().trim().min(1).nullable().default(null),
+  enabledTools: enabledToolsSchema,
+  retrieveAlways: retrieveAlwaysSchema,
 };
 
 export const assistantCreateSchema = z.object({
@@ -36,6 +45,8 @@ export const assistantUpdateSchema = z
     maxTokens: samplingFields.maxTokens.optional(),
     modelId: samplingFields.modelId.optional(),
     knowledgeBaseId: samplingFields.knowledgeBaseId.optional(),
+    enabledTools: samplingFields.enabledTools.optional(),
+    retrieveAlways: samplingFields.retrieveAlways.optional(),
     sortOrder: z.number().int().min(0).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');

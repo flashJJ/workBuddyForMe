@@ -1,10 +1,12 @@
 import type { Citation } from '../types/domain';
+import type { ToolEventPayload } from '../types/tool';
 
 /** SSE 事件类型（POST /api/chat/stream） */
 export const SSE_EVENT = {
   META: 'meta',
   DELTA: 'delta',
   CITATIONS: 'citations',
+  TOOL: 'tool',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -21,6 +23,7 @@ export type SsePayloadMap = {
   meta: { messageId: string; conversationId: string };
   delta: { content: string };
   citations: { citations: Citation[] };
+  tool: ToolEventPayload;
   done: { content: string; usage: TokenUsage | null };
   error: { code: string; message: string };
 };

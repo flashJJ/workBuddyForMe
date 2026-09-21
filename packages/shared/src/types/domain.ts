@@ -5,7 +5,9 @@ import type {
   ModelCapability,
   ProviderProtocol,
   Theme,
+  ToolName,
 } from '../constants';
+import type { ToolTraceEntry } from './tool';
 
 export interface Timestamped {
   createdAt: string;
@@ -46,6 +48,10 @@ export interface Assistant extends Timestamped {
   modelId: string | null;
   /** 绑定 knowledge_bases.id；非空时对话自动 RAG */
   knowledgeBaseId: string | null;
+  /** v0.2：可用工具白名单（空数组 = 纯对话，与 v0.1 行为一致） */
+  enabledTools: ToolName[];
+  /** v0.2：绑定知识库时是否每轮强制检索（兼容开关；关闭后由模型经 knowledge_search 自主决策） */
+  retrieveAlways: boolean;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -74,6 +80,8 @@ export interface Message {
   completionTokens: number | null;
   totalTokens: number | null;
   citations: Citation[];
+  /** v0.2：本轮工具调用轨迹（过程展示/上下文重建用） */
+  toolTrace: ToolTraceEntry[];
   errorCode: string | null;
   errorMessage: string | null;
   createdAt: string;

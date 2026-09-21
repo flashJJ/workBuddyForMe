@@ -27,6 +27,14 @@ export const MAX_CHUNK_SIZE = 4000;
 /** RAG 默认检索条数 */
 export const DEFAULT_TOP_K = 4;
 
+/** v0.2 内置工具（全部只读）；助手通过 enabledTools 白名单授权 */
+export const TOOL_NAMES = ['current_time', 'knowledge_search', 'fetch_webpage'] as const;
+export type ToolName = (typeof TOOL_NAMES)[number];
+
+/** 工具调用安全护栏常量 */
+export const MAX_TOOL_ROUNDS = 5;
+export const TOOL_TIMEOUT_MS = 15_000;
+
 /** 上传限制 */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const ALLOWED_DOC_EXTENSIONS = ['.txt', '.md', '.markdown', '.pdf'] as const;

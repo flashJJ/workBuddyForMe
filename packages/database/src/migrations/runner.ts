@@ -1,5 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { migrateV001 } from './v001-initial-schema';
+import { migrateV002 } from './v002-tools';
 
 interface Migration {
   version: number;
@@ -10,6 +11,7 @@ interface Migration {
 /** 顺序迁移表：新版本在此追加，禁止修改已发布迁移 */
 const MIGRATIONS: Migration[] = [
   { version: 1, description: 'initial schema', up: migrateV001 },
+  { version: 2, description: 'tool calling: assistant tools + message tool_trace', up: migrateV002 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

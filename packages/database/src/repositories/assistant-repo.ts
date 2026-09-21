@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant, ToolName } from '@wbfm/shared';
 import { newId, nowIso, mapAssistant, type AssistantRow } from './mappers';
 
 export interface AssistantCreateFields {
@@ -14,6 +14,8 @@ export interface AssistantCreateFields {
   maxTokens: number | null;
   modelId: string | null;
   knowledgeBaseId: string | null;
+  enabledTools: ToolName[];
+  retrieveAlways: boolean;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -30,8 +32,20 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   maxTokens: 'max_tokens',
   modelId: 'model_id',
   knowledgeBaseId: 'knowledge_base_id',
+  enabledTools: 'enabled_tools',
+  retrieveAlways: 'retrieve_always',
   sortOrder: 'sort_order',
 };
+
+/** 写入前把领域字段转换为列值（JSON/布尔归一） */
+function toRowValues(fields: Partial<AssistantCreateFields>): Record<string, unknown> {
+  const values: Record<string, unknown> = { ...fields };
+  if (fields.enabledTools !== undefined) values.enabledTools = JSON.stringify(fields.enabledTools);
+  if (fields.retrieveAlways !== undefined) {
+    values.retrieveAlways = fields.retrieveAlways ? 1 : 0;
+  }
+  return values;
+}
 
 export function createAssistantRepository(db: DatabaseInstance) {
   return {
@@ -41,11 +55,18 @@ export function createAssistantRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO assistants
            (id, name, emoji, color, system_prompt, temperature, top_p, max_tokens,
-            model_id, knowledge_base_id, is_builtin, sort_order, created_at, updated_at)
+            model_id, knowledge_base_id, enabled_tools, retrieve_always,
+            is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
-            @modelId, @knowledgeBaseId, @isBuiltin, @sortOrder, @ts, @ts)`,
-      ).run({ ...fields, id, isBuiltin: fields.isBuiltin ? 1 : 0, ts });
+            @modelId, @knowledgeBaseId, @enabledTools, @retrieveAlways,
+            @isBuiltin, @sortOrder, @ts, @ts)`,
+      ).run({
+        ...toRowValues(fields),
+        id,
+        isBuiltin: fields.isBuiltin ? 1 : 0,
+        ts,
+      });
       return this.findById(id)!;
     },
 
@@ -70,7 +91,7 @@ export function createAssistantRepository(db: DatabaseInstance) {
       const assignments = keys.map((k) => `${COLUMN_MAP[k]} = @${k}`).join(', ');
       db.prepare(
         `UPDATE assistants SET ${assignments}, updated_at = @updated_at WHERE id = @id`,
-      ).run({ updated_at: nowIso(), id, ...fields });
+      ).run({ ...toRowValues(fields), updated_at: nowIso(), id });
       return this.findById(id);
     },
 

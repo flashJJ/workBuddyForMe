@@ -16,5 +16,7 @@ export const chatRequestSchema = z.object({
   conversationId: z.string().trim().min(1).optional(),
   assistantId: z.string().trim().min(1, '必须选择助手'),
   content: z.string().trim().min(1, '消息内容不能为空').max(100_000),
+  /** v0.2：重新生成——沿用上一条用户消息重跑（需已有会话） */
+  regenerate: z.boolean().optional(),
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
