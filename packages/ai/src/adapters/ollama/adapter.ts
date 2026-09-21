@@ -8,9 +8,10 @@ import { normalizeOllamaBaseUrl } from './url';
  * - 模型列表/连接探活：原生 /api/tags
  * - 对话流式/向量化：复用 Ollama 内置 OpenAI 兼容端点（/v1）
  * - 工具调用：Ollama 0.3+ 经兼容端点支持 function calling
- * - v0.3 视觉：视觉消息（image_url data URL）经 /v1 透传；
- *   兼容性以 M1 首日 qwen2.5-vl 真机实测为准，若该版本兼容层不认 image_url
- *   再在此适配器内改走原生 /api/chat（images base64 字段），不做推测性转换。
+ * - v0.3 视觉：视觉消息（image_url data URL）经 /v1 透传。
+ *   M1 真机实测（Ollama + qwen2.5vl:7b，2026-05）：/v1/chat/completions
+ *   正确消费 data URL 图片（纯色图被准确描述、prompt_tokens 含图像），
+ *   因此无需转原生 /api/chat 的 images 字段。
  */
 export function createOllamaAdapter(connection: ProviderConnection): ChatProvider {
   const openAiConnection: ProviderConnection = {
