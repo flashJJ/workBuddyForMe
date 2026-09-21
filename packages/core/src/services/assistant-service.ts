@@ -27,6 +27,13 @@ export function createAssistantsService({ db }: ServiceDeps) {
     }
   };
 
+  /** knowledge_search 工具必须与知识库绑定同时存在 */
+  const validateTools = (enabledTools: string[], knowledgeBaseId: string | null) => {
+    if (enabledTools.includes('knowledge_search') && knowledgeBaseId === null) {
+      throw ApiError.validation('启用知识库检索工具前，请先关联知识库');
+    }
+  };
+
   const requireExisting = (id: string): Assistant => {
     const assistant = assistants.findById(id);
     if (!assistant) throw ApiError.notFound('助手', id);
@@ -44,6 +51,7 @@ export function createAssistantsService({ db }: ServiceDeps) {
 
     create(input: AssistantCreateInput): Assistant {
       validateBindings(input.modelId, input.knowledgeBaseId);
+      validateTools(input.enabledTools, input.knowledgeBaseId);
       const sortOrder =
         input.sortOrder || assistants.list().length;
       return assistants.create({
@@ -56,6 +64,8 @@ export function createAssistantsService({ db }: ServiceDeps) {
         maxTokens: input.maxTokens,
         modelId: input.modelId,
         knowledgeBaseId: input.knowledgeBaseId,
+        enabledTools: input.enabledTools,
+        retrieveAlways: input.retrieveAlways,
         isBuiltin: false,
         sortOrder,
       });
@@ -66,7 +76,9 @@ export function createAssistantsService({ db }: ServiceDeps) {
       const nextModelId = input.modelId !== undefined ? input.modelId : existing.modelId;
       const nextKbId =
         input.knowledgeBaseId !== undefined ? input.knowledgeBaseId : existing.knowledgeBaseId;
+      const nextTools = input.enabledTools ?? existing.enabledTools;
       validateBindings(nextModelId, nextKbId);
+      validateTools(nextTools, nextKbId);
       return assistants.update(id, input)!;
     },
 
