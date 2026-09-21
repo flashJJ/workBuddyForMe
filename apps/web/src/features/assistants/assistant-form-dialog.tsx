@@ -245,7 +245,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="assistant-kb">关联知识库</Label>
+            <Label htmlFor="assistant-kb">关联知识库（自动 RAG）</Label>
             <Select
               id="assistant-kb"
               value={form.knowledgeBaseId}
