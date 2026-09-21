@@ -28,3 +28,13 @@ export {
   OPENAI_ENDPOINTS,
 } from './adapters/openai/url';
 export { createOllamaAdapter } from './adapters/ollama/adapter';
+
+// 可观测性（LangSmith 可选追踪，未配置时零影响）
+export {
+  isTracingEnabled,
+  startRun,
+  traceAsync,
+  type TraceHandle,
+  type TraceRunType,
+  type TraceStartInput,
+} from './observability/tracer';

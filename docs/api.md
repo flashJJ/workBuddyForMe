@@ -77,21 +77,35 @@ SSE 流中产生的上游错误不中断 HTTP 200，而是以 `error` 事件下�
 
 ## 3. SSE 事件协议（POST /api/chat/stream）
 
-响应 `Content-Type: text/event-stream`，每事件格式 `event: <name>\ndata: <json>\n\n`。事件顺序：
+响应 `Content-Type: text/event-stream`，每事件格式 `event: <name>\ndata: <json>\n\n`。v0.2 起一次回答可能包含多轮工具调用，事件顺序：
 
 ```text
-meta → citations? → delta* → done | error
+meta → (citations? | tool(start → end) | delta)* → done | error
 ```
 
 | 事件 | data 载荷 | 说明 |
 |---|---|---|
 | meta | `{ "messageId": string, "conversationId": string }` | 助手消息已落库（status=streaming） |
-| delta | `{ "content": string }` | 增量文本，可能多次 |
-| citations | `{ "citations": Citation[] }` | 助手绑定知识库时下发（在 delta 之前） |
+| delta | `{ "content": string }` | 增量文本，可能多次（工具轮之间也可能出现） |
+| tool | 见下 | 单次工具调用的开始/结束，一轮回答内可能多组、多轮 |
+| citations | `{ "citations": Citation[] }` | RAG 或 knowledge_search 工具命中时下发；累积去重，可能多次 |
 | done | `{ "content": string, "usage": { promptTokens, completionTokens, totalTokens } \| null }` | 正常结束，usage 来自上游或本地估算 |
 | error | `{ "code": string, "message": string }` | 上游失败（如 PROVIDER_ERROR），消息标记 status=error |
 
-`Citation = { documentId, documentName, ordinal, snippet? }`。客户端中断（AbortController）时服务端将助手消息标记为 `stopped`，不再下发事件。
+`tool` 事件是 `phase` 判别联合：
+
+```jsonc
+// start
+{ "phase": "start", "callId": "call_abc", "tool": "current_time", "argsSummary": "当前时间" }
+// end
+{ "phase": "end", "callId": "call_abc", "tool": "current_time",
+  "status": "ok" | "error", "durationMs": 42,
+  "resultSummary": "2026-…", "error"?: "失败原因（status=error 时）" }
+```
+
+`tool ∈ 'current_time' | 'knowledge_search' | 'fetch_webpage'`。工具名仅出现在助手 `enabledTools` 白名单且模型支持 function calling 时才会下发；工具执行失败不中断对话，错误文本会回灌模型让其自我纠正。工具调用最多 `MAX_TOOL_ROUNDS=5` 轮，单次工具超时 15s（fetch_webpage 抓取超时 8s）。
+
+`Citation = { documentId, documentName, ordinal, snippet? }`。最终的工具轨迹随助手消息持久化在 `messages.tool_trace`（`ToolTraceEntry[]`，字段与 end 事件一致并额外含 `startedAt`），历史消息接口直接返回。客户端中断（AbortController）时服务端将助手消息标记为 `stopped`，不再下发事件。
 
 ## 4. 接口明细
 
@@ -138,11 +152,14 @@ interface Provider {
 
 - 出参 `data`：`Provider`（201）
 - 错误：422
+- 协议约定（v0.2）：
+  - `openai-compatible`：chat/embeddings/模型发现走 `{baseUrl}/chat/completions` 等 OpenAI 路径。
+  - `ollama`：本地服务（默认 `http://127.0.0.1:11434`），`apiKey` 忽略；chat/embeddings 复用 OpenAI 兼容 `/v1` 端点（baseUrl 裸地址会自动补 `/v1`），连通性测试与模型列表走 Ollama 原生 `GET /api/tags`。
 
 ```bash
 curl -s -X POST http://127.0.0.1:3000/api/providers \
   -H 'content-type: application/json' \
-  -d '{"name":"本地 Ollama 网关","baseUrl":"http://127.0.0.1:8080/v1","apiKey":""}'
+  -d '{"name":"本地 Ollama","protocol":"ollama","baseUrl":"http://127.0.0.1:11434","apiKey":""}'
 ```
 
 ### 4.5 PATCH /api/providers/{id}
@@ -216,7 +233,9 @@ interface Assistant {
   id: string; name: string; emoji: string | null; color: string | null;
   systemPrompt: string; temperature: number; topP: number; maxTokens: number | null;
   modelId: string | null;          // null 跟随系统默认对话模型
-  knowledgeBaseId: string | null;  // 非空时对话自动 RAG
+  knowledgeBaseId: string | null;  // 非空时允许 knowledge_search / 自动 RAG
+  enabledTools: ToolName[];        // 白名单：'current_time' | 'knowledge_search' | 'fetch_webpage'
+  retrieveAlways: boolean;         // true=每轮强制 RAG（v0.1 行为）；false=仅模型调用工具时检索
   isBuiltin: boolean; sortOrder: number;
   createdAt: string; updatedAt: string;
 }
@@ -236,7 +255,9 @@ interface Assistant {
 | topP | 0–1 | 否（默认 1） | |
 | maxTokens | int>0 ≤1e6 \| null | 否（默认 null） | |
 | modelId | string \| null | 否（默认 null） | 绑定 models.id |
-| knowledgeBaseId | string \| null | 否（默认 null） | 自动 RAG |
+| knowledgeBaseId | string \| null | 否（默认 null） | 允许 knowledge_search / 自动 RAG |
+| enabledTools | ToolName[] | 否（默认 `['current_time']`） | 工具白名单；含 `knowledge_search` 时必须同时绑定知识库，否则 422 |
+| retrieveAlways | boolean | 否（默认 true） | 绑定知识库时是否每轮强制检索 |
 | sortOrder | int ≥0 | 否（默认 0） | |
 
 - 出参 `data`：`Assistant`（201）；错误：404（modelId/knowledgeBaseId 不存在）/ 422
@@ -297,6 +318,7 @@ interface Message {
   status: 'streaming' | 'completed' | 'error' | 'stopped';
   promptTokens: number | null; completionTokens: number | null; totalTokens: number | null;
   citations: Citation[];
+  toolTrace: ToolTraceEntry[];   // v0.2：该助手回复触发的工具调用轨迹
   errorCode: string | null; errorMessage: string | null;
   createdAt: string;
 }
@@ -310,9 +332,10 @@ interface Message {
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| conversationId | string | 否 | 缺省时新建会话（meta 事件返回 id） |
+| conversationId | string | 否 | 缺省时新建会话（meta 事件返回 id）；`regenerate=true` 时必填 |
 | assistantId | string | 是 | |
-| content | string 1–100000 | 是 | 用户消息 |
+| content | string 1–100000 | 是 | 用户消息；`regenerate=true` 时忽略，沿用上一条用户消息 |
+| regenerate | boolean | 否（默认 false） | 重新生成：删除该会话尾部最后一条助手消息后重新作答，不新增用户消息 |
 
 - 成功：HTTP 200 `text/event-stream`（事件协议见 §3）
 - 校验/存在性错误在建立 SSE 前返回统一 JSON：404 / 422

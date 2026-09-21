@@ -18,6 +18,8 @@ function makeAssistant(db: DatabaseInstance) {
     maxTokens: null,
     modelId: null,
     knowledgeBaseId: null,
+    enabledTools: [],
+    retrieveAlways: false,
     isBuiltin: true,
     sortOrder: 0,
   });
@@ -108,6 +110,8 @@ describe('conversation/message 仓储', () => {
       maxTokens: null,
       modelId: null,
       knowledgeBaseId: null,
+      enabledTools: [],
+      retrieveAlways: false,
       isBuiltin: false,
       sortOrder: 1,
     });

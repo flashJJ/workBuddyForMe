@@ -75,6 +75,8 @@ describe('provider/model/assistant/settings 仓储', () => {
       maxTokens: null,
       modelId: null,
       knowledgeBaseId: null,
+      enabledTools: [],
+      retrieveAlways: false,
       isBuiltin: true,
       sortOrder: 0,
     });
@@ -88,6 +90,8 @@ describe('provider/model/assistant/settings 仓储', () => {
       maxTokens: 100,
       modelId: null,
       knowledgeBaseId: null,
+      enabledTools: [],
+      retrieveAlways: false,
       isBuiltin: false,
       sortOrder: 1,
     });

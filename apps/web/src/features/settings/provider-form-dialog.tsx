@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Provider } from '@wbfm/shared';
+import type { Provider, ProviderProtocol } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useProviderMutations, type ProviderCreateBody } from '@/lib/hooks/use-providers';
@@ -26,12 +27,21 @@ interface Props {
 
 interface FormState {
   name: string;
+  protocol: ProviderProtocol;
   baseUrl: string;
   apiKey: string;
   enabled: boolean;
 }
 
-const EMPTY: FormState = { name: '', baseUrl: '', apiKey: '', enabled: true };
+const EMPTY: FormState = {
+  name: '',
+  protocol: 'openai-compatible',
+  baseUrl: '',
+  apiKey: '',
+  enabled: true,
+};
+
+const OLLAMA_DEFAULT_URL = 'http://127.0.0.1:11434';
 
 export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
   const isEdit = Boolean(provider);
@@ -44,12 +54,32 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
     if (!open) return;
     setForm(
       provider
-        ? { name: provider.name, baseUrl: provider.baseUrl, apiKey: '', enabled: provider.enabled }
+        ? {
+            name: provider.name,
+            protocol: provider.protocol,
+            baseUrl: provider.baseUrl,
+            apiKey: '',
+            enabled: provider.enabled,
+          }
         : EMPTY,
     );
   }, [open, provider]);
 
   const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
+
+  const changeProtocol = (protocol: ProviderProtocol) => {
+    setForm((prev) => {
+      if (protocol === prev.protocol) return prev;
+      // 切到 Ollama：地址为空或仍是 OpenAI 占位时自动填本地默认地址
+      const baseUrl =
+        protocol === 'ollama' && (!prev.baseUrl || prev.baseUrl.includes('api.example.com'))
+          ? OLLAMA_DEFAULT_URL
+          : prev.baseUrl;
+      return { ...prev, protocol, baseUrl, apiKey: protocol === 'ollama' ? '' : prev.apiKey };
+    });
+  };
+
+  const isOllama = form.protocol === 'ollama';
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -70,10 +100,10 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
       } else {
         const body: ProviderCreateBody = {
           name: form.name.trim(),
-          protocol: 'openai-compatible',
+          protocol: form.protocol,
           baseUrl: form.baseUrl.trim(),
           enabled: form.enabled,
-          ...(form.apiKey ? { apiKey: form.apiKey } : {}),
+          ...(isOllama || !form.apiKey ? {} : { apiKey: form.apiKey }),
         };
         await mutations.create.mutateAsync(body);
         toast.success('供应商已创建');
@@ -91,7 +121,9 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? '编辑供应商' : '新增供应商'}</DialogTitle>
-          <DialogDescription>兼容 OpenAI 协议的服务，填写地址与 API Key 即可。</DialogDescription>
+          <DialogDescription>
+            支持 OpenAI 兼容云服务，或本地 Ollama 模型。
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -100,9 +132,21 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
               id="provider-name"
               value={form.name}
               onChange={(e) => update({ name: e.target.value })}
-              placeholder="例如：DeepSeek"
+              placeholder={isOllama ? '例如：本地 Ollama' : '例如：DeepSeek'}
               required
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="provider-protocol">协议</Label>
+            <Select
+              id="provider-protocol"
+              value={form.protocol}
+              disabled={isEdit}
+              onChange={(e) => changeProtocol(e.target.value as ProviderProtocol)}
+            >
+              <option value="openai-compatible">OpenAI 兼容（云端 / 自建网关）</option>
+              <option value="ollama">Ollama（本地离线模型）</option>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="provider-baseurl">Base URL</Label>
@@ -110,21 +154,39 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
               id="provider-baseurl"
               value={form.baseUrl}
               onChange={(e) => update({ baseUrl: e.target.value })}
-              placeholder="https://api.example.com/v1"
+              placeholder={isOllama ? OLLAMA_DEFAULT_URL : 'https://api.example.com/v1'}
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="provider-key">API Key</Label>
-            <Input
-              id="provider-key"
-              type="password"
-              autoComplete="new-password"
-              value={form.apiKey}
-              onChange={(e) => update({ apiKey: e.target.value })}
-              placeholder={isEdit && provider?.apiKeyMasked ? `当前：${provider.apiKeyMasked}（留空不修改）` : 'sk-...'}
-            />
-          </div>
+          {!isOllama && (
+            <div className="space-y-1.5">
+              <Label htmlFor="provider-key">API Key</Label>
+              <Input
+                id="provider-key"
+                type="password"
+                autoComplete="new-password"
+                value={form.apiKey}
+                onChange={(e) => update({ apiKey: e.target.value })}
+                placeholder={
+                  isEdit && provider?.apiKeyMasked ? `当前：${provider.apiKeyMasked}（留空不修改）` : 'sk-...'
+                }
+              />
+            </div>
+          )}
+          {isOllama && (
+            <p className="rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
+              本地 Ollama 无需 API Key。请先安装并运行 Ollama（
+              <a
+                href="https://ollama.com/download"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                ollama.com/download
+              </a>
+              ），再用 <code>ollama pull 模型名</code> 拉取模型。
+            </p>
+          )}
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"

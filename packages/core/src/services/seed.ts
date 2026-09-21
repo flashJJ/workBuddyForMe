@@ -24,6 +24,8 @@ export function ensureSeedData(db: DatabaseInstance): void {
     maxTokens: null,
     modelId: null,
     knowledgeBaseId: null,
+    enabledTools: [],
+    retrieveAlways: false,
     isBuiltin: true,
     sortOrder: 0,
   });

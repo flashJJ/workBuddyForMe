@@ -1,5 +1,11 @@
 import type { DatabaseInstance } from '../client';
-import type { Citation, Message, MessageRole, MessageStatus } from '@wbfm/shared';
+import type {
+  Citation,
+  Message,
+  MessageRole,
+  MessageStatus,
+  ToolTraceEntry,
+} from '@wbfm/shared';
 import { newId, nowIso, mapMessage, type MessageRow } from './mappers';
 
 export interface MessageAddFields {
@@ -8,6 +14,7 @@ export interface MessageAddFields {
   content: string;
   status: MessageStatus;
   citations?: Citation[];
+  toolTrace?: ToolTraceEntry[];
 }
 
 export interface MessageUsage {
@@ -23,8 +30,8 @@ export function createMessageRepository(db: DatabaseInstance) {
       const ts = nowIso();
       db.prepare(
         `INSERT INTO messages
-           (id, conversation_id, role, content, status, citations, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+           (id, conversation_id, role, content, status, citations, tool_trace, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         fields.conversationId,
@@ -32,6 +39,7 @@ export function createMessageRepository(db: DatabaseInstance) {
         fields.content,
         fields.status,
         JSON.stringify(fields.citations ?? []),
+        JSON.stringify(fields.toolTrace ?? []),
         ts,
       );
       return this.findById(id)!;
@@ -96,6 +104,46 @@ export function createMessageRepository(db: DatabaseInstance) {
         content,
         id,
       );
+    },
+
+    /** 流式结束后写回工具调用轨迹 */
+    saveToolTrace(id: string, trace: ToolTraceEntry[]): void {
+      db.prepare(`UPDATE messages SET tool_trace = ? WHERE id = ?`).run(
+        JSON.stringify(trace),
+        id,
+      );
+    },
+
+    /**
+     * 重新生成前置清理：删除某会话最后一条用户消息之后的所有助手消息。
+     * 返回被删除条数（幂等：无尾随助手消息时为 0）。
+     */
+    deleteAssistantMessagesAfterLastUser(conversationId: string): number {
+      const lastUser = db
+        .prepare(
+          `SELECT rowid AS rowid FROM messages
+             WHERE conversation_id = ? AND role = 'user'
+             ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+        )
+        .get(conversationId) as { rowid: number } | undefined;
+      if (!lastUser) return 0;
+      return db
+        .prepare(
+          `DELETE FROM messages WHERE conversation_id = ? AND role = 'assistant' AND rowid > ?`,
+        )
+        .run(conversationId, lastUser.rowid).changes;
+    },
+
+    /** 取会话最后一条用户消息内容（重新生成时沿用） */
+    findLastUserContent(conversationId: string): string | null {
+      const row = db
+        .prepare(
+          `SELECT content FROM messages
+             WHERE conversation_id = ? AND role = 'user'
+             ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+        )
+        .get(conversationId) as { content: string } | undefined;
+      return row?.content ?? null;
     },
   };
 }

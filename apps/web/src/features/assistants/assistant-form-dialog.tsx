@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant, ToolName } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,6 +20,8 @@ import { ApiClientError } from '@/lib/api/client';
 import { useAllModels } from '@/lib/hooks/use-settings';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useAssistantMutations, type AssistantBody } from '@/lib/hooks/use-assistants';
+import { AssistantToolsField } from './assistant-tools-field';
+import { NumberField } from './number-field';
 
 interface Props {
   open: boolean;
@@ -37,6 +39,8 @@ interface FormState {
   maxTokens: string;
   modelId: string;
   knowledgeBaseId: string;
+  enabledTools: ToolName[];
+  retrieveAlways: boolean;
 }
 
 function toForm(assistant: Assistant | null | undefined): FormState {
@@ -51,6 +55,8 @@ function toForm(assistant: Assistant | null | undefined): FormState {
       maxTokens: '',
       modelId: '',
       knowledgeBaseId: '',
+      enabledTools: ['current_time'],
+      retrieveAlways: true,
     };
   }
   return {
@@ -63,6 +69,8 @@ function toForm(assistant: Assistant | null | undefined): FormState {
     maxTokens: assistant.maxTokens ? String(assistant.maxTokens) : '',
     modelId: assistant.modelId ?? '',
     knowledgeBaseId: assistant.knowledgeBaseId ?? '',
+    enabledTools: [...assistant.enabledTools],
+    retrieveAlways: assistant.retrieveAlways,
   };
 }
 
@@ -92,7 +100,32 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     maxTokens: form.maxTokens ? Number(form.maxTokens) : null,
     modelId: form.modelId || null,
     knowledgeBaseId: form.knowledgeBaseId || null,
+    enabledTools: form.enabledTools,
+    retrieveAlways: form.retrieveAlways,
   });
+
+  const toggleTool = (tool: ToolName) => {
+    setForm((prev) => {
+      const has = prev.enabledTools.includes(tool);
+      return {
+        ...prev,
+        enabledTools: has
+          ? prev.enabledTools.filter((t) => t !== tool)
+          : [...prev.enabledTools, tool],
+      };
+    });
+  };
+
+  const changeKnowledgeBase = (knowledgeBaseId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      knowledgeBaseId,
+      // 取消关联知识库时，连带移除知识库检索工具
+      enabledTools: knowledgeBaseId
+        ? prev.enabledTools
+        : prev.enabledTools.filter((t) => t !== 'knowledge_search'),
+    }));
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -216,7 +249,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             <Select
               id="assistant-kb"
               value={form.knowledgeBaseId}
-              onChange={(e) => update({ knowledgeBaseId: e.target.value })}
+              onChange={(e) => changeKnowledgeBase(e.target.value)}
             >
               <option value="">不关联</option>
               {knowledgeBases?.map((kb) => (
@@ -226,6 +259,14 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
               ))}
             </Select>
           </div>
+
+          <AssistantToolsField
+            enabledTools={form.enabledTools}
+            knowledgeBaseId={form.knowledgeBaseId}
+            retrieveAlways={form.retrieveAlways}
+            onToggleTool={toggleTool}
+            onRetrieveAlwaysChange={(value) => update({ retrieveAlways: value })}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -241,28 +282,3 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
   );
 }
 
-function NumberField(props: {
-  id: string;
-  label: string;
-  value: string;
-  step: string;
-  min: string;
-  max?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={props.id}>{props.label}</Label>
-      <Input
-        id={props.id}
-        type="number"
-        inputMode="decimal"
-        value={props.value}
-        step={props.step}
-        min={props.min}
-        max={props.max}
-        onChange={(e) => props.onChange(e.target.value)}
-      />
-    </div>
-  );
-}

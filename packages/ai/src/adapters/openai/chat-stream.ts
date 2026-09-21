@@ -2,11 +2,19 @@ import type { ChatChunk, ChatParams, ProviderConnection } from '../../types';
 import { openSseChannel } from '../../http/sse-channel';
 import { parseSse } from '../../http/sse-parser';
 import { OPENAI_ENDPOINTS, joinEndpoint } from './url';
-import { DONE_MARKER, buildChatBody, mapUsage, type ChatCompletionChunk } from './payloads';
+import {
+  DONE_MARKER,
+  ToolCallAccumulator,
+  buildChatBody,
+  mapUsage,
+  type ChatCompletionChunk,
+} from './payloads';
 
 /**
  * OpenAI 兼容 /chat/completions SSE 增量流。
- * 调用方通过 params.signal 取消时，底层请求与响应体一并中断。
+ * - content 增量实时产出（打字机）；
+ * - tool_calls 增量在适配器内按 index 拼装，finish_reason=tool_calls 时整体产出一次；
+ * - 调用方通过 params.signal 取消时，底层请求与响应体一并中断。
  */
 export async function* openAiChatStream(
   connection: ProviderConnection,
@@ -21,13 +29,23 @@ export async function* openAiChatStream(
     },
   );
 
+  const toolCalls = new ToolCallAccumulator();
   try {
     for await (const event of parseSse(response.body!)) {
       if (event.data === DONE_MARKER) break;
       const chunk = parseChunk(event.data);
       if (!chunk) continue;
-      const delta = chunk.choices?.[0]?.delta?.content;
+      const choice = chunk.choices?.[0];
+      const delta = choice?.delta?.content;
       if (delta) yield { delta };
+      toolCalls.absorb(choice?.delta?.tool_calls);
+      if (choice?.finish_reason) {
+        if (choice.finish_reason === 'tool_calls') {
+          yield { delta: '', toolCalls: toolCalls.assemble(), finishReason: 'tool_calls' };
+        } else if (choice.finish_reason !== 'stop') {
+          yield { delta: '', finishReason: choice.finish_reason };
+        }
+      }
       if (chunk.usage) yield { delta: '', usage: mapUsage(chunk.usage) };
     }
   } finally {

@@ -22,6 +22,7 @@ function makeMessage(partial: Partial<Message> = {}): Message {
     completionTokens: null,
     totalTokens: null,
     citations: [],
+    toolTrace: [],
     errorCode: null,
     errorMessage: null,
     createdAt: '2025-01-01T00:00:00.000Z',
@@ -54,14 +55,40 @@ describe('消息项 MessageItem（TR-27.1）', () => {
           errorMessage: '上游 500',
         })}
         assistantName="通用助手"
-        previousUserContent="再讲一次"
         onRetry={onRetry}
       />,
     );
 
     expect(screen.getByTestId('message-error')).toHaveTextContent('上游 500');
     await user.click(screen.getByRole('button', { name: '重新生成' }));
-    expect(onRetry).toHaveBeenCalledWith('再讲一次');
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('渲染工具调用轨迹卡片并可展开详情', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MessageItem
+        message={makeMessage({
+          toolTrace: [
+            {
+              callId: 'call-1',
+              tool: 'current_time',
+              argsSummary: '当前时间',
+              status: 'ok',
+              durationMs: 42,
+              resultSummary: '2025-01-01 10:00:00',
+              startedAt: '2025-01-01T10:00:00.000Z',
+            },
+          ],
+        })}
+        assistantName="通用助手"
+      />,
+    );
+    const row = screen.getByTestId('tool-trace-row');
+    expect(row).toHaveTextContent('查询当前时间');
+    expect(row).toHaveTextContent('42ms');
+    await user.click(row.querySelector('button')!);
+    expect(screen.getByText('current_time')).toBeInTheDocument();
   });
 
   it('渲染引用来源的序号、文档名与片段', () => {

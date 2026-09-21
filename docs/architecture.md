@@ -18,7 +18,7 @@ WBFM 采用 pnpm + Turborepo monorepo，分三层：**应用层 → 业务层 �
 │ rag / settings / secrets（纯函数式服务，依赖注入数据访问器）    │
 ├──────────────────────────────────────────────────────────────┤
 │ 基础设施层                                                    │
-│ packages/ai        Provider 抽象、OpenAI 兼容适配器、HTTP 底座 │
+│ packages/ai        Provider 抽象、OpenAI 兼容/Ollama 适配器、HTTP 底座 │
 │ packages/database  better-sqlite3、migration、repositories    │
 │ packages/config    数据根/环境变量/目录解析（唯一事实源）       │
 │ packages/shared    Zod schema、领域类型、错误码、SSE 事件      │
@@ -92,17 +92,19 @@ packages/<pkg>/src/
 ```text
 用户发送消息
   POST /api/chat/stream（SSE）
-   1. 校验 → 读取 assistant → 读取历史消息
-   2. [可选] RAG：query embedding → sqlite-vec top-k → 组装引用上下文
-   3. 调用 ai 包 chatStream（OpenAI 兼容 /chat/completions, stream:true）
-   4. 异步迭代上游 chunk → 转发 SSE 事件：event:delta / done / error
-   5. done：落库 assistant 消息（content + usage + citations）
+   1. 校验 → 读取 assistant → 读取历史消息（regenerate 时先 prepareRegenerate）
+   2. [可选] RAG：retrieveAlways 时 query embedding → sqlite-vec top-k → 组装引用上下文
+   3. 调用 ai 包 runProviderTurn（OpenAI 兼容 / Ollama，/chat/completions, stream:true）
+   4. 工具循环（≤5 轮）：透传 delta；遇 tool_calls → 执行助手白名单内工具
+      （current_time / knowledge_search / fetch_webpage[含 SSRF 防护]）→ tool 结果回灌模型
+   5. 转发 SSE 事件：event:tool(start/end) / delta / citations / done / error
+      done：落库 assistant 消息（content + usage + citations + tool_trace）
       error：消息落 status=error，持久化 errorCode/errorMessage
       客户端停止：abort 时已生成内容写回，消息落 status=stopped
    客户端断开：request.signal → AbortController.abort() → 上游连接释放
 ```
 
-SSE 事件协议：`data:` 行承载 JSON，`event` 类型见 `shared` 的 `SseEvent` 联合（`meta`、`delta`、`citations`、`done`、`error`）。
+SSE 事件协议：`data:` 行承载 JSON，`event` 类型见 `shared` 的 `SseEvent` 联合（`meta`、`delta`、`tool`、`citations`、`done`、`error`）。
 
 ### 4.2 知识库导入流水线
 
@@ -127,13 +129,16 @@ providers 1───* models
 assistants *───1 models（绑定对话模型, 可空→跟随默认）
 assistants *───0..1 knowledge_bases
   assistants(id, name, emoji, color, system_prompt, temperature, top_p,
-             max_tokens, model_id FK?, knowledge_base_id FK?, is_builtin, sort_order, timestamps)
+             max_tokens, model_id FK?, knowledge_base_id FK?,
+             enabled_tools(json, v002), retrieve_always(bool, v002),
+             is_builtin, sort_order, timestamps)
 
 conversations *──1 assistants ; conversations 1──* messages
   conversations(id, assistant_id FK, title, last_message_at, timestamps)
   messages(id, conversation_id FK, role, content, status,
            prompt_tokens, completion_tokens, total_tokens,
-           citations(json), error_code, error_message, created_at)
+           citations(json), tool_trace(json, v002),
+           error_code, error_message, created_at)
 
 knowledge_bases 1──* documents 1──* document_chunks 1──1 chunks_vec
   knowledge_bases(id, name, description, chunk_size, chunk_overlap, timestamps)
@@ -161,7 +166,7 @@ settings_kv(key PK, value(json), updated_at)
 | NOT_FOUND | 404 | 资源不存在 |
 | CONFLICT | 409 | 状态冲突（如同名同内容文档重复上传） |
 | EMBEDDING_NOT_CONFIGURED | 422 | 知识库操作缺少 Embedding 模型 |
-| UNSUPPORTED_PROVIDER | 501 | 协议适配器未启用（Ollama 预留） |
+| UNSUPPORTED_PROVIDER | 501 | 未知协议（非 openai-compatible / ollama） |
 | PROVIDER_ERROR | 502 | 上游供应商返回错误 |
 | PROVIDER_TIMEOUT | 504 | 上游超时/连接失败（重试耗尽） |
 | INTERNAL_ERROR | 500 | 未预期错误（兜底） |
@@ -176,6 +181,7 @@ settings_kv(key PK, value(json), updated_at)
   - Web：AES-256-GCM，密钥文件位于数据根 `keys/`（0600 权限尝试设置）。
 - Electron：contextIsolation 开启、nodeIntegration 关闭、sandbox 优先；preload 仅暴露最小白名单 API。
 - 前端永不直连供应商；所有出站请求由 ai 包统一发出（认证头注入、超时、退避）。
+- fetch_webpage 工具 SSRF 防护：DNS 解析后拦截环回/私网/链路本地/保留地址（含 IPv4-mapped IPv6），重定向逐跳重校，仅 http/https，8s 超时、200KB 上限。
 
 ## 8. 关键架构决策（ADR）
 

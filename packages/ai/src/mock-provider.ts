@@ -4,6 +4,7 @@ import type {
   ChatProvider,
   EmbedParams,
   EmbedResult,
+  ToolCall,
 } from './types';
 import { sleep } from './http/backoff';
 
@@ -12,6 +13,8 @@ const EMBED_DIMENSION = 64;
 const STREAM_CHUNK_DELAY_MS = 60;
 /** 用户消息命中该词时输出长回复（约 3 秒流式），供 E2E「中途停止」场景操作 */
 const LONG_ANSWER_TRIGGER = /长回答|详细说说/;
+/** 命中时 mock 模型发起 current_time 工具调用，用于工具链路测试 */
+const TIME_TOOL_TRIGGER = /现在.*(时间|几点)|今天.*(几号|日期)|current time/i;
 
 function hashToken(token: string): number {
   let hash = 0x811c9dc5;
@@ -61,6 +64,15 @@ function extractReference(systemContent: string): string | null {
   return lines.find((line) => !line.startsWith('来源') && !line.startsWith('[')) ?? lines[0] ?? null;
 }
 
+/** 取最近一条 role:tool 的工具结果 */
+function extractToolResult(messages: ChatMessage[], toolName: string): string | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]!;
+    if (message.role === 'tool' && message.name === toolName) return message.content;
+  }
+  return null;
+}
+
 function truncate(text: string, max: number): string {
   const clean = text.replace(/\s+/g, ' ').trim();
   return clean.length > max ? `${clean.slice(0, max)}…` : clean;
@@ -74,12 +86,23 @@ function splitChunks(text: string): string[] {
   return chunks;
 }
 
+function hasTool(params: { tools?: { function: { name: string } }[] }, name: string): boolean {
+  return Boolean(params.tools?.some((tool) => tool.function.name === name));
+}
+
+function toolCallChunk(call: ToolCall): ChatChunk {
+  return { delta: '', toolCalls: [call], finishReason: 'tool_calls' };
+}
+
 /**
  * 进程内 mock 供应商（WBFM_MOCK_AI=1 时由 core 注入）：
- * chatStream 回显用户问题/参考资料，embed 用确定性伪语义向量驱动真实检索链路。
+ * chatStream 回显用户问题/参考资料，embed 用确定性伪语义向量驱动真实检索链路；
+ * supportsTools=true：时间类提问且授权了 current_time 时，走一次完整工具循环。
  */
 export function createMockProvider(): ChatProvider {
   return {
+    supportsTools: true,
+
     async testConnection(): Promise<void> {
       return undefined;
     },
@@ -93,13 +116,29 @@ export function createMockProvider(): ChatProvider {
       const user = [...params.messages].reverse().find((message) => message.role === 'user');
       const reference = extractReference(system?.content ?? '');
 
+      // 工具循环：首轮请求时间 → 发起 current_time 调用；工具结果回灌后 → 作答
+      if (hasTool(params, 'current_time') && TIME_TOOL_TRIGGER.test(user?.content ?? '')) {
+        const toolResult = extractToolResult(params.messages, 'current_time');
+        if (!toolResult) {
+          yield toolCallChunk({
+            id: 'call-mock-time',
+            type: 'function',
+            function: { name: 'current_time', arguments: '{}' },
+          });
+          return;
+        }
+        yield { delta: `现在是 ${toolResult}。` };
+        yield { delta: '', usage: { promptTokens: 20, completionTokens: 8, totalTokens: 28 } };
+        return;
+      }
+
       const reply = reference
         ? `根据检索到的资料：${truncate(reference, 60)}。以上回答依据知识库中的相关内容给出。`
         : LONG_ANSWER_TRIGGER.test(user?.content ?? '')
           ? `好的，下面给出一段较长的回答。${'工作台规划分为三步：先整理资料，再配置助手，最后验证效果。'.repeat(10)}`
           : `你好，我是 mock 模型。收到你的消息：「${truncate(user?.content ?? '', 40)}」。`;
 
-      const promptTokens = 5 + Math.floor((system?.content.length ?? 0) / 4);
+      const promptTokens = 5 + Math.floor((system?.content?.length ?? 0) / 4);
       const chunks = splitChunks(reply);
       for (const [index, chunk] of chunks.entries()) {
         if (params.signal?.aborted) return;

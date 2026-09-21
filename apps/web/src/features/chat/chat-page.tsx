@@ -129,6 +129,7 @@ export function ChatPage() {
               assistantName={currentAssistant?.name ?? '助手'}
               streaming={session.streaming}
               onRetry={session.retry}
+              onResend={session.send}
             />
             <Composer
               streaming={session.streaming}

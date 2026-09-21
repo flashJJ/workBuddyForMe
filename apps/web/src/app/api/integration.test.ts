@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createAssistantRepository,
   createDatabase,
   createMessageRepository,
   createModelRepository,
@@ -211,5 +212,88 @@ describe('API 集成测试全集（TR-33.1）', () => {
     );
     expect(response.status).toBe(504);
     expect((await response.json()).error.code).toBe('PROVIDER_TIMEOUT');
+  });
+
+  it('工具调用 SSE：tool start/end 事件下发，tool_trace 随消息落库', async () => {
+    seedChatModel(db);
+    createAssistantRepository(db).update(builtinAssistantId, {
+      enabledTools: ['current_time'],
+    });
+
+    const toolHead = JSON.stringify({
+      choices: [
+        {
+          delta: {
+            tool_calls: [
+              { index: 0, id: 'call-t1', type: 'function', function: { name: 'current_time', arguments: '' } },
+            ],
+          },
+        },
+      ],
+    });
+    const toolTail = JSON.stringify({
+      choices: [
+        {
+          delta: { tool_calls: [{ index: 0, function: { arguments: '{}' } }] },
+          finish_reason: 'tool_calls',
+        },
+      ],
+    });
+    const toolSse = `data: ${toolHead}\n\ndata: ${toolTail}\n\ndata: [DONE]\n\n`;
+    vi.mocked(fetch)
+      .mockImplementationOnce(
+        async () => new Response(toolSse, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+      )
+      .mockImplementationOnce(
+        async () => new Response(SSE_BODY, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+      );
+
+    const response = await streamChat(
+      jsonRequest({ assistantId: builtinAssistantId, content: '现在几点了' }),
+    );
+    const events = parseSseChunks(await readAll(response));
+    expect(events.map((e) => e.event)).toEqual(['meta', 'tool', 'tool', 'delta', 'done']);
+    expect(events[1]).toMatchObject({
+      event: 'tool',
+      data: { phase: 'start', callId: 'call-t1', tool: 'current_time' },
+    });
+    expect(events[2]!.data).toMatchObject({ phase: 'end', status: 'ok' });
+
+    const conversationId = (events[0]!.data as { conversationId: string }).conversationId;
+    const [, assistantMessage] = createMessageRepository(db).listByConversation(conversationId);
+    expect(assistantMessage!.toolTrace).toHaveLength(1);
+    expect(assistantMessage!.toolTrace[0]).toMatchObject({
+      callId: 'call-t1',
+      tool: 'current_time',
+      status: 'ok',
+    });
+  });
+
+  it('regenerate：删除尾部助手消息后重新作答，不新增用户消息', async () => {
+    seedChatModel(db);
+    const created = await createConversation(
+      jsonRequest({ assistantId: builtinAssistantId }),
+    );
+    const conversationId = (await created.json()).data.id;
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(SSE_BODY, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    );
+    const first = await streamChat(
+      jsonRequest({ assistantId: builtinAssistantId, content: '讲个笑话', conversationId }),
+    );
+    await readAll(first);
+    expect(createMessageRepository(db).listByConversation(conversationId)).toHaveLength(2);
+
+    const second = await streamChat(
+      jsonRequest({ assistantId: builtinAssistantId, content: '讲个笑话', conversationId, regenerate: true }),
+    );
+    const events = parseSseChunks(await readAll(second));
+    expect(events.at(-1)!.event).toBe('done');
+
+    const messages = createMessageRepository(db).listByConversation(conversationId);
+    expect(messages).toHaveLength(2);
+    expect(messages[0]!.role).toBe('user');
+    expect(messages[1]!.role).toBe('assistant');
   });
 });

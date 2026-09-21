@@ -96,6 +96,23 @@ export function createConversationService({ db }: ServiceDeps) {
       messages.markStopped(id, content);
     },
 
+    /** 写回工具调用轨迹 */
+    saveMessageToolTrace(id: string, trace: import('@wbfm/shared').ToolTraceEntry[]): void {
+      messages.saveToolTrace(id, trace);
+    },
+
+    /**
+     * 重新生成前置处理：删除最后一条用户消息之后的助手消息，
+     * 返回该用户消息内容；没有用户消息时抛校验错误。
+     */
+    prepareRegenerate(conversationId: string): string {
+      requireConversation(conversationId);
+      messages.deleteAssistantMessagesAfterLastUser(conversationId);
+      const content = messages.findLastUserContent(conversationId);
+      if (!content) throw ApiError.validation('没有可重新生成的用户消息');
+      return content;
+    },
+
     /** 取最近 n 条历史（供对话编排拼上下文） */
     recentMessages(conversationId: string, n: number): Message[] {
       return messages.lastN(conversationId, n);

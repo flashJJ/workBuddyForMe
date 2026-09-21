@@ -8,6 +8,7 @@ export function createOpenAiCompatibleAdapter(
   connection: ProviderConnection,
 ): ChatProvider {
   return {
+    supportsTools: true,
     testConnection: async (signal) => {
       await openAiListModels(connection, signal);
     },

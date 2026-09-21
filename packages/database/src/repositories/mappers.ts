@@ -12,6 +12,8 @@ import type {
   Provider,
   ProviderModel,
   ProviderProtocol,
+  ToolName,
+  ToolTraceEntry,
 } from '@wbfm/shared';
 import { nowIso } from '../utils/time';
 
@@ -53,6 +55,8 @@ export interface AssistantRow {
   max_tokens: number | null;
   model_id: string | null;
   knowledge_base_id: string | null;
+  enabled_tools: string;
+  retrieve_always: number;
   is_builtin: number;
   sort_order: number;
   created_at: string;
@@ -78,6 +82,7 @@ export interface MessageRow {
   completion_tokens: number | null;
   total_tokens: number | null;
   citations: string;
+  tool_trace: string;
   error_code: string | null;
   error_message: string | null;
   created_at: string;
@@ -159,6 +164,8 @@ export function mapAssistant(row: AssistantRow): Assistant {
     maxTokens: row.max_tokens,
     modelId: row.model_id,
     knowledgeBaseId: row.knowledge_base_id,
+    enabledTools: parseJsonArray<ToolName>(row.enabled_tools),
+    retrieveAlways: row.retrieve_always === 1,
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -188,6 +195,7 @@ export function mapMessage(row: MessageRow): Message {
     completionTokens: row.completion_tokens,
     totalTokens: row.total_tokens,
     citations: parseJsonArray<Citation>(row.citations),
+    toolTrace: parseJsonArray<ToolTraceEntry>(row.tool_trace),
     errorCode: row.error_code,
     errorMessage: row.error_message,
     createdAt: row.created_at,

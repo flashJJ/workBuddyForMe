@@ -79,3 +79,33 @@ export {
   toCitations,
   CITATION_SNIPPET_LENGTH,
 } from './retrieval/context-formatter';
+
+// v0.2 工具调用
+export { createToolRuntime, type ToolRuntime } from './tools/tool-runtime';
+export {
+  executeToolCall,
+  executeCall,
+  parseToolArgs,
+  summarizeArgs,
+  clipSummary,
+} from './tools/tool-executor';
+export {
+  toToolDefinitions,
+  ToolArgError,
+  type Tool,
+  type ToolResult,
+  type ToolContext,
+  type ToolMap,
+} from './tools/types';
+export { currentTimeTool } from './tools/current-time-tool';
+export { knowledgeSearchTool } from './tools/knowledge-search-tool';
+export { fetchWebpageTool, htmlToText } from './tools/fetch-webpage-tool';
+export {
+  isBlockedIp,
+  assertSafeUrlLiteral,
+  resolveAndAssertHost,
+  ipv4ToInt,
+  parseIpv6,
+  SsrfBlockedError,
+} from './tools/ssrf-guard';
+export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool-runner';

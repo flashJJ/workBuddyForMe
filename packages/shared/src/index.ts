@@ -16,6 +16,7 @@ export type {
   AppSettings,
   Timestamped,
 } from './types/domain';
+export type { ToolTraceEntry, ToolEventPayload, ToolCallStatus } from './types/tool';
 
 // Zod 契约
 export * from './schemas/common';
