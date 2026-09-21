@@ -1,36 +1,39 @@
 {
-    "name":  "@wbfm/core",
-    "version":  "0.1.0",
-    "private":  true,
-    "type":  "module",
-    "main":  "./dist/index.cjs",
-    "module":  "./dist/index.mjs",
-    "types":  "./src/index.ts",
-    "exports":  {
-                    ".":  {
-                              "types":  "./src/index.ts",
-                              "development":  "./src/index.ts",
-                              "import":  "./dist/index.mjs",
-                              "require":  "./dist/index.cjs"
-                          }
-                },
-    "files":  [
-                  "dist",
-                  "src"
-              ],
-    "scripts":  {
-                    "build":  "tsup",
-                    "dev":  "tsup --watch",
-                    "typecheck":  "tsc --noEmit",
-                    "lint":  "eslint src --ext .ts",
-                    "test":  "vitest run",
-                    "test:unit":  "vitest run --coverage"
-                },
-    "dependencies":  {
-                         "@wbfm/ai":  "workspace:*",
-                         "@wbfm/config":  "workspace:*",
-                         "@wbfm/database":  "workspace:*",
-                         "@wbfm/shared":  "workspace:*",
-                         "pdfjs-dist":  "^4.10.38"
-                     }
+    "name": "@wbfm/core",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": {
+            "types": "./src/index.ts",
+            "development": "./src/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "files": [
+        "dist",
+        "src"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint src --ext .ts",
+        "test": "vitest run",
+        "test:unit": "vitest run --coverage"
+    },
+    "dependencies": {
+        "@wbfm/ai": "workspace:*",
+        "@wbfm/config": "workspace:*",
+        "@wbfm/database": "workspace:*",
+        "@wbfm/shared": "workspace:*",
+        "fflate": "^0.8.3",
+        "mammoth": "^1.12.3",
+        "pdfjs-dist": "^4.10.38",
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    }
 }

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError } from '@wbfm/shared';
 
 const getDocument = vi.fn();
 
@@ -17,9 +16,13 @@ describe('文档文本提取（TR-16.1）', () => {
     expect(detectKind('a.markdown')).toBe('md');
   });
 
-  it('不支持的类型抛 422', () => {
-    expect(() => detectKind('a.docx')).toThrow(ApiError);
+  it('v0.3 Office 三格式识别；未知类型与老式 .doc 给可读错误', () => {
+    expect(detectKind('a.docx')).toBe('docx');
+    expect(detectKind('a.xlsx')).toBe('xlsx');
+    expect(detectKind('a.pptx')).toBe('pptx');
+    expect(() => detectKind('a.rtf')).toThrow(/不支持的文件类型/);
     expect(() => detectKind('a')).toThrow(/不支持的文件类型/);
+    expect(() => detectKind('old.doc')).toThrow(/另存为新版 .docx/);
   });
 
   it('pdf：逐页提取文本并在结束后销毁文档', async () => {

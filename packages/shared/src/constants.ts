@@ -42,7 +42,15 @@ export const TOOL_TIMEOUT_MS = 15_000;
 
 /** 上传限制 */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-export const ALLOWED_DOC_EXTENSIONS = ['.txt', '.md', '.markdown', '.pdf'] as const;
+export const ALLOWED_DOC_EXTENSIONS = [
+  '.txt',
+  '.md',
+  '.markdown',
+  '.pdf',
+  '.docx',
+  '.xlsx',
+  '.pptx',
+] as const;
 
 /** v0.3 聊天图片附件限制 */
 export const MAX_CHAT_ATTACHMENTS = 4;

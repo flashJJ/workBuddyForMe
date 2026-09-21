@@ -13,6 +13,8 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
+import { zipSync } from 'fflate';
+import * as XLSX from 'xlsx';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
 import { createSettingsService } from '../services/settings-service';
 import { createIngestionPipeline } from './ingestion-pipeline';
@@ -25,6 +27,7 @@ describe('文档摄入管线（TR-16.1）', () => {
   let tempRoot: string;
   let fetchMock: ReturnType<typeof vi.fn>;
   let documentId: string;
+  let kbId: string;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(join(tmpdir(), 'wbfm-t16-'));
@@ -39,6 +42,7 @@ describe('文档摄入管线（TR-16.1）', () => {
       chunkSize: 200,
       chunkOverlap: 20,
     });
+    kbId = kb.id;
     documentId = createDocumentRepository(db).create({
       knowledgeBaseId: kb.id,
       filename: 'notes.txt',
@@ -137,8 +141,8 @@ describe('文档摄入管线（TR-16.1）', () => {
     const kb = createKnowledgeRepository(db).list()[0]!;
     const docx = createDocumentRepository(db).create({
       knowledgeBaseId: kb.id,
-      filename: 'word.docx',
-      fileType: '.docx',
+      filename: 'notes.rtf',
+      fileType: '.rtf',
       byteSize: 1,
       contentHash: 'h2',
     });
@@ -148,5 +152,78 @@ describe('文档摄入管线（TR-16.1）', () => {
     });
     expect(result.status).toBe('failed');
     expect(result.errorMessage).toContain('不支持的文件类型');
+  });
+
+  it('M2：docx/xlsx/pptx 解析后正常分片入库，关键词可被向量检索命中', async () => {
+    seedEmbeddingModel();
+    // mock 嵌入：所有文本给同一向量，距离相同时检索仍会返回库内分片
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse((init?.body as string) ?? '{}') as { input: string[] };
+      return new Response(
+        JSON.stringify({ data: body.input.map((_t, i) => ({ index: i, embedding: [1, 0] })) }),
+        { status: 200 },
+      );
+    });
+
+    const docxSentence = '办公座椅采购项目本季度采购人体工学座椅一百把。';
+    const docxXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+  ${`<w:p><w:r><w:t>${docxSentence}</w:t></w:r></w:p>`.repeat(8)}
+  <w:tbl><w:tr><w:tc><w:p><w:r><w:t>单价</w:t></w:r></w:p></w:tc>
+  <w:tc><w:p><w:r><w:t>1500 元</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+</w:body></w:document>`;
+    const docxBuffer = zipSync({
+      'word/document.xml': encoder.encode(docxXml),
+    });
+
+    const xlsxSentence = '季度营收八百万元整同比增长两成';
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet(
+        Array.from({ length: 10 }, () => [xlsxSentence, '财年 2026']),
+      ),
+      '财报',
+    );
+    const xlsxBuffer = new Uint8Array(
+      XLSX.write(workbook, { type: 'array', bookType: 'xlsx' }),
+    );
+
+    const pptxSentence = '新品发布会将于下月举行主打智能家居产品线';
+    const pptxEntries: Record<string, Uint8Array> = {};
+    for (const n of [1, 2]) {
+      pptxEntries[`ppt/slides/slide${n}.xml`] = encoder.encode(
+        `<p:a xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+          `<a:p><a:r><a:t>${pptxSentence.repeat(5)}</a:t></a:r></a:p></p:a>`,
+      );
+    }
+    const pptxBuffer = zipSync(pptxEntries);
+
+    const pipeline = createIngestionPipeline({ db, cipher });
+    const cases = [
+      { filename: 'a.docx', fileType: '.docx', hash: 'h-docx', buffer: docxBuffer },
+      { filename: 'b.xlsx', fileType: '.xlsx', hash: 'h-xlsx', buffer: xlsxBuffer },
+      { filename: 'c.pptx', fileType: '.pptx', hash: 'h-pptx', buffer: pptxBuffer },
+    ];
+    for (const item of cases) {
+      const row = createDocumentRepository(db).create({
+        knowledgeBaseId: kbId,
+        filename: item.filename,
+        fileType: item.fileType,
+        byteSize: item.buffer.byteLength,
+        contentHash: item.hash,
+      });
+      const result = await pipeline.ingest({ documentId: row.id, buffer: item.buffer });
+      expect(result.status).toBe('indexed');
+      expect(result.chunkCount).toBeGreaterThan(0);
+    }
+
+    const hits = searchChunks(db, { knowledgeBaseId: kbId, vector: [1, 0], k: 50 })
+      .map((hit) => hit.content)
+      .join('\n');
+    expect(hits).toContain('办公座椅采购项目');
+    expect(hits).toContain('季度营收');
+    expect(hits).toContain('新品发布会');
+    expect(hits).toContain('单价');
   });
 });
