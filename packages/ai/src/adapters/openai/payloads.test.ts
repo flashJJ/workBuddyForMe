@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ToolCallAccumulator } from './payloads';
+import { ToolCallAccumulator, buildChatBody, toWireMessage } from './payloads';
 import { normalizeOllamaBaseUrl, normalizeOllamaOrigin } from '../ollama/url';
 
 describe('ToolCallAccumulator：工具调用增量归并', () => {
@@ -36,6 +36,39 @@ describe('ToolCallAccumulator：工具调用增量归并', () => {
 
   it('无任何增量时 assemble 返回空数组', () => {
     expect(new ToolCallAccumulator().assemble()).toEqual([]);
+  });
+});
+
+describe('v0.3 视觉消息 wire', () => {
+  const dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+
+  it('toWireMessage 原样透传 content parts（不重排、不内联改写）', () => {
+    const wire = toWireMessage({
+      role: 'user',
+      content: [
+        { type: 'text', text: '看下这张图' },
+        { type: 'image_url', image_url: { url: dataUrl, detail: 'auto' } },
+      ],
+    });
+    expect(wire.content).toEqual([
+      { type: 'text', text: '看下这张图' },
+      { type: 'image_url', image_url: { url: dataUrl, detail: 'auto' } },
+    ]);
+  });
+
+  it('buildChatBody 中纯文本与多模态消息可共存于同一次请求', () => {
+    const body = buildChatBody({
+      model: 'qwen2.5-vl',
+      messages: [
+        { role: 'system', content: '你是助手' },
+        {
+          role: 'user',
+          content: [{ type: 'image_url', image_url: { url: dataUrl } }],
+        },
+      ],
+    });
+    expect(body.messages).toHaveLength(2);
+    expect(Array.isArray(body.messages[1]!.content)).toBe(true);
   });
 });
 

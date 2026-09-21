@@ -68,7 +68,9 @@ function extractReference(systemContent: string): string | null {
 function extractToolResult(messages: ChatMessage[], toolName: string): string | null {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i]!;
-    if (message.role === 'tool' && message.name === toolName) return message.content;
+    if (message.role === 'tool' && message.name === toolName) {
+      return typeof message.content === 'string' ? message.content : null;
+    }
   }
   return null;
 }
@@ -88,6 +90,24 @@ function splitChunks(text: string): string[] {
 
 function hasTool(params: { tools?: { function: { name: string } }[] }, name: string): boolean {
   return Boolean(params.tools?.some((tool) => tool.function.name === name));
+}
+
+/** v0.3：从 string | content parts 中取文本（视觉消息的图片片段不计入） */
+function messageText(content: ChatMessage['content']): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => (part.type === 'text' ? part.text : ''))
+      .join('\n')
+      .trim();
+  }
+  return '';
+}
+
+function countImages(content: ChatMessage['content']): number {
+  return Array.isArray(content)
+    ? content.filter((part) => part.type === 'image_url').length
+    : 0;
 }
 
 function toolCallChunk(call: ToolCall): ChatChunk {
@@ -114,10 +134,22 @@ export function createMockProvider(): ChatProvider {
     async *chatStream(params): AsyncIterable<ChatChunk> {
       const system = params.messages.find((message) => message.role === 'system');
       const user = [...params.messages].reverse().find((message) => message.role === 'user');
-      const reference = extractReference(system?.content ?? '');
+      const userText = messageText(user?.content ?? '');
+      const imageCount = countImages(user?.content ?? '');
+      const reference = extractReference(messageText(system?.content ?? ''));
+
+      // v0.3：mock 视觉——用户消息带图片时给出确定性「看图」回复，驱动 E2E 全链路
+      if (imageCount > 0) {
+        const reply = `（mock 视觉模型）已查看 ${imageCount} 张图片。${
+          userText ? `你的问题是：${truncate(userText, 40)}。` : '你未附带文字说明。'
+        }图片内容看起来是一张可识别的截图。`;
+        yield { delta: reply };
+        yield { delta: '', usage: { promptTokens: 120, completionTokens: 24, totalTokens: 144 } };
+        return;
+      }
 
       // 工具循环：首轮请求时间 → 发起 current_time 调用；工具结果回灌后 → 作答
-      if (hasTool(params, 'current_time') && TIME_TOOL_TRIGGER.test(user?.content ?? '')) {
+      if (hasTool(params, 'current_time') && TIME_TOOL_TRIGGER.test(userText)) {
         const toolResult = extractToolResult(params.messages, 'current_time');
         if (!toolResult) {
           yield toolCallChunk({
@@ -134,11 +166,11 @@ export function createMockProvider(): ChatProvider {
 
       const reply = reference
         ? `根据检索到的资料：${truncate(reference, 60)}。以上回答依据知识库中的相关内容给出。`
-        : LONG_ANSWER_TRIGGER.test(user?.content ?? '')
+        : LONG_ANSWER_TRIGGER.test(userText)
           ? `好的，下面给出一段较长的回答。${'工作台规划分为三步：先整理资料，再配置助手，最后验证效果。'.repeat(10)}`
-          : `你好，我是 mock 模型。收到你的消息：「${truncate(user?.content ?? '', 40)}」。`;
+          : `你好，我是 mock 模型。收到你的消息：「${truncate(userText, 40)}」。`;
 
-      const promptTokens = 5 + Math.floor((system?.content?.length ?? 0) / 4);
+      const promptTokens = 5 + Math.floor(messageText(system?.content ?? '').length / 4);
       const chunks = splitChunks(reply);
       for (const [index, chunk] of chunks.entries()) {
         if (params.signal?.aborted) return;
