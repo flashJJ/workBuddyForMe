@@ -107,7 +107,7 @@ describe('知识库与文档路由（TR-22.1）', () => {
     expect((await patched.json()).data.description).toBe('产品文档');
   });
 
-  it('上传 txt：轮询至 indexed，分片计数 > 0；重复上传 409；docx 422', async () => {
+  it('上传 txt：轮询至 indexed，分片计数 > 0；重复上传 409；老式 .doc 422 给另存指引', async () => {
     const content = `苹果是一种水果。`.repeat(120);
     const uploaded = await uploadForm(kbId, 'notes.txt', content);
     expect(uploaded.status).toBe(201);
@@ -125,8 +125,9 @@ describe('知识库与文档路由（TR-22.1）', () => {
     const duplicate = await uploadForm(kbId, 'copy.txt', content);
     expect(duplicate.status).toBe(409);
 
-    const unsupported = await uploadForm(kbId, 'word.docx', 'x');
-    expect(unsupported.status).toBe(422);
+    const legacy = await uploadForm(kbId, 'word.doc', 'x');
+    expect(legacy.status).toBe(422);
+    expect((await legacy.json()).error.message).toContain('另存为新版 .docx');
   });
 
   it('删除文档 404；删除知识库后文档/分片计数归零', async () => {
