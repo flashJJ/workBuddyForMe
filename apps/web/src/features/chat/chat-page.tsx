@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import type { Conversation } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
@@ -10,6 +11,7 @@ import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useConversations, useConversationMutations } from '@/lib/hooks/use-conversations';
 import { useAllModels, useSettings } from '@/lib/hooks/use-settings';
 import { AssistantSwitcher } from './assistant-switcher';
+import { ConversationRenameDialog } from './conversation-rename-dialog';
 import { ConversationSidebar } from './conversation-sidebar';
 import { MessageList } from './message-list';
 import { Composer } from './composer';
@@ -38,6 +40,7 @@ export function ChatPage() {
 
   const [assistantId, setAssistantId] = React.useState<string>('');
   const [conversationId, setConversationId] = React.useState<string | null>(null);
+  const [renaming, setRenaming] = React.useState<Conversation | null>(null);
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -79,13 +82,14 @@ export function ChatPage() {
     setConversationId(id);
   };
 
-  const rename = async (conversation: { id: string; title: string }) => {
-    const title = window.prompt('新的对话标题', conversation.title);
-    if (!title?.trim()) return;
+  // Electron 渲染进程不支持 window.prompt，统一使用应用内弹窗
+  const submitRename = async (id: string, title: string) => {
     try {
-      await conversationMutations.rename.mutateAsync({ id: conversation.id, title: title.trim() });
+      await conversationMutations.rename.mutateAsync({ id, title });
+      return true;
     } catch (error) {
       toast.error(error instanceof ApiClientError ? error.message : '重命名失败');
+      return false;
     }
   };
 
@@ -109,8 +113,15 @@ export function ChatPage() {
         disabled={!assistantId}
         onSelect={selectConversation}
         onNew={newChat}
-        onRename={(conversation) => void rename(conversation)}
+        onRename={setRenaming}
         onDelete={(conversation) => void remove(conversation)}
+      />
+      <ConversationRenameDialog
+        conversation={renaming}
+        onOpenChange={(open) => {
+          if (!open) setRenaming(null);
+        }}
+        onSubmit={submitRename}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b px-4 py-2.5">
