@@ -4,6 +4,7 @@ import {
 } from '@wbfm/database';
 import {
   createAssistantsService,
+  createAttachmentService,
   createChatOrchestrator,
   createConversationService,
   createDocumentService,
@@ -14,6 +15,7 @@ import {
   createSettingsService,
   createWebCipher,
   type AssistantsService,
+  type AttachmentService,
   type ChatOrchestrator,
   type ConversationService,
   type DocumentService,
@@ -34,6 +36,7 @@ export interface ServiceContainer {
   ingestion: IngestionPipeline;
   knowledgeBases: KnowledgeService;
   documents: DocumentService;
+  attachments: AttachmentService;
 }
 
 let container: ServiceContainer | null = null;
@@ -59,6 +62,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     ingestion: createIngestionPipeline(deps),
     knowledgeBases: createKnowledgeService(deps),
     documents: createDocumentService(deps),
+    attachments: createAttachmentService(deps),
   };
 }
 

@@ -56,7 +56,7 @@ export function prepareUserTurn(params: {
       ? conversations.get(input.conversationId)
       : conversations.create(assistant.id);
     conversationId = conversation.id;
-    userContent = input.content;
+    userContent = input.content ?? '';
     userImageIds = input.attachments ?? [];
     conversations.appendMessage({
       conversationId,

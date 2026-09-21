@@ -108,7 +108,7 @@ describe('供应商/模型/设置路由（TR-19.1）', () => {
     expect((await chatOnly.json()).data[0].modelId).toBe('gpt-4o-mini');
 
     const bad = await addModel(
-      jsonRequest({ modelId: 'x', capabilities: ['vision'] }),
+      jsonRequest({ modelId: 'x', capabilities: ['audio'] }),
       params,
     );
     expect(bad.status).toBe(422);

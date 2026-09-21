@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Provider, ProviderModel } from '@wbfm/shared';
+import type { ModelCapability, Provider, ProviderModel } from '@wbfm/shared';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
@@ -24,7 +24,7 @@ export interface ProviderUpdateBody {
 export interface ModelCreateBody {
   modelId: string;
   displayName?: string;
-  capabilities: Array<'chat' | 'embedding'>;
+  capabilities: ModelCapability[];
   contextWindow?: number | null;
 }
 
