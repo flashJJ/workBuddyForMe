@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { OCR_TEXT_DENSITY_THRESHOLD } from '@wbfm/shared';
 
 const getDocument = vi.fn();
 
@@ -6,7 +7,12 @@ vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
   getDocument: (...args: unknown[]) => getDocument(...args),
 }));
 
-import { detectKind, readDocumentText } from './read-document';
+import {
+  detectKind,
+  isImagePdf,
+  pageNeedsOcr,
+  readDocumentText,
+} from './read-document';
 
 describe('文档文本提取（TR-16.1）', () => {
   it('txt/md 直读 UTF-8 并去除 BOM', async () => {
@@ -48,5 +54,33 @@ describe('文档文本提取（TR-16.1）', () => {
       expect.objectContaining({ data: expect.any(Uint8Array) }),
     );
     expect(destroy).toHaveBeenCalledOnce();
+  });
+});
+
+describe('v0.4 扫描件文字密度判定', () => {
+  it('空数组不判定为扫描件（无法确定）', () => {
+    expect(isImagePdf([])).toBe(false);
+  });
+
+  it('文字层为空/稀疏 → 图片型 PDF', () => {
+    expect(isImagePdf(['', '', ''])).toBe(true);
+    expect(isImagePdf(['只有几个字', '', ''])).toBe(true);
+  });
+
+  it('平均每页非空白字符达到阈值 → 文字型 PDF', () => {
+    const dense = '字'.repeat(OCR_TEXT_DENSITY_THRESHOLD + 10);
+    expect(isImagePdf([dense])).toBe(false);
+    // 10 页：1 页稠密 + 9 页空白，平均仍低于阈值 → 判扫描件（触发混排逐页 OCR）
+    expect(isImagePdf([dense, '', '', '', '', '', '', '', '', ''])).toBe(true);
+  });
+
+  it('空白与换行不计入字符数', () => {
+    expect(isImagePdf(['\n\n  \t  \n'.padEnd(120, '\n')])).toBe(true);
+  });
+
+  it('pageNeedsOcr：单页稀疏判定（混排 PDF 的逐页决策）', () => {
+    expect(pageNeedsOcr('')).toBe(true);
+    expect(pageNeedsOcr('少')).toBe(true);
+    expect(pageNeedsOcr('字'.repeat(OCR_TEXT_DENSITY_THRESHOLD))).toBe(false);
   });
 });

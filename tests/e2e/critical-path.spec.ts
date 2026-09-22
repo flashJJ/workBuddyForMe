@@ -1,4 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 /**
  * 关键路径 E2E（TR-34.1）：服务器以 WBFM_MOCK_AI=1 启动，
@@ -152,5 +155,43 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     // mock 视觉模型确定性回复 + 用户消息图片回流渲染
     await expect(page.getByText(/已查看 1 张图片/).first()).toBeVisible();
     await expect(page.getByTestId('message-images').getByTestId('message-image')).toBeVisible();
+  });
+
+  test('⑦ 分享对话：Markdown/HTML 导出含角色标注、水印且密钥已脱敏', async ({ page }) => {
+    await page.goto('/chat');
+    // 新对话里夹带一把「密钥」，导出文件中必须被脱敏
+    await page.getByLabel('消息输入框').fill('我的密钥是 sk-testABCDEF123456 请注意保密');
+    await page.getByLabel('消息输入框').press('Enter');
+    await expect(page.getByText(/mock 模型/).first()).toBeVisible();
+
+    const saveAndRead = async (download: import('@playwright/test').Download): Promise<string> => {
+      const target = join(mkdtempSync(join(tmpdir(), 'wbfm-share-')), download.suggestedFilename());
+      await download.saveAs(target);
+      return readFileSync(target, 'utf-8');
+    };
+
+    await expect(page.getByTestId('share-conversation-button')).toBeEnabled();
+    await page.getByTestId('share-conversation-button').click();
+    await expect(page.getByRole('heading', { name: '分享对话' })).toBeVisible();
+
+    // Markdown 导出
+    const mdDownloadPromise = page.waitForEvent('download');
+    await page.getByTestId('share-format-markdown').click();
+    const md = await saveAndRead(await mdDownloadPromise);
+    expect(md).toContain('### 🧑 用户');
+    expect(md).toContain('[REDACTED]');
+    expect(md).not.toContain('sk-testABCDEF123456');
+    expect(md).toMatch(/由 WorkBuddy For Me v\d+\.\d+\.\d+ 生成/);
+
+    // HTML 导出（成功后弹窗自动关闭，重新打开）
+    await page.getByTestId('share-conversation-button').click();
+    const htmlDownloadPromise = page.waitForEvent('download');
+    await page.getByTestId('share-format-html').click();
+    const html = await saveAndRead(await htmlDownloadPromise);
+    expect(html.startsWith('<!DOCTYPE html>')).toBe(true);
+    expect(html).toContain('<style>');
+    expect(html).not.toContain('<link');
+    expect(html).not.toContain('sk-testABCDEF123456');
+    expect(html).toContain('[REDACTED]');
   });
 });

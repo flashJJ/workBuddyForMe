@@ -20,6 +20,8 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
   electron: true
+  # tesseract.js 的 postinstall 仅为 opencollective 捐赠提示，运行时资源走 CDN/本地路径配置
+  tesseract.js: false
 
 # brace-expansion@2.1.7 引入 balanced-match@2（ESM 具名导出），与仓库内
 # minimatch@3 等仍用 balanced-match@1（默认导出）的调用方在 hoisted 布局下

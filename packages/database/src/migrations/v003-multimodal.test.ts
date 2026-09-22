@@ -38,8 +38,8 @@ describe('v003 迁移：多模态字段加法升级', () => {
   it('v2 老库升级：attachments 表就位，老消息/老文档获得兼容默认值', () => {
     const db = createV2Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([3]);
-    expect(LATEST_SCHEMA_VERSION).toBe(3);
+    expect(result.applied).toEqual([3, 4]);
+    expect(LATEST_SCHEMA_VERSION).toBe(4);
 
     const message = db.prepare(`SELECT content_parts FROM messages WHERE id='m1'`).get() as {
       content_parts: string;
@@ -47,10 +47,18 @@ describe('v003 迁移：多模态字段加法升级', () => {
     expect(JSON.parse(message.content_parts)).toEqual([]);
 
     const doc = db
-      .prepare(`SELECT source, source_url FROM documents WHERE id='d1'`)
-      .get() as { source: string; source_url: string | null };
+      .prepare(`SELECT source, source_url, ocr_status, ocr_engine FROM documents WHERE id='d1'`)
+      .get() as {
+      source: string;
+      source_url: string | null;
+      ocr_status: string | null;
+      ocr_engine: string | null;
+    };
     expect(doc.source).toBe('upload');
     expect(doc.source_url).toBeNull();
+    // v004 加法迁移：老文档的 OCR 列保持 NULL
+    expect(doc.ocr_status).toBeNull();
+    expect(doc.ocr_engine).toBeNull();
 
     // 新表可写可读
     db.prepare(

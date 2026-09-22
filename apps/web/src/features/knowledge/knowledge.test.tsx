@@ -26,6 +26,8 @@ function doc(partial: Partial<DocumentRecord> & { id: string; status: DocumentRe
     contentHash: 'hash',
     source: 'upload',
     sourceUrl: null,
+    ocrStatus: null,
+    ocrEngine: null,
     errorMessage: null,
     chunkCount: 0,
     createdAt: '2025-01-01T00:00:00.000Z',

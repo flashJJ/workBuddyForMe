@@ -58,11 +58,29 @@ export type {
 // 知识库摄入
 export { createIngestionPipeline, type IngestionPipeline } from './ingestion/ingestion-pipeline';
 export { chunkText } from './ingestion/chunking';
-export { readDocumentText, detectKind } from './ingestion/read-document';
+export {
+  readDocumentText,
+  detectKind,
+  readPdfPageTexts,
+  isImagePdf,
+  pageNeedsOcr,
+  mergePdfTextItems,
+} from './ingestion/read-document';
 export {
   resolveEmbeddingTarget,
   type ResolvedEmbeddingTarget,
 } from './ingestion/embedding-target';
+export {
+  extractDocumentText,
+  type ExtractDocumentResult,
+  type ExtractHooks,
+} from './ingestion/extract-with-ocr';
+export { runPdfOcr, type OcrRunResult } from './ingestion/ocr-runner';
+export {
+  resolveVisionTarget,
+  type ResolvedVisionTarget,
+} from './ingestion/vision-target';
+export { renderPdfPagesToPng } from './ingestion/pdf-render';
 export type {
   IngestInput,
   IngestResult,
@@ -115,3 +133,29 @@ export {
   SsrfBlockedError,
 } from './tools/ssrf-guard';
 export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool-runner';
+
+// v0.4 数据便携：备份与恢复
+export {
+  exportBackup,
+  sanitizeSettings,
+  BACKUP_MAX_ARCHIVE_BYTES,
+  type BackupExportOptions,
+  type BackupExportResult,
+} from './backup/export';
+export {
+  restoreBackup,
+  precheckBackup,
+  type BackupRestoreOptions,
+  type BackupRestoreResult,
+} from './backup/restore';
+
+// v0.4 对话分享
+export { buildConversationSnapshot } from './share/export-conversation';
+export {
+  sanitizeShareText,
+  sanitizeSnapshot,
+  REDACTED,
+  type ConversationSnapshot,
+  type SharedMessage,
+  type SharedPart,
+} from './share/snapshot';

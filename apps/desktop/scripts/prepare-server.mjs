@@ -50,4 +50,33 @@ if (fs.existsSync(publicFrom)) {
   console.log('已补齐 public');
 }
 
+// v0.4 OCR 原生/wasm 依赖兜底归集：
+// Next file-tracing 在 pnpm hoisted 布局下可能漏掉 @napi-rs/canvas 的 .node
+// 或 tesseract.js 的 worker/wasm（trace 对 optionalDependencies 识别不完整）。
+// standalone node_modules 里缺什么就从仓库根 node_modules 补什么。
+const rootModules = path.join(repoRoot, 'node_modules');
+const standaloneModules = path.join(target, 'node_modules');
+const FALLBACK_PACKAGES = [
+  '@napi-rs/canvas',
+  '@napi-rs/canvas-win32-x64-msvc',
+  'tesseract.js',
+  'tesseract.js-core',
+  'node-fetch',
+  'bmp-js',
+  'idb-keyval',
+  'is-url',
+  'wasm-feature-detect',
+  'zlibjs',
+  'regenerator-runtime',
+  'opencollective-postinstall',
+];
+for (const pkg of FALLBACK_PACKAGES) {
+  const from = path.join(rootModules, pkg);
+  const to = path.join(standaloneModules, pkg);
+  if (fs.existsSync(from) && !fs.existsSync(to)) {
+    fs.cpSync(from, to, { recursive: true });
+    console.log(`已兜底归集 ${pkg}`);
+  }
+}
+
 console.log('服务端资源归集完成');

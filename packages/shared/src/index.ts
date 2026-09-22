@@ -58,6 +58,39 @@ export {
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
 
+// 备份/恢复契约
+export {
+  CURRENT_BACKUP_SCHEMA_VERSION,
+  backupTrackSchema,
+  backupManifestSchema,
+  backupProgressEventSchema,
+  backupExportRequestSchema,
+  backupPrecheckSchema,
+  type BackupTrack,
+  type BackupManifest,
+  type BackupProgressEvent,
+  type BackupExportRequest,
+  type BackupPrecheck,
+} from './backup';
+
+// 桌面端自动更新契约（主进程 ↔ 渲染进程 IPC 载荷）
+export {
+  type UpdateChannel,
+  type UpdateStatus,
+  type FullUpdaterStatus,
+  type WbfmUpdaterBridge,
+} from './updater';
+
+// 命令面板契约（M5）
+export {
+  type Command,
+  type CommandGroup,
+  type CommandContext,
+  type CommandRegistry,
+  filterCommands,
+  fuzzyMatch,
+} from './command';
+
 // API 契约
 export {
   ok,

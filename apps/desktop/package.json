@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/desktop",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "private": true,
   "description": "WorkBuddy For Me Electron 桌面壳",
   "author": "WorkBuddy For Me",
@@ -17,7 +17,11 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@wbfm/shared": "workspace:*",
     "electron": "31.7.7",
     "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

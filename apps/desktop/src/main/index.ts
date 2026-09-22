@@ -1,11 +1,14 @@
 import { randomBytes } from 'node:crypto';
-import { app, BrowserWindow, safeStorage } from 'electron';
+import path from 'node:path';
+import { app, BrowserWindow, globalShortcut, ipcMain, safeStorage } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
 import { startCipherServer, type CipherEndpoint } from './cipher-server';
 import { startManagedServer, type ManagedServer } from './server-manager';
 import { captureWindowState, createMainWindow, type WindowBootInfo } from './window';
 import { saveWindowState } from './window-state';
+import { Updater } from './updater';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
 
@@ -72,6 +75,53 @@ async function start(): Promise<void> {
   }
 
   await createWindow(boot);
+  setupUpdater();
+  setupGlobalShortcuts();
+}
+
+/**
+ * 全局快捷键（M5）：Ctrl+K 唤起命令面板。
+ * 窗口未聚焦时先聚焦再发事件；窗口已聚焦时仅切换开关。
+ * 开发态也注册（便于体验），退出前注销避免残留。
+ */
+function setupGlobalShortcuts(): void {
+  const registered = globalShortcut.register('CommandOrControl+K', () => {
+    const win = mainWindow;
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    if (!win.isFocused()) win.focus();
+    win.webContents.send('command-palette:open');
+  });
+  if (!registered) {
+    console.error('[wbfm] 全局快捷键 Ctrl+K 注册失败（可能被其他应用占用）');
+  }
+}
+
+/**
+ * 自动更新接入（M3）：
+ * - 注册 IPC + 转发 autoUpdater 事件到渲染进程
+ * - 仅打包态真正请求 GitHub Releases（isDev 走 no-op，避免开发态误检）
+ * - autoDownload=true：检测到新版本后后台下载，下载完成弹窗提示重启
+ * - 启动后 10s 异步检查，避免与 cipher/server 启动争抢资源
+ */
+function setupUpdater(): void {
+  autoUpdater.autoDownload = true;
+  const updater = new Updater({
+    autoUpdater,
+    getVersion: () => app.getVersion(),
+    getMainWindow: () => mainWindow,
+    stateFile: path.join(app.getPath('userData'), 'updater-state.json'),
+    enabled: app.isPackaged,
+  });
+  updater.registerIpc(ipcMain);
+  updater.attachEvents();
+  if (app.isPackaged) {
+    setTimeout(() => {
+      void updater.checkForUpdates().catch((error) => {
+        console.error('[wbfm] 启动检查更新失败:', error);
+      });
+    }, 10_000);
+  }
 }
 
 async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
@@ -86,6 +136,7 @@ async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
 
 // 退出时回收托管服务与密码桥
 app.on('will-quit', async (event) => {
+  globalShortcut.unregisterAll();
   if (!managedServer && !cipherEndpoint) return;
   event.preventDefault();
   try {

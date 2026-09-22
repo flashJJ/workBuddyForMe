@@ -111,6 +111,8 @@ export interface DocumentRow {
   status: DocumentRecord['status'];
   source: DocumentRecord['source'];
   source_url: string | null;
+  ocr_status: DocumentRecord['ocrStatus'];
+  ocr_engine: DocumentRecord['ocrEngine'];
   error_message: string | null;
   chunk_count: number;
   created_at: string;
@@ -231,6 +233,8 @@ export function mapDocument(row: DocumentRow): DocumentRecord {
     status: row.status,
     source: row.source,
     sourceUrl: row.source_url,
+    ocrStatus: row.ocr_status,
+    ocrEngine: row.ocr_engine,
     errorMessage: row.error_message,
     chunkCount: row.chunk_count,
     createdAt: row.created_at,

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { Share2 } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
@@ -12,6 +13,7 @@ import { useConversations, useConversationMutations } from '@/lib/hooks/use-conv
 import { useAllModels, useSettings } from '@/lib/hooks/use-settings';
 import { AssistantSwitcher } from './assistant-switcher';
 import { ConversationRenameDialog } from './conversation-rename-dialog';
+import { ConversationShareDialog } from './conversation-share-dialog';
 import { ConversationSidebar } from './conversation-sidebar';
 import { MessageList } from './message-list';
 import { Composer } from './composer';
@@ -41,6 +43,7 @@ export function ChatPage() {
   const [assistantId, setAssistantId] = React.useState<string>('');
   const [conversationId, setConversationId] = React.useState<string | null>(null);
   const [renaming, setRenaming] = React.useState<Conversation | null>(null);
+  const [shareOpen, setShareOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -134,6 +137,11 @@ export function ChatPage() {
         }}
         onSubmit={submitRename}
       />
+      <ConversationShareDialog
+        conversationId={conversationId}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b px-4 py-2.5">
           <AssistantSwitcher
@@ -141,7 +149,20 @@ export function ChatPage() {
             value={assistantId}
             onChange={switchAssistant}
           />
-          <span className="text-xs text-muted-foreground">本地私有 · 流式输出</span>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-testid="share-conversation-button"
+              disabled={!conversationId}
+              onClick={() => setShareOpen(true)}
+            >
+              <Share2 className="mr-1 h-3.5 w-3.5" />
+              分享
+            </Button>
+            <span className="text-xs text-muted-foreground">本地私有 · 流式输出</span>
+          </div>
         </header>
 
         {hasChatModel ? (

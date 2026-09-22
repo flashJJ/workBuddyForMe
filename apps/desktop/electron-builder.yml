@@ -7,10 +7,19 @@ directories:
   buildResources: build
 
 # 仅打入编译后的主进程/preload；standalone 服务走 extraResources（原生 .node 不能进 asar）
+# electron-updater 作为 production 依赖由 electron-builder 自动归集进 asar 的 node_modules
 files:
   - dist/**/*
   - package.json
   - "!**/*.map"
+
+# 自动更新：electron-updater 从 app-update.yml 读取 GitHub 仓库信息
+# （electron-builder 构建时生成 app-update.yml）
+publish:
+  provider: github
+  owner: flashJJ
+  repo: workBuddyForMe
+
 
 extraResources:
   - from: resources/server

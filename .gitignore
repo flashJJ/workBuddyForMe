@@ -36,3 +36,8 @@ Thumbs.db
 data/
 *.sqlite
 *.sqlite-*
+
+# OCR 调试/真机实测临时产物
+.tmp-ocr/
+# tesseract.js 默认按 cwd 下载的语言数据（可用 WBFM_TESSERACT_* 指定缓存目录）
+*.traineddata

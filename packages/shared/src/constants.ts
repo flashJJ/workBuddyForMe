@@ -13,8 +13,17 @@ export type MessageRole = (typeof MESSAGE_ROLES)[number];
 export const MESSAGE_STATUSES = ['streaming', 'completed', 'error', 'stopped'] as const;
 export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
 
-export const DOCUMENT_STATUSES = ['pending', 'processing', 'indexed', 'failed'] as const;
+/** v0.4：partial = OCR 部分成功（超时/超页只识别了部分页面，文本可检索但不完整） */
+export const DOCUMENT_STATUSES = ['pending', 'processing', 'indexed', 'failed', 'partial'] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+
+/** v0.4 OCR 状态：null=非扫描件未走 OCR；running=识别中；done=完成；failed=失败；skipped=检测为扫描件但无可用引擎 */
+export const OCR_STATUSES = ['running', 'done', 'failed', 'skipped'] as const;
+export type OcrStatus = (typeof OCR_STATUSES)[number];
+
+/** v0.4 OCR 引擎：vision=视觉模型逐页识别；tesseract=WASM 离线兜底 */
+export const OCR_ENGINES = ['vision', 'tesseract'] as const;
+export type OcrEngine = (typeof OCR_ENGINES)[number];
 
 /** v0.3 文档来源：本地上传 / 网页剪藏 */
 export const DOCUMENT_SOURCES = ['upload', 'webpage'] as const;
@@ -59,6 +68,30 @@ export const ALLOWED_IMAGE_MIME = ['image/png', 'image/jpeg', 'image/webp'] as c
 /** 浏览器侧压缩后最长边与 JPEG 质量（控制视觉 token） */
 export const IMAGE_COMPRESS_MAX_EDGE = 1600;
 export const IMAGE_COMPRESS_QUALITY = 0.85;
+
+/** v0.4 图片型 PDF OCR 参数 */
+/** 文字层密度阈值：平均每页字符数低于此值判定为扫描件 */
+export const OCR_TEXT_DENSITY_THRESHOLD = 50;
+/** 单页 OCR 超时（ms），超时跳过该页 */
+export const OCR_PAGE_TIMEOUT_MS = 30_000;
+/** 全文 OCR 总超时（ms），超时保留已识别页并标记 partial */
+export const OCR_TOTAL_TIMEOUT_MS = 5 * 60_000;
+/** OCR 处理页数软上限，超出部分不处理并标记 partial */
+export const OCR_MAX_PAGES = 50;
+/**
+ * PDF 渲染缩放：
+ * - 视觉 2x（A4 ≈1190×1684，约 144DPI）；
+ * - tesseract 3x（≈288DPI 保识别率）。
+ */
+export const OCR_VISION_SCALE = 2;
+export const OCR_TESSERACT_SCALE = 3;
+/**
+ * 送视觉模型的单页像素上限：约 2M 像素。
+ * 视觉模型按像素计 image token（qwen2.5-vl 约 784px/token，此预算 ≈2550 token），
+ * 限制总量可避免本地模型默认 4096 上下文（如 Ollama）直接返回 400；
+ * 对超大画幅/非标准 MediaBox 的扫描件按比例缩回，标准 A4 在 2x 下不受影响。
+ */
+export const OCR_VISION_MAX_PIXELS = 2_000_000;
 
 /** 外部请求默认超时（ms），SSE 不设短超时 */
 export const DEFAULT_HTTP_TIMEOUT_MS = 30_000;
