@@ -73,6 +73,14 @@ export {
   type BackupPrecheck,
 } from './backup';
 
+// 桌面端自动更新契约（主进程 ↔ 渲染进程 IPC 载荷）
+export {
+  type UpdateChannel,
+  type UpdateStatus,
+  type FullUpdaterStatus,
+  type WbfmUpdaterBridge,
+} from './updater';
+
 // API 契约
 export {
   ok,
