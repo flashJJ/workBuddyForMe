@@ -10,6 +10,7 @@ const STATUS_VARIANT: Record<DocumentStatus, 'default' | 'success' | 'warning' |
   processing: 'warning',
   indexed: 'success',
   failed: 'danger',
+  partial: 'warning',
 };
 
 const STATUS_LABEL: Record<DocumentStatus, string> = {
@@ -17,7 +18,24 @@ const STATUS_LABEL: Record<DocumentStatus, string> = {
   processing: '索引中',
   indexed: '已索引',
   failed: '失败',
+  partial: '部分 OCR',
 };
+
+/** v0.4：OCR 进行中覆盖处理中文案；partial 给出部分识别提示 */
+function badgeLabel(document: DocumentRecord): string {
+  if (document.status === 'processing' && document.ocrStatus === 'running') {
+    return 'OCR 识别中…';
+  }
+  return STATUS_LABEL[document.status];
+}
+
+function badgeTitle(document: DocumentRecord): string | undefined {
+  if (document.status === 'failed') return document.errorMessage ?? '索引失败';
+  if (document.status === 'partial') {
+    return '部分页面 OCR 超时或超出页数上限，已识别内容可检索，但文档不完整';
+  }
+  return undefined;
+}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -71,11 +89,8 @@ export function DocumentList({ kbId, documents, loading }: {
               原文
             </a>
           )}
-          <Badge
-            variant={STATUS_VARIANT[document.status]}
-            title={document.status === 'failed' ? document.errorMessage ?? '索引失败' : undefined}
-          >
-            {STATUS_LABEL[document.status]}
+          <Badge variant={STATUS_VARIANT[document.status]} title={badgeTitle(document)}>
+            {badgeLabel(document)}
           </Badge>
           <button
             type="button"
