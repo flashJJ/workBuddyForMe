@@ -11,11 +11,13 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v0.4（方案已定，待评审）
+## 当前版本：v0.4 ✅ 已发布（2026-09）
 
-**主题**：数据随身——备份/分享/自动更新 + P1 图片型 PDF OCR 兜底。
+**主题：数据随身**。备份恢复（四轨 tar.gz + 合并式恢复）+ 对话分享（Markdown/单文件 HTML + 脱敏）+ 桌面自动更新（electron-updater）+ P1 图片型 PDF OCR 兜底（视觉模型优先 + tesseract.js 降级）+ Ctrl+K 命令面板。
 
-方案文档：[v0.4-data-portability-and-updates.md](v0.4-data-portability-and-updates.md)
+- 方案：[v0.4-data-portability-and-updates.md](v0.4-data-portability-and-updates.md)
+- 总结：[v0.4-release-summary.md](v0.4-release-summary.md)
+- 技术博客：[blog/v0.4](../../blog/v0.4/)（B01 已发布，B02-B10 待续）
 
 ## 历史版本
 
@@ -47,7 +49,7 @@
 | v0.1 | 闭环：本地 AI 工作台最小可用 | ✅ 已发布 | — | — | — | `v0.1` |
 | v0.2 | 会动手、能离线：工具调用 + 本地模型 | ✅ 已发布 | [方案](v0.2-tool-calling-and-ollama.md) | [总结](v0.2-release-summary.md) | 10 篇 | `v0.2` |
 | v0.3 | 什么都能读：多模态与富文档 | ✅ 已发布 | [方案](v0.3-multimodal-and-rich-docs.md) | [总结](v0.3-release-summary.md) | 10 篇 | `v0.3.0` |
-| v0.4 | 数据随身：备份/分享/自动更新 | 📐 方案已定 | [方案](v0.4-data-portability-and-updates.md) | — | — | — |
+| v0.4 | 数据随身：备份/分享/自动更新 + OCR + 命令面板 | ✅ 已发布 | [方案](v0.4-data-portability-and-updates.md) | [总结](v0.4-release-summary.md) | B01 起 | `v0.4.0` |
 | v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
