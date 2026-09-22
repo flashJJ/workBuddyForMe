@@ -1,6 +1,7 @@
 import type { ChatChunk, ChatParams, ProviderConnection } from '../../types';
 import { openSseChannel } from '../../http/sse-channel';
 import { parseSse } from '../../http/sse-parser';
+import { CHAT_CONNECT_TIMEOUT_MS } from '@wbfm/shared';
 import { OPENAI_ENDPOINTS, joinEndpoint } from './url';
 import {
   DONE_MARKER,
@@ -26,6 +27,8 @@ export async function* openAiChatStream(
       apiKey: connection.apiKey,
       signal: params.signal,
       body: buildChatBody(params),
+      // 本地模型冷加载首字节慢，连接超时放宽到 180s（仅覆盖响应头到达前）
+      timeoutMs: CHAT_CONNECT_TIMEOUT_MS,
     },
   );
 

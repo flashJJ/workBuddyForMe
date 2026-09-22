@@ -23,3 +23,14 @@ export const knowledgeBaseUpdateSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');
 export type KnowledgeBaseUpdateInput = z.infer<typeof knowledgeBaseUpdateSchema>;
+
+/** v0.3 网页剪藏请求 */
+export const clipRequestSchema = z.object({
+  url: z
+    .string()
+    .trim()
+    .min(1, '请填写网页地址')
+    .max(2000)
+    .refine((v) => /^https?:\/\//i.test(v), '网址必须以 http:// 或 https:// 开头'),
+});
+export type ClipRequest = z.infer<typeof clipRequestSchema>;

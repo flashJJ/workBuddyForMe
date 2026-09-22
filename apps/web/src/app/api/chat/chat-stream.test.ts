@@ -133,14 +133,17 @@ describe('会话 CRUD 与 SSE 对话（TR-21.1）', () => {
     expect(messages[1]!.totalTokens).toBe(6);
   });
 
-  it('未配置模型：SSE error 事件结构正确，助手消息标 error', async () => {
+  it('未配置模型：meta 之前直接 error，且不落库任何消息（v0.3 门控前移）', async () => {
     const response = await streamChat(
       jsonRequest({ assistantId: builtinAssistantId, content: 'hi' }),
     );
     const events = parseSseChunks(await readAll(response));
-    expect(events[0]!.event).toBe('meta');
-    expect(events[1]!.event).toBe('error');
-    expect(events[1]!.data).toMatchObject({ code: 'VALIDATION_ERROR' });
+    expect(events).toHaveLength(1);
+    expect(events[0]!.event).toBe('error');
+    expect(events[0]!.data).toMatchObject({ code: 'VALIDATION_ERROR' });
+
+    const list = await (await listConversations(new Request('http://x'))).json();
+    expect(list.data).toHaveLength(0);
   });
 
   it('客户端断开：abort 传导到上游，消息置 stopped', async () => {

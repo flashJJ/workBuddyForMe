@@ -83,3 +83,26 @@ export async function* runProviderTurn(
   });
   return { content, toolCalls, usage };
 }
+
+/** 识别「模型不支持工具调用」类上游错误（Ollama/LM Studio 等返回 400） */
+export function isToolsUnsupportedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /does not support tools|tools?\s+is not supported|unsupported tools?/i.test(message);
+}
+
+/**
+ * 带降级的模型轮次：端点支持工具（supportsTools=true）不代表具体模型支持
+ * （如 qwen2.5vl）。上游 400 拒绝工具声明时（发生在流打开前，无已产出增量），
+ * 去掉工具声明重试一次——模型将直接基于检索上下文/对话回答。
+ */
+export async function* runProviderTurnWithToolFallback(
+  params: TurnParams,
+): AsyncGenerator<OrchestratorEvent, ProviderTurn> {
+  if (params.tools.length === 0) return yield* runProviderTurn(params);
+  try {
+    return yield* runProviderTurn(params);
+  } catch (error) {
+    if (!isToolsUnsupportedError(error)) throw error;
+    return yield* runProviderTurn({ ...params, tools: [] });
+  }
+}

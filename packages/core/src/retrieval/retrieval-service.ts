@@ -11,6 +11,8 @@ export interface RetrievedChunk {
   content: string;
   /** sqlite-vec L2 距离，越小越相似 */
   distance: number;
+  /** v0.3：网页剪藏来源 URL，本地上传文档为 null */
+  sourceUrl: string | null;
 }
 
 export interface RetrieveInput {
@@ -46,6 +48,7 @@ export function createRetrievalService(deps: ServiceDeps) {
         ordinal: hit.ordinal,
         content: hit.content,
         distance: hit.distance,
+        sourceUrl: hit.sourceUrl,
       }));
     },
   };

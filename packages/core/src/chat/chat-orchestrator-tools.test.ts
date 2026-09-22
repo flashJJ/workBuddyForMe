@@ -142,6 +142,43 @@ describe('对话编排：工具调用循环（TR-15.2）', () => {
     expect(messages[1]!.toolTrace[0]!.durationMs).toBeGreaterThanOrEqual(0);
   });
 
+  it('模型不支持工具：首次 400 后自动去工具重试，回答正常落库', async () => {
+    const assistants = createAssistantsService({ db, cipher });
+    assistants.update(assistants.list()[0]!.id, { enabledTools: ['current_time'] });
+    const assistant = assistants.list()[0]!;
+    fetchMock
+      .mockImplementationOnce(
+        () =>
+          new Response(JSON.stringify({ error: { message: 'qwen2.5vl:7b does not support tools' } }), {
+            status: 400,
+            headers: { 'content-type': 'application/json' },
+          }),
+      )
+      .mockImplementationOnce(() => new Response(answerSse('图中是红色。'), { headers: { 'content-type': 'text/event-stream' } }));
+
+    const events = await drain(
+      createChatOrchestrator({ db, cipher }).streamChat({
+        assistantId: assistant.id,
+        content: '这张图什么颜色',
+      }),
+    );
+
+    expect(events.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
+    expect((events[2]!.data as { content: string }).content).toBe('图中是红色。');
+
+    // 第一次请求带 tools 声明，重试请求不带
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const firstBody = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    const secondBody = JSON.parse((fetchMock.mock.calls[1]![1] as RequestInit).body as string);
+    expect(firstBody.tools).toHaveLength(1);
+    expect(secondBody.tools).toBeUndefined();
+
+    const meta = events[0]!.data as { conversationId: string };
+    const messages = createConversationService({ db, cipher }).listMessages(meta.conversationId);
+    expect(messages[1]!.content).toBe('图中是红色。');
+    expect(messages[1]!.errorCode).toBeNull();
+  });
+
   it('regenerate：删除尾部助手消息后重答，用户消息不重复入库', async () => {
     const assistant = createAssistantsService({ db, cipher }).list()[0]!;
     fetchMock

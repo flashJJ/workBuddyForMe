@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, Message, SsePayloadMap, ToolTraceEntry } from '@wbfm/shared';
+import type { Citation, ContentPart, Message, SsePayloadMap, ToolTraceEntry } from '@wbfm/shared';
 import { useMessages } from '@/lib/hooks/use-conversations';
 import { QUERY_KEYS } from '@/lib/api/endpoints';
 import { useChatStream } from '@/lib/hooks/use-chat-stream';
@@ -11,12 +11,20 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function buildUserParts(content: string, attachmentIds: string[]): ContentPart[] {
+  const parts: ContentPart[] = [];
+  if (content) parts.push({ type: 'text', text: content });
+  for (const attachmentId of attachmentIds) parts.push({ type: 'image', attachmentId });
+  return parts;
+}
+
 function pendingMessage(role: Message['role'], content: string): Message {
   return {
     id: '',
     conversationId: '',
     role,
     content,
+    contentParts: [],
     status: 'completed',
     promptTokens: null,
     completionTokens: null,
@@ -32,7 +40,7 @@ function pendingMessage(role: Message['role'], content: string): Message {
 export interface ChatSession {
   messages: Message[];
   streaming: boolean;
-  send: (content: string) => void;
+  send: (content: string, attachmentIds?: string[]) => void;
   /** 重新生成最后一条助手回复（沿用上一条用户消息） */
   retry: () => void;
   stop: () => void;
@@ -92,8 +100,8 @@ export function useChatSession(
   };
 
   const runTurn = React.useCallback(
-    (options: { content: string; regenerate: boolean }) => {
-      const { content, regenerate } = options;
+    (options: { content: string; regenerate: boolean; attachments?: string[] }) => {
+      const { content, regenerate, attachments = [] } = options;
       const assistantMessage: Message = {
         ...pendingMessage('assistant', ''),
         status: 'streaming',
@@ -109,7 +117,11 @@ export function useChatSession(
           }
           return [...trimmed, assistantMessage];
         }
-        return [...source, pendingMessage('user', content), assistantMessage];
+        const userMessage: Message = {
+          ...pendingMessage('user', content),
+          contentParts: buildUserParts(content, attachments),
+        };
+        return [...source, userMessage, assistantMessage];
       });
 
       const handlers = {
@@ -195,6 +207,7 @@ export function useChatSession(
           assistantId,
           ...(conversationId ? { conversationId } : {}),
           content,
+          ...(attachments.length > 0 ? { attachments } : {}),
           ...(regenerate ? { regenerate: true } : {}),
         },
         handlers,
@@ -204,7 +217,11 @@ export function useChatSession(
     [assistantId, conversationId, historyQuery.data, onConversationCreated, queryClient, streamSend],
   );
 
-  const send = React.useCallback((content: string) => runTurn({ content, regenerate: false }), [runTurn]);
+  const send = React.useCallback(
+    (content: string, attachmentIds?: string[]) =>
+      runTurn({ content, regenerate: false, attachments: attachmentIds }),
+    [runTurn],
+  );
 
   const retry = React.useCallback(() => {
     if (streaming) return;

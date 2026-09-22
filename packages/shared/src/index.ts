@@ -13,9 +13,11 @@ export type {
   Citation,
   KnowledgeBase,
   DocumentRecord,
+  Attachment,
   AppSettings,
   Timestamped,
 } from './types/domain';
+export type { ContentPart, TextContentPart, ImageContentPart } from './types/content-part';
 export type { ToolTraceEntry, ToolEventPayload, ToolCallStatus } from './types/tool';
 
 // Zod 契约
@@ -49,8 +51,10 @@ export {
 export {
   knowledgeBaseCreateSchema,
   knowledgeBaseUpdateSchema,
+  clipRequestSchema,
   type KnowledgeBaseCreateInput,
   type KnowledgeBaseUpdateInput,
+  type ClipRequest,
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
 

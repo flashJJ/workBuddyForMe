@@ -1,6 +1,6 @@
 import type { DocumentStatus } from '@wbfm/shared';
 
-export type DocumentKind = 'txt' | 'md' | 'pdf';
+export type DocumentKind = 'txt' | 'md' | 'pdf' | 'docx' | 'xlsx' | 'pptx';
 
 export interface IngestResult {
   documentId: string;

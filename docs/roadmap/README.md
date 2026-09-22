@@ -11,38 +11,48 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v0.1（已发布）
+## 当前版本：v0.4（规划中）
 
-**主题：闭环**。一个人可用的私人 AI 工作台最小完整闭环：
+**主题**：数据随身——备份/分享/自动更新 + P1 图片型 PDF OCR 兜底
 
-- 设置中心：OpenAI 兼容供应商管理（加密存储 + 连接测试）、默认模型
-- 助手预设：内置通用助手 + 自定义助手（人设/温度/模型绑定）
-- 多会话流式对话：SSE 打字机、中途停止、历史持久化
-- 知识库 RAG：txt/md/pdf 解析、分片、sqlite-vec 向量检索、引用角标
-- 双端交付：Next.js Web + Electron 桌面（fork standalone + safeStorage 桥）
-- 工程基座：39 任务验收、四层测试、GitHub Actions CI、12 篇技术博客
+## 历史版本
 
-**已知单调点（迭代动因）**：助手只会「说」不会「做」（无工具调用）、只能纯文本（无图片/Office）、
-只能调云端模型（Ollama 预留未实现）、消息操作单薄、桌面无自动更新。
+### v0.3 ✅ 已发布（2025-Q4）
+
+**主题：什么都能读**。视觉对话 + Office 三格式（docx/xlsx/pptx）解析 + 网页剪藏入库 + 三处真实线上 Bug 复盘修复。tag `v0.3.0`。
+
+- 方案：[v0.3-multimodal-and-rich-docs.md](v0.3-multimodal-and-rich-docs.md)
+- 总结：[v0.3-release-summary.md](v0.3-release-summary.md)
+- 技术博客：[blog/v0.3](../../blog/v0.3/)（B01-B10，共 10 篇）
+- P1 留白：图片型 PDF OCR 兜底延后 v0.4
+
+### v0.2 ✅ 已发布（2025-Q3）
+
+**主题：会动手、能离线**。工具调用链（schema 注册 → LLM tool_calls 解析 → result 回传）+ Ollama 本地模型（OpenAI 兼容接口 + `/api/chat` 原生接口）+ LangSmith 追踪 + 消息重生成 + 知识库增量索引。tag `v0.2`。
+
+- 方案：[v0.2-tool-calling-and-ollama.md](v0.2-tool-calling-and-ollama.md) / [v0.2-execution-plan.md](v0.2-execution-plan.md)
+- 总结：[v0.2-release-summary.md](v0.2-release-summary.md)
+- 技术博客：[blog/v0.2](../../blog/v0.2/)（B01-B10，共 10 篇）
+
+### v0.1 ✅ 已发布
+
+**主题：闭环**。一个人可用的私人 AI 工作台最小完整闭环。tag `v0.1`。
 
 ## 版本索引
 
-| 版本 | 主题 | 状态 | 方案文档 | 发布结论 |
-|---|---|---|---|---|
-| v0.1 | 闭环：本地 AI 工作台最小可用 | ✅ 已发布 | —（spec 驱动交付） | AC-1~12 通过 |
-| v0.2 | 会动手、能离线：工具调用 + 本地模型 | 📐 方案已定 | [v0.2-tool-calling-and-ollama.md](v0.2-tool-calling-and-ollama.md) | — |
-| v0.3 | 什么都能读：多模态与富文档 | 📝 规划中（占位） | — | — |
-| v0.4 | 数据随身：备份/分享/自动更新 | 📝 规划中（占位） | — | — |
-| v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中（占位） | — | — |
+| 版本 | 主题 | 状态 | 方案 | 总结 | 博客 | Tag |
+|---|---|---|---|---|---|---|
+| v0.1 | 闭环：本地 AI 工作台最小可用 | ✅ 已发布 | — | — | — | `v0.1` |
+| v0.2 | 会动手、能离线：工具调用 + 本地模型 | ✅ 已发布 | [方案](v0.2-tool-calling-and-ollama.md) | [总结](v0.2-release-summary.md) | 10 篇 | `v0.2` |
+| v0.3 | 什么都能读：多模态与富文档 | ✅ 已发布 | [方案](v0.3-multimodal-and-rich-docs.md) | [总结](v0.3-release-summary.md) | 10 篇 | `v0.3.0` |
+| v0.4 | 数据随身：备份/分享/自动更新 | 📝 规划中 | — | — | — | — |
+| v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
-### v0.3「什么都能读」—— 多模态与富文档
+### v0.3「什么都能读」—— 多模态与富文档（已细化）
 
-- 图片输入（视觉模型对话，粘贴/拖拽截图）
-- Office 文档解析（docx/xlsx/pptx）与 Markdown 转换
-- 网页剪藏：URL → 正文抽取 → 入知识库
-- 图片型 PDF 的 OCR 兜底
+详见 [v0.3 方案](v0.3-multimodal-and-rich-docs.md)：P0 视觉对话 + Office（docx/xlsx/pptx）解析 + 网页剪藏入库；P1 图片型 PDF OCR 兜底。
 
 ### v0.4「数据随身」—— 备份/分享/自动更新
 

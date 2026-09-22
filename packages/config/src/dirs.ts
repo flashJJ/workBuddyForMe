@@ -7,6 +7,8 @@ export const DATA_SUBDIRS = {
   db: 'db',
   /** 上传的原始文档 */
   files: 'files',
+  /** v0.3 聊天图片附件 */
+  attachments: 'attachments',
   /** Embedding 等缓存 */
   embeddingsCache: 'cache/embeddings',
   /** 本地密钥文件（Web 模式 AES-GCM） */

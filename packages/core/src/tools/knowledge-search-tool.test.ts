@@ -20,6 +20,7 @@ const CHUNK: RetrievedChunk = {
   ordinal: 1,
   content: '年假为 5 天',
   distance: 0.12,
+  sourceUrl: null,
 };
 
 describe('knowledge_search 工具', () => {
@@ -57,6 +58,7 @@ describe('knowledge_search 工具', () => {
         documentId: 'd1',
         documentName: '员工手册.pdf',
         ordinal: 0,
+        sourceUrl: null,
         snippet: '年假为 5 天',
       },
     ]);

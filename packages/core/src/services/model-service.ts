@@ -1,4 +1,4 @@
-import { ApiError, type ModelCreateInput, type ProviderModel } from '@wbfm/shared';
+import { ApiError, type ModelCapability, type ModelCreateInput, type ProviderModel } from '@wbfm/shared';
 import { createModelRepository, createProviderRepository } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
 import { buildProvider, toApiError } from './provider-adapter';
@@ -19,7 +19,7 @@ export function createModelService({ db, cipher }: ServiceDeps) {
       return models.listByProvider(providerId);
     },
 
-    listByCapability(capability: 'chat' | 'embedding'): ProviderModel[] {
+    listByCapability(capability: ModelCapability): ProviderModel[] {
       return models.listByCapability(capability);
     },
 

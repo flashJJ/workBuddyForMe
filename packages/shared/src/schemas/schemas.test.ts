@@ -67,6 +67,26 @@ describe('chat / knowledge schemas', () => {
     expect(chatRequestSchema.parse({ assistantId: 'a', content: '你好' }).content).toBe('你好');
   });
 
+  it('v0.3：允许纯图片消息，缺省 content 收敛为空串，附件上限 4', () => {
+    const pureImage = chatRequestSchema.parse({ assistantId: 'a', attachments: ['att_1'] });
+    expect(pureImage.content).toBe('');
+    expect(pureImage.attachments).toEqual(['att_1']);
+    expect(
+      chatRequestSchema.safeParse({
+        assistantId: 'a',
+        attachments: ['1', '2', '3', '4', '5'],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('v0.3：vision 可作为模型能力', () => {
+    const model = modelCreateSchema.parse({
+      modelId: 'qwen2.5-vl',
+      capabilities: ['chat', 'vision'],
+    });
+    expect(model.capabilities).toEqual(['chat', 'vision']);
+  });
+
   it('知识库分片范围校验与默认值', () => {
     const kb = knowledgeBaseCreateSchema.parse({ name: 'kb' });
     expect(kb.chunkSize).toBe(500);

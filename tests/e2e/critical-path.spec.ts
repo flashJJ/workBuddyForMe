@@ -11,6 +11,12 @@ const DOC_CONTENT =
   '量子咖啡机支持语音唤醒与手机联动。'.repeat(20) +
   '量子咖啡机的保修期为两年，保修期内可免费更换研磨组件。'.repeat(20);
 
+// 1×1 合法 PNG（浏览器 canvas 压缩链路需要可解码图片）
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 test.describe.serial('WorkBuddy 关键路径', () => {
   test('① 配置供应商与模型，连接测试成功', async ({ page }) => {
     await page.goto('/settings');
@@ -115,5 +121,36 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     const citations = page.getByTestId('citations');
     await expect(citations).toBeVisible();
     await expect(citations.getByText(DOC_FILENAME).first()).toBeVisible();
+  });
+
+  test('⑥ 视觉对话：添加视觉模型并附加图片，mock 识别图片', async ({ page }) => {
+    await page.goto('/settings');
+
+    // 新增同时具备对话/视觉能力的模型（默认勾「对话」，再勾「视觉」）
+    await page.locator('[id^="model-id-"]').last().fill('mock-vision');
+    await page.getByLabel('视觉', { exact: true }).check();
+    await page.getByRole('button', { name: '添加', exact: true }).last().click();
+    await expect(page.getByText('已添加模型 mock-vision')).toBeVisible();
+
+    await page
+      .getByLabel('默认对话模型')
+      .selectOption({ label: 'mock-vision（mock-vision）' });
+    await expect(page.getByText('设置已保存').first()).toBeVisible();
+
+    await page.goto('/chat');
+    await page.getByRole('button', { name: '附加图片' }).waitFor();
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'shot.png',
+      mimeType: 'image/png',
+      buffer: TINY_PNG,
+    });
+    await expect(page.getByTestId('attachment-previews')).toBeVisible();
+
+    await page.getByLabel('消息输入框').fill('这是什么');
+    await page.getByLabel('消息输入框').press('Enter');
+
+    // mock 视觉模型确定性回复 + 用户消息图片回流渲染
+    await expect(page.getByText(/已查看 1 张图片/).first()).toBeVisible();
+    await expect(page.getByTestId('message-images').getByTestId('message-image')).toBeVisible();
   });
 });

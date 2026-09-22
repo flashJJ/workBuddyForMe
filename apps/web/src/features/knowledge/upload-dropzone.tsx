@@ -25,7 +25,7 @@ export function UploadDropzone({ kbId }: Props) {
   const uploadFiles = async (files: File[]) => {
     const valid = files.filter(isAllowed);
     if (valid.length < files.length) {
-      toast.error('仅支持 .txt / .md / .markdown / .pdf 文件');
+      toast.error(`仅支持 ${ALLOWED_DOC_EXTENSIONS.filter((ext) => ext !== '.markdown').join(' / ')} 文件`);
     }
     for (const file of valid) {
       try {
@@ -57,7 +57,9 @@ export function UploadDropzone({ kbId }: Props) {
       }}
     >
       <p className="text-sm font-medium">拖拽文档到这里，或点击选择文件</p>
-      <p className="text-xs text-muted-foreground">支持 .txt / .md / .markdown / .pdf，多文件可同时上传</p>
+      <p className="text-xs text-muted-foreground">
+        支持 .txt / .md / .pdf / .docx / .xlsx / .pptx，多文件可同时上传
+      </p>
       <input
         ref={inputRef}
         type="file"

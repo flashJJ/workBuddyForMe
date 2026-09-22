@@ -19,6 +19,7 @@ export function toCitations(chunks: RetrievedChunk[]): Citation[] {
     documentId: chunk.documentId,
     documentName: chunk.documentName,
     ordinal: index,
+    sourceUrl: chunk.sourceUrl,
     snippet:
       chunk.content.length > CITATION_SNIPPET_LENGTH
         ? `${chunk.content.slice(0, CITATION_SNIPPET_LENGTH)}…`

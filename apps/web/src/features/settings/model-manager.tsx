@@ -20,6 +20,7 @@ import {
 const CAPABILITY_LABEL: Record<ModelCapability, string> = {
   chat: '对话',
   embedding: '向量',
+  vision: '视觉',
 };
 
 interface AddFormState {

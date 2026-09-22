@@ -5,6 +5,7 @@ import type { Message } from '@wbfm/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';
+import { AttachmentImage } from './attachment-image';
 import { MarkdownContent } from './markdown';
 import { ToolTrace } from './tool-trace';
 
@@ -48,7 +49,20 @@ function Citations({ message }: { message: Message }) {
             <Badge variant="outline" className="mr-1">
               [{citation.ordinal}]
             </Badge>
-            <span className="font-medium">{citation.documentName}</span>
+            {citation.sourceUrl ? (
+              <a
+                href={citation.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                title={citation.sourceUrl}
+                className="font-medium text-primary hover:underline"
+                data-testid="citation-source-link"
+              >
+                {citation.documentName}
+              </a>
+            ) : (
+              <span className="font-medium">{citation.documentName}</span>
+            )}
             {citation.snippet && (
               <span className="ml-1 text-muted-foreground">— {citation.snippet}</span>
             )}
@@ -98,9 +112,20 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
     );
   }
 
+  const imageIds = message.contentParts
+    .filter((part): part is Extract<typeof part, { type: 'image' }> => part.type === 'image')
+    .map((part) => part.attachmentId);
+
   return (
     <div className="group/msg">
-      <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+      {message.content && <p className="whitespace-pre-wrap text-sm">{message.content}</p>}
+      {imageIds.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2" data-testid="message-images">
+          {imageIds.map((id) => (
+            <AttachmentImage key={id} attachmentId={id} />
+          ))}
+        </div>
+      )}
       {onResend && !disabled && (
         <button
           type="button"

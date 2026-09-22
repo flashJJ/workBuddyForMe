@@ -36,14 +36,14 @@ export interface ChatCompletionRequestBody {
   tools?: ToolDefinition[];
 }
 
-/** OpenAI 线上消息格式（snake_case） */
-export interface WireChatMessage {
+/** OpenAI 线上消息格式（snake_case）；content 支持字符串与视觉片段数组 */
+export type WireChatMessage = {
   role: ChatMessage['role'];
-  content: string | null;
+  content: ChatMessage['content'];
   tool_calls?: ToolCall[];
   tool_call_id?: string;
   name?: string;
-}
+};
 
 /** 内部 ChatMessage（camelCase）→ OpenAI wire（snake_case） */
 export function toWireMessage(message: ChatMessage): WireChatMessage {

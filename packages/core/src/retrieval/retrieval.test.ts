@@ -145,6 +145,7 @@ describe('检索与 RAG 编排（TR-17.1）', () => {
         ordinal: 3,
         content: 'a'.repeat(300),
         distance: 0.1,
+        sourceUrl: null,
       },
     ];
     expect(toCitations(chunks)[0]!.snippet).toHaveLength(161);

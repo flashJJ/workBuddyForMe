@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError } from '@wbfm/shared';
 
 const getDocument = vi.fn();
 
@@ -17,16 +16,26 @@ describe('文档文本提取（TR-16.1）', () => {
     expect(detectKind('a.markdown')).toBe('md');
   });
 
-  it('不支持的类型抛 422', () => {
-    expect(() => detectKind('a.docx')).toThrow(ApiError);
+  it('v0.3 Office 三格式识别；未知类型与老式 .doc 给可读错误', () => {
+    expect(detectKind('a.docx')).toBe('docx');
+    expect(detectKind('a.xlsx')).toBe('xlsx');
+    expect(detectKind('a.pptx')).toBe('pptx');
+    expect(() => detectKind('a.rtf')).toThrow(/不支持的文件类型/);
     expect(() => detectKind('a')).toThrow(/不支持的文件类型/);
+    expect(() => detectKind('old.doc')).toThrow(/另存为新版 .docx/);
   });
 
   it('pdf：逐页提取文本并在结束后销毁文档', async () => {
     const destroy = vi.fn().mockResolvedValue(undefined);
     const getPage = vi.fn().mockResolvedValue({
       getTextContent: vi.fn().mockResolvedValue({
-        items: [{ str: '你好' }, { str: 'PDF' }, { noStr: true }],
+        // 两个 span y 相同 → 合并为一行；第三个 y 不同 → 换行
+        items: [
+          { str: '你好', transform: [1, 0, 0, 12, 0, 200] },
+          { str: 'PDF', transform: [1, 0, 0, 12, 0, 200] },
+          { str: '第二行', transform: [1, 0, 0, 11, 0, 180] },
+          { noStr: true },
+        ],
       }),
     });
     getDocument.mockReturnValue({
@@ -34,7 +43,7 @@ describe('文档文本提取（TR-16.1）', () => {
     });
 
     const text = await readDocumentText('paper.pdf', new Uint8Array([1, 2, 3]));
-    expect(text).toBe('你好\nPDF');
+    expect(text).toBe('你好PDF\n第二行');
     expect(getDocument).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.any(Uint8Array) }),
     );

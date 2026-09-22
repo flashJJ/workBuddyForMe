@@ -17,14 +17,32 @@ export interface ToolCall {
   };
 }
 
+/** v0.3：视觉对话 content parts（OpenAI vision wire 形态，url 为 data URL） */
+export interface TextPart {
+  type: 'text';
+  text: string;
+}
+
+export interface ImageUrlPart {
+  type: 'image_url';
+  image_url: {
+    /** data:image/...;base64,... 或可公开访问的图片 URL */
+    url: string;
+    detail?: 'auto' | 'low' | 'high';
+  };
+}
+
+export type ChatContentPart = TextPart | ImageUrlPart;
+
 /**
  * 对话消息。
  * content 可空：assistant 请求工具调用时只有 toolCalls；
+ * content 可为片段数组：v0.3 多模态用户消息（text + image_url）；
  * role:'tool' 时通过 toolCallId/name 关联对应的调用结果。
  */
 export interface ChatMessage {
   role: MessageRole;
-  content: string | null;
+  content: string | ChatContentPart[] | null;
   toolCalls?: ToolCall[];
   toolCallId?: string;
   name?: string;

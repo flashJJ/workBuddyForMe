@@ -36,7 +36,16 @@ export {
   createDocumentRepository,
   type DocumentRepository,
   type DocumentCreateFields,
+  type DocumentStatusPatch,
 } from './document-repo';
+export {
+  createAttachmentRepository,
+  attachmentStorageName,
+  mapAttachment,
+  type AttachmentRepository,
+  type AttachmentRow,
+  type AttachmentCreateFields,
+} from './attachment-repo';
 export {
   createChunkRepository,
   type ChunkRepository,
