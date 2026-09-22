@@ -130,3 +130,14 @@ export {
   type BackupRestoreOptions,
   type BackupRestoreResult,
 } from './backup/restore';
+
+// v0.4 对话分享
+export { buildConversationSnapshot } from './share/export-conversation';
+export {
+  sanitizeShareText,
+  sanitizeSnapshot,
+  REDACTED,
+  type ConversationSnapshot,
+  type SharedMessage,
+  type SharedPart,
+} from './share/snapshot';
