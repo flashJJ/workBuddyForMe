@@ -78,6 +78,9 @@ test('导航覆盖对话/知识库/助手/设置四模块', async () => {
 
   await page.getByRole('link', { name: /设置/ }).click();
   await expect(page.getByTestId('defaults-panel')).toBeVisible();
+  // M3：关于面板渲染版本号与更新通道（updater 桥经 preload 注入）
+  await expect(page.getByTestId('about-panel')).toBeVisible();
+  await expect(page.getByTestId('about-version')).toContainText('v0.4.0');
 
   await page.getByRole('link', { name: /^对话/ }).click();
   await expect(page.getByTestId('chat-page')).toBeVisible();
