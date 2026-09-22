@@ -1,6 +1,6 @@
 {
   "name": "workbuddy-for-me",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "license": "GPL-3.0-only",
   "description": "WorkBuddy For Me - 类 WorkBuddy 的私人 AI 平台（Next.js 全栈 + Electron）",
