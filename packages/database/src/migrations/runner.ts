@@ -2,6 +2,7 @@ import type { Database } from 'better-sqlite3';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
 import { migrateV003 } from './v003-multimodal';
+import { migrateV004 } from './v004-ocr';
 
 interface Migration {
   version: number;
@@ -17,6 +18,11 @@ const MIGRATIONS: Migration[] = [
     version: 3,
     description: 'multimodal: attachments + message content_parts + document source',
     up: migrateV003,
+  },
+  {
+    version: 4,
+    description: 'ocr: documents.ocr_status + ocr_engine',
+    up: migrateV004,
   },
 ];
 

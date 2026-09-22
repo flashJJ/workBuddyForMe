@@ -17,6 +17,9 @@ export type DocumentStatusPatch = Partial<{
   errorMessage: string | null;
   chunkCount: number;
   indexedAt: string | null;
+  /** v0.4：OCR 状态与引擎（null 可显式清除，如重置） */
+  ocrStatus: DocumentRecord['ocrStatus'];
+  ocrEngine: DocumentRecord['ocrEngine'];
 }>;
 
 export function createDocumentRepository(db: DatabaseInstance) {
@@ -85,7 +88,9 @@ export function createDocumentRepository(db: DatabaseInstance) {
            status = @status,
            error_message = COALESCE(@errorMessage, error_message),
            chunk_count = COALESCE(@chunkCount, chunk_count),
-           indexed_at = COALESCE(@indexedAt, indexed_at)
+           indexed_at = COALESCE(@indexedAt, indexed_at),
+           ocr_status = COALESCE(@ocrStatus, ocr_status),
+           ocr_engine = COALESCE(@ocrEngine, ocr_engine)
          WHERE id = @id`,
       ).run({
         id,
@@ -93,6 +98,8 @@ export function createDocumentRepository(db: DatabaseInstance) {
         errorMessage: patch.errorMessage ?? null,
         chunkCount: patch.chunkCount ?? null,
         indexedAt: patch.indexedAt ?? null,
+        ocrStatus: patch.ocrStatus ?? null,
+        ocrEngine: patch.ocrEngine ?? null,
       });
     },
 

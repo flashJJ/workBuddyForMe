@@ -4,6 +4,8 @@ import type {
   MessageRole,
   MessageStatus,
   ModelCapability,
+  OcrEngine,
+  OcrStatus,
   ProviderProtocol,
   Theme,
   ToolName,
@@ -124,6 +126,10 @@ export interface DocumentRecord {
   source: DocumentSource;
   /** v0.3：剪藏来源页地址，本地上传为 null */
   sourceUrl: string | null;
+  /** v0.4：OCR 状态；非扫描件为 null */
+  ocrStatus: OcrStatus | null;
+  /** v0.4：实际使用的 OCR 引擎；未走 OCR 为 null */
+  ocrEngine: OcrEngine | null;
   errorMessage: string | null;
   chunkCount: number;
   createdAt: string;
