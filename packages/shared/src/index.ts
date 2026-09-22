@@ -58,6 +58,21 @@ export {
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
 
+// 备份/恢复契约
+export {
+  CURRENT_BACKUP_SCHEMA_VERSION,
+  backupTrackSchema,
+  backupManifestSchema,
+  backupProgressEventSchema,
+  backupExportRequestSchema,
+  backupPrecheckSchema,
+  type BackupTrack,
+  type BackupManifest,
+  type BackupProgressEvent,
+  type BackupExportRequest,
+  type BackupPrecheck,
+} from './backup';
+
 // API 契约
 export {
   ok,
