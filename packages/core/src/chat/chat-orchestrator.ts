@@ -19,7 +19,7 @@ import { resolveChatTarget, type ResolvedChatTarget } from './model-resolver';
 import { buildChatMessages, HISTORY_MESSAGE_LIMIT } from './prompt';
 import { buildImageMap } from './multimodal';
 import { prepareUserTurn } from './turn-preparation';
-import { runProviderTurn, type ProviderTurn } from './tool-runner';
+import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
 import type { OrchestratorEvent, RagContext, StreamChatInput } from './types';
 import {
   RAG_SNIPPET_LIMIT,
@@ -157,7 +157,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         try {
           for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
             // 手动迭代：delta 直接累积到 full，保证中途 abort 也能保留已产出片段
-            const turn = runProviderTurn({
+            const turn = runProviderTurnWithToolFallback({
               target,
               assistant,
               messages: outgoing,
