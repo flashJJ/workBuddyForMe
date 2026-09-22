@@ -46,7 +46,11 @@ export function mergePdfTextItems(items: readonly unknown[]): string {
   for (const raw of items) {
     const item = raw as { str?: string; transform?: number[] };
     if (!item.str) continue;
-    const str = item.str.replace(/\u0001/g, '').trim(); // 某些工具插入的控制符
+    // PDF 渲染器会在一些中文 PDF 的文字片段间插入 \u0001 控制符，过滤掉
+    const str = item.str
+      .split('\x01')
+      .join('')
+      .trim();
     if (!str) continue;
 
     const transform = item.transform ?? [1, 0, 0, 1, 0, 0];
