@@ -106,12 +106,12 @@ describe('备份导出（M1）', () => {
     });
 
     const files = await collectTarEntries(archive);
-    const convs = JSON.parse(files['conversations.json']);
+    const convs = JSON.parse(files['conversations.json']!);
     expect(convs).toHaveLength(1);
     expect(convs[0].conversation.title).toBe('测试对话');
     expect(convs[0].messages).toHaveLength(2);
 
-    const kbs = JSON.parse(files['knowledge.json']);
+    const kbs = JSON.parse(files['knowledge.json']!);
     expect(kbs).toHaveLength(1);
     expect(kbs[0].knowledgeBase.name).toBe('产品库');
     expect(kbs[0].documents).toHaveLength(1);
@@ -136,7 +136,7 @@ describe('备份导出（M1）', () => {
     });
 
     const files = await collectTarEntries(archive);
-    const parsed = JSON.parse(files['settings.json']);
+    const parsed = JSON.parse(files['settings.json']!);
     expect(parsed.defaultModel).toEqual({ id: 'chat-model' });
     expect(parsed.providerCredentials.ciphertext).toBe('[REDACTED]');
     expect(parsed.providerCredentials.encrypted).toBe(true);
@@ -168,7 +168,7 @@ describe('sanitizeSettings 纯函数', () => {
       nested: { a: { encrypted: true, ciphertext: 'NESTED' } },
       arr: [{ encrypted: true, ciphertext: 'ARR_SEC' }, 'plain'],
     };
-    const out = sanitizeSettings(raw);
+    const out: any = sanitizeSettings(raw);
     expect(out.flat.ciphertext).toBe('[REDACTED]');
     expect(out.flat.id).toBe('ok');
     expect(out.nested.a.ciphertext).toBe('[REDACTED]');

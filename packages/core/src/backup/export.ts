@@ -135,13 +135,23 @@ export async function exportBackup(
     onProgress?.({ track: 'settings', processed: 1, total: 1 });
   }
 
-  // 2. 附件二进制（可选，单独写入 tar 子目录）
+  // 2. 附件：元数据 JSON + 二进制（可选）
   const attachmentsToPack: Array<{ name: string; data: Buffer }> = [];
   if (tracks.includes('attachments')) {
     const atts = attachmentsRepo.list();
     const attDir = path.join(dataRoot, 'attachments');
     let totalBytes = 0;
+    const serializedAtts = [];
     for (const att of atts) {
+      serializedAtts.push({
+        id: att.id,
+        filename: att.filename,
+        mimeType: att.mime_type,
+        byteSize: att.byte_size,
+        storagePath: att.storage_path,
+        contentHash: att.content_hash,
+        createdAt: att.created_at,
+      });
       const filePath = path.join(attDir, att.storage_path);
       if (fs.existsSync(filePath)) {
         const buf = fs.readFileSync(filePath);
@@ -149,6 +159,7 @@ export async function exportBackup(
         totalBytes += buf.length;
       }
     }
+    files['attachments.json'] = JSON.stringify(serializedAtts, null, 2);
     manifestPartial.attachments.entryCount = attachmentsToPack.length;
     manifestPartial.attachments.totalBytes = totalBytes;
     onProgress?.({ track: 'attachments', processed: attachmentsToPack.length, total: atts.length });
