@@ -31,6 +31,48 @@ export function detectKind(filename: string): DocumentKind {
   return kind;
 }
 
+/**
+ * 合并 PDF TextItem 成有意义的行：
+ * PDF 渲染器常把单行拆成多个 span（甚至逐字），相邻 span 的 y 坐标/字体相同
+ * 就应拼接为同一行；否则换行。
+ */
+export function mergePdfTextItems(items: readonly unknown[]): string {
+  const lines: string[] = [];
+  let current: string[] = [];
+  let prevY: number | null = null;
+  let prevFontSize: number | null = null;
+  const Y_TOLERANCE = 1.5; // PDF 坐标系单位一般是 pt，1.5 足够吸收 sub-pixel 抖动
+
+  for (const raw of items) {
+    const item = raw as { str?: string; transform?: number[] };
+    if (!item.str) continue;
+    const str = item.str.replace(/\u0001/g, '').trim(); // 某些工具插入的控制符
+    if (!str) continue;
+
+    const transform = item.transform ?? [1, 0, 0, 1, 0, 0];
+    const y = transform[5] ?? 0;
+    const fontSize = Math.abs(transform[3] ?? 1);
+
+    const rowChanged =
+      prevY !== null && Math.abs(y - prevY) > Y_TOLERANCE;
+    const fontChanged =
+      prevFontSize !== null && Math.abs(fontSize - prevFontSize) > 0.5 && current.length > 0;
+
+    if (rowChanged || fontChanged) {
+      lines.push(current.join('').trim());
+      current = [];
+    }
+    current.push(str);
+    prevY = y;
+    prevFontSize = fontSize;
+  }
+  if (current.length > 0) lines.push(current.join('').trim());
+
+  return lines
+    .filter((l) => l.length > 0)
+    .join('\n');
+}
+
 async function readPdf(data: Uint8Array): Promise<string> {
   const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
   try {
@@ -38,10 +80,7 @@ async function readPdf(data: Uint8Array): Promise<string> {
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
       const page = await doc.getPage(pageNumber);
       const content = await page.getTextContent();
-      const text = content.items
-        .map((item) => ('str' in item ? item.str : ''))
-        .filter(Boolean)
-        .join('\n');
+      const text = mergePdfTextItems(content.items);
       pages.push(text.trim());
     }
     return pages.filter(Boolean).join('\n\n');
@@ -52,7 +91,7 @@ async function readPdf(data: Uint8Array): Promise<string> {
 
 /**
  * 提取文档纯文本（全程本地，不上传外部）：
- * txt/md 直读 UTF-8，pdf 走 pdfjs，docx/xlsx/pptx 走纯 JS Office 解析器。
+ * txt/md 直读 UTF-8，pdf 走 pdfjs 并合并跨行 text span，docx/xlsx/pptx 走纯 JS Office 解析器。
  */
 export async function readDocumentText(
   filename: string,

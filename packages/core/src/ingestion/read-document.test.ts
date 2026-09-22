@@ -29,7 +29,13 @@ describe('文档文本提取（TR-16.1）', () => {
     const destroy = vi.fn().mockResolvedValue(undefined);
     const getPage = vi.fn().mockResolvedValue({
       getTextContent: vi.fn().mockResolvedValue({
-        items: [{ str: '你好' }, { str: 'PDF' }, { noStr: true }],
+        // 两个 span y 相同 → 合并为一行；第三个 y 不同 → 换行
+        items: [
+          { str: '你好', transform: [1, 0, 0, 12, 0, 200] },
+          { str: 'PDF', transform: [1, 0, 0, 12, 0, 200] },
+          { str: '第二行', transform: [1, 0, 0, 11, 0, 180] },
+          { noStr: true },
+        ],
       }),
     });
     getDocument.mockReturnValue({
@@ -37,7 +43,7 @@ describe('文档文本提取（TR-16.1）', () => {
     });
 
     const text = await readDocumentText('paper.pdf', new Uint8Array([1, 2, 3]));
-    expect(text).toBe('你好\nPDF');
+    expect(text).toBe('你好PDF\n第二行');
     expect(getDocument).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.any(Uint8Array) }),
     );
