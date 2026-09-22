@@ -1,4 +1,4 @@
-import { ApiError } from '@wbfm/shared';
+import { ApiError, OCR_TEXT_DENSITY_THRESHOLD } from '@wbfm/shared';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { DocumentKind } from './types';
 import { readDocx } from './office/read-docx';
@@ -77,20 +77,50 @@ export function mergePdfTextItems(items: readonly unknown[]): string {
     .join('\n');
 }
 
-async function readPdf(data: Uint8Array): Promise<string> {
+/**
+ * v0.4：逐页提取 PDF 文字层（保留空页占位）。
+ * 扫描件判定与「文字层页 / 待 OCR 页」混排合并都依赖逐页结果。
+ */
+export async function readPdfPageTexts(data: Uint8Array): Promise<string[]> {
   const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
   try {
     const pages: string[] = [];
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
       const page = await doc.getPage(pageNumber);
       const content = await page.getTextContent();
-      const text = mergePdfTextItems(content.items);
-      pages.push(text.trim());
+      pages.push(mergePdfTextItems(content.items).trim());
     }
-    return pages.filter(Boolean).join('\n\n');
+    return pages;
   } finally {
     await doc.destroy();
   }
+}
+
+async function readPdf(data: Uint8Array): Promise<string> {
+  const pages = await readPdfPageTexts(data);
+  return pages.filter(Boolean).join('\n\n');
+}
+
+/**
+ * v0.4：文字层密度判定扫描件。
+ * 平均每页非空白字符数 < 阈值（默认 50）即视为图片型 PDF；
+ * 纯文字 PDF（即便有空白扉页）平均密度远高于阈值，不会误判。
+ */
+export function isImagePdf(
+  pageTexts: readonly string[],
+  threshold: number = OCR_TEXT_DENSITY_THRESHOLD,
+): boolean {
+  if (pageTexts.length === 0) return false;
+  const total = pageTexts.reduce((sum, text) => sum + text.replace(/\s/g, '').length, 0);
+  return total / pageTexts.length < threshold;
+}
+
+/** 单页是否需要 OCR：该页文字层非空白字符低于阈值 */
+export function pageNeedsOcr(
+  pageText: string,
+  threshold: number = OCR_TEXT_DENSITY_THRESHOLD,
+): boolean {
+  return pageText.replace(/\s/g, '').length < threshold;
 }
 
 /**

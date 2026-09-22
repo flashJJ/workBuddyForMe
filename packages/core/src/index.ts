@@ -58,11 +58,29 @@ export type {
 // 知识库摄入
 export { createIngestionPipeline, type IngestionPipeline } from './ingestion/ingestion-pipeline';
 export { chunkText } from './ingestion/chunking';
-export { readDocumentText, detectKind } from './ingestion/read-document';
+export {
+  readDocumentText,
+  detectKind,
+  readPdfPageTexts,
+  isImagePdf,
+  pageNeedsOcr,
+  mergePdfTextItems,
+} from './ingestion/read-document';
 export {
   resolveEmbeddingTarget,
   type ResolvedEmbeddingTarget,
 } from './ingestion/embedding-target';
+export {
+  extractDocumentText,
+  type ExtractDocumentResult,
+  type ExtractHooks,
+} from './ingestion/extract-with-ocr';
+export { runPdfOcr, type OcrRunResult } from './ingestion/ocr-runner';
+export {
+  resolveVisionTarget,
+  type ResolvedVisionTarget,
+} from './ingestion/vision-target';
+export { renderPdfPagesToPng } from './ingestion/pdf-render';
 export type {
   IngestInput,
   IngestResult,

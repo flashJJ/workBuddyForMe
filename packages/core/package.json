@@ -28,6 +28,7 @@
     },
     "dependencies": {
         "@mozilla/readability": "^0.6.0",
+        "@napi-rs/canvas": "^0.1.80",
         "@wbfm/ai": "workspace:*",
         "@wbfm/config": "workspace:*",
         "@wbfm/database": "workspace:*",
@@ -38,6 +39,9 @@
         "pdfjs-dist": "^4.10.38",
         "tar-stream": "^3.2.1",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    },
+    "optionalDependencies": {
+        "tesseract.js": "^5.1.1"
     },
     "devDependencies": {
         "@types/tar-stream": "^3.1.4"

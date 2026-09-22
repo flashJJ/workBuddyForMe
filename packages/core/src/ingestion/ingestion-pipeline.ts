@@ -11,7 +11,7 @@ import {
 import type { ServiceDeps } from '../services/deps';
 import { chunkText } from './chunking';
 import { resolveEmbeddingTarget } from './embedding-target';
-import { readDocumentText } from './read-document';
+import { extractDocumentText } from './extract-with-ocr';
 import type { IngestInput, IngestResult } from './types';
 
 const ERROR_EMBEDDING_MISSING = '未配置可用的 embedding 模型，请先在设置中绑定向量模型';
@@ -44,10 +44,23 @@ export function createIngestionPipeline(deps: ServiceDeps) {
       if (!target) return fail(documentId, ERROR_EMBEDDING_MISSING);
 
       let text: string;
+      let ocrMeta: { engine: 'vision' | 'tesseract'; partial: boolean } | null = null;
       try {
-        text = await readDocumentText(document.filename, buffer);
+        const extracted = await extractDocumentText(deps, document.filename, buffer, {
+          signal,
+          onOcrStart: () => {
+            documents.setStatus(documentId, 'processing', { ocrStatus: 'running' });
+          },
+        });
+        text = extracted.text;
+        ocrMeta = extracted.ocr;
       } catch (error) {
-        return fail(documentId, error instanceof Error ? error.message : '文档解析失败');
+        const message = error instanceof Error ? error.message : '文档解析失败';
+        documents.setStatus(documentId, 'failed', {
+          errorMessage: message,
+          ocrStatus: 'failed',
+        });
+        return { documentId, status: 'failed', chunkCount: 0, errorMessage: message };
       }
       if (!text.trim()) return fail(documentId, ERROR_EMPTY);
 
@@ -91,11 +104,16 @@ export function createIngestionPipeline(deps: ServiceDeps) {
         return fail(documentId, error instanceof Error ? error.message : '向量写入失败');
       }
 
-      documents.setStatus(documentId, 'indexed', {
+      // v0.4：OCR 部分成功（超时/超页）→ partial，文本仍可检索但不完整
+      const finalStatus = ocrMeta?.partial ? 'partial' : 'indexed';
+      documents.setStatus(documentId, finalStatus, {
         chunkCount: slices.length,
         indexedAt: new Date().toISOString(),
+        ...(ocrMeta
+          ? { ocrStatus: 'done' as const, ocrEngine: ocrMeta.engine }
+          : {}),
       });
-      return { documentId, status: 'indexed', chunkCount: slices.length };
+      return { documentId, status: finalStatus, chunkCount: slices.length };
     },
   };
 }
