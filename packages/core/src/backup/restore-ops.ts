@@ -45,7 +45,7 @@ export function restoreKnowledge(db: any, buf: Buffer): { kb: { imported: number
   for (const entry of kbs) {
     const r = insertKb.run(entry.knowledgeBase.id, entry.knowledgeBase.name, entry.knowledgeBase.description,
       entry.knowledgeBase.chunkSize, entry.knowledgeBase.chunkOverlap, entry.knowledgeBase.createdAt, entry.knowledgeBase.updatedAt);
-    (r.changes > 0 ? kbImported++ : kbSkipped++);
+    if (r.changes > 0) kbImported++; else kbSkipped++;
 
     for (const d of entry.documents) {
       const doc = d.document;
@@ -115,7 +115,7 @@ export function restoreAttachmentsMeta(db: any, buf: Buffer): { imported: number
   );
   for (const a of atts) {
     const r: DBRunResult = insertAtt.run(a.id, a.filename, a.mimeType, a.byteSize, a.storagePath, a.contentHash, a.createdAt);
-    (r.changes > 0 ? imported++ : skipped++);
+    if (r.changes > 0) imported++; else skipped++;
   }
   return { imported, skipped };
 }

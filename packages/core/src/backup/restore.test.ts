@@ -1,6 +1,8 @@
 import { mkdtempSync, existsSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import zlib from 'node:zlib';
+import tar from 'tar-stream';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance, createSettingsRepository, createAttachmentRepository, createKnowledgeRepository, createDocumentRepository, createConversationRepository, createMessageRepository, createChunkRepository } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
@@ -157,8 +159,6 @@ describe('备份恢复（M1）', () => {
         attachments: { files: '', entryCount: 0, totalBytes: 0 },
       },
     });
-    const tar = require('tar-stream');
-    const zlib = require('zlib');
     const pack = tar.pack();
     pack.entry({ name: 'manifest.json' }, fakeManifest);
     pack.finalize();

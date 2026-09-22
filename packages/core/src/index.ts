@@ -115,3 +115,18 @@ export {
   SsrfBlockedError,
 } from './tools/ssrf-guard';
 export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool-runner';
+
+// v0.4 数据便携：备份与恢复
+export {
+  exportBackup,
+  sanitizeSettings,
+  BACKUP_MAX_ARCHIVE_BYTES,
+  type BackupExportOptions,
+  type BackupExportResult,
+} from './backup/export';
+export {
+  restoreBackup,
+  precheckBackup,
+  type BackupRestoreOptions,
+  type BackupRestoreResult,
+} from './backup/restore';
