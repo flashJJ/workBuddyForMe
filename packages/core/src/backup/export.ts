@@ -94,7 +94,7 @@ export async function exportBackup(
     const serialized = kbs.map((kb) => {
       const docs = documentsRepo.listByKnowledgeBase(kb.id);
       return {
-        knowledgeBase: { id: kb.id, name: kb.name, description: kb.description, chunkSize: kb.chunkSize, chunkOverlap: kb.chunkOverlap, createdAt: kb.createdAt, updatedAt: kb.updatedAt },
+        knowledgeBase: { id: kb.id, name: kb.name, description: kb.description ?? '', chunkSize: kb.chunkSize, chunkOverlap: kb.chunkOverlap, createdAt: kb.createdAt, updatedAt: kb.updatedAt },
         documents: docs.map((doc) => {
           const chunks = chunksRepo.listByDocument(doc.id);
           return {
@@ -214,16 +214,12 @@ function packTarGz(
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     const pack = tar.pack();
+    const gz = zlib.createGzip();
 
-    pack.on('data', (chunk: unknown) => chunks.push(chunk as Buffer));
     pack.on('error', reject);
-    pack.on('end', () => {
-      const gz = zlib.createGzip();
-      gz.on('data', (c: unknown) => chunks.push(c as Buffer));
-      gz.on('end', () => resolve(Buffer.concat(chunks)));
-      gz.on('error', reject);
-      pack.pipe(gz);
-    });
+    gz.on('error', reject);
+    gz.on('data', (c: unknown) => chunks.push(c as Buffer));
+    gz.on('end', () => resolve(Buffer.concat(chunks)));
 
     // 1. manifest
     pack.entry({ name: 'manifest.json' }, JSON.stringify(manifest, null, 2));
@@ -235,6 +231,9 @@ function packTarGz(
     for (const bin of binaries) {
       pack.entry({ name: bin.name }, bin.data);
     }
+
+    // 先 pipe，再 finalize——pipe 让 tar 输出自动喂给 gz
+    pack.pipe(gz);
     pack.finalize();
   });
 }
