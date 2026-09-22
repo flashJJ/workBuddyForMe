@@ -82,7 +82,9 @@ export function mergePdfTextItems(items: readonly unknown[]): string {
  * 扫描件判定与「文字层页 / 待 OCR 页」混排合并都依赖逐页结果。
  */
 export async function readPdfPageTexts(data: Uint8Array): Promise<string[]> {
-  const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
+  // pdfjs 在 Node fake-worker 下会 transfer（detach）输入缓冲，
+  // 同一数据随后还要用于 OCR 渲染，这里必须传副本
+  const doc = await pdfjs.getDocument({ data: data.slice(), isEvalSupported: false }).promise;
   try {
     const pages: string[] = [];
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {

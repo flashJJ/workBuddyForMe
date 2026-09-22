@@ -99,6 +99,22 @@ describe('runPdfOcr 编排', () => {
     expect(result.text).toBe('第一页内容\n\n第二页内容');
   });
 
+  it('视觉引擎只打开一次 PDF 批量渲染全部目标页（pdfjs 不可重复 transfer 同一缓冲）', async () => {
+    resolveVisionTarget.mockReturnValue({
+      provider: makeVisionProvider([{ text: '第一页内容' }, { text: '第二页内容' }]),
+      model: { modelId: 'qwen-vl' },
+    });
+    const data = new Uint8Array([1]);
+    await runPdfOcr({ deps: emptyDeps, data, pageTexts: ['', ''] });
+    expect(renderPdfPagesToPng).toHaveBeenCalledTimes(1);
+    expect(renderPdfPagesToPng).toHaveBeenCalledWith(
+      data,
+      [1, 2],
+      expect.any(Number),
+      expect.any(Number),
+    );
+  });
+
   it('混排 PDF：稠密文字层页保留原文，稀疏页走 OCR', async () => {
     resolveVisionTarget.mockReturnValue({
       provider: makeVisionProvider([{ text: 'OCR 出来的扫描页' }]),
@@ -184,7 +200,14 @@ describe('runPdfOcr 编排', () => {
     });
     expect(result.partial).toBe(true);
     expect(result.processedPages).toBe(2);
-    expect(renderPdfPagesToPng).toHaveBeenCalledTimes(2);
+    // 批量渲染：截断后一次性渲染 [1,2]，第 3、4 页不在渲染列表
+    expect(renderPdfPagesToPng).toHaveBeenCalledTimes(1);
+    expect(renderPdfPagesToPng).toHaveBeenCalledWith(
+      expect.anything(),
+      [1, 2],
+      expect.any(Number),
+      expect.any(Number),
+    );
   });
 
   it('所有页面都无任何文本产出 → 抛 OcrFailedError 附可读指引', async () => {

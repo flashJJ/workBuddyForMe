@@ -3,6 +3,7 @@ import {
   OCR_PAGE_TIMEOUT_MS,
   OCR_TESSERACT_SCALE,
   OCR_TOTAL_TIMEOUT_MS,
+  OCR_VISION_MAX_PIXELS,
   OCR_VISION_SCALE,
   type OcrEngine,
 } from '@wbfm/shared';
@@ -50,7 +51,7 @@ function withPageTimeout<T>(task: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([task, timeout]).finally(() => clearTimeout(timer));
 }
 
-/** 视觉引擎：逐页 渲染→识别，单页超时跳过该页 */
+/** 视觉引擎：整份 PDF 只打开一次批量渲染，再逐页识别，单页超时跳过该页 */
 async function runVisionPages(
   params: RunPdfOcrParams,
   targets: number[],
@@ -61,6 +62,24 @@ async function runVisionPages(
   const ocrByPage = new Map<number, string>();
   let partial = false;
 
+  // 一次打开 PDF 渲染全部目标页（pdfjs 会 detach 输入缓冲，不能逐页重复打开）
+  let pngByPage: Map<number, Buffer>;
+  try {
+    const rendered = await renderPdfPagesToPng(
+      params.data,
+      targets,
+      OCR_VISION_SCALE,
+      OCR_VISION_MAX_PIXELS,
+    );
+    pngByPage = new Map(rendered.map((page) => [page.pageNumber, page.png]));
+  } catch (error) {
+    return {
+      ocrByPage,
+      partial,
+      fatal: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
+
   for (const pageNumber of targets) {
     if (rootSignal.aborted || deadlineSignal.aborted) return { ocrByPage, partial: true, fatal: null };
     const pageSignal = AbortSignal.any([
@@ -69,9 +88,9 @@ async function runVisionPages(
       AbortSignal.timeout(OCR_PAGE_TIMEOUT_MS),
     ]);
     try {
-      const [rendered] = await renderPdfPagesToPng(params.data, [pageNumber], OCR_VISION_SCALE);
-      if (!rendered) throw new Error('页面渲染失败');
-      const text = await recognizePageWithVision(target, rendered.png, pageSignal);
+      const png = pngByPage.get(pageNumber);
+      if (!png) throw new Error('页面渲染失败');
+      const text = await recognizePageWithVision(target, png, pageSignal);
       if (text.trim()) ocrByPage.set(pageNumber, text);
       else partial = true; // 视觉模型空响应视为该页失败
     } catch (error) {
@@ -91,13 +110,17 @@ async function runVisionPages(
   return { ocrByPage, partial, fatal: null };
 }
 
-/** tesseract 引擎：单 worker 复用；单页超时后 worker 不可复用，整体收尾 */
+/** tesseract 引擎：整份 PDF 批量渲染一次，单 worker 逐页识别；单页超时后 worker 不可复用，整体收尾 */
 async function runTesseractPages(
   params: RunPdfOcrParams,
   targets: number[],
   rootSignal: AbortSignal,
   deadlineSignal: AbortSignal,
 ): Promise<{ ocrByPage: Map<number, string>; partial: boolean }> {
+  // 一次打开 PDF 渲染全部目标页（pdfjs 会 detach 输入缓冲，不能逐页重复打开）
+  const rendered = await renderPdfPagesToPng(params.data, targets, OCR_TESSERACT_SCALE);
+  const pngByPage = new Map(rendered.map((page) => [page.pageNumber, page.png]));
+
   const session = await createTesseractSession();
   const ocrByPage = new Map<number, string>();
   let partial = false;
@@ -105,13 +128,9 @@ async function runTesseractPages(
     for (const pageNumber of targets) {
       if (rootSignal.aborted || deadlineSignal.aborted) return { ocrByPage, partial: true };
       try {
-        const [rendered] = await renderPdfPagesToPng(
-          params.data,
-          [pageNumber],
-          OCR_TESSERACT_SCALE,
-        );
-        if (!rendered) throw new Error('页面渲染失败');
-        const text = await withPageTimeout(session.recognize(rendered.png), OCR_PAGE_TIMEOUT_MS);
+        const png = pngByPage.get(pageNumber);
+        if (!png) throw new Error('页面渲染失败');
+        const text = await withPageTimeout(session.recognize(png), OCR_PAGE_TIMEOUT_MS);
         if (text.trim()) ocrByPage.set(pageNumber, text);
         else partial = true;
       } catch (error) {
@@ -210,6 +229,7 @@ export async function runPdfOcr(params: RunPdfOcrParams): Promise<OcrRunResult> 
     if (error instanceof OcrEngineUnavailableError) throw error;
     throw new OcrFailedError(
       `扫描件识别失败：${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   } finally {
     clearTimeout(timer);

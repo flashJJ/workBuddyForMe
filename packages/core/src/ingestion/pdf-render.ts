@@ -24,21 +24,49 @@ async function loadCanvas(): Promise<NapiCanvasModule> {
 }
 
 /**
+ * 计算实际渲染缩放：不超过请求缩放，且总像素不超过 maxPixels（给视觉模型控 token）。
+ * 宽高比保持不变（取宽高双向约束的同一因子）。
+ */
+export function resolveRenderScale(
+  baseWidth: number,
+  baseHeight: number,
+  requestedScale: number,
+  maxPixels?: number,
+): number {
+  if (!maxPixels || maxPixels <= 0) return requestedScale;
+  const basePixels = baseWidth * baseHeight;
+  if (basePixels <= 0) return requestedScale;
+  const maxScale = Math.sqrt(maxPixels / basePixels);
+  return Math.min(requestedScale, maxScale);
+}
+
+/**
  * 将指定页渲染为 PNG。
- * @param scale 渲染缩放：视觉模型建议 2（控 token），tesseract 建议 3（≈288DPI 保识别率）
+ * @param scale 期望渲染缩放：视觉模型建议 2，tesseract 建议 3（≈288DPI）
+ * @param maxPixels 单页像素上限（视觉模型控 image token）；超过则等比缩回
  */
 export async function renderPdfPagesToPng(
   data: Uint8Array,
   pageNumbers: readonly number[],
   scale: number,
+  maxPixels?: number,
 ): Promise<RenderedPdfPage[]> {
   const canvasLib = await loadCanvas();
-  const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
+  // pdfjs 在 Node fake-worker 下会 transfer（detach）输入缓冲，必须传副本，
+  // 否则调用方（同一份 PDF 数据按页多次打开）第二次起即 DataCloneError
+  const doc = await pdfjs.getDocument({ data: data.slice(), isEvalSupported: false }).promise;
   try {
     const rendered: RenderedPdfPage[] = [];
     for (const pageNumber of pageNumbers) {
       const page = await doc.getPage(pageNumber);
-      const viewport = page.getViewport({ scale });
+      const baseViewport = page.getViewport({ scale: 1 });
+      const effectiveScale = resolveRenderScale(
+        baseViewport.width,
+        baseViewport.height,
+        scale,
+        maxPixels,
+      );
+      const viewport = page.getViewport({ scale: effectiveScale });
       const canvas = canvasLib.createCanvas(viewport.width, viewport.height);
       const ctx = canvas.getContext('2d');
 

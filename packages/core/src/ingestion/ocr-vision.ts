@@ -35,6 +35,8 @@ export async function recognizePageWithVision(
 
   const stream = target.provider.chatStream({
     model: target.model.modelId,
+    // OCR 是确定性转录任务：关闭采样，降低漏行/串行的随机性
+    temperature: 0,
     messages: [
       { role: 'system', content: OCR_SYSTEM_PROMPT },
       { role: 'user', content },

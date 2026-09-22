@@ -78,9 +78,20 @@ export const OCR_PAGE_TIMEOUT_MS = 30_000;
 export const OCR_TOTAL_TIMEOUT_MS = 5 * 60_000;
 /** OCR 处理页数软上限，超出部分不处理并标记 partial */
 export const OCR_MAX_PAGES = 50;
-/** PDF 渲染缩放：视觉模型 2x（控 token），tesseract 3x（≈288DPI 保识别率） */
+/**
+ * PDF 渲染缩放：
+ * - 视觉 2x（A4 ≈1190×1684，约 144DPI）；
+ * - tesseract 3x（≈288DPI 保识别率）。
+ */
 export const OCR_VISION_SCALE = 2;
 export const OCR_TESSERACT_SCALE = 3;
+/**
+ * 送视觉模型的单页像素上限：约 2M 像素。
+ * 视觉模型按像素计 image token（qwen2.5-vl 约 784px/token，此预算 ≈2550 token），
+ * 限制总量可避免本地模型默认 4096 上下文（如 Ollama）直接返回 400；
+ * 对超大画幅/非标准 MediaBox 的扫描件按比例缩回，标准 A4 在 2x 下不受影响。
+ */
+export const OCR_VISION_MAX_PIXELS = 2_000_000;
 
 /** 外部请求默认超时（ms），SSE 不设短超时 */
 export const DEFAULT_HTTP_TIMEOUT_MS = 30_000;
