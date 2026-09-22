@@ -92,6 +92,13 @@ export function createAttachmentRepository(db: DatabaseInstance) {
         | undefined;
       return row ?? null;
     },
+
+    /** 备份导出用：列出所有附件行（含 storage_path） */
+    list(): AttachmentRow[] {
+      return db
+        .prepare(`SELECT * FROM attachments ORDER BY created_at ASC`)
+        .all() as AttachmentRow[];
+    },
   };
 }
 
