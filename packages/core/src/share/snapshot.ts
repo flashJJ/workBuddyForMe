@@ -1,3 +1,4 @@
+import { DATA_DIR_NAME } from '@wbfm/config';
 import type { Citation, ToolTraceEntry } from '@wbfm/shared';
 
 /**
@@ -32,9 +33,22 @@ export interface ConversationSnapshot {
 /** 脱敏占位 */
 export const REDACTED = '[REDACTED]';
 
+/** 转义为正则字面量片段（. → \.），避免在源码中硬编码数据目录名 */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// 数据目录名由 @wbfm/config 统一持有；本文件不得出现字面量（仓库不变量）
+const DIR_RE = escapeRegex(DATA_DIR_NAME);
+
+// 预编译：任意用户目录下的数据根路径（Win/macOS/Linux/波浪号）
+const WIN_PATH_RE = new RegExp(`[A-Za-z]:\\\\[^\\s"'<>|*?]*${DIR_RE}(?:\\\\[^\\s"'<>|*?]*)?`, 'g');
+const UNIX_PATH_RE = new RegExp(`/(?:home|Users)/[^\\s"'<>|*?]+/${DIR_RE}(?:/[^\\s"'<>|*?]*)?`, 'g');
+const TILDE_RE = new RegExp(`~/${DIR_RE}(?:/[^\\s"'<>|*?]*)?`, 'g');
+
 /**
  * 分享文本脱敏（纯函数）：
- * 1. 数据根目录路径 / ~/.workbuddy-for-me 本地路径 → [REDACTED]
+ * 1. 数据根目录路径 / 用户目录下的数据根本地路径 → [REDACTED]
  * 2. sk-xxx 风格 API Key → [REDACTED]
  * 3. Bearer/Authorization 令牌 → [REDACTED]
  * 4. api_key/token/secret/password 赋值串 → [REDACTED]
@@ -49,13 +63,10 @@ export function sanitizeShareText(input: string, dataRoot?: string): string {
       out = out.split(v).join(REDACTED);
     }
   }
-  // 1b. 任意用户目录下的 .workbuddy-for-me 路径（Win/macOS Linux/波浪号）
-  out = out.replace(
-    /[A-Za-z]:\\[^\s"'<>|*?]*\.workbuddy-for-me(?:\\[^\s"'<>|*?]*)?/g,
-    REDACTED,
-  );
-  out = out.replace(/\/(?:home|Users)\/[^\s"'<>|*?]+\/\.workbuddy-for-me(?:\/[^\s"'<>|*?]*)?/g, REDACTED);
-  out = out.replace(/~\/\.workbuddy-for-me(?:\/[^\s"'<>|*?]*)?/g, REDACTED);
+  // 1b. 任意用户目录下的数据根路径（Win/macOS Linux/波浪号）
+  out = out.replace(WIN_PATH_RE, REDACTED);
+  out = out.replace(UNIX_PATH_RE, REDACTED);
+  out = out.replace(TILDE_RE, REDACTED);
 
   // 2. OpenAI 风格 sk- key（含 sk-ant-、sk-or- 等前缀）
   out = out.replace(/sk-[A-Za-z0-9_-]{12,}/g, REDACTED);
