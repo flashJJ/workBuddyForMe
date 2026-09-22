@@ -33,14 +33,13 @@ jobs:
       - name: API 集成测试
         run: pnpm test:integration
 
-      - name: 构建 Web
+      - name: 构建 Web（next build，供 E2E playwright 用 next start 启动）
         run: pnpm build:web
 
-      - name: 安装 Playwright Chromium
-        run: pnpm --filter @wbfm/web exec playwright install --with-deps chromium
-
-      - name: Web 关键路径 E2E
-        run: pnpm test:e2e
+      - name: 安装 Playwright Chromium 并执行 Web 关键路径 E2E
+        run: |
+          pnpm --filter @wbfm/web exec playwright install --with-deps chromium
+          pnpm test:e2e
 
       - name: 上传 E2E 产物（失败时留存 trace/screenshot/报告）
         if: failure()
