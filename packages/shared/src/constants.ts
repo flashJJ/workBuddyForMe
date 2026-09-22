@@ -63,3 +63,10 @@ export const IMAGE_COMPRESS_QUALITY = 0.85;
 /** 外部请求默认超时（ms），SSE 不设短超时 */
 export const DEFAULT_HTTP_TIMEOUT_MS = 30_000;
 export const CONNECTION_TEST_TIMEOUT_MS = 10_000;
+
+/**
+ * 聊天流式请求的连接建立超时（响应头到达前）：
+ * 本地大模型冷加载（如 qwen2.5-vl 7B 约 6GB 装载）首字节可能超 60s，
+ * 仅在响应头迟迟不到时才触发；连不上/DNS 失败仍会立即报错。
+ */
+export const CHAT_CONNECT_TIMEOUT_MS = 180_000;
