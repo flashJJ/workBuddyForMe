@@ -81,6 +81,16 @@ export {
   type WbfmUpdaterBridge,
 } from './updater';
 
+// 命令面板契约（M5）
+export {
+  type Command,
+  type CommandGroup,
+  type CommandContext,
+  type CommandRegistry,
+  filterCommands,
+  fuzzyMatch,
+} from './command';
+
 // API 契约
 export {
   ok,
