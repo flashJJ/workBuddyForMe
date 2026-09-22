@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
-import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, safeStorage } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
@@ -76,6 +76,25 @@ async function start(): Promise<void> {
 
   await createWindow(boot);
   setupUpdater();
+  setupGlobalShortcuts();
+}
+
+/**
+ * 全局快捷键（M5）：Ctrl+K 唤起命令面板。
+ * 窗口未聚焦时先聚焦再发事件；窗口已聚焦时仅切换开关。
+ * 开发态也注册（便于体验），退出前注销避免残留。
+ */
+function setupGlobalShortcuts(): void {
+  const registered = globalShortcut.register('CommandOrControl+K', () => {
+    const win = mainWindow;
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    if (!win.isFocused()) win.focus();
+    win.webContents.send('command-palette:open');
+  });
+  if (!registered) {
+    console.error('[wbfm] 全局快捷键 Ctrl+K 注册失败（可能被其他应用占用）');
+  }
 }
 
 /**
@@ -117,6 +136,7 @@ async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
 
 // 退出时回收托管服务与密码桥
 app.on('will-quit', async (event) => {
+  globalShortcut.unregisterAll();
   if (!managedServer && !cipherEndpoint) return;
   event.preventDefault();
   try {

@@ -29,9 +29,22 @@ const updater: WbfmUpdaterBridge = {
   },
 };
 
+/**
+ * 命令面板桥（M5）：主进程 globalShortcut(Ctrl+K) 触发 command-palette:open，
+ * 渲染进程通过 onOpen 订阅并打开面板。
+ */
+const commandPalette = {
+  onOpen: (cb: () => void): (() => void) => {
+    const handler = () => cb();
+    ipcRenderer.on('command-palette:open', handler);
+    return () => ipcRenderer.removeListener('command-palette:open', handler);
+  },
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
   isManaged: Boolean(token),
   updater,
+  commandPalette,
 });

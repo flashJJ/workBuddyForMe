@@ -15,6 +15,8 @@ declare global {
       isManaged?: boolean;
       /** 自动更新桥（preload 注册后可用） */
       updater?: WbfmUpdaterBridge;
+      /** 命令面板桥：主进程 Ctrl+K 全局快捷键触发 open 事件 */
+      commandPalette?: { onOpen: (cb: () => void) => () => void };
     };
   }
 }
