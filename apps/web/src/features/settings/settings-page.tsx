@@ -10,6 +10,7 @@ import { ProviderCard } from './provider-card';
 import { ProviderFormDialog } from './provider-form-dialog';
 import { DefaultsPanel } from './defaults-panel';
 import { BackupPanel } from './backup-panel';
+import { AboutPanel } from './about-panel';
 
 export function SettingsPage() {
   const { data: providers, isLoading, isError, refetch } = useProviders();
@@ -62,6 +63,8 @@ export function SettingsPage() {
       <DefaultsPanel />
 
       <BackupPanel />
+
+      <AboutPanel />
 
       <ProviderFormDialog
         open={dialogOpen}
