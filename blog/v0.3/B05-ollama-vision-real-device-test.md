@@ -1,6 +1,6 @@
 ---
 title: "Ollama 视觉模型真机踩坑：image_url data URL 直传 vs 原生 /api/chat images"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B05"
 tags: ["workbuddy", "ollama", "multimodal", "vision", "qwen2.5vl"]
 date: "2025-Q4"

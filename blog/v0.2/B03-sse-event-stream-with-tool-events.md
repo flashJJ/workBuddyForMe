@@ -1,6 +1,6 @@
 ---
 title: "SSE 事件流里怎么塞工具过程：meta→tool_call→tool_result→delta 的时序编排与 UI 可见性"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B03"
 tags: ["sse", "streaming", "frontend"]
 date: "2025-Q4"
@@ -147,7 +147,7 @@ for (const call of calls) {
 }
 ```
 
-`summarizeArgs` 做了一件很重要的事：把模型传来的原始参数（可能很长、可能包含多余字段）变成一行可读的摘要。比如 `{"query": "WorkBuddy v0.2 架构升级", "topK": 5}` 被摘要为 `"WorkBuddy v0.2 架构升级"`。这个摘要会立即显示在 UI 的"工具卡片"上，告诉用户助手"正在查什么"。
+`summarizeArgs` 做了一件很重要的事：把模型传来的原始参数（可能很长、可能包含多余字段）变成一行可读的摘要。比如 `{"query": "WorkBuddy For Me v0.2 架构升级", "topK": 5}` 被摘要为 `"WorkBuddy For Me v0.2 架构升级"`。这个摘要会立即显示在 UI 的"工具卡片"上，告诉用户助手"正在查什么"。
 
 ### 工具结束：tool(end)
 
@@ -306,7 +306,7 @@ SSE 里不同 event type 就是为了不同的 UI 语义准备的。这不是过
 
 还有一个容易被忽略的点：前端可能发起**多次**针对同一个 conversation 的流请求（比如用户快速点两次发送，或者重试）。`tool_trace` 是一个追加数组，如果两次流请求都往同一个 messageId 上写 tool 事件，就会出现重复条目。
 
-WorkBuddy 的处理是：
+WorkBuddy For Me 的处理是：
 
 1. 每条流有一个唯一的 `streamId`（在 `meta` 事件里额外携带，但前端不持久化）。
 2. 新的流请求发起时，**前端先 abort 上一个流**（通过 `AbortController`）。

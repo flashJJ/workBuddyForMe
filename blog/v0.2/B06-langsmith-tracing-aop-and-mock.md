@@ -1,6 +1,6 @@
 ---
 title: "LangSmith 追踪怎么不侵入业务：AOP 包装 provider 调用、mock 注入的四层测试兼容"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B06"
 tags: ["observability", "langsmith", "testing"]
 date: "2025-Q4"
@@ -12,7 +12,7 @@ date: "2025-Q4"
 
 给一个 LLM 应用加链路追踪的动机很直接：你想知道**一次对话里每一步花了多少时间、模型返回了什么、工具执行的输入输出是什么**——这些信息对于调试"为什么模型不调用工具"、"为什么某个知识库片段没被检索到"、"哪轮对话的 token 用量突增"太关键了。
 
-LangSmith 是 LangChain 生态里的追踪平台，API 很直接：开始一个 span（run），结束时上报 outputs 和 error。WorkBuddy 没引 LangChain SDK（太重量级，而且 WorkBuddy 不用 LangChain 的 chain/agent 抽象），所以自己实现了一层轻量 trace client——但核心矛盾是一样的：**怎么在不侵入业务代码的前提下，给每一步都加上 trace 埋点**？
+LangSmith 是 LangChain 生态里的追踪平台，API 很直接：开始一个 span（run），结束时上报 outputs 和 error。WorkBuddy For Me 没引 LangChain SDK（太重量级，而且 WorkBuddy For Me 不用 LangChain 的 chain/agent 抽象），所以自己实现了一层轻量 trace client——但核心矛盾是一样的：**怎么在不侵入业务代码的前提下，给每一步都加上 trace 埋点**？
 
 v0.2 的目标是：
 
@@ -125,7 +125,7 @@ finally {
 
 追踪代码看起来确实"有几行"，但注意**所有 trace 调用都是"包裹"，不是"改写"**——业务逻辑 `input.retrieve!()` 和 `executeCall()` 是原样调用的，trace 层只是在外面套了一层 AOP 壳。如果把 `traceAsync(...)` 换成直接调用，业务行为完全不变。
 
-这和很多 tracing SDK 的"侵入式注入"不同——比如 OpenTelemetry 的 SDK 需要你显式创建 span、把 span context 塞进每个下游调用的 options 里，业务代码里到处飘着 `span.setStatus()`、`ctx.span = span` 之类的样板。WorkBuddy 用 `traceAsync` 包装器把这些样板收起来了。
+这和很多 tracing SDK 的"侵入式注入"不同——比如 OpenTelemetry 的 SDK 需要你显式创建 span、把 span context 塞进每个下游调用的 options 里，业务代码里到处飘着 `span.setStatus()`、`ctx.span = span` 之类的样板。WorkBuddy For Me 用 `traceAsync` 包装器把这些样板收起来了。
 
 ## traceAsync 的实现：一行核心逻辑
 
@@ -152,7 +152,7 @@ export async function traceAsync<T>(
 
 ## 四层测试的 mock 策略
 
-追踪逻辑本身也需要测试，但更重要的是**业务代码的测试不要被 trace 干扰**。WorkBuddy 按测试层次设计了不同的 mock 方式：
+追踪逻辑本身也需要测试，但更重要的是**业务代码的测试不要被 trace 干扰**。WorkBuddy For Me 按测试层次设计了不同的 mock 方式：
 
 ### 第一层：纯函数单元测试
 
@@ -236,7 +236,7 @@ async function postRun(url: string, body: unknown): Promise<void> {
 
 ### 保护 3：Dotted Order 与 UUID v7 的实现
 
-LangSmith 的 trace SDK 用一种叫 `dotted_order` 的字段来构建 span 树（子 span 的 dotted_order 是父 span 的 dotted_order 加 `.` 加自己的时间序）。WorkBuddy 自己实现了这个算法和 UUID v7 生成器，**不依赖 LangChain SDK**——省了一个 200KB+ 的 runtime 依赖。
+LangSmith 的 trace SDK 用一种叫 `dotted_order` 的字段来构建 span 树（子 span 的 dotted_order 是父 span 的 dotted_order 加 `.` 加自己的时间序）。WorkBuddy For Me 自己实现了这个算法和 UUID v7 生成器，**不依赖 LangChain SDK**——省了一个 200KB+ 的 runtime 依赖。
 
 ```typescript
 function dottedOrder(epoch: number, runId: string, execOrder: number): string {

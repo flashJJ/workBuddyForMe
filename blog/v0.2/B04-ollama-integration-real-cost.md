@@ -1,6 +1,6 @@
 ---
 title: "接入 Ollama 的真实代价：OpenAI 兼容接口 vs 原生 /api/chat、流式解析差异、模型能力探测"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B04"
 tags: ["ollama", "llm", "adapter"]
 date: "2025-Q4"
@@ -10,9 +10,9 @@ date: "2025-Q4"
 
 ## 为什么选 OpenAI 兼容端点
 
-WorkBuddy 是一个多 provider 架构——用户可以接云端 OpenAI、Anthropic、也可以接本地 Ollama。多 provider 的好处是用户不被绑死，但代价是每个 provider 都要写一层 adapter。v0.1 写了 OpenAI adapter，到 v0.2 要加 Ollama，最自然的想法是：Ollama 自 0.3 起就提供了 OpenAI 兼容的 `/v1/chat/completions` 端点，是不是可以直接复用现有 adapter？
+WorkBuddy For Me 是一个多 provider 架构——用户可以接云端 OpenAI、Anthropic、也可以接本地 Ollama。多 provider 的好处是用户不被绑死，但代价是每个 provider 都要写一层 adapter。v0.1 写了 OpenAI adapter，到 v0.2 要加 Ollama，最自然的想法是：Ollama 自 0.3 起就提供了 OpenAI 兼容的 `/v1/chat/completions` 端点，是不是可以直接复用现有 adapter？
 
-答案是：**可以复用聊天和向量化，但不能复用模型列表**。原因是 Ollama 早期版本的 `/v1/models` 返回不一致——有的版本返回空数组，有的版本缺少必要字段。而原生 `GET /api/tags` 从 Ollama 0.1 起就稳定返回 `models[]`，字段是 `name`（"qwen2.5:7b"）和 `size`、`modified_at` 等。所以 WorkBuddy 的 Ollama adapter 做了一个"混合策略"：
+答案是：**可以复用聊天和向量化，但不能复用模型列表**。原因是 Ollama 早期版本的 `/v1/models` 返回不一致——有的版本返回空数组，有的版本缺少必要字段。而原生 `GET /api/tags` 从 Ollama 0.1 起就稳定返回 `models[]`，字段是 `name`（"qwen2.5:7b"）和 `size`、`modified_at` 等。所以 WorkBuddy For Me 的 Ollama adapter 做了一个"混合策略"：
 
 | 能力 | 走的端点 | 原因 |
 |------|----------|------|
@@ -119,19 +119,19 @@ Ollama 0.3 在模型不支持工具调用时，返回的 `finish_reason` 可能�
 1. 模型"想说它不支持 tools"但说得不明显；
 2. 编排器看到 `toolCalls.length === 0` 就直接结束循环，不会降级重试。
 
-Ollama 0.4 修复了这个问题：不支持时会在 HTTP 层直接返回 400，错误信息里明确包含 `"does not support tools"`。WorkBuddy 在 `tool-runner.ts` 里利用这个信息做降级（见 B02 里的 `runProviderTurnWithToolFallback`），但 0.3 的兼容意味着我们还需要在"成功响应但无 toolCalls + content 为空"时加一层启发式 fallback——直接让编排器进入下一轮（不带 tools），让模型自己出回答。
+Ollama 0.4 修复了这个问题：不支持时会在 HTTP 层直接返回 400，错误信息里明确包含 `"does not support tools"`。WorkBuddy For Me 在 `tool-runner.ts` 里利用这个信息做降级（见 B02 里的 `runProviderTurnWithToolFallback`），但 0.3 的兼容意味着我们还需要在"成功响应但无 toolCalls + content 为空"时加一层启发式 fallback——直接让编排器进入下一轮（不带 tools），让模型自己出回答。
 
 ### 坑 3：usage 字段缺失
 
 OpenAI 的 SSE 流会在最后一个 chunk 里带上 `usage: {prompt_tokens, completion_tokens, total_tokens}`。但 Ollama 的 `/v1/chat/completions` 在流式模式下**不返回 usage**（非流式模式返回）。这导致前端 UI 里的 token 用量永远显示为 null。
 
-WorkBuddy 的解法是：**在 provider 消费侧允许 usage 为 null**，orchestrator 和前端都不依赖这个字段做决策。对于本地用户来说，token 用量本来就不影响计费，只是个调试信息——显示 `null` 比瞎编一个数字强。
+WorkBuddy For Me 的解法是：**在 provider 消费侧允许 usage 为 null**，orchestrator 和前端都不依赖这个字段做决策。对于本地用户来说，token 用量本来就不影响计费，只是个调试信息——显示 `null` 比瞎编一个数字强。
 
 ## 连接管理：冷启动的特殊处理
 
 本地模型有个独有的问题：**冷启动首 token 特别慢**。Ollama 收到请求后可能需要先把模型从磁盘加载到 GPU/CPU 内存，这个过程可能要 10-30 秒。在模型加载期间，HTTP 连接已经建立了（TCP 握手完成），但 Ollama 迟迟不返回第一个响应字节。
 
-标准的 fetch `timeout` 往往把"连接超时"和"首字节超时"绑在一起——如果我们把 `timeout` 设为 30 秒，正常请求里模型加载完但推理慢的情况也会被误杀。WorkBuddy 的 `fetch-with-retry` 里做了两层分离：
+标准的 fetch `timeout` 往往把"连接超时"和"首字节超时"绑在一起——如果我们把 `timeout` 设为 30 秒，正常请求里模型加载完但推理慢的情况也会被误杀。WorkBuddy For Me 的 `fetch-with-retry` 里做了两层分离：
 
 ```typescript
 // packages/ai/src/http/fetch-with-retry.ts（简化）
@@ -155,7 +155,7 @@ export const CHAT_CONNECT_TIMEOUT_MS = 180_000;  // 3 分钟，专为本地模�
 
 ## 模型能力探测：supportsTools 的两层门控
 
-之前 B01 提到过，WorkBuddy 有两层工具能力门控。这里展开一下具体实现：
+之前 B01 提到过，WorkBuddy For Me 有两层工具能力门控。这里展开一下具体实现：
 
 **Provider 级（硬编码）**：
 

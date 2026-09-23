@@ -1,6 +1,6 @@
 ---
 title: "ContentPart 联合类型实战：如何不破坏存量就扩展 ChatMessage"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B02"
 tags: ["workbuddy", "typescript", "multimodal", "refactor"]
 date: "2025-Q4"

@@ -1,6 +1,6 @@
 ---
 title: "工程约束怎么不拖后腿：TS strict + 单文件≤300行 + 外部调用 mock 的三层门禁实战"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B09"
 tags: ["typescript", "testing", "engineering"]
 date: "2025-Q4"
@@ -20,7 +20,7 @@ v0.2 在 v0.1 的基础上强化了三层门禁——每一层都有具体的工
 
 ## 第一层：TS strict 全开
 
-WorkBuddy 的所有包共享 `tsconfig.base.json`（由 `packages/config` 里的 `repo-invariants.test.ts` 保证），里面：
+WorkBuddy For Me 的所有包共享 `tsconfig.base.json`（由 `packages/config` 里的 `repo-invariants.test.ts` 保证），里面：
 
 ```json
 {
@@ -84,7 +84,7 @@ export interface ToolContext {
 
 ### strict 不是没有出口
 
-如果某个地方确实需要 `any`（比如接第三方库的返回值），WorkBuddy 用 `// @ts-expect-error` + 注释说明理由，而不是在 tsconfig 里关掉 strict。关键原则：**strict 是默认行为，例外需要显式声明并解释**。
+如果某个地方确实需要 `any`（比如接第三方库的返回值），WorkBuddy For Me 用 `// @ts-expect-error` + 注释说明理由，而不是在 tsconfig 里关掉 strict。关键原则：**strict 是默认行为，例外需要显式声明并解释**。
 
 ## 第二层：单文件 ≤300 行
 
@@ -120,7 +120,7 @@ v0.2 有一个白名单条目：`packages/database/src/migrations/runner.ts`，�
 
 ## 第三层：外部调用必须 mock
 
-WorkBuddy 里的"外部调用"指：**HTTP fetch、数据库操作、文件系统读写、系统时间**。这些东西在单元测试里必须 mock，否则：
+WorkBuddy For Me 里的"外部调用"指：**HTTP fetch、数据库操作、文件系统读写、系统时间**。这些东西在单元测试里必须 mock，否则：
 
 - HTTP fetch 依赖网络，CI 里可能超时或返回不同结果；
 - 数据库需要起 SQLite，每个测试文件都要 setup/teardown；
@@ -129,7 +129,7 @@ WorkBuddy 里的"外部调用"指：**HTTP fetch、数据库操作、文件系�
 
 ### Mock 策略：分层替换点
 
-WorkBuddy 在架构设计时就预留了替换点：
+WorkBuddy For Me 在架构设计时就预留了替换点：
 
 | 外部调用 | 替换点 | 测试文件里的 mock |
 |----------|--------|-------------------|
@@ -228,7 +228,7 @@ CI（`.github/workflows/ci.yml`）按以下顺序执行检查：
 
 - 300 行门禁保证了每个模块都小到可以理解——review 一个 PR 时，你不需要同时理解 1000 行代码；
 - strict 编译期报的类型错，比上线后用户遇到的 undefined 错便宜一万倍；
-- mock 测试保证了 CI 结果可重复——"我本地测过了但 CI 红了"这种情况在 WorkBuddy 里很少见。
+- mock 测试保证了 CI 结果可重复——"我本地测过了但 CI 红了"这种情况在 WorkBuddy For Me 里很少见。
 
 ## 小结
 

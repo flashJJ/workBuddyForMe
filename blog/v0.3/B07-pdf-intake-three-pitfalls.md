@@ -1,6 +1,6 @@
 ---
 title: "PDF intake 的三大坑：webpack externals + 中文逐字换行 + 全链路复盘"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B07"
 tags: ["workbuddy", "pdf", "pdfjs", "nextjs", "webpack", "chinese"]
 date: "2025-Q4"

@@ -1,6 +1,6 @@
 ---
 title: "本地模型冷启动痛点：首 token 延迟、连接超时、chat 与 completion 端点分流"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B05"
 tags: ["ollama", "local-llm", "latency"]
 date: "2025-Q4"
@@ -10,7 +10,7 @@ date: "2025-Q4"
 
 ## 什么是"冷启动"
 
-WorkBuddy 支持本地模型（Ollama）作为 provider。云端模型（OpenAI/Anthropic）收到请求后，首 token 延迟（TTFT，Time To First Token）通常在 200ms-1s 之间；但本地模型第一次收到请求时，Ollama 需要先把模型从磁盘加载到内存（可能是 GPU 显存或 CPU RAM）。这个过程对 7B 模型可能需要 5-15 秒，对 14B+ 模型可能到 30-60 秒。在模型加载完成、开始生成之前，HTTP 连接已经建立了（TCP 握手完成），但 Ollama 迟迟不返回响应头——**整个 fetch 调用被卡在"等响应头"这一步**。
+WorkBuddy For Me 支持本地模型（Ollama）作为 provider。云端模型（OpenAI/Anthropic）收到请求后，首 token 延迟（TTFT，Time To First Token）通常在 200ms-1s 之间；但本地模型第一次收到请求时，Ollama 需要先把模型从磁盘加载到内存（可能是 GPU 显存或 CPU RAM）。这个过程对 7B 模型可能需要 5-15 秒，对 14B+ 模型可能到 30-60 秒。在模型加载完成、开始生成之前，HTTP 连接已经建立了（TCP 握手完成），但 Ollama 迟迟不返回响应头——**整个 fetch 调用被卡在"等响应头"这一步**。
 
 我们把这个模型加载阶段称为"冷启动"，它跟云端的冷启动（AWS Lambda 等）概念类似但更极端：云端冷启动通常是容器初始化 1-5 秒，本地模型冷启动是模型权重加载 10-60 秒，差距一个数量级。
 
@@ -24,13 +24,13 @@ v0.2 的核心挑战是：**怎么让同一个 HTTP 客户端同时适配云端�
 2. **流式间隔超时**：已经在收 SSE chunk，但两个 chunk 之间的空闲时间。正常生成时 chunk 间隔通常 50-200ms；如果模型在思考（reward model/self-reflection 等），可能到 2-5 秒。
 3. **总请求超时**：从 fetch 发起到整个响应体读完的总时间。对本地长文本生成可能需要几分钟。
 
-WorkBuddy 的策略是：**只显式管理连接超时**，流式间隔和总超时交给浏览器/Node 默认行为（实际上无限）。原因很简单：SSE 是长连接，设流式间隔超时容易误杀慢思考；总超时对本地生成不现实（用户让模型写代码可能跑 5 分钟）。所以核心问题就是：**连接超时取多少？**
+WorkBuddy For Me 的策略是：**只显式管理连接超时**，流式间隔和总超时交给浏览器/Node 默认行为（实际上无限）。原因很简单：SSE 是长连接，设流式间隔超时容易误杀慢思考；总超时对本地生成不现实（用户让模型写代码可能跑 5 分钟）。所以核心问题就是：**连接超时取多少？**
 
 如果取 5 秒（云端默认），本地模型第一次请求必挂。如果取 180 秒，云端 provider 真挂了时要等 3 分钟才知道。折中方案：**按 provider 类型分层**。
 
 ## 分层超时设计
 
-WorkBuddy 在 shared 包里定义了几个超时常量（`packages/shared/src/constants.ts`）：
+WorkBuddy For Me 在 shared 包里定义了几个超时常量（`packages/shared/src/constants.ts`）：
 
 ```typescript
 /** 连接探活超时：快速反馈"Ollama 没开"或"OpenAI key 不对" */
@@ -161,7 +161,7 @@ export function withTimeout(
 
 ## 前端体验：加载状态怎么传递
 
-后端 180 秒超时，但前端不应该傻等。WorkBuddy 在 chat UI 里做了两件事：
+后端 180 秒超时，但前端不应该傻等。WorkBuddy For Me 在 chat UI 里做了两件事：
 
 ### 1. 连接探活前置
 
@@ -184,7 +184,7 @@ v0.2 没有做自动预热——冷启动的体验退化只发生在**应用刚�
 
 ## chat vs completion：端点选择
 
-WorkBuddy 在 provider 层面只暴露一个 `chatStream` 方法。但历史上（2023 年末，function calling 刚出来时），不少模型供应商把"普通对话"和"带工具的对话"分成了 `/chat/completions` 和 `/completions` 两个端点。现在主流 provider（OpenAI、Anthropic、Ollama）都统一用 `/chat/completions` 了，`/completions` 是旧版遗留。
+WorkBuddy For Me 在 provider 层面只暴露一个 `chatStream` 方法。但历史上（2023 年末，function calling 刚出来时），不少模型供应商把"普通对话"和"带工具的对话"分成了 `/chat/completions` 和 `/completions` 两个端点。现在主流 provider（OpenAI、Anthropic、Ollama）都统一用 `/chat/completions` 了，`/completions` 是旧版遗留。
 
 Ollama 的情况稍微特殊一点：
 
@@ -200,7 +200,7 @@ v0.2 统一走 `/v1/chat/completions`，不碰 `/api/generate`（没有 tools）
 
 本地模型冷启动的核心矛盾是：**HTTP 客户端用同一个 fetch 同时适配云端（5 秒超时）和本地（30-60 秒 TTFT）的场景**。
 
-WorkBuddy 的解法：
+WorkBuddy For Me 的解法：
 
 | 问题 | 方案 |
 |------|------|

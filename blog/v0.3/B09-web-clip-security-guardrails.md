@@ -1,6 +1,6 @@
 ---
 title: "网页剪藏的安全护栏：SSRF 逐跳复检 + URL/正文去重 + sourceUrl 引用贯通"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B09"
 tags: ["workbuddy", "web-scraping", "ssrf", "security", "dedup", "source-url"]
 date: "2025-Q4"

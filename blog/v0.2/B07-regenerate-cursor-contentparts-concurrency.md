@@ -1,6 +1,6 @@
 ---
 title: "消息重生成的正确姿势：cursor 回溯、contentParts 保留、并发安全"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B07"
 tags: ["chat", "regenerate", "concurrency"]
 date: "2025-Q4"

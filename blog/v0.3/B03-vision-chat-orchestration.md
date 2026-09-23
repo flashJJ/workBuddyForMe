@@ -1,6 +1,6 @@
 ---
 title: "视觉对话编排：SSE 流前的三道保险"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B03"
 tags: ["workbuddy", "multimodal", "orchestration", "vision", "sse"]
 date: "2025-Q4"

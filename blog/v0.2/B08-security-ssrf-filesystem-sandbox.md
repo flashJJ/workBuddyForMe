@@ -1,6 +1,6 @@
 ---
 title: "安全红线：工具调用链的 SSRF 防护、文件系统访问白名单、命令执行沙箱"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B08"
 tags: ["security", "ssrf", "sandbox"]
 date: "2025-Q4"
@@ -10,7 +10,7 @@ date: "2025-Q4"
 
 ## 为什么工具调用打开了新的攻击面
 
-v0.1 的 WorkBuddy 是一个"被动回答"的助手——模型只能基于用户输入和知识库片段生成文本，没有任何对外动作。这种情况下的安全边界很清晰：**模型是只读的、输出只到前端**。
+v0.1 的 WorkBuddy For Me 是一个"被动回答"的助手——模型只能基于用户输入和知识库片段生成文本，没有任何对外动作。这种情况下的安全边界很清晰：**模型是只读的、输出只到前端**。
 
 v0.2 引入工具调用后，这个边界破了。`fetch_webpage` 让模型的输出可以驱动应用去**主动发起 HTTP 请求**；如果未来加了文件系统工具，模型可能驱动应用去**读/写本地文件**；如果加了命令执行工具，甚至可能**执行 shell 命令**。此时安全边界变成了：**模型 → 工具调用 → 外部动作**。中间任何一环松了，都可能变成攻击面。
 
@@ -80,7 +80,7 @@ CIDR 命中判定是个纯函数，100% 可单测——`ssrf-guard.test.ts` 覆�
 
 主机名为域名时，光看字面量不行——攻击者可能让域名先解析到公网 IP（通过字面量校验），然后在 fetch 之前切换到内网 IP（DNS rebinding）。
 
-WorkBuddy 的做法是**在发请求前立即做 DNS 解析，校验所有解析结果**：
+WorkBuddy For Me 的做法是**在发请求前立即做 DNS 解析，校验所有解析结果**：
 
 ```typescript
 export async function resolveAndAssertHost(hostname: string): Promise<void> {
@@ -99,7 +99,7 @@ export async function resolveAndAssertHost(hostname: string): Promise<void> {
 
 URL 校验通过后，请求发起了。但 302 重定向可能跳到内网——比如 `http://evil.com/redirect?url=127.0.0.1` 先返回 302 到 `http://127.0.0.1/admin`。
 
-WorkBuddy 不用 fetch 内置的自动跟随（`redirect: 'follow'`），而是**手动跟随、每跳都过 SSRF 校验**（`packages/core/src/net/safe-web-fetch.ts`）：
+WorkBuddy For Me 不用 fetch 内置的自动跟随（`redirect: 'follow'`），而是**手动跟随、每跳都过 SSRF 校验**（`packages/core/src/net/safe-web-fetch.ts`）：
 
 ```typescript
 export async function followRedirects(initial: URL, signal: AbortSignal) {

@@ -1,6 +1,6 @@
 ---
 title: "Office 三格式解析：mammoth 表格分隔符 + SheetJS 官方源锁定 + fflate OOXML 解包"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B08"
 tags: ["workbuddy", "office", "docx", "xlsx", "pptx", "mammoth", "sheetjs", "fflate"]
 date: "2025-Q4"

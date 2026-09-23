@@ -1,6 +1,6 @@
 ---
 title: "附件存储的正确姿势：落盘 + sha256 去重 + 威胁模型取舍"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B04"
 tags: ["workbuddy", "storage", "attachment", "sha256", "security"]
 date: "2025-Q4"
@@ -162,7 +162,7 @@ if (existing) return mapAttachment(existing);   // 直接返回已有记录，�
 
 ### 场景定义
 
-WorkBuddy 的威胁模型很明确：**本机单用户、不外传、主要风险是文件系统误操作或用户手动清理**。
+WorkBuddy For Me 的威胁模型很明确：**本机单用户、不外传、主要风险是文件系统误操作或用户手动清理**。
 
 | 风险 | 是否真实 | 我们怎么处理 |
 |------|----------|-------------|

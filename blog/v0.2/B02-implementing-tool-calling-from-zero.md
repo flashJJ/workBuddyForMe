@@ -1,6 +1,6 @@
 ---
 title: "从零实现工具调用：schema 注册、LLM tool_calls 解析、result 回传的完整 TypeScript 流程"
-series: "WorkBuddy v0.2 技术拆解"
+series: "WorkBuddy For Me v0.2 技术拆解"
 number: "B02"
 tags: ["tools", "typescript", "function-calling"]
 date: "2025-Q4"
@@ -313,7 +313,7 @@ async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
 
 ### 坑 1：arguments 是 JSON 字符串不是 object
 
-很多接 OpenAI 兼容 API 的开发者第一次碰到都会被坑：`tool_calls[].function.arguments` 是 **string**，你需要自己 JSON.parse。更坑的是，Ollama 的早期版本在流式返回 tool_call 时可能会把 arguments 拆成几个 chunk——这时候你需要等整个 tool_call 结束再拼起来 parse。WorkBuddy 的 OpenAI 兼容 adapter 做了一个 buffer，等同一个 tool_call 的所有增量到齐后才 resolve 完整对象，这个细节在 B03 讲 SSE 流的时候会展开。
+很多接 OpenAI 兼容 API 的开发者第一次碰到都会被坑：`tool_calls[].function.arguments` 是 **string**，你需要自己 JSON.parse。更坑的是，Ollama 的早期版本在流式返回 tool_call 时可能会把 arguments 拆成几个 chunk——这时候你需要等整个 tool_call 结束再拼起来 parse。WorkBuddy For Me 的 OpenAI 兼容 adapter 做了一个 buffer，等同一个 tool_call 的所有增量到齐后才 resolve 完整对象，这个细节在 B03 讲 SSE 流的时候会展开。
 
 ### 坑 2：模型可能声明不存在的工具
 
@@ -322,13 +322,13 @@ async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
 - 模型幻觉了一个工具名（比如它"记得"某个常见工具体的名字，但我们没给）；
 - 模型大小写不一致（比如写了 `CurrentTime` 而不是 `current_time`）。
 
-WorkBuddy 的处理是 **toolMap.get 失败就返回一个 ok:false 的 ToolResult**，output 里写清楚"工具未启用或不存在"。模型看到这个错误信息后，通常会放弃用工具直接回答。
+WorkBuddy For Me 的处理是 **toolMap.get 失败就返回一个 ok:false 的 ToolResult**，output 里写清楚"工具未启用或不存在"。模型看到这个错误信息后，通常会放弃用工具直接回答。
 
 ### 坑 3：工具结果太长撑爆 token 窗口
 
 `fetch_webpage` 抓回的正文可能有几万字符。直接塞给模型会占用大量 context，甚至超过模型的上下文窗口。
 
-WorkBuddy 的做法是 **在执行器层面裁剪 output**——但这个决定目前留给每个工具自己处理。`fetch_webpage` 内部用 `turndown` 转 markdown 后截断到 4000 字符，`knowledge_search` 只返回 topK 个 chunk。工具本身负责保证 output 可控，执行器只额外负责 summary 裁剪。
+WorkBuddy For Me 的做法是 **在执行器层面裁剪 output**——但这个决定目前留给每个工具自己处理。`fetch_webpage` 内部用 `turndown` 转 markdown 后截断到 4000 字符，`knowledge_search` 只返回 topK 个 chunk。工具本身负责保证 output 可控，执行器只额外负责 summary 裁剪。
 
 ### 坑 4：MAX_TOOL_ROUNDS 的取值
 
@@ -340,7 +340,7 @@ WorkBuddy 的做法是 **在执行器层面裁剪 output**——但这个决定�
 
 工具调用的本质是一个简单协议：**模型声明 → 应用执行 → 结果回灌 → 模型继续**。但实现起来需要处理十几个边角情况：JSON 解析失败、工具不存在、参数错误、执行超时、用户中断、结果过长撑爆 token 窗口。
 
-WorkBuddy 把这些处理分散在三个层次：
+WorkBuddy For Me 把这些处理分散在三个层次：
 
 | 层次 | 职责 | 位置 |
 |------|------|------|

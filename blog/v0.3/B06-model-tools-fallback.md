@@ -1,6 +1,6 @@
 ---
 title: "模型不支持工具调用时的优雅降级：400 自动去工具重试"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B06"
 tags: ["workbuddy", "tool-calling", "fallback", "ollama", "qwen2.5vl"]
 date: "2025-Q4"

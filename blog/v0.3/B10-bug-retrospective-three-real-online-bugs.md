@@ -1,6 +1,6 @@
 ---
 title: "v0.3 三个真实线上 Bug 复盘：pdfjs externals、Dialog z-index、PDF span 合并"
-series: "WorkBuddy v0.3 技术拆解"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B10"
 tags: ["workbuddy", "bug", "nextjs", "webpack", "pdfjs", "radix-ui", "tailwindcss"]
 date: "2025-Q4"
@@ -293,7 +293,7 @@ PDF 坐标系里 1 pt = 1/72 inch。Word 导出的 PDF 里，同一行的字符�
 考虑这种 PDF：
 
 ```
-第 1 行：标题 18pt y=100  "WorkBuddy v0.3 Release Notes"
+第 1 行：标题 18pt y=100  "WorkBuddy For Me v0.3 Release Notes"
 第 2 行：标题 18pt y=100  "(续)"                   ← 标题换行了，应该继续同行
 第 3 行：正文 12pt y=124  "我们很高兴..."           ← 标题 → 正文，字号变了，应该换行
 ```

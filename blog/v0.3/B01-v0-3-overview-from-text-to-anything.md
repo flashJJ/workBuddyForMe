@@ -1,6 +1,6 @@
 ---
-title: "从纯文本到什么都能读——WorkBuddy v0.3 三板斧总览"
-series: "WorkBuddy v0.3 技术拆解"
+title: "从纯文本到什么都能读——WorkBuddy For Me v0.3 三板斧总览"
+series: "WorkBuddy For Me v0.3 技术拆解"
 number: "B01"
 tags: ["workbuddy", "multimodal", "overview", "pdf", "ollama"]
 date: "2025-Q4"

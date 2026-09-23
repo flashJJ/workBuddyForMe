@@ -1,6 +1,6 @@
 ---
-title: "数据随身——WorkBuddy v0.4 五件事总览：备份、分享、更新、OCR、命令面板"
-series: "WorkBuddy v0.4 技术拆解"
+title: "数据随身——WorkBuddy For Me v0.4 五件事总览：备份、分享、更新、OCR、命令面板"
+series: "WorkBuddy For Me v0.4 技术拆解"
 number: "B01"
 tags: ["workbuddy", "backup", "share", "auto-update", "ocr", "overview"]
 date: "2025-Q4"
@@ -8,7 +8,7 @@ date: "2025-Q4"
 
 ## 先回答：v0.4 为什么是「数据随身」
 
-v0.3 做完，WorkBuddy 已经能读截图、读 Office、读网页——信息**进得来**了。但用了两个月之后，另一种别扭越来越明显：
+v0.3 做完，WorkBuddy For Me 已经能读截图、读 Office、读网页——信息**进得来**了。但用了两个月之后，另一种别扭越来越明显：
 
 > 数据进得来，出不去。
 
