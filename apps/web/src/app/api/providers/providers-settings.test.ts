@@ -129,7 +129,11 @@ describe('供应商/模型/设置路由（TR-19.1）', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'bad key' }), { status: 401 }));
 
     const remote = await listModels(new Request('http://x?remote=1'), params);
-    expect((await remote.json()).data).toEqual(['m1', 'm2']);
+    // v0.5：远端模型发现返回 DiscoveredModel（含自动探测的上下文长度）
+    expect((await remote.json()).data).toEqual([
+      { id: 'm1', contextLength: null },
+      { id: 'm2', contextLength: null },
+    ]);
 
     const ok = await testConnection(new Request('http://x', { method: 'POST' }), params);
     expect(ok.status).toBe(200);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ModelCapability, Provider, ProviderModel } from '@wbfm/shared';
+import type { DiscoveredModel, ModelCapability, Provider, ProviderModel } from '@wbfm/shared';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
@@ -71,7 +71,8 @@ export function useRemoteModels(providerId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const models = await apiGet<string[]>(`${API.providerModels(providerId!)}?remote=1`);
+      // v0.5：返回模型发现项（含自动探测的上下文长度）
+      const models = await apiGet<DiscoveredModel[]>(`${API.providerModels(providerId!)}?remote=1`);
       await qc.invalidateQueries({ queryKey: QUERY_KEYS.modelsAll });
       return models;
     },

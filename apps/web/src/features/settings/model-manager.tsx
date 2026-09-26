@@ -23,6 +23,12 @@ const CAPABILITY_LABEL: Record<ModelCapability, string> = {
   vision: '视觉',
 };
 
+/** 上下文长度展示：1024 的整数倍显示为 K，否则原值 */
+function formatContext(tokens: number | null): string | null {
+  if (!tokens || tokens <= 0) return null;
+  return tokens % 1024 === 0 ? `${tokens / 1024}K` : String(tokens);
+}
+
 interface AddFormState {
   modelId: string;
   displayName: string;
@@ -100,45 +106,58 @@ export function ModelManager({ provider }: { provider: Provider }) {
         <Spinner />
       ) : (
         <ul className="space-y-1.5" data-testid={`model-list-${provider.id}`}>
-          {models?.map((model) => (
-            <li key={model.id} className="flex items-center justify-between gap-2 text-sm">
-              <span className="truncate">
-                {model.displayName}
-                <span className="ml-1 text-xs text-muted-foreground">{model.modelId}</span>
-              </span>
-              <span className="flex items-center gap-1">
-                {model.capabilities.map((capability) => (
-                  <Badge key={capability} variant="outline">
-                    {CAPABILITY_LABEL[capability]}
-                  </Badge>
-                ))}
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground hover:text-red-500"
-                  aria-label={`移除模型 ${model.displayName}`}
-                  onClick={() => removeModel(model)}
-                >
-                  删除
-                </button>
-              </span>
-            </li>
-          ))}
+          {models?.map((model) => {
+            const context = formatContext(model.contextWindow);
+            return (
+              <li key={model.id} className="flex items-center justify-between gap-2 text-sm">
+                <span className="truncate">
+                  {model.displayName}
+                  <span className="ml-1 text-xs text-muted-foreground">{model.modelId}</span>
+                  {context && (
+                    <span className="ml-1 text-xs text-muted-foreground">· 上下文 {context}</span>
+                  )}
+                </span>
+                <span className="flex items-center gap-1">
+                  {model.capabilities.map((capability) => (
+                    <Badge key={capability} variant="outline">
+                      {CAPABILITY_LABEL[capability]}
+                    </Badge>
+                  ))}
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-red-500"
+                    aria-label={`移除模型 ${model.displayName}`}
+                    onClick={() => removeModel(model)}
+                  >
+                    删除
+                  </button>
+                </span>
+              </li>
+            );
+          })}
           {models?.length === 0 && <li className="text-xs text-muted-foreground">暂无模型</li>}
         </ul>
       )}
 
       {remoteModels.data && remoteModels.data.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {remoteModels.data.map((remote) => (
-            <button
-              key={remote}
-              type="button"
-              className="rounded border px-2 py-0.5 text-xs hover:bg-accent"
-              onClick={() => addModel(remote, { capabilities: ['chat'] })}
-            >
-              + {remote}
-            </button>
-          ))}
+          {remoteModels.data.map((remote) => {
+            const context = formatContext(remote.contextLength);
+            return (
+              <button
+                key={remote.id}
+                type="button"
+                className="rounded border px-2 py-0.5 text-xs hover:bg-accent"
+                title={context ? `自动探测上下文长度：${context} tokens` : undefined}
+                onClick={() =>
+                  addModel(remote.id, { capabilities: ['chat'], contextWindow: remote.contextLength })
+                }
+              >
+                + {remote.id}
+                {context && <span className="ml-1 text-muted-foreground">{context}</span>}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -175,6 +194,20 @@ export function ModelManager({ provider }: { provider: Provider }) {
               </label>
             ))}
           </span>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor={`model-ctx-${provider.id}`} className="text-xs">
+            上下文长度
+          </Label>
+          <Input
+            id={`model-ctx-${provider.id}`}
+            className="h-8 w-28"
+            type="number"
+            min={1}
+            value={form.contextWindow}
+            onChange={(e) => setForm((p) => ({ ...p, contextWindow: e.target.value }))}
+            placeholder="如 32768"
+          />
         </div>
         <Button type="submit" size="sm" disabled={modelMutations.add.isPending}>
           添加
