@@ -28,8 +28,8 @@ describe('v004 迁移：documents OCR 字段加法升级', () => {
   it('v3 老库升级：老文档 ocr 两列为 NULL，可写入引擎与状态', () => {
     const db = createV3Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([4, 5, 6]);
-    expect(LATEST_SCHEMA_VERSION).toBe(6);
+    expect(result.applied).toEqual([4, 5, 6, 7]);
+    expect(LATEST_SCHEMA_VERSION).toBe(7);
 
     const before = db
       .prepare(`SELECT ocr_status, ocr_engine FROM documents WHERE id='d1'`)

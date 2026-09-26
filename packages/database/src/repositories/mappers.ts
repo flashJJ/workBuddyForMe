@@ -94,6 +94,8 @@ export interface MessageRow {
   citations: string;
   tool_trace: string;
   content_parts: string;
+  feedback: string | null;
+  feedback_at: string | null;
   error_code: string | null;
   error_message: string | null;
   created_at: string;
@@ -215,6 +217,8 @@ export function mapMessage(row: MessageRow): Message {
     citations: parseJsonArray<Citation>(row.citations),
     toolTrace: parseJsonArray<ToolTraceEntry>(row.tool_trace),
     contentParts: parseJsonArray<ContentPart>(row.content_parts),
+    feedback: row.feedback === 'up' || row.feedback === 'down' ? row.feedback : null,
+    feedbackAt: row.feedback_at ?? null,
     errorCode: row.error_code,
     errorMessage: row.error_message,
     createdAt: row.created_at,

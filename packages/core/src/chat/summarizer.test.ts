@@ -28,6 +28,8 @@ function domainMessage(role: MessageRole, content: string): Message {
     citations: [],
     toolTrace: [],
     contentParts: [],
+    feedback: null,
+    feedbackAt: null,
     errorCode: null,
     errorMessage: null,
     createdAt: new Date().toISOString(),

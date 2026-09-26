@@ -5,6 +5,7 @@ import { migrateV003 } from './v003-multimodal';
 import { migrateV004 } from './v004-ocr';
 import { migrateV005 } from './v005-conversation-summary';
 import { migrateV006 } from './v006-memory';
+import { migrateV007 } from './v007-message-feedback';
 
 interface Migration {
   version: number;
@@ -35,6 +36,11 @@ const MIGRATIONS: Migration[] = [
     version: 6,
     description: 'long-term memory: assistants.memory_enabled + memories table',
     up: migrateV006,
+  },
+  {
+    version: 7,
+    description: 'message feedback: messages.feedback + feedback_at',
+    up: migrateV007,
   },
 ];
 

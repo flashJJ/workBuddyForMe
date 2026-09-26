@@ -3,6 +3,7 @@ import type {
   Citation,
   ContentPart,
   Message,
+  MessageFeedback,
   MessageRole,
   MessageStatus,
   ToolTraceEntry,
@@ -145,6 +146,14 @@ export function createMessageRepository(db: DatabaseInstance) {
         JSON.stringify(trace),
         id,
       );
+    },
+
+    /** v0.5 P1-2：写入/取消消息反馈，返回更新后的消息（不存在为 null） */
+    setFeedback(id: string, feedback: MessageFeedback | null): Message | null {
+      db.prepare(
+        `UPDATE messages SET feedback = ?, feedback_at = ? WHERE id = ?`,
+      ).run(feedback, feedback ? nowIso() : null, id);
+      return this.findById(id);
     },
 
     /**

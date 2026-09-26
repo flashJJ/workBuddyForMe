@@ -13,6 +13,10 @@ export type MessageRole = (typeof MESSAGE_ROLES)[number];
 export const MESSAGE_STATUSES = ['streaming', 'completed', 'error', 'stopped'] as const;
 export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
 
+/** v0.5 P1-2：助手消息用户反馈 */
+export const MESSAGE_FEEDBACKS = ['up', 'down'] as const;
+export type MessageFeedback = (typeof MESSAGE_FEEDBACKS)[number];
+
 /** v0.4：partial = OCR 部分成功（超时/超页只识别了部分页面，文本可检索但不完整） */
 export const DOCUMENT_STATUSES = ['pending', 'processing', 'indexed', 'failed', 'partial'] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];

@@ -1,6 +1,7 @@
 import type {
   DocumentSource,
   DocumentStatus,
+  MessageFeedback,
   MessageRole,
   MessageStatus,
   ModelCapability,
@@ -127,6 +128,9 @@ export interface Message {
   toolTrace: ToolTraceEntry[];
   /** v0.3：多模态片段（空数组 = 纯文本消息，回落 content） */
   contentParts: ContentPart[];
+  /** v0.5 P1-2：用户对回答的反馈（仅助手消息）；再次点击同项取消 */
+  feedback: MessageFeedback | null;
+  feedbackAt: string | null;
   errorCode: string | null;
   errorMessage: string | null;
   createdAt: string;

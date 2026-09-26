@@ -64,7 +64,18 @@ export function restoreKnowledge(db: any, buf: Buffer): { kb: { imported: number
 
 interface ConvEntry {
   conversation: { id: string; assistantId: string; title: string; lastMessageAt?: string | null; createdAt: string; updatedAt: string };
-  messages: Array<{ id: string; role: string; content: string; status: string; citations?: unknown; toolTrace?: unknown; contentParts?: unknown; createdAt?: string }>;
+  messages: Array<{
+    id: string;
+    role: string;
+    content: string;
+    status: string;
+    citations?: unknown;
+    toolTrace?: unknown;
+    contentParts?: unknown;
+    feedback?: 'up' | 'down' | null;
+    feedbackAt?: string | null;
+    createdAt?: string;
+  }>;
 }
 
 /**
@@ -81,7 +92,8 @@ export function restoreConversations(db: any, buf: Buffer): { convs: { imported:
     `INSERT INTO conversations(id, assistant_id, title, last_message_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
   );
   const insertMsg = db.prepare(
-    `INSERT OR IGNORE INTO messages(id, conversation_id, role, content, status, citations, tool_trace, content_parts, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO messages(id, conversation_id, role, content, status, citations, tool_trace, content_parts, feedback, feedback_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
   for (const entry of convs) {
@@ -97,6 +109,8 @@ export function restoreConversations(db: any, buf: Buffer): { convs: { imported:
     for (const m of entry.messages) {
       insertMsg.run(m.id, c.id, m.role, m.content, m.status,
         JSON.stringify(m.citations ?? []), JSON.stringify(m.toolTrace ?? []), JSON.stringify(m.contentParts ?? []),
+        m.feedback === 'up' || m.feedback === 'down' ? m.feedback : null,
+        m.feedbackAt ?? null,
         m.createdAt ?? new Date().toISOString());
       msgImported++;
     }

@@ -63,6 +63,10 @@ export {
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
 export {
+  messageFeedbackSchema,
+  type MessageFeedbackInput,
+} from './schemas/message';
+export {
   memoryCreateSchema,
   memoryUpdateSchema,
   memoryListQuerySchema,

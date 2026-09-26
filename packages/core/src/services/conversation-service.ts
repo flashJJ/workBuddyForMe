@@ -1,4 +1,4 @@
-import { ApiError, type Citation, type ContentPart, type Conversation, type Message, type MessageRole, type MessageStatus } from '@wbfm/shared';
+import { ApiError, type Citation, type ContentPart, type Conversation, type Message, type MessageFeedback, type MessageRole, type MessageStatus } from '@wbfm/shared';
 import {
   createAssistantRepository,
   createConversationRepository,
@@ -61,6 +61,23 @@ export function createConversationService({ db }: ServiceDeps) {
     listMessages(conversationId: string, limit?: number): Message[] {
       requireConversation(conversationId);
       return messages.listByConversation(conversationId, limit);
+    },
+
+    /** v0.5 P1-2：消息反馈（仅助手消息）；校验会话归属，不存在返回 404 */
+    setMessageFeedback(
+      conversationId: string,
+      messageId: string,
+      feedback: MessageFeedback | null,
+    ): Message {
+      requireConversation(conversationId);
+      const message = messages.findById(messageId);
+      if (!message || message.conversationId !== conversationId) {
+        throw ApiError.notFound('消息', messageId);
+      }
+      if (message.role !== 'assistant') {
+        throw ApiError.validation('只能对助手回答进行反馈');
+      }
+      return messages.setFeedback(messageId, feedback)!;
     },
 
     /** 追加消息；首条用户消息自动生成标题并刷新会话排序时间 */
