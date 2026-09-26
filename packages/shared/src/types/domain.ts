@@ -74,6 +74,10 @@ export interface Conversation extends Timestamped {
   assistantId: string;
   title: string;
   lastMessageAt: string | null;
+  /** v0.5：较早轮次的递归摘要（NULL=未压缩），随 system prompt 注入 */
+  summary: string | null;
+  /** v0.5：已折叠进摘要的最早消息条数（累计） */
+  summaryTurns: number;
 }
 
 export interface Citation {

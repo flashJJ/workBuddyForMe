@@ -51,6 +51,17 @@ export const HISTORY_MESSAGE_SAFETY_CAP = 200;
 /** 为模型回答预留的输出 token（无上次真实 usage 时使用） */
 export const OUTPUT_RESERVE_TOKENS = 2048;
 
+/**
+ * v0.5 对话自动压缩（递归摘要）：
+ * 历史占用超过历史预算的该比例时触发摘要压缩；
+ * 最近逐字消息保留历史预算的该比例（至少保护 COMPACTION_MIN_KEEP_MESSAGES 条）；
+ * SUMMARY_BLOCK_RESERVE 为注入 system 的摘要块预留空间。
+ */
+export const COMPACTION_TRIGGER_RATIO = 0.7;
+export const COMPACTION_KEEP_RATIO = 0.5;
+export const COMPACTION_MIN_KEEP_MESSAGES = 4;
+export const SUMMARY_BLOCK_RESERVE_TOKENS = 512;
+
 /** v0.2 内置工具（全部只读）；助手通过 enabledTools 白名单授权 */
 export const TOOL_NAMES = ['current_time', 'knowledge_search', 'fetch_webpage'] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
