@@ -81,6 +81,34 @@ export function createMessageRepository(db: DatabaseInstance) {
       return rows.map(mapMessage);
     },
 
+    /**
+     * v0.5：跳过最早 skip 条（已折叠进摘要的消息）后，取最近 n 条（时间正序）。
+     * skip 为 conversations.summary_turns。
+     * 注意不能用 DESC + OFFSET（那会跳过最新消息）：以「第 skip 条最旧消息」的
+     * rowid 为阈值（rowid > 阈值），再取阈值之后的最新 n 条；skip=0 不加阈值；
+     * skip >= 总条数时阈值为最后一条（或 NULL），结果为空。
+     */
+    lastNAfter(conversationId: string, skip: number, n: number): Message[] {
+      const threshold =
+        skip > 0
+          ? `AND rowid > (
+               SELECT rowid FROM messages
+               WHERE conversation_id = @cid AND status != 'error'
+               ORDER BY created_at ASC, rowid ASC LIMIT 1 OFFSET @skipMinusOne
+             )`
+          : '';
+      const rows = db
+        .prepare(
+          `SELECT * FROM (
+             SELECT *, rowid AS _rowid FROM messages
+             WHERE conversation_id = @cid AND status != 'error' ${threshold}
+             ORDER BY created_at DESC, rowid DESC LIMIT @n
+           ) ORDER BY created_at ASC, _rowid ASC`,
+        )
+        .all({ cid: conversationId, skipMinusOne: skip - 1, n }) as MessageRow[];
+      return rows.map(mapMessage);
+    },
+
     /** 流式结束后写回完整内容、状态与 token 用量 */
     complete(id: string, content: string, usage: MessageUsage | null): void {
       db.prepare(

@@ -91,6 +91,35 @@ describe('conversation/message 仓储', () => {
     expect(user.id).toBeTruthy();
   });
 
+  it('v0.5 lastNAfter：跳过最旧 N 条后取最近消息（跳过的是旧消息而非新消息）', () => {
+    const assistant = makeAssistant(db);
+    const convos = createConversationRepository(db);
+    const messages = createMessageRepository(db);
+    const c1 = convos.create({ assistantId: assistant.id });
+    for (let i = 1; i <= 6; i += 1) {
+      messages.add({
+        conversationId: c1.id,
+        role: i % 2 === 1 ? 'user' : 'assistant',
+        content: `m${i}`,
+        status: 'completed',
+      });
+    }
+
+    // skip=0 等价 lastN（全部正序返回）
+    expect(messages.lastNAfter(c1.id, 0, 10).map((m) => m.content)).toEqual([
+      'm1', 'm2', 'm3', 'm4', 'm5', 'm6',
+    ]);
+    // 折叠 2 条后：保留 m3..m6，仍正序
+    expect(messages.lastNAfter(c1.id, 2, 10).map((m) => m.content)).toEqual([
+      'm3', 'm4', 'm5', 'm6',
+    ]);
+    // 折叠 2 条 + 预算只装 2 条：取最新 m5、m6
+    expect(messages.lastNAfter(c1.id, 2, 2).map((m) => m.content)).toEqual(['m5', 'm6']);
+    // skip >= 总条数：空（不能绕回取到最新消息）
+    expect(messages.lastNAfter(c1.id, 6, 10)).toEqual([]);
+    expect(messages.lastNAfter(c1.id, 99, 10)).toEqual([]);
+  });
+
   it('删除助手 → 会话 → 消息外键级联', () => {
     const assistantRepo = createAssistantRepository(db);
     const assistant = makeAssistant(db);

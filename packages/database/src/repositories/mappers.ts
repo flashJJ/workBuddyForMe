@@ -69,6 +69,10 @@ export interface ConversationRow {
   assistant_id: string;
   title: string;
   last_message_at: string | null;
+  /** v0.5：递归摘要（NULL=未压缩） */
+  summary: string | null;
+  /** v0.5：已折叠消息条数（累计） */
+  summary_turns: number;
   created_at: string;
   updated_at: string;
 }
@@ -185,6 +189,8 @@ export function mapConversation(row: ConversationRow): Conversation {
     assistantId: row.assistant_id,
     title: row.title,
     lastMessageAt: row.last_message_at,
+    summary: row.summary ?? null,
+    summaryTurns: row.summary_turns ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

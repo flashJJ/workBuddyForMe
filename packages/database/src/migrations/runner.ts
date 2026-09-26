@@ -3,6 +3,7 @@ import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
 import { migrateV003 } from './v003-multimodal';
 import { migrateV004 } from './v004-ocr';
+import { migrateV005 } from './v005-conversation-summary';
 
 interface Migration {
   version: number;
@@ -23,6 +24,11 @@ const MIGRATIONS: Migration[] = [
     version: 4,
     description: 'ocr: documents.ocr_status + ocr_engine',
     up: migrateV004,
+  },
+  {
+    version: 5,
+    description: 'conversation compaction: conversations.summary + summary_turns',
+    up: migrateV005,
   },
 ];
 

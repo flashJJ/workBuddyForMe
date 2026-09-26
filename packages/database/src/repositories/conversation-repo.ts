@@ -54,6 +54,14 @@ export function createConversationRepository(db: DatabaseInstance) {
       ).run(when, when, id);
     },
 
+    /** v0.5：写回递归摘要与累计折叠条数（自动压缩后调用） */
+    updateSummary(id: string, summary: string, summaryTurns: number): Conversation | null {
+      db.prepare(
+        `UPDATE conversations SET summary = ?, summary_turns = ?, updated_at = ? WHERE id = ?`,
+      ).run(summary, summaryTurns, nowIso(), id);
+      return this.findById(id);
+    },
+
     delete(id: string): boolean {
       return db.prepare(`DELETE FROM conversations WHERE id = ?`).run(id).changes > 0;
     },
