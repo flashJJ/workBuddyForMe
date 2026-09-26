@@ -65,8 +65,12 @@ export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settin
 export {
   memoryCreateSchema,
   memoryUpdateSchema,
+  memoryListQuerySchema,
+  memoryClearSchema,
   type MemoryCreateInput,
   type MemoryUpdateInput,
+  type MemoryListQuery,
+  type MemoryClearInput,
 } from './schemas/memory';
 
 // 备份/恢复契约

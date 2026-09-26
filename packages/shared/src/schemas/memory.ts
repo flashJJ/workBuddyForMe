@@ -25,3 +25,18 @@ export const memoryUpdateSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');
 export type MemoryUpdateInput = z.infer<typeof memoryUpdateSchema>;
+
+/** 管理页列表查询：类别/状态过滤 + 内容搜索（GET query 均为字符串） */
+export const memoryListQuerySchema = z.object({
+  kind: kindSchema.optional(),
+  status: statusSchema.optional(),
+  search: z.string().trim().min(1).max(100).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(200),
+});
+export type MemoryListQuery = z.infer<typeof memoryListQuerySchema>;
+
+/** 清空记忆库请求体（预留分类/状态范围；当前仅支持全量） */
+export const memoryClearSchema = z.object({
+  status: statusSchema.optional(),
+});
+export type MemoryClearInput = z.infer<typeof memoryClearSchema>;
