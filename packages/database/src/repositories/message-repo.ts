@@ -150,6 +150,19 @@ export function createMessageRepository(db: DatabaseInstance) {
         .get(conversationId) as MessageRow | undefined;
       return row ? mapMessage(row) : null;
     },
+
+    /** 最近一条带 completion 用量的 completed 助手消息（v0.5 输出预留校准用） */
+    lastAssistantUsage(conversationId: string): { completionTokens: number } | null {
+      const row = db
+        .prepare(
+          `SELECT completion_tokens FROM messages
+             WHERE conversation_id = ? AND role = 'assistant'
+               AND status = 'completed' AND completion_tokens IS NOT NULL
+             ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+        )
+        .get(conversationId) as { completion_tokens: number } | undefined;
+      return row ? { completionTokens: row.completion_tokens } : null;
+    },
   };
 }
 

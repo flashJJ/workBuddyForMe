@@ -3,8 +3,11 @@ import type { ChatMessage } from '@wbfm/ai';
 import type { RagContext } from './types';
 import type { ResolvedImage } from '../services/attachment-service';
 import { toAiContent } from './multimodal';
-
-export const HISTORY_MESSAGE_LIMIT = 20;
+import {
+  assembleHistoryWithinBudget,
+  estimateTokens,
+  type HistoryBudgetStats,
+} from './context-budget';
 
 /** 组装系统提示词：助手人设 + 可选 RAG 参考资料块 */
 export function buildSystemPrompt(assistant: Assistant, rag: RagContext | null): string {
@@ -19,21 +22,48 @@ export function buildSystemPrompt(assistant: Assistant, rag: RagContext | null):
   return parts.filter(Boolean).join('\n\n');
 }
 
+/** v0.5 预算装配参数：模型上下文长度 + 工具声明占用 + 上次真实 completion 校准 */
+export interface ChatBudgetOptions {
+  /** 模型上下文长度（tokens）；兜底默认值由调用方应用 */
+  contextWindow: number;
+  /** 工具声明占用的 token 估算（无工具传 0） */
+  toolsTokens: number;
+  /** 上一轮助手响应的真实 completion tokens（无则 null） */
+  lastCompletionTokens: number | null;
+}
+
 /**
- * 系统提示词 + 最近历史（含本轮用户消息），过滤空系统消息。
+ * 系统提示词 + 历史（含本轮用户消息），过滤空系统消息。
  * v0.3：图片片段经 images 映射解析为 data URL 后下发视觉模型。
+ * v0.5：传入 budget 时按 token 预算从新到旧装配历史——
+ * 先扣 system（含 RAG 资料块）与工具声明及输出预留，剩余预算装历史，装不下为止；
+ * 不传 budget 时保持全量装配（向后兼容）。
  */
 export function buildChatMessages(
   assistant: Assistant,
   history: Message[],
   rag: RagContext | null,
   images: Map<string, ResolvedImage> = new Map(),
-): ChatMessage[] {
-  const messages: ChatMessage[] = [];
+  budget?: ChatBudgetOptions,
+): { messages: ChatMessage[]; stats: HistoryBudgetStats | null } {
   const systemPrompt = buildSystemPrompt(assistant, rag);
-  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
-  for (const message of history) {
-    messages.push({ role: message.role, content: toAiContent(message, images) });
+  const prefix: ChatMessage[] = systemPrompt
+    ? [{ role: 'system', content: systemPrompt }]
+    : [];
+  const mapped = history.map(
+    (message): ChatMessage => ({ role: message.role, content: toAiContent(message, images) }),
+  );
+
+  if (!budget) {
+    return { messages: [...prefix, ...mapped], stats: null };
   }
-  return messages;
+
+  const { kept, stats } = assembleHistoryWithinBudget({
+    history: mapped,
+    contextWindow: budget.contextWindow,
+    systemTokens: systemPrompt ? estimateTokens(systemPrompt) : 0,
+    toolsTokens: budget.toolsTokens,
+    lastCompletionTokens: budget.lastCompletionTokens,
+  });
+  return { messages: [...prefix, ...kept], stats };
 }

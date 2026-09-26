@@ -41,6 +41,16 @@ export const MAX_CHUNK_SIZE = 4000;
 /** RAG 默认检索条数 */
 export const DEFAULT_TOP_K = 4;
 
+/**
+ * v0.5 Token 预算（对话历史按预算组装）：
+ * 模型未配置 contextWindow 时的兜底上下文预算。
+ */
+export const DEFAULT_CONTEXT_TOKEN_BUDGET = 8192;
+/** 历史条数安全帽：token 预算裁剪之外的极端长会话兜底 */
+export const HISTORY_MESSAGE_SAFETY_CAP = 200;
+/** 为模型回答预留的输出 token（无上次真实 usage 时使用） */
+export const OUTPUT_RESERVE_TOKENS = 2048;
+
 /** v0.2 内置工具（全部只读）；助手通过 enabledTools 白名单授权 */
 export const TOOL_NAMES = ['current_time', 'knowledge_search', 'fetch_webpage'] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];

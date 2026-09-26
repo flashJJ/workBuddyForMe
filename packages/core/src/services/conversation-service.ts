@@ -122,6 +122,11 @@ export function createConversationService({ db }: ServiceDeps) {
     recentMessages(conversationId: string, n: number): Message[] {
       return messages.lastN(conversationId, n);
     },
+
+    /** 最近一条助手响应的真实 completion tokens（v0.5 token 预算校准；无则 null） */
+    lastAssistantUsage(conversationId: string): { completionTokens: number } | null {
+      return messages.lastAssistantUsage(conversationId);
+    },
   };
 }
 

@@ -46,7 +46,14 @@ export {
 // 对话编排
 export { createChatOrchestrator, type ChatOrchestrator } from './chat/chat-orchestrator';
 export { resolveChatTarget, type ResolvedChatTarget } from './chat/model-resolver';
-export { buildChatMessages, buildSystemPrompt, HISTORY_MESSAGE_LIMIT } from './chat/prompt';
+export { buildChatMessages, buildSystemPrompt, type ChatBudgetOptions } from './chat/prompt';
+export {
+  estimateTokens,
+  estimateMessageTokens,
+  assembleHistoryWithinBudget,
+  IMAGE_TOKEN_ESTIMATE,
+  type HistoryBudgetStats,
+} from './chat/context-budget';
 export type {
   OrchestratorEvent,
   StreamChatInput,

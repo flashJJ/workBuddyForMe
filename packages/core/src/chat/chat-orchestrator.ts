@@ -1,4 +1,5 @@
 import {
+  HISTORY_MESSAGE_SAFETY_CAP,
   MAX_TOOL_ROUNDS,
   type TokenUsage,
   type ToolName,
@@ -7,7 +8,6 @@ import {
 import {
   startRun,
   traceAsync,
-  type ChatMessage,
   type TraceHandle,
   type ToolCall,
 } from '@wbfm/ai';
@@ -16,7 +16,7 @@ import { createAssistantsService } from '../services/assistant-service';
 import { createAttachmentService } from '../services/attachment-service';
 import { createConversationService } from '../services/conversation-service';
 import { resolveChatTarget, type ResolvedChatTarget } from './model-resolver';
-import { buildChatMessages, HISTORY_MESSAGE_LIMIT } from './prompt';
+import { buildTurnMessages, recordBudgetSpan } from './turn-context';
 import { buildImageMap } from './multimodal';
 import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
@@ -28,10 +28,11 @@ import {
   mergeCitations,
   normalizeFailure,
   safeParseArgs,
+  unknownToolResult,
 } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
 import { executeCall, summarizeArgs } from '../tools/tool-executor';
-import { toToolDefinitions, type ToolResult } from '../tools/types';
+import { toToolDefinitions } from '../tools/types';
 
 export function createChatOrchestrator(deps: ServiceDeps) {
   const assistants = createAssistantsService(deps);
@@ -131,28 +132,28 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         }
 
         const history = conversations
-          .recentMessages(conversationId, HISTORY_MESSAGE_LIMIT)
+          .recentMessages(conversationId, HISTORY_MESSAGE_SAFETY_CAP)
           .filter((m) => m.id !== assistantMessage.id);
         // 历史图片（含本轮新图与重生成旧图）解析为 data URL
         const imageMap = buildImageMap(attachments, history);
-        const outgoing: ChatMessage[] = buildChatMessages(
-          assistant,
-          history,
-          retrieved ?? null,
-          imageMap,
-        );
 
+        // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
         const toolMap = runtime.buildTools(assistant, target.provider.supportsTools);
         const toolDefs = toToolDefinitions([...toolMap.values()]);
+        const { messages: outgoing, stats: budgetStats } = buildTurnMessages({
+          assistant,
+          history,
+          rag: retrieved ?? null,
+          images: imageMap,
+          contextWindow: target.model.contextWindow,
+          toolDefs,
+          lastCompletionTokens:
+            conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
+        });
+        if (budgetStats) await recordBudgetSpan(budgetStats, turnTrace);
         const toolCtx = runtime.createContext(assistant, input.signal);
         const trace: ToolTraceEntry[] = [];
         let citations = retrieved?.citations ?? [];
-
-        const runUnknownTool = (name: string): ToolResult => ({
-          ok: false,
-          output: `工具「${name}」未启用或不存在。请仅使用提供的工具，或不使用工具直接回答。`,
-          summary: `未知工具：${name}`,
-        });
 
         try {
           for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
@@ -218,7 +219,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
                       durationMs: Date.now() - startedAt,
                     }),
                   )
-                : runUnknownTool(call.function.name);
+                : unknownToolResult(call.function.name);
               const durationMs = Date.now() - startedAt;
 
               trace.push({

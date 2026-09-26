@@ -16,7 +16,8 @@
 - `packages/core/src/chat/chat-orchestrator.ts`：`createChatOrchestrator(deps).streamChat(input)` 异步生成器，产出 `OrchestratorEvent`；内含工具调用循环。
 - `packages/core/src/tools/`：`tool-runtime.ts`（`createToolRuntime` 按助手 `enabledTools` 构造工具实例）、三工具（current-time / knowledge-search / fetch-webpage）、`tool-executor.ts`（参数解析 + 超时 + 统一 `ToolResult`）、`ssrf-guard.ts`（私网/保留地址拦截，见下）。
 - `packages/ai/src/…`：`runProviderTurn` 把上游流折叠成 `delta | toolCalls` 步骤；`ToolCallAccumulator` 处理分片 tool_calls delta。
-- `packages/core/src/chat/prompt.ts`：`buildChatMessages`（系统提示词 + RAG 上下文注入 + `HISTORY_MESSAGE_LIMIT` 历史裁剪）。
+- `packages/core/src/chat/prompt.ts`：`buildChatMessages`（系统提示词 + RAG 上下文注入；v0.5 起按 token 预算从新到旧装配历史，`context-budget.ts` 负责估算与裁剪，模型级 `contextWindow` 决定预算）。
+- `packages/core/src/chat/turn-context.ts`：`buildTurnMessages`（工具声明计入预算扣除）+ `recordBudgetSpan`（LangSmith `context_budget` span）。
 - `packages/core/src/chat/model-resolver.ts`：`resolveChatTarget` 解析助手 → 模型 → Provider 适配器。
 
 ## 流程（streamChat）

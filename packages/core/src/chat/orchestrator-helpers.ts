@@ -1,6 +1,7 @@
 import { ApiError, TOOL_NAMES, type Citation, type ToolName } from '@wbfm/shared';
 import { ProviderError, type ToolCall } from '@wbfm/ai';
 import { parseToolArgs } from '../tools/tool-executor';
+import type { ToolResult } from '../tools/types';
 
 export const ROUND_LIMIT_FALLBACK =
   '（工具调用已达轮数上限，未能形成回答，请换个问法再试一次。）';
@@ -40,4 +41,13 @@ export function safeParseArgs(call: ToolCall): unknown {
   } catch {
     return {};
   }
+}
+
+/** 工具调用兜底：模型幻觉出的工具名统一拒绝 */
+export function unknownToolResult(name: string): ToolResult {
+  return {
+    ok: false,
+    output: `工具「${name}」未启用或不存在。请仅使用提供的工具，或不使用工具直接回答。`,
+    summary: `未知工具：${name}`,
+  };
 }
