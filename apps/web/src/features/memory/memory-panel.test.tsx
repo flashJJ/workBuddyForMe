@@ -72,6 +72,22 @@ describe('长期记忆管理面板（M4）', () => {
     );
   });
 
+  it('时间线筛选：选择起止日期后带 from/to 参数拉取', async () => {
+    fetchMock.mockResolvedValue(ok([]));
+    const user = userEvent.setup();
+    renderWithProviders(<MemoryPanel />);
+    await screen.findByText('还没有记忆');
+
+    await user.type(screen.getByLabelText('起始日期'), '2026-01-01');
+    await user.type(screen.getByLabelText('截止日期'), '2026-03-31');
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/from=2026-01-01.*to=2026-03-31|to=2026-03-31.*from=2026-01-01/),
+        expect.anything(),
+      ),
+    );
+  });
+
   it('添加记忆：默认 fact/0.5，POST 后关闭弹窗', async () => {
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/memories' && init?.method === 'POST') return ok(makeMemory({ id: '9', content: '用户在杭州工作' }), 201);

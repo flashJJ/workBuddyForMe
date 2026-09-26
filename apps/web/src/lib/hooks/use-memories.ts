@@ -23,6 +23,8 @@ function toQueryString(filter: MemoryListQuery): string {
   if (filter.kind) params.set('kind', filter.kind);
   if (filter.status) params.set('status', filter.status);
   if (filter.search) params.set('search', filter.search);
+  if (filter.from) params.set('from', filter.from);
+  if (filter.to) params.set('to', filter.to);
   params.set('limit', String(filter.limit ?? 200));
   const qs = params.toString();
   return qs ? `?${qs}` : '';

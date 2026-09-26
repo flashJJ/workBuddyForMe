@@ -55,10 +55,13 @@ describe('记忆库管理路由（M4）', () => {
     expect((await listed.json()).data).toHaveLength(1);
   });
 
-  it('查询校验：非法类别 422', async () => {
-    const bad = await listMemories(new Request('http://x?kind=unknown'));
-    expect(bad.status).toBe(422);
-    expect((await bad.json()).error.code).toBe('VALIDATION_ERROR');
+  it('查询校验：非法类别/非法日期 422', async () => {
+    const badKind = await listMemories(new Request('http://x?kind=unknown'));
+    expect(badKind.status).toBe(422);
+    expect((await badKind.json()).error.code).toBe('VALIDATION_ERROR');
+
+    const badDate = await listMemories(new Request('http://x?from=not-a-date'));
+    expect(badDate.status).toBe(422);
   });
 
   it('新建校验：空内容/超长 importance 422', async () => {

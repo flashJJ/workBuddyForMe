@@ -71,6 +71,8 @@ export function MemoryPanel() {
   const [search, setSearch] = React.useState('');
   const [kind, setKind] = React.useState<'' | MemoryKind>('');
   const [status, setStatus] = React.useState<StatusFilter>('');
+  const [from, setFrom] = React.useState('');
+  const [to, setTo] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Memory | null>(null);
 
@@ -79,6 +81,8 @@ export function MemoryPanel() {
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(kind ? { kind } : {}),
     ...(status ? { status } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
   };
   const { data: memories, isLoading, isError, refetch } = useMemories(filter);
   const mutations = useMemoryMutations();
@@ -170,6 +174,22 @@ export function MemoryPanel() {
           <option value="active">活跃</option>
           <option value="archived">已归档</option>
         </Select>
+        <Input
+          aria-label="起始日期"
+          type="date"
+          className="h-9 w-40"
+          value={from}
+          max={to || undefined}
+          onChange={(e) => setFrom(e.target.value)}
+        />
+        <Input
+          aria-label="截止日期"
+          type="date"
+          className="h-9 w-40"
+          value={to}
+          min={from || undefined}
+          onChange={(e) => setTo(e.target.value)}
+        />
       </div>
 
       {isLoading && <Spinner />}
