@@ -26,11 +26,17 @@ export const memoryUpdateSchema = z
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');
 export type MemoryUpdateInput = z.infer<typeof memoryUpdateSchema>;
 
-/** 管理页列表查询：类别/状态过滤 + 内容搜索（GET query 均为字符串） */
+/** 管理页列表查询：类别/状态过滤 + 内容搜索 + 时间线范围（GET query 均为字符串） */
+const queryDateSchema = z
+  .string()
+  .trim()
+  .refine((v) => !Number.isNaN(Date.parse(v)), '日期格式不正确');
 export const memoryListQuerySchema = z.object({
   kind: kindSchema.optional(),
   status: statusSchema.optional(),
   search: z.string().trim().min(1).max(100).optional(),
+  from: queryDateSchema.optional(),
+  to: queryDateSchema.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(200),
 });
 export type MemoryListQuery = z.infer<typeof memoryListQuerySchema>;

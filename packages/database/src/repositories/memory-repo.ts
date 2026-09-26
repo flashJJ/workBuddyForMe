@@ -22,7 +22,21 @@ export interface MemoryListFilter {
   kind?: MemoryKind;
   /** 列表/管理页搜索（content LIKE） */
   search?: string;
+  /** 创建时间下界（ISO 或 YYYY-MM-DD，含当日） */
+  createdAfter?: string;
+  /** 创建时间上界（ISO 或 YYYY-MM-DD，含当日） */
+  createdBefore?: string;
   limit?: number;
+}
+
+/** P1-1 衰减归档参数（ISO 时间字符串，时间戳比较走 ISO 字典序） */
+export interface MemoryDecayFilter {
+  /** 仅扫描早于该时间创建的记忆 */
+  createdBefore: string;
+  /** 从未访问或最后访问早于该时间 */
+  accessedBefore: string;
+  /** 重要性严格小于该值才归档 */
+  maxImportance: number;
 }
 
 export function createMemoryRepository(db: DatabaseInstance) {
@@ -70,6 +84,14 @@ export function createMemoryRepository(db: DatabaseInstance) {
       if (filter.search?.trim()) {
         where.push('content LIKE @search');
         params.search = `%${filter.search.trim()}%`;
+      }
+      if (filter.createdAfter) {
+        where.push('created_at >= @createdAfter');
+        params.createdAfter = dayBoundary(filter.createdAfter, false);
+      }
+      if (filter.createdBefore) {
+        where.push('created_at <= @createdBefore');
+        params.createdBefore = dayBoundary(filter.createdBefore, true);
       }
       const sql = `SELECT * FROM memories ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
                    ORDER BY importance DESC, created_at DESC, id DESC LIMIT @limit`;
@@ -123,7 +145,36 @@ export function createMemoryRepository(db: DatabaseInstance) {
         : (db.prepare(`SELECT COUNT(*) AS n FROM memories`).get() as { n: number });
       return row.n;
     },
+
+    /**
+     * P1-1 遗忘策略：把又旧、低频、低重要性的 active 记忆软归档
+     * （status=archived，不物理删除，管理页可恢复）。返回归档条数。
+     */
+    archiveStale(filter: MemoryDecayFilter): number {
+      return db
+        .prepare(
+          `UPDATE memories
+             SET status = 'archived', updated_at = @now
+           WHERE status = 'active'
+             AND importance < @maxImportance
+             AND created_at < @createdBefore
+             AND (last_accessed_at IS NULL OR last_accessed_at < @accessedBefore)`,
+        )
+        .run({
+          now: nowIso(),
+          maxImportance: filter.maxImportance,
+          createdBefore: filter.createdBefore,
+          accessedBefore: filter.accessedBefore,
+        }).changes;
+    },
   };
+}
+
+/** YYYY-MM-DD 补全为 UTC 日界；完整 ISO 字符串原样返回 */
+function dayBoundary(value: string, end: boolean): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T${end ? '23:59:59.999Z' : '00:00:00.000Z'}`
+    : value;
 }
 
 export type MemoryRepository = ReturnType<typeof createMemoryRepository>;

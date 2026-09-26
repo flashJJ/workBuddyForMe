@@ -81,6 +81,21 @@ export const MEMORY_EXTRACT_MAX_ITEMS = 5;
 export const MEMORY_IMPORTANCE_MIN = 0;
 export const MEMORY_IMPORTANCE_MAX = 1;
 
+/**
+ * v0.5 P1-1 遗忘策略（软归档，可在管理页恢复）：
+ * - 归档条件：创建超过 MEMORY_DECAY_AFTER_DAYS 天、重要性低于
+ *   MEMORY_DECAY_MIN_IMPORTANCE、且从未被召回（或上次召回也早于
+ *   MEMORY_DECAY_ACCESS_STALE_DAYS 天）的 active 记忆；
+ * - 后台衰减任务借回合成功后机会执行，两次运行至少间隔
+ *   MEMORY_DECAY_INTERVAL_DAYS 天；
+ * - 会话压缩摘要作为情景记忆（event）入库时使用的固定重要性。
+ */
+export const MEMORY_DECAY_MIN_IMPORTANCE = 0.4;
+export const MEMORY_DECAY_AFTER_DAYS = 30;
+export const MEMORY_DECAY_ACCESS_STALE_DAYS = 30;
+export const MEMORY_DECAY_INTERVAL_DAYS = 7;
+export const MEMORY_SUMMARY_IMPORTANCE = 0.6;
+
 /** v0.2 内置工具（全部只读）；助手通过 enabledTools 白名单授权 */
 export const TOOL_NAMES = ['current_time', 'knowledge_search', 'fetch_webpage'] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];

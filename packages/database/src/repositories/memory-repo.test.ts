@@ -96,4 +96,61 @@ describe('memory 仓储与 memories_vec 向量管线', () => {
     ensureMemoryVectorTable(db, 3);
     expect(() => ensureMemoryVectorTable(db, 8)).toThrow(/维度冲突/);
   });
+
+  it('P1-1 时间线过滤：from/to（含当日）按 created_at 筛选', () => {
+    const repo = createMemoryRepository(db);
+    repo.add({ kind: 'fact', content: '旧记忆', importance: 0.5 });
+    db.prepare(`UPDATE memories SET created_at = ?, updated_at = ? WHERE id = 1`).run(
+      '2026-01-10T08:00:00.000Z',
+      '2026-01-10T08:00:00.000Z',
+    );
+    repo.add({ kind: 'fact', content: '新记忆', importance: 0.5 });
+    db.prepare(`UPDATE memories SET created_at = ?, updated_at = ? WHERE id = 2`).run(
+      '2026-03-20T08:00:00.000Z',
+      '2026-03-20T08:00:00.000Z',
+    );
+
+    expect(repo.list({ createdAfter: '2026-03-01' }).map((m) => m.content)).toEqual(['新记忆']);
+    expect(repo.list({ createdBefore: '2026-01-10' }).map((m) => m.content)).toEqual(['旧记忆']);
+    expect(
+      repo
+        .list({ createdAfter: '2026-01-01', createdBefore: '2026-02-01' })
+        .map((m) => m.content),
+    ).toEqual(['旧记忆']);
+  });
+
+  it('P1-1 衰减归档：旧+低重要性+未访问的 active 记忆被归档，高重要性/新/已访问的保留', () => {
+    const repo = createMemoryRepository(db);
+    const staleLow = repo.add({ kind: 'fact', content: '陈旧琐事', importance: 0.2 });
+    const staleHigh = repo.add({ kind: 'preference', content: '长期重要偏好', importance: 0.9 });
+    const recentLow = repo.add({ kind: 'fact', content: '新鲜琐事', importance: 0.1 });
+    const accessedLow = repo.add({ kind: 'event', content: '旧但常被召回', importance: 0.2 });
+    const oldTime = '2026-01-01T00:00:00.000Z';
+    db.prepare(
+      `UPDATE memories SET created_at = @ts, updated_at = @ts WHERE id IN (1, 2, 4)`,
+    ).run({ ts: oldTime });
+    // id=4 近期被访问过
+    db.prepare(`UPDATE memories SET last_accessed_at = ? WHERE id = 4`).run(
+      '2026-03-25T00:00:00.000Z',
+    );
+
+    const archived = repo.archiveStale({
+      createdBefore: '2026-03-01T00:00:00.000Z',
+      accessedBefore: '2026-03-01T00:00:00.000Z',
+      maxImportance: 0.4,
+    });
+    expect(archived).toBe(1);
+    expect(repo.findById(staleLow.id)!.status).toBe('archived');
+    expect(repo.findById(staleHigh.id)!.status).toBe('active');
+    expect(repo.findById(recentLow.id)!.status).toBe('active');
+    expect(repo.findById(accessedLow.id)!.status).toBe('active');
+    // 再跑一次不重复归档
+    expect(
+      repo.archiveStale({
+        createdBefore: '2026-03-01T00:00:00.000Z',
+        accessedBefore: '2026-03-01T00:00:00.000Z',
+        maxImportance: 0.4,
+      }),
+    ).toBe(0);
+  });
 });
