@@ -10,6 +10,7 @@ export interface ChatStreamHandlers {
   onMeta?: (data: SsePayloadMap['meta']) => void;
   onDelta?: (data: SsePayloadMap['delta']) => void;
   onCitations?: (data: SsePayloadMap['citations']) => void;
+  onMemories?: (data: SsePayloadMap['memories']) => void;
   onTool?: (data: SsePayloadMap['tool']) => void;
   onDone?: (data: SsePayloadMap['done']) => void;
   onError?: (data: SsePayloadMap['error']) => void;
@@ -87,6 +88,9 @@ export function useChatStream() {
                 break;
               case 'citations':
                 handlers.onCitations?.(event.data as SsePayloadMap['citations']);
+                break;
+              case 'memories':
+                handlers.onMemories?.(event.data as SsePayloadMap['memories']);
                 break;
               case 'tool':
                 handlers.onTool?.(event.data as SsePayloadMap['tool']);

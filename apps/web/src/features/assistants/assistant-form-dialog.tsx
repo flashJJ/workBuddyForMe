@@ -21,6 +21,7 @@ import { useAllModels } from '@/lib/hooks/use-settings';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useAssistantMutations, type AssistantBody } from '@/lib/hooks/use-assistants';
 import { AssistantToolsField } from './assistant-tools-field';
+import { AssistantMemoryField } from './assistant-memory-field';
 import { NumberField } from './number-field';
 
 interface Props {
@@ -41,6 +42,7 @@ interface FormState {
   knowledgeBaseId: string;
   enabledTools: ToolName[];
   retrieveAlways: boolean;
+  memoryEnabled: boolean;
 }
 
 function toForm(assistant: Assistant | null | undefined): FormState {
@@ -57,6 +59,7 @@ function toForm(assistant: Assistant | null | undefined): FormState {
       knowledgeBaseId: '',
       enabledTools: ['current_time'],
       retrieveAlways: true,
+      memoryEnabled: true,
     };
   }
   return {
@@ -71,6 +74,7 @@ function toForm(assistant: Assistant | null | undefined): FormState {
     knowledgeBaseId: assistant.knowledgeBaseId ?? '',
     enabledTools: [...assistant.enabledTools],
     retrieveAlways: assistant.retrieveAlways,
+    memoryEnabled: assistant.memoryEnabled,
   };
 }
 
@@ -102,6 +106,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     knowledgeBaseId: form.knowledgeBaseId || null,
     enabledTools: form.enabledTools,
     retrieveAlways: form.retrieveAlways,
+    memoryEnabled: form.memoryEnabled,
   });
 
   const toggleTool = (tool: ToolName) => {
@@ -266,6 +271,11 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             retrieveAlways={form.retrieveAlways}
             onToggleTool={toggleTool}
             onRetrieveAlwaysChange={(value) => update({ retrieveAlways: value })}
+          />
+
+          <AssistantMemoryField
+            checked={form.memoryEnabled}
+            onChange={(value) => update({ memoryEnabled: value })}
           />
 
           <DialogFooter>

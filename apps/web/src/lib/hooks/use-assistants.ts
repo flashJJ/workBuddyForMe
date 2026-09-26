@@ -17,6 +17,7 @@ export interface AssistantBody {
   knowledgeBaseId?: string | null;
   enabledTools?: ToolName[];
   retrieveAlways?: boolean;
+  memoryEnabled?: boolean;
 }
 
 export function useAssistants() {

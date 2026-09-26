@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, ContentPart, Message, SsePayloadMap, ToolTraceEntry } from '@wbfm/shared';
+import type { Citation, ContentPart, Message, RecalledMemoryPayload, SsePayloadMap, ToolTraceEntry } from '@wbfm/shared';
 import { useMessages } from '@/lib/hooks/use-conversations';
 import { QUERY_KEYS } from '@/lib/api/endpoints';
 import { useChatStream } from '@/lib/hooks/use-chat-stream';
@@ -40,6 +40,8 @@ function pendingMessage(role: Message['role'], content: string): Message {
 export interface ChatSession {
   messages: Message[];
   streaming: boolean;
+  /** 本轮召回的长期记忆（回答上方「参考了 N 条记忆」提示），下轮开始时清空 */
+  recalledMemories: RecalledMemoryPayload[];
   send: (content: string, attachmentIds?: string[]) => void;
   /** 重新生成最后一条助手回复（沿用上一条用户消息） */
   retry: () => void;
@@ -61,10 +63,14 @@ export function useChatSession(
   const queryClient = useQueryClient();
   const { send: streamSend, stop: streamStop, streaming } = useChatStream();
   const [live, setLive] = React.useState<Message[] | null>(null);
+  const [recalledMemories, setRecalledMemories] = React.useState<RecalledMemoryPayload[]>([]);
 
   // 注意：不能在 conversationId 变化时自动清空 live——新会话首轮 meta 会回传
   // 新的 conversationId，自动清空会抹掉正在进行的流式消息；改由页面显式 reset。
-  const reset = React.useCallback(() => setLive(null), []);
+  const reset = React.useCallback(() => {
+    setLive(null);
+    setRecalledMemories([]);
+  }, []);
 
   const baseMessages = live ?? historyQuery.data ?? [];
 
@@ -102,6 +108,7 @@ export function useChatSession(
   const runTurn = React.useCallback(
     (options: { content: string; regenerate: boolean; attachments?: string[] }) => {
       const { content, regenerate, attachments = [] } = options;
+      setRecalledMemories([]);
       const assistantMessage: Message = {
         ...pendingMessage('assistant', ''),
         status: 'streaming',
@@ -143,6 +150,9 @@ export function useChatSession(
         onCitations: (data: SsePayloadMap['citations']) => {
           const citations: Citation[] = data.citations;
           patchLastAssistant({ citations });
+        },
+        onMemories: (data: SsePayloadMap['memories']) => {
+          setRecalledMemories(data.memories);
         },
         onTool: (data: SsePayloadMap['tool']) => {
           if (data.phase === 'start') {
@@ -247,5 +257,5 @@ export function useChatSession(
     });
   }, [streamStop]);
 
-  return { messages: baseMessages, streaming, send, retry, stop, reset };
+  return { messages: baseMessages, streaming, recalledMemories, send, retry, stop, reset };
 }

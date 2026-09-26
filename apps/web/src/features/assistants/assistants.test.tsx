@@ -113,4 +113,30 @@ describe('助手管理（TR-26.1）', () => {
       orderedIds: ['a2', 'a1'],
     });
   });
+
+  it('长期记忆开关默认开启，取消勾选后随表单提交 memoryEnabled=false', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === '/api/assistants' ) return ok([]);
+      if (url.startsWith('/api/knowledge')) return ok([]);
+      return ok([]);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<AssistantsPage />);
+
+    await user.click(await screen.findByRole('button', { name: '新建助手' }));
+    const checkbox = screen.getByTestId('assistant-memory-enabled');
+    expect(checkbox).toBeChecked();
+    await user.click(checkbox);
+    await user.clear(screen.getByLabelText('名称'));
+    await user.type(screen.getByLabelText('名称'), '无记忆助手');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/assistants', expect.anything()),
+    );
+    const postCall = fetchMock.mock.calls.find(
+      (call) => call[0] === '/api/assistants' && (call[1] as RequestInit).method === 'POST',
+    );
+    expect(JSON.parse((postCall![1] as RequestInit).body as string).memoryEnabled).toBe(false);
+  });
 });

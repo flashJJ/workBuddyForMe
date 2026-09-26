@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Archive, Share2 } from 'lucide-react';
+import { Archive, Brain, Share2 } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
@@ -188,6 +188,16 @@ export function ChatPage() {
 
         {hasChatModel ? (
           <>
+            {session.recalledMemories.length > 0 && (
+              <div
+                data-testid="recalled-memories-hint"
+                title={session.recalledMemories.map((m) => m.content).join('\n')}
+                className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-1.5 rounded-full border bg-muted/40 px-3 py-1 text-xs text-muted-foreground"
+              >
+                <Brain className="h-3 w-3" />
+                本轮参考了 {session.recalledMemories.length} 条长期记忆
+              </div>
+            )}
             <MessageList
               messages={session.messages}
               assistantName={currentAssistant?.name ?? '助手'}
