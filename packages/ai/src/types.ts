@@ -1,4 +1,4 @@
-import type { MessageRole, ProviderProtocol } from '@wbfm/shared';
+import { type DiscoveredModel, type MessageRole, type ProviderProtocol } from '@wbfm/shared';
 
 /** 供应商连接配置（apiKey 已由 core 解密到内存） */
 export interface ProviderConnection {
@@ -100,7 +100,8 @@ export interface ChatProvider {
   readonly supportsTools: boolean;
   /** 轻量探活（如拉取模型列表），失败抛 ProviderError */
   testConnection(signal?: AbortSignal): Promise<void>;
-  listModels(signal?: AbortSignal): Promise<string[]>;
+  /** v0.5：返回发现项（含自动探测的上下文长度，探测不到为 null） */
+  listModels(signal?: AbortSignal): Promise<DiscoveredModel[]>;
   chatStream(params: ChatParams): AsyncIterable<ChatChunk>;
   embed(params: EmbedParams): Promise<EmbedResult>;
 }

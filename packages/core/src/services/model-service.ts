@@ -1,4 +1,10 @@
-import { ApiError, type ModelCapability, type ModelCreateInput, type ProviderModel } from '@wbfm/shared';
+import {
+  ApiError,
+  type DiscoveredModel,
+  type ModelCapability,
+  type ModelCreateInput,
+  type ProviderModel,
+} from '@wbfm/shared';
 import { createModelRepository, createProviderRepository } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
 import { buildProvider, toApiError } from './provider-adapter';
@@ -46,11 +52,11 @@ export function createModelService({ db, cipher }: ServiceDeps) {
       if (!models.delete(id)) throw ApiError.notFound('模型', id);
     },
 
-    /** 从供应商远端实时拉取模型 ID 列表（不落库，供前端选择后手工添加） */
+    /** 从供应商远端实时拉取模型发现项（不落库，供前端选择后手工添加；v0.5 附带自动探测的上下文长度） */
     async fetchRemoteList(
       providerId: string,
       signal?: AbortSignal,
-    ): Promise<string[]> {
+    ): Promise<DiscoveredModel[]> {
       const provider = requireProvider(providerId);
       try {
         return await buildProvider(db, cipher, provider).listModels(signal);

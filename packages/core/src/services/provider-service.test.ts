@@ -119,7 +119,11 @@ describe('provider/model 服务（TR-12.2）', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(providers.testConnection(provider.id)).resolves.toEqual({ ok: true });
-    await expect(models.fetchRemoteList(provider.id)).resolves.toEqual(['m1', 'm2']);
+    // v0.5：远端模型发现返回 DiscoveredModel（OpenAI 兼容协议无上下文长度字段，恒为 null）
+    await expect(models.fetchRemoteList(provider.id)).resolves.toEqual([
+      { id: 'm1', contextLength: null },
+      { id: 'm2', contextLength: null },
+    ]);
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ error: { message: 'bad key' } }), { status: 401 }),

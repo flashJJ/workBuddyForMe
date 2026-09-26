@@ -25,7 +25,11 @@ describe('OpenAI 适配器 testConnection / listModels', () => {
 
     const adapter = createOpenAiCompatibleAdapter(CONNECTION);
     const models = await adapter.listModels();
-    expect(models).toEqual(['gpt-3.5', 'gpt-4', 'gpt-4o']);
+    expect(models).toEqual([
+      { id: 'gpt-3.5', contextLength: null },
+      { id: 'gpt-4', contextLength: null },
+      { id: 'gpt-4o', contextLength: null },
+    ]);
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe('https://api.x.com/v1/models');
     expect(init.method).toBe('GET');

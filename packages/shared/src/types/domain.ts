@@ -39,6 +39,15 @@ export interface ProviderModel {
   createdAt: string;
 }
 
+/**
+ * 供应商远端模型发现项（v0.5）：
+ * contextLength 为自动探测的上下文长度（tokens），无法探测时为 null。
+ */
+export interface DiscoveredModel {
+  id: string;
+  contextLength: number | null;
+}
+
 export interface Assistant extends Timestamped {
   id: string;
   name: string;

@@ -7,6 +7,7 @@ export * from './constants';
 export type {
   Provider,
   ProviderModel,
+  DiscoveredModel,
   Assistant,
   Conversation,
   Message,

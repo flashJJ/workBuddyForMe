@@ -6,6 +6,7 @@ import type {
   EmbedResult,
   ToolCall,
 } from './types';
+import type { DiscoveredModel } from '@wbfm/shared';
 import { sleep } from './http/backoff';
 
 /** mock 向量维度：64 维多热编码，共享 token 的文本相似度高，足以驱动真实 top-k 检索 */
@@ -127,8 +128,11 @@ export function createMockProvider(): ChatProvider {
       return undefined;
     },
 
-    async listModels(): Promise<string[]> {
-      return ['mock-chat', 'mock-embed'];
+    async listModels(): Promise<DiscoveredModel[]> {
+      return [
+        { id: 'mock-chat', contextLength: null },
+        { id: 'mock-embed', contextLength: null },
+      ];
     },
 
     async *chatStream(params): AsyncIterable<ChatChunk> {

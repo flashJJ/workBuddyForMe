@@ -28,9 +28,15 @@ describe('Provider 注册中心（TR-11.1）', () => {
   it('ollama 返回本地适配器：列表走原生 /api/tags，支持工具调用', async () => {
     const fetchMock = vi.fn().mockImplementation(
       () =>
-        new Response(JSON.stringify({ models: [{ name: 'qwen2.5:7b' }, { name: 'llama3.1:8b' }] }), {
-          headers: { 'content-type': 'application/json' },
-        }),
+        new Response(
+          JSON.stringify({
+            models: [
+              { name: 'qwen2.5:7b', details: { context_length: 32768 } },
+              { name: 'llama3.1:8b' },
+            ],
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        ),
     );
     vi.stubGlobal('fetch', fetchMock);
 
@@ -43,7 +49,11 @@ describe('Provider 注册中心（TR-11.1）', () => {
     expect(provider.supportsTools).toBe(true);
 
     const models = await provider.listModels();
-    expect(models).toEqual(['llama3.1:8b', 'qwen2.5:7b']);
+    // 旧版本 /api/tags 无 details 时 contextLength 兜底为 null，新版本自动探测
+    expect(models).toEqual([
+      { id: 'llama3.1:8b', contextLength: null },
+      { id: 'qwen2.5:7b', contextLength: 32768 },
+    ]);
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe('http://127.0.0.1:11434/api/tags');
     // 本地无 Key 时不应带 Authorization
