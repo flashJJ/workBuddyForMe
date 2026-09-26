@@ -84,7 +84,14 @@ describe('备份导出（M1）', () => {
 
     const conv = convRepo.create({ assistantId: 'builtin-general', title: '测试对话' });
     msgRepo.add({ conversationId: conv.id, role: 'user', content: '你好', status: 'completed' });
-    msgRepo.add({ conversationId: conv.id, role: 'assistant', content: '嗨！', status: 'completed' });
+    const assistantMsg = msgRepo.add({
+      conversationId: conv.id,
+      role: 'assistant',
+      content: '嗨！',
+      status: 'completed',
+    });
+    // v0.5 P1-2：反馈随 conversations 轨导出（恢复时写回 feedback 两列）
+    msgRepo.setFeedback(assistantMsg.id, 'up');
 
     const kb = kbRepo.create({ name: '产品库', chunkSize: 500, chunkOverlap: 80 });
     const doc = docRepo.create({
@@ -110,6 +117,8 @@ describe('备份导出（M1）', () => {
     expect(convs).toHaveLength(1);
     expect(convs[0].conversation.title).toBe('测试对话');
     expect(convs[0].messages).toHaveLength(2);
+    expect(convs[0].messages[1].feedback).toBe('up');
+    expect(convs[0].messages[1].feedbackAt).toBeTruthy();
 
     const kbs = JSON.parse(files['knowledge.json']!);
     expect(kbs).toHaveLength(1);
