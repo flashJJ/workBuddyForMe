@@ -72,6 +72,11 @@ export type {
   StreamResult,
 } from './chat/types';
 
+// v0.5 M3 长期记忆
+export { createMemoryService, type MemoryService } from './memory/memory-service';
+export { extractTurnMemories, parseExtractedMemories, type ExtractedMemory } from './memory/extractor';
+export { formatMemoryBlock, toRecalledPayload } from './memory/turn-memory';
+
 // 知识库摄入
 export { createIngestionPipeline, type IngestionPipeline } from './ingestion/ingestion-pipeline';
 export { chunkText } from './ingestion/chunking';

@@ -2,6 +2,7 @@ import {
   COMPACTION_KEEP_RATIO,
   COMPACTION_MIN_KEEP_MESSAGES,
   COMPACTION_TRIGGER_RATIO,
+  MEMORY_BLOCK_RESERVE_TOKENS,
   SUMMARY_BLOCK_RESERVE_TOKENS,
   type Message,
 } from '@wbfm/shared';
@@ -17,6 +18,8 @@ export interface CompactionPlanInput {
   personaTokens: number;
   toolsTokens: number;
   reserveTokens: number;
+  /** 助手开启长期记忆时为记忆块额外预留预算（默认关，兼容旧调用） */
+  memoryEnabled?: boolean;
 }
 
 export interface CompactionPlan {
@@ -39,7 +42,8 @@ export function planCompaction(input: CompactionPlanInput): CompactionPlan | nul
       input.personaTokens -
       input.toolsTokens -
       input.reserveTokens -
-      SUMMARY_BLOCK_RESERVE_TOKENS,
+      SUMMARY_BLOCK_RESERVE_TOKENS -
+      (input.memoryEnabled ? MEMORY_BLOCK_RESERVE_TOKENS : 0),
   );
   if (historyBudget <= 0 || input.history.length <= COMPACTION_MIN_KEEP_MESSAGES) return null;
 

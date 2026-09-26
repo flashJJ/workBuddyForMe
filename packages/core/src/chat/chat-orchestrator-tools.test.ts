@@ -86,6 +86,9 @@ describe('对话编排：工具调用循环（TR-15.2）', () => {
       contextWindow: 4096,
     });
     createSettingsService({ db, cipher }).update({ defaultChatModelId: model.id });
+    // 这些用例聚焦工具循环：关闭长期记忆，避免回合后提取额外占用 fetch mock 队列
+    const seeded = createAssistantsService({ db, cipher });
+    seeded.update(seeded.list()[0]!.id, { memoryEnabled: false });
   });
 
   afterEach(() => {

@@ -70,6 +70,9 @@ describe('对话编排 · 视觉（T4）', () => {
       contextWindow: 4096,
     });
     createSettingsService({ db, cipher }).update({ defaultChatModelId: model.id });
+    // 视觉用例不验证长期记忆：关闭开关，避免回合后提取额外占用 fetch mock 队列
+    const seeded = createAssistantsService({ db, cipher });
+    seeded.update(seeded.list()[0]!.id, { memoryEnabled: false });
     return model;
   }
 

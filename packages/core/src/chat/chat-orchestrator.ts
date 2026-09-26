@@ -1,23 +1,15 @@
-import {
-  HISTORY_MESSAGE_SAFETY_CAP,
-  MAX_TOOL_ROUNDS,
-  type TokenUsage,
-  type ToolName,
-  type ToolTraceEntry,
-} from '@wbfm/shared';
-import {
-  startRun,
-  traceAsync,
-  type TraceHandle,
-  type ToolCall,
-} from '@wbfm/ai';
+import { HISTORY_MESSAGE_SAFETY_CAP, MAX_TOOL_ROUNDS, type TokenUsage, type ToolName, type ToolTraceEntry } from '@wbfm/shared';
+import { startRun, traceAsync, type TraceHandle, type ToolCall } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
 import { createAttachmentService } from '../services/attachment-service';
 import { createConversationService } from '../services/conversation-service';
 import { resolveChatTarget, type ResolvedChatTarget } from './model-resolver';
-import { buildTurnMessages, recordBudgetSpan, runPostTurnCompaction } from './turn-context';
+import { buildTurnMessages, recordBudgetSpan } from './turn-context';
 import { runAlwaysRetrieval } from './retrieve-turn';
+import { runPostTurnJobs } from './post-turn-jobs';
+import { createMemoryService } from '../memory/memory-service';
+import { formatMemoryBlock, safeRecallEvent } from '../memory/turn-memory';
 import { buildImageMap } from './multimodal';
 import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
@@ -39,6 +31,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
   const conversations = createConversationService(deps);
   const attachments = createAttachmentService(deps);
   const runtime = createToolRuntime(deps);
+  const memory = createMemoryService(deps);
 
   return {
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
@@ -109,6 +102,17 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         // 历史图片（含本轮新图与重生成旧图）解析为 data URL
         const imageMap = buildImageMap(attachments, history);
 
+        // v0.5 M3：长期记忆召回（按助手开关门控，失败静默，命中时下发 memories 事件）
+        const recalledMemories = assistant.memoryEnabled
+          ? yield* safeRecallEvent({
+              memory,
+              query: userContent,
+              signal: input.signal,
+              traceParent: turnTrace,
+            })
+          : [];
+        const memoryBlock = formatMemoryBlock(recalledMemories);
+
         // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
         const toolMap = runtime.buildTools(assistant, target.provider.supportsTools);
         const toolDefs = toToolDefinitions([...toolMap.values()]);
@@ -122,6 +126,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           lastCompletionTokens:
             conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
           summary: conversation.summary,
+          memoryBlock,
         });
         if (budgetStats) await recordBudgetSpan(budgetStats, turnTrace);
         const toolCtx = runtime.createContext(assistant, input.signal);
@@ -260,9 +265,9 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         conversations.completeMessage(assistantMessage.id, full, usage);
         conversations.saveMessageToolTrace(assistantMessage.id, trace);
 
-        // v0.5：回合成功后尝试递归摘要压缩（下轮生效）；失败静默降级为纯截断，不阻塞回答
+        // v0.5：回合成功后执行后台任务（递归摘要压缩 + 长期记忆提取），均失败静默
         if (!input.signal?.aborted) {
-          await runPostTurnCompaction({
+          await runPostTurnJobs({
             conversations,
             attachments,
             conversation,
@@ -270,6 +275,9 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             target,
             toolDefs,
             lastCompletionTokens: usage?.completionTokens ?? null,
+            memory,
+            userContent,
+            assistantContent: full,
             signal: input.signal,
             traceParent: turnTrace,
           });

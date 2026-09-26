@@ -56,7 +56,10 @@ function seedLongConversation(
     contextWindow: 3000,
   });
   createSettingsService({ db, cipher }).update({ defaultChatModelId: model.id });
-  const assistant = createAssistantsService({ db, cipher }).list()[0]!;
+  const assistantService = createAssistantsService({ db, cipher });
+  const assistant = assistantService.list()[0]!;
+  // 压缩用例隔离长期记忆：关闭开关，避免回合后提取额外占用 fetch mock 队列
+  assistantService.update(assistant.id, { memoryEnabled: false });
   const convRepo = createConversationRepository(db);
   const msgRepo = createMessageRepository(db);
   const conv = convRepo.create({ assistantId: assistant.id });

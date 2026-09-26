@@ -9,15 +9,23 @@ import {
   type HistoryBudgetStats,
 } from './context-budget';
 
-/** 组装系统提示词：助手人设 + 可选对话摘要 + 可选 RAG 参考资料块 */
+/** 组装系统提示词：助手人设 + 可选对话摘要 + 可选长期记忆 + 可选 RAG 参考资料块 */
 export function buildSystemPrompt(
   assistant: Assistant,
   rag: RagContext | null,
   summary: string | null = null,
+  memoryBlock: string | null = null,
 ): string {
   const parts = [assistant.systemPrompt.trim()];
   if (summary?.trim()) {
     parts.push('以下是本次对话早期内容的摘要，其中的事实与约定仍然有效：\n\n【对话摘要】\n' + summary.trim());
+  }
+  if (memoryBlock?.trim()) {
+    parts.push(
+      '以下是关于用户的长期记忆，回答时可自然利用；与当前问题无关时无需提及：\n\n' +
+        '【长期记忆】\n' +
+        memoryBlock.trim(),
+    );
   }
   if (rag?.contextBlock) {
     parts.push(
@@ -39,6 +47,8 @@ export interface ChatBudgetOptions {
   lastCompletionTokens: number | null;
   /** 已持久化的对话递归摘要（注入 system，占用预算） */
   summary?: string | null;
+  /** 回合前召回的长期记忆块（注入 system，占用预算） */
+  memoryBlock?: string | null;
 }
 
 /**
@@ -55,7 +65,12 @@ export function buildChatMessages(
   images: Map<string, ResolvedImage> = new Map(),
   budget?: ChatBudgetOptions,
 ): { messages: ChatMessage[]; stats: HistoryBudgetStats | null } {
-  const systemPrompt = buildSystemPrompt(assistant, rag, budget?.summary ?? null);
+  const systemPrompt = buildSystemPrompt(
+    assistant,
+    rag,
+    budget?.summary ?? null,
+    budget?.memoryBlock ?? null,
+  );
   const prefix: ChatMessage[] = systemPrompt
     ? [{ role: 'system', content: systemPrompt }]
     : [];

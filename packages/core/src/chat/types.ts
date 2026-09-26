@@ -10,6 +10,7 @@ export type OrchestratorEvent =
   | { event: 'meta'; data: SsePayloadMap['meta'] }
   | { event: 'delta'; data: SsePayloadMap['delta'] }
   | { event: 'citations'; data: SsePayloadMap['citations'] }
+  | { event: 'memories'; data: SsePayloadMap['memories'] }
   | { event: 'tool'; data: SsePayloadMap['tool'] }
   | { event: 'done'; data: SsePayloadMap['done'] }
   | { event: 'error'; data: SsePayloadMap['error'] };

@@ -37,6 +37,8 @@ export interface TurnMessageParams {
   lastCompletionTokens: number | null;
   /** 已持久化的对话递归摘要（注入 system 区块） */
   summary: string | null;
+  /** 回合前召回的长期记忆（注入 system 区块） */
+  memoryBlock: string | null;
 }
 
 /**
@@ -47,13 +49,14 @@ export function buildTurnMessages(params: TurnMessageParams): {
   messages: ChatMessage[];
   stats: HistoryBudgetStats | null;
 } {
-  const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens, summary } =
-    params;
+  const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
+    summary, memoryBlock } = params;
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
     lastCompletionTokens,
     summary,
+    memoryBlock,
   });
 }
 
@@ -109,6 +112,7 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
     personaTokens: estimateTokens(assistant.systemPrompt),
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
     reserveTokens: resolveReserveTokens(params.lastCompletionTokens),
+    memoryEnabled: assistant.memoryEnabled,
   });
   if (!plan) return { compactedTurns: 0 };
 
