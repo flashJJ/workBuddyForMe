@@ -8,6 +8,8 @@ const enabledToolsSchema = z
   .max(10, '工具数量超限')
   .default(['current_time']);
 const retrieveAlwaysSchema = z.boolean().default(true);
+/** v0.5：长期记忆开关默认开启 */
+const memoryEnabledSchema = z.boolean().default(true);
 
 const samplingFields = {
   emoji: z.string().trim().max(8).nullable().default(null),
@@ -25,6 +27,7 @@ const samplingFields = {
   knowledgeBaseId: z.string().trim().min(1).nullable().default(null),
   enabledTools: enabledToolsSchema,
   retrieveAlways: retrieveAlwaysSchema,
+  memoryEnabled: memoryEnabledSchema,
 };
 
 export const assistantCreateSchema = z.object({
@@ -47,6 +50,7 @@ export const assistantUpdateSchema = z
     knowledgeBaseId: samplingFields.knowledgeBaseId.optional(),
     enabledTools: samplingFields.enabledTools.optional(),
     retrieveAlways: samplingFields.retrieveAlways.optional(),
+    memoryEnabled: samplingFields.memoryEnabled.optional(),
     sortOrder: z.number().int().min(0).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');

@@ -4,6 +4,7 @@ export { ApiError, type ApiErrorBody } from './errors/api-error';
 
 // 常量与领域类型
 export * from './constants';
+export { MEMORY_KINDS, MEMORY_STATUSES } from './types/domain';
 export type {
   Provider,
   ProviderModel,
@@ -12,6 +13,9 @@ export type {
   Conversation,
   Message,
   Citation,
+  Memory,
+  MemoryKind,
+  MemoryStatus,
   KnowledgeBase,
   DocumentRecord,
   Attachment,
@@ -58,6 +62,12 @@ export {
   type ClipRequest,
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
+export {
+  memoryCreateSchema,
+  memoryUpdateSchema,
+  type MemoryCreateInput,
+  type MemoryUpdateInput,
+} from './schemas/memory';
 
 // 备份/恢复契约
 export {
@@ -107,4 +117,5 @@ export {
   type SseEventName,
   type SsePayloadMap,
   type TokenUsage,
+  type RecalledMemoryPayload,
 } from './api/sse';

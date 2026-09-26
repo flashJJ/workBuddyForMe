@@ -18,6 +18,7 @@ function makeAssistant(partial: Partial<Assistant> & { id: string; name: string 
     knowledgeBaseId: null,
     enabledTools: [],
     retrieveAlways: false,
+    memoryEnabled: true,
     isBuiltin: false,
     sortOrder: 0,
     createdAt: '2025-01-01T00:00:00.000Z',

@@ -62,6 +62,25 @@ export const COMPACTION_KEEP_RATIO = 0.5;
 export const COMPACTION_MIN_KEEP_MESSAGES = 4;
 export const SUMMARY_BLOCK_RESERVE_TOKENS = 512;
 
+/**
+ * v0.5 长期记忆：
+ * - 提问时按用户消息向量检索 MEMORY_TOP_K 条，L2 距离（单位向量）超过
+ *   MEMORY_RECALL_MAX_DISTANCE 的丢弃——归一化向量 L2≈sqrt(2-2cos)，
+ *   0.78 约等于余弦相似度 0.70，宁少勿多；
+ * - 写入去重：与最近邻距离 ≤ MEMORY_DUPLICATE_MAX_DISTANCE（≈cos 0.94）
+ *   视为同一记忆，更新合并而非新建；
+ * - MEMORY_BLOCK_RESERVE 为注入 system 的记忆块预留空间。
+ */
+export const MEMORY_TOP_K = 3;
+export const MEMORY_RECALL_MAX_DISTANCE = 0.78;
+export const MEMORY_DUPLICATE_MAX_DISTANCE = 0.35;
+export const MEMORY_BLOCK_RESERVE_TOKENS = 512;
+/** 单次回合提取候选记忆的上限，防止小模型输出失控 */
+export const MEMORY_EXTRACT_MAX_ITEMS = 5;
+/** 重要性取值范围（模型打分） */
+export const MEMORY_IMPORTANCE_MIN = 0;
+export const MEMORY_IMPORTANCE_MAX = 1;
+
 /** v0.2 内置工具（全部只读）；助手通过 enabledTools 白名单授权 */
 export const TOOL_NAMES = ['current_time', 'knowledge_search', 'fetch_webpage'] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];

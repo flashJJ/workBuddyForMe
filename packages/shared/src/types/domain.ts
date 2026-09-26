@@ -65,6 +65,8 @@ export interface Assistant extends Timestamped {
   enabledTools: ToolName[];
   /** v0.2：绑定知识库时是否每轮强制检索（兼容开关；关闭后由模型经 knowledge_search 自主决策） */
   retrieveAlways: boolean;
+  /** v0.5：该助手是否启用长期记忆提取/召回（默认开） */
+  memoryEnabled: boolean;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -87,6 +89,28 @@ export interface Citation {
   snippet?: string;
   /** v0.3：网页剪藏来源；存在时引用角标可悬停看 URL、点击新开原文 */
   sourceUrl?: string | null;
+}
+
+/** v0.5 长期记忆类别：事实 / 偏好 / 事件 */
+export const MEMORY_KINDS = ['fact', 'preference', 'event'] as const;
+export type MemoryKind = (typeof MEMORY_KINDS)[number];
+
+/** active=参与召回；archived=软遗忘（P1，暂不自动产生，UI 可见） */
+export const MEMORY_STATUSES = ['active', 'archived'] as const;
+export type MemoryStatus = (typeof MEMORY_STATUSES)[number];
+
+/** v0.5 长期记忆条目 */
+export interface Memory extends Timestamped {
+  /** 整型主键（同时作为 sqlite-vec rowid），对外以字符串传递 */
+  id: string;
+  kind: MemoryKind;
+  content: string;
+  /** 模型打分 0~1，越高越值得长期保留 */
+  importance: number;
+  /** 提取来源会话（可空：手工创建无来源） */
+  sourceConversationId: string | null;
+  status: MemoryStatus;
+  lastAccessedAt: string | null;
 }
 
 export interface Message {
