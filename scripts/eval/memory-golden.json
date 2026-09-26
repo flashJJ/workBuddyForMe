@@ -1,0 +1,79 @@
+{
+  "description": "v0.5 长期记忆召回评估集：每个 case 在全新会话中提问，回答必须命中期望要点（anyOf 任一即可）。LLM-as-judge 按 0-2 分综合评判：2=准确命中且表达正确，1=部分沾边，0=未命中或编造。",
+  "seedMemories": [
+    { "kind": "fact", "content": "用户名叫李明，朋友也叫他阿明", "importance": 0.95 },
+    { "kind": "fact", "content": "用户在杭州未来科技城工作，是一名后端工程师", "importance": 0.8 },
+    { "kind": "fact", "content": "用户正在准备 PMP 考试，计划 2026 年 6 月参加考试", "importance": 0.9 },
+    { "kind": "preference", "content": "用户偏好简体中文回复", "importance": 0.85 },
+    { "kind": "preference", "content": "用户喜欢先给结论再展开理由的回答结构", "importance": 0.7 },
+    { "kind": "preference", "content": "用户不吃香菜，点餐时都会特别说明不要香菜", "importance": 0.75 },
+    { "kind": "fact", "content": "用户养了一只橘猫，名字叫橙子", "importance": 0.8 },
+    { "kind": "event", "content": "用户下周六搬家，从余杭搬到西湖区，已经约好了搬家公司", "importance": 0.7 },
+    { "kind": "fact", "content": "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手", "importance": 0.85 },
+    { "kind": "event", "content": "用户每周三和周五晚上去跑步，每次五公里", "importance": 0.6 },
+    { "kind": "preference", "content": "用户喜欢手冲咖啡，最近在练 V60 注水手法", "importance": 0.65 },
+    { "kind": "fact", "content": "用户用的主力编程语言是 TypeScript", "importance": 0.7 }
+  ],
+  "cases": [
+    {
+      "id": "recall-name",
+      "question": "你还记得我叫什么名字吗？",
+      "anyOf": ["李明", "阿明"]
+    },
+    {
+      "id": "recall-exam",
+      "question": "我最近在准备什么考试来着？",
+      "anyOf": ["PMP"]
+    },
+    {
+      "id": "recall-city",
+      "question": "我在哪个城市上班？",
+      "anyOf": ["杭州"]
+    },
+    {
+      "id": "recall-job",
+      "question": "我是做什么工作的？",
+      "anyOf": ["后端", "工程师"]
+    },
+    {
+      "id": "recall-language",
+      "question": "我希望你用什么语言回复我？",
+      "anyOf": ["简体中文", "中文"]
+    },
+    {
+      "id": "recall-style",
+      "question": "回答问题的时候我喜欢什么结构？",
+      "anyOf": ["先给结论", "结论"]
+    },
+    {
+      "id": "recall-pet",
+      "question": "我养宠物了吗？它叫什么？",
+      "anyOf": ["橙子", "橘猫"]
+    },
+    {
+      "id": "recall-food",
+      "question": "晚上一起吃兰州拉面，帮我点单时要注意什么？",
+      "anyOf": ["香菜"]
+    },
+    {
+      "id": "recall-event-timeline",
+      "question": "我最近有什么已经安排好的事情吗？",
+      "anyOf": ["搬家"]
+    },
+    {
+      "id": "recall-sideproject",
+      "question": "我业余时间在做什么项目？",
+      "anyOf": ["WorkBuddy", "workbuddy", "私人 AI", "AI 助手"]
+    },
+    {
+      "id": "recall-sport",
+      "question": "我平时的运动安排是怎样的？",
+      "anyOf": ["跑步", "五公里"]
+    },
+    {
+      "id": "recall-synthesize-gift",
+      "question": "想送我一个 200 元以内的小礼物，结合你对我的了解给一个建议，一句话就行。",
+      "anyOf": ["咖啡", "V60", "手冲"]
+    }
+  ]
+}

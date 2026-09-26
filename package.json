@@ -23,6 +23,7 @@
     "test:e2e": "pnpm --filter @wbfm/web test:e2e",
     "test:e2e:desktop": "pnpm --filter @wbfm/desktop test:e2e",
     "check:lines": "node scripts/check-file-lines.mjs",
+    "eval:memory": "node scripts/eval/eval-memory.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines"
   },
   "devDependencies": {
