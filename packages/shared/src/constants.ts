@@ -70,13 +70,16 @@ export const SUMMARY_BLOCK_RESERVE_TOKENS = 512;
  * v0.5 长期记忆：
  * - 提问时按用户消息向量检索 MEMORY_TOP_K 条，L2 距离（单位向量）超过
  *   MEMORY_RECALL_MAX_DISTANCE 的丢弃——归一化向量 L2≈sqrt(2-2cos)，
- *   0.78 约等于余弦相似度 0.70，宁少勿多；
+ *   1.05 约等于余弦相似度 0.45。该值按小型本地嵌入模型（qwen3-embedding:0.6b）
+ *   在 scripts/eval golden set 上实测校准：短中文问句与其记忆的余弦常在
+ *   0.5~0.65 区间，0.78（cos 0.70）会导致几乎零召回；放宽后由 MEMORY_TOP_K
+ *   限量、system 提示「无关无需提及」兜底降噪；
  * - 写入去重：与最近邻距离 ≤ MEMORY_DUPLICATE_MAX_DISTANCE（≈cos 0.94）
  *   视为同一记忆，更新合并而非新建；
  * - MEMORY_BLOCK_RESERVE 为注入 system 的记忆块预留空间。
  */
 export const MEMORY_TOP_K = 3;
-export const MEMORY_RECALL_MAX_DISTANCE = 0.78;
+export const MEMORY_RECALL_MAX_DISTANCE = 1.05;
 export const MEMORY_DUPLICATE_MAX_DISTANCE = 0.35;
 export const MEMORY_BLOCK_RESERVE_TOKENS = 512;
 /** 单次回合提取候选记忆的上限，防止小模型输出失控 */
