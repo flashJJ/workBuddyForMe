@@ -8,6 +8,7 @@ import { copyText } from '@/lib/utils/clipboard';
 import { AttachmentImage } from './attachment-image';
 import { MarkdownContent } from './markdown';
 import { ToolTrace } from './tool-trace';
+import { MessageFeedbackButtons } from './message-feedback';
 
 interface Props {
   message: Message;
@@ -16,6 +17,8 @@ interface Props {
   onRetry?: () => void;
   /** 用户消息编辑后作为新一轮重新发送 */
   onResend?: (content: string) => void;
+  /** v0.5 P1-2：反馈落库成功后同步本地视图 */
+  onFeedback?: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
   /** 流式进行中，禁用操作按钮 */
   disabled?: boolean;
 }
@@ -142,7 +145,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
   );
 }
 
-export function MessageItem({ message, assistantName, onRetry, onResend, disabled }: Props) {
+export function MessageItem({ message, assistantName, onRetry, onResend, onFeedback, disabled }: Props) {
   const isUser = message.role === 'user';
   const canRegenerate =
     !isUser &&
@@ -150,6 +153,7 @@ export function MessageItem({ message, assistantName, onRetry, onResend, disable
     Boolean(onRetry) &&
     (message.status === 'error' || message.status === 'completed');
   const showCopy = !isUser && message.status === 'completed' && Boolean(message.content);
+  const canFeedback = !isUser && message.status === 'completed' && Boolean(message.id && onFeedback);
 
   return (
     <div
@@ -194,8 +198,8 @@ export function MessageItem({ message, assistantName, onRetry, onResend, disable
           </div>
         )}
 
-        {(showCopy || canRegenerate) && (
-          <div className="flex gap-3 pt-1">
+        {(showCopy || canRegenerate || canFeedback) && (
+          <div className="flex items-center gap-3 pt-1">
             {showCopy && <CopyButton content={message.content} />}
             {canRegenerate && (
               <button
@@ -206,6 +210,13 @@ export function MessageItem({ message, assistantName, onRetry, onResend, disable
               >
                 重新生成
               </button>
+            )}
+            {canFeedback && onFeedback && (
+              <MessageFeedbackButtons
+                message={message}
+                disabled={disabled}
+                onApplied={onFeedback}
+              />
             )}
           </div>
         )}

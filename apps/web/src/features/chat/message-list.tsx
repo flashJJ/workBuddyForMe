@@ -13,9 +13,11 @@ interface Props {
   onRetry: () => void;
   /** 用户消息编辑后重新发送 */
   onResend: (content: string) => void;
+  /** v0.5 P1-2：消息反馈同步本地视图 */
+  onFeedback?: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
 }
 
-export function MessageList({ messages, assistantName, streaming, onRetry, onResend }: Props) {
+export function MessageList({ messages, assistantName, streaming, onRetry, onResend, onFeedback }: Props) {
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -52,6 +54,7 @@ export function MessageList({ messages, assistantName, streaming, onRetry, onRes
           disabled={streaming}
           onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
           onResend={message.role === 'user' && !streaming ? onResend : undefined}
+          onFeedback={onFeedback}
         />
       ))}
       <div ref={bottomRef} />

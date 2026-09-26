@@ -12,6 +12,8 @@ export const API = {
   conversations: '/api/conversations',
   conversation: (id: string) => `/api/conversations/${id}`,
   messages: (id: string) => `/api/conversations/${id}/messages`,
+  messageFeedback: (conversationId: string, messageId: string) =>
+    `/api/conversations/${conversationId}/messages/${messageId}`,
   chatStream: '/api/chat/stream',
   knowledgeBases: '/api/knowledge-bases',
   knowledgeBase: (id: string) => `/api/knowledge-bases/${id}`,

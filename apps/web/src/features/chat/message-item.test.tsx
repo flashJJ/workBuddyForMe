@@ -24,6 +24,8 @@ function makeMessage(partial: Partial<Message> = {}): Message {
     totalTokens: null,
     citations: [],
     toolTrace: [],
+    feedback: null,
+    feedbackAt: null,
     errorCode: null,
     errorMessage: null,
     createdAt: '2025-01-01T00:00:00.000Z',
@@ -109,6 +111,52 @@ describe('消息项 MessageItem（TR-27.1）', () => {
     expect(screen.getByTestId('citations')).toHaveTextContent('手册.pdf');
     expect(screen.getByTestId('citations')).toHaveTextContent('参见第三章');
     expect(screen.getByText('[1]')).toBeInTheDocument();
+  });
+
+  it('反馈：点击 👍 发 up 并回调；已选状态再点发 null 取消', async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse((init?.body as string) ?? '{}') as {
+        feedback: 'up' | null;
+      };
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: makeMessage({
+            feedback: body.feedback,
+            feedbackAt: body.feedback ? '2025-03-01T00:00:00.000Z' : null,
+          }),
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const onApplied = vi.fn();
+    const user = userEvent.setup();
+
+    const { rerender } = renderWithProviders(
+      <MessageItem message={makeMessage()} assistantName="通用助手" onFeedback={onApplied} />,
+    );
+    await user.click(screen.getByTestId('feedback-up'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const first = fetchMock.mock.calls[0]!;
+    expect(first[0]).toBe('/api/conversations/c1/messages/m1');
+    expect((first[1] as RequestInit).method).toBe('PATCH');
+    expect(JSON.parse((first[1] as RequestInit).body as string)).toEqual({ feedback: 'up' });
+    expect(onApplied).toHaveBeenCalledWith('m1', 'up', expect.any(String));
+
+    // 已选 up 状态再点一次 → null 取消
+    rerender(
+      <MessageItem
+        message={makeMessage({ feedback: 'up', feedbackAt: '2025-03-01T00:00:00.000Z' })}
+        assistantName="通用助手"
+        onFeedback={onApplied}
+      />,
+    );
+    await user.click(screen.getByTestId('feedback-up'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const second = fetchMock.mock.calls[1]!;
+    expect(JSON.parse((second[1] as RequestInit).body as string)).toEqual({ feedback: null });
+    expect(onApplied).toHaveBeenLastCalledWith('m1', null, null);
   });
 
   it('用户图片消息：经带令牌 fetch 拉取 blob 并渲染缩略图', async () => {

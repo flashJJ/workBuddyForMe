@@ -31,6 +31,8 @@ function pendingMessage(role: Message['role'], content: string): Message {
     totalTokens: null,
     citations: [],
     toolTrace: [],
+    feedback: null,
+    feedbackAt: null,
     errorCode: null,
     errorMessage: null,
     createdAt: nowIso(),
@@ -48,6 +50,8 @@ export interface ChatSession {
   stop: () => void;
   /** 切换会话/助手时清空本地流式视图，回到服务端历史 */
   reset: () => void;
+  /** 反馈提交成功后同步到本地 live 视图（live 为空时由 React Query 刷新生效） */
+  applyFeedback: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
 }
 
 /**
@@ -257,5 +261,17 @@ export function useChatSession(
     });
   }, [streamStop]);
 
-  return { messages: baseMessages, streaming, recalledMemories, send, retry, stop, reset };
+  const applyFeedback = React.useCallback(
+    (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => {
+      setLive((prev) => {
+        if (!prev) return prev;
+        return prev.map((m) =>
+          m.id === messageId ? { ...m, feedback, feedbackAt } : m,
+        );
+      });
+    },
+    [],
+  );
+
+  return { messages: baseMessages, streaming, recalledMemories, send, retry, stop, reset, applyFeedback };
 }

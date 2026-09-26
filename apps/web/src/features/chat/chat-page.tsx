@@ -204,6 +204,7 @@ export function ChatPage() {
               streaming={session.streaming}
               onRetry={session.retry}
               onResend={session.send}
+              onFeedback={session.applyFeedback}
             />
             <Composer
               streaming={session.streaming}
