@@ -20,6 +20,9 @@ export const API = {
   document: (id: string) => `/api/documents/${id}`,
   attachments: '/api/attachments',
   attachment: (id: string) => `/api/attachments/${id}`,
+  memories: '/api/memories',
+  memory: (id: string) => `/api/memories/${id}`,
+  memoryClear: '/api/memories/clear',
 } as const;
 
 export const QUERY_KEYS = {
@@ -33,4 +36,5 @@ export const QUERY_KEYS = {
   knowledgeBases: ['knowledge-bases'] as const,
   documents: (kbId: string) => ['documents', kbId] as const,
   attachment: (id: string) => ['attachment', id] as const,
+  memories: ['memories'] as const,
 };

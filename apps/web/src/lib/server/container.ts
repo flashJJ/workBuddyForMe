@@ -10,6 +10,7 @@ import {
   createDocumentService,
   createIngestionPipeline,
   createKnowledgeService,
+  createMemoryService,
   createModelService,
   createProviderService,
   createSettingsService,
@@ -21,6 +22,7 @@ import {
   type DocumentService,
   type IngestionPipeline,
   type KnowledgeService,
+  type MemoryService,
   type SecretCipher,
 } from '@wbfm/core';
 
@@ -37,6 +39,7 @@ export interface ServiceContainer {
   knowledgeBases: KnowledgeService;
   documents: DocumentService;
   attachments: AttachmentService;
+  memories: MemoryService;
 }
 
 let container: ServiceContainer | null = null;
@@ -63,6 +66,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     knowledgeBases: createKnowledgeService(deps),
     documents: createDocumentService(deps),
     attachments: createAttachmentService(deps),
+    memories: createMemoryService(deps),
   };
 }
 
