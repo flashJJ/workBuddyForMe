@@ -4,6 +4,13 @@ import { OUTPUT_RESERVE_TOKENS } from '@wbfm/shared';
 /** 用上次真实 completion 校准预留时的加成余量 */
 const OUTPUT_RESERVE_MARGIN = 128;
 
+/** 输出预留：优先用上次真实 completion 校准，否则默认预留 */
+export function resolveReserveTokens(lastCompletionTokens: number | null): number {
+  return lastCompletionTokens != null
+    ? Math.max(OUTPUT_RESERVE_TOKENS, lastCompletionTokens + OUTPUT_RESERVE_MARGIN)
+    : OUTPUT_RESERVE_TOKENS;
+}
+
 /**
  * v0.5 Token 预算估算参数：
  * 无真实 tokenizer 时按字符粗估——中文 ≈1.5 字符/token，非 CJK ≈4 字符/token。
@@ -82,10 +89,7 @@ export function assembleHistoryWithinBudget(
   input: AssembleHistoryInput,
 ): AssembleHistoryResult {
   const { history, contextWindow, systemTokens, toolsTokens, lastCompletionTokens } = input;
-  const reserveTokens =
-    lastCompletionTokens != null
-      ? Math.max(OUTPUT_RESERVE_TOKENS, lastCompletionTokens + OUTPUT_RESERVE_MARGIN)
-      : OUTPUT_RESERVE_TOKENS;
+  const reserveTokens = resolveReserveTokens(lastCompletionTokens);
   const historyBudget = Math.max(
     0,
     contextWindow - systemTokens - toolsTokens - reserveTokens,

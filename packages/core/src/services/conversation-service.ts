@@ -123,6 +123,19 @@ export function createConversationService({ db }: ServiceDeps) {
       return messages.lastN(conversationId, n);
     },
 
+    /** v0.5：跳过已折叠进摘要的最早 skip 条，取最近 n 条历史（时间正序） */
+    recentMessagesAfter(conversationId: string, skip: number, n: number): Message[] {
+      return messages.lastNAfter(conversationId, skip, n);
+    },
+
+    /** v0.5：写回递归摘要与累计折叠条数 */
+    updateSummary(conversationId: string, summary: string, summaryTurns: number): Conversation {
+      requireConversation(conversationId);
+      const updated = conversations.updateSummary(conversationId, summary, summaryTurns);
+      if (!updated) throw ApiError.notFound('会话', conversationId);
+      return updated;
+    },
+
     /** 最近一条助手响应的真实 completion tokens（v0.5 token 预算校准；无则 null） */
     lastAssistantUsage(conversationId: string): { completionTokens: number } | null {
       return messages.lastAssistantUsage(conversationId);

@@ -16,13 +16,13 @@ import { createAssistantsService } from '../services/assistant-service';
 import { createAttachmentService } from '../services/attachment-service';
 import { createConversationService } from '../services/conversation-service';
 import { resolveChatTarget, type ResolvedChatTarget } from './model-resolver';
-import { buildTurnMessages, recordBudgetSpan } from './turn-context';
+import { buildTurnMessages, recordBudgetSpan, runPostTurnCompaction } from './turn-context';
+import { runAlwaysRetrieval } from './retrieve-turn';
 import { buildImageMap } from './multimodal';
 import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
-import type { OrchestratorEvent, RagContext, StreamChatInput } from './types';
+import type { OrchestratorEvent, StreamChatInput } from './types';
 import {
-  RAG_SNIPPET_LIMIT,
   ROUND_LIMIT_FALLBACK,
   isToolName,
   mergeCitations,
@@ -90,49 +90,21 @@ export function createChatOrchestrator(deps: ServiceDeps) {
       let turnError: unknown = null;
 
       try {
-        let retrieved: RagContext | null = null;
-        try {
-          // 兼容路径：retrieveAlways 时保留 v0.1 每轮强制检索
-          if (input.retrieve && assistant.knowledgeBaseId && assistant.retrieveAlways) {
-            retrieved = await traceAsync(
-              {
-                name: 'knowledge_search',
-                runType: 'retriever',
-                parent: turnTrace,
-                inputs: { query: userContent, knowledgeBaseId: assistant.knowledgeBaseId },
-              },
-              () => input.retrieve!(userContent, assistant, input.signal),
-              (result) =>
-                result
-                  ? {
-                      citationCount: result.citations.length,
-                      citations: result.citations.map((c) => ({
-                        documentId: c.documentId,
-                        ordinal: c.ordinal,
-                        snippet: c.snippet?.slice(0, RAG_SNIPPET_LIMIT) ?? '',
-                      })),
-                    }
-                  : { citationCount: 0 },
-            );
-            if (retrieved?.citations.length) {
-              yield { event: 'citations', data: { citations: retrieved.citations } };
-            }
-          }
-        } catch (error) {
-          if (input.signal?.aborted) {
-            conversations.stopMessage(assistantMessage.id, '');
-            yield { event: 'done', data: { content: '', usage: null } };
-            return;
-          }
-          turnError = error;
-          const failure = normalizeFailure(error);
-          conversations.markMessageError(assistantMessage.id, failure.code, failure.message);
-          yield { event: 'error', data: failure };
-          return;
-        }
+        const retrieval = yield* runAlwaysRetrieval({
+          assistant,
+          userContent,
+          retrieve: input.retrieve,
+          signal: input.signal,
+          traceParent: turnTrace,
+          assistantMessageId: assistantMessage.id,
+          conversations,
+        });
+        if (retrieval.aborted || retrieval.failed) return;
+        const retrieved = retrieval.retrieved;
 
+        const conversation = conversations.get(conversationId);
         const history = conversations
-          .recentMessages(conversationId, HISTORY_MESSAGE_SAFETY_CAP)
+          .recentMessagesAfter(conversationId, conversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
           .filter((m) => m.id !== assistantMessage.id);
         // 历史图片（含本轮新图与重生成旧图）解析为 data URL
         const imageMap = buildImageMap(attachments, history);
@@ -149,6 +121,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           toolDefs,
           lastCompletionTokens:
             conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
+          summary: conversation.summary,
         });
         if (budgetStats) await recordBudgetSpan(budgetStats, turnTrace);
         const toolCtx = runtime.createContext(assistant, input.signal);
@@ -286,6 +259,22 @@ export function createChatOrchestrator(deps: ServiceDeps) {
 
         conversations.completeMessage(assistantMessage.id, full, usage);
         conversations.saveMessageToolTrace(assistantMessage.id, trace);
+
+        // v0.5：回合成功后尝试递归摘要压缩（下轮生效）；失败静默降级为纯截断，不阻塞回答
+        if (!input.signal?.aborted) {
+          await runPostTurnCompaction({
+            conversations,
+            attachments,
+            conversation,
+            assistant,
+            target,
+            toolDefs,
+            lastCompletionTokens: usage?.completionTokens ?? null,
+            signal: input.signal,
+            traceParent: turnTrace,
+          });
+        }
+
         yield { event: 'done', data: { content: full, usage } };
       } finally {
         await turnTrace?.end(

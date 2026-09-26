@@ -51,9 +51,19 @@ export {
   estimateTokens,
   estimateMessageTokens,
   assembleHistoryWithinBudget,
+  resolveReserveTokens,
   IMAGE_TOKEN_ESTIMATE,
   type HistoryBudgetStats,
 } from './chat/context-budget';
+export {
+  planCompaction,
+  buildSummaryMessages,
+  normalizeSummary,
+  summarizeConversation,
+  type CompactionPlan,
+  type CompactionPlanInput,
+} from './chat/summarizer';
+export { compactIfNeeded, type CompactionResult } from './chat/turn-context';
 export type {
   OrchestratorEvent,
   StreamChatInput,
