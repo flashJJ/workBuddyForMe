@@ -19,6 +19,16 @@
 - 总结：[v0.4-release-summary.md](v0.4-release-summary.md)
 - 技术博客：[blog/v0.4](../../blog/v0.4/)（B01 已发布，B02-B10 待续）
 
+## 下一版本：v0.5 📝 规划中
+
+**主题：记得住**。长期记忆（提取/去重/检索注入）+ 上下文工程（token 预算、递归摘要压缩）+ 记忆管理 UI + 评估反馈闭环。
+- 方案：[v0.5-memory-and-context.md](v0.5-memory-and-context.md)
+
+### v0.6 📝 规划中
+
+**主题：会接活**。MCP 客户端（stdio + HTTP）+ 权限分级与人工确认（HITL）+ 本地声明式技能包 + 工具可观测性。
+- 方案：[v0.6-skills-and-mcp.md](v0.6-skills-and-mcp.md)
+
 ## 历史版本
 
 ### v0.3 ✅ 已发布（2025-Q4）
@@ -50,20 +60,22 @@
 | v0.2 | 会动手、能离线：工具调用 + 本地模型 | ✅ 已发布 | [方案](v0.2-tool-calling-and-ollama.md) | [总结](v0.2-release-summary.md) | 10 篇 | `v0.2` |
 | v0.3 | 什么都能读：多模态与富文档 | ✅ 已发布 | [方案](v0.3-multimodal-and-rich-docs.md) | [总结](v0.3-release-summary.md) | 10 篇 | `v0.3.0` |
 | v0.4 | 数据随身：备份/分享/自动更新 + OCR + 命令面板 | ✅ 已发布 | [方案](v0.4-data-portability-and-updates.md) | [总结](v0.4-release-summary.md) | B01 起 | `v0.4.0` |
+| v0.5 | 记得住：长期记忆 + 上下文工程 | 📝 规划中 | [方案](v0.5-memory-and-context.md) | — | — | — |
+| v0.6 | 会接活：MCP + 技能包 + 权限确认 | 📝 规划中 | [方案](v0.6-skills-and-mcp.md) | — | — | — |
 | v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
-### v0.3「什么都能读」—— 多模态与富文档（已细化）
+### v0.7+「知识变厚」—— 编译式 RAG 与知识治理
 
-详见 [v0.3 方案](v0.3-multimodal-and-rich-docs.md)：P0 视觉对话 + Office（docx/xlsx/pptx）解析 + 网页剪藏入库；P1 图片型 PDF OCR 兜底。
+- 知识编译：文档 → 实体/关系/摘要索引的预编译知识层，检索时静态知识优先、降低延迟
+- 可追溯引用升级：语句级绑定原文出处（Source + Page + Paragraph）
+- 知识治理：去重、冲突检测、文档版本管理与增量重编译
 
-### v0.4「数据随身」—— 备份/分享/自动更新
+### v0.8+「团队协作」—— 多智能体
 
-- 桌面端自动更新（electron-updater + GitHub Releases）
-- 备份恢复增强：选择性导出（会话/知识库/设置分轨）与导入校验
-- 对话分享：单会话导出为 Markdown/HTML 快照
-- 全局快捷键与命令面板（Ctrl+K）
+- 规划-执行-审查的最小多 Agent 编排（3-5 个角色，避免通信开销失控）
+- 任务分解与交接格式（Handoff Format）；共享上下文与记忆隔离边界
 
 ### v1.0「正式发布」—— 可对外分发的 1.0
 
