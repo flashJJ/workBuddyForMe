@@ -6,6 +6,9 @@ import type {
   Conversation,
   DocumentRecord,
   KnowledgeBase,
+  Memory,
+  MemoryKind,
+  MemoryStatus,
   Message,
   MessageRole,
   MessageStatus,
@@ -58,6 +61,8 @@ export interface AssistantRow {
   knowledge_base_id: string | null;
   enabled_tools: string;
   retrieve_always: number;
+  /** v0.5：长期记忆开关（0/1） */
+  memory_enabled: number;
   is_builtin: number;
   sort_order: number;
   created_at: string;
@@ -176,6 +181,7 @@ export function mapAssistant(row: AssistantRow): Assistant {
     knowledgeBaseId: row.knowledge_base_id,
     enabledTools: parseJsonArray<ToolName>(row.enabled_tools),
     retrieveAlways: row.retrieve_always === 1,
+    memoryEnabled: row.memory_enabled !== 0,
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -245,6 +251,32 @@ export function mapDocument(row: DocumentRow): DocumentRecord {
     chunkCount: row.chunk_count,
     createdAt: row.created_at,
     indexedAt: row.indexed_at,
+  };
+}
+
+export interface MemoryRow {
+  id: number;
+  kind: MemoryKind;
+  content: string;
+  importance: number;
+  source_conversation_id: string | null;
+  status: MemoryStatus;
+  created_at: string;
+  updated_at: string;
+  last_accessed_at: string | null;
+}
+
+export function mapMemory(row: MemoryRow): Memory {
+  return {
+    id: String(row.id),
+    kind: row.kind,
+    content: row.content,
+    importance: row.importance,
+    sourceConversationId: row.source_conversation_id,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lastAccessedAt: row.last_accessed_at,
   };
 }
 

@@ -16,6 +16,8 @@ export interface AssistantCreateFields {
   knowledgeBaseId: string | null;
   enabledTools: ToolName[];
   retrieveAlways: boolean;
+  /** v0.5：长期记忆开关；建库老数据走列默认 1 */
+  memoryEnabled?: boolean;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -34,6 +36,7 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   knowledgeBaseId: 'knowledge_base_id',
   enabledTools: 'enabled_tools',
   retrieveAlways: 'retrieve_always',
+  memoryEnabled: 'memory_enabled',
   sortOrder: 'sort_order',
 };
 
@@ -43,6 +46,9 @@ function toRowValues(fields: Partial<AssistantCreateFields>): Record<string, unk
   if (fields.enabledTools !== undefined) values.enabledTools = JSON.stringify(fields.enabledTools);
   if (fields.retrieveAlways !== undefined) {
     values.retrieveAlways = fields.retrieveAlways ? 1 : 0;
+  }
+  if (fields.memoryEnabled !== undefined) {
+    values.memoryEnabled = fields.memoryEnabled ? 1 : 0;
   }
   return values;
 }
@@ -55,15 +61,17 @@ export function createAssistantRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO assistants
            (id, name, emoji, color, system_prompt, temperature, top_p, max_tokens,
-            model_id, knowledge_base_id, enabled_tools, retrieve_always,
+            model_id, knowledge_base_id, enabled_tools, retrieve_always, memory_enabled,
             is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
-            @modelId, @knowledgeBaseId, @enabledTools, @retrieveAlways,
+            @modelId, @knowledgeBaseId, @enabledTools, @retrieveAlways, @memoryEnabled,
             @isBuiltin, @sortOrder, @ts, @ts)`,
       ).run({
         ...toRowValues(fields),
         id,
+        // 显式缺省（种子路径）时落 1，避免 NOT NULL 绑定问题
+        memoryEnabled: fields.memoryEnabled === false ? 0 : 1,
         isBuiltin: fields.isBuiltin ? 1 : 0,
         ts,
       });

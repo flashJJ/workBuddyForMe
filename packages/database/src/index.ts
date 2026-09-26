@@ -19,5 +19,16 @@ export {
   type ChunkVectorRow,
   type ChunkSearchResult,
 } from './vector';
+export {
+  ensureMemoryVectorTable,
+  getMemoryVectorDimension,
+  upsertMemoryVector,
+  deleteMemoryVector,
+  deleteAllMemoryVectors,
+  searchMemoryVectors,
+  MEMORY_VECTOR_DIM_META_KEY,
+  type MemoryVectorRow,
+  type MemorySearchResult,
+} from './memory-vector';
 export * from './repositories';
 export { nowIso, timestamps } from './utils/time';

@@ -32,8 +32,8 @@ describe('v005 迁移：conversations 摘要字段加法升级', () => {
   it('v4 老库升级：老会话 summary 为 NULL、summary_turns 为 0，可写回', () => {
     const db = createV4Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([5]);
-    expect(LATEST_SCHEMA_VERSION).toBe(5);
+    expect(result.applied).toEqual([5, 6]);
+    expect(LATEST_SCHEMA_VERSION).toBe(6);
 
     const before = db
       .prepare(`SELECT summary, summary_turns FROM conversations WHERE id='c1'`)
@@ -50,7 +50,7 @@ describe('v005 迁移：conversations 摘要字段加法升级', () => {
     db.close();
   });
 
-  it('user_version 门控：已升级到 v5 的库不重复应用', () => {
+  it('user_version 门控：已升级到最新的库不重复应用', () => {
     const db = createV4Database();
     applyMigrations(db);
     expect(applyMigrations(db).applied).toEqual([]);

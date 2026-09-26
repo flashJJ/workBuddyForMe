@@ -53,4 +53,11 @@ export {
   type StoredChunk,
 } from './chunk-repo';
 export { createSettingsRepository, type SettingsRepository } from './settings-repo';
-export type { ProviderRecord } from './mappers';
+export {
+  createMemoryRepository,
+  type MemoryRepository,
+  type MemoryAddFields,
+  type MemoryUpdateFields,
+  type MemoryListFilter,
+} from './memory-repo';
+export type { ProviderRecord, MemoryRow } from './mappers';

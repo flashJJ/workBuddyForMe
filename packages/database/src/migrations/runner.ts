@@ -4,6 +4,7 @@ import { migrateV002 } from './v002-tools';
 import { migrateV003 } from './v003-multimodal';
 import { migrateV004 } from './v004-ocr';
 import { migrateV005 } from './v005-conversation-summary';
+import { migrateV006 } from './v006-memory';
 
 interface Migration {
   version: number;
@@ -29,6 +30,11 @@ const MIGRATIONS: Migration[] = [
     version: 5,
     description: 'conversation compaction: conversations.summary + summary_turns',
     up: migrateV005,
+  },
+  {
+    version: 6,
+    description: 'long-term memory: assistants.memory_enabled + memories table',
+    up: migrateV006,
   },
 ];
 
