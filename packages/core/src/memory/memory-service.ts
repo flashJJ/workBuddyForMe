@@ -22,6 +22,7 @@ import { traceAsync, type TraceHandle } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { resolveEmbeddingTarget } from '../ingestion/embedding-target';
 import type { ExtractedMemory } from './extractor';
+import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-decay';
 
 /**
  * v0.5 M3 长期记忆服务：
@@ -52,6 +53,14 @@ export interface ManualMemoryInput {
   kind: MemoryKind;
   content: string;
   importance: number;
+}
+
+/** P1-1 单条情景记忆入库（如会话压缩摘要），复用去重/向量管线 */
+export interface RememberOneInput {
+  kind: MemoryKind;
+  content: string;
+  importance: number;
+  sourceConversationId?: string | null;
 }
 
 async function embedTexts(
@@ -146,6 +155,22 @@ export function createMemoryService(deps: ServiceDeps) {
     return result;
   }
 
+  /** 单条记忆入库（情景记忆/摘要），嵌入去重与自动记忆完全一致 */
+  async function rememberOne(input: RememberOneInput, signal?: AbortSignal): Promise<Memory> {
+    const content = input.content.slice(0, 500);
+    const candidate: ExtractedMemory = {
+      kind: input.kind,
+      content,
+      importance: input.importance,
+    };
+    const embedded = await embedTexts(deps, [content], signal);
+    const vector = embedded?.vectors[0] ?? null;
+    const tx = deps.db.transaction(() =>
+      persistOne(deps.db, candidate, vector, input.sourceConversationId ?? null),
+    );
+    return tx().memory;
+  }
+
   async function recall(query: string, options: RecallOptions = {}): Promise<Memory[]> {
     const trimmed = query.trim();
     if (!trimmed) return [];
@@ -234,13 +259,20 @@ export function createMemoryService(deps: ServiceDeps) {
     return tx();
   }
 
+  /** P1-1 遗忘策略：间隔保护 + 软归档，具体逻辑在 memory-decay.ts */
+  function runDecay(options: DecayOptions = {}): DecayResult {
+    return runMemoryDecay(deps.db, repo, options);
+  }
+
   return {
     rememberCandidates,
+    rememberOne,
     recall,
     createManual,
     update,
     remove,
     clearAll,
+    runDecay,
     list,
     get,
   };

@@ -87,6 +87,8 @@ export interface CompactionParams {
 export interface CompactionResult {
   /** 本次新折叠的消息条数；0 表示无需压缩 */
   compactedTurns: number;
+  /** 本次写回的（递归合并后）摘要；未压缩为 null */
+  summary: string | null;
 }
 
 /**
@@ -114,7 +116,7 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
     reserveTokens: resolveReserveTokens(params.lastCompletionTokens),
     memoryEnabled: assistant.memoryEnabled,
   });
-  if (!plan) return { compactedTurns: 0 };
+  if (!plan) return { compactedTurns: 0, summary: null };
 
   const folded = unfolded.slice(0, plan.foldCount);
   const summary = await summarizeConversation({
@@ -129,16 +131,18 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
     summary,
     conversation.summaryTurns + plan.foldCount,
   );
-  return { compactedTurns: plan.foldCount };
+  return { compactedTurns: plan.foldCount, summary };
 }
 
 /**
  * 回合成功后调用：尝试压缩，任何失败（摘要模型不可用/空结果/网络）都只记日志，
  * 降级为下轮继续 token 截断，绝不影响已完成的回答。
  */
-export async function runPostTurnCompaction(params: CompactionParams): Promise<void> {
+export async function runPostTurnCompaction(
+  params: CompactionParams,
+): Promise<CompactionResult | null> {
   try {
-    await compactIfNeeded(params);
+    return await compactIfNeeded(params);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.warn(
@@ -146,5 +150,6 @@ export async function runPostTurnCompaction(params: CompactionParams): Promise<v
         error instanceof Error ? error.message : String(error)
       }`,
     );
+    return null;
   }
 }
