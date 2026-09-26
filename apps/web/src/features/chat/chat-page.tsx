@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Share2 } from 'lucide-react';
+import { Archive, Share2 } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
@@ -14,6 +14,7 @@ import { useAllModels, useSettings } from '@/lib/hooks/use-settings';
 import { AssistantSwitcher } from './assistant-switcher';
 import { ConversationRenameDialog } from './conversation-rename-dialog';
 import { ConversationShareDialog } from './conversation-share-dialog';
+import { ConversationSummaryDialog } from './conversation-summary-dialog';
 import { ConversationSidebar } from './conversation-sidebar';
 import { MessageList } from './message-list';
 import { Composer } from './composer';
@@ -44,6 +45,7 @@ export function ChatPage() {
   const [conversationId, setConversationId] = React.useState<string | null>(null);
   const [renaming, setRenaming] = React.useState<Conversation | null>(null);
   const [shareOpen, setShareOpen] = React.useState(false);
+  const [summaryOpen, setSummaryOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -53,6 +55,8 @@ export function ChatPage() {
 
   const conversationsQuery = useConversations(assistantId || undefined);
   const currentAssistant = assistants?.find((item) => item.id === assistantId) ?? null;
+  const currentConversation =
+    conversationsQuery.data?.find((item) => item.id === conversationId) ?? null;
 
   const session = useChatSession(assistantId, conversationId, (createdId) => {
     setConversationId(createdId);
@@ -142,6 +146,11 @@ export function ChatPage() {
         open={shareOpen}
         onOpenChange={setShareOpen}
       />
+      <ConversationSummaryDialog
+        conversation={currentConversation}
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b px-4 py-2.5">
           <AssistantSwitcher
@@ -150,6 +159,18 @@ export function ChatPage() {
             onChange={switchAssistant}
           />
           <div className="flex items-center gap-3">
+            {currentConversation?.summaryTurns ? (
+              <button
+                type="button"
+                data-testid="compaction-badge"
+                onClick={() => setSummaryOpen(true)}
+                title="查看模型自动生成的早期对话摘要"
+                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
+              >
+                <Archive className="h-3 w-3" />
+                已压缩 {currentConversation.summaryTurns} 条早期消息
+              </button>
+            ) : null}
             <Button
               type="button"
               variant="outline"
