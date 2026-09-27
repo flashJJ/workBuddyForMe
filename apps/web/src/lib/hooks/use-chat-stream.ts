@@ -12,6 +12,8 @@ export interface ChatStreamHandlers {
   onCitations?: (data: SsePayloadMap['citations']) => void;
   onMemories?: (data: SsePayloadMap['memories']) => void;
   onTool?: (data: SsePayloadMap['tool']) => void;
+  /** v0.6 M2：write/danger 工具执行前需用户授权（HITL 弹窗） */
+  onToolConfirmationRequired?: (data: SsePayloadMap['tool_confirmation_required']) => void;
   onDone?: (data: SsePayloadMap['done']) => void;
   onError?: (data: SsePayloadMap['error']) => void;
   onStreamingChange?: (streaming: boolean) => void;
@@ -94,6 +96,11 @@ export function useChatStream() {
                 break;
               case 'tool':
                 handlers.onTool?.(event.data as SsePayloadMap['tool']);
+                break;
+              case 'tool_confirmation_required':
+                handlers.onToolConfirmationRequired?.(
+                  event.data as SsePayloadMap['tool_confirmation_required'],
+                );
                 break;
               case 'done':
                 handlers.onDone?.(event.data as SsePayloadMap['done']);

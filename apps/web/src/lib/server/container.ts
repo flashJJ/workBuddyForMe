@@ -13,6 +13,7 @@ import {
   createMcpRegistry,
   createMemoryService,
   createModelService,
+  createPendingConfirmations,
   createPermissionService,
   createProviderService,
   createSettingsService,
@@ -26,6 +27,7 @@ import {
   type KnowledgeService,
   type McpRegistry,
   type MemoryService,
+  type PendingConfirmations,
   type PermissionService,
   type SecretCipher,
 } from '@wbfm/core';
@@ -48,6 +50,8 @@ export interface ServiceContainer {
   mcp: McpRegistry;
   /** v0.6 M2：工具权限服务（HITL 授权记忆） */
   permissions: PermissionService;
+  /** v0.6 M2：HITL 挂起确认注册表（orchestrator 挂起点 ↔ /api/tools/confirm） */
+  confirmations: PendingConfirmations;
 }
 
 let container: ServiceContainer | null = null;
@@ -62,12 +66,14 @@ function resolveCipher(): SecretCipher {
 function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const mcp = createMcpRegistry(db);
   const permissions = createPermissionService({ db, cipher });
-  const deps = { db, cipher, mcp, permissions };
+  const confirmations = createPendingConfirmations();
+  const deps = { db, cipher, mcp, permissions, confirmations };
   return {
     db,
     cipher,
     mcp,
     permissions,
+    confirmations,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),

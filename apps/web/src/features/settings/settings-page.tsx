@@ -10,6 +10,7 @@ import { ProviderCard } from './provider-card';
 import { ProviderFormDialog } from './provider-form-dialog';
 import { DefaultsPanel } from './defaults-panel';
 import { McpPanel } from './mcp-panel';
+import { PermissionPanel } from './permission-panel';
 import { MemoryPanel } from '../memory/memory-panel';
 import { BackupPanel } from './backup-panel';
 import { AboutPanel } from './about-panel';
@@ -65,6 +66,8 @@ export function SettingsPage() {
       <DefaultsPanel />
 
       <McpPanel />
+
+      <PermissionPanel />
 
       <MemoryPanel />
 

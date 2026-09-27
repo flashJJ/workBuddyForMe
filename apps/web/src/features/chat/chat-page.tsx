@@ -18,6 +18,7 @@ import { ConversationSummaryDialog } from './conversation-summary-dialog';
 import { ConversationSidebar } from './conversation-sidebar';
 import { MessageList } from './message-list';
 import { Composer } from './composer';
+import { ToolConfirmDialog } from './tool-confirm-dialog';
 import { useChatSession } from './use-chat-session';
 
 function SetupGuide() {
@@ -46,6 +47,7 @@ export function ChatPage() {
   const [renaming, setRenaming] = React.useState<Conversation | null>(null);
   const [shareOpen, setShareOpen] = React.useState(false);
   const [summaryOpen, setSummaryOpen] = React.useState(false);
+  const [confirmSubmitting, setConfirmSubmitting] = React.useState(false);
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -121,6 +123,22 @@ export function ChatPage() {
     }
   };
 
+  /** HITL 工具确认：提交失败（超时已被服务端自动拒绝等）提示并保持弹窗 */
+  const submitToolConfirm = async (action: 'allow' | 'deny', remember?: 'assistant' | 'all') => {
+    if (confirmSubmitting) return false;
+    setConfirmSubmitting(true);
+    try {
+      const ok = await session.confirmTool(action, remember);
+      if (!ok) {
+        toast.error('确认提交失败：该请求可能已超时，请重试或停止本轮对话');
+        return false;
+      }
+      return true;
+    } finally {
+      setConfirmSubmitting(false);
+    }
+  };
+
   if (assistantsLoading) return <Spinner />;
 
   return (
@@ -150,6 +168,18 @@ export function ChatPage() {
         conversation={currentConversation}
         open={summaryOpen}
         onOpenChange={setSummaryOpen}
+      />
+      <ToolConfirmDialog
+        open={Boolean(session.pendingConfirmation)}
+        tool={session.pendingConfirmation?.tool ?? ''}
+        permission={session.pendingConfirmation?.permission ?? 'write'}
+        argsSummary={session.pendingConfirmation?.argsSummary ?? ''}
+        submitting={confirmSubmitting}
+        onOpenChange={(open) => {
+          // 不允许点遮罩/ESC 直接关闭而不做决策——必须显式拒绝
+          if (!open && !confirmSubmitting) void submitToolConfirm('deny');
+        }}
+        onSubmit={submitToolConfirm}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b px-4 py-2.5">
