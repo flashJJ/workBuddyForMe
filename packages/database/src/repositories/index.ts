@@ -60,4 +60,10 @@ export {
   type MemoryUpdateFields,
   type MemoryListFilter,
 } from './memory-repo';
+export {
+  createMcpServerRepository,
+  type McpServerRepository,
+  type McpServerCreateFields,
+  type McpServerUpdateFields,
+} from './mcp-server-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';
