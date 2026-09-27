@@ -8,6 +8,7 @@ import {
   type McpServerUpdateFields,
 } from '@wbfm/database';
 import { createMcpClient, type McpClient } from './client';
+import { createMcpHttpClient } from './http-transport';
 import { spawnStdioTransport, type StdioTransport } from './stdio-transport';
 
 /** 服务器连接的内存态（配置来自仓储，进程态不落库） */
@@ -60,8 +61,11 @@ function defaultClientFactory(
     onClose: (detail: { code: number | null; signal: NodeJS.Signals | null }) => void;
   },
 ): McpClient {
-  if (config.transport !== 'stdio') {
-    throw new Error('http transport 将在 v0.6 M2 提供，当前仅支持 stdio');
+  if (config.transport === 'http') {
+    return createMcpHttpClient({
+      url: config.url,
+      headers: config.headers,
+    });
   }
   const transport = spawnStdioTransport({
     command: config.command,

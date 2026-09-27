@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -32,8 +32,8 @@ describe('v005 迁移：conversations 摘要字段加法升级', () => {
   it('v4 老库升级：老会话 summary 为 NULL、summary_turns 为 0，可写回', () => {
     const db = createV4Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([5, 6, 7, 8]);
-    expect(LATEST_SCHEMA_VERSION).toBe(8);
+    expect(result.applied).toEqual([5, 6, 7, 8, 9]);
+    expect(LATEST_SCHEMA_VERSION).toBe(9);
 
     const before = db
       .prepare(`SELECT summary, summary_turns FROM conversations WHERE id='c1'`)

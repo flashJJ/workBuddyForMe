@@ -28,6 +28,7 @@ export {
   type McpServerCapabilities,
   type McpToolCallOutcome,
 } from './client';
+export { createMcpHttpClient } from './http-transport';
 export {
   createMcpRegistry,
   type McpRegistry,

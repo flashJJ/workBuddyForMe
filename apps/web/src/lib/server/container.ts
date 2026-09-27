@@ -13,6 +13,7 @@ import {
   createMcpRegistry,
   createMemoryService,
   createModelService,
+  createPermissionService,
   createProviderService,
   createSettingsService,
   createWebCipher,
@@ -25,6 +26,7 @@ import {
   type KnowledgeService,
   type McpRegistry,
   type MemoryService,
+  type PermissionService,
   type SecretCipher,
 } from '@wbfm/core';
 
@@ -44,6 +46,8 @@ export interface ServiceContainer {
   memories: MemoryService;
   /** v0.6：MCP 注册表（设置页与工具运行时共享同一连接池） */
   mcp: McpRegistry;
+  /** v0.6 M2：工具权限服务（HITL 授权记忆） */
+  permissions: PermissionService;
 }
 
 let container: ServiceContainer | null = null;
@@ -57,11 +61,13 @@ function resolveCipher(): SecretCipher {
 
 function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const mcp = createMcpRegistry(db);
-  const deps = { db, cipher, mcp };
+  const permissions = createPermissionService({ db, cipher });
+  const deps = { db, cipher, mcp, permissions };
   return {
     db,
     cipher,
     mcp,
+    permissions,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),

@@ -15,6 +15,10 @@ export { createProviderService, type ProviderService } from './services/provider
 export { createModelService, type ModelService } from './services/model-service';
 export { buildProvider, toApiError } from './services/provider-adapter';
 export {
+  createPermissionService,
+  type PermissionService,
+} from './services/permission-service';
+export {
   createSettingsService,
   DEFAULT_SETTINGS,
   type SettingsService,

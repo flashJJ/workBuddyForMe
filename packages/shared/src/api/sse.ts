@@ -1,4 +1,5 @@
 import type { Citation, MemoryKind } from '../types/domain';
+import type { PermissionLevel } from '../types/permission';
 import type { ToolEventPayload } from '../types/tool';
 
 /** v0.5：命中的长期记忆轻提示载荷（回答上方「参考了 X 条记忆」） */
@@ -15,6 +16,8 @@ export const SSE_EVENT = {
   CITATIONS: 'citations',
   MEMORIES: 'memories',
   TOOL: 'tool',
+  /** v0.6 M2：write/danger 工具执行前需用户授权（HITL） */
+  TOOL_CONFIRMATION_REQUIRED: 'tool_confirmation_required',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -33,6 +36,13 @@ export type SsePayloadMap = {
   citations: { citations: Citation[] };
   memories: { memories: RecalledMemoryPayload[] };
   tool: ToolEventPayload;
+  /** write/danger 工具执行前需用户授权 */
+  tool_confirmation_required: {
+    callId: string;
+    tool: string;
+    permission: PermissionLevel;
+    argsSummary: string;
+  };
   done: { content: string; usage: TokenUsage | null };
   error: { code: string; message: string };
 };

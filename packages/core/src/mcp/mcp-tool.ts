@@ -18,6 +18,7 @@ export function createMcpTool(info: McpToolInfo, registry: McpRegistry): Tool {
   return {
     name: info.qualifiedName,
     description: `${info.description || 'MCP 工具'}${describeSource(info)}`,
+    permission: 'read',
     parameters: info.inputSchema,
     async run(rawArgs: unknown, _ctx: ToolContext): Promise<ToolResult> {
       const outcome = await registry.callTool(

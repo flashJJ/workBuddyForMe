@@ -66,4 +66,10 @@ export {
   type McpServerCreateFields,
   type McpServerUpdateFields,
 } from './mcp-server-repo';
+export {
+  createToolPermissionRepository,
+  type ToolPermissionRepository,
+  type ToolPermissionCreateFields,
+  type ToolPermissionRow,
+} from './tool-permission-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

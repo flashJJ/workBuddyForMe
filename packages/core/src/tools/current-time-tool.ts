@@ -17,6 +17,7 @@ export const currentTimeTool: Tool = {
   name: 'current_time',
   description:
     '获取本机当前日期与时间。当用户询问今天几号、星期几、现在几点等任何与实时时间有关的问题时调用。',
+  permission: 'read',
   parameters: {
     type: 'object',
     properties: {},

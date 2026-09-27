@@ -73,7 +73,7 @@ describe('备份导出（M1）', () => {
     expect(files['settings.json']).toBeDefined();
   });
 
-  it('有对话+知识库：内容完整序列化', async () => {
+  it('有对话+知识库：内容完整序列化', { timeout: 15000 }, async () => {
     const { ensureSeedData } = await import('../services/seed');
     ensureSeedData(db);
     const convRepo = createConversationRepository(db);

@@ -7,6 +7,7 @@ import { migrateV005 } from './v005-conversation-summary';
 import { migrateV006 } from './v006-memory';
 import { migrateV007 } from './v007-message-feedback';
 import { migrateV008 } from './v008-mcp-servers';
+import { migrateV009 } from './v009-tool-permissions';
 
 interface Migration {
   version: number;
@@ -47,6 +48,11 @@ const MIGRATIONS: Migration[] = [
     version: 8,
     description: 'mcp servers: mcp_servers table (stdio/http)',
     up: migrateV008,
+  },
+  {
+    version: 9,
+    description: 'tool permissions: read/write/danger + HITL allow/deny',
+    up: migrateV009,
   },
 ];
 

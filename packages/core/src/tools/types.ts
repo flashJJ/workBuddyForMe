@@ -1,4 +1,4 @@
-import type { Citation } from '@wbfm/shared';
+import type { Citation, PermissionLevel } from '@wbfm/shared';
 import type { ToolDefinition } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 
@@ -30,6 +30,8 @@ export interface Tool {
   description: string;
   /** OpenAI function-calling 参数 JSON Schema */
   parameters: Record<string, unknown>;
+  /** v0.6 M2：权限分级（read/write/danger）；未标注默认 read */
+  permission?: PermissionLevel;
   run(rawArgs: unknown, ctx: ToolContext): Promise<ToolResult>;
 }
 

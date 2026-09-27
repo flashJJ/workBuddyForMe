@@ -9,6 +9,7 @@ import {
   type JsonRpcMessage,
   type JsonRpcResponse,
 } from './jsonrpc';
+import type { McpTransport } from './transport';
 
 /** stdio 子进程继承的最小环境（白名单，阻断 NODE_OPTIONS 等注入面） */
 const INHERITED_ENV_KEYS = [
@@ -46,25 +47,7 @@ export interface StdioTransportOptions {
   onStderr?: (line: string) => void;
 }
 
-export interface StdioTransport {
-  /**
-   * 订阅服务端消息（请求/通知；响应由 transport 内部路由）。
-   * client 创建晚于 transport，故用后置订阅而非构造参数。
-   */
-  setMessageHandler(handler: (message: JsonRpcMessage) => void): void;
-  /** 发送请求并等待对应响应；超时/进程已死 reject */
-  request(method: string, params: unknown, timeoutMs: number): Promise<JsonRpcResponse>;
-  /** 发送通知（无响应） */
-  notify(method: string, params?: unknown): void;
-  /** 回复服务端请求（带 id 的响应帧） */
-  respond(id: JsonRpcId, result: unknown): void;
-  /** 回复服务端请求的错误帧 */
-  respondError(id: JsonRpcId, code: number, message: string): void;
-  /** 进程是否仍存活 */
-  isAlive(): boolean;
-  /** 停止子进程：kill 后等待 grace，超时强杀 */
-  stop(): Promise<void>;
-}
+export type StdioTransport = McpTransport;
 
 /** Windows 引号规则：反斜杠遇引号/结尾需成对（node child_process 同款规则） */
 function escapeWindowsArgument(arg: string): string {

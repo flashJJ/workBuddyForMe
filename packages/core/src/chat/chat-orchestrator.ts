@@ -164,13 +164,73 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             for (const call of calls) {
               const name = call.function.name;
               const argsSummary = summarizeArgs(name, safeParseArgs(call));
+              const tool = toolMap.get(name);
+
+              // v0.6 M2 权限钩子：write/danger 工具需检查授权或触发 HITL
+              if (tool && deps.permissions && !deps.permissions.isAllowed(
+                name,
+                tool.permission ?? 'read',
+                `assistant:${assistant.id}`,
+              )) {
+                const argsSummaryFull = summarizeArgs(name, safeParseArgs(call));
+                yield {
+                  event: 'tool_confirmation_required',
+                  data: {
+                    callId: call.id,
+                    tool: name,
+                    permission: tool.permission ?? 'read',
+                    argsSummary: argsSummaryFull,
+                  },
+                };
+                // 拒绝时向模型回传结构化「用户拒绝」结果
+                const deniedResult = {
+                  ok: false as const,
+                  output: `工具 ${name} 需要用户授权（权限级别：${tool.permission ?? 'read'}）。请向用户说明需要授权后重试。`,
+                  summary: `需要授权（${tool.permission ?? 'read'}）`,
+                };
+                trace.push({
+                  callId: call.id,
+                  tool: name,
+                  argsSummary: argsSummaryFull,
+                  status: 'error',
+                  durationMs: 0,
+                  resultSummary: deniedResult.summary,
+                  error: deniedResult.summary,
+                  startedAt: new Date().toISOString(),
+                });
+                yield {
+                  event: 'tool',
+                  data: {
+                    phase: 'end',
+                    callId: call.id,
+                    tool: name,
+                    status: 'error',
+                    durationMs: 0,
+                    resultSummary: deniedResult.summary,
+                    error: deniedResult.summary,
+                  },
+                };
+                outgoing.push({
+                  role: 'tool',
+                  content: deniedResult.output,
+                  toolCallId: call.id,
+                  name: call.function.name,
+                });
+                if (input.signal?.aborted) {
+                  conversations.stopMessage(assistantMessage.id, full);
+                  conversations.saveMessageToolTrace(assistantMessage.id, trace);
+                  yield { event: 'done', data: { content: full, usage } };
+                  return;
+                }
+                continue; // 跳过本次工具调用，继续下一轮模型调用
+              }
+
               yield {
                 event: 'tool',
                 data: { phase: 'start', callId: call.id, tool: name, argsSummary },
               };
 
               const startedAt = Date.now();
-              const tool = toolMap.get(name);
               const result = tool
                 ? await traceAsync(
                     {

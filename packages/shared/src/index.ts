@@ -90,6 +90,9 @@ export {
   type McpServerUpdateInput,
 } from './schemas/mcp';
 
+// v0.6 M2：工具权限分级（HITL）
+export type { PermissionLevel, PermissionAction, ToolPermission } from './types/permission';
+
 // 备份/恢复契约
 export {
   CURRENT_BACKUP_SCHEMA_VERSION,

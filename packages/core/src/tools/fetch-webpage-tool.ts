@@ -35,6 +35,7 @@ export const fetchWebpageTool: Tool = {
   name: 'fetch_webpage',
   description:
     '抓取一个公开网页（http/https）并提取正文纯文本，用于阅读用户给出的链接、查询公开资料。不能访问内网地址或需要登录的页面。',
+  permission: 'danger',
   parameters: {
     type: 'object',
     properties: {
