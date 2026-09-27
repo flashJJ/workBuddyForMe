@@ -12,7 +12,7 @@ interface ForkCall {
   options: ForkOptions;
 }
 
-function makeFakeChild(): { child: ChildProcess; calls: ForkCall[] } {
+function makeFakeChild(): { child: ChildProcess; emitter: EventEmitter; calls: ForkCall[] } {
   const calls: ForkCall[] = [];
   const emitter = new EventEmitter();
   const kill = vi.fn((signal?: string) => {
@@ -30,7 +30,7 @@ function makeFakeChild(): { child: ChildProcess; calls: ForkCall[] } {
     once: emitter.once.bind(emitter),
     emit: emitter.emit.bind(emitter),
   } as unknown as ChildProcess;
-  return { child, calls };
+  return { child, emitter, calls };
 }
 
 describe('server-manager 生命周期（TR-30.1）', () => {
@@ -82,7 +82,18 @@ describe('server-manager 生命周期（TR-30.1）', () => {
 
   it('stop 先 SIGTERM 并在退出时 resolve（TR-30.1）', async () => {
     const { child } = makeFakeChild();
-    await stopChild(child, 1000);
+    await stopChild(child, { timeoutMs: 1000, platform: 'linux' });
     expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+  });
+
+  it('win32 用 taskkill /T /F 树杀整棵进程树（TerminateProcess 会遗留 MCP 子进程）', async () => {
+    const { child, emitter } = makeFakeChild();
+    const killer = new EventEmitter();
+    const spawnImpl = vi.fn(() => killer as unknown as ChildProcess);
+    const done = stopChild(child, { timeoutMs: 1000, platform: 'win32', spawnImpl });
+    await Promise.resolve();
+    expect(spawnImpl).toHaveBeenCalledWith('taskkill', ['/pid', '4321', '/T', '/F'], { stdio: 'ignore' });
+    emitter.emit('exit', 0); // 模拟树杀后服务进程退出
+    await done;
   });
 });
