@@ -70,3 +70,9 @@ export const skillManifestSchema = z.object({
 });
 // 注：解析结果与 types/domain.ts 的 SkillManifest 接口结构一致，
 // 此处不再导出同名推断类型以避免双份定义漂移。
+
+/** PATCH /api/skills/:id 请求体：启停切换 */
+export const skillUpdateSchema = z.object({
+  enabled: z.boolean(),
+});
+export type SkillUpdateInput = z.infer<typeof skillUpdateSchema>;
