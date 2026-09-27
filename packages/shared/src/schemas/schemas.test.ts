@@ -108,6 +108,7 @@ describe('mcp server schemas (v0.6)', () => {
       command: 'npx',
       args: ['-y', '@modelcontextprotocol/server-filesystem', 'D:/docs'],
     });
+    if (parsed.transport !== 'stdio') throw new Error('unreachable');
     expect(parsed.args).toEqual(['-y', '@modelcontextprotocol/server-filesystem', 'D:/docs']);
     expect(parsed.env).toEqual({});
     expect(parsed.enabled).toBeUndefined();
