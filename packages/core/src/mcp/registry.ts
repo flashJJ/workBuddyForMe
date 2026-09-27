@@ -1,7 +1,12 @@
 import type { McpServerConfig, McpServerInfo, McpServerStatus, McpToolInfo } from '@wbfm/shared';
-import { isMcpToolName, parseMcpToolName } from '@wbfm/shared';
+import { ApiError, isMcpToolName, parseMcpToolName } from '@wbfm/shared';
 import type { DatabaseInstance } from '@wbfm/database';
-import { createMcpServerRepository, type McpServerRepository } from '@wbfm/database';
+import {
+  createMcpServerRepository,
+  type McpServerCreateFields,
+  type McpServerRepository,
+  type McpServerUpdateFields,
+} from '@wbfm/database';
 import { createMcpClient, type McpClient } from './client';
 import { spawnStdioTransport, type StdioTransport } from './stdio-transport';
 
@@ -20,6 +25,12 @@ interface RegistryEntry {
 export interface McpRegistry {
   /** 按仓储现状对齐连接：新增/修改/删除/启停都收敛（异步连接，不阻塞） */
   reconcile(): void;
+  /** 新建服务器并触发连接（名称唯一，冲突抛 ApiError.conflict） */
+  createServer(fields: McpServerCreateFields): McpServerConfig;
+  /** 部分更新并按需重连（改名冲突抛 ApiError.conflict） */
+  updateServer(id: string, fields: McpServerUpdateFields): McpServerConfig;
+  /** 删除服务器并断开连接；不存在抛 ApiError.notFound */
+  removeServer(id: string): void;
   /** 全部服务器视图（配置 + 连接状态 + 工具数），设置页使用 */
   getServerInfos(): McpServerInfo[];
   /** 已连接服务器的全部工具（助手表单/工具运行时使用） */
@@ -135,64 +146,95 @@ export function createMcpRegistry(
     });
   }
 
-  return {
-    reconcile() {
-      const servers = repo.list();
-      const seen = new Set<string>();
+  function reconcileAll(): void {
+    const servers = repo.list();
+    const seen = new Set<string>();
 
-      for (const server of servers) {
-        seen.add(server.id);
-        if (!server.enabled) {
-          const existing = entries.get(server.id);
-          if (existing) void disconnect(existing);
-          continue;
-        }
+    for (const server of servers) {
+      seen.add(server.id);
+      if (!server.enabled) {
         const existing = entries.get(server.id);
-        if (existing && existing.config.name !== server.name) {
-          // 命名空间变更：旧连接立即失效
-          void disconnect(existing);
-          entries.delete(server.id);
-        }
-        const entry = entries.get(server.id);
-        if (entry && configSignature(entry.config) === configSignature(server)) continue;
-        if (entry) {
-          // 配置变化：重启进程（同样的连接去重护栏）
-          entry.config = server;
-          if (!entry.refreshing) {
-            entry.refreshing = (async () => {
-              await disconnect(entry);
-              await connect(entry);
-            })().finally(() => {
-              entry.refreshing = null;
-            });
-          }
-          continue;
-        }
-        const fresh: RegistryEntry = {
-          config: server,
-          client: null,
-          transport: null,
-          tools: [],
-          status: 'disconnected',
-          statusDetail: null,
-          refreshing: null,
-        };
-        entries.set(server.id, fresh);
-        // 连接去重：进行中不重复发起
-        if (!fresh.refreshing) {
-          fresh.refreshing = connect(fresh).finally(() => {
-            fresh.refreshing = null;
+        if (existing) void disconnect(existing);
+        continue;
+      }
+      const existing = entries.get(server.id);
+      if (existing && existing.config.name !== server.name) {
+        // 命名空间变更：旧连接立即失效
+        void disconnect(existing);
+        entries.delete(server.id);
+      }
+      const entry = entries.get(server.id);
+      if (entry && configSignature(entry.config) === configSignature(server)) continue;
+      if (entry) {
+        // 配置变化：重启进程（同样的连接去重护栏）
+        entry.config = server;
+        if (!entry.refreshing) {
+          entry.refreshing = (async () => {
+            await disconnect(entry);
+            await connect(entry);
+          })().finally(() => {
+            entry.refreshing = null;
           });
         }
+        continue;
       }
+      const fresh: RegistryEntry = {
+        config: server,
+        client: null,
+        transport: null,
+        tools: [],
+        status: 'disconnected',
+        statusDetail: null,
+        refreshing: null,
+      };
+      entries.set(server.id, fresh);
+      // 连接去重：进行中不重复发起
+      if (!fresh.refreshing) {
+        fresh.refreshing = connect(fresh).finally(() => {
+          fresh.refreshing = null;
+        });
+      }
+    }
 
-      // 已删除的服务器
-      for (const [id, entry] of entries) {
-        if (!seen.has(id)) {
-          void disconnect(entry);
-          entries.delete(id);
-        }
+    // 已删除的服务器
+    for (const [id, entry] of entries) {
+      if (!seen.has(id)) {
+        void disconnect(entry);
+        entries.delete(id);
       }
+    }
+  }
+
+  function assertNameFree(name: string, excludeId?: string): void {
+    const existing = repo.getByName(name);
+    if (existing && existing.id !== excludeId) {
+      throw ApiError.conflict(`MCP 服务器名称已存在：${name}`);
+    }
+  }
+
+  return {
+    reconcile: reconcileAll,
+
+    createServer(fields) {
+      assertNameFree(fields.name);
+      const created = repo.create(fields);
+      reconcileAll();
+      return created;
+    },
+
+    updateServer(id, fields) {
+      const current = repo.get(id);
+      if (!current) throw ApiError.notFound('MCP 服务器', id);
+      if (fields.name !== undefined) assertNameFree(fields.name, id);
+      const updated = repo.update(id, fields);
+      if (!updated) throw ApiError.notFound('MCP 服务器', id);
+      reconcileAll();
+      return updated;
+    },
+
+    removeServer(id) {
+      if (!repo.remove(id)) throw ApiError.notFound('MCP 服务器', id);
+      reconcileAll();
     },
 
     getServerInfos() {
