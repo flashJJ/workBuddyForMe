@@ -107,6 +107,39 @@ export const MEMORY_SUMMARY_IMPORTANCE = 0.6;
 export const TOOL_NAMES = ['current_time', 'knowledge_search', 'fetch_webpage'] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
 
+/**
+ * v0.6 MCP（Model Context Protocol）：
+ * - 助手 enabledTools 从固定枚举放宽为字符串（内置名或 mcp:<server>:<tool>）；
+ * - 服务器名即命名空间，必须标识符安全（工具名要回传给模型的 function-calling，
+ *   需满足 [a-zA-Z0-9_-] 约束）；
+ * - transport 本期实现 stdio，http（Streamable HTTP）为 M2 预留。
+ */
+export const MCP_TRANSPORTS = ['stdio', 'http'] as const;
+export type McpTransport = (typeof MCP_TRANSPORTS)[number];
+
+/** 连接状态（设置页可视）：disconnected=未启动；connecting=握手中 */
+export const MCP_SERVER_STATUSES = ['disconnected', 'connecting', 'connected', 'error'] as const;
+export type McpServerStatus = (typeof MCP_SERVER_STATUSES)[number];
+
+export const MCP_SERVER_NAME_MAX = 40;
+export const MCP_SERVER_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+/** MCP 工具原始名（协议未强制，登记为标识符安全，注册时把非法字符替换为 _） */
+export const MCP_TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+/** 助手 enabledTools 合法值：内置名（无冒号）或完整 mcp:<server>:<tool> */
+export const QUALIFIED_TOOL_NAME_PATTERN =
+  /^(?:[a-zA-Z0-9_-]{1,64}|mcp:[a-zA-Z0-9_-]{1,64}:[a-zA-Z0-9_-]{1,64})$/;
+
+/** stdio initialize 握手超时（进程冷启动如 npx 首次下载包可能较慢） */
+export const MCP_CONNECT_TIMEOUT_MS = 30_000;
+/** tools/list 超时 */
+export const MCP_LIST_TIMEOUT_MS = 10_000;
+/** MCP 工具调用默认超时（覆盖内置 TOOL_TIMEOUT_MS；文件检索类操作可能较慢） */
+export const MCP_CALL_TIMEOUT_MS = 60_000;
+/** stdio 子进程优雅退出等待（超时后强杀） */
+export const MCP_EXIT_GRACE_MS = 3_000;
+/** 单服务器工具数上限（防御异常服务器刷爆工具列表） */
+export const MCP_MAX_TOOLS_PER_SERVER = 50;
+
 /** 工具调用安全护栏常量 */
 export const MAX_TOOL_ROUNDS = 5;
 export const TOOL_TIMEOUT_MS = 15_000;

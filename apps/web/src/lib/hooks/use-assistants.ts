@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Assistant, ToolName } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
@@ -15,7 +15,8 @@ export interface AssistantBody {
   maxTokens?: number | null;
   modelId?: string | null;
   knowledgeBaseId?: string | null;
-  enabledTools?: ToolName[];
+  /** v0.6：内置工具名或 mcp:<server>:<tool> */
+  enabledTools?: string[];
   retrieveAlways?: boolean;
   memoryEnabled?: boolean;
 }

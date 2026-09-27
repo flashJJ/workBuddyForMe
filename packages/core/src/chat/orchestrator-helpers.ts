@@ -1,4 +1,4 @@
-import { ApiError, TOOL_NAMES, type Citation, type ToolName } from '@wbfm/shared';
+import { ApiError, type Citation } from '@wbfm/shared';
 import { ProviderError, type ToolCall } from '@wbfm/ai';
 import { parseToolArgs } from '../tools/tool-executor';
 import type { ToolResult } from '../tools/types';
@@ -13,10 +13,6 @@ export function normalizeFailure(error: unknown): { code: string; message: strin
   if (error instanceof ApiError) return { code: error.code, message: error.message };
   if (error instanceof ProviderError) return { code: error.code, message: error.message };
   return { code: 'INTERNAL_ERROR', message: '对话生成失败，请稍后重试' };
-}
-
-export function isToolName(name: string): name is ToolName {
-  return (TOOL_NAMES as readonly string[]).includes(name);
 }
 
 /** citations 按 documentId:ordinal 去重合并 */

@@ -1,4 +1,4 @@
-import type { Assistant, ToolName } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
 import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/retrieval-service';
 import type { Tool, ToolContext, ToolMap } from './types';
@@ -7,7 +7,7 @@ import { knowledgeSearchTool } from './knowledge-search-tool';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 
 /** 全部内置工具（默认全部关闭，由助手白名单开启） */
-const ALL_TOOLS: Record<ToolName, Tool> = {
+const ALL_TOOLS: Record<string, Tool> = {
   current_time: currentTimeTool,
   knowledge_search: knowledgeSearchTool,
   fetch_webpage: fetchWebpageTool,
@@ -30,9 +30,11 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
   return {
     buildTools(assistant, supportsTools) {
       if (!supportsTools || assistant.enabledTools.length === 0) return new Map();
-      const map = new Map<ToolName, Tool>();
+      const map = new Map<string, Tool>();
       for (const name of assistant.enabledTools) {
-        map.set(name, ALL_TOOLS[name]);
+        // v0.6：内置先查表；MCP 限定名由 registry 接管（未注册的白名单项静默跳过）
+        const tool = ALL_TOOLS[name];
+        if (tool) map.set(name, tool);
       }
       return map;
     },

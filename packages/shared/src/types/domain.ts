@@ -1,6 +1,8 @@
 import type {
   DocumentSource,
   DocumentStatus,
+  McpServerStatus,
+  McpTransport,
   MessageFeedback,
   MessageRole,
   MessageStatus,
@@ -9,7 +11,6 @@ import type {
   OcrStatus,
   ProviderProtocol,
   Theme,
-  ToolName,
 } from '../constants';
 import type { ContentPart } from './content-part';
 import type { ToolTraceEntry } from './tool';
@@ -62,8 +63,11 @@ export interface Assistant extends Timestamped {
   modelId: string | null;
   /** 绑定 knowledge_bases.id；非空时对话自动 RAG */
   knowledgeBaseId: string | null;
-  /** v0.2：可用工具白名单（空数组 = 纯对话，与 v0.1 行为一致） */
-  enabledTools: ToolName[];
+  /**
+   * v0.2：可用工具白名单（空数组 = 纯对话，与 v0.1 行为一致）。
+   * v0.6：元素为内置工具名或 mcp:<server>:<tool> 命名空间名。
+   */
+  enabledTools: string[];
   /** v0.2：绑定知识库时是否每轮强制检索（兼容开关；关闭后由模型经 knowledge_search 自主决策） */
   retrieveAlways: boolean;
   /** v0.5：该助手是否启用长期记忆提取/召回（默认开） */
@@ -182,4 +186,44 @@ export interface AppSettings {
   defaultEmbeddingModelId: string | null;
   theme: Theme;
   language: 'zh-CN';
+}
+
+/** v0.6 MCP 服务器配置（mcp_servers 表行；stdio/http 字段按 transport 取用） */
+export interface McpServerConfig extends Timestamped {
+  id: string;
+  transport: McpTransport;
+  /** 标识符安全的命名空间名（唯一），工具限定名用它构建 */
+  name: string;
+  /** stdio：启动命令 */
+  command: string;
+  /** stdio：启动参数 */
+  args: string[];
+  /** stdio：环境变量白名单（叠加在继承环境之上） */
+  env: Record<string, string>;
+  /** http（M2）：Streamable HTTP 端点 */
+  url: string;
+  /** http（M2）：附加请求头 */
+  headers: Record<string, string>;
+  enabled: boolean;
+}
+
+/** 设置页/助手表单看到的服务器视图 = 配置 + 连接状态 */
+export interface McpServerInfo extends McpServerConfig {
+  status: McpServerStatus;
+  /** 最近一次错误原因或握手摘要；正常连接时为 null */
+  statusDetail: string | null;
+  /** 已发现的工具数（仅 connected 时有意义） */
+  toolCount: number;
+}
+
+/** MCP 服务器发现的工具（注册进工具运行时前的元数据） */
+export interface McpToolInfo {
+  serverName: string;
+  /** 服务器内的原始工具名 */
+  name: string;
+  /** 全局限定名 mcp:<server>:<tool>，模型侧 function 名 */
+  qualifiedName: string;
+  description: string;
+  /** MCP inputSchema（JSON Schema），透传为 function parameters */
+  inputSchema: Record<string, unknown>;
 }

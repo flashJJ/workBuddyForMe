@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Assistant, ToolName } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,7 +40,7 @@ interface FormState {
   maxTokens: string;
   modelId: string;
   knowledgeBaseId: string;
-  enabledTools: ToolName[];
+  enabledTools: string[];
   retrieveAlways: boolean;
   memoryEnabled: boolean;
 }
@@ -109,7 +109,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     memoryEnabled: form.memoryEnabled,
   });
 
-  const toggleTool = (tool: ToolName) => {
+  const toggleTool = (tool: string) => {
     setForm((prev) => {
       const has = prev.enabledTools.includes(tool);
       return {

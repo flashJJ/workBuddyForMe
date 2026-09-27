@@ -20,6 +20,9 @@ export type {
   DocumentRecord,
   Attachment,
   AppSettings,
+  McpServerConfig,
+  McpServerInfo,
+  McpToolInfo,
   Timestamped,
 } from './types/domain';
 export type { ContentPart, TextContentPart, ImageContentPart } from './types/content-part';
@@ -76,6 +79,16 @@ export {
   type MemoryListQuery,
   type MemoryClearInput,
 } from './schemas/memory';
+export {
+  mcpServerCreateSchema,
+  mcpServerUpdateSchema,
+  buildMcpToolName,
+  isMcpToolName,
+  parseMcpToolName,
+  MCP_TOOL_NAMESPACE,
+  type McpServerCreateInput,
+  type McpServerUpdateInput,
+} from './schemas/mcp';
 
 // 备份/恢复契约
 export {

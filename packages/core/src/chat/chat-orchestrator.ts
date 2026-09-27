@@ -1,4 +1,4 @@
-import { HISTORY_MESSAGE_SAFETY_CAP, MAX_TOOL_ROUNDS, type TokenUsage, type ToolName, type ToolTraceEntry } from '@wbfm/shared';
+import { HISTORY_MESSAGE_SAFETY_CAP, MAX_TOOL_ROUNDS, type TokenUsage, type ToolTraceEntry } from '@wbfm/shared';
 import { startRun, traceAsync, type TraceHandle, type ToolCall } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
@@ -16,7 +16,6 @@ import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runne
 import type { OrchestratorEvent, StreamChatInput } from './types';
 import {
   ROUND_LIMIT_FALLBACK,
-  isToolName,
   mergeCitations,
   normalizeFailure,
   safeParseArgs,
@@ -163,20 +162,15 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             outgoing.push({ role: 'assistant', content: outcome.content || null, toolCalls: calls });
 
             for (const call of calls) {
-              const name = isToolName(call.function.name)
-                ? call.function.name
-                : (call.function.name as ToolName);
-              const argsSummary = summarizeArgs(
-                isToolName(call.function.name) ? call.function.name : 'current_time',
-                safeParseArgs(call),
-              );
+              const name = call.function.name;
+              const argsSummary = summarizeArgs(name, safeParseArgs(call));
               yield {
                 event: 'tool',
                 data: { phase: 'start', callId: call.id, tool: name, argsSummary },
               };
 
               const startedAt = Date.now();
-              const tool = toolMap.get(call.function.name as ToolName);
+              const tool = toolMap.get(name);
               const result = tool
                 ? await traceAsync(
                     {

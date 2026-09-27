@@ -1,4 +1,7 @@
-import type { ToolName } from '../constants';
+/**
+ * 工具名：v0.6 起为开放式字符串（内置名或 mcp:<server>:<tool> 命名空间），
+ * TOOL_NAMES 枚举仅供内置工具的 UI 标签映射使用。
+ */
 
 /** 工具调用状态（running 仅用于前端流式过程，落库后只会是 ok/error） */
 export type ToolCallStatus = 'running' | 'ok' | 'error';
@@ -9,7 +12,7 @@ export type ToolCallStatus = 'running' | 'ok' | 'error';
  */
 export interface ToolTraceEntry {
   callId: string;
-  tool: ToolName;
+  tool: string;
   argsSummary: string;
   status: ToolCallStatus;
   durationMs: number;
@@ -23,13 +26,13 @@ export type ToolEventPayload =
   | {
       phase: 'start';
       callId: string;
-      tool: ToolName;
+      tool: string;
       argsSummary: string;
     }
   | {
       phase: 'end';
       callId: string;
-      tool: ToolName;
+      tool: string;
       status: ToolCallStatus;
       durationMs: number;
       resultSummary: string;

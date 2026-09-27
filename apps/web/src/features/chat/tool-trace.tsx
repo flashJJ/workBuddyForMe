@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronRight,
+  Wrench,
 } from 'lucide-react';
 import type { ToolName, ToolTraceEntry } from '@wbfm/shared';
 import { cn } from '@/lib/utils';
@@ -19,8 +20,9 @@ const TOOL_META: Record<ToolName, { label: string; icon: typeof Clock }> = {
   fetch_webpage: { label: '读取网页', icon: Globe },
 };
 
-function metaOf(name: ToolName): { label: string; icon: typeof Clock } {
-  return TOOL_META[name] ?? { label: name, icon: Globe };
+/** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>） */
+function metaOf(name: string): { label: string; icon: typeof Clock } {
+  return TOOL_META[name as ToolName] ?? { label: name, icon: Wrench };
 }
 
 function formatDuration(ms: number): string {

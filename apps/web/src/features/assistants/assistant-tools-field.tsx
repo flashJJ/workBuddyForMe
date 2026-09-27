@@ -11,7 +11,8 @@ const TOOL_LABELS: Record<ToolName, string> = {
 };
 
 interface Props {
-  enabledTools: ToolName[];
+  /** v0.6：白名单元素可为 MCP 限定名（由外层渲染对应分组） */
+  enabledTools: string[];
   knowledgeBaseId: string;
   retrieveAlways: boolean;
   onToggleTool: (tool: ToolName) => void;
