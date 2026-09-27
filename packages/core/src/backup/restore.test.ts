@@ -245,21 +245,18 @@ describe('备份恢复（M1）', () => {
   });
 
   it('skills 轨 roundtrip：文件夹落盘 + 启停偏好按 name upsert（v0.6 M3）', async () => {
-    ensureSeedData(srcDb);
     const skillsDir = join(tempRoot, 'skills');
     const manifestContent = JSON.stringify({ name: 'weekly-report', description: '周报', version: '1.0.0' });
     mkdirSync(join(skillsDir, 'weekly-report'), { recursive: true });
     writeFileSync(join(skillsDir, 'weekly-report', 'skill.json'), manifestContent);
-    const srcState = createSkillStateRepository(srcDb);
-    srcState.create({ name: 'weekly-report', enabled: false, sourcePath: join(skillsDir, 'weekly-report') });
+    createSkillStateRepository(srcDb).create({ name: 'weekly-report', enabled: false, sourcePath: join(skillsDir, 'weekly-report') });
 
     const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, { tracks: ['skills'] });
-
     const pre = await precheckBackup(archive);
     expect(pre.compatible).toBe(true);
     expect(pre.tracks.skills).toBe(1);
 
-    // 模拟目标机：源文件夹不存在；目标库已有同名状态行（启动 reconcile 预登记，新 id、enabled=true）
+    // 模拟目标机：源文件夹不存在；目标库已有同名状态行（reconcile 预登记，新 id、enabled=true）
     rmSync(skillsDir, { recursive: true, force: true });
     const dstState = createSkillStateRepository(dstDb);
     dstState.create({ name: 'weekly-report', enabled: true, sourcePath: '/other/path' });
@@ -268,15 +265,10 @@ describe('备份恢复（M1）', () => {
     expect(result.imported.skills).toBe(1);
     expect(result.skipped.skills).toBe(0);
 
-    // 文件夹重建且 skill.json 内容逐字节一致
+    // 文件夹重建且 skill.json 逐字节一致；启停偏好按 name 覆盖且目标库仍一行
     const restored = join(skillsDir, 'weekly-report', 'skill.json');
-    expect(existsSync(restored)).toBe(true);
     expect(readFileSync(restored, 'utf-8')).toBe(manifestContent);
-
-    // 启停偏好按 name 覆盖：enabled=false 落地，目标库仍只有一行
-    const row = dstState.getByName('weekly-report');
-    expect(row).toBeTruthy();
-    expect(row!.enabled).toBe(false);
+    expect(dstState.getByName('weekly-report')!.enabled).toBe(false);
     expect(dstState.list()).toHaveLength(1);
 
     // 幂等：重复恢复 → 文件夹已存在走 skipped，状态重复 upsert 不报错
