@@ -17,6 +17,8 @@ export const DATA_SUBDIRS = {
   logs: 'logs',
   /** 运行时配置（窗口状态等） */
   config: 'config',
+  /** v0.6 M3 本地技能包（skills/<name>/skill.json） */
+  skills: 'skills',
 } as const;
 
 export type DataSubdirKey = keyof typeof DATA_SUBDIRS;
