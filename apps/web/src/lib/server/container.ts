@@ -47,7 +47,6 @@ export interface ServiceContainer {
 }
 
 let container: ServiceContainer | null = null;
-let exitCleanupRegistered = false;
 
 function resolveCipher(): SecretCipher {
   // Electron 可在启动前通过全局注入 safeStorage 桥接密码器（见 Task 30）
@@ -80,10 +79,13 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
 /**
  * 进程退出清理：断开全部 MCP 子进程（幂等 best-effort）。
  * 断开链路在首个 await 前同步发出 kill 信号，signal 处理器内随后 exit 也不会遗漏。
+ * 标志挂 globalThis：dev server 模块重载会重置模块级变量，重复注册会触发
+ * MaxListenersExceededWarning。
  */
 function registerExitCleanup(registry: McpRegistry): void {
-  if (exitCleanupRegistered) return;
-  exitCleanupRegistered = true;
+  const holder = globalThis as { __WBFM_MCP_EXIT_CLEANUP__?: boolean };
+  if (holder.__WBFM_MCP_EXIT_CLEANUP__) return;
+  holder.__WBFM_MCP_EXIT_CLEANUP__ = true;
   const disconnectAll = () => {
     void registry.disconnectAll().catch(() => undefined);
   };
