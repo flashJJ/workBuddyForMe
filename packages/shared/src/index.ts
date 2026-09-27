@@ -92,6 +92,7 @@ export {
 
 // v0.6 M2：工具权限分级（HITL）
 export type { PermissionLevel, PermissionAction, ToolPermission } from './types/permission';
+export { toolConfirmSchema, type ToolConfirmInput } from './schemas/tool';
 
 // 备份/恢复契约
 export {
