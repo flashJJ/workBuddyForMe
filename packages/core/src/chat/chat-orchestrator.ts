@@ -18,6 +18,7 @@ import type { OrchestratorEvent, StreamChatInput } from './types';
 import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
 import { toToolDefinitions } from '../tools/types';
+import { buildSkillPromptBlock, mergeSkillAllowedTools } from '../skills/skill-assembly';
 
 export function createChatOrchestrator(deps: ServiceDeps) {
   const assistants = createAssistantsService(deps);
@@ -106,8 +107,13 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           : [];
         const memoryBlock = formatMemoryBlock(recalledMemories);
 
+        // v0.6 M3：启用技能——提示词模板注入 system；预绑定工具与助手白名单取并集
+        const enabledSkills = deps.skills?.getEnabledSkills() ?? [];
+        const skillBlock = buildSkillPromptBlock(enabledSkills);
+        const effectiveAssistant = mergeSkillAllowedTools(assistant, enabledSkills);
+
         // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
-        const toolMap = runtime.buildTools(assistant, target.provider.supportsTools);
+        const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools);
         const toolDefs = toToolDefinitions([...toolMap.values()]);
         const { messages: outgoing, stats: budgetStats } = buildTurnMessages({
           assistant,
@@ -120,6 +126,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
           summary: conversation.summary,
           memoryBlock,
+          skillBlock,
         });
         if (budgetStats) await recordBudgetSpan(budgetStats, turnTrace);
         const toolCtx = runtime.createContext(assistant, input.signal);

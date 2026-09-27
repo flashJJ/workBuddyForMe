@@ -39,6 +39,8 @@ export interface TurnMessageParams {
   summary: string | null;
   /** 回合前召回的长期记忆（注入 system 区块） */
   memoryBlock: string | null;
+  /** v0.6 M3：启用技能的提示词模板块（注入 system 区块） */
+  skillBlock: string | null;
 }
 
 /**
@@ -50,13 +52,14 @@ export function buildTurnMessages(params: TurnMessageParams): {
   stats: HistoryBudgetStats | null;
 } {
   const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
-    summary, memoryBlock } = params;
+    summary, memoryBlock, skillBlock } = params;
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
     lastCompletionTokens,
     summary,
     memoryBlock,
+    skillBlock,
   });
 }
 

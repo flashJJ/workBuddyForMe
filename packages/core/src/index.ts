@@ -183,6 +183,7 @@ export {
   type SkillService,
   type SkillServiceOptions,
 } from './skills/skill-service';
+export { buildSkillPromptBlock, mergeSkillAllowedTools } from './skills/skill-assembly';
 
 // v0.4 数据便携：备份与恢复
 export {

@@ -9,12 +9,13 @@ import {
   type HistoryBudgetStats,
 } from './context-budget';
 
-/** 组装系统提示词：助手人设 + 可选对话摘要 + 可选长期记忆 + 可选 RAG 参考资料块 */
+/** 组装系统提示词：助手人设 + 可选对话摘要 + 可选长期记忆 + 可选技能流程块 + 可选 RAG 参考资料块 */
 export function buildSystemPrompt(
   assistant: Assistant,
   rag: RagContext | null,
   summary: string | null = null,
   memoryBlock: string | null = null,
+  skillBlock: string | null = null,
 ): string {
   const parts = [assistant.systemPrompt.trim()];
   if (summary?.trim()) {
@@ -26,6 +27,9 @@ export function buildSystemPrompt(
         '【长期记忆】\n' +
         memoryBlock.trim(),
     );
+  }
+  if (skillBlock?.trim()) {
+    parts.push(skillBlock.trim());
   }
   if (rag?.contextBlock) {
     parts.push(
@@ -49,6 +53,8 @@ export interface ChatBudgetOptions {
   summary?: string | null;
   /** 回合前召回的长期记忆块（注入 system，占用预算） */
   memoryBlock?: string | null;
+  /** v0.6 M3：启用技能的提示词模板块（注入 system，占用预算） */
+  skillBlock?: string | null;
 }
 
 /**
@@ -70,6 +76,7 @@ export function buildChatMessages(
     rag,
     budget?.summary ?? null,
     budget?.memoryBlock ?? null,
+    budget?.skillBlock ?? null,
   );
   const prefix: ChatMessage[] = systemPrompt
     ? [{ role: 'system', content: systemPrompt }]
