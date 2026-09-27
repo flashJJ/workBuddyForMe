@@ -11,6 +11,7 @@ import { ProviderFormDialog } from './provider-form-dialog';
 import { DefaultsPanel } from './defaults-panel';
 import { McpPanel } from './mcp-panel';
 import { PermissionPanel } from './permission-panel';
+import { SkillsPanel } from './skills-panel';
 import { MemoryPanel } from '../memory/memory-panel';
 import { BackupPanel } from './backup-panel';
 import { AboutPanel } from './about-panel';
@@ -68,6 +69,8 @@ export function SettingsPage() {
       <McpPanel />
 
       <PermissionPanel />
+
+      <SkillsPanel />
 
       <MemoryPanel />
 

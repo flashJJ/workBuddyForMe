@@ -28,6 +28,8 @@ export const API = {
   mcpServers: '/api/mcp/servers',
   mcpServer: (id: string) => `/api/mcp/servers/${id}`,
   mcpTools: '/api/mcp/tools',
+  skills: '/api/skills',
+  skill: (id: string) => `/api/skills/${id}`,
   toolConfirm: '/api/tools/confirm',
   toolPermissions: '/api/tools/permissions',
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
@@ -47,5 +49,6 @@ export const QUERY_KEYS = {
   memories: ['memories'] as const,
   mcpServers: ['mcp-servers'] as const,
   mcpTools: ['mcp-tools'] as const,
+  skills: ['skills'] as const,
   toolPermissions: ['tool-permissions'] as const,
 };
