@@ -1,6 +1,7 @@
 import type { DatabaseInstance } from '../client';
 import type { McpServerConfig, McpTransport } from '@wbfm/shared';
-import { newId, nowIso, mapMcpServer, type McpServerRow } from './mappers';
+import { newId, nowIso } from './mappers';
+import { mapMcpServer, type McpServerRow } from './mcp-mapper';
 
 export interface McpServerCreateFields {
   /** 不传则自动生成 UUID */

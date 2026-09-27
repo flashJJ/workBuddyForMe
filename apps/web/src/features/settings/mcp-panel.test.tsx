@@ -12,6 +12,8 @@ function makeServer(partial: Partial<McpServerInfo> & { id: string; name: string
     command: 'npx',
     args: [],
     env: {},
+    url: '',
+    headers: {},
     enabled: true,
     status: 'connected',
     statusDetail: null,
