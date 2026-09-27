@@ -281,3 +281,18 @@ export interface SkillState extends Timestamped {
   /** 技能源文件夹绝对路径（搬迁或重装后可能失效，UI 应标红） */
   sourcePath: string;
 }
+
+/** 设置页技能列表视图 = skills_state 行 + 磁盘扫描结果（API 返回） */
+export interface SkillInfo {
+  /** skills_state 行 id（启停/删除引用用） */
+  id: string;
+  name: string;
+  enabled: boolean;
+  sourcePath: string;
+  /** manifest 校验通过时为解析结果；失败或文件夹缺失为 null */
+  manifest: SkillManifest | null;
+  /** 加载/校验失败的具体原因；正常为 null */
+  error: string | null;
+  /** 源文件夹是否存在（false = 引用残留，UI 标红提示） */
+  exists: boolean;
+}

@@ -28,6 +28,7 @@ export type {
   SkillManifest,
   SkillDiskEntry,
   SkillState,
+  SkillInfo,
   Timestamped,
 } from './types/domain';
 export type { ContentPart, TextContentPart, ImageContentPart } from './types/content-part';
@@ -94,10 +95,7 @@ export {
   type McpServerCreateInput,
   type McpServerUpdateInput,
 } from './schemas/mcp';
-export {
-  skillManifestSchema,
-  type SkillManifest,
-} from './schemas/skill';
+export { skillManifestSchema } from './schemas/skill';
 
 // v0.6 M2：工具权限分级（HITL）
 export type { PermissionLevel, PermissionAction, ToolPermission } from './types/permission';
