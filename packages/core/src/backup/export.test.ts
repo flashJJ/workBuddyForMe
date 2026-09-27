@@ -17,6 +17,7 @@ import {
   createSettingsRepository,
   createAttachmentRepository,
   createAssistantRepository,
+  createSkillStateRepository,
 } from '@wbfm/database';
 
 function collectTarEntries(gz: Buffer): Promise<Record<string, string>> {
@@ -167,6 +168,32 @@ describe('备份导出（M1）', () => {
 
   it('上限常量：BACKUP_MAX_ARCHIVE_BYTES = 500MB', () => {
     expect(BACKUP_MAX_ARCHIVE_BYTES).toBe(500 * 1024 * 1024);
+  });
+
+  it('skills 轨：skill.json 原文 + skills_state 状态序列化（v0.6 M3）', async () => {
+    const skillsDir = join(tempRoot, 'skills');
+    const manifestContent = JSON.stringify({ name: 'weekly-report', description: '周报', version: '1.0.0' });
+    mkdirSync(join(skillsDir, 'weekly-report'), { recursive: true });
+    writeFileSync(join(skillsDir, 'weekly-report', 'skill.json'), manifestContent);
+    // 无 skill.json 的文件夹不导出
+    mkdirSync(join(skillsDir, 'empty-folder'), { recursive: true });
+
+    const stateRepo = createSkillStateRepository(db);
+    stateRepo.create({ name: 'weekly-report', enabled: false, sourcePath: join(skillsDir, 'weekly-report') });
+
+    const { archive, manifest } = await exportBackup({ db, cipher: createWebCipher() }, {
+      tracks: ['skills'],
+    });
+    expect(manifest.tracks.skills?.entryCount).toBe(1);
+
+    const files = await collectTarEntries(archive);
+    const payload = JSON.parse(files['skills.json']!);
+    expect(payload.skills).toHaveLength(1);
+    expect(payload.skills[0].name).toBe('weekly-report');
+    expect(payload.skills[0].skillJson).toBe(manifestContent);
+    expect(payload.states).toHaveLength(1);
+    expect(payload.states[0].name).toBe('weekly-report');
+    expect(payload.states[0].enabled).toBe(false);
   });
 });
 

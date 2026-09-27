@@ -133,3 +133,30 @@ export function restoreAttachmentsMeta(db: any, buf: Buffer): { imported: number
   }
   return { imported, skipped };
 }
+
+export interface SkillStateEntry {
+  id: string;
+  name: string;
+  enabled: boolean;
+  sourcePath: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * skills_state：按 name 冲突时更新 enabled（保留本机行的 id/source_path），
+ * 使跨机器恢复后内置技能的启停偏好也能落地（启动 reconcile 已用新 id 预登记同名行）。
+ */
+export function restoreSkillsState(db: any, states: SkillStateEntry[]): number {
+  const stmt = db.prepare(
+    `INSERT INTO skills_state(id, name, enabled, source_path, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(name) DO UPDATE SET enabled = excluded.enabled, updated_at = excluded.updated_at`,
+  );
+  let imported = 0;
+  for (const s of states) {
+    stmt.run(s.id, s.name, s.enabled ? 1 : 0, s.sourcePath, s.createdAt, s.updatedAt);
+    imported++;
+  }
+  return imported;
+}

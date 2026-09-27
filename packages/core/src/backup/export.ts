@@ -18,6 +18,7 @@ import {
   createChunkRepository,
   createSettingsRepository,
   createAttachmentRepository,
+  createSkillStateRepository,
 } from '@wbfm/database';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared';
@@ -68,6 +69,7 @@ export async function exportBackup(
   const chunksRepo = createChunkRepository(deps.db);
   const settingsRepo = createSettingsRepository(deps.db);
   const attachmentsRepo = createAttachmentRepository(deps.db);
+  const skillStateRepo = createSkillStateRepository(deps.db);
 
   // 1. 逐轨序列化（纯 JSON，进 tar）
   const files: Record<string, string> = {};
@@ -76,6 +78,7 @@ export async function exportBackup(
     knowledge: { files: 'knowledge.json', knowledgeBaseCount: 0, documentCount: 0 },
     settings: { files: 'settings.json' },
     attachments: { files: 'attachments/', entryCount: 0, totalBytes: 0 },
+    skills: { files: 'skills.json', entryCount: 0 },
   };
 
   if (tracks.includes('conversations')) {
@@ -133,6 +136,24 @@ export async function exportBackup(
     const raw = settingsRepo.all();
     files['settings.json'] = JSON.stringify(sanitizeSettings(raw), null, 2);
     onProgress?.({ track: 'settings', processed: 1, total: 1 });
+  }
+
+  if (tracks.includes('skills')) {
+    // v0.6 M3：技能轨——skills/ 下各文件夹的 skill.json 原文 + skills_state 启停状态
+    const skillsDir = path.join(dataRoot, 'skills');
+    const skills: Array<{ name: string; skillJson: string }> = [];
+    if (fs.existsSync(skillsDir)) {
+      for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const manifestPath = path.join(skillsDir, entry.name, 'skill.json');
+        if (fs.existsSync(manifestPath)) {
+          skills.push({ name: entry.name, skillJson: fs.readFileSync(manifestPath, 'utf-8') });
+        }
+      }
+    }
+    files['skills.json'] = JSON.stringify({ states: skillStateRepo.list(), skills }, null, 2);
+    manifestPartial.skills = { files: 'skills.json', entryCount: skills.length };
+    onProgress?.({ track: 'skills', processed: skills.length, total: skills.length });
   }
 
   // 2. 附件：元数据 JSON + 二进制（可选）
