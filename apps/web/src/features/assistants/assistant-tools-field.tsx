@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { ToolName } from '@wbfm/shared';
+import type { McpToolInfo, ToolName } from '@wbfm/shared';
 import { TOOL_NAMES } from '@wbfm/shared';
 
 const TOOL_LABELS: Record<ToolName, string> = {
@@ -15,7 +15,9 @@ interface Props {
   enabledTools: string[];
   knowledgeBaseId: string;
   retrieveAlways: boolean;
-  onToggleTool: (tool: ToolName) => void;
+  /** 已连接 MCP 服务器的工具（按服务器分组展示） */
+  mcpTools: McpToolInfo[];
+  onToggleTool: (tool: string) => void;
   onRetrieveAlwaysChange: (value: boolean) => void;
 }
 
@@ -24,9 +26,20 @@ export function AssistantToolsField({
   enabledTools,
   knowledgeBaseId,
   retrieveAlways,
+  mcpTools,
   onToggleTool,
   onRetrieveAlwaysChange,
 }: Props) {
+  const mcpGroups = React.useMemo(() => {
+    const groups = new Map<string, McpToolInfo[]>();
+    for (const tool of mcpTools) {
+      const list = groups.get(tool.serverName) ?? [];
+      list.push(tool);
+      groups.set(tool.serverName, list);
+    }
+    return [...groups.entries()];
+  }, [mcpTools]);
+
   return (
     <fieldset className="space-y-2 rounded-md border p-3">
       <legend className="px-1 text-xs font-medium text-muted-foreground">
@@ -52,6 +65,29 @@ export function AssistantToolsField({
           </label>
         );
       })}
+      {mcpGroups.map(([serverName, tools]) => (
+        <div key={serverName} className="space-y-2 border-t pt-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            MCP 服务器「{serverName}」
+          </p>
+          {tools.map((tool) => (
+            <label key={tool.qualifiedName} className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4"
+                checked={enabledTools.includes(tool.qualifiedName)}
+                onChange={() => onToggleTool(tool.qualifiedName)}
+              />
+              <span>
+                <span className="block font-mono leading-tight">{tool.name}</span>
+                {tool.description && (
+                  <span className="block text-xs text-muted-foreground">{tool.description}</span>
+                )}
+              </span>
+            </label>
+          ))}
+        </div>
+      ))}
       {knowledgeBaseId && (
         <label className="flex cursor-pointer items-center gap-2 border-t pt-2 text-sm">
           <input

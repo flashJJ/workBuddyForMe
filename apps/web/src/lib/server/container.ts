@@ -104,6 +104,8 @@ export function getServices(): ServiceContainer {
   if (container) return container;
   container = build(initDatabase(), resolveCipher());
   registerExitCleanup(container.mcp);
+  // 按仓储现状对齐 MCP 连接（异步，不阻塞首请求）
+  container.mcp.reconcile();
   return container;
 }
 

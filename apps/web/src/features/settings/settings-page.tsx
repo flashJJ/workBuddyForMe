@@ -9,6 +9,7 @@ import { useProviders } from '@/lib/hooks/use-providers';
 import { ProviderCard } from './provider-card';
 import { ProviderFormDialog } from './provider-form-dialog';
 import { DefaultsPanel } from './defaults-panel';
+import { McpPanel } from './mcp-panel';
 import { MemoryPanel } from '../memory/memory-panel';
 import { BackupPanel } from './backup-panel';
 import { AboutPanel } from './about-panel';
@@ -62,6 +63,8 @@ export function SettingsPage() {
       )}
 
       <DefaultsPanel />
+
+      <McpPanel />
 
       <MemoryPanel />
 

@@ -25,6 +25,9 @@ export const API = {
   memories: '/api/memories',
   memory: (id: string) => `/api/memories/${id}`,
   memoryClear: '/api/memories/clear',
+  mcpServers: '/api/mcp/servers',
+  mcpServer: (id: string) => `/api/mcp/servers/${id}`,
+  mcpTools: '/api/mcp/tools',
 } as const;
 
 export const QUERY_KEYS = {
@@ -39,4 +42,6 @@ export const QUERY_KEYS = {
   documents: (kbId: string) => ['documents', kbId] as const,
   attachment: (id: string) => ['attachment', id] as const,
   memories: ['memories'] as const,
+  mcpServers: ['mcp-servers'] as const,
+  mcpTools: ['mcp-tools'] as const,
 };
