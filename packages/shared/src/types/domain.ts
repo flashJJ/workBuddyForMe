@@ -13,6 +13,7 @@ import type {
   Theme,
 } from '../constants';
 import type { ContentPart } from './content-part';
+import type { PermissionLevel } from './permission';
 import type { ToolTraceEntry } from './tool';
 
 export interface Timestamped {
@@ -226,4 +227,57 @@ export interface McpToolInfo {
   description: string;
   /** MCP inputSchema（JSON Schema），透传为 function parameters */
   inputSchema: Record<string, unknown>;
+}
+
+// ── v0.6 M3 本地技能包 ──
+
+/** 技能包 manifest 中的单段提示词模板 */
+export interface SkillPromptTemplate {
+  name: string;
+  order: number;
+  content: string;
+}
+
+/** 技能包 manifest 中的使用示例 */
+export interface SkillExample {
+  title: string;
+  userQuery: string;
+  expectedBehavior?: string;
+}
+
+/** skill.json 的内存表示（zod 校验后） */
+export interface SkillManifest {
+  name: string;
+  description: string;
+  version: string;
+  permissions: PermissionLevel[];
+  promptTemplates: SkillPromptTemplate[];
+  allowedTools: string[];
+  examples: SkillExample[];
+  author?: string;
+}
+
+/** 技能包在数据根 skills/<name>/ 目录下的磁盘表示 */
+export interface SkillDiskEntry {
+  /** 文件夹名（= manifest name） */
+  name: string;
+  /** manifest 绝对路径 */
+  manifestPath: string;
+  /** 文件夹绝对路径 */
+  directoryPath: string;
+  /** 加载/校验结果 */
+  manifest: SkillManifest | null;
+  /** 加载失败时给出具体原因 */
+  error: string | null;
+}
+
+/** 启停状态（持久化在 skills_state 表） */
+export interface SkillState extends Timestamped {
+  id: string;
+  /** 技能名（与磁盘文件夹名一致，唯一键） */
+  name: string;
+  /** 用户是否启用该技能 */
+  enabled: boolean;
+  /** 技能源文件夹绝对路径（搬迁或重装后可能失效，UI 应标红） */
+  sourcePath: string;
 }

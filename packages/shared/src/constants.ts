@@ -129,6 +129,23 @@ export const MCP_TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 export const QUALIFIED_TOOL_NAME_PATTERN =
   /^(?:[a-zA-Z0-9_-]{1,64}|mcp:[a-zA-Z0-9_-]{1,64}:[a-zA-Z0-9_-]{1,64})$/;
 
+/**
+ * v0.6 M3 本地技能包（声明式 Skill）：
+ * 技能 = 数据根 skills/<name>/ 文件夹 + skill.json manifest；
+ * name 唯一且标识符安全（亦作文件夹名与 API 引用键）。
+ */
+export const SKILL_MANIFEST_FILENAME = 'skill.json';
+export const SKILL_NAME_MAX = 40;
+export const SKILL_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+export const SKILL_DESCRIPTION_MAX = 500;
+export const SKILL_VERSION_MAX = 40;
+/** 单段提示词模板长度上限（防失控注入撑爆上下文预算） */
+export const SKILL_PROMPT_TEMPLATE_MAX = 4000;
+export const SKILL_MAX_PROMPT_TEMPLATES = 10;
+/** 单技能预绑定工具数上限（与助手 enabledTools 同样的选择准确率考量） */
+export const SKILL_MAX_TOOLS = 20;
+export const SKILL_MAX_EXAMPLES = 10;
+
 /** stdio initialize 握手超时（进程冷启动如 npx 首次下载包可能较慢） */
 export const MCP_CONNECT_TIMEOUT_MS = 30_000;
 /** tools/list 超时 */
