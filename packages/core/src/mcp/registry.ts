@@ -26,9 +26,9 @@ export interface McpRegistry {
   /** 按仓储现状对齐连接：新增/修改/删除/启停都收敛（异步连接，不阻塞） */
   reconcile(): void;
   /** 新建服务器并触发连接（名称唯一，冲突抛 ApiError.conflict） */
-  createServer(fields: McpServerCreateFields): McpServerConfig;
+  createServer(fields: McpServerCreateFields): McpServerInfo;
   /** 部分更新并按需重连（改名冲突抛 ApiError.conflict） */
-  updateServer(id: string, fields: McpServerUpdateFields): McpServerConfig;
+  updateServer(id: string, fields: McpServerUpdateFields): McpServerInfo;
   /** 删除服务器并断开连接；不存在抛 ApiError.notFound */
   removeServer(id: string): void;
   /** 全部服务器视图（配置 + 连接状态 + 工具数），设置页使用 */
@@ -212,6 +212,16 @@ export function createMcpRegistry(
     }
   }
 
+  function toInfo(config: McpServerConfig): McpServerInfo {
+    const entry = entries.get(config.id);
+    return {
+      ...config,
+      status: entry?.status ?? 'disconnected',
+      statusDetail: entry?.statusDetail ?? null,
+      toolCount: entry?.tools.length ?? 0,
+    };
+  }
+
   return {
     reconcile: reconcileAll,
 
@@ -219,7 +229,7 @@ export function createMcpRegistry(
       assertNameFree(fields.name);
       const created = repo.create(fields);
       reconcileAll();
-      return created;
+      return toInfo(created);
     },
 
     updateServer(id, fields) {
@@ -229,7 +239,7 @@ export function createMcpRegistry(
       const updated = repo.update(id, fields);
       if (!updated) throw ApiError.notFound('MCP 服务器', id);
       reconcileAll();
-      return updated;
+      return toInfo(updated);
     },
 
     removeServer(id) {
@@ -238,15 +248,7 @@ export function createMcpRegistry(
     },
 
     getServerInfos() {
-      return repo.list().map((config) => {
-        const entry = entries.get(config.id);
-        return {
-          ...config,
-          status: entry?.status ?? 'disconnected',
-          statusDetail: entry?.statusDetail ?? null,
-          toolCount: entry?.tools.length ?? 0,
-        };
-      });
+      return repo.list().map(toInfo);
     },
 
     getTools() {
