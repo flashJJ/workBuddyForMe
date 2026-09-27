@@ -60,7 +60,7 @@
 | v0.2 | 会动手、能离线：工具调用 + 本地模型 | ✅ 已发布 | [方案](v0.2-tool-calling-and-ollama.md) | [总结](v0.2-release-summary.md) | 10 篇 | `v0.2` |
 | v0.3 | 什么都能读：多模态与富文档 | ✅ 已发布 | [方案](v0.3-multimodal-and-rich-docs.md) | [总结](v0.3-release-summary.md) | 10 篇 | `v0.3.0` |
 | v0.4 | 数据随身：备份/分享/自动更新 + OCR + 命令面板 | ✅ 已发布 | [方案](v0.4-data-portability-and-updates.md) | [总结](v0.4-release-summary.md) | B01 起 | `v0.4.0` |
-| v0.5 | 记得住：长期记忆 + 上下文工程 | 📝 规划中 | [方案](v0.5-memory-and-context.md) | — | — | — |
+| v0.5 | 记得住：长期记忆 + 上下文工程 | ✅ 已发布 | [方案](v0.5-memory-and-context.md) | [总结](v0.5-release-summary.md) | — | `v0.5.0` |
 | v0.6 | 会接活：MCP + 技能包 + 权限确认 | 📝 规划中 | [方案](v0.6-skills-and-mcp.md) | — | — | — |
 | v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
 
