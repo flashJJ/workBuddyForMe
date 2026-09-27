@@ -24,7 +24,7 @@
 **主题：记得住**。长期记忆（提取/去重/检索注入）+ 上下文工程（token 预算、递归摘要压缩）+ 记忆管理 UI + 评估反馈闭环。
 - 方案：[v0.5-memory-and-context.md](v0.5-memory-and-context.md)
 
-### v0.6 📝 规划中
+### v0.6 🚧 开发中
 
 **主题：会接活**。MCP 客户端（stdio + HTTP）+ 权限分级与人工确认（HITL）+ 本地声明式技能包 + 工具可观测性。
 - 方案：[v0.6-skills-and-mcp.md](v0.6-skills-and-mcp.md)
@@ -61,7 +61,7 @@
 | v0.3 | 什么都能读：多模态与富文档 | ✅ 已发布 | [方案](v0.3-multimodal-and-rich-docs.md) | [总结](v0.3-release-summary.md) | 10 篇 | `v0.3.0` |
 | v0.4 | 数据随身：备份/分享/自动更新 + OCR + 命令面板 | ✅ 已发布 | [方案](v0.4-data-portability-and-updates.md) | [总结](v0.4-release-summary.md) | B01 起 | `v0.4.0` |
 | v0.5 | 记得住：长期记忆 + 上下文工程 | ✅ 已发布 | [方案](v0.5-memory-and-context.md) | [总结](v0.5-release-summary.md) | — | `v0.5.0` |
-| v0.6 | 会接活：MCP + 技能包 + 权限确认 | 📝 规划中 | [方案](v0.6-skills-and-mcp.md) | — | — | — |
+| v0.6 | 会接活：MCP + 技能包 + 权限确认 | 🚧 开发中（feature/v0.6-skills-and-mcp） | [方案](v0.6-skills-and-mcp.md) | — | — | — |
 | v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
