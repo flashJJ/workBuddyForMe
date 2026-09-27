@@ -1,5 +1,5 @@
 import { HISTORY_MESSAGE_SAFETY_CAP, MAX_TOOL_ROUNDS, type TokenUsage, type ToolTraceEntry } from '@wbfm/shared';
-import { startRun, traceAsync, type TraceHandle, type ToolCall } from '@wbfm/ai';
+import { startRun, type TraceHandle, type ToolCall } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
 import { createAttachmentService } from '../services/attachment-service';
@@ -13,16 +13,10 @@ import { formatMemoryBlock, safeRecallEvent } from '../memory/turn-memory';
 import { buildImageMap } from './multimodal';
 import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
+import { runToolCallLoop } from './tool-call-loop';
 import type { OrchestratorEvent, StreamChatInput } from './types';
-import {
-  ROUND_LIMIT_FALLBACK,
-  mergeCitations,
-  normalizeFailure,
-  safeParseArgs,
-  unknownToolResult,
-} from './orchestrator-helpers';
+import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
-import { executeCall, summarizeArgs } from '../tools/tool-executor';
 import { toToolDefinitions } from '../tools/types';
 
 export function createChatOrchestrator(deps: ServiceDeps) {
@@ -161,139 +155,26 @@ export function createChatOrchestrator(deps: ServiceDeps) {
 
             outgoing.push({ role: 'assistant', content: outcome.content || null, toolCalls: calls });
 
-            for (const call of calls) {
-              const name = call.function.name;
-              const argsSummary = summarizeArgs(name, safeParseArgs(call));
-              const tool = toolMap.get(name);
-
-              // v0.6 M2 权限钩子：write/danger 工具需检查授权或触发 HITL
-              if (tool && deps.permissions && !deps.permissions.isAllowed(
-                name,
-                tool.permission ?? 'read',
-                `assistant:${assistant.id}`,
-              )) {
-                const argsSummaryFull = summarizeArgs(name, safeParseArgs(call));
-                yield {
-                  event: 'tool_confirmation_required',
-                  data: {
-                    callId: call.id,
-                    tool: name,
-                    permission: tool.permission ?? 'read',
-                    argsSummary: argsSummaryFull,
-                  },
-                };
-                // 拒绝时向模型回传结构化「用户拒绝」结果
-                const deniedResult = {
-                  ok: false as const,
-                  output: `工具 ${name} 需要用户授权（权限级别：${tool.permission ?? 'read'}）。请向用户说明需要授权后重试。`,
-                  summary: `需要授权（${tool.permission ?? 'read'}）`,
-                };
-                trace.push({
-                  callId: call.id,
-                  tool: name,
-                  argsSummary: argsSummaryFull,
-                  status: 'error',
-                  durationMs: 0,
-                  resultSummary: deniedResult.summary,
-                  error: deniedResult.summary,
-                  startedAt: new Date().toISOString(),
-                });
-                yield {
-                  event: 'tool',
-                  data: {
-                    phase: 'end',
-                    callId: call.id,
-                    tool: name,
-                    status: 'error',
-                    durationMs: 0,
-                    resultSummary: deniedResult.summary,
-                    error: deniedResult.summary,
-                  },
-                };
-                outgoing.push({
-                  role: 'tool',
-                  content: deniedResult.output,
-                  toolCallId: call.id,
-                  name: call.function.name,
-                });
-                if (input.signal?.aborted) {
-                  conversations.stopMessage(assistantMessage.id, full);
-                  conversations.saveMessageToolTrace(assistantMessage.id, trace);
-                  yield { event: 'done', data: { content: full, usage } };
-                  return;
-                }
-                continue; // 跳过本次工具调用，继续下一轮模型调用
-              }
-
-              yield {
-                event: 'tool',
-                data: { phase: 'start', callId: call.id, tool: name, argsSummary },
-              };
-
-              const startedAt = Date.now();
-              const result = tool
-                ? await traceAsync(
-                    {
-                      name: `tool:${name}`,
-                      runType: 'tool',
-                      parent: turnTrace,
-                      inputs: {
-                        callId: call.id,
-                        arguments: safeParseArgs(call),
-                        argsSummary,
-                      },
-                      metadata: { tool: name },
-                    },
-                    () => executeCall(tool, call, toolCtx),
-                    (value) => ({
-                      ok: value.ok,
-                      summary: value.summary,
-                      durationMs: Date.now() - startedAt,
-                    }),
-                  )
-                : unknownToolResult(call.function.name);
-              const durationMs = Date.now() - startedAt;
-
-              trace.push({
-                callId: call.id,
-                tool: name,
-                argsSummary,
-                status: result.ok ? 'ok' : 'error',
-                durationMs,
-                resultSummary: result.summary,
-                ...(result.ok ? {} : { error: result.summary }),
-                startedAt: new Date(startedAt).toISOString(),
-              });
-              yield {
-                event: 'tool',
-                data: {
-                  phase: 'end',
-                  callId: call.id,
-                  tool: name,
-                  status: result.ok ? 'ok' : 'error',
-                  durationMs,
-                  resultSummary: result.summary,
-                  ...(result.ok ? {} : { error: result.summary }),
-                },
-              };
-
-              citations = mergeCitations(citations, result.citations);
-              if (result.citations?.length) {
-                yield { event: 'citations', data: { citations } };
-              }
-              outgoing.push({
-                role: 'tool',
-                content: result.output,
-                toolCallId: call.id,
-                name: call.function.name,
-              });
-
-              if (input.signal?.aborted) {
+            const loopOutcome = yield* runToolCallLoop({
+              calls,
+              toolMap,
+              toolCtx,
+              deps,
+              assistantId: assistant.id,
+              turnTrace,
+              trace,
+              outgoing,
+              citations,
+              signal: input.signal,
+              onAbort: () => {
                 conversations.stopMessage(assistantMessage.id, full);
                 conversations.saveMessageToolTrace(assistantMessage.id, trace);
-                yield { event: 'done', data: { content: full, usage } };
-                return;
-              }
+              },
+            });
+            citations = loopOutcome.citations;
+            if (loopOutcome.aborted) {
+              yield { event: 'done', data: { content: full, usage } };
+              return;
             }
           }
 

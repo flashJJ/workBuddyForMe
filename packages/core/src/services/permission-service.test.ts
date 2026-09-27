@@ -83,6 +83,6 @@ describe('权限服务（v0.6 M2 HITL）', () => {
 
     const filtered = service.listPermissions('fetch_webpage');
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].toolName).toBe('fetch_webpage');
+    expect(filtered[0]!.toolName).toBe('fetch_webpage');
   });
 });

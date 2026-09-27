@@ -19,6 +19,12 @@ export {
   type PermissionService,
 } from './services/permission-service';
 export {
+  createPendingConfirmations,
+  CONFIRMATION_TIMEOUT_MS,
+  type PendingConfirmations,
+  type ConfirmationDecision,
+} from './services/pending-confirmations';
+export {
   createSettingsService,
   DEFAULT_SETTINGS,
   type SettingsService,

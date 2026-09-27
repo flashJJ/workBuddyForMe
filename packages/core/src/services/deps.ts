@@ -2,6 +2,7 @@ import type { DatabaseInstance } from '@wbfm/database';
 import type { SecretCipher } from '../secrets/cipher';
 import type { McpRegistry } from '../mcp/registry';
 import type { PermissionService } from './permission-service';
+import type { PendingConfirmations } from './pending-confirmations';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
@@ -11,4 +12,6 @@ export interface ServiceDeps {
   mcp?: McpRegistry;
   /** v0.6 M2：工具权限服务（HITL 授权记忆） */
   permissions?: PermissionService;
+  /** v0.6 M2：HITL 挂起确认注册表（未提供时未授权工具直接拒绝） */
+  confirmations?: PendingConfirmations;
 }
