@@ -8,6 +8,7 @@ import { migrateV006 } from './v006-memory';
 import { migrateV007 } from './v007-message-feedback';
 import { migrateV008 } from './v008-mcp-servers';
 import { migrateV009 } from './v009-tool-permissions';
+import { migrateV010 } from './v010-skills-state';
 
 interface Migration {
   version: number;
@@ -53,6 +54,11 @@ const MIGRATIONS: Migration[] = [
     version: 9,
     description: 'tool permissions: read/write/danger + HITL allow/deny',
     up: migrateV009,
+  },
+  {
+    version: 10,
+    description: 'skills: skills_state table (enable/disable references)',
+    up: migrateV010,
   },
 ];
 

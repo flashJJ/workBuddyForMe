@@ -72,4 +72,11 @@ export {
   type ToolPermissionCreateFields,
   type ToolPermissionRow,
 } from './tool-permission-repo';
+export {
+  createSkillStateRepository,
+  type SkillStateRepository,
+  type SkillStateCreateFields,
+  type SkillStateUpdateFields,
+  type SkillStateRow,
+} from './skill-state-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';
