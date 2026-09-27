@@ -156,6 +156,9 @@ export {
 } from './tools/ssrf-guard';
 export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool-runner';
 
+// v0.6 MCP（Model Context Protocol）
+export * from './mcp';
+
 // v0.4 数据便携：备份与恢复
 export {
   exportBackup,

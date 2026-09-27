@@ -1,6 +1,7 @@
 import type { Assistant } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
 import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/retrieval-service';
+import { createMcpTool } from '../mcp/mcp-tool';
 import type { Tool, ToolContext, ToolMap } from './types';
 import { currentTimeTool } from './current-time-tool';
 import { knowledgeSearchTool } from './knowledge-search-tool';
@@ -27,13 +28,22 @@ export interface ToolRuntime {
 export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
   const retrieval = createRetrievalService(deps);
 
+  /** 解析白名单项：内置查表，MCP 限定名走注册表（未连接/不存在则跳过） */
+  function resolveTool(name: string): Tool | null {
+    const builtin = ALL_TOOLS[name];
+    if (builtin) return builtin;
+    const registry = deps.mcp;
+    if (!registry) return null;
+    const info = registry.getTools().find((tool) => tool.qualifiedName === name);
+    return info ? createMcpTool(info, registry) : null;
+  }
+
   return {
     buildTools(assistant, supportsTools) {
       if (!supportsTools || assistant.enabledTools.length === 0) return new Map();
       const map = new Map<string, Tool>();
       for (const name of assistant.enabledTools) {
-        // v0.6：内置先查表；MCP 限定名由 registry 接管（未注册的白名单项静默跳过）
-        const tool = ALL_TOOLS[name];
+        const tool = resolveTool(name);
         if (tool) map.set(name, tool);
       }
       return map;
