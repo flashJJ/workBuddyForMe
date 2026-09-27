@@ -169,6 +169,21 @@ export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool
 // v0.6 MCP（Model Context Protocol）
 export * from './mcp';
 
+// v0.6 M3 本地技能包
+export { loadSkillsFromDisk } from './skills/loader';
+export {
+  BUILTIN_SKILLS,
+  BUILTIN_MEETING_NOTES,
+  BUILTIN_WEEKLY_REPORT,
+  ensureBuiltinSkills,
+} from './skills/builtin-skills';
+export {
+  createSkillService,
+  type EnabledSkill,
+  type SkillService,
+  type SkillServiceOptions,
+} from './skills/skill-service';
+
 // v0.4 数据便携：备份与恢复
 export {
   exportBackup,
