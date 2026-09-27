@@ -41,8 +41,8 @@ describe('v007 迁移：消息反馈字段', () => {
   it('v6 老库升级：老消息 feedback 两列为 NULL，可写回 up/down', () => {
     const db = createV6Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([7]);
-    expect(LATEST_SCHEMA_VERSION).toBe(7);
+    expect(result.applied).toEqual([7, 8]);
+    expect(LATEST_SCHEMA_VERSION).toBe(8);
 
     const before = db.prepare(`SELECT feedback, feedback_at FROM messages WHERE id='m1'`).get() as {
       feedback: string | null;
