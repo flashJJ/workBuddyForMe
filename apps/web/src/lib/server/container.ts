@@ -10,6 +10,7 @@ import {
   createDocumentService,
   createIngestionPipeline,
   createKnowledgeService,
+  createMcpRegistry,
   createMemoryService,
   createModelService,
   createProviderService,
@@ -22,6 +23,7 @@ import {
   type DocumentService,
   type IngestionPipeline,
   type KnowledgeService,
+  type McpRegistry,
   type MemoryService,
   type SecretCipher,
 } from '@wbfm/core';
@@ -40,9 +42,12 @@ export interface ServiceContainer {
   documents: DocumentService;
   attachments: AttachmentService;
   memories: MemoryService;
+  /** v0.6：MCP 注册表（设置页与工具运行时共享同一连接池） */
+  mcp: McpRegistry;
 }
 
 let container: ServiceContainer | null = null;
+let exitCleanupRegistered = false;
 
 function resolveCipher(): SecretCipher {
   // Electron 可在启动前通过全局注入 safeStorage 桥接密码器（见 Task 30）
@@ -52,10 +57,12 @@ function resolveCipher(): SecretCipher {
 }
 
 function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
-  const deps = { db, cipher };
+  const mcp = createMcpRegistry(db);
+  const deps = { db, cipher, mcp };
   return {
     db,
     cipher,
+    mcp,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),
@@ -70,10 +77,33 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   };
 }
 
+/**
+ * 进程退出清理：断开全部 MCP 子进程（幂等 best-effort）。
+ * 断开链路在首个 await 前同步发出 kill 信号，signal 处理器内随后 exit 也不会遗漏。
+ */
+function registerExitCleanup(registry: McpRegistry): void {
+  if (exitCleanupRegistered) return;
+  exitCleanupRegistered = true;
+  const disconnectAll = () => {
+    void registry.disconnectAll().catch(() => undefined);
+  };
+  process.once('exit', disconnectAll);
+  // 注册处理器会接管默认信号行为，故 cleanup 后显式退出
+  process.once('SIGTERM', () => {
+    disconnectAll();
+    process.exit(0);
+  });
+  process.once('SIGINT', () => {
+    disconnectAll();
+    process.exit(0);
+  });
+}
+
 /** 获取服务单例：首次访问时初始化文件数据库与全部业务服务 */
 export function getServices(): ServiceContainer {
   if (container) return container;
   container = build(initDatabase(), resolveCipher());
+  registerExitCleanup(container.mcp);
   return container;
 }
 
