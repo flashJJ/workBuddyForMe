@@ -17,6 +17,7 @@ import {
   createPermissionService,
   createProviderService,
   createSettingsService,
+  createSkillService,
   createWebCipher,
   type AssistantsService,
   type AttachmentService,
@@ -30,6 +31,7 @@ import {
   type PendingConfirmations,
   type PermissionService,
   type SecretCipher,
+  type SkillService,
 } from '@wbfm/core';
 
 export interface ServiceContainer {
@@ -52,6 +54,8 @@ export interface ServiceContainer {
   permissions: PermissionService;
   /** v0.6 M2：HITL 挂起确认注册表（orchestrator 挂起点 ↔ /api/tools/confirm） */
   confirmations: PendingConfirmations;
+  /** v0.6 M3：技能包服务（启动时 reconcile 扫盘对齐） */
+  skills: SkillService;
 }
 
 let container: ServiceContainer | null = null;
@@ -67,13 +71,15 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const mcp = createMcpRegistry(db);
   const permissions = createPermissionService({ db, cipher });
   const confirmations = createPendingConfirmations();
-  const deps = { db, cipher, mcp, permissions, confirmations };
+  const skills = createSkillService({ db });
+  const deps = { db, cipher, mcp, permissions, confirmations, skills };
   return {
     db,
     cipher,
     mcp,
     permissions,
     confirmations,
+    skills,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),
@@ -120,6 +126,8 @@ export function getServices(): ServiceContainer {
   registerExitCleanup(container.mcp);
   // 按仓储现状对齐 MCP 连接（异步，不阻塞首请求）
   container.mcp.reconcile();
+  // 技能包启动对齐：播种内置示例 + 扫盘登记（本地文件扫描，同步快速完成）
+  container.skills.reconcile();
   return container;
 }
 
