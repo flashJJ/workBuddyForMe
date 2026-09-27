@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-  MCP_SERVER_NAME_MAX,
-  MCP_SERVER_NAME_PATTERN,
-  MCP_TRANSPORTS,
-} from '../constants';
+import { MCP_SERVER_NAME_MAX, MCP_SERVER_NAME_PATTERN } from '../constants';
 
 /**
  * v0.6 MCP 服务器 API 契约。

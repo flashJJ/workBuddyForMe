@@ -11,7 +11,6 @@ import {
   isNotification,
   isRequest,
   type JsonRpcMessage,
-  type JsonRpcResponse,
 } from './jsonrpc';
 import type { StdioTransport } from './stdio-transport';
 

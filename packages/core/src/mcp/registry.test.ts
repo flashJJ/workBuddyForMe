@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { McpServerConfig, McpToolInfo } from '@wbfm/shared';
+import type { McpServerConfig } from '@wbfm/shared';
 import { buildMcpToolName } from '@wbfm/shared';
 import { createDatabase } from '@wbfm/database';
 import { createMcpServerRepository } from '@wbfm/database';
