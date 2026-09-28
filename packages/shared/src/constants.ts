@@ -160,6 +160,10 @@ export const MCP_MAX_TOOLS_PER_SERVER = 50;
 /** 工具调用安全护栏常量 */
 export const MAX_TOOL_ROUNDS = 5;
 export const TOOL_TIMEOUT_MS = 15_000;
+/** v0.6 M4：熔断——连续失败超过此值后自动停用工具 */
+export const TOOL_BREAKER_FAILURE_THRESHOLD = 3;
+/** v0.6 M4：熔断冷却时间（5 分钟后半开重试） */
+export const TOOL_BREAKER_COOLDOWN_MS = 5 * 60_000;
 
 /** 上传限制 */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
