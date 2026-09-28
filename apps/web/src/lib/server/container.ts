@@ -18,6 +18,7 @@ import {
   createProviderService,
   createSettingsService,
   createSkillService,
+  createToolBreaker,
   createWebCipher,
   type AssistantsService,
   type AttachmentService,
@@ -32,6 +33,7 @@ import {
   type PermissionService,
   type SecretCipher,
   type SkillService,
+  type ToolBreaker,
 } from '@wbfm/core';
 
 export interface ServiceContainer {
@@ -56,6 +58,8 @@ export interface ServiceContainer {
   confirmations: PendingConfirmations;
   /** v0.6 M3：技能包服务（启动时 reconcile 扫盘对齐） */
   skills: SkillService;
+  /** v0.6 M4：工具熔断器（连续失败降级；面板路由共享同一实例） */
+  breakers: ToolBreaker;
 }
 
 let container: ServiceContainer | null = null;
@@ -72,7 +76,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const permissions = createPermissionService({ db, cipher });
   const confirmations = createPendingConfirmations();
   const skills = createSkillService({ db });
-  const deps = { db, cipher, mcp, permissions, confirmations, skills };
+  const breakers = createToolBreaker();
+  const deps = { db, cipher, mcp, permissions, confirmations, skills, breakers };
   return {
     db,
     cipher,
@@ -80,6 +85,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     permissions,
     confirmations,
     skills,
+    breakers,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),

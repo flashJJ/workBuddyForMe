@@ -89,6 +89,47 @@ export async function* runToolCallLoop(
     }
     // 放行（含 read 工具与已授权 write/danger）：落到下方正常执行路径
 
+    // v0.6 M4 熔断检查：连续失败的工具短期跳过执行，cooldown 到期自动半开重试
+    const breaker = deps.breakers;
+    if (breaker?.isTripped(name)) {
+      const trippedSummary = '已熔断';
+      const trippedOutput = `工具 ${name} 已熔断：连续失败达到阈值，5 分钟内自动半开恢复，或前往「设置 → 工具熔断器」手动重置。`;
+      const trippedStartedAt = Date.now();
+      trace.push({
+        callId: call.id,
+        tool: name,
+        argsSummary,
+        status: 'error',
+        durationMs: 0,
+        resultSummary: trippedSummary,
+        error: trippedSummary,
+        startedAt: new Date(trippedStartedAt).toISOString(),
+        source,
+        permission,
+      });
+      yield {
+        event: 'tool',
+        data: {
+          phase: 'end',
+          callId: call.id,
+          tool: name,
+          status: 'error',
+          durationMs: 0,
+          resultSummary: trippedSummary,
+          error: trippedSummary,
+          source,
+          permission,
+        },
+      };
+      outgoing.push({
+        role: 'tool',
+        content: trippedOutput,
+        toolCallId: call.id,
+        name: call.function.name,
+      });
+      continue;
+    }
+
     yield {
       event: 'tool',
       data: { phase: 'start', callId: call.id, tool: name, argsSummary, source, permission },
@@ -109,6 +150,9 @@ export async function* runToolCallLoop(
         )
       : unknownToolResult(call.function.name);
     const durationMs = Date.now() - startedAt;
+
+    // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过
+    breaker?.recordResult(name, result.ok);
 
     trace.push({
       callId: call.id,
