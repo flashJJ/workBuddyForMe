@@ -56,6 +56,8 @@ export function applyToolTraceEnd(prev: Message[] | null, data: ToolEndPayload):
         resultSummary: data.resultSummary,
         ...(data.status === 'error' && data.error ? { error: data.error } : {}),
         startedAt: previous?.startedAt ?? new Date().toISOString(),
+        ...(data.source ? { source: data.source } : previous?.source ? { source: previous.source } : {}),
+        ...(data.permission ? { permission: data.permission } : previous?.permission ? { permission: previous.permission } : {}),
       };
       const idx = trace.findIndex((t) => t.callId === data.callId);
       const nextTrace = idx === -1 ? [...trace, entry] : trace.map((t, j) => (j === idx ? entry : t));

@@ -166,6 +166,8 @@ export function useChatSession(
               durationMs: 0,
               resultSummary: '执行中…',
               startedAt: nowIso(),
+              ...(data.source ? { source: data.source } : {}),
+              ...(data.permission ? { permission: data.permission } : {}),
             });
             return;
           }

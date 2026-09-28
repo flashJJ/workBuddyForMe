@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Wrench,
 } from 'lucide-react';
-import type { ToolName, ToolTraceEntry } from '@wbfm/shared';
+import type { ToolName, ToolTraceEntry, PermissionLevel } from '@wbfm/shared';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const TOOL_META: Record<ToolName, { label: string; icon: typeof Clock }> = {
@@ -23,6 +24,25 @@ const TOOL_META: Record<ToolName, { label: string; icon: typeof Clock }> = {
 /** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>） */
 function metaOf(name: string): { label: string; icon: typeof Clock } {
   return TOOL_META[name as ToolName] ?? { label: name, icon: Wrench };
+}
+
+const SOURCE_LABELS: Record<string, string> = { builtin: '内置', unknown: '未知' };
+const SOURCE_VARIANT: Record<string, 'default' | 'outline' | 'success' | 'warning' | 'danger'> = {
+  builtin: 'default',
+  unknown: 'outline',
+};
+const PERMISSION_LABELS: Record<PermissionLevel, string> = { read: '读', write: '写', danger: '危险' };
+const PERMISSION_VARIANT: Record<PermissionLevel, 'success' | 'warning' | 'danger'> = {
+  read: 'success',
+  write: 'warning',
+  danger: 'danger',
+};
+
+function sourceLabel(source?: string): string {
+  if (!source) return '';
+  if (SOURCE_LABELS[source]) return SOURCE_LABELS[source]!;
+  if (source.startsWith('mcp:')) return `MCP / ${source.slice(4)}`;
+  return source;
 }
 
 function formatDuration(ms: number): string {
@@ -58,6 +78,8 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
         )}
         <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium">{label}</span>
+        {entry.source && <Badge variant={SOURCE_VARIANT[entry.source] ?? 'outline'} className="px-1.5 py-0 text-[10px]">{sourceLabel(entry.source)}</Badge>}
+        {entry.permission && <Badge variant={PERMISSION_VARIANT[entry.permission]} className="px-1.5 py-0 text-[10px]">{PERMISSION_LABELS[entry.permission]}</Badge>}
         {entry.argsSummary && (
           <span className="min-w-0 flex-1 truncate text-muted-foreground">{entry.argsSummary}</span>
         )}
@@ -74,6 +96,18 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
             <dt className="w-16 shrink-0">工具名</dt>
             <dd className="font-mono text-foreground">{entry.tool}</dd>
           </div>
+          {entry.source && (
+            <div className="flex gap-2">
+              <dt className="w-16 shrink-0">来源</dt>
+              <dd>{sourceLabel(entry.source)}</dd>
+            </div>
+          )}
+          {entry.permission && (
+            <div className="flex gap-2">
+              <dt className="w-16 shrink-0">权限</dt>
+              <dd>{PERMISSION_LABELS[entry.permission]}</dd>
+            </div>
+          )}
           {entry.argsSummary && (
             <div className="flex gap-2">
               <dt className="w-16 shrink-0">参数</dt>
