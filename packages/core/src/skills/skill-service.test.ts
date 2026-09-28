@@ -34,10 +34,14 @@ describe('skill-service（v0.6 M3）', () => {
     db.close();
   });
 
-  it('reconcile：播种内置 2 个技能并登记为启用；重复调用幂等', () => {
+  it('reconcile：播种内置 3 个技能并登记为启用；重复调用幂等', () => {
     service.reconcile();
     const list = service.list();
-    expect(list.map((s) => s.name).sort()).toEqual(['meeting-notes', 'weekly-report']);
+    expect(list.map((s) => s.name).sort()).toEqual([
+      'file-search',
+      'meeting-notes',
+      'weekly-report',
+    ]);
     for (const skill of list) {
       expect(skill.enabled).toBe(true);
       expect(skill.exists).toBe(true);
@@ -48,7 +52,7 @@ describe('skill-service（v0.6 M3）', () => {
     service.setEnabled(list[0]!.id, false);
     service.reconcile();
     const again = service.list();
-    expect(again).toHaveLength(2);
+    expect(again).toHaveLength(3);
     expect(again.find((s) => s.id === list[0]!.id)?.enabled).toBe(false);
   });
 
@@ -110,7 +114,7 @@ describe('skill-service（v0.6 M3）', () => {
     service.setEnabled(weekly.id, false);
 
     const enabled = service.getEnabledSkills();
-    expect(enabled.map((s) => s.name)).toEqual(['meeting-notes']);
+    expect(enabled.map((s) => s.name).sort()).toEqual(['file-search', 'meeting-notes']);
     expect(enabled[0]!.manifest.promptTemplates.length).toBeGreaterThan(0);
   });
 });

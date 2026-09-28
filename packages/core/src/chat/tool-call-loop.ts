@@ -1,7 +1,7 @@
 import { traceAsync, type ToolCall } from '@wbfm/ai';
 import type { Citation, ToolTraceEntry } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
-import type { ToolMap, ToolContext, Tool } from '../tools/types';
+import type { ToolMap, ToolContext } from '../tools/types';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TraceHandle } from '@wbfm/ai';
 import { executeCall, summarizeArgs } from '../tools/tool-executor';

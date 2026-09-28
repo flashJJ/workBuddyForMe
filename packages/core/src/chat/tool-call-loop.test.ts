@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { ToolTraceEntry } from '@wbfm/shared';
 import { runToolCallLoop, type ToolCallLoopParams } from './tool-call-loop';
 import type { OrchestratorEvent } from './types';
@@ -28,7 +28,7 @@ function makeRuntime(resolved: ResolvedTool | null): ToolRuntime {
 function makeDeps(): ServiceDeps {
   return {
     db: {} as never,
-  } as ServiceDeps;
+  } as unknown as ServiceDeps;
 }
 
 async function drain(gen: AsyncGenerator<OrchestratorEvent>): Promise<OrchestratorEvent[]> {

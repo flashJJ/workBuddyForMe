@@ -156,6 +156,14 @@ export {
 export { currentTimeTool } from './tools/current-time-tool';
 export { knowledgeSearchTool } from './tools/knowledge-search-tool';
 export { fetchWebpageTool, htmlToText } from './tools/fetch-webpage-tool';
+export { extractMainContent } from './tools/html-extractor';
+export {
+  createToolBreaker,
+  type ToolBreaker,
+  type ToolBreakerSnapshot,
+  type ToolBreakerOptions,
+  type BreakerStatus,
+} from './tools/tool-breaker';
 export {
   isBlockedIp,
   assertSafeUrlLiteral,
@@ -175,6 +183,7 @@ export {
   BUILTIN_SKILLS,
   BUILTIN_MEETING_NOTES,
   BUILTIN_WEEKLY_REPORT,
+  BUILTIN_FILE_SEARCH,
   ensureBuiltinSkills,
 } from './skills/builtin-skills';
 export {

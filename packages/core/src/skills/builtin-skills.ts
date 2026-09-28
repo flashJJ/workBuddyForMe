@@ -67,7 +67,40 @@ export const BUILTIN_MEETING_NOTES: SkillManifest = {
   author: 'WorkBuddy 内置',
 };
 
-export const BUILTIN_SKILLS: SkillManifest[] = [BUILTIN_WEEKLY_REPORT, BUILTIN_MEETING_NOTES];
+export const BUILTIN_FILE_SEARCH: SkillManifest = {
+  name: 'file-search',
+  description: '在本地指定目录中查找与读取文件。需先在「设置 → MCP」中添加 filesystem MCP 服务器并指向目标根目录，再让助手启用本技能。',
+  version: '1.0.0',
+  permissions: ['read'],
+  promptTemplates: [
+    {
+      name: '文件检索流程',
+      order: 0,
+      content: [
+        '当用户要求查找或阅读本地文件时，按以下流程执行：',
+        '1. 若助手已启用 filesystem MCP 工具（list_directory / read_file / search_files 等），先调用列出目标目录；',
+        '2. 根据文件名、扩展名与关键词匹配用户意图，必要时用 read_file 读取候选文件；',
+        '3. 汇总结果：返回命中文件路径与片段，不整份输出大文件；超出上下文时按摘要+片段裁剪；',
+        '4. 若未挂载 filesystem MCP 服务器，明确提示用户在「设置 → MCP」中添加后再试，不要假装能访问磁盘。',
+      ].join('\n'),
+    },
+  ],
+  allowedTools: [],
+  examples: [
+    {
+      title: '查找文件',
+      userQuery: '帮我找一下 D 盘 docs 目录下的 README',
+      expectedBehavior: '调用 list_directory/read_file，返回命中文件路径与片段；未挂载时提示用户去设置中添加',
+    },
+  ],
+  author: 'WorkBuddy 内置',
+};
+
+export const BUILTIN_SKILLS: SkillManifest[] = [
+  BUILTIN_WEEKLY_REPORT,
+  BUILTIN_MEETING_NOTES,
+  BUILTIN_FILE_SEARCH,
+];
 
 /** 幂等播种：内置示例技能写入技能目录（manifest 已存在则跳过，保留用户改动） */
 export function ensureBuiltinSkills(skillsDir: string): void {

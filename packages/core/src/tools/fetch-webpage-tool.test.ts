@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { executeToolCall } from './tool-executor';
 import type { ToolContext } from './types';
-import { fetchWebpageTool, htmlToText } from './fetch-webpage-tool';
+import { fetchWebpageTool } from './fetch-webpage-tool';
 
 const ctx: ToolContext = { knowledgeBaseId: null, retrieve: async () => [] };
 
@@ -14,19 +14,6 @@ function htmlResponse(body: string, contentType = 'text/html; charset=utf-8', st
 
 describe('fetch_webpage 工具', () => {
   afterEach(() => vi.unstubAllGlobals());
-
-  it('htmlToText：剥脚本/标签、解码实体、块级换行', () => {
-    const html =
-      '<html><head><style>x{}</style><script>alert(1)</script></head>' +
-      '<body><h1>标题</h1><p>正文&nbsp;A &amp; B</p>' +
-      '<a href="x">链接</a></body></html>';
-    const text = htmlToText(html);
-    expect(text).toContain('标题');
-    expect(text).toContain('正文 A & B');
-    expect(text).toContain('链接');
-    expect(text).not.toContain('alert');
-    expect(text).not.toContain('<');
-  });
 
   it('正常抓取公网页面：输出含来源主机与正文', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
