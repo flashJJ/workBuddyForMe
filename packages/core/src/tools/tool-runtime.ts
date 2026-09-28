@@ -14,11 +14,19 @@ const ALL_TOOLS: Record<string, Tool> = {
   fetch_webpage: fetchWebpageTool,
 };
 
+export interface ResolvedTool {
+  tool: Tool;
+  /** 来源标识：'builtin' | 'mcp:<serverName>' */
+  source: string;
+}
+
 export interface ToolRuntime {
   /** 按助手白名单构造可用工具映射；模型不支持工具时返回空映射 */
   buildTools(assistant: Assistant, supportsTools: boolean): ToolMap;
   /** 构造工具执行上下文（绑定库与检索回调） */
   createContext(assistant: Assistant, signal?: AbortSignal): ToolContext;
+  /** v0.6 M4：解析工具名 → { tool, source }；内置查表，MCP 走注册表 */
+  resolveTool(name: string): ResolvedTool | null;
 }
 
 /**
@@ -29,22 +37,25 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
   const retrieval = createRetrievalService(deps);
 
   /** 解析白名单项：内置查表，MCP 限定名走注册表（未连接/不存在则跳过） */
-  function resolveTool(name: string): Tool | null {
+  function resolveTool(name: string): ResolvedTool | null {
     const builtin = ALL_TOOLS[name];
-    if (builtin) return builtin;
+    if (builtin) return { tool: builtin, source: 'builtin' };
     const registry = deps.mcp;
     if (!registry) return null;
     const info = registry.getTools().find((tool) => tool.qualifiedName === name);
-    return info ? createMcpTool(info, registry) : null;
+    if (!info) return null;
+    return { tool: createMcpTool(info, registry), source: `mcp:${info.serverName}` };
   }
 
   return {
+    resolveTool,
+
     buildTools(assistant, supportsTools) {
       if (!supportsTools || assistant.enabledTools.length === 0) return new Map();
       const map = new Map<string, Tool>();
       for (const name of assistant.enabledTools) {
-        const tool = resolveTool(name);
-        if (tool) map.set(name, tool);
+        const resolved = resolveTool(name);
+        if (resolved) map.set(name, resolved.tool);
       }
       return map;
     },

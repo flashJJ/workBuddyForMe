@@ -12,6 +12,10 @@ export interface ToolGateParams {
   argsSummary: string;
   assistantId: string;
   signal?: AbortSignal;
+  /** v0.6 M4：工具来源标识 */
+  source: string;
+  /** v0.6 M4：权限级别（调用方已解析，避免重复查 tool?.permission） */
+  permission: PermissionLevel;
 }
 
 export interface ToolGateResult {
@@ -32,8 +36,7 @@ export interface ToolGateResult {
 export async function* gateToolPermission(
   params: ToolGateParams,
 ): AsyncGenerator<OrchestratorEvent, ToolGateResult> {
-  const { deps, tool, toolName, callId, argsSummary, assistantId, signal } = params;
-  const permission: PermissionLevel = tool?.permission ?? 'read';
+  const { deps, tool, toolName, callId, argsSummary, assistantId, signal, source, permission } = params;
   const granted =
     !tool ||
     !deps.permissions ||
@@ -60,6 +63,8 @@ export async function* gateToolPermission(
     resultSummary: summary,
     error: summary,
     startedAt: new Date().toISOString(),
+    source,
+    permission,
   };
   yield {
     event: 'tool',
@@ -71,6 +76,8 @@ export async function* gateToolPermission(
       durationMs: 0,
       resultSummary: summary,
       error: summary,
+      source,
+      permission,
     },
   };
   return {

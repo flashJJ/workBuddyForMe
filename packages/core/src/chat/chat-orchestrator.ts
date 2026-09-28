@@ -167,6 +167,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               toolMap,
               toolCtx,
               deps,
+              runtime,
               assistantId: assistant.id,
               turnTrace,
               trace,

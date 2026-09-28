@@ -1,7 +1,8 @@
 import { traceAsync, type ToolCall } from '@wbfm/ai';
 import type { Citation, ToolTraceEntry } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
-import type { ToolMap, ToolContext } from '../tools/types';
+import type { ToolMap, ToolContext, Tool } from '../tools/types';
+import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TraceHandle } from '@wbfm/ai';
 import { executeCall, summarizeArgs } from '../tools/tool-executor';
 import { gateToolPermission } from './tool-permission-gate';
@@ -14,6 +15,8 @@ export interface ToolCallLoopParams {
   toolMap: ToolMap;
   toolCtx: ToolContext;
   deps: ServiceDeps;
+  /** v0.6 M4：工具运行时（用于 resolveTool 获取 source） */
+  runtime: ToolRuntime;
   assistantId: string;
   turnTrace: TraceHandle | null;
   /** 工具调用追踪（本函数会 push 条目） */
@@ -44,6 +47,7 @@ export async function* runToolCallLoop(
     toolMap,
     toolCtx,
     deps,
+    runtime,
     assistantId,
     turnTrace,
     trace,
@@ -57,6 +61,10 @@ export async function* runToolCallLoop(
     const name = call.function.name;
     const argsSummary = summarizeArgs(name, safeParseArgs(call));
     const tool = toolMap.get(name);
+    // v0.6 M4：解析来源与权限（toolMap 可能不含该工具——未知工具名走 unknownToolResult）
+    const resolved = runtime.resolveTool(name);
+    const source = resolved?.source ?? 'unknown';
+    const permission = resolved?.tool.permission ?? 'read';
 
     // v0.6 M2 权限门控：write/danger 未授权时 HITL 挂起-恢复或拒绝
     const gate = yield* gateToolPermission({
@@ -67,6 +75,8 @@ export async function* runToolCallLoop(
       argsSummary,
       assistantId,
       signal,
+      source,
+      permission,
     });
     if (gate.denied) {
       trace.push(gate.traceEntry!);
@@ -81,7 +91,7 @@ export async function* runToolCallLoop(
 
     yield {
       event: 'tool',
-      data: { phase: 'start', callId: call.id, tool: name, argsSummary },
+      data: { phase: 'start', callId: call.id, tool: name, argsSummary, source, permission },
     };
 
     const startedAt = Date.now();
@@ -92,7 +102,7 @@ export async function* runToolCallLoop(
             runType: 'tool',
             parent: turnTrace,
             inputs: { callId: call.id, arguments: safeParseArgs(call), argsSummary },
-            metadata: { tool: name },
+            metadata: { tool: name, source, permission },
           },
           () => executeCall(tool, call, toolCtx),
           (value) => ({ ok: value.ok, summary: value.summary, durationMs: Date.now() - startedAt }),
@@ -109,6 +119,8 @@ export async function* runToolCallLoop(
       resultSummary: result.summary,
       ...(result.ok ? {} : { error: result.summary }),
       startedAt: new Date(startedAt).toISOString(),
+      source,
+      permission,
     });
     yield {
       event: 'tool',
@@ -120,6 +132,8 @@ export async function* runToolCallLoop(
         durationMs,
         resultSummary: result.summary,
         ...(result.ok ? {} : { error: result.summary }),
+        source,
+        permission,
       },
     };
 
