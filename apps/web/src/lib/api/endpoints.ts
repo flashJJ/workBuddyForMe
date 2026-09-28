@@ -34,6 +34,7 @@ export const API = {
   toolPermissions: '/api/tools/permissions',
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
   toolBreakers: '/api/tools/breakers',
+  toolDebug: '/api/tools/debug',
 } as const;
 
 export const QUERY_KEYS = {
@@ -53,4 +54,5 @@ export const QUERY_KEYS = {
   skills: ['skills'] as const,
   toolPermissions: ['tool-permissions'] as const,
   toolBreakers: ['tool-breakers'] as const,
+  toolDebug: ['tool-debug'] as const,
 };

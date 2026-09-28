@@ -19,6 +19,7 @@ import {
   createSettingsService,
   createSkillService,
   createToolBreaker,
+  createToolRuntime,
   createWebCipher,
   type AssistantsService,
   type AttachmentService,
@@ -34,6 +35,7 @@ import {
   type SecretCipher,
   type SkillService,
   type ToolBreaker,
+  type ToolRuntime,
 } from '@wbfm/core';
 
 export interface ServiceContainer {
@@ -60,6 +62,8 @@ export interface ServiceContainer {
   skills: SkillService;
   /** v0.6 M4：工具熔断器（连续失败降级；面板路由共享同一实例） */
   breakers: ToolBreaker;
+  /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
+  runtime: ToolRuntime;
 }
 
 let container: ServiceContainer | null = null;
@@ -78,6 +82,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const skills = createSkillService({ db });
   const breakers = createToolBreaker();
   const deps = { db, cipher, mcp, permissions, confirmations, skills, breakers };
+  const runtime = createToolRuntime(deps);
   return {
     db,
     cipher,
@@ -86,6 +91,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     confirmations,
     skills,
     breakers,
+    runtime,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),

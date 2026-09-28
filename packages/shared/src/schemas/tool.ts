@@ -20,3 +20,15 @@ export const toolConfirmSchema = z
     path: ['assistantId'],
   });
 export type ToolConfirmInput = z.infer<typeof toolConfirmSchema>;
+
+/**
+ * v0.6 M4：工具调试执行 API 契约。
+ * 设置页调试台 POST /api/tools/debug 提交选定的工具名与参数 JSON，
+ * 服务端不经模型/熔断/HITL 直接试跑并返回结构化结果。
+ */
+export const toolDebugExecuteSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  /** 参数 JSON 字符串：解析失败由服务端归一为参数错误，不阻断响应 */
+  args: z.unknown(),
+});
+export type ToolDebugExecuteInput = z.infer<typeof toolDebugExecuteSchema>;

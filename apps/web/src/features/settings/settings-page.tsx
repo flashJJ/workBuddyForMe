@@ -12,6 +12,7 @@ import { DefaultsPanel } from './defaults-panel';
 import { McpPanel } from './mcp-panel';
 import { PermissionPanel } from './permission-panel';
 import { ToolBreakerPanel } from './tool-breaker-panel';
+import { ToolDebugPanel } from './tool-debug-panel';
 import { SkillsPanel } from './skills-panel';
 import { MemoryPanel } from '../memory/memory-panel';
 import { BackupPanel } from './backup-panel';
@@ -72,6 +73,8 @@ export function SettingsPage() {
       <PermissionPanel />
 
       <ToolBreakerPanel />
+
+      <ToolDebugPanel />
 
       <SkillsPanel />
 

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createWebCipher } from '@wbfm/core';
+import { createWebCipher, type DebugToolInfo } from '@wbfm/core';
 import {
   __buildContainerForTest,
   __setContainerForTest,
@@ -14,6 +14,7 @@ import { POST as confirmTool } from './confirm/route';
 import { GET as listPermissions } from './permissions/route';
 import { DELETE as revokePermission } from './permissions/[id]/route';
 import { GET as listBreakers, POST as resetBreaker } from './breakers/route';
+import { GET as listDebugTools, POST as debugExecute } from './debug/route';
 
 const jsonRequest = (body: unknown, method = 'POST') =>
   new Request('http://127.0.0.1/x', {
@@ -167,5 +168,53 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
     const res = await resetBreaker(jsonRequest({ name: 'never_tripped_tool' }));
     expect(res.status).toBe(200);
     expect((await res.json()).data.ok).toBe(true);
+  });
+
+  it('debug：GET 列出全部内置工具（含 source/permission/description/parameters）', async () => {
+    const res = await listDebugTools(new Request('http://x'));
+    expect(res.status).toBe(200);
+    const list = (await res.json()).data;
+    expect(list.map((t: DebugToolInfo) => t.name).sort()).toEqual([
+      'current_time',
+      'fetch_webpage',
+      'knowledge_search',
+    ]);
+    for (const t of list) {
+      expect(t.source).toBe('builtin');
+      expect(t.description).toBeTruthy();
+      expect(t.parameters).toBeTypeOf('object');
+    }
+  });
+
+  it('debug：POST 执行 current_time 返回结构化结果（ok=true）', async () => {
+    const res = await debugExecute(jsonRequest({ name: 'current_time', args: {} }));
+    expect(res.status).toBe(200);
+    const result = (await res.json()).data;
+    expect(result.ok).toBe(true);
+    expect(result.summary).toBeTruthy();
+    expect(result.output).toBeTruthy();
+  });
+
+  it('debug：POST 不存在的工具返回 ok=false 未启用提示', async () => {
+    const res = await debugExecute(jsonRequest({ name: 'no_such_tool', args: {} }));
+    expect(res.status).toBe(200);
+    const result = (await res.json()).data;
+    expect(result.ok).toBe(false);
+    expect(result.summary).toBe('工具未启用');
+    expect(result.output).toContain('no_such_tool');
+  });
+
+  it('debug：POST 非法 body 422（name 缺失）', async () => {
+    const res = await debugExecute(jsonRequest({ args: {} }));
+    expect(res.status).toBe(422);
+  });
+
+  it('debug：POST 参数非法 JSON 归一为参数错误结果（不 422）', async () => {
+    // args 是 unknown，schema 允许任意；执行时由 ToolArgError 归一为 ok:false
+    // 这里直接传一个非对象参数给 fetch_webpage，应得到 ok:false 失败结果
+    const res = await debugExecute(jsonRequest({ name: 'fetch_webpage', args: 'not-an-object' }));
+    expect(res.status).toBe(200);
+    const result = (await res.json()).data;
+    expect(result.ok).toBe(false);
   });
 });
