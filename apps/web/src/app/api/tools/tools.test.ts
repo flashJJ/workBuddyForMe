@@ -13,6 +13,7 @@ import {
 import { POST as confirmTool } from './confirm/route';
 import { GET as listPermissions } from './permissions/route';
 import { DELETE as revokePermission } from './permissions/[id]/route';
+import { GET as listBreakers, POST as resetBreaker } from './breakers/route';
 
 const jsonRequest = (body: unknown, method = 'POST') =>
   new Request('http://127.0.0.1/x', {
@@ -124,5 +125,47 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
 
     const again = await revokePermission(new Request('http://x', { method: 'DELETE' }), idParams(targetId));
     expect(again.status).toBe(404);
+  });
+
+  it('breakers：GET 列出熔断中工具；POST 重置后列表为空', async () => {
+    // 初始为空
+    const empty = await listBreakers(new Request('http://x'));
+    expect((await empty.json()).data).toEqual([]);
+
+    // 造一条熔断记录：连续 3 次失败（默认阈值）
+    services.breakers.recordResult('fetch_webpage', false);
+    services.breakers.recordResult('fetch_webpage', false);
+    services.breakers.recordResult('fetch_webpage', false);
+    expect(services.breakers.isTripped('fetch_webpage')).toBe(true);
+
+    const tripped = await listBreakers(new Request('http://x'));
+    const rows = (await tripped.json()).data;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].name).toBe('fetch_webpage');
+    expect(rows[0].status).toBe('open');
+    expect(rows[0].failures).toBe(3);
+
+    // 重置
+    const reset = await resetBreaker(jsonRequest({ name: 'fetch_webpage' }));
+    expect(reset.status).toBe(200);
+    expect((await reset.json()).data).toEqual({ name: 'fetch_webpage', ok: true });
+    expect(services.breakers.isTripped('fetch_webpage')).toBe(false);
+
+    const after = await listBreakers(new Request('http://x'));
+    expect((await after.json()).data).toEqual([]);
+  });
+
+  it('breakers：POST 非法 body 422（name 缺失/空串）', async () => {
+    const noName = await resetBreaker(jsonRequest({}));
+    expect(noName.status).toBe(422);
+
+    const emptyName = await resetBreaker(jsonRequest({ name: '  ' }));
+    expect(emptyName.status).toBe(422);
+  });
+
+  it('breakers：POST 重置不存在的工具幂等成功（视为已重置）', async () => {
+    const res = await resetBreaker(jsonRequest({ name: 'never_tripped_tool' }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).data.ok).toBe(true);
   });
 });

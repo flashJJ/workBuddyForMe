@@ -33,6 +33,7 @@ export const API = {
   toolConfirm: '/api/tools/confirm',
   toolPermissions: '/api/tools/permissions',
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
+  toolBreakers: '/api/tools/breakers',
 } as const;
 
 export const QUERY_KEYS = {
@@ -51,4 +52,5 @@ export const QUERY_KEYS = {
   mcpTools: ['mcp-tools'] as const,
   skills: ['skills'] as const,
   toolPermissions: ['tool-permissions'] as const,
+  toolBreakers: ['tool-breakers'] as const,
 };
