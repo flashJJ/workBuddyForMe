@@ -137,7 +137,7 @@ export {
 } from './retrieval/context-formatter';
 
 // v0.2 工具调用
-export { createToolRuntime, type ToolRuntime } from './tools/tool-runtime';
+export { createToolRuntime, type ToolRuntime, type ResolvedTool, type DebugToolInfo } from './tools/tool-runtime';
 export {
   executeToolCall,
   executeCall,
@@ -164,6 +164,11 @@ export {
   type ToolBreakerOptions,
   type BreakerStatus,
 } from './tools/tool-breaker';
+export {
+  debugExecuteTool,
+  DEBUG_MCP_TIMEOUT_MS,
+  type DebugExecuteParams,
+} from './tools/debug-executor';
 export {
   isBlockedIp,
   assertSafeUrlLiteral,

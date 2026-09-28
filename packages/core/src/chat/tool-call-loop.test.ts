@@ -23,6 +23,8 @@ function makeRuntime(resolved: ResolvedTool | null): ToolRuntime {
     resolveTool: () => resolved,
     buildTools: () => new Map(),
     createContext: () => ({ signal: undefined, knowledgeBaseId: null, retrieve: async () => [] }),
+    listDebugTools: () => [],
+    createDebugToolContext: (signal) => ({ signal, knowledgeBaseId: null, retrieve: async () => [] }),
   };
 }
 

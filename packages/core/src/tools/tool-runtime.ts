@@ -1,4 +1,4 @@
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant, PermissionLevel } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
 import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/retrieval-service';
 import { createMcpTool } from '../mcp/mcp-tool';
@@ -20,6 +20,15 @@ export interface ResolvedTool {
   source: string;
 }
 
+/** v0.6 M4：调试台展示的工具元数据（聚合内置 + MCP） */
+export interface DebugToolInfo {
+  name: string;
+  source: string;
+  permission: PermissionLevel;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
 export interface ToolRuntime {
   /** 按助手白名单构造可用工具映射；模型不支持工具时返回空映射 */
   buildTools(assistant: Assistant, supportsTools: boolean): ToolMap;
@@ -27,6 +36,10 @@ export interface ToolRuntime {
   createContext(assistant: Assistant, signal?: AbortSignal): ToolContext;
   /** v0.6 M4：解析工具名 → { tool, source }；内置查表，MCP 走注册表 */
   resolveTool(name: string): ResolvedTool | null;
+  /** v0.6 M4：聚合全部可调试工具（内置 + 已连接 MCP），调试台用 */
+  listDebugTools(): DebugToolInfo[];
+  /** v0.6 M4：调试台用空 retrieve 上下文（不绑知识库） */
+  createDebugToolContext(signal?: AbortSignal): ToolContext;
 }
 
 /**
@@ -49,6 +62,43 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
 
   return {
     resolveTool,
+
+    listDebugTools() {
+      const list: DebugToolInfo[] = [];
+      // 内置工具
+      for (const [name, tool] of Object.entries(ALL_TOOLS)) {
+        list.push({
+          name,
+          source: 'builtin',
+          permission: tool.permission ?? 'read',
+          description: tool.description,
+          parameters: tool.parameters,
+        });
+      }
+      // MCP 工具（仅已连接服务器的）
+      const mcpRegistry = deps.mcp;
+      if (mcpRegistry) {
+        for (const info of mcpRegistry.getTools()) {
+          list.push({
+            name: info.qualifiedName,
+            source: `mcp:${info.serverName}`,
+            permission: 'read',
+            description: info.description || 'MCP 工具',
+            parameters: info.inputSchema,
+          });
+        }
+      }
+      return list;
+    },
+
+    createDebugToolContext(signal) {
+      // 调试台不绑知识库；knowledge_search 调用时 retrieve 返回空
+      return {
+        signal,
+        knowledgeBaseId: null,
+        retrieve: async () => [],
+      };
+    },
 
     buildTools(assistant, supportsTools) {
       if (!supportsTools || assistant.enabledTools.length === 0) return new Map();
