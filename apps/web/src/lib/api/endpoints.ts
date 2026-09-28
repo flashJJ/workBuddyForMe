@@ -25,6 +25,16 @@ export const API = {
   memories: '/api/memories',
   memory: (id: string) => `/api/memories/${id}`,
   memoryClear: '/api/memories/clear',
+  mcpServers: '/api/mcp/servers',
+  mcpServer: (id: string) => `/api/mcp/servers/${id}`,
+  mcpTools: '/api/mcp/tools',
+  skills: '/api/skills',
+  skill: (id: string) => `/api/skills/${id}`,
+  toolConfirm: '/api/tools/confirm',
+  toolPermissions: '/api/tools/permissions',
+  toolPermission: (id: string) => `/api/tools/permissions/${id}`,
+  toolBreakers: '/api/tools/breakers',
+  toolDebug: '/api/tools/debug',
 } as const;
 
 export const QUERY_KEYS = {
@@ -39,4 +49,10 @@ export const QUERY_KEYS = {
   documents: (kbId: string) => ['documents', kbId] as const,
   attachment: (id: string) => ['attachment', id] as const,
   memories: ['memories'] as const,
+  mcpServers: ['mcp-servers'] as const,
+  mcpTools: ['mcp-tools'] as const,
+  skills: ['skills'] as const,
+  toolPermissions: ['tool-permissions'] as const,
+  toolBreakers: ['tool-breakers'] as const,
+  toolDebug: ['tool-debug'] as const,
 };

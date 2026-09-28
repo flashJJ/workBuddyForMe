@@ -11,25 +11,30 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v0.4 ✅ 已发布（2026-09）
+## 当前版本：v0.6 🚧 开发中
 
-**主题：数据随身**。备份恢复（四轨 tar.gz + 合并式恢复）+ 对话分享（Markdown/单文件 HTML + 脱敏）+ 桌面自动更新（electron-updater）+ P1 图片型 PDF OCR 兜底（视觉模型优先 + tesseract.js 降级）+ Ctrl+K 命令面板。
+**主题：会接活**。MCP 客户端（stdio + HTTP）+ 权限分级与人工确认（HITL）+ 本地声明式技能包 + 工具可观测性。
+
+- 方案：[v0.6-skills-and-mcp.md](v0.6-skills-and-mcp.md)
+- 分支：`feature/v0.6-skills-and-mcp`（M1 MCP stdio 客户端 + 服务器管理已完成）
+
+## 上一版本：v0.5 ✅ 已发布（2026-09）
+
+**主题：记得住**。长期记忆（提取/去重/检索注入）+ 上下文工程（token 预算、递归摘要压缩）+ 记忆管理 UI + 评估反馈闭环。tag `v0.5.0`。
+
+- 方案：[v0.5-memory-and-context.md](v0.5-memory-and-context.md)
+- 总结：[v0.5-release-summary.md](v0.5-release-summary.md)
+
+## 历史版本
+
+### v0.4 ✅ 已发布（2026-09）
+
+**主题：数据随身**。备份恢复（四轨 tar.gz + 合并式恢复）+ 对话分享（Markdown/单文件 HTML + 脱敏）+ 桌面自动更新（electron-updater）+ Ctrl+K 命令面板。tag `v0.4.0`。
 
 - 方案：[v0.4-data-portability-and-updates.md](v0.4-data-portability-and-updates.md)
 - 总结：[v0.4-release-summary.md](v0.4-release-summary.md)
 - 技术博客：[blog/v0.4](../../blog/v0.4/)（B01 已发布，B02-B10 待续）
-
-## 下一版本：v0.5 📝 规划中
-
-**主题：记得住**。长期记忆（提取/去重/检索注入）+ 上下文工程（token 预算、递归摘要压缩）+ 记忆管理 UI + 评估反馈闭环。
-- 方案：[v0.5-memory-and-context.md](v0.5-memory-and-context.md)
-
-### v0.6 📝 规划中
-
-**主题：会接活**。MCP 客户端（stdio + HTTP）+ 权限分级与人工确认（HITL）+ 本地声明式技能包 + 工具可观测性。
-- 方案：[v0.6-skills-and-mcp.md](v0.6-skills-and-mcp.md)
-
-## 历史版本
+- P1 收编：图片型 PDF OCR 兜底（视觉模型优先 + tesseract.js 降级）
 
 ### v0.3 ✅ 已发布（2025-Q4）
 
@@ -61,7 +66,7 @@
 | v0.3 | 什么都能读：多模态与富文档 | ✅ 已发布 | [方案](v0.3-multimodal-and-rich-docs.md) | [总结](v0.3-release-summary.md) | 10 篇 | `v0.3.0` |
 | v0.4 | 数据随身：备份/分享/自动更新 + OCR + 命令面板 | ✅ 已发布 | [方案](v0.4-data-portability-and-updates.md) | [总结](v0.4-release-summary.md) | B01 起 | `v0.4.0` |
 | v0.5 | 记得住：长期记忆 + 上下文工程 | ✅ 已发布 | [方案](v0.5-memory-and-context.md) | [总结](v0.5-release-summary.md) | — | `v0.5.0` |
-| v0.6 | 会接活：MCP + 技能包 + 权限确认 | 📝 规划中 | [方案](v0.6-skills-and-mcp.md) | — | — | — |
+| v0.6 | 会接活：MCP + 技能包 + 权限确认 | 🚧 开发中（feature/v0.6-skills-and-mcp） | [方案](v0.6-skills-and-mcp.md) | — | — | — |
 | v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）

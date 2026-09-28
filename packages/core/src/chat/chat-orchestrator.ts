@@ -1,5 +1,5 @@
-import { HISTORY_MESSAGE_SAFETY_CAP, MAX_TOOL_ROUNDS, type TokenUsage, type ToolName, type ToolTraceEntry } from '@wbfm/shared';
-import { startRun, traceAsync, type TraceHandle, type ToolCall } from '@wbfm/ai';
+import { HISTORY_MESSAGE_SAFETY_CAP, MAX_TOOL_ROUNDS, type TokenUsage, type ToolTraceEntry } from '@wbfm/shared';
+import { startRun, type TraceHandle, type ToolCall } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
 import { createAttachmentService } from '../services/attachment-service';
@@ -13,18 +13,12 @@ import { formatMemoryBlock, safeRecallEvent } from '../memory/turn-memory';
 import { buildImageMap } from './multimodal';
 import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
+import { runToolCallLoop } from './tool-call-loop';
 import type { OrchestratorEvent, StreamChatInput } from './types';
-import {
-  ROUND_LIMIT_FALLBACK,
-  isToolName,
-  mergeCitations,
-  normalizeFailure,
-  safeParseArgs,
-  unknownToolResult,
-} from './orchestrator-helpers';
+import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
-import { executeCall, summarizeArgs } from '../tools/tool-executor';
 import { toToolDefinitions } from '../tools/types';
+import { buildSkillPromptBlock, mergeSkillAllowedTools } from '../skills/skill-assembly';
 
 export function createChatOrchestrator(deps: ServiceDeps) {
   const assistants = createAssistantsService(deps);
@@ -113,8 +107,13 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           : [];
         const memoryBlock = formatMemoryBlock(recalledMemories);
 
+        // v0.6 M3：启用技能——提示词模板注入 system；预绑定工具与助手白名单取并集
+        const enabledSkills = deps.skills?.getEnabledSkills() ?? [];
+        const skillBlock = buildSkillPromptBlock(enabledSkills);
+        const effectiveAssistant = mergeSkillAllowedTools(assistant, enabledSkills);
+
         // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
-        const toolMap = runtime.buildTools(assistant, target.provider.supportsTools);
+        const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools);
         const toolDefs = toToolDefinitions([...toolMap.values()]);
         const { messages: outgoing, stats: budgetStats } = buildTurnMessages({
           assistant,
@@ -127,6 +126,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
           summary: conversation.summary,
           memoryBlock,
+          skillBlock,
         });
         if (budgetStats) await recordBudgetSpan(budgetStats, turnTrace);
         const toolCtx = runtime.createContext(assistant, input.signal);
@@ -162,84 +162,27 @@ export function createChatOrchestrator(deps: ServiceDeps) {
 
             outgoing.push({ role: 'assistant', content: outcome.content || null, toolCalls: calls });
 
-            for (const call of calls) {
-              const name = isToolName(call.function.name)
-                ? call.function.name
-                : (call.function.name as ToolName);
-              const argsSummary = summarizeArgs(
-                isToolName(call.function.name) ? call.function.name : 'current_time',
-                safeParseArgs(call),
-              );
-              yield {
-                event: 'tool',
-                data: { phase: 'start', callId: call.id, tool: name, argsSummary },
-              };
-
-              const startedAt = Date.now();
-              const tool = toolMap.get(call.function.name as ToolName);
-              const result = tool
-                ? await traceAsync(
-                    {
-                      name: `tool:${name}`,
-                      runType: 'tool',
-                      parent: turnTrace,
-                      inputs: {
-                        callId: call.id,
-                        arguments: safeParseArgs(call),
-                        argsSummary,
-                      },
-                      metadata: { tool: name },
-                    },
-                    () => executeCall(tool, call, toolCtx),
-                    (value) => ({
-                      ok: value.ok,
-                      summary: value.summary,
-                      durationMs: Date.now() - startedAt,
-                    }),
-                  )
-                : unknownToolResult(call.function.name);
-              const durationMs = Date.now() - startedAt;
-
-              trace.push({
-                callId: call.id,
-                tool: name,
-                argsSummary,
-                status: result.ok ? 'ok' : 'error',
-                durationMs,
-                resultSummary: result.summary,
-                ...(result.ok ? {} : { error: result.summary }),
-                startedAt: new Date(startedAt).toISOString(),
-              });
-              yield {
-                event: 'tool',
-                data: {
-                  phase: 'end',
-                  callId: call.id,
-                  tool: name,
-                  status: result.ok ? 'ok' : 'error',
-                  durationMs,
-                  resultSummary: result.summary,
-                  ...(result.ok ? {} : { error: result.summary }),
-                },
-              };
-
-              citations = mergeCitations(citations, result.citations);
-              if (result.citations?.length) {
-                yield { event: 'citations', data: { citations } };
-              }
-              outgoing.push({
-                role: 'tool',
-                content: result.output,
-                toolCallId: call.id,
-                name: call.function.name,
-              });
-
-              if (input.signal?.aborted) {
+            const loopOutcome = yield* runToolCallLoop({
+              calls,
+              toolMap,
+              toolCtx,
+              deps,
+              runtime,
+              assistantId: assistant.id,
+              turnTrace,
+              trace,
+              outgoing,
+              citations,
+              signal: input.signal,
+              onAbort: () => {
                 conversations.stopMessage(assistantMessage.id, full);
                 conversations.saveMessageToolTrace(assistantMessage.id, trace);
-                yield { event: 'done', data: { content: full, usage } };
-                return;
-              }
+              },
+            });
+            citations = loopOutcome.citations;
+            if (loopOutcome.aborted) {
+              yield { event: 'done', data: { content: full, usage } };
+              return;
             }
           }
 

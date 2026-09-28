@@ -55,4 +55,29 @@ describe('工具运行时白名单', () => {
     expect(ctx.signal).toBe(controller.signal);
     expect(typeof ctx.retrieve).toBe('function');
   });
+
+  it('listDebugTools 返回 3 个内置工具，每个含 source/permission/description/parameters', () => {
+    const list = runtime.listDebugTools();
+    expect(list.map((t) => t.name).sort()).toEqual([
+      'current_time',
+      'fetch_webpage',
+      'knowledge_search',
+    ]);
+    for (const info of list) {
+      expect(info.source).toBe('builtin');
+      expect(info.description).toBeTruthy();
+      expect(info.parameters).toBeTypeOf('object');
+    }
+    // fetch_webpage 标 danger
+    const fetch = list.find((t) => t.name === 'fetch_webpage');
+    expect(fetch?.permission).toBe('danger');
+  });
+
+  it('createDebugToolContext 不绑知识库，retrieve 返回空数组', async () => {
+    const controller = new AbortController();
+    const ctx = runtime.createDebugToolContext(controller.signal);
+    expect(ctx.knowledgeBaseId).toBeNull();
+    expect(ctx.signal).toBe(controller.signal);
+    await expect(ctx.retrieve('q', 5)).resolves.toEqual([]);
+  });
 });

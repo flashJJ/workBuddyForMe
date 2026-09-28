@@ -1,10 +1,10 @@
-import { mkdtempSync, existsSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import zlib from 'node:zlib';
 import tar from 'tar-stream';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDatabase, type DatabaseInstance, createSettingsRepository, createAttachmentRepository, createKnowledgeRepository, createDocumentRepository, createConversationRepository, createMessageRepository, createChunkRepository } from '@wbfm/database';
+import { createDatabase, type DatabaseInstance, createSettingsRepository, createAttachmentRepository, createKnowledgeRepository, createDocumentRepository, createConversationRepository, createMessageRepository, createChunkRepository, createSkillStateRepository } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { exportBackup } from './export';
 import { restoreBackup, precheckBackup } from './restore';
@@ -242,6 +242,40 @@ describe('备份恢复（M1）', () => {
     expect(restored.status).toBe('pending');
     // indexedAt 应为 null（需要重新索引）
     expect(restored.indexedAt).toBeNull();
+  });
+
+  it('skills 轨 roundtrip：文件夹落盘 + 启停偏好按 name upsert（v0.6 M3）', async () => {
+    const skillsDir = join(tempRoot, 'skills');
+    const manifestContent = JSON.stringify({ name: 'weekly-report', description: '周报', version: '1.0.0' });
+    mkdirSync(join(skillsDir, 'weekly-report'), { recursive: true });
+    writeFileSync(join(skillsDir, 'weekly-report', 'skill.json'), manifestContent);
+    createSkillStateRepository(srcDb).create({ name: 'weekly-report', enabled: false, sourcePath: join(skillsDir, 'weekly-report') });
+
+    const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, { tracks: ['skills'] });
+    const pre = await precheckBackup(archive);
+    expect(pre.compatible).toBe(true);
+    expect(pre.tracks.skills).toBe(1);
+
+    // 模拟目标机：源文件夹不存在；目标库已有同名状态行（reconcile 预登记，新 id、enabled=true）
+    rmSync(skillsDir, { recursive: true, force: true });
+    const dstState = createSkillStateRepository(dstDb);
+    dstState.create({ name: 'weekly-report', enabled: true, sourcePath: '/other/path' });
+
+    const result = await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
+    expect(result.imported.skills).toBe(1);
+    expect(result.skipped.skills).toBe(0);
+
+    // 文件夹重建且 skill.json 逐字节一致；启停偏好按 name 覆盖且目标库仍一行
+    const restored = join(skillsDir, 'weekly-report', 'skill.json');
+    expect(readFileSync(restored, 'utf-8')).toBe(manifestContent);
+    expect(dstState.getByName('weekly-report')!.enabled).toBe(false);
+    expect(dstState.list()).toHaveLength(1);
+
+    // 幂等：重复恢复 → 文件夹已存在走 skipped，状态重复 upsert 不报错
+    const r2 = await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
+    expect(r2.imported.skills).toBe(0);
+    expect(r2.skipped.skills).toBe(1);
+    expect(dstState.list()).toHaveLength(1);
   });
 
   it('conversations 的 assistant 不存在：外键约束静默跳过', async () => {

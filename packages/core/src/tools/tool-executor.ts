@@ -1,4 +1,4 @@
-import { TOOL_TIMEOUT_MS, type ToolName } from '@wbfm/shared';
+import { TOOL_TIMEOUT_MS } from '@wbfm/shared';
 import type { Tool, ToolContext, ToolResult } from './types';
 import { ToolArgError } from './types';
 
@@ -88,8 +88,8 @@ export async function executeCall(
   return executeToolCall(tool, args, ctx, timeoutMs);
 }
 
-/** 界面用参数摘要：取关键字段拼接，长度受控 */
-export function summarizeArgs(toolName: ToolName, args: unknown): string {
+/** 界面用参数摘要：取关键字段拼接，长度受控（内置工具给重点字段，其余整体 JSON） */
+export function summarizeArgs(toolName: string, args: unknown): string {
   if (!args || typeof args !== 'object') return '';
   const record = args as Record<string, unknown>;
   if (toolName === 'current_time') return '当前时间';

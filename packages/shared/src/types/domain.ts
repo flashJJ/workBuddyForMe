@@ -1,6 +1,8 @@
 import type {
   DocumentSource,
   DocumentStatus,
+  McpServerStatus,
+  McpTransport,
   MessageFeedback,
   MessageRole,
   MessageStatus,
@@ -9,9 +11,9 @@ import type {
   OcrStatus,
   ProviderProtocol,
   Theme,
-  ToolName,
 } from '../constants';
 import type { ContentPart } from './content-part';
+import type { PermissionLevel } from './permission';
 import type { ToolTraceEntry } from './tool';
 
 export interface Timestamped {
@@ -62,8 +64,11 @@ export interface Assistant extends Timestamped {
   modelId: string | null;
   /** 绑定 knowledge_bases.id；非空时对话自动 RAG */
   knowledgeBaseId: string | null;
-  /** v0.2：可用工具白名单（空数组 = 纯对话，与 v0.1 行为一致） */
-  enabledTools: ToolName[];
+  /**
+   * v0.2：可用工具白名单（空数组 = 纯对话，与 v0.1 行为一致）。
+   * v0.6：元素为内置工具名或 mcp:<server>:<tool> 命名空间名。
+   */
+  enabledTools: string[];
   /** v0.2：绑定知识库时是否每轮强制检索（兼容开关；关闭后由模型经 knowledge_search 自主决策） */
   retrieveAlways: boolean;
   /** v0.5：该助手是否启用长期记忆提取/召回（默认开） */
@@ -182,4 +187,112 @@ export interface AppSettings {
   defaultEmbeddingModelId: string | null;
   theme: Theme;
   language: 'zh-CN';
+}
+
+/** v0.6 MCP 服务器配置（mcp_servers 表行；stdio/http 字段按 transport 取用） */
+export interface McpServerConfig extends Timestamped {
+  id: string;
+  transport: McpTransport;
+  /** 标识符安全的命名空间名（唯一），工具限定名用它构建 */
+  name: string;
+  /** stdio：启动命令 */
+  command: string;
+  /** stdio：启动参数 */
+  args: string[];
+  /** stdio：环境变量白名单（叠加在继承环境之上） */
+  env: Record<string, string>;
+  /** http（M2）：Streamable HTTP 端点 */
+  url: string;
+  /** http（M2）：附加请求头 */
+  headers: Record<string, string>;
+  enabled: boolean;
+}
+
+/** 设置页/助手表单看到的服务器视图 = 配置 + 连接状态 */
+export interface McpServerInfo extends McpServerConfig {
+  status: McpServerStatus;
+  /** 最近一次错误原因或握手摘要；正常连接时为 null */
+  statusDetail: string | null;
+  /** 已发现的工具数（仅 connected 时有意义） */
+  toolCount: number;
+}
+
+/** MCP 服务器发现的工具（注册进工具运行时前的元数据） */
+export interface McpToolInfo {
+  serverName: string;
+  /** 服务器内的原始工具名 */
+  name: string;
+  /** 全局限定名 mcp:<server>:<tool>，模型侧 function 名 */
+  qualifiedName: string;
+  description: string;
+  /** MCP inputSchema（JSON Schema），透传为 function parameters */
+  inputSchema: Record<string, unknown>;
+}
+
+// ── v0.6 M3 本地技能包 ──
+
+/** 技能包 manifest 中的单段提示词模板 */
+export interface SkillPromptTemplate {
+  name: string;
+  order: number;
+  content: string;
+}
+
+/** 技能包 manifest 中的使用示例 */
+export interface SkillExample {
+  title: string;
+  userQuery: string;
+  expectedBehavior?: string;
+}
+
+/** skill.json 的内存表示（zod 校验后） */
+export interface SkillManifest {
+  name: string;
+  description: string;
+  version: string;
+  permissions: PermissionLevel[];
+  promptTemplates: SkillPromptTemplate[];
+  allowedTools: string[];
+  examples: SkillExample[];
+  author?: string;
+}
+
+/** 技能包在数据根 skills/<name>/ 目录下的磁盘表示 */
+export interface SkillDiskEntry {
+  /** 文件夹名（= manifest name） */
+  name: string;
+  /** manifest 绝对路径 */
+  manifestPath: string;
+  /** 文件夹绝对路径 */
+  directoryPath: string;
+  /** 加载/校验结果 */
+  manifest: SkillManifest | null;
+  /** 加载失败时给出具体原因 */
+  error: string | null;
+}
+
+/** 启停状态（持久化在 skills_state 表） */
+export interface SkillState extends Timestamped {
+  id: string;
+  /** 技能名（与磁盘文件夹名一致，唯一键） */
+  name: string;
+  /** 用户是否启用该技能 */
+  enabled: boolean;
+  /** 技能源文件夹绝对路径（搬迁或重装后可能失效，UI 应标红） */
+  sourcePath: string;
+}
+
+/** 设置页技能列表视图 = skills_state 行 + 磁盘扫描结果（API 返回） */
+export interface SkillInfo {
+  /** skills_state 行 id（启停/删除引用用） */
+  id: string;
+  name: string;
+  enabled: boolean;
+  sourcePath: string;
+  /** manifest 校验通过时为解析结果；失败或文件夹缺失为 null */
+  manifest: SkillManifest | null;
+  /** 加载/校验失败的具体原因；正常为 null */
+  error: string | null;
+  /** 源文件夹是否存在（false = 引用残留，UI 标红提示） */
+  exists: boolean;
 }

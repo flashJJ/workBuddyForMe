@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { Assistant, ToolName } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared';
 import { newId, nowIso, mapAssistant, type AssistantRow } from './mappers';
 
 export interface AssistantCreateFields {
@@ -14,7 +14,8 @@ export interface AssistantCreateFields {
   maxTokens: number | null;
   modelId: string | null;
   knowledgeBaseId: string | null;
-  enabledTools: ToolName[];
+  /** v0.6：内置工具名或 mcp:<server>:<tool> */
+  enabledTools: string[];
   retrieveAlways: boolean;
   /** v0.5：长期记忆开关；建库老数据走列默认 1 */
   memoryEnabled?: boolean;

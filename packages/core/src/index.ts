@@ -15,6 +15,16 @@ export { createProviderService, type ProviderService } from './services/provider
 export { createModelService, type ModelService } from './services/model-service';
 export { buildProvider, toApiError } from './services/provider-adapter';
 export {
+  createPermissionService,
+  type PermissionService,
+} from './services/permission-service';
+export {
+  createPendingConfirmations,
+  CONFIRMATION_TIMEOUT_MS,
+  type PendingConfirmations,
+  type ConfirmationDecision,
+} from './services/pending-confirmations';
+export {
   createSettingsService,
   DEFAULT_SETTINGS,
   type SettingsService,
@@ -127,7 +137,7 @@ export {
 } from './retrieval/context-formatter';
 
 // v0.2 工具调用
-export { createToolRuntime, type ToolRuntime } from './tools/tool-runtime';
+export { createToolRuntime, type ToolRuntime, type ResolvedTool, type DebugToolInfo } from './tools/tool-runtime';
 export {
   executeToolCall,
   executeCall,
@@ -146,6 +156,19 @@ export {
 export { currentTimeTool } from './tools/current-time-tool';
 export { knowledgeSearchTool } from './tools/knowledge-search-tool';
 export { fetchWebpageTool, htmlToText } from './tools/fetch-webpage-tool';
+export { extractMainContent } from './tools/html-extractor';
+export {
+  createToolBreaker,
+  type ToolBreaker,
+  type ToolBreakerSnapshot,
+  type ToolBreakerOptions,
+  type BreakerStatus,
+} from './tools/tool-breaker';
+export {
+  debugExecuteTool,
+  DEBUG_MCP_TIMEOUT_MS,
+  type DebugExecuteParams,
+} from './tools/debug-executor';
 export {
   isBlockedIp,
   assertSafeUrlLiteral,
@@ -155,6 +178,26 @@ export {
   SsrfBlockedError,
 } from './tools/ssrf-guard';
 export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool-runner';
+
+// v0.6 MCP（Model Context Protocol）
+export * from './mcp';
+
+// v0.6 M3 本地技能包
+export { loadSkillsFromDisk } from './skills/loader';
+export {
+  BUILTIN_SKILLS,
+  BUILTIN_MEETING_NOTES,
+  BUILTIN_WEEKLY_REPORT,
+  BUILTIN_FILE_SEARCH,
+  ensureBuiltinSkills,
+} from './skills/builtin-skills';
+export {
+  createSkillService,
+  type EnabledSkill,
+  type SkillService,
+  type SkillServiceOptions,
+} from './skills/skill-service';
+export { buildSkillPromptBlock, mergeSkillAllowedTools } from './skills/skill-assembly';
 
 // v0.4 数据便携：备份与恢复
 export {

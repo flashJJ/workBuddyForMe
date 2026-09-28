@@ -20,6 +20,15 @@ export type {
   DocumentRecord,
   Attachment,
   AppSettings,
+  McpServerConfig,
+  McpServerInfo,
+  McpToolInfo,
+  SkillPromptTemplate,
+  SkillExample,
+  SkillManifest,
+  SkillDiskEntry,
+  SkillState,
+  SkillInfo,
   Timestamped,
 } from './types/domain';
 export type { ContentPart, TextContentPart, ImageContentPart } from './types/content-part';
@@ -76,6 +85,30 @@ export {
   type MemoryListQuery,
   type MemoryClearInput,
 } from './schemas/memory';
+export {
+  mcpServerCreateSchema,
+  mcpServerUpdateSchema,
+  buildMcpToolName,
+  isMcpToolName,
+  parseMcpToolName,
+  MCP_TOOL_NAMESPACE,
+  type McpServerCreateInput,
+  type McpServerUpdateInput,
+} from './schemas/mcp';
+export {
+  skillManifestSchema,
+  skillUpdateSchema,
+  type SkillUpdateInput,
+} from './schemas/skill';
+
+// v0.6 M2：工具权限分级（HITL）
+export type { PermissionLevel, PermissionAction, ToolPermission } from './types/permission';
+export {
+  toolConfirmSchema,
+  toolDebugExecuteSchema,
+  type ToolConfirmInput,
+  type ToolDebugExecuteInput,
+} from './schemas/tool';
 
 // 备份/恢复契约
 export {

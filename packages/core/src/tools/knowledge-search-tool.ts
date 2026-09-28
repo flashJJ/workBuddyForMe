@@ -19,6 +19,7 @@ export const knowledgeSearchTool: Tool = {
   name: 'knowledge_search',
   description:
     '在用户授权的私有知识库中语义检索资料。当问题可能需要用户文档中的信息（制度、项目资料、历史文档等）时调用；寒暄与常识问题不要调用。',
+  permission: 'read',
   parameters: {
     type: 'object',
     properties: {

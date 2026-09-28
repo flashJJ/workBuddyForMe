@@ -12,6 +12,10 @@ export type OrchestratorEvent =
   | { event: 'citations'; data: SsePayloadMap['citations'] }
   | { event: 'memories'; data: SsePayloadMap['memories'] }
   | { event: 'tool'; data: SsePayloadMap['tool'] }
+  | {
+      event: 'tool_confirmation_required';
+      data: SsePayloadMap['tool_confirmation_required'];
+    }
   | { event: 'done'; data: SsePayloadMap['done'] }
   | { event: 'error'; data: SsePayloadMap['error'] };
 

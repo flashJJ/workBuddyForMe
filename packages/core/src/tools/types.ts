@@ -1,4 +1,4 @@
-import type { Citation, ToolName } from '@wbfm/shared';
+import type { Citation, PermissionLevel } from '@wbfm/shared';
 import type { ToolDefinition } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 
@@ -24,16 +24,18 @@ export interface ToolResult {
   citations?: Citation[];
 }
 
-/** 内置只读工具统一接口 */
+/** 工具统一接口（v0.6：内置与 MCP 工具同构；name 为全局限定名） */
 export interface Tool {
-  name: ToolName;
+  name: string;
   description: string;
   /** OpenAI function-calling 参数 JSON Schema */
   parameters: Record<string, unknown>;
+  /** v0.6 M2：权限分级（read/write/danger）；未标注默认 read */
+  permission?: PermissionLevel;
   run(rawArgs: unknown, ctx: ToolContext): Promise<ToolResult>;
 }
 
-export type ToolMap = ReadonlyMap<ToolName, Tool>;
+export type ToolMap = ReadonlyMap<string, Tool>;
 
 /** 工具参数错误：执行器捕获后回灌模型，给一次自我纠正机会 */
 export class ToolArgError extends Error {

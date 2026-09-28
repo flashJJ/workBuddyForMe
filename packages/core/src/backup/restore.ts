@@ -14,7 +14,7 @@ import {
 import type { ServiceDeps } from '../services/deps';
 import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared';
-import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta } from './restore-ops';
+import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, type SkillStateEntry } from './restore-ops';
 import { ensureSeedData } from '../services/seed';
 
 export interface BackupRestoreOptions {
@@ -26,8 +26,14 @@ export interface BackupRestoreOptions {
 
 export interface BackupRestoreResult {
   manifest: BackupManifest;
-  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number };
-  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number };
+  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number };
+  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number };
+}
+
+/** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
+interface SkillsTrackPayload {
+  states?: SkillStateEntry[];
+  skills?: Array<{ name: string; skillJson: string }>;
 }
 
 /**
@@ -57,6 +63,7 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       knowledgeBases: manifest.tracks.knowledge.knowledgeBaseCount,
       documents: manifest.tracks.knowledge.documentCount,
       attachments: manifest.tracks.attachments.entryCount,
+      skills: manifest.tracks.skills?.entryCount ?? 0,
     },
     warnings,
   });
@@ -80,11 +87,21 @@ export async function restoreBackup(
   const { tracks, onProgress } = options;
   const tracksToRestore = tracks ?? determineTracks(manifest, files);
 
+  // 技能轨负载在事务外解析一次：状态行进事务，文件夹落盘在事务后
+  let skillsPayload: SkillsTrackPayload | null = null;
+  if (tracksToRestore.includes('skills') && files.has('skills.json')) {
+    try {
+      skillsPayload = JSON.parse(files.get('skills.json')!.toString('utf-8')) as SkillsTrackPayload;
+    } catch {
+      throw new ApiError('VALIDATION_ERROR', 'skills.json 解析失败，归档可能已损坏');
+    }
+  }
+
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
     const result: Omit<BackupRestoreResult, 'manifest'> = {
-      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0 },
-      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0 },
+      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0 },
+      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0 },
     };
 
     if (tracksToRestore.includes('settings') && files.has('settings.json')) {
@@ -114,6 +131,11 @@ export async function restoreBackup(
       onProgress?.({ track: 'attachments', processed: imported, total: manifest.tracks.attachments.entryCount });
     }
 
+    if (tracksToRestore.includes('skills') && skillsPayload?.states?.length) {
+      // 启停偏好按 name upsert（含内置技能）；计数不入 result，imported.skills 以文件夹落盘数为准
+      restoreSkillsState(deps.db, skillsPayload.states);
+    }
+
     return result;
   }).immediate();
 
@@ -124,6 +146,25 @@ export async function restoreBackup(
     for (const bin of binaries) {
       const destPath = path.join(attDir, bin.name.replace(/^attachments\//, ''));
       fs.writeFileSync(destPath, bin.data);
+    }
+  }
+
+  // --- 事务外：技能文件夹 skill.json 落盘（同名文件夹已存在则保留本机版本） ---
+  if (tracksToRestore.includes('skills') && skillsPayload?.skills?.length) {
+    const skillsDir = path.join(getDataRoot(), 'skills');
+    fs.mkdirSync(skillsDir, { recursive: true });
+    const total = manifest.tracks.skills?.entryCount ?? skillsPayload.skills.length;
+    for (const sk of skillsPayload.skills) {
+      const folder = path.join(skillsDir, sk.name);
+      if (fs.existsSync(folder)) {
+        // 不覆盖：避免备份旧版本回滚用户对技能的修改
+        txResult.skipped.skills++;
+      } else {
+        fs.mkdirSync(folder, { recursive: true });
+        fs.writeFileSync(path.join(folder, 'skill.json'), sk.skillJson);
+        txResult.imported.skills++;
+      }
+      onProgress?.({ track: 'skills', processed: txResult.imported.skills + txResult.skipped.skills, total });
     }
   }
 
@@ -138,6 +179,7 @@ function determineTracks(manifest: BackupManifest, files: Map<string, Buffer>): 
   if (files.has('knowledge.json') && manifest.tracks.knowledge.knowledgeBaseCount > 0) tracks.push('knowledge');
   if (files.has('settings.json')) tracks.push('settings');
   if (files.has('attachments.json') && manifest.tracks.attachments.entryCount > 0) tracks.push('attachments');
+  if (files.has('skills.json') && (manifest.tracks.skills?.entryCount ?? 0) > 0) tracks.push('skills');
   return tracks;
 }
 

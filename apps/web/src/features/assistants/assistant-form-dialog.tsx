@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Assistant, ToolName } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,6 +20,7 @@ import { ApiClientError } from '@/lib/api/client';
 import { useAllModels } from '@/lib/hooks/use-settings';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useAssistantMutations, type AssistantBody } from '@/lib/hooks/use-assistants';
+import { useMcpTools } from '@/lib/hooks/use-mcp';
 import { AssistantToolsField } from './assistant-tools-field';
 import { AssistantMemoryField } from './assistant-memory-field';
 import { NumberField } from './number-field';
@@ -40,7 +41,7 @@ interface FormState {
   maxTokens: string;
   modelId: string;
   knowledgeBaseId: string;
-  enabledTools: ToolName[];
+  enabledTools: string[];
   retrieveAlways: boolean;
   memoryEnabled: boolean;
 }
@@ -83,6 +84,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
   const mutations = useAssistantMutations();
   const { data: models } = useAllModels();
   const { data: knowledgeBases } = useKnowledgeBases();
+  const { data: mcpTools } = useMcpTools();
   const toast = useToast();
   const [form, setForm] = React.useState<FormState>(() => toForm(assistant));
   const [submitting, setSubmitting] = React.useState(false);
@@ -109,7 +111,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     memoryEnabled: form.memoryEnabled,
   });
 
-  const toggleTool = (tool: ToolName) => {
+  const toggleTool = (tool: string) => {
     setForm((prev) => {
       const has = prev.enabledTools.includes(tool);
       return {
@@ -269,6 +271,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             enabledTools={form.enabledTools}
             knowledgeBaseId={form.knowledgeBaseId}
             retrieveAlways={form.retrieveAlways}
+            mcpTools={mcpTools ?? []}
             onToggleTool={toggleTool}
             onRetrieveAlwaysChange={(value) => update({ retrieveAlways: value })}
           />

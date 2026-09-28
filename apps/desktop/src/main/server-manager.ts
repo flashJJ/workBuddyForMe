@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { fork, type ChildProcess, type ForkOptions } from 'node:child_process';
+import { fork, spawn, type ChildProcess, type ForkOptions } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { HEALTH_TIMEOUT_MS, HEALTH_INTERVAL_MS, STOP_TIMEOUT_MS, resolveDataRoot, resolveNodeRuntimePath } from './config';
@@ -88,9 +88,41 @@ export async function startManagedServer(options: StartServerOptions): Promise<M
   };
 }
 
-/** 优雅退出：SIGTERM → 等待 → SIGKILL 兜底，确保端口回收 */
-export function stopChild(child: ChildProcess, timeoutMs = STOP_TIMEOUT_MS): Promise<void> {
+/** stopChild 选项（timeout 默认 STOP_TIMEOUT_MS；platform/spawnImpl 供测试注入） */
+export type SpawnLike = (command: string, args: string[], options: { stdio: 'ignore' }) => ChildProcess;
+export interface StopChildOptions {
+  timeoutMs?: number;
+  platform?: NodeJS.Platform;
+  spawnImpl?: SpawnLike;
+}
+
+/**
+ * 优雅退出：SIGTERM → 等待 → SIGKILL 兜底，确保端口回收。
+ * Windows 上 kill()=TerminateProcess，不给服务进程跑清理钩子的机会，
+ * fork 出的 MCP 子进程会变孤儿——改用 taskkill /T /F 杀整棵进程树。
+ */
+export function stopChild(child: ChildProcess, options: StopChildOptions = {}): Promise<void> {
+  const timeoutMs = options.timeoutMs ?? STOP_TIMEOUT_MS;
   if (child.killed || child.exitCode !== null) return Promise.resolve();
+  if ((options.platform ?? process.platform) === 'win32') {
+    return new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        child.kill('SIGKILL');
+        resolve();
+      }, timeoutMs);
+      child.once('exit', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      if (child.pid) {
+        const doSpawn = options.spawnImpl ?? spawn;
+        const killer = doSpawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+        killer.on('error', () => child.kill('SIGKILL'));
+      } else {
+        child.kill('SIGKILL');
+      }
+    });
+  }
   return new Promise<void>((resolve) => {
     const timer = setTimeout(() => {
       child.kill('SIGKILL');

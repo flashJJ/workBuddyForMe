@@ -6,6 +6,9 @@ import { migrateV004 } from './v004-ocr';
 import { migrateV005 } from './v005-conversation-summary';
 import { migrateV006 } from './v006-memory';
 import { migrateV007 } from './v007-message-feedback';
+import { migrateV008 } from './v008-mcp-servers';
+import { migrateV009 } from './v009-tool-permissions';
+import { migrateV010 } from './v010-skills-state';
 
 interface Migration {
   version: number;
@@ -41,6 +44,21 @@ const MIGRATIONS: Migration[] = [
     version: 7,
     description: 'message feedback: messages.feedback + feedback_at',
     up: migrateV007,
+  },
+  {
+    version: 8,
+    description: 'mcp servers: mcp_servers table (stdio/http)',
+    up: migrateV008,
+  },
+  {
+    version: 9,
+    description: 'tool permissions: read/write/danger + HITL allow/deny',
+    up: migrateV009,
+  },
+  {
+    version: 10,
+    description: 'skills: skills_state table (enable/disable references)',
+    up: migrateV010,
   },
 ];
 

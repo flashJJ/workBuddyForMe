@@ -1,4 +1,9 @@
-import type { ToolName } from '../constants';
+/**
+ * 工具名：v0.6 起为开放式字符串（内置名或 mcp:<server>:<tool> 命名空间），
+ * TOOL_NAMES 枚举仅供内置工具的 UI 标签映射使用。
+ */
+
+import type { PermissionLevel } from './permission';
 
 /** 工具调用状态（running 仅用于前端流式过程，落库后只会是 ok/error） */
 export type ToolCallStatus = 'running' | 'ok' | 'error';
@@ -9,13 +14,17 @@ export type ToolCallStatus = 'running' | 'ok' | 'error';
  */
 export interface ToolTraceEntry {
   callId: string;
-  tool: ToolName;
+  tool: string;
   argsSummary: string;
   status: ToolCallStatus;
   durationMs: number;
   resultSummary: string;
   error?: string;
   startedAt: string;
+  /** v0.6 M4：工具来源标识（'builtin' | 'mcp:<server>' | 其他） */
+  source?: string;
+  /** v0.6 M4：权限级别（'read' | 'write' | 'danger'） */
+  permission?: PermissionLevel;
 }
 
 /** SSE tool 事件载荷：start 与 end 两阶段，前端据此渲染过程卡片 */
@@ -23,15 +32,19 @@ export type ToolEventPayload =
   | {
       phase: 'start';
       callId: string;
-      tool: ToolName;
+      tool: string;
       argsSummary: string;
+      source?: string;
+      permission?: PermissionLevel;
     }
   | {
       phase: 'end';
       callId: string;
-      tool: ToolName;
+      tool: string;
       status: ToolCallStatus;
       durationMs: number;
       resultSummary: string;
       error?: string;
+      source?: string;
+      permission?: PermissionLevel;
     };

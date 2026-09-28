@@ -16,7 +16,6 @@ import type {
   Provider,
   ProviderModel,
   ProviderProtocol,
-  ToolName,
   ToolTraceEntry,
 } from '@wbfm/shared';
 import { nowIso } from '../utils/time';
@@ -181,7 +180,7 @@ export function mapAssistant(row: AssistantRow): Assistant {
     maxTokens: row.max_tokens,
     modelId: row.model_id,
     knowledgeBaseId: row.knowledge_base_id,
-    enabledTools: parseJsonArray<ToolName>(row.enabled_tools),
+    enabledTools: parseJsonArray<string>(row.enabled_tools),
     retrieveAlways: row.retrieve_always === 1,
     memoryEnabled: row.memory_enabled !== 0,
     isBuiltin: row.is_builtin === 1,

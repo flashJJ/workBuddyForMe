@@ -2,10 +2,24 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, ContentPart, Message, RecalledMemoryPayload, SsePayloadMap, ToolTraceEntry } from '@wbfm/shared';
+import type { Citation, ContentPart, Message, PermissionLevel, RecalledMemoryPayload, SsePayloadMap, ToolTraceEntry } from '@wbfm/shared';
 import { useMessages } from '@/lib/hooks/use-conversations';
-import { QUERY_KEYS } from '@/lib/api/endpoints';
+import { API, QUERY_KEYS } from '@/lib/api/endpoints';
+import { apiPost } from '@/lib/api/client';
 import { useChatStream } from '@/lib/hooks/use-chat-stream';
+import {
+  applyToolTraceEnd,
+  patchLastAssistantMessage,
+  upsertToolTraceEntry,
+} from './live-message-utils';
+
+/** v0.6 M2：待用户确认的工具调用（HITL 弹窗数据源） */
+export interface PendingToolConfirmation {
+  callId: string;
+  tool: string;
+  permission: PermissionLevel;
+  argsSummary: string;
+}
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -44,6 +58,8 @@ export interface ChatSession {
   streaming: boolean;
   /** 本轮召回的长期记忆（回答上方「参考了 N 条记忆」提示），下轮开始时清空 */
   recalledMemories: RecalledMemoryPayload[];
+  /** v0.6 M2：当前待确认的工具调用（null=无弹窗） */
+  pendingConfirmation: PendingToolConfirmation | null;
   send: (content: string, attachmentIds?: string[]) => void;
   /** 重新生成最后一条助手回复（沿用上一条用户消息） */
   retry: () => void;
@@ -52,6 +68,8 @@ export interface ChatSession {
   reset: () => void;
   /** 反馈提交成功后同步到本地 live 视图（live 为空时由 React Query 刷新生效） */
   applyFeedback: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
+  /** v0.6 M2：提交工具确认决策；返回 false 表示提交失败（调用方提示并保持弹窗） */
+  confirmTool: (action: 'allow' | 'deny', remember?: 'assistant' | 'all') => Promise<boolean>;
 }
 
 /**
@@ -68,51 +86,31 @@ export function useChatSession(
   const { send: streamSend, stop: streamStop, streaming } = useChatStream();
   const [live, setLive] = React.useState<Message[] | null>(null);
   const [recalledMemories, setRecalledMemories] = React.useState<RecalledMemoryPayload[]>([]);
+  const [pendingConfirmation, setPendingConfirmation] = React.useState<PendingToolConfirmation | null>(null);
 
   // 注意：不能在 conversationId 变化时自动清空 live——新会话首轮 meta 会回传
   // 新的 conversationId，自动清空会抹掉正在进行的流式消息；改由页面显式 reset。
   const reset = React.useCallback(() => {
     setLive(null);
     setRecalledMemories([]);
+    setPendingConfirmation(null);
   }, []);
 
   const baseMessages = live ?? historyQuery.data ?? [];
 
   const patchLastAssistant = (patch: Partial<Message>) => {
-    setLive((prev) => {
-      if (!prev) return prev;
-      const next = [...prev];
-      for (let i = next.length - 1; i >= 0; i -= 1) {
-        if (next[i]!.role === 'assistant') {
-          next[i] = { ...next[i]!, ...patch };
-          break;
-        }
-      }
-      return next;
-    });
+    setLive((prev) => patchLastAssistantMessage(prev, patch));
   };
 
   const upsertToolTrace = (entry: ToolTraceEntry) => {
-    setLive((prev) => {
-      if (!prev) return prev;
-      const next = [...prev];
-      for (let i = next.length - 1; i >= 0; i -= 1) {
-        if (next[i]!.role === 'assistant') {
-          const trace = next[i]!.toolTrace ?? [];
-          const idx = trace.findIndex((t) => t.callId === entry.callId);
-          const nextTrace = idx === -1 ? [...trace, entry] : trace.map((t, j) => (j === idx ? entry : t));
-          next[i] = { ...next[i]!, toolTrace: nextTrace };
-          break;
-        }
-      }
-      return next;
-    });
+    setLive((prev) => upsertToolTraceEntry(prev, entry));
   };
 
   const runTurn = React.useCallback(
     (options: { content: string; regenerate: boolean; attachments?: string[] }) => {
       const { content, regenerate, attachments = [] } = options;
       setRecalledMemories([]);
+      setPendingConfirmation(null);
       const assistantMessage: Message = {
         ...pendingMessage('assistant', ''),
         status: 'streaming',
@@ -168,37 +166,25 @@ export function useChatSession(
               durationMs: 0,
               resultSummary: '执行中…',
               startedAt: nowIso(),
+              ...(data.source ? { source: data.source } : {}),
+              ...(data.permission ? { permission: data.permission } : {}),
             });
             return;
           }
           // end：用 start 阶段记录的 startedAt 保留真实开始时间
-          setLive((prev) => {
-            if (!prev) return prev;
-            const next = [...prev];
-            for (let i = next.length - 1; i >= 0; i -= 1) {
-              if (next[i]!.role === 'assistant') {
-                const trace = next[i]!.toolTrace ?? [];
-                const previous = trace.find((t) => t.callId === data.callId);
-                const entry: ToolTraceEntry = {
-                  callId: data.callId,
-                  tool: data.tool,
-                  argsSummary: previous?.argsSummary ?? '',
-                  status: data.status,
-                  durationMs: data.durationMs,
-                  resultSummary: data.resultSummary,
-                  ...(data.status === 'error' && data.error ? { error: data.error } : {}),
-                  startedAt: previous?.startedAt ?? nowIso(),
-                };
-                const idx = trace.findIndex((t) => t.callId === data.callId);
-                const nextTrace = idx === -1 ? [...trace, entry] : trace.map((t, j) => (j === idx ? entry : t));
-                next[i] = { ...next[i]!, toolTrace: nextTrace };
-                break;
-              }
-            }
-            return next;
+          setLive((prev) => applyToolTraceEnd(prev, data));
+        },
+        onToolConfirmationRequired: (data: SsePayloadMap['tool_confirmation_required']) => {
+          // orchestrator 已挂起等待决策；弹窗由页面渲染
+          setPendingConfirmation({
+            callId: data.callId,
+            tool: data.tool,
+            permission: data.permission,
+            argsSummary: data.argsSummary,
           });
         },
         onDone: (data: SsePayloadMap['done']) => {
+          setPendingConfirmation(null);
           patchLastAssistant({
             status: 'completed',
             content: data.content,
@@ -210,6 +196,7 @@ export function useChatSession(
           void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
         },
         onError: (data: SsePayloadMap['error']) => {
+          setPendingConfirmation(null);
           patchLastAssistant({ status: 'error', errorCode: data.code, errorMessage: data.message });
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
           void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
@@ -247,6 +234,7 @@ export function useChatSession(
   /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
   const stop = React.useCallback(() => {
     streamStop();
+    setPendingConfirmation(null);
     setLive((prev) => {
       if (!prev) return prev;
       const next = [...prev];
@@ -273,5 +261,40 @@ export function useChatSession(
     [],
   );
 
-  return { messages: baseMessages, streaming, recalledMemories, send, retry, stop, reset, applyFeedback };
+  /**
+   * 提交 HITL 决策：成功后清空弹窗状态；
+   * 失败（如 120s 超时服务端已自动拒绝 → 404）返回 false，调用方提示并保持弹窗。
+   */
+  const confirmTool = React.useCallback(
+    async (action: 'allow' | 'deny', remember?: 'assistant' | 'all'): Promise<boolean> => {
+      const pending = pendingConfirmation;
+      if (!pending) return false;
+      try {
+        await apiPost(API.toolConfirm, {
+          callId: pending.callId,
+          tool: pending.tool,
+          action,
+          ...(remember ? { remember, assistantId } : {}),
+        });
+        setPendingConfirmation(null);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [pendingConfirmation, assistantId],
+  );
+
+  return {
+    messages: baseMessages,
+    streaming,
+    recalledMemories,
+    pendingConfirmation,
+    send,
+    retry,
+    stop,
+    reset,
+    applyFeedback,
+    confirmTool,
+  };
 }
