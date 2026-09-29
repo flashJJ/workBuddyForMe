@@ -1,5 +1,6 @@
 import type { Citation, MemoryKind } from '../types/domain';
 import type { PermissionLevel } from '../types/permission';
+import type { TaskEventPayload } from '../schemas/task';
 import type { ToolEventPayload } from '../types/tool';
 
 /** v0.5：命中的长期记忆轻提示载荷（回答上方「参考了 X 条记忆」） */
@@ -18,6 +19,8 @@ export const SSE_EVENT = {
   TOOL: 'tool',
   /** v0.6 M2：write/danger 工具执行前需用户授权（HITL） */
   TOOL_CONFIRMATION_REQUIRED: 'tool_confirmation_required',
+  /** v0.7 M3：任务 Agent 循环（运行/步骤时间线） */
+  TASK: 'task',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -43,6 +46,8 @@ export type SsePayloadMap = {
     permission: PermissionLevel;
     argsSummary: string;
   };
+  /** v0.7 M3：任务运行/步骤事件 */
+  task: TaskEventPayload;
   done: { content: string; usage: TokenUsage | null };
   error: { code: string; message: string };
 };

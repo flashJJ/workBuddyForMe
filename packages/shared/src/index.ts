@@ -140,6 +140,23 @@ export {
   type UiaListResponse,
   type InputActionResponse,
 } from './schemas/computer';
+export {
+  TASK_RUN_STATUSES,
+  TASK_STOP_REASONS,
+  TASK_STEP_KINDS,
+  TASK_STEP_STATUSES,
+  TASK_EVENT_TYPES,
+  taskCreateSchema,
+  type TaskRunStatus,
+  type TaskStopReason,
+  type TaskStepKind,
+  type TaskStepStatus,
+  type TaskCreateInput,
+  type TaskRunView,
+  type TaskStepView,
+  type TaskEventType,
+  type TaskEventPayload,
+} from './schemas/task';
 
 // v0.6 M2：工具权限分级（HITL）
 export type { PermissionLevel, PermissionAction, ToolPermission } from './types/permission';

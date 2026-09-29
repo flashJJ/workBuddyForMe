@@ -79,4 +79,13 @@ export {
   type SkillStateUpdateFields,
   type SkillStateRow,
 } from './skill-state-repo';
+export {
+  createTaskRunRepository,
+  type TaskRunRepository,
+  type TaskRunCreateFields,
+  type TaskStepAddFields,
+  type TaskStepFinishFields,
+  type TaskRunRow,
+  type TaskStepRow,
+} from './task-run-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

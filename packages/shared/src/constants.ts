@@ -180,6 +180,14 @@ export const TOOL_BREAKER_FAILURE_THRESHOLD = 3;
 /** v0.6 M4：熔断冷却时间（5 分钟后半开重试） */
 export const TOOL_BREAKER_COOLDOWN_MS = 5 * 60_000;
 
+/**
+ * v0.7 M3 任务 Agent 循环护栏：
+ * - TASK_MAX_STEPS 单任务步数上限（防失控死循环）；
+ * - TASK_MAX_FAILURES 连续失败步数上限（与熔断阈值对齐，触顶自动终止）。
+ */
+export const TASK_MAX_STEPS = 20;
+export const TASK_MAX_FAILURES = 3;
+
 /** 上传限制 */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const ALLOWED_DOC_EXTENSIONS = [
