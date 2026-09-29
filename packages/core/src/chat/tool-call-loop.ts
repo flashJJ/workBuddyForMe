@@ -1,6 +1,7 @@
 import { traceAsync, type ToolCall } from '@wbfm/ai';
 import type { Citation, ToolTraceEntry } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
+import { createAttachmentService } from '../services/attachment-service';
 import type { ToolMap, ToolContext } from '../tools/types';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TraceHandle } from '@wbfm/ai';
@@ -184,6 +185,33 @@ export async function* runToolCallLoop(
     citations = mergeCitations(citations, result.citations);
     if (result.citations?.length) {
       yield { event: 'citations', data: { citations } };
+    }
+    // v0.7 M1：图片结果（如屏幕截图）落盘为附件，并合成 user 消息注入视觉上下文
+    // （outgoing 仅为 wire 消息列表，不落库，合成消息无污染）
+    if (result.ok && result.images?.length) {
+      const attachments = createAttachmentService(deps);
+      for (const image of result.images) {
+        try {
+          attachments.save({
+            filename: `${name}-${Date.now()}.png`,
+            mimeType: image.mimeType,
+            buffer: Buffer.from(image.dataBase64, 'base64'),
+          });
+        } catch (error) {
+          // 落盘失败不阻断：图片仍可经 wire 注入本轮对话
+          console.error(`[tool] 图片附件落盘失败（${name}）:`, error);
+        }
+      }
+      outgoing.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: `[工具 ${name} 返回的图片]` },
+          ...result.images.map((image) => ({
+            type: 'image_url' as const,
+            image_url: { url: `data:${image.mimeType};base64,${image.dataBase64}` },
+          })),
+        ],
+      });
     }
     outgoing.push({
       role: 'tool',

@@ -13,6 +13,14 @@ export interface ToolContext {
     topK: number,
     signal?: AbortSignal,
   ) => Promise<RetrievedChunk[]>;
+  /** v0.7 M1：本轮对话模型是否具备视觉能力（screen_snapshot 据此决定是否携带图片） */
+  visionCapable?: boolean;
+}
+
+/** 工具结果携带的图片（如屏幕截图），由编排器落盘为附件并注入视觉消息 */
+export interface ToolResultImage {
+  mimeType: string;
+  dataBase64: string;
 }
 
 /** 工具执行结果：output 回灌模型，summary 用于界面展示 */
@@ -22,6 +30,8 @@ export interface ToolResult {
   summary: string;
   /** knowledge_search 命中时透传引用角标 */
   citations?: Citation[];
+  /** v0.7 M1：图片结果（仅视觉模型轮次产出） */
+  images?: ToolResultImage[];
 }
 
 /** 工具统一接口（v0.6：内置与 MCP 工具同构；name 为全局限定名） */

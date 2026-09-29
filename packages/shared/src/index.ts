@@ -100,6 +100,19 @@ export {
   skillUpdateSchema,
   type SkillUpdateInput,
 } from './schemas/skill';
+export {
+  COMPUTER_CHANNEL_FILE,
+  SCREENSHOT_MAX_EDGE,
+  SCREEN_SNAPSHOT_SCOPES,
+  screenSnapshotArgsSchema,
+  screenSnapshotRegionSchema,
+  computerChannelInfoSchema,
+  type ScreenSnapshotScope,
+  type ScreenSnapshotRegion,
+  type ScreenSnapshotArgs,
+  type ComputerChannelInfo,
+  type ScreenSnapshotResponse,
+} from './schemas/computer';
 
 // v0.6 M2：工具权限分级（HITL）
 export type { PermissionLevel, PermissionAction, ToolPermission } from './types/permission';

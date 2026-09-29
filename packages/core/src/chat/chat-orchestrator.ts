@@ -129,7 +129,10 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           skillBlock,
         });
         if (budgetStats) await recordBudgetSpan(budgetStats, turnTrace);
-        const toolCtx = runtime.createContext(assistant, input.signal);
+        // v0.7 M1：向工具上下文透传视觉能力（screen_snapshot 据此决定是否携带截图图片）
+        const toolCtx = runtime.createContext(assistant, input.signal, {
+          visionCapable: target.model.capabilities.includes('vision'),
+        });
         const trace: ToolTraceEntry[] = [];
         let citations = retrieved?.citations ?? [];
 

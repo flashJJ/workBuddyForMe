@@ -5,6 +5,7 @@ import {
   Clock,
   Globe,
   Loader2,
+  Monitor,
   Search,
   CheckCircle2,
   AlertCircle,
@@ -19,6 +20,7 @@ const TOOL_META: Record<ToolName, { label: string; icon: typeof Clock }> = {
   current_time: { label: '查询当前时间', icon: Clock },
   knowledge_search: { label: '检索知识库', icon: Search },
   fetch_webpage: { label: '读取网页', icon: Globe },
+  screen_snapshot: { label: '屏幕截图', icon: Monitor },
 };
 
 /** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>） */

@@ -34,6 +34,7 @@ export async function executeToolCall(
       output: result.output,
       summary: clipSummary(result.summary || result.output),
       ...(result.citations ? { citations: result.citations } : {}),
+      ...(result.images?.length ? { images: result.images } : {}),
     };
   } catch (error) {
     const durationMs = Date.now() - start;
@@ -95,5 +96,11 @@ export function summarizeArgs(toolName: string, args: unknown): string {
   if (toolName === 'current_time') return '当前时间';
   if (toolName === 'knowledge_search') return clipSummary(String(record.query ?? ''));
   if (toolName === 'fetch_webpage') return clipSummary(String(record.url ?? ''));
+  if (toolName === 'screen_snapshot') {
+    const scope = String(record.scope ?? 'fullscreen');
+    if (scope !== 'region') return '全屏截图';
+    const region = record.region as Record<string, unknown> | undefined;
+    return region ? `区域截图 (${region.x}, ${region.y}) ${region.width}x${region.height}` : '区域截图';
+  }
   return clipSummary(JSON.stringify(record));
 }

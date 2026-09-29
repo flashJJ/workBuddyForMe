@@ -8,6 +8,7 @@ const TOOL_LABELS: Record<ToolName, string> = {
   current_time: '当前时间（回答时间/日期类问题）',
   knowledge_search: '知识库检索（需先关联知识库）',
   fetch_webpage: '读取网页（模型可抓取链接内容）',
+  screen_snapshot: '屏幕截图（需桌面端，视觉模型可解读）',
 };
 
 interface Props {

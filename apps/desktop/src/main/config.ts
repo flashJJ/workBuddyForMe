@@ -1,5 +1,8 @@
 import fs from 'node:fs';
+import { homedir } from 'node:os';
 import path from 'node:path';
+import { DATA_DIR_NAME, DATA_ROOT_ENV } from '@wbfm/config';
+import { COMPUTER_CHANNEL_FILE } from '@wbfm/shared';
 
 /** 桌面端固定开发地址（Next dev server） */
 export const DEV_SERVER_URL = 'http://127.0.0.1:3000';
@@ -47,4 +50,17 @@ export function resolveDataRoot(userDataDir: string): string {
 /** 测试可覆盖的 userData 目录（单实例锁/窗口状态/引导脚本均落此处） */
 export function resolveUserDataDir(): string | null {
   return process.env.WBFM_USER_DATA_DIR ?? null;
+}
+
+/**
+ * 控制通道发现文件路径（与 core 侧 resolveDataPath(COMPUTER_CHANNEL_FILE) 语义一致）：
+ * - WBFM_DATA_ROOT 注入（E2E / 显式覆盖）：直接用
+ * - 打包态：userData/data（server-manager 注入给 fork 子进程的同一路径）
+ * - 开发态：~/DATA_DIR_NAME（dev server 默认数据根，桌面壳不托管服务）
+ */
+export function resolveComputerChannelFile(userDataDir: string, isPackaged: boolean): string {
+  const root =
+    process.env[DATA_ROOT_ENV] ??
+    (isPackaged ? path.join(userDataDir, 'data') : path.join(homedir(), DATA_DIR_NAME));
+  return path.join(root, COMPUTER_CHANNEL_FILE);
 }

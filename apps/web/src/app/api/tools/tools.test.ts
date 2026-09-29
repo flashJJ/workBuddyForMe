@@ -178,6 +178,7 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'current_time',
       'fetch_webpage',
       'knowledge_search',
+      'screen_snapshot',
     ]);
     for (const t of list) {
       expect(t.source).toBe('builtin');

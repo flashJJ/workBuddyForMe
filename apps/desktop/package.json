@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@wbfm/config": "workspace:*",
     "@wbfm/shared": "workspace:*",
     "electron": "31.7.7",
     "electron-builder": "^25.1.8"

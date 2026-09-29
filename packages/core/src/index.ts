@@ -157,6 +157,17 @@ export { currentTimeTool } from './tools/current-time-tool';
 export { knowledgeSearchTool } from './tools/knowledge-search-tool';
 export { fetchWebpageTool, htmlToText } from './tools/fetch-webpage-tool';
 export { extractMainContent } from './tools/html-extractor';
+// v0.7 M1 屏幕感知
+export {
+  createComputerChannelClient,
+  ChannelUnavailableError,
+  type ComputerChannelClient,
+} from './computer/channel-client';
+export {
+  createScreenSnapshotTool,
+  screenSnapshotTool,
+} from './tools/computer/screen-snapshot-tool';
+export type { ToolResultImage } from './tools/types';
 export {
   createToolBreaker,
   type ToolBreaker,

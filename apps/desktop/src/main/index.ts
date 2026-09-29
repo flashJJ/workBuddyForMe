@@ -2,9 +2,16 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { app, BrowserWindow, globalShortcut, ipcMain, safeStorage } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
+import { DEV_SERVER_URL, resolveComputerChannelFile, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
 import { startCipherServer, type CipherEndpoint } from './cipher-server';
+import {
+  removeChannelDiscovery,
+  startComputerChannel,
+  writeChannelDiscovery,
+  type ComputerChannel,
+} from './computer/control-channel';
+import { captureScreenSnapshot } from './computer/screen';
 import { startManagedServer, type ManagedServer } from './server-manager';
 import { captureWindowState, createMainWindow, type WindowBootInfo } from './window';
 import { saveWindowState } from './window-state';
@@ -21,6 +28,8 @@ if (customUserData) {
 let mainWindow: BrowserWindow | null = null;
 let managedServer: ManagedServer | null = null;
 let cipherEndpoint: CipherEndpoint | null = null;
+let computerChannel: ComputerChannel | null = null;
+let computerChannelFile: string | null = null;
 
 // 单实例锁：重复启动聚焦到已有窗口
 const gotLock = app.requestSingleInstanceLock();
@@ -77,6 +86,32 @@ async function start(): Promise<void> {
   await createWindow(boot);
   setupUpdater();
   setupGlobalShortcuts();
+  await setupComputerChannel();
+}
+
+/**
+ * v0.7 M1 屏幕感知控制通道：dev/prod 均启动（web server 侧经发现文件定位）。
+ * 启动失败仅降级（屏幕感知工具不可用），不阻断应用启动。
+ */
+async function setupComputerChannel(): Promise<void> {
+  try {
+    computerChannel = await startComputerChannel({
+      handlers: { snapshot: captureScreenSnapshot },
+    });
+    computerChannelFile = resolveComputerChannelFile(app.getPath('userData'), app.isPackaged);
+    writeChannelDiscovery(computerChannelFile, {
+      version: 1,
+      url: computerChannel.url,
+      token: computerChannel.token,
+      pid: process.pid,
+      startedAt: new Date().toISOString(),
+    });
+    console.error('[wbfm] 控制通道就绪:', computerChannel.url);
+  } catch (error) {
+    computerChannel = null;
+    computerChannelFile = null;
+    console.error('[wbfm] 控制通道启动失败（屏幕感知不可用）:', error);
+  }
 }
 
 /**
@@ -134,17 +169,21 @@ async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
   if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
 }
 
-// 退出时回收托管服务与密码桥
+// 退出时回收托管服务、密码桥与屏幕感知控制通道
 app.on('will-quit', async (event) => {
   globalShortcut.unregisterAll();
-  if (!managedServer && !cipherEndpoint) return;
+  if (computerChannelFile) removeChannelDiscovery(computerChannelFile);
+  if (!managedServer && !cipherEndpoint && !computerChannel) return;
   event.preventDefault();
   try {
+    await computerChannel?.close();
     await managedServer?.stop();
     await cipherEndpoint?.close();
   } finally {
     managedServer = null;
     cipherEndpoint = null;
+    computerChannel = null;
+    computerChannelFile = null;
     app.exit(0);
   }
 });
