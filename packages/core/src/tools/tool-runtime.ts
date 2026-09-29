@@ -7,6 +7,9 @@ import { currentTimeTool } from './current-time-tool';
 import { knowledgeSearchTool } from './knowledge-search-tool';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 import { screenSnapshotTool } from './computer/screen-snapshot-tool';
+import { createInputTools } from './computer/input-tools';
+import { createWindowTools } from './computer/window-tools';
+import { createComputerChannelClient } from '../computer/channel-client';
 
 /** 全部内置工具（默认全部关闭，由助手白名单开启） */
 const ALL_TOOLS: Record<string, Tool> = {
@@ -15,6 +18,14 @@ const ALL_TOOLS: Record<string, Tool> = {
   fetch_webpage: fetchWebpageTool,
   screen_snapshot: screenSnapshotTool,
 };
+
+// v0.7 M2：键鼠 / 窗口 / UIA 工具组（共用一个控制通道客户端）
+for (const tool of [
+  ...createInputTools(createComputerChannelClient()),
+  ...createWindowTools(createComputerChannelClient()),
+]) {
+  ALL_TOOLS[tool.name] = tool;
+}
 
 export interface ResolvedTool {
   tool: Tool;

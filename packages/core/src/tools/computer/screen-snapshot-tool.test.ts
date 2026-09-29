@@ -21,7 +21,20 @@ function makeCtx(visionCapable: boolean): ToolContext {
 }
 
 function clientWith(run: ComputerChannelClient['snapshot']): ComputerChannelClient {
-  return { getInfo: () => null, snapshot: run };
+  const unavailable = () => Promise.reject(new ChannelUnavailableError('stub'));
+  return {
+    getInfo: () => null,
+    snapshot: run,
+    mouseMove: unavailable,
+    mouseClick: unavailable,
+    mouseScroll: unavailable,
+    keyboardType: unavailable,
+    keyboardPress: unavailable,
+    windowList: unavailable,
+    windowFocus: unavailable,
+    appLaunch: unavailable,
+    uiaList: unavailable,
+  };
 }
 
 describe('screen_snapshot 工具', () => {

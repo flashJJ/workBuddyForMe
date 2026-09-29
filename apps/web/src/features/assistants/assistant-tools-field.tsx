@@ -9,6 +9,15 @@ const TOOL_LABELS: Record<ToolName, string> = {
   knowledge_search: '知识库检索（需先关联知识库）',
   fetch_webpage: '读取网页（模型可抓取链接内容）',
   screen_snapshot: '屏幕截图（需桌面端，视觉模型可解读）',
+  mouse_move: '鼠标移动（需桌面端，危险操作）',
+  mouse_click: '鼠标点击（需桌面端，危险操作）',
+  mouse_scroll: '鼠标滚轮（需桌面端，危险操作）',
+  keyboard_type: '键盘输入文本（需桌面端，危险操作）',
+  keyboard_press: '组合键（需桌面端，危险操作）',
+  window_list: '列出窗口（需桌面端）',
+  uia_list: '枚举窗口控件（需桌面端，精确定位用）',
+  window_focus: '激活窗口到前台（需桌面端）',
+  app_launch: '启动应用（需桌面端，危险操作）',
 };
 
 interface Props {

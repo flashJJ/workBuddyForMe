@@ -11,6 +11,13 @@ import {
   AlertCircle,
   ChevronRight,
   Wrench,
+  MousePointer2,
+  MousePointerClick,
+  Mouse,
+  Keyboard,
+  AppWindow,
+  ListTree,
+  Rocket,
 } from 'lucide-react';
 import type { ToolName, ToolTraceEntry, PermissionLevel } from '@wbfm/shared';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +28,15 @@ const TOOL_META: Record<ToolName, { label: string; icon: typeof Clock }> = {
   knowledge_search: { label: '检索知识库', icon: Search },
   fetch_webpage: { label: '读取网页', icon: Globe },
   screen_snapshot: { label: '屏幕截图', icon: Monitor },
+  mouse_move: { label: '鼠标移动', icon: MousePointer2 },
+  mouse_click: { label: '鼠标点击', icon: MousePointerClick },
+  mouse_scroll: { label: '鼠标滚轮', icon: Mouse },
+  keyboard_type: { label: '键盘输入', icon: Keyboard },
+  keyboard_press: { label: '组合键', icon: Keyboard },
+  window_list: { label: '列出窗口', icon: AppWindow },
+  uia_list: { label: '枚举窗口控件', icon: ListTree },
+  window_focus: { label: '激活窗口', icon: AppWindow },
+  app_launch: { label: '启动应用', icon: Rocket },
 };
 
 /** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>） */

@@ -69,7 +69,7 @@ export interface ChatSession {
   /** 反馈提交成功后同步到本地 live 视图（live 为空时由 React Query 刷新生效） */
   applyFeedback: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
   /** v0.6 M2：提交工具确认决策；返回 false 表示提交失败（调用方提示并保持弹窗） */
-  confirmTool: (action: 'allow' | 'deny', remember?: 'assistant' | 'all') => Promise<boolean>;
+  confirmTool: (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => Promise<boolean>;
 }
 
 /**
@@ -261,28 +261,26 @@ export function useChatSession(
     [],
   );
 
-  /**
-   * 提交 HITL 决策：成功后清空弹窗状态；
-   * 失败（如 120s 超时服务端已自动拒绝 → 404）返回 false，调用方提示并保持弹窗。
-   */
+  /** 提交 HITL 决策：成功清空弹窗；失败（超时已被服务端拒绝 → 404）返回 false，调用方提示并保持弹窗 */
   const confirmTool = React.useCallback(
-    async (action: 'allow' | 'deny', remember?: 'assistant' | 'all'): Promise<boolean> => {
+    async (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task'): Promise<boolean> => {
       const pending = pendingConfirmation;
       if (!pending) return false;
+      const extra =
+        remember === 'task'
+          ? { remember, taskScope: conversationId ?? '' }
+          : remember
+            ? { remember, assistantId }
+            : {};
       try {
-        await apiPost(API.toolConfirm, {
-          callId: pending.callId,
-          tool: pending.tool,
-          action,
-          ...(remember ? { remember, assistantId } : {}),
-        });
+        await apiPost(API.toolConfirm, { callId: pending.callId, tool: pending.tool, action, ...extra });
         setPendingConfirmation(null);
         return true;
       } catch {
         return false;
       }
     },
-    [pendingConfirmation, assistantId],
+    [pendingConfirmation, assistantId, conversationId],
   );
 
   return {

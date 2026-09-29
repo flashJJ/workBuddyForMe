@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
-import { app, BrowserWindow, globalShortcut, ipcMain, safeStorage } from 'electron';
+import { app, BrowserWindow, clipboard, globalShortcut, ipcMain, safeStorage } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { DEV_SERVER_URL, resolveComputerChannelFile, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
@@ -10,8 +10,13 @@ import {
   startComputerChannel,
   writeChannelDiscovery,
   type ComputerChannel,
+  type ComputerChannelHandlers,
 } from './computer/control-channel';
 import { captureScreenSnapshot } from './computer/screen';
+import { createNutInputBackend } from './computer/input';
+import { listUiaElements } from './computer/uia';
+import { focusWindow, launchApp, listWindows } from './computer/windows';
+import { createClickOverlay, type ClickOverlay } from './computer/overlay';
 import { startManagedServer, type ManagedServer } from './server-manager';
 import { captureWindowState, createMainWindow, type WindowBootInfo } from './window';
 import { saveWindowState } from './window-state';
@@ -30,6 +35,7 @@ let managedServer: ManagedServer | null = null;
 let cipherEndpoint: CipherEndpoint | null = null;
 let computerChannel: ComputerChannel | null = null;
 let computerChannelFile: string | null = null;
+let clickOverlay: ClickOverlay | null = null;
 
 // 单实例锁：重复启动聚焦到已有窗口
 const gotLock = app.requestSingleInstanceLock();
@@ -90,14 +96,34 @@ async function start(): Promise<void> {
 }
 
 /**
- * v0.7 M1 屏幕感知控制通道：dev/prod 均启动（web server 侧经发现文件定位）。
- * 启动失败仅降级（屏幕感知工具不可用），不阻断应用启动。
+ * v0.7 桌面能力控制通道：dev/prod 均启动（web server 侧经发现文件定位）。
+ * 启动失败仅降级（computer 工具不可用），不阻断应用启动。
  */
 async function setupComputerChannel(): Promise<void> {
   try {
-    computerChannel = await startComputerChannel({
-      handlers: { snapshot: captureScreenSnapshot },
+    const input = createNutInputBackend({
+      setClipboard: (text) => clipboard.writeText(text),
     });
+    clickOverlay = createClickOverlay();
+    const handlers: ComputerChannelHandlers = {
+      snapshot: captureScreenSnapshot,
+      mouseMove: async ({ x, y }) => (await input.moveMouse(x, y), { ok: true as const }),
+      mouseClick: async ({ x, y, button, double }) => {
+        await input.moveMouse(x, y);
+        clickOverlay?.showClick(x, y);
+        await input.click(button, double);
+        return { ok: true as const };
+      },
+      mouseScroll: async ({ dx, dy }) => (await input.scroll(dx, dy), { ok: true as const }),
+      mousePosition: () => input.getMousePosition(),
+      keyboardType: async ({ text }) => (await input.typeText(text), { ok: true as const }),
+      keyboardPress: async ({ keys }) => (await input.pressKeys(keys), { ok: true as const }),
+      windowList: () => listWindows(),
+      windowFocus: async (a) => (await focusWindow(a), { ok: true as const }),
+      appLaunch: async (a) => (await launchApp(a), { ok: true as const }),
+      uiaList: (a) => listUiaElements(a),
+    };
+    computerChannel = await startComputerChannel({ handlers });
     computerChannelFile = resolveComputerChannelFile(app.getPath('userData'), app.isPackaged);
     writeChannelDiscovery(computerChannelFile, {
       version: 1,
@@ -169,9 +195,11 @@ async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
   if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
 }
 
-// 退出时回收托管服务、密码桥与屏幕感知控制通道
+// 退出时回收托管服务、密码桥与控制通道（含点击指示圈窗口）
 app.on('will-quit', async (event) => {
   globalShortcut.unregisterAll();
+  clickOverlay?.close();
+  clickOverlay = null;
   if (computerChannelFile) removeChannelDiscovery(computerChannelFile);
   if (!managedServer && !cipherEndpoint && !computerChannel) return;
   event.preventDefault();

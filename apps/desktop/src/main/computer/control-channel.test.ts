@@ -44,6 +44,43 @@ async function post(url: string, token: string | null, body: unknown): Promise<{
   return { status: res.status, json: await res.json() };
 }
 
+describe('控制通道（M2 键鼠/窗口/UIA 路由）', () => {
+  it('输入路由透传参数并返回 ok', async () => {
+    const got: unknown[] = [];
+    channel = await startComputerChannel({
+      handlers: {
+        snapshot: async () => FAKE_SNAPSHOT,
+        mouseClick: async (args) => {
+          got.push(args);
+          return { ok: true };
+        },
+        mousePosition: async () => ({ x: 3, y: 4 }),
+      },
+    });
+    const click = await post(`${channel.url}/input/mouse-click`, channel.token, { x: 10, y: 20 });
+    expect(click.status).toBe(200);
+    // schema 默认值补全（button/double）
+    expect(got).toEqual([{ x: 10, y: 20, button: 'left', double: false }]);
+    const pos = await post(`${channel.url}/input/mouse-position`, channel.token, {});
+    expect(pos.json).toEqual({ x: 3, y: 4 });
+  });
+
+  it('handler 未注入的能力返回 404 capability_unavailable', async () => {
+    channel = await startComputerChannel({ handlers: { snapshot: async () => FAKE_SNAPSHOT } });
+    const res = await post(`${channel.url}/input/mouse-click`, channel.token, { x: 1, y: 2 });
+    expect(res.status).toBe(404);
+    expect((res.json as { error: string }).error).toBe('capability_unavailable');
+  });
+
+  it('输入路由参数非法返回 422（负数坐标 / 未知键名）', async () => {
+    channel = await startComputerChannel({
+      handlers: { snapshot: async () => FAKE_SNAPSHOT, mouseMove: async () => ({ ok: true as const }) },
+    });
+    expect((await post(`${channel.url}/input/mouse-move`, channel.token, { x: -1, y: 0 })).status).toBe(422);
+    expect((await post(`${channel.url}/input/keyboard-press`, channel.token, { keys: ['win'] })).status).toBe(422);
+  });
+});
+
 describe('控制通道（屏幕感知）', () => {
   it('无 token / 错 token 返回 401', async () => {
     channel = await startComputerChannel({ handlers: { snapshot: async () => FAKE_SNAPSHOT } });

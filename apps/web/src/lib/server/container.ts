@@ -18,6 +18,7 @@ import {
   createProviderService,
   createSettingsService,
   createSkillService,
+  createTaskGrantRegistry,
   createToolBreaker,
   createToolRuntime,
   createWebCipher,
@@ -34,6 +35,7 @@ import {
   type PermissionService,
   type SecretCipher,
   type SkillService,
+  type TaskGrantRegistry,
   type ToolBreaker,
   type ToolRuntime,
 } from '@wbfm/core';
@@ -62,6 +64,8 @@ export interface ServiceContainer {
   skills: SkillService;
   /** v0.6 M4：工具熔断器（连续失败降级；面板路由共享同一实例） */
   breakers: ToolBreaker;
+  /** v0.7 M2：任务级批量授权（remember='task'，仅内存） */
+  taskGrants: TaskGrantRegistry;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
   runtime: ToolRuntime;
 }
@@ -81,7 +85,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const confirmations = createPendingConfirmations();
   const skills = createSkillService({ db });
   const breakers = createToolBreaker();
-  const deps = { db, cipher, mcp, permissions, confirmations, skills, breakers };
+  const taskGrants = createTaskGrantRegistry();
+  const deps = { db, cipher, mcp, permissions, confirmations, skills, breakers, taskGrants };
   const runtime = createToolRuntime(deps);
   return {
     db,
@@ -91,6 +96,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     confirmations,
     skills,
     breakers,
+    taskGrants,
     runtime,
     providers: createProviderService(deps),
     models: createModelService(deps),

@@ -98,6 +98,30 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
     expect(services.permissions.listPermissions('other_tool')).toEqual([]);
   });
 
+  it('confirm：allow+remember=task 写入内存任务授权（不落库），缺 taskScope 422', async () => {
+    const pending = services.confirmations.request('call-task');
+    const res = await confirmTool(
+      jsonRequest({
+        callId: 'call-task',
+        tool: 'mouse_click',
+        action: 'allow',
+        remember: 'task',
+        taskScope: 'conv-1',
+      }),
+    );
+    expect(res.status).toBe(200);
+    await expect(pending).resolves.toBe('allow');
+    // 任务级授权写入内存注册表，不写长期授权记录
+    expect(services.taskGrants.isGranted('mouse_click', 'conv-1')).toBe(true);
+    expect(services.taskGrants.isGranted('mouse_click', 'conv-2')).toBe(false);
+    expect(services.permissions.listPermissions('mouse_click')).toEqual([]);
+
+    const badScope = await confirmTool(
+      jsonRequest({ callId: 'c-x', tool: 'mouse_click', action: 'allow', remember: 'task' }),
+    );
+    expect(badScope.status).toBe(422);
+  });
+
   it('permissions：GET 列表 + toolName 过滤；DELETE 撤销后 404', async () => {
     // 空列表
     const empty = await listPermissions(new Request('http://x'));
@@ -175,10 +199,19 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
     expect(res.status).toBe(200);
     const list = (await res.json()).data;
     expect(list.map((t: DebugToolInfo) => t.name).sort()).toEqual([
+      'app_launch',
       'current_time',
       'fetch_webpage',
+      'keyboard_press',
+      'keyboard_type',
       'knowledge_search',
+      'mouse_click',
+      'mouse_move',
+      'mouse_scroll',
       'screen_snapshot',
+      'uia_list',
+      'window_focus',
+      'window_list',
     ]);
     for (const t of list) {
       expect(t.source).toBe('builtin');

@@ -25,6 +25,10 @@ export {
   type ConfirmationDecision,
 } from './services/pending-confirmations';
 export {
+  createTaskGrantRegistry,
+  type TaskGrantRegistry,
+} from './services/task-grants';
+export {
   createSettingsService,
   DEFAULT_SETTINGS,
   type SettingsService,

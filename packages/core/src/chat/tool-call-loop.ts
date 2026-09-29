@@ -19,6 +19,8 @@ export interface ToolCallLoopParams {
   /** v0.6 M4：工具运行时（用于 resolveTool 获取 source） */
   runtime: ToolRuntime;
   assistantId: string;
+  /** v0.7 M2：任务作用域（对话 id / 任务运行 id），用于 remember='task' 批量授权 */
+  taskScope?: string;
   turnTrace: TraceHandle | null;
   /** 工具调用追踪（本函数会 push 条目） */
   trace: ToolTraceEntry[];
@@ -75,6 +77,7 @@ export async function* runToolCallLoop(
       callId: call.id,
       argsSummary,
       assistantId,
+      taskScope: params.taskScope,
       signal,
       source,
       permission,
