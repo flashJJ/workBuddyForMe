@@ -64,6 +64,8 @@ export interface TaskStepFinishFields {
   resultJson?: string;
   error?: string;
   durationMs?: number;
+  /** M3-2：观察步截图附件 id（截图落盘在步完成后才可知） */
+  screenshotPath?: string;
 }
 
 function mapRun(row: TaskRunRow): TaskRunView {
@@ -213,7 +215,8 @@ export function createTaskRunRepository(db: DatabaseInstance) {
       if (!row) return null;
       db.prepare(
         `UPDATE task_steps
-         SET status = @status, result_json = @resultJson, error = @error, duration_ms = @durationMs
+         SET status = @status, result_json = @resultJson, error = @error,
+             duration_ms = @durationMs, screenshot_path = @screenshotPath
          WHERE id = @id`,
       ).run({
         id,
@@ -221,6 +224,7 @@ export function createTaskRunRepository(db: DatabaseInstance) {
         resultJson: fields.resultJson ?? row.result_json,
         error: fields.error ?? row.error,
         durationMs: fields.durationMs ?? row.duration_ms,
+        screenshotPath: fields.screenshotPath ?? row.screenshot_path,
       });
       return mapStep(this.getStepRow(id)!);
     },
