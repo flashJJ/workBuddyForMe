@@ -14,13 +14,14 @@ const TRACK_OPTIONS: Array<{ value: BackupTrack; label: string; desc: string }> 
   { value: 'settings', label: '设置与凭证', desc: '默认模型、主题等；敏感凭证会被脱敏（[REDACTED]）' },
   { value: 'attachments', label: '图片附件', desc: '对话中的图片附件二进制文件' },
   { value: 'skills', label: '技能包', desc: '技能文件夹（skill.json）与启停状态' },
+  { value: 'tasks', label: '任务记录', desc: '桌面 Agent 任务运行与步骤日志（v0.7+）' },
 ];
 
 type RestoreResponse = { ok: true; precheck: BackupPrecheck; result: BackupRestoreResult };
 
 export function BackupPanel() {
   const toast = useToast();
-  const [selected, setSelected] = React.useState<BackupTrack[]>(['conversations', 'knowledge', 'settings', 'attachments', 'skills']);
+  const [selected, setSelected] = React.useState<BackupTrack[]>(['conversations', 'knowledge', 'settings', 'attachments', 'skills', 'tasks']);
   const [exporting, setExporting] = React.useState(false);
   const [restoring, setRestoring] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -87,11 +88,13 @@ export function BackupPanel() {
       if (r.imported.settings) parts.push('设置');
       if (r.imported.attachments) parts.push(`${r.imported.attachments} 附件`);
       if (r.imported.skills) parts.push(`${r.imported.skills} 技能`);
+      if (r.imported.tasks) parts.push(`${r.imported.tasks} 任务`);
 
       const skippedParts: string[] = [];
       if (r.skipped.conversations) skippedParts.push(`${r.skipped.conversations} 对话（已存在或助手不存在）`);
       if (r.skipped.documents) skippedParts.push(`${r.skipped.documents} 文档`);
       if (r.skipped.skills) skippedParts.push(`${r.skipped.skills} 技能（文件夹已存在）`);
+      if (r.skipped.tasks) skippedParts.push(`${r.skipped.tasks} 任务（已存在或会话/助手不存在）`);
 
       let msg = `恢复完成：导入 ${parts.join('、') || '无'}`;
       if (skippedParts.length) msg += `，跳过 ${skippedParts.join('、')}`;
