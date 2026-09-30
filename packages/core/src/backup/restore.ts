@@ -14,7 +14,7 @@ import {
 import type { ServiceDeps } from '../services/deps';
 import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared';
-import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, type SkillStateEntry } from './restore-ops';
+import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
 import { ensureSeedData } from '../services/seed';
 
 export interface BackupRestoreOptions {
@@ -26,8 +26,8 @@ export interface BackupRestoreOptions {
 
 export interface BackupRestoreResult {
   manifest: BackupManifest;
-  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number };
-  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number };
+  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number };
+  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number };
 }
 
 /** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
@@ -64,6 +64,7 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       documents: manifest.tracks.knowledge.documentCount,
       attachments: manifest.tracks.attachments.entryCount,
       skills: manifest.tracks.skills?.entryCount ?? 0,
+      tasks: manifest.tracks.tasks?.entryCount ?? 0,
     },
     warnings,
   });
@@ -100,8 +101,8 @@ export async function restoreBackup(
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
     const result: Omit<BackupRestoreResult, 'manifest'> = {
-      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0 },
-      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0 },
+      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0 },
+      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0 },
     };
 
     if (tracksToRestore.includes('settings') && files.has('settings.json')) {
@@ -134,6 +135,19 @@ export async function restoreBackup(
     if (tracksToRestore.includes('skills') && skillsPayload?.states?.length) {
       // 启停偏好按 name upsert（含内置技能）；计数不入 result，imported.skills 以文件夹落盘数为准
       restoreSkillsState(deps.db, skillsPayload.states);
+    }
+
+    if (tracksToRestore.includes('tasks') && files.has('tasks.json')) {
+      let taskPayload: TaskTrackEntry[];
+      try {
+        taskPayload = JSON.parse(files.get('tasks.json')!.toString('utf-8')) as TaskTrackEntry[];
+      } catch {
+        throw new ApiError('VALIDATION_ERROR', 'tasks.json 解析失败，归档可能已损坏');
+      }
+      const { imported, skipped } = restoreTasks(deps.db, taskPayload);
+      result.imported.tasks = imported;
+      result.skipped.tasks = skipped;
+      onProgress?.({ track: 'tasks', processed: imported + skipped, total: manifest.tracks.tasks?.entryCount ?? taskPayload.length });
     }
 
     return result;
@@ -180,6 +194,7 @@ function determineTracks(manifest: BackupManifest, files: Map<string, Buffer>): 
   if (files.has('settings.json')) tracks.push('settings');
   if (files.has('attachments.json') && manifest.tracks.attachments.entryCount > 0) tracks.push('attachments');
   if (files.has('skills.json') && (manifest.tracks.skills?.entryCount ?? 0) > 0) tracks.push('skills');
+  if (files.has('tasks.json') && (manifest.tracks.tasks?.entryCount ?? 0) > 0) tracks.push('tasks');
   return tracks;
 }
 

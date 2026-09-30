@@ -1,5 +1,5 @@
 import { formatSse } from '@wbfm/shared';
-import type { OrchestratorEvent } from '@wbfm/core';
+import type { OrchestratorEvent, TaskLoopEvent } from '@wbfm/core';
 
 const SSE_HEADERS = {
   'content-type': 'text/event-stream; charset=utf-8',
@@ -7,8 +7,11 @@ const SSE_HEADERS = {
   connection: 'keep-alive',
 } as const;
 
-/** 将编排器事件流桥接为 SSE Response；客户端断开由 request.signal 传导中断 */
-export function sseResponse(events: AsyncIterable<OrchestratorEvent>): Response {
+/** SSE 流事件类型：编排器事件 + v0.7 M3 任务循环事件（task 子类型） */
+export type SseStreamEvent = OrchestratorEvent | TaskLoopEvent;
+
+/** 将编排器/任务事件流桥接为 SSE Response；客户端断开由 request.signal 传导中断 */
+export function sseResponse(events: AsyncIterable<SseStreamEvent>): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

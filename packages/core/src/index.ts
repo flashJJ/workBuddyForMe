@@ -25,6 +25,37 @@ export {
   type ConfirmationDecision,
 } from './services/pending-confirmations';
 export {
+  createTaskGrantRegistry,
+  type TaskGrantRegistry,
+} from './services/task-grants';
+export {
+  createTaskRunnerService,
+  type TaskRunnerService,
+  type TaskStartParams,
+} from './services/task-runner-service';
+export {
+  runTaskLoop,
+} from './agent/task-loop';
+export {
+  createTaskLoopControl,
+  type TaskLoopControl,
+  type TaskLoopEvent,
+  type TaskLoopParams,
+} from './agent/control';
+export {
+  createLlmPlanner,
+  TASK_PLANNER_SYSTEM_PROMPT,
+  buildPlannerMessages,
+  parseDecision,
+  PlannerParseError,
+} from './agent/llm-planner';
+export type {
+  TaskPlanner,
+  TaskPlannerInput,
+  TaskPlanDecision,
+  TaskObservation,
+} from './agent/types';
+export {
   createSettingsService,
   DEFAULT_SETTINGS,
   type SettingsService,
@@ -157,6 +188,17 @@ export { currentTimeTool } from './tools/current-time-tool';
 export { knowledgeSearchTool } from './tools/knowledge-search-tool';
 export { fetchWebpageTool, htmlToText } from './tools/fetch-webpage-tool';
 export { extractMainContent } from './tools/html-extractor';
+// v0.7 M1 屏幕感知
+export {
+  createComputerChannelClient,
+  ChannelUnavailableError,
+  type ComputerChannelClient,
+} from './computer/channel-client';
+export {
+  createScreenSnapshotTool,
+  screenSnapshotTool,
+} from './tools/computer/screen-snapshot-tool';
+export type { ToolResultImage } from './tools/types';
 export {
   createToolBreaker,
   type ToolBreaker,

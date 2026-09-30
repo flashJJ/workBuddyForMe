@@ -124,7 +124,7 @@ export function ChatPage() {
   };
 
   /** HITL 工具确认：提交失败（超时已被服务端自动拒绝等）提示并保持弹窗 */
-  const submitToolConfirm = async (action: 'allow' | 'deny', remember?: 'assistant' | 'all') => {
+  const submitToolConfirm = async (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => {
     if (confirmSubmitting) return false;
     setConfirmSubmitting(true);
     try {
@@ -175,6 +175,7 @@ export function ChatPage() {
         permission={session.pendingConfirmation?.permission ?? 'write'}
         argsSummary={session.pendingConfirmation?.argsSummary ?? ''}
         submitting={confirmSubmitting}
+        taskScopeAvailable={Boolean(conversationId)}
         onOpenChange={(open) => {
           // 不允许点遮罩/ESC 直接关闭而不做决策——必须显式拒绝
           if (!open && !confirmSubmitting) void submitToolConfirm('deny');

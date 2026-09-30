@@ -10,6 +10,7 @@ import ChatPage from '@/app/(main)/chat/page';
 import KnowledgePage from '@/app/(main)/knowledge/page';
 import AssistantsPage from '@/app/(main)/assistants/page';
 import SettingsPage from '@/app/(main)/settings/page';
+import TasksPage from '@/app/(main)/tasks/page';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -36,13 +37,13 @@ describe('应用外壳（TR-23.1）', () => {
     vi.unstubAllGlobals();
   });
 
-  it('侧边栏：四个模块导航，当前路由高亮，切换路径更新高亮', () => {
+  it('侧边栏：五个模块导航，当前路由高亮，切换路径更新高亮', () => {
     const { rerender } = render(
       <ThemeProvider>
         <AppSidebar />
       </ThemeProvider>,
     );
-    expect(screen.getAllByRole('link')).toHaveLength(4);
+    expect(screen.getAllByRole('link')).toHaveLength(5);
     expect(screen.getByRole('link', { name: /对话/ })).toHaveAttribute(
       'aria-current',
       'page',
@@ -90,7 +91,7 @@ describe('应用外壳（TR-23.1）', () => {
     expect(screen.getByText('恢复正常')).toBeInTheDocument();
   });
 
-  it('四个模块页面均可挂载无报错', async () => {
+  it('五个模块页面均可挂载无报错', async () => {
     const fetchMock = vi.fn(async (url: string) =>
       new Response(
         JSON.stringify({
@@ -107,7 +108,7 @@ describe('应用外壳（TR-23.1）', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    const pages = [ChatPage, KnowledgePage, AssistantsPage, SettingsPage];
+    const pages = [ChatPage, KnowledgePage, AssistantsPage, SettingsPage, TasksPage];
     for (const Page of pages) {
       const { unmount } = renderWithProviders(<Page />);
       expect(screen.queryByText('页面出了点问题')).toBeNull();

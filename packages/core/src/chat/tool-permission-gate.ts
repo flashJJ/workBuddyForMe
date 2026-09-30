@@ -16,6 +16,8 @@ export interface ToolGateParams {
   source: string;
   /** v0.6 M4：权限级别（调用方已解析，避免重复查 tool?.permission） */
   permission: PermissionLevel;
+  /** v0.7 M2：任务作用域（对话 id / 任务运行 id），用于 remember='task' 批量授权 */
+  taskScope?: string;
 }
 
 export interface ToolGateResult {
@@ -36,11 +38,12 @@ export interface ToolGateResult {
 export async function* gateToolPermission(
   params: ToolGateParams,
 ): AsyncGenerator<OrchestratorEvent, ToolGateResult> {
-  const { deps, tool, toolName, callId, argsSummary, assistantId, signal, source, permission } = params;
+  const { deps, tool, toolName, callId, argsSummary, assistantId, signal, source, permission, taskScope } = params;
   const granted =
     !tool ||
     !deps.permissions ||
-    deps.permissions.isAllowed(toolName, permission, `assistant:${assistantId}`);
+    deps.permissions.isAllowed(toolName, permission, `assistant:${assistantId}`) ||
+    Boolean(taskScope && deps.taskGrants?.isGranted(toolName, taskScope));
   if (granted) return { denied: false };
 
   const decisionPromise = deps.confirmations ? deps.confirmations.request(callId, signal) : null;

@@ -18,6 +18,7 @@ import {
   createAttachmentRepository,
   createAssistantRepository,
   createSkillStateRepository,
+  createTaskRunRepository,
 } from '@wbfm/database';
 
 function collectTarEntries(gz: Buffer): Promise<Record<string, string>> {
@@ -194,6 +195,45 @@ describe('备份导出（M1）', () => {
     expect(payload.states).toHaveLength(1);
     expect(payload.states[0].name).toBe('weekly-report');
     expect(payload.states[0].enabled).toBe(false);
+  });
+
+  it('tasks 轨：task_runs + task_steps 全量序列化（v0.7 M4）', async () => {
+    const { ensureSeedData } = await import('../services/seed');
+    ensureSeedData(db);
+    const convRepo = createConversationRepository(db);
+    const taskRepo = createTaskRunRepository(db);
+    const conv = convRepo.create({ assistantId: 'builtin-general', title: '任务对话' });
+    const run = taskRepo.createRun({
+      conversationId: conv.id,
+      assistantId: 'builtin-general',
+      goal: '打开记事本写一句话保存',
+      maxSteps: 10,
+    });
+    const obs = taskRepo.addStep({ runId: run.id, stepIndex: 1, kind: 'observe', reason: '观察' });
+    taskRepo.finishStep(obs.id, { status: 'completed', resultJson: '{"summary":"桌面已就绪"}', durationMs: 100 });
+    const action = taskRepo.addStep({
+      runId: run.id, stepIndex: 2, kind: 'action', toolName: 'app_launch',
+      reason: '启动记事本', argsJson: '{"name":"notepad"}',
+    });
+    taskRepo.finishStep(action.id, { status: 'completed', resultJson: '{}', durationMs: 200 });
+    taskRepo.updateRunStatus(run.id, 'completed', 'completed');
+
+    const { archive, manifest } = await exportBackup({ db, cipher: createWebCipher() }, {
+      tracks: ['tasks'],
+    });
+    expect(manifest.tracks.tasks?.entryCount).toBe(1);
+
+    const files = await collectTarEntries(archive);
+    const payload = JSON.parse(files['tasks.json']!);
+    expect(payload).toHaveLength(1);
+    expect(payload[0].run.id).toBe(run.id);
+    expect(payload[0].run.goal).toBe('打开记事本写一句话保存');
+    expect(payload[0].run.status).toBe('completed');
+    expect(payload[0].run.stopReason).toBe('completed');
+    expect(payload[0].steps).toHaveLength(2);
+    expect(payload[0].steps[0].kind).toBe('observe');
+    expect(payload[0].steps[1].toolName).toBe('app_launch');
+    expect(payload[0].steps[1].argsJson).toBe('{"name":"notepad"}');
   });
 });
 

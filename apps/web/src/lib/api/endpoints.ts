@@ -35,6 +35,12 @@ export const API = {
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
   toolBreakers: '/api/tools/breakers',
   toolDebug: '/api/tools/debug',
+  tasks: '/api/tasks',
+  taskList: (conversationId: string) => `/api/tasks?conversationId=${conversationId}`,
+  task: (id: string) => `/api/tasks/${id}`,
+  taskEvents: (id: string) => `/api/tasks/${id}/events`,
+  taskControl: (id: string) => `/api/tasks/${id}/control`,
+  taskStopAll: '/api/tasks/stop-all',
 } as const;
 
 export const QUERY_KEYS = {
@@ -55,4 +61,8 @@ export const QUERY_KEYS = {
   toolPermissions: ['tool-permissions'] as const,
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
+  tasks: ['tasks'] as const,
+  tasksByConversation: (conversationId: string) =>
+    ['tasks', { conversationId }] as const,
+  task: (id: string) => ['task', id] as const,
 };

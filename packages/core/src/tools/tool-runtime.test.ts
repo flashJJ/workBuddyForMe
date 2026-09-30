@@ -56,21 +56,36 @@ describe('工具运行时白名单', () => {
     expect(typeof ctx.retrieve).toBe('function');
   });
 
-  it('listDebugTools 返回 3 个内置工具，每个含 source/permission/description/parameters', () => {
+  it('listDebugTools 返回 13 个内置工具，每个含 source/permission/description/parameters', () => {
     const list = runtime.listDebugTools();
     expect(list.map((t) => t.name).sort()).toEqual([
+      'app_launch',
       'current_time',
       'fetch_webpage',
+      'keyboard_press',
+      'keyboard_type',
       'knowledge_search',
+      'mouse_click',
+      'mouse_move',
+      'mouse_scroll',
+      'screen_snapshot',
+      'uia_list',
+      'window_focus',
+      'window_list',
     ]);
     for (const info of list) {
       expect(info.source).toBe('builtin');
       expect(info.description).toBeTruthy();
       expect(info.parameters).toBeTypeOf('object');
     }
-    // fetch_webpage 标 danger
+    // fetch_webpage 标 danger；screen_snapshot 标 read
     const fetch = list.find((t) => t.name === 'fetch_webpage');
     expect(fetch?.permission).toBe('danger');
+    const snapshot = list.find((t) => t.name === 'screen_snapshot');
+    expect(snapshot?.permission).toBe('read');
+    // M2 键鼠 danger；窗口列举 read
+    expect(list.find((t) => t.name === 'mouse_click')?.permission).toBe('danger');
+    expect(list.find((t) => t.name === 'window_list')?.permission).toBe('read');
   });
 
   it('createDebugToolContext 不绑知识库，retrieve 返回空数组', async () => {

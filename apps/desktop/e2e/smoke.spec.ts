@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, _electron, type ElectronApplication, type Page } from '@playwright/test';
@@ -13,7 +13,9 @@ import { expect, test, _electron, type ElectronApplication, type Page } from '@p
  * 打包产物 app.asar + WBFM_SERVER_PATH 指向打包内 standalone server，
  * 生产链路（fork server / cipher 桥 / 令牌守卫）验证等价。
  */
-const releaseDir = path.join(__dirname, '..', 'release', 'win-unpacked');
+const releaseDir = process.env.WBFM_RELEASE_DIR
+  ? path.resolve(__dirname, '..', process.env.WBFM_RELEASE_DIR)
+  : path.join(__dirname, '..', 'release', 'win-unpacked');
 const packagedExe = path.join(releaseDir, 'WorkBuddyForMe.exe');
 const asarPath = path.join(releaseDir, 'resources', 'app.asar');
 const officialElectron = path.join(__dirname, '..', '..', '..', 'node_modules', 'electron', 'dist', 'electron.exe');
@@ -33,6 +35,7 @@ function ensureElectronHost(): string {
 
 let electronApp: ElectronApplication;
 let page: Page;
+let dataRoot = '';
 
 interface WbfmBridge {
   token: string;
@@ -43,7 +46,8 @@ interface WbfmBridge {
 test.beforeAll(async () => {
   // 数据根与 userData 均重定向到临时目录：
   // 避免污染真实用户数据，也避免残留实例的单实例锁阻塞本次启动
-  const dataRoot = mkdtempSync(path.join(tmpdir(), 'wbfm-smoke-data-'));
+  const dataRootDir = mkdtempSync(path.join(tmpdir(), 'wbfm-smoke-data-'));
+  dataRoot = dataRootDir;
   const userData = mkdtempSync(path.join(tmpdir(), 'wbfm-smoke-user-'));
   electronApp = await _electron.launch({
     executablePath: useOfficialElectron ? ensureElectronHost() : packagedExe,
@@ -51,7 +55,7 @@ test.beforeAll(async () => {
     timeout: 120_000,
     env: {
       ...process.env,
-      WBFM_DATA_ROOT: dataRoot,
+      WBFM_DATA_ROOT: dataRootDir,
       WBFM_USER_DATA_DIR: userData,
       ...(useOfficialElectron ? { WBFM_SERVER_PATH: packagedServerPath } : {}),
     } as Record<string, string>,
@@ -80,7 +84,7 @@ test('导航覆盖对话/知识库/助手/设置四模块', async () => {
   await expect(page.getByTestId('defaults-panel')).toBeVisible();
   // M3：关于面板渲染版本号与更新通道（updater 桥经 preload 注入）
   await expect(page.getByTestId('about-panel')).toBeVisible();
-  await expect(page.getByTestId('about-version')).toContainText('v0.6.0');
+  await expect(page.getByTestId('about-version')).toContainText('v0.7.0');
 
   await page.getByRole('link', { name: /^对话/ }).click();
   await expect(page.getByTestId('chat-page')).toBeVisible();
@@ -102,6 +106,54 @@ test('安全基线：webPreferences 安全开关与仅回环监听', async () =>
   expect(prefs.nodeIntegration).toBe(false);
   expect(prefs.sandbox).toBe(true);
   expect(prefs.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\//);
+});
+
+test('v0.7 M1 控制通道：发现文件可读，无 token 401，带 token 截图为 PNG', async () => {
+  // 发现文件由主进程启动时写入数据根（WBFM_DATA_ROOT 已重定向到临时目录）
+  const channelFile = path.join(dataRoot, 'computer-channel.json');
+  await expect
+    .poll(() => existsSync(channelFile), { timeout: 15_000 })
+    .toBe(true);
+  const info = JSON.parse(readFileSync(channelFile, 'utf8')) as {
+    version: number;
+    url: string;
+    token: string;
+  };
+  expect(info.version).toBe(1);
+  expect(info.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+  expect(info.token).toBeTruthy();
+
+  const snapshotUrl = `${info.url}/screen/snapshot`;
+  // 无 token 拒绝
+  const denied = await fetch(snapshotUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ scope: 'fullscreen' }),
+  });
+  expect(denied.status).toBe(401);
+
+  // 带 token 截图：返回 PNG 且尺寸契约完整
+  const allowed = await fetch(snapshotUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${info.token}` },
+    body: JSON.stringify({ scope: 'fullscreen' }),
+  });
+  expect(allowed.status).toBe(200);
+  const snap = (await allowed.json()) as {
+    imageBase64: string;
+    mimeType: string;
+    width: number;
+    height: number;
+    scaleFactor: number;
+  };
+  expect(snap.mimeType).toBe('image/png');
+  expect(snap.width).toBeGreaterThan(0);
+  expect(snap.height).toBeGreaterThan(0);
+  expect(snap.scaleFactor).toBeGreaterThan(0);
+  expect(snap.scaleFactor).toBeLessThanOrEqual(1);
+  // PNG 魔数：0x89 0x50 0x4e 0x47
+  const png = Buffer.from(snap.imageBase64, 'base64');
+  expect([...png.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
 });
 
 test('托管令牌：无令牌 401 拒绝，携带令牌放行', async () => {

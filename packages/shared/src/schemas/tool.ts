@@ -10,14 +10,23 @@ export const toolConfirmSchema = z
     callId: z.string().trim().min(1).max(128),
     tool: z.string().trim().min(1).max(200),
     action: z.enum(['allow', 'deny']),
-    /** 授权记忆范围：assistant=仅当前助手，all=全局；缺省仅本次生效 */
-    remember: z.enum(['assistant', 'all']).optional(),
+    /**
+     * 授权记忆范围：assistant=仅当前助手（落库），all=全局（落库），
+     * task=本任务内（v0.7，仅内存，任务/会话结束即失效）；缺省仅本次生效
+     */
+    remember: z.enum(['assistant', 'all', 'task']).optional(),
     /** remember='assistant' 时必填 */
     assistantId: z.string().trim().min(1).max(64).optional(),
+    /** remember='task' 时必填：任务作用域标识（对话 id / 任务运行 id） */
+    taskScope: z.string().trim().min(1).max(128).optional(),
   })
   .refine((v) => v.remember !== 'assistant' || Boolean(v.assistantId), {
     message: 'remember=assistant 时必须提供 assistantId',
     path: ['assistantId'],
+  })
+  .refine((v) => v.remember !== 'task' || Boolean(v.taskScope), {
+    message: 'remember=task 时必须提供 taskScope',
+    path: ['taskScope'],
   });
 export type ToolConfirmInput = z.infer<typeof toolConfirmSchema>;
 

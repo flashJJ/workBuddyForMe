@@ -20,6 +20,7 @@ import {
   createAttachmentRepository,
   createSkillStateRepository,
 } from '@wbfm/database';
+import { serializeTasksTrack } from './export-tasks-track';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared';
 import { getDataRoot } from '@wbfm/config';
@@ -79,6 +80,7 @@ export async function exportBackup(
     settings: { files: 'settings.json' },
     attachments: { files: 'attachments/', entryCount: 0, totalBytes: 0 },
     skills: { files: 'skills.json', entryCount: 0 },
+    tasks: { files: 'tasks.json', entryCount: 0 },
   };
 
   if (tracks.includes('conversations')) {
@@ -154,6 +156,14 @@ export async function exportBackup(
     files['skills.json'] = JSON.stringify({ states: skillStateRepo.list(), skills }, null, 2);
     manifestPartial.skills = { files: 'skills.json', entryCount: skills.length };
     onProgress?.({ track: 'skills', processed: skills.length, total: skills.length });
+  }
+
+  if (tracks.includes('tasks')) {
+    // v0.7 M4：任务轨——task_runs + task_steps 全量序列化（截图附件 id 引用 attachments 表，独立于 attachments 轨）
+    const serialized = serializeTasksTrack(deps.db);
+    files['tasks.json'] = JSON.stringify(serialized, null, 2);
+    manifestPartial.tasks = { files: 'tasks.json', entryCount: serialized.length };
+    onProgress?.({ track: 'tasks', processed: serialized.length, total: serialized.length });
   }
 
   // 2. 附件：元数据 JSON + 二进制（可选）

@@ -103,8 +103,23 @@ export const MEMORY_DECAY_ACCESS_STALE_DAYS = 30;
 export const MEMORY_DECAY_INTERVAL_DAYS = 7;
 export const MEMORY_SUMMARY_IMPORTANCE = 0.6;
 
-/** v0.2 内置工具（全部只读）；助手通过 enabledTools 白名单授权 */
-export const TOOL_NAMES = ['current_time', 'knowledge_search', 'fetch_webpage'] as const;
+/** v0.2 内置工具（默认只读）；助手通过 enabledTools 白名单授权（v0.7 新增 screen_snapshot） */
+export const TOOL_NAMES = [
+  'current_time',
+  'knowledge_search',
+  'fetch_webpage',
+  'screen_snapshot',
+  // v0.7 M2 键鼠 / 窗口 / UIA
+  'mouse_move',
+  'mouse_click',
+  'mouse_scroll',
+  'keyboard_type',
+  'keyboard_press',
+  'window_list',
+  'uia_list',
+  'window_focus',
+  'app_launch',
+] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
 
 /**
@@ -164,6 +179,14 @@ export const TOOL_TIMEOUT_MS = 15_000;
 export const TOOL_BREAKER_FAILURE_THRESHOLD = 3;
 /** v0.6 M4：熔断冷却时间（5 分钟后半开重试） */
 export const TOOL_BREAKER_COOLDOWN_MS = 5 * 60_000;
+
+/**
+ * v0.7 M3 任务 Agent 循环护栏：
+ * - TASK_MAX_STEPS 单任务步数上限（防失控死循环）；
+ * - TASK_MAX_FAILURES 连续失败步数上限（与熔断阈值对齐，触顶自动终止）。
+ */
+export const TASK_MAX_STEPS = 20;
+export const TASK_MAX_FAILURES = 3;
 
 /** 上传限制 */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;

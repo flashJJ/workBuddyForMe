@@ -9,6 +9,7 @@ import { migrateV007 } from './v007-message-feedback';
 import { migrateV008 } from './v008-mcp-servers';
 import { migrateV009 } from './v009-tool-permissions';
 import { migrateV010 } from './v010-skills-state';
+import { migrateV011 } from './v011-task-runs';
 
 interface Migration {
   version: number;
@@ -59,6 +60,11 @@ const MIGRATIONS: Migration[] = [
     version: 10,
     description: 'skills: skills_state table (enable/disable references)',
     up: migrateV010,
+  },
+  {
+    version: 11,
+    description: 'computer agent: task_runs + task_steps (action log)',
+    up: migrateV011,
   },
 ];
 

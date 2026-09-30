@@ -13,6 +13,7 @@ out/
 
 # electron
 apps/desktop/release/
+apps/desktop/release-*/
 apps/desktop/.vite/
 # 打包前归集的 standalone 服务（prepare-server.mjs 产物）
 apps/desktop/resources/server/

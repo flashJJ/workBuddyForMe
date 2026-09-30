@@ -4,6 +4,7 @@ import type { McpRegistry } from '../mcp/registry';
 import type { SkillService } from '../skills/skill-service';
 import type { PermissionService } from './permission-service';
 import type { PendingConfirmations } from './pending-confirmations';
+import type { TaskGrantRegistry } from './task-grants';
 import type { ToolBreaker } from '../tools/tool-breaker';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
@@ -20,4 +21,6 @@ export interface ServiceDeps {
   skills?: SkillService;
   /** v0.6 M4：工具熔断器（未提供时不做连续失败降级） */
   breakers?: ToolBreaker;
+  /** v0.7 M2：任务级批量授权（remember='task'，仅内存） */
+  taskGrants?: TaskGrantRegistry;
 }

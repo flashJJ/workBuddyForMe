@@ -16,6 +16,7 @@ export const backupTrackSchema = z.enum([
   'settings',
   'attachments',
   'skills',
+  'tasks',
 ]);
 export type BackupTrack = z.infer<typeof backupTrackSchema>;
 
@@ -40,6 +41,8 @@ export const backupManifestSchema = z.object({
     attachments: z.object({ files: z.string(), entryCount: z.number().int().min(0), totalBytes: z.number().int().min(0) }),
     /** v0.6 新增；旧归档（v0.4/v0.5）无此键，故 optional 保持向前兼容 */
     skills: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
+    /** v0.7 新增；旧归档无此键，故 optional 保持向前兼容 */
+    tasks: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
   }),
   /** 归档整体 SHA-256 摘要（可选，快速校验用） */
   archiveSha256: z.string().optional(),
@@ -62,6 +65,7 @@ export const backupPrecheckSchema = z.object({
     documents: z.number().int().min(0),
     attachments: z.number().int().min(0),
     skills: z.number().int().min(0),
+    tasks: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

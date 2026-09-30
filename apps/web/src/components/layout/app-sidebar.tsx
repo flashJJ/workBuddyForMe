@@ -40,7 +40,7 @@ export function AppSidebar() {
         })}
       </nav>
       <div className="flex items-center justify-between px-5 py-4 text-xs text-muted-foreground">
-        <span>v0.6.0</span>
+        <span>v0.7.0</span>
         <ThemeToggle />
       </div>
     </aside>

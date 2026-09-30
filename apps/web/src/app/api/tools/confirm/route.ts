@@ -16,8 +16,13 @@ export const POST = defineRoute(async ({ request, services }) => {
 
   // 2. allow + remember 时写入授权记忆
   if (input.action === 'allow' && input.remember) {
-    const scope = input.remember === 'all' ? 'all' : `assistant:${input.assistantId}`;
-    services.permissions.grantPermission(input.tool, scope, 'allow');
+    if (input.remember === 'task') {
+      // v0.7 M2：任务级批量授权（仅内存，进程重启即失效）
+      services.taskGrants.grant(input.tool, input.taskScope!);
+    } else {
+      const scope = input.remember === 'all' ? 'all' : `assistant:${input.assistantId}`;
+      services.permissions.grantPermission(input.tool, scope, 'allow');
+    }
   }
 
   return jsonOk({ ok: true });

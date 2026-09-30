@@ -6,13 +6,26 @@ import type { Tool, ToolContext, ToolMap } from './types';
 import { currentTimeTool } from './current-time-tool';
 import { knowledgeSearchTool } from './knowledge-search-tool';
 import { fetchWebpageTool } from './fetch-webpage-tool';
+import { screenSnapshotTool } from './computer/screen-snapshot-tool';
+import { createInputTools } from './computer/input-tools';
+import { createWindowTools } from './computer/window-tools';
+import { createComputerChannelClient } from '../computer/channel-client';
 
 /** 全部内置工具（默认全部关闭，由助手白名单开启） */
 const ALL_TOOLS: Record<string, Tool> = {
   current_time: currentTimeTool,
   knowledge_search: knowledgeSearchTool,
   fetch_webpage: fetchWebpageTool,
+  screen_snapshot: screenSnapshotTool,
 };
+
+// v0.7 M2：键鼠 / 窗口 / UIA 工具组（共用一个控制通道客户端）
+for (const tool of [
+  ...createInputTools(createComputerChannelClient()),
+  ...createWindowTools(createComputerChannelClient()),
+]) {
+  ALL_TOOLS[tool.name] = tool;
+}
 
 export interface ResolvedTool {
   tool: Tool;
@@ -33,7 +46,7 @@ export interface ToolRuntime {
   /** 按助手白名单构造可用工具映射；模型不支持工具时返回空映射 */
   buildTools(assistant: Assistant, supportsTools: boolean): ToolMap;
   /** 构造工具执行上下文（绑定库与检索回调） */
-  createContext(assistant: Assistant, signal?: AbortSignal): ToolContext;
+  createContext(assistant: Assistant, signal?: AbortSignal, opts?: { visionCapable?: boolean }): ToolContext;
   /** v0.6 M4：解析工具名 → { tool, source }；内置查表，MCP 走注册表 */
   resolveTool(name: string): ResolvedTool | null;
   /** v0.6 M4：聚合全部可调试工具（内置 + 已连接 MCP），调试台用 */
@@ -93,9 +106,11 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
 
     createDebugToolContext(signal) {
       // 调试台不绑知识库；knowledge_search 调用时 retrieve 返回空
+      // visionCapable 固定 false：调试台仅验证通道连通性，截图以文本元数据返回
       return {
         signal,
         knowledgeBaseId: null,
+        visionCapable: false,
         retrieve: async () => [],
       };
     },
@@ -110,10 +125,11 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
       return map;
     },
 
-    createContext(assistant, signal) {
+    createContext(assistant, signal, opts) {
       return {
         signal,
         knowledgeBaseId: assistant.knowledgeBaseId,
+        visionCapable: opts?.visionCapable ?? false,
         retrieve: (query, topK, retrieveSignal) =>
           retrieval.retrieve({
             knowledgeBaseId: assistant.knowledgeBaseId ?? '',
