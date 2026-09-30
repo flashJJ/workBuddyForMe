@@ -11,12 +11,13 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v0.7 📝 规划中
+## 当前版本：v0.7 ✅ 已发布（2026-09）
 
-**主题：看得见、动得了手**。桌面 Agent 能力——屏幕视觉感知 + 键鼠执行 + 任务级 Agent 循环 + 浏览器自动化，对标腾讯 WorkBuddy 的「接管电脑」能力但坚持本地优先与逐步授权。
+**主题：看得见、动得了手**。桌面 Agent 能力——屏幕视觉感知 + 键鼠执行 + 任务级 Agent 循环 + 浏览器自动化评估（playwright-mcp 评估未接入，登记 v0.8+ 重新评估），对标腾讯 WorkBuddy 的「接管电脑」能力但坚持本地优先与逐步授权。tag `v0.7.0`。
 
 - 方案：[v0.7-computer-agent.md](v0.7-computer-agent.md)
-- 分支：`feature/v0.7-computer-agent`（待评审后开工）
+- 浏览器自动化评估：[v0.7-playwright-mcp-eval.md](v0.7-playwright-mcp-eval.md)
+- 总结：—
 
 ## 上一版本：v0.6 ✅ 已发布（2026-09）
 
@@ -74,7 +75,7 @@
 | v0.4 | 数据随身：备份/分享/自动更新 + OCR + 命令面板 | ✅ 已发布 | [方案](v0.4-data-portability-and-updates.md) | [总结](v0.4-release-summary.md) | B01 起 | `v0.4.0` |
 | v0.5 | 记得住：长期记忆 + 上下文工程 | ✅ 已发布 | [方案](v0.5-memory-and-context.md) | [总结](v0.5-release-summary.md) | — | `v0.5.0` |
 | v0.6 | 会接活：MCP + 技能包 + 权限确认 | ✅ 已发布 | [方案](v0.6-skills-and-mcp.md) | — | — | `v0.6.0` |
-| v0.7 | 看得见、动得了手：桌面 Agent | 📝 规划中（feature/v0.7-computer-agent） | [方案](v0.7-computer-agent.md) | — | — | — |
+| v0.7 | 看得见、动得了手：桌面 Agent | ✅ 已发布 | [方案](v0.7-computer-agent.md) | — | — | `v0.7.0` |
 | v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
