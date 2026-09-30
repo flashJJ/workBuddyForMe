@@ -29,6 +29,33 @@ export {
   type TaskGrantRegistry,
 } from './services/task-grants';
 export {
+  createTaskRunnerService,
+  type TaskRunnerService,
+  type TaskStartParams,
+} from './services/task-runner-service';
+export {
+  runTaskLoop,
+} from './agent/task-loop';
+export {
+  createTaskLoopControl,
+  type TaskLoopControl,
+  type TaskLoopEvent,
+  type TaskLoopParams,
+} from './agent/control';
+export {
+  createLlmPlanner,
+  TASK_PLANNER_SYSTEM_PROMPT,
+  buildPlannerMessages,
+  parseDecision,
+  PlannerParseError,
+} from './agent/llm-planner';
+export type {
+  TaskPlanner,
+  TaskPlannerInput,
+  TaskPlanDecision,
+  TaskObservation,
+} from './agent/types';
+export {
   createSettingsService,
   DEFAULT_SETTINGS,
   type SettingsService,
