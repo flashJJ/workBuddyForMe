@@ -39,6 +39,10 @@ describe('task-run-repo（v0.7 M3 行动日志）', () => {
     expect(listed).toHaveLength(1);
     expect(listed[0]?.id).toBe(run.id);
     expect(repo.listRunsByConversation('nope')).toHaveLength(0);
+
+    // listAllRuns 跨会话总览
+    expect(repo.listAllRuns()).toHaveLength(1);
+    expect(repo.listAllRuns()[0]?.id).toBe(run.id);
     db.close();
   });
 

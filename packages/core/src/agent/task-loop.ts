@@ -17,7 +17,6 @@ import { gateToolPermission } from '../chat/tool-permission-gate';
 import type { TaskObservation, TaskPlanDecision } from './types';
 import {
   createTaskLoopControl,
-  type TaskLoopControl,
   type TaskLoopEvent,
   type TaskLoopParams,
 } from './control';

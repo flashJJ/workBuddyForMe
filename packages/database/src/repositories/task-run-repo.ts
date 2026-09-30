@@ -149,6 +149,14 @@ export function createTaskRunRepository(db: DatabaseInstance) {
       return rows.map(mapRun);
     },
 
+    /** 跨会话列出最近运行（任务面板总览；默认按创建时间倒序） */
+    listAllRuns(limit = 100): TaskRunView[] {
+      const rows = db
+        .prepare('SELECT * FROM task_runs ORDER BY created_at DESC LIMIT ?')
+        .all(limit) as TaskRunRow[];
+      return rows.map(mapRun);
+    },
+
     /** 状态机推进；终态（completed/failed/stopped）自动写 finished_at 与 stop_reason */
     updateRunStatus(id: string, status: TaskRunStatus, stopReason?: TaskStopReason): TaskRunView | null {
       const row = this.getRunRow(id);

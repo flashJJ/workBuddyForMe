@@ -1,4 +1,4 @@
-import type { TaskRunView } from '@wbfm/shared';
+import { ApiError, type TaskRunView } from '@wbfm/shared';
 import type { ServiceDeps } from './deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import { runTaskLoop } from '../agent/task-loop';
@@ -29,7 +29,10 @@ export interface TaskStartParams {
 }
 
 export interface TaskRunnerService {
-  /** 启动循环：返回事件生成器（消费完自动从注册表移除） */
+  /**
+   * 启动循环：返回事件生成器（消费完自动从注册表移除）。
+   * 同一 runId 重复启动抛 409（前端应改用 /events 重新订阅而非再次启动）。
+   */
   start(params: TaskStartParams): AsyncGenerator<TaskLoopEvent, TaskRunView>;
   /** 急停单个任务（control.stop + abort）；不存在返回 false */
   stop(runId: string): boolean;
@@ -50,6 +53,9 @@ export function createTaskRunnerService(deps: ServiceDeps, runtime: ToolRuntime)
 
   return {
     start(params) {
+      if (active.has(params.run.id)) {
+        throw ApiError.conflict('任务已在运行，请勿重复启动');
+      }
       const control = createTaskLoopControl();
       const abort = new AbortController();
       const combined = params.clientSignal
