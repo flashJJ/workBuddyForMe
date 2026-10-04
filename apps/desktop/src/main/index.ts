@@ -106,7 +106,24 @@ async function setupComputerChannel(): Promise<void> {
     });
     clickOverlay = createClickOverlay();
     const handlers: ComputerChannelHandlers = {
-      snapshot: captureScreenSnapshot,
+      // 截图前最小化主窗口，避免把 WorkBuddy 自身截进画面干扰模型定位
+      snapshot: async (args) => {
+        const win = mainWindow;
+        const wasVisible = win?.isVisible() ?? false;
+        const wasMinimized = win?.isMinimized() ?? false;
+        if (win && wasVisible && !wasMinimized) {
+          win.minimize();
+          await new Promise((r) => setTimeout(r, 350));
+        }
+        try {
+          return await captureScreenSnapshot(args);
+        } finally {
+          if (win && wasVisible && !wasMinimized) {
+            win.restore();
+            win.focus();
+          }
+        }
+      },
       mouseMove: async ({ x, y }) => (await input.moveMouse(x, y), { ok: true as const }),
       mouseClick: async ({ x, y, button, double }) => {
         await input.moveMouse(x, y);

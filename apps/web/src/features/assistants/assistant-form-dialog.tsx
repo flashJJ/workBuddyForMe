@@ -96,20 +96,27 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
   const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
   const chatModels = (models ?? []).filter((model) => model.capabilities.includes('chat'));
 
-  const buildBody = (): AssistantBody => ({
-    name: form.name.trim(),
-    emoji: form.emoji.trim() || null,
-    color: form.color || null,
-    systemPrompt: form.systemPrompt,
-    temperature: Number(form.temperature),
-    topP: Number(form.topP),
-    maxTokens: form.maxTokens ? Number(form.maxTokens) : null,
-    modelId: form.modelId || null,
-    knowledgeBaseId: form.knowledgeBaseId || null,
-    enabledTools: form.enabledTools,
-    retrieveAlways: form.retrieveAlways,
-    memoryEnabled: form.memoryEnabled,
-  });
+  const buildBody = (): AssistantBody => {
+    // 未关联知识库时自动剔除 knowledge_search，避免后端 422
+    const knowledgeBaseId = form.knowledgeBaseId || null;
+    const enabledTools = knowledgeBaseId
+      ? form.enabledTools
+      : form.enabledTools.filter((t) => t !== 'knowledge_search');
+    return {
+      name: form.name.trim(),
+      emoji: form.emoji.trim() || null,
+      color: form.color || null,
+      systemPrompt: form.systemPrompt,
+      temperature: Number(form.temperature),
+      topP: Number(form.topP),
+      maxTokens: form.maxTokens ? Number(form.maxTokens) : null,
+      modelId: form.modelId || null,
+      knowledgeBaseId,
+      enabledTools,
+      retrieveAlways: form.retrieveAlways,
+      memoryEnabled: form.memoryEnabled,
+    };
+  };
 
   const toggleTool = (tool: string) => {
     setForm((prev) => {
