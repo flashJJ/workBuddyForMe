@@ -10,6 +10,7 @@ import { migrateV008 } from './v008-mcp-servers';
 import { migrateV009 } from './v009-tool-permissions';
 import { migrateV010 } from './v010-skills-state';
 import { migrateV011 } from './v011-task-runs';
+import { migrateV012 } from './v012-flow-studio';
 
 interface Migration {
   version: number;
@@ -65,6 +66,11 @@ const MIGRATIONS: Migration[] = [
     version: 11,
     description: 'computer agent: task_runs + task_steps (action log)',
     up: migrateV011,
+  },
+  {
+    version: 12,
+    description: 'flow studio: workflows + workflow_versions + workflow_runs + node_executions',
+    up: migrateV012,
   },
 ];
 

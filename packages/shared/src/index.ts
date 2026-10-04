@@ -158,6 +158,59 @@ export {
   type TaskEventPayload,
 } from './schemas/task';
 
+// v0.8 Flow Studio 可视化工作流
+export {
+  FLOW_NODE_TYPES,
+  CONDITION_BRANCHES,
+  FLOW_INPUT_VALUE_TYPES,
+  flowInputFieldSchema,
+  flowNodeSchema,
+  flowEdgeSchema,
+  flowGraphSchema,
+  workflowCreateSchema,
+  workflowUpdateSchema,
+  workflowVersionCreateSchema,
+  flowRunCreateSchema,
+  flowHumanSubmitSchema,
+  FLOW_TOOL_NAMESPACE,
+  buildFlowToolName,
+  isFlowToolName,
+  parseFlowToolName,
+  type FlowNodeType,
+  type ConditionBranch,
+  type FlowInputValueType,
+  type FlowInputField,
+  type FlowNode,
+  type FlowEdge,
+  type FlowGraph,
+  type WorkflowCreateInput,
+  type WorkflowUpdateInput,
+  type WorkflowVersionCreateInput,
+  type FlowRunCreateInput,
+  type FlowHumanSubmitInput,
+} from './schemas/flow';
+export {
+  FLOW_STATUSES,
+  FLOW_RUN_STATUSES,
+  FLOW_RUN_TERMINAL_STATUSES,
+  FLOW_NODE_EXEC_STATUSES,
+  FLOW_TRIGGERS,
+  FLOW_DIAGNOSTIC_SEVERITIES,
+  FLOW_EVENT_TYPES,
+  type FlowStatus,
+  type FlowRunStatus,
+  type FlowNodeExecStatus,
+  type FlowTrigger,
+  type WorkflowView,
+  type WorkflowVersionView,
+  type WorkflowRunView,
+  type NodeExecutionView,
+  type FlowDiagnosticSeverity,
+  type FlowDiagnostic,
+  type FlowEventType,
+  type FlowEventPayload,
+} from './types/flow';
+
 // v0.6 M2：工具权限分级（HITL）
 export type { PermissionLevel, PermissionAction, ToolPermission } from './types/permission';
 export {
