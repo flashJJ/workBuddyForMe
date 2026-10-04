@@ -19,10 +19,11 @@ import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useAllModels } from '@/lib/hooks/use-settings';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
-import { useAssistantMutations, type AssistantBody } from '@/lib/hooks/use-assistants';
+import { useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useMcpTools } from '@/lib/hooks/use-mcp';
 import { AssistantToolsField } from './assistant-tools-field';
 import { AssistantMemoryField } from './assistant-memory-field';
+import { buildAssistantBody, type AssistantFormShape } from './assistant-form-body';
 import { NumberField } from './number-field';
 
 interface Props {
@@ -31,20 +32,7 @@ interface Props {
   assistant?: Assistant | null;
 }
 
-interface FormState {
-  name: string;
-  emoji: string;
-  color: string;
-  systemPrompt: string;
-  temperature: string;
-  topP: string;
-  maxTokens: string;
-  modelId: string;
-  knowledgeBaseId: string;
-  enabledTools: string[];
-  retrieveAlways: boolean;
-  memoryEnabled: boolean;
-}
+type FormState = AssistantFormShape;
 
 function toForm(assistant: Assistant | null | undefined): FormState {
   if (!assistant) {
@@ -96,28 +84,6 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
   const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
   const chatModels = (models ?? []).filter((model) => model.capabilities.includes('chat'));
 
-  const buildBody = (): AssistantBody => {
-    // 未关联知识库时自动剔除 knowledge_search，避免后端 422
-    const knowledgeBaseId = form.knowledgeBaseId || null;
-    const enabledTools = knowledgeBaseId
-      ? form.enabledTools
-      : form.enabledTools.filter((t) => t !== 'knowledge_search');
-    return {
-      name: form.name.trim(),
-      emoji: form.emoji.trim() || null,
-      color: form.color || null,
-      systemPrompt: form.systemPrompt,
-      temperature: Number(form.temperature),
-      topP: Number(form.topP),
-      maxTokens: form.maxTokens ? Number(form.maxTokens) : null,
-      modelId: form.modelId || null,
-      knowledgeBaseId,
-      enabledTools,
-      retrieveAlways: form.retrieveAlways,
-      memoryEnabled: form.memoryEnabled,
-    };
-  };
-
   const toggleTool = (tool: string) => {
     setForm((prev) => {
       const has = prev.enabledTools.includes(tool);
@@ -147,10 +113,10 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     setSubmitting(true);
     try {
       if (isEdit && assistant) {
-        await mutations.update.mutateAsync({ id: assistant.id, body: buildBody() });
+        await mutations.update.mutateAsync({ id: assistant.id, body: buildAssistantBody(form) });
         toast.success('助手已更新');
       } else {
-        await mutations.create.mutateAsync(buildBody());
+        await mutations.create.mutateAsync(buildAssistantBody(form));
         toast.success('助手已创建');
       }
       onOpenChange(false);
