@@ -32,6 +32,7 @@ test-results/
 .DS_Store
 Thumbs.db
 .idea/
+.trae/
 
 # local data
 data/
