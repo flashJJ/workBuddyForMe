@@ -25,8 +25,6 @@ function diagnostic(
 }
 const error = (code: string, message: string, ref?: { nodeId?: string; edgeId?: string }) =>
   diagnostic('error', `flow/${code}`, message, ref);
-const warning = (code: string, message: string, ref?: { nodeId?: string; edgeId?: string }) =>
-  diagnostic('warning', `flow/${code}`, message, ref);
 
 /**
  * 编译流程图：结构校验（环/端点/句柄/可达/入度）→ Kahn 拓扑计划。
@@ -145,16 +143,20 @@ export function compileFlow(graph: FlowGraph): CompileResult {
       }
     }
 
-    // 7. warning：condition 的 true/false 分支至少各使用一次
+    // 7. condition 的 true/false 两个分支都必须连线并通向 end：
+    //    未连线的命中分支在运行时无路可走（无法产出 end 结果），故按错误处理。
     for (const node of graph.nodes.filter((n) => n.type === 'condition')) {
       const handles = new Set(
         (adj.successors.get(node.id) ?? []).map((s) => s.handle).filter(Boolean),
       );
-      if (!handles.has('true') || !handles.has('false')) {
-        const missing = !handles.has('true') && !handles.has('false') ? 'true/false' : !handles.has('true') ? 'true' : 'false';
-        diagnostics.push(
-          warning('unused-branch', `条件节点「${node.id}」的 ${missing} 分支未连线`, { nodeId: node.id }),
-        );
+      for (const branch of ['true', 'false'] as const) {
+        if (!handles.has(branch)) {
+          diagnostics.push(
+            error('missing-branch', `条件节点「${node.id}」的 ${branch} 分支未连线`, {
+              nodeId: node.id,
+            }),
+          );
+        }
       }
     }
   }
@@ -173,6 +175,7 @@ export function compileFlow(graph: FlowGraph): CompileResult {
   const compiled: CompiledFlow = {
     graph,
     nodesById,
+    edgesById: new Map(graph.edges.map((edge) => [edge.id, edge])),
     order,
     startNodeId: startNodes[0]!.id,
     endNodeIds: endNodes.map((n) => n.id),

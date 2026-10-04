@@ -39,14 +39,14 @@ describe('compileFlow：合法图', () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 
-  it('condition 未用全部分支只告警不阻断', () => {
+  it('condition 两个分支都必须连线（M1 收紧：缺分支为错误，保证运行时必有可达 end）', () => {
     const g = graph(
       [node('start', 'start'), node('cond', 'condition'), node('end', 'end')],
       [edge('e1', 'start', 'cond'), edge('e2', 'cond', 'end', 'true')],
     );
     const result = compileFlow(g);
-    expect(result.ok).toBe(true);
-    expect(codes(g)).toContain('unused-branch');
+    expect(result.ok).toBe(false);
+    expect(codes(g)).toContain('missing-branch');
   });
 });
 

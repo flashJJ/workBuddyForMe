@@ -25,6 +25,7 @@ export function buildAdjacency(graph: FlowGraph): Adjacency {
   for (const edge of graph.edges) {
     successors.get(edge.source)?.push({
       node: edge.target,
+      edgeId: edge.id,
       handle: edge.sourceHandle,
     });
     predecessors.get(edge.target)?.push(edge.source);

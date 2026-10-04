@@ -1,4 +1,5 @@
 import type { Assistant, PermissionLevel } from '@wbfm/shared';
+import { parseFlowToolName } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
 import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/retrieval-service';
 import { createMcpTool } from '../mcp/mcp-tool';
@@ -62,10 +63,16 @@ export interface ToolRuntime {
 export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
   const retrieval = createRetrievalService(deps);
 
-  /** 解析白名单项：内置查表，MCP 限定名走注册表（未连接/不存在则跳过） */
+  /** 解析白名单项：内置查表，MCP 限定名走注册表，flow 限定名走工作流解析器 */
   function resolveTool(name: string): ResolvedTool | null {
     const builtin = ALL_TOOLS[name];
     if (builtin) return { tool: builtin, source: 'builtin' };
+    const flowRef = parseFlowToolName(name);
+    if (flowRef) {
+      const flowTool = deps.flowToolResolver?.(flowRef.workflowId) ?? null;
+      if (flowTool) return { tool: flowTool, source: 'flow' };
+      return null;
+    }
     const registry = deps.mcp;
     if (!registry) return null;
     const info = registry.getTools().find((tool) => tool.qualifiedName === name);

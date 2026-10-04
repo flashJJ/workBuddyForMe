@@ -94,36 +94,31 @@ describe('runFlow：自定义处理器与数据流转', () => {
 });
 
 describe('runFlow：失败路径', () => {
-  it('未注册的节点类型：node_failed + run_failed', async () => {
+  it('llm 节点缺少模型能力回调：node_failed + run_failed', async () => {
     const graph: FlowGraph = {
-      nodes: [n('start', 'start'), n('tool1', 'tool'), n('end', 'end')],
-      edges: [e('e1', 'start', 'tool1'), e('e2', 'tool1', 'end')],
+      nodes: [n('start', 'start'), n('llm1', 'llm', { user: 'hi' }), n('end', 'end')],
+      edges: [e('e1', 'start', 'llm1'), e('e2', 'llm1', 'end')],
     };
     const events = await collect(runFlow(compiledOf(graph), opts));
-    expect(events.map((x) => x.type)).toEqual([
-      'run_started',
-      'node_started',
-      'node_succeeded',
-      'node_started',
-      'node_failed',
-      'run_failed',
-    ]);
-    expect(events.at(-1)).toMatchObject({ type: 'run_failed', nodeId: 'tool1' });
+    expect(events.at(-2)).toMatchObject({ type: 'node_failed', nodeId: 'llm1' });
+    expect(events.at(-1)).toMatchObject({ type: 'run_failed', nodeId: 'llm1' });
   });
 
-  it('处理器抛错：失败事件带消息且不再继续', async () => {
+  it('处理器抛错：失败事件带消息且不再继续（自定义 llm 处理器）', async () => {
     const badHandler: FlowNodeHandler = {
-      type: 'tool',
+      type: 'llm',
       async run() {
         throw new Error('boom');
       },
     };
     const graph: FlowGraph = {
-      nodes: [n('start', 'start'), n('tool1', 'tool'), n('end', 'end')],
-      edges: [e('e1', 'start', 'tool1'), e('e2', 'tool1', 'end')],
+      nodes: [n('start', 'start'), n('llm1', 'llm', { user: 'hi' }), n('end', 'end')],
+      edges: [e('e1', 'start', 'llm1'), e('e2', 'llm1', 'end')],
     };
-    const events = await collect(runFlow(compiledOf(graph), { ...opts, handlers: { tool: badHandler } }));
-    expect(events.at(-2)).toMatchObject({ type: 'node_failed', nodeId: 'tool1', message: 'boom' });
+    const events = await collect(
+      runFlow(compiledOf(graph), { ...opts, handlers: { llm: badHandler } }),
+    );
+    expect(events.at(-2)).toMatchObject({ type: 'node_failed', nodeId: 'llm1', message: 'boom' });
     expect(events.at(-1)).toMatchObject({ type: 'run_failed', message: 'boom' });
   });
 

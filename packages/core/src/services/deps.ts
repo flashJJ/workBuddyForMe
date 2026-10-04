@@ -6,6 +6,7 @@ import type { PermissionService } from './permission-service';
 import type { PendingConfirmations } from './pending-confirmations';
 import type { TaskGrantRegistry } from './task-grants';
 import type { ToolBreaker } from '../tools/tool-breaker';
+import type { Tool } from '../tools/types';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
@@ -23,4 +24,9 @@ export interface ServiceDeps {
   breakers?: ToolBreaker;
   /** v0.7 M2：任务级批量授权（remember='task'，仅内存） */
   taskGrants?: TaskGrantRegistry;
+  /**
+   * v0.8 M1：flow 工具第三来源解析器（已发布工作流 → Tool）。
+   * 懒解析：仅在 resolveTool 遇到 flow:<id> 时调用，避免与 FlowRunService 的构造环。
+   */
+  flowToolResolver?: (workflowId: string) => Tool | null;
 }
