@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildFlowInputJsonSchema,
   buildFlowToolName,
   flowGraphSchema,
+  flowStartConfigSchema,
   isFlowToolName,
   parseFlowToolName,
   workflowCreateSchema,
@@ -47,6 +49,39 @@ describe('flow 图契约（v0.8）', () => {
     const wf = workflowCreateSchema.parse({ name: '研究助手' });
     expect(wf.description).toBe('');
     expect(workflowCreateSchema.safeParse({ name: '' }).success).toBe(false);
+  });
+});
+
+describe('start 节点入参契约', () => {
+  it('inputs 缺省为空数组', () => {
+    expect(flowStartConfigSchema.parse({}).inputs).toEqual([]);
+  });
+
+  it('入参字段转 function JSON Schema：类型映射 + 必填收集', () => {
+    const config = flowStartConfigSchema.parse({
+      inputs: [
+        { name: 'topic', type: 'string', required: true, description: '主题' },
+        { name: 'count', type: 'number', required: false, default: 3 },
+        { name: 'urgent', type: 'boolean', required: true },
+      ],
+    });
+    const schema = buildFlowInputJsonSchema(config.inputs);
+    expect(schema).toMatchObject({
+      type: 'object',
+      properties: {
+        topic: { type: 'string', description: '主题' },
+        count: { type: 'number' },
+        urgent: { type: 'boolean' },
+      },
+      required: ['topic', 'urgent'],
+      additionalProperties: false,
+    });
+  });
+
+  it('非法参数名被拒', () => {
+    expect(
+      flowStartConfigSchema.safeParse({ inputs: [{ name: '1bad', type: 'string' }] }).success,
+    ).toBe(false);
   });
 });
 

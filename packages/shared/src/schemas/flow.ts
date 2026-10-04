@@ -47,6 +47,31 @@ export const flowInputFieldSchema = z.object({
 });
 export type FlowInputField = z.infer<typeof flowInputFieldSchema>;
 
+/** start 节点 config：声明流程入参（发布为 flow 工具时据此生成 JSON Schema） */
+export const flowStartConfigSchema = z.object({
+  inputs: z.array(flowInputFieldSchema).max(20).default([]),
+});
+export type FlowStartConfig = z.infer<typeof flowStartConfigSchema>;
+
+/** 把 start 入参字段转为 OpenAI function-calling JSON Schema（flow 工具 parameters） */
+export function buildFlowInputJsonSchema(fields: FlowInputField[]): Record<string, unknown> {
+  const typeMap: Record<FlowInputValueType, string> = {
+    string: 'string',
+    number: 'number',
+    boolean: 'boolean',
+  };
+  const properties: Record<string, unknown> = {};
+  const required: string[] = [];
+  for (const field of fields) {
+    properties[field.name] = {
+      type: typeMap[field.type],
+      ...(field.description ? { description: field.description } : {}),
+    };
+    if (field.required && field.default === undefined) required.push(field.name);
+  }
+  return { type: 'object', properties, required, additionalProperties: false };
+}
+
 const positionSchema = z.object({
   x: z.number().finite(),
   y: z.number().finite(),

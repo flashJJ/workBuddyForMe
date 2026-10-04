@@ -137,7 +137,13 @@ interface FlowRunEventBase {
 /** SSE flow 事件载荷（判别联合；节点事件必带 nodeId） */
 export type FlowEventPayload =
   | (FlowRunEventBase & { type: 'run_started'; version: number; trigger: FlowTrigger })
-  | (FlowRunEventBase & { type: 'node_started'; nodeId: string; nodeType: string })
+  | (FlowRunEventBase & {
+      type: 'node_started';
+      nodeId: string;
+      nodeType: string;
+      /** 引用解析后的实际入参（试运行面板/落库用，M1 起携带） */
+      inputs?: unknown;
+    })
   | (FlowRunEventBase & {
       type: 'node_succeeded';
       nodeId: string;
