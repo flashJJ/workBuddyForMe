@@ -266,3 +266,24 @@ export {
   type SharedMessage,
   type SharedPart,
 } from './share/snapshot';
+
+// v0.8 Flow Studio 可视化工作流（M0：图编译 + 执行引擎骨架）
+export {
+  compileFlow,
+  runFlow,
+  resolveFlowRefs,
+  extractReferences,
+  RefResolutionError,
+  createDefaultHandlers,
+  startNodeHandler,
+  endNodeHandler,
+  type CompileResult,
+  type CompiledFlow,
+  type FlowScope,
+  type FlowExecutionContext,
+  type FlowNodeHandler,
+  type FlowHandlerRegistry,
+  type RunFlowOptions,
+  type StartNodeOutputs,
+  type EndNodeConfig,
+} from './flow';
