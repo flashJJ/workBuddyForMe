@@ -1,5 +1,7 @@
 import {
   initDatabase,
+  createWorkflowRepository,
+  createWorkflowRunRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
 import {
@@ -8,6 +10,7 @@ import {
   createChatOrchestrator,
   createConversationService,
   createDocumentService,
+  createFlowRunService,
   createIngestionPipeline,
   createKnowledgeService,
   createMcpRegistry,
@@ -28,6 +31,7 @@ import {
   type ChatOrchestrator,
   type ConversationService,
   type DocumentService,
+  type FlowRunService,
   type IngestionPipeline,
   type KnowledgeService,
   type McpRegistry,
@@ -35,6 +39,7 @@ import {
   type PendingConfirmations,
   type PermissionService,
   type SecretCipher,
+  type ServiceDeps,
   type SkillService,
   type TaskGrantRegistry,
   type TaskRunnerService,
@@ -72,6 +77,8 @@ export interface ServiceContainer {
   taskRunner: TaskRunnerService;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
   runtime: ToolRuntime;
+  /** v0.8 M1：工作流运行服务（试运行/落库；已发布流程经 runtime 第三来源解析） */
+  flowRunner: FlowRunService;
 }
 
 let container: ServiceContainer | null = null;
@@ -90,9 +97,27 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const skills = createSkillService({ db });
   const breakers = createToolBreaker();
   const taskGrants = createTaskGrantRegistry();
-  const deps = { db, cipher, mcp, permissions, confirmations, skills, breakers, taskGrants };
+  const deps: ServiceDeps = {
+    db,
+    cipher,
+    mcp,
+    permissions,
+    confirmations,
+    skills,
+    breakers,
+    taskGrants,
+  };
   const runtime = createToolRuntime(deps);
   const taskRunner = createTaskRunnerService(deps, runtime);
+  // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
+  // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
+  const flowRunner = createFlowRunService({
+    deps,
+    runtime,
+    workflows: createWorkflowRepository(db),
+    runs: createWorkflowRunRepository(db),
+  });
+  deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
   return {
     db,
     cipher,
@@ -104,6 +129,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     taskGrants,
     taskRunner,
     runtime,
+    flowRunner,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),
