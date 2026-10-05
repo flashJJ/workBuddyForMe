@@ -28,7 +28,8 @@ export interface JsonRpcErrorObject {
 
 export interface JsonRpcResponse {
   jsonrpc: '2.0';
-  id: JsonRpcId;
+  /** 解析失败/非法请求时按规范允许 null */
+  id: JsonRpcId | null;
   result?: unknown;
   error?: JsonRpcErrorObject;
 }

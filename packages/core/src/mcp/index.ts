@@ -35,3 +35,23 @@ export {
   type McpRegistryOptions,
 } from './registry';
 export { createMcpTool } from './mcp-tool';
+// v0.9 M3：Flow MCP Server（处理器/描述符/调用上下文）
+export {
+  handleMcpMessage,
+  McpInvalidParamsError,
+  type McpServerContext,
+  type McpCallResult,
+} from './server/mcp-server-core';
+export {
+  buildFlowMcpName,
+  describeFlowAsMcpTool,
+  ensureUniqueToolNames,
+  type McpToolDescriptor,
+} from './server/describe-tool';
+export {
+  createMcpFlowContext,
+  MCP_CALL_TIMEOUT_MS,
+  MCP_FLOW_SERVER_INFO,
+  type McpFlowContextDeps,
+} from './server/mcp-flow-context';
+export { runMcpStdio, type McpStdioOptions, type McpStdioHandle } from './server/stdio-adapter';

@@ -155,6 +155,8 @@ export function spawnStdioTransport(options: StdioTransportOptions): StdioTransp
     const message = decodeMessage(line);
     if (!message) return;
     if (isResponse(message)) {
+      // id=null（服务端解析失败帧）无法匹配挂起请求：客户端忽略即可
+      if (message.id === null) return;
       const entry = pending.get(message.id);
       if (entry) {
         pending.delete(message.id);

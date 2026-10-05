@@ -10,6 +10,7 @@ import {
   useFlowEndpointMutations,
   type FlowEndpointConfigInput,
 } from '@/lib/hooks/use-flow-endpoint';
+import { EndpointMcpHint } from './endpoint-mcp-hint';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -215,6 +216,8 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
                   />
                 </label>
               </div>
+
+              <EndpointMcpHint baseUrl={baseUrl} tokenRevealed={revealedKey} />
 
               <div className="rounded-md border p-2.5 text-[11px] leading-relaxed text-muted-foreground">
                 <p className="font-medium text-foreground">无人值守危险操作策略</p>
