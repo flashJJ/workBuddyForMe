@@ -18,8 +18,15 @@ import {
   AppWindow,
   ListTree,
   Rocket,
+  Workflow,
+  Minus,
 } from 'lucide-react';
-import type { ToolName, ToolTraceEntry, PermissionLevel } from '@wbfm/shared';
+import type {
+  ToolName,
+  ToolSubstep,
+  ToolTraceEntry,
+  PermissionLevel,
+} from '@wbfm/shared';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -39,15 +46,17 @@ const TOOL_META: Record<ToolName, { label: string; icon: typeof Clock }> = {
   app_launch: { label: '启动应用', icon: Rocket },
 };
 
-/** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>） */
+/** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>）；v0.8 flow:<id> 统一展示为工作流 */
 function metaOf(name: string): { label: string; icon: typeof Clock } {
+  if (name.startsWith('flow:')) return { label: '工作流', icon: Workflow };
   return TOOL_META[name as ToolName] ?? { label: name, icon: Wrench };
 }
 
-const SOURCE_LABELS: Record<string, string> = { builtin: '内置', unknown: '未知' };
+const SOURCE_LABELS: Record<string, string> = { builtin: '内置', unknown: '未知', flow: '流程' };
 const SOURCE_VARIANT: Record<string, 'default' | 'outline' | 'success' | 'warning' | 'danger'> = {
   builtin: 'default',
   unknown: 'outline',
+  flow: 'success',
 };
 const PERMISSION_LABELS: Record<PermissionLevel, string> = { read: '读', write: '写', danger: '危险' };
 const PERMISSION_VARIANT: Record<PermissionLevel, 'success' | 'warning' | 'danger'> = {
@@ -68,11 +77,33 @@ function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+function SubstepRow({ step }: { step: ToolSubstep }) {
+  return (
+    <li className="flex items-start gap-1.5 pl-5 leading-tight">
+      <SubstepIcon status={step.status} />
+      <span className="shrink-0 text-muted-foreground">{step.label}</span>
+      {step.detail && (
+        <span className="min-w-0 truncate text-muted-foreground/70" title={step.detail}>
+          {step.detail}
+        </span>
+      )}
+    </li>
+  );
+}
+
+function SubstepIcon({ status }: { status: ToolSubstep['status'] }) {
+  if (status === 'running') return <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin text-blue-500" />;
+  if (status === 'error') return <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />;
+  if (status === 'skipped') return <Minus className="mt-0.5 h-3 w-3 shrink-0 text-slate-400" />;
+  return <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-green-600" />;
+}
+
 function ToolRow({ entry }: { entry: ToolTraceEntry }) {
   const [open, setOpen] = React.useState(false);
   const { label, icon: Icon } = metaOf(entry.tool);
   const running = entry.status === 'running';
   const failed = entry.status === 'error';
+  const substeps = entry.substeps ?? [];
 
   return (
     <div
@@ -108,6 +139,17 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
           className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
         />
       </button>
+      {substeps.length > 0 && (
+        <ul
+          data-testid="tool-substeps"
+          className="space-y-1 border-t px-2.5 py-1.5"
+          aria-label={`${label}子步骤`}
+        >
+          {substeps.map((step) => (
+            <SubstepRow key={step.id} step={step} />
+          ))}
+        </ul>
+      )}
       {open && (
         <dl className="space-y-1 border-t px-2.5 py-2 text-muted-foreground">
           <div className="flex gap-2">

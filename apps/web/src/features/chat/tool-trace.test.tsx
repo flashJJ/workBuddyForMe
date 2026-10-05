@@ -47,3 +47,35 @@ describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
     expect(row.textContent).not.toContain('内置');
   });
 });
+
+describe('ToolTrace flow 子步骤（v0.8 M3）', () => {
+  const flowEntry: ToolTraceEntry = {
+    ...baseEntry,
+    callId: 'c2',
+    tool: 'flow:b0000002-0000-4000-8000-000000000002',
+    argsSummary: '',
+    source: 'flow',
+    substeps: [
+      { id: 'start', label: '开始', status: 'ok' },
+      { id: 'draft', label: '生成周报草稿', status: 'ok', detail: '周报草稿文本…' },
+      { id: 'review', label: '人工确认', status: 'running' },
+    ],
+  };
+
+  it('flow 工具显示「工作流」名 + 流程徽章 + 逐节点子步骤', () => {
+    render(<ToolTrace trace={[flowEntry]} />);
+    const row = screen.getByTestId('tool-trace-row');
+    expect(row.textContent).toContain('工作流');
+    expect(row.textContent).toContain('流程');
+    const substeps = screen.getByTestId('tool-substeps');
+    expect(substeps.textContent).toContain('开始');
+    expect(substeps.textContent).toContain('生成周报草稿');
+    expect(substeps.textContent).toContain('人工确认');
+    expect(substeps.textContent).toContain('周报草稿文本…');
+  });
+
+  it('无子步骤时不渲染子步骤列表', () => {
+    render(<ToolTrace trace={[baseEntry]} />);
+    expect(screen.queryByTestId('tool-substeps')).toBeNull();
+  });
+});
