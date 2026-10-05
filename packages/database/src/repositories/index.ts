@@ -103,5 +103,19 @@ export {
   type NodeExecutionRow,
   type WorkflowRunCreateFields,
   type RunFinishFields,
+  type RunListFilter,
+  type RecoverableRuns,
 } from './workflow-run-repo';
+export {
+  createNodeExecutionStore,
+  mapNodeExecution,
+  type NodeExecutionStore,
+} from './node-execution-repo';
+export {
+  createWorkflowEndpointRepository,
+  type WorkflowEndpointRepository,
+  type WorkflowEndpointRow,
+  type EndpointUpsertFields,
+  type EndpointConfigPatch,
+} from './workflow-endpoint-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

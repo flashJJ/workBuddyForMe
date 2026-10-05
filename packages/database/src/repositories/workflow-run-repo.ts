@@ -1,5 +1,4 @@
 import type {
-  FlowNodeExecStatus,
   FlowRunStatus,
   FlowTrigger,
   NodeExecutionView,
@@ -7,6 +6,7 @@ import type {
 } from '@wbfm/shared';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
+import { createNodeExecutionStore } from './node-execution-repo';
 
 export interface WorkflowRunRow {
   id: string;
@@ -22,6 +22,10 @@ export interface WorkflowRunRow {
   started_at: string | null;
   finished_at: string | null;
   created_at: string;
+  endpoint_id: string | null;
+  parent_run_id: string | null;
+  resumed_from_node: string | null;
+  interrupt_reason: string | null;
 }
 
 export interface NodeExecutionRow {
@@ -44,13 +48,36 @@ export interface WorkflowRunCreateFields {
   trigger?: FlowTrigger;
   input?: Record<string, unknown>;
   conversationId?: string | null;
+  /** v0.9：API/MCP 触发来源端点 */
+  endpointId?: string | null;
+  /** v0.9：重放关联 */
+  parentRunId?: string | null;
+  resumedFromNode?: string | null;
 }
 
-export type RunTerminalStatus = Extract<FlowRunStatus, 'succeeded' | 'failed' | 'cancelled'>;
+export type RunTerminalStatus = Extract<
+  FlowRunStatus,
+  'succeeded' | 'failed' | 'cancelled' | 'interrupted'
+>;
 
 export interface RunFinishFields {
   output?: unknown;
   error?: { code: string; message: string; nodeId?: string };
+}
+
+export interface RunListFilter {
+  trigger?: FlowTrigger;
+  status?: FlowRunStatus;
+  endpointId?: string;
+  limit?: number;
+}
+
+/** v0.9：启动恢复扫描结果 */
+export interface RecoverableRuns {
+  /** queued 无执行者：重新入队的 runId */
+  queued: string[];
+  /** running/waiting_human 无执行者：需收敛 interrupted 的 runId */
+  interrupted: string[];
 }
 
 function parseJson<T>(raw: string | null, fallback: T): T {
@@ -77,26 +104,20 @@ function mapRun(row: WorkflowRunRow): WorkflowRunView {
     startedAt: row.started_at,
     finishedAt: row.finished_at,
     createdAt: row.created_at,
-  };
-}
-
-function mapNode(row: NodeExecutionRow): NodeExecutionView {
-  return {
-    id: row.id,
-    runId: row.run_id,
-    nodeId: row.node_id,
-    status: row.status as FlowNodeExecStatus,
-    inputs: parseJson<unknown>(row.inputs_json, null),
-    outputs: parseJson<unknown>(row.outputs_json, null),
-    error: row.error_json,
-    startedAt: row.started_at,
-    finishedAt: row.finished_at,
-    durationMs: row.duration_ms,
+    endpointId: row.endpoint_id,
+    parentRunId: row.parent_run_id,
+    resumedFromNode: row.resumed_from_node,
+    interruptReason: row.interrupt_reason,
   };
 }
 
 export function createWorkflowRunRepository(db: DatabaseInstance) {
+  const nodeStore = createNodeExecutionStore(db);
+
   return {
+    /* ---------------- 节点执行（组合自 node-execution-repo） ---------------- */
+    ...nodeStore,
+
     /* ---------------- runs ---------------- */
 
     createRun(fields: WorkflowRunCreateFields): WorkflowRunView {
@@ -105,10 +126,12 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO workflow_runs
            (id, workflow_id, version, trigger, status, input_json, output_json, error_json,
-            conversation_id, wait_node_id, started_at, finished_at, created_at)
+            conversation_id, wait_node_id, started_at, finished_at, created_at,
+            endpoint_id, parent_run_id, resumed_from_node, interrupt_reason)
          VALUES
            (@id, @workflowId, @version, @trigger, 'queued', @inputJson, NULL, NULL,
-            @conversationId, NULL, NULL, NULL, @ts)`,
+            @conversationId, NULL, NULL, NULL, @ts,
+            @endpointId, @parentRunId, @resumedFromNode, NULL)`,
       ).run({
         id,
         workflowId: fields.workflowId,
@@ -116,6 +139,9 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
         trigger: fields.trigger ?? 'manual',
         inputJson: fields.input === undefined ? null : JSON.stringify(fields.input),
         conversationId: fields.conversationId ?? null,
+        endpointId: fields.endpointId ?? null,
+        parentRunId: fields.parentRunId ?? null,
+        resumedFromNode: fields.resumedFromNode ?? null,
         ts,
       });
       return mapRun(this.getRunRow(id)!);
@@ -141,6 +167,30 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return rows.map(mapRun);
     },
 
+    /** v0.9：跨工作流运行记录（运行中心筛选）；至少一个过滤项或显式 limit */
+    listRuns(filter: RunListFilter = {}): WorkflowRunView[] {
+      const where: string[] = [];
+      const params: Record<string, unknown> = {};
+      if (filter.trigger) {
+        where.push('trigger = @trigger');
+        params.trigger = filter.trigger;
+      }
+      if (filter.status) {
+        where.push('status = @status');
+        params.status = filter.status;
+      }
+      if (filter.endpointId) {
+        where.push('endpoint_id = @endpointId');
+        params.endpointId = filter.endpointId;
+      }
+      const clause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+      const limit = Math.min(filter.limit ?? 100, 200);
+      const rows = db
+        .prepare(`SELECT * FROM workflow_runs ${clause} ORDER BY created_at DESC LIMIT ${limit}`)
+        .all(params) as WorkflowRunRow[];
+      return rows.map(mapRun);
+    },
+
     /** 最近一次进入终态的运行完成时间（列表卡片用；无运行记录为 null） */
     getLatestFinishedAt(workflowId: string): string | null {
       const row = db
@@ -153,7 +203,22 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return row?.finished_at ?? null;
     },
 
-    /** queued → running，写 started_at */
+    /**
+     * v0.9：队列原子认领——仅当 run 仍为 queued 时置 running。
+     * 返回 true 表示当前调用者抢到执行权（防内存信号重复/多 tick 双跑）。
+     */
+    claimQueued(id: string): boolean {
+      const ts = nowIso();
+      const result = db
+        .prepare(
+          `UPDATE workflow_runs SET status = 'running', started_at = COALESCE(started_at, @ts)
+           WHERE id = @id AND status = 'queued'`,
+        )
+        .run({ id, ts });
+      return result.changes === 1;
+    },
+
+    /** queued → running，写 started_at（兼容非队列路径；新代码优先 claimQueued） */
     startRun(id: string): WorkflowRunView | null {
       if (!this.getRunRow(id)) return null;
       db.prepare(
@@ -173,11 +238,27 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return mapRun(this.getRunRow(id)!);
     },
 
-    /** 终态推进：succeeded/failed/cancelled，写 finished_at 与输出/错误 */
-    finishRun(id: string, status: RunTerminalStatus, fields: RunFinishFields = {}): WorkflowRunView | null {
+    /** v0.9：进程重启时把在途运行收敛为 interrupted（终态）；非在途状态返回 null */
+    markInterrupted(id: string, reason: string): WorkflowRunView | null {
+      const result = db
+        .prepare(
+          `UPDATE workflow_runs
+           SET status = 'interrupted', interrupt_reason = @reason,
+               finished_at = COALESCE(finished_at, @ts)
+           WHERE id = @id AND status IN ('running', 'waiting_human')`,
+        )
+        .run({ id, reason, ts: nowIso() });
+      return result.changes === 0 ? null : mapRun(this.getRunRow(id)!);
+    },
+
+    /** 终态推进：succeeded/failed/cancelled/interrupted，写 finished_at 与输出/错误 */
+    finishRun(
+      id: string,
+      status: RunTerminalStatus,
+      fields: RunFinishFields = {},
+    ): WorkflowRunView | null {
       if (!this.getRunRow(id)) return null;
-      const errorJson =
-        fields.error === undefined ? null : JSON.stringify(fields.error);
+      const errorJson = fields.error === undefined ? null : JSON.stringify(fields.error);
       db.prepare(
         `UPDATE workflow_runs
          SET status = @status,
@@ -195,78 +276,21 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return mapRun(this.getRunRow(id)!);
     },
 
-    /* ---------------- node executions ---------------- */
-
-    /** 节点开始：running + started_at + 解析后入参 */
-    addNodeExecution(
-      runId: string,
-      nodeId: string,
-      inputs?: unknown,
-    ): NodeExecutionView {
-      const id = newId();
-      const ts = nowIso();
-      db.prepare(
-        `INSERT INTO node_executions
-           (id, run_id, node_id, status, inputs_json, outputs_json, error_json,
-            started_at, finished_at, duration_ms)
-         VALUES
-           (@id, @runId, @nodeId, 'running', @inputsJson, NULL, NULL, @ts, NULL, 0)`,
-      ).run({
-        id,
-        runId,
-        nodeId,
-        inputsJson: inputs === undefined ? null : JSON.stringify(inputs),
-        ts,
-      });
-      return mapNode(this.getNodeRow(id)!);
-    },
-
-    getNodeRow(id: string): NodeExecutionRow | null {
-      return (
-        (db.prepare('SELECT * FROM node_executions WHERE id = ?').get(id) as
-          | NodeExecutionRow
-          | undefined) ?? null
-      );
-    },
-
-    /**
-     * 节点终态：succeeded/failed/skipped，写 finished_at 并按 started_at 计算耗时；
-     * skipped 允许没有 started_at（分支剪枝），耗时记 0。
-     */
-    finishNodeExecution(
-      nodeExecutionId: string,
-      status: Extract<FlowNodeExecStatus, 'succeeded' | 'failed' | 'skipped'>,
-      fields: { outputs?: unknown; error?: string } = {},
-    ): NodeExecutionView | null {
-      const row = this.getNodeRow(nodeExecutionId);
-      if (!row) return null;
-      const ts = nowIso();
-      const durationMs = row.started_at
-        ? Math.max(0, Date.parse(ts) - Date.parse(row.started_at))
-        : 0;
-      db.prepare(
-        `UPDATE node_executions
-         SET status = @status, outputs_json = @outputsJson, error_json = @error,
-             finished_at = @ts, duration_ms = @durationMs
-         WHERE id = @id`,
-      ).run({
-        status,
-        outputsJson: fields.outputs === undefined ? row.outputs_json : JSON.stringify(fields.outputs),
-        error: fields.error ?? '',
-        ts,
-        durationMs,
-        id: nodeExecutionId,
-      });
-      return mapNode(this.getNodeRow(nodeExecutionId)!);
-    },
-
-    listNodeExecutions(runId: string): NodeExecutionView[] {
+    /** v0.9：启动恢复扫描；activeIds 为当前进程内存里仍有执行者的 run（不收敛） */
+    findRecoverableRuns(activeIds: ReadonlySet<string>): RecoverableRuns {
       const rows = db
-        .prepare('SELECT * FROM node_executions WHERE run_id = ? ORDER BY started_at ASC, rowid ASC')
-        .all(runId) as NodeExecutionRow[];
-      return rows.map(mapNode);
+        .prepare(`SELECT id, status FROM workflow_runs WHERE status IN ('queued','running','waiting_human')`)
+        .all() as { id: string; status: string }[];
+      const result: RecoverableRuns = { queued: [], interrupted: [] };
+      for (const row of rows) {
+        if (activeIds.has(row.id)) continue;
+        if (row.status === 'queued') result.queued.push(row.id);
+        else result.interrupted.push(row.id);
+      }
+      return result;
     },
   };
 }
 
 export type WorkflowRunRepository = ReturnType<typeof createWorkflowRunRepository>;
+export type { NodeExecutionView };

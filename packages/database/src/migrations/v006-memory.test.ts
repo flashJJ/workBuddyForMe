@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -30,8 +30,8 @@ describe('v006 迁移：长期记忆（assistants.memory_enabled + memories）',
   it('v5 老库升级：老助手默认开启记忆，memories 表可写', () => {
     const db = createV5Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([6, 7, 8, 9, 10, 11, 12]);
-    expect(LATEST_SCHEMA_VERSION).toBe(12);
+    expect(result.applied).toEqual([6, 7, 8, 9, 10, 11, 12, 13]);
+    expect(LATEST_SCHEMA_VERSION).toBe(13);
 
     const assistant = db
       .prepare(`SELECT memory_enabled FROM assistants WHERE id='a1'`)

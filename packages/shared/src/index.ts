@@ -198,14 +198,27 @@ export {
   type FlowRunCreateInput,
   type FlowHumanSubmitInput,
 } from './schemas/flow';
+// v0.9 Flow Serving 契约（端点/无人值守策略）
+export {
+  FLOW_ENDPOINT_SYNC_TIMEOUT,
+  FLOW_ENDPOINT_RATE_LIMIT,
+  FLOW_DESKTOP_CONTROL_TOOLS,
+  flowUnattendedPolicySchema,
+  flowEndpointUpsertSchema,
+  flowEndpointStatusSchema,
+  type FlowEndpointUpsertInput,
+} from './schemas/flow-serving';
 export {
   FLOW_STATUSES,
   FLOW_RUN_STATUSES,
   FLOW_RUN_TERMINAL_STATUSES,
+  FLOW_RUN_RESUMABLE_STATUSES,
   FLOW_NODE_EXEC_STATUSES,
   FLOW_TRIGGERS,
   FLOW_DIAGNOSTIC_SEVERITIES,
   FLOW_EVENT_TYPES,
+  FLOW_ENDPOINT_STATUSES,
+  FLOW_UNATTENDED_POLICY_MODES,
   type FlowStatus,
   type FlowRunStatus,
   type FlowNodeExecStatus,
@@ -218,6 +231,11 @@ export {
   type FlowDiagnostic,
   type FlowEventType,
   type FlowEventPayload,
+  type FlowEndpointStatus,
+  type FlowUnattendedPolicyMode,
+  type FlowUnattendedPolicy,
+  type WorkflowEndpointView,
+  type WorkflowEndpointSecretView,
 } from './types/flow';
 
 // v0.6 M2：工具权限分级（HITL）

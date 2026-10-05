@@ -224,6 +224,16 @@ export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool
 // v0.6 MCP（Model Context Protocol）
 export * from './mcp';
 
+// v0.9 Flow Serving（本地 API/MCP 端点）
+export {
+  ENDPOINT_KEY_PREFIX,
+  generateEndpointKey,
+  hashEndpointKey,
+  endpointKeyPreview,
+  verifyEndpointKey,
+  type GeneratedEndpointKey,
+} from './serving/endpoint-keys';
+
 // v0.6 M3 本地技能包
 export { loadSkillsFromDisk } from './skills/loader';
 export {
