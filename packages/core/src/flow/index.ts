@@ -57,8 +57,15 @@ export {
   type FlowRunService,
   type FlowRunServiceDeps,
   type CreateRunParams,
-  type StartedFlow,
 } from './run-service';
+export { createFlowEventBus, isTerminalFlowEvent, type FlowEventBus } from './queue/event-bus';
+export { createFlowRunQueue, type FlowRunQueue } from './queue/run-queue';
+export {
+  recoverInterruptedRuns,
+  RECOVERY_REASON_PROCESS_RESTART,
+  type RecoveryResult,
+} from './queue/recovery-scanner';
+export { createFlowExecutor, type FlowExecutor, type FlowExecutionParams } from './flow-execution';
 export type {
   CompiledFlow,
   SuccessorRef,

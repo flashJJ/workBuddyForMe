@@ -73,6 +73,20 @@ export const GET = defineRoute(({ request, params, services }) => {
                 ...(run.error?.nodeId ? { nodeId: run.error.nodeId } : {}),
               }),
             );
+          } else if (run.status === 'interrupted') {
+            // v0.9：进程重启中断的在途运行（事件协议无 interrupted，回放为失败并带原因）
+            enqueue(
+              controller,
+              formatSse('flow', {
+                type: 'run_failed',
+                runId: id,
+                workflowId: run.workflowId,
+                message:
+                  run.interruptReason === 'process_restart'
+                    ? '服务重启导致运行中断，可从运行记录重跑'
+                    : '运行中断',
+              }),
+            );
           } else {
             enqueue(
               controller,
@@ -91,12 +105,16 @@ export const GET = defineRoute(({ request, params, services }) => {
     return new Response(stream, { headers: SSE_HEADERS });
   }
 
-  // queued：启动执行，逐事件转发；事件为裸 FlowEventPayload，统一包到 flow 事件名下
-  const started = services.flowRunner.startEvents(id, request.signal);
+  // v0.9：进行中运行只读订阅（执行由队列驱动，SSE 断开不再取消运行）。
+  // 订阅带缓冲补发：connect 前已产生的事件也会送达；request.signal 仅用于客户端断开时结束流。
+  const subscription = services.flowRunner.subscribeRunEvents(id, request.signal);
+  if (!subscription) {
+    return new Response('运行不存在', { status: 404 });
+  }
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const event of started.events) {
+        for await (const event of subscription) {
           enqueue(controller, formatSse('flow', event));
         }
       } catch {

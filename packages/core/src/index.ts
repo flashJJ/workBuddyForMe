@@ -284,7 +284,12 @@ export {
   type FlowRunService,
   type FlowRunServiceDeps,
   type CreateRunParams,
-  type StartedFlow,
+  createFlowEventBus,
+  createFlowRunQueue,
+  recoverInterruptedRuns,
+  type FlowEventBus,
+  type FlowRunQueue,
+  type RecoveryResult,
 } from './flow';
 export {
   STARTER_FLOWS,
