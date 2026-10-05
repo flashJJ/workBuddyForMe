@@ -83,6 +83,23 @@ export interface ServiceContainer {
 
 let container: ServiceContainer | null = null;
 
+/**
+ * dev 模式下 Next 按需编译/HMR 会重新求值本模块，模块级 container 会重置为 null，
+ * 导致 SSE 长连接持有旧 flowRunner（含人工等待器）而 POST 路由拿到新实例。
+ * 额外在 globalThis 上保留同一单例，使模块重载后仍复用原容器（生产模式无影响）。
+ */
+const globalHolder = globalThis as { __WBFM_SERVICE_CONTAINER__?: ServiceContainer };
+
+function readContainer(): ServiceContainer | null {
+  return container ?? globalHolder.__WBFM_SERVICE_CONTAINER__ ?? null;
+}
+
+function writeContainer(value: ServiceContainer | null): void {
+  container = value;
+  if (value) globalHolder.__WBFM_SERVICE_CONTAINER__ = value;
+  else delete globalHolder.__WBFM_SERVICE_CONTAINER__;
+}
+
 function resolveCipher(): SecretCipher {
   // Electron 可在启动前通过全局注入 safeStorage 桥接密码器（见 Task 30）
   const bridge = (globalThis as { __WBFM_CIPHER__?: SecretCipher }).__WBFM_CIPHER__;
@@ -171,23 +188,26 @@ function registerExitCleanup(registry: McpRegistry): void {
 
 /** 获取服务单例：首次访问时初始化文件数据库与全部业务服务 */
 export function getServices(): ServiceContainer {
-  if (container) return container;
-  container = build(initDatabase(), resolveCipher());
-  registerExitCleanup(container.mcp);
+  const existing = readContainer();
+  if (existing) return existing;
+  const created = build(initDatabase(), resolveCipher());
+  writeContainer(created);
+  registerExitCleanup(created.mcp);
   // 按仓储现状对齐 MCP 连接（异步，不阻塞首请求）
-  container.mcp.reconcile();
+  created.mcp.reconcile();
   // 技能包启动对齐：播种内置示例 + 扫盘登记（本地文件扫描，同步快速完成）
-  container.skills.reconcile();
-  return container;
+  created.skills.reconcile();
+  return created;
 }
 
 /** 仅供测试：替换/清空容器 */
 export function __setContainerForTest(value: ServiceContainer | null): void {
-  container = value;
+  writeContainer(value);
 }
 
 /** 仅供测试：基于内存/临时库快速装配 */
 export function __buildContainerForTest(db: DatabaseInstance, cipher: SecretCipher) {
-  container = build(db, cipher);
-  return container;
+  const created = build(db, cipher);
+  writeContainer(created);
+  return created;
 }

@@ -25,9 +25,9 @@ export function resolveChatTargetForModelId(
   modelId: string | null,
 ): ResolvedChatTarget {
   const effectiveModelId =
-    modelId ??
+    modelId ||
     createSettingsRepository(db).getJson<{ defaultChatModelId?: string | null }>(SETTINGS_KEY, {})
-      .defaultChatModelId ??
+      .defaultChatModelId ||
     null;
   if (!effectiveModelId) {
     throw new ApiError(
