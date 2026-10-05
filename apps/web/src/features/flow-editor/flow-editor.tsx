@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ReactFlowProvider,
   addEdge,
@@ -31,6 +32,7 @@ import { FlowCanvas } from './flow-canvas';
 import { ConfigPanel } from './config-panel';
 import { DiagnosticsBar } from './diagnostics-bar';
 import { RunInputDialog } from './run-input-dialog';
+import { EndpointDialog } from './endpoint-dialog';
 import { ExecutionPanel } from '../flow-execution/execution-panel';
 import { FlowStatusContext } from './flow-status-context';
 import {
@@ -63,8 +65,11 @@ function EditorInner({ flowId }: { flowId: string }) {
   const [viewport, setViewport] = React.useState<Viewport | undefined>();
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [diagnostics, setDiagnostics] = React.useState<FlowDiagnostic[] | null>(null);
-  const [runId, setRunId] = React.useState<string | null>(null);
+  // 支持 ?run=<runId> 深链（运行记录重放后跳转自动打开执行面板）
+  const searchParams = useSearchParams();
+  const [runId, setRunId] = React.useState<string | null>(searchParams.get('run'));
   const [runDialogOpen, setRunDialogOpen] = React.useState(false);
+  const [servingOpen, setServingOpen] = React.useState(false);
   const [lastRunInput, setLastRunInput] = React.useState<Record<string, unknown>>({});
   const live = useFlowRunEvents(runId);
   const centerRef = React.useRef<HTMLDivElement>(null);
@@ -225,6 +230,7 @@ function EditorInner({ flowId }: { flowId: string }) {
         onSave={save}
         onValidate={validate}
         onPublish={publish}
+        onServing={() => setServingOpen(true)}
         onRun={() => setRunDialogOpen(true)}
       />
       <div className="flex min-h-0 flex-1">
@@ -278,6 +284,12 @@ function EditorInner({ flowId }: { flowId: string }) {
         initial={lastRunInput}
         onSubmit={submitRun}
         onClose={() => setRunDialogOpen(false)}
+      />
+      <EndpointDialog
+        open={servingOpen}
+        workflowId={flowId}
+        published={data.workflow.status === 'published'}
+        onClose={() => setServingOpen(false)}
       />
     </div>
   );

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Pencil, Plus, Trash2, Workflow } from 'lucide-react';
+import { History, Pencil, Plus, Trash2, Workflow } from 'lucide-react';
 import type { FlowStatus, WorkflowView, WorkflowCreateInput } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,10 +68,18 @@ export function FlowsListPage() {
             把检索、判断、生成、工具、人工审核画成确定的流程图；发布后可在对话中作为工具调用。
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4" />
-          新建工作流
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/flows/runs">
+            <Button variant="outline">
+              <History className="h-4 w-4" />
+              运行记录
+            </Button>
+          </Link>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4" />
+            新建工作流
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-auto p-6">

@@ -253,7 +253,13 @@ async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
     mainWindow = null;
   });
 
-  if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // 开发态默认不自动开 DevTools：独立（detach）窗口在 Windows 上会与主窗口
+  // 竞争键盘焦点，偶发造成页面输入框「有光标但打不出字」（需重开窗口才恢复）。
+  // 需要时用菜单「视图 → 开发者工具」（Ctrl+Shift+I），或设 WBFM_DEVTOOLS=detach
+  // 恢复旧的启动自动弹出行为。
+  if (isDev && process.env.WBFM_DEVTOOLS === 'detach') {
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
+  }
 }
 
 // 退出时回收托管服务、密码桥与控制通道（含点击指示圈窗口）

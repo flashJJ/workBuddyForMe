@@ -13,6 +13,8 @@ export const FLOW_RUN_STATUSES = [
   'succeeded',
   'failed',
   'cancelled',
+  /** v0.9：进程重启时在途运行（running/waiting_human）无执行者，收敛为该终态 */
+  'interrupted',
 ] as const;
 export type FlowRunStatus = (typeof FLOW_RUN_STATUSES)[number];
 
@@ -21,6 +23,14 @@ export const FLOW_RUN_TERMINAL_STATUSES: ReadonlyArray<FlowRunStatus> = [
   'succeeded',
   'failed',
   'cancelled',
+  'interrupted',
+];
+
+/** 可重跑的终态（失败/取消/中断；成功运行也可手动再跑但走新建对话或 API） */
+export const FLOW_RUN_RESUMABLE_STATUSES: ReadonlyArray<FlowRunStatus> = [
+  'failed',
+  'cancelled',
+  'interrupted',
 ];
 
 export const FLOW_NODE_EXEC_STATUSES = [
@@ -83,6 +93,54 @@ export interface WorkflowRunView {
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
+  /** v0.9：API/MCP 触发来源端点 id（manual/chat 为 null） */
+  endpointId: string | null;
+  /** v0.9：重放运行关联的原始运行 id（整体/节点重跑时非空） */
+  parentRunId: string | null;
+  /** v0.9：从某节点重放时的起点节点 id（整体重跑为 null） */
+  resumedFromNode: string | null;
+  /** v0.9：中断原因（当前仅 process_restart） */
+  interruptReason: string | null;
+}
+
+/* ──────────────────────── v0.9 服务化（端点/策略） ──────────────────────── */
+
+export const FLOW_ENDPOINT_STATUSES = ['enabled', 'disabled'] as const;
+export type FlowEndpointStatus = (typeof FLOW_ENDPOINT_STATUSES)[number];
+
+/** 无人值守（API/MCP）触发下 write/danger 工具节点的授权策略 */
+export const FLOW_UNATTENDED_POLICY_MODES = ['deny_all', 'allowlist'] as const;
+export type FlowUnattendedPolicyMode = (typeof FLOW_UNATTENDED_POLICY_MODES)[number];
+
+export type FlowUnattendedPolicy =
+  | { mode: 'deny_all' }
+  | { mode: 'allowlist'; allowed: string[] };
+
+/** 工作流对外暴露端点（v1 一流程一端点） */
+export interface WorkflowEndpointView {
+  id: string;
+  workflowId: string;
+  /** 密钥可展示短头（明文不落库、不返回） */
+  keyPrefix: string;
+  httpEnabled: boolean;
+  mcpEnabled: boolean;
+  /** 同步调用等待上限（毫秒），超时转异步 */
+  syncTimeoutMs: number;
+  /** 每分钟每密钥调用上限 */
+  rateLimitPerMin: number;
+  policy: FlowUnattendedPolicy;
+  /** 新版本含危险操作节点时，调用前需重新确认策略 */
+  policyRevalidationRequired: boolean;
+  status: FlowEndpointStatus;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 端点创建/重置密钥时一次性返回的完整信息（明文密钥仅此一次出现） */
+export interface WorkflowEndpointSecretView extends WorkflowEndpointView {
+  /** 完整明文密钥，创建/重置时返回一次 */
+  key: string;
 }
 
 /** 单个节点的执行记录（试运行时间线数据源） */

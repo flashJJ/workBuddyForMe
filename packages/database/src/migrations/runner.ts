@@ -11,6 +11,7 @@ import { migrateV009 } from './v009-tool-permissions';
 import { migrateV010 } from './v010-skills-state';
 import { migrateV011 } from './v011-task-runs';
 import { migrateV012 } from './v012-flow-studio';
+import { migrateV013 } from './v013-flow-serving';
 
 interface Migration {
   version: number;
@@ -71,6 +72,11 @@ const MIGRATIONS: Migration[] = [
     version: 12,
     description: 'flow studio: workflows + workflow_versions + workflow_runs + node_executions',
     up: migrateV012,
+  },
+  {
+    version: 13,
+    description: 'flow serving: workflow_endpoints + workflow_runs 端点/重放/中断列',
+    up: migrateV013,
   },
 ];
 

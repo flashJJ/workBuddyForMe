@@ -1,11 +1,13 @@
 {
   "name": "@wbfm/web",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 3000",
-    "build": "next build",
+    "build": "next build && node scripts/build-mcp-server.mjs",
+    "mcp:build": "node scripts/build-mcp-server.mjs",
+    "mcp:stdio": "node .next/mcp-server/mcp-server.cjs",
     "start": "next start -H 127.0.0.1 -p 3000",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
@@ -59,3 +61,4 @@
     "vitest": "^3.2.7"
   }
 }
+

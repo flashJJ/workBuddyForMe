@@ -1,28 +1,32 @@
 import {
   ApiError,
+  FLOW_RUN_TERMINAL_STATUSES,
   type FlowEventPayload,
   type FlowHumanSubmitInput,
   type FlowTrigger,
   type ToolSubstep,
+  type WorkflowRunView,
 } from '@wbfm/shared';
-import type { WorkflowRepository, WorkflowRunRepository } from '@wbfm/database';
+import type {
+  WorkflowEndpointRepository,
+  WorkflowRepository,
+  WorkflowRunRepository,
+} from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { Tool } from '../tools/types';
 import { createRetrievalService } from '../retrieval/retrieval-service';
-import { executeToolCall } from '../tools/tool-executor';
-import { resolveChatTargetForModelId } from '../chat/model-resolver';
 import { compileFlow } from './compiler';
-import { runFlow } from './engine';
-import { createFlowRunStore } from './run-store';
-import { coerceHumanDecision, createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
+import { createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
 import { buildFlowTool } from './flow-tool';
-import { createSubstepCollector, flowNodeTitle } from './flow-substeps';
-
-export interface StartedFlow {
-  runId: string;
-  events: AsyncGenerator<FlowEventPayload>;
-}
+import { createSubstepQueue } from '../chat/substep-queue';
+import { createChatInvoker } from './chat-invoke';
+import { createFlowEventBus, isTerminalFlowEvent, type FlowEventBus } from './queue/event-bus';
+import { createFlowRunQueue } from './queue/run-queue';
+import { recoverInterruptedRuns } from './queue/recovery-scanner';
+import { waitForRunTerminal } from './queue/terminal-wait';
+import { createFlowExecutor, type FlowExecutor } from './flow-execution';
+import { resolveRunRuntimeOverrides, type RunRuntimeOverrides } from './run-options';
 
 interface ActiveEntry {
   abort: AbortController;
@@ -34,6 +38,8 @@ export interface FlowRunServiceDeps {
   workflows: WorkflowRepository;
   runs: WorkflowRunRepository;
   waiters?: FlowWaitRegistry;
+  /** v0.9：读取端点策略快照（api/mcp 运行门控）；内部路由/测试可不传 */
+  endpoints?: WorkflowEndpointRepository;
 }
 
 export interface CreateRunParams {
@@ -41,40 +47,56 @@ export interface CreateRunParams {
   input?: Record<string, unknown>;
   trigger?: FlowTrigger;
   conversationId?: string | null;
+  endpointId?: string | null;
+  /** v0.9 重放：关联原运行；resumedFromNode 存在时为祖先闭包节点重放，否则整体重跑 */
+  replay?: { parentRunId: string; resumedFromNode?: string };
 }
 
 export interface FlowRunService {
-  /**
-   * 仅登记一条 queued 运行（校验图 + 建记录），不执行。
-   * 供 POST /runs 使用；执行由随后的 startEvents（SSE 订阅）驱动。
-   */
+  /** 登记 queued 运行（校验图 + 建记录）；manual/api/mcp 自动入队，chat 由 invokeFromChat 直接执行 */
   createRun(params: CreateRunParams): string;
+  /** 显式入队（恢复扫描等内部场景；重复调用幂等） */
+  enqueueRun(runId: string): void;
   /**
-   * 按 runId 订阅并驱动执行：
-   * - queued 且未活跃：启动事件流（生命周期随调用方迭代结束）；
-   * - 活跃中：抛 409（同一运行只允许一个订阅）；
-   * - 已终态：抛 409（终态回放由调用方从仓储读取，不经过本方法）。
+   * 只读订阅运行事件（不影响执行生命周期）：
+   * 本进程有事件缓冲（进行中或刚终态）→ 返回生成器（先补历史再接实时）；
+   * 进程重启后的终态运行无缓冲 → 返回 null，调用方改从 node_executions 回放。
    */
-  startEvents(runId: string, clientSignal?: AbortSignal): StartedFlow;
+  subscribeRunEvents(runId: string, observerSignal?: AbortSignal):
+    | AsyncGenerator<FlowEventPayload>
+    | null;
+  /**
+   * 等待运行进入终态（公开 API 同步调用 / MCP tools/call 复用）：
+   * 纯等待者，不占用队列执行者，也不影响运行生命周期。
+   * 超时返回 timedOut（运行继续，调用方转异步语义）。
+   */
+  waitForTerminal(
+    runId: string,
+    timeoutMs: number,
+  ): Promise<{ timedOut: boolean; run: WorkflowRunView | null }>;
   submitHuman(runId: string, nodeId: string, body: FlowHumanSubmitInput): boolean;
   submitToolConfirmation(runId: string, nodeId: string, allowed: boolean): boolean;
   cancel(runId: string): boolean;
   isActive(runId: string): boolean;
   activeRunIds(): string[];
-  /** 第三工具来源：已发布流程 → flow:<id> 工具；未发布返回 null */
   resolveAsTool(workflowId: string): Tool | null;
-  /** 全部已发布流程对应的工具（对话装配时自动注入，不进 assistants 白名单表） */
   listPublishedTools(): Tool[];
 }
 
 const humanKey = (runId: string, nodeId: string) => `${runId}:human:${nodeId}`;
 const toolKey = (runId: string, nodeId: string) => `${runId}:tool:${nodeId}`;
+/** queued 补偿扫描周期：5 秒（本地应用，最长冷启动认领延迟上限） */
+const RESCUE_INTERVAL_MS = 5_000;
 
 export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunService {
   const { deps, runtime, workflows, runs } = serviceDeps;
+  const endpoints = serviceDeps.endpoints;
   const waiters = serviceDeps.waiters ?? createFlowWaitRegistry();
   const retrieval = createRetrievalService(deps);
   const active = new Map<string, ActiveEntry>();
+  const bus: FlowEventBus = createFlowEventBus();
+  /** 运行期附加参数（策略快照/重放闭包，见 run-options.ts），执行结束即删除 */
+  const runOverrides = new Map<string, RunRuntimeOverrides>();
 
   function loadCompiledGraph(workflowId: string, requirePublished: boolean) {
     const wf = workflows.getWorkflow(workflowId);
@@ -89,164 +111,131 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
       const detail = result.diagnostics.map((d) => `[${d.severity}] ${d.message}`).join('；');
       throw ApiError.validation(`工作流图校验未通过：${detail}`);
     }
-    return { wf, version: versionView.version, compiled: result.compiled, graph: versionView.graph };
+    return { version: versionView.version, compiled: result.compiled, graph: versionView.graph };
   }
+
+  const executor: FlowExecutor = createFlowExecutor({
+    deps,
+    runtime,
+    runs,
+    waiters,
+    retrieval,
+    active,
+  });
+
+  /** 队列执行体：认领后的 run → 编译 → 执行 → 事件发布到总线 */
+  async function runQueued(run: WorkflowRunView): Promise<void> {
+    const { compiled } = loadCompiledGraph(run.workflowId, run.trigger !== 'manual');
+    const overrides = runOverrides.get(run.id);
+    const generator = executor.execute(compiled, {
+      runId: run.id,
+      workflowId: run.workflowId,
+      version: run.version,
+      input: run.input ?? {},
+      trigger: run.trigger,
+      interactive: run.trigger === 'manual',
+      ...(overrides ?? {}),
+    });
+    try {
+      for await (const event of generator) bus.publish(run.id, event);
+    } finally {
+      runOverrides.delete(run.id);
+    }
+  }
+
+  const queue = createFlowRunQueue({
+    claim: (runId) => (runs.claimQueued(runId) ? runs.getRun(runId) : null),
+    execute: runQueued,
+    onError: (runId, error) => console.error(`[flow] run ${runId} 队列执行异常：`, error),
+  });
+
+  // 启动恢复：上一进程在途运行收敛 + queued 重新入队
+  const recovery = recoverInterruptedRuns(runs, new Set(active.keys()));
+  for (const runId of recovery.requeued) queue.enqueue(runId);
+
+  // 定时补偿：纯 setImmediate 边缘触发在极端时序（如 dev 冷编译窗口模块重载）
+  // 下可能丢失首个信号；周期把 DB 中仍是 queued 且本进程未在执行的 run 重新入队。
+  // claim 以 DB 原子更新兜底，补偿永远不会导致双跑。
+  const rescueTimer = setInterval(() => {
+    try {
+      for (const run of runs.listRuns({ status: 'queued', limit: 100 })) {
+        if (!queue.hasInFlight(run.id)) queue.enqueue(run.id);
+      }
+    } catch (error) {
+      console.error('[flow] queued 补偿扫描失败：', error);
+    }
+  }, RESCUE_INTERVAL_MS);
+  rescueTimer.unref?.();
 
   function createRun(params: CreateRunParams): string {
     const trigger = params.trigger ?? 'manual';
-    const { version } = loadCompiledGraph(params.workflowId, trigger === 'chat');
+    const { version, compiled } = loadCompiledGraph(params.workflowId, trigger === 'chat');
+    const overrides = resolveRunRuntimeOverrides({
+      trigger,
+      endpointId: params.endpointId,
+      replay: params.replay,
+      compiled,
+      endpoints,
+    });
+
     const run = runs.createRun({
       workflowId: params.workflowId,
       version,
       trigger,
       input: params.input ?? {},
       conversationId: params.conversationId ?? null,
+      endpointId: params.endpointId ?? null,
+      parentRunId: params.replay?.parentRunId ?? null,
+      resumedFromNode: params.replay?.resumedFromNode ?? null,
     });
+    runOverrides.set(run.id, overrides);
+    // chat 路径由 invokeFromChat 在调用协程内直接执行；其余触发器入队
+    if (trigger !== 'chat') queue.enqueue(run.id);
     return run.id;
   }
 
-  /** 核心：为已登记的运行创建执行事件流（调用方迭代驱动执行） */
-  function executeRun(
+  /** 订阅生成器：先同步补发缓冲，再接实时，终态事件后自动结束 */
+  async function* eventGenerator(
     runId: string,
-    opts: {
-      workflowId: string;
-      version: number;
-      input: Record<string, unknown>;
-      trigger: FlowTrigger;
-      interactive: boolean;
-      clientSignal?: AbortSignal;
-    },
+    catchup: FlowEventPayload[],
+    observerSignal?: AbortSignal,
   ): AsyncGenerator<FlowEventPayload> {
-    const { compiled } = loadCompiledGraph(opts.workflowId, opts.trigger === 'chat');
-    const abort = new AbortController();
-    const signal = opts.clientSignal
-      ? AbortSignal.any([opts.clientSignal, abort.signal])
-      : abort.signal;
-    active.set(runId, { abort });
-    runs.startRun(runId);
-
-    const toolContext = {
-      signal,
-      knowledgeBaseId: null as string | null,
-      visionCapable: false,
-      retrieve: (query: string, topK: number) =>
-        retrieval.retrieve({ knowledgeBaseId: '', query, topK }),
-    };
-
-    const inner = runFlow(compiled, {
-      workflowId: opts.workflowId,
-      version: opts.version,
-      runId,
-      input: opts.input,
-      trigger: opts.trigger,
-      interactive: opts.interactive,
-      signal,
-      context: {
-        resolveChatTarget: ({ modelId }) => resolveChatTargetForModelId(deps, modelId ?? null),
-        retrieve: (query, knowledgeBaseId, topK) =>
-          retrieval.retrieve({ knowledgeBaseId, query, topK }),
-        resolveTool: async (name) => runtime.resolveTool(name)?.tool ?? null,
-        executeTool: (tool, args) => executeToolCall(tool, args, toolContext),
-        checkToolAllowed: (toolName, permission) =>
-          Boolean(deps.permissions?.isAllowed(toolName, permission, 'all')) ||
-          Boolean(deps.taskGrants?.isGranted(toolName, runId)),
-        requestToolConfirmation: (req) =>
-          waiters
-            .request(toolKey(runId, req.nodeId), signal)
-            .then((payload) => {
-              const allowed = payload === true;
-              if (allowed) deps.taskGrants?.grant(req.toolName, runId);
-              return allowed;
-            }),
-        requestHuman: (nodeId) =>
-          waiters.request(humanKey(runId, nodeId), signal).then((payload) =>
-            coerceHumanDecision(payload),
-          ),
-      },
-    });
-
-    const store = createFlowRunStore(runs);
-    return (async function* () {
-      try {
-        for await (const event of inner) {
-          store.persist(event);
-          yield event;
+    const q = createSubstepQueue<FlowEventPayload>();
+    for (const event of catchup) q.push(event);
+    const unsubscribe = bus.subscribe(runId, (event) => q.push(event));
+    observerSignal?.addEventListener('abort', () => q.close(), { once: true });
+    try {
+      for (;;) {
+        const item = await q.next();
+        if (item.done) break;
+        yield item.value;
+        if (isTerminalFlowEvent(item.value)) {
+          q.close();
+          break;
         }
-      } finally {
-        active.delete(runId);
-        deps.taskGrants?.clear(runId);
       }
-    })();
+    } finally {
+      unsubscribe();
+    }
   }
 
-  function startEvents(runId: string, clientSignal?: AbortSignal): StartedFlow {
+  function subscribeRunEvents(runId: string, observerSignal?: AbortSignal) {
     const run = runs.getRun(runId);
     if (!run) throw ApiError.notFound('工作流运行', runId);
-    if (active.has(runId)) throw ApiError.conflict('运行事件流已被订阅，请勿重复打开');
-    if (run.status !== 'queued') {
-      throw ApiError.conflict(`运行已处于 ${run.status} 状态，请通过查询接口获取结果`);
-    }
-    const events = executeRun(runId, {
-      workflowId: run.workflowId,
-      version: run.version,
-      input: run.input ?? {},
-      trigger: run.trigger,
-      // M2：试运行（manual）交互；chat 触发不经 SSE（invokeFromChat 内部直接执行）
-      interactive: run.trigger === 'manual',
-      clientSignal,
-    });
-    return { runId, events };
+    const buffered = bus.snapshot(runId);
+    // 终态且本进程无缓冲（重启前的运行）→ 交调用方走落库回放
+    if (buffered === null && FLOW_RUN_TERMINAL_STATUSES.includes(run.status)) return null;
+    return eventGenerator(runId, buffered ?? [], observerSignal);
   }
 
-  /**
-   * 对话触发执行（非交互）：登记后直接消费完整事件流，收敛为最终输出或错误。
-   * 节点事件同步映射为工具子步骤（onSubstep 实时回调 + 随结果返回快照）。
-   */
-  async function invokeFromChat(
-    workflowId: string,
-    input: Record<string, unknown>,
-    onSubstep?: (substep: ToolSubstep) => void,
-  ): Promise<
-    | { ok: true; output: unknown; substeps: ToolSubstep[] }
-    | { ok: false; error: string; substeps: ToolSubstep[] }
-  > {
-    const trigger: FlowTrigger = 'chat';
-    const { version, graph } = loadCompiledGraph(workflowId, true);
-    const titleOf = (nodeId: string) => {
-      const node = graph.nodes.find((n) => n.id === nodeId);
-      return node ? flowNodeTitle(node) : nodeId;
-    };
-    const collector = createSubstepCollector(titleOf);
+  const invokeFromChat = createChatInvoker({
+    // 对话要求已发布；createRun 内部仍会再次校验
+    loadCompiledPublished: (workflowId) => loadCompiledGraph(workflowId, true),
+    createChatRun: ({ workflowId, input }) => createRun({ workflowId, input, trigger: 'chat' }),
+    executor,
+    bus,
+  });
 
-    const runId = createRun({ workflowId, input, trigger });
-    const events = executeRun(runId, {
-      workflowId,
-      version,
-      input: input ?? {},
-      trigger,
-      interactive: false,
-    });
-    for await (const event of events) {
-      const substep = collector.absorb(event);
-      if (substep) onSubstep?.(substep);
-      if (event.type === 'run_succeeded') {
-        return { ok: true, output: event.output, substeps: collector.list() };
-      }
-      if (event.type === 'run_failed') {
-        return { ok: false, error: event.message, substeps: collector.list() };
-      }
-      if (event.type === 'run_cancelled') {
-        return { ok: false, error: '工作流执行被中断', substeps: collector.list() };
-      }
-    }
-    return {
-      ok: false,
-      error: '工作流未产出结果（事件流意外结束）',
-      substeps: collector.list(),
-    };
-  }
-
-  /** 已发布流程 → flow 工具；未发布/无版本返回 null */
   function resolveAsTool(workflowId: string): Tool | null {
     const wf = workflows.getWorkflow(workflowId);
     if (!wf || wf.status !== 'published') return null;
@@ -257,7 +246,10 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
 
   return {
     createRun,
-    startEvents,
+    enqueueRun: (runId) => queue.enqueue(runId),
+    subscribeRunEvents,
+    waitForTerminal: (runId, timeoutMs) =>
+      waitForRunTerminal({ bus, getRun: runs.getRun.bind(runs) }, runId, timeoutMs),
     submitHuman(runId, nodeId, body) {
       const decision: FlowHumanSubmitInput = {
         nodeId: body.nodeId ?? nodeId,

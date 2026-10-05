@@ -51,10 +51,14 @@ export async function startManagedServer(options: StartServerOptions): Promise<M
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(bootstrapPath, renderCipherBootstrap(cipher), { mode: 0o600 });
 
+  // v0.9：MCP stdio bin 与内置 Node 路径（注入给 web 进程，供系统信息/UI 生成 spawn 命令行）
+  const nodeRuntime = resolveNodeRuntimePath(serverPath);
+  const mcpBinPath = path.join(path.dirname(serverPath), '..', '..', 'mcp-server', 'mcp-server.cjs');
+
   const child = doFork(serverPath, [], {
     // 优先用打包内置的真实 Node（与归集 node_modules 的原生模块同 ABI）；
     // Electron 默认以内置 Node 运行 fork 子进程，会导致 better-sqlite3 dlopen 失败
-    execPath: resolveNodeRuntimePath(serverPath) ?? undefined,
+    execPath: nodeRuntime ?? undefined,
     execArgv: ['--require', bootstrapPath],
     env: {
       ...process.env,
@@ -64,6 +68,8 @@ export async function startManagedServer(options: StartServerOptions): Promise<M
       WBFM_SERVER_MANAGED: '1',
       WBFM_TOKEN: token,
       WBFM_DATA_ROOT: resolveDataRoot(userDataDir),
+      ...(nodeRuntime ? { WBFM_MCP_NODE: nodeRuntime } : {}),
+      ...(fs.existsSync(mcpBinPath) ? { WBFM_MCP_BIN: mcpBinPath } : {}),
     },
     // Electron 环境下 fork 强制要求 stdio 含 'ipc'（ERR_CHILD_PROCESS_IPC_REQUIRED）
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],

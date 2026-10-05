@@ -84,6 +84,8 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
   let service: FlowRunService;
   let workflows: ReturnType<typeof createWorkflowRepository>;
   let runs: ReturnType<typeof createWorkflowRunRepository>;
+  let deps: ServiceDeps;
+  let runtime: ToolRuntime;
   const dangerTool: Tool = {
     name: 'danger_tool',
     description: '危险工具',
@@ -98,23 +100,27 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     db = createDatabase(':memory:');
     workflows = createWorkflowRepository(db);
     runs = createWorkflowRunRepository(db);
-    const deps: ServiceDeps = {
+    deps = {
       db,
       cipher: {} as SecretCipher,
       permissions: createPermissionService({ db, cipher: {} as SecretCipher }),
       taskGrants: createTaskGrantRegistry(),
     };
-    const runtime = {
+    runtime = {
       resolveTool: (name: string) =>
         name === 'danger_tool' ? { tool: dangerTool, source: 'builtin' } : null,
     } as unknown as ToolRuntime;
     service = createFlowRunService({ deps, runtime, workflows, runs });
   });
 
-  /** 试运行：先登记 queued，再订阅驱动（与 Web POST /runs + GET /events 同构） */
-  function startManual(workflowId: string) {
+  /** v0.9：createRun 即入队（队列驱动执行）；订阅返回只读事件生成器 */
+  function startManual(workflowId: string): {
+    runId: string;
+    events: NonNullable<ReturnType<FlowRunService['subscribeRunEvents']>>;
+  } {
     const runId = service.createRun({ workflowId, trigger: 'manual' });
-    return service.startEvents(runId);
+    const events = service.subscribeRunEvents(runId)!;
+    return { runId, events };
   }
 
   it('试运行 start→end：运行与节点记录落库，终态 succeeded', async () => {
@@ -222,14 +228,69 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     workflows.addVersion(wf.id, graphHuman());
     const { runId, events } = startManual(wf.id);
 
-    const iterator = events[Symbol.asyncIterator]();
-    const first = await iterator.next();
-    expect(first.value.type).toBe('run_started');
-    expect(service.cancel(runId)).toBe(true);
-    // 断线/abort 后挂起按拒绝处理，运行进入终态（cancelled 或 rejected 终态之一）
-    const rest = await drain(events);
-    const terminal = rest.at(-1);
-    expect(['run_cancelled', 'run_succeeded']).toContain(terminal?.type);
-    expect(['cancelled', 'succeeded']).toContain(runs.getRun(runId)?.status);
+    const seen: FlowEventPayload[] = [];
+    for await (const event of events) {
+      seen.push(event);
+      if (event.type === 'run_started') {
+        expect(service.cancel(runId)).toBe(true);
+      }
+    }
+    expect(seen.at(-1)?.type).toBe('run_cancelled');
+    expect(runs.getRun(runId)?.status).toBe('cancelled');
   });
+
+  it('v0.9 多观察者：两个订阅看到一致事件序列，订阅断开不影响执行', async () => {
+    const wf = workflows.createWorkflow({ name: '最简' });
+    workflows.addVersion(wf.id, graphStartEnd());
+    const runId = service.createRun({ workflowId: wf.id, trigger: 'manual' });
+
+    // 第一个订阅收到 run_started 后立即断开（return 结束生成器）
+    async function firstEvents(): Promise<FlowEventPayload['type'][]> {
+      const types: FlowEventPayload['type'][] = [];
+      for await (const event of service.subscribeRunEvents(runId)!) {
+        types.push(event.type);
+        if (types.length >= 1) return types; // 提前断开
+      }
+      return types;
+    }
+    const first = await firstEvents();
+    expect(first).toEqual(['run_started']);
+
+    // 第二个订阅仍可完整观察（缓冲补发 + 实时），运行终态 succeeded
+    const all = await drain(service.subscribeRunEvents(runId)!);
+    expect(all.at(-1)?.type).toBe('run_succeeded');
+    expect(runs.getRun(runId)?.status).toBe('succeeded');
+  });
+
+  it('v0.9 终态运行无缓冲时 subscribeRunEvents 返回 null（交路由落库回放）', async () => {
+    const wf = workflows.createWorkflow({ name: '最简' });
+    workflows.addVersion(wf.id, graphStartEnd());
+    await drain(startManual(wf.id).events);
+    // 模拟进程重启：新建 service（新总线无缓冲），终态运行订阅返回 null，在途行恢复
+    const second = createFlowRunService({ deps, runtime, workflows, runs });
+    const runId = runs.listRunsByWorkflow(wf.id, 1)[0]!.id;
+    expect(second.subscribeRunEvents(runId)).toBeNull();
+    expect(second.isActive(runId)).toBe(false);
+  });
+
+  it('v0.9 启动恢复：上一进程 running 行收敛 interrupted，queued 行自动续跑成功', async () => {
+    const done = workflows.createWorkflow({ name: '已完成图' });
+    workflows.addVersion(done.id, graphStartEnd());
+    // 模拟上一进程残留：一条 queued、一条 running（无 active 执行者）
+    const queuedId = runs.createRun({ workflowId: done.id, version: 1, trigger: 'manual' }).id;
+    const stuckId = runs.createRun({ workflowId: done.id, version: 1, trigger: 'manual' }).id;
+    runs.claimQueued(stuckId);
+    expect(runs.getRun(stuckId)?.status).toBe('running');
+
+    // 新服务构造时执行恢复扫描：stuck 收敛 interrupted，queued 重新入队续跑
+    const recovered = createFlowRunService({ deps, runtime, workflows, runs });
+    // 给 setImmediate 队列链一点时间跑完
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(runs.getRun(stuckId)?.status).toBe('interrupted');
+    expect(runs.getRun(stuckId)?.interruptReason).toBe('process_restart');
+    expect(runs.getRun(queuedId)?.status).toBe('succeeded');
+    expect(recovered.isActive(stuckId)).toBe(false);
+  });
+
 });

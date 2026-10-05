@@ -24,6 +24,17 @@ fs.mkdirSync(path.dirname(target), { recursive: true });
 console.log(`复制 standalone → ${path.relative(repoRoot, target)}`);
 fs.cpSync(standaloneDir, target, { recursive: true });
 
+// v0.9：MCP stdio bin（由 apps/web scripts/build-mcp-server.mjs 产出；
+// 外部 MCP 客户端 spawn 内置 node 运行它，复用同一份归集 node_modules 解决原生 ABI）
+const mcpBinFrom = path.join(webDir, '.next', 'mcp-server');
+const mcpBinTo = path.join(target, 'mcp-server');
+if (fs.existsSync(path.join(mcpBinFrom, 'mcp-server.cjs'))) {
+  fs.cpSync(mcpBinFrom, mcpBinTo, { recursive: true });
+  console.log('已归集 MCP stdio server → resources/server/mcp-server');
+} else {
+  console.warn('未找到 MCP stdio server 产物（.next/mcp-server/mcp-server.cjs），stdio 承载将不可用');
+}
+
 // 内置真实 Node 运行时：Electron fork 默认用 Electron 内置 Node（ABI 125），
 // 与归集进来的 node_modules（Node 24 / ABI 137 编译的 better-sqlite3）不匹配，
 // dlopen 直接失败。托管服务改用与构建同版本的真实 Node 启动，ABI 天然一致。

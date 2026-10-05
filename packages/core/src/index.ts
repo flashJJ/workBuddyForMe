@@ -224,6 +224,17 @@ export { runProviderTurn, type ProviderTurn, type TurnParams } from './chat/tool
 // v0.6 MCP（Model Context Protocol）
 export * from './mcp';
 
+// v0.9 Flow Serving（本地 API/MCP 端点）
+export { ENDPOINT_KEY_PREFIX, generateEndpointKey, hashEndpointKey, endpointKeyPreview, verifyEndpointKey, type GeneratedEndpointKey } from './serving/endpoint-keys';
+export { createRateLimiter, type RateLimiter, type RateLimitDecision } from './serving/rate-limiter';
+export { readFlowStartFields, validateFlowStartInput, StartInputValidationError } from './serving/start-input';
+export {
+  createEndpointService, PublicEndpointError, type EndpointService, type EndpointServiceDeps,
+  type EndpointConfigInput, type EndpointTransport, type PublicErrorCode, type UpsertEndpointResult,
+} from './serving/endpoint-service';
+export { scanFlowDangerNodes, type FlowDangerNode } from './serving/danger-scan';
+export { createFlowServingStack, type FlowServingStack, type FlowServingStackOptions } from './serving/create-serving-stack';
+
 // v0.6 M3 本地技能包
 export { loadSkillsFromDisk } from './skills/loader';
 export {
@@ -274,7 +285,12 @@ export {
   type FlowRunService,
   type FlowRunServiceDeps,
   type CreateRunParams,
-  type StartedFlow,
+  createFlowEventBus,
+  createFlowRunQueue,
+  recoverInterruptedRuns,
+  type FlowEventBus,
+  type FlowRunQueue,
+  type RecoveryResult,
 } from './flow';
 export {
   STARTER_FLOWS,

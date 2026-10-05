@@ -3,6 +3,7 @@ import { resolveFlowRefs } from './refs';
 import { createDefaultHandlers } from './handlers';
 import { toolNodeHandler, type ToolNodeConfig } from './handlers/tool';
 import { buildIncomingIndex, isNodeLive } from './engine-live';
+import { policyDenyText, type PolicyDecisionReason } from './policy-gate';
 import type {
   CompiledFlow,
   FlowExecutionContext,
@@ -12,7 +13,11 @@ import type {
   RunFlowOptions,
 } from './types';
 
-function deniedToolOutput(toolName: string, permission: string): Record<string, unknown> {
+function deniedToolOutput(toolName: string, permission: string, reason?: string): Record<string, unknown> {
+  // v0.9 无人值守拒绝时 reason 携带 policy_* 说明（节点记录即审计轨迹）
+  if (reason) {
+    return { ok: false, output: reason, summary: '无人值守策略拒绝' };
+  }
   return {
     ok: false,
     output: `工具 ${toolName} 未获得用户授权（权限级别：${permission}），已跳过执行。`,
@@ -63,6 +68,13 @@ export async function* runFlow(
       yield { type: 'node_failed', ...base, nodeId, message: '节点在编译产物中不存在' };
       yield { type: 'run_failed', ...base, nodeId, message: '节点在编译产物中不存在' };
       return;
+    }
+
+    // ── v0.9 重放：祖先闭包之外的节点不执行（补发 skipped 观测事件） ──
+    if (options.onlyNodeIds && !options.onlyNodeIds.has(nodeId)) {
+      state.set(nodeId, 'skipped');
+      yield { type: 'node_skipped', ...base, nodeId, reason: '不在本次重放的祖先闭包内' };
+      continue;
     }
 
     // ── 活性判断：未命中分支链上的节点直接 skipped ──
@@ -118,6 +130,11 @@ export async function* runFlow(
       }
 
       yield { type: 'node_succeeded', ...base, nodeId, outputs };
+      // v0.9 节点重放：目标节点执行完成即收尾（输出取目标节点，不要求连通到 end）
+      if (options.replayTargetId && nodeId === options.replayTargetId && node.type !== 'end') {
+        yield { type: 'run_succeeded', ...base, output: outputs.output ?? outputs ?? null };
+        return;
+      }
       if (node.type === 'end') {
         // 首个成功 end 收尾：其余未访问且不再导通的节点补发 skipped（观测完整性）
         for (const restId of compiled.order.slice(compiled.order.indexOf(nodeId) + 1)) {
@@ -205,24 +222,33 @@ async function* runToolNodeWithGate(
 
   const permission = tool.permission ?? 'read';
   let allowed = true;
+  let denyReason: string | undefined;
+  const unattended = ctx.trigger === 'api' || ctx.trigger === 'mcp';
   if (permission !== 'read') {
-    allowed = (await ctx.checkToolAllowed?.(toolName, permission)) ?? false;
-    if (!allowed) {
-      // 同样遵循「先注册等待 → 发事件 → await」时序
-      const pending =
-        ctx.interactive && ctx.requestToolConfirmation
-          ? ctx.requestToolConfirmation({
-              nodeId,
-              toolName,
-              permission,
-              argsSummary: JSON.stringify(toolConfig.args ?? {}).slice(0, 200),
-            })
-          : null;
-      yield { type: 'node_waiting_human', ...base, nodeId };
-      allowed = pending ? await pending : false;
+    if (unattended && ctx.evaluateUnattended) {
+      // v0.9 无人值守：端点策略快照裁决，永不挂起等待人工
+      const decision = ctx.evaluateUnattended(toolName, permission);
+      allowed = decision.allowed;
+      if (!allowed) denyReason = policyDenyText(decision.reason as PolicyDecisionReason, toolName);
+    } else {
+      allowed = (await ctx.checkToolAllowed?.(toolName, permission)) ?? false;
+      if (!allowed) {
+        // 同样遵循「先注册等待 → 发事件 → await」时序
+        const pending =
+          ctx.interactive && ctx.requestToolConfirmation
+            ? ctx.requestToolConfirmation({
+                nodeId,
+                toolName,
+                permission,
+                argsSummary: JSON.stringify(toolConfig.args ?? {}).slice(0, 200),
+              })
+            : null;
+        yield { type: 'node_waiting_human', ...base, nodeId };
+        allowed = pending ? await pending : false;
+      }
     }
   }
-  if (!allowed) return deniedToolOutput(toolName, permission);
+  if (!allowed) return deniedToolOutput(toolName, permission, denyReason);
 
   const result = await toolNodeHandler.run(
     config as unknown as ToolNodeConfig,
