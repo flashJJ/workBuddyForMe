@@ -2,12 +2,13 @@
 
 类 WorkBuddy 的**私人 AI 平台**：本地优先的多模型 AI 工作台，基于 Next.js 全栈 + Electron，提供多会话流式对话、知识库 RAG 问答、可视化工作流编排 Flow Studio、桌面 Agent 任务、智能体助手预设与统一的供应商管理。数据完全保留在本机 SQLite 中。
 
-> 状态：v0.8.0｜平台：Windows（Web 模式跨平台）
+> 状态：v0.9.0｜平台：Windows（Web 模式跨平台）
 
 ## 功能
 
 - **多会话 AI 对话**：SSE 流式输出、Markdown/代码高亮、中途停止、错误友好提示；工具调用（HITL 授权/熔断/超时门控）全程可观测。
 - **Flow Studio 工作流（v0.8）**：在 `/flows` 画布上把知识检索、条件分支、大模型、工具、人工确认画成确定的 DAG；逐节点试运行调试，发布后以 `flow:<id>` 工具回到普通对话中被助手调用，对话卡片展示节点级子步骤。
+- **Flow Serving 本地 API/MCP（v0.9）**：已发布流程可在编辑器「对外服务」中一键暴露——独立端点密钥（sha256 存储、可轮换/吊销）、本机 HTTP API（同步/异步 invoke、轮询、只读 SSE）、每密钥限流与环回 Host 防护；同时提供 **MCP Server**（streamable HTTP 与 stdio 双承载），任何 MCP 客户端（含应用自身「设置 → MCP 服务器」）都能发现并调用流程。无人值守触发按端点策略门控（默认拒绝写入/高危操作，桌面控制类永久禁止），运行与连接解耦（杀进程重启自动恢复），并提供运行记录中心与失败节点重放。
 - **桌面 Agent 任务**：给助手一个桌面目标，观察屏幕 → 决策 → 执行的任务循环，逐步授权与急停。
 - **知识库 RAG**：txt/md/pdf/docx 文档上传、自动分片向量化（sqlite-vec）、带引用来源的问答。
 - **技能与 MCP**：文件夹式技能包（提示词 + 工具白名单），MCP stdio 服务器工具接入。
@@ -43,6 +44,33 @@ pnpm dev:desktop
 ```
 
 首次使用：打开「设置 → 供应商」添加 OpenAI 兼容供应商（baseURL / API Key）与模型，再回到「对话」开始使用。没有真实模型服务时，可给 Web 进程设置 `WBFM_MOCK_AI=1` 启用内置 Mock 供应商（模型 `mock-chat` / `mock-embed`，支持伪语义检索），完整体验对话与 RAG 流程。
+
+### 把流程暴露给外部程序（v0.9）
+
+在已发布流程的编辑器中点「对外服务」开启本地 API/MCP，密钥仅在创建/重置时展示一次：
+
+```powershell
+# 同步调用（超时自动返回 202 转异步，响应头 X-WBFM-Async=1）
+curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<密钥>/invoke" `
+  -H "Authorization: Bearer <密钥>" -H "Content-Type: application/json" -d '{}'
+
+# 异步 + 轮询
+curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<密钥>/invoke?mode=async" `
+  -H "Authorization: Bearer <密钥>" -H "Content-Type: application/json" -d '{}'
+curl.exe "http://127.0.0.1:3000/api/public/flows/<密钥>/runs/<runId>" `
+  -H "Authorization: Bearer <密钥>"
+```
+
+MCP 接入（Claude Desktop 等支持 MCP 的客户端，或本应用「设置 → MCP 服务器」自举）：
+
+```json
+{
+  "url": "http://127.0.0.1:3000/api/public/mcp",
+  "headers": { "Authorization": "Bearer <端点密钥>" }
+}
+```
+
+stdio 承载在桌面安装版中可用（端点对话框生成含内置 node 路径与 `WBFM_MCP_TOKEN` 的 spawn 配置）。公开 API 仅绑定 127.0.0.1、不接受 Cookie、无 CORS 放行；写入/高危工具默认拒绝，需在端点策略中逐项加入白名单（鼠标/键盘/窗口类桌面工具在任何策略下都禁止 API/MCP 调用）。
 
 ## 构建与发布
 
