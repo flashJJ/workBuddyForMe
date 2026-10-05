@@ -89,6 +89,14 @@ export interface FlowExecutionContext {
   activeTool?: Tool;
   /** 同步/快速检查是否已有授权记忆（all / 本运行级 grant） */
   checkToolAllowed?(toolName: string, permission: PermissionLevel): boolean | Promise<boolean>;
+  /**
+   * v0.9 无人值守门控（trigger=api/mcp 时引擎优先使用，跳过 HITL 链）：
+   * 返回 allow/deny + 原因；read 工具不会进入该回调。
+   */
+  evaluateUnattended?(
+    toolName: string,
+    permission: PermissionLevel,
+  ): { allowed: boolean; reason: string };
   /** 交互式工具授权（挂起等待；非交互环境直接返回 false） */
   requestToolConfirmation?(req: FlowToolConfirmationRequest): Promise<boolean>;
   /** 人工节点挂起等待（非交互环境返回 approved:false） */
@@ -121,6 +129,13 @@ export interface RunFlowOptions {
   handlers?: FlowHandlerRegistry;
   /** 执行上下文（M1 起由 run-service 提供完整能力回调） */
   context?: Partial<Omit<FlowExecutionContext, 'input' | 'scope' | 'trigger' | 'interactive'>>;
+  /**
+   * v0.9 重放：仅执行该集合内节点（目标节点的祖先闭包），其余发 skipped；
+   * 与 replayTargetId 配合，跑到目标节点即收尾。
+   */
+  onlyNodeIds?: ReadonlySet<string>;
+  /** v0.9 节点重放：该节点执行完成后直接 run_succeeded（整体重跑不传） */
+  replayTargetId?: string;
   signal?: AbortSignal;
 }
 

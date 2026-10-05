@@ -3,7 +3,13 @@
 import * as React from 'react';
 import { Copy, KeyRound, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/common/toast';
-import { FLOW_ENDPOINT_RATE_LIMIT, FLOW_ENDPOINT_SYNC_TIMEOUT } from '@wbfm/shared';
+import {
+  FLOW_DESKTOP_CONTROL_TOOLS,
+  FLOW_ENDPOINT_RATE_LIMIT,
+  FLOW_ENDPOINT_SYNC_TIMEOUT,
+  type FlowUnattendedPolicy,
+} from '@wbfm/shared';
+// FLOW_DESKTOP_CONTROL_TOOLS 在保存时用于过滤白名单；策略编辑 UI 在 EndpointPolicySection
 import { ApiClientError } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';
 import {
@@ -12,6 +18,7 @@ import {
   type FlowEndpointConfigInput,
 } from '@/lib/hooks/use-flow-endpoint';
 import { EndpointMcpHint } from './endpoint-mcp-hint';
+import { EndpointPolicySection } from './endpoint-policy-section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -46,6 +53,8 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
   /** 创建/重置当次返回的明文密钥（不落任何持久存储） */
   const [revealedKey, setRevealedKey] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+  /** 无人值守策略（默认 deny_all；allowlist 仅允许勾选当前图中的危险工具） */
+  const [policy, setPolicy] = React.useState<FlowUnattendedPolicy>({ mode: 'deny_all' });
   /** 重置密钥二次确认（内联，避免 Electron 下 window.confirm 抢走键盘焦点） */
   const [confirmingRotate, setConfirmingRotate] = React.useState(false);
 
@@ -61,6 +70,7 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
     setRateLimit(ep?.rateLimitPerMin ?? FLOW_ENDPOINT_RATE_LIMIT.default);
     setRevealedKey(null);
     setCopied(false);
+    setPolicy(ep?.policy ?? { mode: 'deny_all' });
   }, [open, ep]);
 
   const baseUrl =
@@ -81,6 +91,17 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
 
   const save = async () => {
     if (!httpEnabled && !mcpEnabled && !ep) return;
+    // 白名单只提交当前发布图中仍存在的非桌面类危险工具，防止残留已删节点工具名
+    const graphTools = new Set((detail.data?.dangerNodes ?? []).map((n) => n.toolName));
+    const effectivePolicy: FlowUnattendedPolicy =
+      policy.mode === 'allowlist'
+        ? {
+            mode: 'allowlist',
+            allowed: policy.allowed.filter(
+              (name) => graphTools.has(name) && !FLOW_DESKTOP_CONTROL_TOOLS.includes(name as never),
+            ),
+          }
+        : { mode: 'deny_all' };
     const body: FlowEndpointConfigInput = {
       httpEnabled,
       mcpEnabled,
@@ -89,6 +110,7 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
         FLOW_ENDPOINT_RATE_LIMIT.max,
         Math.max(FLOW_ENDPOINT_RATE_LIMIT.min, Math.floor(rateLimit) || FLOW_ENDPOINT_RATE_LIMIT.default),
       ),
+      policy: effectivePolicy,
     };
     try {
       const result = await mutations.save.mutateAsync(body);
@@ -131,6 +153,12 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
         {!published && (
           <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-700 dark:bg-amber-950/30">
             流程尚未发布：请先在工具栏「发布」当前版本，发布后才能开启对外调用。
+          </p>
+        )}
+        {ep?.policyRevalidationRequired && (
+          <p className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-700 dark:bg-red-950/30">
+            流程发布了新版本：请重新核对下方无人值守策略并「保存配置」，保存前所有 API/MCP
+            调用将被拒绝（409 需重新确认策略）。
           </p>
         )}
 
@@ -239,18 +267,11 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
 
               <EndpointMcpHint baseUrl={baseUrl} tokenRevealed={revealedKey} />
 
-              <div className="rounded-md border p-2.5 text-[11px] leading-relaxed text-muted-foreground">
-                <p className="font-medium text-foreground">无人值守危险操作策略</p>
-                <p className="mt-1">
-                  当前默认「拒绝全部写入/高危操作」；白名单配置将在 v0.9 后续版本提供。
-                </p>
-                {dangerNodes.length > 0 && (
-                  <p className="mt-1 text-amber-600 dark:text-amber-400">
-                    ⚠ 当前发布图含 {dangerNodes.length} 个写入/高危节点：
-                    {dangerNodes.map((n) => `${n.toolName}(${n.permission})`).join('、')}
-                  </p>
-                )}
-              </div>
+              <EndpointPolicySection
+                policy={policy}
+                dangerNodes={dangerNodes}
+                onChange={setPolicy}
+              />
             </>
           )}
         </div>

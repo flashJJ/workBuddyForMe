@@ -139,11 +139,14 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
   // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
   const workflows = createWorkflowRepository(db);
+  // v0.9：端点仓储同时供 flowRunner（策略快照）与端点服务（管理/鉴权）使用，必须同一实例
+  const endpointRepo = createWorkflowEndpointRepository(db);
   const flowRunner = createFlowRunService({
     deps,
     runtime,
     workflows,
     runs: createWorkflowRunRepository(db),
+    endpoints: endpointRepo,
   });
   // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
   const starterCount = ensureStarterFlows(workflows);
@@ -152,7 +155,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   deps.flowToolLister = () => flowRunner.listPublishedTools();
   // v0.9：对外端点服务 + 公开 API 限流器
   const endpoints = createEndpointService({
-    endpoints: createWorkflowEndpointRepository(db),
+    endpoints: endpointRepo,
     workflows,
   });
   const rateLimiter = createRateLimiter();

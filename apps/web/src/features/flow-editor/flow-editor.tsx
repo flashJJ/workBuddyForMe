@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ReactFlowProvider,
   addEdge,
@@ -64,7 +65,9 @@ function EditorInner({ flowId }: { flowId: string }) {
   const [viewport, setViewport] = React.useState<Viewport | undefined>();
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [diagnostics, setDiagnostics] = React.useState<FlowDiagnostic[] | null>(null);
-  const [runId, setRunId] = React.useState<string | null>(null);
+  // 支持 ?run=<runId> 深链（运行记录重放后跳转自动打开执行面板）
+  const searchParams = useSearchParams();
+  const [runId, setRunId] = React.useState<string | null>(searchParams.get('run'));
   const [runDialogOpen, setRunDialogOpen] = React.useState(false);
   const [servingOpen, setServingOpen] = React.useState(false);
   const [lastRunInput, setLastRunInput] = React.useState<Record<string, unknown>>({});

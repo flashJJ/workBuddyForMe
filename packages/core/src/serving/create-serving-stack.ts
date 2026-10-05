@@ -62,7 +62,7 @@ export function createFlowServingStack(
   const workflows = createWorkflowRepository(db);
   const runs = createWorkflowRunRepository(db);
   const endpointRepo = createWorkflowEndpointRepository(db);
-  const flowRunner = createFlowRunService({ deps, runtime, workflows, runs });
+  const flowRunner = createFlowRunService({ deps, runtime, workflows, runs, endpoints: endpointRepo });
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
   deps.flowToolLister = () => flowRunner.listPublishedTools();

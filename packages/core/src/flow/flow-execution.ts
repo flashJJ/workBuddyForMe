@@ -1,4 +1,9 @@
-import type { FlowEventPayload, FlowTrigger } from '@wbfm/shared';
+import type {
+  FlowEventPayload,
+  FlowTrigger,
+  FlowUnattendedPolicy,
+  PermissionLevel,
+} from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { RetrievalService } from '../retrieval/retrieval-service';
@@ -8,6 +13,7 @@ import { resolveChatTargetForModelId } from '../chat/model-resolver';
 import type { CompiledFlow } from './types';
 import { runFlow } from './engine';
 import { createFlowRunStore } from './run-store';
+import { evaluateUnattendedPolicy } from './policy-gate';
 import { coerceHumanDecision, type FlowWaitRegistry } from './wait-registry';
 
 export interface FlowExecutionParams {
@@ -18,6 +24,12 @@ export interface FlowExecutionParams {
   trigger: FlowTrigger;
   /** manual=true（可挂起等待内联授权）；chat/api/mcp=false */
   interactive: boolean;
+  /** v0.9：api/mcp 触发时的端点策略快照（创建 run 时固化；manual/chat 不传） */
+  unattendedPolicy?: FlowUnattendedPolicy;
+  /** v0.9 重放：仅执行祖先闭包内节点 */
+  onlyNodeIds?: ReadonlySet<string>;
+  /** v0.9 节点重放目标（跑到该节点即收尾） */
+  replayTargetId?: string;
 }
 
 interface ActiveEntry {
@@ -51,7 +63,7 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
     compiled: CompiledFlow,
     params: FlowExecutionParams,
   ): AsyncGenerator<FlowEventPayload> {
-    const { runId, workflowId, version, input, trigger, interactive } = params;
+    const { runId, workflowId, version, input, trigger, interactive, unattendedPolicy } = params;
     const abort = new AbortController();
     const signal = abort.signal;
     active.set(runId, { abort });
@@ -73,12 +85,21 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
       trigger,
       interactive,
       signal,
+      onlyNodeIds: params.onlyNodeIds,
+      replayTargetId: params.replayTargetId,
       context: {
         resolveChatTarget: ({ modelId }) => resolveChatTargetForModelId(deps, modelId ?? null),
         retrieve: (query, knowledgeBaseId, topK) =>
           retrieval.retrieve({ knowledgeBaseId, query, topK }),
         resolveTool: async (name) => runtime.resolveTool(name)?.tool ?? null,
         executeTool: (tool, args) => executeToolCall(tool, args, toolContext),
+        // v0.9：api/mcp 用创建 run 时固化的端点策略快照裁决（纯函数，不读 DB/不挂起）
+        ...(unattendedPolicy
+          ? {
+              evaluateUnattended: (toolName: string, permission: PermissionLevel) =>
+                evaluateUnattendedPolicy(unattendedPolicy, toolName, permission),
+            }
+          : {}),
         checkToolAllowed: (toolName, permission) =>
           Boolean(deps.permissions?.isAllowed(toolName, permission, 'all')) ||
           Boolean(deps.taskGrants?.isGranted(toolName, runId)),

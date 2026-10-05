@@ -151,7 +151,9 @@ export function createEndpointService(deps: EndpointServiceDeps): EndpointServic
         return { endpoint, plaintextKey: generated.key };
       }
       const endpoint = endpoints.updateConfig(existing.id, config) ?? existing;
-      return { endpoint };
+      // 保存配置即重新确认策略（含新版本发布后的 policy_revalidation_required）
+      endpoints.setRevalidation(existing.id, false);
+      return { endpoint: endpoints.getById(existing.id) ?? endpoint };
     },
 
     rotateKey(workflowId) {

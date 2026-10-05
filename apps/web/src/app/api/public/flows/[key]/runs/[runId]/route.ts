@@ -21,6 +21,8 @@ export const GET = definePublicRoute<{ key: string; runId: string }>(
     status: node.status,
     durationMs: node.durationMs,
     error: node.error,
+    // v0.9：含 outputs 便于审计策略拒绝文本（[policy_deny:*]）与工具结果
+    outputs: node.outputs,
   }));
   return publicJsonOk({
     runId: run.id,

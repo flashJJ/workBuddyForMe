@@ -43,6 +43,8 @@ export {
 export { createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
 export { createFlowRunStore, type FlowRunStore } from './run-store';
 export { buildFlowTool, type FlowToolInvoker, type FlowChatInvokeResult } from './flow-tool';
+export { createChatInvoker, type ChatInvokeDeps } from './chat-invoke';
+export { resolveRunRuntimeOverrides, type RunRuntimeOverrides } from './run-options';
 export {
   flowEventToSubstep,
   createSubstepCollector,
@@ -61,6 +63,13 @@ export {
 export { createFlowEventBus, isTerminalFlowEvent, type FlowEventBus } from './queue/event-bus';
 export { createFlowRunQueue, type FlowRunQueue } from './queue/run-queue';
 export { waitForRunTerminal, isTerminalRun, type TerminalWaitResult } from './queue/terminal-wait';
+export { computeReplayClosure } from './replay';
+export {
+  evaluateUnattendedPolicy,
+  policyDenyText,
+  type PolicyDecision,
+  type PolicyDecisionReason,
+} from './policy-gate';
 export {
   recoverInterruptedRuns,
   RECOVERY_REASON_PROCESS_RESTART,
