@@ -11,6 +11,7 @@ import {
   createConversationService,
   createDocumentService,
   createFlowRunService,
+  ensureStarterFlows,
   createIngestionPipeline,
   createKnowledgeService,
   createMcpRegistry,
@@ -128,13 +129,18 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const taskRunner = createTaskRunnerService(deps, runtime);
   // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
   // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
+  const workflows = createWorkflowRepository(db);
   const flowRunner = createFlowRunService({
     deps,
     runtime,
-    workflows: createWorkflowRepository(db),
+    workflows,
     runs: createWorkflowRunRepository(db),
   });
+  // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
+  const starterCount = ensureStarterFlows(workflows);
+  if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
   deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
+  deps.flowToolLister = () => flowRunner.listPublishedTools();
   return {
     db,
     cipher,
