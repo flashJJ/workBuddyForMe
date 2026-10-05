@@ -60,6 +60,7 @@ export {
 } from './run-service';
 export { createFlowEventBus, isTerminalFlowEvent, type FlowEventBus } from './queue/event-bus';
 export { createFlowRunQueue, type FlowRunQueue } from './queue/run-queue';
+export { waitForRunTerminal, isTerminalRun, type TerminalWaitResult } from './queue/terminal-wait';
 export {
   recoverInterruptedRuns,
   RECOVERY_REASON_PROCESS_RESTART,

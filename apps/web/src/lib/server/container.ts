@@ -1,6 +1,7 @@
 import {
   initDatabase,
   createWorkflowRepository,
+  createWorkflowEndpointRepository,
   createWorkflowRunRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
@@ -10,7 +11,9 @@ import {
   createChatOrchestrator,
   createConversationService,
   createDocumentService,
+  createEndpointService,
   createFlowRunService,
+  createRateLimiter,
   ensureStarterFlows,
   createIngestionPipeline,
   createKnowledgeService,
@@ -32,8 +35,10 @@ import {
   type ChatOrchestrator,
   type ConversationService,
   type DocumentService,
+  type EndpointService,
   type FlowRunService,
   type IngestionPipeline,
+  type RateLimiter,
   type KnowledgeService,
   type McpRegistry,
   type MemoryService,
@@ -80,6 +85,10 @@ export interface ServiceContainer {
   runtime: ToolRuntime;
   /** v0.8 M1：工作流运行服务（试运行/落库；已发布流程经 runtime 第三来源解析） */
   flowRunner: FlowRunService;
+  /** v0.9：对外端点服务（密钥/开关/策略配置 + 公开调用鉴权） */
+  endpoints: EndpointService;
+  /** v0.9：公开 API 每端点速率限制器（进程内单例） */
+  rateLimiter: RateLimiter;
 }
 
 let container: ServiceContainer | null = null;
@@ -141,7 +150,15 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
   deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
   deps.flowToolLister = () => flowRunner.listPublishedTools();
+  // v0.9：对外端点服务 + 公开 API 限流器
+  const endpoints = createEndpointService({
+    endpoints: createWorkflowEndpointRepository(db),
+    workflows,
+  });
+  const rateLimiter = createRateLimiter();
   return {
+    endpoints,
+    rateLimiter,
     db,
     cipher,
     mcp,

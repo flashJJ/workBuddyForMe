@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, Play, Save, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Globe, Play, Save, ShieldCheck } from 'lucide-react';
 import type { FlowStatus, WorkflowView } from '@wbfm/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ interface FlowToolbarProps {
   onSave: () => void;
   onValidate: () => void;
   onPublish: () => void;
+  onServing: () => void;
   onRun: () => void;
 }
 
@@ -37,6 +38,7 @@ export function FlowToolbar({
   onSave,
   onValidate,
   onPublish,
+  onServing,
   onRun,
 }: FlowToolbarProps) {
   const badge = STATUS_BADGE[workflow.status];
@@ -83,6 +85,16 @@ export function FlowToolbar({
         >
           <ShieldCheck className="h-3.5 w-3.5" />
           发布
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onServing}
+          disabled={workflow.status !== 'published'}
+          title={workflow.status === 'published' ? '管理本地 API / MCP 对外暴露' : '发布后可开启对外服务'}
+        >
+          <Globe className="h-3.5 w-3.5" />
+          对外服务
         </Button>
         <Button size="sm" onClick={onRun} disabled={running || version === 0 || dirty}>
           <Play className="h-3.5 w-3.5" />

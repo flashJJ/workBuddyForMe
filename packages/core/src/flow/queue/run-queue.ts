@@ -12,6 +12,8 @@ export interface FlowRunQueue {
   enqueue(runId: string): void;
   /** 当前待拾取信号数（测试/观测用） */
   pendingSize(): number;
+  /** 是否在执行中（补偿扫描据此跳过） */
+  hasInFlight(runId: string): boolean;
 }
 
 export interface FlowRunQueueDeps {
@@ -38,7 +40,16 @@ export function createFlowRunQueue(deps: FlowRunQueueDeps): FlowRunQueue {
       schedule();
       return;
     }
-    const run = deps.claim(runId);
+    let run: WorkflowRunView | null;
+    try {
+      run = deps.claim(runId);
+    } catch (error) {
+      // DB 临时不可用（如关闭窗口）：不使 tick 变成 unhandled rejection，
+      // 补偿扫描/下一次 enqueue 会重新拾取本 run。
+      deps.onError?.(runId, error);
+      if (pending.length > 0) schedule();
+      return;
+    }
     if (!run) {
       // 已被别处认领/状态不再是 queued（恢复扫描等场景）
       if (pending.length > 0) schedule();
@@ -70,6 +81,9 @@ export function createFlowRunQueue(deps: FlowRunQueueDeps): FlowRunQueue {
     },
     pendingSize() {
       return pending.length;
+    },
+    hasInFlight(runId) {
+      return inFlight.has(runId);
     },
   };
 }

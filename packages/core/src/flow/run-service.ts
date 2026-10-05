@@ -13,13 +13,14 @@ import type { ToolRuntime } from '../tools/tool-runtime';
 import type { Tool } from '../tools/types';
 import { createRetrievalService } from '../retrieval/retrieval-service';
 import { compileFlow } from './compiler';
-import { coerceHumanDecision, createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
+import { createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
 import { buildFlowTool } from './flow-tool';
 import { createSubstepCollector, flowNodeTitle } from './flow-substeps';
 import { createSubstepQueue } from '../chat/substep-queue';
 import { createFlowEventBus, isTerminalFlowEvent, type FlowEventBus } from './queue/event-bus';
 import { createFlowRunQueue } from './queue/run-queue';
 import { recoverInterruptedRuns } from './queue/recovery-scanner';
+import { waitForRunTerminal } from './queue/terminal-wait';
 import { createFlowExecutor, type FlowExecutor } from './flow-execution';
 
 interface ActiveEntry {
@@ -55,6 +56,15 @@ export interface FlowRunService {
   subscribeRunEvents(runId: string, observerSignal?: AbortSignal):
     | AsyncGenerator<FlowEventPayload>
     | null;
+  /**
+   * 等待运行进入终态（公开 API 同步调用 / MCP tools/call 复用）：
+   * 纯等待者，不占用队列执行者，也不影响运行生命周期。
+   * 超时返回 timedOut（运行继续，调用方转异步语义）。
+   */
+  waitForTerminal(
+    runId: string,
+    timeoutMs: number,
+  ): Promise<{ timedOut: boolean; run: WorkflowRunView | null }>;
   submitHuman(runId: string, nodeId: string, body: FlowHumanSubmitInput): boolean;
   submitToolConfirmation(runId: string, nodeId: string, allowed: boolean): boolean;
   cancel(runId: string): boolean;
@@ -66,6 +76,8 @@ export interface FlowRunService {
 
 const humanKey = (runId: string, nodeId: string) => `${runId}:human:${nodeId}`;
 const toolKey = (runId: string, nodeId: string) => `${runId}:tool:${nodeId}`;
+/** queued 补偿扫描周期：5 秒（本地应用，最长冷启动认领延迟上限） */
+const RESCUE_INTERVAL_MS = 5_000;
 
 export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunService {
   const { deps, runtime, workflows, runs } = serviceDeps;
@@ -122,6 +134,20 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
   // 启动恢复：上一进程在途运行收敛 + queued 重新入队
   const recovery = recoverInterruptedRuns(runs, new Set(active.keys()));
   for (const runId of recovery.requeued) queue.enqueue(runId);
+
+  // 定时补偿：纯 setImmediate 边缘触发在极端时序（如 dev 冷编译窗口模块重载）
+  // 下可能丢失首个信号；周期把 DB 中仍是 queued 且本进程未在执行的 run 重新入队。
+  // claim 以 DB 原子更新兜底，补偿永远不会导致双跑。
+  const rescueTimer = setInterval(() => {
+    try {
+      for (const run of runs.listRuns({ status: 'queued', limit: 100 })) {
+        if (!queue.hasInFlight(run.id)) queue.enqueue(run.id);
+      }
+    } catch (error) {
+      console.error('[flow] queued 补偿扫描失败：', error);
+    }
+  }, RESCUE_INTERVAL_MS);
+  rescueTimer.unref?.();
 
   function createRun(params: CreateRunParams): string {
     const trigger = params.trigger ?? 'manual';
@@ -222,6 +248,8 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     createRun,
     enqueueRun: (runId) => queue.enqueue(runId),
     subscribeRunEvents,
+    waitForTerminal: (runId, timeoutMs) =>
+      waitForRunTerminal({ bus, getRun: runs.getRun.bind(runs) }, runId, timeoutMs),
     submitHuman(runId, nodeId, body) {
       const decision: FlowHumanSubmitInput = {
         nodeId: body.nodeId ?? nodeId,

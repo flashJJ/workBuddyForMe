@@ -53,6 +53,9 @@ export const API = {
   flowRunHuman: (runId: string) => `/api/flows/runs/${runId}/human`,
   flowRunToolConfirm: (runId: string) => `/api/flows/runs/${runId}/tool-confirm`,
   flowRunControl: (runId: string) => `/api/flows/runs/${runId}/control`,
+  // v0.9 对外服务端点（内部管理面）
+  flowEndpoint: (id: string) => `/api/flows/${id}/endpoint`,
+  flowEndpointRotate: (id: string) => `/api/flows/${id}/endpoint/rotate`,
 } as const;
 
 export const QUERY_KEYS = {
@@ -80,4 +83,5 @@ export const QUERY_KEYS = {
   flows: ['flows'] as const,
   flow: (id: string) => ['flows', id] as const,
   flowRun: (id: string) => ['flow-run', id] as const,
+  flowEndpoint: (id: string) => ['flow-endpoint', id] as const,
 };
