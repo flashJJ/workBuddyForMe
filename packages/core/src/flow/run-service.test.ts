@@ -111,10 +111,16 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     service = createFlowRunService({ deps, runtime, workflows, runs });
   });
 
+  /** 试运行：先登记 queued，再订阅驱动（与 Web POST /runs + GET /events 同构） */
+  function startManual(workflowId: string) {
+    const runId = service.createRun({ workflowId, trigger: 'manual' });
+    return service.startEvents(runId);
+  }
+
   it('试运行 start→end：运行与节点记录落库，终态 succeeded', async () => {
     const wf = workflows.createWorkflow({ name: '最简' });
     workflows.addVersion(wf.id, graphStartEnd());
-    const { runId, events } = service.start({ workflowId: wf.id });
+    const { runId, events } = startManual(wf.id);
     const all = await drain(events);
     expect(all.at(-1)?.type).toBe('run_succeeded');
 
@@ -133,7 +139,7 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
   it('人工节点：事件挂起 → submitHuman 后继续；waiting_human 落库', async () => {
     const wf = workflows.createWorkflow({ name: '审核流' });
     workflows.addVersion(wf.id, graphHuman());
-    const { runId, events } = service.start({ workflowId: wf.id, interactive: true });
+    const { runId, events } = startManual(wf.id);
 
     let submitted = false;
     for await (const ev of events) {
@@ -152,7 +158,7 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
   it('danger 工具：挂起 → submitToolConfirmation 允许 → 执行并落库', async () => {
     const wf = workflows.createWorkflow({ name: '危险流' });
     workflows.addVersion(wf.id, graphDangerTool());
-    const { runId, events } = service.start({ workflowId: wf.id, interactive: true });
+    const { runId, events } = startManual(wf.id);
 
     for await (const ev of events) {
       if (ev.type === 'node_waiting_human' && ev.nodeId === 't1') {
@@ -178,9 +184,7 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
         { id: 'end', type: 'end', position: { x: 2, y: 0 }, config: { output: 'WEEKLY' } },
       ],
     });
-    expect(() =>
-      service.start({ workflowId: wf.id, trigger: 'chat', interactive: false }),
-    ).toThrow(/尚未发布/);
+    expect(() => service.createRun({ workflowId: wf.id, trigger: 'chat' })).toThrow(/尚未发布/);
 
     workflows.publishVersion(wf.id);
     const tool = service.resolveAsTool(wf.id);
@@ -197,7 +201,7 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
   it('取消运行：cancel 后事件流收敛为 cancelled', async () => {
     const wf = workflows.createWorkflow({ name: '人工长流' });
     workflows.addVersion(wf.id, graphHuman());
-    const { runId, events } = service.start({ workflowId: wf.id, interactive: true });
+    const { runId, events } = startManual(wf.id);
 
     const iterator = events[Symbol.asyncIterator]();
     const first = await iterator.next();

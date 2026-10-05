@@ -141,6 +141,18 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return rows.map(mapRun);
     },
 
+    /** 最近一次进入终态的运行完成时间（列表卡片用；无运行记录为 null） */
+    getLatestFinishedAt(workflowId: string): string | null {
+      const row = db
+        .prepare(
+          `SELECT finished_at FROM workflow_runs
+           WHERE workflow_id = ? AND finished_at IS NOT NULL
+           ORDER BY finished_at DESC LIMIT 1`,
+        )
+        .get(workflowId) as { finished_at: string | null } | undefined;
+      return row?.finished_at ?? null;
+    },
+
     /** queued → running，写 started_at */
     startRun(id: string): WorkflowRunView | null {
       if (!this.getRunRow(id)) return null;

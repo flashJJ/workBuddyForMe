@@ -273,6 +273,6 @@ export {
   createFlowRunService,
   type FlowRunService,
   type FlowRunServiceDeps,
-  type StartFlowParams,
+  type CreateRunParams,
   type StartedFlow,
 } from './flow';
