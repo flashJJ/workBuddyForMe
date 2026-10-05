@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Copy, KeyRound, RefreshCw } from 'lucide-react';
+import { useToast } from '@/components/common/toast';
 import { FLOW_ENDPOINT_RATE_LIMIT, FLOW_ENDPOINT_SYNC_TIMEOUT } from '@wbfm/shared';
 import { ApiClientError } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';
@@ -35,6 +36,7 @@ export interface EndpointDialogProps {
 export function EndpointDialog({ open, workflowId, published, onClose }: EndpointDialogProps) {
   const detail = useFlowEndpoint(open ? workflowId : null);
   const mutations = useFlowEndpointMutations(workflowId);
+  const toast = useToast();
   const ep = detail.data?.endpoint ?? null;
 
   const [httpEnabled, setHttpEnabled] = React.useState(false);
@@ -44,6 +46,12 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
   /** 创建/重置当次返回的明文密钥（不落任何持久存储） */
   const [revealedKey, setRevealedKey] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+  /** 重置密钥二次确认（内联，避免 Electron 下 window.confirm 抢走键盘焦点） */
+  const [confirmingRotate, setConfirmingRotate] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) setConfirmingRotate(false);
+  }, [open]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -86,18 +94,24 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
       const result = await mutations.save.mutateAsync(body);
       if (result.plaintextKey) setRevealedKey(result.plaintextKey);
     } catch (error) {
-      window.alert(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
     }
   };
 
   const rotate = async () => {
     if (!ep) return;
-    if (!window.confirm('重置后旧密钥立即失效，使用旧密钥的调用方都会被拒绝。确定重置？')) return;
+    // 二次点击确认：旧密钥即时失效，避免误触；不使用原生 confirm（会抢 Electron 键盘焦点）
+    if (!confirmingRotate) {
+      setConfirmingRotate(true);
+      window.setTimeout(() => setConfirmingRotate(false), 4000);
+      return;
+    }
+    setConfirmingRotate(false);
     try {
       const result = await mutations.rotate.mutateAsync();
       setRevealedKey(result.plaintextKey ?? null);
     } catch (error) {
-      window.alert(error instanceof ApiClientError ? error.message : '重置失败');
+      toast.error(error instanceof ApiClientError ? error.message : '重置失败');
     }
   };
 
@@ -159,9 +173,15 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
                   <div className="mt-1 flex items-center gap-2">
                     <KeyRound className="h-3 w-3 text-muted-foreground" />
                     <span className="text-[11px]">当前密钥：{ep.keyPrefix}…（已隐藏）</span>
-                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={rotate}>
+                    <Button
+                      variant={confirmingRotate ? 'destructive' : 'ghost'}
+                      size="sm"
+                      className="h-6 px-2 text-[11px]"
+                      onClick={rotate}
+                      title={confirmingRotate ? '旧密钥将立即失效，再次点击确认' : undefined}
+                    >
                       <RefreshCw className="h-3 w-3" />
-                      重置密钥
+                      {confirmingRotate ? '再点一次确认重置' : '重置密钥'}
                     </Button>
                   </div>
                 )}
