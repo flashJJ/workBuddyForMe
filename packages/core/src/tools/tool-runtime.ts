@@ -129,6 +129,10 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         const resolved = resolveTool(name);
         if (resolved) map.set(name, resolved.tool);
       }
+      // v0.8 M3：已发布流程自动作为工具注入对话（白名单不感知 flow:<id>，不覆盖显式项）
+      for (const tool of deps.flowToolLister?.() ?? []) {
+        if (!map.has(tool.name)) map.set(tool.name, tool);
+      }
       return map;
     },
 

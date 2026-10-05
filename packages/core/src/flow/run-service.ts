@@ -1,4 +1,10 @@
-import { ApiError, type FlowEventPayload, type FlowHumanSubmitInput, type FlowTrigger } from '@wbfm/shared';
+import {
+  ApiError,
+  type FlowEventPayload,
+  type FlowHumanSubmitInput,
+  type FlowTrigger,
+  type ToolSubstep,
+} from '@wbfm/shared';
 import type { WorkflowRepository, WorkflowRunRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
@@ -9,9 +15,9 @@ import { resolveChatTargetForModelId } from '../chat/model-resolver';
 import { compileFlow } from './compiler';
 import { runFlow } from './engine';
 import { createFlowRunStore } from './run-store';
-import { createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
+import { coerceHumanDecision, createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
 import { buildFlowTool } from './flow-tool';
-import type { FlowHumanDecision } from './types';
+import { createSubstepCollector, flowNodeTitle } from './flow-substeps';
 
 export interface StartedFlow {
   runId: string;
@@ -57,6 +63,8 @@ export interface FlowRunService {
   activeRunIds(): string[];
   /** 第三工具来源：已发布流程 → flow:<id> 工具；未发布返回 null */
   resolveAsTool(workflowId: string): Tool | null;
+  /** 全部已发布流程对应的工具（对话装配时自动注入，不进 assistants 白名单表） */
+  listPublishedTools(): Tool[];
 }
 
 const humanKey = (runId: string, nodeId: string) => `${runId}:human:${nodeId}`;
@@ -190,13 +198,26 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     return { runId, events };
   }
 
-  /** 对话触发执行（非交互）：登记后直接消费完整事件流，收敛为最终输出或错误 */
+  /**
+   * 对话触发执行（非交互）：登记后直接消费完整事件流，收敛为最终输出或错误。
+   * 节点事件同步映射为工具子步骤（onSubstep 实时回调 + 随结果返回快照）。
+   */
   async function invokeFromChat(
     workflowId: string,
     input: Record<string, unknown>,
-  ): Promise<{ ok: true; output: unknown } | { ok: false; error: string }> {
+    onSubstep?: (substep: ToolSubstep) => void,
+  ): Promise<
+    | { ok: true; output: unknown; substeps: ToolSubstep[] }
+    | { ok: false; error: string; substeps: ToolSubstep[] }
+  > {
     const trigger: FlowTrigger = 'chat';
-    const { version } = loadCompiledGraph(workflowId, true);
+    const { version, graph } = loadCompiledGraph(workflowId, true);
+    const titleOf = (nodeId: string) => {
+      const node = graph.nodes.find((n) => n.id === nodeId);
+      return node ? flowNodeTitle(node) : nodeId;
+    };
+    const collector = createSubstepCollector(titleOf);
+
     const runId = createRun({ workflowId, input, trigger });
     const events = executeRun(runId, {
       workflowId,
@@ -206,11 +227,32 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
       interactive: false,
     });
     for await (const event of events) {
-      if (event.type === 'run_succeeded') return { ok: true, output: event.output };
-      if (event.type === 'run_failed') return { ok: false, error: event.message };
-      if (event.type === 'run_cancelled') return { ok: false, error: '工作流执行被中断' };
+      const substep = collector.absorb(event);
+      if (substep) onSubstep?.(substep);
+      if (event.type === 'run_succeeded') {
+        return { ok: true, output: event.output, substeps: collector.list() };
+      }
+      if (event.type === 'run_failed') {
+        return { ok: false, error: event.message, substeps: collector.list() };
+      }
+      if (event.type === 'run_cancelled') {
+        return { ok: false, error: '工作流执行被中断', substeps: collector.list() };
+      }
     }
-    return { ok: false, error: '工作流未产出结果（事件流意外结束）' };
+    return {
+      ok: false,
+      error: '工作流未产出结果（事件流意外结束）',
+      substeps: collector.list(),
+    };
+  }
+
+  /** 已发布流程 → flow 工具；未发布/无版本返回 null */
+  function resolveAsTool(workflowId: string): Tool | null {
+    const wf = workflows.getWorkflow(workflowId);
+    if (!wf || wf.status !== 'published') return null;
+    const versionView = workflows.getCurrentVersion(workflowId);
+    if (!versionView) return null;
+    return buildFlowTool(wf, versionView.graph, { invokeFromChat });
   }
 
   return {
@@ -239,29 +281,13 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     activeRunIds() {
       return [...active.keys()];
     },
-    resolveAsTool(workflowId) {
-      const wf = workflows.getWorkflow(workflowId);
-      if (!wf || wf.status !== 'published') return null;
-      const versionView = workflows.getCurrentVersion(workflowId);
-      if (!versionView) return null;
-      return buildFlowTool(wf, versionView.graph, {
-        invokeFromChat: (id, input) => invokeFromChat(id, input),
-      });
+    resolveAsTool,
+    listPublishedTools() {
+      return workflows
+        .listWorkflows()
+        .filter((wf) => wf.status === 'published')
+        .map((wf) => resolveAsTool(wf.id))
+        .filter((tool): tool is Tool => tool !== null);
     },
   };
-}
-
-function coerceHumanDecision(payload: unknown): FlowHumanDecision {
-  if (payload && typeof payload === 'object' && 'approved' in payload) {
-    const record = payload as Record<string, unknown>;
-    return {
-      approved: record.approved === true,
-      values:
-        record.values && typeof record.values === 'object'
-          ? (record.values as Record<string, unknown>)
-          : {},
-    };
-  }
-  // 断线/超时/无交互环境：按拒绝处理（流程可经后续 condition 分支走驳回路径）
-  return { approved: false, values: {} };
 }

@@ -42,7 +42,16 @@ export {
 } from './handlers';
 export { createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
 export { createFlowRunStore, type FlowRunStore } from './run-store';
-export { buildFlowTool, type FlowToolInvoker } from './flow-tool';
+export { buildFlowTool, type FlowToolInvoker, type FlowChatInvokeResult } from './flow-tool';
+export {
+  flowEventToSubstep,
+  createSubstepCollector,
+  flowNodeTitle,
+  FLOW_NODE_DEFAULT_LABELS,
+  type FlowSubstepCollector,
+} from './flow-substeps';
+export { STARTER_FLOWS, type StarterFlowDef } from './starters/starters';
+export { ensureStarterFlows } from './starters/seed-starter-flows';
 export {
   createFlowRunService,
   type FlowRunService,

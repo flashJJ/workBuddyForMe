@@ -1,3 +1,5 @@
+import type { FlowHumanDecision } from './types';
+
 /**
  * Flow 运行挂起等待注册表（v0.8 M1）：
  * 人工节点与 write/danger 工具确认共用，key 为 `${runId}:human|tool:${nodeId}`。
@@ -56,4 +58,19 @@ export function createFlowWaitRegistry(): FlowWaitRegistry {
       pending.clear();
     },
   };
+}
+
+/** 人工等待载荷归一：断线/超时/非交互环境统一按拒绝处理（流程可走驳回路径） */
+export function coerceHumanDecision(payload: unknown): FlowHumanDecision {
+  if (payload && typeof payload === 'object' && 'approved' in payload) {
+    const record = payload as Record<string, unknown>;
+    return {
+      approved: record.approved === true,
+      values:
+        record.values && typeof record.values === 'object'
+          ? (record.values as Record<string, unknown>)
+          : {},
+    };
+  }
+  return { approved: false, values: {} };
 }

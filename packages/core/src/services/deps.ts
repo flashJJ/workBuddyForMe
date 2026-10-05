@@ -29,4 +29,9 @@ export interface ServiceDeps {
    * 懒解析：仅在 resolveTool 遇到 flow:<id> 时调用，避免与 FlowRunService 的构造环。
    */
   flowToolResolver?: (workflowId: string) => Tool | null;
+  /**
+   * v0.8 M3：列出全部已发布流程工具。
+   * 对话装配时自动追加到工具表（不改 assistants 白名单表）；懒调用以避开构造环。
+   */
+  flowToolLister?: () => Tool[];
 }

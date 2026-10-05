@@ -193,9 +193,28 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     expect((tool?.parameters as { required: string[] }).required).toEqual(['topic']);
 
     // 对话执行（非交互）：ToolResult.ok
-    const result = await tool!.run({ topic: '本周' }, { knowledgeBaseId: '', retrieve: async () => [] });
+    const seen: string[] = [];
+    const result = await tool!.run(
+      { topic: '本周' },
+      {
+        knowledgeBaseId: '',
+        retrieve: async () => [],
+        onSubstep: (s) => seen.push(`${s.id}:${s.status}`),
+      },
+    );
     expect(result.ok).toBe(true);
     expect(result.output).toBe('WEEKLY');
+
+    // v0.8 M3：节点执行映射为工具子步骤（实时回调 + 结果快照一致）
+    expect(seen).toEqual(['start:running', 'start:ok', 'end:running', 'end:ok']);
+    expect(result.substeps?.map((s) => `${s.id}:${s.status}`)).toEqual([
+      'start:ok',
+      'end:ok',
+    ]);
+    expect(result.substeps?.[0]?.label).toBe('开始');
+
+    // 已发布流程出现在 listPublishedTools
+    expect(service.listPublishedTools().map((t) => t.name)).toEqual([`flow:${wf.id}`]);
   });
 
   it('取消运行：cancel 后事件流收敛为 cancelled', async () => {

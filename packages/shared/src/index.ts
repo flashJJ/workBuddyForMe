@@ -32,7 +32,13 @@ export type {
   Timestamped,
 } from './types/domain';
 export type { ContentPart, TextContentPart, ImageContentPart } from './types/content-part';
-export type { ToolTraceEntry, ToolEventPayload, ToolCallStatus } from './types/tool';
+export type {
+  ToolTraceEntry,
+  ToolEventPayload,
+  ToolCallStatus,
+  ToolSubstep,
+  ToolSubstepStatus,
+} from './types/tool';
 
 // Zod 契约
 export * from './schemas/common';

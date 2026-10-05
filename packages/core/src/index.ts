@@ -276,3 +276,9 @@ export {
   type CreateRunParams,
   type StartedFlow,
 } from './flow';
+export {
+  STARTER_FLOWS,
+  ensureStarterFlows,
+  flowEventToSubstep,
+  type StarterFlowDef,
+} from './flow';

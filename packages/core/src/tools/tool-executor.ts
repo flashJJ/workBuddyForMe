@@ -35,6 +35,7 @@ export async function executeToolCall(
       summary: clipSummary(result.summary || result.output),
       ...(result.citations ? { citations: result.citations } : {}),
       ...(result.images?.length ? { images: result.images } : {}),
+      ...(result.substeps?.length ? { substeps: result.substeps } : {}),
     };
   } catch (error) {
     const durationMs = Date.now() - start;
