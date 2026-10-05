@@ -41,6 +41,18 @@ export const API = {
   taskEvents: (id: string) => `/api/tasks/${id}/events`,
   taskControl: (id: string) => `/api/tasks/${id}/control`,
   taskStopAll: '/api/tasks/stop-all',
+  // v0.8 Flow Studio
+  flows: '/api/flows',
+  flow: (id: string) => `/api/flows/${id}`,
+  flowVersions: (id: string) => `/api/flows/${id}/versions`,
+  flowValidate: (id: string) => `/api/flows/${id}/validate`,
+  flowPublish: (id: string) => `/api/flows/${id}/publish`,
+  flowRuns: (id: string) => `/api/flows/${id}/runs`,
+  flowRun: (runId: string) => `/api/flows/runs/${runId}`,
+  flowRunEvents: (runId: string) => `/api/flows/runs/${runId}/events`,
+  flowRunHuman: (runId: string) => `/api/flows/runs/${runId}/human`,
+  flowRunToolConfirm: (runId: string) => `/api/flows/runs/${runId}/tool-confirm`,
+  flowRunControl: (runId: string) => `/api/flows/runs/${runId}/control`,
 } as const;
 
 export const QUERY_KEYS = {
@@ -65,4 +77,7 @@ export const QUERY_KEYS = {
   tasksByConversation: (conversationId: string) =>
     ['tasks', { conversationId }] as const,
   task: (id: string) => ['task', id] as const,
+  flows: ['flows'] as const,
+  flow: (id: string) => ['flows', id] as const,
+  flowRun: (id: string) => ['flow-run', id] as const,
 };

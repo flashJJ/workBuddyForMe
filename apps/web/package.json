@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/web",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -29,6 +29,7 @@
     "@wbfm/core": "workspace:*",
     "@wbfm/database": "workspace:*",
     "@wbfm/shared": "workspace:*",
+    "@xyflow/react": "^12.12.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.451.0",

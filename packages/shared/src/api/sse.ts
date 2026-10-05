@@ -1,5 +1,6 @@
 import type { Citation, MemoryKind } from '../types/domain';
 import type { PermissionLevel } from '../types/permission';
+import type { FlowEventPayload } from '../types/flow';
 import type { TaskEventPayload } from '../schemas/task';
 import type { ToolEventPayload } from '../types/tool';
 
@@ -21,6 +22,8 @@ export const SSE_EVENT = {
   TOOL_CONFIRMATION_REQUIRED: 'tool_confirmation_required',
   /** v0.7 M3：任务 Agent 循环（运行/步骤时间线） */
   TASK: 'task',
+  /** v0.8 Flow Studio：工作流运行/节点时间线 */
+  FLOW: 'flow',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -48,6 +51,8 @@ export type SsePayloadMap = {
   };
   /** v0.7 M3：任务运行/步骤事件 */
   task: TaskEventPayload;
+  /** v0.8：工作流运行/节点事件 */
+  flow: FlowEventPayload;
   done: { content: string; usage: TokenUsage | null };
   error: { code: string; message: string };
 };

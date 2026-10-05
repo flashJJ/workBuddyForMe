@@ -2,15 +2,16 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, ContentPart, Message, PermissionLevel, RecalledMemoryPayload, SsePayloadMap, ToolTraceEntry } from '@wbfm/shared';
+import type { Citation, ContentPart, Message, PermissionLevel, RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared';
 import { useMessages } from '@/lib/hooks/use-conversations';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiPost } from '@/lib/api/client';
 import { useChatStream } from '@/lib/hooks/use-chat-stream';
 import {
+  applyToolSubsteps,
   applyToolTraceEnd,
+  applyToolTraceStart,
   patchLastAssistantMessage,
-  upsertToolTraceEntry,
 } from './live-message-utils';
 
 /** v0.6 M2：待用户确认的工具调用（HITL 弹窗数据源） */
@@ -102,10 +103,6 @@ export function useChatSession(
     setLive((prev) => patchLastAssistantMessage(prev, patch));
   };
 
-  const upsertToolTrace = (entry: ToolTraceEntry) => {
-    setLive((prev) => upsertToolTraceEntry(prev, entry));
-  };
-
   const runTurn = React.useCallback(
     (options: { content: string; regenerate: boolean; attachments?: string[] }) => {
       const { content, regenerate, attachments = [] } = options;
@@ -158,17 +155,12 @@ export function useChatSession(
         },
         onTool: (data: SsePayloadMap['tool']) => {
           if (data.phase === 'start') {
-            upsertToolTrace({
-              callId: data.callId,
-              tool: data.tool,
-              argsSummary: data.argsSummary,
-              status: 'running',
-              durationMs: 0,
-              resultSummary: '执行中…',
-              startedAt: nowIso(),
-              ...(data.source ? { source: data.source } : {}),
-              ...(data.permission ? { permission: data.permission } : {}),
-            });
+            setLive((prev) => applyToolTraceStart(prev, data));
+            return;
+          }
+          if (data.phase === 'substep') {
+            // v0.8：flow 工具逐节点进度
+            setLive((prev) => applyToolSubsteps(prev, data));
             return;
           }
           // end：用 start 阶段记录的 startedAt 保留真实开始时间

@@ -1,4 +1,4 @@
-import type { Citation, PermissionLevel } from '@wbfm/shared';
+import type { Citation, PermissionLevel, ToolSubstep } from '@wbfm/shared';
 import type { ToolDefinition } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 
@@ -15,6 +15,11 @@ export interface ToolContext {
   ) => Promise<RetrievedChunk[]>;
   /** v0.7 M1：本轮对话模型是否具备视觉能力（screen_snapshot 据此决定是否携带图片） */
   visionCapable?: boolean;
+  /**
+   * v0.8：工具内部子步骤进度回调（flow 工具逐节点执行时上报，对话 SSE 实时展示）。
+   * 同一子步骤 id 会先 running 后 ok/error/skipped。
+   */
+  onSubstep?: (substep: ToolSubstep) => void;
 }
 
 /** 工具结果携带的图片（如屏幕截图），由编排器落盘为附件并注入视觉消息 */
@@ -32,6 +37,8 @@ export interface ToolResult {
   citations?: Citation[];
   /** v0.7 M1：图片结果（仅视觉模型轮次产出） */
   images?: ToolResultImage[];
+  /** v0.8：工具内部子步骤快照（flow 工具逐节点执行结果，落 tool_trace） */
+  substeps?: ToolSubstep[];
 }
 
 /** 工具统一接口（v0.6：内置与 MCP 工具同构；name 为全局限定名） */

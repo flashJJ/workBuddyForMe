@@ -86,7 +86,7 @@ export {
 
 // 对话编排
 export { createChatOrchestrator, type ChatOrchestrator } from './chat/chat-orchestrator';
-export { resolveChatTarget, type ResolvedChatTarget } from './chat/model-resolver';
+export { resolveChatTarget, resolveChatTargetForModelId, type ResolvedChatTarget } from './chat/model-resolver';
 export { buildChatMessages, buildSystemPrompt, type ChatBudgetOptions } from './chat/prompt';
 export {
   estimateTokens,
@@ -266,3 +266,19 @@ export {
   type SharedMessage,
   type SharedPart,
 } from './share/snapshot';
+
+// v0.8 Flow Studio 可视化工作流（根桶只导出对外服务面；引擎/处理器等内部件见 ./flow）
+export { compileFlow, type CompileResult } from './flow';
+export {
+  createFlowRunService,
+  type FlowRunService,
+  type FlowRunServiceDeps,
+  type CreateRunParams,
+  type StartedFlow,
+} from './flow';
+export {
+  STARTER_FLOWS,
+  ensureStarterFlows,
+  flowEventToSubstep,
+  type StarterFlowDef,
+} from './flow';

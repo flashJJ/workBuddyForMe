@@ -38,8 +38,8 @@ describe('v003 迁移：多模态字段加法升级', () => {
   it('v2 老库升级：attachments 表就位，老消息/老文档获得兼容默认值', () => {
     const db = createV2Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    expect(LATEST_SCHEMA_VERSION).toBe(11);
+    expect(result.applied).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(LATEST_SCHEMA_VERSION).toBe(12);
 
     const message = db.prepare(`SELECT content_parts FROM messages WHERE id='m1'`).get() as {
       content_parts: string;

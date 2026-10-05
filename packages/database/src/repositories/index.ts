@@ -88,4 +88,20 @@ export {
   type TaskRunRow,
   type TaskStepRow,
 } from './task-run-repo';
+export {
+  createWorkflowRepository,
+  type WorkflowRepository,
+  type WorkflowRow,
+  type WorkflowVersionRow,
+  type WorkflowCreateFields,
+  type WorkflowUpdateFields,
+} from './workflow-repo';
+export {
+  createWorkflowRunRepository,
+  type WorkflowRunRepository,
+  type WorkflowRunRow,
+  type NodeExecutionRow,
+  type WorkflowRunCreateFields,
+  type RunFinishFields,
+} from './workflow-run-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

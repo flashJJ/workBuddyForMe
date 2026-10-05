@@ -3,6 +3,7 @@ import type { Assistant } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
 import { createToolRuntime } from './tool-runtime';
 import { toToolDefinitions } from './types';
+import type { Tool } from './types';
 
 function assistantWith(enabledTools: Assistant['enabledTools'], knowledgeBaseId: string | null = null) {
   return {
@@ -94,5 +95,48 @@ describe('工具运行时白名单', () => {
     expect(ctx.knowledgeBaseId).toBeNull();
     expect(ctx.signal).toBe(controller.signal);
     await expect(ctx.retrieve('q', 5)).resolves.toEqual([]);
+  });
+});
+
+describe('工具运行时第三来源：flow 工具（v0.8 M1）', () => {
+  const flowTool: Tool = {
+    name: 'flow:wf-123',
+    description: '已发布工作流',
+    parameters: { type: 'object' },
+    permission: 'read',
+    async run() {
+      return { ok: true, output: 'done', summary: 'ran' };
+    },
+  };
+
+  it('flow:<id> 经 deps.flowToolResolver 解析，来源标记为 flow', () => {
+    const runtimeWithFlow = createToolRuntime({
+      ...deps,
+      flowToolResolver: (workflowId) => (workflowId === 'wf-123' ? flowTool : null),
+    });
+    const resolved = runtimeWithFlow.resolveTool('flow:wf-123');
+    expect(resolved?.tool).toBe(flowTool);
+    expect(resolved?.source).toBe('flow');
+  });
+
+  it('未注册 resolver / 工作流不存在时返回 null（不影响内置与 MCP 解析）', () => {
+    expect(runtime.resolveTool('flow:anything')).toBeNull();
+    const runtimeMissing = createToolRuntime({
+      ...deps,
+      flowToolResolver: () => null,
+    });
+    expect(runtimeMissing.resolveTool('flow:x')).toBeNull();
+    // 内置工具解析不受影响
+    expect(runtimeMissing.resolveTool('current_time')?.source).toBe('builtin');
+  });
+
+  it('flow 工具可进入助手白名单并下发为 function 声明', () => {
+    const runtimeWithFlow = createToolRuntime({
+      ...deps,
+      flowToolResolver: () => flowTool,
+    });
+    const map = runtimeWithFlow.buildTools(assistantWith(['flow:wf-123']), true);
+    expect([...map.keys()]).toEqual(['flow:wf-123']);
+    expect(toToolDefinitions([...map.values()])[0]?.function.name).toBe('flow:wf-123');
   });
 });

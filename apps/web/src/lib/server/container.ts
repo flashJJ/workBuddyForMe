@@ -1,5 +1,7 @@
 import {
   initDatabase,
+  createWorkflowRepository,
+  createWorkflowRunRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
 import {
@@ -8,6 +10,8 @@ import {
   createChatOrchestrator,
   createConversationService,
   createDocumentService,
+  createFlowRunService,
+  ensureStarterFlows,
   createIngestionPipeline,
   createKnowledgeService,
   createMcpRegistry,
@@ -28,6 +32,7 @@ import {
   type ChatOrchestrator,
   type ConversationService,
   type DocumentService,
+  type FlowRunService,
   type IngestionPipeline,
   type KnowledgeService,
   type McpRegistry,
@@ -35,6 +40,7 @@ import {
   type PendingConfirmations,
   type PermissionService,
   type SecretCipher,
+  type ServiceDeps,
   type SkillService,
   type TaskGrantRegistry,
   type TaskRunnerService,
@@ -72,9 +78,28 @@ export interface ServiceContainer {
   taskRunner: TaskRunnerService;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
   runtime: ToolRuntime;
+  /** v0.8 M1：工作流运行服务（试运行/落库；已发布流程经 runtime 第三来源解析） */
+  flowRunner: FlowRunService;
 }
 
 let container: ServiceContainer | null = null;
+
+/**
+ * dev 模式下 Next 按需编译/HMR 会重新求值本模块，模块级 container 会重置为 null，
+ * 导致 SSE 长连接持有旧 flowRunner（含人工等待器）而 POST 路由拿到新实例。
+ * 额外在 globalThis 上保留同一单例，使模块重载后仍复用原容器（生产模式无影响）。
+ */
+const globalHolder = globalThis as { __WBFM_SERVICE_CONTAINER__?: ServiceContainer };
+
+function readContainer(): ServiceContainer | null {
+  return container ?? globalHolder.__WBFM_SERVICE_CONTAINER__ ?? null;
+}
+
+function writeContainer(value: ServiceContainer | null): void {
+  container = value;
+  if (value) globalHolder.__WBFM_SERVICE_CONTAINER__ = value;
+  else delete globalHolder.__WBFM_SERVICE_CONTAINER__;
+}
 
 function resolveCipher(): SecretCipher {
   // Electron 可在启动前通过全局注入 safeStorage 桥接密码器（见 Task 30）
@@ -90,9 +115,32 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const skills = createSkillService({ db });
   const breakers = createToolBreaker();
   const taskGrants = createTaskGrantRegistry();
-  const deps = { db, cipher, mcp, permissions, confirmations, skills, breakers, taskGrants };
+  const deps: ServiceDeps = {
+    db,
+    cipher,
+    mcp,
+    permissions,
+    confirmations,
+    skills,
+    breakers,
+    taskGrants,
+  };
   const runtime = createToolRuntime(deps);
   const taskRunner = createTaskRunnerService(deps, runtime);
+  // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
+  // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
+  const workflows = createWorkflowRepository(db);
+  const flowRunner = createFlowRunService({
+    deps,
+    runtime,
+    workflows,
+    runs: createWorkflowRunRepository(db),
+  });
+  // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
+  const starterCount = ensureStarterFlows(workflows);
+  if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
+  deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
+  deps.flowToolLister = () => flowRunner.listPublishedTools();
   return {
     db,
     cipher,
@@ -104,6 +152,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     taskGrants,
     taskRunner,
     runtime,
+    flowRunner,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),
@@ -145,23 +194,26 @@ function registerExitCleanup(registry: McpRegistry): void {
 
 /** 获取服务单例：首次访问时初始化文件数据库与全部业务服务 */
 export function getServices(): ServiceContainer {
-  if (container) return container;
-  container = build(initDatabase(), resolveCipher());
-  registerExitCleanup(container.mcp);
+  const existing = readContainer();
+  if (existing) return existing;
+  const created = build(initDatabase(), resolveCipher());
+  writeContainer(created);
+  registerExitCleanup(created.mcp);
   // 按仓储现状对齐 MCP 连接（异步，不阻塞首请求）
-  container.mcp.reconcile();
+  created.mcp.reconcile();
   // 技能包启动对齐：播种内置示例 + 扫盘登记（本地文件扫描，同步快速完成）
-  container.skills.reconcile();
-  return container;
+  created.skills.reconcile();
+  return created;
 }
 
 /** 仅供测试：替换/清空容器 */
 export function __setContainerForTest(value: ServiceContainer | null): void {
-  container = value;
+  writeContainer(value);
 }
 
 /** 仅供测试：基于内存/临时库快速装配 */
 export function __buildContainerForTest(db: DatabaseInstance, cipher: SecretCipher) {
-  container = build(db, cipher);
-  return container;
+  const created = build(db, cipher);
+  writeContainer(created);
+  return created;
 }

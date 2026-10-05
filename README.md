@@ -1,13 +1,16 @@
 # WorkBuddy For Me
 
-类 WorkBuddy 的**私人 AI 平台**：本地优先的多模型 AI 工作台，基于 Next.js 全栈 + Electron，提供多会话流式对话、知识库 RAG 问答、智能体助手预设与统一的供应商管理。数据完全保留在本机 SQLite 中。
+类 WorkBuddy 的**私人 AI 平台**：本地优先的多模型 AI 工作台，基于 Next.js 全栈 + Electron，提供多会话流式对话、知识库 RAG 问答、可视化工作流编排 Flow Studio、桌面 Agent 任务、智能体助手预设与统一的供应商管理。数据完全保留在本机 SQLite 中。
 
-> 状态：MVP 开发中（v0.1.0）｜平台：Windows（Web 模式跨平台）
+> 状态：v0.8.0｜平台：Windows（Web 模式跨平台）
 
 ## 功能
 
-- **多会话 AI 对话**：SSE 流式输出、Markdown/代码高亮、中途停止、错误友好提示。
-- **知识库 RAG**：txt/md/pdf 文档上传、自动分片向量化（sqlite-vec）、带引用来源的问答。
+- **多会话 AI 对话**：SSE 流式输出、Markdown/代码高亮、中途停止、错误友好提示；工具调用（HITL 授权/熔断/超时门控）全程可观测。
+- **Flow Studio 工作流（v0.8）**：在 `/flows` 画布上把知识检索、条件分支、大模型、工具、人工确认画成确定的 DAG；逐节点试运行调试，发布后以 `flow:<id>` 工具回到普通对话中被助手调用，对话卡片展示节点级子步骤。
+- **桌面 Agent 任务**：给助手一个桌面目标，观察屏幕 → 决策 → 执行的任务循环，逐步授权与急停。
+- **知识库 RAG**：txt/md/pdf/docx 文档上传、自动分片向量化（sqlite-vec）、带引用来源的问答。
+- **技能与 MCP**：文件夹式技能包（提示词 + 工具白名单），MCP stdio 服务器工具接入。
 - **助手预设**：系统提示词、温度/topP/maxTokens、模型与知识库绑定，内置默认助手。
 - **设置中心**：OpenAI 兼容供应商（DeepSeek/通义/Kimi/GPT/本地网关）配置、连接测试、模型管理；API Key 加密落盘、脱敏显示。
 - **双端形态**：浏览器 Web 与 Electron Windows 桌面端同一套代码。

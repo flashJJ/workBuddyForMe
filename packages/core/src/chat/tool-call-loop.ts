@@ -1,13 +1,14 @@
 import { traceAsync, type ToolCall } from '@wbfm/ai';
-import type { Citation, ToolTraceEntry } from '@wbfm/shared';
+import type { Citation, ToolSubstep, ToolTraceEntry } from '@wbfm/shared';
 import type { ServiceDeps } from '../services/deps';
 import { createAttachmentService } from '../services/attachment-service';
-import type { ToolMap, ToolContext } from '../tools/types';
+import type { ToolMap, ToolContext, ToolResult } from '../tools/types';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TraceHandle } from '@wbfm/ai';
 import { executeCall, summarizeArgs } from '../tools/tool-executor';
 import { gateToolPermission } from './tool-permission-gate';
 import { mergeCitations, safeParseArgs, unknownToolResult } from './orchestrator-helpers';
+import { createSubstepQueue } from './substep-queue';
 import type { OrchestratorEvent } from './types';
 import type { ChatMessage } from '@wbfm/ai';
 
@@ -140,20 +141,44 @@ export async function* runToolCallLoop(
     };
 
     const startedAt = Date.now();
-    const result = tool
-      ? await traceAsync(
-          {
-            name: `tool:${name}`,
-            runType: 'tool',
-            parent: turnTrace,
-            inputs: { callId: call.id, arguments: safeParseArgs(call), argsSummary },
-            metadata: { tool: name, source, permission },
-          },
-          () => executeCall(tool, call, toolCtx),
-          (value) => ({ ok: value.ok, summary: value.summary, durationMs: Date.now() - startedAt }),
-        )
-      : unknownToolResult(call.function.name);
+    const substeps: ToolSubstep[] = [];
+    let result: ToolResult;
+    if (tool) {
+      // v0.8：flow 工具执行中逐节点推进子步骤，经队列转成 tool/substep SSE 事件。
+      // 入队的是回调时刻的快照（run 内可能同步连发多条，避免 yield 时数组已被整体推进）。
+      const queue = createSubstepQueue<ToolSubstep[]>();
+      const callToolCtx: ToolContext = {
+        ...toolCtx,
+        onSubstep: (substep) => {
+          const idx = substeps.findIndex((s) => s.id === substep.id);
+          if (idx >= 0) substeps[idx] = substep;
+          else substeps.push(substep);
+          queue.push([...substeps]);
+        },
+      };
+      const execution = traceAsync(
+        {
+          name: `tool:${name}`,
+          runType: 'tool',
+          parent: turnTrace,
+          inputs: { callId: call.id, arguments: safeParseArgs(call), argsSummary },
+          metadata: { tool: name, source, permission },
+        },
+        () => executeCall(tool, call, callToolCtx),
+        (value) => ({ ok: value.ok, summary: value.summary, durationMs: Date.now() - startedAt }),
+      ).finally(() => queue.close());
+
+      for (;;) {
+        const item = await queue.next();
+        if (item.done) break;
+        yield { event: 'tool', data: { phase: 'substep', callId: call.id, substeps: item.value } };
+      }
+      result = await execution;
+    } else {
+      result = unknownToolResult(call.function.name);
+    }
     const durationMs = Date.now() - startedAt;
+    const substepSnapshot = substeps.length > 0 ? { substeps: [...substeps] } : {};
 
     // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过
     breaker?.recordResult(name, result.ok);
@@ -169,6 +194,7 @@ export async function* runToolCallLoop(
       startedAt: new Date(startedAt).toISOString(),
       source,
       permission,
+      ...substepSnapshot,
     });
     yield {
       event: 'tool',
@@ -182,6 +208,7 @@ export async function* runToolCallLoop(
         ...(result.ok ? {} : { error: result.summary }),
         source,
         permission,
+        ...substepSnapshot,
       },
     };
 

@@ -155,9 +155,13 @@ describe('mcp server schemas (v0.6)', () => {
     expect(withMcp.enabledTools).toContain('mcp:filesystem:search_files');
     expect(assistantCreateSchema.safeParse({ name: 'a', enabledTools: ['mcp:fs'] }).success).toBe(false);
     expect(assistantCreateSchema.safeParse({ name: 'a', enabledTools: ['bad name!'] }).success).toBe(false);
-    // 上限仍为 10
+    // 上限 20（v0.7 维护提交由 10 上调）：11 个合法，21 个拒绝
     expect(
       assistantCreateSchema.safeParse({ name: 'a', enabledTools: Array.from({ length: 11 }, (_, i) => `t${i}`) })
+        .success,
+    ).toBe(true);
+    expect(
+      assistantCreateSchema.safeParse({ name: 'a', enabledTools: Array.from({ length: 21 }, (_, i) => `t${i}`) })
         .success,
     ).toBe(false);
   });
