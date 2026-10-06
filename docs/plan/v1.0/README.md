@@ -46,7 +46,7 @@ v0.1-v0.9 解决了「闭环→会动手→什么都能读→数据随身→记�
 | 阶段 | 主题 | 核心交付 | 状态 |
 |---|---|---|---|
 | M0 | 契约与 Spike | `@wbfm/voice` 骨架（引擎接口/WAV/切句/状态机/模型清单 35 测）、shared 语音契约、v014 迁移、sherpa-onnx-node 真机闭环 Spike、透明窗 Spike + 穿透滞回控制器（8 测） | ✅ 已完成 |
-| M1 | 会说 | sherpa TTS 引擎、模型下载器、`/api/voice/tts`、对话页朗读开关、播放队列与停止联动 | 📝 待开始 |
+| M1 | 会说 | sherpa TTS 引擎（fp32）、模型下载器、`/api/voice/tts`、对话页朗读开关、播放队列与停止联动 | ✅ 已完成 |
 | M2 | 能听 | sherpa ASR 引擎、`/api/voice/asr`、录音（先 PTT）、语音设置面板（模型下载/自检） | |
 | M3 | 有形 | 懒加载 Cubism 形象、RMS 口型、表情解析与助手开关、许可声明 | |
 | M4 | 伴身 | pet 窗/IPC、穿透滞回接线、拖拽与位置持久化、主窗↔桌宠语音单例、右键菜单 | |
@@ -58,7 +58,7 @@ v0.1-v0.9 解决了「闭环→会动手→什么都能读→数据随身→记�
 
 - **本地语音走 sherpa-onnx 官方 Node 绑定**（`sherpa-onnx-node` 1.13.8 + `sherpa-onnx-win-x64` 平台包）。M0 Spike 已在 Node 24（Next 服务端同款运行时）完成「MeloTTS 合成→重采样→SenseVoice 识别」真机闭环，Smart App Control 下原生 `.node` 加载正常。
 - **语音跑在 Next 服务进程，不碰 Electron ABI**：生产态 `/api/voice/*` 由独立托管 Node 运行（v0.9 既有架构），无需 electron-rebuild；打包时把 sherpa 两个包加入 `prepare-server.mjs` 的 FALLBACK_PACKAGES。
-- **模型不进安装包**：首用时下载到 userData（ASR int8 ≈228MB、TTS int8 ≈62MB），默认 hf-mirror，sha/大小校验；支持指定本地目录。
+- **模型不进安装包**：首用时下载到 userData（ASR int8 ≈228MB、TTS fp32 ≈163MB），默认 hf-mirror，大小校验；支持指定本地目录。M1 实测 Node onnxruntime 1.28 在无 AVX512-VNNI 的 CPU 上 int8 TTS 内核退化（0.25x 实时），TTS 选 fp32（1.5x 实时）；ASR int8 不受影响。
 - **不照搬 VTuber 的 WebSocket**：沿用项目 HTTP+SSE 范式，新增 `voice_audio`/`voice_state` 两个 SSE 事件；对话仍走既有 orchestrator（记忆/技能/工具/Flow 全部白得）。
 - **穿透滞回**：进入模型区立即可交互、离开延迟 180ms 才穿透（既往 Electron 项目边缘抖动教训固化为 `PetClickThroughController` 单测）。
 - **半双工而非全双工**：用「播放中软闭麦 + 停止/急停打断」覆盖 80% 场景，AEC 复杂度不进入 v1.0。
