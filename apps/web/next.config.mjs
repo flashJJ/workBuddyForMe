@@ -15,6 +15,8 @@ const nextConfig = {
       'pdfjs-dist',
       '@napi-rs/canvas',
       'tesseract.js',
+      // v1.0：sherpa-onnx-node 含 .node 原生绑定与 DLL，必须外部 require
+      'sherpa-onnx-node',
     ],
     // pnpm 虚拟仓下原生二进制/worker/wasm 需显式纳入 standalone 追踪
     outputFileTracingIncludes: {
@@ -31,6 +33,11 @@ const nextConfig = {
         './node_modules/tesseract.js-core/**/*',
         './node_modules/.pnpm/tesseract.js@*/node_modules/tesseract.js/**/*',
         './node_modules/.pnpm/tesseract.js-core@*/node_modules/tesseract.js-core/**/*',
+        // v1.0 sherpa-onnx 原生绑定（JS 包 + win 平台 .node/DLL）
+        './node_modules/sherpa-onnx-node/**/*',
+        './node_modules/sherpa-onnx-win-x64/**/*',
+        './node_modules/.pnpm/sherpa-onnx-node@*/node_modules/sherpa-onnx-node/**/*',
+        './node_modules/.pnpm/sherpa-onnx-win-x64@*/node_modules/sherpa-onnx-win-x64/**/*',
       ],
     },
   },
@@ -53,6 +60,8 @@ const nextConfig = {
         // v0.4 OCR：原生 canvas 与 tesseract worker 保持运行时外部 require
         /^@napi-rs\/canvas$/,
         /^tesseract\.js$/,
+        // v1.0：sherpa-onnx Node 绑定（含 require(./win-x64) 的平台包解析）
+        /^sherpa-onnx-node$/,
       ];
     }
     return config;

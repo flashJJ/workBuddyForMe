@@ -20,6 +20,9 @@ import { MessageList } from './message-list';
 import { Composer } from './composer';
 import { ToolConfirmDialog } from './tool-confirm-dialog';
 import { useChatSession } from './use-chat-session';
+import { useVoicePlayback } from '../voice/use-voice-playback';
+import { useVoiceSettings } from '../voice/use-voice-settings';
+import { VoiceToggle } from '../voice/voice-toggle';
 
 function SetupGuide() {
   return (
@@ -60,9 +63,35 @@ export function ChatPage() {
   const currentConversation =
     conversationsQuery.data?.find((item) => item.id === conversationId) ?? null;
 
+  // v1.0：语音朗读（本地 TTS）。开关持久化在语音设置；播放队列与停止联动。
+  const { settings: voiceSettings, update: updateVoiceSettings } = useVoiceSettings();
+  const playback = useVoicePlayback();
+  const [ttsEnabled, setTtsEnabled] = React.useState(false);
+  React.useEffect(() => {
+    if (voiceSettings) setTtsEnabled(voiceSettings.ttsEnabled);
+  }, [voiceSettings]);
+
+  const handleTtsToggle = React.useCallback(
+    (next: boolean) => {
+      setTtsEnabled(next);
+      void updateVoiceSettings({ ttsEnabled: next });
+    },
+    [updateVoiceSettings],
+  );
+
+  // 传给会话的语音接线必须稳定（避免 reset/stop 回调反复重建）
+  const voiceBridge = React.useMemo(
+    () => ({
+      ttsEnabled,
+      onAudio: playback.enqueue,
+      cancelPlayback: playback.cancel,
+    }),
+    [ttsEnabled, playback.enqueue, playback.cancel],
+  );
+
   const session = useChatSession(assistantId, conversationId, (createdId) => {
     setConversationId(createdId);
-  });
+  }, voiceBridge);
 
   const hasChatModel = React.useMemo(() => {
     if (!currentAssistant) return false;
@@ -240,6 +269,7 @@ export function ChatPage() {
             <Composer
               streaming={session.streaming}
               visionEnabled={visionEnabled}
+              leading={<VoiceToggle enabled={ttsEnabled} onEnabledChange={handleTtsToggle} />}
               onSend={session.send}
               onStop={session.stop}
             />

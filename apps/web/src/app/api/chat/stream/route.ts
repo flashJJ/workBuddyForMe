@@ -3,6 +3,8 @@ import { createRagRetriever } from '@wbfm/core';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { parseBody, readJsonBody } from '@/lib/server/validation';
 import { sseResponse } from '@/lib/server/sse-stream';
+import { getVoiceRuntime } from '@/lib/server/voice/voice-runtime-singleton';
+import { withVoice } from '@/lib/server/voice/voice-chat-bridge';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,5 +19,18 @@ export const POST = defineRoute(async ({ request, services }) => {
     signal: request.signal,
     retrieve: retriever,
   });
+
+  // v1.0：请求显式要求语音朗读时，旁路包装为「文本 + voice_audio」流。
+  // 缺省（voice 缺省/tts=false）直接返回原事件流，行为与 v0.9 一致。
+  if (input.voice?.tts) {
+    const runtime = getVoiceRuntime();
+    return sseResponse(
+      withVoice(events, {
+        tts: { synthesize: (text: string) => runtime.synthesize(text) },
+        signal: request.signal,
+      }),
+    );
+  }
+
   return sseResponse(events);
 });

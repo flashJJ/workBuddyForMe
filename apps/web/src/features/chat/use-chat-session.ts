@@ -73,6 +73,15 @@ export interface ChatSession {
   confirmTool: (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => Promise<boolean>;
 }
 
+/** v1.0：语音接线（朗读开关 + 音频帧/状态回调），由对话页注入播放队列 */
+export interface ChatSessionVoice {
+  ttsEnabled: boolean;
+  onAudio?: (frame: SsePayloadMap['voice_audio']) => void;
+  onVoiceState?: (state: SsePayloadMap['voice_state']) => void;
+  /** 停止/重置时中断播放 */
+  cancelPlayback?: () => void;
+}
+
 /**
  * 对话会话状态：历史消息来自 React Query，流式期间用本地 live 列表接管；
  * 新会话由后端创建后通过 onConversationCreated 回传 conversationId。
@@ -81,6 +90,7 @@ export function useChatSession(
   assistantId: string,
   conversationId: string | null,
   onConversationCreated: (id: string) => void,
+  voice?: ChatSessionVoice,
 ): ChatSession {
   const historyQuery = useMessages(conversationId);
   const queryClient = useQueryClient();
@@ -95,7 +105,8 @@ export function useChatSession(
     setLive(null);
     setRecalledMemories([]);
     setPendingConfirmation(null);
-  }, []);
+    voice?.cancelPlayback?.();
+  }, [voice]);
 
   const baseMessages = live ?? historyQuery.data ?? [];
 
@@ -167,7 +178,7 @@ export function useChatSession(
           setLive((prev) => applyToolTraceEnd(prev, data));
         },
         onToolConfirmationRequired: (data: SsePayloadMap['tool_confirmation_required']) => {
-          // orchestrator 已挂起等待决策；弹窗由页面渲染
+          // 编排器已挂起等待决策；弹窗由页面渲染
           setPendingConfirmation({
             callId: data.callId,
             tool: data.tool,
@@ -175,6 +186,8 @@ export function useChatSession(
             argsSummary: data.argsSummary,
           });
         },
+        onVoiceAudio: (data: SsePayloadMap['voice_audio']) => voice?.onAudio?.(data),
+        onVoiceState: (data: SsePayloadMap['voice_state']) => voice?.onVoiceState?.(data),
         onDone: (data: SsePayloadMap['done']) => {
           setPendingConfirmation(null);
           patchLastAssistant({
@@ -202,12 +215,13 @@ export function useChatSession(
           content,
           ...(attachments.length > 0 ? { attachments } : {}),
           ...(regenerate ? { regenerate: true } : {}),
+          ...(voice?.ttsEnabled ? { voice: { tts: true } } : {}),
         },
         handlers,
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [assistantId, conversationId, historyQuery.data, onConversationCreated, queryClient, streamSend],
+    [assistantId, conversationId, historyQuery.data, onConversationCreated, queryClient, streamSend, voice],
   );
 
   const send = React.useCallback(
@@ -226,6 +240,7 @@ export function useChatSession(
   /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
   const stop = React.useCallback(() => {
     streamStop();
+    voice?.cancelPlayback?.();
     setPendingConfirmation(null);
     setLive((prev) => {
       if (!prev) return prev;
@@ -239,7 +254,7 @@ export function useChatSession(
       }
       return next;
     });
-  }, [streamStop]);
+  }, [streamStop, voice]);
 
   const applyFeedback = React.useCallback(
     (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => {

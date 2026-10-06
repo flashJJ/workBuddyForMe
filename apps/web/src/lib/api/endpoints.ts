@@ -59,6 +59,11 @@ export const API = {
   // v0.9 M4 运行记录与重放
   flowRunsCenter: '/api/flow-runs',
   flowRunReplay: (runId: string) => `/api/flows/runs/${runId}/replay`,
+  // v1.0 语音
+  voiceSettings: '/api/voice/settings',
+  voiceTts: '/api/voice/tts',
+  voiceModelStatus: '/api/voice/models/status',
+  voiceModelDownload: '/api/voice/models/download',
 } as const;
 
 export const QUERY_KEYS = {
@@ -87,4 +92,6 @@ export const QUERY_KEYS = {
   flow: (id: string) => ['flows', id] as const,
   flowRun: (id: string) => ['flow-run', id] as const,
   flowEndpoint: (id: string) => ['flow-endpoint', id] as const,
+  voiceSettings: ['voice-settings'] as const,
+  voiceModelStatus: ['voice-model-status'] as const,
 };
