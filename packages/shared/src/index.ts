@@ -77,6 +77,35 @@ export {
   type ClipRequest,
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
+
+// v1.0 语音/形象/桌宠契约
+export {
+  VOICE_ASR_ENGINES,
+  VOICE_TTS_ENGINES,
+  VOICE_INPUT_MODES,
+  VOICE_STATES,
+  voiceAsrEngineSchema,
+  voiceTtsEngineSchema,
+  voiceInputModeSchema,
+  voiceStateSchema,
+  voiceSettingsUpdateSchema,
+  voiceSettingsSchema,
+  DEFAULT_VOICE_SETTINGS,
+  voiceAsrRequestSchema,
+  voiceAsrResponseSchema,
+  voiceTtsRequestSchema,
+  voiceModelStatusSchema,
+  type VoiceAsrEngine,
+  type VoiceTtsEngine,
+  type VoiceInputMode,
+  type VoiceState,
+  type VoiceSettingsUpdateInput,
+  type VoiceSettings,
+  type VoiceAsrRequest,
+  type VoiceAsrResponse,
+  type VoiceTtsRequest,
+  type VoiceModelStatus,
+} from './schemas/voice';
 export {
   messageFeedbackSchema,
   type MessageFeedbackInput,
