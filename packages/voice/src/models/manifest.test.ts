@@ -13,7 +13,7 @@ describe('VOICE_MODELS 清单', () => {
   it('TTS 必需的 Jieba 词典与规则 fst 都在清单中', () => {
     const paths = VOICE_MODELS.tts.files.map((f) => f.path);
     for (const required of [
-      'model.int8.onnx',
+      'model.onnx',
       'tokens.txt',
       'lexicon.txt',
       'dict/jieba.dict.utf8',

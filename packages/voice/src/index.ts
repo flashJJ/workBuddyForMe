@@ -53,3 +53,18 @@ export {
   type VoiceModelSpec,
   type VoiceModelFile,
 } from './models/manifest';
+export {
+  downloadVoiceModel,
+  defaultFs,
+  type DownloadProgress,
+  type DownloadModelOptions,
+  type FsLike,
+} from './models/downloader';
+
+export { SherpaTtsEngine, defaultSherpaTtsLoader } from './engine/sherpa/tts-engine';
+export type {
+  SherpaTtsOptions,
+  SherpaTtsModule,
+  SherpaTtsNative,
+  SherpaTtsLoader,
+} from './engine/sherpa/tts-engine';

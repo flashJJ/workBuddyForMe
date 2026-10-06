@@ -45,10 +45,13 @@ const ASR_SENSEVOICE: VoiceModelSpec = {
 const TTS_MELO_ZH_EN: VoiceModelSpec = {
   kind: 'tts',
   id: 'vits-melo-tts-zh_en',
-  label: 'MeloTTS 中英女声（VITS int8）',
+  label: 'MeloTTS 中英女声（VITS fp32）',
   hfRepo: 'csukuangfj/vits-melo-tts-zh_en',
   files: [
-    { path: 'model.int8.onnx', size: 53_517_430 },
+    // 注意：Node 侧（onnxruntime 1.28）在无 AVX512-VNNI 的 CPU（如 Intel Arrow Lake）
+    // 上 int8 量化内核退化到 ~0.25x 实时；fp32 反而 1.5x 实时（2026-10 实测），
+    // 故 v1.0 Node 桌面端 TTS 选 fp32（ASR SenseVoice int8 不受此问题影响）。
+    { path: 'model.onnx', size: 170_429_550 },
     { path: 'tokens.txt', size: 655 },
     { path: 'lexicon.txt', size: 6_837_671 },
     { path: 'date.fst', size: 59_154 },
