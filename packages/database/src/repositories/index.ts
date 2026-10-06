@@ -118,4 +118,10 @@ export {
   type EndpointUpsertFields,
   type EndpointConfigPatch,
 } from './workflow-endpoint-repo';
+export {
+  createVoiceModelRepository,
+  type VoiceModelRepository,
+  type VoiceModelState,
+  type VoiceModelDownloadStatus,
+} from './voice-model-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

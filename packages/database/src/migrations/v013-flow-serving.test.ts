@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -39,8 +39,8 @@ describe('v013 迁移：Flow Serving（endpoints 表 + runs 增列）', () => {
   it('v12 老库升级：新表可写、runs 四增列 NULL、老数据不动', () => {
     const db = createV12Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([13]);
-    expect(LATEST_SCHEMA_VERSION).toBe(13);
+    expect(result.applied).toEqual([13, 14]);
+    expect(LATEST_SCHEMA_VERSION).toBe(14);
 
     db.prepare(
       `INSERT INTO workflows(id, name, status, current_version, created_at, updated_at)

@@ -28,6 +28,13 @@ export const chatRequestSchema = z
       .optional(),
     /** v0.2：重新生成——沿用上一条用户消息重跑（需已有会话） */
     regenerate: z.boolean().optional(),
+    /** v1.0：语音选项。缺省/tts=false 时行为与 v0.9 完全一致（纯文字） */
+    voice: z
+      .object({
+        /** 是否在文本流之外追加 voice_audio 朗读帧 */
+        tts: z.boolean(),
+      })
+      .optional(),
   })
   .refine((v) => v.content.length > 0 || (v.attachments?.length ?? 0) > 0, {
     message: '消息内容不能为空',

@@ -87,7 +87,8 @@ export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   ttsEnabled: false,
   ttsEngine: 'sherpa_onnx',
-  ttsSpeakerId: 1,
+  // vits-melo-tts-zh_en 分发包仅暴露 1 个 speaker（中英混合女声，sid=0）
+  ttsSpeakerId: 0,
   ttsSpeed: 1,
   ttsNumThreads: 4,
   asrEnabled: false,

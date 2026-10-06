@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -35,8 +35,8 @@ describe('v012 迁移：Flow Studio（workflows 四表）', () => {
   it('v11 老库升级：四表可写，默认值与级联删除生效', () => {
     const db = createV11Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([12, 13]);
-    expect(LATEST_SCHEMA_VERSION).toBe(13);
+    expect(result.applied).toEqual([12, 13, 14]);
+    expect(LATEST_SCHEMA_VERSION).toBe(14);
 
     const ts = '2026-10-05T01:00:00.000Z';
     db.prepare(
