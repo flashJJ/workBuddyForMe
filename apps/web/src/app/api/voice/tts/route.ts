@@ -16,7 +16,8 @@ export const POST = defineRoute(async ({ request }) => {
   const input = parseBody(voiceTtsRequestSchema, await readJsonBody(request));
   try {
     const runtime = getVoiceRuntime();
-    const { samples, sampleRate } = await runtime.synthesize(input.text);
+    // speakerId 缺省时 runtime 按当前角色绑定声线合成（设置页角色试听显式传入）
+    const { samples, sampleRate } = await runtime.synthesize(input.text, input.speakerId);
     const wav = encodePcm16Wav(samples, sampleRate);
     return new Response(new Uint8Array(wav), {
       headers: {

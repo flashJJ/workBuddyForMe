@@ -110,3 +110,74 @@ describe('SherpaTtsEngine', () => {
     await expect(engine.dispose()).resolves.toBeUndefined();
   });
 });
+
+describe('SherpaTtsEngine（Kokoro 多说话人）', () => {
+  const kokoroConfig = {
+    modelDir: '/models/tts',
+    speakerId: 3,
+    speed: 1,
+    numThreads: 4,
+    kokoro: {
+      voices: '/models/tts/voices.bin',
+      dataDir: '/models/tts/espeak-ng-data',
+      lexicon: '/models/tts/lexicon-us-en.txt,/models/tts/lexicon-zh.txt',
+    },
+  };
+
+  it('构造走 kokoro 配置：voices/espeak/lexicon 透传，maxNumSentences=1，中文 fst 拼接', async () => {
+    const native = makeNative({ numSpeakers: 103 });
+    const mod = makeModule(native);
+    const engine = await SherpaTtsEngine.create({
+      config: kokoroConfig,
+      spec: VOICE_MODELS.tts,
+      loader: async () => mod,
+      exists: existsAll,
+    });
+    await engine.synthesize('你好');
+    expect(native.generate).toHaveBeenCalledWith({ text: '你好', sid: 3, speed: 1 });
+    const cfg = (mod.OfflineTts as unknown as ReturnType<typeof vi.fn>).mock.calls[0]![0] as {
+      model: {
+        kokoro: { model: string; voices: string; tokens: string; dataDir: string; lexicon: string };
+      };
+      maxNumSentences: number;
+      ruleFsts: string;
+    };
+    expect(cfg.model.kokoro.model.replaceAll('\\', '/')).toBe('/models/tts/model.onnx');
+    expect(cfg.model.kokoro.voices.replaceAll('\\', '/')).toBe('/models/tts/voices.bin');
+    expect(cfg.model.kokoro.dataDir.replaceAll('\\', '/')).toBe('/models/tts/espeak-ng-data');
+    expect(cfg.model.kokoro.lexicon).toContain('lexicon-zh.txt');
+    expect(cfg.maxNumSentences).toBe(1);
+    expect(cfg.ruleFsts).toContain('date-zh.fst');
+    expect(cfg.ruleFsts).toContain('number-zh.fst');
+    expect(cfg.ruleFsts).toContain('phone-zh.fst');
+  });
+
+  it('必需文件缺失（voices.bin / espeak phontab / lexicon-zh）抛 VoiceEngineError', async () => {
+    for (const missing of ['voices.bin', 'phontab', 'lexicon-zh.txt']) {
+      await expect(
+        SherpaTtsEngine.create({
+          config: kokoroConfig,
+          spec: VOICE_MODELS.tts,
+          loader: async () => makeModule(makeNative({ numSpeakers: 103 })),
+          exists: (p) => !p.includes(missing),
+        }),
+      ).rejects.toMatchObject({ name: 'VoiceEngineError', engine: 'tts' });
+    }
+  });
+
+  it('逐句 sid：按角色切换音色；越界 sid 回落引擎默认（不抛错）', async () => {
+    const native = makeNative({ numSpeakers: 103 });
+    const engine = await SherpaTtsEngine.create({
+      config: kokoroConfig,
+      spec: VOICE_MODELS.tts,
+      loader: async () => makeModule(native),
+      exists: existsAll,
+    });
+    await engine.synthesize('马克', { speakerId: 58 });
+    expect(native.generate).toHaveBeenLastCalledWith({ text: '马克', sid: 58, speed: 1 });
+    await engine.synthesize('晴');
+    expect(native.generate).toHaveBeenLastCalledWith({ text: '晴', sid: 3, speed: 1 });
+    await engine.synthesize('越界', { speakerId: 999 });
+    expect(native.generate).toHaveBeenLastCalledWith({ text: '越界', sid: 3, speed: 1 });
+  });
+});

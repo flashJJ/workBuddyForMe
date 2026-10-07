@@ -1,23 +1,94 @@
 'use client';
 
 import * as React from 'react';
-import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared';
+import { Loader2, Play } from 'lucide-react';
+import {
+  AVATAR_TTS_VOICES,
+  type VoiceSettings,
+  type VoiceSettingsUpdateInput,
+} from '@wbfm/shared';
 import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar/avatar-models';
 import { getPetBridge } from '@/features/pet/pet-bridge';
 import { usePetOpenState } from '@/features/pet/use-pet-voice-relay';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { useToast } from '@/components/common/toast';
+import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
+import { API } from '@/lib/api/endpoints';
 
 interface Props {
   settings: VoiceSettings;
+  ttsReady: boolean;
   onPatch: (patch: VoiceSettingsUpdateInput) => Promise<void>;
+}
+
+const VOICE_PREVIEW_TEXT = '你好，这是当前角色绑定声线的试听，所有语音都在本机合成。';
+
+/** 角色声线试听：按绑定 sid 合成 WAV 并播放 */
+function AvatarVoicePreview(props: { sid: number; ready: boolean }) {
+  const toast = useToast();
+  const [playing, setPlaying] = React.useState(false);
+
+  const play = async () => {
+    if (playing) return;
+    setPlaying(true);
+    try {
+      const res = await fetch(
+        API.voiceTts,
+        withManagedHeaders({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ text: VOICE_PREVIEW_TEXT, speakerId: props.sid }),
+        }),
+      );
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as
+          | { error?: { message?: string } }
+          | null;
+        throw new Error(payload?.error?.message ?? `合成失败（HTTP ${res.status}）`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        setPlaying(false);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setPlaying(false);
+        toast.error('试听播放失败');
+      };
+      await audio.play();
+    } catch (err) {
+      setPlaying(false);
+      toast.error(err instanceof ApiClientError ? err.message : (err as Error).message);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-8 shrink-0"
+      disabled={!props.ready || playing}
+      onClick={() => void play()}
+      data-testid="avatar-voice-preview"
+    >
+      {playing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1 h-3.5 w-3.5" />}
+      试听声线
+    </Button>
+  );
 }
 
 /**
  * Live2D 形象：对话页右侧虚拟角色开关 + 内置模型选择（M3.5 起 5 套官方样本）。
  * M4 伴身：桌面端额外提供「桌宠模式」开关（透明置顶小窗，仅 Electron preload 有桥时出现）。
+ * M4.5：每个角色绑定固定 Kokoro 声线，可就地试听。
  */
-export function AvatarSection({ settings, onPatch }: Props) {
+export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
   // 本地态在离散事件内同步落 DOM（避免外部存储驱动的受控 Select 二次操作回退），
   // 服务端值通过 effect 回同步
   const [enabled, setEnabled] = React.useState(settings.avatarEnabled);
@@ -26,6 +97,7 @@ export function AvatarSection({ settings, onPatch }: Props) {
   React.useEffect(() => setModelId(settings.avatarModelId), [settings.avatarModelId]);
 
   const model = getAvatarModel(modelId);
+  const voice = AVATAR_TTS_VOICES[model.id as keyof typeof AVATAR_TTS_VOICES] ?? AVATAR_TTS_VOICES.haru;
   const petBridge = React.useMemo(() => getPetBridge(), []);
   const petOpen = usePetOpenState();
 
@@ -101,6 +173,16 @@ export function AvatarSection({ settings, onPatch }: Props) {
               </option>
             ))}
           </Select>
+          <div
+            className="flex items-center justify-between gap-2"
+            data-testid="avatar-voice-row"
+          >
+            <p className="text-xs text-muted-foreground">
+              绑定声线：Kokoro {voice.voice}（{voice.gender === 'female' ? '中文女声' : '中文男声'}，
+              sid {voice.sid}/102）· 对话朗读自动使用该声线
+            </p>
+            <AvatarVoicePreview sid={voice.sid} ready={ttsReady} />
+          </div>
           <p className="text-xs text-muted-foreground">
             均为 Live2D 官方样本角色（免费素材许可，仅内置不可导入外部模型）；切换后即时生效
           </p>

@@ -121,6 +121,10 @@ export {
   type VoiceModelFileStatus,
   SUPPORTED_AVATAR_MODEL_IDS,
   DEFAULT_AVATAR_MODEL_ID,
+  AVATAR_TTS_VOICES,
+  getAvatarSpeakerId,
+  type SupportedAvatarModelId,
+  type AvatarTtsVoice,
 } from './schemas/voice';
 export {
   messageFeedbackSchema,

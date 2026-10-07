@@ -24,8 +24,8 @@ const MODEL_META = {
     description: '中文/英文/日文/粤语转文字，int8 量化',
   },
   tts: {
-    name: '离线语音合成 MeloTTS',
-    description: '中英混合女声朗读，VITS fp32',
+    name: '离线语音合成 Kokoro',
+    description: '中英多说话人，103 个音色，按角色绑定声线',
   },
 } as const;
 
@@ -180,7 +180,13 @@ export function VoicePreferencePanel() {
 
       <StorageSection />
 
-      {settings && <AvatarSection settings={settings} onPatch={patch} />}
+      {settings && (
+        <AvatarSection
+          settings={settings}
+          ttsReady={!!modelStatus?.ttsReady}
+          onPatch={patch}
+        />
+      )}
 
       <div className="space-y-2 rounded-md border p-3" data-testid="voice-device-section">
         <p className="text-sm font-medium">设备自检</p>

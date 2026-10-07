@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import {
   SherpaAsrEngine,
   SherpaTtsEngine,
@@ -18,6 +19,7 @@ import {
   type DatabaseInstance,
   type SettingsRepository,
 } from '@wbfm/database';
+import { getAvatarSpeakerId } from '@wbfm/shared';
 import type { VoiceModelFileStatus, VoiceSettings } from '@wbfm/shared';
 import { readVoiceSettings } from './voice-settings';
 import { getModelDir, getVoiceModelsRoot } from './model-paths';
@@ -156,10 +158,15 @@ export class VoiceRuntime {
     this.jobs.get(kind)?.controller.abort();
   }
 
-  /** 单句合成（路由/试听）；引擎缺失模型时抛 VoiceEngineError（带 hint） */
-  async synthesize(text: string): Promise<SynthResult> {
+  /**
+   * 单句合成（路由/试听/对话桥）。
+   * sid 解析：调用方显式指定（如请求 voice.speakerId 或角色试听）→ 当前角色绑定
+   * （settings.avatarModelId → AVATAR_TTS_VOICES）→ 引擎默认（兜底 ttsSpeakerId）。
+   */
+  async synthesize(text: string, speakerId?: number): Promise<SynthResult> {
     const engine = await this.ensureTts();
-    return engine.synthesize(text);
+    const sid = speakerId ?? getAvatarSpeakerId(this.settings.avatarModelId);
+    return engine.synthesize(text, { speakerId: sid });
   }
 
   /**
@@ -178,22 +185,31 @@ export class VoiceRuntime {
 
   private async ensureTts(): Promise<TtsEngine> {
     const s = this.settings;
-    const key = [
-      getModelDir(s, 'tts', VOICE_MODELS.tts.id),
-      s.ttsSpeakerId,
-      s.ttsSpeed,
-      s.ttsNumThreads,
-    ].join('|');
+    const modelDir = getModelDir(s, 'tts', VOICE_MODELS.tts.id);
+    // sid 是逐句参数（按角色切换），不进引擎缓存键；引擎只按目录/线程/速度长驻
+    const key = [modelDir, s.ttsSpeed, s.ttsNumThreads].join('|');
     if (this.ttsEngine && this.ttsConfigKey === key) return this.ttsEngine;
     await this.ttsEngine?.dispose();
     this.ttsEngine = await SherpaTtsEngine.create({
       spec: VOICE_MODELS.tts,
       config: {
-        modelDir: getModelDir(s, 'tts', VOICE_MODELS.tts.id),
+        modelDir,
         speakerId: s.ttsSpeakerId,
         speed: s.ttsSpeed,
         numThreads: s.ttsNumThreads,
         provider: 'cpu',
+        // Kokoro 多说话人：voices 嵌入库 + espeak 数据 + 中英词典 + 中文规整 FST
+        kokoro: {
+          voices: path.join(modelDir, 'voices.bin'),
+          dataDir: path.join(modelDir, 'espeak-ng-data'),
+          lexicon: [
+            path.join(modelDir, 'lexicon-us-en.txt'),
+            path.join(modelDir, 'lexicon-zh.txt'),
+          ].join(','),
+          ruleFsts: ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst']
+            .map((f) => path.join(modelDir, f))
+            .join(','),
+        },
       },
     });
     this.ttsConfigKey = key;

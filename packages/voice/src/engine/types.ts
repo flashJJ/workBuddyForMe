@@ -34,12 +34,31 @@ export interface AsrEngineConfig {
 export interface TtsEngineConfig {
   /** 模型根目录 */
   modelDir: string;
-  /** 说话人 ID（melo zh_en：0=英文女声，1=中文女声） */
+  /** 默认说话人 ID（请求未显式指定时使用） */
   speakerId?: number;
   /** 语速倍率，1.0 为正常 */
   speed?: number;
   numThreads?: number;
   provider?: 'cpu' | 'cuda';
+  /**
+   * Kokoro 多说话人模型额外配置（存在则走 Kokoro 前端，否则按 MeloTTS VITS）。
+   * lexicon/ruleFsts 为逗号分隔的绝对路径字符串（与 sherpa C API 一致）。
+   */
+  kokoro?: {
+    /** 说话人嵌入库（voices.bin） */
+    voices: string;
+    /** espeak-ng-data 目录（多语种 g2p，Kokoro 强制要求） */
+    dataDir: string;
+    /** 逗号分隔的词典绝对路径（如 英文,中文） */
+    lexicon: string;
+    /** 逗号分隔的文本规整 FST（日期/数字/拼音） */
+    ruleFsts?: string;
+  };
+}
+
+/** 单次合成选项：可逐句切换说话人（多说话人 TTS 按角色配音） */
+export interface TtsSynthOptions {
+  speakerId?: number;
 }
 
 /** 语音识别引擎接口（离线/在线实现共同遵守）。 */
@@ -55,8 +74,8 @@ export interface AsrEngine {
 
 /** 语音合成引擎接口（离线/在线实现共同遵守）。 */
 export interface TtsEngine {
-  /** 合成一句/一段文本为 PCM */
-  synthesize(text: string): Promise<TtsResult>;
+  /** 合成一句/一段文本为 PCM；opts.speakerId 可逐句切换说话人 */
+  synthesize(text: string, opts?: TtsSynthOptions): Promise<TtsResult>;
   dispose(): Promise<void>;
 }
 

@@ -141,6 +141,13 @@ test.describe.serial('M3 Live2D 形象', () => {
     expect(payload.success).toBe(true);
     expect(payload.data.avatarModelId).toBe('hiyori');
 
+    // M4.5：角色绑定 Kokoro 声线（Hiyori → zf_026 / sid 18）；
+    // e2e 临时数据根无 TTS 模型，试听按钮渲染但禁用
+    const voiceRow = page.getByTestId('avatar-voice-row');
+    await expect(voiceRow).toContainText('zf_026');
+    await expect(voiceRow).toContainText('sid 18');
+    await expect(page.getByTestId('avatar-voice-preview')).toBeDisabled();
+
     // 对话页加载 Hiyori 模型清单（默认 haru 资源不应被请求）
     const requested = collectLive2dRequests(page);
     await page.goto('/chat');

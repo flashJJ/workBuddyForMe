@@ -26,7 +26,10 @@ export const POST = defineRoute(async ({ request, services }) => {
     const runtime = getVoiceRuntime();
     return sseResponse(
       withVoice(events, {
-        tts: { synthesize: (text: string) => runtime.synthesize(text) },
+        // 未显式带 sid 时，runtime 按当前 avatarModelId 的角色绑定声线合成
+        tts: {
+          synthesize: (text: string) => runtime.synthesize(text, input.voice?.speakerId),
+        },
         signal: request.signal,
       }),
     );

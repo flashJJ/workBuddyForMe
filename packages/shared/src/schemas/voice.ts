@@ -34,8 +34,12 @@ export const voiceSettingsUpdateSchema = z
     /** 朗读回复总开关（TTS 自动播放） */
     ttsEnabled: z.boolean().optional(),
     ttsEngine: voiceTtsEngineSchema.optional(),
-    /** melo zh_en：0=英文女声 1=中文女声 */
-    ttsSpeakerId: z.number().int().min(0).max(20).optional(),
+    /**
+     * 兜底发音人 sid（Kokoro 103 音色，范围 0-102）。
+     * 正常对话按 avatarModelId 绑定的角色声线合成（见 AVATAR_TTS_VOICES），
+     * 此值仅用于无角色上下文的试听/未知角色回落。
+     */
+    ttsSpeakerId: z.number().int().min(0).max(102).optional(),
     ttsSpeed: z.number().min(0.5).max(2).optional(),
     ttsNumThreads: z.number().int().min(1).max(32).optional(),
     /** 语音输入开关（麦克风） */
@@ -93,13 +97,56 @@ export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 
 /** v1.0 内置 Live2D 模型 id（新增内置模型时追加；未知 id 读取时回落首个） */
 export const SUPPORTED_AVATAR_MODEL_IDS = ['haru', 'hiyori', 'mark', 'mao', 'wanko'] as const;
-export const DEFAULT_AVATAR_MODEL_ID: (typeof SUPPORTED_AVATAR_MODEL_IDS)[number] = 'haru';
+export type SupportedAvatarModelId = (typeof SUPPORTED_AVATAR_MODEL_IDS)[number];
+export const DEFAULT_AVATAR_MODEL_ID: SupportedAvatarModelId = 'haru';
+
+/**
+ * Kokoro 多说话人 TTS（kokoro-multi-lang-v1_1，共 103 音色，sid 0-102）。
+ * sid 对照 sherpa-onnx 官方音色表：
+ * https://k2-fsa.github.io/sherpa/onnx/tts/all/Chinese-English/kokoro-multi-lang-v1_1.html
+ * 0=af_maple、1=af_sol、2=bf_vale；3-57 为中文女声 zf_*（55 个）；
+ * 58-102 为中文男声 zm_*（45 个）。
+ *
+ * 角色声线绑定（M4.5）：每个内置 Live2D 角色固定一个 sid，服务端合成时按
+ * settings.avatarModelId 自动选择，前端无需在对话请求里显式传 speakerId。
+ */
+export interface AvatarTtsVoice {
+  /** voices.bin 中的说话人索引 */
+  sid: number;
+  /** Kokoro 音色名（与官方音色表一致，用于设置页展示/排查） */
+  voice: string;
+  /** 性别（仅按官方 zf/zm 前缀归类，用于界面标注，不含主观音色描述） */
+  gender: 'female' | 'male';
+}
+
+export const AVATAR_TTS_VOICES: Record<SupportedAvatarModelId, AvatarTtsVoice> = {
+  // Haru：官方接待员（成熟女性）→ 中文女声 zf_001
+  haru: { sid: 3, voice: 'zf_001', gender: 'female' },
+  // Hiyori：休闲少女 → 中文女声 zf_026
+  hiyori: { sid: 18, voice: 'zf_026', gender: 'female' },
+  // Mark：帽衫少年 → 中文男声 zm_009
+  mark: { sid: 58, voice: 'zm_009', gender: 'male' },
+  // Mao：魔法少女 → 中文女声 zf_049
+  mao: { sid: 32, voice: 'zf_049', gender: 'female' },
+  // Wanko：柴犬吉祥物（男孩感）→ 中文男声 zm_010
+  wanko: { sid: 59, voice: 'zm_010', gender: 'male' },
+};
+
+/** 角色 → sid；未知/空角色回落默认角色（Haru）的声线 */
+export function getAvatarSpeakerId(
+  avatarModelId: string | null | undefined,
+): number {
+  const voice =
+    AVATAR_TTS_VOICES[avatarModelId as SupportedAvatarModelId] ??
+    AVATAR_TTS_VOICES[DEFAULT_AVATAR_MODEL_ID];
+  return voice.sid;
+}
 
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   ttsEnabled: false,
   ttsEngine: 'sherpa_onnx',
-  // vits-melo-tts-zh_en 分发包仅暴露 1 个 speaker（中英混合女声，sid=0）
-  ttsSpeakerId: 0,
+  // 兜底 sid：Haru 绑定的 zf_001（对话合成默认走角色绑定，见 AVATAR_TTS_VOICES）
+  ttsSpeakerId: 3,
   ttsSpeed: 1,
   ttsNumThreads: 4,
   asrEnabled: false,
@@ -136,7 +183,8 @@ export type VoiceAsrResponse = z.infer<typeof voiceAsrResponseSchema>;
 /** POST /api/voice/tts（单句合成，非流式调试/回放用） */
 export const voiceTtsRequestSchema = z.object({
   text: z.string().min(1).max(2000),
-  speakerId: z.number().int().optional(),
+  /** 角色试听显式指定音色；缺省服务端按当前 avatarModelId 绑定解析 */
+  speakerId: z.number().int().min(0).max(102).optional(),
   speed: z.number().min(0.5).max(2).optional(),
 });
 export type VoiceTtsRequest = z.infer<typeof voiceTtsRequestSchema>;

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Loader2, Play } from 'lucide-react';
-import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared';
+import { getAvatarSpeakerId, type VoiceSettings, type VoiceSettingsUpdateInput } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -58,7 +58,7 @@ function ToggleRow(props: {
 }
 
 /** TTS 试听：拉取 WAV 后用 HTMLAudio 播放（fetch 以附带 Electron 托管 token） */
-function TtsPreview(props: { ready: boolean }) {
+function TtsPreview(props: { ready: boolean; speakerId: number }) {
   const toast = useToast();
   const [text, setText] = React.useState(PREVIEW_TEXT);
   const [playing, setPlaying] = React.useState(false);
@@ -73,7 +73,7 @@ function TtsPreview(props: { ready: boolean }) {
         withManagedHeaders({
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ text: text.slice(0, 200) || PREVIEW_TEXT }),
+          body: JSON.stringify({ text: text.slice(0, 200) || PREVIEW_TEXT, speakerId: props.speakerId }),
         }),
       );
       if (!res.ok) {
@@ -176,8 +176,10 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
             </Select>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">发音人：内置中英混合女声（唯一）</p>
-        <TtsPreview ready={ttsReady} />
+        <p className="text-xs text-muted-foreground">
+          多说话人模型：声线按「Live2D 形象」选中的角色自动绑定（103 个中英音色，可在形象区逐角色试听）
+        </p>
+        <TtsPreview ready={ttsReady} speakerId={getAvatarSpeakerId(settings.avatarModelId)} />
       </div>
 
       <div className="space-y-3 rounded-md border p-3">

@@ -1,5 +1,7 @@
+import { KOKORO_FILES } from './manifest-kokoro-files';
+
 /**
- * 本地语音模型清单（v1.0：sherpa-onnx SenseVoice ASR + MeloTTS 中英 TTS）。
+ * 本地语音模型清单（v1.0：sherpa-onnx SenseVoice ASR + Kokoro 中英多说话人 TTS）。
  *
  * 模型不进安装包，首次启用时按清单下载到用户目录（userData/models/voice）。
  * 体积/文件列表来自 2026-10 在 hf-mirror 的实测（csukuangfj 仓库），用于：
@@ -42,40 +44,19 @@ const ASR_SENSEVOICE: VoiceModelSpec = {
   totalBytes: 0,
 };
 
-const TTS_MELO_ZH_EN: VoiceModelSpec = {
+const TTS_KOKORO_ZH_EN: VoiceModelSpec = {
   kind: 'tts',
-  id: 'vits-melo-tts-zh_en',
-  label: 'MeloTTS 中英女声（VITS fp32）',
-  hfRepo: 'csukuangfj/vits-melo-tts-zh_en',
-  files: [
-    // 注意：Node 侧（onnxruntime 1.28）在无 AVX512-VNNI 的 CPU（如 Intel Arrow Lake）
-    // 上 int8 量化内核退化到 ~0.25x 实时；fp32 反而 1.5x 实时（2026-10 实测），
-    // 故 v1.0 Node 桌面端 TTS 选 fp32（ASR SenseVoice int8 不受此问题影响）。
-    { path: 'model.onnx', size: 170_429_550 },
-    { path: 'tokens.txt', size: 655 },
-    { path: 'lexicon.txt', size: 6_837_671 },
-    { path: 'date.fst', size: 59_154 },
-    { path: 'number.fst', size: 64_482 },
-    { path: 'phone.fst', size: 88_630 },
-    { path: 'new_heteronym.fst', size: 21_974 },
-    { path: 'dict/README.md', size: 683 },
-    { path: 'dict/hmm_model.utf8', size: 519_739 },
-    { path: 'dict/idf.utf8', size: 5_998_717 },
-    { path: 'dict/jieba.dict.utf8', size: 5_071_204 },
-    { path: 'dict/stop_words.utf8', size: 8_974 },
-    { path: 'dict/user.dict.utf8', size: 49 },
-    { path: 'dict/pos_dict/char_state_tab.utf8', size: 327_139 },
-    { path: 'dict/pos_dict/prob_emit.utf8', size: 1_687_686 },
-    { path: 'dict/pos_dict/prob_start.utf8', size: 4_347 },
-    { path: 'dict/pos_dict/prob_trans.utf8', size: 124_159 },
-  ],
+  id: 'kokoro-multi-lang-v1_1',
+  label: 'Kokoro 中英多说话人（103 音色，fp32）',
+  hfRepo: 'csukuangfj/kokoro-multi-lang-v1_1',
+  files: KOKORO_FILES,
   totalBytes: 0,
 };
 
 /** v1.0 支持的模型清单（按 kind 索引）。 */
 export const VOICE_MODELS: Record<VoiceModelKind, VoiceModelSpec> = {
   asr: withTotals(ASR_SENSEVOICE),
-  tts: withTotals(TTS_MELO_ZH_EN),
+  tts: withTotals(TTS_KOKORO_ZH_EN),
 };
 
 function withTotals(spec: VoiceModelSpec): VoiceModelSpec {

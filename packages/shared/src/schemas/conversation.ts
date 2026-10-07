@@ -33,6 +33,8 @@ export const chatRequestSchema = z
       .object({
         /** 是否在文本流之外追加 voice_audio 朗读帧 */
         tts: z.boolean(),
+        /** M4.5：按当前虚拟角色选择说话人 sid（多说话人 TTS）；缺省用全局设置 */
+        speakerId: z.number().int().min(0).max(102).optional(),
       })
       .optional(),
   })
