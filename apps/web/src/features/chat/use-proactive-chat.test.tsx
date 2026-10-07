@@ -24,6 +24,30 @@ const HAPPY_SSE = [
   'event: done\ndata: {"content":"嗨，最近在忙什么？","usage":null}\n\n',
 ];
 
+const META_CHUNK = 'event: meta\ndata: {"messageId":"proactive-x","conversationId":"","proactive":true}\n\n';
+
+/** 不主动关闭的流：abort 信号触发时按真实 fetch 行为让 body 报错，避免测试悬挂 */
+function bindHangingStream(fetchSpy: ReturnType<typeof vi.fn>, chunks: string[]) {
+  const encoder = new TextEncoder();
+  let controller!: ReadableStreamDefaultController<Uint8Array>;
+  fetchSpy.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+    init.signal.addEventListener('abort', () =>
+      controller.error(new DOMException('Aborted', 'AbortError')),
+    );
+    return Promise.resolve(
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(c) {
+            controller = c;
+            for (const chunk of chunks) c.enqueue(encoder.encode(chunk));
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'text/event-stream' } },
+      ),
+    );
+  });
+}
+
 function makeArgs(overrides: Partial<Parameters<typeof useProactiveChat>[0]> = {}) {
   return {
     assistantId: 'a1',
@@ -183,5 +207,94 @@ describe('useProactiveChat（F8 空闲主动说话）', () => {
     });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(result.current.bubble?.content).toBe('嗨，最近在忙什么？');
+  });
+
+  it('降级：流中 error 事件（meta 之后）静默收起气泡，不抛错', async () => {
+    const errorSse = [
+      META_CHUNK,
+      'event: error\ndata: {"code":"UPSTREAM_ERROR","message":"供应商挂了"}\n\n',
+    ];
+    const fetchSpy = vi.fn().mockResolvedValue(sseResponse(errorSse));
+    vi.stubGlobal('fetch', fetchSpy);
+    const { result } = renderHook(() => useProactiveChat(makeArgs()));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(305_000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.bubble).toBeNull();
+    expect(result.current.active).toBe(false);
+  });
+
+  it('降级：网络层 reject（离线/服务重启）静默收起，冷却后可重试', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(sseResponse(HAPPY_SSE));
+    vi.stubGlobal('fetch', fetchSpy);
+    const { result } = renderHook(() => useProactiveChat(makeArgs()));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(305_000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.bubble).toBeNull();
+    expect(result.current.active).toBe(false);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(305_000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(result.current.bubble?.status).toBe('completed');
+  });
+
+  it('进行中正常轮次占用（busy 翻 true）：abort 请求、停 TTS、立即收气泡', async () => {
+    const fetchSpy = vi.fn();
+    bindHangingStream(fetchSpy, [META_CHUNK]);
+    vi.stubGlobal('fetch', fetchSpy);
+    const onCancelPlayback = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ busy }) => useProactiveChat(makeArgs({ busy, onCancelPlayback })),
+      { initialProps: { busy: false } },
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(305_000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.bubble?.status).toBe('streaming');
+
+    // 挂载时切换 effect 也会幂等清理一次（cancel 计数 ≥1），这里断言 busy 中止新增一次
+    const cancelCountBefore = onCancelPlayback.mock.calls.length;
+    rerender({ busy: true });
+    expect(fetchSpy.mock.calls[0]![1].signal.aborted).toBe(true);
+    expect(onCancelPlayback.mock.calls.length).toBe(cancelCountBefore + 1);
+    expect(result.current.bubble).toBeNull();
+    expect(result.current.active).toBe(false);
+  });
+
+  it('TTS 开关开但模型未就绪：降级为纯文字请求（不带 voice），气泡仍正常呈现', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue(sseResponse(HAPPY_SSE));
+    vi.stubGlobal('fetch', fetchSpy);
+    const args = makeArgs({ ttsReady: false });
+    args.voiceSettings = { ...args.voiceSettings, ttsEnabled: true };
+    renderHook(() => useProactiveChat(args));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(305_000);
+    });
+    const body = JSON.parse(fetchSpy.mock.calls[0]![1].body as string);
+    expect(body.voice).toBeUndefined();
   });
 });

@@ -16,7 +16,7 @@
 **主题：会说话的桌面伙伴**。本地 sherpa-onnx 语音识别/合成（离线）+ 流式语音对话与可打断 + Live2D 形象（口型/表情）+ 透明置顶鼠标穿透桌宠窗。借鉴 Open-LLM-VTuber 并坚持本地优先与半双工安全边界。分支 `feature/v1.0-voice-companion`。
 
 - 方案：[docs/plan/v1.0](../plan/v1.0/README.md)（七篇，含 VAD 专题与桌宠专题）
-- 总结：[v1.0-release-summary.md](v1.0-release-summary.md)（阶段性，2026-10-07：M0–M4 代码完成——含桌宠 pack:dir e2e 4/4，VAD/桌宠真机交互待人工验收）
+- 总结：[v1.0-release-summary.md](v1.0-release-summary.md)（阶段性，2026-10-08：M0–M5 代码全部完成——含多形象/桌宠/VAD/Kokoro 声线/主动说话、降级矩阵与 1.0.0 升版；仅剩真人验收、打包态断网手测与 tag）
 - 原规划 v1.0 的「正式发布」收尾项（代码签名/安装器打磨/a11y/i18n/帮助中心）顺延 **v1.1**
 
 ## 已发布版本：v0.9 ✅（2026-10）
@@ -85,7 +85,7 @@
 | v0.7 | 看得见、动得了手：桌面 Agent | ✅ 已发布 | [方案](v0.7-computer-agent.md) | — | 10 篇 | `v0.7.0` |
 | v0.8 | Flow Studio：可视化工作流 DAG | ✅ 已发布 | [方案](v0.8-flow-studio.md) | [总结](v0.8-release-summary.md) | — | `v0.8.0` |
 | v0.9 | Flow Serving：执行解耦 + 本地 API/MCP | ✅ 已发布 | [方案](v0.9-flow-serving.md) | [总结](v0.9-release-summary.md) | B01-B08 | `v0.9.0` |
-| v1.0 | 会说话的桌面伙伴：本地语音 + Live2D + 桌宠 | 🚧 开发中 | [方案](../plan/v1.0/README.md) | [总结](v1.0-release-summary.md) | — | — |
+| v1.0 | 会说话的桌面伙伴：本地语音 + Live2D + 桌宠 | 🔜 待封版（代码完成，待真人验收） | [方案](../plan/v1.0/README.md) | [总结](v1.0-release-summary.md) | — | 待打 `v1.0.0` |
 | v1.1 | 正式发布：签名/安装器/a11y/i18n/帮助中心 | 📝 规划中（由原 v1.0 顺延） | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）

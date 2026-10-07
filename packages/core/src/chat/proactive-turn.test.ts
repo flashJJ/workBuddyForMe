@@ -15,6 +15,7 @@ import { createConversationService } from '../services/conversation-service';
 import { createSettingsService } from '../services/settings-service';
 import { createChatOrchestrator } from './chat-orchestrator';
 import {
+  PROACTIVE_EMPTY_FALLBACK,
   PROACTIVE_MESSAGE_PREFIX,
   PROACTIVE_TRIGGER_PROMPT,
 } from './proactive-turn';
@@ -153,6 +154,56 @@ describe('F8 主动说话 streamProactive（skip-history 轻量轮）', () => {
     );
     expect(events.at(-1)).toMatchObject({ event: 'error' });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('降级：会话已删除/不存在时退化为无历史开场，不阻断', async () => {
+    const assistant = seed();
+    fetchMock.mockResolvedValue(
+      new Response(SSE_BODY, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    );
+
+    const events = await drain(
+      createChatOrchestrator({ db, cipher }).streamProactive({
+        assistantId: assistant.id,
+        conversationId: 'conv-ghost',
+      }),
+    );
+
+    expect(events.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
+    // 仅剩 system + 主动触发指令，没有任何历史消息
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(body.messages).toHaveLength(2);
+    expect(body.messages.at(-1).content).toBe(PROACTIVE_TRIGGER_PROMPT);
+  });
+
+  it('降级：供应商 500 时以 error 事件收尾，不抛异常', async () => {
+    const assistant = seed();
+    fetchMock.mockResolvedValue(
+      new Response('upstream boom', { status: 500, headers: { 'content-type': 'text/plain' } }),
+    );
+
+    const events = await drain(
+      createChatOrchestrator({ db, cipher }).streamProactive({ assistantId: assistant.id }),
+    );
+    expect(events.at(-1)).toMatchObject({ event: 'error' });
+  });
+
+  it('降级：模型零文本返回时补一句中性短问候，不复用工具轮限文案', async () => {
+    const assistant = seed();
+    const emptyBody =
+      'data: {"choices":[{"delta":{}}],"usage":{"prompt_tokens":10,"completion_tokens":0,"total_tokens":10}}\n\n' +
+      'data: [DONE]\n\n';
+    fetchMock.mockResolvedValue(
+      new Response(emptyBody, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    );
+
+    const events = await drain(
+      createChatOrchestrator({ db, cipher }).streamProactive({ assistantId: assistant.id }),
+    );
+    expect(events.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
+    const done = events.at(-1)!.data as { content: string };
+    expect(done.content).toBe(PROACTIVE_EMPTY_FALLBACK);
+    expect(done.content).not.toContain('工具调用');
   });
 
   it('abort：中止后以 done 收尾且不抛错', async () => {

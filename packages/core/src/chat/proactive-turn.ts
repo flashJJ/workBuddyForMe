@@ -6,7 +6,7 @@ import { createConversationService } from '../services/conversation-service';
 import { resolveChatTarget } from './model-resolver';
 import { buildSystemPrompt } from './prompt';
 import { runProviderTurn } from './tool-runner';
-import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
+import { normalizeFailure } from './orchestrator-helpers';
 import type { OrchestratorEvent } from './types';
 
 /** 主动轮入参：助手必填，会话可选（无会话时不带历史，仅问候开场） */
@@ -34,6 +34,12 @@ export const PROACTIVE_TRIGGER_PROMPT = [
 
 /** 主动轮不落库的临时消息 id 前缀（前端据此与真实消息区分） */
 export const PROACTIVE_MESSAGE_PREFIX = 'proactive-';
+
+/**
+ * 模型零文本返回时的主动轮兜底（主动轮不挂工具，不能复用工具轮限文案）。
+ * 用一句中性短问候保住「角色开口了」的体验，长度同样遵守触发指令的短约束。
+ */
+export const PROACTIVE_EMPTY_FALLBACK = '嗨，今天有什么我可以帮你的吗？';
 
 export function createProactiveMessageId(): string {
   return `${PROACTIVE_MESSAGE_PREFIX}${Date.now().toString(36)}-${Math.random()
@@ -124,7 +130,7 @@ export function createProactiveTurn(deps: ServiceDeps) {
         return;
       }
       if (!full.trim()) {
-        full = ROUND_LIMIT_FALLBACK;
+        full = PROACTIVE_EMPTY_FALLBACK;
         yield { event: 'delta', data: { content: full } };
       }
       yield { event: 'done', data: { content: full, usage } };

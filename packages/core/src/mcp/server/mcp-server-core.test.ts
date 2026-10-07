@@ -64,7 +64,7 @@ describe('handleMcpMessage（v0.9 M3）', () => {
   beforeEach(() => {
     calls = [];
     ctx = {
-      serverInfo: { name: 'workbuddy-flow', version: '0.9.0' },
+      serverInfo: { name: 'workbuddy-flow', version: '1.0.0' },
       listTools: async () => [describeFlowAsMcpTool(workflow, graphWithInput)],
       async callTool(name, args): Promise<McpCallResult | null> {
         calls.push({ name, args });
@@ -87,7 +87,7 @@ describe('handleMcpMessage（v0.9 M3）', () => {
     expect(ok?.result).toMatchObject({
       protocolVersion: '2025-06-18',
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: 'workbuddy-flow', version: '0.9.0' },
+      serverInfo: { name: 'workbuddy-flow', version: '1.0.0' },
     });
     // 未知版本回落服务端版本
     const fallback = await req('initialize', { protocolVersion: '1999-01-01' });
