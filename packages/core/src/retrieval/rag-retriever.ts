@@ -27,6 +27,11 @@ export function createRagRetriever(deps: ServiceDeps): RagRetriever {
     return {
       citations: toCitations(chunks),
       contextBlock: formatContextBlock(chunks),
+      chunks: chunks.map((chunk) => ({
+        documentName: chunk.documentName,
+        ordinal: chunk.ordinal,
+        content: chunk.content,
+      })),
     };
   };
 }

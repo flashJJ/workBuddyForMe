@@ -31,6 +31,23 @@ export function estimateTokens(text: string): number {
   return Math.ceil(cjk / CJK_CHARS_PER_TOKEN + other / NON_CJK_CHARS_PER_TOKEN);
 }
 
+/**
+ * 按估算 token 预算截断纯文本（二分最大安全前缀），超限时追加省略号。
+ * 用于 RAG 长片段/长资料块在系统提示词内的硬限长，保证整轮请求不超模型窗口。
+ */
+export function truncateToTokens(text: string, maxTokens: number): string {
+  if (maxTokens <= 0) return '';
+  if (estimateTokens(text) <= maxTokens) return text;
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (estimateTokens(text.slice(0, mid)) <= maxTokens) lo = mid;
+    else hi = mid - 1;
+  }
+  return `${text.slice(0, Math.max(0, lo - 1)).trimEnd()}…`;
+}
+
 /** 估算单条消息 token：文本按字符、图片按固定值、工具调用按 JSON 体积 */
 export function estimateMessageTokens(message: ChatMessage): number {
   let tokens = PER_MESSAGE_OVERHEAD_TOKENS;

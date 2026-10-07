@@ -108,6 +108,7 @@ export { compactIfNeeded, type CompactionResult } from './chat/turn-context';
 export type {
   OrchestratorEvent,
   StreamChatInput,
+  RagChunk,
   RagContext,
   RagRetriever,
   StreamResult,

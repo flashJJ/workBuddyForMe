@@ -50,6 +50,20 @@ export const DEFAULT_TOP_K = 4;
  * 模型未配置 contextWindow 时的兜底上下文预算。
  */
 export const DEFAULT_CONTEXT_TOKEN_BUDGET = 8192;
+/**
+ * 预算安全系数：字符粗估与模型真实 tokenizer 存在偏差（中文/JSON/代码普遍低估），
+ * 所有区块按 contextWindow×0.9 做硬上限，给真实分词与消息结构留余量。
+ */
+export const CONTEXT_BUDGET_SAFETY_RATIO = 0.9;
+/** RAG 资料块单段值得注入的最小 token 预算；剩余空间小于此值宁可不注入资料 */
+export const RAG_CHUNK_MIN_TOKENS = 96;
+/**
+ * Ollama 运行时默认上下文窗口（num_ctx 默认值；与架构上限无关）。
+ * /api/tags 的 details.context_length 是模型训练上限（如 qwen2.5=32768），
+ * 不是服务端实际 num_ctx（默认 4096），模型发现时必须用此值，否则会向
+ * 4096 窗口发 3 万 token 请求触发 exceed_context_size_error。
+ */
+export const OLLAMA_DEFAULT_CONTEXT_WINDOW = 4096;
 /** 历史条数安全帽：token 预算裁剪之外的极端长会话兜底 */
 export const HISTORY_MESSAGE_SAFETY_CAP = 200;
 /** 为模型回答预留的输出 token（无上次真实 usage 时使用） */

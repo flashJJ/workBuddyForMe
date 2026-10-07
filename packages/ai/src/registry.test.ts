@@ -49,10 +49,10 @@ describe('Provider 注册中心（TR-11.1）', () => {
     expect(provider.supportsTools).toBe(true);
 
     const models = await provider.listModels();
-    // 旧版本 /api/tags 无 details 时 contextLength 兜底为 null，新版本自动探测
+    // details.context_length 是架构上限不能采用：统一按 Ollama 运行时默认 num_ctx=4096 上报
     expect(models).toEqual([
-      { id: 'llama3.1:8b', contextLength: null },
-      { id: 'qwen2.5:7b', contextLength: 32768 },
+      { id: 'llama3.1:8b', contextLength: 4096 },
+      { id: 'qwen2.5:7b', contextLength: 4096 },
     ]);
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe('http://127.0.0.1:11434/api/tags');
