@@ -122,6 +122,7 @@ describe('M3 对话编排 × 长期记忆（端到端）', () => {
       orchestrator.streamChat({ assistantId: assistant.id, content: '以后请用中文回复我' }),
     );
     expect(first.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
+    await orchestrator.waitForBackgroundJobs();
 
     const memories = createMemoryService({ db, cipher }).list();
     expect(memories).toHaveLength(1);
@@ -137,6 +138,7 @@ describe('M3 对话编排 × 长期记忆（端到端）', () => {
       }),
     );
     expect(second.map((e) => e.event)).toEqual(['meta', 'memories', 'delta', 'done']);
+    await orchestrator.waitForBackgroundJobs();
     const memoryEvent = second[1]!;
     expect(memoryEvent.data).toMatchObject({
       memories: [{ kind: 'preference', content: '用户偏好中文回复' }],

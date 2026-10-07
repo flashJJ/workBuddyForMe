@@ -1,4 +1,10 @@
-import { HISTORY_MESSAGE_SAFETY_CAP, MAX_TOOL_ROUNDS, type TokenUsage, type ToolTraceEntry } from '@wbfm/shared';
+import {
+  HISTORY_MESSAGE_SAFETY_CAP,
+  MAX_TOOL_ROUNDS,
+  POST_TURN_JOBS_TIMEOUT_MS,
+  type TokenUsage,
+  type ToolTraceEntry,
+} from '@wbfm/shared';
 import { startRun, type TraceHandle, type ToolCall } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
@@ -26,8 +32,18 @@ export function createChatOrchestrator(deps: ServiceDeps) {
   const attachments = createAttachmentService(deps);
   const runtime = createToolRuntime(deps);
   const memory = createMemoryService(deps);
+  // done 之后异步执行的旁路任务（摘要/记忆）；不阻塞响应，但保留句柄供测试与优雅关闭等待
+  const backgroundJobs = new Set<Promise<unknown>>();
+  const scheduleBackgroundJob = (job: Promise<unknown>): void => {
+    backgroundJobs.add(job);
+    void job.finally(() => backgroundJobs.delete(job));
+  };
 
   return {
+    /** 等待全部在途的回合后台任务完成（测试/优雅关闭用；对话响应本身不等待） */
+    waitForBackgroundJobs: async (): Promise<void> => {
+      await Promise.allSettled([...backgroundJobs]);
+    },
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
       const assistant = assistants.get(input.assistantId);
 
@@ -212,25 +228,35 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         conversations.completeMessage(assistantMessage.id, full, usage);
         conversations.saveMessageToolTrace(assistantMessage.id, trace);
 
-        // v0.5：回合成功后执行后台任务（递归摘要压缩 + 长期记忆提取），均失败静默
-        if (!input.signal?.aborted) {
-          await runPostTurnJobs({
-            conversations,
-            attachments,
-            conversation,
-            assistant,
-            target,
-            toolDefs,
-            lastCompletionTokens: usage?.completionTokens ?? null,
-            memory,
-            userContent,
-            assistantContent: full,
-            signal: input.signal,
-            traceParent: turnTrace,
-          });
-        }
-
+        // 先把 done 交给用户：回答已完整落库，UI 立即结束 loading。
+        // 摘要压缩/长期记忆是旁路 LLM 任务（本地 14B 上可能再花十几秒），
+        // 绝不能阻塞 done——否则会出现「文字已出完但停止生成一直转」。
         yield { event: 'done', data: { content: full, usage } };
+
+        // 后台任务 fire-and-forget：用独立 signal（响应关闭会 abort 请求 signal，
+        // 但摘要/记忆不应随之丢弃），超时兜底；失败内部均已静默。
+        if (!input.signal?.aborted) {
+          const bgController = new AbortController();
+          const bgTimer = setTimeout(() => bgController.abort(), POST_TURN_JOBS_TIMEOUT_MS);
+          scheduleBackgroundJob(
+            runPostTurnJobs({
+              conversations,
+              attachments,
+              conversation,
+              assistant,
+              target,
+              toolDefs,
+              lastCompletionTokens: usage?.completionTokens ?? null,
+              memory,
+              userContent,
+              assistantContent: full,
+              signal: bgController.signal,
+              traceParent: null,
+            })
+              .catch(() => undefined)
+              .finally(() => clearTimeout(bgTimer)),
+          );
+        }
       } finally {
         await turnTrace?.end(
           { content: full, usage, aborted: Boolean(input.signal?.aborted) },

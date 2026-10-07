@@ -118,14 +118,16 @@ describe('对话压缩（M2：递归摘要）', () => {
         }),
       );
 
+    const orchestrator = createChatOrchestrator({ db, cipher });
     const events = await drain(
-      createChatOrchestrator({ db, cipher }).streamChat({
+      orchestrator.streamChat({
         assistantId,
         conversationId,
         content: '最新问题',
       }),
     );
     expect(events.at(-1)).toMatchObject({ event: 'done' });
+    await orchestrator.waitForBackgroundJobs();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const summaryBody = JSON.parse(
@@ -175,12 +177,14 @@ describe('对话压缩（M2：递归摘要）', () => {
     await drain(
       orchestrator.streamChat({ assistantId, conversationId, content: '第一个新问题' }),
     );
+    await orchestrator.waitForBackgroundJobs();
     const convAfter = createConversationRepository(db).findById(conversationId)!;
     expect(convAfter.summaryTurns).toBeGreaterThanOrEqual(1);
 
     await drain(
       orchestrator.streamChat({ assistantId, conversationId, content: '第二个新问题' }),
     );
+    await orchestrator.waitForBackgroundJobs();
     // 第三轮请求可能再次触发压缩（第 4 次请求），断言对话请求体取最后一次 chat 之前的那次
     const chatBodies = fetchMock.mock.calls
       .map((call) => JSON.parse((call[1] as RequestInit).body as string))
@@ -209,8 +213,9 @@ describe('对话压缩（M2：递归摘要）', () => {
       )
       .mockResolvedValueOnce(new Response('boom', { status: 500 }));
 
+    const orchestrator = createChatOrchestrator({ db, cipher });
     const events = await drain(
-      createChatOrchestrator({ db, cipher }).streamChat({
+      orchestrator.streamChat({
         assistantId,
         conversationId,
         content: '问题',
@@ -220,6 +225,7 @@ describe('对话压缩（M2：递归摘要）', () => {
       event: 'done',
       data: { content: '本轮回答' },
     });
+    await orchestrator.waitForBackgroundJobs();
     const conv = createConversationRepository(db).findById(conversationId)!;
     expect(conv.summary).toBeNull();
     expect(conv.summaryTurns).toBe(0);

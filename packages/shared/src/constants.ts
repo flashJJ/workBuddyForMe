@@ -70,6 +70,17 @@ export const HISTORY_MESSAGE_SAFETY_CAP = 200;
 export const OUTPUT_RESERVE_TOKENS = 2048;
 
 /**
+ * 回合后旁路任务（对话摘要压缩 + 长期记忆提取）的整体超时。
+ * 这些任务在 done 之后异步执行，不阻塞用户；超时主动中止，防止后台 LLM 调用悬挂。
+ */
+export const POST_TURN_JOBS_TIMEOUT_MS = 120_000;
+/**
+ * 流式对话的块间空闲超时：响应头到达后，若该时长内没有任何增量数据则判上游挂起。
+ * 连接超时只覆盖首字节，本常量覆盖生成中途卡死（本地模型高负载/长上下文场景）。
+ */
+export const CHAT_STREAM_IDLE_TIMEOUT_MS = 120_000;
+
+/**
  * v0.5 对话自动压缩（递归摘要）：
  * 历史占用超过历史预算的该比例时触发摘要压缩；
  * 最近逐字消息保留历史预算的该比例（至少保护 COMPACTION_MIN_KEEP_MESSAGES 条）；

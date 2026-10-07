@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+﻿import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -34,6 +34,7 @@ describe('对话编排（TR-15.1）', () => {
   let cipher: SecretCipher;
   let tempRoot: string;
   let fetchMock: ReturnType<typeof vi.fn>;
+  let pendingOrchestrator: ReturnType<typeof createChatOrchestrator> | null;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(join(tmpdir(), 'wbfm-t15-'));
@@ -41,14 +42,23 @@ describe('对话编排（TR-15.1）', () => {
     db = createDatabase(':memory:');
     cipher = createWebCipher();
     fetchMock = vi.fn();
+    pendingOrchestrator = null;
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // 后台记忆/摘要任务 fire-and-forget，关库前等其收尾，避免跨用例泄漏
+    await pendingOrchestrator?.waitForBackgroundJobs();
     vi.unstubAllGlobals();
     db.close();
     resetDataRootForTest();
   });
+
+  /** 用例统一经此工厂创建，便于 afterEach 等待后台任务 */
+  function makeOrchestrator() {
+    pendingOrchestrator = createChatOrchestrator({ db, cipher });
+    return pendingOrchestrator;
+  }
 
   function seedProvider() {
     const providers = createProviderRepository(db);
@@ -75,7 +85,7 @@ describe('对话编排（TR-15.1）', () => {
   it('正常流：meta→delta→done，落库完整正文与 usage，历史含 system', async () => {
     seedProvider();
     const assistant = createAssistantsService({ db, cipher }).list()[0]!;
-    const orchestrator = createChatOrchestrator({ db, cipher });
+    const orchestrator = makeOrchestrator();
     fetchMock.mockResolvedValue(
       new Response(SSE_BODY, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
     );
@@ -107,7 +117,7 @@ describe('对话编排（TR-15.1）', () => {
   it('未配置模型：error 事件且助手消息落 error 状态', async () => {
     const assistant = createAssistantsService({ db, cipher }).list()[0]!;
     const events = await drain(
-      createChatOrchestrator({ db, cipher }).streamChat({
+      makeOrchestrator().streamChat({
         assistantId: assistant.id,
         content: 'hi',
       }),
@@ -124,7 +134,7 @@ describe('对话编排（TR-15.1）', () => {
     fetchMock.mockResolvedValue(new Response('boom', { status: 500 }));
 
     const events = await drain(
-      createChatOrchestrator({ db, cipher }).streamChat({
+      makeOrchestrator().streamChat({
         assistantId: assistant.id,
         content: 'hi',
       }),
@@ -158,7 +168,7 @@ describe('对话编排（TR-15.1）', () => {
         ),
     );
 
-    const generator = createChatOrchestrator({ db, cipher }).streamChat({
+    const generator = makeOrchestrator().streamChat({
       assistantId: assistant.id,
       content: '继续',
       signal: controller.signal,
@@ -181,3 +191,4 @@ describe('对话编排（TR-15.1）', () => {
     expect(messages[1]!.content).toBe('你好');
   });
 });
+
