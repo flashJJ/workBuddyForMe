@@ -25,5 +25,8 @@ export const PUT = defineRoute(async ({ request, services }) => {
   ) {
     getVoiceRuntime().invalidateTts();
   }
+  if (patch.asrNumThreads !== undefined || patch.modelsDir !== undefined) {
+    getVoiceRuntime().invalidateAsr();
+  }
   return jsonOk(next);
 });

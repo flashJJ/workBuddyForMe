@@ -37,8 +37,23 @@ let nextId = 1;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([]);
+  // 跟踪自动关闭定时器：卸载（含测试环境销毁）时全部取消，避免 teardown 后 setState
+  const timersRef = React.useRef(new Map<number, ReturnType<typeof setTimeout>>());
+
+  React.useEffect(
+    () => () => {
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current.clear();
+    },
+    [],
+  );
 
   const dismiss = React.useCallback((id: number) => {
+    const timer = timersRef.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timersRef.current.delete(id);
+    }
     setToasts((items) => items.filter((item) => item.id !== id));
   }, []);
 
@@ -46,7 +61,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     (variant: ToastVariant, message: string) => {
       const id = nextId++;
       setToasts((items) => [...items, { id, variant, message }]);
-      setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
+      const timer = setTimeout(() => {
+        timersRef.current.delete(id);
+        dismiss(id);
+      }, AUTO_DISMISS_MS);
+      timersRef.current.set(id, timer);
     },
     [dismiss],
   );

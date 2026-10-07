@@ -10,13 +10,17 @@ import { z } from 'zod';
 export const VOICE_ASR_ENGINES = ['sherpa_onnx', 'none'] as const;
 export const VOICE_TTS_ENGINES = ['sherpa_onnx', 'none'] as const;
 export const VOICE_INPUT_MODES = ['ptt', 'vad'] as const;
+/** M4 免手聆听灵敏度：影响 VAD 起始阈值相对底噪的倍率（2.6/3.2/3.8） */
+export const VAD_SENSITIVITIES = ['high', 'balanced', 'low'] as const;
 
 export const voiceAsrEngineSchema = z.enum(VOICE_ASR_ENGINES);
 export const voiceTtsEngineSchema = z.enum(VOICE_TTS_ENGINES);
 export const voiceInputModeSchema = z.enum(VOICE_INPUT_MODES);
+export const vadSensitivitySchema = z.enum(VAD_SENSITIVITIES);
 export type VoiceAsrEngine = z.infer<typeof voiceAsrEngineSchema>;
 export type VoiceTtsEngine = z.infer<typeof voiceTtsEngineSchema>;
 export type VoiceInputMode = z.infer<typeof voiceInputModeSchema>;
+export type VadSensitivity = z.infer<typeof vadSensitivitySchema>;
 
 /** 语音会话状态（SSE voice_state 载荷）；与 @wbfm/voice 状态机取值一致 */
 export const VOICE_STATES = ['idle', 'listening', 'thinking', 'speaking'] as const;
@@ -40,6 +44,8 @@ export const voiceSettingsUpdateSchema = z
     asrNumThreads: z.number().int().min(1).max(32).optional(),
     /** ptt=按住说话；vad=端点检测自动收发（半双工） */
     inputMode: voiceInputModeSchema.optional(),
+    /** M4 VAD 起始灵敏度（高/均衡/低） */
+    vadSensitivity: vadSensitivitySchema.optional(),
     /** VAD 静音判定毫秒（vad 模式） */
     vadSilenceMs: z.number().int().min(300).max(5000).optional(),
     /** 模型下载镜像（默认 hf-mirror） */
@@ -72,6 +78,7 @@ export const voiceSettingsSchema = voiceSettingsUpdateSchema.required({
   asrEngine: true,
   asrNumThreads: true,
   inputMode: true,
+  vadSensitivity: true,
   vadSilenceMs: true,
   modelMirrorBase: true,
   modelsDir: true,
@@ -84,6 +91,10 @@ export const voiceSettingsSchema = voiceSettingsUpdateSchema.required({
 });
 export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 
+/** v1.0 内置 Live2D 模型 id（新增内置模型时追加；未知 id 读取时回落首个） */
+export const SUPPORTED_AVATAR_MODEL_IDS = ['haru'] as const;
+export const DEFAULT_AVATAR_MODEL_ID: (typeof SUPPORTED_AVATAR_MODEL_IDS)[number] = 'haru';
+
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   ttsEnabled: false,
   ttsEngine: 'sherpa_onnx',
@@ -95,11 +106,12 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   asrEngine: 'sherpa_onnx',
   asrNumThreads: 4,
   inputMode: 'ptt',
+  vadSensitivity: 'balanced',
   vadSilenceMs: 900,
   modelMirrorBase: 'https://hf-mirror.com',
   modelsDir: null,
   avatarEnabled: false,
-  avatarModelId: 'shizuku',
+  avatarModelId: DEFAULT_AVATAR_MODEL_ID,
   petEnabled: false,
   petClickThrough: false,
   proactiveEnabled: false,
@@ -129,13 +141,34 @@ export const voiceTtsRequestSchema = z.object({
 });
 export type VoiceTtsRequest = z.infer<typeof voiceTtsRequestSchema>;
 
-/** 模型状态查询结果 */
-export const voiceModelStatusSchema = z.object({
+/** 单个模型的下载/持久状态（GET models/status 的 downloads[kind]） */
+export const voiceModelDownloadSchema = z.object({
+  /** 是否存在活动下载任务 */
+  active: z.boolean(),
+  /** 与 voice_models 表 CHECK 约束一致 */
+  status: z.enum(['missing', 'downloading', 'ready', 'error']),
+  bytesTotal: z.number().int(),
+  bytesDone: z.number().int(),
+  error: z.string().nullable(),
+});
+export type VoiceModelDownload = z.infer<typeof voiceModelDownloadSchema>;
+
+/** 模型文件齐备性（磁盘 stat 结果） */
+export const voiceModelFileStatusSchema = z.object({
   asrReady: z.boolean(),
   ttsReady: z.boolean(),
   asrMissing: z.array(z.string()),
   ttsMissing: z.array(z.string()),
   asrTotalBytes: z.number().int(),
   ttsTotalBytes: z.number().int(),
+});
+export type VoiceModelFileStatus = z.infer<typeof voiceModelFileStatusSchema>;
+
+/** 模型状态查询结果（文件齐备性 + 下载任务状态） */
+export const voiceModelStatusSchema = voiceModelFileStatusSchema.extend({
+  downloads: z.object({
+    asr: voiceModelDownloadSchema,
+    tts: voiceModelDownloadSchema,
+  }),
 });
 export type VoiceModelStatus = z.infer<typeof voiceModelStatusSchema>;

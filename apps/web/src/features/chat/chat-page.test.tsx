@@ -29,6 +29,7 @@ const ASSISTANT: Assistant = {
   enabledTools: [],
   retrieveAlways: false,
   memoryEnabled: true,
+  expressionEnabled: true,
   isBuiltin: true,
   sortOrder: 0,
   createdAt: '2025-01-01T00:00:00.000Z',

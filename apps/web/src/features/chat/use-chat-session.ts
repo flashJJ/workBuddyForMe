@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, ContentPart, Message, PermissionLevel, RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared';
+import type { Citation, ContentPart, Message, RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared';
 import { useMessages } from '@/lib/hooks/use-conversations';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiPost } from '@/lib/api/client';
@@ -13,14 +13,9 @@ import {
   applyToolTraceStart,
   patchLastAssistantMessage,
 } from './live-message-utils';
+import type { ChatSessionVoice, PendingToolConfirmation } from './chat-session.types';
 
-/** v0.6 M2：待用户确认的工具调用（HITL 弹窗数据源） */
-export interface PendingToolConfirmation {
-  callId: string;
-  tool: string;
-  permission: PermissionLevel;
-  argsSummary: string;
-}
+export type { ChatSessionVoice, PendingToolConfirmation } from './chat-session.types';
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -71,15 +66,6 @@ export interface ChatSession {
   applyFeedback: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
   /** v0.6 M2：提交工具确认决策；返回 false 表示提交失败（调用方提示并保持弹窗） */
   confirmTool: (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => Promise<boolean>;
-}
-
-/** v1.0：语音接线（朗读开关 + 音频帧/状态回调），由对话页注入播放队列 */
-export interface ChatSessionVoice {
-  ttsEnabled: boolean;
-  onAudio?: (frame: SsePayloadMap['voice_audio']) => void;
-  onVoiceState?: (state: SsePayloadMap['voice_state']) => void;
-  /** 停止/重置时中断播放 */
-  cancelPlayback?: () => void;
 }
 
 /**

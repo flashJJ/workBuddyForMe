@@ -62,6 +62,7 @@ export const API = {
   // v1.0 语音
   voiceSettings: '/api/voice/settings',
   voiceTts: '/api/voice/tts',
+  voiceAsr: '/api/voice/asr',
   voiceModelStatus: '/api/voice/models/status',
   voiceModelDownload: '/api/voice/models/download',
 } as const;

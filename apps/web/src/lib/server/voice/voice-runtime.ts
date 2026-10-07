@@ -1,9 +1,14 @@
 import fs from 'node:fs';
 import {
+  SherpaAsrEngine,
   SherpaTtsEngine,
   VOICE_MODELS,
   downloadVoiceModel,
   findMissingFiles,
+  decodePcm16Wav,
+  resampleLinear,
+  ASR_SAMPLE_RATE,
+  type AsrEngine,
   type DownloadProgress,
   type TtsEngine,
   type VoiceModelKind,
@@ -13,7 +18,7 @@ import {
   type DatabaseInstance,
   type SettingsRepository,
 } from '@wbfm/database';
-import type { VoiceModelStatus, VoiceSettings } from '@wbfm/shared';
+import type { VoiceModelFileStatus, VoiceSettings } from '@wbfm/shared';
 import { readVoiceSettings } from './voice-settings';
 import { getModelDir, getVoiceModelsRoot } from './model-paths';
 
@@ -28,6 +33,11 @@ export interface SynthResult {
   sampleRate: number;
 }
 
+export interface TranscribeResult {
+  text: string;
+  lang: string | null;
+}
+
 /**
  * 进程内语音运行时：模型就绪检查、后台下载任务、TTS 引擎单例。
  *
@@ -36,6 +46,8 @@ export interface SynthResult {
 export class VoiceRuntime {
   private ttsEngine: TtsEngine | null = null;
   private ttsConfigKey = '';
+  private asrEngine: AsrEngine | null = null;
+  private asrConfigKey = '';
   private readonly jobs = new Map<VoiceModelKind, DownloadJob>();
 
   constructor(
@@ -52,7 +64,7 @@ export class VoiceRuntime {
   }
 
   /** 检查模型文件齐备性（以磁盘为准，DB 状态仅作展示补充） */
-  async getModelStatus(): Promise<VoiceModelStatus> {
+  async getModelStatus(): Promise<VoiceModelFileStatus> {
     const settings = this.settings;
     const results = await Promise.all(
       (['asr', 'tts'] as const).map(async (kind) => {
@@ -150,6 +162,20 @@ export class VoiceRuntime {
     return engine.synthesize(text);
   }
 
+  /**
+   * 识别上传的 WAV：解码 → 必要时重采样到 16k → ASR。
+   * 录音端本就采 16k，重采样仅为浏览器/设备采样率不一致的兜底。
+   */
+  async transcribeWav(wav: Uint8Array): Promise<TranscribeResult> {
+    const decoded = decodePcm16Wav(Buffer.from(wav));
+    const samples =
+      decoded.sampleRate === ASR_SAMPLE_RATE
+        ? decoded.samples
+        : resampleLinear(decoded.samples, decoded.sampleRate, ASR_SAMPLE_RATE);
+    const engine = await this.ensureAsr();
+    return engine.transcribe(samples);
+  }
+
   private async ensureTts(): Promise<TtsEngine> {
     const s = this.settings;
     const key = [
@@ -177,5 +203,27 @@ export class VoiceRuntime {
   /** 设置变更后让引擎下次调用时按新配置重建 */
   invalidateTts(): void {
     this.ttsConfigKey = '';
+  }
+
+  invalidateAsr(): void {
+    this.asrConfigKey = '';
+  }
+
+  private async ensureAsr(): Promise<AsrEngine> {
+    const s = this.settings;
+    const key = [getModelDir(s, 'asr', VOICE_MODELS.asr.id), s.asrNumThreads].join('|');
+    if (this.asrEngine && this.asrConfigKey === key) return this.asrEngine;
+    await this.asrEngine?.dispose();
+    this.asrEngine = await SherpaAsrEngine.create({
+      spec: VOICE_MODELS.asr,
+      config: {
+        modelDir: getModelDir(s, 'asr', VOICE_MODELS.asr.id),
+        numThreads: s.asrNumThreads,
+        provider: 'cpu',
+      },
+      useItn: true,
+    });
+    this.asrConfigKey = key;
+    return this.asrEngine;
   }
 }

@@ -17,6 +17,7 @@ import { SkillsPanel } from './skills-panel';
 import { MemoryPanel } from '../memory/memory-panel';
 import { BackupPanel } from './backup-panel';
 import { AboutPanel } from './about-panel';
+import { VoicePreferencePanel } from '../voice/settings/voice-preference-panel';
 
 export function SettingsPage() {
   const { data: providers, isLoading, isError, refetch } = useProviders();
@@ -67,6 +68,8 @@ export function SettingsPage() {
       )}
 
       <DefaultsPanel />
+
+      <VoicePreferencePanel />
 
       <McpPanel />
 

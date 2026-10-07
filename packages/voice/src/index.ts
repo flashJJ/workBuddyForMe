@@ -68,3 +68,11 @@ export type {
   SherpaTtsNative,
   SherpaTtsLoader,
 } from './engine/sherpa/tts-engine';
+export { SherpaAsrEngine, defaultSherpaAsrLoader } from './engine/sherpa/asr-engine';
+export type {
+  SherpaAsrOptions,
+  SherpaAsrModule,
+  SherpaAsrRecognizer,
+  SherpaAsrStream,
+  SherpaAsrLoader,
+} from './engine/sherpa/asr-engine';
