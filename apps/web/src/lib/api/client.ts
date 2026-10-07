@@ -91,6 +91,6 @@ export function apiDelete<T>(path: string): Promise<T> {
 }
 
 /** multipart 上传（文档摄入） */
-export function apiUpload<T>(path: string, form: FormData): Promise<T> {
-  return request<T>(path, { method: 'POST', body: form });
+export function apiUpload<T>(path: string, form: FormData, init?: RequestInit): Promise<T> {
+  return request<T>(path, { method: 'POST', body: form, ...init });
 }

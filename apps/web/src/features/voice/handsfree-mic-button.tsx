@@ -1,0 +1,65 @@
+'use client';
+
+import * as React from 'react';
+import { AudioLines, Loader2, Mic, Radio } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/common/toast';
+import type { HandsfreeVoice } from './use-handsfree-voice';
+
+interface HandsfreeMicButtonProps {
+  handsfree: HandsfreeVoice;
+  disabled?: boolean;
+}
+
+/**
+ * M4 免手持续聆听开关：再次点击关闭（关闭即无任何麦克风采集）。
+ * 按钮不随流式回复禁用——助手说话时它必须保持可触发，开口即 barge-in。
+ */
+export function HandsfreeMicButton({ handsfree, disabled }: HandsfreeMicButtonProps) {
+  const toast = useToast();
+  const { armed, voiceState, monitorError, asrError } = handsfree;
+
+  React.useEffect(() => {
+    if (monitorError) toast.error(monitorError.message);
+  }, [monitorError, toast]);
+
+  React.useEffect(() => {
+    if (asrError) toast.error(`识别失败：${asrError}`);
+  }, [asrError, toast]);
+
+  const label = !armed
+    ? '开启免手持续聆听'
+    : voiceState === 'listening'
+      ? '正在聆听，说完自动发送'
+      : voiceState === 'thinking'
+        ? '正在识别…'
+        : voiceState === 'speaking'
+          ? '助手说话中：开口即可打断'
+          : '免手聆听中（点击关闭）';
+
+  return (
+    <Button
+      type="button"
+      variant={armed ? 'default' : 'outline'}
+      size="icon"
+      className="touch-none select-none"
+      aria-label={label}
+      title={label}
+      aria-pressed={armed}
+      disabled={disabled}
+      data-testid="handsfree-button"
+      data-state={armed ? voiceState : 'off'}
+      onClick={() => handsfree.toggle()}
+    >
+      {!armed ? (
+        <Mic className="h-4 w-4" />
+      ) : voiceState === 'thinking' ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : voiceState === 'listening' ? (
+        <Radio className="h-4 w-4 animate-pulse" />
+      ) : (
+        <AudioLines className={voiceState === 'speaking' ? 'h-4 w-4' : 'h-4 w-4'} />
+      )}
+    </Button>
+  );
+}

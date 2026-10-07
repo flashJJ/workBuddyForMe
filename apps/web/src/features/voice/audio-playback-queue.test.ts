@@ -6,7 +6,7 @@ function frame(partial: Partial<VoiceAudioFrame>): VoiceAudioFrame {
     fragment: partial.fragment ?? '',
     spoken: partial.spoken ?? 'x',
     // null 是合法值（无声帧），仅 undefined 时用默认
-    audio: 'audio' in partial ? partial.audio : 'wav',
+    audio: partial.audio !== undefined ? partial.audio : 'wav',
     sampleRate: 16000,
     final: partial.final ?? false,
   };
@@ -98,5 +98,35 @@ describe('AudioPlaybackQueue', () => {
     player.gate();
     await flushTicks();
     expect(player.played).toEqual(['a', 'c']);
+  });
+
+  it('M4 epoch：cancel 时仍在队列中的旧轮帧（含 final）全部不落播放器、不发 idle 干扰', async () => {
+    const states: string[] = [];
+    const player = makePlayer();
+    const q = new AudioPlaybackQueue(player, (s) => states.push(s));
+    q.enqueue(frame({ spoken: 'a' })); // 正在播
+    q.enqueue(frame({ spoken: 'b' })); // 排队（旧轮）
+    q.enqueue(frame({ spoken: '', audio: null, final: true })); // 旧轮 final
+    await flushTicks();
+    expect(player.played).toEqual(['a']);
+
+    q.cancel(); // barge-in：b 与旧 final 同代际作废
+    await flushTicks();
+    player.gate(); // 释放 a 的等待
+    await flushTicks();
+    await flushTicks();
+    expect(player.played).toEqual(['a']); // b 从未播放
+    // cancel 自身的 idle 之后，没有旧 final 再追加状态
+    expect(states.filter((s) => s === 'idle')).toHaveLength(1);
+    expect(q.getEpoch()).toBe(1);
+
+    // 新轮 final 正常发 idle
+    q.enqueue(frame({ spoken: 'c' }));
+    q.enqueue(frame({ spoken: '', audio: null, final: true }));
+    await flushTicks();
+    player.gate();
+    await flushTicks();
+    expect(player.played).toEqual(['a', 'c']);
+    expect(states.filter((s) => s === 'idle')).toHaveLength(2);
   });
 });

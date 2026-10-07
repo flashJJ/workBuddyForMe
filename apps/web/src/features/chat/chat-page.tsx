@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { Archive, Brain, Share2 } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
@@ -23,20 +22,11 @@ import { useChatSession } from './use-chat-session';
 import { useVoicePlayback } from '../voice/use-voice-playback';
 import { useVoiceSettings } from '../voice/use-voice-settings';
 import { VoiceToggle } from '../voice/voice-toggle';
-
-function SetupGuide() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-      <p className="text-sm font-medium">还没有可用的对话模型</p>
-      <p className="max-w-sm text-xs text-muted-foreground">
-        请先在设置中新增供应商、添加对话模型，并将其设为默认模型（或给助手绑定模型）。
-      </p>
-      <Button asChild>
-        <Link href="/settings">前往设置</Link>
-      </Button>
-    </div>
-  );
-}
+import { MicButton } from '../voice/mic-button';
+import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
+import { useHandsfreeVoice } from '../voice/use-handsfree-voice';
+import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
+import { ChatSetupGuide } from './chat-setup-guide';
 
 export function ChatPage() {
   const { data: assistants, isLoading: assistantsLoading } = useAssistants();
@@ -64,7 +54,8 @@ export function ChatPage() {
     conversationsQuery.data?.find((item) => item.id === conversationId) ?? null;
 
   // v1.0：语音朗读（本地 TTS）。开关持久化在语音设置；播放队列与停止联动。
-  const { settings: voiceSettings, update: updateVoiceSettings } = useVoiceSettings();
+  const { settings: voiceSettings, modelStatus: voiceModelStatus, update: updateVoiceSettings } =
+    useVoiceSettings();
   const playback = useVoicePlayback();
   const [ttsEnabled, setTtsEnabled] = React.useState(false);
   React.useEffect(() => {
@@ -93,6 +84,14 @@ export function ChatPage() {
     setConversationId(createdId);
   }, voiceBridge);
 
+  // M4：免手持续聆听（VAD）。PTT 路径保持独立，仅输入方式切到 vad 时挂载监控。
+  const handsfree = useHandsfreeVoice({
+    asrReady: !!voiceModelStatus?.asrReady,
+    canArm: !!voiceSettings?.asrEnabled && voiceSettings.inputMode === 'vad',
+    sensitivity: voiceSettings?.vadSensitivity ?? 'balanced',
+    silenceMs: voiceSettings?.vadSilenceMs ?? 900,
+    playback, onRecognizedSend: (text) => session.send(text), onAbortTurn: session.stop,
+  });
   const hasChatModel = React.useMemo(() => {
     if (!currentAssistant) return false;
     if (currentAssistant.modelId) return true;
@@ -269,15 +268,33 @@ export function ChatPage() {
             <Composer
               streaming={session.streaming}
               visionEnabled={visionEnabled}
-              leading={<VoiceToggle enabled={ttsEnabled} onEnabledChange={handleTtsToggle} />}
+              leading={
+                <>
+                  <VoiceToggle enabled={ttsEnabled} onEnabledChange={handleTtsToggle} />
+                  {voiceSettings?.asrEnabled &&
+                    (voiceSettings.inputMode === 'vad' ? (
+                      <HandsfreeMicButton handsfree={handsfree} />
+                    ) : (
+                      <MicButton onRecognizedSend={(text) => session.send(text)} disabled={session.streaming} />
+                    ))}
+                </>
+              }
               onSend={session.send}
               onStop={session.stop}
             />
           </>
         ) : (
-          <SetupGuide />
+          <ChatSetupGuide />
         )}
       </div>
+      {voiceSettings?.avatarEnabled && hasChatModel && (
+        <ChatAvatarRail
+          modelId={voiceSettings.avatarModelId || 'haru'}
+          messages={session.messages}
+          getLevel={playback.getLevel}
+          speaking={playback.speaking}
+        />
+      )}
     </div>
   );
 }
