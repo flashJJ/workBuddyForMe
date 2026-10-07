@@ -6,6 +6,8 @@
  *
  * 运行：pnpm --filter @wbfm/desktop exec electron spikes/pet-window-smoke.cjs
  */
+// CJS 冒烟脚本刻意用 require 加载 electron（由 electron 直接执行，无打包链路）
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { app, BrowserWindow, screen } = require('electron');
 
 app.whenReady().then(async () => {

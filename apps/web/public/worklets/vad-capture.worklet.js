@@ -1,3 +1,5 @@
+/* eslint-env es2022 */
+/* global sampleRate */
 /**
  * M4-VAD 采集 Worklet（原生 JS，由 public/ 静态提供，无构建依赖）。
  *

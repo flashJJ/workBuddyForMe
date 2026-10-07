@@ -54,11 +54,16 @@ const tts = new sherpa.OfflineTts({
   numThreads: 4,
   debug: false,
   provider: 'cpu',
-  maxNumSentences: 2,
+  // Kokoro 前端强制 maxNumSentences=1（传 2 会被原生层忽略，且每次 generate 刷一条
+  // "max_num_sentences (2) != 1 is ignored" 原生告警）；与生产 tts-engine.ts 保持一致
+  maxNumSentences: 1,
   ruleFsts: ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst']
     .map((f) => path.join(MODEL_DIR, f))
     .join(','),
 });
+// 说明：构造阶段原生层可能打印一次 "Unknown token: ❓"——与输入/FST 无关（不传 FST、
+// 不合成也会出现），是 kokoro-multi-lang-v1_1 与 sherpa-onnx 1.13.8 加载期的内部提示，
+// numSpeakers 与后续合成都正常，无需处理。
 console.log(`    加载 ${Date.now() - t0}ms | sampleRate=${tts.sampleRate} numSpeakers=${tts.numSpeakers}`);
 
 if (tts.numSpeakers !== 103) {
@@ -79,6 +84,8 @@ for (const r of ROLES) {
 }
 
 console.log('[3/3] 英文抽查（zf_001 读英文句，验证多语种前端）...');
+// 注：espeak 偶发输出 Kokoro 音素表没有的音标时，原生层打印
+// "Skip unknown phonemes"（如 U+025A），仅跳过该音标、音频正常，非错误。
 const en = tts.generate({
   text: 'Hello! This is an offline text to speech demo running entirely on your machine.',
   sid: ROLES[0].sid,

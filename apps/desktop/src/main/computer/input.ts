@@ -62,6 +62,8 @@ export interface NutInputOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
+// ASCII 判定的字符类必须覆盖 0x00-0x1F 控制区段（正则本意即匹配完整 7 位 ASCII）
+// eslint-disable-next-line no-control-regex
 const isAscii = (s: string): boolean => /^[\x00-\x7F]*$/.test(s);
 
 export function createNutInputBackend(options: NutInputOptions = {}): InputBackend {

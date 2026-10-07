@@ -31,9 +31,7 @@ function bindHangingStream(fetchSpy: ReturnType<typeof vi.fn>, chunks: string[])
   const encoder = new TextEncoder();
   let controller!: ReadableStreamDefaultController<Uint8Array>;
   fetchSpy.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
-    init.signal.addEventListener('abort', () =>
-      controller.error(new DOMException('Aborted', 'AbortError')),
-    );
+    init.signal.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')));
     return Promise.resolve(
       new Response(
         new ReadableStream<Uint8Array>({
@@ -48,7 +46,8 @@ function bindHangingStream(fetchSpy: ReturnType<typeof vi.fn>, chunks: string[])
   });
 }
 
-function makeArgs(overrides: Partial<Parameters<typeof useProactiveChat>[0]> = {}) {
+// 显式标注 hook 入参类型：避免默认字面量与 Partial overrides 联合后，测试里回写属性被放宽
+function makeArgs(overrides: Partial<Parameters<typeof useProactiveChat>[0]> = {}): Parameters<typeof useProactiveChat>[0] {
   return {
     assistantId: 'a1',
     conversationId: null,
@@ -289,7 +288,8 @@ describe('useProactiveChat（F8 空闲主动说话）', () => {
     const fetchSpy = vi.fn().mockResolvedValue(sseResponse(HAPPY_SSE));
     vi.stubGlobal('fetch', fetchSpy);
     const args = makeArgs({ ttsReady: false });
-    args.voiceSettings = { ...args.voiceSettings, ttsEnabled: true };
+    // makeArgs 默认值保证非空：! 让展开保持必填字段（对含 null 联合展开会把字段变可选）
+    args.voiceSettings = { ...args.voiceSettings!, ttsEnabled: true };
     renderHook(() => useProactiveChat(args));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(305_000);

@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup && node scripts/dev.mjs",
+    "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p e2e/tsconfig.json",
     "test": "vitest run",
     "test:unit": "vitest run",

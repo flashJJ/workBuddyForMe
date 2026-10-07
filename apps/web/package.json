@@ -9,7 +9,7 @@
     "mcp:build": "node scripts/build-mcp-server.mjs",
     "mcp:stdio": "node .next/mcp-server/mcp-server.cjs",
     "start": "next start -H 127.0.0.1 -p 3000",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p ../../tests/e2e/tsconfig.json",
     "lint": "next lint",
     "test": "vitest run",
     "test:unit": "vitest run",
