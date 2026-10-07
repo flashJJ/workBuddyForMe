@@ -34,9 +34,19 @@ export interface StreamChatInput {
   regenerate?: boolean;
 }
 
+/** 注入系统提示词前的轻量 RAG 片段（仅保留装配资料块需要的字段） */
+export interface RagChunk {
+  documentName: string;
+  ordinal: number;
+  content: string;
+}
+
 export interface RagContext {
   citations: Citation[];
+  /** 预格式化资料块（无预算约束的兼容路径使用） */
   contextBlock: string;
+  /** 结构化片段：prompt 装配时按剩余 token 预算整体/截断注入 */
+  chunks: RagChunk[];
 }
 
 export type RagRetriever = (

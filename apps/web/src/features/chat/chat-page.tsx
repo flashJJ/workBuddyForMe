@@ -1,39 +1,29 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { Archive, Brain, Share2 } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared';
-import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useConversations, useConversationMutations } from '@/lib/hooks/use-conversations';
 import { useAllModels, useSettings } from '@/lib/hooks/use-settings';
-import { AssistantSwitcher } from './assistant-switcher';
 import { ConversationRenameDialog } from './conversation-rename-dialog';
 import { ConversationShareDialog } from './conversation-share-dialog';
 import { ConversationSummaryDialog } from './conversation-summary-dialog';
 import { ConversationSidebar } from './conversation-sidebar';
+import { ChatHeader } from './chat-header';
 import { MessageList } from './message-list';
 import { Composer } from './composer';
 import { ToolConfirmDialog } from './tool-confirm-dialog';
-import { useChatSession } from './use-chat-session';
-
-function SetupGuide() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-      <p className="text-sm font-medium">还没有可用的对话模型</p>
-      <p className="max-w-sm text-xs text-muted-foreground">
-        请先在设置中新增供应商、添加对话模型，并将其设为默认模型（或给助手绑定模型）。
-      </p>
-      <Button asChild>
-        <Link href="/settings">前往设置</Link>
-      </Button>
-    </div>
-  );
-}
+import { useChatVoiceCompanion } from './use-chat-voice-companion';
+import { VoiceToggle } from '../voice/voice-toggle';
+import { MicButton } from '../voice/mic-button';
+import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
+import { ProactiveBubbleBar } from './proactive-bubble';
+import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
+import { ChatSetupGuide } from './chat-setup-guide';
 
 export function ChatPage() {
   const { data: assistants, isLoading: assistantsLoading } = useAssistants();
@@ -60,10 +50,7 @@ export function ChatPage() {
   const currentConversation =
     conversationsQuery.data?.find((item) => item.id === conversationId) ?? null;
 
-  const session = useChatSession(assistantId, conversationId, (createdId) => {
-    setConversationId(createdId);
-  });
-
+  // hasChatModel/visionEnabled 依赖下方模型列表；语音伴侣在模型能力算出后接线
   const hasChatModel = React.useMemo(() => {
     if (!currentAssistant) return false;
     if (currentAssistant.modelId) return true;
@@ -74,6 +61,15 @@ export function ChatPage() {
     }
     return false;
   }, [currentAssistant, settings, models]);
+
+  // 语音伴侣聚合：TTS 播放/PTT/VAD/桌宠中继/F8 主动说话（主窗唯一音频出口）
+  const companion = useChatVoiceCompanion({
+    assistantId,
+    conversationId,
+    onConversationCreated: setConversationId,
+    hasChatModel,
+  });
+  const { session, voiceSettings, ttsEnabled, handleTtsToggle, handsfree, petOpen } = companion;
 
   // v0.3：当前生效模型（助手绑定优先，否则全局默认）是否具备视觉能力
   const visionEnabled = React.useMemo(() => {
@@ -183,39 +179,14 @@ export function ChatPage() {
         onSubmit={submitToolConfirm}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b px-4 py-2.5">
-          <AssistantSwitcher
-            assistants={assistants ?? []}
-            value={assistantId}
-            onChange={switchAssistant}
-          />
-          <div className="flex items-center gap-3">
-            {currentConversation?.summaryTurns ? (
-              <button
-                type="button"
-                data-testid="compaction-badge"
-                onClick={() => setSummaryOpen(true)}
-                title="查看模型自动生成的早期对话摘要"
-                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
-              >
-                <Archive className="h-3 w-3" />
-                已压缩 {currentConversation.summaryTurns} 条早期消息
-              </button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              data-testid="share-conversation-button"
-              disabled={!conversationId}
-              onClick={() => setShareOpen(true)}
-            >
-              <Share2 className="mr-1 h-3.5 w-3.5" />
-              分享
-            </Button>
-            <span className="text-xs text-muted-foreground">本地私有 · 流式输出</span>
-          </div>
-        </header>
+        <ChatHeader
+          assistants={assistants ?? []}
+          assistantId={assistantId}
+          currentConversation={currentConversation}
+          onAssistantChange={switchAssistant}
+          onShowSummary={() => setSummaryOpen(true)}
+          onShare={() => setShareOpen(true)}
+        />
 
         {hasChatModel ? (
           <>
@@ -237,17 +208,44 @@ export function ChatPage() {
               onResend={session.send}
               onFeedback={session.applyFeedback}
             />
+            {companion.proactiveBubble && (
+              <ProactiveBubbleBar
+                bubble={companion.proactiveBubble}
+                assistantName={currentAssistant?.name ?? '助手'}
+                onDismiss={companion.dismissProactive}
+              />
+            )}
             <Composer
               streaming={session.streaming}
               visionEnabled={visionEnabled}
+              leading={
+                <>
+                  <VoiceToggle enabled={ttsEnabled} onEnabledChange={handleTtsToggle} />
+                  {voiceSettings?.asrEnabled &&
+                    (voiceSettings.inputMode === 'vad' ? (
+                      <HandsfreeMicButton handsfree={handsfree} />
+                    ) : (
+                      <MicButton onRecognizedSend={(text) => session.send(text)} disabled={session.streaming} />
+                    ))}
+                </>
+              }
               onSend={session.send}
               onStop={session.stop}
             />
           </>
         ) : (
-          <SetupGuide />
+          <ChatSetupGuide />
         )}
       </div>
+      {voiceSettings?.avatarEnabled && hasChatModel && !petOpen && (
+        <ChatAvatarRail
+          modelId={voiceSettings.avatarModelId || 'haru'}
+          messages={session.messages}
+          getLevel={companion.playback.getLevel}
+          speaking={companion.playback.speaking}
+          proactiveContent={companion.proactiveBubble?.content ?? null}
+        />
+      )}
     </div>
   );
 }

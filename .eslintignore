@@ -3,4 +3,11 @@ dist
 .next
 out
 coverage
-apps/desktop/release
+# Playwright 运行产物（trace viewer 自带大量打包 JS）
+**/playwright-report/
+**/test-results/
+# prepare-server 归集的 standalone 副本与 electron-builder 打包目录（release/release-m1/release-m2）
+apps/desktop/resources/
+apps/desktop/release*
+# 官方第三方压缩混淆库（Live2D Cubism Core）
+apps/web/public/live2d/core/

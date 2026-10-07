@@ -14,7 +14,14 @@ module.exports = {
     '.next/',
     'out/',
     'coverage/',
-    'apps/desktop/release/',
+    // Playwright 产物（trace viewer 自带大量打包 JS）
+    '**/playwright-report/',
+    '**/test-results/',
+    // prepare-server 归集的 standalone 副本与 electron-builder 打包目录
+    'apps/desktop/resources/',
+    'apps/desktop/release*/',
+    // 官方第三方压缩混淆库（Live2D Cubism Core）
+    'apps/web/public/live2d/core/',
     'apps/web/.next/',
   ],
   rules: {
@@ -26,8 +33,25 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['**/*.config.{js,cjs,mjs,ts}', 'scripts/**/*.{js,cjs,mjs}'],
+      // Node 工具链：构建配置、根 scripts、ESLint 配置本身
+      files: [
+        '**/*.config.{js,cjs,mjs,ts}',
+        '.eslintrc.cjs',
+        'scripts/**/*.{js,cjs,mjs}',
+      ],
       env: { node: true },
+    },
+    {
+      // 桌面壳与各包的本地脚本、spike 取证、测试夹具（不进构建产物）
+      files: [
+        'apps/desktop/scripts/**/*.{js,cjs,mjs}',
+        'apps/desktop/spikes/**/*.{js,cjs,mjs}',
+        'packages/**/spikes/**/*.{js,cjs,mjs}',
+        'packages/**/fixtures/**/*.{js,cjs,mjs}',
+      ],
+      env: { node: true },
+      // Node 18+ 全局 fetch（旧版 globals 定义未包含）
+      globals: { fetch: 'readonly' },
     },
   ],
 };

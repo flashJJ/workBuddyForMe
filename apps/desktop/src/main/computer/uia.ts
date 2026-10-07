@@ -50,7 +50,7 @@ while ($stack.Count -gt 0 -and $list.Count -lt $maxNodes) {
       # （Unexpected token ','），必须先赋值变量再 Add。
       $item = [pscustomobject]@{
         name = [string]$c.Name
-        controlType = ([string]$c.ControlType.ProgrammaticName) -replace '^ControlType\.',''
+        controlType = ([string]$c.ControlType.ProgrammaticName) -replace '^ControlType\\.',''
         automationId = [string]$c.AutomationId
         rect = @{ x = [int][Math]::Round($r.X); y = [int][Math]::Round($r.Y); width = [int][Math]::Round($r.Width); height = [int][Math]::Round($r.Height) }
         interactable = [bool]$c.IsEnabled

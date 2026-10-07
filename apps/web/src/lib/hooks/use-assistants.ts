@@ -19,6 +19,8 @@ export interface AssistantBody {
   enabledTools?: string[];
   retrieveAlways?: boolean;
   memoryEnabled?: boolean;
+  /** v1.0 M3：表情指令标签开关 */
+  expressionEnabled?: boolean;
 }
 
 export function useAssistants() {

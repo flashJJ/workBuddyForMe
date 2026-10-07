@@ -18,7 +18,7 @@ import {
 /** MCP tools/call 同步等待上限（超时后返回 runId 指引文本，不把客户端吊死） */
 export const MCP_CALL_TIMEOUT_MS = 90_000;
 
-export const MCP_FLOW_SERVER_INFO = { name: 'workbuddy-flow', version: '0.9.0' } as const;
+export const MCP_FLOW_SERVER_INFO = { name: 'workbuddy-flow', version: '1.0.0' } as const;
 
 export interface McpFlowContextDeps {
   endpoint: WorkflowEndpointView;

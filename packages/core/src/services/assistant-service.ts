@@ -67,6 +67,7 @@ export function createAssistantsService({ db }: ServiceDeps) {
         enabledTools: input.enabledTools,
         retrieveAlways: input.retrieveAlways,
         memoryEnabled: input.memoryEnabled,
+        expressionEnabled: input.expressionEnabled,
         isBuiltin: false,
         sortOrder,
       });

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, ContentPart, Message, PermissionLevel, RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared';
+import type { Citation, ContentPart, Message, RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared';
 import { useMessages } from '@/lib/hooks/use-conversations';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiPost } from '@/lib/api/client';
@@ -13,14 +13,9 @@ import {
   applyToolTraceStart,
   patchLastAssistantMessage,
 } from './live-message-utils';
+import type { ChatSessionVoice, PendingToolConfirmation } from './chat-session.types';
 
-/** v0.6 M2：待用户确认的工具调用（HITL 弹窗数据源） */
-export interface PendingToolConfirmation {
-  callId: string;
-  tool: string;
-  permission: PermissionLevel;
-  argsSummary: string;
-}
+export type { ChatSessionVoice, PendingToolConfirmation } from './chat-session.types';
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -81,6 +76,7 @@ export function useChatSession(
   assistantId: string,
   conversationId: string | null,
   onConversationCreated: (id: string) => void,
+  voice?: ChatSessionVoice,
 ): ChatSession {
   const historyQuery = useMessages(conversationId);
   const queryClient = useQueryClient();
@@ -95,7 +91,8 @@ export function useChatSession(
     setLive(null);
     setRecalledMemories([]);
     setPendingConfirmation(null);
-  }, []);
+    voice?.cancelPlayback?.();
+  }, [voice]);
 
   const baseMessages = live ?? historyQuery.data ?? [];
 
@@ -167,7 +164,7 @@ export function useChatSession(
           setLive((prev) => applyToolTraceEnd(prev, data));
         },
         onToolConfirmationRequired: (data: SsePayloadMap['tool_confirmation_required']) => {
-          // orchestrator 已挂起等待决策；弹窗由页面渲染
+          // 编排器已挂起等待决策；弹窗由页面渲染
           setPendingConfirmation({
             callId: data.callId,
             tool: data.tool,
@@ -175,6 +172,8 @@ export function useChatSession(
             argsSummary: data.argsSummary,
           });
         },
+        onVoiceAudio: (data: SsePayloadMap['voice_audio']) => voice?.onAudio?.(data),
+        onVoiceState: (data: SsePayloadMap['voice_state']) => voice?.onVoiceState?.(data),
         onDone: (data: SsePayloadMap['done']) => {
           setPendingConfirmation(null);
           patchLastAssistant({
@@ -202,12 +201,13 @@ export function useChatSession(
           content,
           ...(attachments.length > 0 ? { attachments } : {}),
           ...(regenerate ? { regenerate: true } : {}),
+          ...(voice?.ttsEnabled ? { voice: { tts: true } } : {}),
         },
         handlers,
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [assistantId, conversationId, historyQuery.data, onConversationCreated, queryClient, streamSend],
+    [assistantId, conversationId, historyQuery.data, onConversationCreated, queryClient, streamSend, voice],
   );
 
   const send = React.useCallback(
@@ -226,6 +226,7 @@ export function useChatSession(
   /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
   const stop = React.useCallback(() => {
     streamStop();
+    voice?.cancelPlayback?.();
     setPendingConfirmation(null);
     setLive((prev) => {
       if (!prev) return prev;
@@ -239,7 +240,7 @@ export function useChatSession(
       }
       return next;
     });
-  }, [streamStop]);
+  }, [streamStop, voice]);
 
   const applyFeedback = React.useCallback(
     (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => {

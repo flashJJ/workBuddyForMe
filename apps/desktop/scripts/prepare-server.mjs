@@ -80,6 +80,9 @@ const FALLBACK_PACKAGES = [
   'zlibjs',
   'regenerator-runtime',
   'opencollective-postinstall',
+  // v1.0 本地语音：JS 绑定 + win-x64 原生平台包（.node + onnxruntime DLL）
+  'sherpa-onnx-node',
+  'sherpa-onnx-win-x64',
 ];
 for (const pkg of FALLBACK_PACKAGES) {
   const from = path.join(rootModules, pkg);

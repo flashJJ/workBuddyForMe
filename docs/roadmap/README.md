@@ -11,13 +11,20 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v0.7 ✅ 已发布（2026-09）
+## 当前版本：v1.0 🚧 开发中（2026-10 起）
 
-**主题：看得见、动得了手**。桌面 Agent 能力——屏幕视觉感知 + 键鼠执行 + 任务级 Agent 循环 + 浏览器自动化评估（playwright-mcp 评估未接入，登记 v0.8+ 重新评估），对标腾讯 WorkBuddy 的「接管电脑」能力但坚持本地优先与逐步授权。tag `v0.7.0`。
+**主题：会说话的桌面伙伴**。本地 sherpa-onnx 语音识别/合成（离线）+ 流式语音对话与可打断 + Live2D 形象（口型/表情）+ 透明置顶鼠标穿透桌宠窗。借鉴 Open-LLM-VTuber 并坚持本地优先与半双工安全边界。分支 `feature/v1.0-voice-companion`。
 
-- 方案：[v0.7-computer-agent.md](v0.7-computer-agent.md)
-- 浏览器自动化评估：[v0.7-playwright-mcp-eval.md](v0.7-playwright-mcp-eval.md)
-- 总结：—
+- 方案：[docs/plan/v1.0](../plan/v1.0/README.md)（七篇，含 VAD 专题与桌宠专题）
+- 总结：[v1.0-release-summary.md](v1.0-release-summary.md)（阶段性，2026-10-08：M0–M5 代码全部完成——含多形象/桌宠/VAD/Kokoro 声线/主动说话、降级矩阵与 1.0.0 升版；仅剩真人验收、打包态断网手测与 tag）
+- 原规划 v1.0 的「正式发布」收尾项（代码签名/安装器打磨/a11y/i18n/帮助中心）顺延 **v1.1**
+
+## 已发布版本：v0.9 ✅（2026-10）
+
+**主题：执行解耦 + 流程服务化**。队列/事件总线/崩溃恢复、本地 HTTP API、MCP Server（HTTP/stdio 双承载）、无人值守策略门控、运行记录与重放。tag `v0.9.0`。
+
+- 方案：[v0.9-flow-serving.md](v0.9-flow-serving.md)
+- 总结：[v0.9-release-summary.md](v0.9-release-summary.md)
 
 ## 上一版本：v0.6 ✅ 已发布（2026-09）
 
@@ -76,7 +83,10 @@
 | v0.5 | 记得住：长期记忆 + 上下文工程 | ✅ 已发布 | [方案](v0.5-memory-and-context.md) | [总结](v0.5-release-summary.md) | — | `v0.5.0` |
 | v0.6 | 会接活：MCP + 技能包 + 权限确认 | ✅ 已发布 | [方案](v0.6-skills-and-mcp.md) | — | — | `v0.6.0` |
 | v0.7 | 看得见、动得了手：桌面 Agent | ✅ 已发布 | [方案](v0.7-computer-agent.md) | — | 10 篇 | `v0.7.0` |
-| v1.0 | 正式发布：签名/安装器/打磨 | 📝 规划中 | — | — | — | — |
+| v0.8 | Flow Studio：可视化工作流 DAG | ✅ 已发布 | [方案](v0.8-flow-studio.md) | [总结](v0.8-release-summary.md) | — | `v0.8.0` |
+| v0.9 | Flow Serving：执行解耦 + 本地 API/MCP | ✅ 已发布 | [方案](v0.9-flow-serving.md) | [总结](v0.9-release-summary.md) | B01-B08 | `v0.9.0` |
+| v1.0 | 会说话的桌面伙伴：本地语音 + Live2D + 桌宠 | 🔜 待封版（代码完成，待真人验收） | [方案](../plan/v1.0/README.md) | [总结](v1.0-release-summary.md) | — | 待打 `v1.0.0` |
+| v1.1 | 正式发布：签名/安装器/a11y/i18n/帮助中心 | 📝 规划中（由原 v1.0 顺延） | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
@@ -91,7 +101,13 @@
 - 可追溯引用升级：语句级绑定原文出处（Source + Page + Paragraph）
 - 知识治理：去重、冲突检测、文档版本管理与增量重编译
 
-### v1.0「正式发布」—— 可对外分发的 1.0
+### v1.0「会说话的桌面伙伴」—— 语音与形象（🚧 开发中）
+
+- 本地 sherpa-onnx ASR/TTS（离线、零费用），流式按句朗读、首逗号快出、停止即打断（半双工）
+- Live2D 形象：口型 RMS、表情标签、待机动作；透明置顶桌宠窗（鼠标穿透滞回、拖拽、双击回主窗）
+- 详见 [docs/plan/v1.0](../plan/v1.0/README.md)。原「正式发布」收尾项移至 v1.1。
+
+### v1.1「正式发布」—— 可对外分发（原 v1.0 规划）
 
 - Windows 代码签名证书（消除 SmartScreen 警告）
 - 安装器体验（NSIS 一键安装、开始菜单/卸载信息）

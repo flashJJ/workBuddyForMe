@@ -3,6 +3,7 @@ import type { PermissionLevel } from '../types/permission';
 import type { FlowEventPayload } from '../types/flow';
 import type { TaskEventPayload } from '../schemas/task';
 import type { ToolEventPayload } from '../types/tool';
+import type { VoiceState } from '../schemas/voice';
 
 /** v0.5：命中的长期记忆轻提示载荷（回答上方「参考了 X 条记忆」） */
 export interface RecalledMemoryPayload {
@@ -24,6 +25,10 @@ export const SSE_EVENT = {
   TASK: 'task',
   /** v0.8 Flow Studio：工作流运行/节点时间线 */
   FLOW: 'flow',
+  /** v1.0 语音：按句合成的音频帧（audio=null 为仅展示片段，如表情标签） */
+  VOICE_AUDIO: 'voice_audio',
+  /** v1.0 语音：会话状态机变更（idle/listening/thinking/speaking） */
+  VOICE_STATE: 'voice_state',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -37,7 +42,7 @@ export interface TokenUsage {
 }
 
 export type SsePayloadMap = {
-  meta: { messageId: string; conversationId: string };
+  meta: { messageId: string; conversationId: string; proactive?: boolean };
   delta: { content: string };
   citations: { citations: Citation[] };
   memories: { memories: RecalledMemoryPayload[] };
@@ -53,6 +58,19 @@ export type SsePayloadMap = {
   task: TaskEventPayload;
   /** v0.8：工作流运行/节点事件 */
   flow: FlowEventPayload;
+  /** v1.0：一段可朗读文本对应的 WAV（base64）；audio=null 仅驱动字幕/表情 */
+  voice_audio: {
+    /** 本片段展示文本（含表情标签原文） */
+    fragment: string;
+    /** 清洗后用于 TTS 的文本；空串表示该片段无声 */
+    spoken: string;
+    audio: string | null;
+    sampleRate: number;
+    /** 是否为最后一段（等价于流即将 done） */
+    final: boolean;
+  };
+  /** v1.0：语音状态机变更 */
+  voice_state: { state: VoiceState };
   done: { content: string; usage: TokenUsage | null };
   error: { code: string; message: string };
 };

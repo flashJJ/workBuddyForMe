@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage } from '@wbfm/ai';
-import { IMAGE_TOKEN_ESTIMATE, estimateMessageTokens, estimateTokens } from './context-budget';
-import { assembleHistoryWithinBudget } from './context-budget';
+import {
+  IMAGE_TOKEN_ESTIMATE,
+  estimateMessageTokens,
+  estimateTokens,
+  truncateToTokens,
+  assembleHistoryWithinBudget,
+} from './context-budget';
 
 /** 'abcdefghij' 10 个非 CJK 字符 → ceil(10/4)=3 token，加每条消息固定开销 4 = 7 */
 function asciiMsg(content: string, role: ChatMessage['role'] = 'user'): ChatMessage {
@@ -26,6 +31,24 @@ describe('estimateTokens（字符粗估：CJK≈1.5 字符/token，其余≈4 �
 
   it('空文本为 0', () => {
     expect(estimateTokens('')).toBe(0);
+  });
+});
+
+describe('truncateToTokens（按预算截断文本）', () => {
+  it('已在预算内原样返回', () => {
+    expect(truncateToTokens('一二三四', 10)).toBe('一二三四');
+  });
+
+  it('非正预算返回空串', () => {
+    expect(truncateToTokens('一二三四', 0)).toBe('');
+  });
+
+  it('超长时截断并追加省略号，结果估算不超过预算', () => {
+    const text = '中文内容'.repeat(100);
+    const out = truncateToTokens(text, 20);
+    expect(out.endsWith('…')).toBe(true);
+    expect(out.length).toBeLessThan(text.length);
+    expect(estimateTokens(out)).toBeLessThanOrEqual(20);
   });
 });
 

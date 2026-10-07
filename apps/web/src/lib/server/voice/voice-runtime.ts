@@ -1,0 +1,245 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  SherpaAsrEngine,
+  SherpaTtsEngine,
+  VOICE_MODELS,
+  downloadVoiceModel,
+  findMissingFiles,
+  decodePcm16Wav,
+  resampleLinear,
+  ASR_SAMPLE_RATE,
+  type AsrEngine,
+  type DownloadProgress,
+  type TtsEngine,
+  type VoiceModelKind,
+} from '@wbfm/voice';
+import {
+  createVoiceModelRepository,
+  type DatabaseInstance,
+  type SettingsRepository,
+} from '@wbfm/database';
+import { getAvatarSpeakerId } from '@wbfm/shared';
+import type { VoiceModelFileStatus, VoiceSettings } from '@wbfm/shared';
+import { readVoiceSettings } from './voice-settings';
+import { getModelDir, getVoiceModelsRoot } from './model-paths';
+
+interface DownloadJob {
+  kind: VoiceModelKind;
+  controller: AbortController;
+  lastProgress: DownloadProgress | null;
+}
+
+export interface SynthResult {
+  samples: Float32Array;
+  sampleRate: number;
+}
+
+export interface TranscribeResult {
+  text: string;
+  lang: string | null;
+}
+
+/**
+ * 进程内语音运行时：模型就绪检查、后台下载任务、TTS 引擎单例。
+ *
+ * 引擎长驻（模型加载耗时）；配置签名变化（目录/sid/线程/速度）时惰性重建。
+ */
+export class VoiceRuntime {
+  private ttsEngine: TtsEngine | null = null;
+  private ttsConfigKey = '';
+  private asrEngine: AsrEngine | null = null;
+  private asrConfigKey = '';
+  private readonly jobs = new Map<VoiceModelKind, DownloadJob>();
+
+  constructor(
+    private readonly db: DatabaseInstance,
+    private readonly settingsRepo: SettingsRepository,
+  ) {}
+
+  private get settings(): VoiceSettings {
+    return readVoiceSettings(this.settingsRepo);
+  }
+
+  private voiceModels() {
+    return createVoiceModelRepository(this.db);
+  }
+
+  /** 检查模型文件齐备性（以磁盘为准，DB 状态仅作展示补充） */
+  async getModelStatus(): Promise<VoiceModelFileStatus> {
+    const settings = this.settings;
+    const results = await Promise.all(
+      (['asr', 'tts'] as const).map(async (kind) => {
+        const spec = VOICE_MODELS[kind];
+        const missing: string[] = [];
+        for (const f of spec.files) {
+          const full = `${getModelDir(settings, kind, spec.id)}/${f.path}`;
+          try {
+            const size = fs.statSync(full).size;
+            if (f.size > 0 && size !== f.size) missing.push(f.path);
+          } catch {
+            missing.push(f.path);
+          }
+        }
+        return [kind, missing] as const;
+      }),
+    );
+    const asrMissing = results.find(([k]) => k === 'asr')?.[1] ?? [];
+    const ttsMissing = results.find(([k]) => k === 'tts')?.[1] ?? [];
+    return {
+      asrReady: asrMissing.length === 0,
+      ttsReady: ttsMissing.length === 0,
+      asrMissing,
+      ttsMissing,
+      asrTotalBytes: VOICE_MODELS.asr.totalBytes,
+      ttsTotalBytes: VOICE_MODELS.tts.totalBytes,
+    };
+  }
+
+  /** 下载进度（含 DB 持久状态与当前任务实时进度） */
+  getDownloadInfo(kind: VoiceModelKind) {
+    const persisted = this.voiceModels().get(kind, VOICE_MODELS[kind].id);
+    const job = this.jobs.get(kind);
+    return {
+      active: Boolean(job),
+      status: persisted?.status ?? 'missing',
+      bytesTotal: persisted?.bytesTotal ?? VOICE_MODELS[kind].totalBytes,
+      bytesDone: job?.lastProgress?.bytesDone ?? persisted?.bytesDone ?? 0,
+      error: persisted?.error ?? null,
+    };
+  }
+
+  /** 启动后台下载；已在下载返回 false（幂等） */
+  startDownload(kind: VoiceModelKind): boolean {
+    if (this.jobs.has(kind)) return false;
+    const spec = VOICE_MODELS[kind];
+    const settings = this.settings;
+    const repo = this.voiceModels();
+    const controller = new AbortController();
+    repo.markDownloading(kind, spec.id, spec.totalBytes, 0);
+
+    const job: DownloadJob = { kind, controller, lastProgress: null };
+    this.jobs.set(kind, job);
+
+    void downloadVoiceModel({
+      spec,
+      targetRoot: getVoiceModelsRoot(settings),
+      mirror: !settings.modelMirrorBase || settings.modelMirrorBase.includes('hf-mirror'),
+      signal: controller.signal,
+      onProgress: (p) => {
+        job.lastProgress = p;
+        repo.markProgress(kind, spec.id, p.bytesDone, p.bytesTotal);
+      },
+    })
+      .then(async () => {
+        const missing = await findMissingFiles(spec, async (rel) => {
+          try {
+            return fs.statSync(`${getModelDir(settings, kind, spec.id)}/${rel}`).size;
+          } catch {
+            return null;
+          }
+        });
+        if (missing.length > 0) throw new Error(`下载后校验缺失：${missing.join(', ')}`);
+        repo.markReady(kind, spec.id, spec.totalBytes);
+      })
+      .catch((error: unknown) => {
+        if ((error as Error).name !== 'AbortError') {
+          repo.markError(kind, spec.id, (error as Error).message, spec.totalBytes);
+        }
+      })
+      .finally(() => {
+        this.jobs.delete(kind);
+      });
+    return true;
+  }
+
+  /** 取消下载 */
+  cancelDownload(kind: VoiceModelKind): void {
+    this.jobs.get(kind)?.controller.abort();
+  }
+
+  /**
+   * 单句合成（路由/试听/对话桥）。
+   * sid 解析：调用方显式指定（如请求 voice.speakerId 或角色试听）→ 当前角色绑定
+   * （settings.avatarModelId → AVATAR_TTS_VOICES）→ 引擎默认（兜底 ttsSpeakerId）。
+   */
+  async synthesize(text: string, speakerId?: number): Promise<SynthResult> {
+    const engine = await this.ensureTts();
+    const sid = speakerId ?? getAvatarSpeakerId(this.settings.avatarModelId);
+    return engine.synthesize(text, { speakerId: sid });
+  }
+
+  /**
+   * 识别上传的 WAV：解码 → 必要时重采样到 16k → ASR。
+   * 录音端本就采 16k，重采样仅为浏览器/设备采样率不一致的兜底。
+   */
+  async transcribeWav(wav: Uint8Array): Promise<TranscribeResult> {
+    const decoded = decodePcm16Wav(Buffer.from(wav));
+    const samples =
+      decoded.sampleRate === ASR_SAMPLE_RATE
+        ? decoded.samples
+        : resampleLinear(decoded.samples, decoded.sampleRate, ASR_SAMPLE_RATE);
+    const engine = await this.ensureAsr();
+    return engine.transcribe(samples);
+  }
+
+  private async ensureTts(): Promise<TtsEngine> {
+    const s = this.settings;
+    const modelDir = getModelDir(s, 'tts', VOICE_MODELS.tts.id);
+    // sid 是逐句参数（按角色切换），不进引擎缓存键；引擎只按目录/线程/速度长驻
+    const key = [modelDir, s.ttsSpeed, s.ttsNumThreads].join('|');
+    if (this.ttsEngine && this.ttsConfigKey === key) return this.ttsEngine;
+    await this.ttsEngine?.dispose();
+    this.ttsEngine = await SherpaTtsEngine.create({
+      spec: VOICE_MODELS.tts,
+      config: {
+        modelDir,
+        speakerId: s.ttsSpeakerId,
+        speed: s.ttsSpeed,
+        numThreads: s.ttsNumThreads,
+        provider: 'cpu',
+        // Kokoro 多说话人：voices 嵌入库 + espeak 数据 + 中英词典 + 中文规整 FST
+        kokoro: {
+          voices: path.join(modelDir, 'voices.bin'),
+          dataDir: path.join(modelDir, 'espeak-ng-data'),
+          lexicon: [
+            path.join(modelDir, 'lexicon-us-en.txt'),
+            path.join(modelDir, 'lexicon-zh.txt'),
+          ].join(','),
+          ruleFsts: ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst']
+            .map((f) => path.join(modelDir, f))
+            .join(','),
+        },
+      },
+    });
+    this.ttsConfigKey = key;
+    return this.ttsEngine;
+  }
+
+  /** 设置变更后让引擎下次调用时按新配置重建 */
+  invalidateTts(): void {
+    this.ttsConfigKey = '';
+  }
+
+  invalidateAsr(): void {
+    this.asrConfigKey = '';
+  }
+
+  private async ensureAsr(): Promise<AsrEngine> {
+    const s = this.settings;
+    const key = [getModelDir(s, 'asr', VOICE_MODELS.asr.id), s.asrNumThreads].join('|');
+    if (this.asrEngine && this.asrConfigKey === key) return this.asrEngine;
+    await this.asrEngine?.dispose();
+    this.asrEngine = await SherpaAsrEngine.create({
+      spec: VOICE_MODELS.asr,
+      config: {
+        modelDir: getModelDir(s, 'asr', VOICE_MODELS.asr.id),
+        numThreads: s.asrNumThreads,
+        provider: 'cpu',
+      },
+      useItn: true,
+    });
+    this.asrConfigKey = key;
+    return this.asrEngine;
+  }
+}

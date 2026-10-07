@@ -38,8 +38,8 @@ describe('v011 迁移：任务 Agent 循环（task_runs + task_steps）', () => 
   it('v10 老库升级：两表可写，级联删除生效', () => {
     const db = createV10Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([11, 12, 13]);
-    expect(LATEST_SCHEMA_VERSION).toBe(13);
+    expect(result.applied).toEqual([11, 12, 13, 14, 15]);
+    expect(LATEST_SCHEMA_VERSION).toBe(15);
 
     const ts = '2026-09-30T01:00:00.000Z';
     db.prepare(

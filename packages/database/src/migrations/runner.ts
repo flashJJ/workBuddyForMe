@@ -12,6 +12,8 @@ import { migrateV010 } from './v010-skills-state';
 import { migrateV011 } from './v011-task-runs';
 import { migrateV012 } from './v012-flow-studio';
 import { migrateV013 } from './v013-flow-serving';
+import { migrateV014 } from './v014-voice';
+import { migrateV015 } from './v015-assistant-expression';
 
 interface Migration {
   version: number;
@@ -77,6 +79,16 @@ const MIGRATIONS: Migration[] = [
     version: 13,
     description: 'flow serving: workflow_endpoints + workflow_runs 端点/重放/中断列',
     up: migrateV013,
+  },
+  {
+    version: 14,
+    description: 'voice companion: voice_models 下载状态表（设置复用 settings_kv）',
+    up: migrateV014,
+  },
+  {
+    version: 15,
+    description: 'assistant expression: assistants.expression_enabled 表情指令开关',
+    up: migrateV015,
   },
 ];
 

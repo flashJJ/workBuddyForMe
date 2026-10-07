@@ -14,6 +14,9 @@ export interface ChatStreamHandlers {
   onTool?: (data: SsePayloadMap['tool']) => void;
   /** v0.6 M2：write/danger 工具执行前需用户授权（HITL 弹窗） */
   onToolConfirmationRequired?: (data: SsePayloadMap['tool_confirmation_required']) => void;
+  /** v1.0：语音朗读帧（base64 wav，按序）与语音状态 */
+  onVoiceAudio?: (data: SsePayloadMap['voice_audio']) => void;
+  onVoiceState?: (data: SsePayloadMap['voice_state']) => void;
   onDone?: (data: SsePayloadMap['done']) => void;
   onError?: (data: SsePayloadMap['error']) => void;
   onStreamingChange?: (streaming: boolean) => void;
@@ -27,6 +30,8 @@ export interface ChatStreamInput {
   attachments?: string[];
   /** 重新生成：沿用上一条用户消息，不需要新内容之外的服务端改动 */
   regenerate?: boolean;
+  /** v1.0：语音选项（tts=true 时服务端额外推 voice_audio 帧） */
+  voice?: { tts: boolean };
 }
 
 /** SSE 对话流：fetch + ReadableStream 增量解析，支持客户端主动中断 */
@@ -101,6 +106,12 @@ export function useChatStream() {
                 handlers.onToolConfirmationRequired?.(
                   event.data as SsePayloadMap['tool_confirmation_required'],
                 );
+                break;
+              case 'voice_audio':
+                handlers.onVoiceAudio?.(event.data as SsePayloadMap['voice_audio']);
+                break;
+              case 'voice_state':
+                handlers.onVoiceState?.(event.data as SsePayloadMap['voice_state']);
                 break;
               case 'done':
                 handlers.onDone?.(event.data as SsePayloadMap['done']);

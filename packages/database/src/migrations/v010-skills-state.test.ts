@@ -31,8 +31,8 @@ describe('v010 迁移：技能包状态（skills_state）', () => {
   it('v9 老库升级：表可写，name 唯一', () => {
     const db = createV9Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([10, 11, 12, 13]);
-    expect(LATEST_SCHEMA_VERSION).toBe(13);
+    expect(result.applied).toEqual([10, 11, 12, 13, 14, 15]);
+    expect(LATEST_SCHEMA_VERSION).toBe(15);
 
     const ts = '2026-09-27T00:00:00.000Z';
     db.prepare(

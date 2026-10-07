@@ -1,4 +1,4 @@
-import { formatSse } from '@wbfm/shared';
+import { formatSse, type SsePayloadMap } from '@wbfm/shared';
 import type { OrchestratorEvent, TaskLoopEvent } from '@wbfm/core';
 
 const SSE_HEADERS = {
@@ -7,8 +7,12 @@ const SSE_HEADERS = {
   connection: 'keep-alive',
 } as const;
 
-/** SSE 流事件类型：编排器事件 + v0.7 M3 任务循环事件（task 子类型） */
-export type SseStreamEvent = OrchestratorEvent | TaskLoopEvent;
+/** SSE 流事件类型：编排器事件 + v0.7 任务循环 + v1.0 语音帧/状态 */
+export type SseStreamEvent =
+  | OrchestratorEvent
+  | TaskLoopEvent
+  | { event: 'voice_audio'; data: SsePayloadMap['voice_audio'] }
+  | { event: 'voice_state'; data: SsePayloadMap['voice_state'] };
 
 /** 将编排器/任务事件流桥接为 SSE Response；客户端断开由 request.signal 传导中断 */
 export function sseResponse(events: AsyncIterable<SseStreamEvent>): Response {

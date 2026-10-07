@@ -1,7 +1,8 @@
 import type { ChatChunk, ChatParams, ProviderConnection } from '../../types';
+import { CHAT_CONNECT_TIMEOUT_MS, CHAT_STREAM_IDLE_TIMEOUT_MS } from '@wbfm/shared';
+import { ProviderError } from '../../errors/provider-error';
 import { openSseChannel } from '../../http/sse-channel';
 import { parseSse } from '../../http/sse-parser';
-import { CHAT_CONNECT_TIMEOUT_MS } from '@wbfm/shared';
 import { OPENAI_ENDPOINTS, joinEndpoint } from './url';
 import {
   DONE_MARKER,
@@ -33,8 +34,27 @@ export async function* openAiChatStream(
   );
 
   const toolCalls = new ToolCallAccumulator();
+  // 块间空闲看门狗：连接建立后若长时间无任何增量（本地模型高负载/上游僵死），
+  // 主动中止并归一化为可重试超时，避免读取循环无限等待、UI 永久转圈。
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  const clearIdle = () => {
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  };
+  const armIdle = (abort: () => void) => {
+    clearIdle();
+    idleTimer = setTimeout(abort, CHAT_STREAM_IDLE_TIMEOUT_MS);
+  };
   try {
+    const abortIdle = () => {
+      clearIdle();
+      response.body?.cancel().catch(() => undefined);
+    };
+    armIdle(abortIdle);
     for await (const event of parseSse(response.body!)) {
+      armIdle(abortIdle); // 每收到一个 SSE 事件就重置空闲计时
       if (event.data === DONE_MARKER) break;
       const chunk = parseChunk(event.data);
       if (!chunk) continue;
@@ -51,11 +71,30 @@ export async function* openAiChatStream(
       }
       if (chunk.usage) yield { delta: '', usage: mapUsage(chunk.usage) };
     }
+  } catch (error) {
+    // 空闲看门狗触发：body.cancel 会让底层读取抛 AbortError，且并非调用方主动取消
+    if (!params.signal?.aborted && isIdleAbort(error)) {
+      throw ProviderError.timeout(
+        `SSE 流式读取 ${joinEndpoint(connection.baseUrl, OPENAI_ENDPOINTS.chatCompletions)}`,
+        CHAT_STREAM_IDLE_TIMEOUT_MS,
+      );
+    }
+    throw error;
   } finally {
+    clearIdle();
     // 消费者提前 break / abort 时取消上游响应体并解绑信号，避免悬挂连接
     await response.body?.cancel().catch(() => undefined);
     dispose();
   }
+}
+
+/** 空闲超时引起的中止：AbortError 且调用方 signal 未 abort（区别于用户主动停止） */
+function isIdleAbort(error: unknown): boolean {
+  return (
+    error instanceof DOMException
+      ? error.name === 'AbortError'
+      : error instanceof Error && error.name === 'AbortError'
+  );
 }
 
 function parseChunk(data: string): ChatCompletionChunk | null {

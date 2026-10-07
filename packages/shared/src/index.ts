@@ -61,12 +61,21 @@ export {
   type AssistantReorderInput,
 } from './schemas/assistant';
 export {
+  EXPRESSION_TAGS,
+  DEFAULT_EXPRESSION,
+  normalizeExpressionName,
+  stripExpressionDirectives,
+  type ExpressionTag,
+} from './schemas/expression';
+export {
   conversationCreateSchema,
   conversationUpdateSchema,
   chatRequestSchema,
+  proactiveRequestSchema,
   type ConversationCreateInput,
   type ConversationUpdateInput,
   type ChatRequest,
+  type ProactiveRequest,
 } from './schemas/conversation';
 export {
   knowledgeBaseCreateSchema,
@@ -77,6 +86,48 @@ export {
   type ClipRequest,
 } from './schemas/knowledge';
 export { settingsUpdateSchema, type SettingsUpdateInput } from './schemas/settings';
+
+// v1.0 语音/形象/桌宠契约
+export {
+  VOICE_ASR_ENGINES,
+  VOICE_TTS_ENGINES,
+  VOICE_INPUT_MODES,
+  VAD_SENSITIVITIES,
+  VOICE_STATES,
+  voiceAsrEngineSchema,
+  voiceTtsEngineSchema,
+  voiceInputModeSchema,
+  vadSensitivitySchema,
+  voiceStateSchema,
+  voiceSettingsUpdateSchema,
+  voiceSettingsSchema,
+  DEFAULT_VOICE_SETTINGS,
+  voiceAsrRequestSchema,
+  voiceAsrResponseSchema,
+  voiceTtsRequestSchema,
+  voiceModelStatusSchema,
+  voiceModelDownloadSchema,
+  voiceModelFileStatusSchema,
+  type VoiceAsrEngine,
+  type VoiceTtsEngine,
+  type VoiceInputMode,
+  type VadSensitivity,
+  type VoiceState,
+  type VoiceSettingsUpdateInput,
+  type VoiceSettings,
+  type VoiceAsrRequest,
+  type VoiceAsrResponse,
+  type VoiceTtsRequest,
+  type VoiceModelStatus,
+  type VoiceModelDownload,
+  type VoiceModelFileStatus,
+  SUPPORTED_AVATAR_MODEL_IDS,
+  DEFAULT_AVATAR_MODEL_ID,
+  AVATAR_TTS_VOICES,
+  getAvatarSpeakerId,
+  type SupportedAvatarModelId,
+  type AvatarTtsVoice,
+} from './schemas/voice';
 export {
   messageFeedbackSchema,
   type MessageFeedbackInput,
@@ -269,6 +320,16 @@ export {
   type FullUpdaterStatus,
   type WbfmUpdaterBridge,
 } from './updater';
+
+// 桌宠契约（M4 伴身：IPC 表现事件/桥类型/模型归一）
+export {
+  PET_SUBTITLE_MAX,
+  type PetVoiceState,
+  type PetPerformanceEvent,
+  type WbfmPetBridge,
+  normalizeAvatarModelId,
+  sanitizePetEvent,
+} from './pet';
 
 // 命令面板契约（M5）
 export {

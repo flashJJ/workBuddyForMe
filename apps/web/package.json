@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/web",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "mcp:build": "node scripts/build-mcp-server.mjs",
     "mcp:stdio": "node .next/mcp-server/mcp-server.cjs",
     "start": "next start -H 127.0.0.1 -p 3000",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p ../../tests/e2e/tsconfig.json",
     "lint": "next lint",
     "test": "vitest run",
     "test:unit": "vitest run",
@@ -31,11 +31,14 @@
     "@wbfm/core": "workspace:*",
     "@wbfm/database": "workspace:*",
     "@wbfm/shared": "workspace:*",
+    "@wbfm/voice": "workspace:*",
     "@xyflow/react": "^12.12.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.451.0",
     "next": "^14.2.15",
+    "pixi-live2d-display": "0.4.0",
+    "pixi.js": "^6.5.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
@@ -61,4 +64,3 @@
     "vitest": "^3.2.7"
   }
 }
-

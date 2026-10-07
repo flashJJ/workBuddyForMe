@@ -12,6 +12,8 @@ interface Props {
   placeholder?: string;
   /** 当前对话模型具备 vision 能力时才开放图片附加 */
   visionEnabled?: boolean;
+  /** 输入框左侧附加控件（v1.0：语音朗读开关） */
+  leading?: React.ReactNode;
   onSend: (content: string, attachmentIds: string[]) => void;
   onStop: () => void;
 }
@@ -44,7 +46,7 @@ function AttachmentPreviews(props: {
   );
 }
 
-export function Composer({ streaming, disabled, placeholder, visionEnabled, onSend, onStop }: Props) {
+export function Composer({ streaming, disabled, placeholder, visionEnabled, leading, onSend, onStop }: Props) {
   const [value, setValue] = React.useState('');
   const [dragging, setDragging] = React.useState(false);
   const toast = useToast();
@@ -116,6 +118,7 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, onSe
         <AttachmentPreviews items={attachments.items} onRemove={attachments.remove} />
       )}
       <div className="flex items-end gap-2">
+        {leading}
         {visionEnabled && (
           <>
             <input
