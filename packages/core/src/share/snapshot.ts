@@ -1,5 +1,5 @@
 import { DATA_DIR_NAME } from '@wbfm/config';
-import type { Citation, ToolTraceEntry } from '@wbfm/shared';
+import { stripExpressionDirectives, type Citation, type ToolTraceEntry } from '@wbfm/shared';
 
 /**
  * 对话分享快照（M2）：core 从 DB + 附件文件构建的与会话存储无关的中间结构。
@@ -91,8 +91,14 @@ export function sanitizeSnapshot(snapshot: ConversationSnapshot, dataRoot?: stri
     title: scrub(snapshot.title),
     messages: snapshot.messages.map((m) => ({
       ...m,
-      content: scrub(m.content),
-      parts: m.parts.map((p) => (p.type === 'text' ? { type: 'text', text: scrub(p.text) } : p)),
+      // v1.0 M3：表情指令是驱动形象的控制信号，不进入分享内容
+      content:
+        m.role === 'assistant' ? stripExpressionDirectives(scrub(m.content)) : scrub(m.content),
+      parts: m.parts.map((p) =>
+        p.type === 'text'
+          ? { type: 'text', text: m.role === 'assistant' ? stripExpressionDirectives(scrub(p.text)) : scrub(p.text) }
+          : p,
+      ),
       toolTrace: m.toolTrace.map((t) => ({
         ...t,
         argsSummary: scrub(t.argsSummary),

@@ -70,6 +70,26 @@ function statusText(status: UpdateStatus): string {
   }
 }
 
+/** v1.0 M3：Live2D 组件与样本模型的第三方许可声明（随形象功能再分发所必需） */
+function Live2DLicenseNotice() {
+  return (
+    <div className="space-y-1 border-t pt-3 text-xs text-muted-foreground" data-testid="live2d-license">
+      <p className="font-medium text-foreground">第三方许可</p>
+      <p>
+        虚拟形象使用 Live2D Cubism Core（© Live2D Limited，Live2D Proprietary Software
+        License）与 pixi-live2d-display（MIT）渲染；样本模型「Haru」© Live2D Limited，
+        依 Live2D Sample Content License 再分发。商业使用请遵循 Live2D Cubism SDK 发布许可条款。
+      </p>
+      {/* Haru 属 Live2D 官方原创角色样本，其使用条款要求在作品中逐字标注此版权声明 */}
+      <p lang="en" className="border-l-2 pl-2 leading-relaxed">
+        This content uses sample data owned and copyrighted by Live2D Inc. The sample data are
+        utilized in accordance with terms and conditions set by Live2D Inc. This content itself
+        is created at the author&apos;s sole discretion.
+      </p>
+    </div>
+  );
+}
+
 export function AboutPanel() {
   const toast = useToast();
   const { bridge, status, setStatus, refresh } = useUpdaterStatus();
@@ -81,6 +101,7 @@ export function AboutPanel() {
       <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="about-panel">
         <h3 className="font-medium">关于</h3>
         <p className="text-xs text-muted-foreground">自动更新检查仅在桌面端可用。</p>
+        <Live2DLicenseNotice />
       </section>
     );
   }
@@ -173,6 +194,8 @@ export function AboutPanel() {
           手动下载。
         </p>
       )}
+
+      <Live2DLicenseNotice />
     </section>
   );
 }

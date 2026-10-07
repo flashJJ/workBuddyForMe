@@ -11,6 +11,8 @@ const enabledToolsSchema = z
 const retrieveAlwaysSchema = z.boolean().default(true);
 /** v0.5：长期记忆开关默认开启 */
 const memoryEnabledSchema = z.boolean().default(true);
+/** v1.0 M3：表情指令标签开关默认开启（形象关闭时标签也不上屏/不出声） */
+const expressionEnabledSchema = z.boolean().default(true);
 
 const samplingFields = {
   emoji: z.string().trim().max(8).nullable().default(null),
@@ -29,6 +31,7 @@ const samplingFields = {
   enabledTools: enabledToolsSchema,
   retrieveAlways: retrieveAlwaysSchema,
   memoryEnabled: memoryEnabledSchema,
+  expressionEnabled: expressionEnabledSchema,
 };
 
 export const assistantCreateSchema = z.object({
@@ -52,6 +55,7 @@ export const assistantUpdateSchema = z
     enabledTools: samplingFields.enabledTools.optional(),
     retrieveAlways: samplingFields.retrieveAlways.optional(),
     memoryEnabled: samplingFields.memoryEnabled.optional(),
+    expressionEnabled: samplingFields.expressionEnabled.optional(),
     sortOrder: z.number().int().min(0).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');

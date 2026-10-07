@@ -23,6 +23,7 @@ import { useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useMcpTools } from '@/lib/hooks/use-mcp';
 import { AssistantToolsField } from './assistant-tools-field';
 import { AssistantMemoryField } from './assistant-memory-field';
+import { AssistantExpressionField } from './assistant-expression-field';
 import { buildAssistantBody, type AssistantFormShape } from './assistant-form-body';
 import { NumberField } from './number-field';
 
@@ -49,6 +50,7 @@ function toForm(assistant: Assistant | null | undefined): FormState {
       enabledTools: ['current_time'],
       retrieveAlways: true,
       memoryEnabled: true,
+      expressionEnabled: true,
     };
   }
   return {
@@ -64,6 +66,7 @@ function toForm(assistant: Assistant | null | undefined): FormState {
     enabledTools: [...assistant.enabledTools],
     retrieveAlways: assistant.retrieveAlways,
     memoryEnabled: assistant.memoryEnabled,
+    expressionEnabled: assistant.expressionEnabled,
   };
 }
 
@@ -252,6 +255,11 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
           <AssistantMemoryField
             checked={form.memoryEnabled}
             onChange={(value) => update({ memoryEnabled: value })}
+          />
+
+          <AssistantExpressionField
+            checked={form.expressionEnabled}
+            onChange={(value) => update({ expressionEnabled: value })}
           />
 
           <DialogFooter>

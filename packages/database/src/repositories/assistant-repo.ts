@@ -19,6 +19,8 @@ export interface AssistantCreateFields {
   retrieveAlways: boolean;
   /** v0.5：长期记忆开关；建库老数据走列默认 1 */
   memoryEnabled?: boolean;
+  /** v1.0 M3：表情指令开关；建库老数据走列默认 1 */
+  expressionEnabled?: boolean;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -38,6 +40,7 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   enabledTools: 'enabled_tools',
   retrieveAlways: 'retrieve_always',
   memoryEnabled: 'memory_enabled',
+  expressionEnabled: 'expression_enabled',
   sortOrder: 'sort_order',
 };
 
@@ -51,6 +54,9 @@ function toRowValues(fields: Partial<AssistantCreateFields>): Record<string, unk
   if (fields.memoryEnabled !== undefined) {
     values.memoryEnabled = fields.memoryEnabled ? 1 : 0;
   }
+  if (fields.expressionEnabled !== undefined) {
+    values.expressionEnabled = fields.expressionEnabled ? 1 : 0;
+  }
   return values;
 }
 
@@ -63,16 +69,17 @@ export function createAssistantRepository(db: DatabaseInstance) {
         `INSERT INTO assistants
            (id, name, emoji, color, system_prompt, temperature, top_p, max_tokens,
             model_id, knowledge_base_id, enabled_tools, retrieve_always, memory_enabled,
-            is_builtin, sort_order, created_at, updated_at)
+            expression_enabled, is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
             @modelId, @knowledgeBaseId, @enabledTools, @retrieveAlways, @memoryEnabled,
-            @isBuiltin, @sortOrder, @ts, @ts)`,
+            @expressionEnabled, @isBuiltin, @sortOrder, @ts, @ts)`,
       ).run({
         ...toRowValues(fields),
         id,
         // 显式缺省（种子路径）时落 1，避免 NOT NULL 绑定问题
         memoryEnabled: fields.memoryEnabled === false ? 0 : 1,
+        expressionEnabled: fields.expressionEnabled === false ? 0 : 1,
         isBuiltin: fields.isBuiltin ? 1 : 0,
         ts,
       });

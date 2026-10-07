@@ -62,6 +62,8 @@ export interface AssistantRow {
   retrieve_always: number;
   /** v0.5：长期记忆开关（0/1） */
   memory_enabled: number;
+  /** v1.0 M3：表情指令开关（0/1） */
+  expression_enabled: number;
   is_builtin: number;
   sort_order: number;
   created_at: string;
@@ -183,6 +185,7 @@ export function mapAssistant(row: AssistantRow): Assistant {
     enabledTools: parseJsonArray<string>(row.enabled_tools),
     retrieveAlways: row.retrieve_always === 1,
     memoryEnabled: row.memory_enabled !== 0,
+    expressionEnabled: row.expression_enabled !== 0,
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,

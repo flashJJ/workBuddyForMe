@@ -73,6 +73,8 @@ export interface Assistant extends Timestamped {
   retrieveAlways: boolean;
   /** v0.5：该助手是否启用长期记忆提取/召回（默认开） */
   memoryEnabled: boolean;
+  /** v1.0 M3：回复中允许插入 [joy] 等表情指令标签（驱动 Live2D 形象；默认开） */
+  expressionEnabled: boolean;
   isBuiltin: boolean;
   sortOrder: number;
 }

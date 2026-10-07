@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -41,8 +41,8 @@ describe('v007 迁移：消息反馈字段', () => {
   it('v6 老库升级：老消息 feedback 两列为 NULL，可写回 up/down', () => {
     const db = createV6Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([7, 8, 9, 10, 11, 12, 13, 14]);
-    expect(LATEST_SCHEMA_VERSION).toBe(14);
+    expect(result.applied).toEqual([7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    expect(LATEST_SCHEMA_VERSION).toBe(15);
 
     const before = db.prepare(`SELECT feedback, feedback_at FROM messages WHERE id='m1'`).get() as {
       feedback: string | null;

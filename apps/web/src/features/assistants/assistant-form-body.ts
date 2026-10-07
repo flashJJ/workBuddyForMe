@@ -14,6 +14,7 @@ export interface AssistantFormShape {
   enabledTools: string[];
   retrieveAlways: boolean;
   memoryEnabled: boolean;
+  expressionEnabled: boolean;
 }
 
 /**
@@ -38,5 +39,6 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
     enabledTools,
     retrieveAlways: form.retrieveAlways,
     memoryEnabled: form.memoryEnabled,
+    expressionEnabled: form.expressionEnabled,
   };
 }

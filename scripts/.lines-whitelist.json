@@ -1,0 +1,8 @@
+{
+  "entries": [
+    {
+      "path": "packages/shared/src/index.ts",
+      "reason": "纯 re-export barrel 聚合文件，无业务逻辑；按域集中导出 zod 契约与类型，拆分只增加跳转成本"
+    }
+  ]
+}

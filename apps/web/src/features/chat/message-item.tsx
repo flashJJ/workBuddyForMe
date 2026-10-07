@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Message } from '@wbfm/shared';
+import { stripExpressionDirectives, type Message } from '@wbfm/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';
@@ -154,6 +154,8 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
     (message.status === 'error' || message.status === 'completed');
   const showCopy = !isUser && message.status === 'completed' && Boolean(message.content);
   const canFeedback = !isUser && message.status === 'completed' && Boolean(message.id && onFeedback);
+  // v1.0 M3：助手消息上屏/复制时剥离表情指令标签（标签驱动形象，不属于回复文本）
+  const displayContent = isUser ? message.content : stripExpressionDirectives(message.content);
 
   return (
     <div
@@ -182,7 +184,7 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
         {isUser ? (
           <UserBody message={message} onResend={onResend} disabled={disabled} />
         ) : (
-          <MarkdownContent content={message.content} />
+          <MarkdownContent content={displayContent} />
         )}
 
         {message.status === 'streaming' && (
@@ -200,7 +202,7 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
 
         {(showCopy || canRegenerate || canFeedback) && (
           <div className="flex items-center gap-3 pt-1">
-            {showCopy && <CopyButton content={message.content} />}
+            {showCopy && <CopyButton content={displayContent} />}
             {canRegenerate && (
               <button
                 type="button"

@@ -61,6 +61,13 @@ export {
   type AssistantReorderInput,
 } from './schemas/assistant';
 export {
+  EXPRESSION_TAGS,
+  DEFAULT_EXPRESSION,
+  normalizeExpressionName,
+  stripExpressionDirectives,
+  type ExpressionTag,
+} from './schemas/expression';
+export {
   conversationCreateSchema,
   conversationUpdateSchema,
   chatRequestSchema,
@@ -83,10 +90,12 @@ export {
   VOICE_ASR_ENGINES,
   VOICE_TTS_ENGINES,
   VOICE_INPUT_MODES,
+  VAD_SENSITIVITIES,
   VOICE_STATES,
   voiceAsrEngineSchema,
   voiceTtsEngineSchema,
   voiceInputModeSchema,
+  vadSensitivitySchema,
   voiceStateSchema,
   voiceSettingsUpdateSchema,
   voiceSettingsSchema,
@@ -95,9 +104,12 @@ export {
   voiceAsrResponseSchema,
   voiceTtsRequestSchema,
   voiceModelStatusSchema,
+  voiceModelDownloadSchema,
+  voiceModelFileStatusSchema,
   type VoiceAsrEngine,
   type VoiceTtsEngine,
   type VoiceInputMode,
+  type VadSensitivity,
   type VoiceState,
   type VoiceSettingsUpdateInput,
   type VoiceSettings,
@@ -105,6 +117,10 @@ export {
   type VoiceAsrResponse,
   type VoiceTtsRequest,
   type VoiceModelStatus,
+  type VoiceModelDownload,
+  type VoiceModelFileStatus,
+  SUPPORTED_AVATAR_MODEL_IDS,
+  DEFAULT_AVATAR_MODEL_ID,
 } from './schemas/voice';
 export {
   messageFeedbackSchema,
