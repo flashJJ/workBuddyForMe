@@ -21,7 +21,8 @@ const THREAD_OPTIONS = [1, 2, 4, 8];
 const SPEED_OPTIONS = [0.8, 1, 1.2, 1.5];
 const PREVIEW_TEXT = '你好，我是你的本地语音助手，所有语音都在本机完成。';
 
-function ToggleRow(props: {
+/** 通用开关行（复用：TTS/ASR 引擎参数、F8 主动说话设置） */
+export function ToggleRow(props: {
   id: string;
   label: string;
   hint: string;

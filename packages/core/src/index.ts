@@ -86,6 +86,14 @@ export {
 
 // 对话编排
 export { createChatOrchestrator, type ChatOrchestrator } from './chat/chat-orchestrator';
+export {
+  PROACTIVE_HISTORY_MESSAGES,
+  PROACTIVE_TRIGGER_PROMPT,
+  PROACTIVE_MESSAGE_PREFIX,
+  createProactiveMessageId,
+  createProactiveTurn,
+  type StreamProactiveInput,
+} from './chat/proactive-turn';
 export { resolveChatTarget, resolveChatTargetForModelId, type ResolvedChatTarget } from './chat/model-resolver';
 export { buildChatMessages, buildSystemPrompt, type ChatBudgetOptions } from './chat/prompt';
 export {

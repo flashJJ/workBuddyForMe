@@ -20,6 +20,7 @@ import { buildImageMap } from './multimodal';
 import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
 import { runToolCallLoop } from './tool-call-loop';
+import { createProactiveTurn, type StreamProactiveInput } from './proactive-turn';
 import type { OrchestratorEvent, StreamChatInput } from './types';
 import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
@@ -32,6 +33,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
   const attachments = createAttachmentService(deps);
   const runtime = createToolRuntime(deps);
   const memory = createMemoryService(deps);
+  const streamProactiveTurn = createProactiveTurn(deps);
   // done 之后异步执行的旁路任务（摘要/记忆）；不阻塞响应，但保留句柄供测试与优雅关闭等待
   const backgroundJobs = new Set<Promise<unknown>>();
   const scheduleBackgroundJob = (job: Promise<unknown>): void => {
@@ -263,6 +265,13 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           turnError ?? undefined,
         );
       }
+    },
+
+    /** F8 主动说话：轻量 skip-history 轮（不落库/无工具/RAG） */
+    async *streamProactive(
+      input: StreamProactiveInput,
+    ): AsyncGenerator<OrchestratorEvent> {
+      yield* streamProactiveTurn(input);
     },
   };
 }

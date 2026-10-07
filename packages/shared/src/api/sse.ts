@@ -42,7 +42,7 @@ export interface TokenUsage {
 }
 
 export type SsePayloadMap = {
-  meta: { messageId: string; conversationId: string };
+  meta: { messageId: string; conversationId: string; proactive?: boolean };
   delta: { content: string };
   citations: { citations: Citation[] };
   memories: { memories: RecalledMemoryPayload[] };

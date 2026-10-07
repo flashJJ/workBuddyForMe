@@ -5,6 +5,10 @@
       "reason": "纯 re-export barrel 聚合文件，无业务逻辑；按域集中导出 zod 契约与类型，拆分只增加跳转成本"
     },
     {
+      "path": "packages/core/src/index.ts",
+      "reason": "纯 re-export barrel 聚合文件（服务/对话/RAG/工具/记忆等域），无业务逻辑；按域集中导出，拆分只增加跳转成本"
+    },
+    {
       "path": "packages/voice/src/models/manifest-kokoro-files.ts",
       "reason": "由 HF tree API 自动生成的 Kokoro 模型文件清单（377 项，含 espeak-ng-data 全量小文件），纯数据无逻辑；拆分会破坏生成器的单文件覆盖写入约定"
     }

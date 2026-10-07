@@ -7,6 +7,7 @@ import { VoiceModelCard } from './voice-model-card';
 import { VoiceEngineParams } from './voice-engine-params';
 import { VoiceInputSection } from './voice-input-section';
 import { AvatarSection } from './avatar-section';
+import { ProactiveSection } from './proactive-section';
 import { MicSelfTest } from './mic-self-test';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -187,6 +188,8 @@ export function VoicePreferencePanel() {
           onPatch={patch}
         />
       )}
+
+      {settings && <ProactiveSection settings={settings} onPatch={patch} />}
 
       <div className="space-y-2 rounded-md border p-3" data-testid="voice-device-section">
         <p className="text-sm font-medium">设备自检</p>

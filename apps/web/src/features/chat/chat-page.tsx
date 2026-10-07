@@ -17,15 +17,12 @@ import { ChatHeader } from './chat-header';
 import { MessageList } from './message-list';
 import { Composer } from './composer';
 import { ToolConfirmDialog } from './tool-confirm-dialog';
-import { useChatSession } from './use-chat-session';
-import { useVoicePlayback } from '../voice/use-voice-playback';
-import { useVoiceSettings } from '../voice/use-voice-settings';
+import { useChatVoiceCompanion } from './use-chat-voice-companion';
 import { VoiceToggle } from '../voice/voice-toggle';
 import { MicButton } from '../voice/mic-button';
 import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
-import { useHandsfreeVoice } from '../voice/use-handsfree-voice';
+import { ProactiveBubbleBar } from './proactive-bubble';
 import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
-import { useChatPetRelay } from '../pet/use-chat-pet-relay';
 import { ChatSetupGuide } from './chat-setup-guide';
 
 export function ChatPage() {
@@ -53,62 +50,7 @@ export function ChatPage() {
   const currentConversation =
     conversationsQuery.data?.find((item) => item.id === conversationId) ?? null;
 
-  // v1.0：语音朗读（本地 TTS）。开关持久化在语音设置；播放队列与停止联动。
-  const { settings: voiceSettings, modelStatus: voiceModelStatus, update: updateVoiceSettings } =
-    useVoiceSettings();
-  const playback = useVoicePlayback();
-  const [ttsEnabled, setTtsEnabled] = React.useState(false);
-  React.useEffect(() => {
-    if (voiceSettings) setTtsEnabled(voiceSettings.ttsEnabled);
-  }, [voiceSettings]);
-
-  const handleTtsToggle = React.useCallback(
-    (next: boolean) => {
-      setTtsEnabled(next);
-      void updateVoiceSettings({ ttsEnabled: next });
-    },
-    [updateVoiceSettings],
-  );
-
-  // 桌宠音频帧中继回调在下方 hook 中产生，用 ref 保证 voiceBridge 拿到最新引用
-  const petRelayRef = React.useRef<(frame: Parameters<typeof playback.enqueue>[0]) => void>(() => {});
-
-  // 传给会话的语音接线必须稳定（避免 reset/stop 回调反复重建）
-  const voiceBridge = React.useMemo(
-    () => ({
-      ttsEnabled,
-      onAudio: (frame: Parameters<typeof playback.enqueue>[0]) => {
-        playback.enqueue(frame);
-        petRelayRef.current(frame);
-      },
-      cancelPlayback: playback.cancel,
-    }),
-    [ttsEnabled, playback.enqueue, playback.cancel],
-  );
-
-  const session = useChatSession(assistantId, conversationId, (createdId) => {
-    setConversationId(createdId);
-  }, voiceBridge);
-
-  // M4：免手持续聆听（VAD）。PTT 路径保持独立，仅输入方式切到 vad 时挂载监控。
-  const handsfree = useHandsfreeVoice({
-    asrReady: !!voiceModelStatus?.asrReady,
-    canArm: !!voiceSettings?.asrEnabled && voiceSettings.inputMode === 'vad',
-    sensitivity: voiceSettings?.vadSensitivity ?? 'balanced',
-    silenceMs: voiceSettings?.vadSilenceMs ?? 900,
-    playback, onRecognizedSend: (text) => session.send(text), onAbortTurn: session.stop,
-  });
-
-  // M4 伴身：桌宠打开期间主窗 rail 让位（避免双 WebGL 上下文），
-  // 语音电平/状态/表情/字幕经 IPC 中继到桌宠瘦终端；petEnabled 持久化并自动开窗
-  const { petOpen, onAudioFrame: relayPetAudio } = useChatPetRelay({
-    voiceSettings,
-    voiceState: handsfree.voiceState,
-    messages: session.messages,
-    conversationId,
-    subscribeLevel: playback.subscribeLevel,
-  });
-  petRelayRef.current = relayPetAudio;
+  // hasChatModel/visionEnabled 依赖下方模型列表；语音伴侣在模型能力算出后接线
   const hasChatModel = React.useMemo(() => {
     if (!currentAssistant) return false;
     if (currentAssistant.modelId) return true;
@@ -119,6 +61,15 @@ export function ChatPage() {
     }
     return false;
   }, [currentAssistant, settings, models]);
+
+  // 语音伴侣聚合：TTS 播放/PTT/VAD/桌宠中继/F8 主动说话（主窗唯一音频出口）
+  const companion = useChatVoiceCompanion({
+    assistantId,
+    conversationId,
+    onConversationCreated: setConversationId,
+    hasChatModel,
+  });
+  const { session, voiceSettings, ttsEnabled, handleTtsToggle, handsfree, petOpen } = companion;
 
   // v0.3：当前生效模型（助手绑定优先，否则全局默认）是否具备视觉能力
   const visionEnabled = React.useMemo(() => {
@@ -257,6 +208,13 @@ export function ChatPage() {
               onResend={session.send}
               onFeedback={session.applyFeedback}
             />
+            {companion.proactiveBubble && (
+              <ProactiveBubbleBar
+                bubble={companion.proactiveBubble}
+                assistantName={currentAssistant?.name ?? '助手'}
+                onDismiss={companion.dismissProactive}
+              />
+            )}
             <Composer
               streaming={session.streaming}
               visionEnabled={visionEnabled}
@@ -283,8 +241,9 @@ export function ChatPage() {
         <ChatAvatarRail
           modelId={voiceSettings.avatarModelId || 'haru'}
           messages={session.messages}
-          getLevel={playback.getLevel}
-          speaking={playback.speaking}
+          getLevel={companion.playback.getLevel}
+          speaking={companion.playback.speaking}
+          proactiveContent={companion.proactiveBubble?.content ?? null}
         />
       )}
     </div>

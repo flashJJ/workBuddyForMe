@@ -12,6 +12,8 @@ interface UseChatPetRelayArgs {
   messages: Message[];
   conversationId: string | null;
   subscribeLevel: (sink: (level: number) => void) => () => void;
+  /** F8：主动轮气泡文本（存在时桌宠表情优先跟随它） */
+  proactiveContent?: string | null;
 }
 
 interface UseChatPetRelayResult {
@@ -32,6 +34,7 @@ export function useChatPetRelay({
   messages,
   conversationId,
   subscribeLevel,
+  proactiveContent = null,
 }: UseChatPetRelayArgs): UseChatPetRelayResult {
   const petBridge = React.useMemo(() => getPetBridge(), []);
   const petOpen = usePetOpenState();
@@ -41,6 +44,7 @@ export function useChatPetRelay({
     messages,
     conversationId,
     subscribeLevel,
+    proactiveContent,
   });
 
   const autoOpenTried = React.useRef(false);

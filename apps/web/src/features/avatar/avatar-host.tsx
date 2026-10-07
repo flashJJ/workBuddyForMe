@@ -18,11 +18,17 @@ interface AvatarHostProps {
   speaking: boolean;
   /** 模型 id（语音设置 avatarModelId） */
   modelId: string;
+  /** F8：主动轮气泡文本（存在时表情优先跟随它） */
+  proactiveContent?: string | null;
 }
 
-/** 取最后一条助手消息（流式或已完成）的文本，推导当前表情 */
-function useLastAssistantExpression(messages: Message[]): ExpressionTag {
+/** 取表情：F8 主动轮进行时以主动气泡内容为准，否则取最后一条助手消息 */
+function useLastAssistantExpression(messages: Message[], proactiveContent?: string | null): ExpressionTag {
   return React.useMemo(() => {
+    if (proactiveContent) {
+      const proactiveTag = latestExpression(proactiveContent);
+      if (proactiveTag) return proactiveTag;
+    }
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       const m = messages[i];
       if (m?.role === 'assistant') {
@@ -30,15 +36,15 @@ function useLastAssistantExpression(messages: Message[]): ExpressionTag {
       }
     }
     return DEFAULT_EXPRESSION;
-  }, [messages]);
+  }, [messages, proactiveContent]);
 }
 
 /**
  * 对话页形象区（M3）：Live2D 画布 + 状态角标。
  * 挂在独立右侧栏；组件本身轻量，重资源经 live2d-canvas 动态切 chunk。
  */
-export function AvatarHost({ messages, getLevel, speaking, modelId }: AvatarHostProps) {
-  const expression = useLastAssistantExpression(messages);
+export function AvatarHost({ messages, getLevel, speaking, modelId, proactiveContent = null }: AvatarHostProps) {
+  const expression = useLastAssistantExpression(messages, proactiveContent);
   return (
     <div className="flex h-full flex-col" data-testid="avatar-host">
       <div className="flex items-center justify-between border-b px-3 py-2">

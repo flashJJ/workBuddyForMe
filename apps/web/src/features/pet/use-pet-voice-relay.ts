@@ -14,15 +14,19 @@ import { getPetBridge } from './pet-bridge';
 /** 桌宠电平中继节流：约 30Hz（口型动画本身不需要更高频率） */
 const LEVEL_THROTTLE_MS = 33;
 
-/** 取最后一条助手消息的当前表情（与 AvatarHost 同逻辑） */
-function useLastAssistantExpression(messages: Message[]): ExpressionTag {
+/** 取表情：F8 主动轮进行时以主动气泡内容为准，否则取最后一条助手消息 */
+function useLastAssistantExpression(messages: Message[], proactiveContent?: string | null): ExpressionTag {
   return React.useMemo(() => {
+    if (proactiveContent) {
+      const proactiveTag = latestExpression(proactiveContent);
+      if (proactiveTag) return proactiveTag;
+    }
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       const m = messages[i];
       if (m?.role === 'assistant') return latestExpression(m.content) ?? DEFAULT_EXPRESSION;
     }
     return DEFAULT_EXPRESSION;
-  }, [messages]);
+  }, [messages, proactiveContent]);
 }
 
 interface UsePetVoiceRelayArgs {
@@ -32,6 +36,8 @@ interface UsePetVoiceRelayArgs {
   messages: Message[];
   conversationId: string | null;
   subscribeLevel: (sink: (level: number) => void) => () => void;
+  /** F8：主动轮气泡文本（存在时表情优先跟随它） */
+  proactiveContent?: string | null;
 }
 
 /**
@@ -45,10 +51,11 @@ export function usePetVoiceRelay({
   messages,
   conversationId,
   subscribeLevel,
+  proactiveContent = null,
 }: UsePetVoiceRelayArgs): (frame: SsePayloadMap['voice_audio']) => void {
   const bridge = React.useMemo(() => getPetBridge(), []);
   const activeNow = Boolean(bridge && active);
-  const expression = useLastAssistantExpression(messages);
+  const expression = useLastAssistantExpression(messages, proactiveContent);
 
   // 电平：订阅音频渲染线程（隐藏窗口不暂停），按 33ms 节流转发
   React.useEffect(() => {

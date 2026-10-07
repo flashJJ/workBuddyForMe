@@ -43,3 +43,19 @@ export const chatRequestSchema = z
     path: ['content'],
   });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
+
+/**
+ * F8 主动说话请求体：服务端据此跑 skip-history 轻量轮（不写消息）。
+ * conversationId 缺省时不带历史开场；voice.tts=true 时与普通对话同样旁路语音帧。
+ */
+export const proactiveRequestSchema = z.object({
+  assistantId: z.string().trim().min(1, '必须选择助手'),
+  conversationId: z.string().trim().min(1).optional(),
+  voice: z
+    .object({
+      tts: z.boolean(),
+      speakerId: z.number().int().min(0).max(102).optional(),
+    })
+    .optional(),
+});
+export type ProactiveRequest = z.infer<typeof proactiveRequestSchema>;

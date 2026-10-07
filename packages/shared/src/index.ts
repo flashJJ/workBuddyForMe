@@ -71,9 +71,11 @@ export {
   conversationCreateSchema,
   conversationUpdateSchema,
   chatRequestSchema,
+  proactiveRequestSchema,
   type ConversationCreateInput,
   type ConversationUpdateInput,
   type ChatRequest,
+  type ProactiveRequest,
 } from './schemas/conversation';
 export {
   knowledgeBaseCreateSchema,
