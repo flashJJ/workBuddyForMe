@@ -52,6 +52,15 @@
     @apply bg-background text-foreground antialiased;
   }
 
+  /* M4 桌宠窗 /pet：透明 BrowserWindow 内强制无底色、禁选中与滚动条，
+     否则 body 的 bg-background 会让透明窗刷出一层不透明背景 */
+  html[data-pet='1'],
+  html[data-pet='1'] body {
+    background: transparent !important;
+    overflow: hidden;
+    user-select: none;
+  }
+
   /* 全局自定义滚动条：与软件暗色/亮色主题统一 */
   * {
     scrollbar-width: thin;

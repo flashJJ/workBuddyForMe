@@ -315,6 +315,16 @@ export {
   type WbfmUpdaterBridge,
 } from './updater';
 
+// 桌宠契约（M4 伴身：IPC 表现事件/桥类型/模型归一）
+export {
+  PET_SUBTITLE_MAX,
+  type PetVoiceState,
+  type PetPerformanceEvent,
+  type WbfmPetBridge,
+  normalizeAvatarModelId,
+  sanitizePetEvent,
+} from './pet';
+
 // 命令面板契约（M5）
 export {
   type Command,

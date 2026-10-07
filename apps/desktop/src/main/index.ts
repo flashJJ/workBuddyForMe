@@ -20,6 +20,7 @@ import { createClickOverlay, type ClickOverlay } from './computer/overlay';
 import { startManagedServer, type ManagedServer } from './server-manager';
 import { captureWindowState, createMainWindow, type WindowBootInfo } from './window';
 import { saveWindowState } from './window-state';
+import { createAppPetManager, PetManager } from './pet/pet-manager';
 import { Updater } from './updater';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
@@ -36,6 +37,7 @@ let cipherEndpoint: CipherEndpoint | null = null;
 let computerChannel: ComputerChannel | null = null;
 let computerChannelFile: string | null = null;
 let clickOverlay: ClickOverlay | null = null;
+let petManager: PetManager | null = null;
 
 // 单实例锁：重复启动聚焦到已有窗口
 const gotLock = app.requestSingleInstanceLock();
@@ -44,6 +46,8 @@ if (!gotLock) {
 } else {
   app.on('second-instance', () => {
     if (!mainWindow) return;
+    // M4：桌宠存活时主窗可能只是被隐藏（非最小化），focus 不会自动 show
+    if (!mainWindow.isVisible()) mainWindow.show();
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
   });
@@ -54,6 +58,8 @@ if (!gotLock) {
   });
 
   app.on('before-quit', () => {
+    // M4 伴身：退出前置位（拦截主窗关闭的 hide 语义放行）+ 立即销毁桌宠窗
+    petManager?.prepareQuit();
     if (mainWindow) saveWindowState(app.getPath('userData'), captureWindowState(mainWindow));
   });
 
@@ -90,6 +96,8 @@ async function start(): Promise<void> {
   }
 
   await createWindow(boot);
+  // M4 伴身：pet:* IPC 注册；主窗 close 在桌宠存活时被改为隐藏
+  petManager = createAppPetManager(boot, () => mainWindow);
   setupUpdater();
   setupGlobalShortcuts();
   await setupComputerChannel();
@@ -251,6 +259,10 @@ async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
   mainWindow = createMainWindow(app.getPath('userData'), url, boot);
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+  // M4 伴身：桌宠存活时关主窗仅隐藏（双击桌宠可唤回）；prepareQuit 后正常退出
+  mainWindow.on('close', (event) => {
+    petManager?.handleMainClose(event);
   });
 
   // 开发态默认不自动开 DevTools：独立（detach）窗口在 Windows 上会与主窗口

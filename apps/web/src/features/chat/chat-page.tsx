@@ -1,20 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { Archive, Brain, Share2 } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared';
-import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useConversations, useConversationMutations } from '@/lib/hooks/use-conversations';
 import { useAllModels, useSettings } from '@/lib/hooks/use-settings';
-import { AssistantSwitcher } from './assistant-switcher';
 import { ConversationRenameDialog } from './conversation-rename-dialog';
 import { ConversationShareDialog } from './conversation-share-dialog';
 import { ConversationSummaryDialog } from './conversation-summary-dialog';
 import { ConversationSidebar } from './conversation-sidebar';
+import { ChatHeader } from './chat-header';
 import { MessageList } from './message-list';
 import { Composer } from './composer';
 import { ToolConfirmDialog } from './tool-confirm-dialog';
@@ -26,6 +25,7 @@ import { MicButton } from '../voice/mic-button';
 import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
 import { useHandsfreeVoice } from '../voice/use-handsfree-voice';
 import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
+import { useChatPetRelay } from '../pet/use-chat-pet-relay';
 import { ChatSetupGuide } from './chat-setup-guide';
 
 export function ChatPage() {
@@ -70,11 +70,17 @@ export function ChatPage() {
     [updateVoiceSettings],
   );
 
+  // 桌宠音频帧中继回调在下方 hook 中产生，用 ref 保证 voiceBridge 拿到最新引用
+  const petRelayRef = React.useRef<(frame: Parameters<typeof playback.enqueue>[0]) => void>(() => {});
+
   // 传给会话的语音接线必须稳定（避免 reset/stop 回调反复重建）
   const voiceBridge = React.useMemo(
     () => ({
       ttsEnabled,
-      onAudio: playback.enqueue,
+      onAudio: (frame: Parameters<typeof playback.enqueue>[0]) => {
+        playback.enqueue(frame);
+        petRelayRef.current(frame);
+      },
       cancelPlayback: playback.cancel,
     }),
     [ttsEnabled, playback.enqueue, playback.cancel],
@@ -92,6 +98,17 @@ export function ChatPage() {
     silenceMs: voiceSettings?.vadSilenceMs ?? 900,
     playback, onRecognizedSend: (text) => session.send(text), onAbortTurn: session.stop,
   });
+
+  // M4 伴身：桌宠打开期间主窗 rail 让位（避免双 WebGL 上下文），
+  // 语音电平/状态/表情/字幕经 IPC 中继到桌宠瘦终端；petEnabled 持久化并自动开窗
+  const { petOpen, onAudioFrame: relayPetAudio } = useChatPetRelay({
+    voiceSettings,
+    voiceState: handsfree.voiceState,
+    messages: session.messages,
+    conversationId,
+    subscribeLevel: playback.subscribeLevel,
+  });
+  petRelayRef.current = relayPetAudio;
   const hasChatModel = React.useMemo(() => {
     if (!currentAssistant) return false;
     if (currentAssistant.modelId) return true;
@@ -211,39 +228,14 @@ export function ChatPage() {
         onSubmit={submitToolConfirm}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b px-4 py-2.5">
-          <AssistantSwitcher
-            assistants={assistants ?? []}
-            value={assistantId}
-            onChange={switchAssistant}
-          />
-          <div className="flex items-center gap-3">
-            {currentConversation?.summaryTurns ? (
-              <button
-                type="button"
-                data-testid="compaction-badge"
-                onClick={() => setSummaryOpen(true)}
-                title="查看模型自动生成的早期对话摘要"
-                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
-              >
-                <Archive className="h-3 w-3" />
-                已压缩 {currentConversation.summaryTurns} 条早期消息
-              </button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              data-testid="share-conversation-button"
-              disabled={!conversationId}
-              onClick={() => setShareOpen(true)}
-            >
-              <Share2 className="mr-1 h-3.5 w-3.5" />
-              分享
-            </Button>
-            <span className="text-xs text-muted-foreground">本地私有 · 流式输出</span>
-          </div>
-        </header>
+        <ChatHeader
+          assistants={assistants ?? []}
+          assistantId={assistantId}
+          currentConversation={currentConversation}
+          onAssistantChange={switchAssistant}
+          onShowSummary={() => setSummaryOpen(true)}
+          onShare={() => setShareOpen(true)}
+        />
 
         {hasChatModel ? (
           <>
@@ -287,7 +279,7 @@ export function ChatPage() {
           <ChatSetupGuide />
         )}
       </div>
-      {voiceSettings?.avatarEnabled && hasChatModel && (
+      {voiceSettings?.avatarEnabled && hasChatModel && !petOpen && (
         <ChatAvatarRail
           modelId={voiceSettings.avatarModelId || 'haru'}
           messages={session.messages}

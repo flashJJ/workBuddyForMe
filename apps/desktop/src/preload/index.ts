@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { WbfmUpdaterBridge } from '@wbfm/shared';
+import type { WbfmPetBridge, WbfmUpdaterBridge } from '@wbfm/shared';
 
 /**
  * 最小 preload：
@@ -41,10 +41,38 @@ const commandPalette = {
   },
 };
 
+/** 订阅主进程单向广播，返回取消订阅 */
+function subscribe(channel: string, cb: (payload: unknown) => void): () => void {
+  const handler = (_event: unknown, payload: unknown) => cb(payload);
+  ipcRenderer.on(channel, handler);
+  return () => ipcRenderer.removeListener(channel, handler);
+}
+
+/**
+ * 桌宠桥（M4 伴身）：主窗用 open/close/isOpen/relayPerformance/onOpenChange；
+ * /pet 窗用 reportHover/focusMain/onPerformance。白名单最小权限，无任何壳能力。
+ */
+const pet: WbfmPetBridge = {
+  open: (modelId) => ipcRenderer.invoke('pet:open', modelId),
+  close: () => ipcRenderer.invoke('pet:close'),
+  isOpen: () => ipcRenderer.invoke('pet:is-open') as Promise<boolean>,
+  reportHover: (hovering) => ipcRenderer.send('pet:hover', hovering),
+  focusMain: () => ipcRenderer.send('pet:focus-main'),
+  dragBegin: () => ipcRenderer.send('pet:drag-begin'),
+  dragTo: () => ipcRenderer.send('pet:drag-to'),
+  dragEnd: () => ipcRenderer.send('pet:drag-end'),
+  showMenu: () => ipcRenderer.send('pet:show-menu'),
+  relayPerformance: (event) => ipcRenderer.send('pet:relay', event),
+  onPerformance: (cb) =>
+    subscribe('pet:performance', (payload) => cb(payload as Parameters<typeof cb>[0])),
+  onOpenChange: (cb) => subscribe('pet:open-changed', (payload) => cb(Boolean(payload))),
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
   isManaged: Boolean(token),
   updater,
   commandPalette,
+  pet,
 });

@@ -162,4 +162,15 @@ test.describe.serial('M3 Live2D 形象', () => {
       })
       .toBeTruthy();
   });
+
+  test('⑧ 纯浏览器无桌宠桥：桌宠开关不渲染，裸访 /pet 回落 /chat', async ({ page }) => {
+    await page.goto('/settings');
+    await expect(page.getByTestId('avatar-enabled')).toBeVisible();
+    // 无 Electron preload → 桌宠区整块不出现
+    await expect(page.getByTestId('pet-enabled-row')).toHaveCount(0);
+
+    await page.goto('/pet?model=haru');
+    await expect(page).toHaveURL(/\/chat/, { timeout: 15_000 });
+    await expect(page.getByLabel('消息输入框')).toBeVisible({ timeout: 30_000 });
+  });
 });

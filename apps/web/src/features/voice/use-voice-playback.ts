@@ -21,6 +21,11 @@ export interface VoicePlayback {
   /** 当前语音状态（idle/speaking；listening/thinking 由别处驱动） */
   voiceState: VoiceState;
   speaking: boolean;
+  /**
+   * 订阅音频渲染线程电平（M4 桌宠中继用）：回调随音频图 tick，
+   * 窗口隐藏后仍触发（rAF 会被节流）；返回取消订阅。
+   */
+  subscribeLevel: (sink: (level: number) => void) => () => void;
 }
 
 /** 语音播放：AudioContext + 单写者队列；卸载时自动清理 */
@@ -30,6 +35,8 @@ export function useVoicePlayback(): VoicePlayback {
   // 门控读数在音频帧回调中被查询，必须用 ref 避免闭包过期
   const speakingRef = React.useRef(false);
   const lastIdleAtRef = React.useRef(0);
+  // 电平订阅者（M4 桌宠）：音频渲染线程回调扇出，不走 React 渲染
+  const levelSinksRef = React.useRef<Set<(level: number) => void>>(new Set());
 
   // 队列必须在 effect 内创建（而非渲染期单例）：StrictMode dev 下组件会经历
   // 挂载→清理→重挂，渲染期单例会被首次 cleanup 的 dispose() 永久标记为
@@ -37,16 +44,23 @@ export function useVoicePlayback(): VoicePlayback {
   // 无报错）。effect 内创建可让重挂周期拿到全新实例；播放器构造本身惰性，
   // 不触碰 AudioContext，SSR/首渲安全（enqueue 等均有 null 守卫）。
   React.useEffect(() => {
-    const queue = new AudioPlaybackQueue(new WebAudioPlayer(), (s) => {
-      if (s === 'speaking') {
-        speakingRef.current = true;
-      } else if (s === 'idle') {
-        // 记录播报结束时刻（含正常播完与 cancel），供 VAD 冷却窗判定
-        if (speakingRef.current) lastIdleAtRef.current = Date.now();
-        speakingRef.current = false;
-      }
-      setVoiceState(s);
-    });
+    const queue = new AudioPlaybackQueue(
+      new WebAudioPlayer({
+        onLevel: (level) => {
+          for (const sink of levelSinksRef.current) sink(level);
+        },
+      }),
+      (s) => {
+        if (s === 'speaking') {
+          speakingRef.current = true;
+        } else if (s === 'idle') {
+          // 记录播报结束时刻（含正常播完与 cancel），供 VAD 冷却窗判定
+          if (speakingRef.current) lastIdleAtRef.current = Date.now();
+          speakingRef.current = false;
+        }
+        setVoiceState(s);
+      },
+    );
     queueRef.current = queue;
     return () => {
       queue.dispose();
@@ -69,12 +83,19 @@ export function useVoicePlayback(): VoicePlayback {
     }),
     [],
   );
+  const subscribeLevel = React.useCallback((sink: (level: number) => void) => {
+    levelSinksRef.current.add(sink);
+    return () => {
+      levelSinksRef.current.delete(sink);
+    };
+  }, []);
 
   return {
     enqueue,
     cancel,
     getLevel,
     getGate,
+    subscribeLevel,
     voiceState,
     speaking: voiceState === 'speaking',
   };
