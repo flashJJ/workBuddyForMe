@@ -92,7 +92,7 @@ export const voiceSettingsSchema = voiceSettingsUpdateSchema.required({
 export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 
 /** v1.0 内置 Live2D 模型 id（新增内置模型时追加；未知 id 读取时回落首个） */
-export const SUPPORTED_AVATAR_MODEL_IDS = ['haru'] as const;
+export const SUPPORTED_AVATAR_MODEL_IDS = ['haru', 'hiyori', 'mark', 'mao', 'wanko'] as const;
 export const DEFAULT_AVATAR_MODEL_ID: (typeof SUPPORTED_AVATAR_MODEL_IDS)[number] = 'haru';
 
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {

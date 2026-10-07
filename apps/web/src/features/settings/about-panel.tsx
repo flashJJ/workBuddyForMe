@@ -70,17 +70,22 @@ function statusText(status: UpdateStatus): string {
   }
 }
 
-/** v1.0 M3：Live2D 组件与样本模型的第三方许可声明（随形象功能再分发所必需） */
+/** v1.0 M3/M3.5：Live2D 组件与 5 套样本模型的第三方许可声明（随形象功能再分发所必需） */
+const SAMPLE_MODELS = 'Haru（接待员晴）、Hiyori（百濑日和）、Mark（马克）、Mao（虹猫）、Wanko（汪子饼）';
+
 function Live2DLicenseNotice() {
   return (
     <div className="space-y-1 border-t pt-3 text-xs text-muted-foreground" data-testid="live2d-license">
       <p className="font-medium text-foreground">第三方许可</p>
       <p>
         虚拟形象使用 Live2D Cubism Core（© Live2D Limited，Live2D Proprietary Software
-        License）与 pixi-live2d-display（MIT）渲染；样本模型「Haru」© Live2D Limited，
-        依 Live2D Sample Content License 再分发。商业使用请遵循 Live2D Cubism SDK 发布许可条款。
+        License）与 pixi-live2d-display（MIT）渲染；内置角色 {SAMPLE_MODELS}
+        的模型与贴图素材 © Live2D Limited，依 Live2D Cubism Web Samples 样本素材许可（Sample
+        Content License / Free Material License）再分发，每套模型目录附带官方 LICENSE.md。
+        商业使用请遵循 Live2D Cubism SDK 发布许可条款；本应用仅提供内置固定角色，不支持导入外部
+        Live2D 模型（避免落入「可扩展性应用」付费许可类别）。
       </p>
-      {/* Haru 属 Live2D 官方原创角色样本，其使用条款要求在作品中逐字标注此版权声明 */}
+      {/* Live2D 官方原创角色样本要求在作品中逐字标注此版权声明（见 sample-model-terms） */}
       <p lang="en" className="border-l-2 pl-2 leading-relaxed">
         This content uses sample data owned and copyrighted by Live2D Inc. The sample data are
         utilized in accordance with terms and conditions set by Live2D Inc. This content itself

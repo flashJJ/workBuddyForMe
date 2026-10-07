@@ -107,4 +107,59 @@ test.describe.serial('M3 Live2D 形象', () => {
     await page.goto('/chat');
     await expect(page.getByTestId('avatar-rail')).toHaveCount(0);
   });
+
+  test('⑦ M3.5 多形象：选择器列出 5 套官方角色，切换后加载对应模型并持久化', async ({ page }) => {
+    // 重新开启形象（⑥ 已关闭）：先注册并消费开关自身的 PUT，避免与切模型 PUT 串台
+    await page.goto('/settings');
+    const enablePut = page
+      .waitForResponse(
+        (r) => r.url().includes('/api/voice/settings') && r.request().method() === 'PUT',
+      )
+      .then((r) => r.json());
+    await page.getByTestId('avatar-enabled').check();
+    const enablePayload = await enablePut;
+    expect(enablePayload.success).toBe(true);
+
+    const select = page.getByTestId('avatar-model');
+    await expect(select).toBeVisible();
+    const options = await select.locator('option').allInnerTexts();
+    expect(options).toHaveLength(5);
+    expect(options.join('|')).toContain('Hiyori');
+    expect(options.join('|')).toContain('Mark');
+
+    // 切换到 Hiyori：用请求体精确匹配切模型 PUT（开关 PUT 已在前面消费）
+    const putPromise = page
+      .waitForResponse((r) => {
+        if (!r.url().includes('/api/voice/settings') || r.request().method() !== 'PUT') {
+          return false;
+        }
+        return r.request().postDataJSON()?.avatarModelId === 'hiyori';
+      })
+      .then((r) => r.json());
+    await select.selectOption('hiyori');
+    const payload = await putPromise;
+    expect(payload.success).toBe(true);
+    expect(payload.data.avatarModelId).toBe('hiyori');
+
+    // 对话页加载 Hiyori 模型清单（默认 haru 资源不应被请求）
+    const requested = collectLive2dRequests(page);
+    await page.goto('/chat');
+    await expect(page.getByTestId('avatar-rail')).toBeVisible({ timeout: 30_000 });
+    await expect
+      .poll(() => requested.some((u) => u.includes('/models/hiyori/Hiyori.model3.json')), {
+        timeout: 30_000,
+      })
+      .toBeTruthy();
+    expect(requested.some((u) => u.includes('haru_greeter_t03.model3.json'))).toBeFalsy();
+
+    // 刷新后设置仍为 hiyori（持久化）
+    await page.goto('/chat');
+    const fresh = collectLive2dRequests(page);
+    await expect(page.getByTestId('avatar-rail')).toBeVisible({ timeout: 30_000 });
+    await expect
+      .poll(() => fresh.some((u) => u.includes('/models/hiyori/Hiyori.model3.json')), {
+        timeout: 30_000,
+      })
+      .toBeTruthy();
+  });
 });
