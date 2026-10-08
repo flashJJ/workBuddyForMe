@@ -80,7 +80,7 @@ export function useChatVoiceCompanion({
     asrReady: !!voiceModelStatus?.asrReady,
     canArm: !!voiceSettings?.asrEnabled && voiceSettings.inputMode === 'vad',
     sensitivity: voiceSettings?.vadSensitivity ?? 'balanced',
-    silenceMs: voiceSettings?.vadSilenceMs ?? 900,
+    silenceMs: voiceSettings?.vadSilenceMs ?? 600,
     playback,
     onRecognizedSend: (text) => session.send(text),
     onAbortTurn: session.stop,

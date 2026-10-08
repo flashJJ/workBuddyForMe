@@ -34,7 +34,7 @@ export type VadEvent =
 export interface VadGate {
   /** 助手正在播报 TTS */
   speaking: boolean;
-  /** 当前处于停播后冷却窗（如 500ms 内） */
+  /** 当前处于停播后冷却窗（如 300ms 内） */
   inCooldown: boolean;
 }
 
@@ -100,7 +100,7 @@ export const DEFAULT_VAD_CONFIG: ResolvedVadConfig = {
   calibrationMs: 800,
   speechStartMs: 240,
   minSpeechMs: 320,
-  silenceMs: 900,
+  silenceMs: 600,
   maxSpeechMs: 30_000,
   startMultiplier: SENSITIVITY_START_MULTIPLIER.balanced,
   stopMultiplier: 1.8,
@@ -147,6 +147,17 @@ export class VadDetector {
     return this.noiseFloor;
   }
 
+  /** 本帧（给定门控快照）实际生效的起始阈值（调试/UI 用） */
+  getStartThreshold(frame?: VadFrameInput): number {
+    const speaking = frame?.gate?.speaking ?? false;
+    return Math.max(
+      this.cfg.minStartThreshold,
+      this.noiseFloor *
+        this.cfg.startMultiplier *
+        (speaking ? this.cfg.playbackThresholdScale : 1),
+    );
+  }
+
   getPhase(): Phase {
     return this.phase;
   }
@@ -166,7 +177,7 @@ export class VadDetector {
     const rawRms = clamp01(frame.rms);
     const inCooldown = frame.gate?.inCooldown ?? false;
     const speaking = frame.gate?.speaking ?? false;
-    // 冷却窗把决策 RMS 硬置零（底噪学习也走该值，500ms 内 EMA 影响可忽略）
+    // 冷却窗把决策 RMS 硬置零（底噪学习也走该值，300ms 内 EMA 影响可忽略）
     const decisionRms = inCooldown ? 0 : rawRms;
 
     const startThreshold = Math.max(

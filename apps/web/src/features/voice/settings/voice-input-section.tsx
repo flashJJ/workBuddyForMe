@@ -113,7 +113,7 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
             >
               {SILENCE_PRESETS.map((ms) => (
                 <option key={ms} value={ms}>
-                  {ms / 1000} 秒{ms === 900 ? '（推荐）' : ''}
+                  {ms / 1000} 秒{ms === 600 ? '（推荐，跟手）' : ''}
                 </option>
               ))}
             </Select>

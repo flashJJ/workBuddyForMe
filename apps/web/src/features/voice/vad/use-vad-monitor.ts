@@ -128,14 +128,11 @@ export function useVadMonitor(options: VadMonitorOptions): VadMonitor {
 
     void (async () => {
       try {
+        // 不硬约束 sampleRate/channelCount：部分设备（Electron 音频管线）在不支持时
+        // 会给到异常轨道（静音/极低增益）；与 PTT 自检链路一致，只开回声消除+降噪，
+        // 采样率由 worklet 按 AudioContext 实际速率重采样（兼容 48k/16k 等）。
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            channelCount: 1,
-            sampleRate: 16000,
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: false,
-          },
+          audio: { echoCancellation: true, noiseSuppression: true },
         });
         if (cancelled) {
           mediaStream.getTracks().forEach((t) => t.stop());
