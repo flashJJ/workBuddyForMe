@@ -1,4 +1,4 @@
-import { TOOL_TIMEOUT_MS } from '@wbfm/shared';
+import { TOOL_TIMEOUT_MS } from '@wbfm/shared/constants';
 import { executeToolCall } from './tool-executor';
 import type { ToolResult } from './types';
 import type { ToolRuntime } from './tool-runtime';

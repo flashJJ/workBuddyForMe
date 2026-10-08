@@ -3,9 +3,9 @@ import {
   HISTORY_MESSAGE_SAFETY_CAP,
   MAX_TOOL_ROUNDS,
   POST_TURN_JOBS_TIMEOUT_MS,
-  type TokenUsage,
-  type ToolTraceEntry,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
+import { type TokenUsage } from '@wbfm/shared/api';
+import { type ToolTraceEntry } from '@wbfm/shared/types';
 import { startRun, type TraceHandle, type ToolCall } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';

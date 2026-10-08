@@ -1,5 +1,6 @@
-import { formatSse, type SsePayloadMap } from '@wbfm/shared';
-import type { OrchestratorEvent, TaskLoopEvent } from '@wbfm/core';
+import { formatSse, type SsePayloadMap } from '@wbfm/shared/api';
+import type { OrchestratorEvent } from '@wbfm/core/chat';
+import type { TaskLoopEvent } from '@wbfm/core/agent';
 
 const SSE_HEADERS = {
   'content-type': 'text/event-stream; charset=utf-8',

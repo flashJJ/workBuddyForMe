@@ -1,5 +1,5 @@
 import { traceAsync, type ToolCall } from '@wbfm/ai';
-import type { Citation, ToolSubstep, ToolTraceEntry } from '@wbfm/shared';
+import type { Citation, ToolSubstep, ToolTraceEntry } from '@wbfm/shared/types';
 import type { ServiceDeps } from '../services/deps';
 import { createAttachmentService } from '../services/attachment-service';
 import type { ToolMap, ToolContext, ToolResult } from '../tools/types';

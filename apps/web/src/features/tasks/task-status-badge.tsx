@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import type { TaskRunStatus, TaskStepKind, TaskStepStatus } from '@wbfm/shared';
+import type { TaskRunStatus, TaskStepKind, TaskStepStatus } from '@wbfm/shared/schemas';
 
 const RUN_STATUS_META: Record<TaskRunStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'outline' }> = {
   queued: { label: '排队', variant: 'outline' },

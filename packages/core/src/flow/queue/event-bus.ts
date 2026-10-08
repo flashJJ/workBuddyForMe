@@ -1,4 +1,4 @@
-import type { FlowEventPayload } from '@wbfm/shared';
+import type { FlowEventPayload } from '@wbfm/shared/types';
 
 /**
  * v0.9 进程内流程事件总线：

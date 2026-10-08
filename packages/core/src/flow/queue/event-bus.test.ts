@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { FlowEventPayload } from '@wbfm/shared';
+import type { FlowEventPayload } from '@wbfm/shared/types';
 import { createFlowEventBus, isTerminalFlowEvent } from './event-bus';
 
 const runStarted = (runId: string): FlowEventPayload => ({

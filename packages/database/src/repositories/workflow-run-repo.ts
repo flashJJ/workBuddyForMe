@@ -3,7 +3,7 @@ import type {
   FlowTrigger,
   NodeExecutionView,
   WorkflowRunView,
-} from '@wbfm/shared';
+} from '@wbfm/shared/types';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 import { createNodeExecutionStore } from './node-execution-repo';

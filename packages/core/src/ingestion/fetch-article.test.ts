@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import {
   articleHtmlToText,
   fetchArticle,

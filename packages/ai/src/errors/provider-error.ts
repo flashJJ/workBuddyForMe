@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@wbfm/shared';
+import type { ErrorCode } from '@wbfm/shared/errors';
 
 export type ProviderErrorCode = Extract<
   ErrorCode,

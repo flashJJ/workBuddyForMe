@@ -1,6 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { StringDecoder } from 'node:string_decoder';
-import { MCP_EXIT_GRACE_MS } from '@wbfm/shared';
+import { MCP_EXIT_GRACE_MS } from '@wbfm/shared/constants';
 import {
   decodeMessage,
   encodeMessage,

@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import { toOfficeReadError } from './office-error';
 
 const SLIDE_PATH = /^ppt\/slides\/slide(\d+)\.xml$/;

@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, ContentPart, Message, RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared';
+import type { Citation, ContentPart, Message } from '@wbfm/shared/types';
+import type { RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared/api';
 import { useMessages } from '@/lib/hooks/use-conversations';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiPost } from '@/lib/api/client';

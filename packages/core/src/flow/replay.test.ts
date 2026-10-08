@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import { describe, expect, it } from 'vitest';
 import { compileFlow } from './compiler';
 import { computeReplayClosure } from './replay';

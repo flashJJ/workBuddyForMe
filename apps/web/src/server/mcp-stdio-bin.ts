@@ -11,13 +11,9 @@
  * stdout 是 JSON-RPC 协议通道，所有诊断只写 stderr。
  */
 import { initDatabase } from '@wbfm/database';
-import {
-  createFlowServingStack,
-  createMcpFlowContext,
-  createWebCipher,
-  PublicEndpointError,
-  runMcpStdio,
-} from '@wbfm/core';
+import { createFlowServingStack, PublicEndpointError } from '@wbfm/core/serving';
+import { createMcpFlowContext, runMcpStdio } from '@wbfm/core/mcp';
+import { createWebCipher } from '@wbfm/core/secrets';
 
 function readTokenArg(): string | null {
   const fromArg = process.argv.find((arg) => arg.startsWith('--token='));

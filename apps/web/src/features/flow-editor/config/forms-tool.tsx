@@ -1,6 +1,6 @@
 'use client';
 
-import type { DebugToolInfo } from '@wbfm/core';
+import type { DebugToolInfo } from '@wbfm/core/tools';
 import { Badge } from '@/components/ui/badge';
 import { useToolDebugList } from '@/lib/hooks/use-tool-debug';
 import { useFlows } from '@/lib/hooks/use-flows';

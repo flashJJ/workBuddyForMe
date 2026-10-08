@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { Conversation } from '@wbfm/shared';
+import type { Conversation } from '@wbfm/shared/types';
 import { newId, nowIso, mapConversation, type ConversationRow } from './mappers';
 
 export interface ConversationCreateFields {

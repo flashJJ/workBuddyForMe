@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDatabase, createTaskRunRepository, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import type { TaskRunView, TaskStepView } from '@wbfm/shared';
+import type { TaskRunView, TaskStepView } from '@wbfm/shared/schemas';
 import { createWebCipher } from '../secrets/cipher';
 import { createPermissionService } from '../services/permission-service';
 import { createTaskGrantRegistry } from '../services/task-grants';

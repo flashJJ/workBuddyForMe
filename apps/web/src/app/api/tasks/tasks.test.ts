@@ -8,7 +8,7 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createWebCipher } from '@wbfm/core';
+import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
 import { parseSseChunks } from '@/lib/server/sse-stream';
 import { POST as createTask } from './route';

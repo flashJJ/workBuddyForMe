@@ -1,4 +1,4 @@
-import { DEFAULT_AVATAR_MODEL_ID } from '@wbfm/shared';
+import { DEFAULT_AVATAR_MODEL_ID } from '@wbfm/shared/schemas';
 import type { ExpressionTag } from './expression-parser';
 
 /**

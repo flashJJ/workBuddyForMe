@@ -1,4 +1,5 @@
-import type { FlowInputField, WorkflowEndpointView } from '@wbfm/shared';
+import type { FlowInputField } from '@wbfm/shared/schemas';
+import type { WorkflowEndpointView } from '@wbfm/shared/types';
 import type { WorkflowRepository } from '@wbfm/database';
 import { readFlowStartFields, validateFlowStartInput } from '../../serving/start-input';
 import type { FlowRunService } from '../../flow/run-service';

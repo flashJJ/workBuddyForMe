@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { ScreenSnapshotResponse } from '@wbfm/shared';
+import type { ScreenSnapshotResponse } from '@wbfm/shared/schemas';
 import {
   removeChannelDiscovery,
   startComputerChannel,

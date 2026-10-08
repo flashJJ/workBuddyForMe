@@ -1,11 +1,11 @@
-import type { SsePayloadMap } from '@wbfm/shared';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 import {
   StreamingSentenceSplitter,
   encodePcm16Wav,
   stripForTts,
   type TtsEngine,
 } from '@wbfm/voice';
-import type { OrchestratorEvent } from '@wbfm/core';
+import type { OrchestratorEvent } from '@wbfm/core/chat';
 
 /** 语音桥事件（复用 SSE wire 契约，sse-stream 直接可序列化） */
 export type VoiceBridgeEvent =

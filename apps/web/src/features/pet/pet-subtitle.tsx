@@ -1,6 +1,6 @@
 'use client';
 
-import type { PetVoiceState } from '@wbfm/shared';
+import type { PetVoiceState } from '@wbfm/shared/pet';
 
 interface Props {
   text: string;

@@ -1,4 +1,4 @@
-import type { Attachment } from '@wbfm/shared';
+import type { Attachment } from '@wbfm/shared/types';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 

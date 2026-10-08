@@ -1,7 +1,7 @@
-import { PublicEndpointError, StartInputValidationError } from '@wbfm/core';
+import { PublicEndpointError, StartInputValidationError } from '@wbfm/core/serving';
 import { getServices, type ServiceContainer } from './container';
-import type { EndpointTransport } from '@wbfm/core';
-import type { WorkflowEndpointView } from '@wbfm/shared';
+import type { EndpointTransport } from '@wbfm/core/serving';
+import type { WorkflowEndpointView } from '@wbfm/shared/types';
 
 /**
  * v0.9 公开路由组（/api/public/**）：

@@ -11,7 +11,7 @@ import {
   Search,
   type LucideIcon,
 } from 'lucide-react';
-import type { Command } from '@wbfm/shared';
+import type { Command } from '@wbfm/shared/command';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useConversationMutations } from '@/lib/hooks/use-conversations';
 import { useToast } from '@/components/common/toast';

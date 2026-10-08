@@ -1,8 +1,5 @@
-import {
-  buildFlowInputJsonSchema,
-  type FlowGraph,
-  type WorkflowView,
-} from '@wbfm/shared';
+import { buildFlowInputJsonSchema, type FlowGraph } from '@wbfm/shared/schemas';
+import { type WorkflowView } from '@wbfm/shared/types';
 import { readFlowStartFields } from '../../serving/start-input';
 
 /**

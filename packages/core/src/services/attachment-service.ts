@@ -1,11 +1,8 @@
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  ALLOWED_IMAGE_MIME,
-  ApiError,
-  MAX_IMAGE_BYTES,
-  type Attachment,
-} from '@wbfm/shared';
+import { ALLOWED_IMAGE_MIME, MAX_IMAGE_BYTES } from '@wbfm/shared/constants';
+import { ApiError } from '@wbfm/shared/errors';
+import { type Attachment } from '@wbfm/shared/types';
 import { getDataDir } from '@wbfm/config';
 import {
   attachmentStorageName,

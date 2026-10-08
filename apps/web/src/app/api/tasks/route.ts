@@ -1,5 +1,6 @@
 import { createTaskRunRepository } from '@wbfm/database';
-import { taskCreateSchema, TASK_MAX_STEPS } from '@wbfm/shared';
+import { taskCreateSchema } from '@wbfm/shared/schemas';
+import { TASK_MAX_STEPS } from '@wbfm/shared/constants';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, parseSearch, readJsonBody } from '@/lib/server/validation';

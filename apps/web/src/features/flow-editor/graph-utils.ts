@@ -1,10 +1,5 @@
 import type { Edge, Node } from '@xyflow/react';
-import type {
-  FlowEdge,
-  FlowGraph,
-  FlowNode,
-  FlowNodeType,
-} from '@wbfm/shared';
+import type { FlowEdge, FlowGraph, FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
 
 /** 画布节点 data：业务配置在 config；运行状态由 FlowStatusContext 注入 */
 export type FlowNodeData = {

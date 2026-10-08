@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatProvider } from '@wbfm/ai';
-import type { ProviderModel } from '@wbfm/shared';
+import type { ProviderModel } from '@wbfm/shared/types';
 import type { ResolvedChatTarget } from '../chat/model-resolver';
 import { buildPlannerMessages, createLlmPlanner, parseDecision, PlannerParseError } from './llm-planner';
 

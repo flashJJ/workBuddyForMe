@@ -6,7 +6,7 @@ import type {
   EmbedResult,
   ToolCall,
 } from './types';
-import type { DiscoveredModel } from '@wbfm/shared';
+import type { DiscoveredModel } from '@wbfm/shared/types';
 import { sleep } from './http/backoff';
 
 /** mock 向量维度：64 维多热编码，共享 token 的文本相似度高，足以驱动真实 top-k 检索 */

@@ -7,8 +7,8 @@ import {
   FLOW_DESKTOP_CONTROL_TOOLS,
   FLOW_ENDPOINT_RATE_LIMIT,
   FLOW_ENDPOINT_SYNC_TIMEOUT,
-  type FlowUnattendedPolicy,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
+import { type FlowUnattendedPolicy } from '@wbfm/shared/types';
 // FLOW_DESKTOP_CONTROL_TOOLS 在保存时用于过滤白名单；策略编辑 UI 在 EndpointPolicySection
 import { ApiClientError } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';

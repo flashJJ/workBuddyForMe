@@ -1,4 +1,4 @@
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import { traceAsync, type TraceHandle } from '@wbfm/ai';
 import type { OrchestratorEvent, RagContext, RagRetriever } from './types';
 import type { ConversationService } from '../services/conversation-service';

@@ -13,7 +13,7 @@ import {
   type Viewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { FlowNodeType } from '@wbfm/shared';
+import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { flowNodeTypes } from './flow-nodes';
 import { flowEdgeTypes } from './flow-edges';
 import { FlowStatusContext } from './flow-status-context';

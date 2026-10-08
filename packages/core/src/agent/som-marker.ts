@@ -1,4 +1,4 @@
-import type { ScreenSnapshotResponse, UiaElement } from '@wbfm/shared';
+import type { ScreenSnapshotResponse, UiaElement } from '@wbfm/shared/schemas';
 
 /**
  * v0.7 M3-3 SoM（Set-of-Mark）编号标记视觉兜底。

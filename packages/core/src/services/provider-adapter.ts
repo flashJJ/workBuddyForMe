@@ -1,4 +1,4 @@
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import { createMockProvider, createProvider, ProviderError, type ChatProvider } from '@wbfm/ai';
 import type { DatabaseInstance, ProviderRecord } from '@wbfm/database';
 import type { SecretCipher } from '../secrets/cipher';

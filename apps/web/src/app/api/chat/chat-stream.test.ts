@@ -9,7 +9,8 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createSettingsService, createWebCipher } from '@wbfm/core';
+import { createSettingsService } from '@wbfm/core/services';
+import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
 import { parseSseChunks } from '@/lib/server/sse-stream';
 import { POST as streamChat } from './stream/route';

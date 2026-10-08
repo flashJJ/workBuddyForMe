@@ -3,7 +3,7 @@ import {
   MEMORY_DECAY_AFTER_DAYS,
   MEMORY_DECAY_INTERVAL_DAYS,
   MEMORY_DECAY_MIN_IMPORTANCE,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
 import { getMeta, setMeta, type DatabaseInstance, type MemoryRepository } from '@wbfm/database';
 
 /**

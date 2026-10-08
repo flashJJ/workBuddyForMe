@@ -2,9 +2,9 @@ import {
   MCP_CONNECT_TIMEOUT_MS,
   MCP_LIST_TIMEOUT_MS,
   MCP_MAX_TOOLS_PER_SERVER,
-  buildMcpToolName,
-} from '@wbfm/shared';
-import type { McpToolInfo } from '@wbfm/shared';
+} from '@wbfm/shared/constants';
+import { buildMcpToolName } from '@wbfm/shared/schemas';
+import type { McpToolInfo } from '@wbfm/shared/types';
 import { MCP_PROTOCOL_VERSION } from './jsonrpc';
 import type { McpClient, McpServerCapabilities, McpToolCallOutcome } from './client';
 import { sanitizeToolName } from './client';

@@ -1,13 +1,6 @@
 import type { DatabaseInstance } from '../client';
-import type {
-  Citation,
-  ContentPart,
-  Message,
-  MessageFeedback,
-  MessageRole,
-  MessageStatus,
-  ToolTraceEntry,
-} from '@wbfm/shared';
+import type { Citation, ContentPart, Message, ToolTraceEntry } from '@wbfm/shared/types';
+import type { MessageFeedback, MessageRole, MessageStatus } from '@wbfm/shared/constants';
 import { newId, nowIso, mapMessage, type MessageRow } from './mappers';
 
 export interface MessageAddFields {

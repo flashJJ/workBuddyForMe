@@ -1,10 +1,5 @@
-import {
-  DEFAULT_CONTEXT_TOKEN_BUDGET,
-  HISTORY_MESSAGE_SAFETY_CAP,
-  type Assistant,
-  type Conversation,
-  type Message,
-} from '@wbfm/shared';
+import { DEFAULT_CONTEXT_TOKEN_BUDGET, HISTORY_MESSAGE_SAFETY_CAP } from '@wbfm/shared/constants';
+import { type Assistant, type Conversation, type Message } from '@wbfm/shared/types';
 import {
   traceAsync,
   type ChatMessage,

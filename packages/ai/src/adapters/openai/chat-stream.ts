@@ -1,5 +1,5 @@
 import type { ChatChunk, ChatParams, ProviderConnection } from '../../types';
-import { CHAT_CONNECT_TIMEOUT_MS, CHAT_STREAM_IDLE_TIMEOUT_MS } from '@wbfm/shared';
+import { CHAT_CONNECT_TIMEOUT_MS, CHAT_STREAM_IDLE_TIMEOUT_MS } from '@wbfm/shared/constants';
 import { ProviderError } from '../../errors/provider-error';
 import { openSseChannel } from '../../http/sse-channel';
 import { parseSse } from '../../http/sse-parser';

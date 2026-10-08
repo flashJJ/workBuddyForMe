@@ -1,5 +1,6 @@
 import type { DatabaseInstance } from '../client';
-import type { McpServerConfig, McpTransport } from '@wbfm/shared';
+import type { McpServerConfig } from '@wbfm/shared/types';
+import type { McpTransport } from '@wbfm/shared/constants';
 import { newId, nowIso } from './mappers';
 import { mapMcpServer, type McpServerRow } from './mcp-mapper';
 

@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { McpServerInfo, McpServerStatus } from '@wbfm/shared';
+import type { McpServerInfo } from '@wbfm/shared/types';
+import type { McpServerStatus } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ToolCall } from '@wbfm/ai';
-import type { ToolTraceEntry } from '@wbfm/shared';
+import type { ToolTraceEntry } from '@wbfm/shared/types';
 import { runToolCallLoop } from './tool-call-loop';
 import type { OrchestratorEvent } from './types';
 import type { Tool, ToolContext, ToolMap, ToolResult } from '../tools/types';

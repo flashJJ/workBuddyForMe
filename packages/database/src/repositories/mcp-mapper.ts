@@ -1,4 +1,5 @@
-import type { McpServerConfig, McpTransport } from '@wbfm/shared';
+import type { McpServerConfig } from '@wbfm/shared/types';
+import type { McpTransport } from '@wbfm/shared/constants';
 
 /** v0.6 MCP 服务器行：args/env/headers 为 JSON 文本，读取容错 */
 export interface McpServerRow {

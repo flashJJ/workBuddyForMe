@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Assistant, SkillManifest } from '@wbfm/shared';
+import type { Assistant, SkillManifest } from '@wbfm/shared/types';
 import { buildSkillPromptBlock, mergeSkillAllowedTools } from './skill-assembly';
 import type { EnabledSkill } from './skill-service';
 

@@ -1,9 +1,10 @@
-import { ApiError, type Provider } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type Provider } from '@wbfm/shared/types';
 import {
   createProviderRepository,
   type ProviderRecord,
 } from '@wbfm/database';
-import type { ProviderCreateInput, ProviderUpdateInput } from '@wbfm/shared';
+import type { ProviderCreateInput, ProviderUpdateInput } from '@wbfm/shared/schemas';
 import { maskSecret } from '../secrets/cipher';
 import type { ServiceDeps } from './deps';
 import { buildProvider, toApiError } from './provider-adapter';

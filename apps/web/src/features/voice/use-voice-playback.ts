@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { SsePayloadMap } from '@wbfm/shared';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 import { AudioPlaybackQueue, type VoiceState } from './audio-playback-queue';
 import { WebAudioPlayer } from './web-audio-player';
 import type { VadGate } from './vad/vad-detector';

@@ -5,15 +5,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   FlowDiagnostic,
   FlowEventPayload,
-  FlowGraph,
-  FlowHumanSubmitInput,
   FlowNodeExecStatus,
   WorkflowRunView,
   WorkflowVersionView,
   WorkflowView,
+} from '@wbfm/shared/types';
+import type {
+  FlowGraph,
+  FlowHumanSubmitInput,
   WorkflowCreateInput,
   WorkflowUpdateInput,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

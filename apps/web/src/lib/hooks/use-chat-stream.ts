@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { SsePayloadMap } from '@wbfm/shared';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 import { API } from '@/lib/api/endpoints';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { SseReader } from '@/lib/api/sse-reader';

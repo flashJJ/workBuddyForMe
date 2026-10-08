@@ -1,7 +1,7 @@
 import type { DatabaseInstance } from '../client';
-import type { ModelCapability } from '@wbfm/shared';
+import type { ModelCapability } from '@wbfm/shared/constants';
 import { newId, nowIso, mapModel, type ModelRow } from './mappers';
-import type { ProviderModel } from '@wbfm/shared';
+import type { ProviderModel } from '@wbfm/shared/types';
 
 export interface ModelCreateFields {
   providerId: string;

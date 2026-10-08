@@ -1,7 +1,7 @@
 'use client';
 
 import { Archive, Share2 } from 'lucide-react';
-import type { Assistant, Conversation } from '@wbfm/shared';
+import type { Assistant, Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { AssistantSwitcher } from './assistant-switcher';
 

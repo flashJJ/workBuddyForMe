@@ -1,4 +1,4 @@
-import type { TaskStepView } from '@wbfm/shared';
+import type { TaskStepView } from '@wbfm/shared/schemas';
 
 /**
  * v0.7 M3 任务 Agent 循环类型契约：

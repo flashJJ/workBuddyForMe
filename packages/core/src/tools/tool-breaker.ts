@@ -1,7 +1,4 @@
-import {
-  TOOL_BREAKER_COOLDOWN_MS,
-  TOOL_BREAKER_FAILURE_THRESHOLD,
-} from '@wbfm/shared';
+import { TOOL_BREAKER_COOLDOWN_MS, TOOL_BREAKER_FAILURE_THRESHOLD } from '@wbfm/shared/constants';
 
 /**
  * 工具熔断器（v0.6 M4）：跨轮次全局状态，跟踪连续失败的 MCP/内置工具。

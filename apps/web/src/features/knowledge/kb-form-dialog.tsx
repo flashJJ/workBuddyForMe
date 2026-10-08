@@ -1,13 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import type { KnowledgeBase } from '@wbfm/shared';
+import type { KnowledgeBase } from '@wbfm/shared/types';
 import {
   DEFAULT_CHUNK_OVERLAP,
   DEFAULT_CHUNK_SIZE,
   MAX_CHUNK_SIZE,
   MIN_CHUNK_SIZE,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

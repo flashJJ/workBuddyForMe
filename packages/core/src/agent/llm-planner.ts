@@ -1,5 +1,5 @@
 import type { ChatMessage } from '@wbfm/ai';
-import type { TaskStepView } from '@wbfm/shared';
+import type { TaskStepView } from '@wbfm/shared/schemas';
 import type { ResolvedChatTarget } from '../chat/model-resolver';
 import type { TaskObservation, TaskPlanDecision, TaskPlanner, TaskPlannerInput } from './types';
 

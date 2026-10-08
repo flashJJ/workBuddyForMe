@@ -1,5 +1,5 @@
-import { ApiError } from '@wbfm/shared';
-import { precheckBackup, restoreBackup } from '@wbfm/core';
+import { ApiError } from '@wbfm/shared/errors';
+import { precheckBackup, restoreBackup } from '@wbfm/core/backup';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { readUploadPart } from '@/lib/server/multipart';
 

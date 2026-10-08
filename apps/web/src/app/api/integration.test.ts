@@ -11,8 +11,9 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createSettingsService, createWebCipher } from '@wbfm/core';
-import { ApiError, ERROR_CODES, type ErrorCode } from '@wbfm/shared';
+import { createSettingsService } from '@wbfm/core/services';
+import { createWebCipher } from '@wbfm/core/secrets';
+import { ApiError, ERROR_CODES, type ErrorCode } from '@wbfm/shared/errors';
 import { ProviderError } from '@wbfm/ai';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
 import { toErrorResponse } from '@/lib/server/api-response';

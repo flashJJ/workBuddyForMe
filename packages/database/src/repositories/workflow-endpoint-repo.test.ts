@@ -2,7 +2,7 @@ import { createDatabase } from '../client';
 import { createWorkflowRepository } from './workflow-repo';
 import { createWorkflowRunRepository } from './workflow-run-repo';
 import { createWorkflowEndpointRepository } from './workflow-endpoint-repo';
-import type { FlowGraph } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import { describe, beforeEach, expect, it } from 'vitest';
 
 const graph: FlowGraph = {

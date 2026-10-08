@@ -1,4 +1,5 @@
-import type { FlowDiagnostic, FlowGraph } from '@wbfm/shared';
+import type { FlowDiagnostic } from '@wbfm/shared/types';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import {
   buildAdjacency,
   findCyclePath,

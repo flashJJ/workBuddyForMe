@@ -1,9 +1,5 @@
-import type {
-  FlowEventPayload,
-  FlowGraph,
-  FlowNodeType,
-  PermissionLevel,
-} from '@wbfm/shared';
+import type { FlowEventPayload, PermissionLevel } from '@wbfm/shared/types';
+import type { FlowGraph, FlowNodeType } from '@wbfm/shared/schemas';
 import { describe, expect, it } from 'vitest';
 import { compileFlow } from './compiler';
 import { runFlow } from './engine';

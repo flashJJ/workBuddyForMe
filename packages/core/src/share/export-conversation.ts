@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import {
   createConversationRepository,
   createMessageRepository,

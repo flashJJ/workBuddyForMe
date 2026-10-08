@@ -1,9 +1,5 @@
-import type {
-  Assistant,
-  Citation,
-  SsePayloadMap,
-  TokenUsage,
-} from '@wbfm/shared';
+import type { Assistant, Citation } from '@wbfm/shared/types';
+import type { SsePayloadMap, TokenUsage } from '@wbfm/shared/api';
 
 /** 编排器产出的事件，与 SSE wire 事件一一对应 */
 export type OrchestratorEvent =

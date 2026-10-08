@@ -2,7 +2,7 @@ import {
   ALLOWED_IMAGE_MIME,
   IMAGE_COMPRESS_MAX_EDGE,
   IMAGE_COMPRESS_QUALITY,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
 
 export interface CompressedImage {
   blob: Blob;

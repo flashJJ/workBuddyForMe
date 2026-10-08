@@ -1,4 +1,6 @@
-import { ApiError, type AppSettings, type SettingsUpdateInput } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type AppSettings } from '@wbfm/shared/types';
+import { type SettingsUpdateInput } from '@wbfm/shared/schemas';
 import { createModelRepository, createSettingsRepository } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
 

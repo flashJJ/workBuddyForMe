@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import type { Message, WbfmPetBridge } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
+import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import { usePetOpenState, usePetVoiceRelay } from './use-pet-voice-relay';
 
 function makeBridge(): WbfmPetBridge & { relayPerformance: ReturnType<typeof vi.fn> } {

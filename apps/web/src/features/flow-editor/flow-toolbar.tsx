@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, Globe, Play, Save, ShieldCheck } from 'lucide-react';
-import type { FlowStatus, WorkflowView } from '@wbfm/shared';
+import type { FlowStatus, WorkflowView } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 

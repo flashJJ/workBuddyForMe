@@ -3,7 +3,7 @@ import type {
   FlowTrigger,
   FlowUnattendedPolicy,
   PermissionLevel,
-} from '@wbfm/shared';
+} from '@wbfm/shared/types';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { RetrievalService } from '../retrieval/retrieval-service';

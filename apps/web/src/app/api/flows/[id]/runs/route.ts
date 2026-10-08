@@ -1,4 +1,4 @@
-import { flowRunCreateSchema, idParamSchema, type FlowRunCreateInput } from '@wbfm/shared';
+import { flowRunCreateSchema, idParamSchema, type FlowRunCreateInput } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, parseParams, readJsonBody } from '@/lib/server/validation';

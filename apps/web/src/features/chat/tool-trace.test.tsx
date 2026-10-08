@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ToolTraceEntry } from '@wbfm/shared';
+import type { ToolTraceEntry } from '@wbfm/shared/types';
 import { ToolTrace } from './tool-trace';
 
 const baseEntry: ToolTraceEntry = {

@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { Attachment } from '@wbfm/shared';
-import { MAX_CHAT_ATTACHMENTS } from '@wbfm/shared';
+import type { Attachment } from '@wbfm/shared/types';
+import { MAX_CHAT_ATTACHMENTS } from '@wbfm/shared/constants';
 import { API } from '@/lib/api/endpoints';
 import { apiUpload } from '@/lib/api/client';
 import { compressImage, isSupportedImage } from '@/lib/utils/image';

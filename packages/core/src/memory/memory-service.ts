@@ -2,10 +2,8 @@ import {
   MEMORY_DUPLICATE_MAX_DISTANCE,
   MEMORY_RECALL_MAX_DISTANCE,
   MEMORY_TOP_K,
-  type Memory,
-  type MemoryKind,
-  type MemoryStatus,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
+import { type Memory, type MemoryKind, type MemoryStatus } from '@wbfm/shared/types';
 import {
   createMemoryRepository,
   deleteAllMemoryVectors,

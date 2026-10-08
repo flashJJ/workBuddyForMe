@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VoiceModelKind } from '@wbfm/voice';
-import type { VoiceTtsModel } from '@wbfm/shared';
+import type { VoiceTtsModel } from '@wbfm/shared/schemas';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiPost } from '@/lib/api/client';
 import { useVoiceSettings } from '../use-voice-settings';

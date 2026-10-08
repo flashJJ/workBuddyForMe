@@ -1,6 +1,6 @@
 'use client';
 
-import type { WbfmPetBridge } from '@wbfm/shared';
+import type { WbfmPetBridge } from '@wbfm/shared/pet';
 
 /**
  * 桌宠桥访问与命中区纯函数（M4 伴身）。

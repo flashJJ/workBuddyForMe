@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { TASK_MAX_FAILURES } from '@wbfm/shared/constants';
 import {
-  TASK_MAX_FAILURES,
   type TaskEventType,
   type TaskRunStatus,
   type TaskRunView,
   type TaskStepView,
   type TaskStopReason,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { createTaskRunRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 import { createAttachmentService } from '../services/attachment-service';

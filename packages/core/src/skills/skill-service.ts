@@ -1,4 +1,5 @@
-import { ApiError, type SkillDiskEntry, type SkillInfo, type SkillManifest } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type SkillDiskEntry, type SkillInfo, type SkillManifest } from '@wbfm/shared/types';
 import { getDataDir } from '@wbfm/config';
 import { createSkillStateRepository, type SkillStateRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';

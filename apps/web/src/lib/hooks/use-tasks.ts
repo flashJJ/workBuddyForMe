@@ -7,7 +7,7 @@ import type {
   TaskRunView,
   TaskStepView,
   TaskEventPayload,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { apiGet, apiPost, withManagedHeaders } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

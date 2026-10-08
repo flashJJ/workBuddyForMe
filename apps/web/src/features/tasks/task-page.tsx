@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { AlertTriangle, ChevronRight, Send } from 'lucide-react';
-import type { TaskRunView } from '@wbfm/shared';
+import type { TaskRunView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
 import { Textarea } from '@/components/ui/textarea';

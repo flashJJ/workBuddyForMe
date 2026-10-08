@@ -1,4 +1,4 @@
-import type { WorkflowRunView } from '@wbfm/shared';
+import type { WorkflowRunView } from '@wbfm/shared/types';
 
 /**
  * v0.9 进程内运行队列（单执行者、顺序拾取）：

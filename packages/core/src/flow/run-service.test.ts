@@ -1,4 +1,4 @@
-import type { FlowGraph, FlowHumanSubmitInput } from '@wbfm/shared';
+import type { FlowGraph, FlowHumanSubmitInput } from '@wbfm/shared/schemas';
 import { createDatabase } from '@wbfm/database';
 import {
   createWorkflowRepository,

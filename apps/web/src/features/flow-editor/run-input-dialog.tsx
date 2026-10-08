@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Play } from 'lucide-react';
-import type { FlowInputField } from '@wbfm/shared';
+import type { FlowInputField } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

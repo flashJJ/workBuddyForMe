@@ -1,5 +1,5 @@
 import type { ChatMessage } from '@wbfm/ai';
-import { OUTPUT_RESERVE_TOKENS } from '@wbfm/shared';
+import { OUTPUT_RESERVE_TOKENS } from '@wbfm/shared/constants';
 
 /** 用上次真实 completion 校准预留时的加成余量 */
 const OUTPUT_RESERVE_MARGIN = 128;

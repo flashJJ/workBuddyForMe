@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { KnowledgeBase } from '@wbfm/shared';
+import type { KnowledgeBase } from '@wbfm/shared/types';
 import { newId, nowIso, mapKnowledgeBase, type KnowledgeBaseRow } from './mappers';
 
 export interface KnowledgeBaseCreateFields {

@@ -1,4 +1,4 @@
-import { SCREENSHOT_MAX_EDGE, type ScreenSnapshotRegion } from '@wbfm/shared';
+import { SCREENSHOT_MAX_EDGE, type ScreenSnapshotRegion } from '@wbfm/shared/schemas';
 
 /** 截图计划：先裁剪（物理像素）后等比缩放到 maxEdge 内 */
 export interface SnapshotPlan {

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { ToolPermission } from '@wbfm/shared';
+import type { ToolPermission } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { useToolPermissions, useToolPermissionMutations } from '@/lib/hooks/use-permissions';

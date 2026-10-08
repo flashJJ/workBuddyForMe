@@ -1,4 +1,4 @@
-import { voiceTtsRequestSchema } from '@wbfm/shared';
+import { voiceTtsRequestSchema } from '@wbfm/shared/schemas';
 import { encodePcm16Wav } from '@wbfm/voice';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { toErrorResponse } from '@/lib/server/api-response';

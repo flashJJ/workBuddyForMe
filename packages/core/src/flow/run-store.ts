@@ -1,4 +1,4 @@
-import type { FlowEventPayload } from '@wbfm/shared';
+import type { FlowEventPayload } from '@wbfm/shared/types';
 import type { WorkflowRunRepository } from '@wbfm/database';
 
 /**

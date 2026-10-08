@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { DebugToolInfo, ToolResult } from '@wbfm/core';
+import type { DebugToolInfo, ToolResult } from '@wbfm/core/tools';
 import { apiGet, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

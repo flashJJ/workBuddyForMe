@@ -1,8 +1,4 @@
-import {
-  flowStartConfigSchema,
-  type FlowGraph,
-  type FlowInputField,
-} from '@wbfm/shared';
+import { flowStartConfigSchema, type FlowGraph, type FlowInputField } from '@wbfm/shared/schemas';
 
 /**
  * v0.9 公开调用入参校验：请求体即 start 节点入参记录。

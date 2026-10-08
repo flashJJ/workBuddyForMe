@@ -1,13 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import {
-  PET_SUBTITLE_MAX,
-  stripExpressionDirectives,
-  type Message,
-  type PetVoiceState,
-  type SsePayloadMap,
-} from '@wbfm/shared';
+import { PET_SUBTITLE_MAX, type PetVoiceState } from '@wbfm/shared/pet';
+import { stripExpressionDirectives } from '@wbfm/shared/schemas';
+import { type Message } from '@wbfm/shared/types';
+import { type SsePayloadMap } from '@wbfm/shared/api';
 import { DEFAULT_EXPRESSION, latestExpression, type ExpressionTag } from '@/features/avatar/expression-parser';
 import { getPetBridge } from './pet-bridge';
 

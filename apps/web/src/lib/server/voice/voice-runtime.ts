@@ -11,7 +11,6 @@ import {
   resampleLinear,
   ASR_SAMPLE_RATE,
   type AsrEngine,
-  type DownloadProgress,
   type TtsEngine,
   type VoiceModelKind,
   type VoiceModelSpec,
@@ -21,29 +20,16 @@ import {
   type DatabaseInstance,
   type SettingsRepository,
 } from '@wbfm/database';
-import { getAvatarSpeakerId, type VoiceModelFileStatus, type VoiceSettings } from '@wbfm/shared';
+import {
+  getAvatarSpeakerId,
+  type VoiceModelFileStatus,
+  type VoiceSettings,
+} from '@wbfm/shared/schemas';
 import { readVoiceSettings } from './voice-settings';
 import { getModelDir, getVoiceModelsRoot } from './model-paths';
-
-interface DownloadJob {
-  kind: VoiceModelKind;
-  /** 同 kind 可能有多个规格（两套 TTS 引擎），用 specId 区分活动任务归属 */
-  specId: string;
-  controller: AbortController;
-  lastProgress: DownloadProgress | null;
-}
+import type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime-types';
 
 const TTS_MODEL_SPECS: VoiceModelSpec[] = VOICE_MODELS.tts;
-
-export interface SynthResult {
-  samples: Float32Array;
-  sampleRate: number;
-}
-
-export interface TranscribeResult {
-  text: string;
-  lang: string | null;
-}
 
 /**
  * 进程内语音运行时：模型就绪检查、后台下载任务、TTS 引擎单例。

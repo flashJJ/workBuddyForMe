@@ -1,6 +1,7 @@
-import { ApiError, type Assistant } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type Assistant } from '@wbfm/shared/types';
 import type { ChatProvider } from '@wbfm/ai';
-import type { ProviderModel } from '@wbfm/shared';
+import type { ProviderModel } from '@wbfm/shared/types';
 import {
   createModelRepository,
   createProviderRepository,

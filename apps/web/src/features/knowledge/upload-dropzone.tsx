@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
-import { ALLOWED_DOC_EXTENSIONS } from '@wbfm/shared';
+import { ALLOWED_DOC_EXTENSIONS } from '@wbfm/shared/constants';
 import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
 
 interface Props {

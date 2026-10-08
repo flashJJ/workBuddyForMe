@@ -1,6 +1,7 @@
-import { formatSse, type FlowEventPayload, type WorkflowRunView } from '@wbfm/shared';
+import { formatSse } from '@wbfm/shared/api';
+import { type FlowEventPayload, type WorkflowRunView } from '@wbfm/shared/types';
 import type { WorkflowRunRepository } from '@wbfm/database';
-import type { FlowRunService } from '@wbfm/core';
+import type { FlowRunService } from '@wbfm/core/flow';
 
 /**
  * v0.9 工作流运行事件 SSE（内部路由与公开只读路由共用）：

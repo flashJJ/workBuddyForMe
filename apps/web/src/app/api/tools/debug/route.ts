@@ -1,5 +1,5 @@
-import { toolDebugExecuteSchema } from '@wbfm/shared';
-import { debugExecuteTool } from '@wbfm/core';
+import { toolDebugExecuteSchema } from '@wbfm/shared/schemas';
+import { debugExecuteTool } from '@wbfm/core/tools';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, readJsonBody } from '@/lib/server/validation';

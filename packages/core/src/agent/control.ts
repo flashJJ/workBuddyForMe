@@ -1,9 +1,9 @@
-import type { TaskEventPayload } from '@wbfm/shared';
+import type { TaskEventPayload } from '@wbfm/shared/schemas';
 import type { OrchestratorEvent } from '../chat/types';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TaskPlanner } from './types';
-import type { TaskRunView } from '@wbfm/shared';
+import type { TaskRunView } from '@wbfm/shared/schemas';
 
 /** 循环对外事件：task 时间线事件 + 门控/工具事件（透传 SSE） */
 export type TaskLoopEvent = { event: 'task'; data: TaskEventPayload } | OrchestratorEvent;

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { VoiceAsrResponse, VoiceState } from '@wbfm/shared';
+import type { VoiceAsrResponse, VoiceState } from '@wbfm/shared/schemas';
 import { API } from '@/lib/api/endpoints';
 import { apiUpload } from '@/lib/api/client';
 import { useVadMonitor, type VadMonitorError } from './vad/use-vad-monitor';

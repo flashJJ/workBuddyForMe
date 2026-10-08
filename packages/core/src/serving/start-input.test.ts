@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { FlowGraph, FlowInputField } from '@wbfm/shared';
+import type { FlowGraph, FlowInputField } from '@wbfm/shared/schemas';
 import {
   StartInputValidationError,
   readFlowStartFields,

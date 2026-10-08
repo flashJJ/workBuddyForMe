@@ -1,7 +1,9 @@
-import { ApiError, TASK_MAX_STEPS } from '@wbfm/shared';
-import { createLlmPlanner, resolveChatTarget, type TaskPlanner } from '@wbfm/core';
+import { ApiError } from '@wbfm/shared/errors';
+import { TASK_MAX_STEPS } from '@wbfm/shared/constants';
+import { createLlmPlanner, type TaskPlanner } from '@wbfm/core/agent';
+import { resolveChatTarget } from '@wbfm/core/chat';
 import type { ServiceContainer } from './container';
-import type { TaskRunView } from '@wbfm/shared';
+import type { TaskRunView } from '@wbfm/shared/schemas';
 
 /**
  * v0.7 M3-4b 任务启动辅助：

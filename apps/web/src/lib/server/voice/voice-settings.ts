@@ -5,7 +5,7 @@ import {
   VOICE_TTS_MODELS,
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import type { SettingsRepository } from '@wbfm/database';
 
 const VOICE_SETTINGS_KEY = 'voice';

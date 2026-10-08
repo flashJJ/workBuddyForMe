@@ -1,6 +1,6 @@
 'use client';
 
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import { Select } from '@/components/ui/select';
 
 interface Props {

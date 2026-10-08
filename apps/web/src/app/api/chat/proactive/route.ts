@@ -1,4 +1,4 @@
-import { proactiveRequestSchema } from '@wbfm/shared';
+import { proactiveRequestSchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { parseBody, readJsonBody } from '@/lib/server/validation';
 import { sseResponse } from '@/lib/server/sse-stream';

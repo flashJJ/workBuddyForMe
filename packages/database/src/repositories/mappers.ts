@@ -10,14 +10,16 @@ import type {
   MemoryKind,
   MemoryStatus,
   Message,
+  Provider,
+  ProviderModel,
+  ToolTraceEntry,
+} from '@wbfm/shared/types';
+import type {
   MessageRole,
   MessageStatus,
   ModelCapability,
-  Provider,
-  ProviderModel,
   ProviderProtocol,
-  ToolTraceEntry,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
 import { nowIso } from '../utils/time';
 
 /** 仓储对外暴露的供应商记录（不含密文；hasApiKey 供服务层判断） */

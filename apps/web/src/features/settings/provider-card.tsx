@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Provider } from '@wbfm/shared';
+import type { Provider } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/common/toast';

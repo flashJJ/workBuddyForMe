@@ -1,7 +1,4 @@
-import {
-  screenSnapshotArgsSchema,
-  type ScreenSnapshotResponse,
-} from '@wbfm/shared';
+import { screenSnapshotArgsSchema, type ScreenSnapshotResponse } from '@wbfm/shared/schemas';
 import type { ComputerChannelClient } from '../../computer/channel-client';
 import { ChannelUnavailableError, createComputerChannelClient } from '../../computer/channel-client';
 import type { Tool, ToolResult } from '../types';

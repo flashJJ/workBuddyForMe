@@ -1,5 +1,5 @@
-import { backupExportRequestSchema } from '@wbfm/shared';
-import { exportBackup } from '@wbfm/core';
+import { backupExportRequestSchema } from '@wbfm/shared/backup';
+import { exportBackup } from '@wbfm/core/backup';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { parseBody, readJsonBody } from '@/lib/server/validation';
 

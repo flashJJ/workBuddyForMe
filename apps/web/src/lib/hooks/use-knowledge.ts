@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared';
+import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost, apiUpload } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

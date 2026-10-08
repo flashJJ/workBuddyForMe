@@ -9,7 +9,7 @@ import {
   normalizeAvatarModelId,
   sanitizePetEvent,
   type PetPerformanceEvent,
-} from '@wbfm/shared';
+} from '@wbfm/shared/pet';
 import { PetClickThroughController } from './pet-penetration';
 import { loadPetState, savePetState, type PetState } from './pet-state';
 import { createPetWindow, type CursorPoint } from './pet-window';

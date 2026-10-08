@@ -1,5 +1,7 @@
-import type { McpServerConfig, McpServerInfo, McpServerStatus, McpToolInfo } from '@wbfm/shared';
-import { ApiError, isMcpToolName, parseMcpToolName } from '@wbfm/shared';
+import type { McpServerConfig, McpServerInfo, McpToolInfo } from '@wbfm/shared/types';
+import type { McpServerStatus } from '@wbfm/shared/constants';
+import { ApiError } from '@wbfm/shared/errors';
+import { isMcpToolName, parseMcpToolName } from '@wbfm/shared/schemas';
 import type { DatabaseInstance } from '@wbfm/database';
 import {
   createMcpServerRepository,

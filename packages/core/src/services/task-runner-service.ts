@@ -1,4 +1,5 @@
-import { ApiError, type TaskRunView } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type TaskRunView } from '@wbfm/shared/schemas';
 import type { ServiceDeps } from './deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import { runTaskLoop } from '../agent/task-loop';

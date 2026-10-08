@@ -1,6 +1,6 @@
 'use client';
 
-import type { Assistant, KnowledgeBase, ProviderModel } from '@wbfm/shared';
+import type { Assistant, KnowledgeBase, ProviderModel } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 

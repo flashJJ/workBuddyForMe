@@ -1,4 +1,4 @@
-import type { DocumentStatus } from '@wbfm/shared';
+import type { DocumentStatus } from '@wbfm/shared/constants';
 
 export type DocumentKind = 'txt' | 'md' | 'pdf' | 'docx' | 'xlsx' | 'pptx';
 

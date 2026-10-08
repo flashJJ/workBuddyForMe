@@ -12,11 +12,8 @@ import {
   type EdgeChange,
   type Viewport,
 } from '@xyflow/react';
-import type {
-  FlowDiagnostic,
-  FlowInputField,
-  FlowNodeType,
-} from '@wbfm/shared';
+import type { FlowDiagnostic } from '@wbfm/shared/types';
+import type { FlowInputField, FlowNodeType } from '@wbfm/shared/schemas';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';

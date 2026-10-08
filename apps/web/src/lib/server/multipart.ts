@@ -1,4 +1,5 @@
-import { ApiError, MAX_IMAGE_BYTES } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { MAX_IMAGE_BYTES } from '@wbfm/shared/constants';
 
 export interface UploadPart {
   filename: string;

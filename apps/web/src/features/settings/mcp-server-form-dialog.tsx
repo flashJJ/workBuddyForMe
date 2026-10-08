@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { McpServerInfo } from '@wbfm/shared';
+import type { McpServerInfo } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

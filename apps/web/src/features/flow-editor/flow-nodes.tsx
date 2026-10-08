@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import type { FlowNodeExecStatus, FlowNodeType } from '@wbfm/shared';
+import type { FlowNodeExecStatus } from '@wbfm/shared/types';
+import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { cn } from '@/lib/utils';
 import { NODE_META, nodeTitle } from './node-meta';
 import { configSummary, type FlowCanvasNode } from './graph-utils';

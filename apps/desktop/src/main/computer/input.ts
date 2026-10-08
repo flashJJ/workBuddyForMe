@@ -1,5 +1,5 @@
 import { Button, Key, keyboard, mouse, Point } from '@nut-tree-fork/nut-js';
-import type { KeyName, MouseButton } from '@wbfm/shared';
+import type { KeyName, MouseButton } from '@wbfm/shared/schemas';
 
 /**
  * v0.7 M2 键鼠执行薄封装（注入式可测）。

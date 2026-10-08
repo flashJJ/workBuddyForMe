@@ -1,5 +1,5 @@
-import type { ToolPermission, PermissionLevel, PermissionAction } from '@wbfm/shared';
-import { ApiError } from '@wbfm/shared';
+import type { ToolPermission, PermissionLevel, PermissionAction } from '@wbfm/shared/types';
+import { ApiError } from '@wbfm/shared/errors';
 import { createToolPermissionRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 

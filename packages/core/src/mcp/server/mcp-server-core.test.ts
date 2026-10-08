@@ -7,7 +7,8 @@ import {
   type McpServerContext,
 } from './mcp-server-core';
 import { buildFlowMcpName, describeFlowAsMcpTool, ensureUniqueToolNames } from './describe-tool';
-import type { FlowGraph, WorkflowView } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
+import type { WorkflowView } from '@wbfm/shared/types';
 
 const graphWithInput: FlowGraph = {
   nodes: [

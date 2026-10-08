@@ -4,9 +4,8 @@ import {
   flowStartConfigSchema,
   type FlowGraph,
   type FlowInputField,
-  type ToolSubstep,
-  type WorkflowView,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
+import { type ToolSubstep, type WorkflowView } from '@wbfm/shared/types';
 import type { Tool } from '../tools/types';
 
 /** 对话触发结果：终态输出 + 节点子步骤快照（工具卡片展示用） */

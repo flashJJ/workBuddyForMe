@@ -1,12 +1,12 @@
+import { FLOW_RUN_TERMINAL_STATUSES } from '@wbfm/shared/types';
+import { ApiError } from '@wbfm/shared/errors';
 import {
-  ApiError,
-  FLOW_RUN_TERMINAL_STATUSES,
   type FlowEventPayload,
-  type FlowHumanSubmitInput,
   type FlowTrigger,
   type ToolSubstep,
   type WorkflowRunView,
-} from '@wbfm/shared';
+} from '@wbfm/shared/types';
+import { type FlowHumanSubmitInput } from '@wbfm/shared/schemas';
 import type {
   WorkflowEndpointRepository,
   WorkflowRepository,

@@ -1,7 +1,4 @@
-import type {
-  FlowTrigger,
-  FlowUnattendedPolicy,
-} from '@wbfm/shared';
+import type { FlowTrigger, FlowUnattendedPolicy } from '@wbfm/shared/types';
 import type { WorkflowEndpointRepository } from '@wbfm/database';
 import type { CompiledFlow } from './types';
 import { computeReplayClosure } from './replay';

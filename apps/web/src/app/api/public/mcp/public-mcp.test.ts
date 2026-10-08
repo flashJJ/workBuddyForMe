@@ -2,14 +2,14 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { FlowGraph } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import {
   createDatabase,
   createWorkflowRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
 import { setDataRootForTest, resetDataRootForTest } from '@wbfm/config';
-import { createWebCipher } from '@wbfm/core';
+import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest, getServices } from '@/lib/server/container';
 import { POST as mcpPost } from './route';
 

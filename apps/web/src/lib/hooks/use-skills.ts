@@ -1,7 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { SkillInfo, SkillUpdateInput } from '@wbfm/shared';
+import type { SkillInfo } from '@wbfm/shared/types';
+import type { SkillUpdateInput } from '@wbfm/shared/schemas';
 import { apiDelete, apiGet, apiPatch } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

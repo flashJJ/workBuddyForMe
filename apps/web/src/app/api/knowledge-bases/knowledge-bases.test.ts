@@ -11,7 +11,8 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createSettingsService, createWebCipher } from '@wbfm/core';
+import { createSettingsService } from '@wbfm/core/services';
+import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
 import { GET as listKb, POST as createKb } from './route';
 import { GET as getKb, PATCH, DELETE } from './[id]/route';

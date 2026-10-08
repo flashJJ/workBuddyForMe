@@ -4,7 +4,7 @@ import {
   handleMcpMessage,
   JSON_RPC_ERRORS,
   type JsonRpcMessage,
-} from '@wbfm/core';
+} from '@wbfm/core/mcp';
 import { definePublicRoute } from '@/lib/server/public-route';
 import { readJsonBody } from '@/lib/server/validation';
 

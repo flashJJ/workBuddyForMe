@@ -1,4 +1,4 @@
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import * as XLSX from 'xlsx';
 import { toOfficeReadError } from './office-error';
 

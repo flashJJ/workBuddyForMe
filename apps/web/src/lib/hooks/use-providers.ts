@@ -1,7 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { DiscoveredModel, ModelCapability, Provider, ProviderModel } from '@wbfm/shared';
+import type { DiscoveredModel, Provider, ProviderModel } from '@wbfm/shared/types';
+import type { ModelCapability } from '@wbfm/shared/constants';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Conversation } from '@wbfm/shared';
+import type { Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

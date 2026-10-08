@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import type { SuccessorRef } from './types';
 
 /**

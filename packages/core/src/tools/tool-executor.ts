@@ -1,4 +1,4 @@
-import { TOOL_TIMEOUT_MS } from '@wbfm/shared';
+import { TOOL_TIMEOUT_MS } from '@wbfm/shared/constants';
 import type { Tool, ToolContext, ToolResult } from './types';
 import { ToolArgError } from './types';
 

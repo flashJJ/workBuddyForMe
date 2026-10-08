@@ -1,5 +1,6 @@
 import { fetchJson } from '../../http/fetch-with-retry';
-import { OLLAMA_DEFAULT_CONTEXT_WINDOW, type DiscoveredModel } from '@wbfm/shared';
+import { OLLAMA_DEFAULT_CONTEXT_WINDOW } from '@wbfm/shared/constants';
+import { type DiscoveredModel } from '@wbfm/shared/types';
 import type { ProviderConnection } from '../../types';
 import { OLLAMA_NATIVE_ENDPOINTS, normalizeOllamaOrigin } from './url';
 

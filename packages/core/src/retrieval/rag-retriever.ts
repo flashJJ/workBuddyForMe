@@ -1,4 +1,4 @@
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import type { RagContext, RagRetriever } from '../chat/types';
 import type { ServiceDeps } from '../services/deps';
 import { formatContextBlock, toCitations } from './context-formatter';

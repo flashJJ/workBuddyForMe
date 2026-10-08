@@ -47,8 +47,20 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 
 ## 包发布形态（exports 条件）
 
-- `development` → `src/index.ts`（Next dev、Vitest 直接消费源码）。
-- 生产 import/require → `dist/index.mjs|cjs`（tsup 构建，turbo `^build` 保证顺序）。
+每个包的 `.` 与各域子路径使用同一组条件：
+
+- `types` / `development` → `src/...` TS 源（编辑器、Next dev、Vitest 直接消费源码）。
+- 生产 import/require → `dist/index.mjs|cjs`（tsup 单 bundle，turbo `^build` 保证顺序）。
+  子路径在生产条件下同样解析到根 bundle——v1.1 的域拆分是**源码架构边界**，不做产物级 chunk 拆分（避免跨 chunk 类身份多副本）。
+
+### 域子路径（v1.1 M2 起）
+
+跨包导入优先用域子路径，根 barrel（`@wbfm/<pkg>`）仅在 v1.1 兼容期保留；本仓内部消费已全部迁到子路径，新代码不要再写根 barrel 导入。
+
+- `@wbfm/core`：`/agent` `/secrets` `/services` `/chat` `/memory` `/ingestion` `/retrieval` `/tools` `/computer` `/mcp` `/serving` `/skills` `/backup` `/share` `/flow`
+- `@wbfm/shared`：`/schemas` `/types` `/errors` `/api` `/constants` 及叶契约 `/backup` `/updater` `/pet` `/command`
+- 域 barrel 只导出本域公开面；需要新跨域能力时，在对应 `src/<域>/index.ts` 增补导出，不要深链其他包的 `src` 文件。
+- 测试里的 `vi.mock()` 按**模块说明符**拦截：改子路径导入后，mock 目标也要改成同一个子路径（如 `vi.mock('@wbfm/shared/constants')`），否则替换不生效。
 
 ## 分层与 internal 约定
 

@@ -1,5 +1,5 @@
 import type { ChatMessage } from '@wbfm/ai';
-import type { PermissionLevel, ToolTraceEntry } from '@wbfm/shared';
+import type { PermissionLevel, ToolTraceEntry } from '@wbfm/shared/types';
 import type { ServiceDeps } from '../services/deps';
 import type { Tool } from '../tools/types';
 import type { OrchestratorEvent } from './types';

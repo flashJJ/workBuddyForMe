@@ -1,4 +1,5 @@
-import { ApiError, fail, ok } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { fail, ok } from '@wbfm/shared/api';
 import { ProviderError } from '@wbfm/ai';
 import { ZodError } from 'zod';
 

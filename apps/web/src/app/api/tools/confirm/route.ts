@@ -1,4 +1,5 @@
-import { ApiError, toolConfirmSchema } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { toolConfirmSchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, readJsonBody } from '@/lib/server/validation';

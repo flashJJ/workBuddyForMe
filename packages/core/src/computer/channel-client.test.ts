@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { ComputerChannelInfo, ScreenSnapshotResponse } from '@wbfm/shared';
+import type { ComputerChannelInfo, ScreenSnapshotResponse } from '@wbfm/shared/schemas';
 import { ChannelUnavailableError, createComputerChannelClient } from './channel-client';
 
 let tmpDir: string;

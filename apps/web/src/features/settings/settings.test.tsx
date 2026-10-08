@@ -3,7 +3,7 @@ import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Provider, ProviderModel } from '@wbfm/shared';
+import type { Provider, ProviderModel } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { ProviderFormDialog } from './provider-form-dialog';
 import { ProviderCard } from './provider-card';

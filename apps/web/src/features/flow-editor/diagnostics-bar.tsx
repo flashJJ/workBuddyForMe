@@ -3,7 +3,7 @@
 import { AlertTriangle, Crosshair, XCircle } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
 import { cn } from '@/lib/utils';
-import type { FlowDiagnostic } from '@wbfm/shared';
+import type { FlowDiagnostic } from '@wbfm/shared/types';
 import type { FlowCanvasNode } from './graph-utils';
 
 interface DiagnosticsBarProps {

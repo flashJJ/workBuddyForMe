@@ -1,7 +1,8 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Message, MessageFeedback } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
+import type { MessageFeedback } from '@wbfm/shared/constants';
 import { apiPatch } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
 

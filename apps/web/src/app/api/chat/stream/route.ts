@@ -1,5 +1,5 @@
-import { chatRequestSchema } from '@wbfm/shared';
-import { createRagRetriever } from '@wbfm/core';
+import { chatRequestSchema } from '@wbfm/shared/schemas';
+import { createRagRetriever } from '@wbfm/core/retrieval';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { parseBody, readJsonBody } from '@/lib/server/validation';
 import { sseResponse } from '@/lib/server/sse-stream';

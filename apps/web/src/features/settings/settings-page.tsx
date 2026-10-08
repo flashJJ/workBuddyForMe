@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Provider } from '@wbfm/shared';
+import type { Provider } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { DEFAULT_VOICE_SETTINGS, type VoiceSettings } from '@wbfm/shared';
+import { DEFAULT_VOICE_SETTINGS, type VoiceSettings } from '@wbfm/shared/schemas';
 import { useProactiveChat } from './use-proactive-chat';
 
 function sseResponse(chunks: string[]) {

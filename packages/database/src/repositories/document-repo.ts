@@ -1,5 +1,6 @@
 import type { DatabaseInstance } from '../client';
-import type { DocumentRecord, DocumentSource, DocumentStatus } from '@wbfm/shared';
+import type { DocumentRecord } from '@wbfm/shared/types';
+import type { DocumentSource, DocumentStatus } from '@wbfm/shared/constants';
 import { newId, nowIso, mapDocument, type DocumentRow } from './mappers';
 
 export interface DocumentCreateFields {

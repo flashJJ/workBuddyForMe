@@ -7,7 +7,7 @@ import {
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
   type VoiceTtsModel,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';

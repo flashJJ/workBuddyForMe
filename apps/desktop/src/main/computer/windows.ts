@@ -4,7 +4,7 @@ import type {
   WindowFocusArgs,
   WindowInfo,
   WindowListResponse,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { createPowerShellRunner, PS_PRELUDE, type PowerShellRunner } from './ps';
 
 /**

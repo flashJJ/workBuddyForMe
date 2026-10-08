@@ -5,7 +5,7 @@ import {
   mouseClickArgsSchema,
   mouseMoveArgsSchema,
   mouseScrollArgsSchema,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { ChannelUnavailableError, type ComputerChannelClient } from '../../computer/channel-client';
 import type { Tool, ToolResult } from '../types';
 import { ToolArgError } from '../types';

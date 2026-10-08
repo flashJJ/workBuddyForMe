@@ -10,10 +10,10 @@ import {
   type BackupPrecheck,
   type BackupTrack,
   type BackupProgressEvent,
-} from '@wbfm/shared';
+} from '@wbfm/shared/backup';
 import type { ServiceDeps } from '../services/deps';
 import { getDataRoot } from '@wbfm/config';
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
 import { ensureSeedData } from '../services/seed';
 

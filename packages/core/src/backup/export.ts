@@ -8,7 +8,7 @@ import {
   type BackupManifest,
   type BackupProgressEvent,
   type BackupTrack,
-} from '@wbfm/shared';
+} from '@wbfm/shared/backup';
 import type { ServiceDeps } from '../services/deps';
 import {
   createConversationRepository,
@@ -22,7 +22,7 @@ import {
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { getAppVersion } from './app-version';
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import { getDataRoot } from '@wbfm/config';
 
 /** 归档最大 500MB（保护用户磁盘，超限在导出前就拒绝） */

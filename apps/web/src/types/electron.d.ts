@@ -1,4 +1,5 @@
-import type { WbfmPetBridge, WbfmUpdaterBridge } from '@wbfm/shared';
+import type { WbfmPetBridge } from '@wbfm/shared/pet';
+import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 
 /**
  * Electron preload 通过 contextBridge 注入的桥（window.wbfm）。

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { WbfmPetBridge, WbfmUpdaterBridge } from '@wbfm/shared';
+import type { WbfmPetBridge } from '@wbfm/shared/pet';
+import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 
 /**
  * 最小 preload：

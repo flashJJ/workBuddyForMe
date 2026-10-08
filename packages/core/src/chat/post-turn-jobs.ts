@@ -1,5 +1,5 @@
-import { MEMORY_SUMMARY_IMPORTANCE } from '@wbfm/shared';
-import type { Assistant, Conversation } from '@wbfm/shared';
+import { MEMORY_SUMMARY_IMPORTANCE } from '@wbfm/shared/constants';
+import type { Assistant, Conversation } from '@wbfm/shared/types';
 import type { ToolDefinition, TraceHandle } from '@wbfm/ai';
 import type { AttachmentService } from '../services/attachment-service';
 import type { ConversationService } from '../services/conversation-service';
