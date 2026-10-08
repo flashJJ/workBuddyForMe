@@ -18,6 +18,14 @@ const nextConfig = {
       // v1.0：sherpa-onnx-node 含 .node 原生绑定与 DLL，必须外部 require
       'sherpa-onnx-node',
     ],
+    // 运行时数据根（~/.workbuddy-for-me：语音模型/espeak 数据/附件）绝不能被追踪进
+    // standalone：nft 会把模型清单里的字面量路径与 homedir() 静态求值误解析到磁盘上已下载的
+    // 用户数据（跨盘符路径无法相对化，被存成「C:/Users/...」嵌套条目），Next 复制时以
+    // 「.next/server/C:/Users/...」非法嵌套落盘，单次复制抛错会中断该路由其余文件（含
+    // .next/server/chunks 共享 chunk）的归集，打包态 server 启动即 MODULE_NOT_FOUND。
+    // 必须用 outputFileTracingIgnores（glob 原样进 picomatch）；outputFileTracingExcludes
+    // 会被 path.join(项目根, glob) 拼死，无法表达盘外路径。
+    outputFileTracingIgnores: ['**/.workbuddy-for-me/**'],
     // pnpm 虚拟仓下原生二进制/worker/wasm 需显式纳入 standalone 追踪
     outputFileTracingIncludes: {
       '/**/*': [
