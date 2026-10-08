@@ -7,18 +7,25 @@ import { z } from 'zod';
 
 // ---------- 引擎与输入模式 ----------
 
+/** ASR 引擎：目前仅 sherpa-onnx 本地推理；none=关闭识别 */
 export const VOICE_ASR_ENGINES = ['sherpa_onnx', 'none'] as const;
+/** TTS 引擎：目前仅 sherpa-onnx 本地推理；none=关闭朗读 */
 export const VOICE_TTS_ENGINES = ['sherpa_onnx', 'none'] as const;
+/** 朗读模型：melo=单声低延迟（VITS 中英）；kokoro=多角色声线 */
+export const VOICE_TTS_MODELS = ['melo', 'kokoro'] as const;
+/** 语音输入模式：ptt=按住说话；vad=免手持续聆听（半双工） */
 export const VOICE_INPUT_MODES = ['ptt', 'vad'] as const;
 /** M4 免手聆听灵敏度：影响 VAD 起始阈值相对底噪的倍率（2.6/3.2/3.8） */
 export const VAD_SENSITIVITIES = ['high', 'balanced', 'low'] as const;
 
 export const voiceAsrEngineSchema = z.enum(VOICE_ASR_ENGINES);
 export const voiceTtsEngineSchema = z.enum(VOICE_TTS_ENGINES);
+export const voiceTtsModelSchema = z.enum(VOICE_TTS_MODELS);
 export const voiceInputModeSchema = z.enum(VOICE_INPUT_MODES);
 export const vadSensitivitySchema = z.enum(VAD_SENSITIVITIES);
 export type VoiceAsrEngine = z.infer<typeof voiceAsrEngineSchema>;
 export type VoiceTtsEngine = z.infer<typeof voiceTtsEngineSchema>;
+export type VoiceTtsModel = z.infer<typeof voiceTtsModelSchema>;
 export type VoiceInputMode = z.infer<typeof voiceInputModeSchema>;
 export type VadSensitivity = z.infer<typeof vadSensitivitySchema>;
 
@@ -32,8 +39,11 @@ export type VoiceState = z.infer<typeof voiceStateSchema>;
 export const voiceSettingsUpdateSchema = z
   .object({
     /** 朗读回复总开关（TTS 自动播放） */
+    /** 朗读开关与合成器（保留：未来云 TTS 扩展点） */
     ttsEnabled: z.boolean().optional(),
     ttsEngine: voiceTtsEngineSchema.optional(),
+    /** v1.1：朗读模型（melo=单声低延迟，kokoro=多角色声线）；旧库缺省回落 kokoro */
+    ttsModel: voiceTtsModelSchema.optional(),
     /**
      * 兜底发音人 sid（Kokoro 103 音色，范围 0-102）。
      * 正常对话按 avatarModelId 绑定的角色声线合成（见 AVATAR_TTS_VOICES），
@@ -75,6 +85,7 @@ export type VoiceSettingsUpdateInput = z.infer<typeof voiceSettingsUpdateSchema>
 export const voiceSettingsSchema = voiceSettingsUpdateSchema.required({
   ttsEnabled: true,
   ttsEngine: true,
+  ttsModel: true,
   ttsSpeakerId: true,
   ttsSpeed: true,
   ttsNumThreads: true,
@@ -145,6 +156,8 @@ export function getAvatarSpeakerId(
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   ttsEnabled: false,
   ttsEngine: 'sherpa_onnx',
+  // v1.1 默认沿用 Kokoro 多角色声线；melo 为单声低延迟备选（设置页可切）
+  ttsModel: 'kokoro',
   // 兜底 sid：Haru 绑定的 zf_001（对话合成默认走角色绑定，见 AVATAR_TTS_VOICES）
   ttsSpeakerId: 3,
   ttsSpeed: 1,
@@ -154,7 +167,8 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   asrNumThreads: 4,
   inputMode: 'ptt',
   vadSensitivity: 'balanced',
-  vadSilenceMs: 900,
+  // 免手跟手优先：600ms 尾静音（设置面板提供 600-1500 档，易被停顿打断可调大）
+  vadSilenceMs: 600,
   modelMirrorBase: 'https://hf-mirror.com',
   modelsDir: null,
   avatarEnabled: false,
@@ -201,7 +215,7 @@ export const voiceModelDownloadSchema = z.object({
 });
 export type VoiceModelDownload = z.infer<typeof voiceModelDownloadSchema>;
 
-/** 模型文件齐备性（磁盘 stat 结果） */
+/** 模型文件齐备性（磁盘 stat 结果）。tts 状态以当前选中模型为准，另附两套引擎明细 */
 export const voiceModelFileStatusSchema = z.object({
   asrReady: z.boolean(),
   ttsReady: z.boolean(),
@@ -209,14 +223,29 @@ export const voiceModelFileStatusSchema = z.object({
   ttsMissing: z.array(z.string()),
   asrTotalBytes: z.number().int(),
   ttsTotalBytes: z.number().int(),
+  /** 当前选中的 TTS 模型 */
+  activeTtsModel: z.enum(VOICE_TTS_MODELS),
+  /** 两套 TTS 各自的文件就绪情况（供设置页下载引导） */
+  ttsModels: z.array(
+    z.object({
+      model: z.enum(VOICE_TTS_MODELS),
+      label: z.string(),
+      totalBytes: z.number().int(),
+      ready: z.boolean(),
+      missing: z.array(z.string()),
+    }),
+  ),
 });
 export type VoiceModelFileStatus = z.infer<typeof voiceModelFileStatusSchema>;
 
-/** 模型状态查询结果（文件齐备性 + 下载任务状态） */
+/** 模型状态查询结果（文件齐备性 + 下载任务状态）。tts 按模型分别上报。 */
 export const voiceModelStatusSchema = voiceModelFileStatusSchema.extend({
   downloads: z.object({
     asr: voiceModelDownloadSchema,
+    /** 当前选中 TTS 模型的下载任务（旧消费端兼容入口） */
     tts: voiceModelDownloadSchema,
+    /** 两套 TTS 引擎各自的下载任务，key 为 VOICE_TTS_MODELS */
+    ttsByModel: z.record(voiceModelDownloadSchema),
   }),
 });
 export type VoiceModelStatus = z.infer<typeof voiceModelStatusSchema>;

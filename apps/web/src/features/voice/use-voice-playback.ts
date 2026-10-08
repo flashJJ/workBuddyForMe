@@ -6,8 +6,12 @@ import { AudioPlaybackQueue, type VoiceState } from './audio-playback-queue';
 import { WebAudioPlayer } from './web-audio-player';
 import type { VadGate } from './vad/vad-detector';
 
-/** 停播后回声门控冷却时长：屏蔽声学拖尾/混响（与方案 §6.1 一致） */
-const PLAYBACK_COOLDOWN_MS = 500;
+/**
+ * 停播后回声门控冷却时长：屏蔽扬声器/音频管线尾音。
+ * 300ms 实测足以覆盖 WebAudio 排空与室内混响；另有播放态 ×2.2 阈值 +
+ * 600ms 起始确认双保险防自激，冷却窗只承担「硬置零」职责故可取较短值。
+ */
+const PLAYBACK_COOLDOWN_MS = 300;
 
 export interface VoicePlayback {
   /** 投喂一帧 voice_audio */

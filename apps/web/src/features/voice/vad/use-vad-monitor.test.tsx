@@ -99,10 +99,10 @@ describe('useVadMonitor', () => {
       }),
     );
     await waitFor(() => expect(result.current.phase).toBe('on'));
+    // 不硬约束采样率/声道（部分 Electron 音频管线不支持时会给到低增益轨道），
+    // 仅开回声消除+降噪，采样率由 worklet 按 AudioContext 实际速率重采样
     expect(getUserMedia).toHaveBeenCalledWith(
-      expect.objectContaining({
-        audio: expect.objectContaining({ autoGainControl: false, echoCancellation: true }),
-      }),
+      expect.objectContaining({ audio: { echoCancellation: true, noiseSuppression: true } }),
     );
   });
 

@@ -47,11 +47,13 @@ export {
 
 export {
   VOICE_MODELS,
+  getVoiceModelSpec,
   modelFileUrl,
   findMissingFiles,
   type VoiceModelKind,
   type VoiceModelSpec,
   type VoiceModelFile,
+  type TtsEngineId,
 } from './models/manifest';
 export {
   downloadVoiceModel,
