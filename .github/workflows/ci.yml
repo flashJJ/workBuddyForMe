@@ -27,7 +27,7 @@ jobs:
       - name: 质量门禁（typecheck + lint + 300 行约束）
         run: pnpm check
 
-      - name: 单元测试（核心包覆盖率 ≥70%）
+      - name: 单元测试（覆盖率分级门禁：core 70%+压缩模块 95%、web 关键域 60%）
         run: pnpm test:unit
 
       - name: API 集成测试

@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p ../../tests/e2e/tsconfig.json",
     "lint": "next lint",
     "test": "vitest run",
-    "test:unit": "vitest run",
+    "test:unit": "vitest run --coverage",
     "test:integration": "vitest run integration",
     "test:e2e": "playwright test"
   },

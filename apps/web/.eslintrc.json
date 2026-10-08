@@ -10,7 +10,7 @@
   },
   "rules": {
     "import/no-restricted-paths": [
-      "warn",
+      "error",
       {
         "zones": [
           {

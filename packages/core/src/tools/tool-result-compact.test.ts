@@ -117,6 +117,35 @@ describe('compactToolOutput：knowledge_search 特化', () => {
     expect(['knowledge', 'text']).toContain(r.strategy);
     expect(r.tokens).toBeLessThanOrEqual(100);
   });
+
+  it('长短混合片段：短摘录保留原文、长摘录截断，全部编号装得下走 shortLine 装配', () => {
+    const output = knowledgeBlock([
+      [1, 1, longBody],
+      [2, 2, '短条款'],
+    ]);
+    const r = compactToolOutput(output, opts({ source: 'builtin', toolName: 'knowledge_search', maxTokens: 150 }));
+    expect(r.strategy).toBe('knowledge');
+    expect(r.text).toContain('[2] 《测试制度文档》片段2：短条款');
+    expect(r.text).toContain('…');
+    expect(r.tokens).toBeLessThanOrEqual(150);
+  });
+
+  it('多片段格式畸形（第二段有编号但引文头不合法）放弃 knowledge 解析，降级文本截断', () => {
+    const output = [
+      `[1] 来源：《文档》片段 1\n${'制度正文'.repeat(80)}`,
+      `[2] 这不是合法引文头\n${'格式错误的片段正文'.repeat(20)}`,
+    ].join('\n\n');
+    const r = compactToolOutput(output, opts({ source: 'builtin', toolName: 'knowledge_search', maxTokens: 100 }));
+    expect(r.strategy).toBe('text');
+    expect(r.tokens).toBeLessThanOrEqual(100);
+  });
+
+  it('纯编号行也放不下时 compactKnowledge 放弃，兜底文本截断且编号不丢给提示语义', () => {
+    const output = knowledgeBlock(Array.from({ length: 30 }, (_, i) => [i + 1, i + 1, longBody]));
+    const r = compactToolOutput(output, opts({ source: 'builtin', toolName: 'knowledge_search', maxTokens: 20 }));
+    expect(r.strategy).toBe('text');
+    expect(r.tokens).toBeLessThanOrEqual(20);
+  });
 });
 
 describe('compactToolOutput：结构化 JSON 取样', () => {
@@ -203,6 +232,14 @@ describe('compactToolOutput：fetch_webpage 与通用文本', () => {
     const output = '网页 https://x 正文（来源 x，约 10 字符）：\n\n短正文内容';
     const r = compactToolOutput(output, opts({ source: 'builtin', toolName: 'fetch_webpage', maxTokens: 500 }));
     expect(r.compacted).toBe(false);
+  });
+
+  it('网页输出无空行分隔头时按无来源头路径裁剪，仍不超预算', () => {
+    const output = '正'.repeat(300); // 无 '\n\n'：sep=-1，header='' 分支
+    const r = compactToolOutput(output, opts({ source: 'builtin', toolName: 'fetch_webpage', maxTokens: 100 }));
+    expect(r.strategy).toBe('webpage');
+    expect(r.text).not.toContain('来源');
+    expect(r.tokens).toBeLessThanOrEqual(100);
   });
 
   it('长中文非 JSON 文本按预算截断并附固定提示', () => {

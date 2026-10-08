@@ -105,8 +105,8 @@ module.exports = {
       { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
     ],
     '@typescript-eslint/no-explicit-any': 'warn',
-    // M0 先 warn（含方向与 internal 两类 zone），M5.4 翻 error
-    'import/no-restricted-paths': ['warn', { zones: [...directionZones, ...internalZones] }],
+    // v1.1 M5：M0 起 warn 观察一个完整版本且零违例，正式翻 error（CI 与 pnpm lint:boundaries 硬门禁）
+    'import/no-restricted-paths': ['error', { zones: [...directionZones, ...internalZones] }],
   },
   overrides: [
     {
