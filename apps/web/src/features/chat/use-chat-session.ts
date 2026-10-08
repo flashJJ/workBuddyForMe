@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, ContentPart, Message } from '@wbfm/shared/types';
+import type { Citation, Message } from '@wbfm/shared/types';
 import type { RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared/api';
 import { useMessages } from '@/lib/hooks/use-conversations';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -15,40 +15,18 @@ import {
   patchLastAssistantMessage,
 } from './live-message-utils';
 import type { ChatSessionVoice, PendingToolConfirmation } from './chat-session.types';
+import {
+  appendAssistantDelta,
+  buildStreamInput,
+  buildTurnMessages,
+  completedPatch,
+  confirmationFromPayload,
+  applyMessageFeedback,
+  markStreamingAssistantStopped,
+  pendingMessage,
+} from './use-chat-session-helpers';
 
 export type { ChatSessionVoice, PendingToolConfirmation } from './chat-session.types';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function buildUserParts(content: string, attachmentIds: string[]): ContentPart[] {
-  const parts: ContentPart[] = [];
-  if (content) parts.push({ type: 'text', text: content });
-  for (const attachmentId of attachmentIds) parts.push({ type: 'image', attachmentId });
-  return parts;
-}
-
-function pendingMessage(role: Message['role'], content: string): Message {
-  return {
-    id: '',
-    conversationId: '',
-    role,
-    content,
-    contentParts: [],
-    status: 'completed',
-    promptTokens: null,
-    completionTokens: null,
-    totalTokens: null,
-    citations: [],
-    toolTrace: [],
-    feedback: null,
-    feedbackAt: null,
-    errorCode: null,
-    errorMessage: null,
-    createdAt: nowIso(),
-  };
-}
 
 export interface ChatSession {
   messages: Message[];
@@ -111,22 +89,13 @@ export function useChatSession(
         status: 'streaming',
       };
 
-      setLive((prev) => {
-        const source = prev ?? historyQuery.data ?? [];
-        if (regenerate) {
-          // 去掉尾部旧助手消息（错误/已完成），挂上新的占位
-          const trimmed = [...source];
-          if (trimmed.length && trimmed[trimmed.length - 1]!.role === 'assistant') {
-            trimmed.pop();
-          }
-          return [...trimmed, assistantMessage];
-        }
-        const userMessage: Message = {
-          ...pendingMessage('user', content),
-          contentParts: buildUserParts(content, attachments),
-        };
-        return [...source, userMessage, assistantMessage];
-      });
+      setLive((prev) =>
+        buildTurnMessages(prev ?? historyQuery.data ?? [], assistantMessage, {
+          content,
+          regenerate,
+          attachments,
+        }),
+      );
 
       const handlers = {
         onMeta: (data: SsePayloadMap['meta']) => {
@@ -134,15 +103,7 @@ export function useChatSession(
           if (!conversationId && !regenerate) onConversationCreated(data.conversationId);
         },
         onDelta: (data: SsePayloadMap['delta']) => {
-          setLive((prev) => {
-            if (!prev) return prev;
-            const next = [...prev];
-            const last = next[next.length - 1];
-            if (last && last.role === 'assistant') {
-              next[next.length - 1] = { ...last, content: last.content + data.content };
-            }
-            return next;
-          });
+          setLive((prev) => appendAssistantDelta(prev, data.content));
         },
         onCitations: (data: SsePayloadMap['citations']) => {
           const citations: Citation[] = data.citations;
@@ -166,24 +127,13 @@ export function useChatSession(
         },
         onToolConfirmationRequired: (data: SsePayloadMap['tool_confirmation_required']) => {
           // 编排器已挂起等待决策；弹窗由页面渲染
-          setPendingConfirmation({
-            callId: data.callId,
-            tool: data.tool,
-            permission: data.permission,
-            argsSummary: data.argsSummary,
-          });
+          setPendingConfirmation(confirmationFromPayload(data));
         },
         onVoiceAudio: (data: SsePayloadMap['voice_audio']) => voice?.onAudio?.(data),
         onVoiceState: (data: SsePayloadMap['voice_state']) => voice?.onVoiceState?.(data),
         onDone: (data: SsePayloadMap['done']) => {
           setPendingConfirmation(null);
-          patchLastAssistant({
-            status: 'completed',
-            content: data.content,
-            promptTokens: data.usage?.promptTokens ?? null,
-            completionTokens: data.usage?.completionTokens ?? null,
-            totalTokens: data.usage?.totalTokens ?? null,
-          });
+          patchLastAssistant(completedPatch(data));
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
           void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
         },
@@ -196,14 +146,14 @@ export function useChatSession(
       };
 
       void streamSend(
-        {
+        buildStreamInput({
           assistantId,
-          ...(conversationId ? { conversationId } : {}),
+          conversationId,
           content,
-          ...(attachments.length > 0 ? { attachments } : {}),
-          ...(regenerate ? { regenerate: true } : {}),
-          ...(voice?.ttsEnabled ? { voice: { tts: true } } : {}),
-        },
+          attachments,
+          regenerate,
+          ttsEnabled: voice?.ttsEnabled ?? false,
+        }),
         handlers,
       );
     },
@@ -229,28 +179,12 @@ export function useChatSession(
     streamStop();
     voice?.cancelPlayback?.();
     setPendingConfirmation(null);
-    setLive((prev) => {
-      if (!prev) return prev;
-      const next = [...prev];
-      for (let i = next.length - 1; i >= 0; i -= 1) {
-        const item = next[i]!;
-        if (item.role === 'assistant' && item.status === 'streaming') {
-          next[i] = { ...item, status: 'stopped' };
-          return next;
-        }
-      }
-      return next;
-    });
+    setLive((prev) => markStreamingAssistantStopped(prev));
   }, [streamStop, voice]);
 
   const applyFeedback = React.useCallback(
     (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => {
-      setLive((prev) => {
-        if (!prev) return prev;
-        return prev.map((m) =>
-          m.id === messageId ? { ...m, feedback, feedbackAt } : m,
-        );
-      });
+      setLive((prev) => applyMessageFeedback(prev, messageId, feedback, feedbackAt));
     },
     [],
   );

@@ -18,11 +18,7 @@ import { PetHoverPoller } from './pet-hover-poller';
 import { showDefaultPetContextMenu } from './pet-menu';
 import { registerPetIpc, type IpcMainLike } from './pet-ipc';
 import type { PetManagerDeps, PetWindowLike } from './pet-types';
-
-const OPEN_CHANGED_CHANNEL = 'pet:open-changed';
-const PERFORMANCE_CHANNEL = 'pet:performance';
-/** 默认角色（与 web/voice schema 默认值一致） */
-const DEFAULT_MODEL = 'haru';
+import { OPEN_CHANGED_CHANNEL, PERFORMANCE_CHANNEL, DEFAULT_MODEL } from './pet-constants';
 
 export class PetManager {
   private win: PetWindowLike | null = null;

@@ -1,8 +1,6 @@
-import { mkdtempSync, existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import zlib from 'node:zlib';
-import tar from 'tar-stream';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance, createSettingsRepository, createAttachmentRepository, createKnowledgeRepository, createDocumentRepository, createConversationRepository, createMessageRepository, createChunkRepository, createSkillStateRepository } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
@@ -10,6 +8,7 @@ import { exportBackup } from './export';
 import { restoreBackup, precheckBackup } from './restore';
 import { createWebCipher } from '../secrets/cipher';
 import { ensureSeedData } from '../services/seed';
+import { seedConversationWithMessages, seedConversation, seedIndexedKnowledge, seedKnowledgeBase, seedDarkThemeSetting, seedMixedSettings, seedAttachment, seedSkillFixture, packManifestArchive } from './restore.helpers';
 
 describe('备份恢复（M1）', () => {
   let srcDb: DatabaseInstance;
@@ -33,39 +32,18 @@ describe('备份恢复（M1）', () => {
   it('四轨 roundtrip：导出→恢复→DB 数据一致', async () => {
     // 源库：seed + 插入数据
     ensureSeedData(srcDb);
-    const convRepo = createConversationRepository(srcDb);
-    const msgRepo = createMessageRepository(srcDb);
-    const kbRepo = createKnowledgeRepository(srcDb);
-    const docRepo = createDocumentRepository(srcDb);
-    const chunkRepo = createChunkRepository(srcDb);
-    const settingsRepo = createSettingsRepository(srcDb);
-    const attRepo = createAttachmentRepository(srcDb);
 
     // 对话 + 消息
-    const conv = convRepo.create({ assistantId: 'builtin-general', title: '产品讨论' });
-    msgRepo.add({ conversationId: conv.id, role: 'user', content: '介绍一下产品', status: 'completed' });
-    msgRepo.add({ conversationId: conv.id, role: 'assistant', content: '好的，我们的产品...', status: 'completed' });
+    const conv = seedConversationWithMessages(srcDb);
 
     // 知识库 + 文档 + 分片
-    const kb = kbRepo.create({ name: '技术文档', chunkSize: 300, chunkOverlap: 50 });
-    const doc = docRepo.create({
-      knowledgeBaseId: kb.id, filename: 'readme.md', fileType: 'md',
-      byteSize: 200, contentHash: 'abc123', source: 'upload',
-    });
-    chunkRepo.bulkInsert(doc.id, [
-      { ordinal: 0, content: '第一行内容', charStart: 0, charEnd: 5 },
-      { ordinal: 1, content: '第二行内容', charStart: 6, charEnd: 10 },
-    ]);
-    docRepo.setStatus(doc.id, 'indexed', { chunkCount: 2, indexedAt: '2025-06-01T00:00:00Z' });
+    const { kb, doc } = seedIndexedKnowledge(srcDb);
 
     // settings
-    settingsRepo.setJson('theme', { mode: 'dark' });
-    settingsRepo.setJson('sensitive', { encrypted: true, ciphertext: 'SECRET' });
+    seedMixedSettings(srcDb);
 
     // 附件
-    mkdirSync(join(tempRoot, 'attachments'), { recursive: true });
-    const att = attRepo.create({ filename: 'logo.png', mimeType: 'image/png', byteSize: 10, contentHash: 'png-hash' });
-    writeFileSync(join(tempRoot, 'attachments', att.storage_path), Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
+    seedAttachment(srcDb, tempRoot);
 
     // 导出（四轨全选）
     const deps = { db: srcDb, cipher: createWebCipher() };
@@ -150,7 +128,7 @@ describe('备份恢复（M1）', () => {
 
   it('版本不兼容：precheck.compatible=false + restore 抛错', async () => {
     // 构造一个假 archive：manifest.version=99
-    const fakeManifest = JSON.stringify({
+    const archive = await packManifestArchive({
       backupSchemaVersion: 99, appVersion: '0.4.0', createdAt: new Date().toISOString(),
       tracks: {
         conversations: { files: '', entryCount: 0 },
@@ -158,13 +136,6 @@ describe('备份恢复（M1）', () => {
         settings: { files: '' },
         attachments: { files: '', entryCount: 0, totalBytes: 0 },
       },
-    });
-    const pack = tar.pack();
-    pack.entry({ name: 'manifest.json' }, fakeManifest);
-    pack.finalize();
-    const archive = await new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      pack.pipe(zlib.createGzip()).on('data', (c: unknown) => chunks.push(c as Buffer)).on('end', () => resolve(Buffer.concat(chunks))).on('error', reject);
     });
 
     const pre = await precheckBackup(archive);
@@ -176,8 +147,7 @@ describe('备份恢复（M1）', () => {
 
   it('幂等：重复恢复同一归档，skipped 计数 > 0', async () => {
     ensureSeedData(srcDb);
-    const kbRepo = createKnowledgeRepository(srcDb);
-    kbRepo.create({ name: '幂等测试', chunkSize: 300, chunkOverlap: 50 });
+    seedKnowledgeBase(srcDb, '幂等测试');
 
     const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, { tracks: ['knowledge'] });
 
@@ -194,13 +164,9 @@ describe('备份恢复（M1）', () => {
 
   it('仅指定 knowledge 轨恢复：conversations/settings 不导入', async () => {
     ensureSeedData(srcDb);
-    const convRepo = createConversationRepository(srcDb);
-    const kbRepo = createKnowledgeRepository(srcDb);
-    const settingsRepo = createSettingsRepository(srcDb);
-
-    convRepo.create({ assistantId: 'builtin-general', title: '应该被跳过' });
-    kbRepo.create({ name: '应该被导入', chunkSize: 300, chunkOverlap: 50 });
-    settingsRepo.setJson('theme', { mode: 'dark' });
+    seedConversation(srcDb, '应该被跳过');
+    seedKnowledgeBase(srcDb, '应该被导入');
+    seedDarkThemeSetting(srcDb);
 
     const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, {
       tracks: ['conversations', 'knowledge', 'settings'],
@@ -222,17 +188,11 @@ describe('备份恢复（M1）', () => {
 
   it('恢复后 documents.status = pending（needs_reindex）', async () => {
     ensureSeedData(srcDb);
-    const kbRepo = createKnowledgeRepository(srcDb);
-    const docRepo = createDocumentRepository(srcDb);
-    const chunkRepo = createChunkRepository(srcDb);
-
-    const kb = kbRepo.create({ name: '测试', chunkSize: 300, chunkOverlap: 50 });
-    const doc = docRepo.create({
-      knowledgeBaseId: kb.id, filename: 'test.txt', fileType: 'txt',
-      byteSize: 100, contentHash: 'h1', source: 'upload',
+    const { kb, doc } = seedIndexedKnowledge(srcDb, {
+      name: '测试', filename: 'test.txt', fileType: 'txt', byteSize: 100, contentHash: 'h1',
+      chunks: [{ ordinal: 0, content: 'hello', charStart: 0, charEnd: 5 }],
+      indexedAt: '2025-01-01T00:00:00Z',
     });
-    chunkRepo.bulkInsert(doc.id, [{ ordinal: 0, content: 'hello', charStart: 0, charEnd: 5 }]);
-    docRepo.setStatus(doc.id, 'indexed', { chunkCount: 1, indexedAt: '2025-01-01T00:00:00Z' });
 
     const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, { tracks: ['knowledge'] });
     await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
@@ -245,11 +205,7 @@ describe('备份恢复（M1）', () => {
   });
 
   it('skills 轨 roundtrip：文件夹落盘 + 启停偏好按 name upsert（v0.6 M3）', async () => {
-    const skillsDir = join(tempRoot, 'skills');
-    const manifestContent = JSON.stringify({ name: 'weekly-report', description: '周报', version: '1.0.0' });
-    mkdirSync(join(skillsDir, 'weekly-report'), { recursive: true });
-    writeFileSync(join(skillsDir, 'weekly-report', 'skill.json'), manifestContent);
-    createSkillStateRepository(srcDb).create({ name: 'weekly-report', enabled: false, sourcePath: join(skillsDir, 'weekly-report') });
+    const { skillsDir, manifestContent } = seedSkillFixture(srcDb, tempRoot);
 
     const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, { tracks: ['skills'] });
     const pre = await precheckBackup(archive);

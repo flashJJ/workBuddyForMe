@@ -1,4 +1,4 @@
-import type { FlowGraph, FlowHumanSubmitInput } from '@wbfm/shared/schemas';
+import type { FlowHumanSubmitInput } from '@wbfm/shared/schemas';
 import { createDatabase } from '@wbfm/database';
 import {
   createWorkflowRepository,
@@ -13,71 +13,8 @@ import type { ToolRuntime } from '../tools/tool-runtime';
 import type { Tool } from '../tools/types';
 import type { ServiceDeps } from '../services/deps';
 import { createFlowRunService, type FlowRunService } from './run-service';
+import { drain, graphDangerTool, graphHuman, graphStartEnd } from './run-service.helpers';
 import type { FlowEventPayload } from './types';
-
-async function drain(gen: AsyncGenerator<FlowEventPayload>): Promise<FlowEventPayload[]> {
-  const out: FlowEventPayload[] = [];
-  for await (const ev of gen) out.push(ev);
-  return out;
-}
-
-function graphStartEnd(output = 'DONE'): FlowGraph {
-  return {
-    nodes: [
-      { id: 'start', type: 'start', position: { x: 0, y: 0 }, config: {} },
-      {
-        id: 'end',
-        type: 'end',
-        position: { x: 200, y: 0 },
-        config: { output },
-      },
-    ],
-    edges: [{ id: 'e1', source: 'start', target: 'end' }],
-  };
-}
-
-function graphHuman(): FlowGraph {
-  return {
-    nodes: [
-      { id: 'start', type: 'start', position: { x: 0, y: 0 }, config: {} },
-      { id: 'review', type: 'human', position: { x: 200, y: 0 }, config: { prompt: '审核？' } },
-      {
-        id: 'end',
-        type: 'end',
-        position: { x: 400, y: 0 },
-        config: { output: '{{$nodes.review.outputs.approved}}' },
-      },
-    ],
-    edges: [
-      { id: 'e1', source: 'start', target: 'review' },
-      { id: 'e2', source: 'review', target: 'end' },
-    ],
-  };
-}
-
-function graphDangerTool(): FlowGraph {
-  return {
-    nodes: [
-      { id: 'start', type: 'start', position: { x: 0, y: 0 }, config: {} },
-      {
-        id: 't1',
-        type: 'tool',
-        position: { x: 200, y: 0 },
-        config: { toolName: 'danger_tool', args: {} },
-      },
-      {
-        id: 'end',
-        type: 'end',
-        position: { x: 400, y: 0 },
-        config: { output: '{{$nodes.t1.outputs.summary}}' },
-      },
-    ],
-    edges: [
-      { id: 'e1', source: 'start', target: 't1' },
-      { id: 'e2', source: 't1', target: 'end' },
-    ],
-  };
-}
 
 describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
   let db: DatabaseInstance;

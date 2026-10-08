@@ -1,36 +1,10 @@
-import type { FlowEventPayload, PermissionLevel } from '@wbfm/shared/types';
-import type { FlowGraph, FlowNodeType } from '@wbfm/shared/schemas';
+import type { PermissionLevel } from '@wbfm/shared/types';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import { describe, expect, it } from 'vitest';
-import { compileFlow } from './compiler';
 import { runFlow } from './engine';
+import { collect, compiledOf, e, n, types } from './engine-branch.helpers';
 import type { FlowExecutionContext, FlowNodeHandler } from './types';
 import type { Tool } from '../tools/types';
-
-async function collect(gen: AsyncGenerator<FlowEventPayload>): Promise<FlowEventPayload[]> {
-  const events: FlowEventPayload[] = [];
-  for await (const event of gen) events.push(event);
-  return events;
-}
-
-const n = (
-  id: string,
-  type: FlowNodeType,
-  config: Record<string, unknown> = {},
-  x = 0,
-  y = 0,
-) => ({ id, type, position: { x, y }, config });
-const e = (id: string, source: string, target: string, sourceHandle?: 'true' | 'false') => ({
-  id,
-  source,
-  target,
-  sourceHandle,
-});
-const compiledOf = (graph: FlowGraph) => {
-  const result = compileFlow(graph);
-  if (!result.compiled) throw new Error(result.diagnostics.map((d) => d.message).join('；'));
-  return result.compiled;
-};
-const types = (events: FlowEventPayload[]) => events.map((x) => x.type);
 
 /** start→cond→(true/false)→两个 end，condition 规则用字面量确定性求值 */
 function branchGraph(result: boolean): FlowGraph {

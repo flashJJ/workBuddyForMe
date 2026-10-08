@@ -1,5 +1,4 @@
 import type { McpServerConfig, McpServerInfo, McpToolInfo } from '@wbfm/shared/types';
-import type { McpServerStatus } from '@wbfm/shared/constants';
 import { ApiError } from '@wbfm/shared/errors';
 import { isMcpToolName, parseMcpToolName } from '@wbfm/shared/schemas';
 import type { DatabaseInstance } from '@wbfm/database';
@@ -11,19 +10,15 @@ import {
 } from '@wbfm/database';
 import { createMcpClient, type McpClient } from './client';
 import { createMcpHttpClient } from './http-transport';
-import { spawnStdioTransport, type StdioTransport } from './stdio-transport';
-
-/** 服务器连接的内存态（配置来自仓储，进程态不落库） */
-interface RegistryEntry {
-  config: McpServerConfig;
-  client: McpClient | null;
-  transport: StdioTransport | null;
-  tools: McpToolInfo[];
-  status: McpServerStatus;
-  statusDetail: string | null;
-  /** 防并发连接/刷新 */
-  refreshing: Promise<void> | null;
-}
+import { spawnStdioTransport } from './stdio-transport';
+import {
+  buildServerInfo,
+  collectConnectedTools,
+  configSignature,
+  createRegistryEntry,
+  statusAfterProcessExit,
+  type RegistryEntry,
+} from './registry-entry';
 
 export interface McpRegistry {
   /** 按仓储现状对齐连接：新增/修改/删除/启停都收敛（异步连接，不阻塞） */
@@ -104,8 +99,9 @@ export function createMcpRegistry(
         },
         onClose: (detail) => {
           // 进程退出：意外退出标记 error（启停由 reconcile 管理，M1 不自动重启）
-          if (entry.status === 'connected' || entry.status === 'connecting') {
-            entry.status = 'error';
+          const nextStatus = statusAfterProcessExit(entry.status);
+          if (nextStatus) {
+            entry.status = nextStatus;
             entry.statusDetail = `进程退出（code=${detail.code ?? 'null'}）`;
           }
           entry.client = null;
@@ -141,17 +137,6 @@ export function createMcpRegistry(
     await client?.close().catch(() => undefined);
   }
 
-  function configSignature(config: McpServerConfig): string {
-    return JSON.stringify({
-      name: config.name,
-      command: config.command,
-      args: config.args,
-      env: config.env,
-      url: config.url,
-      headers: config.headers,
-    });
-  }
-
   function reconcileAll(): void {
     const servers = repo.list();
     const seen = new Set<string>();
@@ -184,15 +169,7 @@ export function createMcpRegistry(
         }
         continue;
       }
-      const fresh: RegistryEntry = {
-        config: server,
-        client: null,
-        transport: null,
-        tools: [],
-        status: 'disconnected',
-        statusDetail: null,
-        refreshing: null,
-      };
+      const fresh = createRegistryEntry(server);
       entries.set(server.id, fresh);
       // 连接去重：进行中不重复发起
       if (!fresh.refreshing) {
@@ -218,16 +195,6 @@ export function createMcpRegistry(
     }
   }
 
-  function toInfo(config: McpServerConfig): McpServerInfo {
-    const entry = entries.get(config.id);
-    return {
-      ...config,
-      status: entry?.status ?? 'disconnected',
-      statusDetail: entry?.statusDetail ?? null,
-      toolCount: entry?.tools.length ?? 0,
-    };
-  }
-
   return {
     reconcile: reconcileAll,
 
@@ -235,7 +202,7 @@ export function createMcpRegistry(
       assertNameFree(fields.name);
       const created = repo.create(fields);
       reconcileAll();
-      return toInfo(created);
+      return buildServerInfo(created, entries.get(created.id));
     },
 
     updateServer(id, fields) {
@@ -245,7 +212,7 @@ export function createMcpRegistry(
       const updated = repo.update(id, fields);
       if (!updated) throw ApiError.notFound('MCP 服务器', id);
       reconcileAll();
-      return toInfo(updated);
+      return buildServerInfo(updated, entries.get(updated.id));
     },
 
     removeServer(id) {
@@ -254,15 +221,11 @@ export function createMcpRegistry(
     },
 
     getServerInfos() {
-      return repo.list().map(toInfo);
+      return repo.list().map((config) => buildServerInfo(config, entries.get(config.id)));
     },
 
     getTools() {
-      const all: McpToolInfo[] = [];
-      for (const entry of entries.values()) {
-        if (entry.status === 'connected') all.push(...entry.tools);
-      }
-      return all;
+      return collectConnectedTools(entries.values());
     },
 
     async callTool(qualifiedName, args, timeoutMs) {

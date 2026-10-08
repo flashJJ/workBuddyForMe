@@ -1,5 +1,4 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { StringDecoder } from 'node:string_decoder';
 import { MCP_EXIT_GRACE_MS } from '@wbfm/shared/constants';
 import {
   decodeMessage,
@@ -10,6 +9,9 @@ import {
   type JsonRpcResponse,
 } from './jsonrpc';
 import type { McpTransport } from './transport';
+import { LineDecoder } from './line-decoder';
+
+export { LineDecoder };
 
 /** stdio 子进程继承的最小环境（白名单，阻断 NODE_OPTIONS 等注入面） */
 const INHERITED_ENV_KEYS = [
@@ -84,38 +86,6 @@ function buildEnv(extra: Record<string, string>): NodeJS.ProcessEnv {
   }
   // 断言而非推断：web 侧 next-env 会给 ProcessEnv 增补必填 NODE_ENV，字面量缺省会被误报
   return { ...base, ...extra } as NodeJS.ProcessEnv;
-}
-
-/** 按行分帧解码（处理 chunk 边界与 CRLF） */
-export class LineDecoder {
-  private decoder = new StringDecoder('utf8');
-  private buffer = '';
-
-  push(chunk: Buffer): string[] {
-    this.buffer += this.decoder.write(chunk);
-    return this.flushLines(false);
-  }
-
-  end(chunk?: Buffer): string[] {
-    if (chunk) this.buffer += this.decoder.end(chunk);
-    else this.buffer += this.decoder.end();
-    return this.flushLines(true);
-  }
-
-  private flushLines(final: boolean): string[] {
-    const lines: string[] = [];
-    let index = this.buffer.indexOf('\n');
-    while (index >= 0) {
-      lines.push(this.buffer.slice(0, index).replace(/\r$/, ''));
-      this.buffer = this.buffer.slice(index + 1);
-      index = this.buffer.indexOf('\n');
-    }
-    if (final && this.buffer) {
-      lines.push(this.buffer.replace(/\r$/, ''));
-      this.buffer = '';
-    }
-    return lines;
-  }
 }
 
 export function spawnStdioTransport(options: StdioTransportOptions): StdioTransport {

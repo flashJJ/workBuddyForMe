@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import {
   SherpaAsrEngine,
   SherpaTtsEngine,
@@ -27,6 +26,13 @@ import {
 } from '@wbfm/shared/schemas';
 import { readVoiceSettings } from './voice-settings';
 import { getModelDir, getVoiceModelsRoot } from './model-paths';
+import {
+  asrConfigKey,
+  buildAsrEngineConfig,
+  buildTtsEngineConfig,
+  ttsConfigKey,
+} from './voice-engine-config';
+import { listMissingModelFiles } from './voice-model-files';
 import type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime-types';
 
 const TTS_MODEL_SPECS: VoiceModelSpec[] = VOICE_MODELS.tts;
@@ -67,19 +73,7 @@ export class VoiceRuntime {
     const checked = await Promise.all(
       (['asr', 'tts'] as const).map(async (kind) => {
         const list = kind === 'asr' ? [VOICE_MODELS.asr] : TTS_MODEL_SPECS;
-        const missing: string[] = [];
-        for (const spec of list) {
-          for (const f of spec.files) {
-            const full = `${getModelDir(settings, kind, spec.id)}/${f.path}`;
-            try {
-              const size = fs.statSync(full).size;
-              if (f.size > 0 && size !== f.size) missing.push(`${spec.id}/${f.path}`);
-            } catch {
-              missing.push(`${spec.id}/${f.path}`);
-            }
-          }
-        }
-        return [kind, missing] as const;
+        return [kind, listMissingModelFiles(list, settings, kind)] as const;
       }),
     );
     const asrMissing = checked.find(([k]) => k === 'asr')?.[1] ?? [];
@@ -216,40 +210,12 @@ export class VoiceRuntime {
     const spec = this.ttsSpec();
     const modelDir = getModelDir(s, 'tts', spec.id);
     // 引擎缓存键含模型（melo/kokoro 配置不同）；sid 逐句传入不进键
-    const key = [spec.id, modelDir, s.ttsSpeed, s.ttsNumThreads].join('|');
+    const key = ttsConfigKey(spec, modelDir, s);
     if (this.ttsEngine && this.ttsConfigKey === key) return this.ttsEngine;
     await this.ttsEngine?.dispose();
     this.ttsEngine = await SherpaTtsEngine.create({
       spec,
-      config:
-        spec.engine === 'melo'
-          ? {
-              // VITS 路径由 SherpaTtsEngine 按 modelDir 自行拼出（model/lexicon/tokens/dict）
-              modelDir,
-              speakerId: 0,
-              speed: s.ttsSpeed,
-              numThreads: s.ttsNumThreads,
-              provider: 'cpu',
-            }
-          : {
-              modelDir,
-              speakerId: s.ttsSpeakerId,
-              speed: s.ttsSpeed,
-              numThreads: s.ttsNumThreads,
-              provider: 'cpu',
-              // Kokoro 多说话人：voices 嵌入库 + espeak 数据 + 中英词典 + 中文规整 FST
-              kokoro: {
-                voices: path.join(modelDir, 'voices.bin'),
-                dataDir: path.join(modelDir, 'espeak-ng-data'),
-                lexicon: [
-                  path.join(modelDir, 'lexicon-us-en.txt'),
-                  path.join(modelDir, 'lexicon-zh.txt'),
-                ].join(','),
-                ruleFsts: ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst']
-                  .map((f) => path.join(modelDir, f))
-                  .join(','),
-              },
-            },
+      config: buildTtsEngineConfig(spec, modelDir, s),
     });
     this.ttsConfigKey = key;
     return this.ttsEngine;
@@ -266,16 +232,13 @@ export class VoiceRuntime {
 
   private async ensureAsr(): Promise<AsrEngine> {
     const s = this.settings;
-    const key = [getModelDir(s, 'asr', VOICE_MODELS.asr.id), s.asrNumThreads].join('|');
+    const modelDir = getModelDir(s, 'asr', VOICE_MODELS.asr.id);
+    const key = asrConfigKey(modelDir, s);
     if (this.asrEngine && this.asrConfigKey === key) return this.asrEngine;
     await this.asrEngine?.dispose();
     this.asrEngine = await SherpaAsrEngine.create({
       spec: VOICE_MODELS.asr,
-      config: {
-        modelDir: getModelDir(s, 'asr', VOICE_MODELS.asr.id),
-        numThreads: s.asrNumThreads,
-        provider: 'cpu',
-      },
+      config: buildAsrEngineConfig(modelDir, s),
       useItn: true,
     });
     this.asrConfigKey = key;

@@ -1,46 +1,22 @@
-import { traceAsync, type ToolCall } from '@wbfm/ai';
-import type { Citation, ToolSubstep, ToolTraceEntry } from '@wbfm/shared/types';
-import type { ServiceDeps } from '../services/deps';
+import { traceAsync } from '@wbfm/ai';
+import type { ToolSubstep } from '@wbfm/shared/types';
 import { createAttachmentService } from '../services/attachment-service';
-import type { ToolMap, ToolContext, ToolResult } from '../tools/types';
-import type { ToolRuntime } from '../tools/tool-runtime';
-import type { TraceHandle } from '@wbfm/ai';
+import type { ToolContext, ToolResult } from '../tools/types';
 import { executeCall, summarizeArgs } from '../tools/tool-executor';
 import { compactToolOutput, normalizeToolSource } from '../tools/tool-result-compact';
 import { gateToolPermission } from './tool-permission-gate';
 import { mergeCitations, safeParseArgs, unknownToolResult } from './orchestrator-helpers';
 import { createSubstepQueue } from './substep-queue';
 import type { OrchestratorEvent } from './types';
-import type { ChatMessage } from '@wbfm/ai';
+import type { ToolCallLoopOutcome, ToolCallLoopParams } from './tool-call-loop-types';
+import {
+  buildBreakerTripOutput,
+  buildToolEndData,
+  buildToolTraceEntry,
+  snapshotSubsteps,
+} from './tool-call-loop-events';
 
-export interface ToolCallLoopParams {
-  calls: ToolCall[];
-  toolMap: ToolMap;
-  toolCtx: ToolContext;
-  deps: ServiceDeps;
-  /** v0.6 M4：工具运行时（用于 resolveTool 获取 source） */
-  runtime: ToolRuntime;
-  assistantId: string;
-  /** v0.7 M2：任务作用域（对话 id / 任务运行 id），用于 remember='task' 批量授权 */
-  taskScope?: string;
-  turnTrace: TraceHandle | null;
-  /** 工具调用追踪（本函数会 push 条目） */
-  trace: ToolTraceEntry[];
-  /** 出站消息（本函数会 push tool 结果消息） */
-  outgoing: ChatMessage[];
-  citations: Citation[];
-  signal?: AbortSignal;
-  /** v1.1：每条工具消息的入模 token 预算（context-budget 装配时下发） */
-  toolMessageBudgetTokens: number;
-  /** 中断收尾：stopMessage + saveMessageToolTrace（由编排器注入） */
-  onAbort: () => void;
-}
-
-export interface ToolCallLoopOutcome {
-  /** true=处理中断，调用方应 yield done 并 return */
-  aborted: boolean;
-  citations: Citation[];
-}
+export type { ToolCallLoopOutcome, ToolCallLoopParams } from './tool-call-loop-types';
 
 /**
  * 单轮工具调用循环：权限门控（HITL）→ 执行 → 追踪/事件 → 回灌出站消息。
@@ -100,41 +76,10 @@ export async function* runToolCallLoop(
     // v0.6 M4 熔断检查：连续失败的工具短期跳过执行，cooldown 到期自动半开重试
     const breaker = deps.breakers;
     if (breaker?.isTripped(name)) {
-      const trippedSummary = '已熔断';
-      const trippedOutput = `工具 ${name} 已熔断：连续失败达到阈值，5 分钟内自动半开恢复，或前往「设置 → 工具熔断器」手动重置。`;
-      const trippedStartedAt = Date.now();
-      trace.push({
-        callId: call.id,
-        tool: name,
-        argsSummary,
-        status: 'error',
-        durationMs: 0,
-        resultSummary: trippedSummary,
-        error: trippedSummary,
-        startedAt: new Date(trippedStartedAt).toISOString(),
-        source,
-        permission,
-      });
-      yield {
-        event: 'tool',
-        data: {
-          phase: 'end',
-          callId: call.id,
-          tool: name,
-          status: 'error',
-          durationMs: 0,
-          resultSummary: trippedSummary,
-          error: trippedSummary,
-          source,
-          permission,
-        },
-      };
-      outgoing.push({
-        role: 'tool',
-        content: trippedOutput,
-        toolCallId: call.id,
-        name: call.function.name,
-      });
+      const tripped = buildBreakerTripOutput({ call, name, argsSummary, source, permission });
+      trace.push(tripped.traceEntry);
+      yield { event: 'tool', data: tripped.data };
+      outgoing.push(tripped.message);
       continue;
     }
 
@@ -181,7 +126,7 @@ export async function* runToolCallLoop(
       result = unknownToolResult(call.function.name);
     }
     const durationMs = Date.now() - startedAt;
-    const substepSnapshot = substeps.length > 0 ? { substeps: [...substeps] } : {};
+    const substepSnapshot = snapshotSubsteps(substeps);
 
     // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过
     breaker?.recordResult(name, result.ok);
@@ -196,40 +141,31 @@ export async function* runToolCallLoop(
         })
       : null;
 
-    trace.push({
-      callId: call.id,
-      tool: name,
-      argsSummary,
-      status: result.ok ? 'ok' : 'error',
-      durationMs,
-      resultSummary: result.summary,
-      ...(result.ok ? {} : { error: result.summary }),
-      startedAt: new Date(startedAt).toISOString(),
-      source,
-      permission,
-      ...substepSnapshot,
-      ...(compaction?.compacted
-        ? {
-            compacted: true,
-            originalTokens: compaction.originalTokens,
-            modelTokens: compaction.tokens,
-          }
-        : {}),
-    });
-    yield {
-      event: 'tool',
-      data: {
-        phase: 'end',
-        callId: call.id,
-        tool: name,
-        status: result.ok ? 'ok' : 'error',
+    trace.push(
+      buildToolTraceEntry({
+        call,
+        name,
+        argsSummary,
+        result,
         durationMs,
-        resultSummary: result.summary,
-        ...(result.ok ? {} : { error: result.summary }),
+        startedAt,
         source,
         permission,
-        ...substepSnapshot,
-      },
+        substepSnapshot,
+        compaction,
+      }),
+    );
+    yield {
+      event: 'tool',
+      data: buildToolEndData({
+        call,
+        name,
+        result,
+        durationMs,
+        source,
+        permission,
+        substepSnapshot,
+      }),
     };
 
     citations = mergeCitations(citations, result.citations);

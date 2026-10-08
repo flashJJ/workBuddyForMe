@@ -13,8 +13,7 @@ import {
   type Viewport,
 } from '@xyflow/react';
 import type { FlowDiagnostic } from '@wbfm/shared/types';
-import type { FlowInputField, FlowNodeType } from '@wbfm/shared/schemas';
-import { Spinner } from '@/components/common/state';
+import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import {
@@ -23,15 +22,8 @@ import {
   useFlowRunAction,
   useFlowRunEvents,
 } from '@/lib/hooks/use-flows';
-import { FlowToolbar } from './flow-toolbar';
-import { NodePalette } from './node-palette';
-import { FlowCanvas } from './flow-canvas';
-import { ConfigPanel } from './config-panel';
-import { DiagnosticsBar } from './diagnostics-bar';
-import { RunInputDialog } from './run-input-dialog';
-import { EndpointDialog } from './endpoint-dialog';
-import { ExecutionPanel } from '../flow-execution/execution-panel';
-import { FlowStatusContext } from './flow-status-context';
+import { EditorLoadingState, EditorMissingState, EditorShell } from './editor-shell';
+import { buildFlowStatusValue, selectStartFields } from './flow-editor-utils';
 import {
   createNode,
   emptyCanvas,
@@ -169,12 +161,7 @@ function EditorInner({ flowId }: { flowId: string }) {
   };
 
   // ── 试运行 ──
-  const startFields = React.useMemo<FlowInputField[]>(() => {
-    const start = nodes.find((n) => n.type === 'start');
-    return Array.isArray(start?.data.config.inputs)
-      ? (start!.data.config.inputs as FlowInputField[])
-      : [];
-  }, [nodes]);
+  const startFields = React.useMemo(() => selectStartFields(nodes), [nodes]);
 
   const submitRun = async (input: Record<string, unknown>) => {
     setRunDialogOpen(false);
@@ -187,107 +174,62 @@ function EditorInner({ flowId }: { flowId: string }) {
     }
   };
 
-  const statusValue = React.useMemo<React.ContextType<typeof FlowStatusContext>>(
-    () => ({
-      nodeStatus: live.nodeStatus,
-      errorNodeIds: new Set(
-        (diagnostics ?? []).filter((d) => d.severity === 'error' && d.nodeId).map((d) => d.nodeId!),
-      ),
-      warningNodeIds: new Set(
-        (diagnostics ?? []).filter((d) => d.severity === 'warning' && d.nodeId).map((d) => d.nodeId!),
-      ),
-      errorEdgeIds: new Set(
-        (diagnostics ?? []).filter((d) => d.edgeId).map((d) => d.edgeId!),
-      ),
-    }),
+  const statusValue = React.useMemo(
+    () => buildFlowStatusValue(diagnostics, live.nodeStatus),
     [live.nodeStatus, diagnostics],
   );
 
   if (flowQuery.isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Spinner label="加载工作流..." />
-      </div>
-    );
+    return <EditorLoadingState />;
   }
   if (!data) {
-    return <div className="p-8 text-sm text-muted-foreground">工作流不存在或加载失败。</div>;
+    return <EditorMissingState />;
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <FlowToolbar
-        workflow={data.workflow}
-        version={version}
-        dirty={dirty}
-        saving={mutations.saveVersion.isPending}
-        publishing={mutations.publish.isPending}
-        running={live.phase === 'running'}
-        diagnosticCount={diagnostics?.length ?? null}
-        onSave={save}
-        onValidate={validate}
-        onPublish={publish}
-        onServing={() => setServingOpen(true)}
-        onRun={() => setRunDialogOpen(true)}
-      />
-      <div className="flex min-h-0 flex-1">
-        <NodePalette onAdd={(type) => addNode(type)} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div ref={centerRef} className="relative min-h-0 flex-1">
-            <FlowCanvas
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onDropNode={addNode}
-              onSelectNode={setSelectedId}
-              onDeleteNodes={deleteNodes}
-              onDeleteEdges={deleteEdges}
-              onViewportChange={setViewport}
-              selectedNodeId={selectedId}
-              status={statusValue}
-            />
-            {diagnostics && (
-              <DiagnosticsBar
-                diagnostics={diagnostics}
-                nodes={nodes}
-                onSelectNode={setSelectedId}
-                onClose={() => setDiagnostics(null)}
-              />
-            )}
-          </div>
-          {runId && (
-            <ExecutionPanel
-              runId={runId}
-              nodes={nodes}
-              live={live}
-              onClose={() => setRunId(null)}
-              onRerun={() => setRunDialogOpen(true)}
-            />
-          )}
-        </div>
-        <ConfigPanel
-          node={selectedNode}
-          nodes={nodes}
-          onChangeConfig={changeConfig}
-          onDelete={(id) => deleteNodes([id])}
-          onClose={() => setSelectedId(null)}
-        />
-      </div>
-      <RunInputDialog
-        open={runDialogOpen}
-        fields={startFields}
-        initial={lastRunInput}
-        onSubmit={submitRun}
-        onClose={() => setRunDialogOpen(false)}
-      />
-      <EndpointDialog
-        open={servingOpen}
-        workflowId={flowId}
-        published={data.workflow.status === 'published'}
-        onClose={() => setServingOpen(false)}
-      />
-    </div>
+    <EditorShell
+      workflowId={flowId}
+      workflow={data.workflow}
+      version={version}
+      dirty={dirty}
+      saving={mutations.saveVersion.isPending}
+      publishing={mutations.publish.isPending}
+      running={live.phase === 'running'}
+      diagnosticCount={diagnostics?.length ?? null}
+      nodes={nodes}
+      edges={edges}
+      selectedId={selectedId}
+      selectedNode={selectedNode}
+      status={statusValue}
+      diagnostics={diagnostics}
+      centerRef={centerRef}
+      runId={runId}
+      live={live}
+      runDialogOpen={runDialogOpen}
+      startFields={startFields}
+      lastRunInput={lastRunInput}
+      servingOpen={servingOpen}
+      published={data.workflow.status === 'published'}
+      onSave={save}
+      onValidate={validate}
+      onPublish={publish}
+      onServing={() => setServingOpen(true)}
+      onRun={() => setRunDialogOpen(true)}
+      onAddNode={addNode}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={onConnect}
+      onSelectNode={setSelectedId}
+      onDeleteNodes={deleteNodes}
+      onDeleteEdges={deleteEdges}
+      onViewportChange={setViewport}
+      onChangeConfig={changeConfig}
+      onCloseDiagnostics={() => setDiagnostics(null)}
+      onSubmitRun={submitRun}
+      onCloseRunDialog={() => setRunDialogOpen(false)}
+      onCloseRun={() => setRunId(null)}
+      onRerun={() => setRunDialogOpen(true)}
+      onCloseEndpoint={() => setServingOpen(false)}
+    />
   );
 }

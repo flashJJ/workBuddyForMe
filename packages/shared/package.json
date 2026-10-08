@@ -38,8 +38,8 @@
       "require": "./dist/index.cjs"
     },
     "./constants": {
-      "types": "./src/constants.ts",
-      "development": "./src/constants.ts",
+      "types": "./src/constants/index.ts",
+      "development": "./src/constants/index.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },

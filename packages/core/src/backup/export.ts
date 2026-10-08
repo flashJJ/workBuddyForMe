@@ -1,13 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import zlib from 'node:zlib';
-import tar from 'tar-stream';
 import {
   CURRENT_BACKUP_SCHEMA_VERSION,
   backupManifestSchema,
   type BackupManifest,
-  type BackupProgressEvent,
-  type BackupTrack,
 } from '@wbfm/shared/backup';
 import type { ServiceDeps } from '../services/deps';
 import {
@@ -24,27 +20,14 @@ import { serializeTasksTrack } from './export-tasks-track';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared/errors';
 import { getDataRoot } from '@wbfm/config';
+import { packTarGz } from './export-archive';
+import { sanitizeSettings } from './export-sanitize';
+import { BACKUP_MAX_ARCHIVE_BYTES } from './export-types';
+import type { BackupExportOptions, BackupExportResult } from './export-types';
 
-/** 归档最大 500MB（保护用户磁盘，超限在导出前就拒绝） */
-export const BACKUP_MAX_ARCHIVE_BYTES = 500 * 1024 * 1024;
-
-export interface BackupExportOptions {
-  tracks: BackupTrack[];
-  /** 归档落盘路径（不传则返回 Buffer） */
-  outputPath?: string;
-  /** 外部进度回调（不传则静默） */
-  onProgress?: (ev: BackupProgressEvent) => void;
-}
-
-export interface BackupExportResult {
-  archive: Buffer;
-  manifest: BackupManifest;
-  /** 归档字节数 */
-  size: number;
-}
-
-/** 敏感值在 settings 轨中的占位 */
-const REDACTED_PLACEHOLDER = '[REDACTED]';
+// 既有域 barrel 导出名原位保留（实现已拆至 kebab-case 纯函数模块，exportBackup 主流程不变）
+export { sanitizeSettings };
+export { BACKUP_MAX_ARCHIVE_BYTES, type BackupExportOptions, type BackupExportResult };
 
 /**
  * 备份导出：四轨 JSON 序列化 + tar.gz 归档。
@@ -220,62 +203,4 @@ export async function exportBackup(
   }
 
   return { archive, manifest, size: archive.length };
-}
-
-/**
- * settings_kv 脱敏：任何形如 { encrypted: true, ciphertext: string } 的 JSON 值，
- * 用 '[REDACTED]' 替换 ciphertext。递归处理嵌套结构。
- */
-export function sanitizeSettings(raw: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    out[key] = deepSanitize(value);
-  }
-  return out;
-}
-
-function deepSanitize(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  if (typeof value !== 'object') return value;
-  const obj = value as Record<string, unknown>;
-  if (obj.encrypted === true && typeof obj.ciphertext === 'string') {
-    return { ...obj, ciphertext: REDACTED_PLACEHOLDER };
-  }
-  if (Array.isArray(value)) return value.map(deepSanitize);
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj)) out[k] = deepSanitize(v);
-  return out;
-}
-
-/** 内存中打包 tar.gz——所有 JSON 文件 + 可选二进制附件 */
-function packTarGz(
-  files: Record<string, string>,
-  binaries: Array<{ name: string; data: Buffer }>,
-  manifest: BackupManifest,
-): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    const pack = tar.pack();
-    const gz = zlib.createGzip();
-
-    pack.on('error', reject);
-    gz.on('error', reject);
-    gz.on('data', (c: unknown) => chunks.push(c as Buffer));
-    gz.on('end', () => resolve(Buffer.concat(chunks)));
-
-    // 1. manifest
-    pack.entry({ name: 'manifest.json' }, JSON.stringify(manifest, null, 2));
-    // 2. JSON 轨道文件
-    for (const [name, content] of Object.entries(files)) {
-      pack.entry({ name }, content);
-    }
-    // 3. 二进制附件
-    for (const bin of binaries) {
-      pack.entry({ name: bin.name }, bin.data);
-    }
-
-    // 先 pipe，再 finalize——pipe 让 tar 输出自动喂给 gz
-    pack.pipe(gz);
-    pack.finalize();
-  });
 }
