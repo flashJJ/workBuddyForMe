@@ -3,7 +3,7 @@
 > 版本：v1.1（基线 tag 待 v1.0.0 真人验收后封版；分支拟用 `feature/v1.1-internal-hardening`）
 > 日期：2026-10-08
 > 主题：**零新功能的内部加固**——分层强制、工具结果压缩、热点文件拆分、契约防漂移、评估平台化
-> 借鉴来源：elpis（NestJS + LangGraph AI 应用框架，`e:\code\elpis-main`），只取**与框架无关的工程资产**，不迁 NestJS DI
+> 借鉴来源：elpis（NestJS + LangGraph AI 应用框架，本地参考工作副本），只取**与框架无关的工程资产**，不迁 NestJS DI
 > 上一版方案：[v1.0 Voice Companion](../v1.0/README.md)
 
 ---
