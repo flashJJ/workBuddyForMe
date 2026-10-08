@@ -16,6 +16,12 @@ const STREAM_CHUNK_DELAY_MS = 60;
 const LONG_ANSWER_TRIGGER = /长回答|详细说说/;
 /** 命中时 mock 模型发起 current_time 工具调用，用于工具链路测试 */
 const TIME_TOOL_TRIGGER = /现在.*(时间|几点)|今天.*(几号|日期)|current time/i;
+/**
+ * v1.1 M5 eval 平台可控工具触发：消息形如 `[eval-tool:工具名] {可选参数JSON}`。
+ * 首轮发起该工具调用；工具结果回灌后引用结果中的 anchor/itemCount 作答，
+ * 且 promptTokens 按全部 messages 实际字符计（使工具结果压缩效果可在 usage 观察）。
+ */
+const EVAL_TOOL_TRIGGER = /^\[eval-tool:([^\s\]]+)](?:\s+(\{[\s\S]*\}))?\s*$/;
 
 function hashToken(token: string): number {
   let hash = 0x811c9dc5;
@@ -150,6 +156,46 @@ export function createMockProvider(): ChatProvider {
         yield { delta: reply };
         yield { delta: '', usage: { promptTokens: 120, completionTokens: 24, totalTokens: 144 } };
         return;
+      }
+
+      // v1.1 M5 eval 可控工具：[eval-tool:名称] → 首轮调用/次轮引用结果
+      const evalMatch = userText.match(EVAL_TOOL_TRIGGER);
+      if (evalMatch) {
+        const evalToolName = evalMatch[1]!;
+        if (hasTool(params, evalToolName)) {
+          const evalToolResult = extractToolResult(params.messages, evalToolName);
+          if (!evalToolResult) {
+            let args: Record<string, unknown> = {};
+            if (evalMatch[2]) {
+              try {
+                args = JSON.parse(evalMatch[2]) as Record<string, unknown>;
+              } catch {
+                args = {};
+              }
+            }
+            yield toolCallChunk({
+              id: 'call-eval-tool',
+              type: 'function',
+              function: { name: evalToolName, arguments: JSON.stringify(args) },
+            });
+            return;
+          }
+          // 二次引用：答案必须从工具结果（压缩视图）取 anchor/itemCount，
+          // 读到即证明压缩保留了后续工具引用所需身份字段；promptTokens 按全部
+          // messages 实计，使入模压缩量直接反映在 done.usage 上。
+          const anchor = evalToolResult.match(/"id"\s*:\s*"([^"]+)"/)?.[1] ?? '?';
+          const omitted = evalToolResult.match(/"__omitted"\s*:\s*(\d+)/)?.[1] ?? '0';
+          const reply = `eval 引用完成：anchor=${anchor}，omitted=${omitted}`;
+          const promptTokens = Math.max(
+            5,
+            Math.ceil(params.messages.map((m) => messageText(m.content)).join('').length / 4),
+          );
+          yield {
+            delta: reply,
+            usage: { promptTokens, completionTokens: 12, totalTokens: promptTokens + 12 },
+          };
+          return;
+        }
       }
 
       // 工具循环：首轮请求时间 → 发起 current_time 调用；工具结果回灌后 → 作答

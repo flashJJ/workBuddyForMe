@@ -10,15 +10,21 @@
  * 用法：
  *   node scripts/eval/eval-memory.mjs --reset-memories
  *     --reset-memories  先清空记忆库再写入 golden 种子记忆（破坏性，必须显式传入）
- *     --base-url URL    指定服务地址
+ *     --base-url=URL    指定服务地址
  *     --judge=off       关闭 LLM-as-judge，只跑关键词命中
- *     --out PATH        结果同时写入 JSON 文件
+ *     --out=PATH        结果同时写入 JSON 文件
  *
  * 退出码：基础设施错误（连不上服务/模型报错）= 2；关键词命中率 < 70% = 1；否则 0。
+ *
+ * v1.1 M5：HTTP/SSE/关键词断言改消费 scripts/eval/lib（本文件只保留记忆域编排与
+ * LLM-as-judge 汇总），行为、报告格式、退出码均不变。
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { api } from './lib/http.mjs';
+import { streamChat } from './lib/sse-client.mjs';
+import { outputContainsAny } from './lib/assertions.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = join(HERE, 'memory-golden.json');
@@ -33,59 +39,6 @@ function parseArgs(argv) {
     else if (arg.startsWith('--out=')) args.out = arg.slice('--out='.length);
   }
   return args;
-}
-
-async function api(baseUrl, path, init = {}) {
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
-  });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok || !payload?.success) {
-    const detail = payload?.error ? `${payload.error.code}: ${payload.error.message}` : response.status;
-    throw new Error(`${init.method ?? 'GET'} ${path} 失败（${detail}）`);
-  }
-  return payload.data;
-}
-
-/** 解析 SSE 流，拼接全部 delta，返回 { content, error } */
-async function streamChat(baseUrl, body) {
-  const response = await fetch(`${baseUrl}/api/chat/stream`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok || !response.body) {
-    throw new Error(`chat/stream 建立失败：HTTP ${response.status}`);
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let content = '';
-  let error = null;
-
-  const handleEvent = (rawEvent) => {
-    const lines = rawEvent.split('\n');
-    const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim();
-    const dataLine = lines.find((line) => line.startsWith('data:'));
-    if (!eventName || !dataLine) return;
-    const data = JSON.parse(dataLine.slice(5).trim());
-    if (eventName === 'delta') content += data.content;
-    if (eventName === 'error') error = data.message ?? data.code;
-  };
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let sep;
-    while ((sep = buffer.indexOf('\n\n')) !== -1) {
-      handleEvent(buffer.slice(0, sep));
-      buffer = buffer.slice(sep + 2);
-    }
-  }
-  if (buffer.trim()) handleEvent(buffer);
-  return { content, error };
 }
 
 async function selectAssistant(baseUrl) {
@@ -104,11 +57,6 @@ async function seedMemories(baseUrl, golden, reset) {
   }
 }
 
-function keywordHit(answer, keywords) {
-  const haystack = answer.toLowerCase();
-  return keywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
-}
-
 const JUDGE_PROMPT = (question, expected, answer) => `你是严格的评测员。根据「用户问题」与「应命中的要点」评判回答质量。
 只输出 JSON，不要输出其他内容：{"score":0|1|2,"reason":"不超过30字"}
 评分：2=准确命中要点；1=部分沾边但不完整；0=未命中或编造。
@@ -122,7 +70,7 @@ async function llmJudge(baseUrl, assistantId, testCase, answer) {
     method: 'POST',
     body: JSON.stringify({ assistantId, title: 'judge' }),
   });
-  const { content, error } = await streamChat(baseUrl, {
+  const { content, error } = await streamChat(baseUrl, '/api/chat/stream', {
     assistantId,
     conversationId: conversation.id,
     content: JUDGE_PROMPT(testCase.question, testCase.anyOf, answer),
@@ -154,12 +102,13 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({ assistantId: assistant.id, title: `eval-${testCase.id}` }),
     });
-    const { content, error } = await streamChat(args.baseUrl, {
+    const { content, error } = await streamChat(args.baseUrl, '/api/chat/stream', {
       assistantId: assistant.id,
       conversationId: conversation.id,
       content: testCase.question,
     });
-    const hit = !error && keywordHit(content, testCase.anyOf);
+    const hitResult = error ? { pass: false } : outputContainsAny(content, testCase.anyOf);
+    const hit = hitResult.pass;
     const judge = args.judge
       ? await llmJudge(args.baseUrl, assistant.id, testCase, content)
       : null;
