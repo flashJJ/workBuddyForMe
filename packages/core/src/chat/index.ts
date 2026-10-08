@@ -29,6 +29,7 @@ export {
 } from './summarizer';
 export { compactIfNeeded, type CompactionResult } from './turn-context';
 export { runProviderTurn, type ProviderTurn, type TurnParams } from './tool-runner';
+export { ORCHESTRATOR_EVENT_NAMES, type OrchestratorEventName } from './types';
 export type {
   OrchestratorEvent,
   StreamChatInput,

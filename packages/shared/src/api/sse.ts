@@ -75,6 +75,19 @@ export type SsePayloadMap = {
   error: { code: string; message: string };
 };
 
+/**
+ * 线上事件的机械派生源（v1.1 M4）：
+ * 任何 `{ event, data }` 事件联合都必须经此类型从 SsePayloadMap 派生，禁止再手写
+ * `{ event: 'x'; data: XxxPayload } | …`——手写联合与 wire 真源漂移时编译期不报错。
+ *
+ * @example
+ * type OrchestratorEvent = SseEvent<'meta' | 'delta' | 'done'>;
+ * // = { event: 'meta'; data: SsePayloadMap['meta'] } | …
+ */
+export type SseEvent<K extends SseEventName = SseEventName> = {
+  [E in K]: { event: E; data: SsePayloadMap[E] };
+}[K];
+
 /** 序列化为 SSE  wire 格式（单行 data JSON） */
 export function formatSse<K extends SseEventName>(
   event: K,

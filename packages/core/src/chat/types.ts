@@ -1,19 +1,37 @@
 import type { Assistant, Citation } from '@wbfm/shared/types';
-import type { SsePayloadMap, TokenUsage } from '@wbfm/shared/api';
+import type { SseEvent, TokenUsage } from '@wbfm/shared/api';
 
-/** 编排器产出的事件，与 SSE wire 事件一一对应 */
-export type OrchestratorEvent =
-  | { event: 'meta'; data: SsePayloadMap['meta'] }
-  | { event: 'delta'; data: SsePayloadMap['delta'] }
-  | { event: 'citations'; data: SsePayloadMap['citations'] }
-  | { event: 'memories'; data: SsePayloadMap['memories'] }
-  | { event: 'tool'; data: SsePayloadMap['tool'] }
-  | {
-      event: 'tool_confirmation_required';
-      data: SsePayloadMap['tool_confirmation_required'];
-    }
-  | { event: 'done'; data: SsePayloadMap['done'] }
-  | { event: 'error'; data: SsePayloadMap['error'] };
+/**
+ * 编排器可 yield 的事件名（运行时镜像见 ORCHESTRATOR_EVENT_NAMES）。
+ * 与 SsePayloadMap 中其余线上事件的分工：
+ * - task：任务 Agent 循环在 agent/control 追加；
+ * - flow：工作流运行 SSE 独立订阅，不经过对话编排器；
+ * - voice_audio/voice_state：web 语音桥在传输层追加。
+ */
+export type OrchestratorEventName =
+  | 'meta'
+  | 'delta'
+  | 'citations'
+  | 'memories'
+  | 'tool'
+  | 'tool_confirmation_required'
+  | 'done'
+  | 'error';
+
+/** 运行时事件名镜像（穷尽 switch 与 wire 录制一致性测试用；与类型联合同源） */
+export const ORCHESTRATOR_EVENT_NAMES = [
+  'meta',
+  'delta',
+  'citations',
+  'memories',
+  'tool',
+  'tool_confirmation_required',
+  'done',
+  'error',
+] as const satisfies readonly OrchestratorEventName[];
+
+/** 编排器产出的事件：从 SSE wire 真源机械派生（v1.1 M4），不再手写 payload 形状 */
+export type OrchestratorEvent = SseEvent<OrchestratorEventName>;
 
 export interface StreamChatInput {
   assistantId: string;

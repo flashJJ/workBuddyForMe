@@ -10,6 +10,7 @@ export {
 export {
   SSE_EVENT,
   formatSse,
+  type SseEvent,
   type SseEventName,
   type SsePayloadMap,
   type TokenUsage,
