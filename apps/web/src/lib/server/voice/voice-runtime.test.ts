@@ -16,10 +16,11 @@ vi.mock('@wbfm/voice', async (importOriginal) => ({
 
 import { VoiceRuntime } from './voice-runtime';
 
-function makeRuntime(avatarModelId = 'mark') {
+function makeRuntime(avatarModelId = 'mark', ttsModel: 'melo' | 'kokoro' = 'kokoro') {
   const settings = {
     ...DEFAULT_VOICE_SETTINGS,
     avatarModelId,
+    ttsModel,
     modelsDir: '/tmp/wbfm-voice-runtime-test',
   };
   const settingsRepo = {
@@ -80,5 +81,56 @@ describe('VoiceRuntime 角色声线解析', () => {
     expect(opts.config.kokoro.lexicon).toContain('lexicon-zh.txt');
     expect(opts.config.kokoro.ruleFsts).toContain('date-zh.fst');
     expect(opts.config.kokoro.ruleFsts).toContain('phone-zh.fst');
+  });
+});
+
+describe('VoiceRuntime MeloTTS 单声引擎', () => {
+  beforeEach(() => {
+    h.create.mockReset();
+    h.synth.mockReset();
+    h.dispose.mockReset();
+    h.create.mockResolvedValue({ synthesize: h.synth, dispose: h.dispose });
+    h.synth.mockResolvedValue({ samples: new Float32Array([0.1]), sampleRate: 44100 });
+  });
+
+  it('ttsModel=melo：以 VITS 配置创建（无 kokoro 段，speakerId=0），只创建一次', async () => {
+    const { runtime } = makeRuntime('haru', 'melo');
+    await runtime.synthesize('第一句');
+    await runtime.synthesize('第二句');
+    expect(h.create).toHaveBeenCalledTimes(1);
+    const opts = h.create.mock.calls[0]![0] as {
+      spec: { id: string };
+      config: { modelDir: string; speakerId: number; kokoro?: unknown };
+    };
+    expect(opts.spec.id).toBe('vits-melo-tts-zh_en');
+    expect(opts.config.modelDir.replaceAll('\\', '/')).toContain('vits-melo-tts-zh_en');
+    expect(opts.config.kokoro).toBeUndefined();
+    expect(opts.config.speakerId).toBe(0);
+  });
+
+  it('MeloTTS 单说话人：调用方显式 sid 也强制为 0（角色绑定不生效）', async () => {
+    const { runtime } = makeRuntime('mark', 'melo');
+    await runtime.synthesize('你好，我是马克。', 58);
+    expect(h.synth).toHaveBeenCalledWith('你好，我是马克。', { speakerId: 0 });
+  });
+
+  it('切换 ttsModel 并 invalidate 后：dispose 旧引擎并按新模型重建', async () => {
+    const { runtime, settings } = makeRuntime('haru', 'kokoro');
+    await runtime.synthesize('kokoro 句');
+    expect(h.create).toHaveBeenCalledTimes(1);
+
+    settings.ttsModel = 'melo';
+    runtime.invalidateTts();
+    await runtime.synthesize('melo 句');
+
+    expect(h.dispose).toHaveBeenCalledTimes(1);
+    expect(h.create).toHaveBeenCalledTimes(2);
+    const second = h.create.mock.calls[1]![0] as {
+      spec: { id: string };
+      config: { kokoro?: unknown; speakerId: number };
+    };
+    expect(second.spec.id).toBe('vits-melo-tts-zh_en');
+    expect(second.config.kokoro).toBeUndefined();
+    expect(h.synth).toHaveBeenLastCalledWith('melo 句', { speakerId: 0 });
   });
 });

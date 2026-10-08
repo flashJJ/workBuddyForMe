@@ -2,6 +2,7 @@ import {
   DEFAULT_AVATAR_MODEL_ID,
   DEFAULT_VOICE_SETTINGS,
   SUPPORTED_AVATAR_MODEL_IDS,
+  VOICE_TTS_MODELS,
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared';
@@ -20,6 +21,8 @@ export function readVoiceSettings(settings: SettingsRepository): VoiceSettings {
   ) {
     merged.avatarModelId = DEFAULT_AVATAR_MODEL_ID;
   }
+  // v1.1：旧库无 ttsModel 字段时默认 Kokoro（与历史默认一致）
+  if (!merged.ttsModel || !VOICE_TTS_MODELS.includes(merged.ttsModel)) merged.ttsModel = 'kokoro';
   return merged;
 }
 

@@ -2,7 +2,12 @@
 
 import * as React from 'react';
 import { Loader2, Play } from 'lucide-react';
-import { getAvatarSpeakerId, type VoiceSettings, type VoiceSettingsUpdateInput } from '@wbfm/shared';
+import {
+  getAvatarSpeakerId,
+  type VoiceSettings,
+  type VoiceSettingsUpdateInput,
+  type VoiceTtsModel,
+} from '@wbfm/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -20,6 +25,63 @@ interface Props {
 const THREAD_OPTIONS = [1, 2, 4, 8];
 const SPEED_OPTIONS = [0.8, 1, 1.2, 1.5];
 const PREVIEW_TEXT = '你好，我是你的本地语音助手，所有语音都在本机完成。';
+
+/** v1.1 朗读引擎选项（模型下载状态见「离线模型」区两张 TTS 卡） */
+const TTS_MODEL_OPTIONS: ReadonlyArray<{
+  value: VoiceTtsModel;
+  name: string;
+  hint: string;
+}> = [
+  {
+    value: 'kokoro',
+    name: 'Kokoro 多角色声线',
+    hint: '103 个中英音色，声线按所选 Live2D 角色自动绑定',
+  },
+  {
+    value: 'melo',
+    name: 'MeloTTS 低延迟单声',
+    hint: '单一中文女声，CPU 合成更快，免手聆听首句等待更短',
+  },
+];
+
+/** 朗读引擎选择器：单选卡片，切换即时保存（服务端惰性重建引擎） */
+function TtsModelSelector(props: {
+  value: VoiceTtsModel;
+  onPatch: (patch: VoiceSettingsUpdateInput) => Promise<void>;
+}) {
+  return (
+    <div className="space-y-1.5" role="radiogroup" aria-label="朗读引擎" data-testid="tts-model-selector">
+      <Label>朗读引擎</Label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {TTS_MODEL_OPTIONS.map((option) => {
+          const selected = props.value === option.value;
+          return (
+            <label
+              key={option.value}
+              className={`flex cursor-pointer items-start gap-2 rounded-md border p-2.5 ${
+                selected ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30' : ''
+              }`}
+              data-testid={`tts-model-option-${option.value}`}
+            >
+              <input
+                type="radio"
+                name="tts-model"
+                className="mt-0.5 h-4 w-4 shrink-0"
+                value={option.value}
+                checked={selected}
+                onChange={() => void props.onPatch({ ttsModel: option.value })}
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">{option.name}</span>
+                <span className="block text-xs text-muted-foreground">{option.hint}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 /** 通用开关行（复用：TTS/ASR 引擎参数、F8 主动说话设置） */
 export function ToggleRow(props: {
@@ -142,11 +204,16 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         <ToggleRow
           id="tts-enabled"
           label="回复自动朗读"
-          hint={ttsReady ? '对话页也可用朗读按钮临时开关' : '请先下载 TTS 模型'}
+          hint={
+            ttsReady
+              ? '对话页也可用朗读按钮临时开关'
+              : `请先下载当前引擎（${settings.ttsModel === 'melo' ? 'MeloTTS' : 'Kokoro'}）的模型`
+          }
           checked={settings.ttsEnabled}
           disabled={!ttsReady}
           onChange={(next) => void onPatch({ ttsEnabled: next })}
         />
+        <TtsModelSelector value={settings.ttsModel} onPatch={onPatch} />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="tts-speed">语速</Label>
@@ -178,9 +245,16 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          多说话人模型：声线按「Live2D 形象」选中的角色自动绑定（103 个中英音色，可在形象区逐角色试听）
+          {settings.ttsModel === 'melo'
+            ? 'MeloTTS 为单说话人模型：所有角色共用同一中文女声，切换角色不改变声线'
+            : 'Kokoro 多说话人：声线按「Live2D 形象」选中的角色自动绑定（103 个中英音色，可在形象区逐角色试听）'}
         </p>
-        <TtsPreview ready={ttsReady} speakerId={getAvatarSpeakerId(settings.avatarModelId)} />
+        <TtsPreview
+          ready={ttsReady}
+          speakerId={
+            settings.ttsModel === 'melo' ? 0 : getAvatarSpeakerId(settings.avatarModelId)
+          }
+        />
       </div>
 
       <div className="space-y-3 rounded-md border p-3">

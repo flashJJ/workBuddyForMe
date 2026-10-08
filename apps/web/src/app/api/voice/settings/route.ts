@@ -18,6 +18,7 @@ export const PUT = defineRoute(async ({ request, services }) => {
   const patch = parseBody(voiceSettingsUpdateSchema, await readJsonBody(request));
   const next = patchVoiceSettings(createSettingsRepository(services.db), patch);
   if (
+    patch.ttsModel !== undefined ||
     patch.ttsSpeakerId !== undefined ||
     patch.ttsSpeed !== undefined ||
     patch.ttsNumThreads !== undefined ||

@@ -19,20 +19,30 @@ import { apiGet } from '@/lib/api/client';
 const HF_MIRROR = 'https://hf-mirror.com';
 const HF_OFFICIAL = 'https://huggingface.co';
 
-const MODEL_META = {
-  asr: {
-    name: '离线语音识别 SenseVoice',
-    description: '中文/英文/日文/粤语转文字，int8 量化',
-  },
-  tts: {
-    name: '离线语音合成 Kokoro',
-    description: '中英多说话人，103 个音色，按角色绑定声线',
-  },
+const ASR_MODEL_META = {
+  name: '离线语音识别 SenseVoice',
+  description: '中文/英文/日文/粤语转文字，int8 量化',
 } as const;
 
-/** 模型下载管理（ASR / TTS 两张卡） */
+/** v1.1 两套 TTS 引擎的展示文案（顺序即设置页展示顺序：默认引擎在前） */
+const TTS_MODEL_META: Record<
+  'melo' | 'kokoro',
+  { name: string; description: string }
+> = {
+  kokoro: {
+    name: '离线语音合成 Kokoro',
+    description: '中英 103 个音色，按 Live2D 角色绑定声线，体积较大',
+  },
+  melo: {
+    name: '离线语音合成 MeloTTS',
+    description: 'VITS 中英单女声，合成更快、免手聆听首句等待更短',
+  },
+};
+const TTS_DISPLAY_ORDER = ['kokoro', 'melo'] as const;
+
+/** 模型下载管理（ASR 一张 + TTS 每引擎一张） */
 function ModelDownloadSection() {
-  const { modelStatus } = useVoiceSettings();
+  const { modelStatus, settings } = useVoiceSettings();
   const downloads = useVoiceModelDownloads();
   if (!modelStatus) return null;
   return (
@@ -40,24 +50,34 @@ function ModelDownloadSection() {
       <p className="text-sm font-medium">离线模型</p>
       <VoiceModelCard
         kind="asr"
-        name={MODEL_META.asr.name}
-        description={MODEL_META.asr.description}
+        name={ASR_MODEL_META.name}
+        description={ASR_MODEL_META.description}
         totalBytes={modelStatus.asrTotalBytes}
         view={downloads.viewFor('asr')}
         onStart={() => downloads.start('asr')}
         onCancel={() => downloads.cancel('asr')}
       />
-      <VoiceModelCard
-        kind="tts"
-        name={MODEL_META.tts.name}
-        description={MODEL_META.tts.description}
-        totalBytes={modelStatus.ttsTotalBytes}
-        view={downloads.viewFor('tts')}
-        onStart={() => downloads.start('tts')}
-        onCancel={() => downloads.cancel('tts')}
-      />
+      {TTS_DISPLAY_ORDER.map((model) => {
+        const info = modelStatus.ttsModels.find((m) => m.model === model);
+        if (!info) return null;
+        const meta = TTS_MODEL_META[model];
+        return (
+          <VoiceModelCard
+            key={model}
+            kind="tts"
+            testIdKey={`tts-${model}`}
+            name={meta.name}
+            description={meta.description}
+            totalBytes={info.totalBytes}
+            view={downloads.viewFor('tts', model)}
+            active={settings?.ttsModel === model}
+            onStart={() => downloads.start('tts', model)}
+            onCancel={() => downloads.cancel('tts', model)}
+          />
+        );
+      })}
       <p className="text-xs text-muted-foreground">
-        模型不进安装包，首次使用时下载到本机；下载完成后语音功能完全离线可用。
+        模型不进安装包，首次使用时下载到本机；下载完成后语音功能完全离线可用。两套朗读引擎可只下载当前使用的一套。
       </p>
     </div>
   );

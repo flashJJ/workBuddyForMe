@@ -16,12 +16,16 @@ export interface VoiceModelFile {
 }
 
 export type VoiceModelKind = 'asr' | 'tts';
+/** TTS 可选引擎（MeloTTS 单声低延迟 / Kokoro 多角色） */
+export type TtsEngineId = 'melo' | 'kokoro';
 
 export interface VoiceModelSpec {
   kind: VoiceModelKind;
   /** 模型标识，同时作为本地目录名 */
   id: string;
   label: string;
+  /** 引擎类型（kind=tts 时必填） */
+  engine?: TtsEngineId;
   /** HuggingFace 仓库（resolve 基址由镜像设置拼接） */
   hfRepo: string;
   files: VoiceModelFile[];
@@ -44,23 +48,68 @@ const ASR_SENSEVOICE: VoiceModelSpec = {
   totalBytes: 0,
 };
 
+const TTS_MELO_ZH_EN: VoiceModelSpec = {
+  kind: 'tts',
+  engine: 'melo',
+  id: 'vits-melo-tts-zh_en',
+  label: 'MeloTTS 中英女声（VITS fp32，单声低延迟）',
+  hfRepo: 'csukuangfj/vits-melo-tts-zh_en',
+  files: [
+    // Node 侧 onnxruntime 在无 AVX512-VNNI 的 CPU 上 int8 内核退化（Arrow Lake 实测），
+    // fp32 反而更快；故 MeloTTS 与 Kokoro 均保留 fp32 模型清单。
+    { path: 'model.onnx', size: 170_429_550 },
+    { path: 'tokens.txt', size: 655 },
+    { path: 'lexicon.txt', size: 6_837_671 },
+    { path: 'date.fst', size: 59_154 },
+    { path: 'number.fst', size: 64_482 },
+    { path: 'phone.fst', size: 88_630 },
+    { path: 'new_heteronym.fst', size: 21_974 },
+    { path: 'dict/README.md', size: 683 },
+    { path: 'dict/hmm_model.utf8', size: 519_739 },
+    { path: 'dict/idf.utf8', size: 5_998_717 },
+    { path: 'dict/jieba.dict.utf8', size: 5_071_204 },
+    { path: 'dict/stop_words.utf8', size: 8_974 },
+    { path: 'dict/user.dict.utf8', size: 49 },
+    { path: 'dict/pos_dict/char_state_tab.utf8', size: 327_139 },
+    { path: 'dict/pos_dict/prob_emit.utf8', size: 1_687_686 },
+    { path: 'dict/pos_dict/prob_start.utf8', size: 4_347 },
+    { path: 'dict/pos_dict/prob_trans.utf8', size: 124_159 },
+  ],
+  totalBytes: 0,
+};
+
 const TTS_KOKORO_ZH_EN: VoiceModelSpec = {
   kind: 'tts',
+  engine: 'kokoro',
   id: 'kokoro-multi-lang-v1_1',
-  label: 'Kokoro 中英多说话人（103 音色，fp32）',
+  label: 'Kokoro 多角色声线（103 音色）',
   hfRepo: 'csukuangfj/kokoro-multi-lang-v1_1',
   files: KOKORO_FILES,
   totalBytes: 0,
 };
 
-/** v1.0 支持的模型清单（按 kind 索引）。 */
-export const VOICE_MODELS: Record<VoiceModelKind, VoiceModelSpec> = {
+/** v1.x 支持的语音模型清单：asr 固定一个；tts 提供 MeloTTS（低延迟单声）与 Kokoro（多角色）。
+ *  用 satisfies 保留窄类型（asr 单规格、tts 数组），避免访问侧被宽联合类型拖累 */
+export const VOICE_MODELS = {
   asr: withTotals(ASR_SENSEVOICE),
-  tts: withTotals(TTS_KOKORO_ZH_EN),
-};
+  tts: [withTotals(TTS_MELO_ZH_EN), withTotals(TTS_KOKORO_ZH_EN)],
+} satisfies Record<VoiceModelKind, VoiceModelSpec | VoiceModelSpec[]>;
 
 function withTotals(spec: VoiceModelSpec): VoiceModelSpec {
   return { ...spec, totalBytes: spec.files.reduce((sum, f) => sum + f.size, 0) };
+}
+
+/** 按 kind+engine 取模型规格（tts 缺省回落 Kokoro，与 shared 默认 ttsEngine 对齐） */
+export function getVoiceModelSpec(
+  kind: VoiceModelKind,
+  engine?: TtsEngineId,
+): VoiceModelSpec {
+  const entry = VOICE_MODELS[kind];
+  if (Array.isArray(entry)) {
+    const wanted = engine ?? 'kokoro';
+    return entry.find((m) => m.engine === wanted) ?? entry[entry.length - 1]!;
+  }
+  return entry;
 }
 
 /** 拼接某个模型文件的下载地址（默认走国内镜像）。 */
