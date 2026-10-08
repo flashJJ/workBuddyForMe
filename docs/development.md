@@ -13,9 +13,10 @@
 | `pnpm dev:web` | Next dev（127.0.0.1:3000） |
 | `pnpm dev:desktop` | Electron 开发态（自动等待 Next dev 就绪） |
 | `pnpm build` | Turborepo 全量构建（web 产出 `.next/standalone`） |
-| `pnpm typecheck` / `pnpm lint` | 类型检查 / Lint |
+| `pnpm typecheck` / `pnpm lint` | 类型检查 / Lint（含分层边界规则） |
+| `pnpm lint:boundaries` | 仅扫描分层边界违例（`import/no-restricted-paths`） |
 | `pnpm check` | lint + typecheck + check:lines 聚合门禁 |
-| `pnpm check:lines` | 300 行门禁（`--self-test` 自测） |
+| `pnpm check:lines` | 300 行硬门禁 + 260 行预警（`--self-test` 自测） |
 | `pnpm test:unit` | 全仓单元测试（覆盖率阈值阻断） |
 | `pnpm test:integration` | Web API 集成测试全集（内存库 + 路由直调） |
 | `pnpm test:e2e` | Web 关键路径 E2E（Playwright + Mock 供应商） |
@@ -37,7 +38,7 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 
 ## 编码约定
 
-- **单文件 ≤ 300 行**：超出拆为子组件 / 纯函数；配置或生成文件走 `scripts/.lines-whitelist.json` 并写明理由。
+- **单文件 ≤ 300 行**：超出拆为子组件 / 纯函数；配置或生成文件走 `scripts/.lines-whitelist.json` 并写明理由。260–299 行为预警档（`pnpm check:lines` 列出但不阻断），热点在撞红线前即可见。
 - 分层：页面只做装配；业务逻辑在 `packages/core`；数据访问走 repository；出站 HTTP 走 `packages/ai`。
 - 路径：数据目录只能来自 `@wbfm/config` 的 `getDataRoot()`，禁止他处硬编码（仓库不变量测试强制）。
 - 错误码：唯一事实源 `packages/shared/src/errors/error-codes.ts`；路由层经 `toErrorResponse` 归一（业务错误 / ProviderError / Zod 422 / 兜底 500）。
@@ -48,6 +49,26 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 
 - `development` → `src/index.ts`（Next dev、Vitest 直接消费源码）。
 - 生产 import/require → `dist/index.mjs|cjs`（tsup 构建，turbo `^build` 保证顺序）。
+
+## 分层与 internal 约定
+
+依赖方向由 ESLint `import/no-restricted-paths` 机械强制（根 `.eslintrc.cjs` 与 `apps/web/.eslintrc.json`；v1.1 M0 起 warn，M5 翻 error），不依赖口头记忆：
+
+```text
+apps/web      → packages/{shared, config, database, ai, core, voice} 的公开面
+apps/desktop  → packages/{shared, config}（桌面壳不碰业务与 DB）
+packages/voice    → shared, config
+packages/ai       → shared, config
+packages/database → shared, config
+packages/core     → shared, config, database, ai, voice（唯一聚合全部的编排层）
+packages/shared, config → 不依赖任何业务包
+另外：packages 不得反向依赖 apps；两个 apps 互不引用。
+```
+
+- **internal 私有目录**：包内仅供本包使用的实现放在 `src/<域>/internal/`。跨包/跨应用 import 任何包的 `internal/**` 会被规则命中；同包内部互相引用放行；测试文件（`*.test.*` / `*.spec.*` / `__tests__` / `__mocks`）允许跨层装配，规则关闭。
+- 跨包消费只走公开面：包名导入（`@wbfm/<pkg>`）或域子路径；不要写指向其他包 `src` 的相对路径，也不要在 package.json 里声明违反上表的依赖（两者都会让门禁/typecheck 变红）。
+- 自检命令：`pnpm lint:boundaries`（仓库根整体扫描，只看边界规则）；各包 `pnpm lint` 与 CI 同样执行该规则。
+- 问答示例：**web 能不能 import core/internal？** 不能——web 只允许消费 core 的公开面；需要的能力应在 core 域 barrel 导出。测试里临时装配可以，非测试代码不行。
 
 ## 测试策略
 

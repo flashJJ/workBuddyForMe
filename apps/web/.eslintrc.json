@@ -1,3 +1,61 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": "next/core-web-vitals",
+  "plugins": ["import"],
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "project": ["./tsconfig.json", "../../packages/*/tsconfig.json"]
+      }
+    }
+  },
+  "rules": {
+    "import/no-restricted-paths": [
+      "warn",
+      {
+        "zones": [
+          {
+            "target": "./**",
+            "from": "../desktop/**"
+          },
+          {
+            "target": "./**",
+            "from": "../../packages/shared/**/internal/**"
+          },
+          {
+            "target": "./**",
+            "from": "../../packages/config/**/internal/**"
+          },
+          {
+            "target": "./**",
+            "from": "../../packages/database/**/internal/**"
+          },
+          {
+            "target": "./**",
+            "from": "../../packages/ai/**/internal/**"
+          },
+          {
+            "target": "./**",
+            "from": "../../packages/voice/**/internal/**"
+          },
+          {
+            "target": "./**",
+            "from": "../../packages/core/**/internal/**"
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/__tests__/**",
+        "**/__mocks__/**"
+      ],
+      "rules": { "import/no-restricted-paths": "off" }
+    }
+  ]
 }
