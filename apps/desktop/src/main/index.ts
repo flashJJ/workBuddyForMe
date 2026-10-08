@@ -20,7 +20,8 @@ import { createClickOverlay, type ClickOverlay } from './computer/overlay';
 import { startManagedServer, type ManagedServer } from './server-manager';
 import { captureWindowState, createMainWindow, type WindowBootInfo } from './window';
 import { saveWindowState } from './window-state';
-import { createAppPetManager, PetManager } from './pet/pet-manager';
+import { PetManager } from './pet/pet-manager';
+import { createAppPetManager } from './pet/pet-bootstrap';
 import { Updater } from './updater';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';

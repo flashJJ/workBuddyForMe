@@ -11,14 +11,6 @@
     {
       "path": "packages/voice/src/models/manifest-kokoro-files.ts",
       "reason": "由 HF tree API 自动生成的 Kokoro 模型文件清单（377 项，含 espeak-ng-data 全量小文件），纯数据无逻辑；拆分会破坏生成器的单文件覆盖写入约定"
-    },
-    {
-      "path": "apps/desktop/src/main/pet/pet-manager.ts",
-      "reason": "桌宠单窗生命周期协调器：窗口创建/原位换窗、穿透滞回轮询、DIP 手势拖拽、右键菜单、IPC 注册与主窗隐藏语义全部围绕同一组私有状态（win/controller/state/drag）协作；拆成子模块需暴露这批内部状态与同步时序，内聚下降且封版前风险高；M4 起 23 个单测锁定行为"
-    },
-    {
-      "path": "apps/desktop/src/main/pet/pet-manager.test.ts",
-      "reason": "pet-manager 注入式生命周期的行为规格测试：每用例需自建窗口/菜单/光标/定时器假件，样板天然较长；与 pet-manager.ts 白名单成对，后续若生产模块拆分则同步拆测试"
     }
   ]
 }
