@@ -30,6 +30,10 @@ export interface HandsfreeVoice {
   toggle: () => void;
   /** 合并后的四态：播放态以队列为准，其余取本地监听/思考 */
   voiceState: VoiceState;
+  /** 麦克风采集实时电平（0~1，armed 时约 10Hz 刷新；未武装恒 0） */
+  micLevel: number;
+  /** 采集管线阶段：off/starting/on（on 才表示 worklet 已真正启动） */
+  monitorPhase: 'off' | 'starting' | 'on';
   monitorError: VadMonitorError | null;
   asrError: string | null;
 }
@@ -47,6 +51,9 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
   const [armed, setArmed] = React.useState(false);
   const [local, setLocal] = React.useState<LocalState>('idle');
   const [asrError, setAsrError] = React.useState<string | null>(null);
+  // 实时麦克风电平（0~1，约 10Hz 刷新，仅供免手监听调试/电平指示）
+  const [micLevel, setMicLevel] = React.useState(0);
+  const lastLevelFlushRef = React.useRef(0);
 
   const busyRef = React.useRef(false);
   const queuedRef = React.useRef<Float32Array | null>(null);
@@ -138,6 +145,14 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
     getGate: () => cbRef.current.playback.getGate(),
     onSegment: (samples) => void recognize(samples),
     onVadEvent: handleVadEvent,
+    // 约 100ms 刷新一次电平，避免 32ms 每帧重渲染
+    onLevel: (rms) => {
+      const now = performance.now();
+      if (now - lastLevelFlushRef.current >= 100) {
+        lastLevelFlushRef.current = now;
+        setMicLevel(rms);
+      }
+    },
   });
 
   // 关闭武装/失去条件：作废轮次与在途识别，复位本地态
@@ -148,6 +163,7 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
       abortRef.current = null;
       queuedRef.current = null;
       setLocal('idle');
+      setMicLevel(0);
     }
   }, [monitorEnabled]);
 
@@ -170,6 +186,10 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
     armed,
     toggle,
     voiceState,
+    /** 麦克风采集实时电平（0~1，armed 时约 10Hz 刷新；未武装恒 0） */
+    micLevel,
+    /** 采集管线阶段：off/starting/on（on 才表示 worklet 已真正启动） */
+    monitorPhase: monitor.phase,
     monitorError: monitor.error,
     asrError,
   };

@@ -177,11 +177,23 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
             className="flex items-center justify-between gap-2"
             data-testid="avatar-voice-row"
           >
-            <p className="text-xs text-muted-foreground">
-              绑定声线：Kokoro {voice.voice}（{voice.gender === 'female' ? '中文女声' : '中文男声'}，
-              sid {voice.sid}/102）· 对话朗读自动使用该声线
-            </p>
-            <AvatarVoicePreview sid={voice.sid} ready={ttsReady} />
+            {settings.ttsModel === 'melo' ? (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  当前朗读引擎为 MeloTTS（单声线）：所有角色共用同一中文女声；
+                  需要角色专属声线时请在上方「朗读引擎」切回 Kokoro
+                </p>
+                <AvatarVoicePreview sid={0} ready={ttsReady} />
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  绑定声线：Kokoro {voice.voice}（{voice.gender === 'female' ? '中文女声' : '中文男声'}，
+                  sid {voice.sid}/102）· 对话朗读自动使用该声线
+                </p>
+                <AvatarVoicePreview sid={voice.sid} ready={ttsReady} />
+              </>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             均为 Live2D 官方样本角色（免费素材许可，仅内置不可导入外部模型）；切换后即时生效

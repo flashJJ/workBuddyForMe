@@ -12,6 +12,7 @@ const ASR_TEXT = '你好，这是语音识别的一句话';
 const DEFAULT_SETTINGS = {
   ttsEnabled: false,
   ttsEngine: 'sherpa_onnx',
+  ttsModel: 'kokoro',
   ttsSpeakerId: 0,
   ttsSpeed: 1,
   ttsNumThreads: 4,
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS = {
   asrEngine: 'sherpa_onnx',
   asrNumThreads: 4,
   inputMode: 'ptt',
+  vadSensitivity: 'balanced',
   vadSilenceMs: 900,
   modelMirrorBase: 'https://hf-mirror.com',
   modelsDir: null,
@@ -34,16 +36,24 @@ const DEFAULT_SETTINGS = {
 const voiceSettings = { ...DEFAULT_SETTINGS };
 
 function modelStatus(overrides: Record<string, unknown> = {}) {
+  const kokoroDl = { active: false, status: 'ready', bytesTotal: 394_000_000, bytesDone: 394_000_000, error: null };
+  const meloDl = { active: false, status: 'ready', bytesTotal: 191_000_000, bytesDone: 191_000_000, error: null };
   return {
     asrReady: true,
     ttsReady: true,
     asrMissing: [],
     ttsMissing: [],
     asrTotalBytes: 239_549_735,
-    ttsTotalBytes: 191_000_000,
+    ttsTotalBytes: 394_000_000,
+    activeTtsModel: 'kokoro',
+    ttsModels: [
+      { model: 'kokoro', label: 'Kokoro 多角色声线（103 音色）', totalBytes: 394_000_000, ready: true, missing: [] },
+      { model: 'melo', label: 'MeloTTS 中英女声（单声低延迟）', totalBytes: 191_000_000, ready: true, missing: [] },
+    ],
     downloads: {
       asr: { active: false, status: 'ready', bytesTotal: 239_549_735, bytesDone: 239_549_735, error: null },
-      tts: { active: false, status: 'ready', bytesTotal: 191_000_000, bytesDone: 191_000_000, error: null },
+      tts: kokoroDl,
+      ttsByModel: { kokoro: kokoroDl, melo: meloDl },
     },
     ...overrides,
   };
@@ -111,7 +121,8 @@ test.describe.serial('M2 语音输入（ASR）', () => {
     const panel = page.getByTestId('voice-panel');
     await expect(panel).toBeVisible();
     await expect(page.getByTestId('voice-model-card-asr')).toContainText('已就绪');
-    await expect(page.getByTestId('voice-model-card-tts')).toContainText('已就绪');
+    await expect(page.getByTestId('voice-model-card-tts-kokoro')).toContainText('已就绪');
+    await expect(page.getByTestId('voice-model-card-tts-melo')).toContainText('已就绪');
 
     const asrToggle = page.getByLabel(/启用语音输入/);
     await expect(asrToggle).toBeEnabled();

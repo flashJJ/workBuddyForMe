@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SherpaTtsEngine, type SherpaTtsModule, type SherpaTtsNative } from './tts-engine';
 import { VoiceEngineError } from '../types';
-import { VOICE_MODELS } from '../../models/manifest';
+import { getVoiceModelSpec } from '../../models/manifest';
+
+const MELO_SPEC = getVoiceModelSpec('tts', 'melo');
+const KOKORO_SPEC = getVoiceModelSpec('tts', 'kokoro');
 
 function makeNative(overrides: Partial<SherpaTtsNative> = {}): SherpaTtsNative {
   return {
@@ -19,13 +22,13 @@ function makeModule(native: SherpaTtsNative): SherpaTtsModule {
 
 const existsAll = () => true;
 
-describe('SherpaTtsEngine', () => {
+describe('SherpaTtsEngine（MeloTTS VITS 单说话人）', () => {
   it('正常构造：映射模型路径/dict/fst，sid=1 透传', async () => {
     const native = makeNative();
     const mod = makeModule(native);
     const engine = await SherpaTtsEngine.create({
       config: { modelDir: '/models/tts', speakerId: 1, speed: 1.2, numThreads: 4 },
-      spec: VOICE_MODELS.tts,
+      spec: MELO_SPEC,
       loader: async () => mod,
       exists: existsAll,
     });
@@ -48,7 +51,7 @@ describe('SherpaTtsEngine', () => {
     await expect(
       SherpaTtsEngine.create({
         config: { modelDir: '/models/tts' },
-        spec: VOICE_MODELS.tts,
+        spec: MELO_SPEC,
         loader: async () => makeModule(makeNative()),
         exists: (p) => !p.includes('tokens.txt'),
       }),
@@ -60,7 +63,7 @@ describe('SherpaTtsEngine', () => {
     const native = makeNative({ numSpeakers: 1 });
     const engine = await SherpaTtsEngine.create({
       config: { modelDir: '/models/tts', speakerId: 1 },
-      spec: VOICE_MODELS.tts,
+      spec: MELO_SPEC,
       loader: async () => makeModule(native),
       exists: existsAll,
     });
@@ -74,7 +77,7 @@ describe('SherpaTtsEngine', () => {
     const native = makeNative();
     const engine = await SherpaTtsEngine.create({
       config: { modelDir: '/models/tts', speakerId: 0 },
-      spec: VOICE_MODELS.tts,
+      spec: MELO_SPEC,
       loader: async () => makeModule(native),
       exists: existsAll,
     });
@@ -87,7 +90,7 @@ describe('SherpaTtsEngine', () => {
     await expect(
       SherpaTtsEngine.create({
         config: { modelDir: '/models/tts' },
-        spec: VOICE_MODELS.tts,
+        spec: MELO_SPEC,
         loader: async () => {
           throw new Error('cannot find .node');
         },
@@ -102,7 +105,7 @@ describe('SherpaTtsEngine', () => {
     }) });
     const engine = await SherpaTtsEngine.create({
       config: { modelDir: '/models/tts', speakerId: 0 },
-      spec: VOICE_MODELS.tts,
+      spec: MELO_SPEC,
       loader: async () => makeModule(native),
       exists: existsAll,
     });
@@ -129,7 +132,7 @@ describe('SherpaTtsEngine（Kokoro 多说话人）', () => {
     const mod = makeModule(native);
     const engine = await SherpaTtsEngine.create({
       config: kokoroConfig,
-      spec: VOICE_MODELS.tts,
+      spec: KOKORO_SPEC,
       loader: async () => mod,
       exists: existsAll,
     });
@@ -157,7 +160,7 @@ describe('SherpaTtsEngine（Kokoro 多说话人）', () => {
       await expect(
         SherpaTtsEngine.create({
           config: kokoroConfig,
-          spec: VOICE_MODELS.tts,
+          spec: KOKORO_SPEC,
           loader: async () => makeModule(makeNative({ numSpeakers: 103 })),
           exists: (p) => !p.includes(missing),
         }),
@@ -169,7 +172,7 @@ describe('SherpaTtsEngine（Kokoro 多说话人）', () => {
     const native = makeNative({ numSpeakers: 103 });
     const engine = await SherpaTtsEngine.create({
       config: kokoroConfig,
-      spec: VOICE_MODELS.tts,
+      spec: KOKORO_SPEC,
       loader: async () => makeModule(native),
       exists: existsAll,
     });

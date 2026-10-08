@@ -14,6 +14,7 @@ const ASR_TEXT = '这是免手模式自动发送的一句话';
 const DEFAULT_SETTINGS = {
   ttsEnabled: false,
   ttsEngine: 'sherpa_onnx',
+  ttsModel: 'kokoro',
   ttsSpeakerId: 0,
   ttsSpeed: 1,
   ttsNumThreads: 4,
@@ -36,16 +37,24 @@ const DEFAULT_SETTINGS = {
 const voiceSettings = { ...DEFAULT_SETTINGS };
 
 function modelStatus() {
+  const kokoroDl = { active: false, status: 'ready', bytesTotal: 394_000_000, bytesDone: 394_000_000, error: null };
+  const meloDl = { active: false, status: 'ready', bytesTotal: 191_000_000, bytesDone: 191_000_000, error: null };
   return {
     asrReady: true,
     ttsReady: true,
     asrMissing: [],
     ttsMissing: [],
     asrTotalBytes: 239_549_735,
-    ttsTotalBytes: 191_000_000,
+    ttsTotalBytes: 394_000_000,
+    activeTtsModel: 'kokoro',
+    ttsModels: [
+      { model: 'kokoro', label: 'Kokoro 多角色声线（103 音色）', totalBytes: 394_000_000, ready: true, missing: [] },
+      { model: 'melo', label: 'MeloTTS 中英女声（单声低延迟）', totalBytes: 191_000_000, ready: true, missing: [] },
+    ],
     downloads: {
       asr: { active: false, status: 'ready', bytesTotal: 239_549_735, bytesDone: 239_549_735, error: null },
-      tts: { active: false, status: 'ready', bytesTotal: 191_000_000, bytesDone: 191_000_000, error: null },
+      tts: kokoroDl,
+      ttsByModel: { kokoro: kokoroDl, melo: meloDl },
     },
   };
 }

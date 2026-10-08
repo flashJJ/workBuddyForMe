@@ -18,10 +18,14 @@ export function useVoiceSettings() {
   const modelStatusQuery = useQuery({
     queryKey: QUERY_KEYS.voiceModelStatus,
     queryFn: () => apiGet<import('@wbfm/shared').VoiceModelStatus>(API.voiceModelStatus),
-    // 任一模型下载中时 1s 轮询；全部空闲后停止
+    // 任一模型下载中时 1s 轮询；全部空闲后停止（TTS 两套引擎分别看 ttsByModel）
     refetchInterval: (query) => {
       const downloads = query.state.data?.downloads;
-      return downloads && (downloads.asr.active || downloads.tts.active) ? 1000 : false;
+      if (!downloads) return false;
+      const ttsActive =
+        downloads.tts.active ||
+        Object.values(downloads.ttsByModel ?? {}).some((d) => d.active);
+      return downloads.asr.active || ttsActive ? 1000 : false;
     },
   });
 

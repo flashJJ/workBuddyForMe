@@ -38,28 +38,43 @@ export function HandsfreeMicButton({ handsfree, disabled }: HandsfreeMicButtonPr
           : '免手聆听中（点击关闭）';
 
   return (
-    <Button
-      type="button"
-      variant={armed ? 'default' : 'outline'}
-      size="icon"
-      className="touch-none select-none"
-      aria-label={label}
-      title={label}
-      aria-pressed={armed}
-      disabled={disabled}
-      data-testid="handsfree-button"
-      data-state={armed ? voiceState : 'off'}
-      onClick={() => handsfree.toggle()}
-    >
-      {!armed ? (
-        <Mic className="h-4 w-4" />
-      ) : voiceState === 'thinking' ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : voiceState === 'listening' ? (
-        <Radio className="h-4 w-4 animate-pulse" />
-      ) : (
-        <AudioLines className={voiceState === 'speaking' ? 'h-4 w-4' : 'h-4 w-4'} />
+    <span className="flex items-center gap-1.5">
+      <Button
+        type="button"
+        variant={armed ? 'default' : 'outline'}
+        size="icon"
+        className="touch-none select-none"
+        aria-label={label}
+        title={label}
+        aria-pressed={armed}
+        data-testid="handsfree-button"
+        data-state={armed ? voiceState : 'off'}
+        onClick={() => handsfree.toggle()}
+      >
+        {!armed ? (
+          <Mic className="h-4 w-4" />
+        ) : voiceState === 'thinking' ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : voiceState === 'listening' ? (
+          <Radio className="h-4 w-4 animate-pulse" />
+        ) : (
+          <AudioLines className="h-4 w-4" />
+        )}
+      </Button>
+      {armed && (
+        <span
+          className="flex h-4 w-20 items-end overflow-hidden rounded-sm bg-muted"
+          title={`采集：${handsfree.monitorPhase}`}
+          data-testid="handsfree-level"
+          data-phase={handsfree.monitorPhase}
+          data-level={handsfree.micLevel.toFixed(3)}
+        >
+          <span
+            className="block h-full bg-primary transition-[width] duration-100"
+            style={{ width: `${Math.min(1, handsfree.micLevel) * 100}%` }}
+          />
+        </span>
       )}
-    </Button>
+    </span>
   );
 }

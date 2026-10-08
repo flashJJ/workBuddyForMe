@@ -2,7 +2,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { Readable } from 'node:stream';
 import { downloadVoiceModel, type FsLike } from './downloader';
-import { VOICE_MODELS } from './manifest';
+import { getVoiceModelSpec } from './manifest';
 
 /** 内存文件系统（key 使用 path.join 产生的平台原生路径） */
 function createMemFs(): FsLike & { files: Map<string, Uint8Array> } {
@@ -41,7 +41,7 @@ function fetchImpl(responses: Record<string, Uint8Array>, failures?: Set<string>
 
 const tinySpec = (files: Array<{ path: string; size: number }>) => {
   const totalBytes = files.reduce((n, f) => n + f.size, 0);
-  return { ...VOICE_MODELS.tts, id: 'tiny-tts', files, totalBytes };
+  return { ...getVoiceModelSpec('tts', 'melo'), id: 'tiny-tts', files, totalBytes };
 };
 
 describe('downloadVoiceModel', () => {
