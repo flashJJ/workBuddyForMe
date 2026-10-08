@@ -57,7 +57,8 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 
 跨包导入优先用域子路径，根 barrel（`@wbfm/<pkg>`）仅在 v1.1 兼容期保留；本仓内部消费已全部迁到子路径，新代码不要再写根 barrel 导入。
 
-- `@wbfm/core`：`/agent` `/secrets` `/services` `/chat` `/memory` `/ingestion` `/retrieval` `/tools` `/computer` `/mcp` `/serving` `/skills` `/backup` `/share` `/flow`
+- `@wbfm/core`：`/agent` `/secrets` `/services` `/chat` `/memory` `/ingestion` `/retrieval` `/tools` `/computer` `/mcp` `/serving` `/skills` `/backup` `/share` `/flow` `/voice`
+- `/voice`（v1.1 M3 起）：语音运行时编排（VoiceRuntime 引擎缓存键/sid 三级解析/settings 失效重建、模型下载与齐备性、语音设置读写）。它依赖 `@wbfm/voice`（sherpa-onnx-node 原生绑定），**有意不聚合进 core 根 barrel**，避免无关消费者被拉入原生模块图；生产条件指向独立打包入口 `dist/voice.*`（tsup 多入口，叶子域无跨入口类共享）。web 侧只保留 singleton（globalThis HMR）、withVoice SSE 传输桥与同签名 re-export 薄壳。
 - `@wbfm/shared`：`/schemas` `/types` `/errors` `/api` `/constants` 及叶契约 `/backup` `/updater` `/pet` `/command`
 - 域 barrel 只导出本域公开面；需要新跨域能力时，在对应 `src/<域>/index.ts` 增补导出，不要深链其他包的 `src` 文件。
 - 测试里的 `vi.mock()` 按**模块说明符**拦截：改子路径导入后，mock 目标也要改成同一个子路径（如 `vi.mock('@wbfm/shared/constants')`），否则替换不生效。

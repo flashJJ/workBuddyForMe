@@ -1,6 +1,7 @@
 import { createSettingsRepository } from '@wbfm/database';
+// v1.1 M3：VoiceRuntime 领域编排已下沉 @wbfm/core/voice；web 仅保留进程单例（HMR 防护）
+import { VoiceRuntime } from '@wbfm/core/voice';
 import { getServices } from '../container';
-import { VoiceRuntime } from './voice-runtime';
 
 /**
  * VoiceRuntime 单例：与 ServiceContainer 同样的 HMR 防护——

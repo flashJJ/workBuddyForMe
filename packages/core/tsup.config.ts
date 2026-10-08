@@ -1,7 +1,13 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  // voice 是叶子域（仅依赖外部包，不被 core 其他域引用），独立成入口：
+  // 它不聚合进根 barrel（隔离 sherpa-onnx-node 原生模块图），子路径生产条件
+  // 指向本入口产物 dist/voice.*；与 index 之间无内部共享代码，不存在多 chunk 类身份副本。
+  entry: {
+    index: 'src/index.ts',
+    voice: 'src/voice/index.ts',
+  },
   format: ['esm', 'cjs'],
   sourcemap: true,
   clean: true,

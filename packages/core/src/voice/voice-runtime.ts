@@ -38,7 +38,8 @@ import type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime
 const TTS_MODEL_SPECS: VoiceModelSpec[] = VOICE_MODELS.tts;
 
 /**
- * 进程内语音运行时：模型就绪检查、后台下载任务、TTS 引擎单例。
+ * 进程内语音运行时（v1.1 M3 从 apps/web 下沉 core/voice 域，逻辑零改动）：
+ * 模型就绪检查、后台下载任务、TTS/ASR 引擎单例。
  *
  * 引擎长驻（模型加载耗时）；配置签名变化（目录/sid/线程/速度）时惰性重建。
  */
