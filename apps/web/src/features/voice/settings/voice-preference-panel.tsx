@@ -182,7 +182,7 @@ export function VoicePreferencePanel() {
 
       <ModelDownloadSection />
 
-      {/* 真机基准取证（Ultra 9 275HX + RTX 5070Ti，2026-10）：Windows「平衡」电源下
+      {/* 真机基准取证（2026-10，高性能 x86 PC）：Windows「平衡」电源下
           CPU 持续功耗受限，Kokoro 合成 RTF 约 2.2（首句等待 5s+）；高性能电源下 RTF≈1.0 */}
       <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-muted-foreground" data-testid="voice-power-hint">
         免手聆听首句等待偏长？离线 TTS 跑在 CPU 上：请插电并在 Windows「电源计划」选择「最佳性能/高性能」
