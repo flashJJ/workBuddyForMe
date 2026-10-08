@@ -1,4 +1,5 @@
 import {
+  DEFAULT_CONTEXT_TOKEN_BUDGET,
   HISTORY_MESSAGE_SAFETY_CAP,
   MAX_TOOL_ROUNDS,
   POST_TURN_JOBS_TIMEOUT_MS,
@@ -12,6 +13,7 @@ import { createAttachmentService } from '../services/attachment-service';
 import { createConversationService } from '../services/conversation-service';
 import { resolveChatTarget, type ResolvedChatTarget } from './model-resolver';
 import { buildTurnMessages, recordBudgetSpan } from './turn-context';
+import { resolveToolMessageBudget } from './context-budget';
 import { runAlwaysRetrieval } from './retrieve-turn';
 import { runPostTurnJobs } from './post-turn-jobs';
 import { createMemoryService } from '../memory/memory-service';
@@ -151,6 +153,10 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         const toolCtx = runtime.createContext(assistant, input.signal, {
           visionCapable: target.model.capabilities.includes('vision'),
         });
+        // v1.1：工具结果入模预算按本轮模型窗口装配下发（压缩器不读全局状态）
+        const toolMessageBudgetTokens = resolveToolMessageBudget(
+          target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+        );
         const trace: ToolTraceEntry[] = [];
         let citations = retrieved?.citations ?? [];
 
@@ -195,6 +201,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               trace,
               outgoing,
               citations,
+              toolMessageBudgetTokens,
               signal: input.signal,
               onAbort: () => {
                 conversations.stopMessage(assistantMessage.id, full);

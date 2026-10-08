@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { ChatMessage } from '@wbfm/ai';
 import {
   IMAGE_TOKEN_ESTIMATE,
+  TOOL_MESSAGE_BUDGET_FLOOR,
   estimateMessageTokens,
   estimateTokens,
+  resolveToolMessageBudget,
   truncateToTokens,
   assembleHistoryWithinBudget,
 } from './context-budget';
@@ -175,5 +177,17 @@ describe('assembleHistoryWithinBudget（历史按 token 预算从新到旧装配
       lastCompletionTokens: 100,
     });
     expect(stats.reserveTokens).toBe(2048);
+  });
+});
+
+describe('resolveToolMessageBudget（v1.1 工具消息预算下发）', () => {
+  it('常规窗口取 20%', () => {
+    expect(resolveToolMessageBudget(128_000)).toBe(25_600);
+    expect(resolveToolMessageBudget(8_192)).toBe(1_638);
+  });
+
+  it('小窗口不低于 256 token 保底', () => {
+    expect(resolveToolMessageBudget(1_024)).toBe(TOOL_MESSAGE_BUDGET_FLOOR);
+    expect(resolveToolMessageBudget(0)).toBe(TOOL_MESSAGE_BUDGET_FLOOR);
   });
 });

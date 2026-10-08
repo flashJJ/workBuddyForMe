@@ -4,6 +4,22 @@ import { OUTPUT_RESERVE_TOKENS } from '@wbfm/shared';
 /** 用上次真实 completion 校准预留时的加成余量 */
 const OUTPUT_RESERVE_MARGIN = 128;
 
+/**
+ * v1.1：单条工具消息（入模 tool content）占上下文窗口的预算比例。
+ * 100KB 级工具输出经压缩后入模占比 ≤20%，多条工具消息的总量由历史装配预算二次约束。
+ */
+export const TOOL_MESSAGE_BUDGET_RATIO = 0.2;
+/** 工具消息预算下限（小窗口模型也保留可引用的 id/编号空间） */
+export const TOOL_MESSAGE_BUDGET_FLOOR = 256;
+
+/** 装配阶段为每条工具消息下发 token 预算（无全局状态，由编排器按本轮窗口计算） */
+export function resolveToolMessageBudget(contextWindow: number): number {
+  return Math.max(
+    TOOL_MESSAGE_BUDGET_FLOOR,
+    Math.floor(contextWindow * TOOL_MESSAGE_BUDGET_RATIO),
+  );
+}
+
 /** 输出预留：优先用上次真实 completion 校准，否则默认预留 */
 export function resolveReserveTokens(lastCompletionTokens: number | null): number {
   return lastCompletionTokens != null

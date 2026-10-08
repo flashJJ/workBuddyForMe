@@ -42,6 +42,12 @@ export interface ToolTraceEntry {
   permission?: PermissionLevel;
   /** v0.8：工具内部子步骤（flow 工具的逐节点时间线，落库快照） */
   substeps?: ToolSubstep[];
+  /** v1.1：入模 output 是否经中央压缩层裁剪（完整 output 仍只在执行期/trace 摘要可查） */
+  compacted?: boolean;
+  /** v1.1：压缩前 output 的估算 token（compacted=true 时记录） */
+  originalTokens?: number;
+  /** v1.1：实际入模视图的估算 token */
+  modelTokens?: number;
 }
 
 /** SSE tool 事件载荷：start / substep（v0.8 流式子步骤）/ end 三阶段 */

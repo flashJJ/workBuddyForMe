@@ -6,6 +6,7 @@ import type { ToolMap, ToolContext, ToolResult } from '../tools/types';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TraceHandle } from '@wbfm/ai';
 import { executeCall, summarizeArgs } from '../tools/tool-executor';
+import { compactToolOutput, normalizeToolSource } from '../tools/tool-result-compact';
 import { gateToolPermission } from './tool-permission-gate';
 import { mergeCitations, safeParseArgs, unknownToolResult } from './orchestrator-helpers';
 import { createSubstepQueue } from './substep-queue';
@@ -29,6 +30,8 @@ export interface ToolCallLoopParams {
   outgoing: ChatMessage[];
   citations: Citation[];
   signal?: AbortSignal;
+  /** v1.1：每条工具消息的入模 token 预算（context-budget 装配时下发） */
+  toolMessageBudgetTokens: number;
   /** 中断收尾：stopMessage + saveMessageToolTrace（由编排器注入） */
   onAbort: () => void;
 }
@@ -183,6 +186,16 @@ export async function* runToolCallLoop(
     // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过
     breaker?.recordResult(name, result.ok);
 
+    // v1.1 双视图：完整 result.output 不进模型——入模前经中央压缩层产出预算视图；
+    // trace 只标 compacted 与 token 账（result/output 对象本身不被改写，UI 卡片看 summary）
+    const compaction = result.ok
+      ? compactToolOutput(result.output, {
+          maxTokens: params.toolMessageBudgetTokens,
+          source: normalizeToolSource(source),
+          toolName: name,
+        })
+      : null;
+
     trace.push({
       callId: call.id,
       tool: name,
@@ -195,6 +208,13 @@ export async function* runToolCallLoop(
       source,
       permission,
       ...substepSnapshot,
+      ...(compaction?.compacted
+        ? {
+            compacted: true,
+            originalTokens: compaction.originalTokens,
+            modelTokens: compaction.tokens,
+          }
+        : {}),
     });
     yield {
       event: 'tool',
@@ -216,6 +236,7 @@ export async function* runToolCallLoop(
     if (result.citations?.length) {
       yield { event: 'citations', data: { citations } };
     }
+
     // v0.7 M1：图片结果（如屏幕截图）落盘为附件，并合成 user 消息注入视觉上下文
     // （outgoing 仅为 wire 消息列表，不落库，合成消息无污染）
     if (result.ok && result.images?.length) {
@@ -245,7 +266,7 @@ export async function* runToolCallLoop(
     }
     outgoing.push({
       role: 'tool',
-      content: result.output,
+      content: compaction ? compaction.text : result.output,
       toolCallId: call.id,
       name: call.function.name,
     });
