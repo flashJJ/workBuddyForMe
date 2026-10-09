@@ -11,16 +11,16 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 下一版本：v1.2 📝 规划中
+## 当前版本：v1.2 🚧 规划启动
 
-**主题：正式发布打磨**（原 v1.1 规划顺延）。Windows 代码签名证书（消除 SmartScreen 警告）、NSIS 安装器体验（开始菜单/卸载信息）、深色模式完检与无障碍（a11y）pass、国际化框架（中/英）与帮助中心/使用向导。**开工前置：v1.1 合 main 并打 tag v1.1.0**。
+**主题：正式发布打磨**（原 v1.1 规划顺延）。Windows 代码签名证书（消除 SmartScreen 警告）、NSIS 安装器体验（开始菜单/卸载信息）、深色模式完检与无障碍（a11y）pass、国际化框架（中/英）与帮助中心/使用向导。开工前置已满足：v1.1 已合 main 并打 tag `v1.1.0`（封版合并 `65e184a`）。分支 `feature/v1.2-release-polish`，下一步产出 docs/plan/v1.2 方案四篇并评审。
 
-## 当前版本：v1.1 🔜 待封版（M0–M5 代码完成，待全门禁回归与合 main）
+## 已发布版本：v1.1 ✅（2026-10）
 
-**主题：内部加固（零新功能）**。借 elpis（NestJS+LangGraph）的工程资产还 v1.0 的架构债：分层依赖 ESLint 硬门禁（方向 zone + internal 全配对）、工具结果中央压缩层（双视图：模型看压缩/trace 看全文）、热点文件拆分（≥260 文件 28→1）与 barrel 域子路径化（954 成员迁移）、语音运行时下沉 core/voice 独立入口、SSE 契约从 payload 真源机械派生、eval 评估平台化（3 个 golden set 全带反向验证）、覆盖率分级门禁（core 70%+压缩模块 95%、web 关键域 60%）。分支 `feature/v1.1-internal-hardening`（基线 v1.0.0 `b7480e7`）。
+**主题：内部加固（零新功能）**。借 elpis（NestJS+LangGraph）的工程资产还 v1.0 的架构债：分层依赖 ESLint 硬门禁（方向 zone + internal 全配对）、工具结果中央压缩层（双视图：模型看压缩/trace 看全文）、热点文件拆分（≥260 文件 28→0）与 barrel 域子路径化（954 成员迁移）、语音运行时下沉 core/voice 独立入口、SSE 契约从 payload 真源机械派生、eval 评估平台化（3 个 golden set 全带反向验证）、覆盖率分级门禁（core 70%+压缩模块 95%、web 关键域 60%）。分支 `feature/v1.1-internal-hardening`（基线 v1.0.0 `b7480e7`，`--no-ff` 合入 main `72794ee`）。tag `v1.1.0`（封版合并 `65e184a`）。
 
 - 方案：[v1.1 内部加固](../plan/v1.1/README.md)（四篇：README/现状差距/重构设计/实施路线与风险，SDD 合同式任务板试点）
-- 总结：[v1.1-release-summary.md](v1.1-release-summary.md)（M0–M5 完成；剩 T5.6 全门禁/e2e 回归、合 main 与 tag v1.1.0）
+- 总结：[v1.1-release-summary.md](v1.1-release-summary.md)（M0–M5 全量交付、全门禁绿；真机抽测另修两个 cipher 热修——同步桥死锁致供应商加载失败、worker fork 炸弹致空闲 OOM 黑屏，均已随 v1.1.0 封入）
 
 ## 已发布版本：v1.0 ✅（2026-10）
 
@@ -96,8 +96,8 @@
 | v0.8 | Flow Studio：可视化工作流 DAG | ✅ 已发布 | [方案](v0.8-flow-studio.md) | [总结](v0.8-release-summary.md) | — | `v0.8.0` |
 | v0.9 | Flow Serving：执行解耦 + 本地 API/MCP | ✅ 已发布 | [方案](v0.9-flow-serving.md) | [总结](v0.9-release-summary.md) | B01-B08 | `v0.9.0` |
 | v1.0 | 会说话的桌面伙伴：本地语音 + Live2D + 桌宠 | ✅ 已发布（真人验收通过） | [方案](../plan/v1.0/README.md) | [总结](v1.0-release-summary.md) | — | `v1.0.0` |
-| v1.1 | 内部加固：分层强制/工具结果压缩/热点拆分/契约防漂移/eval 平台 | 🔜 待封版（M0–M5 代码完成，待全门禁回归） | [方案](../plan/v1.1/README.md) | [总结](v1.1-release-summary.md) | — | 待打 `v1.1.0` |
-| v1.2 | 正式发布：签名/安装器/a11y/i18n/帮助中心（原 v1.1 顺延） | 📝 规划中 | — | — | — | — |
+| v1.1 | 内部加固：分层强制/工具结果压缩/热点拆分/契约防漂移/eval 平台 | ✅ 已发布（含 cipher 桥死锁/fork 炸弹两个真机热修） | [方案](../plan/v1.1/README.md) | [总结](v1.1-release-summary.md) | — | `v1.1.0` |
+| v1.2 | 正式发布：签名/安装器/a11y/i18n/帮助中心（原 v1.1 顺延） | 🚧 规划启动（分支 `feature/v1.2-release-polish`） | — | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
@@ -118,12 +118,12 @@
 - Live2D 形象：口型 RMS、表情标签、待机动作；透明置顶桌宠窗（鼠标穿透滞回、拖拽、双击回主窗）
 - 详见 [docs/plan/v1.0](../plan/v1.0/README.md) 与 [v1.0-release-summary.md](v1.0-release-summary.md)。原「正式发布」收尾项现移至 v1.2（v1.1 改为内部加固）。
 
-### v1.1「内部加固」—— 代码优化（🔜 待封版）
+### v1.1「内部加固」—— 代码优化（✅ 已发布，tag v1.1.0）
 
 - 零新功能版本：分层依赖 ESLint 硬门禁、工具结果中央压缩（双视图）、热点文件拆分去白名单、barrel 域子路径化、SSE 契约机械派生、eval 平台化、覆盖率分级门禁
 - 详见 [docs/plan/v1.1](../plan/v1.1/README.md) 与 [v1.1-release-summary.md](v1.1-release-summary.md)。借 elpis 的纯函数压缩器、internal 目录约定与合同式 SDD，不迁 NestJS DI
 
-### v1.2「正式发布」—— 可对外分发（原 v1.1 规划顺延）
+### v1.2「正式发布」—— 可对外分发（原 v1.1 规划顺延，🚧 规划启动）
 
 - Windows 代码签名证书（消除 SmartScreen 警告）
 - 安装器体验（NSIS 一键安装、开始菜单/卸载信息）
