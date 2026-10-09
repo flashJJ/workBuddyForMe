@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useDocuments, useKnowledgeBases, useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
 import { KnowledgeBaseFormDialog } from './kb-form-dialog';
@@ -85,6 +86,7 @@ export function KnowledgePage() {
   const { data: knowledgeBases, isLoading, isError, refetch } = useKnowledgeBases();
   const mutations = useKnowledgeMutations();
   const toast = useToast();
+  const confirm = useConfirm();
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [clipOpen, setClipOpen] = React.useState(false);
@@ -106,7 +108,16 @@ export function KnowledgePage() {
   };
 
   const removeKb = async (kb: KnowledgeBase) => {
-    if (!window.confirm(`删除知识库「${kb.name}」？其中全部文档与向量索引将被清除。`)) return;
+    if (
+      !(await confirm({
+        title: '删除知识库',
+        description: `删除知识库「${kb.name}」？其中全部文档与向量索引将被清除。`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await mutations.remove.mutateAsync(kb.id);
       if (activeId === kb.id) setActiveId(null);

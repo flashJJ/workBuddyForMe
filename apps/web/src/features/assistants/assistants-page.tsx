@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useAssistants, useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useAllModels } from '@/lib/hooks/use-settings';
@@ -19,6 +20,7 @@ export function AssistantsPage() {
   const { data: knowledgeBases } = useKnowledgeBases();
   const mutations = useAssistantMutations();
   const toast = useToast();
+  const confirm = useConfirm();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Assistant | null>(null);
 
@@ -33,7 +35,16 @@ export function AssistantsPage() {
   };
 
   const remove = async (assistant: Assistant) => {
-    if (!window.confirm(`确定删除助手「${assistant.name}」？相关对话记录不会被删除。`)) return;
+    if (
+      !(await confirm({
+        title: '删除助手',
+        description: `确定删除助手「${assistant.name}」？相关对话记录不会被删除。`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await mutations.remove.mutateAsync(assistant.id);
       toast.success('助手已删除');

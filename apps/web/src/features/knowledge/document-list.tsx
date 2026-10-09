@@ -4,6 +4,7 @@ import type { DocumentRecord } from '@wbfm/shared/types';
 import type { DocumentStatus } from '@wbfm/shared/constants';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Spinner } from '@/components/common/state';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
 
 const STATUS_VARIANT: Record<DocumentStatus, 'default' | 'success' | 'warning' | 'danger' | 'outline'> = {
@@ -50,9 +51,19 @@ export function DocumentList({ kbId, documents, loading }: {
   loading: boolean;
 }) {
   const mutations = useKnowledgeMutations();
+  const confirm = useConfirm();
 
-  const remove = (document: DocumentRecord) => {
-    if (!window.confirm(`删除文档「${document.filename}」及其向量索引？`)) return;
+  const remove = async (document: DocumentRecord) => {
+    if (
+      !(await confirm({
+        title: '删除文档',
+        description: `删除文档「${document.filename}」及其向量索引？`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     void mutations.deleteDocument.mutateAsync({ kbId, documentId: document.id });
   };
 

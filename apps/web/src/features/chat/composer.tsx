@@ -126,6 +126,7 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
               type="file"
               accept="image/png,image/jpeg,image/webp"
               multiple
+              aria-label="添加图片附件"
               className="hidden"
               onChange={(event) => {
                 const files = Array.from(event.target.files ?? []);

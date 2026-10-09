@@ -5,6 +5,7 @@ import type { Provider } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useProviderMutations } from '@/lib/hooks/use-providers';
 import { ModelManager } from './model-manager';
@@ -23,6 +24,7 @@ type TestState =
 export function ProviderCard({ provider, onEdit }: Props) {
   const mutations = useProviderMutations();
   const toast = useToast();
+  const confirm = useConfirm();
   const [testState, setTestState] = React.useState<TestState>({ status: 'idle' });
 
   const toggleEnabled = async (enabled: boolean) => {
@@ -47,7 +49,16 @@ export function ProviderCard({ provider, onEdit }: Props) {
   };
 
   const remove = async () => {
-    if (!window.confirm(`确定删除供应商「${provider.name}」及其模型配置？`)) return;
+    if (
+      !(await confirm({
+        title: '删除供应商',
+        description: `确定删除供应商「${provider.name}」及其模型配置？`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await mutations.remove.mutateAsync(provider.id);
       toast.success('供应商已删除');

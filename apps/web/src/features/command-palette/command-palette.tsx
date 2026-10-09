@@ -26,6 +26,8 @@ interface CommandPaletteProps {
  * 命令面板（M5）：Ctrl+K 唤起，模糊搜索内置命令，↑↓ 导航，Enter 执行，Esc 关闭。
  * 基于 Radix Dialog 实现，无外部聚焦陷阱依赖（手动管理 input 与 list 焦点）。
  */
+const LISTBOX_ID = 'command-palette-listbox';
+
 export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteProps) {
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -107,6 +109,8 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
           className="fixed left-1/2 top-[20%] z-[51] w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border bg-background shadow-2xl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
+          {/* sr-only 标题：满足 Radix Dialog 的 a11y 名称要求，读屏可播报 */}
+          <DialogPrimitive.Title className="sr-only">命令面板</DialogPrimitive.Title>
           <div className="border-b px-4 py-3">
             <input
               ref={inputRef}
@@ -114,12 +118,19 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="输入命令名称…（↑↓ 选择，Enter 执行，Esc 关闭）"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              aria-label="搜索并执行命令"
+              role="combobox"
+              aria-expanded="true"
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              aria-controls={LISTBOX_ID}
+              aria-activedescendant={flat[activeIndex] ? `command-option-${flat[activeIndex].id}` : undefined}
+              className="w-full rounded bg-transparent text-sm placeholder:text-muted-foreground"
               data-testid="command-input"
             />
           </div>
 
-          <div ref={listRef} className="max-h-80 overflow-y-auto py-2">
+          <div ref={listRef} id={LISTBOX_ID} role="listbox" aria-label="命令列表" className="max-h-80 overflow-y-auto py-2">
             {flat.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                 没有匹配「{query}」的命令
@@ -138,6 +149,9 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
                       <button
                         key={cmd.id}
                         type="button"
+                        role="option"
+                        id={`command-option-${cmd.id}`}
+                        aria-selected={active}
                         data-active={active}
                         data-testid={`command-item-${cmd.id}`}
                         disabled={cmd.disabled}

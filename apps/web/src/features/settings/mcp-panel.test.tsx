@@ -130,13 +130,17 @@ describe('MCP 服务器面板（v0.6 M1）', () => {
     });
   });
 
-  it('删除：confirm 后 DELETE', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('删除：确认框确认后 DELETE', async () => {
     fetchMock.mockResolvedValue(ok([makeServer({ id: '1', name: 'filesystem' })]));
     const user = userEvent.setup();
     renderWithProviders(<McpPanel />);
     const item = (await screen.findAllByTestId('mcp-server-item'))[0]!;
     await user.click(within(item).getByRole('button', { name: '删除' }));
+
+    // v1.2：window.confirm 已替换为应用内 ConfirmDialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('删除 MCP 服务器');
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([input, init]) =>
@@ -146,15 +150,17 @@ describe('MCP 服务器面板（v0.6 M1）', () => {
     });
   });
 
-  it('删除：confirm 取消则不发起请求', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('删除：确认框取消则不发起请求', async () => {
     fetchMock.mockResolvedValue(ok([makeServer({ id: '1', name: 'filesystem' })]));
     const user = userEvent.setup();
     renderWithProviders(<McpPanel />);
     const item = (await screen.findAllByTestId('mcp-server-item'))[0]!;
     await user.click(within(item).getByRole('button', { name: '删除' }));
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // v1.2：在应用内 ConfirmDialog 上点取消，不得发起 DELETE
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: '取消' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'DELETE')).toBe(false);
   });
 });

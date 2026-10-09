@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { useMemories, useMemoryMutations } from '@/lib/hooks/use-memories';
 import {
   MEMORY_KIND_BADGE,
@@ -87,6 +88,7 @@ export function MemoryPanel() {
   const { data: memories, isLoading, isError, refetch } = useMemories(filter);
   const mutations = useMemoryMutations();
   const toast = useToast();
+  const confirm = useConfirm();
 
   const openCreate = () => {
     setEditing(null);
@@ -98,7 +100,16 @@ export function MemoryPanel() {
   };
 
   const remove = async (memory: Memory) => {
-    if (!window.confirm(`确定删除这条记忆吗？\n\n${memory.content}`)) return;
+    if (
+      !(await confirm({
+        title: '删除记忆',
+        description: `确定删除这条记忆吗？\n\n${memory.content}`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await mutations.remove.mutateAsync(memory.id);
       toast.success('记忆已删除');
@@ -108,7 +119,16 @@ export function MemoryPanel() {
   };
 
   const clearAll = async () => {
-    if (!window.confirm('确定清空全部记忆吗？此操作不可恢复，所有记忆及其向量都会被删除。')) return;
+    if (
+      !(await confirm({
+        title: '清空全部记忆',
+        description: '确定清空全部记忆吗？此操作不可恢复，所有记忆及其向量都会被删除。',
+        confirmText: '全部清空',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       const result = await mutations.clear.mutateAsync();
       toast.success(`已清空 ${result.removed} 条记忆`);

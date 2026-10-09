@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
@@ -128,7 +128,6 @@ describe('知识库页面（TR-28.1）', () => {
 
   it('失败文档展示错误 tooltip，确认后删除并调用 DELETE', async () => {
     const failed = doc({ id: 'd2', filename: 'bad.pdf', status: 'failed', errorMessage: 'PDF 解析失败' });
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/knowledge-bases') return ok([KB]);
       if (url === '/api/knowledge-bases/kb1/documents') return ok([failed]);
@@ -142,11 +141,13 @@ describe('知识库页面（TR-28.1）', () => {
     expect(badge).toHaveAttribute('title', 'PDF 解析失败');
 
     await user.click(screen.getByRole('button', { name: '删除文档 bad.pdf' }));
+    // v1.2：window.confirm 已替换为应用内 ConfirmDialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('删除文档');
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/documents/d2', expect.anything()),
     );
-    expect(confirmSpy).toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 
   it('M3 网页剪藏：网页文档带标识与原文链接；弹窗提交 URL 调 /clip', async () => {

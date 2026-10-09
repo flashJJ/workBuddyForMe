@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useFlowMutations, useFlows } from '@/lib/hooks/use-flows';
 import { FlowFormDialog } from './flow-form-dialog';
@@ -26,6 +27,7 @@ export function FlowsListPage() {
   const flowsQuery = useFlows();
   const mutations = useFlowMutations();
   const toast = useToast();
+  const confirm = useConfirm();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<WorkflowView | null>(null);
 
@@ -53,8 +55,17 @@ export function FlowsListPage() {
     }
   };
 
-  const remove = (wf: WorkflowView) => {
-    if (!window.confirm(`删除工作流「${wf.name}」？其全部版本与运行记录将被清除。`)) return;
+  const remove = async (wf: WorkflowView) => {
+    if (
+      !(await confirm({
+        title: '删除工作流',
+        description: `删除工作流「${wf.name}」？其全部版本与运行记录将被清除。`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     void mutations.remove.mutate(wf.id);
   };
 

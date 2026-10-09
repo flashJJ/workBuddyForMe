@@ -78,7 +78,6 @@ describe('助手管理（TR-26.1）', () => {
       if (url.startsWith('/api/assistants/a2')) return ok({ id: 'a2' });
       return ok([]);
     });
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     renderWithProviders(<AssistantsPage />);
 
@@ -87,11 +86,13 @@ describe('助手管理（TR-26.1）', () => {
     expect(within(builtinCard).getByText('内置')).toBeInTheDocument();
 
     await user.click(within(screen.getByTestId('assistant-card-a2')).getByRole('button', { name: '删除' }));
+    // v1.2：window.confirm 已替换为应用内 ConfirmDialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('删除助手');
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/assistants/a2', expect.anything()),
     );
-    expect(confirmSpy).toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 
   it('排序：首个助手下移后提交完整 orderedIds', async () => {

@@ -5,6 +5,7 @@ import type { McpServerInfo } from '@wbfm/shared/types';
 import type { McpServerStatus } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useMcpMutations, useMcpServers } from '@/lib/hooks/use-mcp';
 import { McpServerFormDialog } from './mcp-server-form-dialog';
@@ -33,6 +34,7 @@ export function McpPanel() {
   const { data: servers, isLoading, isError, refetch } = useMcpServers();
   const mutations = useMcpMutations();
   const toast = useToast();
+  const confirm = useConfirm();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<McpServerInfo | null>(null);
 
@@ -57,8 +59,17 @@ export function McpPanel() {
     );
   };
 
-  const remove = (server: McpServerInfo) => {
-    if (!window.confirm(`删除 MCP 服务器「${server.name}」？其工具将从助手中移除。`)) return;
+  const remove = async (server: McpServerInfo) => {
+    if (
+      !(await confirm({
+        title: '删除 MCP 服务器',
+        description: `删除「${server.name}」？其工具将从助手中移除。`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     mutations.remove.mutate(server.id, {
       onSuccess: () => toast.success('已删除'),
       onError: (error) => toast.error(error instanceof ApiClientError ? error.message : '删除失败'),

@@ -13,7 +13,8 @@
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* v1.2 a11y：12px 次要文字在 muted 底上需 ≥4.5:1（原值 47% 仅 4.09:1） */
+    --muted-foreground: 215 20% 40%;
     --accent: 210 40% 94%;
     --accent-foreground: 222 47% 11%;
     --destructive: 0 72% 51%;
@@ -89,6 +90,46 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+  }
+
+  /*
+   * 全局键盘焦点基线（a11y T3.3）：
+   * 原生交互元素（未用 UI 基元的 <button>/<a>/裸 input 等）键盘聚焦时显示统一焦点环；
+   * UI 基元（Button/Input/…）自身带 focus-visible:outline-none + ring-2，
+   * class 选择器优先级高于此元素选择器，不会出现双焦点框。
+   */
+  a:focus-visible,
+  button:focus-visible,
+  [role='button']:focus-visible,
+  [role='option']:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: calc(var(--radius) - 4px);
+  }
+
+  /* 跳到主内容链接：默认视觉隐藏，键盘聚焦时显现（a11y） */
+  .skip-link {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 100;
+    transform: translateY(-150%);
+    border-radius: calc(var(--radius) - 2px);
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    transition: transform 120ms ease;
+  }
+  .skip-link:focus-visible {
+    transform: translateY(0);
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 
   /* M4 桌宠窗 /pet：透明 BrowserWindow 内强制无底色、禁选中与滚动条，

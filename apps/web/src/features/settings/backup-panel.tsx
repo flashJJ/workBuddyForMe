@@ -173,6 +173,7 @@ export function BackupPanel() {
           ref={fileInputRef}
           type="file"
           accept=".tar.gz,.tgz"
+          aria-label="选择备份归档文件（.tar.gz）以恢复"
           className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:text-primary-foreground hover:file:bg-primary/90"
           onChange={onFileChange}
           disabled={restoring}

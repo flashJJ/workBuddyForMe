@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Provider, ProviderModel } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
@@ -118,7 +118,6 @@ describe('设置中心（TR-25.1）', () => {
       if (url.startsWith('/api/models/') && init?.method === 'DELETE') return ok({ id: 'mdl1' });
       return ok(null);
     });
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     renderWithProviders(<ProviderCard provider={PROVIDER} onEdit={() => undefined} />);
 
@@ -139,10 +138,12 @@ describe('设置中心（TR-25.1）', () => {
     });
 
     await user.click(screen.getByLabelText('移除模型 GPT-4o mini'));
+    // v1.2：window.confirm 已替换为应用内 ConfirmDialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('移除模型');
+    await user.click(within(dialog).getByRole('button', { name: '移除' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/models/mdl1', expect.anything()),
     );
-    expect(confirmSpy).toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 });

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import {
   useModelMutations,
@@ -49,6 +50,7 @@ export function ModelManager({ provider }: { provider: Provider }) {
   const modelMutations = useModelMutations();
   const remoteModels = useRemoteModels(provider.id);
   const toast = useToast();
+  const confirm = useConfirm();
   const [form, setForm] = React.useState<AddFormState>(EMPTY_FORM);
 
   const toggleCapability = (capability: ModelCapability) => {
@@ -79,7 +81,16 @@ export function ModelManager({ provider }: { provider: Provider }) {
   };
 
   const removeModel = async (model: ProviderModel) => {
-    if (!window.confirm(`确定移除模型 ${model.displayName}？`)) return;
+    if (
+      !(await confirm({
+        title: '移除模型',
+        description: `确定从该供应商移除模型 ${model.displayName}？`,
+        confirmText: '移除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await modelMutations.remove.mutateAsync(model.id);
       toast.success('模型已移除');

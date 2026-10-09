@@ -5,8 +5,14 @@ import { CommandPaletteHost } from '@/features/command-palette/use-command-palet
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* 键盘用户首站：视觉隐藏，聚焦时显现 */}
+      <a href="#main-content" className="skip-link">
+        跳到主内容
+      </a>
       <AppSidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto outline-none">
+        {children}
+      </main>
       <CommandPaletteHost />
     </div>
   );

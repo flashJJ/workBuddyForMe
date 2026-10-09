@@ -5,6 +5,7 @@ import { Brain } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared/types';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useConversations, useConversationMutations } from '@/lib/hooks/use-conversations';
@@ -31,6 +32,7 @@ export function ChatPage() {
   const { data: models } = useAllModels();
   const conversationMutations = useConversationMutations();
   const toast = useToast();
+  const confirm = useConfirm();
 
   const [assistantId, setAssistantId] = React.useState<string>('');
   const [conversationId, setConversationId] = React.useState<string | null>(null);
@@ -110,7 +112,16 @@ export function ChatPage() {
   };
 
   const remove = async (conversation: { id: string; title: string }) => {
-    if (!window.confirm(`删除对话「${conversation.title}」？`)) return;
+    if (
+      !(await confirm({
+        title: '删除对话',
+        description: `删除对话「${conversation.title}」？`,
+        confirmText: '删除',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await conversationMutations.remove.mutateAsync(conversation.id);
       if (conversationId === conversation.id) setConversationId(null);

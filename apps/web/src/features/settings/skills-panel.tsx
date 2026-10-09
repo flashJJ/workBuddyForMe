@@ -4,6 +4,7 @@ import type { PermissionLevel, SkillInfo } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useSkillMutations, useSkills } from '@/lib/hooks/use-skills';
 
@@ -32,6 +33,7 @@ function shapeSummary(skill: SkillInfo): string {
 function SkillRow({ skill }: { skill: SkillInfo }) {
   const mutations = useSkillMutations();
   const toast = useToast();
+  const confirm = useConfirm();
 
   const toggle = () => {
     mutations.update.mutate(
@@ -44,11 +46,14 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
     );
   };
 
-  const remove = () => {
+  const remove = async () => {
     if (
-      !window.confirm(
-        `删除技能「${skill.name}」的引用？\n\n源文件夹保留在数据目录 skills/ 下不会被删除；重启后若文件夹仍在会重新登记为启用。`,
-      )
+      !(await confirm({
+        title: '删除技能引用',
+        description: `删除技能「${skill.name}」的引用？\n\n源文件夹保留在数据目录 skills/ 下不会被删除；重启后若文件夹仍在会重新登记为启用。`,
+        confirmText: '删除引用',
+        danger: true,
+      }))
     ) {
       return;
     }
