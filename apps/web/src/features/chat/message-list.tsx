@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { Message } from '@wbfm/shared/types';
 import { EmptyState } from '@/components/common/state';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { MessageItem } from './message-item';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function MessageList({ messages, assistantName, streaming, onRetry, onResend, onFeedback }: Props) {
+  const { t } = useI18n();
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -28,8 +30,12 @@ export function MessageList({ messages, assistantName, streaming, onRetry, onRes
     return (
       <div className="flex flex-1 items-center justify-center p-6">
         <EmptyState
-          title="开始新对话"
-          description={streaming ? '正在生成回复…' : '发送第一条消息，助手会在这里回应你。'}
+          title={t('chatMessages.list.emptyTitle')}
+          description={
+            streaming
+              ? t('chatMessages.list.generatingReply')
+              : t('chatMessages.list.emptyDescription')
+          }
         />
       </div>
     );

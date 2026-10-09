@@ -30,7 +30,7 @@ export function DiagnosticsBar({ diagnostics, nodes, onSelectNode, onClose }: Di
   return (
     <div className="absolute bottom-3 left-3 z-10 max-h-44 w-96 overflow-y-auto rounded-lg border bg-card/95 shadow-lg backdrop-blur">
       <div className="flex items-center gap-1.5 border-b px-3 py-1.5 text-xs font-medium">
-        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+        <AlertTriangle className="h-3.5 w-3.5 text-warning" />
         校验问题（{diagnostics.length}）
         <button type="button" className="ml-auto text-muted-foreground hover:text-foreground" onClick={onClose}>
           关闭
@@ -50,9 +50,9 @@ export function DiagnosticsBar({ diagnostics, nodes, onSelectNode, onClose }: Di
               )}
             >
               {d.severity === 'error' ? (
-                <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
               ) : (
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
               )}
               <span className="flex-1 leading-snug">{d.message}</span>
               {d.nodeId && <Crosshair className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />}

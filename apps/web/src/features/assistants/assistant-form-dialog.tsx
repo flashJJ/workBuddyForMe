@@ -15,11 +15,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/common/toast';
-import { ApiClientError } from '@/lib/api/client';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { useAllModels } from '@/lib/hooks/use-settings';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useMcpTools } from '@/lib/hooks/use-mcp';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantToolsField } from './assistant-tools-field';
 import { AssistantMemoryField } from './assistant-memory-field';
 import { AssistantExpressionField } from './assistant-expression-field';
@@ -37,6 +38,7 @@ interface Props {
 type FormState = AssistantFormShape;
 
 export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
+  const { t } = useI18n();
   const isEdit = Boolean(assistant);
   const mutations = useAssistantMutations();
   const { data: models } = useAllModels();
@@ -83,14 +85,14 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     try {
       if (isEdit && assistant) {
         await mutations.update.mutateAsync({ id: assistant.id, body: buildAssistantBody(form) });
-        toast.success('助手已更新');
+        toast.success(t('assistants.form.updated'));
       } else {
         await mutations.create.mutateAsync(buildAssistantBody(form));
-        toast.success('助手已创建');
+        toast.success(t('assistants.form.created'));
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(errorText(error, t, { fallback: 'toast.saveFailed' }));
     } finally {
       setSubmitting(false);
     }
@@ -100,8 +102,8 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? '编辑助手' : '新建助手'}</DialogTitle>
-          <DialogDescription>定义人设、采样参数，可绑定模型与知识库。</DialogDescription>
+          <DialogTitle>{isEdit ? t('assistants.form.editTitle') : t('assistants.form.createTitle')}</DialogTitle>
+          <DialogDescription>{t('assistants.form.description')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <AssistantIdentityFields
@@ -112,21 +114,21 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
           />
 
           <div className="space-y-1.5">
-            <Label htmlFor="assistant-prompt">系统提示词（人设）</Label>
+            <Label htmlFor="assistant-prompt">{t('assistants.form.promptLabel')}</Label>
             <Textarea
               id="assistant-prompt"
               value={form.systemPrompt}
               onChange={(e) => update({ systemPrompt: e.target.value })}
               rows={5}
               maxLength={8000}
-              placeholder="你是一名……"
+              placeholder={t('assistants.form.promptPlaceholder')}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <NumberField
               id="assistant-temperature"
-              label="Temperature（0-2）"
+              label={t('assistants.form.temperatureLabel')}
               value={form.temperature}
               step="0.1"
               min="0"
@@ -135,7 +137,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             />
             <NumberField
               id="assistant-topp"
-              label="Top P（0-1）"
+              label={t('assistants.form.topPLabel')}
               value={form.topP}
               step="0.05"
               min="0"
@@ -144,23 +146,26 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             />
             <NumberField
               id="assistant-maxtokens"
-              label="最大输出 Token（空=不限）"
+              label={t('assistants.form.maxTokensLabel')}
               value={form.maxTokens}
               step="100"
               min="1"
               onChange={(value) => update({ maxTokens: value })}
             />
             <div className="space-y-1.5">
-              <Label htmlFor="assistant-model">绑定模型</Label>
+              <Label htmlFor="assistant-model">{t('assistants.form.modelLabel')}</Label>
               <Select
                 id="assistant-model"
                 value={form.modelId}
                 onChange={(e) => update({ modelId: e.target.value })}
               >
-                <option value="">跟随系统默认</option>
+                <option value="">{t('assistants.form.modelFollowDefault')}</option>
                 {chatModels.map((model) => (
                   <option key={model.id} value={model.id}>
-                    {model.displayName}（{model.modelId}）
+                    {t('assistants.form.modelOption', {
+                      displayName: model.displayName,
+                      modelId: model.modelId,
+                    })}
                   </option>
                 ))}
               </Select>
@@ -168,13 +173,13 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="assistant-kb">关联知识库（自动 RAG）</Label>
+            <Label htmlFor="assistant-kb">{t('assistants.form.kbLabel')}</Label>
             <Select
               id="assistant-kb"
               value={form.knowledgeBaseId}
               onChange={(e) => changeKnowledgeBase(e.target.value)}
             >
-              <option value="">不关联</option>
+              <option value="">{t('assistants.form.kbNone')}</option>
               {knowledgeBases?.map((kb) => (
                 <option key={kb.id} value={kb.id}>
                   {kb.name}
@@ -204,10 +209,10 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.actions.cancel')}
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? '保存中…' : '保存'}
+              {submitting ? t('assistants.form.saving') : t('common.actions.save')}
             </Button>
           </DialogFooter>
         </form>

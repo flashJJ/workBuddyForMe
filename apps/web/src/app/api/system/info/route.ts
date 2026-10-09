@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const GET = defineRoute(() =>
   jsonOk({
     dataDir: getDataRoot(),
-    version: process.env.npm_package_version ?? '0.1.0',
+    version: process.env.APP_VERSION ?? process.env.npm_package_version ?? '0.0.0-dev',
     // v0.9：桌面打包态才有 stdio bin（dev/独立 web 为 null，UI 仅展示 HTTP 接入）
     mcp: {
       nodeBin: process.env.WBFM_MCP_NODE ?? null,

@@ -33,5 +33,9 @@ export type OcrEngine = (typeof OCR_ENGINES)[number];
 export const DOCUMENT_SOURCES = ['upload', 'webpage'] as const;
 export type DocumentSource = (typeof DOCUMENT_SOURCES)[number];
 
-export const THEMES = ['light', 'dark'] as const;
+export const THEMES = ['light', 'dark', 'system'] as const;
 export type Theme = (typeof THEMES)[number];
+
+/** v1.2 国际化语言（核心路径双语；次要面板可回退） */
+export const LANGUAGES = ['zh-CN', 'en-US'] as const;
+export type Language = (typeof LANGUAGES)[number];

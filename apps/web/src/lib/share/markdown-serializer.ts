@@ -1,5 +1,7 @@
+import type { Language } from '@wbfm/shared/constants';
 import type { ConversationSnapshot, SharedMessage } from '@wbfm/core/share';
 import { formatDuration, formatTime } from './share-format';
+import { createShareTranslator } from './share-i18n';
 
 /**
  * 对话快照 → Markdown 字符串（M2 分享）。
@@ -11,16 +13,12 @@ import { formatDuration, formatTime } from './share-format';
  * - 图片直接内联 data URL；代码块原样保留（LLM 输出本就是 markdown）。
  */
 
-const ROLE_TITLE: Record<SharedMessage['role'], string> = {
-  user: '### 🧑 用户',
-  assistant: '### 🤖 助手',
-};
-
 /** 取消息正文：优先多模态 parts，回落 content */
-function messageBody(m: SharedMessage): string {
+function messageBody(m: SharedMessage, imageAlt: string): string {
   if (m.parts.length === 0) return m.content;
+  // imageAlt 由调用方传入（markdown 与 html 产物用词不同）
   return m.parts
-    .map((p) => (p.type === 'text' ? p.text : `![图片](${p.dataUrl})`))
+    .map((p) => (p.type === 'text' ? p.text : `![${imageAlt}](${p.dataUrl})`))
     .join('\n\n');
 }
 
@@ -31,7 +29,11 @@ interface Footnote {
   sourceUrl?: string | null;
 }
 
-export function serializeMarkdown(snap: ConversationSnapshot): string {
+export function serializeMarkdown(
+  snap: ConversationSnapshot,
+  locale: Language = 'zh-CN',
+): string {
+  const tt = createShareTranslator(locale);
   const lines: string[] = [];
   const footnotes: Footnote[] = [];
   const footnoteKey = new Map<string, number>();
@@ -53,45 +55,52 @@ export function serializeMarkdown(snap: ConversationSnapshot): string {
 
   // 文档头
   lines.push(`# ${snap.title}`, '');
-  lines.push(`- 助手：${snap.assistantName ?? '通用助手'}`);
-  lines.push(`- 导出时间：${formatTime(snap.exportedAt)}`);
+  lines.push(
+    `- ${tt('share.headerAssistant', { name: snap.assistantName ?? tt('share.defaultAssistantName') })}`,
+  );
+  lines.push(`- ${tt('share.exportedAt', { time: formatTime(snap.exportedAt) })}`);
   lines.push('', '---', '');
 
   for (const m of snap.messages) {
-    lines.push(`${ROLE_TITLE[m.role]} · ${formatTime(m.createdAt)}`, '');
+    const roleTitle = m.role === 'user' ? tt('share.roleUser') : tt('share.roleAssistant');
+    lines.push(`### ${roleTitle} · ${formatTime(m.createdAt)}`, '');
 
     // 工具过程卡片（助手消息；放在正文前，对应执行时序）
     for (const t of m.toolTrace) {
-      const verdict = t.status === 'ok' ? '✅ 成功' : '❌ 失败';
+      const verdict = t.status === 'ok' ? tt('share.toolOk') : tt('share.toolFailed');
       lines.push(`> 🔧 **${t.tool}** (${formatDuration(t.durationMs)}) → ${verdict}`);
-      if (t.argsSummary) lines.push(`> 参数：${t.argsSummary}`);
-      if (t.status === 'ok' && t.resultSummary) lines.push(`> 结果：${t.resultSummary}`);
-      if (t.status === 'error' && t.error) lines.push(`> 错误：${t.error}`);
+      if (t.argsSummary) lines.push(`> ${tt('share.argsLine', { text: t.argsSummary })}`);
+      if (t.status === 'ok' && t.resultSummary) {
+        lines.push(`> ${tt('share.resultLine', { text: t.resultSummary })}`);
+      }
+      if (t.status === 'error' && t.error) {
+        lines.push(`> ${tt('share.errorLine', { text: t.error })}`);
+      }
       lines.push('');
     }
 
     // 正文 + 引用角标
-    let body = messageBody(m).trim();
+    let body = messageBody(m, tt('share.imageAltMarkdown')).trim();
     if (m.citations.length > 0) {
       const markers = m.citations.map((c) => `[^${cite(c)}]`).join(' ');
       body = `${body} ${markers}`;
     }
-    lines.push(body || '（无文本内容）', '', '---', '');
+    lines.push(body || tt('share.noText'), '', '---', '');
   }
 
   // 脚注定义
   if (footnotes.length > 0) {
-    lines.push('## 引用来源', '');
+    lines.push(`## ${tt('share.refsTitleMarkdown')}`, '');
     for (const f of footnotes) {
       const parts: string[] = [`**${f.documentName}**`];
       if (f.snippet) parts.push(f.snippet);
-      if (f.sourceUrl) parts.push(`[原文链接](${f.sourceUrl})`);
+      if (f.sourceUrl) parts.push(`[${tt('share.sourceLinkMarkdown')}](${f.sourceUrl})`);
       lines.push(`[^${f.index}]: ${parts.join(' — ')}`);
     }
     lines.push('', '---', '');
   }
 
   // 水印
-  lines.push(`*由 WorkBuddy For Me v${snap.appVersion} 生成*`);
+  lines.push(`*${tt('share.watermark', { version: snap.appVersion })}*`);
   return lines.join('\n');
 }

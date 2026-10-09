@@ -1,53 +1,69 @@
-# WorkBuddy For Me 技术博客系列
+# 本地优先桌面 AI 应用技术博客系列
 
-> 一个本地优先 AI 平台的实战复盘，12 篇文章覆盖架构、桌面端、安全、RAG、测试、CI 全链路。
+> 一个单人开发、本地优先的桌面 AI 应用的实战复盘：架构、桌面端、安全、RAG、语音、工作流、工程化全链路。所有文章均已脱敏，独立成文。
 
-## 文章目录
+## 系列目录
+
+| 系列 | 主题 | 篇数 |
+|---|---|---|
+| [v0.1](v0.1/) | 从 0 到 1：Monorepo、进程模型、SSE、RAG、测试与 CI | 12 |
+| [v0.2](v0.2/) | 会动手：工具调用、本地模型、安全沙箱与工程门禁 | 10 |
+| [v0.3](v0.3/) | 什么都能读：多模态视觉、Office/PDF 解析、网页剪藏 | 10 |
+| [v0.4](v0.4/) | 数据随身：备份恢复、对话分享、自动更新与 OCR | 10 |
+| [v0.5](v0.5/) | 记得住：token 预算、递归摘要、长期记忆与评估基线 | 10 |
+| [v0.6](v0.6/) | 会接活：MCP 最小客户端、技能包、权限分级与熔断 | 10 |
+| [v0.7](v0.7/) | 看得见、动得了手：屏幕感知、键鼠执行与任务 Agent | 10 |
+| [v0.8](v0.8/) | Flow Studio：可视化工作流 DAG 引擎 | 10 |
+| [v0.9](v0.9/) | Flow Serving：执行解耦、本地 HTTP API 与 MCP Server | 8 |
+| [v1.0](v1.0/) | 会说话的桌面伙伴：离线语音、Live2D 与桌宠 | 10 |
+| [v1.1](v1.1/) | 内部加固：边界门禁、压缩层、契约派生与评估平台化 | 10 |
+
+## v0.1 系列文章
 
 ### 架构与工程化
 
 | # | 标题 | 关键词 |
 |---|---|---|
-| 01 | [一个人的 AI 平台怎么搭？pnpm Monorepo 分层实战](01-monorepo-architecture.md) | Monorepo、分层架构、依赖单向、Turborepo |
-| 02 | [为什么我给项目设了「单文件 ≤300 行」的硬规则](02-300-line-rule.md) | 代码规范、门禁脚本、可维护性 |
+| 01 | [一个人的全栈 AI 应用怎么搭：pnpm Monorepo 分层实战](v0.1/01-monorepo-architecture.md) | Monorepo、分层架构、依赖单向、Turborepo |
+| 02 | [单文件超过 300 行就不许提交：一个人的全栈生存规则](v0.1/02-300-line-rule.md) | 代码规范、门禁脚本、可维护性 |
 
 ### 桌面端与安全
 
 | # | 标题 | 关键词 |
 |---|---|---|
-| 03 | [Electron 打包后窗口 30 秒不出现：一个 ABI 不匹配的血案](03-electron-abi-pitfall.md) | Electron、Node ABI、fork、native 模块 |
-| 04 | [本地 AI 应用的密钥保卫战：safeStorage 桥接设计](04-secret-storage-bridge.md) | 密钥加密、safeStorage、令牌守卫、脱敏 |
-| 08 | [Electron 桌面应用的进程模型：为什么 fork Next.js standalone](08-electron-process-model.md) | Electron 架构、standalone、进程模型 |
+| 03 | [Electron 打包后窗口 30 秒不出现：一次 ABI 不匹配排查实录](v0.1/03-electron-abi-pitfall.md) | Electron、Node ABI、fork、native 模块 |
+| 04 | [本地 AI 应用的密钥怎么存：safeStorage 桥接设计](v0.1/04-secret-storage-bridge.md) | 密钥加密、safeStorage、令牌守卫、脱敏 |
+| 08 | [Electron 为什么 fork Next.js standalone：一套代码双端跑的进程模型](v0.1/08-electron-process-model.md) | Electron 架构、standalone、进程模型 |
 
 ### AI 与数据
 
 | # | 标题 | 关键词 |
 |---|---|---|
-| 05 | [SQLite + sqlite-vec：100 篇文档内的私域知识库怎么做](05-sqlite-vec-rag.md) | RAG、向量检索、sqlite-vec、分片 |
-| 06 | [SSE 流式对话是怎么炼成的：从上游 chunk 到前端渲染](06-sse-streaming-chat.md) | SSE、流式对话、中断语义、异步生成器 |
-| 07 | [一套代码接入所有大模型：OpenAI 兼容适配器设计](07-openai-compatible-provider.md) | Provider 抽象、OpenAI 兼容、HTTP 重试 |
+| 05 | [不上向量数据库：SQLite + sqlite-vec 做百篇文档级 RAG](v0.1/05-sqlite-vec-rag.md) | RAG、向量检索、sqlite-vec、分片 |
+| 06 | [SSE 流式对话全链路：从上游 chunk 到前端打字机](v0.1/06-sse-streaming-chat.md) | SSE、流式对话、中断语义、异步生成器 |
+| 07 | [一套代码接入所有大模型：OpenAI 兼容适配器设计](v0.1/07-openai-compatible-provider.md) | Provider 抽象、OpenAI 兼容、HTTP 重试 |
 
 ### 工程质量
 
 | # | 标题 | 关键词 |
 |---|---|---|
-| 09 | [统一响应包络 + 领域错误码：让前后端吵架变少](09-api-envelope-error-codes.md) | API 契约、错误码、Zod、端到端校验 |
-| 10 | [外部模型调用 100% mock：四层测试体系的取舍](10-four-layer-testing.md) | 测试策略、mock、覆盖率、依赖注入 |
-| 11 | [一个人的项目也要有 CI：本地一键脚本与 GitHub Actions](11-ci-one-person.md) | CI/CD、Turborepo 缓存、质量门禁 |
+| 09 | [统一响应包络与领域错误码：前后端不再为返回格式扯皮](v0.1/09-api-envelope-error-codes.md) | API 契约、错误码、Zod、端到端校验 |
+| 10 | [外部模型调用 100% mock：四层测试体系的取舍](v0.1/10-four-layer-testing.md) | 测试策略、mock、覆盖率、依赖注入 |
+| 11 | [一个人的项目也要有 CI：本地一键脚本与流水线](v0.1/11-ci-one-person.md) | CI/CD、Turborepo 缓存、质量门禁 |
 
 ### 复盘
 
 | # | 标题 | 关键词 |
 |---|---|---|
-| 12 | [从 0 到 1 做一个本地 AI 平台，我学到了什么](12-retrospective.md) | 复盘、避坑指南、独立开发心法 |
+| 12 | [一个人做完一个本地 AI 应用：10 条工程复盘](v0.1/12-retrospective.md) | 复盘、避坑指南、独立开发心法 |
 
 ## 阅读建议
 
-- **想了解整体架构**：01 → 08 → 12
-- **踩坑向**：03 → 04 → 05
-- **AI 核心**：06 → 07 → 05
-- **工程质量**：02 → 09 → 10 → 11
+- **想了解整体架构**：v0.1-01 → v0.1-08 → v0.1-12
+- **踩坑向**：v0.1-03 → v0.1-04 → v1.1-B09（打包态 worker 死锁与 fork 炸弹）
+- **AI 核心**：v0.1-06 → v0.2-B02 → v0.5 全系列 → v1.0-B04
+- **工程质量**：v0.1-02 → v1.1-B02 → v1.1-B07
 
 ## 关于脱敏
 
-所有文章均已脱敏处理，不包含真实 API Key、内部路径、项目代号。技术细节基于真实实现抽象而来，可放心参考。
+所有文章均已脱敏处理，不包含真实产品名、API Key、内部路径与项目代号。技术细节基于真实实现抽象而来，可放心参考。

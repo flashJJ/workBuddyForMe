@@ -3,15 +3,17 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { filterCommands, type Command, type CommandGroup } from '@wbfm/shared/command';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useCommands, COMMAND_ICONS } from './use-commands';
 
-const GROUP_LABELS: Record<CommandGroup, string> = {
-  navigation: '导航',
-  conversation: '会话',
-  assistant: '助手',
-  settings: '设置',
-  update: '更新',
+const GROUP_LABEL_KEYS: Record<CommandGroup, MessageKey> = {
+  navigation: 'commandPalette.groups.navigation',
+  conversation: 'commandPalette.groups.conversation',
+  assistant: 'commandPalette.groups.assistant',
+  settings: 'commandPalette.groups.settings',
+  update: 'commandPalette.groups.update',
 };
 
 const GROUP_ORDER: CommandGroup[] = ['navigation', 'conversation', 'assistant', 'settings', 'update'];
@@ -26,7 +28,10 @@ interface CommandPaletteProps {
  * 命令面板（M5）：Ctrl+K 唤起，模糊搜索内置命令，↑↓ 导航，Enter 执行，Esc 关闭。
  * 基于 Radix Dialog 实现，无外部聚焦陷阱依赖（手动管理 input 与 list 焦点）。
  */
+const LISTBOX_ID = 'command-palette-listbox';
+
 export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteProps) {
+  const { t } = useI18n();
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -107,28 +112,39 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
           className="fixed left-1/2 top-[20%] z-[51] w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border bg-background shadow-2xl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
+          {/* sr-only 标题：满足 Radix Dialog 的 a11y 名称要求，读屏可播报 */}
+          <DialogPrimitive.Title className="sr-only">
+            {t('commandPalette.title')}
+          </DialogPrimitive.Title>
           <div className="border-b px-4 py-3">
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="输入命令名称…（↑↓ 选择，Enter 执行，Esc 关闭）"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              placeholder={t('commandPalette.placeholder')}
+              aria-label={t('commandPalette.searchLabel')}
+              role="combobox"
+              aria-expanded="true"
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              aria-controls={LISTBOX_ID}
+              aria-activedescendant={flat[activeIndex] ? `command-option-${flat[activeIndex].id}` : undefined}
+              className="w-full rounded bg-transparent text-sm placeholder:text-muted-foreground"
               data-testid="command-input"
             />
           </div>
 
-          <div ref={listRef} className="max-h-80 overflow-y-auto py-2">
+          <div ref={listRef} id={LISTBOX_ID} role="listbox" aria-label={t('commandPalette.listLabel')} className="max-h-80 overflow-y-auto py-2">
             {flat.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                没有匹配「{query}」的命令
+                {t('commandPalette.empty', { query })}
               </div>
             ) : (
               grouped.map(({ group, items }) => (
                 <div key={group} className="mb-1">
                   <div className="px-4 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    {GROUP_LABELS[group]}
+                    {t(GROUP_LABEL_KEYS[group])}
                   </div>
                   {items.map((cmd) => {
                     const globalIndex = flat.indexOf(cmd);
@@ -138,6 +154,9 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
                       <button
                         key={cmd.id}
                         type="button"
+                        role="option"
+                        id={`command-option-${cmd.id}`}
+                        aria-selected={active}
                         data-active={active}
                         data-testid={`command-item-${cmd.id}`}
                         disabled={cmd.disabled}

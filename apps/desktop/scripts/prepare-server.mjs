@@ -83,6 +83,9 @@ const FALLBACK_PACKAGES = [
   // v1.0 本地语音：JS 绑定 + win-x64 原生平台包（.node + onnxruntime DLL）
   'sherpa-onnx-node',
   'sherpa-onnx-win-x64',
+  // v1.2 真机装包验收：sqlite-vec 运行时按平台 require vec0.dll 所在的
+  // 平台子包，tracing 只收了主包；缺它 health 即 500、宿主 30s 超时退出
+  'sqlite-vec-windows-x64',
 ];
 for (const pkg of FALLBACK_PACKAGES) {
   const from = path.join(rootModules, pkg);

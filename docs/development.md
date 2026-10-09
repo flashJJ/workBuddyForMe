@@ -113,11 +113,47 @@ SAC 开启时，electron-builder 重打包产生的未签名 exe（hash 每次�
 4. `pnpm build:web` → `playwright install --with-deps chromium` → `pnpm test:e2e`
 5. 失败时上传 `apps/web/test-results` 与 `playwright-report` 产物
 
-Electron 冒烟需 Windows 环境（better-sqlite3 原生重编译 + electron-builder），当前 CI 未纳入，本机执行 `pnpm test:e2e:desktop`。
+Electron 冒烟需 Windows 环境（better-sqlite3 原生重编译 + electron-builder），质量 CI 未纳入，本机执行 `pnpm test:e2e:desktop`。
+
+`.github/workflows/release.yml`（windows-latest）负责安装包发布：手动触发只产出 artifact；推送 `v*` 标签时构建 NSIS 并发布 **draft** Release（含 latest.yml/blockmap）。流水线会校验标签名与 root package.json 版本一致（`pnpm sync-version:check`），并在打包后运行 `apps/desktop/scripts/verify-artifacts.ps1` 校验版本资源（配置了签名证书时同时校验签名链）。
+
+### Windows 本机构建的 winCodeSign 前置
+
+electron-builder 的 rcedit（写入 exe 图标/版本资源）依赖 `winCodeSign-2.6.0` 工具包。CI 的 Windows runner 可直接解压；**本机非提权终端**解压会因包内两个 macOS dylib 符号链接失败（`Cannot create symbolic link`，7za 报 Sub items Errors 2），需一次性预置缓存：
+
+```powershell
+$env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
+# 触发一次下载（会失败并留下 <随机数>.7z），随后手工解压（忽略 darwin 符号链接错误）：
+$cache = "$env:LOCALAPPDATA\electron-builder\Cache\winCodeSign"
+$7z = "node_modules\7zip-bin\win\x64\7za.exe"
+& $7z x "$cache\<下载得到的>.7z" "-o$cache\winCodeSign-2.6.0" -y   # 两个 dylib 报错可忽略
+```
+
+之后 `dist:win`/`pack:dir` 正常。一劳永逸方案是开启 Windows「开发者模式」（赋予非提权符号链接权限）。
 
 ## 发版流程
 
+发版前：
+
 1. `pnpm check` → `pnpm test:unit` → `pnpm test:integration` → `pnpm build`。
 2. `pnpm test:e2e`；Windows 机器执行 `pnpm test:e2e:desktop`。
-3. `pnpm --filter @wbfm/desktop dist:win` 产出 NSIS 安装包（未签名）。
-4. 数据兼容检查：`data/` 下 SQLite 迁移幂等；发布前用旧版本数据目录启动验证「读兼容」。
+3. 数据兼容检查：`data/` 下 SQLite 迁移幂等；发布前用旧版本数据目录启动验证「读兼容」。
+4. 升版只改 root package.json 的 version，执行 `pnpm sync-version`（同步 apps/web、apps/desktop 的 package.json 与 `packages/shared/src/version.ts`），提交。
+
+发版：
+
+5. 合入 main 后打附注标签 `vX.Y.Z` 并推送 → release.yml 在 Windows runner 上产出 NSIS 并创建 **draft** Release。
+6. 在 GitHub 编辑 draft Release：核对资产（exe/blockmap/latest.yml 三件套）、粘贴并补全发行说明（v1.2 英文草稿：[v1.2-release-notes-en.md](../roadmap/v1.2-release-notes-en.md)，发布前填日期与 sha256），人工转正式发布。
+7. 真机验证：旧版安装包应用内「检查更新」走完整更新链；全新安装走首次启动向导（详见各版本真机验收清单）。
+
+本机构建（调试安装器）用 `pnpm --filter @wbfm/desktop dist:win`（自动 build web → 归集 → electron-builder，`--publish never`），产物在 `apps/desktop/release/`。
+
+### 代码签名（当前未购买证书）
+
+无证书时构建自动跳过全部 signtool（node.exe/elevate.exe/uninstaller/Setup 四点），但 rcedit 正常写入图标与版本资源，安装与自动更新不受影响，代价是首次运行 SmartScreen 可能拦截（引导用户选「仍要运行」）。购买 OV/EV 证书后启用签名，无需改代码：
+
+1. 仓库 Settings → Secrets 添加 `CSC_LINK`（pfx 证书的 base64）与 `CSC_KEY_PASSWORD`；
+2. 重跑标签发布，release.yml 自动签名并加时间戳（CI 内构建时间与打包机时区无关）；
+3. 产物自检会在检测到 `CSC_LINK` 时额外校验签名链为 Valid。
+
+> appId `com.wbfm.desktop` 与 productName 已冻结：更改会被 electron-updater 识别为不同应用并切断跨版本更新链。

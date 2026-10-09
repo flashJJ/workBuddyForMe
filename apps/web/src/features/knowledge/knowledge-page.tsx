@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useDocuments, useKnowledgeBases, useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { KnowledgeBaseFormDialog } from './kb-form-dialog';
 import { UploadDropzone } from './upload-dropzone';
 import { ClipDialog } from './clip-dialog';
@@ -29,11 +31,12 @@ function KnowledgeBaseNav({
   onEdit: (kb: KnowledgeBase) => void;
   onDelete: (kb: KnowledgeBase) => void;
 }) {
+  const { t } = useI18n();
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r bg-muted/30" data-testid="kb-sidebar">
       <div className="p-3">
         <Button type="button" className="w-full" size="sm" onClick={onCreate}>
-          + 新建知识库
+          {t('knowledge.createKb')}
         </Button>
       </div>
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
@@ -60,18 +63,18 @@ function KnowledgeBaseNav({
               <button
                 type="button"
                 className="text-xs text-muted-foreground hover:text-foreground"
-                aria-label={`编辑 ${kb.name}`}
+                aria-label={t('knowledge.editAria', { name: kb.name })}
                 onClick={() => onEdit(kb)}
               >
-                改
+                {t('knowledge.editShort')}
               </button>
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-red-500"
-                aria-label={`删除 ${kb.name}`}
+                className="text-xs text-muted-foreground hover:text-destructive"
+                aria-label={t('knowledge.deleteAria', { name: kb.name })}
                 onClick={() => onDelete(kb)}
               >
-                删
+                {t('knowledge.deleteShort')}
               </button>
             </span>
           </li>
@@ -82,9 +85,11 @@ function KnowledgeBaseNav({
 }
 
 export function KnowledgePage() {
+  const { t } = useI18n();
   const { data: knowledgeBases, isLoading, isError, refetch } = useKnowledgeBases();
   const mutations = useKnowledgeMutations();
   const toast = useToast();
+  const confirm = useConfirm();
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [clipOpen, setClipOpen] = React.useState(false);
@@ -106,13 +111,22 @@ export function KnowledgePage() {
   };
 
   const removeKb = async (kb: KnowledgeBase) => {
-    if (!window.confirm(`删除知识库「${kb.name}」？其中全部文档与向量索引将被清除。`)) return;
+    if (
+      !(await confirm({
+        title: t('knowledge.deleteTitle'),
+        description: t('knowledge.deleteConfirm', { name: kb.name }),
+        confirmText: t('common.actions.delete'),
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await mutations.remove.mutateAsync(kb.id);
       if (activeId === kb.id) setActiveId(null);
-      toast.success('知识库已删除');
+      toast.success(t('knowledge.deleted'));
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '删除失败');
+      toast.error(error instanceof ApiClientError ? error.message : t('knowledge.deleteFailed'));
     }
   };
 
@@ -136,13 +150,13 @@ export function KnowledgePage() {
 
       <main className="min-w-0 flex-1 overflow-y-auto">
         {isError ? (
-          <ErrorState message="知识库加载失败" onRetry={() => void refetch()} />
+          <ErrorState message={t('knowledge.loadError')} onRetry={() => void refetch()} />
         ) : !activeKb ? (
           <div className="flex h-full items-center justify-center p-6">
             <EmptyState
-              title="还没有知识库"
-              description="新建知识库并上传文档，助手即可基于你的资料回答问题。"
-              action={<Button onClick={openCreate}>去新建</Button>}
+              title={t('knowledge.empty.title')}
+              description={t('knowledge.empty.description')}
+              action={<Button onClick={openCreate}>{t('knowledge.empty.action')}</Button>}
             />
           </div>
         ) : (
@@ -156,7 +170,7 @@ export function KnowledgePage() {
                 data-testid="open-clip-dialog"
                 onClick={() => setClipOpen(true)}
               >
-                从网页导入
+                {t('knowledge.importFromWeb')}
               </Button>
             </div>
             <UploadDropzone kbId={activeKb.id} />

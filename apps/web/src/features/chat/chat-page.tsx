@@ -5,7 +5,9 @@ import { Brain } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared/types';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
-import { ApiClientError } from '@/lib/api/client';
+import { useConfirm } from '@/components/common/confirm-dialog';
+import { errorText } from '@/lib/i18n/resolve-error';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useConversations, useConversationMutations } from '@/lib/hooks/use-conversations';
 import { useAllModels, useSettings } from '@/lib/hooks/use-settings';
@@ -31,6 +33,8 @@ export function ChatPage() {
   const { data: models } = useAllModels();
   const conversationMutations = useConversationMutations();
   const toast = useToast();
+  const confirm = useConfirm();
+  const { t } = useI18n();
 
   const [assistantId, setAssistantId] = React.useState<string>('');
   const [conversationId, setConversationId] = React.useState<string | null>(null);
@@ -104,18 +108,28 @@ export function ChatPage() {
       await conversationMutations.rename.mutateAsync({ id, title });
       return true;
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '重命名失败');
+      toast.error(errorText(error, t, { fallback: 'toast.renameFailed' }));
       return false;
     }
   };
 
   const remove = async (conversation: { id: string; title: string }) => {
-    if (!window.confirm(`删除对话「${conversation.title}」？`)) return;
+    if (
+      !(await confirm({
+        title: t('chat.deleteConversationTitle'),
+        description: t('chat.deleteConversationConfirm', { title: conversation.title }),
+        confirmText: t('common.actions.delete'),
+        cancelText: t('common.actions.cancel'),
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     try {
       await conversationMutations.remove.mutateAsync(conversation.id);
       if (conversationId === conversation.id) setConversationId(null);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '删除失败');
+      toast.error(errorText(error, t, { fallback: 'toast.deleteFailed' }));
     }
   };
 
@@ -126,7 +140,7 @@ export function ChatPage() {
     try {
       const ok = await session.confirmTool(action, remember);
       if (!ok) {
-        toast.error('确认提交失败：该请求可能已超时，请重试或停止本轮对话');
+        toast.error(t('toast.toolConfirmSubmitFailed'));
         return false;
       }
       return true;
@@ -197,12 +211,12 @@ export function ChatPage() {
                 className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-1.5 rounded-full border bg-muted/40 px-3 py-1 text-xs text-muted-foreground"
               >
                 <Brain className="h-3 w-3" />
-                本轮参考了 {session.recalledMemories.length} 条长期记忆
+                {t('chat.recalledMemoriesHint', { count: session.recalledMemories.length })}
               </div>
             )}
             <MessageList
               messages={session.messages}
-              assistantName={currentAssistant?.name ?? '助手'}
+              assistantName={currentAssistant?.name ?? t('chat.defaultAssistantName')}
               streaming={session.streaming}
               onRetry={session.retry}
               onResend={session.send}
@@ -211,7 +225,7 @@ export function ChatPage() {
             {companion.proactiveBubble && (
               <ProactiveBubbleBar
                 bubble={companion.proactiveBubble}
-                assistantName={currentAssistant?.name ?? '助手'}
+                assistantName={currentAssistant?.name ?? t('chat.defaultAssistantName')}
                 onDismiss={companion.dismissProactive}
               />
             )}

@@ -88,10 +88,10 @@ function SubstepRow({ step }: { step: ToolSubstep }) {
 }
 
 function SubstepIcon({ status }: { status: ToolSubstep['status'] }) {
-  if (status === 'running') return <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin text-blue-500" />;
-  if (status === 'error') return <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />;
+  if (status === 'running') return <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin text-info" />;
+  if (status === 'error') return <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />;
   if (status === 'skipped') return <Minus className="mt-0.5 h-3 w-3 shrink-0 text-slate-400" />;
-  return <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-green-600" />;
+  return <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-success" />;
 }
 
 function ToolRow({ entry }: { entry: ToolTraceEntry }) {
@@ -117,9 +117,9 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
         {running ? (
           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
         ) : failed ? (
-          <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+          <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
         ) : (
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
         )}
         <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium">{label}</span>
@@ -172,7 +172,7 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
           )}
           <div className="flex gap-2">
             <dt className="w-16 shrink-0">结果</dt>
-            <dd className={cn('break-all', failed && 'text-red-600')}>{entry.resultSummary}</dd>
+            <dd className={cn('break-all', failed && 'text-destructive')}>{entry.resultSummary}</dd>
           </div>
         </dl>
       )}

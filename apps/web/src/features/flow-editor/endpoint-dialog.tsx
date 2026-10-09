@@ -135,12 +135,12 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
         </DialogHeader>
 
         {!published && (
-          <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-700 dark:bg-amber-950/30">
+          <p className="rounded-md border border-warning/30 bg-warning-background p-2 text-xs text-warning">
             流程尚未发布：请先在工具栏「发布」当前版本，发布后才能开启对外调用。
           </p>
         )}
         {ep?.policyRevalidationRequired && (
-          <p className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-700 dark:bg-red-950/30">
+          <p className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
             流程发布了新版本：请重新核对下方无人值守策略并「保存配置」，保存前所有 API/MCP
             调用将被拒绝（409 需重新确认策略）。
           </p>

@@ -18,6 +18,7 @@ import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useProviderMutations, type ProviderCreateBody } from '@/lib/hooks/use-providers';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   open: boolean;
@@ -45,6 +46,7 @@ const EMPTY: FormState = {
 const OLLAMA_DEFAULT_URL = 'http://127.0.0.1:11434';
 
 export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
+  const { t } = useI18n();
   const isEdit = Boolean(provider);
   const mutations = useProviderMutations();
   const toast = useToast();
@@ -97,7 +99,7 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
             ...(form.apiKey ? { apiKey: form.apiKey } : {}),
           },
         });
-        toast.success('供应商已更新');
+        toast.success(t('settingsProviders.form.providerUpdated'));
       } else {
         const body: ProviderCreateBody = {
           name: form.name.trim(),
@@ -107,11 +109,11 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
           ...(isOllama || !form.apiKey ? {} : { apiKey: form.apiKey }),
         };
         await mutations.create.mutateAsync(body);
-        toast.success('供应商已创建');
+        toast.success(t('settingsProviders.form.providerCreated'));
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(error instanceof ApiClientError ? error.message : t('toast.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -121,32 +123,38 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? '编辑供应商' : '新增供应商'}</DialogTitle>
-          <DialogDescription>
-            支持 OpenAI 兼容云服务，或本地 Ollama 模型。
-          </DialogDescription>
+          <DialogTitle>
+            {isEdit ? t('settingsProviders.form.editTitle') : t('settings.addProvider')}
+          </DialogTitle>
+          <DialogDescription>{t('settingsProviders.form.description')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="provider-name">名称</Label>
+            <Label htmlFor="provider-name">{t('common.words.name')}</Label>
             <Input
               id="provider-name"
               value={form.name}
               onChange={(e) => update({ name: e.target.value })}
-              placeholder={isOllama ? '例如：本地 Ollama' : '例如：DeepSeek'}
+              placeholder={
+                isOllama
+                  ? t('settingsProviders.form.namePlaceholderOllama')
+                  : t('settingsProviders.form.namePlaceholderCloud')
+              }
               required
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="provider-protocol">协议</Label>
+            <Label htmlFor="provider-protocol">{t('settingsProviders.form.protocol')}</Label>
             <Select
               id="provider-protocol"
               value={form.protocol}
               disabled={isEdit}
               onChange={(e) => changeProtocol(e.target.value as ProviderProtocol)}
             >
-              <option value="openai-compatible">OpenAI 兼容（云端 / 自建网关）</option>
-              <option value="ollama">Ollama（本地离线模型）</option>
+              <option value="openai-compatible">
+                {t('settingsProviders.form.protocolOpenai')}
+              </option>
+              <option value="ollama">{t('settingsProviders.form.protocolOllama')}</option>
             </Select>
           </div>
           <div className="space-y-1.5">
@@ -169,14 +177,18 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
                 value={form.apiKey}
                 onChange={(e) => update({ apiKey: e.target.value })}
                 placeholder={
-                  isEdit && provider?.apiKeyMasked ? `当前：${provider.apiKeyMasked}（留空不修改）` : 'sk-...'
+                  isEdit && provider?.apiKeyMasked
+                    ? t('settingsProviders.form.apiKeyPlaceholderEdit', {
+                        masked: provider.apiKeyMasked,
+                      })
+                    : 'sk-...'
                 }
               />
             </div>
           )}
           {isOllama && (
             <p className="rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
-              本地 Ollama 无需 API Key。请先安装并运行 Ollama（
+              {t('settingsProviders.form.ollamaHintLead')}
               <a
                 href="https://ollama.com/download"
                 target="_blank"
@@ -185,7 +197,9 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
               >
                 ollama.com/download
               </a>
-              ），再用 <code>ollama pull 模型名</code> 拉取模型。
+              {t('settingsProviders.form.ollamaHintMid')}
+              <code>{t('settingsProviders.form.ollamaHintCommand')}</code>
+              {t('settingsProviders.form.ollamaHintTail')}
             </p>
           )}
           <label className="flex items-center gap-2 text-sm">
@@ -194,14 +208,14 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
               checked={form.enabled}
               onChange={(e) => update({ enabled: e.target.checked })}
             />
-            启用该供应商
+            {t('settingsProviders.form.enableProvider')}
           </label>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.actions.cancel')}
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? '保存中…' : '保存'}
+              {submitting ? t('settings.saving') : t('common.actions.save')}
             </Button>
           </DialogFooter>
         </form>

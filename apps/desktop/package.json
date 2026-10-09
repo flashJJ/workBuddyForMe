@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/desktop",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "WorkBuddy For Me Electron 桌面壳",
   "author": "WorkBuddy For Me",
@@ -13,8 +13,8 @@
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:e2e": "node scripts/run-e2e.mjs",
-    "dist:win": "pnpm build && node scripts/prepare-server.mjs && electron-builder --win --x64",
-    "pack:dir": "pnpm build && node scripts/prepare-server.mjs && electron-builder --dir --x64"
+    "dist:win": "pnpm --filter @wbfm/web build && pnpm build && node scripts/prepare-server.mjs && electron-builder --win --x64 --publish never",
+    "pack:dir": "pnpm --filter @wbfm/web build && pnpm build && node scripts/prepare-server.mjs && electron-builder --dir --x64 --publish never"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -28,4 +28,3 @@
     "electron-updater": "^6.8.9"
   }
 }
-

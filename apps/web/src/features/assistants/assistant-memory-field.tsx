@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/use-i18n';
+
 interface Props {
   checked: boolean;
   onChange: (value: boolean) => void;
@@ -7,6 +9,7 @@ interface Props {
 
 /** 助手编辑表单中的长期记忆开关（v0.5） */
 export function AssistantMemoryField({ checked, onChange }: Props) {
+  const { t } = useI18n();
   return (
     <label className="flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm">
       <input
@@ -17,9 +20,9 @@ export function AssistantMemoryField({ checked, onChange }: Props) {
         onChange={(e) => onChange(e.target.checked)}
       />
       <span>
-        开启长期记忆
+        {t('assistants.memory.label')}
         <span className="ml-1 text-xs text-muted-foreground">
-          （每轮自动召回相关记忆，对话后提取值得记住的信息；需配置嵌入模型）
+          {t('assistants.memory.hint')}
         </span>
       </span>
     </label>

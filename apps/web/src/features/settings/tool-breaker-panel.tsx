@@ -7,23 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useToolBreakers, useToolBreakerMutations } from '@/lib/hooks/use-tool-breakers';
+import { useI18n } from '@/lib/i18n/use-i18n';
+import { useIntl } from '@/lib/i18n/use-intl';
+import { errorText } from '@/lib/i18n/resolve-error';
+import type { MessageKey } from '@wbfm/shared/i18n';
 
-function formatStatus(status: ToolBreakerSnapshot['status']): { label: string; variant: 'warning' | 'danger' } {
-  if (status === 'open') return { label: '熔断中', variant: 'danger' };
-  return { label: '半开试探', variant: 'warning' };
-}
-
-function formatTrippedAt(iso: number | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('zh-CN', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+function statusMeta(
+  status: ToolBreakerSnapshot['status'],
+): { labelKey: MessageKey; variant: 'warning' | 'danger' } {
+  if (status === 'open') {
+    return { labelKey: 'settingsMcp.breaker.statusOpen', variant: 'danger' };
+  }
+  return { labelKey: 'settingsMcp.breaker.statusHalfOpen', variant: 'warning' };
 }
 
 export function ToolBreakerPanel() {
+  const { t } = useI18n();
+  const intl = useIntl();
+  const formatTrippedAt = (iso: number | null) => (iso ? intl.formatCompactDateTime(iso) : '—');
   const { data: breakers, isLoading } = useToolBreakers();
   const mutations = useToolBreakerMutations();
   const toast = useToast();
@@ -31,9 +32,9 @@ export function ToolBreakerPanel() {
   const reset = async (name: string) => {
     try {
       await mutations.reset.mutateAsync(name);
-      toast.success(`已重置 ${name} 的熔断状态`);
+      toast.success(t('settingsMcp.breaker.resetDone', { name }));
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : '重置失败');
+      toast.error(errorText(error, t, { fallback: 'settingsMcp.breaker.resetFailed' }));
     }
   };
 
@@ -41,26 +42,28 @@ export function ToolBreakerPanel() {
     <section className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">工具熔断器</h2>
+          <h2 className="text-lg font-semibold">{t('settingsMcp.breaker.title')}</h2>
           <p className="text-sm text-muted-foreground">
-            连续失败达阈值的工具会自动短期跳过执行；冷却 5 分钟后自动半开重试。
+            {t('settingsMcp.breaker.description')}
           </p>
         </div>
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">加载中…</p>}
+      {isLoading && (
+        <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>
+      )}
 
       {!isLoading && (!breakers || breakers.length === 0) && (
         <EmptyState
-          title="暂无熔断工具"
-          description="所有工具运行正常；连续失败的工具会在此展示并支持手动重置。"
+          title={t('settingsMcp.breaker.emptyTitle')}
+          description={t('settingsMcp.breaker.emptyDescription')}
         />
       )}
 
       {!isLoading && breakers && breakers.length > 0 && (
         <div className="space-y-2">
           {breakers.map((b) => {
-            const { label, variant } = formatStatus(b.status);
+            const { labelKey, variant } = statusMeta(b.status);
             return (
               <div
                 key={b.name}
@@ -70,10 +73,13 @@ export function ToolBreakerPanel() {
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="flex items-center gap-2 font-medium">
                     <code className="rounded bg-muted px-1 text-xs">{b.name}</code>
-                    <Badge variant={variant}>{label}</Badge>
+                    <Badge variant={variant}>{t(labelKey)}</Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    连续失败 {b.failures} 次 · 熔断于 {formatTrippedAt(b.trippedAt)}
+                    {t('settingsMcp.breaker.failuresLine', {
+                      count: b.failures,
+                      date: formatTrippedAt(b.trippedAt),
+                    })}
                   </div>
                 </div>
                 <Button
@@ -84,7 +90,7 @@ export function ToolBreakerPanel() {
                   onClick={() => void reset(b.name)}
                   className="ml-2 shrink-0"
                 >
-                  重置
+                  {t('common.actions.reset')}
                 </Button>
               </div>
             );

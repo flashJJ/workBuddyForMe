@@ -42,6 +42,17 @@ const commandPalette = {
   },
 };
 
+/**
+ * 快捷键浮层桥（v1.2 M5）：主进程 globalShortcut(Ctrl+/) 触发 shortcuts:open。
+ */
+const shortcuts = {
+  onOpen: (cb: () => void): (() => void) => {
+    const handler = () => cb();
+    ipcRenderer.on('shortcuts:open', handler);
+    return () => ipcRenderer.removeListener('shortcuts:open', handler);
+  },
+};
+
 /** 订阅主进程单向广播，返回取消订阅 */
 function subscribe(channel: string, cb: (payload: unknown) => void): () => void {
   const handler = (_event: unknown, payload: unknown) => cb(payload);
@@ -75,5 +86,6 @@ contextBridge.exposeInMainWorld('wbfm', {
   isManaged: Boolean(token),
   updater,
   commandPalette,
+  shortcuts,
   pet,
 });

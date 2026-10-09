@@ -1,24 +1,18 @@
----
-title: "HITL 挂起-恢复：在 SSE 流中间等用户点按钮，120 秒超时与中断的边界"
-series: "WorkBuddy For Me v0.6 技术拆解"
-number: "B05"
-tags: ["workbuddy", "hitl", "sse", "async", "confirmation"]
-date: "2025-Q4"
----
+# 在 SSE 流中间等用户点按钮：人工确认的挂起与恢复
+
+这个本地 AI 应用用 SSE 流式输出回答，同时允许模型在回答过程中调用工具。权限门控决定了「write/danger 要确认」，但工程上这是一个棘手的位置。
 
 ## 问题：工具循环跑到一半，需要等一个人
 
-B04 的权限门控决定了「write/danger 要确认」，但工程上这是一个棘手的位置：工具调用发生在 **SSE 流式回答的中间**——模型刚发了 tool_call，回答流正开着，此时要弹个窗等用户点按钮。
+工具调用发生在 **SSE 流式回答的中间**——模型刚发了 tool_call，回答流正开着，此时要弹个窗等用户点按钮。
 
 这里的本质矛盾：**工具循环是 async 代码，用户确认是 UI 事件**，两者之间隔着「HTTP 请求已经发出、响应流正在进行、而确认要走另一个 HTTP 请求回来」的鸿沟。循环不能 return（流还没完），不能阻塞（Node 没有真阻塞），只能**挂起**。
 
-v0.6 的解法是挂起-恢复机制：服务端一个内存注册表管理「等待中的确认」，SSE 事件通知前端弹窗，用户的决定经独立 POST 路由回来，注册表 resolve 挂起的 Promise，循环继续。这篇拆它的三个部件与三条边界。
-
----
+解法是挂起-恢复机制：服务端一个内存注册表管理「等待中的确认」，SSE 事件通知前端弹窗，用户的决定经独立 POST 路由回来，注册表 resolve 挂起的 Promise，循环继续。这篇拆它的三个部件与三条边界。
 
 ## 部件一：挂起注册表
 
-[pending-confirmations.ts](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/services/pending-confirmations.ts) 是机制的核心，一个内存 Map：
+`packages/core/src/services/pending-confirmations.ts` 是机制的核心，一个内存 Map：
 
 ```typescript
 type Pending = {
@@ -42,8 +36,6 @@ const pending = new Map<string, Pending>();       // key: confirmationId
 
 挂起期间 SSE 流保持打开（心跳照常），前端收到 `confirm_required` 弹窗，用户操作 POST 到 `/api/tools/confirm`，路由查注册表 resolve——**确认请求和对话请求是两个 HTTP 请求，靠 confirmationId 在内存里汇合**。
 
----
-
 ## 部件二：三条边界——超时、中断、重复
 
 挂起的 Promise 必须有出路，否则循环永远挂着。三条边界各处理一种「用户决定永远不会来」的情况：
@@ -56,11 +48,9 @@ const pending = new Map<string, Pending>();       // key: confirmationId
 
 三条边界共享一个不变量：**每条挂起有且仅有一次 resolve，resolve 后注册表必清理**。8 个单测把超时、中断、重复、正常四路径全部钉死。
 
----
-
 ## 部件三：弹窗与三按钮
 
-前端 [tool-confirm-dialog.tsx](file:///e:/code/traeWork/workBuddyForMe/apps/web/src/features/chat/tool-confirm-dialog.tsx) 收到 SSE 事件后弹模态：
+前端 `tool-confirm-dialog.tsx` 收到 SSE 事件后弹模态：
 
 ```text
 ┌─────────────────────────────────────┐
@@ -73,13 +63,11 @@ const pending = new Map<string, Pending>();       // key: confirmationId
 └─────────────────────────────────────┘
 ```
 
-三按钮的语义（对应 remember 字段，B04）：「拒绝」本轮拒绝+模型收到 USER_DENIED；「本次允许」只放行这一次；「一直允许」写 tool_permissions 表，今后该工具（按 remember 范围）免确认。
+三按钮的语义（对应 remember 字段，见上一篇）：「拒绝」本轮拒绝 + 模型收到 USER_DENIED；「本次允许」只放行这一次；「一直允许」写 tool_permissions 表，今后该工具（按 remember 范围）免确认。
 
 徽章颜色（write 黄 / danger 红）不是装饰——它训练用户的风险直觉：黄的多看一眼参数，红的先看目标再决定。**弹窗的信息设计目标是让用户能在 3 秒内做出有依据的决定**：工具名（谁在干活）、参数摘要（要干什么）、目标高亮（对什么干）。
 
 弹窗出现在聊天流内而不是全局模态——确认是这轮对话的一部分，上下文就在弹窗上方，用户不用回忆「刚才它在干嘛」。
-
----
 
 ## 为什么不在客户端等：SSE 单向性的约束
 
@@ -89,16 +77,12 @@ const pending = new Map<string, Pending>();       // key: confirmationId
 
 这个红利值得展开：如果这是多用户 SaaS，挂起注册表要放 Redis、confirmationId 要跨实例路由、超时要防多实例重复触发——每一层都是本地单机不需要付的成本。
 
----
-
 ## 手测验收点
 
-M2 收工后的手测清单（记录在 roadmap）：fetch_webpage 触发弹窗（danger 级）、「一直允许」后同工具不再弹、撤销后恢复弹窗、超时自动拒绝、中断自动拒绝。弹窗链路是 SSE + 状态机 + 跨请求汇合的三重组合，单测再全也要真机走一遍——**异步边界的测试，手测是最后一道**。
-
----
+权限体系收工后的手测清单：fetch_webpage 触发弹窗（danger 级）、「一直允许」后同工具不再弹、撤销后恢复弹窗、超时自动拒绝、中断自动拒绝。弹窗链路是 SSE + 状态机 + 跨请求汇合的三重组合，单测再全也要真机走一遍——**异步边界的测试，手测是最后一道**。
 
 ## 小结
 
 挂起-恢复把「等用户」这件同步的事，拆成了「内存里挂 Promise + SSE 通知 + 独立路由回决定」三个异步部件。三条边界（超时/中断/重复）保证挂起项必收敛，弹窗的信息设计保证决定有依据。
 
-权限与确认体系至此完整。下一篇 B06 换个主题，讲技能包：怎么把「提示词 + 工具白名单」打包成文件夹即插即用的声明式技能。
+权限与确认体系至此完整。下一篇换个主题，讲技能包：怎么把「提示词 + 工具白名单」打包成文件夹即插即用的声明式技能。

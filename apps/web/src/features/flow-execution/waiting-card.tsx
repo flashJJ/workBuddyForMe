@@ -16,8 +16,8 @@ interface WaitingCardProps {
 export function WaitingCard({ node, busy, onSubmitHuman, onToolConfirm }: WaitingCardProps) {
   if (node.type === 'human') {
     return (
-      <div className="mx-4 mb-3 rounded-md border border-amber-500/50 bg-amber-500/5 p-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+      <div className="mx-4 mb-3 rounded-md border border-warning/30 bg-warning-background p-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-warning">
           <UserCheck className="h-4 w-4" />
           人工审核等待中
         </div>
@@ -45,8 +45,8 @@ export function WaitingCard({ node, busy, onSubmitHuman, onToolConfirm }: Waitin
 
   if (node.type === 'tool') {
     return (
-      <div className="mx-4 mb-3 rounded-md border border-amber-500/50 bg-amber-500/5 p-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+      <div className="mx-4 mb-3 rounded-md border border-warning/30 bg-warning-background p-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-warning">
           <ShieldAlert className="h-4 w-4" />
           高危工具请求授权
         </div>

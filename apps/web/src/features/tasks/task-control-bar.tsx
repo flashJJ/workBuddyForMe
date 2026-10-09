@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Pause, Play, Square } from 'lucide-react';
 import type { TaskRunStatus } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**
  * 任务控制条：暂停 / 继续 / 终止。
@@ -19,6 +20,7 @@ export interface TaskControlBarProps {
 }
 
 export function TaskControlBar({ status, onPause, onResume, onStop, disabled }: TaskControlBarProps) {
+  const { t } = useI18n();
   const isActive = status === 'running' || status === 'paused';
   return (
     <div className="flex items-center gap-2 rounded-md border bg-card p-2">
@@ -30,7 +32,7 @@ export function TaskControlBar({ status, onPause, onResume, onStop, disabled }: 
         disabled={disabled || status !== 'running'}
       >
         <Pause className="h-4 w-4" />
-        暂停
+        {t('tasks.control.pause')}
       </Button>
       <Button
         type="button"
@@ -40,7 +42,7 @@ export function TaskControlBar({ status, onPause, onResume, onStop, disabled }: 
         disabled={disabled || status !== 'paused'}
       >
         <Play className="h-4 w-4" />
-        继续
+        {t('tasks.control.resume')}
       </Button>
       <Button
         type="button"
@@ -50,10 +52,10 @@ export function TaskControlBar({ status, onPause, onResume, onStop, disabled }: 
         disabled={disabled || !isActive}
       >
         <Square className="h-4 w-4" />
-        终止
+        {t('tasks.control.stop')}
       </Button>
-      <span className="ml-auto text-xs text-muted-foreground" title="桌面端急停热键">
-        急停：Ctrl+Alt+Esc
+      <span className="ml-auto text-xs text-muted-foreground" title={t('tasks.control.emergencyTitle')}>
+        {t('tasks.control.emergencyHint')}
       </span>
     </div>
   );

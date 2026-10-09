@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultEmbeddingModelId: null,
   theme: 'light',
   language: 'zh-CN',
+  // 全新装机默认未引导；老用户由 v016 迁移显式回填 true
+  hasOnboarded: false,
 };
 
 export function createSettingsService({ db }: ServiceDeps) {

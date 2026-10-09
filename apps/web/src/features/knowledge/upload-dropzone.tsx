@@ -5,6 +5,7 @@ import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { ALLOWED_DOC_EXTENSIONS } from '@wbfm/shared/constants';
 import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   kbId: string;
@@ -17,6 +18,7 @@ function isAllowed(file: File): boolean {
 
 /** 拖拽/点选上传文档；多文件排队提交，后台异步摄入 */
 export function UploadDropzone({ kbId }: Props) {
+  const { t } = useI18n();
   const mutations = useKnowledgeMutations();
   const toast = useToast();
   const [dragging, setDragging] = React.useState(false);
@@ -25,14 +27,22 @@ export function UploadDropzone({ kbId }: Props) {
   const uploadFiles = async (files: File[]) => {
     const valid = files.filter(isAllowed);
     if (valid.length < files.length) {
-      toast.error(`仅支持 ${ALLOWED_DOC_EXTENSIONS.filter((ext) => ext !== '.markdown').join(' / ')} 文件`);
+      toast.error(
+        t('knowledge.upload.unsupported', {
+          extensions: ALLOWED_DOC_EXTENSIONS.filter((ext) => ext !== '.markdown').join(' / '),
+        }),
+      );
     }
     for (const file of valid) {
       try {
         await mutations.uploadDocument.mutateAsync({ kbId, file });
-        toast.success(`已上传 ${file.name}，正在后台索引`);
+        toast.success(t('knowledge.upload.uploaded', { name: file.name }));
       } catch (error) {
-        toast.error(error instanceof ApiClientError ? error.message : `${file.name} 上传失败`);
+        toast.error(
+          error instanceof ApiClientError
+            ? error.message
+            : t('knowledge.upload.uploadFailed', { name: file.name }),
+        );
       }
     }
   };
@@ -56,9 +66,9 @@ export function UploadDropzone({ kbId }: Props) {
         void uploadFiles(Array.from(event.dataTransfer.files));
       }}
     >
-      <p className="text-sm font-medium">拖拽文档到这里，或点击选择文件</p>
+      <p className="text-sm font-medium">{t('knowledge.upload.dropTitle')}</p>
       <p className="text-xs text-muted-foreground">
-        支持 .txt / .md / .pdf / .docx / .xlsx / .pptx，多文件可同时上传
+        {t('knowledge.upload.dropHint')}
       </p>
       <input
         ref={inputRef}
@@ -66,7 +76,7 @@ export function UploadDropzone({ kbId }: Props) {
         multiple
         accept={ALLOWED_DOC_EXTENSIONS.join(',')}
         className="hidden"
-        aria-label="选择文档上传"
+        aria-label={t('knowledge.upload.inputAria')}
         onChange={(event) => {
           void uploadFiles(Array.from(event.target.files ?? []));
           event.target.value = '';

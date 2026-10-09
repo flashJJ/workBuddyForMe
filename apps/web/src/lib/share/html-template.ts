@@ -1,5 +1,7 @@
+import type { Language } from '@wbfm/shared/constants';
 import type { ConversationSnapshot, SharedPart } from '@wbfm/core/share';
 import { formatDuration, formatTime } from './share-format';
+import { createShareTranslator } from './share-i18n';
 
 /**
  * 对话快照 → 独立单文件 HTML（M2 分享）。
@@ -47,13 +49,17 @@ function renderTextBlock(text: string): string {
     .join('\n');
 }
 
-function renderParts(parts: SharedPart[], fallbackContent: string): string {
+function renderParts(
+  parts: SharedPart[],
+  fallbackContent: string,
+  tt: ReturnType<typeof createShareTranslator>,
+): string {
   if (parts.length === 0) return renderProse(fallbackContent);
   return parts
     .map((p) =>
       p.type === 'text'
         ? renderProse(p.text)
-        : `<figure><img src="${p.dataUrl}" alt="分享图片"></figure>`,
+        : `<figure><img src="${p.dataUrl}" alt="${tt('share.imageAltHtml')}"></figure>`,
     )
     .join('\n');
 }
@@ -92,7 +98,11 @@ section.refs details { margin-top:4px; color:#4b5563; } section.refs a { color:#
 footer.watermark { text-align:center; color:#9ca3af; font-size:12px; margin:24px 0 8px; }
 `.trim();
 
-export function renderConversationHtml(snap: ConversationSnapshot): string {
+export function renderConversationHtml(
+  snap: ConversationSnapshot,
+  locale: Language = 'zh-CN',
+): string {
+  const tt = createShareTranslator(locale);
   const refMap = new Map<string, number>();
   const refs: Array<{ name: string; snippet?: string; sourceUrl?: string | null }> = [];
   const citeNo = (documentId: string, ordinal: number, name: string, snippet?: string, sourceUrl?: string | null): number => {
@@ -108,15 +118,21 @@ export function renderConversationHtml(snap: ConversationSnapshot): string {
   const messageHtml = snap.messages
     .map((m) => {
       const roleCls = m.role === 'user' ? 'user' : 'assistant';
-      const roleLabel = m.role === 'user' ? '🧑 用户' : '🤖 助手';
+      const roleLabel = m.role === 'user' ? tt('share.roleUser') : tt('share.roleAssistant');
       const tools = m.toolTrace
         .map((t) => {
           const ok = t.status === 'ok';
-          const verdict = ok ? '✅ 成功' : '❌ 失败';
+          const verdict = ok ? tt('share.toolOk') : tt('share.toolFailed');
           const detail =
-            (t.argsSummary ? `<div class="line">参数：${escapeHtml(t.argsSummary)}</div>` : '') +
-            (ok && t.resultSummary ? `<div class="line">结果：${escapeHtml(t.resultSummary)}</div>` : '') +
-            (!ok && t.error ? `<div class="line">错误：${escapeHtml(t.error)}</div>` : '');
+            (t.argsSummary
+              ? `<div class="line">${tt('share.argsLine', { text: escapeHtml(t.argsSummary) })}</div>`
+              : '') +
+            (ok && t.resultSummary
+              ? `<div class="line">${tt('share.resultLine', { text: escapeHtml(t.resultSummary) })}</div>`
+              : '') +
+            (!ok && t.error
+              ? `<div class="line">${tt('share.errorLine', { text: escapeHtml(t.error) })}</div>`
+              : '');
           return `<div class="tool ${ok ? 'ok' : 'error'}"><div class="head">🔧 ${escapeHtml(t.tool)} · ${formatDuration(t.durationMs)} → ${verdict}</div>${detail}</div>`;
         })
         .join('');
@@ -126,23 +142,25 @@ export function renderConversationHtml(snap: ConversationSnapshot): string {
           return `<sup class="cite"><a href="#cite-${no}">${no}</a></sup>`;
         })
         .join('');
-      return `<section class="msg ${roleCls}"><div class="role">${roleLabel} · ${formatTime(m.createdAt)}</div>${tools}<div class="body">${renderParts(m.parts, m.content)}${badges}</div></section>`;
+      return `<section class="msg ${roleCls}"><div class="role">${roleLabel} · ${formatTime(m.createdAt)}</div>${tools}<div class="body">${renderParts(m.parts, m.content, tt)}${badges}</div></section>`;
     })
     .join('\n');
 
   const refsHtml = refs.length
-    ? `<section class="refs"><h2>引用来源（点击编号展开摘要）</h2><ol>${refs
+    ? `<section class="refs"><h2>${tt('share.refsTitleHtml')}</h2><ol>${refs
         .map(
           (r, i) =>
             `<li id="cite-${i + 1}"><strong>${escapeHtml(r.name)}</strong>${
-              r.snippet ? `<details><summary>查看摘要</summary>${escapeHtml(r.snippet)}</details>` : ''
-            }${r.sourceUrl ? ` <a href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener noreferrer">原文链接 ↗</a>` : ''}</li>`,
+              r.snippet
+                ? `<details><summary>${tt('share.viewSummary')}</summary>${escapeHtml(r.snippet)}</details>`
+                : ''
+            }${r.sourceUrl ? ` <a href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener noreferrer">${tt('share.sourceLinkHtml')}</a>` : ''}</li>`,
         )
         .join('')}</ol></section>`
     : '';
 
   return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="${locale}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -153,11 +171,11 @@ export function renderConversationHtml(snap: ConversationSnapshot): string {
 <div class="wrap">
 <header class="doc">
   <h1>${escapeHtml(snap.title)}</h1>
-  <div class="meta">助手：${escapeHtml(snap.assistantName ?? '通用助手')} · 导出时间：${formatTime(snap.exportedAt)}</div>
+  <div class="meta">${tt('share.headerAssistant', { name: escapeHtml(snap.assistantName ?? tt('share.defaultAssistantName')) })} · ${tt('share.exportedAt', { time: formatTime(snap.exportedAt) })}</div>
 </header>
 ${messageHtml}
 ${refsHtml}
-<footer class="watermark">由 WorkBuddy For Me v${escapeHtml(snap.appVersion)} 生成</footer>
+<footer class="watermark">${tt('share.watermark', { version: escapeHtml(snap.appVersion) })}</footer>
 </div>
 </body>
 </html>`;

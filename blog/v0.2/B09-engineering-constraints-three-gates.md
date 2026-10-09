@@ -1,26 +1,20 @@
----
-title: "工程约束怎么不拖后腿：TS strict + 单文件≤300行 + 外部调用 mock 的三层门禁实战"
-series: "WorkBuddy For Me v0.2 技术拆解"
-number: "B09"
-tags: ["typescript", "testing", "engineering"]
-date: "2025-Q4"
----
+# 三道工程门禁：TS strict、300 行上限与外部调用全 mock
 
-# 工程约束怎么不拖后腿
+单人开发最大的风险不是写不出功能，而是三个月后回头看不懂自己写的东西、改一处崩三处、测试全靠手点。纪律不能靠意志力，得靠机器检查的门禁。这篇讲我们这个本地优先桌面 AI 应用长期坚持的三道工程约束——它们偶尔让开发变慢，但让单人也能 hold 住几十个包的代码库。
 
 ## 约束不是枷锁，是认知成本的下限
 
-"约束"这个词听起来像限制——限制你用 20 种设计模式、限制你把所有逻辑塞一个文件、限制你想用 `any` 就用。但好的约束本质上是**把团队的认知成本固化成可机器检查的规则**：
+「约束」这个词听起来像限制——限制你用 20 种设计模式、限制你把所有逻辑塞一个文件、限制你想用 `any` 就用。但好的约束本质上是**把团队的认知成本固化成可机器检查的规则**：
 
-- "单文件 ≤300 行"不是因为长文件一定坏，而是因为**当它超过 300 行时，大概率可以拆出独立的子模块**，而机器检查可以在你还没意识到时就拦住；
-- "TS strict 全开"不是因为 `any` 不能用，而是因为**一旦你用了 `any`，TypeScript 就失去了大部分价值**，而 strict 模式可以在编译期把类型不匹配暴露出来；
-- "外部调用必须 mock"不是因为真实调用不好，而是因为**单元测试需要确定性**，而真实 HTTP 调用、数据库、文件系统都是不确定的。
+- 「单文件 ≤300 行」不是因为长文件一定坏，而是因为**当它超过 300 行时，大概率可以拆出独立的子模块**，而机器检查可以在你还没意识到时就拦住；
+- 「TS strict 全开」不是因为 `any` 不能用，而是因为**一旦你用了 `any`，TypeScript 就失去了大部分价值**，而 strict 模式可以在编译期把类型不匹配暴露出来；
+- 「外部调用必须 mock」不是因为真实调用不好，而是因为**单元测试需要确定性**，而真实 HTTP 调用、数据库、文件系统都是不确定的。
 
-v0.2 在 v0.1 的基础上强化了三层门禁——每一层都有具体的工具实现、CI 集成和例外处理机制。
+工具链这轮改造新增了大量代码，我们沿用并强化了三层门禁——每一层都有具体的工具实现、CI 集成和例外处理机制。
 
 ## 第一层：TS strict 全开
 
-WorkBuddy For Me 的所有包共享 `tsconfig.base.json`（由 `packages/config` 里的 `repo-invariants.test.ts` 保证），里面：
+所有包共享 `tsconfig.base.json`（由 `packages/config` 里的 `repo-invariants.test.ts` 保证），里面：
 
 ```json
 {
@@ -50,7 +44,7 @@ for (const name of assistant.enabledTools) {
 
 在 strict 但 `noUncheckedIndexedAccess=false` 的情况下，TypeScript 会认为 `ALL_TOOLS[name]` 返回 `Tool`（Record 的值类型），但实际上如果 `name` 是一个不在 Record 里的 string，运行时会返回 `undefined`。开启 `noUncheckedIndexedAccess` 后，类型变成 `Tool | undefined`——你必须在使用前检查。
 
-v0.2 的处理方式是**用类型守卫**让 TypeScript 推断出 `name` 一定存在于 Record 里：
+我们的处理方式是**用类型守卫**让 TypeScript 推断出 `name` 一定存在于 Record 里：
 
 ```typescript
 // orchestrator-helpers.ts
@@ -80,25 +74,25 @@ export interface ToolContext {
 }
 ```
 
-开启 `exactOptionalPropertyTypes` 后，`signal: undefined` 和 `signal` 不存在是两个不同的概念——前者要求你显式赋值 `undefined`，后者可以完全不写。这在构建 `ToolContext` 时有点烦，但好处是**当你看到 `{ signal: undefined }` 时，你知道这是"有意不提供 signal"，而不是"忘了填"**。
+开启 `exactOptionalPropertyTypes` 后，`signal: undefined` 和 `signal` 不存在是两个不同的概念——前者要求你显式赋值 `undefined`，后者可以完全不写。这在构建 `ToolContext` 时有点烦，但好处是**当你看到 `{ signal: undefined }` 时，你知道这是「有意不提供 signal」，而不是「忘了填」**。
 
 ### strict 不是没有出口
 
-如果某个地方确实需要 `any`（比如接第三方库的返回值），WorkBuddy For Me 用 `// @ts-expect-error` + 注释说明理由，而不是在 tsconfig 里关掉 strict。关键原则：**strict 是默认行为，例外需要显式声明并解释**。
+如果某个地方确实需要 `any`（比如接第三方库的返回值），我们用 `// @ts-expect-error` + 注释说明理由，而不是在 tsconfig 里关掉 strict。关键原则：**strict 是默认行为，例外需要显式声明并解释**。
 
 ## 第二层：单文件 ≤300 行
 
-这是 v0.1 就有的约束，v0.2 新增了大量代码后仍然坚持。检查脚本是 `scripts/check-file-lines.mjs`，逻辑简单直接：
+这是项目最早就定下的约束，工具链新增大量代码后仍然坚持。检查脚本是 `scripts/check-file-lines.mjs`，逻辑简单直接：
 
 1. 扫描 `apps/` 和 `packages/` 下所有手写 `.ts/.tsx` 文件；
 2. 物理行数超过 300 的报错并 exit 1；
 3. 白名单在 `scripts/.lines-whitelist.json`，每个豁免必须附理由。
 
-这个脚本在 CI 里作为单独 step 运行（`.github/workflows/ci.yml`），任何 PR 里引入的超限文件都会被拦截。
+这个脚本在 CI 里作为单独 step 运行（`.github/workflows/ci.yml`），任何提交里引入的超限文件都会被拦截。
 
 ### 真实例子：chat-orchestrator.ts 的拆分
 
-v0.2 新增了工具链后，chat orchestrator 的逻辑膨胀了——如果全部塞在一个文件里，很容易超过 500 行。我们把它拆成了：
+工具链上线后，chat orchestrator 的逻辑膨胀了——如果全部塞在一个文件里，很容易超过 500 行。我们把它拆成了：
 
 ```
 packages/core/src/chat/
@@ -112,31 +106,31 @@ packages/core/src/chat/
 ├── types.ts                    (40 行：共享类型定义)
 ```
 
-注意 `chat-orchestrator.ts` 是 299 行——**不是巧合，是拆分的边界**。每次加新功能时，如果 orchestrator 的行数接近 300，就会触发"把这段逻辑抽成独立模块"的思考。
+注意 `chat-orchestrator.ts` 是 299 行——**不是巧合，是拆分的边界**。每次加新功能时，如果 orchestrator 的行数接近 300，就会触发「把这段逻辑抽成独立模块」的思考。
 
 ### 例外处理：为什么 .lines-whitelist.json 有存在必要
 
-v0.2 有一个白名单条目：`packages/database/src/migrations/runner.ts`，理由是"SQLite migrations runner，集中管理所有迁移版本号与执行顺序，拆分后反而破坏阅读性"。这个豁免是合理的——迁移文件确实不适合拆分，但**申请豁免必须附理由**，不能无条件放行。
+白名单里有一个条目：`packages/database/src/migrations/runner.ts`，理由是「SQLite migrations runner，集中管理所有迁移版本号与执行顺序，拆分后反而破坏阅读性」。这个豁免是合理的——迁移文件确实不适合拆分，但**申请豁免必须附理由**，不能无条件放行。
 
 ## 第三层：外部调用必须 mock
 
-WorkBuddy For Me 里的"外部调用"指：**HTTP fetch、数据库操作、文件系统读写、系统时间**。这些东西在单元测试里必须 mock，否则：
+我们这里的「外部调用」指：**HTTP fetch、数据库操作、文件系统读写、系统时间**。这些东西在单元测试里必须 mock，否则：
 
 - HTTP fetch 依赖网络，CI 里可能超时或返回不同结果；
 - 数据库需要起 SQLite，每个测试文件都要 setup/teardown；
 - 文件系统读写可能污染 CI 工作目录；
-- `Date.now()` 依赖真实时钟，测试里没法制造"明天"或"过去"。
+- `Date.now()` 依赖真实时钟，测试里没法制造「明天」或「过去」。
 
 ### Mock 策略：分层替换点
 
-WorkBuddy For Me 在架构设计时就预留了替换点：
+架构设计时就预留了替换点：
 
 | 外部调用 | 替换点 | 测试文件里的 mock |
 |----------|--------|-------------------|
-| HTTP fetch | `@wbfm/ai` 的 `fetch-with-retry` | `vi.mock('node:fetch', ...)` |
+| HTTP fetch | `@app/ai` 的 `fetch-with-retry` | `vi.mock('node:fetch', ...)` |
 | 数据库 | `database` 包的 Repository 接口 | 直接 mock repository 方法（不 mock sqlite） |
 | 时间 | 工具里 `new Date()` / `Date.now()` | `vi.useFakeTimers()` |
-| LangSmith trace | `@wbfm/ai` 的 `tracer.ts` | 环境变量关闭 + `vi.fn()` 返回 null |
+| LangSmith trace | `@app/ai` 的 `tracer.ts` | 环境变量关闭 + `vi.fn()` 返回 null |
 
 ### 真实例子：tool-executor 的测试
 
@@ -214,7 +208,7 @@ CI（`.github/workflows/ci.yml`）按以下顺序执行检查：
 - run: pnpm lint               # 补充：ESLint（prefer-const、no-unused-vars 等）
 ```
 
-顺序很重要——typecheck 和行数检查失败是"确定性拒绝"（代码还没写对），应该先执行；测试失败可能需要调试，放到后面。
+顺序很重要——typecheck 和行数检查失败是「确定性拒绝」（代码还没写对），应该先执行；测试失败可能需要调试，放到后面。
 
 ## 约束什么时候会成为瓶颈
 
@@ -224,15 +218,15 @@ CI（`.github/workflows/ci.yml`）按以下顺序执行检查：
 - 想写 `toolMap.get(call.name)!.run(...)` 但 strict 要求先判空 → 多写 3 行；
 - 想直接在测试里 `fetch('http://localhost:11434')` 但规则要求 mock → 改用 `vi.mock`。
 
-但这些"变慢"换来的是**长期稳定性**：
+但这些「变慢」换来的是**长期稳定性**：
 
-- 300 行门禁保证了每个模块都小到可以理解——review 一个 PR 时，你不需要同时理解 1000 行代码；
+- 300 行门禁保证了每个模块都小到可以理解——review 一个改动时，你不需要同时理解 1000 行代码；
 - strict 编译期报的类型错，比上线后用户遇到的 undefined 错便宜一万倍；
-- mock 测试保证了 CI 结果可重复——"我本地测过了但 CI 红了"这种情况在 WorkBuddy For Me 里很少见。
+- mock 测试保证了 CI 结果可重复——「我本地测过了但 CI 红了」这种情况在我们这里很少见。
 
 ## 小结
 
-v0.2 的三层工程约束：
+这三层工程约束：
 
 | 层 | 工具 | 强制点 | 例外机制 |
 |----|------|--------|---------|
@@ -240,6 +234,6 @@ v0.2 的三层工程约束：
 | 文件规模 | `scripts/check-file-lines.mjs` | 物理行数 ≤300 | `.lines-whitelist.json` + 理由 |
 | 测试 | Vitest + 架构上的依赖注入 | 外部调用不进入单元测试 | E2E 测试里真实调用 |
 
-三层约束的共同原则是：**约束是默认行为，例外需要显式声明并解释**。这保证了在没有额外思考时，开发者总是走"安全、可维护、可测试"的路径。
+三层约束的共同原则是：**约束是默认行为，例外需要显式声明并解释**。这保证了在没有额外思考时，开发者总是走「安全、可维护、可测试」的路径。
 
-B10 是本系列最后一篇——从 v0.1 到 v0.2 的架构债盘点，看看哪些可以还、哪些留给 v0.3。
+B10 是本系列最后一篇：盘点工具链落地后欠下的架构债，看看哪些该还、哪些先不还。

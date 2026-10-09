@@ -1,16 +1,10 @@
----
-title: "附件存储的正确姿势：落盘 + sha256 去重 + 威胁模型取舍"
-series: "WorkBuddy For Me v0.3 技术拆解"
-number: "B04"
-tags: ["workbuddy", "storage", "attachment", "sha256", "security"]
-date: "2025-Q4"
----
+# 附件存储的正确姿势：落盘、sha256 去重与威胁模型
 
 ## 为什么图片不进数据库
 
 第一个想法很诱人：把图片 base64 编码后直接存到 SQLite 的 BLOB 或者 TEXT 列里。代码 5 行搞定，查询 join 一下就拿出来了，不需要额外的文件系统路径管理。
 
-但 v0.1 做文档上传的时候我们已经踩过这个坑——`documents` 表一开始也是存 BLOB，后来改了。原因在附件这里同样成立，甚至更严重：
+但最早做文档上传的时候我们已经踩过这个坑——`documents` 表一开始也是存 BLOB，后来改了。原因在附件这里同样成立，甚至更严重：
 
 1. **SQLite 单文件膨胀**：一张 3MB 的图 base64 后 4MB，存 10 张就是 40MB，数据库文件一下从几 MB 长到几百 MB，备份和同步都变重。
 2. **全表扫描**：你只关心文本消息做全文检索，但 base64 图片的 TEXT 列也在被扫——拖慢所有查询。
@@ -19,14 +13,12 @@ date: "2025-Q4"
 
 所以结论很明确：**二进制只落磁盘，数据库只存元数据和引用**。这篇讲整个 AttachmentService 的设计和实现细节。
 
----
-
 ## 完整设计
 
 ### 文件系统布局
 
-```
-<data-dir>/attachments/<id>.<ext>
+```text
+<应用数据目录>/attachments/<id>.<ext>
 ```
 
 `id` 是 SQLite 自动生成的主键（`INTEGER PRIMARY KEY AUTOINCREMENT`），`ext` 由 mimeType 映射：
@@ -37,11 +29,11 @@ date: "2025-Q4"
 | `image/jpeg` | `.jpg` |
 | `image/webp` | `.webp` |
 
-为什么用数据库 id 而不是 sha256 做文件名？因为 sha256 文件名太长、不容易读（debug 时你会感谢 `att-123.png` 而不是 `7f3a...b2c.png`）。sha256 只在 DB 元数据里做去重查找，文件名用短 id。
+为什么用数据库 id 而不是 sha256 做文件名？因为 sha256 文件名太长、不容易读（debug 时你会感谢 `att-123.png` 而不是一长串 hash 命名的文件）。sha256 只在 DB 元数据里做去重查找，文件名用短 id。
 
 ### 数据库 schema
 
-`packages/database/src/migrations/v003-multimodal.ts`：
+多模态迁移（database 包 migrations 目录）：
 
 ```typescript
 db.exec(`
@@ -63,7 +55,7 @@ db.exec(`CREATE INDEX IF NOT EXISTS idx_attachments_hash ON attachments(content_
 
 ### 服务层全貌
 
-`packages/core/src/services/attachment-service.ts`：
+core 包的 `attachment-service.ts`：
 
 ```typescript
 export function createAttachmentService(deps: ServiceDeps) {
@@ -124,8 +116,6 @@ export function createAttachmentService(deps: ServiceDeps) {
 
 全部同步——AttachmentService 是本地操作，IO 都是 `node:fs` 的 sync 版本，不需要 async/await。
 
----
-
 ## sha256 去重的实现
 
 ```typescript
@@ -146,6 +136,7 @@ if (existing) return mapAttachment(existing);   // 直接返回已有记录，�
 ### 去重的真实价值
 
 假设一个公司里有 50 个员工各自上传了一张公司 logo 截图做头像，sha256 去重之后：
+
 - DB 里只有 1 条 attachment 记录
 - 磁盘上只有 1 份 logo 文件
 - 50 条 message.contentParts 都引用同一个 attachmentId
@@ -156,13 +147,11 @@ if (existing) return mapAttachment(existing);   // 直接返回已有记录，�
 
 文件名和大小都可能重复（不同图片可能同名同大小），sha256 是内容指纹，碰撞概率可以忽略不计。
 
----
-
 ## 威胁模型
 
 ### 场景定义
 
-WorkBuddy For Me 的威胁模型很明确：**本机单用户、不外传、主要风险是文件系统误操作或用户手动清理**。
+我们这个本地优先桌面应用的威胁模型很明确：**本机单用户、不外传、主要风险是文件系统误操作或用户手动清理**。
 
 | 风险 | 是否真实 | 我们怎么处理 |
 |------|----------|-------------|
@@ -179,7 +168,7 @@ WorkBuddy For Me 的威胁模型很明确：**本机单用户、不外传、主�
 - 本地 Ollama 场景：图片根本不出本机，加密是多余的
 - 云端 API 场景：加密了也没用——解密后在内存里就是明文，provider 还是会收到 data URL（除非你自己在客户端加密然后给模型看加密后的图，那模型啥也识别不了）
 
-真的要做加密的话，应该在**发之前就加密图片**（客户端 AES-GCM + 密钥由用户输入），这样 provider 收到的就是加密后的像素。但这超出了 v0.3 的范围——v0.3 的 MVP 假设用户知道自己在做什么。
+真的要做加密的话，应该在**发之前就加密图片**（客户端 AES-GCM + 密钥由用户输入），这样 provider 收到的就是加密后的像素。但这超出了当前版本的范围——MVP 假设用户知道自己在做什么。
 
 ### 为什么文件用明文扩展名
 
@@ -189,13 +178,11 @@ WorkBuddy For Me 的威胁模型很明确：**本机单用户、不外传、主�
 2. 用户手动清理时更容易识别——不会误删
 3. 扩展名不构成安全风险——即使有人替换扩展名，`loadImages` 里用的是 DB 里的 `mimeType`（来自上传时校验），不是从文件名推断
 
----
-
 ## API 层：multipart upload 和回流
 
 ### 上传入口
 
-`apps/web/src/app/api/attachments/route.ts`：
+附件接口的 `route.ts`：
 
 ```typescript
 export async function POST(request: Request) {
@@ -242,11 +229,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 `image_url` 在模型 wire 里用的是 **base64 data URL**（在 `loadImages` 里现算），不是这个 HTTP 端点。这个端点只在前端渲染时用。
 
----
-
 ## 清理与回收
 
-清理孤立附件（文件存在但 message 不引用、或 message 已删除）是 v0.4 的工作。v0.3 里先不做自动清理，手动删除时走一个脚本。
+清理孤立附件（文件存在但 message 不引用、或 message 已删除）是后续版本的工作，这里先不做自动清理，手动删除时走一个脚本。
 
 但有一件事必须做：**附件文件的生命周期应该绑定到 attachment 表的 id 上**。如果有一天我们加了 ON DELETE CASCADE 或者定时清理脚本，逻辑就是：
 
@@ -258,8 +243,6 @@ WHERE mcp.id IS NULL;
 ```
 
 然后 `fs.unlink` 物理删除。这里之所以没把文件路径硬编码在脚本里，就是因为 `AttachmentService` 已经提供了路径拼接函数 `attachmentStorageName`——清理脚本只要调用它就行，不重复造轮子。
-
----
 
 ## 小结
 
@@ -273,4 +256,4 @@ WHERE mcp.id IS NULL;
 
 这套设计在单用户、本地场景下足够简洁、足够安全。如果以后要支持多用户或云存储（S3），只要把 `AttachmentService` 的 `save`/`loadImages`/`read` 的存储层换了就行——上层的 ContentPart 契约完全不用变。
 
-下一篇 B05 讲 Ollama 视觉模型真机踩坑——qwen2.5vl 的 image_url data URL 直传 vs 原生 `/api/chat` images 字段的完整排查链路。
+下一篇讲 Ollama 视觉模型真机踩坑——qwen2.5vl 的 image_url data URL 直传 vs 原生 `/api/chat` images 字段的完整排查链路。

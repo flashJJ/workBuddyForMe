@@ -1,18 +1,12 @@
----
-title: "接入 Ollama 的真实代价：OpenAI 兼容接口 vs 原生 /api/chat、流式解析差异、模型能力探测"
-series: "WorkBuddy For Me v0.2 技术拆解"
-number: "B04"
-tags: ["ollama", "llm", "adapter"]
-date: "2025-Q4"
----
+# 接入 Ollama 本地模型的真实成本
 
-# 接入 Ollama 的真实代价
+「支持本地模型」听起来像是加个 base URL 的事，真接进去才发现：兼容端点不完全兼容、流式字段各家拆法不同、同一个错误在不同版本里表现还不一样。这篇记下我们这个本地优先桌面 AI 应用接入 Ollama 时付出的真实成本——哪些能白嫖兼容协议，哪些必须写特例。
 
 ## 为什么选 OpenAI 兼容端点
 
-WorkBuddy For Me 是一个多 provider 架构——用户可以接云端 OpenAI、Anthropic、也可以接本地 Ollama。多 provider 的好处是用户不被绑死，但代价是每个 provider 都要写一层 adapter。v0.1 写了 OpenAI adapter，到 v0.2 要加 Ollama，最自然的想法是：Ollama 自 0.3 起就提供了 OpenAI 兼容的 `/v1/chat/completions` 端点，是不是可以直接复用现有 adapter？
+我们是多 provider 架构——用户可以接云端 OpenAI、Anthropic，也可以接本地 Ollama。多 provider 的好处是用户不被绑死，但代价是每个 provider 都要写一层 adapter。最早写好了 OpenAI adapter，后来要加 Ollama，最自然的想法是：Ollama 自 0.3 起就提供了 OpenAI 兼容的 `/v1/chat/completions` 端点，是不是可以直接复用现有 adapter？
 
-答案是：**可以复用聊天和向量化，但不能复用模型列表**。原因是 Ollama 早期版本的 `/v1/models` 返回不一致——有的版本返回空数组，有的版本缺少必要字段。而原生 `GET /api/tags` 从 Ollama 0.1 起就稳定返回 `models[]`，字段是 `name`（"qwen2.5:7b"）和 `size`、`modified_at` 等。所以 WorkBuddy For Me 的 Ollama adapter 做了一个"混合策略"：
+答案是：**可以复用聊天和向量化，但不能复用模型列表**。原因是 Ollama 早期版本的 `/v1/models` 返回不一致——有的版本返回空数组，有的版本缺少必要字段。而原生 `GET /api/tags` 从 Ollama 0.1 起就稳定返回 `models[]`，字段是 `name`（"qwen2.5:7b"）和 `size`、`modified_at` 等。所以我们的 Ollama adapter 做了一个「混合策略」：
 
 | 能力 | 走的端点 | 原因 |
 |------|----------|------|
@@ -116,22 +110,22 @@ class ToolCallAccumulator {
 
 Ollama 0.3 在模型不支持工具调用时，返回的 `finish_reason` 可能是 `'stop'` 而不是 `'tool_calls'`——同时 tool_calls 数组为空。这导致两个问题：
 
-1. 模型"想说它不支持 tools"但说得不明显；
+1. 模型「想说它不支持 tools」但说得不明显；
 2. 编排器看到 `toolCalls.length === 0` 就直接结束循环，不会降级重试。
 
-Ollama 0.4 修复了这个问题：不支持时会在 HTTP 层直接返回 400，错误信息里明确包含 `"does not support tools"`。WorkBuddy For Me 在 `tool-runner.ts` 里利用这个信息做降级（见 B02 里的 `runProviderTurnWithToolFallback`），但 0.3 的兼容意味着我们还需要在"成功响应但无 toolCalls + content 为空"时加一层启发式 fallback——直接让编排器进入下一轮（不带 tools），让模型自己出回答。
+Ollama 0.4 修复了这个问题：不支持时会在 HTTP 层直接返回 400，错误信息里明确包含 `"does not support tools"`。我们在 `tool-runner.ts` 里利用这个信息做降级（见 B02 里的 `runProviderTurnWithToolFallback`），但 0.3 的兼容意味着我们还需要在「成功响应但无 toolCalls + content 为空」时加一层启发式 fallback——直接让编排器进入下一轮（不带 tools），让模型自己出回答。
 
 ### 坑 3：usage 字段缺失
 
 OpenAI 的 SSE 流会在最后一个 chunk 里带上 `usage: {prompt_tokens, completion_tokens, total_tokens}`。但 Ollama 的 `/v1/chat/completions` 在流式模式下**不返回 usage**（非流式模式返回）。这导致前端 UI 里的 token 用量永远显示为 null。
 
-WorkBuddy For Me 的解法是：**在 provider 消费侧允许 usage 为 null**，orchestrator 和前端都不依赖这个字段做决策。对于本地用户来说，token 用量本来就不影响计费，只是个调试信息——显示 `null` 比瞎编一个数字强。
+我们的解法是：**在 provider 消费侧允许 usage 为 null**，orchestrator 和前端都不依赖这个字段做决策。对于本地用户来说，token 用量本来就不影响计费，只是个调试信息——显示 `null` 比瞎编一个数字强。
 
 ## 连接管理：冷启动的特殊处理
 
 本地模型有个独有的问题：**冷启动首 token 特别慢**。Ollama 收到请求后可能需要先把模型从磁盘加载到 GPU/CPU 内存，这个过程可能要 10-30 秒。在模型加载期间，HTTP 连接已经建立了（TCP 握手完成），但 Ollama 迟迟不返回第一个响应字节。
 
-标准的 fetch `timeout` 往往把"连接超时"和"首字节超时"绑在一起——如果我们把 `timeout` 设为 30 秒，正常请求里模型加载完但推理慢的情况也会被误杀。WorkBuddy For Me 的 `fetch-with-retry` 里做了两层分离：
+标准的 fetch `timeout` 往往把「连接超时」和「首字节超时」绑在一起——如果我们把 `timeout` 设为 30 秒，正常请求里模型加载完但推理慢的情况也会被误杀。我们的 `fetch-with-retry` 里做了两层分离：
 
 ```typescript
 // packages/ai/src/http/fetch-with-retry.ts（简化）
@@ -155,7 +149,7 @@ export const CHAT_CONNECT_TIMEOUT_MS = 180_000;  // 3 分钟，专为本地模�
 
 ## 模型能力探测：supportsTools 的两层门控
 
-之前 B01 提到过，WorkBuddy For Me 有两层工具能力门控。这里展开一下具体实现：
+之前 B01 提到过，我们设了两层工具能力门控。这里展开一下具体实现：
 
 **Provider 级（硬编码）**：
 
@@ -167,7 +161,7 @@ supportsTools: true,  // Ollama 0.3+ 都兼容 OpenAI function-calling
 supportsTools: true,  // GPT-3.5-turbo / GPT-4 / GPT-4o 都支持
 ```
 
-这个值在 provider 注册时固定，不随具体模型变化。Ollama adapter 里 `supportsTools: true` 指的是"这个 provider 类型整体兼容 tools 协议"，不是"所有 Ollama 模型都支持"。
+这个值在 provider 注册时固定，不随具体模型变化。Ollama adapter 里 `supportsTools: true` 指的是「这个 provider 类型整体兼容 tools 协议」，不是「所有 Ollama 模型都支持」。
 
 **模型级（调用时探测）**：
 
@@ -186,7 +180,7 @@ const outcome = await runProviderTurnWithToolFallback({
 });
 ```
 
-`runProviderTurnWithToolFallback` 的逻辑已经在 B02 里讲过：先试带 tools，400 里含 "does not support tools" 就去掉重试一次。这个设计的妙处在于——**它同时覆盖了两种"不支持"**：
+`runProviderTurnWithToolFallback` 的逻辑已经在 B02 里讲过：先试带 tools，400 里含 "does not support tools" 就去掉重试一次。这个设计的妙处在于——**它同时覆盖了两种「不支持」**：
 
 1. Provider 类型本身不支持（`supportsTools = false`）：toolMap 为空，tools 参数是空数组，直接走纯文本调用。
 2. Provider 支持但具体模型不支持：先用 tools 参数调用收到 400，降级重试。
@@ -197,7 +191,7 @@ const outcome = await runProviderTurnWithToolFallback({
 
 到这里你可能会问：既然有 `/v1/chat/completions` 兼容端点，那原生 `/api/chat` 还有必要碰吗？
 
-v0.2 的答案是**没必要**，但值得把对比列出来，方便 v0.3 做决策：
+目前的答案是**没必要**，但值得把对比列出来，方便以后做决策：
 
 | 维度 | /v1/chat/completions | /api/chat |
 |------|----------------------|-----------|
@@ -208,18 +202,18 @@ v0.2 的答案是**没必要**，但值得把对比列出来，方便 v0.3 做�
 | usage | 流式时缺失 | 流式时**完整**返回 |
 | 兼容性 | Ollama 0.3+ | 所有版本 |
 
-v0.2 选兼容端点的核心理由是**减少维护面**——多写一套 adapter + accumulator + payload 映射只为了拿到流式 usage？在本地用户不在乎 token 计费的场景下，这个性价比很低。视觉输入方面，Ollama 真机实测证明 `/v1/chat/completions` 正确消费 data URL 图片（纯色图被准确描述、prompt_tokens 包含图像），所以没有必要切原生端点。
+我们选兼容端点的核心理由是**减少维护面**——多写一套 adapter + accumulator + payload 映射只为了拿到流式 usage？在本地用户不在乎 token 计费的场景下，这个性价比很低。视觉输入方面，Ollama 真机实测证明 `/v1/chat/completions` 正确消费 data URL 图片（纯色图被准确描述、prompt_tokens 包含图像），所以没有必要切原生端点。
 
-但 `/api/chat` 流式时**返回完整 usage** 这个点值得记下来——如果 v0.3 要做"对话成本统计"，可能需要在 Ollama 专用 provider 上切回原生端点。
+但 `/api/chat` 流式时**返回完整 usage** 这个点值得记下来——以后要做「对话成本统计」，可能需要在 Ollama 专用 provider 上切回原生端点。
 
 ## 小结
 
 接入 Ollama 的核心结论是：
 
-1. **聊天和向量化走 OpenAI 兼容端点，模型列表和探活走原生 `/api/tags`**——这是在"复用代码"和"稳定性"之间的最优权衡。
+1. **聊天和向量化走 OpenAI 兼容端点，模型列表和探活走原生 `/api/tags`**——这是在「复用代码」和「稳定性」之间的最优权衡。
 2. **tool_calls 增量必须 accumulator 拼装**——OpenAI 和 Ollama 都拆包，不攒齐就 parse 会炸。
 3. **流式 usage 缺失不是 bug 而是功能设计**——本地用户不计费，接受 null 比硬编数值好。
 4. **冷启动超时要分层**——连接超时放宽到 3 分钟，请求体流超时独立管理，避免误伤正常推理。
-5. **能力探测用"先试后降级"**——两层门控覆盖 provider 级不支持和模型级不支持两种情况。
+5. **能力探测用「先试后降级」**——两层门控覆盖 provider 级不支持和模型级不支持两种情况。
 
 B05 会专门展开本地模型冷启动的完整话题——连接超时、首 token 延迟、chat 与 completion 端点的分流等。

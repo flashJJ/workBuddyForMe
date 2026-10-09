@@ -3,6 +3,7 @@ import * as React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ThemeProvider } from '@/components/theme/theme-provider';
+import { I18nProvider } from '@/lib/i18n/i18n-context';
 import { AppSidebar } from './app-sidebar';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { renderWithProviders } from '@/test/render';
@@ -40,8 +41,10 @@ describe('应用外壳（TR-23.1）', () => {
 
   it('侧边栏：六个模块导航，当前路由高亮，切换路径更新高亮', () => {
     const { rerender } = render(
-      <ThemeProvider>
-        <AppSidebar />
+      <ThemeProvider skipHydration>
+        <I18nProvider skipHydration>
+          <AppSidebar />
+        </I18nProvider>
       </ThemeProvider>,
     );
     expect(screen.getAllByRole('link')).toHaveLength(6);
@@ -52,8 +55,10 @@ describe('应用外壳（TR-23.1）', () => {
 
     usePathname.mockReturnValue('/knowledge');
     rerender(
-      <ThemeProvider>
-        <AppSidebar />
+      <ThemeProvider skipHydration>
+        <I18nProvider skipHydration>
+          <AppSidebar />
+        </I18nProvider>
       </ThemeProvider>,
     );
     expect(screen.getByRole('link', { name: /知识库/ })).toHaveAttribute(
@@ -63,9 +68,16 @@ describe('应用外壳（TR-23.1）', () => {
   });
 
   it('主题切换：点击后 html 挂 dark 类并可切回', () => {
+    // setTheme 会 PUT 设置表：stub 成功响应，避免失败回滚干扰断言
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ success: true, data: {} }), { status: 200 })),
+    );
     render(
-      <ThemeProvider>
-        <AppSidebar />
+      <ThemeProvider skipHydration>
+        <I18nProvider skipHydration>
+          <AppSidebar />
+        </I18nProvider>
       </ThemeProvider>,
     );
     const toggle = screen.getByRole('button', { name: /切换到深色模式/ });
@@ -84,7 +96,11 @@ describe('应用外壳（TR-23.1）', () => {
         </ErrorBoundary>
       );
     }
-    render(<RecoverableApp />);
+    render(
+      <I18nProvider skipHydration>
+        <RecoverableApp />
+      </I18nProvider>,
+    );
     expect(screen.getByText('页面出了点问题')).toBeInTheDocument();
     expect(screen.getByText(/组件炸了/)).toBeInTheDocument();
 
@@ -99,7 +115,7 @@ describe('应用外壳（TR-23.1）', () => {
           success: true,
           data:
             url === '/api/settings'
-              ? { defaultChatModelId: null, defaultEmbeddingModelId: null, theme: 'light', language: 'zh-CN' }
+              ? { defaultChatModelId: null, defaultEmbeddingModelId: null, theme: 'light', language: 'zh-CN', hasOnboarded: true }
               : url === '/api/system/info'
                 ? { dataDir: '/tmp/wbfm' }
                 : [],

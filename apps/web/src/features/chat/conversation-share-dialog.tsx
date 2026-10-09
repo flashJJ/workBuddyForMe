@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { FileCode2, FileText } from 'lucide-react';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
+import { useI18n } from '@/lib/i18n/use-i18n';
+import { errorText } from '@/lib/i18n/resolve-error';
 
 type ShareFormat = 'markdown' | 'html';
 
@@ -22,9 +25,18 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const FORMATS: Array<{ value: ShareFormat; label: string; hint: string; icon: typeof FileText }> = [
-  { value: 'markdown', label: 'Markdown', hint: '.md，适合粘贴到文档 / GitHub', icon: FileText },
-  { value: 'html', label: 'HTML 网页', hint: '.html 单文件，浏览器直接打开', icon: FileCode2 },
+type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
+
+interface FormatMeta {
+  value: ShareFormat;
+  labelKey: MessageKey | null;
+  hintKey: MessageKey;
+  icon: typeof FileText;
+}
+
+const FORMATS: FormatMeta[] = [
+  { value: 'markdown', labelKey: null, hintKey: 'chat.share.markdownHint', icon: FileText },
+  { value: 'html', labelKey: 'chat.share.htmlLabel', hintKey: 'chat.share.htmlHint', icon: FileCode2 },
 ];
 
 /** 从 Content-Disposition 取文件名：优先 RFC 5987 的 filename*（支持中文） */
@@ -39,16 +51,21 @@ function filenameFromDisposition(cd: string | null, fallback: string): string {
 }
 
 /** 触发浏览器下载（文件名优先取 content-disposition） */
-async function downloadShare(conversationId: string, format: ShareFormat): Promise<void> {
+async function downloadShare(
+  conversationId: string,
+  format: ShareFormat,
+  t: Translate,
+  locale: string,
+): Promise<void> {
   const res = await fetch(
-    `/api/conversations/${conversationId}/export?format=${format}`,
+    `/api/conversations/${conversationId}/export?format=${format}&locale=${encodeURIComponent(locale)}`,
     withManagedHeaders(),
   );
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new ApiClientError(
       body.error?.code ?? 'SHARE_EXPORT_FAILED',
-      body.error?.message ?? `导出失败（${res.status}）`,
+      body.error?.message ?? t('toast.exportFailedStatus', { status: res.status }),
       res.status,
     );
   }
@@ -67,6 +84,7 @@ async function downloadShare(conversationId: string, format: ShareFormat): Promi
 }
 
 export function ConversationShareDialog({ conversationId, open, onOpenChange }: Props) {
+  const { t, locale } = useI18n();
   const toast = useToast();
   const [pending, setPending] = React.useState<ShareFormat | null>(null);
 
@@ -74,11 +92,11 @@ export function ConversationShareDialog({ conversationId, open, onOpenChange }: 
     if (!conversationId || pending) return;
     setPending(format);
     try {
-      await downloadShare(conversationId, format);
-      toast.success('分享文件已生成并开始下载');
+      await downloadShare(conversationId, format, t, locale);
+      toast.success(t('toast.shareDownloaded'));
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '导出失败');
+      toast.error(errorText(error, t, { fallback: 'toast.exportFailed' }));
     } finally {
       setPending(null);
     }
@@ -88,13 +106,11 @@ export function ConversationShareDialog({ conversationId, open, onOpenChange }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>分享对话</DialogTitle>
-          <DialogDescription>
-            选择导出格式。导出内容已自动脱敏 API Key、访问令牌与本地路径。
-          </DialogDescription>
+          <DialogTitle>{t('chat.share.title')}</DialogTitle>
+          <DialogDescription>{t('chat.share.description')}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          {FORMATS.map(({ value, label, hint, icon: Icon }) => (
+          {FORMATS.map(({ value, labelKey, hintKey, icon: Icon }) => (
             <button
               key={value}
               type="button"
@@ -105,15 +121,15 @@ export function ConversationShareDialog({ conversationId, open, onOpenChange }: 
             >
               <Icon className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium">
-                {pending === value ? '生成中…' : label}
+                {pending === value ? t('chat.share.generating') : (labelKey ? t(labelKey) : 'Markdown')}
               </span>
-              <span className="text-xs text-muted-foreground">{hint}</span>
+              <span className="text-xs text-muted-foreground">{t(hintKey)}</span>
             </button>
           ))}
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            取消
+            {t('common.actions.cancel')}
           </Button>
         </DialogFooter>
       </DialogContent>

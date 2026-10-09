@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/common/toast';
+import { openShortcutsOverlay } from '@/features/shortcuts/use-shortcuts-host';
+import { reopenOnboarding } from '@/features/onboarding/use-onboarding-host';
+import { useI18n } from '@/lib/i18n/use-i18n';
+import { useIntl } from '@/lib/i18n/use-intl';
 
 const RELEASES_URL = 'https://github.com/flashJJ/workBuddyForMe/releases';
 
@@ -43,33 +47,6 @@ function useUpdaterStatus() {
   return { bridge, status, setStatus, refresh };
 }
 
-function formatTime(iso: string | null): string {
-  if (!iso) return '尚未检查';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function statusText(status: UpdateStatus): string {
-  switch (status.state) {
-    case 'idle':
-      return '未检查';
-    case 'checking':
-      return '检查中…';
-    case 'available':
-      return `发现新版本 v${status.version}，正在下载…`;
-    case 'not-available':
-      return '已是最新版本';
-    case 'downloading':
-      return `下载中 ${status.percent}%`;
-    case 'downloaded':
-      return `v${status.version} 下载完成，重启以安装`;
-    case 'error':
-      return `更新失败：${status.message}`;
-  }
-}
-
 /** v1.0 M3/M3.5：Live2D 组件与 5 套样本模型的第三方许可声明（随形象功能再分发所必需） */
 const SAMPLE_MODELS = 'Haru（接待员晴）、Hiyori（百濑日和）、Mark（马克）、Mao（虹猫）、Wanko（汪子饼）';
 
@@ -95,17 +72,67 @@ function Live2DLicenseNotice() {
   );
 }
 
+/** v1.2 M5：关于面板快捷入口（重放向导 / 快捷键浮层 / 帮助中心锚点），两个渲染分支共用 */
+function AboutQuickLinks() {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-wrap items-center gap-2" data-testid="about-quick-links">
+      <Button type="button" variant="outline" size="sm" onClick={reopenOnboarding} data-testid="about-replay-wizard">
+        {t('about.replayWizard')}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={openShortcutsOverlay}
+        data-testid="about-shortcuts"
+      >
+        {t('shortcuts.title')}
+      </Button>
+      <a
+        href="#help-center"
+        className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent"
+        data-testid="about-help"
+      >
+        {t('about.helpCenter')}
+      </a>
+    </div>
+  );
+}
+
 export function AboutPanel() {
+  const { t } = useI18n();
+  const intl = useIntl();
   const toast = useToast();
   const { bridge, status, setStatus, refresh } = useUpdaterStatus();
   const [checking, setChecking] = React.useState(false);
+
+  const statusText = (state: UpdateStatus): string => {
+    switch (state.state) {
+      case 'idle':
+        return t('about.status.idle');
+      case 'checking':
+        return t('about.status.checking');
+      case 'available':
+        return t('about.status.available', { version: state.version });
+      case 'not-available':
+        return t('about.status.notAvailable');
+      case 'downloading':
+        return t('about.status.downloading', { percent: state.percent });
+      case 'downloaded':
+        return t('about.status.downloaded', { version: state.version });
+      case 'error':
+        return t('about.status.error', { message: state.message });
+    }
+  };
 
   // 无桥（纯浏览器/SSR）：仅渲染提示，避免页面布局空洞
   if (!bridge || !status) {
     return (
       <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="about-panel">
-        <h3 className="font-medium">关于</h3>
-        <p className="text-xs text-muted-foreground">自动更新检查仅在桌面端可用。</p>
+        <h3 className="font-medium">{t('about.title')}</h3>
+        <p className="text-xs text-muted-foreground">{t('about.desktopOnly')}</p>
+        <AboutQuickLinks />
         <Live2DLicenseNotice />
       </section>
     );
@@ -118,8 +145,10 @@ export function AboutPanel() {
       await bridge.check();
       await refresh();
       const cur = await bridge.getStatus();
-      if (cur.status.state === 'not-available') toast.info('已是最新版本');
-      else if (cur.status.state === 'error') toast.error(`更新检查失败：${cur.status.message}`);
+      if (cur.status.state === 'not-available') toast.info(t('about.upToDate'));
+      else if (cur.status.state === 'error') {
+        toast.error(t('about.checkFailed', { message: cur.status.message }));
+      }
     } finally {
       setChecking(false);
     }
@@ -128,7 +157,11 @@ export function AboutPanel() {
   const handleChannel = async (channel: UpdateChannel) => {
     const next = await bridge.setChannel(channel);
     setStatus(next);
-    toast.info(`已切换到 ${channel === 'beta' ? 'Beta' : '稳定'} 通道`);
+    toast.info(
+      t('about.channelSwitched', {
+        channel: channel === 'beta' ? t('about.channelBeta') : t('about.channelStable'),
+      }),
+    );
   };
 
   const handleInstall = () => {
@@ -139,23 +172,33 @@ export function AboutPanel() {
 
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="about-panel">
-      <h3 className="font-medium">关于</h3>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-medium">{t('about.title')}</h3>
+      </div>
+
+      <AboutQuickLinks />
 
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <span className="block text-xs text-muted-foreground">当前版本</span>
+          <span className="block text-xs text-muted-foreground">
+            {t('about.currentVersion')}
+          </span>
           <span className="font-mono" data-testid="about-version">
             v{status.version}
           </span>
         </div>
         <div>
-          <span className="block text-xs text-muted-foreground">上次检查</span>
-          <span>{formatTime(status.lastCheckAt)}</span>
+          <span className="block text-xs text-muted-foreground">{t('about.lastCheck')}</span>
+          <span>
+            {status.lastCheckAt
+              ? intl.formatDateTime(status.lastCheckAt)
+              : t('about.lastCheckNever')}
+          </span>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="updater-channel">更新通道</Label>
+        <Label htmlFor="updater-channel">{t('about.channelLabel')}</Label>
         <Select
           id="updater-channel"
           data-testid="updater-channel"
@@ -163,11 +206,11 @@ export function AboutPanel() {
           onChange={(e) => void handleChannel(e.target.value as UpdateChannel)}
           disabled={!status.enabled}
         >
-          <option value="stable">稳定版（Stable）</option>
-          <option value="beta">测试版（Beta）</option>
+          <option value="stable">{t('about.channelStableOption')}</option>
+          <option value="beta">{t('about.channelBetaOption')}</option>
         </Select>
         {!status.enabled && (
-          <p className="text-xs text-muted-foreground">开发态不检查更新。</p>
+          <p className="text-xs text-muted-foreground">{t('about.devModeHint')}</p>
         )}
       </div>
 
@@ -178,11 +221,11 @@ export function AboutPanel() {
           disabled={!status.enabled || checking || downloaded}
           data-testid="updater-check"
         >
-          {checking ? '检查中…' : '检查更新'}
+          {checking ? t('about.checking') : t('about.checkUpdate')}
         </Button>
         {downloaded && (
           <Button type="button" onClick={handleInstall} data-testid="updater-install">
-            重启以安装
+            {t('about.installAndRestart')}
           </Button>
         )}
         <span className="text-sm text-muted-foreground" data-testid="updater-status">
@@ -192,11 +235,11 @@ export function AboutPanel() {
 
       {status.status.state === 'error' && (
         <p className="text-xs text-muted-foreground">
-          可前往{' '}
+          {t('about.releaseHintBefore')}{' '}
           <a href={RELEASES_URL} target="_blank" rel="noreferrer" className="text-primary underline">
-            Release 页面
+            {t('about.releaseLink')}
           </a>{' '}
-          手动下载。
+          {t('about.releaseHintAfter')}
         </p>
       )}
 

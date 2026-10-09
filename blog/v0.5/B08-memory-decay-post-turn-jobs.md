@@ -1,24 +1,16 @@
----
-title: "遗忘与善后：软归档三条件、7 天间隔保护、post-turn-jobs 的统一入口"
-series: "WorkBuddy For Me v0.5 技术拆解"
-number: "B08"
-tags: ["workbuddy", "memory", "decay", "background-jobs", "privacy"]
-date: "2025-Q4"
----
+# 遗忘与善后：软归档三条件、7 天间隔保护、post-turn-jobs 的统一入口
 
 ## 问题：记忆库不能只进不出
 
-M3 上线后，记忆库只增不减。用户的偏好会变（「我最近在减脂」三个月后失效）、一次性事件会过期（「下周三要答辩」答辩完就是噪音）、提取模型会记错（低重要性条目本就是「仅参考」级）。
+我们的桌面助手是本地优先的：记忆库只存在用户自己的机器上。长期记忆上线后，它只增不减。用户的偏好会变（「我最近在减脂」三个月后失效）、一次性事件会过期（「下周三要答辩」答辩完就是噪音）、提取模型会记错（低重要性条目本就是「仅参考」级）。
 
 没有遗忘机制的记忆库，半年后会变成一个信噪比持续下降的仓库：召回 Top-3 里塞满过时信息，面板里几百条记忆没人翻得动。**记忆系统的长期可用性取决于遗忘，不亚于取决于记住**。
 
-P1-1 的遗忘策略（[memory-decay.ts](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/memory/memory-decay.ts)）和承载它的回合后作业框架（[post-turn-jobs.ts](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/post-turn-jobs.ts)）是这篇的两个主角。
-
----
+遗忘策略（`memory-decay.ts`）和承载它的回合后作业框架（`post-turn-jobs.ts`）是这篇的两个主角。
 
 ## 遗忘的三条件：与门，缺一不可
 
-归档条件（[constants.ts](file:///e:/code/traeWork/workBuddyForMe/packages/shared/src/constants.ts)）是三个条件的**与**：
+归档条件（`constants.ts`）是三个条件的**与**：
 
 ```typescript
 export const MEMORY_DECAY_MIN_IMPORTANCE = 0.4;    // 重要性低于 0.4
@@ -36,8 +28,6 @@ export const MEMORY_DECAY_ACCESS_STALE_DAYS = 30;   // 从未召回，或上次�
 
 三条件与门的整体语义：遗忘只清理「系统在标记它不重要、时间证明它没用」双重确认过的记忆。
 
----
-
 ## 软归档：「忘记」是淡出视线，不是物理删除
 
 归档是 `status: active → archived`，不是 DELETE：
@@ -53,13 +43,11 @@ WHERE status = 'active'
 
 为什么软而不硬？三个理由：
 
-**隐私闭环的一致性**。B01 说过，v0.5 的记忆哲学是「控制权在用户」。系统自作主张物理删除记忆，哪怕条件再保守，也是对这条原则的破坏。软归档的语义是「系统帮你淡出视线，删除权永远留给你」——面板里可切换查看已归档、可单条恢复、可永久删除。
+**隐私闭环的一致性**。B01 说过，这套记忆系统的哲学是「控制权在用户」。系统自作主张物理删除记忆，哪怕条件再保守，也是对这条原则的破坏。软归档的语义是「系统帮你淡出视线，删除权永远留给你」——面板里可切换查看已归档、可单条恢复、可永久删除。
 
 **召回零成本退出**。B06 提过，检索 SQL 内建 `status = 'active'` 过滤——归档记忆自动退出召回，向量都还在，恢复是 O(1) 状态翻转。
 
 **误归档可逆**。遗忘是启发式判断，一定会错（比如某个低频但关键的记忆恰好三条件全中）。可逆性把「遗忘错了」从数据事故降级为一次点击恢复。
-
----
 
 ## 7 天间隔保护：为什么遗忘不能每轮都跑
 
@@ -74,15 +62,13 @@ if (lastRun && elapsed < MEMORY_DECAY_INTERVAL_DAYS * DAY_MS) {
 
 为什么？遗忘是借回合成功的机会执行的（见下文 post-turn-jobs），而条件里有两个时间窗口（30 天）——**遗忘的结果在 7 天尺度上几乎不变**。每轮对话后跑一次归档查询，99% 的时候归档数是 0，纯粹浪费一次全表扫描。
 
-间隔保护把遗忘从「每轮一次的无用功」变成「每周一次的例行整理」。meta 表 KV 记录上次运行时间，跨重启持久——这正是 v0.5 给 meta 表开 KV 通道的第二个用途（第一个是 B06 的向量维度登记）。测试和手工触发可用 `force: true` 跳过保护，单测靠它验证归档逻辑本身。
-
----
+间隔保护把遗忘从「每轮一次的无用功」变成「每周一次的例行整理」。meta 表 KV 记录上次运行时间，跨重启持久——这正是我们给 meta 表开 KV 通道的第二个用途（第一个是 B06 的向量维度登记）。测试和手工触发可用 `force: true` 跳过保护，单测靠它验证归档逻辑本身。
 
 ## post-turn-jobs：所有回合后作业的统一入口
 
-v0.5 的回合后作业有四个：递归压缩（M2）、摘要记忆化（M2+M3 联动）、记忆提取（M3）、衰减归档（P1-1）。它们如果散落在 orchestrator 各处，会出现两个问题：执行顺序不明（摘要记忆化依赖压缩的产出）、错误处理不一（各处写各的 try/catch）。
+回合后作业有四个：递归压缩、摘要记忆化（压缩与记忆的联动）、记忆提取、衰减归档。它们如果散落在 orchestrator 各处，会出现两个问题：执行顺序不明（摘要记忆化依赖压缩的产出）、错误处理不一（各处写各的 try/catch）。
 
-[post-turn-jobs.ts](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/post-turn-jobs.ts) 把它们收敛成一个统一入口：
+`post-turn-jobs.ts` 把它们收敛成一个统一入口：
 
 ```text
 runPostTurnJobs
@@ -99,15 +85,13 @@ runPostTurnJobs
 
 ```typescript
 function warn(message: string, error: unknown): void {
-  console.warn(`[wbfm] ${message}：${error instanceof Error ? error.message : String(error)}`);
+  console.warn(`[post-turn] ${message}：${error instanceof Error ? error.message : String(error)}`);
 }
 ```
 
 这条原则从 B03 贯穿到现在：回合后作业全是增强，任何一步失败都不影响已完成的回答。四步独立捕获意味着：压缩失败不影响记忆提取，提取失败不影响归档——**故障隔离粒度到步骤**。
 
 **memoryEnabled 的开关语义**：助手关掉记忆时，第 2-4 步整体跳过，但第 1 步（压缩）照常——压缩是上下文管理，与记忆无关。开关的粒度精确到「记忆生命周期」，不误伤其他增强。
-
----
 
 ## 时机选择：为什么借回合成功的机会执行
 
@@ -118,8 +102,6 @@ function warn(message: string, error: unknown): void {
 3. **少一个调度器**。定时任务需要调度器（setInterval + 持久化 + 时区处理），借回合触发只需一个间隔保护。简单性也是设计目标。
 
 代价是：如果用户长期不用，遗忘不会发生——但这恰好是正确的行为：没人用的记忆库，遗忘与否无所谓。
-
----
 
 ## 小结
 

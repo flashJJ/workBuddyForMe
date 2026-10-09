@@ -51,8 +51,8 @@ export function EndpointInvokeCard({
         </div>
       )}
       {revealedKey && (
-        <div className="mt-1.5 rounded border border-emerald-300 bg-emerald-50 p-2 dark:bg-emerald-950/30">
-          <p className="mb-1 text-[11px] text-emerald-700 dark:text-emerald-400">
+        <div className="mt-1.5 rounded border border-success/30 bg-success-background p-2">
+          <p className="mb-1 text-[11px] text-success">
             明文密钥只显示这一次，请立即复制保存：
           </p>
           <div className="flex items-center gap-2">

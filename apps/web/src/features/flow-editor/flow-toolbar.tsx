@@ -55,7 +55,7 @@ export function FlowToolbar({
           <span className="text-sm font-semibold">{workflow.name}</span>
           <Badge variant={badge.variant}>{badge.label}</Badge>
           <span className="text-[11px] text-muted-foreground">v{version}</span>
-          {dirty && <span className="text-[11px] text-amber-500">未保存</span>}
+          {dirty && <span className="text-[11px] text-warning">未保存</span>}
         </div>
       </div>
 
@@ -63,9 +63,9 @@ export function FlowToolbar({
         {diagnosticCount !== null && (
           <Button variant="ghost" size="sm" onClick={onValidate} title="重新校验">
             {diagnosticCount === 0 ? (
-              <span className="text-xs text-emerald-600 dark:text-emerald-400">校验通过</span>
+              <span className="text-xs text-success">校验通过</span>
             ) : (
-              <span className="text-xs text-red-500">{diagnosticCount} 个问题</span>
+              <span className="text-xs text-destructive">{diagnosticCount} 个问题</span>
             )}
           </Button>
         )}

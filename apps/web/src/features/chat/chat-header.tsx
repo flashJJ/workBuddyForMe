@@ -3,6 +3,7 @@
 import { Archive, Share2 } from 'lucide-react';
 import type { Assistant, Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantSwitcher } from './assistant-switcher';
 
 interface Props {
@@ -23,6 +24,7 @@ export function ChatHeader({
   onShowSummary,
   onShare,
 }: Props) {
+  const { t } = useI18n();
   return (
     <header className="flex items-center justify-between border-b px-4 py-2.5">
       <AssistantSwitcher assistants={assistants} value={assistantId} onChange={onAssistantChange} />
@@ -32,11 +34,11 @@ export function ChatHeader({
             type="button"
             data-testid="compaction-badge"
             onClick={onShowSummary}
-            title="查看模型自动生成的早期对话摘要"
+            title={t('chat.viewSummaryTitle')}
             className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
           >
             <Archive className="h-3 w-3" />
-            已压缩 {currentConversation.summaryTurns} 条早期消息
+            {t('chat.compactedBadge', { count: currentConversation.summaryTurns })}
           </button>
         ) : null}
         <Button
@@ -48,9 +50,9 @@ export function ChatHeader({
           onClick={onShare}
         >
           <Share2 className="mr-1 h-3.5 w-3.5" />
-          分享
+          {t('common.actions.share')}
         </Button>
-        <span className="text-xs text-muted-foreground">本地私有 · 流式输出</span>
+        <span className="text-xs text-muted-foreground">{t('chat.localPrivateStreaming')}</span>
       </div>
     </header>
   );

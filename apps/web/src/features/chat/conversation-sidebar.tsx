@@ -3,6 +3,7 @@
 import type { Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/state';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   conversations: Conversation[];
@@ -23,16 +24,17 @@ export function ConversationSidebar({
   onRename,
   onDelete,
 }: Props) {
+  const { t } = useI18n();
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r bg-muted/30" data-testid="conversation-sidebar">
       <div className="p-3">
         <Button type="button" className="w-full" size="sm" onClick={onNew} disabled={disabled}>
-          + 新对话
+          + {t('chat.newConversationTitle')}
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3">
         {conversations.length === 0 ? (
-          <EmptyState title="暂无对话" description="发送消息后自动保存到这里。" />
+          <EmptyState title={t('chat.sidebar.emptyTitle')} description={t('chat.sidebar.emptyDescription')} />
         ) : (
           <ul className="space-y-0.5">
             {conversations.map((conversation) => (
@@ -55,18 +57,18 @@ export function ConversationSidebar({
                     <button
                       type="button"
                       className="text-xs text-muted-foreground hover:text-foreground"
-                      aria-label={`重命名 ${conversation.title}`}
+                      aria-label={t('chat.sidebar.renameAria', { title: conversation.title })}
                       onClick={() => onRename(conversation)}
                     >
-                      改
+                      {t('chat.sidebar.renameShort')}
                     </button>
                     <button
                       type="button"
-                      className="text-xs text-muted-foreground hover:text-red-500"
-                      aria-label={`删除 ${conversation.title}`}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                      aria-label={t('chat.sidebar.deleteAria', { title: conversation.title })}
                       onClick={() => onDelete(conversation)}
                     >
-                      删
+                      {t('chat.sidebar.deleteShort')}
                     </button>
                   </span>
                 </div>

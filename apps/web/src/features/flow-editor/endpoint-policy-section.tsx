@@ -57,7 +57,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
       </div>
       {dangerNodes.length > 0 && (
         <div className="mt-2 rounded bg-background p-2">
-          <p className="text-amber-600 dark:text-amber-400">
+          <p className="text-warning">
             当前发布图含 {dangerNodes.length} 个写入/高危节点：
           </p>
           <div className="mt-1 flex flex-col gap-1">
@@ -77,7 +77,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
                   />
                   <span className="font-mono">{node.toolName}</span>
                   <span className="rounded bg-muted px-1 text-[10px]">{node.permission}</span>
-                  {banned && <span className="text-red-500">桌面控制类，API/MCP 永久禁止</span>}
+                  {banned && <span className="text-destructive">桌面控制类，API/MCP 永久禁止</span>}
                 </label>
               );
             })}

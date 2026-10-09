@@ -2,20 +2,20 @@
 
 import * as React from 'react';
 import type { AppSettings, ProviderModel } from '@wbfm/shared/types';
+import type { Language } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/common/toast';
-import { ApiClientError } from '@/lib/api/client';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { apiGet } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';
 import { useAllModels, useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
-
-function modelLabel(model: ProviderModel): string {
-  return `${model.displayName}（${model.modelId}）`;
-}
+import { useTheme, type ThemePreference } from '@/components/theme/theme-provider';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 function DataDirField() {
+  const { t } = useI18n();
   const [dataDir, setDataDir] = React.useState<string>('');
   const toast = useToast();
 
@@ -32,21 +32,21 @@ function DataDirField() {
   const copy = async () => {
     if (!dataDir) return;
     await copyText(dataDir);
-    toast.success('数据目录已复制');
+    toast.success(t('settings.defaults.dataDirCopied'));
   };
 
   return (
     <div className="space-y-1.5">
-      <Label>本地数据目录</Label>
+      <Label>{t('settings.defaults.dataDir')}</Label>
       <div className="flex gap-2">
         <input
           readOnly
           value={dataDir}
-          aria-label="本地数据目录"
+          aria-label={t('settings.defaults.dataDir')}
           className="h-9 flex-1 truncate rounded-md border bg-muted px-3 text-sm text-muted-foreground"
         />
         <Button type="button" variant="outline" size="sm" onClick={() => void copy()}>
-          复制
+          {t('common.actions.copy')}
         </Button>
       </div>
     </div>
@@ -54,10 +54,13 @@ function DataDirField() {
 }
 
 export function DefaultsPanel() {
+  const { t, locale, setLocale } = useI18n();
   const { data: settings } = useSettings();
   const { data: models } = useAllModels();
   const updateSettings = useUpdateSettings();
   const toast = useToast();
+  // 主题以 ThemeProvider 为唯一写路径（侧栏切换/设置下拉/系统三态共用，实时换肤并双写设置表）
+  const { theme, setTheme } = useTheme();
   const [draft, setDraft] = React.useState<AppSettings | null>(null);
 
   React.useEffect(() => {
@@ -71,28 +74,31 @@ export function DefaultsPanel() {
     model.capabilities.includes('embedding'),
   );
 
+  const modelLabel = (model: ProviderModel): string =>
+    t('settings.defaults.modelOptionLabel', { displayName: model.displayName, modelId: model.modelId });
+
   const save = async (patch: Partial<AppSettings>) => {
     try {
       const next = await updateSettings.mutateAsync(patch);
       setDraft(next);
-      toast.success('设置已保存');
+      toast.success(t('settings.defaults.settingsSaved'));
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(errorText(error, t, { fallback: 'toast.saveFailed' }));
     }
   };
 
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="defaults-panel">
-      <h3 className="font-medium">默认偏好</h3>
+      <h3 className="font-medium">{t('settings.defaults.title')}</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="default-chat-model">默认对话模型</Label>
+          <Label htmlFor="default-chat-model">{t('settings.defaults.chatModel')}</Label>
           <Select
             id="default-chat-model"
             value={draft.defaultChatModelId ?? ''}
             onChange={(e) => void save({ defaultChatModelId: e.target.value || null })}
           >
-            <option value="">未选择</option>
+            <option value="">{t('settings.defaults.notSelected')}</option>
             {chatModels.map((model) => (
               <option key={model.id} value={model.id}>
                 {modelLabel(model)}
@@ -101,13 +107,13 @@ export function DefaultsPanel() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="default-embedding-model">默认向量模型（知识库）</Label>
+          <Label htmlFor="default-embedding-model">{t('settings.defaults.embeddingModel')}</Label>
           <Select
             id="default-embedding-model"
             value={draft.defaultEmbeddingModelId ?? ''}
             onChange={(e) => void save({ defaultEmbeddingModelId: e.target.value || null })}
           >
-            <option value="">未选择</option>
+            <option value="">{t('settings.defaults.notSelected')}</option>
             {embeddingModels.map((model) => (
               <option key={model.id} value={model.id}>
                 {modelLabel(model)}
@@ -116,21 +122,31 @@ export function DefaultsPanel() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="theme-preference">主题</Label>
+          <Label htmlFor="theme-preference">{t('settings.defaults.theme')}</Label>
           <Select
             id="theme-preference"
-            value={draft.theme}
-            onChange={(e) => void save({ theme: e.target.value as AppSettings['theme'] })}
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as ThemePreference)}
           >
-            <option value="light">浅色</option>
-            <option value="dark">深色</option>
+            <option value="light">{t('settings.defaults.themeLight')}</option>
+            <option value="dark">{t('settings.defaults.themeDark')}</option>
+            <option value="system">{t('settings.defaults.themeSystem')}</option>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="language-preference">{t('common.language.label')}</Label>
+          <Select
+            id="language-preference"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as Language)}
+          >
+            <option value="zh-CN">{t('common.language.zhCN')}</option>
+            <option value="en-US">{t('common.language.enUS')}</option>
           </Select>
         </div>
       </div>
       <DataDirField />
-      <p className="text-xs text-muted-foreground">
-        助手可单独指定模型；未指定时使用上方默认对话模型。设置项即时保存。
-      </p>
+      <p className="text-xs text-muted-foreground">{t('settings.defaults.hint')}</p>
     </section>
   );
 }

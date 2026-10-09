@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   kbId: string;
@@ -24,6 +25,7 @@ interface Props {
 
 /** v0.3 网页剪藏：贴 URL → 后台抓取/抽取/摄入，文档列表轮询复用既有状态 */
 export function ClipDialog({ kbId, open, onOpenChange }: Props) {
+  const { t } = useI18n();
   const mutations = useKnowledgeMutations();
   const toast = useToast();
   const [url, setUrl] = React.useState('');
@@ -35,15 +37,15 @@ export function ClipDialog({ kbId, open, onOpenChange }: Props) {
   const submit = async () => {
     const trimmed = url.trim();
     if (!/^https?:\/\//i.test(trimmed)) {
-      toast.error('网址必须以 http:// 或 https:// 开头');
+      toast.error(t('knowledge.clip.invalidUrl'));
       return;
     }
     try {
       await mutations.clipDocument.mutateAsync({ kbId, url: trimmed });
-      toast.success('网页已提交，正在后台抽取正文并索引');
+      toast.success(t('knowledge.clip.submitted'));
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '网页剪藏失败');
+      toast.error(error instanceof ApiClientError ? error.message : t('knowledge.clip.failed'));
     }
   };
 
@@ -51,13 +53,13 @@ export function ClipDialog({ kbId, open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>从网页导入</DialogTitle>
+          <DialogTitle>{t('knowledge.clip.title')}</DialogTitle>
           <DialogDescription>
-            粘贴公开文章链接，自动抽取标题与正文入库；仅支持 http/https，无法抓取内网或需登录页面。
+            {t('knowledge.clip.description')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <Label htmlFor="clip-url">网页地址</Label>
+          <Label htmlFor="clip-url">{t('knowledge.clip.urlLabel')}</Label>
           <Input
             id="clip-url"
             data-testid="clip-url-input"
@@ -71,7 +73,7 @@ export function ClipDialog({ kbId, open, onOpenChange }: Props) {
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            取消
+            {t('common.actions.cancel')}
           </Button>
           <Button
             type="button"
@@ -79,7 +81,9 @@ export function ClipDialog({ kbId, open, onOpenChange }: Props) {
             disabled={mutations.clipDocument.isPending}
             onClick={() => void submit()}
           >
-            {mutations.clipDocument.isPending ? '抓取中…' : '开始导入'}
+            {mutations.clipDocument.isPending
+              ? t('knowledge.clip.fetching')
+              : t('knowledge.clip.submit')}
           </Button>
         </DialogFooter>
       </DialogContent>

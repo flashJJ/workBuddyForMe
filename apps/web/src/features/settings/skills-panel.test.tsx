@@ -122,8 +122,11 @@ describe('技能包面板（v0.6 M3）', () => {
     const deleteBtn = within(first).getByRole('button', { name: '删除' });
 
     fetchMock.mockResolvedValue(ok({ id: '1' }));
-    window.confirm = vi.fn().mockReturnValue(true);
     await user.click(deleteBtn);
+
+    // v1.2：window.confirm 已替换为应用内 ConfirmDialog，点对话框中的「删除引用」
+    const confirmBtn = await screen.findByRole('button', { name: '删除引用' });
+    await user.click(confirmBtn);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

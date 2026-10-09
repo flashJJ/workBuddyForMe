@@ -96,6 +96,7 @@ async function startManagedStack(): Promise<WindowBootInfo | null> {
       userDataDir: app.getPath('userData'),
       serverPath: resolveServerPath(),
       cipher: { url: cipherEndpoint.url, token: cipherEndpoint.token },
+      appVersion: app.getVersion(),
     });
     console.error('[wbfm] 托管服务就绪:', managedServer.url);
     return { url: managedServer.url, token: managedServer.token };

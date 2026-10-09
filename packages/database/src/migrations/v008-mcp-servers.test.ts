@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -27,8 +27,8 @@ describe('v008 迁移：MCP 服务器（mcp_servers）', () => {
   it('v7 老库升级：表可写，name 唯一，transport 受 CHECK 约束', () => {
     const db = createV7Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([8, 9, 10, 11, 12, 13, 14, 15]);
-    expect(LATEST_SCHEMA_VERSION).toBe(15);
+    expect(result.applied).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    expect(LATEST_SCHEMA_VERSION).toBe(16);
 
     const ts = '2026-09-27T00:00:00.000Z';
     db.prepare(

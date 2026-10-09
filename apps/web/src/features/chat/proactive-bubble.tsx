@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { stripExpressionDirectives } from '@wbfm/shared/schemas';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ProactiveBubble } from './use-proactive-chat';
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
  * 不进入消息列表/不持久化；表情标签仅用于驱动 Live2D，气泡内剥离展示。
  */
 export function ProactiveBubbleBar({ bubble, assistantName, onDismiss }: Props) {
+  const { t } = useI18n();
   const text = stripExpressionDirectives(bubble.content).trim();
   return (
     <div
@@ -27,7 +29,7 @@ export function ProactiveBubbleBar({ bubble, assistantName, onDismiss }: Props) 
         <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <div className="min-w-0">
           <p className="text-[11px] leading-tight text-muted-foreground">
-            {assistantName} 主动搭话
+            {t('chat.proactive.label', { name: assistantName })}
           </p>
           <p className="whitespace-pre-wrap break-words text-sm">
             {text}
@@ -41,7 +43,7 @@ export function ProactiveBubbleBar({ bubble, assistantName, onDismiss }: Props) 
         type="button"
         onClick={onDismiss}
         className="mt-1 shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
-        aria-label="收起主动搭话"
+        aria-label={t('chat.proactive.dismissAria')}
         data-testid="proactive-bubble-close"
       >
         <X className="h-3.5 w-3.5" />

@@ -18,6 +18,8 @@ export interface StartServerOptions {
   userDataDir: string;
   serverPath: string;
   cipher: CipherRef;
+  /** 应用版本（主进程 app.getVersion()）；注入给托管服务供 health/system API 读取 */
+  appVersion?: string;
   /** 测试注入 */
   forkImpl?: ForkFn;
   waitImpl?: typeof waitForServer;
@@ -68,6 +70,8 @@ export async function startManagedServer(options: StartServerOptions): Promise<M
       WBFM_SERVER_MANAGED: '1',
       WBFM_TOKEN: token,
       WBFM_DATA_ROOT: resolveDataRoot(userDataDir),
+      // 内置 node 直接 spawn 时没有 npm_package_version，显式注入防安装版 health 报 0.1.0
+      APP_VERSION: options.appVersion ?? process.env.npm_package_version ?? '0.0.0-dev',
       ...(nodeRuntime ? { WBFM_MCP_NODE: nodeRuntime } : {}),
       ...(fs.existsSync(mcpBinPath) ? { WBFM_MCP_BIN: mcpBinPath } : {}),
     },

@@ -9,18 +9,20 @@ describe('Badge 徽标', () => {
     expect(screen.getByText('默认')).toBeInTheDocument();
   });
 
-  it('success/warning/danger/outline 变体应用对应样式', () => {
+  it('success/warning/danger/info/outline 变体应用语义样式', () => {
     render(
       <>
         <Badge variant="success" data-testid="s">成功</Badge>
         <Badge variant="warning" data-testid="w">警告</Badge>
         <Badge variant="danger" data-testid="d">危险</Badge>
+        <Badge variant="info" data-testid="i">信息</Badge>
         <Badge variant="outline" data-testid="o">轮廓</Badge>
       </>,
     );
-    expect(screen.getByTestId('s')).toHaveClass('bg-emerald-500/10');
-    expect(screen.getByTestId('w')).toHaveClass('bg-amber-500/10');
-    expect(screen.getByTestId('d')).toHaveClass('bg-red-500/10');
+    expect(screen.getByTestId('s')).toHaveClass('bg-success-background');
+    expect(screen.getByTestId('w')).toHaveClass('bg-warning-background');
+    expect(screen.getByTestId('d')).toHaveClass('bg-destructive/10');
+    expect(screen.getByTestId('i')).toHaveClass('bg-info-background');
     expect(screen.getByTestId('o')).toHaveClass('border');
   });
 });

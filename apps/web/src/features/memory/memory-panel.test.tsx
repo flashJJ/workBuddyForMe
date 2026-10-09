@@ -118,11 +118,14 @@ describe('长期记忆管理面板（M4）', () => {
       if (url.startsWith('/api/memories/1')) return ok({ id: '1', deleted: true });
       return ok([makeMemory({ id: '1', content: '一条记忆' })]);
     });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     renderWithProviders(<MemoryPanel />);
 
     await user.click(await screen.findByTestId('memory-delete'));
+    // v1.2：window.confirm 已替换为应用内 ConfirmDialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('删除记忆');
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/memories/1', expect.anything()),
     );
@@ -133,11 +136,14 @@ describe('长期记忆管理面板（M4）', () => {
       if (url === '/api/memories/clear') return ok({ removed: 3 });
       return ok([makeMemory({ id: '1', content: '记忆' })]);
     });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     renderWithProviders(<MemoryPanel />);
 
     await user.click(await screen.findByTestId('memory-clear'));
+    // v1.2：清空确认使用应用内 ConfirmDialog
+    const clearDialog = await screen.findByRole('dialog');
+    expect(clearDialog).toHaveTextContent('清空全部记忆');
+    await user.click(within(clearDialog).getByRole('button', { name: '全部清空' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/memories/clear', expect.anything()),
     );

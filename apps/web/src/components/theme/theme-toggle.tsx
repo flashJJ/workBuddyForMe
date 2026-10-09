@@ -3,10 +3,10 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from './theme-provider';
 
-/** 深/浅主题切换按钮，状态来自 ThemeProvider */
+/** 深/浅主题切换按钮，状态来自 ThemeProvider（system 态按实际生效值显示与切换） */
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   return (
     <button
       type="button"

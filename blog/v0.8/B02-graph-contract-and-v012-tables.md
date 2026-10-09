@@ -1,19 +1,13 @@
----
-title: "一张图存哪里、怎么版本化：Flow Studio 的 zod 契约与 v012 四表设计"
-series: "WorkBuddy For Me v0.8 技术拆解"
-number: "B02"
-tags: ["workbuddy", "zod", "sqlite", "migration", "versioning", "contract"]
-date: "2026-10"
----
+# 一张图存哪里、怎么版本化：zod 图契约与四张表的快照设计
+
+可视化工作流编辑器的第一行代码不是画布，是**契约**：节点长什么样、边允许怎么连、配置值的结构是什么。契约错了，编译器、引擎、编辑器、API 四层各写各的理解，后面全是补丁。这篇讲我们在本地优先的桌面 AI 应用里，如何用一份 zod schema 同时约束前后端与数据库，以及四张表怎样支撑「保存即快照、发布即固定」。
 
 ## 一切从「图是什么」开始
 
-可视化编辑器的第一行代码不是画布，是**契约**：节点长什么样、边允许怎么连、配置值的结构是什么。契约错了，编译器、引擎、编辑器、API 四层各写各的理解，后面全是补丁。
-
-v0.8 的做法是把图的定义放在 `packages/shared`，用 zod 写一份 schema，前后端和数据库序列化共用同一份事实源：
+图的定义放在 shared 包，用 zod 写一份 schema，前后端和数据库序列化共用同一份事实源：
 
 ```ts
-// shared/src/schemas/flow.ts（简化）
+// shared 包的 flow schema（简化）
 export const flowNodeSchema = z.object({
   id: z.string().regex(FLOW_NODE_ID_PATTERN, '节点 id 仅允许字母数字_-'),
   type: z.enum(['start', 'llm', 'knowledgeSearch', 'tool', 'condition', 'human', 'end']),
@@ -43,9 +37,9 @@ export const flowGraphSchema = z.object({
 
 ---
 
-## v012：四张表，只做加法
+## 四张表：一次建表迁移，只做加法
 
-项目从 v0.1 起有一条铁律：数据库迁移只走 `PRAGMA user_version` 顺序文件，**只 ADD 不 ALTER 既有表**。v012 一次加了四张表：
+这个项目的数据库迁移有一条铁律：迁移只走 `PRAGMA user_version` 顺序文件，**只 ADD 不 ALTER 既有表**。工作流功能的建表迁移一次加了四张表：
 
 ```sql
 CREATE TABLE workflows (
@@ -74,7 +68,7 @@ CREATE TABLE workflow_runs (
   id TEXT PRIMARY KEY,
   workflow_id TEXT NOT NULL REFERENCES workflows(id),
   version INTEGER NOT NULL,                  -- 运行时钉住的版本
-  trigger TEXT NOT NULL,                     -- manual | chat（api/mcp/schedule 留给 v0.9+）
+  trigger TEXT NOT NULL,                     -- manual | chat（api/mcp/schedule 留给后续版本）
   status TEXT NOT NULL,                      -- queued|running|waiting_human|succeeded|failed|cancelled
   input_json TEXT, output_json TEXT, error_json TEXT,
   conversation_id TEXT,
@@ -95,7 +89,7 @@ CREATE TABLE node_executions (
 
 `workflow_runs.version` 这个字段是故意冗余存的：**运行必须钉住创建那一刻的图版本**。即使运行期间作者又保存了 v3，v2 发起的 run 仍然按 v2 跑完——否则长流程执行到一半图变了，引用全部对不上。
 
-迁移测试的方式也延续传统：在测试里对一份 v011 的真实库文件跑迁移，断言表数量、旧表行数、旧数据一字未动。
+迁移测试的方式也延续传统：在测试里对上一个版本的真实库文件跑迁移，断言表数量、旧表行数、旧数据一字未动。
 
 ---
 
@@ -132,7 +126,7 @@ publishVersion(workflowId, version?) {
 }
 ```
 
-工具解析器（v0.8 M1 已做、M3 打通对话）只认一件事：`status === 'published'` 时取 `current_version` 的图构建 Tool。取消发布就是把状态置为 disabled，`resolveTool` 返回 null，工具目录里立刻消失——全程不需要删任何版本数据。
+工具解析器（引擎阶段已做、集成阶段打通对话）只认一件事：`status === 'published'` 时取 `current_version` 的图构建 Tool。取消发布就是把状态置为 disabled，`resolveTool` 返回 null，工具目录里立刻消失——全程不需要删任何版本数据。
 
 ---
 
@@ -168,6 +162,6 @@ export function buildFlowInputJsonSchema(fields: FlowInputField[]) {
 
 1. **入口 schema 管结构，编译器管语义。** 试图用一份 zod 校验所有跨节点规则，只会得到一份没人敢改的巨型联合类型。开放 config + 分层校验，编辑中的脏状态才有容身之处。
 2. **可变工作流 + 不可变版本 + 发布指针。** 这是函数部署和内容发布系统共同验证过的模型，比「published 布尔位 + 原地改图」多一张版本表，省掉一整类线上事故。
-3. **迁移只做加法，运行钉住版本。** v011→v012 零回填升级；run 行冗余存 version，让「图在变、运行不变」成为默认语义。
+3. **迁移只做加法，运行钉住版本。** 旧版库零回填升级；run 行冗余存 version，让「图在变、运行不变」成为默认语义。
 
-下一篇 B03 进入 core：拿到一张结构合法的图之后，编译器如何判断它到底能不能跑——环、孤岛、死路、没连全的分支，以及怎么让每个错误都能在画布上被点出来。
+下一篇进入 core：拿到一张结构合法的图之后，编译器如何判断它到底能不能跑——环、孤岛、死路、没连全的分支，以及怎么让每个错误都能在画布上被点出来。

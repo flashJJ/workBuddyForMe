@@ -5,6 +5,7 @@ import {
 } from '@wbfm/shared/constants';
 import { buildMcpToolName } from '@wbfm/shared/schemas';
 import type { McpToolInfo } from '@wbfm/shared/types';
+import { APP_VERSION } from '@wbfm/shared/version';
 import { MCP_PROTOCOL_VERSION } from './jsonrpc';
 import type { McpClient, McpServerCapabilities, McpToolCallOutcome } from './client';
 import { sanitizeToolName } from './client';
@@ -66,7 +67,7 @@ export function createMcpHttpClient(options: McpHttpClientOptions): McpClient {
         {
           protocolVersion: MCP_PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: 'workbuddy-for-me', version: '0.6.0' },
+          clientInfo: { name: 'workbuddy-for-me', version: APP_VERSION },
         },
         MCP_CONNECT_TIMEOUT_MS,
       );

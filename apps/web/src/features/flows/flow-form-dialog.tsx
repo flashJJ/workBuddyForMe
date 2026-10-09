@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { WorkflowCreateInput } from '@wbfm/shared/schemas';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 export interface FlowFormDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export interface FlowFormDialogProps {
 }
 
 export function FlowFormDialog({ open, initial, title, onSubmit, onClose }: FlowFormDialogProps) {
+  const { t } = useI18n();
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
@@ -38,7 +40,7 @@ export function FlowFormDialog({ open, initial, title, onSubmit, onClose }: Flow
 
   const submit = () => {
     if (!name.trim()) {
-      setError('名称不能为空');
+      setError(t('flows.form.nameRequired'));
       return;
     }
     onSubmit({ name: name.trim(), description: description.trim() });
@@ -49,35 +51,39 @@ export function FlowFormDialog({ open, initial, title, onSubmit, onClose }: Flow
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>流程会以草稿状态创建，保存流程图后可发布为对话工具。</DialogDescription>
+          <DialogDescription>{t('flows.form.description')}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">名称</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              {t('common.words.name')}
+            </label>
             <Input
               value={name}
               autoFocus
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：资料研究助手"
+              placeholder={t('flows.form.namePlaceholder')}
               className="h-9"
             />
-            {error && <p className="text-[11px] text-red-500">{error}</p>}
+            {error && <p className="text-[11px] text-destructive">{error}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">描述（可选）</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              {t('flows.form.descLabel')}
+            </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="这个流程做什么、适合在什么场景调用"
+              placeholder={t('flows.form.descPlaceholder')}
             />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            取消
+            {t('common.actions.cancel')}
           </Button>
-          <Button onClick={submit}>保存</Button>
+          <Button onClick={submit}>{t('common.actions.save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

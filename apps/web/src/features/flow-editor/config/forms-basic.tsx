@@ -46,7 +46,7 @@ export function StartForm({ config, patch }: NodeConfigFormProps) {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-red-500"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                   onClick={() => remove(i)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />

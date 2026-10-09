@@ -74,7 +74,7 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
           ))}
         </div>
         {!asrReady && (
-          <p className="text-xs text-amber-600">请先下载离线语音识别模型后再切换输入方式。</p>
+          <p className="text-xs text-warning">请先下载离线语音识别模型后再切换输入方式。</p>
         )}
       </div>
 

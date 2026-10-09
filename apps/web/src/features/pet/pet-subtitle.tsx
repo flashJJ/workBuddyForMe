@@ -9,9 +9,9 @@ interface Props {
 
 const STATE_DOT: Record<PetVoiceState, string> = {
   idle: 'bg-muted-foreground/50',
-  listening: 'bg-emerald-500',
-  thinking: 'bg-amber-500 animate-pulse',
-  speaking: 'bg-sky-500',
+  listening: 'bg-success',
+  thinking: 'bg-warning animate-pulse',
+  speaking: 'bg-info',
 };
 
 /**

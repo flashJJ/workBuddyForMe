@@ -15,8 +15,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/common/toast';
-import { ApiClientError } from '@/lib/api/client';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { useMemoryMutations, type MemoryCreateBody } from '@/lib/hooks/use-memories';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { MEMORY_KIND_OPTIONS, MEMORY_STATUS_LABELS } from './memory-labels';
 
 interface Props {
@@ -46,6 +47,7 @@ function toForm(memory: Memory | null): FormState {
 
 /** 记忆新建/编辑弹窗：新建走 POST，编辑走 PATCH；内容变更后服务端自动重算向量 */
 export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
+  const { t } = useI18n();
   const [form, setForm] = React.useState<FormState>(() => toForm(memory));
   const [submitting, setSubmitting] = React.useState(false);
   const toast = useToast();
@@ -60,7 +62,7 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
   const submit = async () => {
     const importance = Number(form.importance);
     if (!form.content.trim()) {
-      toast.error('记忆内容不能为空');
+      toast.error(t('memory.form.contentRequired'));
       return;
     }
     setSubmitting(true);
@@ -75,7 +77,7 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
             status: form.status,
           },
         });
-        toast.success('记忆已更新');
+        toast.success(t('memory.form.updated'));
       } else {
         const body: MemoryCreateBody = {
           kind: form.kind,
@@ -83,11 +85,11 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
           importance,
         };
         await mutations.create.mutateAsync(body);
-        toast.success('记忆已添加');
+        toast.success(t('memory.form.created'));
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(errorText(error, t, { fallback: 'toast.saveFailed' }));
     } finally {
       setSubmitting(false);
     }
@@ -97,33 +99,33 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{memory ? '编辑记忆' : '添加记忆'}</DialogTitle>
+          <DialogTitle>{memory ? t('memory.form.editTitle') : t('memory.form.createTitle')}</DialogTitle>
           <DialogDescription>
-            记忆会通过语义嵌入在相关对话中自动召回，内容请写成自包含的一句陈述。
+            {t('memory.form.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>类别</Label>
+              <Label>{t('memory.form.kindLabel')}</Label>
               <Select
-                aria-label="记忆类别"
+                aria-label={t('memory.form.kindAria')}
                 value={form.kind}
                 onChange={(e) => update({ kind: e.target.value as MemoryKind })}
               >
                 {MEMORY_KIND_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {t(option.labelKey)}
                   </option>
                 ))}
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>重要性（{Number(form.importance).toFixed(1)}）</Label>
+              <Label>{t('memory.form.importanceLabel', { value: Number(form.importance).toFixed(1) })}</Label>
               <input
                 type="range"
-                aria-label="重要性"
+                aria-label={t('memory.form.importanceAria')}
                 min={0}
                 max={1}
                 step={0.1}
@@ -135,14 +137,14 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>内容</Label>
+            <Label>{t('memory.form.contentLabel')}</Label>
             <Textarea
-              aria-label="记忆内容"
+              aria-label={t('memory.form.contentAria')}
               value={form.content}
               maxLength={500}
               rows={4}
               onChange={(e) => update({ content: e.target.value })}
-              placeholder="例如：用户在准备 PMP 考试，希望用中文交流"
+              placeholder={t('memory.form.contentPlaceholder')}
             />
             <div className="text-right text-xs text-muted-foreground">
               {form.content.length}/500
@@ -151,14 +153,14 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
 
           {memory && (
             <div className="space-y-1.5">
-              <Label>状态</Label>
+              <Label>{t('memory.form.statusLabel')}</Label>
               <Select
-                aria-label="记忆状态"
+                aria-label={t('memory.form.statusAria')}
                 value={form.status}
                 onChange={(e) => update({ status: e.target.value as MemoryStatus })}
               >
-                <option value="active">{MEMORY_STATUS_LABELS.active}</option>
-                <option value="archived">{MEMORY_STATUS_LABELS.archived}</option>
+                <option value="active">{t(MEMORY_STATUS_LABELS.active)}</option>
+                <option value="archived">{t(MEMORY_STATUS_LABELS.archived)}</option>
               </Select>
             </div>
           )}
@@ -166,10 +168,10 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            取消
+            {t('common.actions.cancel')}
           </Button>
           <Button type="button" disabled={submitting} onClick={() => void submit()}>
-            {submitting ? '保存中…' : '保存'}
+            {submitting ? t('memory.form.saving') : t('common.actions.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

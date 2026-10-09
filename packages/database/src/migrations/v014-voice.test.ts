@@ -23,8 +23,8 @@ describe('v014 迁移：voice_models 下载状态表', () => {
     expect(getSchemaVersion(db)).toBe(13);
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([14, 15]);
-    expect(LATEST_SCHEMA_VERSION).toBe(15);
+    expect(result.applied).toEqual([14, 15, 16]);
+    expect(LATEST_SCHEMA_VERSION).toBe(16);
 
     db.prepare(
       `INSERT INTO voice_models(kind, model_id, status, bytes_total, bytes_done, updated_at)
@@ -67,7 +67,7 @@ describe('v014 迁移：voice_models 下载状态表', () => {
   it('迁移幂等：v014 重复执行不报错', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(15);
+    expect(getSchemaVersion(db)).toBe(16);
     expect(() => migrateV014(db)).not.toThrow();
   });
 });

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Provider, ProviderModel } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
@@ -118,12 +118,12 @@ describe('设置中心（TR-25.1）', () => {
       if (url.startsWith('/api/models/') && init?.method === 'DELETE') return ok({ id: 'mdl1' });
       return ok(null);
     });
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     renderWithProviders(<ProviderCard provider={PROVIDER} onEdit={() => undefined} />);
 
     await screen.findByText('GPT-4o mini');
-    await user.type(screen.getByLabelText('模型 ID'), 'text-embedding-3-small');
+    // 普通模型名默认仅勾「对话」；手动再勾「向量」→ 两种能力
+    await user.type(screen.getByLabelText('模型 ID'), 'custom-dual-model');
     await user.click(screen.getByLabelText('向量'));
     await user.click(screen.getByRole('button', { name: '添加' }));
 
@@ -134,15 +134,45 @@ describe('设置中心（TR-25.1）', () => {
       (call) => call[0] === '/api/providers/p1/models' && (call[1] as RequestInit).method === 'POST',
     );
     expect(JSON.parse((postCall![1] as RequestInit).body as string)).toMatchObject({
-      modelId: 'text-embedding-3-small',
+      modelId: 'custom-dual-model',
       capabilities: ['chat', 'embedding'],
     });
 
     await user.click(screen.getByLabelText('移除模型 GPT-4o mini'));
+    // v1.2：window.confirm 已替换为应用内 ConfirmDialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('移除模型');
+    await user.click(within(dialog).getByRole('button', { name: '移除' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/models/mdl1', expect.anything()),
     );
-    expect(confirmSpy).toHaveBeenCalled();
-    confirmSpy.mockRestore();
+  });
+
+  it('模型 ID 含 embedding 特征：自动识别为向量能力（无需手动勾选）', async () => {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/providers/p1/models' && init?.method === 'GET') return ok([MODEL]);
+      if (url === '/api/providers/p1/models' && init?.method === 'POST') return ok({ id: 'mdl3' });
+      return ok(null);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<ProviderCard provider={PROVIDER} onEdit={() => undefined} />);
+
+    await screen.findByText('GPT-4o mini');
+    await user.type(screen.getByLabelText('模型 ID'), 'qwen3-embedding:0.6b');
+    // 输入即自动勾「向量」、取消「对话」
+    expect(screen.getByLabelText('向量')).toBeChecked();
+    expect(screen.getByLabelText('对话')).not.toBeChecked();
+    await user.click(screen.getByRole('button', { name: '添加' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/providers/p1/models', expect.anything()),
+    );
+    const postCall = fetchMock.mock.calls.find(
+      (call) => call[0] === '/api/providers/p1/models' && (call[1] as RequestInit).method === 'POST',
+    );
+    expect(JSON.parse((postCall![1] as RequestInit).body as string)).toMatchObject({
+      modelId: 'qwen3-embedding:0.6b',
+      capabilities: ['embedding'],
+    });
   });
 });

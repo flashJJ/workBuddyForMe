@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   open: boolean;
@@ -26,19 +27,16 @@ interface Props {
   onSubmit: (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => Promise<boolean>;
 }
 
-function permissionBadge(permission: PermissionLevel): { variant: 'warning' | 'danger'; label: string } {
-  switch (permission) {
-    case 'write':
-      return { variant: 'warning', label: '写入' };
-    case 'danger':
-      return { variant: 'danger', label: '高危' };
-    default:
-      return { variant: 'warning', label: permission };
-  }
-}
-
 export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitting, taskScopeAvailable, onOpenChange, onSubmit }: Props) {
-  const pb = permissionBadge(permission);
+  const { t } = useI18n();
+  // 未知权限等级回退展示枚举原值（write/danger 走本地化文案）
+  const permissionVariant = permission === 'danger' ? 'danger' : 'warning';
+  const permissionLabel =
+    permission === 'write'
+      ? t('chat.toolConfirm.permissionWrite')
+      : permission === 'danger'
+        ? t('chat.toolConfirm.permissionDanger')
+        : permission;
 
   const handleDeny = async () => {
     await onSubmit('deny');
@@ -62,28 +60,28 @@ export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitt
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            工具执行确认
-            <Badge variant={pb.variant}>{pb.label}</Badge>
+            {t('chat.toolConfirm.title')}
+            <Badge variant={permissionVariant}>{permissionLabel}</Badge>
           </DialogTitle>
           <DialogDescription>
-            助手请求执行以下工具调用，是否授权？
+            {t('chat.toolConfirm.description')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="rounded-md bg-muted p-3 text-sm font-mono break-all">{tool}</div>
           {argsSummary && (
             <div className="text-sm text-muted-foreground space-y-1">
-              <div className="text-xs font-medium text-foreground">调用参数摘要：</div>
+              <div className="text-xs font-medium text-foreground">{t('chat.toolConfirm.argsSummaryLabel')}</div>
               <div className="rounded-md bg-muted/60 p-2 break-all">{argsSummary}</div>
             </div>
           )}
         </div>
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleDeny} disabled={submitting}>
-            拒绝
+            {t('chat.toolConfirm.deny')}
           </Button>
           <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={handleAllowOnce} disabled={submitting}>
-            本次允许
+            {t('chat.toolConfirm.allowOnce')}
           </Button>
           <Button
             type="button"
@@ -91,12 +89,16 @@ export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitt
             className="w-full sm:w-auto"
             onClick={handleAllowTask}
             disabled={submitting || !taskScopeAvailable}
-            title={taskScopeAvailable ? '本对话内该工具后续调用不再询问' : '对话建立后可用'}
+            title={
+              taskScopeAvailable
+                ? t('chat.toolConfirm.allowTaskTitle')
+                : t('chat.toolConfirm.taskUnavailableTitle')
+            }
           >
-            本任务内允许
+            {t('chat.toolConfirm.allowTask')}
           </Button>
           <Button type="button" className="w-full sm:w-auto" onClick={handleAllowAlways} disabled={submitting}>
-            一直允许
+            {t('chat.toolConfirm.allowAlways')}
           </Button>
         </DialogFooter>
       </DialogContent>

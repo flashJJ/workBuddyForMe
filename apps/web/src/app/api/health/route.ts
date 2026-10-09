@@ -8,6 +8,7 @@ export const GET = defineRoute(() => {
   return jsonOk({
     status: 'ok',
     time: new Date().toISOString(),
-    version: process.env.npm_package_version ?? '0.1.0',
+    // 打包态由桌面壳注入 APP_VERSION；dev/独立 web 回落 npm 包版本
+    version: process.env.APP_VERSION ?? process.env.npm_package_version ?? '0.0.0-dev',
   });
 });

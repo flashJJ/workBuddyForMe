@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   conversation: Conversation | null;
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function ConversationRenameDialog({ conversation, onOpenChange, onSubmit }: Props) {
+  const { t } = useI18n();
   const [title, setTitle] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -48,27 +50,27 @@ export function ConversationRenameDialog({ conversation, onOpenChange, onSubmit 
     <Dialog open={Boolean(conversation)} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>重命名对话</DialogTitle>
-          <DialogDescription>给这个对话起一个更容易识别的标题。</DialogDescription>
+          <DialogTitle>{t('chat.rename.title')}</DialogTitle>
+          <DialogDescription>{t('chat.rename.description')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="conversation-title">对话标题</Label>
+            <Label htmlFor="conversation-title">{t('chat.rename.titleLabel')}</Label>
             <Input
               id="conversation-title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="输入新的对话标题"
+              placeholder={t('chat.rename.titlePlaceholder')}
               maxLength={120}
               required
             />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.actions.cancel')}
             </Button>
             <Button type="submit" disabled={submitting || !trimmed || unchanged}>
-              {submitting ? '保存中…' : '保存'}
+              {submitting ? t('common.actions.saving') : t('common.actions.save')}
             </Button>
           </DialogFooter>
         </form>

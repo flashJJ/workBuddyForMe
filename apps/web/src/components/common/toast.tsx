@@ -22,9 +22,9 @@ const ToastContext = React.createContext<ToastContextValue | null>(null);
 const AUTO_DISMISS_MS = 3500;
 
 const VARIANT_STYLE: Record<ToastVariant, string> = {
-  success: 'border-l-4 border-l-emerald-500',
-  error: 'border-l-4 border-l-red-500',
-  info: 'border-l-4 border-l-blue-500',
+  success: 'border-l-4 border-l-success',
+  error: 'border-l-4 border-l-destructive',
+  info: 'border-l-4 border-l-info',
 };
 
 const VARIANT_ICON = {

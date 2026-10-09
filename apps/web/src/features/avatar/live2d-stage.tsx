@@ -77,7 +77,7 @@ export function Live2dStage({ modelId, expression, getLevel, speaking }: StagePr
       />
       {error && (
         <div
-          className="absolute inset-x-2 bottom-2 flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-background/90 p-2 text-xs text-amber-600 dark:text-amber-400"
+          className="absolute inset-x-2 bottom-2 flex items-start gap-1.5 rounded-md border border-warning/30 bg-background/90 p-2 text-xs text-warning"
           data-testid="live2d-error"
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />

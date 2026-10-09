@@ -6,6 +6,7 @@ import { type Message } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { AttachmentImage } from './attachment-image';
 import { MarkdownContent } from './markdown';
 import { ToolTrace } from './tool-trace';
@@ -25,6 +26,7 @@ interface Props {
 }
 
 function CopyButton({ content }: { content: string }) {
+  const { t } = useI18n();
   const [copied, setCopied] = React.useState(false);
   const copy = async () => {
     await copyText(content);
@@ -37,16 +39,17 @@ function CopyButton({ content }: { content: string }) {
       className="text-xs text-muted-foreground hover:text-foreground"
       onClick={() => void copy()}
     >
-      {copied ? '已复制' : '复制'}
+      {copied ? t('chatMessages.copied') : t('common.actions.copy')}
     </button>
   );
 }
 
 function Citations({ message }: { message: Message }) {
+  const { t } = useI18n();
   if (message.citations.length === 0) return null;
   return (
     <div className="mt-2 space-y-1 border-t pt-2" data-testid="citations">
-      <p className="text-xs font-medium text-muted-foreground">引用来源</p>
+      <p className="text-xs font-medium text-muted-foreground">{t('chatMessages.citations')}</p>
       <ol className="space-y-1">
         {message.citations.map((citation) => (
           <li key={`${citation.documentId}-${citation.ordinal}`} className="text-xs">
@@ -78,6 +81,7 @@ function Citations({ message }: { message: Message }) {
 }
 
 function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onResend' | 'disabled'>) {
+  const { t } = useI18n();
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(message.content);
 
@@ -99,7 +103,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
         />
         <div className="flex gap-2">
           <Button size="sm" onClick={submit}>
-            重新发送
+            {t('chatMessages.resend')}
           </Button>
           <Button
             size="sm"
@@ -109,7 +113,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
               setEditing(false);
             }}
           >
-            取消
+            {t('common.actions.cancel')}
           </Button>
         </div>
       </div>
@@ -139,7 +143,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
             setEditing(true);
           }}
         >
-          编辑并重发
+          {t('chatMessages.editAndResend')}
         </button>
       )}
     </div>
@@ -147,6 +151,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
 }
 
 export function MessageItem({ message, assistantName, onRetry, onResend, onFeedback, disabled }: Props) {
+  const { t } = useI18n();
   const isUser = message.role === 'user';
   const canRegenerate =
     !isUser &&
@@ -170,14 +175,14 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
         }`}
         aria-hidden
       >
-        {isUser ? '我' : 'AI'}
+        {isUser ? t('chatMessages.you') : 'AI'}
       </div>
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">
-            {isUser ? '我' : assistantName}
+            {isUser ? t('chatMessages.you') : assistantName}
           </span>
-          {message.status === 'stopped' && <Badge variant="warning">已停止</Badge>}
+          {message.status === 'stopped' && <Badge variant="warning">{t('chatMessages.stopped')}</Badge>}
         </div>
 
         {!isUser && message.toolTrace.length > 0 && <ToolTrace trace={message.toolTrace} />}
@@ -194,10 +199,14 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
 
         {message.status === 'error' && (
           <div
-            className="rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs text-red-600"
+            className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive"
             data-testid="message-error"
           >
-            <p>生成失败：{message.errorMessage ?? message.errorCode ?? '未知错误'}</p>
+            <p>
+              {t('chatMessages.generateFailed', {
+                reason: message.errorMessage ?? message.errorCode ?? t('chatMessages.unknownError'),
+              })}
+            </p>
           </div>
         )}
 
@@ -211,7 +220,7 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
                 onClick={() => onRetry?.()}
                 data-testid="regenerate-button"
               >
-                重新生成
+                {t('chatMessages.regenerate')}
               </button>
             )}
             {canFeedback && onFeedback && (

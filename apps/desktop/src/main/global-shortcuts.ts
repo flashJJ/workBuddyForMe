@@ -31,6 +31,18 @@ export function registerGlobalShortcuts(deps: {
     console.error('[wbfm] 全局快捷键 Ctrl+K 注册失败（可能被其他应用占用）');
   }
 
+  // v1.2 M5：Ctrl+/ 唤起快捷键浮层（窗口聚焦后由渲染层开窗）
+  const shortcutsRegistered = globalShortcut.register('CommandOrControl+/', () => {
+    const win = deps.getMainWindow();
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    if (!win.isFocused()) win.focus();
+    win.webContents.send('shortcuts:open');
+  });
+  if (!shortcutsRegistered) {
+    console.error('[wbfm] 全局快捷键 Ctrl+/ 注册失败（可能被其他应用占用）');
+  }
+
   const emergencyRegistered = globalShortcut.register('CommandOrControl+Alt+Escape', () => {
     void triggerEmergencyStop(deps.getManagedServer).catch((error) => {
       console.error('[wbfm] 急停热键调用失败:', error);

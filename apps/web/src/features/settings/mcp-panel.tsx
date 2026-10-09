@@ -3,24 +3,27 @@
 import * as React from 'react';
 import type { McpServerInfo } from '@wbfm/shared/types';
 import type { McpServerStatus } from '@wbfm/shared/constants';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
-import { ApiClientError } from '@/lib/api/client';
+import { useConfirm } from '@/components/common/confirm-dialog';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { useMcpMutations, useMcpServers } from '@/lib/hooks/use-mcp';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { McpServerFormDialog } from './mcp-server-form-dialog';
 
-const STATUS_LABELS: Record<McpServerStatus, string> = {
-  connected: '已连接',
-  connecting: '连接中…',
-  disconnected: '未连接',
-  error: '连接失败',
+const STATUS_KEYS: Record<McpServerStatus, MessageKey> = {
+  connected: 'settingsMcp.mcp.status.connected',
+  connecting: 'settingsMcp.mcp.status.connecting',
+  disconnected: 'settingsMcp.mcp.status.disconnected',
+  error: 'settingsMcp.mcp.status.error',
 };
 
 const STATUS_STYLES: Record<McpServerStatus, string> = {
-  connected: 'border-emerald-300 bg-emerald-50 text-emerald-700',
-  connecting: 'border-amber-300 bg-amber-50 text-amber-700',
+  connected: 'border-success/30 bg-success-background text-success',
+  connecting: 'border-warning/30 bg-warning-background text-warning',
   disconnected: 'border-muted bg-muted text-muted-foreground',
-  error: 'border-red-300 bg-red-50 text-red-700',
+  error: 'border-destructive/30 bg-destructive/10 text-destructive',
 };
 
 function commandSummary(server: McpServerInfo): string {
@@ -30,9 +33,11 @@ function commandSummary(server: McpServerInfo): string {
 
 /** 设置页 MCP 服务器管理面板（v0.6 M1：stdio 传输最小闭环） */
 export function McpPanel() {
+  const { t } = useI18n();
   const { data: servers, isLoading, isError, refetch } = useMcpServers();
   const mutations = useMcpMutations();
   const toast = useToast();
+  const confirm = useConfirm();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<McpServerInfo | null>(null);
 
@@ -50,18 +55,32 @@ export function McpPanel() {
     mutations.update.mutate(
       { id: server.id, body: { transport: 'stdio', enabled: !server.enabled } },
       {
-        onSuccess: () => toast.success(server.enabled ? '已停用并断开' : '已启用，正在连接'),
-        onError: (error) =>
-          toast.error(error instanceof ApiClientError ? error.message : '操作失败'),
+        onSuccess: () =>
+          toast.success(
+            server.enabled
+              ? t('settingsMcp.mcp.disabledDisconnected')
+              : t('settingsMcp.mcp.enabledConnecting'),
+          ),
+        onError: (error) => toast.error(errorText(error, t, { fallback: 'toast.operationFailed' })),
       },
     );
   };
 
-  const remove = (server: McpServerInfo) => {
-    if (!window.confirm(`删除 MCP 服务器「${server.name}」？其工具将从助手中移除。`)) return;
+  const remove = async (server: McpServerInfo) => {
+    if (
+      !(await confirm({
+        title: t('settingsMcp.mcp.deleteTitle'),
+        description: t('settingsMcp.mcp.deleteConfirm', { name: server.name }),
+        confirmText: t('common.actions.delete'),
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     mutations.remove.mutate(server.id, {
-      onSuccess: () => toast.success('已删除'),
-      onError: (error) => toast.error(error instanceof ApiClientError ? error.message : '删除失败'),
+      onSuccess: () => toast.success(t('settingsMcp.mcp.deleted')),
+      onError: (error) =>
+        toast.error(errorText(error, t, { fallback: 'settingsMcp.deleteFailed' })),
     });
   };
 
@@ -69,26 +88,27 @@ export function McpPanel() {
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="mcp-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-medium">MCP 服务器</h3>
+          <h3 className="font-medium">{t('settingsMcp.mcp.title')}</h3>
           <p className="text-xs text-muted-foreground">
-            接入本地 MCP（Model Context Protocol）服务器，为助手扩展文件搜索等外部工具。
+            {t('settingsMcp.mcp.description')}
           </p>
         </div>
         <Button type="button" variant="outline" onClick={openCreate}>
-          添加服务器
+          {t('settingsMcp.mcp.addServer')}
         </Button>
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">加载中…</p>}
+      {isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
       {isError && (
-        <p className="text-sm text-red-600">
-          MCP 服务器加载失败，<button className="underline" onClick={() => void refetch()}>重试</button>
+        <p className="text-sm text-destructive">
+          {t('settingsMcp.mcp.loadFailed')}
+          <button className="underline" onClick={() => void refetch()}>
+            {t('common.actions.retry')}
+          </button>
         </p>
       )}
       {servers && servers.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          还没有 MCP 服务器。添加后可在助手编辑里勾选其工具。
-        </p>
+        <p className="text-sm text-muted-foreground">{t('settingsMcp.mcp.empty')}</p>
       )}
       {servers && servers.length > 0 && (
         <ul className="space-y-2" data-testid="mcp-server-list">
@@ -105,17 +125,19 @@ export function McpPanel() {
                     className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLES[server.status]}`}
                     title={server.statusDetail ?? undefined}
                   >
-                    {STATUS_LABELS[server.status]}
+                    {t(STATUS_KEYS[server.status]!)}
                   </span>
                   {server.toolCount > 0 && (
-                    <span className="text-xs text-muted-foreground">{server.toolCount} 个工具</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t('settingsMcp.mcp.toolCount', { count: server.toolCount })}
+                    </span>
                   )}
                 </div>
                 <p className="truncate font-mono text-xs text-muted-foreground">
                   {commandSummary(server) || '—'}
                 </p>
                 {server.status === 'error' && server.statusDetail && (
-                  <p className="text-xs text-red-600">{server.statusDetail}</p>
+                  <p className="text-xs text-destructive">{server.statusDetail}</p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -126,19 +148,19 @@ export function McpPanel() {
                     checked={server.enabled}
                     onChange={() => toggleEnabled(server)}
                   />
-                  启用
+                  {t('common.actions.enable')}
                 </label>
                 <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(server)}>
-                  编辑
+                  {t('common.actions.edit')}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-destructive hover:text-destructive"
                   onClick={() => remove(server)}
                 >
-                  删除
+                  {t('common.actions.delete')}
                 </Button>
               </div>
             </li>

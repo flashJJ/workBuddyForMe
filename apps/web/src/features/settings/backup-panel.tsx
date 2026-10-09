@@ -1,27 +1,58 @@
 'use client';
 
 import * as React from 'react';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { apiUpload, ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { BackupTrack, BackupPrecheck } from '@wbfm/shared/backup';
 import type { BackupRestoreResult } from '@wbfm/core/backup';
 
-const TRACK_OPTIONS: Array<{ value: BackupTrack; label: string; desc: string }> = [
-  { value: 'conversations', label: '对话记录', desc: '全部对话与消息历史' },
-  { value: 'knowledge', label: '知识库', desc: '知识库、文档与分片（向量不备份，恢复后需重建）' },
-  { value: 'settings', label: '设置与凭证', desc: '默认模型、主题等；敏感凭证会被脱敏（[REDACTED]）' },
-  { value: 'attachments', label: '图片附件', desc: '对话中的图片附件二进制文件' },
-  { value: 'skills', label: '技能包', desc: '技能文件夹（skill.json）与启停状态' },
-  { value: 'tasks', label: '任务记录', desc: '桌面 Agent 任务运行与步骤日志（v0.7+）' },
+/** 轨道展示键（顺序即 UI 展示顺序） */
+const TRACK_KEYS: Record<BackupTrack, { label: MessageKey; desc: MessageKey }> = {
+  conversations: {
+    label: 'settingsBackup.tracks.conversationsLabel',
+    desc: 'settingsBackup.tracks.conversationsDesc',
+  },
+  knowledge: {
+    label: 'settingsBackup.tracks.knowledgeLabel',
+    desc: 'settingsBackup.tracks.knowledgeDesc',
+  },
+  settings: {
+    label: 'settingsBackup.tracks.settingsLabel',
+    desc: 'settingsBackup.tracks.settingsDesc',
+  },
+  attachments: {
+    label: 'settingsBackup.tracks.attachmentsLabel',
+    desc: 'settingsBackup.tracks.attachmentsDesc',
+  },
+  skills: {
+    label: 'settingsBackup.tracks.skillsLabel',
+    desc: 'settingsBackup.tracks.skillsDesc',
+  },
+  tasks: {
+    label: 'settingsBackup.tracks.tasksLabel',
+    desc: 'settingsBackup.tracks.tasksDesc',
+  },
+};
+
+const TRACK_ORDER: BackupTrack[] = [
+  'conversations',
+  'knowledge',
+  'settings',
+  'attachments',
+  'skills',
+  'tasks',
 ];
 
 type RestoreResponse = { ok: true; precheck: BackupPrecheck; result: BackupRestoreResult };
 
 export function BackupPanel() {
+  const { t } = useI18n();
   const toast = useToast();
-  const [selected, setSelected] = React.useState<BackupTrack[]>(['conversations', 'knowledge', 'settings', 'attachments', 'skills', 'tasks']);
+  const [selected, setSelected] = React.useState<BackupTrack[]>(TRACK_ORDER);
   const [exporting, setExporting] = React.useState(false);
   const [restoring, setRestoring] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -49,7 +80,7 @@ export function BackupPanel() {
         const body = await res.json().catch(() => ({}));
         throw new ApiClientError(
           body.error?.code ?? 'EXPORT_FAILED',
-          body.error?.message ?? `导出失败（${res.status}）`,
+          body.error?.message ?? t('settingsBackup.exportFailedStatus', { status: res.status }),
           res.status,
         );
       }
@@ -64,9 +95,11 @@ export function BackupPanel() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('备份已导出');
+      toast.success(t('settingsBackup.exported'));
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '导出失败');
+      toast.error(
+        error instanceof ApiClientError ? error.message : t('settingsBackup.exportFailed'),
+      );
     } finally {
       setExporting(false);
     }
@@ -81,34 +114,64 @@ export function BackupPanel() {
 
       const r = resp.result;
       const parts: string[] = [];
-      if (r.imported.conversations) parts.push(`${r.imported.conversations} 对话`);
-      if (r.imported.messages) parts.push(`${r.imported.messages} 消息`);
-      if (r.imported.knowledgeBases) parts.push(`${r.imported.knowledgeBases} 知识库`);
-      if (r.imported.documents) parts.push(`${r.imported.documents} 文档`);
-      if (r.imported.settings) parts.push('设置');
-      if (r.imported.attachments) parts.push(`${r.imported.attachments} 附件`);
-      if (r.imported.skills) parts.push(`${r.imported.skills} 技能`);
-      if (r.imported.tasks) parts.push(`${r.imported.tasks} 任务`);
+      if (r.imported.conversations) {
+        parts.push(t('settingsBackup.imported.conversations', { count: r.imported.conversations }));
+      }
+      if (r.imported.messages) {
+        parts.push(t('settingsBackup.imported.messages', { count: r.imported.messages }));
+      }
+      if (r.imported.knowledgeBases) {
+        parts.push(
+          t('settingsBackup.imported.knowledgeBases', { count: r.imported.knowledgeBases }),
+        );
+      }
+      if (r.imported.documents) {
+        parts.push(t('settingsBackup.imported.documents', { count: r.imported.documents }));
+      }
+      if (r.imported.settings) parts.push(t('settingsBackup.imported.settings'));
+      if (r.imported.attachments) {
+        parts.push(t('settingsBackup.imported.attachments', { count: r.imported.attachments }));
+      }
+      if (r.imported.skills) {
+        parts.push(t('settingsBackup.imported.skills', { count: r.imported.skills }));
+      }
+      if (r.imported.tasks) {
+        parts.push(t('settingsBackup.imported.tasks', { count: r.imported.tasks }));
+      }
 
       const skippedParts: string[] = [];
-      if (r.skipped.conversations) skippedParts.push(`${r.skipped.conversations} 对话（已存在或助手不存在）`);
-      if (r.skipped.documents) skippedParts.push(`${r.skipped.documents} 文档`);
-      if (r.skipped.skills) skippedParts.push(`${r.skipped.skills} 技能（文件夹已存在）`);
-      if (r.skipped.tasks) skippedParts.push(`${r.skipped.tasks} 任务（已存在或会话/助手不存在）`);
+      if (r.skipped.conversations) {
+        skippedParts.push(
+          t('settingsBackup.skipped.conversations', { count: r.skipped.conversations }),
+        );
+      }
+      if (r.skipped.documents) {
+        skippedParts.push(t('settingsBackup.skipped.documents', { count: r.skipped.documents }));
+      }
+      if (r.skipped.skills) {
+        skippedParts.push(t('settingsBackup.skipped.skills', { count: r.skipped.skills }));
+      }
+      if (r.skipped.tasks) {
+        skippedParts.push(t('settingsBackup.skipped.tasks', { count: r.skipped.tasks }));
+      }
 
-      let msg = `恢复完成：导入 ${parts.join('、') || '无'}`;
-      if (skippedParts.length) msg += `，跳过 ${skippedParts.join('、')}`;
+      let msg = t('settingsBackup.restoreDone', {
+        items: parts.join('、') || t('common.words.none'),
+      });
+      if (skippedParts.length) {
+        msg += t('settingsBackup.restoreSkipped', { items: skippedParts.join('、') });
+      }
 
       toast.success(msg);
 
       // needs_reindex 提示
       if (r.imported.documents > 0) {
-        toast.info(`${r.imported.documents} 个文档需重新索引向量（打开知识库手动重建）`);
+        toast.info(t('settingsBackup.reindexHint', { count: r.imported.documents }));
       }
 
       // 脱敏警告
       if (resp.precheck.warnings.some((w) => w.includes('脱敏'))) {
-        toast.info('敏感凭证已被脱敏，请在设置中重新填写');
+        toast.info(t('settingsBackup.redactedHint'));
       }
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 422) {
@@ -117,7 +180,9 @@ export function BackupPanel() {
           toast.error(details.precheck.warnings[0]);
         }
       } else {
-        toast.error(error instanceof ApiClientError ? error.message : '恢复失败');
+        toast.error(
+          error instanceof ApiClientError ? error.message : t('settingsBackup.restoreFailed'),
+        );
       }
     } finally {
       setRestoring(false);
@@ -132,54 +197,61 @@ export function BackupPanel() {
 
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="backup-panel">
-      <h3 className="font-medium">数据备份与恢复</h3>
+      <h3 className="font-medium">{t('settingsBackup.title')}</h3>
       <p className="text-xs text-muted-foreground">
-        导出本地数据到 <code>.tar.gz</code> 归档，可跨机器迁移或作为备份恢复。知识库文档恢复后需重新索引向量。
+        {t('settingsBackup.descriptionLead')}
+        <code>.tar.gz</code>
+        {t('settingsBackup.descriptionTail')}
       </p>
 
       {/* 导出区域 */}
       <div className="space-y-3 rounded-md border p-3">
-        <Label>选择要导出的数据</Label>
+        <Label>{t('settingsBackup.selectTracks')}</Label>
         <div className="grid gap-2 sm:grid-cols-2">
-          {TRACK_OPTIONS.map((opt) => (
+          {TRACK_ORDER.map((track) => (
             <label
-              key={opt.value}
+              key={track}
               className="flex cursor-pointer items-start gap-2 rounded-md p-2 text-sm hover:bg-muted/50"
             >
               <input
                 type="checkbox"
                 className="mt-0.5 h-4 w-4 rounded border-muted-foreground"
-                checked={selected.includes(opt.value)}
-                onChange={() => toggle(opt.value)}
+                checked={selected.includes(track)}
+                onChange={() => toggle(track)}
               />
               <span>
-                <span className="block font-medium leading-tight">{opt.label}</span>
-                <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+                <span className="block font-medium leading-tight">
+                  {t(TRACK_KEYS[track].label)}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {t(TRACK_KEYS[track].desc)}
+                </span>
               </span>
             </label>
           ))}
         </div>
         <div className="flex justify-end">
           <Button type="button" onClick={() => void doExport()} disabled={exportDisabled}>
-            {exporting ? '导出中...' : `导出备份（${selected.length} 轨）`}
+            {exporting
+              ? t('settingsBackup.exporting')
+              : t('settingsBackup.exportButton', { count: selected.length })}
           </Button>
         </div>
       </div>
 
       {/* 恢复区域 */}
       <div className="space-y-3 rounded-md border p-3">
-        <Label>从归档恢复</Label>
+        <Label>{t('settingsBackup.restoreTitle')}</Label>
         <input
           ref={fileInputRef}
           type="file"
           accept=".tar.gz,.tgz"
+          aria-label={t('settingsBackup.chooseFileAria')}
           className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:text-primary-foreground hover:file:bg-primary/90"
           onChange={onFileChange}
           disabled={restoring}
         />
-        <p className="text-xs text-muted-foreground">
-          支持 .tar.gz 格式，最大 500MB。恢复前会先检查版本兼容性与数据统计。
-        </p>
+        <p className="text-xs text-muted-foreground">{t('settingsBackup.restoreHint')}</p>
       </div>
     </section>
   );

@@ -1,33 +1,29 @@
----
-title: "v0.2 总览：从「只会说」到「会动手」——WorkBuddy For Me 的工具调用链架构升级"
-series: "WorkBuddy For Me v0.2 技术拆解"
-number: "B01"
-tags: ["workbuddy", "tools", "architecture"]
-date: "2025-Q4"
----
+# 从只会对话到能动手：给本地 AI 助手接上工具调用链
 
-# v0.2 总览：从「只会说」到「会动手」
+一个只会问答的 RAG 助手，天花板是肉眼可见的：用户问「今天几号」「帮我看看这个网页讲了什么」「知识库里那段话我怎么也搜不出来」，它都只能摇头说「我不知道」。这往往不是模型不够聪明，而是整条链路里根本没有「动手」的位置。
 
-## 问题：v0.1 的瓶颈
+先交代半句背景：我们做的是一个本地优先、以桌面应用形式交付、单人开发的私人 AI 助手——数据留在用户自己的机器上，模型可云可本地。要让它从「只会说」走到「会动手」，本质上只缺两块拼图：**模型能声明「我想执行什么」**，以及**应用能接住这个声明、执行、把结果喂回去**。前者是 tool calling（OpenAI 在 2023 年底引入、此后主流模型纷纷对齐的 function calling 协议），后者是工具编排器——整条工具链的复杂度几乎都堆在这里。
 
-v0.1 的 WorkBuddy For Me 是一个典型的 RAG 问答助手：接收用户输入，拼 system prompt + 历史消息 + 检索片段，调用模型，把流式文本吐给前端。这条链路在"有知识库约束"的场景下够用，但一旦用户的问题超出了知识范围——比如"今天几号"、"帮我查一下这个网页的内容"、"我想不起知识库里关于 X 的那段描述了"——助手就只能摇头说"我不知道"。
+这篇是全景图：先看纯问答链路卡在哪，再看迭代循环式的编排器长什么样、三道关键设计决策是什么，最后过一遍安全红线和后续文章的路线。
 
-v0.1 的代码结构本身就透露了这个限制。chat orchestrator 的核心循环只有一件事：拼消息 → 调 provider → 转发 delta。`streamChat` 是个干净的单次调用，没有任何"模型输出 → 执行 → 结果回灌 → 再调用"的迭代空间。模型是唯一的信息源，知识库是唯一的外部上下文，前端只消费文本流。
+## 纯问答链路的限制
 
-要让助手"会动手"，本质上需要两件事：**模型能声明"我想执行什么"**，以及**应用能接住这个声明、执行、把结果喂回去**。前者是 tool calling（OpenAI 2023 年底引入、此后主流模型纷纷对齐的 function calling 协议），后者是工具编排器——v0.2 的全部复杂度几乎都堆在这里。
+最早，这个应用是一个典型的 RAG 问答助手：接收用户输入，拼 system prompt + 历史消息 + 检索片段，调用模型，把流式文本吐给前端。这条链路在「有知识库约束」的场景下够用，但一旦问题超出知识范围就无解。
+
+代码结构本身就透露了这个限制。chat orchestrator 的核心循环只有一件事：拼消息 → 调 provider → 转发 delta。`streamChat` 是个干净的单次调用，没有任何「模型输出 → 执行 → 结果回灌 → 再调用」的迭代空间。模型是唯一的信息源，知识库是唯一的外部上下文，前端只消费文本流。
 
 ## 设计目标与约束
 
-动手之前，先把边界画清楚。WorkBuddy For Me 是个人/小团队用的本地优先（local-first）桌面应用，这几个事实直接决定了设计取舍：
+动手之前，先把边界画清楚。本地优先 + 桌面交付 + 个人使用，这几个事实直接决定了设计取舍：
 
 - **模型不一定支持 function calling**：用户可能接的是 Ollama 跑的 qwen2.5:7b，也可能是云端 OpenAI。协议层必须兼容两端，不支持的情况下优雅降级。
-- **工具必须只读**：v0.2 不上文件系统写入、不上 shell 命令。`fetch_webpage`、`knowledge_search`、`current_time` 三个内置工具覆盖"查网页 → 查知识库 → 查时间"的闭环，其余操作留到后续版本。
+- **第一批工具必须只读**：不上文件系统写入、不上 shell 命令。`fetch_webpage`、`knowledge_search`、`current_time` 三个内置工具覆盖「查网页 → 查知识库 → 查时间」的闭环，其余操作留到以后。
 - **工具链不能死循环**：模型拿到结果后可能再次调用工具，也可能直接出最终文本。硬上限（默认 8 轮）+ 达到上限时的 fallback 文本，保证一次对话的执行时间可预测。
 - **SSE 是唯一的流协议**：前后端通过 Next.js Route Handler + `response.write()` 发 SSE，事件序列必须稳定：`meta`（消息 ID）→ 若干轮 `tool.start` / `delta` / `tool.end` → `citations`（可选）→ `done` 或 `error`。
 
 ## 整体架构一览
 
-升级后的 chat orchestrator 不再是单次调用，而是一个迭代循环。核心骨架（简化自 `packages/core/src/chat/chat-orchestrator.ts`）长这样：
+改造后的 chat orchestrator 不再是单次调用，而是一个迭代循环。核心骨架（简化自 `packages/core/src/chat/chat-orchestrator.ts`）长这样：
 
 ```typescript
 // packages/core/src/chat/chat-orchestrator.ts（简化）
@@ -66,17 +62,17 @@ export async function* streamChat(input: StreamChatInput): AsyncGenerator<Orches
 
 这个循环里藏着几个关键设计决策，后续文章会逐个展开：
 
-1. **工具注册与执行分离**：`ToolRuntime` 负责"按助手白名单构建可用工具映射"和"构造执行上下文"，`ToolExecutor` 负责"执行一次调用 + 归一化结果（含超时/参数错误）"。两者分开是为了让工具本身保持纯函数（`run(rawArgs, ctx) → ToolResult`），便于测试和替换。
+1. **工具注册与执行分离**：`ToolRuntime` 负责「按助手白名单构建可用工具映射」和「构造执行上下文」，`ToolExecutor` 负责「执行一次调用 + 归一化结果（含超时/参数错误）」。两者分开是为了让工具本身保持纯函数（`run(rawArgs, ctx) → ToolResult`），便于测试和替换。
 
-2. **Provider 层对工具的透明降级**：`runProviderTurnWithToolFallback` 先尝试带 `tools` 参数调用，收到"不支持 tools"的错误后自动去掉 tools 再重试——这样同一个助手在 OpenAI 和 Ollama 上都能工作，只是后者不会触发工具。
+2. **Provider 层对工具的透明降级**：`runProviderTurnWithToolFallback` 先尝试带 `tools` 参数调用，收到「不支持 tools」的错误后自动去掉 tools 再重试——这样同一个助手在 OpenAI 和 Ollama 上都能工作，只是后者不会触发工具。
 
-3. **SSE 事件驱动而非轮询**：工具执行过程（start → 执行 → end）被拆成两个事件，前端据此渲染"工具卡片正在跑"的视觉反馈，而不是等工具跑完才一次性吐给前端。这对 `fetch_webpage` 这种可能耗时 5-10 秒的工具特别重要。
+3. **SSE 事件驱动而非轮询**：工具执行过程（start → 执行 → end）被拆成两个事件，前端据此渲染「工具卡片正在跑」的视觉反馈，而不是等工具跑完才一次性吐给前端。这对 `fetch_webpage` 这种可能耗时 5-10 秒的工具特别重要。
 
 4. **LangSmith 追踪零侵入**：通过环境变量开关 + `traceAsync` 包装器，tool 执行、RAG 检索、模型调用全链路自动埋点，不需要业务代码改一行。关闭追踪时代码路径完全不感知。
 
 ## 三个内置工具的实现思路
 
-v0.2 提供三个只读工具，它们覆盖了最常见的"回答不了"场景：
+第一批工具只有三个，全是只读，但它们覆盖了最常见的「回答不了」场景：
 
 | 工具名 | 能力 | 外部依赖 |
 |--------|------|----------|
@@ -126,7 +122,7 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
 
 ## 模型能力探测与门控
 
-不是所有模型都支持工具调用。v0.2 有两道门控：
+不是所有模型都支持工具调用。这里有两道门控：
 
 **第一道：Provider 级**。每个 adapter 返回 `supportsTools: boolean`。Ollama adapter 固定 `true`（因为 Ollama 0.3+ 的 `/v1/chat/completions` 兼容端点确实支持 tools），但不代表具体模型支持。
 
@@ -146,11 +142,11 @@ export async function* runProviderTurnWithToolFallback(params: TurnParams) {
 }
 ```
 
-这种"先试后降级"的策略比预先探测更靠谱，因为模型能力是动态的（同一个 provider 下不同模型能力不同），而报错信息里通常直接包含了"不支持 tools"的字样。
+这种「先试后降级」的策略比预先探测更靠谱，因为模型能力是动态的（同一个 provider 下不同模型能力不同），而报错信息里通常直接包含了「不支持 tools」的字样。
 
 ## 安全红线
 
-v0.2 上了工具就等于打开了新的攻击面。三个工具里最危险的是 `fetch_webpage`——如果模型被诱导去请求内网地址（比如 `http://169.254.169.254/latest/meta-data/`），桌面应用跑在用户机器上，等于把本地网络暴露给了云端模型的输出。
+上了工具就等于打开了新的攻击面。三个工具里最危险的是 `fetch_webpage`——如果模型被诱导去请求内网地址（比如 `http://169.254.169.254/latest/meta-data/`），桌面应用跑在用户机器上，等于把本地网络暴露给了云端模型的输出。
 
 SSRF 防护实现在 `packages/core/src/tools/ssrf-guard.ts`，分两层：
 
@@ -161,7 +157,7 @@ SSRF 防护实现在 `packages/core/src/tools/ssrf-guard.ts`，分两层：
 
 ## 本系列后续文章
 
-这篇是全景图。后续文章按"底层 → 协议 → 运行时 → 安全 → 工程"的顺序展开：
+这篇是全景图。后续文章按「底层 → 协议 → 运行时 → 安全 → 工程」的顺序展开：
 
 | 编号 | 主题 | 关键词 |
 |------|------|--------|
@@ -173,6 +169,6 @@ SSRF 防护实现在 `packages/core/src/tools/ssrf-guard.ts`，分两层：
 | B07 | 消息重生成的正确姿势 | cursor 回溯、contentParts 保留、并发安全 |
 | B08 | 工具调用链的安全红线 | SSRF 防护、文件系统白名单、命令沙箱 |
 | B09 | 工程约束的三层门禁 | TS strict + 单文件≤300行 + 外部调用 mock |
-| B10 | v0.1→v0.2 的架构债盘点 | 哪些能还、哪些留给 v0.3 |
+| B10 | 工具链落地后的架构债盘点 | 哪些该还、哪些先不还 |
 
 如果你是直接跳到这一篇的，建议先看这篇建立整体认知，再按编号顺序读后续——每篇独立可读，但组合起来是一条完整的实现路径。

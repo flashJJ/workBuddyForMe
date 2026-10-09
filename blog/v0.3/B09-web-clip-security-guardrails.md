@@ -1,20 +1,14 @@
----
-title: "网页剪藏的安全护栏：SSRF 逐跳复检 + URL/正文去重 + sourceUrl 引用贯通"
-series: "WorkBuddy For Me v0.3 技术拆解"
-number: "B09"
-tags: ["workbuddy", "web-scraping", "ssrf", "security", "dedup", "source-url"]
-date: "2025-Q4"
----
+# 网页剪藏的安全护栏：SSRF 逐跳复检、双重去重与来源贯通
 
 ## 从 fetch_webpage 工具到网页剪藏
 
-v0.2 里已经有一个 `fetch_webpage` 工具——模型可以调用它去拉网页内容回答问题。到 v0.3 M3 网页剪藏时，我们遇到了一个选择：
+此前已经有一个 `fetch_webpage` 工具——模型可以调用它去拉网页内容回答问题。做网页剪藏时，我们遇到了一个选择：
 
 > 是给剪藏重新写一套 URL 校验 + fetch + 去重的逻辑，还是和 `fetch_webpage` 工具共用一套基础设施？
 
 我们选了后者。原因很简单：**安全逻辑绝不能分叉**。
 
-`packages/core/src/net/safe-web-fetch.ts` 是两者的公共模块，位于 `packages/net/` 目录——独立于 `tools/` 和 `ingestion/`，任何人都可以用它。剪藏入口（`document-service.ts` 的 `clipWebpage`）和 `fetch_webpage` 工具（`fetch-webpage-tool.ts`）都 import 这同一个文件。
+core 包 net 目录的 `safe-web-fetch.ts` 是两者的公共模块——独立于 `tools/` 和 `ingestion/`，任何人都可以用它。剪藏入口（`document-service.ts` 的 `clipWebpage`）和 `fetch_webpage` 工具（`fetch-webpage-tool.ts`）都 import 这同一个文件。
 
 ```typescript
 // safe-web-fetch.ts 是唯一的实现
@@ -26,11 +20,9 @@ export async function readBoundedText(response, signal) { /* ... */ }
 
 这篇按调用顺序讲每一层护栏。
 
----
-
 ## 护栏 1：URL 静态校验（assertSafeUrlLiteral）
 
-任何 URL 进入系统的第一步。`packages/core/src/tools/ssrf-guard.ts`：
+任何 URL 进入系统的第一步。core 包 tools 目录的 `ssrf-guard.ts`：
 
 ```typescript
 export function assertSafeUrlLiteral(urlString: string): URL {
@@ -66,8 +58,6 @@ export function assertSafeUrlLiteral(urlString: string): URL {
 
 这样 `http://127.0.0.1/` 永远不会触发 DNS 请求，也就不可能被 DNS rebinding 攻击。
 
----
-
 ## 护栏 2：DNS 解析时校验（resolveAndAssertHost）
 
 ```typescript
@@ -89,7 +79,7 @@ export async function resolveAndAssertHost(hostname: string): Promise<void> {
 
 DNS rebinding 攻击链是：
 
-```
+```text
 1. 攻击者控制域名 evil.com 的 DNS
 2. 第一次解析 → 返回公网 IP（通过我们的校验）
 3. 我们 fetch evil.com → 攻击者这次返回 127.0.0.1
@@ -97,20 +87,19 @@ DNS rebinding 攻击链是：
 ```
 
 我们的防护方式是：
+
 1. 在发起 fetch **之前**做一次 DNS 解析校验（护栏 2）
 2. fetch 时让 Node.js 的 HTTP 客户端再做一次 DNS 解析（这是 Node 内部的，我们不控制）
 
 理论上存在一个小窗口：**护栏 2 的 DNS 解析结果和 fetch 时的 DNS 解析结果不一样**——但这个窗口很小（我们是手动 followRedirects，不会触发 DNS 缓存），加上护栏 1 的协议白名单和字面量 IP 直判，实际攻击面非常有限。
 
-如果要更彻底，应该在 fetch 时用 `dns.lookup` 的结果**直接做 IP 连接**（绕过系统 DNS），但 Node.js 的 `http.Agent` 不暴露这个能力。v0.3 先不做，等未来真的遇到 rebinding 攻击再加。
-
----
+如果要更彻底，应该在 fetch 时用 `dns.lookup` 的结果**直接做 IP 连接**（绕过系统 DNS），但 Node.js 的 `http.Agent` 不暴露这个能力。这里先不做，等未来真的遇到 rebinding 攻击再加。
 
 ## 护栏 3：逐跳重定向复检（followRedirects）
 
 这是最关键的一层。很多 SSRF 攻击链是：
 
-```
+```text
 http://trusted-cdn.com/redirect  → 302 → http://internal:8080/secret
 ```
 
@@ -148,9 +137,9 @@ export async function followRedirects(initial: URL, signal: AbortSignal) {
 3. **最多 3 跳**——`WEB_FETCH_MAX_REDIRECTS = 3`，太多跳说明有问题（反爬、无限重定向）
 4. **3xx → 非 3xx 的切换**——一旦拿到非重定向响应就返回，不继续 follow
 
-### 一个真实的 SSRF 攻击案例如果没这层护栏
+### 一个真实的 SSRF 攻击案例，如果没这层护栏
 
-```
+```text
 1. 用户提交剪藏：http://google.com/
 2. 我们校验 google.com → 公网 IP → 通过
 3. 发起 fetch，收到 302 → http://169.254.169.254/latest/meta-data/
@@ -158,8 +147,6 @@ export async function followRedirects(initial: URL, signal: AbortSignal) {
 ```
 
 有了逐跳复检：第 2 跳时 `assertEveryHop('http://169.254.169.254/...')` → 护栏 1 识别出 169.254 → 抛 `SsrfBlockedError` → 拒绝。
-
----
 
 ## 护栏 4：8 秒超时 + 200KB 有界读取
 
@@ -202,8 +189,6 @@ export async function readBoundedText(response: Response, signal: AbortSignal) {
 ### 为什么用手动 reader 而不是 `response.text()`
 
 `response.text()` 会把整个 body 一次性读进内存，没有大小限制。用 `body.getReader()` 手动分块读，可以在每块累加后检查是否超过 200KB——一旦超限立即中断。
-
----
 
 ## 去重层：URL 规范化 + 正文 hash 去重
 
@@ -264,11 +249,9 @@ function normalizeUrl(raw: string): string {
 
 同一个页面可能在不同域名有镜像（比如某公众号文章被转发到知乎专栏）。URL 去重会漏掉这种情况，所以加了正文 sha256——**正文完全相同就不重复 ingest**。
 
----
-
 ## sourceUrl 的贯通：从文档到 RAG 引用
 
-sourceUrl 存在 `documents.source_url`（v003-multimodal 加的列），在整个检索链路中贯通：
+sourceUrl 存在 `documents.source_url`（多模态迁移加的列），在整个检索链路中贯通：
 
 ### 存储
 
@@ -302,11 +285,9 @@ return {
 };
 ```
 
-### 前端渲染（knowledge-search-tool.test.ts 验证过）
+### 前端渲染
 
-知识卡片上显示「来源：[打开原文](sourceUrl)」，点击在新标签页打开原始网页。
-
----
+知识卡片上显示「来源：打开原文（sourceUrl）」，点击在新标签页打开原始网页。
 
 ## 与 fetch_webpage 工具的关系
 
@@ -320,10 +301,9 @@ return {
 | sourceUrl | 不记录 | 写入 documents.source_url |
 
 共用底层安全模块，上层各司其职。这样做的好处是：
+
 - 安全护栏只维护一份——改一处两处受益
 - 未来加新的 fetch 场景（比如定期刷新知识库），直接 import `safeFetchWebPage` 就行
-
----
 
 ## 安全护栏的防御矩阵
 
@@ -338,8 +318,6 @@ return {
 | 云元数据 SSRF | 护栏 1 + 护栏 3 | 169.254.0.0/16 直判 + 重定向复检 |
 | 重复 ingest | 去重层 | URL 规范化 + 正文 hash |
 
----
-
 ## 小结
 
 网页剪藏的安全护栏有三个设计原则：
@@ -352,4 +330,4 @@ return {
 
 sourceUrl 的贯通让每一条 RAG citation 都能回到原文——这对知识管理产品很重要，用户需要知道 AI 的回答从哪来。
 
-下一篇 B10 是最后一篇，三个真实线上 Bug 的复盘——pdfjs externals、Dialog z-index、PDF span 合并的完整踩坑记录。
+下一篇是最后一篇，三个真实线上 Bug 的复盘——pdfjs externals、Dialog z-index、PDF span 合并的完整踩坑记录。

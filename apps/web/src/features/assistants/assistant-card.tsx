@@ -3,6 +3,7 @@
 import type { Assistant, KnowledgeBase, ProviderModel } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   assistant: Assistant;
@@ -25,6 +26,7 @@ export function AssistantCard({
   onDelete,
   onMove,
 }: Props) {
+  const { t } = useI18n();
   const boundModel = models.find((model) => model.id === assistant.modelId);
   const boundKb = knowledgeBases.find((kb) => kb.id === assistant.knowledgeBaseId);
 
@@ -45,34 +47,38 @@ export function AssistantCard({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="truncate font-medium">{assistant.name}</h3>
-              {assistant.isBuiltin && <Badge variant="outline">内置</Badge>}
+              {assistant.isBuiltin && <Badge variant="outline">{t('assistants.card.builtin')}</Badge>}
             </div>
             <p className="line-clamp-2 text-xs text-muted-foreground">
-              {assistant.systemPrompt || '未设置系统提示词'}
+              {assistant.systemPrompt || t('assistants.card.noPrompt')}
             </p>
           </div>
         </div>
         <div className="flex shrink-0 flex-col gap-1">
           <Button type="button" size="sm" variant="ghost" onClick={() => onEdit(assistant)}>
-            编辑
+            {t('common.actions.edit')}
           </Button>
           {!assistant.isBuiltin && (
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              className="text-red-500 hover:text-red-600"
+              className="text-destructive hover:text-destructive"
               onClick={() => onDelete(assistant)}
             >
-              删除
+              {t('common.actions.delete')}
             </Button>
           )}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
-        <Badge variant="default">{boundModel ? boundModel.displayName : '默认模型'}</Badge>
-        {boundKb && <Badge variant="success">知识库：{boundKb.name}</Badge>}
+        <Badge variant="default">
+          {boundModel ? boundModel.displayName : t('assistants.card.defaultModel')}
+        </Badge>
+        {boundKb && (
+          <Badge variant="success">{t('assistants.card.knowledgeBase', { name: boundKb.name })}</Badge>
+        )}
         <span className="text-muted-foreground">
           T={assistant.temperature} · P={assistant.topP}
           {assistant.maxTokens ? ` · ≤${assistant.maxTokens}` : ''}
@@ -84,19 +90,19 @@ export function AssistantCard({
           type="button"
           className="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent disabled:opacity-30"
           disabled={!canMoveUp}
-          aria-label={`${assistant.name} 上移`}
+          aria-label={t('assistants.card.moveUpAria', { name: assistant.name })}
           onClick={() => onMove(assistant, -1)}
         >
-          ↑ 上移
+          {t('assistants.card.moveUp')}
         </button>
         <button
           type="button"
           className="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent disabled:opacity-30"
           disabled={!canMoveDown}
-          aria-label={`${assistant.name} 下移`}
+          aria-label={t('assistants.card.moveDownAria', { name: assistant.name })}
           onClick={() => onMove(assistant, 1)}
         >
-          ↓ 下移
+          {t('assistants.card.moveDown')}
         </button>
       </div>
     </article>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LANGUAGES, type Language } from '@wbfm/shared/constants';
 import { idParamSchema } from '@wbfm/shared/schemas';
 import { buildConversationSnapshot } from '@wbfm/core/share';
 import { defineRoute } from '@/lib/server/with-api-handler';
@@ -10,6 +11,7 @@ export const dynamic = 'force-dynamic';
 
 const exportQuerySchema = z.object({
   format: z.enum(['html', 'markdown']),
+  locale: z.enum(LANGUAGES).optional(),
 });
 
 /** 标题 → 跨平台安全文件名片段（兜底 conversation） */
@@ -35,7 +37,8 @@ function contentDisposition(name: string, ext: string): string {
 /** GET /api/conversations/:id/export?format=html|markdown — 分享文件下载（已脱敏） */
 export const GET = defineRoute(async ({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
-  const { format } = parseSearch(exportQuerySchema, new URL(request.url));
+  const { format, locale = 'zh-CN' } = parseSearch(exportQuerySchema, new URL(request.url));
+  const outputLocale = locale as Language;
 
   const snapshot = await buildConversationSnapshot(
     { db: services.db, cipher: services.cipher },
@@ -44,7 +47,7 @@ export const GET = defineRoute(async ({ request, params, services }) => {
 
   const name = safeName(snapshot.title);
   if (format === 'html') {
-    return new Response(renderConversationHtml(snapshot), {
+    return new Response(renderConversationHtml(snapshot, outputLocale), {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'content-disposition': contentDisposition(name, 'html'),
@@ -52,7 +55,7 @@ export const GET = defineRoute(async ({ request, params, services }) => {
     });
   }
 
-  return new Response(serializeMarkdown(snapshot), {
+  return new Response(serializeMarkdown(snapshot, outputLocale), {
     headers: {
       'content-type': 'text/markdown; charset=utf-8',
       'content-disposition': contentDisposition(name, 'md'),
