@@ -24,10 +24,11 @@
     --ring: 221 83% 53%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    /* 状态语义色（Badge/状态徽章明暗两套，取代散落的 emerald/red/amber 硬编码） */
-    --success: 152 62% 36%;
+    /* 状态语义色（Badge/状态徽章明暗两套，取代散落的 emerald/red/amber 硬编码）
+       v1.2 修：前景色须在同色 95% 浅底与白底下 ≥4.5:1（原值 success 3.52/warning 3.91） */
+    --success: 152 60% 28%;
     --success-bg: 152 54% 95%;
-    --warning: 32 90% 38%;
+    --warning: 32 90% 32%;
     --warning-bg: 38 92% 95%;
     --info: 217 91% 42%;
     --info-bg: 214 92% 95%;
