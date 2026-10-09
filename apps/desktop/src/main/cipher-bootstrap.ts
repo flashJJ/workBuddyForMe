@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 生成注入 standalone Node 服务的 --require 引导脚本。
  *
  * SecretCipher 是同步接口（core 服务层直接调用），而 safeStorage 只能在
@@ -86,6 +86,12 @@ export function renderCipherBootstrap(params: CipherBootstrapParams): string {
 
   var worker = new Worker(workerSource, {
     eval: true,
+    // 致命：本脚本经 node --require 注入 standalone 进程。Node ≥22.10 的
+    // Worker 默认继承 process.execArgv（实测含 --require），子 worker 会再次
+    // 执行本 preload → 每个 worker 又 new Worker → 指数 fork 炸弹（真机实测：
+    // 约 40 秒 700+ worker、28GB 线程栈后 V8 OOM，整窗黑屏）。显式置空切断
+    // preload 继承（Node ≤20 默认本就是空数组，全版本安全）。
+    execArgv: [],
     workerData: {
       url: ${url},
       token: ${token},
@@ -142,3 +148,5 @@ export function renderCipherBootstrap(params: CipherBootstrapParams): string {
 })();
 `;
 }
+
+
