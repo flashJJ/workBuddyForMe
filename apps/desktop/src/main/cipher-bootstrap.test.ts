@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { Worker } from 'node:worker_threads';
 import {
   CIPHER_FETCH_TIMEOUT_MS,
@@ -33,6 +34,9 @@ describe('renderCipherBootstrap 引导脚本', () => {
     const workerBody = source.slice(source.indexOf('var workerSource'), source.indexOf("].join"));
     expect(workerBody).not.toContain('Atomics.wait');
     expect(workerBody).toContain('AbortSignal.timeout');
+    // 防 fork 炸弹回归：本脚本经 --require 注入，Node ≥22.10 worker 默认继承
+    // process.execArgv 导致子 worker 递归执行 preload 无限自举，必须显式置空
+    expect(source).toMatch(/new Worker\(workerSource,\s*\{[\s\S]*?execArgv:\s*\[\]/);
   });
 
   it('冷启动容错：3 次尝试、单次 8s、总预算 30s，独立 SAB 隔离迟到响应', () => {
@@ -147,5 +151,40 @@ describe('cipher bootstrap 真实 worker 桥接（跨线程 mock 桥）', () => 
 
   it('decrypt 重试耗尽后返回 null（SecretCipher 契约：降级为未配置密钥，不抛）', () => {
     expect(cipher.decrypt('badcipher')).toBeNull();
+  });
+});
+
+describe('cipher bootstrap --require 注入防 fork 炸弹', () => {
+  it('子进程以 --require 加载 bootstrap 时 preload 只执行一次（回归：worker 递归自举）', () => {
+    // Node ≥22.10 worker 默认继承 process.execArgv（含 --require），子 worker
+    // 会再执行 preload 并 new Worker 形成指数 fork（真机实测 4 秒繁殖 130+）。
+    // 判据：在 preload 守卫之后注入文件计数，健康态只在主线程执行 1 次；
+    // 炸弹态每个 worker 各执行一次，计数文件出现多行。
+    const dir = mkdtempSync(join(tmpdir(), 'wbfm-cipher-fork-'));
+    const countPath = join(dir, 'preload-count.log').replace(/\\/g, '/');
+    const bootstrapPath = join(dir, 'cipher-bootstrap.cjs');
+    let rendered = renderCipherBootstrap({ url: 'http://127.0.0.1:1', token: 't' });
+    rendered = rendered.replace(
+      'if (globalThis.__WBFM_CIPHER__) return;',
+      `if (globalThis.__WBFM_CIPHER__) return;
+  try { require('node:fs').appendFileSync(${JSON.stringify(countPath)}, 'x\\n'); } catch (_) {}`,
+    );
+    writeFileSync(bootstrapPath, rendered, 'utf8');
+    const sentinelPath = join(dir, 'sentinel.cjs');
+    writeFileSync(sentinelPath, "setTimeout(() => process.exit(0), 4_000);\n", 'utf8');
+    try {
+      execFileSync(process.execPath, ['--require', bootstrapPath, sentinelPath], {
+        timeout: 15_000,
+        stdio: 'pipe',
+        env: { ...process.env, NODE_OPTIONS: '' },
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      rmSync(dir, { recursive: true, force: true });
+      throw new Error(`--require 注入异常（疑似 worker fork 炸弹回归）：${detail}`);
+    }
+    const count = readFileSync(countPath, 'utf8').trim().split('\n').filter(Boolean).length;
+    rmSync(dir, { recursive: true, force: true });
+    expect(count).toBe(1);
   });
 });
