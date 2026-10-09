@@ -22,28 +22,28 @@
 - 方案：[v1.1 内部加固](../plan/v1.1/README.md)（四篇：README/现状差距/重构设计/实施路线与风险，SDD 合同式任务板试点）
 - 总结：[v1.1-release-summary.md](v1.1-release-summary.md)（M0–M5 全量交付、全门禁绿；真机抽测另修两个 cipher 热修——同步桥死锁致供应商加载失败、worker fork 炸弹致空闲 OOM 黑屏，均已随 v1.1.0 封入）
 
-## 已发布版本：v1.0 ✅（2026-10）
+## 历史版本
+
+### v1.0 ✅ 已发布（2026-10）
 
 **主题：会说话的桌面伙伴**。本地 sherpa-onnx 语音识别/合成（离线）+ 流式语音对话与可打断 + Live2D 形象（口型/表情）+ 透明置顶鼠标穿透桌宠窗 + 空闲主动搭话。借鉴 Open-LLM-VTuber 并坚持本地优先与半双工安全边界。分支 `feature/v1.0-voice-companion`（`--no-ff` 合入 main，封版合并提交 b7480e7）。tag `v1.0.0`。
 
 - 方案：[docs/plan/v1.0](../plan/v1.0/README.md)（七篇，含 VAD 专题与桌宠专题）
 - 总结：[v1.0-release-summary.md](v1.0-release-summary.md)
 
-## 已发布版本：v0.9 ✅（2026-10）
+### v0.9 ✅ 已发布（2026-10）
 
 **主题：执行解耦 + 流程服务化**。队列/事件总线/崩溃恢复、本地 HTTP API、MCP Server（HTTP/stdio 双承载）、无人值守策略门控、运行记录与重放。tag `v0.9.0`。
 
 - 方案：[v0.9-flow-serving.md](v0.9-flow-serving.md)
 - 总结：[v0.9-release-summary.md](v0.9-release-summary.md)
 
-## 上一版本：v0.6 ✅ 已发布（2026-09）
+### v0.6 ✅ 已发布（2026-09）
 
 **主题：会接活**。MCP 客户端（stdio + HTTP）+ 权限分级与人工确认（HITL）+ 本地声明式技能包 + 工具可观测性/熔断/调试台。tag `v0.6.0`。
 
 - 方案：[v0.6-skills-and-mcp.md](v0.6-skills-and-mcp.md)
 - 总结：—
-
-## 历史版本
 
 ### v0.5 ✅ 已发布（2026-09）
 
