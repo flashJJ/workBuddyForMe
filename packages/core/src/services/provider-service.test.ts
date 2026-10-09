@@ -59,6 +59,45 @@ describe('provider/model 服务（TR-12.2）', () => {
     expect(() => providers.get(created.id)).toThrow(ApiError);
   });
 
+  it('单条密文解密抛错时降级为空密钥，不拖垮整个供应商列表', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const providers = createProviderService({ db, cipher });
+    const broken = providers.create({
+      name: '坏密文厂商',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://broken/v1',
+      apiKey: 'sk-broken123456',
+    });
+    const good = providers.create({
+      name: '正常厂商',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://good/v1',
+      apiKey: 'sk-good12345678',
+    });
+    // 契约破坏型 cipher：仅对坏行密文抛错（模拟桥实现违反「失败返回 null」契约）
+    const tamperedMarker = 'wbfm.v1.tampered';
+    db.prepare('UPDATE providers SET api_key_cipher = ? WHERE id = ?').run(tamperedMarker, broken.id);
+    const partialCipher: SecretCipher = {
+      encrypt: (plaintext) => cipher.encrypt(plaintext),
+      decrypt: (ciphertext) => {
+        if (ciphertext === tamperedMarker) throw new Error('cipher boom');
+        return cipher.decrypt(ciphertext);
+      },
+    };
+    const tolerant = createProviderService({ db, cipher: partialCipher });
+
+    const list = tolerant.list();
+    expect(list).toHaveLength(2);
+    const brokenView = list.find((p) => p.id === broken.id)!;
+    const goodView = list.find((p) => p.id === good.id)!;
+    expect(brokenView.apiKeyMasked).toBeNull();
+    expect(goodView.apiKeyMasked).toBe('sk-****5678');
+    // 单条 get 同样降级而非 500
+    expect(tolerant.get(broken.id).apiKeyMasked).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
   it('空 Key 允许创建/更新；不存在的 id 返回 NOT_FOUND', () => {
     const providers = createProviderService({ db, cipher });
     const created = providers.create({

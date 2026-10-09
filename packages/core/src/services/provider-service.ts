@@ -19,8 +19,19 @@ export function createProviderService({ db, cipher }: ServiceDeps) {
   const decryptMasked = (record: ProviderRecord): Provider => {
     if (!record.hasApiKey) return toView(record, null);
     const row = repo.getRow(record.id);
-    const plain = row?.api_key_cipher ? cipher.decrypt(row.api_key_cipher) : null;
-    return toView(record, plain ? maskSecret(plain) : null);
+    if (!row?.api_key_cipher) return toView(record, null);
+    try {
+      const plain = cipher.decrypt(row.api_key_cipher);
+      return toView(record, plain ? maskSecret(plain) : null);
+    } catch (error) {
+      // 单条密文不可解（dev/打包密钥体系不同、数据根跨机迁移、密文损坏）时
+      // 降级为「未配置密钥」而非拖垮整个列表；用户在设置中重新输入即可恢复。
+      console.warn(
+        `[provider] 供应商 ${record.name}(${record.id}) 的密钥无法解密，已降级显示，请重新输入 API Key：`,
+        error instanceof Error ? error.message : error,
+      );
+      return toView(record, null);
+    }
   };
 
   return {
