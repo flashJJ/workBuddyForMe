@@ -77,8 +77,11 @@ export function ToolDebugPanel() {
       {!isLoading && tools && tools.length > 0 && (
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">工具</label>
+            <label htmlFor="tool-debug-select" className="text-xs font-medium text-muted-foreground">
+              工具
+            </label>
             <select
+              id="tool-debug-select"
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm"

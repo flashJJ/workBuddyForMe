@@ -57,7 +57,9 @@ for (const rel of targets) {
 }
 
 const versionPath = path.join(root, versionFile);
-const currentVersionSource = fs.readFileSync(versionPath, 'utf8');
+// 行尾归一化后再比较：windows-latest CI 检出时 autocrlf 会把 LF 转成 CRLF，
+// 否则版本一致也会报 1.2.0 -> 1.2.0 的假 drift（写入侧恒用 LF，git 按配置自行转换）。
+const currentVersionSource = fs.readFileSync(versionPath, 'utf8').replace(/\r\n/g, '\n');
 const expected = expectedVersionFile(version);
 if (currentVersionSource !== expected) {
   const m = currentVersionSource.match(/APP_VERSION = '([^']+)'/);
