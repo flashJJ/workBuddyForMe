@@ -12,7 +12,104 @@
             "development": "./src/index.ts",
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
-        }
+        },
+        "./agent": {
+            "types": "./src/agent/index.ts",
+            "development": "./src/agent/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./secrets": {
+            "types": "./src/secrets/index.ts",
+            "development": "./src/secrets/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./services": {
+            "types": "./src/services/index.ts",
+            "development": "./src/services/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./chat": {
+            "types": "./src/chat/index.ts",
+            "development": "./src/chat/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./memory": {
+            "types": "./src/memory/index.ts",
+            "development": "./src/memory/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./ingestion": {
+            "types": "./src/ingestion/index.ts",
+            "development": "./src/ingestion/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./retrieval": {
+            "types": "./src/retrieval/index.ts",
+            "development": "./src/retrieval/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./tools": {
+            "types": "./src/tools/index.ts",
+            "development": "./src/tools/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./computer": {
+            "types": "./src/computer/index.ts",
+            "development": "./src/computer/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./mcp": {
+            "types": "./src/mcp/index.ts",
+            "development": "./src/mcp/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./serving": {
+            "types": "./src/serving/index.ts",
+            "development": "./src/serving/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./skills": {
+            "types": "./src/skills/index.ts",
+            "development": "./src/skills/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./backup": {
+            "types": "./src/backup/index.ts",
+            "development": "./src/backup/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./share": {
+            "types": "./src/share/index.ts",
+            "development": "./src/share/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./flow": {
+            "types": "./src/flow/index.ts",
+            "development": "./src/flow/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./voice": {
+            "types": "./src/voice/index.ts",
+            "development": "./src/voice/index.ts",
+            "import": "./dist/voice.mjs",
+            "require": "./dist/voice.cjs"
+        },
+        "./package.json": "./package.json"
     },
     "files": [
         "dist",
@@ -33,6 +130,7 @@
         "@wbfm/config": "workspace:*",
         "@wbfm/database": "workspace:*",
         "@wbfm/shared": "workspace:*",
+        "@wbfm/voice": "workspace:*",
         "fflate": "^0.8.3",
         "linkedom": "^0.18.13",
         "mammoth": "^1.12.3",

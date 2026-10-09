@@ -2,7 +2,7 @@
  * v0.7 M4：tasks 轨序列化辅助——从 export.ts 拆出以满足 300 行门禁。
  * 把 task_runs + task_steps 转为归档可序列化的纯对象结构。
  */
-import type { TaskRunView, TaskStepView } from '@wbfm/shared';
+import type { TaskRunView, TaskStepView } from '@wbfm/shared/schemas';
 import { createTaskRunRepository } from '@wbfm/database';
 import type { DatabaseInstance } from '@wbfm/database';
 

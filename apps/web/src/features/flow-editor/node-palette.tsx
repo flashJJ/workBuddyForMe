@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { FlowNodeType } from '@wbfm/shared';
+import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { cn } from '@/lib/utils';
 import { NODE_META, PALETTE_TYPES } from './node-meta';
 

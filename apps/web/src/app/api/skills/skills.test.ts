@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { getDataDir, resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createWebCipher } from '@wbfm/core';
+import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest, getServices } from '@/lib/server/container';
 import { GET as listSkills } from './route';
 import { PATCH, DELETE as removeSkill } from './[id]/route';

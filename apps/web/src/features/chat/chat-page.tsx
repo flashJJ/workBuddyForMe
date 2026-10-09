@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Brain } from 'lucide-react';
-import type { Conversation } from '@wbfm/shared';
+import type { Conversation } from '@wbfm/shared/types';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';

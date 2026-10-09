@@ -1,4 +1,4 @@
-import type { ToolSubstep } from '@wbfm/shared';
+import type { ToolSubstep } from '@wbfm/shared/types';
 import type { FlowEventBus } from './queue/event-bus';
 import { createSubstepCollector, flowNodeTitle } from './flow-substeps';
 import type { FlowExecutor } from './flow-execution';

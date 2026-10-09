@@ -1,4 +1,5 @@
-import type { Memory, RecalledMemoryPayload } from '@wbfm/shared';
+import type { Memory } from '@wbfm/shared/types';
+import type { RecalledMemoryPayload } from '@wbfm/shared/api';
 import type { TraceHandle } from '@wbfm/ai';
 import type { ResolvedChatTarget } from '../chat/model-resolver';
 import type { OrchestratorEvent } from '../chat/types';

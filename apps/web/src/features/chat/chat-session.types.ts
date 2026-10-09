@@ -1,4 +1,5 @@
-import type { PermissionLevel, SsePayloadMap } from '@wbfm/shared';
+import type { PermissionLevel } from '@wbfm/shared/types';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 
 /** v0.6 M2：待用户确认的工具调用（HITL 弹窗数据源） */
 export interface PendingToolConfirmation {

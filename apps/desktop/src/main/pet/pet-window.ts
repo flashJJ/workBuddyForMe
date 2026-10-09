@@ -10,7 +10,7 @@
  */
 import { BrowserWindow, screen } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
-import { normalizeAvatarModelId } from '@wbfm/shared';
+import { normalizeAvatarModelId } from '@wbfm/shared/pet';
 import { DEV_SERVER_URL, resolvePreloadPath } from '../config';
 import type { WindowBootInfo } from '../window';
 import { clampIntoDisplay, type PetState } from './pet-state';

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createWebCipher } from '@wbfm/core';
+import { createWebCipher } from '@wbfm/core/secrets';
 import { GET as health } from '@/app/api/health/route';
 import { __buildContainerForTest, __setContainerForTest } from './container';
 import { defineRoute } from './with-api-handler';

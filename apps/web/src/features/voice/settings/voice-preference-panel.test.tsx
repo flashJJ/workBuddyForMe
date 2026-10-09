@@ -2,7 +2,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DEFAULT_VOICE_SETTINGS, type VoiceModelDownload, type VoiceModelStatus } from '@wbfm/shared';
+import {
+  DEFAULT_VOICE_SETTINGS,
+  type VoiceModelDownload,
+  type VoiceModelStatus,
+} from '@wbfm/shared/schemas';
 import { renderWithProviders } from '@/test/render';
 import { VoicePreferencePanel } from './voice-preference-panel';
 

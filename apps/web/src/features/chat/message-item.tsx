@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { stripExpressionDirectives, type Message } from '@wbfm/shared';
+import { stripExpressionDirectives } from '@wbfm/shared/schemas';
+import { type Message } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';

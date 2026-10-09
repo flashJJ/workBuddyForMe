@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AppSettings, ProviderModel } from '@wbfm/shared';
+import type { AppSettings, ProviderModel } from '@wbfm/shared/types';
 import { useProviders } from './use-providers';
 import { apiGet, apiPut } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';

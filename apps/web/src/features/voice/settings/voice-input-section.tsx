@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { VoiceSettings, VadSensitivity } from '@wbfm/shared';
+import type { VoiceSettings, VadSensitivity } from '@wbfm/shared/schemas';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatChunk, ChatMessage, ChatParams } from '@wbfm/ai';
-import type { Message, MessageRole } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
+import type { MessageRole } from '@wbfm/shared/constants';
 import type { ResolvedChatTarget } from './model-resolver';
 import {
   buildSummaryMessages,

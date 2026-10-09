@@ -1,5 +1,5 @@
-import type { Message, ToolSubstep, ToolTraceEntry } from '@wbfm/shared';
-import type { SsePayloadMap } from '@wbfm/shared';
+import type { Message, ToolSubstep, ToolTraceEntry } from '@wbfm/shared/types';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 
 /** 工具 end 事件载荷（phase='end' 分支） */
 type ToolEndPayload = Extract<SsePayloadMap['tool'], { phase: 'end' }>;

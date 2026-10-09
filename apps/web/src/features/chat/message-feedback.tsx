@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
-import type { Message, MessageFeedback } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
+import type { MessageFeedback } from '@wbfm/shared/constants';
 import { useMessageFeedback } from '@/lib/hooks/use-message-feedback';
 
 interface Props {

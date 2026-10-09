@@ -1,115 +1,16 @@
-import type {
-  FlowRunStatus,
-  FlowTrigger,
-  NodeExecutionView,
-  WorkflowRunView,
-} from '@wbfm/shared';
+import type { WorkflowRunView } from '@wbfm/shared/types';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 import { createNodeExecutionStore } from './node-execution-repo';
-
-export interface WorkflowRunRow {
-  id: string;
-  workflow_id: string;
-  version: number;
-  trigger: string;
-  status: string;
-  input_json: string | null;
-  output_json: string | null;
-  error_json: string | null;
-  conversation_id: string | null;
-  wait_node_id: string | null;
-  started_at: string | null;
-  finished_at: string | null;
-  created_at: string;
-  endpoint_id: string | null;
-  parent_run_id: string | null;
-  resumed_from_node: string | null;
-  interrupt_reason: string | null;
-}
-
-export interface NodeExecutionRow {
-  id: string;
-  run_id: string;
-  node_id: string;
-  status: string;
-  inputs_json: string | null;
-  outputs_json: string | null;
-  error_json: string | null;
-  started_at: string | null;
-  finished_at: string | null;
-  duration_ms: number;
-}
-
-export interface WorkflowRunCreateFields {
-  id?: string;
-  workflowId: string;
-  version: number;
-  trigger?: FlowTrigger;
-  input?: Record<string, unknown>;
-  conversationId?: string | null;
-  /** v0.9：API/MCP 触发来源端点 */
-  endpointId?: string | null;
-  /** v0.9：重放关联 */
-  parentRunId?: string | null;
-  resumedFromNode?: string | null;
-}
-
-export type RunTerminalStatus = Extract<
-  FlowRunStatus,
-  'succeeded' | 'failed' | 'cancelled' | 'interrupted'
->;
-
-export interface RunFinishFields {
-  output?: unknown;
-  error?: { code: string; message: string; nodeId?: string };
-}
-
-export interface RunListFilter {
-  trigger?: FlowTrigger;
-  status?: FlowRunStatus;
-  endpointId?: string;
-  limit?: number;
-}
-
-/** v0.9：启动恢复扫描结果 */
-export interface RecoverableRuns {
-  /** queued 无执行者：重新入队的 runId */
-  queued: string[];
-  /** running/waiting_human 无执行者：需收敛 interrupted 的 runId */
-  interrupted: string[];
-}
-
-function parseJson<T>(raw: string | null, fallback: T): T {
-  if (raw === null || raw === '') return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function mapRun(row: WorkflowRunRow): WorkflowRunView {
-  return {
-    id: row.id,
-    workflowId: row.workflow_id,
-    version: row.version,
-    trigger: row.trigger as FlowTrigger,
-    status: row.status as FlowRunStatus,
-    input: parseJson<Record<string, unknown> | null>(row.input_json, null),
-    output: parseJson<unknown>(row.output_json, null),
-    error: parseJson<WorkflowRunView['error']>(row.error_json, null),
-    conversationId: row.conversation_id,
-    waitNodeId: row.wait_node_id,
-    startedAt: row.started_at,
-    finishedAt: row.finished_at,
-    createdAt: row.created_at,
-    endpointId: row.endpoint_id,
-    parentRunId: row.parent_run_id,
-    resumedFromNode: row.resumed_from_node,
-    interruptReason: row.interrupt_reason,
-  };
-}
+import { mapRun } from './workflow-run-mapper';
+import type {
+  RecoverableRuns,
+  RunFinishFields,
+  RunListFilter,
+  RunTerminalStatus,
+  WorkflowRunCreateFields,
+  WorkflowRunRow,
+} from './workflow-run-types';
 
 export function createWorkflowRunRepository(db: DatabaseInstance) {
   const nodeStore = createNodeExecutionStore(db);
@@ -292,5 +193,14 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
   };
 }
 
+export type {
+  NodeExecutionRow,
+  RecoverableRuns,
+  RunFinishFields,
+  RunListFilter,
+  RunTerminalStatus,
+  WorkflowRunCreateFields,
+  WorkflowRunRow,
+} from './workflow-run-types';
 export type WorkflowRunRepository = ReturnType<typeof createWorkflowRunRepository>;
-export type { NodeExecutionView };
+export type { NodeExecutionView } from '@wbfm/shared/types';

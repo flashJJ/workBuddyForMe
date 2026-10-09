@@ -1,4 +1,4 @@
-import type { SsePayloadMap } from '@wbfm/shared';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 
 export type VoiceAudioFrame = SsePayloadMap['voice_audio'];
 export type VoiceState = SsePayloadMap['voice_state']['state'];

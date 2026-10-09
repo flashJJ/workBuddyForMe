@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { WorkflowRunView } from '@wbfm/shared';
+import type { WorkflowRunView } from '@wbfm/shared/types';
 import { createFlowRunQueue } from './run-queue';
 
 function runView(id: string): WorkflowRunView {

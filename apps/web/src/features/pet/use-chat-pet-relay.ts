@@ -1,7 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import type { Message, PetVoiceState, VoiceSettings } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
+import type { PetVoiceState } from '@wbfm/shared/pet';
+import type { VoiceSettings } from '@wbfm/shared/schemas';
 import type { VoiceAudioFrame } from '@/features/voice/audio-playback-queue';
 import { getPetBridge } from './pet-bridge';
 import { usePetOpenState, usePetVoiceRelay } from './use-pet-voice-relay';

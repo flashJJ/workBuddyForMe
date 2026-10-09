@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared';
+import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';

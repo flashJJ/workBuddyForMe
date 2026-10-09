@@ -1,5 +1,12 @@
 import { createTaskRunRepository } from '@wbfm/database';
-import { ApiError, formatSse, idParamSchema, type TaskEventPayload, type TaskRunView, type TaskStepView } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { formatSse } from '@wbfm/shared/api';
+import {
+  idParamSchema,
+  type TaskEventPayload,
+  type TaskRunView,
+  type TaskStepView,
+} from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { sseResponse } from '@/lib/server/sse-stream';
 import { parseParams } from '@/lib/server/validation';

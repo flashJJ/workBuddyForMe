@@ -4,8 +4,8 @@ import {
   COMPACTION_TRIGGER_RATIO,
   MEMORY_BLOCK_RESERVE_TOKENS,
   SUMMARY_BLOCK_RESERVE_TOKENS,
-  type Message,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
+import { type Message } from '@wbfm/shared/types';
 import { traceAsync, type ChatMessage, type TraceHandle } from '@wbfm/ai';
 import { estimateMessageTokens } from './context-budget';
 import type { ResolvedChatTarget } from './model-resolver';

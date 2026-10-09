@@ -5,8 +5,8 @@ import { apiUpload, ApiClientError, withManagedHeaders } from '@/lib/api/client'
 import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import type { BackupTrack, BackupPrecheck } from '@wbfm/shared';
-import type { BackupRestoreResult } from '@wbfm/core';
+import type { BackupTrack, BackupPrecheck } from '@wbfm/shared/backup';
+import type { BackupRestoreResult } from '@wbfm/core/backup';
 
 const TRACK_OPTIONS: Array<{ value: BackupTrack; label: string; desc: string }> = [
   { value: 'conversations', label: '对话记录', desc: '全部对话与消息历史' },

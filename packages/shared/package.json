@@ -12,7 +12,62 @@
       "development": "./src/index.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./errors": {
+      "types": "./src/errors/index.ts",
+      "development": "./src/errors/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./api": {
+      "types": "./src/api/index.ts",
+      "development": "./src/api/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./types": {
+      "types": "./src/types/index.ts",
+      "development": "./src/types/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./schemas": {
+      "types": "./src/schemas/index.ts",
+      "development": "./src/schemas/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./constants": {
+      "types": "./src/constants/index.ts",
+      "development": "./src/constants/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./backup": {
+      "types": "./src/backup.ts",
+      "development": "./src/backup.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./updater": {
+      "types": "./src/updater.ts",
+      "development": "./src/updater.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./pet": {
+      "types": "./src/pet.ts",
+      "development": "./src/pet.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./command": {
+      "types": "./src/command.ts",
+      "development": "./src/command.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": ["dist", "src"],
   "scripts": {

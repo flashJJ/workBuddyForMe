@@ -1,4 +1,5 @@
-import { ApiError, OCR_TEXT_DENSITY_THRESHOLD } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { OCR_TEXT_DENSITY_THRESHOLD } from '@wbfm/shared/constants';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { DocumentKind } from './types';
 import { readDocx } from './office/read-docx';

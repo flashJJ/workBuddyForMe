@@ -191,7 +191,6 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
   });
 
   test('③ 免手武装后自动聆听：VAD 段→ASR→消息自动发送并收到回复', async ({ page }) => {
-    const asrPromise = page.waitForRequest((r) => r.url().includes('/api/voice/asr'));
     await page.goto('/chat');
     await expect(page.getByLabel('消息输入框')).toBeVisible();
 

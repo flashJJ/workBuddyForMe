@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Assistant, Message } from '@wbfm/shared';
+import type { Assistant, Message } from '@wbfm/shared/types';
 import { buildChatMessages, buildSystemPrompt, EXPRESSION_DIRECTIVE_BLOCK } from './prompt';
 import { estimateMessageTokens } from './context-budget';
 import type { ChatMessage } from '@wbfm/ai';

@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { CSSProperties } from 'react';
 import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
 import type { ExpressionTag } from '@/features/avatar/expression-parser';
-import type { PetVoiceState } from '@wbfm/shared';
+import type { PetVoiceState } from '@wbfm/shared/pet';
 import { getPetBridge } from './pet-bridge';
 import { PetSubtitle } from './pet-subtitle';
 

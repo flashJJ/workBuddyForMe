@@ -1,6 +1,6 @@
 'use client';
 
-import type { PermissionLevel, SkillInfo } from '@wbfm/shared';
+import type { PermissionLevel, SkillInfo } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';

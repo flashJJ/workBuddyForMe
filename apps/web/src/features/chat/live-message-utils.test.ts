@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Message, ToolSubstep } from '@wbfm/shared';
-import type { SsePayloadMap } from '@wbfm/shared';
+import type { Message, ToolSubstep } from '@wbfm/shared/types';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 import { applyToolSubsteps, applyToolTraceEnd } from './live-message-utils';
 
 function assistantWithTrace(tool: string): Message[] {

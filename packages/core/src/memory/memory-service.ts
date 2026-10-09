@@ -1,11 +1,5 @@
-import {
-  MEMORY_DUPLICATE_MAX_DISTANCE,
-  MEMORY_RECALL_MAX_DISTANCE,
-  MEMORY_TOP_K,
-  type Memory,
-  type MemoryKind,
-  type MemoryStatus,
-} from '@wbfm/shared';
+import { MEMORY_TOP_K } from '@wbfm/shared/constants';
+import { type Memory, type MemoryKind, type MemoryStatus } from '@wbfm/shared/types';
 import {
   createMemoryRepository,
   deleteAllMemoryVectors,
@@ -18,11 +12,32 @@ import {
   type MemoryListFilter,
   type MemoryRepository,
 } from '@wbfm/database';
-import { traceAsync, type TraceHandle } from '@wbfm/ai';
+import { traceAsync } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
-import { resolveEmbeddingTarget } from '../ingestion/embedding-target';
 import type { ExtractedMemory } from './extractor';
 import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-decay';
+import { embedTexts } from './memory-embedding';
+import {
+  filterRecallHits,
+  mergeImportance,
+  pickDuplicateTarget,
+  toExtractedMemory,
+} from './memory-match';
+import type {
+  ManualMemoryInput,
+  RecallOptions,
+  RememberOneInput,
+  RememberOptions,
+  RememberResult,
+} from './memory-service-types';
+
+export type {
+  ManualMemoryInput,
+  RecallOptions,
+  RememberOneInput,
+  RememberOptions,
+  RememberResult,
+} from './memory-service-types';
 
 /**
  * v0.5 M3 长期记忆服务：
@@ -31,55 +46,6 @@ import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-de
  * - 管理 CRUD：M4 设置页复用。
  * 嵌入模型未配置时记忆仍可手工入库，但不参与语义召回。
  */
-
-export interface RememberResult {
-  created: number;
-  updated: number;
-  memories: Memory[];
-}
-
-export interface RememberOptions {
-  sourceConversationId?: string | null;
-  signal?: AbortSignal;
-  traceParent?: TraceHandle | null;
-}
-
-export interface RecallOptions {
-  signal?: AbortSignal;
-  traceParent?: TraceHandle | null;
-}
-
-export interface ManualMemoryInput {
-  kind: MemoryKind;
-  content: string;
-  importance: number;
-}
-
-/** P1-1 单条情景记忆入库（如会话压缩摘要），复用去重/向量管线 */
-export interface RememberOneInput {
-  kind: MemoryKind;
-  content: string;
-  importance: number;
-  sourceConversationId?: string | null;
-}
-
-async function embedTexts(
-  deps: ServiceDeps,
-  texts: string[],
-  signal?: AbortSignal,
-): Promise<{ vectors: number[][]; dimension: number } | null> {
-  const target = resolveEmbeddingTarget(deps);
-  if (!target || texts.length === 0) return null;
-  const result = await target.provider.embed({
-    model: target.model.modelId,
-    input: texts,
-    signal,
-  });
-  if (result.vectors.length !== texts.length) {
-    throw new Error('嵌入向量数量与输入不一致');
-  }
-  return { vectors: result.vectors, dimension: result.dimension };
-}
 
 export function createMemoryService(deps: ServiceDeps) {
   const repo: MemoryRepository = createMemoryRepository(deps.db);
@@ -95,11 +61,10 @@ export function createMemoryService(deps: ServiceDeps) {
     let nearestDistance = Number.POSITIVE_INFINITY;
     if (vector) {
       ensureMemoryVectorTable(db, vector.length);
-      const hits = searchMemoryVectors(db, { vector, k: 1 });
-      const hit = hits[0];
-      if (hit && hit.distance <= MEMORY_DUPLICATE_MAX_DISTANCE) {
-        nearestId = hit.memoryId;
-        nearestDistance = hit.distance;
+      const nearest = pickDuplicateTarget(searchMemoryVectors(db, { vector, k: 1 })[0]);
+      if (nearest) {
+        nearestId = nearest.id;
+        nearestDistance = nearest.distance;
       }
     }
 
@@ -108,7 +73,7 @@ export function createMemoryService(deps: ServiceDeps) {
       if (existing) {
         const memory = repo.update(String(nearestId), {
           content: candidate.content,
-          importance: Math.max(existing.importance, candidate.importance),
+          importance: mergeImportance(existing.importance, candidate.importance),
         })!;
         if (vector) upsertMemoryVector(db, { id: nearestId, vector });
         return { memory, merged: true };
@@ -157,13 +122,8 @@ export function createMemoryService(deps: ServiceDeps) {
 
   /** 单条记忆入库（情景记忆/摘要），嵌入去重与自动记忆完全一致 */
   async function rememberOne(input: RememberOneInput, signal?: AbortSignal): Promise<Memory> {
-    const content = input.content.slice(0, 500);
-    const candidate: ExtractedMemory = {
-      kind: input.kind,
-      content,
-      importance: input.importance,
-    };
-    const embedded = await embedTexts(deps, [content], signal);
+    const candidate = toExtractedMemory(input);
+    const embedded = await embedTexts(deps, [candidate.content], signal);
     const vector = embedded?.vectors[0] ?? null;
     const tx = deps.db.transaction(() =>
       persistOne(deps.db, candidate, vector, input.sourceConversationId ?? null),
@@ -185,10 +145,9 @@ export function createMemoryService(deps: ServiceDeps) {
         if (getMemoryVectorDimension(deps.db) === null) return [];
         const embedded = await embedTexts(deps, [trimmed], options.signal);
         if (!embedded) return [];
-        const hits = searchMemoryVectors(deps.db, {
-          vector: embedded.vectors[0]!,
-          k: MEMORY_TOP_K,
-        }).filter((hit) => hit.distance <= MEMORY_RECALL_MAX_DISTANCE);
+        const hits = filterRecallHits(
+          searchMemoryVectors(deps.db, { vector: embedded.vectors[0]!, k: MEMORY_TOP_K }),
+        );
         const memories = hits
           .map((hit) => repo.findById(String(hit.memoryId)))
           .filter((m): m is Memory => m !== null);

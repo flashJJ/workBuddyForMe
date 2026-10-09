@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { OCR_TEXT_DENSITY_THRESHOLD } from '@wbfm/shared';
+import { OCR_TEXT_DENSITY_THRESHOLD } from '@wbfm/shared/constants';
 
 const getDocument = vi.fn();
 

@@ -1,9 +1,6 @@
-import {
-  ApiError,
-  type Assistant,
-  type AssistantCreateInput,
-  type AssistantUpdateInput,
-} from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type Assistant } from '@wbfm/shared/types';
+import { type AssistantCreateInput, type AssistantUpdateInput } from '@wbfm/shared/schemas';
 import {
   createAssistantRepository,
   createKnowledgeRepository,

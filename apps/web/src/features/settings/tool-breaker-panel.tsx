@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { ToolBreakerSnapshot } from '@wbfm/core';
+import type { ToolBreakerSnapshot } from '@wbfm/core/tools';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/common/state';

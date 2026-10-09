@@ -1,4 +1,5 @@
-import { RAG_CHUNK_MIN_TOKENS, type Citation } from '@wbfm/shared';
+import { RAG_CHUNK_MIN_TOKENS } from '@wbfm/shared/constants';
+import { type Citation } from '@wbfm/shared/types';
 import type { RagChunk } from '../chat/types';
 import { estimateTokens, truncateToTokens } from '../chat/context-budget';
 import type { RetrievedChunk } from './retrieval-service';

@@ -1,4 +1,5 @@
-import { ApiError, type Assistant, type ContentPart } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type Assistant, type ContentPart } from '@wbfm/shared/types';
 import type { AttachmentService } from '../services/attachment-service';
 import type { ConversationService } from '../services/conversation-service';
 import type { ResolvedChatTarget } from './model-resolver';

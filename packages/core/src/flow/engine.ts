@@ -1,4 +1,5 @@
-import type { FlowEventPayload, FlowNodeType } from '@wbfm/shared';
+import type { FlowEventPayload } from '@wbfm/shared/types';
+import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { resolveFlowRefs } from './refs';
 import { createDefaultHandlers } from './handlers';
 import { toolNodeHandler, type ToolNodeConfig } from './handlers/tool';

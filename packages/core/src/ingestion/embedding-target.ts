@@ -1,5 +1,5 @@
 import type { ChatProvider } from '@wbfm/ai';
-import type { ProviderModel } from '@wbfm/shared';
+import type { ProviderModel } from '@wbfm/shared/types';
 import {
   createModelRepository,
   createProviderRepository,

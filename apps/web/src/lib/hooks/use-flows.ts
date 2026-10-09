@@ -5,17 +5,32 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   FlowDiagnostic,
   FlowEventPayload,
-  FlowGraph,
-  FlowHumanSubmitInput,
   FlowNodeExecStatus,
   WorkflowRunView,
   WorkflowVersionView,
   WorkflowView,
+} from '@wbfm/shared/types';
+import type {
+  FlowGraph,
+  FlowHumanSubmitInput,
   WorkflowCreateInput,
   WorkflowUpdateInput,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
+import {
+  INITIAL_LIVE,
+  applyFlowEvent,
+  buildFlowRunEventsUrl,
+  flowEventDedupeKey,
+  isTerminalFlowEvent,
+  onFlowConnectionError,
+  onFlowConnectionOpen,
+  readManagedToken,
+} from './use-flows-helpers';
+import type { FlowLiveState } from './use-flows-types';
+
+export type { FlowLiveState, FlowRunPhase } from './use-flows-types';
 
 /** 工作流详情：元信息 + 当前版本图（无版本 graph=null） */
 export interface FlowDetail {
@@ -131,37 +146,6 @@ export function useFlowRunAction(runId: string | null) {
 
 // ── SSE 运行事件流 ──
 
-export type FlowRunPhase =
-  | 'connecting'
-  | 'running'
-  | 'succeeded'
-  | 'failed'
-  | 'cancelled';
-
-export interface FlowLiveState {
-  events: FlowEventPayload[];
-  /** nodeId → 节点执行状态（画布高亮/时间线共用） */
-  nodeStatus: Record<string, FlowNodeExecStatus>;
-  /** 当前挂起中的节点（人工审核或危险工具授权） */
-  waitingNodeId: string | null;
-  phase: FlowRunPhase;
-  connection: 'connecting' | 'open' | 'closed' | 'error';
-  output: unknown;
-  errorMessage: string | null;
-  errorNodeId: string | null;
-}
-
-const INITIAL_LIVE: FlowLiveState = {
-  events: [],
-  nodeStatus: {},
-  waitingNodeId: null,
-  phase: 'connecting',
-  connection: 'connecting',
-  output: null,
-  errorMessage: null,
-  errorNodeId: null,
-};
-
 /**
  * 订阅工作流运行 SSE：挂载即连、卸载即关。
  * 终态运行由服务端回放节点记录，同一套事件归一处理。
@@ -176,31 +160,23 @@ export function useFlowRunEvents(runId: string | null): FlowLiveState {
     }
     setState(INITIAL_LIVE);
 
-    const token = (globalThis as { window?: { wbfm?: { token?: string } } }).window?.wbfm?.token;
-    const url = `${API.flowRunEvents(runId)}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    const url = buildFlowRunEventsUrl(runId, readManagedToken());
     const es = new EventSource(url);
     // 同一订阅内去重：终态运行的服务端回放可能因 EventSource 自动重连而重复
     const seen = new Set<string>();
 
-    es.onopen = () =>
-      setState((s) => ({ ...s, connection: 'open', phase: s.phase === 'connecting' ? 'running' : s.phase }));
-    es.onerror = () =>
-      setState((s) => ({ ...s, connection: s.phase === 'running' || s.phase === 'connecting' ? 'error' : 'closed' }));
+    es.onopen = () => setState((s) => onFlowConnectionOpen(s));
+    es.onerror = () => setState((s) => onFlowConnectionError(s));
     es.addEventListener('flow', (ev) => {
       try {
         const payload = JSON.parse((ev as MessageEvent).data) as FlowEventPayload;
         // 同一运行中每类节点事件只出现一次；run 级事件按 type 去重
-        const dedupeKey =
-          'nodeId' in payload ? `${payload.type}:${payload.nodeId}` : payload.type;
+        const dedupeKey = flowEventDedupeKey(payload);
         if (seen.has(dedupeKey)) return;
         seen.add(dedupeKey);
         setState((s) => applyFlowEvent(s, payload));
         // 关键：终态后服务端会关闭流，必须主动 es.close()，否则浏览器自动重连→重放→风暴
-        if (
-          payload.type === 'run_succeeded' ||
-          payload.type === 'run_failed' ||
-          payload.type === 'run_cancelled'
-        ) {
+        if (isTerminalFlowEvent(payload)) {
           es.close();
         }
       } catch {
@@ -212,54 +188,4 @@ export function useFlowRunEvents(runId: string | null): FlowLiveState {
   }, [runId]);
 
   return state;
-}
-
-function applyFlowEvent(prev: FlowLiveState, e: FlowEventPayload): FlowLiveState {
-  const next: FlowLiveState = {
-    ...prev,
-    events: [...prev.events, e],
-    nodeStatus: { ...prev.nodeStatus },
-  };
-  switch (e.type) {
-    case 'run_started':
-      next.phase = 'running';
-      break;
-    case 'node_started':
-      next.nodeStatus[e.nodeId] = 'running';
-      if (prev.waitingNodeId === e.nodeId) next.waitingNodeId = null;
-      break;
-    case 'node_succeeded':
-      next.nodeStatus[e.nodeId] = 'succeeded';
-      if (prev.waitingNodeId === e.nodeId) next.waitingNodeId = null;
-      break;
-    case 'node_skipped':
-      next.nodeStatus[e.nodeId] = 'skipped';
-      break;
-    case 'node_waiting_human':
-      next.nodeStatus[e.nodeId] = 'waiting_human';
-      next.waitingNodeId = e.nodeId;
-      break;
-    case 'node_failed':
-      next.nodeStatus[e.nodeId] = 'failed';
-      break;
-    case 'run_succeeded':
-      next.phase = 'succeeded';
-      next.connection = 'closed';
-      next.output = e.output;
-      next.waitingNodeId = null;
-      break;
-    case 'run_failed':
-      next.phase = 'failed';
-      next.connection = 'closed';
-      next.errorMessage = e.message;
-      next.errorNodeId = e.nodeId ?? null;
-      next.waitingNodeId = null;
-      break;
-    case 'run_cancelled':
-      next.phase = 'cancelled';
-      next.connection = 'closed';
-      next.waitingNodeId = null;
-      break;
-  }
-  return next;
 }

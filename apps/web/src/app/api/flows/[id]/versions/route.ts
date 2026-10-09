@@ -1,9 +1,9 @@
+import { ApiError } from '@wbfm/shared/errors';
 import {
-  ApiError,
   idParamSchema,
   workflowVersionCreateSchema,
   type WorkflowVersionCreateInput,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { createWorkflowRepository } from '@wbfm/database';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';

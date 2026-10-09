@@ -2,8 +2,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { ChatChunk, ChatParams, ChatProvider } from '@wbfm/ai';
 
 // 缩短超时/上限常量，避免单测等待 30s/5min（pageNeedsOcr 阈值保持 50）
-vi.mock('@wbfm/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@wbfm/shared')>();
+// v1.1 T2.2：runner 改从 @wbfm/shared/constants 子路径导入，mock 需按说明符精确命中
+vi.mock('@wbfm/shared/constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wbfm/shared/constants')>();
   return {
     ...actual,
     OCR_PAGE_TIMEOUT_MS: 50,

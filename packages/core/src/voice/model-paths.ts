@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { resolveDataPath } from '@wbfm/config';
 import type { VoiceModelKind } from '@wbfm/voice';
-import type { VoiceSettings } from '@wbfm/shared';
+import type { VoiceSettings } from '@wbfm/shared/schemas';
 
 /** 语音模型根目录：用户自定义优先，否则数据根下 models/voice */
 export function getVoiceModelsRoot(settings: VoiceSettings): string {

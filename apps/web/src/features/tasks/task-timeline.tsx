@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { TaskStepView } from '@wbfm/shared';
+import type { TaskStepView } from '@wbfm/shared/schemas';
 import { AttachmentImage } from '@/features/chat/attachment-image';
 import { TaskStepStatusBadge } from './task-status-badge';
 

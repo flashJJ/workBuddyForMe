@@ -1,5 +1,6 @@
-import { flowGraphSchema, idParamSchema, type FlowDiagnostic } from '@wbfm/shared';
-import { compileFlow } from '@wbfm/core';
+import { flowGraphSchema, idParamSchema } from '@wbfm/shared/schemas';
+import { type FlowDiagnostic } from '@wbfm/shared/types';
+import { compileFlow } from '@wbfm/core/flow';
 import { createWorkflowRepository } from '@wbfm/database';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';

@@ -1,11 +1,6 @@
 import { z } from 'zod';
-import {
-  FLOW_RUN_RESUMABLE_STATUSES,
-  FLOW_RUN_STATUSES,
-  FLOW_TRIGGERS,
-  type FlowRunStatus,
-  type FlowTrigger,
-} from '@wbfm/shared';
+import { FLOW_RUN_RESUMABLE_STATUSES, FLOW_RUN_STATUSES, FLOW_TRIGGERS } from '@wbfm/shared/types';
+import { type FlowRunStatus, type FlowTrigger } from '@wbfm/shared/types';
 import {
   createWorkflowRepository,
   createWorkflowRunRepository,

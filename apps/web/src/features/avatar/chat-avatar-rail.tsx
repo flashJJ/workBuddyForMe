@@ -1,6 +1,6 @@
 'use client';
 
-import type { Message } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
 import { AvatarHost } from './avatar-host';
 
 interface Props {

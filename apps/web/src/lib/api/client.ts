@@ -1,4 +1,4 @@
-import { unwrapEnvelope, type ApiEnvelope } from '@wbfm/shared';
+import { unwrapEnvelope, type ApiEnvelope } from '@wbfm/shared/api';
 
 /** 客户端侧业务错误（携带后端错误码，供页面做差异化提示） */
 export class ApiClientError extends Error {

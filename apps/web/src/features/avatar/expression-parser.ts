@@ -10,7 +10,7 @@ import {
   normalizeExpressionName,
   stripExpressionDirectives,
   type ExpressionTag,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 
 export { DEFAULT_EXPRESSION, EXPRESSION_TAGS, stripExpressionDirectives, type ExpressionTag };
 

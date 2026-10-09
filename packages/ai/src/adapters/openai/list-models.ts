@@ -1,5 +1,5 @@
 import { fetchJson } from '../../http/fetch-with-retry';
-import type { DiscoveredModel } from '@wbfm/shared';
+import type { DiscoveredModel } from '@wbfm/shared/types';
 import type { ProviderConnection } from '../../types';
 import { OPENAI_ENDPOINTS, joinEndpoint } from './url';
 

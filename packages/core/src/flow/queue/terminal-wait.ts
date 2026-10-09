@@ -1,7 +1,5 @@
-import {
-  FLOW_RUN_TERMINAL_STATUSES,
-  type WorkflowRunView,
-} from '@wbfm/shared';
+import { FLOW_RUN_TERMINAL_STATUSES } from '@wbfm/shared/types';
+import { type WorkflowRunView } from '@wbfm/shared/types';
 import type { FlowEventBus } from './event-bus';
 
 /**

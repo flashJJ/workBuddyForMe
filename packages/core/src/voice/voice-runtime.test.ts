@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_VOICE_SETTINGS } from '@wbfm/shared';
+import { DEFAULT_VOICE_SETTINGS } from '@wbfm/shared/schemas';
 import type { DatabaseInstance, SettingsRepository } from '@wbfm/database';
 
 // 只替换引擎工厂（避免在单测里真实加载 325MB 模型），其余 @wbfm/voice 导出保持真实

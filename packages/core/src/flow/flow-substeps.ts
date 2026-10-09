@@ -1,4 +1,5 @@
-import type { FlowEventPayload, FlowNode, FlowNodeType, ToolSubstep } from '@wbfm/shared';
+import type { FlowEventPayload, ToolSubstep } from '@wbfm/shared/types';
+import type { FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
 
 /**
  * flow 运行事件 → 对话工具卡片子步骤（v0.8 P0-6）。

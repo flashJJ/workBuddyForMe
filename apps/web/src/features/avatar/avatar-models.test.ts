@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
-import { SUPPORTED_AVATAR_MODEL_IDS } from '@wbfm/shared';
+import { SUPPORTED_AVATAR_MODEL_IDS } from '@wbfm/shared/schemas';
 import { AVATAR_MODELS, AVATAR_MODEL_LIST, getAvatarModel } from './avatar-models';
 import { EXPRESSION_TAGS } from './expression-parser';
 

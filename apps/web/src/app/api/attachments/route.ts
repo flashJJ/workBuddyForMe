@@ -1,4 +1,4 @@
-import { MAX_IMAGE_BYTES } from '@wbfm/shared';
+import { MAX_IMAGE_BYTES } from '@wbfm/shared/constants';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { readUploadPart } from '@/lib/server/multipart';

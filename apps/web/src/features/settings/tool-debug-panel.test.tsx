@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DebugToolInfo } from '@wbfm/core';
+import type { DebugToolInfo } from '@wbfm/core/tools';
 import { renderWithProviders } from '@/test/render';
 import { ToolDebugPanel } from './tool-debug-panel';
 

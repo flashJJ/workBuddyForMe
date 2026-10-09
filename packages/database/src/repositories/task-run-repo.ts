@@ -5,7 +5,7 @@ import type {
   TaskStepStatus,
   TaskStepView,
   TaskStopReason,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 

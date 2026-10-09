@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import type { SsePayloadMap } from '@wbfm/shared';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 import { API } from '@/lib/api/endpoints';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { SseReader } from '@/lib/api/sse-reader';
+import { assertNever, narrowChatSseEvent } from '@/lib/api/sse-events';
 
 export interface ChatStreamHandlers {
   onMeta?: (data: SsePayloadMap['meta']) => void;
@@ -85,40 +86,44 @@ export function useChatStream() {
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          for (const event of parser.feed(decoder.decode(value, { stream: true }))) {
+          for (const raw of parser.feed(decoder.decode(value, { stream: true }))) {
+            // wire 边界单次窄化：事件名不在对话流白名单（task/flow/未知帧）则忽略
+            const event = narrowChatSseEvent(raw);
+            if (!event) continue;
+            // data 类型由 SsePayloadMap 判别联合推出；switch 必须穷尽（漏分支 tsc 红）
             switch (event.event) {
               case 'meta':
-                handlers.onMeta?.(event.data as SsePayloadMap['meta']);
+                handlers.onMeta?.(event.data);
                 break;
               case 'delta':
-                handlers.onDelta?.(event.data as SsePayloadMap['delta']);
+                handlers.onDelta?.(event.data);
                 break;
               case 'citations':
-                handlers.onCitations?.(event.data as SsePayloadMap['citations']);
+                handlers.onCitations?.(event.data);
                 break;
               case 'memories':
-                handlers.onMemories?.(event.data as SsePayloadMap['memories']);
+                handlers.onMemories?.(event.data);
                 break;
               case 'tool':
-                handlers.onTool?.(event.data as SsePayloadMap['tool']);
+                handlers.onTool?.(event.data);
                 break;
               case 'tool_confirmation_required':
-                handlers.onToolConfirmationRequired?.(
-                  event.data as SsePayloadMap['tool_confirmation_required'],
-                );
+                handlers.onToolConfirmationRequired?.(event.data);
                 break;
               case 'voice_audio':
-                handlers.onVoiceAudio?.(event.data as SsePayloadMap['voice_audio']);
+                handlers.onVoiceAudio?.(event.data);
                 break;
               case 'voice_state':
-                handlers.onVoiceState?.(event.data as SsePayloadMap['voice_state']);
+                handlers.onVoiceState?.(event.data);
                 break;
               case 'done':
-                handlers.onDone?.(event.data as SsePayloadMap['done']);
+                handlers.onDone?.(event.data);
                 break;
               case 'error':
-                handlers.onError?.(event.data as SsePayloadMap['error']);
+                handlers.onError?.(event.data);
                 break;
+              default:
+                assertNever(event);
             }
           }
         }

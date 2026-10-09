@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { ProviderProtocol } from '@wbfm/shared';
+import type { ProviderProtocol } from '@wbfm/shared/constants';
 import { newId, nowIso, mapProvider, type ProviderRecord, type ProviderRow } from './mappers';
 
 export interface ProviderCreateFields {

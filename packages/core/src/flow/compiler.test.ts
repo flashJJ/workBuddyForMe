@@ -1,4 +1,4 @@
-import type { FlowEdge, FlowGraph, FlowNode, FlowNodeType } from '@wbfm/shared';
+import type { FlowEdge, FlowGraph, FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
 import { describe, expect, it } from 'vitest';
 import { compileFlow } from './compiler';
 

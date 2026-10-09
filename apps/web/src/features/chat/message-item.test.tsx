@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Message } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { copyText } from '@/lib/utils/clipboard';
 import { MessageItem } from './message-item';

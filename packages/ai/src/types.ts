@@ -1,4 +1,5 @@
-import { type DiscoveredModel, type MessageRole, type ProviderProtocol } from '@wbfm/shared';
+import { type DiscoveredModel } from '@wbfm/shared/types';
+import { type MessageRole, type ProviderProtocol } from '@wbfm/shared/constants';
 
 /** 供应商连接配置（apiKey 已由 core 解密到内存） */
 export interface ProviderConnection {

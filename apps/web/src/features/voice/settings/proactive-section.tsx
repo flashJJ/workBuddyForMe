@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared';
+import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared/schemas';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { ToggleRow } from './voice-engine-params';

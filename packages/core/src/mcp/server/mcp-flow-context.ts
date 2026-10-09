@@ -1,4 +1,5 @@
-import type { FlowInputField, WorkflowEndpointView } from '@wbfm/shared';
+import type { FlowInputField } from '@wbfm/shared/schemas';
+import type { WorkflowEndpointView } from '@wbfm/shared/types';
 import type { WorkflowRepository } from '@wbfm/database';
 import { readFlowStartFields, validateFlowStartInput } from '../../serving/start-input';
 import type { FlowRunService } from '../../flow/run-service';
@@ -18,7 +19,7 @@ import {
 /** MCP tools/call 同步等待上限（超时后返回 runId 指引文本，不把客户端吊死） */
 export const MCP_CALL_TIMEOUT_MS = 90_000;
 
-export const MCP_FLOW_SERVER_INFO = { name: 'workbuddy-flow', version: '1.0.0' } as const;
+export const MCP_FLOW_SERVER_INFO = { name: 'workbuddy-flow', version: '1.1.0' } as const;
 
 export interface McpFlowContextDeps {
   endpoint: WorkflowEndpointView;

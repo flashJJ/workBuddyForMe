@@ -1,4 +1,4 @@
-import { memoryCreateSchema, memoryListQuerySchema } from '@wbfm/shared';
+import { memoryCreateSchema, memoryListQuerySchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, parseSearch, readJsonBody } from '@/lib/server/validation';

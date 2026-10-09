@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { DebugToolInfo, ToolResult } from '@wbfm/core';
+import type { DebugToolInfo, ToolResult } from '@wbfm/core/tools';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';

@@ -1,4 +1,4 @@
-import { CONNECTION_TEST_TIMEOUT_MS } from '@wbfm/shared';
+import { CONNECTION_TEST_TIMEOUT_MS } from '@wbfm/shared/constants';
 import { ProviderError } from '../errors/provider-error';
 import { normalizeHttpError } from './error-normalize';
 import { withTimeout, type LinkedSignal } from './timeout-signal';

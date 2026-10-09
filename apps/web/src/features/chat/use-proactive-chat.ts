@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { SsePayloadMap, VoiceSettings } from '@wbfm/shared';
+import type { SsePayloadMap } from '@wbfm/shared/api';
+import type { VoiceSettings } from '@wbfm/shared/schemas';
 import { API } from '@/lib/api/endpoints';
 import { withManagedHeaders } from '@/lib/api/client';
 import { SseReader } from '@/lib/api/sse-reader';

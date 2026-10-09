@@ -1,4 +1,4 @@
-import type { ContentPart, Message } from '@wbfm/shared';
+import type { ContentPart, Message } from '@wbfm/shared/types';
 import type { ChatContentPart } from '@wbfm/ai';
 import type { AttachmentService, ResolvedImage } from '../services/attachment-service';
 

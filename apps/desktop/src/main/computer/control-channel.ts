@@ -27,7 +27,7 @@ import {
   type UiaListResponse,
   type WindowFocusArgs,
   type WindowListResponse,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import type { z } from 'zod';
 
 /**

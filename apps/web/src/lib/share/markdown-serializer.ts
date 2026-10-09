@@ -1,4 +1,4 @@
-import type { ConversationSnapshot, SharedMessage } from '@wbfm/core';
+import type { ConversationSnapshot, SharedMessage } from '@wbfm/core/share';
 import { formatDuration, formatTime } from './share-format';
 
 /**

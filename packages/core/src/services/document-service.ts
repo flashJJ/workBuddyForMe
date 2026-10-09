@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { ApiError, type DocumentRecord } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type DocumentRecord } from '@wbfm/shared/types';
 import { createDocumentRepository, createKnowledgeRepository, deleteVectorsByDocument } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
 import { detectKind } from '../ingestion/read-document';

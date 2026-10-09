@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Message } from '@wbfm/shared';
+import type { Message } from '@wbfm/shared/types';
 import { Live2dCanvas } from './live2d-canvas';
 import {
   DEFAULT_EXPRESSION,

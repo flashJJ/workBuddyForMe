@@ -1,12 +1,12 @@
-import type { TaskEventPayload } from '@wbfm/shared';
+import type { SseEvent } from '@wbfm/shared/api';
+import type { TaskRunView } from '@wbfm/shared/schemas';
 import type { OrchestratorEvent } from '../chat/types';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TaskPlanner } from './types';
-import type { TaskRunView } from '@wbfm/shared';
 
-/** 循环对外事件：task 时间线事件 + 门控/工具事件（透传 SSE） */
-export type TaskLoopEvent = { event: 'task'; data: TaskEventPayload } | OrchestratorEvent;
+/** 循环对外事件：task 时间线事件（wire 真源派生）+ 门控/工具事件（透传 SSE） */
+export type TaskLoopEvent = SseEvent<'task'> | OrchestratorEvent;
 
 export type TaskControlState = 'running' | 'paused' | 'stopped';
 

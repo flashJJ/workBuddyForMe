@@ -26,7 +26,7 @@ import {
   type UiaListResponse,
   type WindowFocusArgs,
   type WindowListResponse,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import type { ZodType } from 'zod';
 
 /** 桌面端控制通道不可用（纯 Web 模式 / 通道未就绪 / 请求失败） */

@@ -1,7 +1,8 @@
 'use client';
 
-import { FLOW_DESKTOP_CONTROL_TOOLS, type FlowUnattendedPolicy } from '@wbfm/shared';
-import type { FlowDangerNode } from '@wbfm/core';
+import { FLOW_DESKTOP_CONTROL_TOOLS } from '@wbfm/shared/schemas';
+import { type FlowUnattendedPolicy } from '@wbfm/shared/types';
+import type { FlowDangerNode } from '@wbfm/core/serving';
 
 /**
  * 端点对话框中的「无人值守危险操作策略」区块（v0.9 M4）：

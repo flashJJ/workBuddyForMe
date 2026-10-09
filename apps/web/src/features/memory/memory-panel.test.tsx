@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Memory } from '@wbfm/shared';
+import type { Memory } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { MemoryPanel } from './memory-panel';
 

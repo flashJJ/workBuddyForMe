@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { FlowNodeExecStatus } from '@wbfm/shared';
+import type { FlowNodeExecStatus } from '@wbfm/shared/types';
 
 /**
  * 画布运行态/诊断态通过 context 下发，避免每次试运行都重建

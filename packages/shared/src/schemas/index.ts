@@ -1,0 +1,233 @@
+/**
+ * @域 barrel Zod 契约（v1.1 M2 域子路径化）
+ * 公开面与历史根 barrel 完全一致；根 barrel 聚合本面，新代码从 @wbfm/shared/schemas 导入。
+ */
+export * from './common';
+export {
+  providerProtocolSchema,
+  providerCreateSchema,
+  providerUpdateSchema,
+  providerTestSchema,
+  type ProviderCreateInput,
+  type ProviderUpdateInput,
+  type ProviderTestInput,
+} from './provider';
+export { modelCapabilitySchema, modelCreateSchema, type ModelCreateInput } from './model';
+export {
+  assistantCreateSchema,
+  assistantUpdateSchema,
+  assistantReorderSchema,
+  type AssistantCreateInput,
+  type AssistantUpdateInput,
+  type AssistantReorderInput,
+} from './assistant';
+export {
+  EXPRESSION_TAGS,
+  DEFAULT_EXPRESSION,
+  normalizeExpressionName,
+  stripExpressionDirectives,
+  type ExpressionTag,
+} from './expression';
+export {
+  conversationCreateSchema,
+  conversationUpdateSchema,
+  chatRequestSchema,
+  proactiveRequestSchema,
+  type ConversationCreateInput,
+  type ConversationUpdateInput,
+  type ChatRequest,
+  type ProactiveRequest,
+} from './conversation';
+export {
+  knowledgeBaseCreateSchema,
+  knowledgeBaseUpdateSchema,
+  clipRequestSchema,
+  type KnowledgeBaseCreateInput,
+  type KnowledgeBaseUpdateInput,
+  type ClipRequest,
+} from './knowledge';
+export { settingsUpdateSchema, type SettingsUpdateInput } from './settings';
+
+// v1.0 语音/形象契约
+export {
+  VOICE_ASR_ENGINES,
+  VOICE_TTS_ENGINES,
+  VOICE_TTS_MODELS,
+  VOICE_INPUT_MODES,
+  VAD_SENSITIVITIES,
+  VOICE_STATES,
+  voiceAsrEngineSchema,
+  voiceTtsEngineSchema,
+  voiceTtsModelSchema,
+  voiceInputModeSchema,
+  vadSensitivitySchema,
+  voiceStateSchema,
+  voiceSettingsUpdateSchema,
+  voiceSettingsSchema,
+  DEFAULT_VOICE_SETTINGS,
+  voiceAsrRequestSchema,
+  voiceAsrResponseSchema,
+  voiceTtsRequestSchema,
+  voiceModelStatusSchema,
+  voiceModelDownloadSchema,
+  voiceModelFileStatusSchema,
+  type VoiceAsrEngine,
+  type VoiceTtsEngine,
+  type VoiceTtsModel,
+  type VoiceInputMode,
+  type VadSensitivity,
+  type VoiceState,
+  type VoiceSettingsUpdateInput,
+  type VoiceSettings,
+  type VoiceAsrRequest,
+  type VoiceAsrResponse,
+  type VoiceTtsRequest,
+  type VoiceModelStatus,
+  type VoiceModelDownload,
+  type VoiceModelFileStatus,
+  SUPPORTED_AVATAR_MODEL_IDS,
+  DEFAULT_AVATAR_MODEL_ID,
+  AVATAR_TTS_VOICES,
+  getAvatarSpeakerId,
+  type SupportedAvatarModelId,
+  type AvatarTtsVoice,
+} from './voice';
+export {
+  messageFeedbackSchema,
+  type MessageFeedbackInput,
+} from './message';
+export {
+  memoryCreateSchema,
+  memoryUpdateSchema,
+  memoryListQuerySchema,
+  memoryClearSchema,
+  type MemoryCreateInput,
+  type MemoryUpdateInput,
+  type MemoryListQuery,
+  type MemoryClearInput,
+} from './memory';
+export {
+  mcpServerCreateSchema,
+  mcpServerUpdateSchema,
+  buildMcpToolName,
+  isMcpToolName,
+  parseMcpToolName,
+  MCP_TOOL_NAMESPACE,
+  type McpServerCreateInput,
+  type McpServerUpdateInput,
+} from './mcp';
+export {
+  skillManifestSchema,
+  skillUpdateSchema,
+  type SkillUpdateInput,
+} from './skill';
+export {
+  COMPUTER_CHANNEL_FILE,
+  SCREENSHOT_MAX_EDGE,
+  SCREEN_SNAPSHOT_SCOPES,
+  screenSnapshotArgsSchema,
+  screenSnapshotRegionSchema,
+  computerChannelInfoSchema,
+  type ScreenSnapshotScope,
+  type ScreenSnapshotRegion,
+  type ScreenSnapshotArgs,
+  type ComputerChannelInfo,
+  type ScreenSnapshotResponse,
+  // v0.7 M2 键鼠 / 窗口 / UIA
+  MOUSE_BUTTONS,
+  KEY_NAMES,
+  mouseMoveArgsSchema,
+  mouseClickArgsSchema,
+  mouseScrollArgsSchema,
+  keyboardTypeArgsSchema,
+  keyboardPressArgsSchema,
+  windowFocusArgsSchema,
+  appLaunchArgsSchema,
+  uiaListArgsSchema,
+  type MouseButton,
+  type KeyName,
+  type MouseMoveArgs,
+  type MouseClickArgs,
+  type MouseScrollArgs,
+  type KeyboardTypeArgs,
+  type KeyboardPressArgs,
+  type MousePositionResponse,
+  type WindowInfo,
+  type WindowListResponse,
+  type WindowFocusArgs,
+  type AppLaunchArgs,
+  type UiaElement,
+  type UiaListArgs,
+  type UiaListResponse,
+  type InputActionResponse,
+} from './computer';
+export {
+  TASK_RUN_STATUSES,
+  TASK_STOP_REASONS,
+  TASK_STEP_KINDS,
+  TASK_STEP_STATUSES,
+  TASK_EVENT_TYPES,
+  taskCreateSchema,
+  type TaskRunStatus,
+  type TaskStopReason,
+  type TaskStepKind,
+  type TaskStepStatus,
+  type TaskCreateInput,
+  type TaskRunView,
+  type TaskStepView,
+  type TaskEventType,
+  type TaskEventPayload,
+} from './task';
+
+// v0.8 Flow Studio 可视化工作流
+export {
+  FLOW_NODE_TYPES,
+  CONDITION_BRANCHES,
+  FLOW_INPUT_VALUE_TYPES,
+  flowInputFieldSchema,
+  flowStartConfigSchema,
+  buildFlowInputJsonSchema,
+  flowNodeSchema,
+  flowEdgeSchema,
+  flowGraphSchema,
+  workflowCreateSchema,
+  workflowUpdateSchema,
+  workflowVersionCreateSchema,
+  flowRunCreateSchema,
+  flowHumanSubmitSchema,
+  FLOW_TOOL_NAMESPACE,
+  buildFlowToolName,
+  isFlowToolName,
+  parseFlowToolName,
+  type FlowNodeType,
+  type ConditionBranch,
+  type FlowInputValueType,
+  type FlowInputField,
+  type FlowStartConfig,
+  type FlowNode,
+  type FlowEdge,
+  type FlowGraph,
+  type WorkflowCreateInput,
+  type WorkflowUpdateInput,
+  type WorkflowVersionCreateInput,
+  type FlowRunCreateInput,
+  type FlowHumanSubmitInput,
+} from './flow';
+// v0.9 Flow Serving 契约（端点/无人值守策略）
+export {
+  FLOW_ENDPOINT_SYNC_TIMEOUT,
+  FLOW_ENDPOINT_RATE_LIMIT,
+  FLOW_DESKTOP_CONTROL_TOOLS,
+  flowUnattendedPolicySchema,
+  flowEndpointUpsertSchema,
+  flowEndpointStatusSchema,
+  type FlowEndpointUpsertInput,
+} from './flow-serving';
+
+// v0.6 M2：工具权限分级（HITL）调试/确认入参契约
+export {
+  toolConfirmSchema,
+  toolDebugExecuteSchema,
+  type ToolConfirmInput,
+  type ToolDebugExecuteInput,
+} from './tool';

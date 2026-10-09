@@ -1,4 +1,4 @@
-import { idParamSchema, messageFeedbackSchema } from '@wbfm/shared';
+import { idParamSchema, messageFeedbackSchema } from '@wbfm/shared/schemas';
 import { z } from 'zod';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';

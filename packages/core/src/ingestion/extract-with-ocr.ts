@@ -1,4 +1,4 @@
-import type { OcrEngine } from '@wbfm/shared';
+import type { OcrEngine } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../services/deps';
 import { detectKind, isImagePdf, readDocumentText, readPdfPageTexts } from './read-document';
 import { runPdfOcr } from './ocr-runner';

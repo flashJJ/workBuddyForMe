@@ -1,4 +1,5 @@
-import { ApiError, type Citation } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type Citation } from '@wbfm/shared/types';
 import { ProviderError, type ToolCall } from '@wbfm/ai';
 import { parseToolArgs } from '../tools/tool-executor';
 import type { ToolResult } from '../tools/types';

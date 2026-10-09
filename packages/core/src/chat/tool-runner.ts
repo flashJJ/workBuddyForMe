@@ -1,6 +1,6 @@
-import type { TokenUsage } from '@wbfm/shared';
+import type { TokenUsage } from '@wbfm/shared/api';
 import { startRun, type ChatMessage, type TraceHandle, type ToolCall, type ToolDefinition } from '@wbfm/ai';
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import type { ResolvedChatTarget } from './model-resolver';
 import type { OrchestratorEvent } from './types';
 

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { SKILL_MANIFEST_FILENAME, type SkillManifest } from '@wbfm/shared';
+import { SKILL_MANIFEST_FILENAME } from '@wbfm/shared/constants';
+import { type SkillManifest } from '@wbfm/shared/types';
 
 /**
  * 内置示例技能（v0.6 M3）：随包分发的模板示范。

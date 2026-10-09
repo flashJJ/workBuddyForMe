@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { WorkflowCreateInput } from '@wbfm/shared';
+import type { WorkflowCreateInput } from '@wbfm/shared/schemas';
 
 export interface FlowFormDialogProps {
   open: boolean;

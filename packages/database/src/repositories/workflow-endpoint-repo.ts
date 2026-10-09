@@ -2,7 +2,7 @@ import type {
   FlowEndpointStatus,
   FlowUnattendedPolicy,
   WorkflowEndpointView,
-} from '@wbfm/shared';
+} from '@wbfm/shared/types';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 

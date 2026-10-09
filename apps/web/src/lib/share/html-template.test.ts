@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ConversationSnapshot } from '@wbfm/core';
+import type { ConversationSnapshot } from '@wbfm/core/share';
 import { renderConversationHtml } from './html-template';
 
 function baseSnapshot(overrides: Partial<ConversationSnapshot> = {}): ConversationSnapshot {

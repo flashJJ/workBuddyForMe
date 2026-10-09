@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Pause, Play, Square } from 'lucide-react';
-import type { TaskRunStatus } from '@wbfm/shared';
+import type { TaskRunStatus } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 
 /**

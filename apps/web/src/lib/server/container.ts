@@ -8,50 +8,46 @@ import {
 import {
   createAssistantsService,
   createAttachmentService,
-  createChatOrchestrator,
   createConversationService,
   createDocumentService,
-  createEndpointService,
-  createFlowRunService,
-  createRateLimiter,
-  ensureStarterFlows,
-  createIngestionPipeline,
   createKnowledgeService,
-  createMcpRegistry,
-  createMemoryService,
   createModelService,
   createPendingConfirmations,
   createPermissionService,
   createProviderService,
   createSettingsService,
-  createSkillService,
   createTaskGrantRegistry,
   createTaskRunnerService,
-  createToolBreaker,
-  createToolRuntime,
-  createWebCipher,
   type AssistantsService,
   type AttachmentService,
-  type ChatOrchestrator,
   type ConversationService,
   type DocumentService,
-  type EndpointService,
-  type FlowRunService,
-  type IngestionPipeline,
-  type RateLimiter,
   type KnowledgeService,
-  type McpRegistry,
-  type MemoryService,
   type PendingConfirmations,
   type PermissionService,
-  type SecretCipher,
   type ServiceDeps,
-  type SkillService,
   type TaskGrantRegistry,
   type TaskRunnerService,
+} from '@wbfm/core/services';
+import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
+import {
+  createEndpointService,
+  createRateLimiter,
+  type EndpointService,
+  type RateLimiter,
+} from '@wbfm/core/serving';
+import { createFlowRunService, ensureStarterFlows, type FlowRunService } from '@wbfm/core/flow';
+import { createIngestionPipeline, type IngestionPipeline } from '@wbfm/core/ingestion';
+import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
+import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
+import { createSkillService, type SkillService } from '@wbfm/core/skills';
+import {
+  createToolBreaker,
+  createToolRuntime,
   type ToolBreaker,
   type ToolRuntime,
-} from '@wbfm/core';
+} from '@wbfm/core/tools';
+import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 
 export interface ServiceContainer {
   db: DatabaseInstance;

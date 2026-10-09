@@ -21,12 +21,8 @@ import {
   Workflow,
   Minus,
 } from 'lucide-react';
-import type {
-  ToolName,
-  ToolSubstep,
-  ToolTraceEntry,
-  PermissionLevel,
-} from '@wbfm/shared';
+import type { ToolName } from '@wbfm/shared/constants';
+import type { ToolSubstep, ToolTraceEntry, PermissionLevel } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 

@@ -1,5 +1,5 @@
 import { desktopCapturer, screen } from 'electron';
-import type { ScreenSnapshotArgs, ScreenSnapshotResponse } from '@wbfm/shared';
+import type { ScreenSnapshotArgs, ScreenSnapshotResponse } from '@wbfm/shared/schemas';
 import { planSnapshot } from './screen-plan';
 
 /**

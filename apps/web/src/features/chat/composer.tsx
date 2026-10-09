@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { MAX_CHAT_ATTACHMENTS } from '@wbfm/shared';
+import { MAX_CHAT_ATTACHMENTS } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { useAttachmentUpload } from './use-attachment-upload';

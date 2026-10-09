@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { KnowledgeBase } from '@wbfm/shared';
+import type { KnowledgeBase } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/page-header';

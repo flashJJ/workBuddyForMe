@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Sparkles, X } from 'lucide-react';
-import { stripExpressionDirectives } from '@wbfm/shared';
+import { stripExpressionDirectives } from '@wbfm/shared/schemas';
 import type { ProactiveBubble } from './use-proactive-chat';
 
 interface Props {

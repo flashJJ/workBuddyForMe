@@ -3,7 +3,7 @@ import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Assistant, Conversation, Provider, ProviderModel } from '@wbfm/shared';
+import type { Assistant, Conversation, Provider, ProviderModel } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { ChatPage } from './chat-page';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { OrchestratorEvent } from '@wbfm/core';
+import type { OrchestratorEvent } from '@wbfm/core/chat';
 import { withVoice, type VoiceBridgeEvent } from './voice-chat-bridge';
 
 type Synth = (text: string) => Promise<{ samples: Float32Array; sampleRate: number }>;

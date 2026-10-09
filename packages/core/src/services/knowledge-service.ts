@@ -1,4 +1,5 @@
-import { ApiError, type KnowledgeBase } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type KnowledgeBase } from '@wbfm/shared/types';
 import type {
   KnowledgeBaseCreateFields,
   KnowledgeBaseUpdateFields,

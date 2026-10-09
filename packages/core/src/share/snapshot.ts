@@ -1,5 +1,6 @@
 import { DATA_DIR_NAME } from '@wbfm/config';
-import { stripExpressionDirectives, type Citation, type ToolTraceEntry } from '@wbfm/shared';
+import { stripExpressionDirectives } from '@wbfm/shared/schemas';
+import { type Citation, type ToolTraceEntry } from '@wbfm/shared/types';
 
 /**
  * 对话分享快照（M2）：core 从 DB + 附件文件构建的与会话存储无关的中间结构。

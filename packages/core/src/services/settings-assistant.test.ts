@@ -2,7 +2,8 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ApiError, assistantCreateSchema } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { assistantCreateSchema } from '@wbfm/shared/schemas';
 import {
   createDatabase,
   createKnowledgeRepository,

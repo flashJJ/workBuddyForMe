@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared';
+import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 import { nowIso, mapMemory, type MemoryRow } from './mappers';
 
 export interface MemoryAddFields {

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { filterCommands, type Command, type CommandGroup } from '@wbfm/shared';
+import { filterCommands, type Command, type CommandGroup } from '@wbfm/shared/command';
 import { cn } from '@/lib/utils';
 import { useCommands, COMMAND_ICONS } from './use-commands';
 

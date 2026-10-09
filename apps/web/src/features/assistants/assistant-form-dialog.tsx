@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
@@ -25,6 +24,8 @@ import { AssistantToolsField } from './assistant-tools-field';
 import { AssistantMemoryField } from './assistant-memory-field';
 import { AssistantExpressionField } from './assistant-expression-field';
 import { buildAssistantBody, type AssistantFormShape } from './assistant-form-body';
+import { toForm } from './assistant-form-state';
+import { AssistantIdentityFields } from './assistant-identity-fields';
 import { NumberField } from './number-field';
 
 interface Props {
@@ -34,41 +35,6 @@ interface Props {
 }
 
 type FormState = AssistantFormShape;
-
-function toForm(assistant: Assistant | null | undefined): FormState {
-  if (!assistant) {
-    return {
-      name: '',
-      emoji: '🤖',
-      color: '#6366f1',
-      systemPrompt: '',
-      temperature: '1',
-      topP: '1',
-      maxTokens: '',
-      modelId: '',
-      knowledgeBaseId: '',
-      enabledTools: ['current_time'],
-      retrieveAlways: true,
-      memoryEnabled: true,
-      expressionEnabled: true,
-    };
-  }
-  return {
-    name: assistant.name,
-    emoji: assistant.emoji ?? '',
-    color: assistant.color ?? '#6366f1',
-    systemPrompt: assistant.systemPrompt,
-    temperature: String(assistant.temperature),
-    topP: String(assistant.topP),
-    maxTokens: assistant.maxTokens ? String(assistant.maxTokens) : '',
-    modelId: assistant.modelId ?? '',
-    knowledgeBaseId: assistant.knowledgeBaseId ?? '',
-    enabledTools: [...assistant.enabledTools],
-    retrieveAlways: assistant.retrieveAlways,
-    memoryEnabled: assistant.memoryEnabled,
-    expressionEnabled: assistant.expressionEnabled,
-  };
-}
 
 export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
   const isEdit = Boolean(assistant);
@@ -138,38 +104,12 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
           <DialogDescription>定义人设、采样参数，可绑定模型与知识库。</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-3">
-            <div className="w-20 space-y-1.5">
-              <Label htmlFor="assistant-emoji">图标</Label>
-              <Input
-                id="assistant-emoji"
-                value={form.emoji}
-                onChange={(e) => update({ emoji: e.target.value })}
-                maxLength={8}
-              />
-            </div>
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor="assistant-name">名称</Label>
-              <Input
-                id="assistant-name"
-                value={form.name}
-                onChange={(e) => update({ name: e.target.value })}
-                placeholder="例如：产品经理"
-                required
-                maxLength={60}
-              />
-            </div>
-            <div className="w-24 space-y-1.5">
-              <Label htmlFor="assistant-color">配色</Label>
-              <Input
-                id="assistant-color"
-                type="color"
-                value={form.color}
-                onChange={(e) => update({ color: e.target.value })}
-                className="h-9 p-1"
-              />
-            </div>
-          </div>
+          <AssistantIdentityFields
+            emoji={form.emoji}
+            name={form.name}
+            color={form.color}
+            onUpdate={update}
+          />
 
           <div className="space-y-1.5">
             <Label htmlFor="assistant-prompt">系统提示词（人设）</Label>

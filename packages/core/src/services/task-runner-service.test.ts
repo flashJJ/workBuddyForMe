@@ -4,7 +4,7 @@ import { mkdtempSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDatabase, createTaskRunRepository, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import type { TaskRunView } from '@wbfm/shared';
+import type { TaskRunView } from '@wbfm/shared/schemas';
 import { createWebCipher } from '../secrets/cipher';
 import { createTaskGrantRegistry } from './task-grants';
 import type { ServiceDeps } from './deps';

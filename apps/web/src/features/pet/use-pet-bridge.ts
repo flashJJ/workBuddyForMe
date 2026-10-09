@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import type { PetPerformanceEvent, PetVoiceState } from '@wbfm/shared';
+import type { PetPerformanceEvent, PetVoiceState } from '@wbfm/shared/pet';
 import { DEFAULT_EXPRESSION, type ExpressionTag } from '@/features/avatar/expression-parser';
 import { getPetBridge, isPetHitPoint } from './pet-bridge';
 

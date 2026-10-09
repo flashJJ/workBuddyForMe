@@ -1,4 +1,4 @@
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 
 export const TOKEN_HEADER = 'x-wbfm-token';
 

@@ -1,4 +1,4 @@
-import type { FlowInputField } from '@wbfm/shared';
+import type { FlowInputField } from '@wbfm/shared/schemas';
 import { NODE_META, nodeTitle, buildRefToken } from '../node-meta';
 import type { FlowCanvasNode } from '../graph-utils';
 

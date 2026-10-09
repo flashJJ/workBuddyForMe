@@ -1,63 +1,21 @@
 import { randomUUID } from 'node:crypto';
-import {
-  TASK_MAX_FAILURES,
-  type TaskEventType,
-  type TaskRunStatus,
-  type TaskRunView,
-  type TaskStepView,
-  type TaskStopReason,
-} from '@wbfm/shared';
+import type { TaskRunView } from '@wbfm/shared/schemas';
 import { createTaskRunRepository } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
-import { createAttachmentService } from '../services/attachment-service';
-import type { ToolRuntime } from '../tools/tool-runtime';
 import type { ToolContext } from '../tools/types';
 import { executeToolCall, summarizeArgs } from '../tools/tool-executor';
 import { gateToolPermission } from '../chat/tool-permission-gate';
-import type { TaskObservation, TaskPlanDecision } from './types';
+import type { TaskPlanDecision } from './types';
 import {
   createTaskLoopControl,
   type TaskLoopEvent,
   type TaskLoopParams,
 } from './control';
-
-/** 落库 resultJson 截断上限（UIA 清单等长输出防爆行） */
-const STEP_RESULT_MAX_CHARS = 4000;
-
-/** 观察工具执行：截图落盘为附件，失败返回 null */
-async function runObservation(
-  runtime: ToolRuntime,
-  deps: ServiceDeps,
-  toolName: string,
-  ctx: ToolContext,
-  runId: string,
-  stepIndex: number,
-): Promise<TaskObservation | null> {
-  const resolved = runtime.resolveTool(toolName);
-  if (!resolved) return null;
-  const result = await executeToolCall(resolved.tool, {}, ctx);
-  deps.breakers?.recordResult(toolName, result.ok);
-  if (!result.ok) return null;
-  const image = result.images?.[0];
-  let screenshotPath = '';
-  if (image) {
-    try {
-      const attachments = createAttachmentService(deps);
-      screenshotPath = attachments.save({
-        filename: `task-${runId}-${stepIndex}.png`,
-        mimeType: image.mimeType,
-        buffer: Buffer.from(image.dataBase64, 'base64'),
-      }).id;
-    } catch (error) {
-      console.error('[task] 观察截图落盘失败:', error);
-    }
-  }
-  return {
-    summary: result.output,
-    screenshotPath,
-    ...(image ? { imageBase64: image.dataBase64, mimeType: image.mimeType } : {}),
-  };
-}
+import {
+  STEP_RESULT_MAX_CHARS,
+  createTaskLoopInternals,
+  runObservation,
+  type TaskLoopState,
+} from './task-loop-helpers';
 
 /**
  * 任务 Agent 循环：观察 → 决策 → 门控 → 执行 → 再观察。
@@ -79,40 +37,13 @@ export async function* runTaskLoop(
     retrieve: async () => [],
   };
 
-  let run = repo.updateRunStatus(params.run.id, 'running') ?? params.run;
-  let stepIndex = 0;
-  let consecutiveFailures = 0;
-
-  const taskEvent = (type: TaskEventType, step?: TaskStepView): TaskLoopEvent => ({
-    event: 'task',
-    data: { type, runId: run.id, conversationId: run.conversationId, run, ...(step ? { step } : {}) },
-  });
-  const stepStarted = (step: TaskStepView) => taskEvent('step_started', step);
-  const stepFinished = (stepId: string) => {
-    const fresh = repo.listSteps(run.id).find((s) => s.id === stepId);
-    return fresh ? taskEvent('step_finished', fresh) : null;
+  const state: TaskLoopState = {
+    run: repo.updateRunStatus(params.run.id, 'running') ?? params.run,
+    stepIndex: 0,
+    consecutiveFailures: 0,
   };
-  const finalize = (status: TaskRunStatus, stopReason: TaskStopReason) => {
-    const updated = repo.updateRunStatus(run.id, status, stopReason) ?? run;
-    deps.taskGrants?.clear(run.id);
-    return { run: updated, event: { event: 'task', data: { type: 'run_finished', runId: updated.id, conversationId: updated.conversationId, run: updated } } as TaskLoopEvent };
-  };
-  const checkLimits = (): { run: TaskRunView; event: TaskLoopEvent } | null => {
-    if (consecutiveFailures >= TASK_MAX_FAILURES) return finalize('failed', 'max_failures');
-    if (run.stepCount >= run.maxSteps) return finalize('stopped', 'max_steps');
-    return null;
-  };
-  const failStep = (reason: string, error: string) => {
-    stepIndex += 1;
-    const s = repo.addStep({ runId: run.id, stepIndex, kind: 'action', reason });
-    repo.finishStep(s.id, { status: 'failed', error });
-    return s;
-  };
-  const afterFail = () => {
-    consecutiveFailures += 1;
-    run = repo.incrementRunCounters(run.id, { failed: true }) ?? run;
-    return checkLimits();
-  };
+  const { taskEvent, stepStarted, stepFinished, finalize, checkLimits, failStep, afterFail } =
+    createTaskLoopInternals({ repo, deps, state });
 
   yield taskEvent('run_started');
 
@@ -123,7 +54,7 @@ export async function* runTaskLoop(
       return fin.run;
     }
     if (control.state === 'paused') {
-      run = repo.updateRunStatus(run.id, 'paused') ?? run;
+      state.run = repo.updateRunStatus(state.run.id, 'paused') ?? state.run;
       yield taskEvent('run_paused');
       await control.waitIfPaused();
       if ((control.state as string) === 'stopped' || signal?.aborted) {
@@ -131,16 +62,16 @@ export async function* runTaskLoop(
         yield fin.event;
         return fin.run;
       }
-      run = repo.updateRunStatus(run.id, 'running') ?? run;
+      state.run = repo.updateRunStatus(state.run.id, 'running') ?? state.run;
       yield taskEvent('run_resumed');
     }
 
     /* ---- 观察 ---- */
-    stepIndex += 1;
-    const observeStep = repo.addStep({ runId: run.id, stepIndex, kind: 'observe', reason: '观察当前屏幕状态' });
+    state.stepIndex += 1;
+    const observeStep = repo.addStep({ runId: state.run.id, stepIndex: state.stepIndex, kind: 'observe', reason: '观察当前屏幕状态' });
     yield stepStarted(observeStep);
     const obsStarted = Date.now();
-    const observation = await runObservation(runtime, deps, observeToolName, toolCtx, run.id, stepIndex);
+    const observation = await runObservation(runtime, deps, observeToolName, toolCtx, state.run.id, state.stepIndex);
     repo.finishStep(observeStep.id, {
       status: observation ? 'completed' : 'failed',
       resultJson: JSON.stringify({ summary: (observation?.summary ?? '').slice(0, STEP_RESULT_MAX_CHARS) }),
@@ -168,7 +99,7 @@ export async function* runTaskLoop(
     let decision: TaskPlanDecision;
     try {
       decision = await planner.decide(
-        { goal: run.goal, steps: repo.listSteps(run.id), observation, allowedTools },
+        { goal: state.run.goal, steps: repo.listSteps(state.run.id), observation, allowedTools },
         signal,
       );
     } catch (error) {
@@ -196,9 +127,9 @@ export async function* runTaskLoop(
 
     /* ---- 完成 / 宣告失败 ---- */
     if (decision.action !== 'tool') {
-      stepIndex += 1;
+      state.stepIndex += 1;
       const ok = decision.action === 'done';
-      const finalStep = repo.addStep({ runId: run.id, stepIndex, kind: 'final', reason: decision.reason });
+      const finalStep = repo.addStep({ runId: state.run.id, stepIndex: state.stepIndex, kind: 'final', reason: decision.reason });
       yield stepStarted(finalStep);
       repo.finishStep(finalStep.id, {
         status: ok ? 'completed' : 'failed',
@@ -215,10 +146,10 @@ export async function* runTaskLoop(
     /* ---- 工具动作 ---- */
     const toolName = decision.tool ?? '';
     const resolved = runtime.resolveTool(toolName);
-    stepIndex += 1;
+    state.stepIndex += 1;
     const actionStep = repo.addStep({
-      runId: run.id,
-      stepIndex,
+      runId: state.run.id,
+      stepIndex: state.stepIndex,
       kind: 'action',
       toolName: toolName || null,
       reason: decision.reason,
@@ -253,8 +184,8 @@ export async function* runTaskLoop(
       toolName,
       callId,
       argsSummary: summarizeArgs(toolName, decision.args ?? {}),
-      assistantId: run.assistantId,
-      taskScope: run.id,
+      assistantId: state.run.assistantId,
+      taskScope: state.run.id,
       signal,
       source: resolved.source,
       permission: resolved.tool.permission ?? 'read',
@@ -288,8 +219,8 @@ export async function* runTaskLoop(
     });
     const actFinished = stepFinished(actionStep.id);
     if (actFinished) yield actFinished;
-    consecutiveFailures = result.ok ? 0 : consecutiveFailures + 1;
-    run = repo.incrementRunCounters(run.id, { failed: !result.ok }) ?? run;
+    state.consecutiveFailures = result.ok ? 0 : state.consecutiveFailures + 1;
+    state.run = repo.incrementRunCounters(state.run.id, { failed: !result.ok }) ?? state.run;
     const hit = checkLimits();
     if (hit) {
       yield hit.event;

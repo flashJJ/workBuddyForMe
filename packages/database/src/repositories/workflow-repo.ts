@@ -1,4 +1,5 @@
-import type { FlowGraph, FlowStatus, WorkflowVersionView, WorkflowView } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
+import type { FlowStatus, WorkflowVersionView, WorkflowView } from '@wbfm/shared/types';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 

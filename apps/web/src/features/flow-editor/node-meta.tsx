@@ -9,7 +9,7 @@ import {
   UserCheck,
   type LucideIcon,
 } from 'lucide-react';
-import type { FlowNodeType } from '@wbfm/shared';
+import type { FlowNodeType } from '@wbfm/shared/schemas';
 
 /** 节点类型展示元数据（面板/画布/配置共用的唯一事实源） */
 export interface NodeMeta {

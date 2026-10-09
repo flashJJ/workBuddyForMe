@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { ApiError, idParamSchema } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { idParamSchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, parseParams, readJsonBody } from '@/lib/server/validation';

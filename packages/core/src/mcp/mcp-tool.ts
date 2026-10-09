@@ -1,5 +1,5 @@
-import { MCP_CALL_TIMEOUT_MS } from '@wbfm/shared';
-import type { McpToolInfo } from '@wbfm/shared';
+import { MCP_CALL_TIMEOUT_MS } from '@wbfm/shared/constants';
+import type { McpToolInfo } from '@wbfm/shared/types';
 import type { Tool, ToolContext, ToolResult } from '../tools/types';
 import type { McpRegistry } from './registry';
 

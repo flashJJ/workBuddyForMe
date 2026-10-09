@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { Provider, ProviderProtocol } from '@wbfm/shared';
+import type { Provider } from '@wbfm/shared/types';
+import type { ProviderProtocol } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

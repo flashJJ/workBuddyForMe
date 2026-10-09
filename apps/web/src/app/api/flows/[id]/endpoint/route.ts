@@ -1,11 +1,11 @@
+import { ApiError } from '@wbfm/shared/errors';
 import {
-  ApiError,
   flowEndpointUpsertSchema,
   idParamSchema,
   type FlowEndpointUpsertInput,
-} from '@wbfm/shared';
+} from '@wbfm/shared/schemas';
 import { createWorkflowRepository } from '@wbfm/database';
-import { scanFlowDangerNodes } from '@wbfm/core';
+import { scanFlowDangerNodes } from '@wbfm/core/serving';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, parseParams, readJsonBody } from '@/lib/server/validation';

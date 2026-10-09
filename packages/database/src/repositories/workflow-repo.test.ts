@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { FlowGraph } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import { createDatabase, type DatabaseInstance } from '../client';
 import { createWorkflowRepository } from './workflow-repo';
 import { createWorkflowRunRepository } from './workflow-run-repo';

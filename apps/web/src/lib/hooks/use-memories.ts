@@ -1,7 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Memory, MemoryKind, MemoryListQuery, MemoryStatus } from '@wbfm/shared';
+import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
+import type { MemoryListQuery } from '@wbfm/shared/schemas';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

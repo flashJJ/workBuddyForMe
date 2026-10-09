@@ -1,4 +1,4 @@
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 
 /** 老式二进制 Office 扩展名（OOXML 之前格式，v0.3 不支持） */
 export const LEGACY_OFFICE_EXTENSIONS = ['.doc', '.xls', '.ppt'];

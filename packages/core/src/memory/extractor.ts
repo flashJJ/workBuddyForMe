@@ -1,4 +1,5 @@
-import { MEMORY_EXTRACT_MAX_ITEMS, MEMORY_KINDS, type MemoryKind } from '@wbfm/shared';
+import { MEMORY_EXTRACT_MAX_ITEMS } from '@wbfm/shared/constants';
+import { MEMORY_KINDS, type MemoryKind } from '@wbfm/shared/types';
 import { traceAsync, type ChatMessage, type TraceHandle } from '@wbfm/ai';
 import { z } from 'zod';
 import type { ResolvedChatTarget } from '../chat/model-resolver';

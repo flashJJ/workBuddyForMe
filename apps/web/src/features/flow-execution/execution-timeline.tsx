@@ -10,7 +10,8 @@ import {
   PauseCircle,
   XCircle,
 } from 'lucide-react';
-import type { FlowEventPayload, FlowNodeType } from '@wbfm/shared';
+import type { FlowEventPayload } from '@wbfm/shared/types';
+import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { cn } from '@/lib/utils';
 import { NODE_META, nodeTitle } from '../flow-editor/node-meta';
 import type { FlowCanvasNode } from '../flow-editor/graph-utils';

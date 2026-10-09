@@ -1,0 +1,12 @@
+{
+  "description": "v1.1 M5 工具结果中央压缩 golden set：mock AI 经 MCP 拉取 120KB 结构化记录，验证①大输出被压缩（promptTokens 低于基线 40%）②二次工具引用成功（身份字段首 id 保留、__omitted 省略标记可见）③trace 留压缩元数据。",
+  "mcpServerName": "eval-big",
+  "mcpTool": "big_json",
+  "toolCallName": "mcp:eval-big:big_json",
+  "fixture": "fixtures/big-output-mcp-server.mjs",
+  "trigger": "[eval-tool:mcp:eval-big:big_json]",
+  "anchorId": "WBFM-ANCHOR-0001",
+  "itemCount": 600,
+  "minOutputBytes": 100000,
+  "promptTokenBudget": 12000
+}

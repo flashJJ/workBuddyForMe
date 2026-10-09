@@ -1,4 +1,4 @@
-import { DEFAULT_HTTP_TIMEOUT_MS } from '@wbfm/shared';
+import { DEFAULT_HTTP_TIMEOUT_MS } from '@wbfm/shared/constants';
 import { ProviderError } from '../errors/provider-error';
 import { backoffDelayMs, sleep } from './backoff';
 import { normalizeHttpError } from './error-normalize';

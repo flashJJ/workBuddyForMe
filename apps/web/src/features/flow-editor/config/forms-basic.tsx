@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import type { FlowInputField, FlowInputValueType } from '@wbfm/shared';
+import type { FlowInputField, FlowInputValueType } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Field, Input, RefTextarea, Select, str, type NodeConfigFormProps } from './form-primitives';
 

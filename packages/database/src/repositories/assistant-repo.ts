@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../client';
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import { newId, nowIso, mapAssistant, type AssistantRow } from './mappers';
 
 export interface AssistantCreateFields {

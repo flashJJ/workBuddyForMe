@@ -1,4 +1,4 @@
-import { workflowCreateSchema, type WorkflowCreateInput } from '@wbfm/shared';
+import { workflowCreateSchema, type WorkflowCreateInput } from '@wbfm/shared/schemas';
 import { createWorkflowRepository, createWorkflowRunRepository } from '@wbfm/database';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';

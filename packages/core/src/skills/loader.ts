@@ -1,12 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  SKILL_MANIFEST_FILENAME,
-  SKILL_NAME_PATTERN,
-  skillManifestSchema,
-  type SkillDiskEntry,
-  type SkillManifest,
-} from '@wbfm/shared';
+import { SKILL_MANIFEST_FILENAME, SKILL_NAME_PATTERN } from '@wbfm/shared/constants';
+import { skillManifestSchema } from '@wbfm/shared/schemas';
+import { type SkillDiskEntry, type SkillManifest } from '@wbfm/shared/types';
 
 /** zod 校验失败时取前几条 issue 拼成可读原因（路径: 消息） */
 interface ZodIssueLike {

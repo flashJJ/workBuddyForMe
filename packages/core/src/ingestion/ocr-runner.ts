@@ -6,7 +6,7 @@ import {
   OCR_VISION_MAX_PIXELS,
   OCR_VISION_SCALE,
   type OcrEngine,
-} from '@wbfm/shared';
+} from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../services/deps';
 import { pageNeedsOcr } from './read-document';
 import { renderPdfPagesToPng } from './pdf-render';

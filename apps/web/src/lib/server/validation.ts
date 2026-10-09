@@ -1,4 +1,4 @@
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import type { z } from 'zod';
 
 /** 读取 JSON body；空体返回 undefined，非法 JSON 返回 422 */

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { idParamSchema } from '@wbfm/shared';
-import { buildConversationSnapshot } from '@wbfm/core';
+import { idParamSchema } from '@wbfm/shared/schemas';
+import { buildConversationSnapshot } from '@wbfm/core/share';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { parseParams, parseSearch } from '@/lib/server/validation';
 import { renderConversationHtml } from '@/lib/share/html-template';

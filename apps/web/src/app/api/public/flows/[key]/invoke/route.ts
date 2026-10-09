@@ -3,7 +3,7 @@ import {
   PublicEndpointError,
   readFlowStartFields,
   validateFlowStartInput,
-} from '@wbfm/core';
+} from '@wbfm/core/serving';
 import { definePublicRoute, publicJsonOk } from '@/lib/server/public-route';
 import { readJsonBody } from '@/lib/server/validation';
 

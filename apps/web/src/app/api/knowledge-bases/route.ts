@@ -1,4 +1,4 @@
-import { knowledgeBaseCreateSchema } from '@wbfm/shared';
+import { knowledgeBaseCreateSchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, readJsonBody } from '@/lib/server/validation';

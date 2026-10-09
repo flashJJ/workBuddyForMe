@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared';
+import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared/schemas';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiGet, apiPut } from '@/lib/api/client';
 

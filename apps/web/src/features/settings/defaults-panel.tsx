@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { AppSettings, ProviderModel } from '@wbfm/shared';
+import type { AppSettings, ProviderModel } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';

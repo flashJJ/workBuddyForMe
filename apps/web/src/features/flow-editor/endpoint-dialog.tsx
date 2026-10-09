@@ -1,15 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { Copy, KeyRound, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/common/toast';
 import {
-  FLOW_DESKTOP_CONTROL_TOOLS,
   FLOW_ENDPOINT_RATE_LIMIT,
   FLOW_ENDPOINT_SYNC_TIMEOUT,
-  type FlowUnattendedPolicy,
-} from '@wbfm/shared';
-// FLOW_DESKTOP_CONTROL_TOOLS 在保存时用于过滤白名单；策略编辑 UI 在 EndpointPolicySection
+} from '@wbfm/shared/schemas';
+import { type FlowUnattendedPolicy } from '@wbfm/shared/types';
+// 策略编辑 UI 在 EndpointPolicySection；白名单过滤见 endpoint-dialog-utils
 import { ApiClientError } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';
 import {
@@ -19,6 +17,14 @@ import {
 } from '@/lib/hooks/use-flow-endpoint';
 import { EndpointMcpHint } from './endpoint-mcp-hint';
 import { EndpointPolicySection } from './endpoint-policy-section';
+import { EndpointToggles } from './endpoint-toggles';
+import { EndpointInvokeCard } from './endpoint-invoke-card';
+import {
+  TIMEOUT_OPTIONS,
+  buildEffectivePolicy,
+  clampRateLimit,
+  getEndpointBaseUrl,
+} from './endpoint-dialog-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,8 +35,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
-const TIMEOUT_OPTIONS = [5_000, 10_000, 30_000, 60_000, 120_000];
 
 export interface EndpointDialogProps {
   open: boolean;
@@ -73,15 +77,7 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
     setPolicy(ep?.policy ?? { mode: 'deny_all' });
   }, [open, ep]);
 
-  const baseUrl =
-    typeof window === 'undefined'
-      ? 'http://127.0.0.1:3000/api/public'
-      : `${window.location.origin}/api/public`;
-  const shownKey = revealedKey ?? '<你的密钥>';
-  const curlExample = `curl -X POST ${baseUrl}/flows/${shownKey}/invoke \\
-  -H "Authorization: Bearer ${shownKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{}'`;
+  const baseUrl = getEndpointBaseUrl();
 
   const onCopy = async (text: string) => {
     await copyText(text);
@@ -91,25 +87,13 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
 
   const save = async () => {
     if (!httpEnabled && !mcpEnabled && !ep) return;
-    // 白名单只提交当前发布图中仍存在的非桌面类危险工具，防止残留已删节点工具名
     const graphTools = new Set((detail.data?.dangerNodes ?? []).map((n) => n.toolName));
-    const effectivePolicy: FlowUnattendedPolicy =
-      policy.mode === 'allowlist'
-        ? {
-            mode: 'allowlist',
-            allowed: policy.allowed.filter(
-              (name) => graphTools.has(name) && !FLOW_DESKTOP_CONTROL_TOOLS.includes(name as never),
-            ),
-          }
-        : { mode: 'deny_all' };
+    const effectivePolicy = buildEffectivePolicy(policy, graphTools);
     const body: FlowEndpointConfigInput = {
       httpEnabled,
       mcpEnabled,
       syncTimeoutMs: timeoutMs,
-      rateLimitPerMin: Math.min(
-        FLOW_ENDPOINT_RATE_LIMIT.max,
-        Math.max(FLOW_ENDPOINT_RATE_LIMIT.min, Math.floor(rateLimit) || FLOW_ENDPOINT_RATE_LIMIT.default),
-      ),
+      rateLimitPerMin: clampRateLimit(rateLimit),
       policy: effectivePolicy,
     };
     try {
@@ -163,79 +147,25 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
         )}
 
         <div className="flex flex-col gap-4 text-sm">
-          <label className="flex items-center justify-between gap-3">
-            <span>
-              本地 API
-              <span className="ml-1 text-[11px] text-muted-foreground">HTTP invoke / 轮询 / SSE</span>
-            </span>
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={httpEnabled}
-              disabled={!published}
-              onChange={(e) => setHttpEnabled(e.target.checked)}
-            />
-          </label>
-          <label className="flex items-center justify-between gap-3">
-            <span>
-              MCP 暴露
-              <span className="ml-1 text-[11px] text-muted-foreground">供 MCP 客户端发现调用（配置先行，服务 M3 上线）</span>
-            </span>
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={mcpEnabled}
-              disabled={!published}
-              onChange={(e) => setMcpEnabled(e.target.checked)}
-            />
-          </label>
+          <EndpointToggles
+            httpEnabled={httpEnabled}
+            mcpEnabled={mcpEnabled}
+            published={published}
+            onHttpChange={setHttpEnabled}
+            onMcpChange={setMcpEnabled}
+          />
 
           {(httpEnabled || mcpEnabled) && (
             <>
-              <div className="flex flex-col gap-1.5 rounded-md border bg-muted/30 p-2.5">
-                <span className="text-[11px] font-medium text-muted-foreground">调用地址</span>
-                <code className="select-all break-all text-[11px] leading-relaxed">
-                  POST {baseUrl}/flows/{shownKey}/invoke
-                </code>
-                {ep && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <KeyRound className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-[11px]">当前密钥：{ep.keyPrefix}…（已隐藏）</span>
-                    <Button
-                      variant={confirmingRotate ? 'destructive' : 'ghost'}
-                      size="sm"
-                      className="h-6 px-2 text-[11px]"
-                      onClick={rotate}
-                      title={confirmingRotate ? '旧密钥将立即失效，再次点击确认' : undefined}
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      {confirmingRotate ? '再点一次确认重置' : '重置密钥'}
-                    </Button>
-                  </div>
-                )}
-                {revealedKey && (
-                  <div className="mt-1.5 rounded border border-emerald-300 bg-emerald-50 p-2 dark:bg-emerald-950/30">
-                    <p className="mb-1 text-[11px] text-emerald-700 dark:text-emerald-400">
-                      明文密钥只显示这一次，请立即复制保存：
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 select-all break-all text-[11px]">{revealedKey}</code>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-[11px]"
-                        onClick={() => onCopy(revealedKey)}
-                      >
-                        <Copy className="h-3 w-3" />
-                        {copied ? '已复制' : '复制'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                <pre className="mt-1.5 overflow-x-auto rounded bg-background p-2 text-[10px] leading-snug text-muted-foreground">
-{curlExample}
-                </pre>
-              </div>
+              <EndpointInvokeCard
+                baseUrl={baseUrl}
+                endpoint={ep}
+                revealedKey={revealedKey}
+                copied={copied}
+                confirmingRotate={confirmingRotate}
+                onRotate={rotate}
+                onCopy={onCopy}
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1">

@@ -11,88 +11,9 @@ vi.mock('electron', () => ({
   Menu: { buildFromTemplate: menuMocks.buildFromTemplate },
 }));
 
-import type {
-  IpcEventLike,
-  IpcMainLike,
-  MainWindowLike,
-  PetContextMenuActions,
-  PetWindowLike,
-} from './pet-manager';
+import type { PetContextMenuActions } from './pet-menu';
 import { PetManager } from './pet-manager';
-
-function createFakePetWindow(): {
-  win: PetWindowLike;
-  wc: PetWindowLike['webContents'];
-  setIgnore: ReturnType<typeof vi.fn>;
-  setPosition: ReturnType<typeof vi.fn>;
-} {
-  const onHandlers = new Map<string, () => void>();
-  const wcHandlers = new Map<string, (...args: unknown[]) => void>();
-  let destroyed = false;
-  const setIgnore = vi.fn();
-  const setPosition = vi.fn();
-  const wc: PetWindowLike['webContents'] = {
-    on: vi.fn((channel: string, cb: (...args: unknown[]) => void) => {
-      wcHandlers.set(channel, cb);
-    }),
-    send: vi.fn(),
-  };
-  const win: PetWindowLike = {
-    webContents: wc,
-    setIgnoreMouseEvents: setIgnore,
-    setPosition,
-    isDestroyed: vi.fn(() => destroyed),
-    isMinimized: vi.fn(() => false),
-    isVisible: vi.fn(() => true),
-    getBounds: vi.fn(() => ({ x: 321, y: 432, width: 260, height: 340 })),
-    close: vi.fn(() => {
-      destroyed = true;
-      onHandlers.get('closed')?.();
-    }),
-    destroy: vi.fn(() => {
-      destroyed = true;
-      onHandlers.get('closed')?.();
-    }),
-    on: vi.fn((event: 'closed' | 'move' | 'system-context-menu', cb: (e?: unknown) => void) => {
-      onHandlers.set(event, cb as () => void);
-      return win;
-    }),
-  };
-  return { win, wc, setIgnore, setPosition };
-}
-
-function createFakeMain(): MainWindowLike & {
-  isDestroyed: ReturnType<typeof vi.fn>;
-  isMinimized: ReturnType<typeof vi.fn>;
-} {
-  return {
-    webContents: { send: vi.fn() },
-    isDestroyed: vi.fn(() => false),
-    isMinimized: vi.fn(() => false),
-    restore: vi.fn(),
-    show: vi.fn(),
-    hide: vi.fn(),
-    focus: vi.fn(),
-  };
-}
-
-function createFakeIpc() {
-  const handles = new Map<string, (e: IpcEventLike, ...a: unknown[]) => unknown>();
-  const listeners = new Map<string, (e: IpcEventLike, ...a: unknown[]) => void>();
-  const ipc: IpcMainLike = {
-    handle: vi.fn((ch, fn) => void handles.set(ch, fn)),
-    on: vi.fn((ch, fn) => void listeners.set(ch, fn)),
-  };
-  return {
-    ipc,
-    invoke(ch: string, sender: unknown, ...args: unknown[]) {
-      return handles.get(ch)!({ sender }, ...args);
-    },
-    emit(ch: string, sender: unknown, ...args: unknown[]) {
-      listeners.get(ch)!({ sender }, ...args);
-    },
-  };
-}
+import { createFakeIpc, createFakeMain, createFakePetWindow } from './pet-test-fixtures';
 
 describe('PetManager', () => {
   let dir: string;
@@ -102,7 +23,6 @@ describe('PetManager', () => {
   let ipcKit: ReturnType<typeof createFakeIpc>;
   let manager: PetManager;
   let menuActions: PetContextMenuActions | null;
-  let pollTick: () => void;
   let cursor: { x: number; y: number };
 
   beforeEach(() => {
@@ -116,9 +36,8 @@ describe('PetManager', () => {
     });
     ipcKit = createFakeIpc();
     menuActions = null;
-    // 默认光标在窗口外；测试用例可直接改 cursor 再 pollTick()
+    // 默认光标在窗口外；个别用例直接改 cursor 驱动手势
     cursor = { x: 0, y: 0 };
-    pollTick = () => undefined;
     manager = new PetManager({
       userDataDir: dir,
       boot: { url: 'http://127.0.0.1:59999', token: 't' },
@@ -128,10 +47,7 @@ describe('PetManager', () => {
         menuActions = actions;
       },
       getCursor: () => cursor,
-      setInterval: (cb: () => void) => {
-        pollTick = cb;
-        return 1 as unknown as ReturnType<typeof setInterval>;
-      },
+      setInterval: () => 1 as unknown as ReturnType<typeof setInterval>,
       clearInterval: vi.fn(),
     });
     manager.registerIpc(ipcKit.ipc);
@@ -278,52 +194,12 @@ describe('PetManager', () => {
     expect(main.show).toHaveBeenCalledTimes(1);
   });
 
-  it('主进程光标轮询：移入命中列立即关穿透，移出经滞回不立即翻转', async () => {
+  it('手动拖拽 IPC 身份校验：非桌宠发送方拒绝（手势数值逻辑见 pet-drag-controller.test）', async () => {
     await manager.open();
-    // open 时 tick 一次（光标在外），初始穿透仍为 true
-    expect(pet.setIgnore).toHaveBeenLastCalledWith(true, { forward: true });
-
-    // 光标移到窗口（bounds 321,432,260×340）命中列中央
-    cursor = { x: 451, y: 600 };
-    pollTick();
-    expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
-
-    // 移出：本轮不翻转（滞回 180ms，假定时器下尚未到期）
-    cursor = { x: 10, y: 10 };
-    pollTick();
-    expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
-  });
-
-  it('手动拖拽：begin 记录偏移，dragTo 按全局坐标移窗，end 持久化；非桌宠发送方拒绝', async () => {
-    await manager.open();
-    // begin 时光标在 (451,600)，bounds 原点 (321,432) → 偏移 (130,168)
-    cursor = { x: 451, y: 600 };
-    ipcKit.emit('pet:drag-begin', pet.wc);
-
-    // 光标未移动超过阈值（3px）→ 不 setPosition（视为点击）
-    ipcKit.emit('pet:drag-to', pet.wc);
-    expect(pet.setPosition).not.toHaveBeenCalled();
-
-    // 光标移到 (500,700)，超阈值 → 窗口左上 = (500-130, 700-168)
-    cursor = { x: 500, y: 700 };
-    ipcKit.emit('pet:drag-to', pet.wc);
-    expect(pet.setPosition).toHaveBeenLastCalledWith(370, 532);
-    expect(pet.setPosition).toHaveBeenCalledTimes(1);
-
-    // 主进程忽略 IPC 携带的任何坐标（旧协议残余），仍以全局光标为准
-    cursor = { x: 510, y: 710 };
-    ipcKit.emit('pet:drag-to', pet.wc, 9999, 9999);
-    expect(pet.setPosition).toHaveBeenLastCalledWith(380, 542);
-
-    ipcKit.emit('pet:drag-end', pet.wc);
-    const saved = JSON.parse(fs.readFileSync(path.join(dir, 'pet-state.json'), 'utf8'));
-    expect(saved.x).toBe(321);
-    expect(saved.y).toBe(432);
-
-    // 主窗伪造拖拽 → 拒绝
     ipcKit.emit('pet:drag-begin', main.webContents);
     ipcKit.emit('pet:drag-to', main.webContents);
-    expect(pet.setPosition).toHaveBeenCalledTimes(2);
+    ipcKit.emit('pet:drag-end', main.webContents);
+    expect(pet.setPosition).not.toHaveBeenCalled();
   });
 
   it('右键菜单：头部 IPC 仅桌宠发送方可弹；身体 drag 区经 system-context-menu 弹并阻止系统菜单', async () => {

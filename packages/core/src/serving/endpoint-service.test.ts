@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import {
   createWorkflowEndpointRepository,

@@ -1,10 +1,7 @@
-import {
-  ApiError,
-  type DiscoveredModel,
-  type ModelCapability,
-  type ModelCreateInput,
-  type ProviderModel,
-} from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
+import { type DiscoveredModel, type ProviderModel } from '@wbfm/shared/types';
+import { type ModelCapability } from '@wbfm/shared/constants';
+import { type ModelCreateInput } from '@wbfm/shared/schemas';
 import { createModelRepository, createProviderRepository } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
 import { buildProvider, toApiError } from './provider-adapter';

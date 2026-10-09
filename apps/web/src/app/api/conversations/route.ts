@@ -1,4 +1,4 @@
-import { conversationCreateSchema } from '@wbfm/shared';
+import { conversationCreateSchema } from '@wbfm/shared/schemas';
 import { z } from 'zod';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';

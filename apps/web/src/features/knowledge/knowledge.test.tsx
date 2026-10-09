@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared';
+import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { KnowledgePage } from './knowledge-page';
 

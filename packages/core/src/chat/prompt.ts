@@ -1,5 +1,5 @@
-import { CONTEXT_BUDGET_SAFETY_RATIO, RAG_CHUNK_MIN_TOKENS } from '@wbfm/shared';
-import type { Assistant, Message } from '@wbfm/shared';
+import { CONTEXT_BUDGET_SAFETY_RATIO, RAG_CHUNK_MIN_TOKENS } from '@wbfm/shared/constants';
+import type { Assistant, Message } from '@wbfm/shared/types';
 import type { ChatMessage } from '@wbfm/ai';
 import type { RagContext } from './types';
 import type { ResolvedImage } from '../services/attachment-service';

@@ -1,4 +1,4 @@
-import type { Citation, PermissionLevel, ToolSubstep } from '@wbfm/shared';
+import type { Citation, PermissionLevel, ToolSubstep } from '@wbfm/shared/types';
 import type { ToolDefinition } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 

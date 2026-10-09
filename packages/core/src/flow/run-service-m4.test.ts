@@ -1,4 +1,5 @@
-import type { FlowGraph, FlowUnattendedPolicy } from '@wbfm/shared';
+import type { FlowGraph } from '@wbfm/shared/schemas';
+import type { FlowUnattendedPolicy } from '@wbfm/shared/types';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import {
   createWorkflowEndpointRepository,

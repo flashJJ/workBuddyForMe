@@ -1,13 +1,10 @@
 import type {
   FlowEventPayload,
-  FlowGraph,
-  FlowEdge,
-  FlowNode,
-  FlowNodeType,
   FlowTrigger,
   PermissionLevel,
   ProviderModel,
-} from '@wbfm/shared';
+} from '@wbfm/shared/types';
+import type { FlowGraph, FlowEdge, FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
 import type { ChatProvider } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 import type { Tool, ToolResult } from '../tools/types';

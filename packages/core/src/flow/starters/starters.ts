@@ -1,4 +1,4 @@
-import type { FlowGraph, FlowNode, FlowEdge } from '@wbfm/shared';
+import type { FlowGraph, FlowNode, FlowEdge } from '@wbfm/shared/schemas';
 
 /**
  * v0.8 P0-7：内置 starter flows（首次启动播种并发布，模式对齐 builtin skills）。

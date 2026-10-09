@@ -1,4 +1,4 @@
-import { idParamSchema, providerUpdateSchema } from '@wbfm/shared';
+import { idParamSchema, providerUpdateSchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, parseParams, readJsonBody } from '@/lib/server/validation';

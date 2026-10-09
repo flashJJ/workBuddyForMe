@@ -1,6 +1,7 @@
 'use client';
 
-import type { DocumentRecord, DocumentStatus } from '@wbfm/shared';
+import type { DocumentRecord } from '@wbfm/shared/types';
+import type { DocumentStatus } from '@wbfm/shared/constants';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Spinner } from '@/components/common/state';
 import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';

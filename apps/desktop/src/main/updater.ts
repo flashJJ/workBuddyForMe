@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type { BrowserWindow } from 'electron';
-import type { FullUpdaterStatus, UpdateChannel, UpdateStatus } from '@wbfm/shared';
+import type { FullUpdaterStatus, UpdateChannel, UpdateStatus } from '@wbfm/shared/updater';
 import {
   bumpLastCheck,
   readUpdaterState,
@@ -8,7 +8,7 @@ import {
   type UpdaterState,
 } from './updater-state';
 
-export type { FullUpdaterStatus, UpdateChannel, UpdateStatus } from '@wbfm/shared';
+export type { FullUpdaterStatus, UpdateChannel, UpdateStatus } from '@wbfm/shared/updater';
 
 /** autoUpdater 子集：生产用 electron-updater 单例，测试注入 EventEmitter mock */
 export interface AutoUpdaterLike {

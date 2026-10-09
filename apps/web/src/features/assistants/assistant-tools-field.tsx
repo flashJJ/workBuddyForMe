@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import type { McpToolInfo, ToolName } from '@wbfm/shared';
-import { TOOL_NAMES } from '@wbfm/shared';
+import type { McpToolInfo } from '@wbfm/shared/types';
+import type { ToolName } from '@wbfm/shared/constants';
+import { TOOL_NAMES } from '@wbfm/shared/constants';
 
 const TOOL_LABELS: Record<ToolName, string> = {
   current_time: '当前时间（回答时间/日期类问题）',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ScreenSnapshotResponse } from '@wbfm/shared';
+import type { ScreenSnapshotResponse } from '@wbfm/shared/schemas';
 import { ChannelUnavailableError, type ComputerChannelClient } from '../../computer/channel-client';
 import { createScreenSnapshotTool } from './screen-snapshot-tool';
 import type { ToolContext } from '../types';

@@ -1,4 +1,4 @@
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import type { EnabledSkill } from './skill-service';
 
 /**

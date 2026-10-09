@@ -1,8 +1,5 @@
-import {
-  FLOW_DESKTOP_CONTROL_TOOLS,
-  type FlowUnattendedPolicy,
-  type PermissionLevel,
-} from '@wbfm/shared';
+import { FLOW_DESKTOP_CONTROL_TOOLS } from '@wbfm/shared/schemas';
+import { type FlowUnattendedPolicy, type PermissionLevel } from '@wbfm/shared/types';
 
 /** 桌面控制永久禁单（只读的字符串数组视图，避免把字面量联合类型带入 includes） */
 const DESKTOP_BAN_LIST: readonly string[] = FLOW_DESKTOP_CONTROL_TOOLS;

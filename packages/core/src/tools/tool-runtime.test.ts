@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Assistant } from '@wbfm/shared';
+import type { Assistant } from '@wbfm/shared/types';
 import type { ServiceDeps } from '../services/deps';
 import { createToolRuntime } from './tool-runtime';
 import { toToolDefinitions } from './types';

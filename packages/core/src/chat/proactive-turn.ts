@@ -1,4 +1,5 @@
-import { HISTORY_MESSAGE_SAFETY_CAP, type TokenUsage } from '@wbfm/shared';
+import { HISTORY_MESSAGE_SAFETY_CAP } from '@wbfm/shared/constants';
+import { type TokenUsage } from '@wbfm/shared/api';
 import { startRun, type ChatMessage, type TraceHandle } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';

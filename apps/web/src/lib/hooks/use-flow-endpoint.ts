@@ -1,11 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type {
-  FlowUnattendedPolicy,
-  WorkflowEndpointView,
-} from '@wbfm/shared';
-import type { FlowDangerNode } from '@wbfm/core';
+import type { FlowUnattendedPolicy, WorkflowEndpointView } from '@wbfm/shared/types';
+import type { FlowDangerNode } from '@wbfm/core/serving';
 import { apiGet, apiPost, apiPut } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 

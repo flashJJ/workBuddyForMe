@@ -1,4 +1,4 @@
-import type { FlowNodeExecStatus, NodeExecutionView } from '@wbfm/shared';
+import type { FlowNodeExecStatus, NodeExecutionView } from '@wbfm/shared/types';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 import type { NodeExecutionRow } from './workflow-run-repo';

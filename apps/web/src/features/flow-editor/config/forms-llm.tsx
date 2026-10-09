@@ -3,7 +3,7 @@
 import { useQueries } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import type { KnowledgeBase, ProviderModel } from '@wbfm/shared';
+import type { KnowledgeBase, ProviderModel } from '@wbfm/shared/types';
 import { useProviders } from '@/lib/hooks/use-providers';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import {

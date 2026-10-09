@@ -1,4 +1,4 @@
-import type { MemoryKind, MemoryStatus } from '@wbfm/shared';
+import type { MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 
 /** 长期记忆展示文案与徽标配色集中管理 */
 

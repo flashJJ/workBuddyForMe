@@ -1,6 +1,6 @@
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import { safeFetchWebPage, SsrfBlockedError } from '../net/safe-web-fetch';
 
 export interface ClippedArticle {

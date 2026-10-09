@@ -1,7 +1,7 @@
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { getVoiceRuntime } from '@/lib/server/voice/voice-runtime-singleton';
-import { VOICE_TTS_MODELS } from '@wbfm/shared';
+import { VOICE_TTS_MODELS } from '@wbfm/shared/schemas';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,4 +1,4 @@
-import { ApiError } from '@wbfm/shared';
+import { ApiError } from '@wbfm/shared/errors';
 import { ProviderError } from '@wbfm/ai';
 import {
   createChunkRepository,

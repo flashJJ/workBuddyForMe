@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { VoiceAsrResponse } from '@wbfm/shared';
+import type { VoiceAsrResponse } from '@wbfm/shared/schemas';
 import { API } from '@/lib/api/endpoints';
 import { apiUpload } from '@/lib/api/client';
 import { downsampleTo16k, encodeWav16k, rms } from './pcm-wav';
