@@ -143,7 +143,7 @@ $7z = "node_modules\7zip-bin\win\x64\7za.exe"
 发版：
 
 5. 合入 main 后打附注标签 `vX.Y.Z` 并推送 → release.yml 在 Windows runner 上产出 NSIS 并创建 **draft** Release。
-6. 在 GitHub 编辑 draft Release：核对资产（exe/blockmap/latest.yml 三件套）、补发行说明，人工转正式发布。
+6. 在 GitHub 编辑 draft Release：核对资产（exe/blockmap/latest.yml 三件套）、粘贴并补全发行说明（v1.2 英文草稿：[v1.2-release-notes-en.md](../roadmap/v1.2-release-notes-en.md)，发布前填日期与 sha256），人工转正式发布。
 7. 真机验证：旧版安装包应用内「检查更新」走完整更新链；全新安装走首次启动向导（详见各版本真机验收清单）。
 
 本机构建（调试安装器）用 `pnpm --filter @wbfm/desktop dist:win`（自动 build web → 归集 → electron-builder，`--publish never`），产物在 `apps/desktop/release/`。
