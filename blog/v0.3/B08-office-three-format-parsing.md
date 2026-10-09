@@ -1,10 +1,4 @@
----
-title: "Office 三格式解析：mammoth 表格分隔符 + SheetJS 官方源锁定 + fflate OOXML 解包"
-series: "WorkBuddy For Me v0.3 技术拆解"
-number: "B08"
-tags: ["workbuddy", "office", "docx", "xlsx", "pptx", "mammoth", "sheetjs", "fflate"]
-date: "2025-Q4"
----
+# Office 三格式解析：mammoth、SheetJS 与手写 OOXML
 
 ## 为什么 Office 三格式要分开处理
 
@@ -16,20 +10,20 @@ docx、xlsx、pptx 虽然都属于 Office 套件，但底层格式完全不同�
 | xlsx | ZIP + XML（OOXML SpreadsheetML） | `<v:v>` 节点 | `<sheetData>` → `<row>` → `<c>` |
 | pptx | ZIP + XML（OOXML PresentationML） | `<a:t>` 节点 | `<a:tbl>` → `<a:tr>` → `<a:tc>` |
 
-zip 结构和 XML namespace 都不一样。选什么库来解每个格式，是 v0.3 M2 的一个核心技术决策。
-
----
+zip 结构和 XML namespace 都不一样。选什么库来解每个格式，是文档解析模块的一个核心技术决策。
 
 ## docx：mammoth + 轻量 HTML → 文本转换
 
 ### 为什么 mammoth
 
 docx 领域有三个主流选择：
+
 - **mammoth.js**——纯 JS，专门做 docx → HTML/纯文本转换，输出受控的有限 HTML 标签
 - **docx-preview**——浏览器渲染用的，不适合 Node
 - **自己解 OOXML**——工作量大，但可控
 
 我们选 mammoth，原因是它：
+
 1. 不依赖原生编译，跨平台（Node + Electron + Web）
 2. 输出 HTML 而不是纯文本——表格结构还在（`<table>`, `<tr>`, `<td>`），方便后续处理
 3. 支持受控标签——`convertToHtml` 只输出 `<p>`, `<h1-6>`, `<table>`, `<tr>`, `<td>`, `<strong>`, `<em>` 等有限标签，没有 `<script>` 或 inline style
@@ -45,7 +39,7 @@ mammoth 有 `convertToText` 方法，但它**不处理表格**——所有表格
 
 ### 真实代码
 
-`packages/core/src/ingestion/office/read-docx.ts`：
+core 包 ingestion/office 目录的 `read-docx.ts`：
 
 ```typescript
 import mammoth from 'mammoth';
@@ -74,13 +68,14 @@ export function docxHtmlToText(html: string): string {
 
 **设计 1：表格单元格用 `|` 分隔**
 
-```
+```text
 姓名 | 职位 | 部门
 张三 | 产品经理 | 研发部
 李四 | 高级工程师 | 研发部
 ```
 
 用 `|` 而不是 tab 的原因：
+
 - mammoth 输出的 `<td>` 内容里可能已经有 tab
 - `|` 在纯文本里更易读
 - RAG 检索时 `|` 分隔的表格仍然保留了列语义
@@ -92,19 +87,18 @@ export function docxHtmlToText(html: string): string {
 .replace(/<\/p>\s*(<\/t[dh]>)/gi, '$1')
 ```
 
-mammoth 在 `<td>` 里如果有多个 `<p>`（Word 里单元格内有多个段落），会输出 `<td><p>第一段</p><p>第二段</p></td>`。如果直接剥离标签就变成「第一段第二段」，失去段落边界。但我们做了预处理——单元格内的首尾 `<p>` 标签被移除，中间的 `<p>` 会被 `.replace(/<\/p>\s*(<\/t[dh]>)/gi, '$1')` 前的规则产生换行？不对……
-
-等一下，再仔细看一下逻辑：
+mammoth 在 `<td>` 里如果有多个 `<p>`（Word 里单元格内有多个段落），会输出 `<td><p>第一段</p><p>第二段</p></td>`。规则生效的顺序是：
 
 1. `<td>` 后紧跟的 `<p>` → 去掉开头 `<p>`，保留内容
 2. `</p>` 后紧跟 `</td>` → 去掉 `</p>`，保留 `</td>`
-3. `</p>` 不紧跟 `</td>`（单元格内有多个段落）→ 走第 2 条规则前，会先被第 3 条规则 `.replace(/<\/(p|h[1-6])>/gi, '\n')` 替换成换行
+3. `</p>` 不紧跟 `</td>`（单元格内有多个段落）→ 会先被 `.replace(/<\/(p|h[1-6])>/gi, '\n')` 替换成换行
 
 所以最终：
-- 单元格内单段 → 单行，无换行
-- 单元格内多段 → 段之间有换行（但我们后续 `.split('\n').filter(Boolean)` 会过滤空行）
 
-嗯……实际上我们的代码可能还不够完美，但对于绝大多数 Word 文档，这个简单的正则转换够用了。
+- 单元格内单段 → 单行，无换行
+- 单元格内多段 → 段之间有换行（后续 `.split('\n').filter(Boolean)` 会过滤空行）
+
+对于绝大多数 Word 文档，这个简单的正则转换够用了。
 
 **设计 3：行尾 `| ` 清理**
 
@@ -118,18 +112,18 @@ mammoth 在 `<td>` 里如果有多个 `<p>`（Word 里单元格内有多个段�
 
 第一版我们考虑过用 `cheerio` 做 DOM 解析，但 mammoth 输出的 HTML 太简单了（有限标签集），用正则处理反而更轻、更快、没有依赖。正则对 mammoth 的稳定输出完全可控——mammoth 的输出在其 API 范围内是确定的。
 
----
-
 ## xlsx：SheetJS（xlsx）0.20.3 官方源
 
 ### 为什么锁 0.20.3
 
 SheetJS 的历史比较复杂：
+
 - 0.18.x 之后作者改了 license（0.2.x 是非商业 license）
 - 社区 fork（sheetjs/sheetjs）和作者的 npm 包（xlsx）在版本上分裂
 - pnpm 的 `sheetjs` 包和 `xlsx` 包是不同的包
 
 我们选的是 **npm 官方源的 `xlsx@0.20.3`**：
+
 - 这是最后一个 MIT license 的版本
 - 0.20.3 修复了 0.20.2 的一个内存泄漏（大表格时）
 - 我们测了 10 个真实 xlsx 文件（含 .xlsx / .xlsm / 旧版 .xls），都能正确读取
@@ -146,7 +140,7 @@ SheetJS 的历史比较复杂：
 
 ### 真实代码
 
-`packages/core/src/ingestion/office/read-xlsx.ts`：
+core 包 ingestion/office 目录的 `read-xlsx.ts`：
 
 ```typescript
 import * as XLSX from 'xlsx';
@@ -192,13 +186,12 @@ export function readXlsx(data: Uint8Array): string {
 3. **单元格内的换行替换成空格**：Excel 单元格内可以有多行（Alt+Enter），但在纯文本输出里用空格更合适
 4. **空 sheet 跳过**：`blankrows: false` + `filter((line) => line.length > 0)`，空白 sheet 不进输出
 
----
-
 ## pptx：fflate 纯 JS 解包 + 手写 OOXML 解析
 
 ### 为什么不找现成库
 
 pptx 解析的库生态不太好：
+
 - `pptxtojson`——维护不活跃，依赖老旧
 - `jszip` + 自己解——可行但 jszip 比 fflate 重
 - `pptx` npm 包——主要用于**生成** pptx，不是解析
@@ -208,7 +201,7 @@ pptx 解析的库生态不太好：
 
 ### pptx 的 OOXML 结构
 
-```
+```text
 pptx/                          ← zip 根目录
 ├── ppt/
 │   └── slides/
@@ -244,7 +237,7 @@ pptx/                          ← zip 根目录
 
 ### 真实代码
 
-`packages/core/src/ingestion/office/read-pptx.ts`：
+core 包 ingestion/office 目录的 `read-pptx.ts`：
 
 ```typescript
 import { unzipSync } from 'fflate';
@@ -305,11 +298,9 @@ Node.js 没有原生 DOMParser。引入 `xmldom` 或 `fast-xml-parser` 会增加
 
 ### 几个已知的限制
 
-1. **不提取备注页文本**：备注页在 `ppt/notesSlides/` 里，v0.3 不处理（注释：用户做知识库时主要内容在主 slide）
+1. **不提取备注页文本**：备注页在 `ppt/notesSlides/` 里，这里不处理（用户做知识库时主要内容在主 slide）
 2. **不提取表格单元格**：ppt 里的表格文本同样在 `<a:t>` 里，所以**会被提取**（因为表格也是 paragraph + run + t 的结构）
 3. **不处理 SmartArt、图表、图片里的文字**：这些内容不在 slide XML 里，或者是嵌入的图片/OLE 对象
-
----
 
 ## 三格式的统一输出格式
 
@@ -325,8 +316,6 @@ Node.js 没有原生 DOMParser。引入 `xmldom` 或 `fast-xml-parser` 会增加
 
 统一成这个格式后，下游的 `chunking.ts`（按段落切 chunk）和 embedding 就完全不用关心文件来源了。
 
----
-
 ## 遗留 Office 格式（.doc / .xls / .ppt）的处理
 
 ```typescript
@@ -340,9 +329,7 @@ function rejectLegacyOffice(ext: string): never {
 }
 ```
 
-旧版 Office 二进制格式（.doc/.xls/.ppt）没有一个稳定的纯 JS 解析方案。Apache POI 是 Java 的，Python 的 `python-docx` 不支持 .doc，纯 JS 的 `word-extractor` 维护不活跃。v0.3 里我们选择**直接拒绝**，提示用户转成新版格式。
-
----
+旧版 Office 二进制格式（.doc/.xls/.ppt）没有一个稳定的纯 JS 解析方案。Apache POI 是 Java 的，Python 的 `python-docx` 不支持 .doc，纯 JS 的 `word-extractor` 维护不活跃。我们选择**直接拒绝**，提示用户转成新版格式。
 
 ## 小结
 
@@ -356,6 +343,6 @@ Office 三格式的选型逻辑是：**为每种格式找最合适的工具，�
 
 所有解析器的输出统一为 Markdown 风格纯文本（段落换行、表格分隔、分 sheet/slide 节），下游 chunking 和 embedding 完全透明。不处理旧版 Office 二进制格式，用户转新版。
 
-这套方案在 v0.3 里稳定跑了 3 个月，没有出现解析器层面的 Bug——问题主要出在上一篇 B07 的 PDF webpack externals 和下一篇 B09 的网页剪藏安全护栏。
+这套方案上线后稳定跑了 3 个月，没有出现解析器层面的 Bug——问题主要出在上一篇的 PDF webpack externals 和下一篇的网页剪藏安全护栏。
 
-下一篇 B09 讲网页剪藏的安全护栏——SSRF 逐跳复检 + URL/正文去重 + sourceUrl 引用贯通。
+下一篇讲网页剪藏的安全护栏——SSRF 逐跳复检 + URL/正文去重 + sourceUrl 引用贯通。

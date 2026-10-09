@@ -1,14 +1,8 @@
----
-title: "模型不支持工具调用时的优雅降级：400 自动去工具重试"
-series: "WorkBuddy For Me v0.3 技术拆解"
-number: "B06"
-tags: ["workbuddy", "tool-calling", "fallback", "ollama", "qwen2.5vl"]
-date: "2025-Q4"
----
+# 模型不支持工具调用怎么办：一次 400，自动去工具重试
 
 ## 问题起源：supportsTools 是 provider 级还是 model 级？
 
-v0.2 里我们有一个 `supportsTools` 布尔值，存在 provider 配置里：
+之前我们有一个 `supportsTools` 布尔值，存在 provider 配置里：
 
 ```typescript
 interface Provider {
@@ -22,13 +16,13 @@ interface Provider {
 语义很简单：如果这个 provider 支持 function calling 协议，`supportsTools = true`。在 `ChatOrchestrator` 里用它决定要不要组装 `toolDefs`：
 
 ```typescript
-// v0.2 的逻辑
+// 以前的逻辑
 const toolDefs = target.provider.supportsTools ? toToolDefinitions([...toolMap.values()]) : [];
 ```
 
-这个设计在 v0.2 没问题——Ollama 上你只跑 qwen2.5 或 llama3.2，要么全支持工具，要么全不支持。
+这个设计在只有纯文本模型时没问题——Ollama 上你只跑 qwen2.5 或 llama3.2，要么全支持工具，要么全不支持。
 
-v0.3 加视觉之后，真机测到了一个矛盾情况：
+加上视觉模型之后，真机测到了一个矛盾情况：
 
 - Ollama provider → `supportsTools = true`（Ollama 端点**理论上**支持 tools）
 - 但 qwen2.5vl:7b 模型 → 带 tools 请求直接 400
@@ -48,13 +42,11 @@ interface Model {
 }
 ```
 
-但改 `supportsTools` 的粒度是一个大迁移——数据库 schema、ProviderService、UI 模型管理页面都要改。v0.3 里我们选了一条**更务实的路：不改 schema，运行时降级**。
-
----
+但改 `supportsTools` 的粒度是一个大迁移——数据库 schema、ProviderService、UI 模型管理页面都要改。这里我们选了一条**更务实的路：不改 schema，运行时降级**。
 
 ## 降级方案：runProviderTurnWithToolFallback
 
-`packages/core/src/chat/tool-runner.ts`：
+core 包 chat 目录的 `tool-runner.ts`：
 
 ```typescript
 export async function* runProviderTurnWithToolFallback(
@@ -97,8 +89,6 @@ if (!isToolsUnsupportedError(error)) throw error;
 
 因为 HTTP 400 可能有很多原因（payload 格式错、model 不存在、provider 挂了）。只有确定是「模型不支持 tools」才重试一次，其他错误让它按正常路径抛出、被外层 catch 处理（yield error 事件）。
 
----
-
 ## 为什么 fallback 只重试一次
 
 ```typescript
@@ -113,7 +103,7 @@ return yield* runProviderTurn({ ...params, tools: [] });   // ← 只调一次
 
 ### 时序保证
 
-```
+```text
 第一次 runProviderTurn（带 tools）
   │
   ├── 组装 ChatBody（含 tools array）
@@ -123,7 +113,7 @@ return yield* runProviderTurn({ ...params, tools: [] });   // ← 只调一次
   │     └── Provider 返回 400，还没写任何 SSE body
   │
   └── throw Error('model does not support tools')  ← 还没 yield 任何 delta
-  
+
 fallback 触发
   │
   ├── isToolsUnsupportedError → true
@@ -155,8 +145,6 @@ while (true) {
 
 **用户体验上完全无感**——不会看到一个 error 事件然后重连，整个 fallback 在一次 SSE 连接内完成。
 
----
-
 ## 如果 provider 返回了部分 SSE 然后才报错怎么办
 
 真机测试里我们看到 Ollama 对 tools 不支持的情况是**同步 400**——在写任何 SSE body 之前就返回了。但理论上存在一种坏情况：provider 先吐了几个 delta，然后才报错说 tools 不支持。
@@ -166,8 +154,6 @@ while (true) {
 原因很简单：**部分产出后 fallback 会导致内容重复**（用户已经看到一半回答了，再 retry 会产出另一份完全不同的回答）。这种情况下我们选择**把错误正常抛出，让外层 yield error 事件**，而不是静默重试。用户会看到「请求失败，可能由于模型不支持工具」，然后手动换模型。
 
 如果未来真的遇到这种「部分 SSE 后报错 tools 不支持」的 provider，可以在 `runProviderTurn` 里记录一个 `yieldedDeltaCount`，fallback 只在 count === 0 时触发。但目前不需要。
-
----
 
 ## 在 ChatOrchestrator 里的接入
 
@@ -183,8 +169,6 @@ for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
 ```
 
 改动极小——原来的 `runProviderTurn` 只有两处调用（chat-orchestrator 里 round 循环 + 可能一个单测），换成 `runProviderTurnWithToolFallback` 就好。单测里可以直接 mock `runProviderTurn` 让它第一次 throw / 第二次正常，验证 fallback 路径。
-
----
 
 ## 测试覆盖
 
@@ -212,8 +196,6 @@ describe('runProviderTurnWithToolFallback', () => {
 });
 ```
 
----
-
 ## 小结
 
 `runProviderTurnWithToolFallback` 的设计哲学是：**在最小改动下解决最常见的不兼容问题**。
@@ -224,8 +206,8 @@ describe('runProviderTurnWithToolFallback', () => {
 - 非工具不支持的错误原样抛出（不误伤正常错误）
 - 接入点只有一处（替换 `runProviderTurn` 的调用）
 
-这个 fallback 完美适配了 v0.3 的实际场景：qwen2.5vl 支持视觉但不支持工具——assistant 开了工具后，第一次请求 400 → 自动去掉 tools 重试 → 模型直接用 RAG 上下文回答。用户完全无感，看到的是正常的对话体验。
+这个 fallback 正好覆盖了实际场景：qwen2.5vl 支持视觉但不支持工具——assistant 开了工具后，第一次请求 400 → 自动去掉 tools 重试 → 模型直接用 RAG 上下文回答。用户完全无感，看到的是正常的对话体验。
 
 如果未来要做完整的 model-level capabilities 配置，`runProviderTurnWithToolFallback` 可以继续作为**网络降级层**（就算配置了 supportsTools=true，实际 provider 还是可能不支持），和 model-level 配置配合使用，而不是互斥。
 
-下一篇 B07 讲 PDF intake 的三大坑——fake worker 相对路径、中文逐字换行、externals 修复的完整链路复盘。
+下一篇讲 PDF intake 的三大坑——fake worker 相对路径、中文逐字换行、externals 修复的完整链路复盘。

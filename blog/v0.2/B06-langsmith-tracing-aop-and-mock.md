@@ -1,20 +1,16 @@
----
-title: "LangSmith 追踪怎么不侵入业务：AOP 包装 provider 调用、mock 注入的四层测试兼容"
-series: "WorkBuddy For Me v0.2 技术拆解"
-number: "B06"
-tags: ["observability", "langsmith", "testing"]
-date: "2025-Q4"
----
+# 链路追踪零侵入：AOP 包装器与四层测试的 mock 策略
 
-# LangSmith 追踪怎么不侵入业务
+「模型为什么不调工具？」「那个知识库片段为什么没被检索到？」「这轮对话的 token 怎么突然飙了？」——调这类问题时，没有链路追踪只能靠猜：每一步花了多久、模型回了什么、工具的输入输出是什么，全是黑盒。但追踪本身也有成本：埋点代码侵入业务、忘了关就发一堆网络请求、测试里全是追踪噪音。
+
+这篇讲我们这个本地优先的单人桌面 AI 应用怎么做到「开追踪时全链路自动埋点，关追踪时业务代码零感知」，以及四层测试各自怎么 mock。
 
 ## 追踪的价值与侵入的矛盾
 
-给一个 LLM 应用加链路追踪的动机很直接：你想知道**一次对话里每一步花了多少时间、模型返回了什么、工具执行的输入输出是什么**——这些信息对于调试"为什么模型不调用工具"、"为什么某个知识库片段没被检索到"、"哪轮对话的 token 用量突增"太关键了。
+给一个 LLM 应用加链路追踪的动机很直接：你想知道**一次对话里每一步花了多少时间、模型返回了什么、工具执行的输入输出是什么**——这些信息对于调试「为什么模型不调用工具」、「为什么某个知识库片段没被检索到」、「哪轮对话的 token 用量突增」太关键了。
 
-LangSmith 是 LangChain 生态里的追踪平台，API 很直接：开始一个 span（run），结束时上报 outputs 和 error。WorkBuddy For Me 没引 LangChain SDK（太重量级，而且 WorkBuddy For Me 不用 LangChain 的 chain/agent 抽象），所以自己实现了一层轻量 trace client——但核心矛盾是一样的：**怎么在不侵入业务代码的前提下，给每一步都加上 trace 埋点**？
+LangSmith 是 LangChain 生态里的追踪平台，API 很直接：开始一个 span（run），结束时上报 outputs 和 error。我们没引 LangChain SDK（太重量级，而且我们不用 LangChain 的 chain/agent 抽象），所以自己实现了一层轻量 trace client——但核心矛盾是一样的：**怎么在不侵入业务代码的前提下，给每一步都加上 trace 埋点**？
 
-v0.2 的目标是：
+设计目标是：
 
 1. **业务代码里不出现任何 `import { startRun } from ...`**——追踪逻辑通过 AOP 式包装注入；
 2. **关闭追踪时代码路径零感知**——`LANGSMITH_TRACING=false` 时，调用 trace 函数等价于直接执行原函数，没有额外网络请求、没有动态 import 开销；
@@ -72,7 +68,7 @@ export function isTracingEnabled(): boolean {
 
 ```typescript
 // packages/core/src/chat/chat-orchestrator.ts
-import { startRun, traceAsync, type TraceHandle } from '@wbfm/ai';
+import { startRun, traceAsync, type TraceHandle } from '@app/ai';
 
 // 在 streamChat 里
 const turnTrace: TraceHandle | null = await startRun({
@@ -84,7 +80,7 @@ const turnTrace: TraceHandle | null = await startRun({
     regenerate: Boolean(input.regenerate),
     content: userContent,
   },
-  metadata: { app: 'workbuddy' },
+  metadata: { app: 'my-ai-app' },
 });
 
 // RAG 检索（自动 trace）
@@ -123,9 +119,9 @@ finally {
 }
 ```
 
-追踪代码看起来确实"有几行"，但注意**所有 trace 调用都是"包裹"，不是"改写"**——业务逻辑 `input.retrieve!()` 和 `executeCall()` 是原样调用的，trace 层只是在外面套了一层 AOP 壳。如果把 `traceAsync(...)` 换成直接调用，业务行为完全不变。
+追踪代码看起来确实「有几行」，但注意**所有 trace 调用都是「包裹」，不是「改写」**——业务逻辑 `input.retrieve!()` 和 `executeCall()` 是原样调用的，trace 层只是在外面套了一层 AOP 壳。如果把 `traceAsync(...)` 换成直接调用，业务行为完全不变。
 
-这和很多 tracing SDK 的"侵入式注入"不同——比如 OpenTelemetry 的 SDK 需要你显式创建 span、把 span context 塞进每个下游调用的 options 里，业务代码里到处飘着 `span.setStatus()`、`ctx.span = span` 之类的样板。WorkBuddy For Me 用 `traceAsync` 包装器把这些样板收起来了。
+这和很多 tracing SDK 的「侵入式注入」不同——比如 OpenTelemetry 的 SDK 需要你显式创建 span、把 span context 塞进每个下游调用的 options 里，业务代码里到处飘着 `span.setStatus()`、`ctx.span = span` 之类的样板。我们用 `traceAsync` 包装器把这些样板收起来了。
 
 ## traceAsync 的实现：一行核心逻辑
 
@@ -152,7 +148,7 @@ export async function traceAsync<T>(
 
 ## 四层测试的 mock 策略
 
-追踪逻辑本身也需要测试，但更重要的是**业务代码的测试不要被 trace 干扰**。WorkBuddy For Me 按测试层次设计了不同的 mock 方式：
+追踪逻辑本身也需要测试，但更重要的是**业务代码的测试不要被 trace 干扰**。我们按测试层次设计了不同的 mock 方式：
 
 ### 第一层：纯函数单元测试
 
@@ -177,17 +173,17 @@ delete process.env.LANGSMITH_API_KEY;
 **做法 B：手动 mock tracer 模块**
 
 ```typescript
-vi.mock('@wbfm/ai', () => ({
+vi.mock('@app/ai', () => ({
   startRun: vi.fn().mockResolvedValue(null),
   traceAsync: vi.fn((_, fn) => fn()),
 }));
 ```
 
-这种做法在需要**验证 trace 被正确调用**时使用——比如要断言 `traceAsync` 收到了正确的 `runType: 'tool'` 和 `inputs`。但要注意：mock 掉整个模块后，其他从 `@wbfm/ai` 导入的真实类型（比如 `ChatMessage`、`ToolCall`）也会被替换，需要手动保留：
+这种做法在需要**验证 trace 被正确调用**时使用——比如要断言 `traceAsync` 收到了正确的 `runType: 'tool'` 和 `inputs`。但要注意：mock 掉整个模块后，其他从 `@app/ai` 导入的真实类型（比如 `ChatMessage`、`ToolCall`）也会被替换，需要手动保留：
 
 ```typescript
-vi.mock('@wbfm/ai', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('@wbfm/ai')>();
+vi.mock('@app/ai', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@app/ai')>();
   return {
     ...mod,
     startRun: vi.fn().mockResolvedValue(null),
@@ -198,7 +194,7 @@ vi.mock('@wbfm/ai', async (importOriginal) => {
 
 ### 第三层：e2e 测试（Playwright）
 
-e2e 测试不 mock trace，但**在 e2e 环境里也不开启 trace**——e2e 关心的是"聊天对话能不能正常完成"、"SSE 事件序列对不对"，trace 只是运行时副作用。通过 `.env.e2e` 设置 `LANGSMITH_TRACING=false`。
+e2e 测试不 mock trace，但**在 e2e 环境里也不开启 trace**——e2e 关心的是「聊天对话能不能正常完成」、「SSE 事件序列对不对」，trace 只是运行时副作用。通过 `.env.e2e` 设置 `LANGSMITH_TRACING=false`。
 
 ### 第四层：前端组件测试
 
@@ -232,11 +228,11 @@ async function postRun(url: string, body: unknown): Promise<void> {
 
 ### 保护 2：单 span 上报不阻塞对话
 
-`traceAsync` 里的 `handle.end()` 是 await 的，但在真实 `DirectTrace.end()` 里，它只是调一次 PATCH。正常情况下这个 PATCH 在 100-200ms 内完成；异常情况 5 秒超时后被吞掉。如果真的在意"不能等 trace 完成再 yield done"，可以把 `end()` 改成 fire-and-forget（不 await）。但 v0.2 认为 200ms 可以接受——用户等几秒生成后不差这 200ms。
+`traceAsync` 里的 `handle.end()` 是 await 的，但在真实 `DirectTrace.end()` 里，它只是调一次 PATCH。正常情况下这个 PATCH 在 100-200ms 内完成；异常情况 5 秒超时后被吞掉。如果真的在意「不能等 trace 完成再 yield done」，可以把 `end()` 改成 fire-and-forget（不 await）。但当前实现认为 200ms 可以接受——用户等几秒生成后不差这 200ms。
 
 ### 保护 3：Dotted Order 与 UUID v7 的实现
 
-LangSmith 的 trace SDK 用一种叫 `dotted_order` 的字段来构建 span 树（子 span 的 dotted_order 是父 span 的 dotted_order 加 `.` 加自己的时间序）。WorkBuddy For Me 自己实现了这个算法和 UUID v7 生成器，**不依赖 LangChain SDK**——省了一个 200KB+ 的 runtime 依赖。
+LangSmith 的 trace SDK 用一种叫 `dotted_order` 的字段来构建 span 树（子 span 的 dotted_order 是父 span 的 dotted_order 加 `.` 加自己的时间序）。我们自己实现了这个算法和 UUID v7 生成器，**不依赖 LangChain SDK**——省了一个 200KB+ 的 runtime 依赖。
 
 ```typescript
 function dottedOrder(epoch: number, runId: string, execOrder: number): string {

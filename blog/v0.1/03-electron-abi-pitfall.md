@@ -1,16 +1,12 @@
-# Electron 打包后窗口 30 秒不出现：一个 ABI 不匹配的血案
+# Electron 打包后窗口 30 秒不出现：一次 ABI 不匹配排查实录
 
-> 调了两天，根因是一行 `execPath` 没传。
+Electron 应用里加载原生 Node 模块，九成的诡异启动问题都出在 ABI 上。这篇复盘一个典型案例：Web 模式一切正常，打包成桌面应用后窗口死活不出来，健康检查轮询 30 秒超时退出，而控制台只有一句干巴巴的「启动失败」。
 
-## 现象
-
-Web 模式跑得好好的，一打包成桌面应用，窗口就是不出来。等了 30 秒，超时，退出。
-
-控制台只有一句「启动失败」，子进程毫无输出——因为 fork 的错误监听根本没加，所有错误都被静默吞掉了。
+整个排查调了两天，最后的修复只有一行：fork 子进程时显式传入 `execPath`。比修复更值钱的是定位过程——先讲怎么让被吞掉的错误开口说话。
 
 ## 第一步：让错误说话
 
-先给 `child_process.fork` 加上 `error` 和 `exit` 监听，把子进程的 stdout/stderr 全部转发到主进程控制台：
+子进程毫无输出，是因为 `child_process.fork` 的错误监听根本没加，所有错误都被静默吞掉。先补上 `error` 和 `exit` 监听，并把子进程的 stdout/stderr 全部转发到主进程控制台：
 
 ```ts
 child.stdout?.on('data', (chunk) => process.stdout.write(`[server] ${chunk}`));
@@ -21,9 +17,9 @@ child.once('exit', (code, signal) => {
 });
 ```
 
-重新打包，错误终于冒出来了：
+重新打包，真正的错误终于冒出来：
 
-```
+```text
 [server] Error: The module 'better-sqlite3.node'
 was compiled against a different Node.js version using
 NODE_MODULE_VERSION 137. This version of Node.js requires
@@ -32,13 +28,13 @@ NODE_MODULE_VERSION 125.
 
 ## 根因：两个 Node，两套 ABI
 
-Electron 打包后，主进程跑在 **Electron 内置的 Node** 上（ABI 125）。而我的桌面架构是：主进程 fork 一个子进程跑 Next.js standalone server，`better-sqlite3` 在子进程里加载。
+这个本地 AI 应用的桌面架构是：Electron 主进程 fork 一个子进程跑 Next.js standalone server，`better-sqlite3` 在子进程里加载。打包后，主进程跑在 **Electron 内置的 Node** 上（ABI 125）。
 
-问题来了：**`fork` 默认用主进程的 Node 运行时**，也就是 Electron 内置 Node（ABI 125）。但打包进去的 `better-sqlite3.node` 是构建时用 **Node 24（ABI 137）** 编译的。
+问题出在 fork 的默认行为上：**`fork` 默认沿用父进程的 Node 运行时**，也就是 Electron 内置 Node（ABI 125）。但打包进去的 `better-sqlite3.node`，是构建阶段用 **Node 24（ABI 137）** 编译的。
 
 两个 ABI 对不上，原生模块 dlopen 直接失败，server 永远起不来，健康检查轮询 30 秒后超时，窗口自然不出现。
 
-> **ABI（Application Binary Interface）** 可以理解为原生模块和 Node 引擎之间的「接口版本号」。编译时用的 Node 版本和运行时的 Node 版本 ABI 不一致，就像 USB-C 插头插不进 USB-A 接口——物理上就对不上。
+> **ABI（Application Binary Interface）** 可以理解为原生模块和 Node 引擎之间的「接口版本号」。编译时的 Node 与运行时的 Node ABI 不一致，就像 USB-C 插头插进 USB-A 口——物理上就对不上。
 
 ## 修复：让子进程用「对的」Node
 
@@ -52,7 +48,7 @@ const nodeTarget = path.join(target, 'node', process.platform === 'win32' ? 'nod
 fs.copyFileSync(process.execPath, nodeTarget);
 ```
 
-fork 时指定：
+fork 时显式指定：
 
 ```ts
 const child = fork(serverPath, [], {
@@ -62,30 +58,32 @@ const child = fork(serverPath, [], {
 });
 ```
 
-`resolveNodeRuntimePath` 在没打包（开发态）时返回 `null`，回落 Electron 默认；打包后指向内置 Node。这样：
+`resolveNodeRuntimePath` 在开发态（未打包）返回 `null`，回落 Electron 默认行为；打包后指向内置 Node。这样：
 
-- 子进程运行的 Node ABI = 编译原生模块时的 Node ABI
-- better-sqlite3 正常加载
-- 不需要 electron-rebuild
+- 子进程运行的 Node ABI = 编译原生模块时的 Node ABI；
+- better-sqlite3 正常加载；
+- 不需要 electron-rebuild。
 
-## 这个方案的好处
+## 为什么选这个方案
 
-1. **零网络依赖**：不依赖预编译的 electron 版原生模块
-2. **ABI 天然一致**：构建机什么 Node，打包进去就什么 Node
-3. **开发态无感**：未打包时回落默认行为
+1. **零网络依赖**：不依赖预编译的 electron 版原生模块，打包机断网也能出产物；
+2. **ABI 天然一致**：构建机用什么 Node，打包进去就是什么 Node，不存在版本漂移；
+3. **开发态无感**：未打包时回落默认行为，日常开发零额外步骤。
+
+顺带一提，这套「业务跑在真实 Node 子进程」的架构还有个红利：后续语音能力引入更重的原生绑定（`.node`/DLL）时，同样不用碰 electron-rebuild，从根上绕开了 Electron ABI 这一类老坑。
 
 ## 经验教训
 
-1. **fork 子进程一定要加 error/exit 监听**——否则出问题你连日志都看不到
-2. **Electron 里跑原生模块，先想清楚 ABI**——主进程和子进程可能是两套 Node
-3. **Windows 上还有 Smart App Control 的坑**——未签名 exe 会被系统拦截，那是另一个故事（下篇聊）
+1. **fork 子进程一定要加 error/exit 监听**——否则出问题连日志都看不到，排查纯靠猜；
+2. **Electron 里跑原生模块，先想清楚 ABI**——主进程和子进程可能根本是两套 Node；
+3. **Windows 上还有 Smart App Control 的坑**——未签名 exe 会被系统拦截，那是分发层面的另一个问题。
 
 ## 小结
 
-Electron + 原生模块的组合，90% 的坑都出在 ABI 上。记住：
+记住三条：
 
-- 打包后的运行时 Node 版本，可能和你构建时的不一样
-- 让子进程用和原生模块编译时一致的 Node，是最稳的解法
-- 没有日志的 bug 不是 bug，是玄学
+- 打包后的运行时 Node 版本，可能和构建时的不一样，别假设一致；
+- 让子进程用与原生模块编译时一致的 Node（内置 Node + `execPath`），是最稳的解法；
+- 没有日志的 bug 不是 bug，是玄学——排查的第一步永远是先让错误可见。
 
-下一篇聊聊「本地 AI 应用的密钥怎么存才安全」——safeStorage 桥接的设计。
+下一篇聊「本地 AI 应用的密钥怎么存才安全」：Electron safeStorage 与一次性加解密桥的设计。

@@ -1,14 +1,10 @@
----
-title: "在 React Flow 上画确定的图：7 类自定义节点、分支双句柄与诊断定位实战"
-series: "WorkBuddy For Me v0.8 技术拆解"
-number: "B07"
-tags: ["workbuddy", "xyflow", "react-flow", "canvas", "dnd", "custom-nodes", "tailwind"]
-date: "2026-10"
----
+# 在 React Flow 上画确定的图：7 类自定义节点、分支双句柄与诊断定位
+
+可视化节点编辑器自研是个深坑：缩放平移坐标系、贝塞尔连线路径、小地图、多选框选、触屏兼容、海量节点虚拟化。这篇讲我们桌面 AI 工作流的画布落地：只用 @xyflow/react 的基础能力，nodes/edges 全程受控，运行态走 Context 而非图数据，以及让编译器诊断在节点和边上「发光」的做法。
 
 ## 为什么是 @xyflow/react 12
 
-可视化节点编辑器自己写是个深坑：缩放/平移坐标系、连线的贝塞尔路径计算、小地图、多选/框选、触屏兼容、海量节点的虚拟化。选型时几乎没有第二个正经候选——Langflow 源码级对照用的也是 reactflow v12，API 稳定、文档完善、只做画布不做状态管理捆绑。
+选型时对照过主流开源可视化流程工具，画布层用的也是 xyflow（React Flow）：API 稳定、文档完善、只做画布不捆绑状态管理，几乎没有第二个正经候选。
 
 落地时给自己定了两条纪律：
 
@@ -21,7 +17,7 @@ date: "2026-10"
 
 ## 受控模型：nodes/edges 就是编辑器的状态
 
-React Flow 同时支持受控和非受控。v0.8 全程受控——画布元素是存在编辑器组件里的两个 state：
+React Flow 同时支持受控和非受控。这里全程受控——画布元素是存在编辑器组件里的两个 state：
 
 ```tsx
 const [nodes, setNodes] = useState<FlowCanvasNode[]>([]);
@@ -150,7 +146,7 @@ export function BranchEdge(props: EdgeProps) {
 
 ```tsx
 // 面板
-onDragStart={(e) => e.dataTransfer.setData('application/x-wbfm-flow-node', type)}
+onDragStart={(e) => e.dataTransfer.setData('application/x-flow-node', type)}
 
 // 画布
 onDrop={(event) => {
@@ -163,7 +159,7 @@ onDrop={(event) => {
 }}
 ```
 
-React Flow 的坐标在无缩放平移时等于相对画布容器的像素坐标；v0.8 不做缩放补偿（落点精度对这种积木摆放足够，且官方 useReactFlow.screenToFlowCenter 是备选）。面板同时支持**单击添加**（落在视口中心加一点随机抖动），降低不会拖拽的新用户门槛。start/end 不出现在面板里——它们由新建画布时自动生成且不可删除（删除键和按钮都拦），保证编译器的端点要求在交互层就难以被破坏。
+React Flow 的坐标在无缩放平移时等于相对画布容器的像素坐标；这里不做缩放补偿（落点精度对这种积木摆放足够，且官方 useReactFlow.screenToFlowCenter 是备选）。面板同时支持**单击添加**（落在视口中心加一点随机抖动），降低不会拖拽的新用户门槛。start/end 不出现在面板里——它们由新建画布时自动生成且不可删除（删除键和按钮都拦），保证编译器的端点要求在交互层就难以被破坏。
 
 连线合法性用 `isValidConnection` 兜底：不可连入 start、不可从 end 连出、不可自连。这些规则编译器也会查，但在拖线那一刻就禁止（连线视觉上不吸附）比保存时再报错体验好得多——**能在交互层阻止的错误，不要留给校验层**。
 
@@ -189,7 +185,7 @@ const deleteNodes = (ids) => {
 
 ## 校验结果在画布上发光
 
-编译器诊断（B03）到前端后变成三个 Set 下发进 FlowStatusContext：
+编译器诊断到前端后变成三个 Set 下发进 FlowStatusContext：
 
 ```tsx
 errorNodeIds: new Set(diagnostics.filter(d => d.severity === 'error' && d.nodeId).map(d => d.nodeId!)),
@@ -226,4 +222,4 @@ onSelectNode(d.nodeId);  // 顺带打开配置抽屉
 - 拖拽 MIME + 点击添加双通道；连接规则、端点保护尽量在交互层拦截；删节点级联清边；
 - 诊断变 Set 下发描边，点击诊断 setCenter 飞行定位并打开配置，校验成为导航。
 
-画得出、连得对之后，下一篇 B08 讲底部的试运行面板：怎么把 B06 的 SSE 事件流组织成可调试的时间线、人工/危险工具怎样在面板里原地处理，以及那两个真机踩出来的 EventSource 坑在 UI 侧的连锁反应。
+画得出、连得对之后，下一篇讲底部的试运行面板：怎么把 SSE 事件流组织成可调试的时间线、人工/危险工具怎样在面板里原地处理，以及那两个真机踩出来的 EventSource 坑在 UI 侧的连锁反应。

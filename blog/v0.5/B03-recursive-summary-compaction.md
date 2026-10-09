@@ -1,24 +1,16 @@
----
-title: "递归摘要压缩：70% 触发线、保留一半的折叠算法、失败时必须能降级"
-series: "WorkBuddy For Me v0.5 技术拆解"
-number: "B03"
-tags: ["workbuddy", "summary", "compaction", "context-window", "degradation"]
-date: "2025-Q4"
----
+# 递归摘要压缩：70% 触发线、保留一半的折叠算法、失败时必须能降级
 
 ## 问题：预算装不下的历史，直接扔掉吗
 
-B02 的预算装配解决「装多少」的问题，但装配的输出只有两种：装得下的历史后缀，和被丢弃的前缀。v0.4 的行为是后者直接蒸发——40 轮对话里前 20 轮定的技术选型、达成的共识，在第 41 轮对模型完全不可见。
+在我们这个本地优先的桌面助手里，B02 的预算装配解决了「装多少」的问题，但装配的输出只有两种：装得下的历史后缀，和被丢弃的前缀。老的行为是后者直接蒸发——40 轮对话里前 20 轮定的技术选型、达成的共识，在第 41 轮对模型完全不可见。
 
-M2 的答案是**递归摘要压缩**：被丢弃的部分不扔，折叠成一段结构化摘要，注入 system 的【早期对话摘要】区块。「递归」的意思是摘要本身也参与下一轮压缩——第二次压缩时不是重新摘要全部历史，而是把旧摘要和新折叠的对话**增量合并**成新摘要。摘要块因此可以承载任意长的对话，自身占用却收敛在几百 token。
+答案是**递归摘要压缩**：被丢弃的部分不扔，折叠成一段结构化摘要，注入 system 的【早期对话摘要】区块。「递归」的意思是摘要本身也参与下一轮压缩——第二次压缩时不是重新摘要全部历史，而是把旧摘要和新折叠的对话**增量合并**成新摘要。摘要块因此可以承载任意长的对话，自身占用却收敛在几百 token。
 
 这篇拆三个点：触发与折叠的纯函数决策、增量合并的 prompt 设计、以及「压缩失败降级为纯截断」这条生命线。
 
----
-
 ## 决策层：什么时候压、压多少，都是纯函数
 
-压缩决策完全在 [planCompaction](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/summarizer.ts) 里，不碰 LLM、不碰数据库，输入输出都是纯数据——这是它能被 21 个单测钉死的原因。
+压缩决策完全在 `planCompaction`（`summarizer.ts`）里，不碰 LLM、不碰数据库，输入输出都是纯数据——这是它能被 21 个单测钉死的原因。
 
 **触发条件：历史占用超过预算的 70%**（`COMPACTION_TRIGGER_RATIO = 0.7`）：
 
@@ -50,11 +42,9 @@ if (totalTokens <= historyBudget * COMPACTION_TRIGGER_RATIO) return null;
 
 硬性保护最近 4 条则是语义正确性：摘要生成是异步的，如果刚说完的话立刻进了摘要，用户看到界面上的消息和模型看到的上下文不一致——「我上句话明明就在屏幕上，你怎么像没说过」。
 
----
-
 ## 合并层：增量合并的 prompt 设计
 
-摘要调用本身在 [buildSummaryMessages](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/summarizer.ts)，prompt 是这次迭代调得最久的一段文字：
+摘要调用本身在 `buildSummaryMessages`，prompt 是这套机制里调得最久的一段文字：
 
 ```text
 你是对话摘要助手。把给定的早期对话压缩为结构化中文摘要，供后续对话参考。
@@ -84,31 +74,25 @@ if (totalTokens <= historyBudget * COMPACTION_TRIGGER_RATIO) return null;
 
 **增量合并而非重摘要**。第二次压缩时如果把「旧摘要 + 全部历史」重新摘要，旧摘要里的信息会逐轮衰减（每轮摘要损失一点细节，十轮后什么都不剩）——这就是「递归」要对抗的**摘要熵增**。增量合并指令明确「保留旧摘要中仍有效的要点」，让旧信息在新摘要里有明确的存活通道。
 
-**输出格式强约束**。「不要标题、不要解释、不要代码块」+ temperature 0 + [normalizeSummary](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/summarizer.ts) 剥围栏——本地模型仍然偶尔包 ```markdown 围栏，纯函数兜底。空结果直接抛错（交由上层降级），空摘要比没有摘要更危险：它会让 planCompaction 以为压缩成功，历史却已删除。
-
----
+**输出格式强约束**。「不要标题、不要解释、不要代码块」+ temperature 0 + `normalizeSummary` 剥围栏——本地模型仍然偶尔包 ```markdown 围栏，纯函数兜底。空结果直接抛错（交由上层降级），空摘要比没有摘要更危险：它会让 planCompaction 以为压缩成功，历史却已删除。
 
 ## 生命线：压缩失败必须降级为纯截断
 
-这是整个 M2 最重要的工程决策，写在 [summarizeConversation](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/summarizer.ts) 的 docstring 里：
+这是整个压缩设计最重要的工程决策，写在 `summarizeConversation` 的 docstring 里：
 
 > 失败（网络/空结果）抛错，由编排器吞掉并降级为纯截断，绝不阻塞回答。
 
-为什么必须是降级而不是报错？看压缩在生命周期里的位置：**回合成功后**的后台作业（[post-turn-jobs.ts](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/post-turn-jobs.ts) 统一入口的第一步）。此时用户已经收到了完整回答，SSE 流已关闭。如果压缩失败冒泡成用户可见错误，等于告诉用户「你的回答成功了，但有个你看不懂的东西失败了」——纯噪音。
+为什么必须是降级而不是报错？看压缩在生命周期里的位置：**回合成功后**的后台作业（`post-turn-jobs.ts` 统一入口的第一步）。此时用户已经收到了完整回答，SSE 流已关闭。如果压缩失败冒泡成用户可见错误，等于告诉用户「你的回答成功了，但有个你看不懂的东西失败了」——纯噪音。
 
-降级为纯截断意味着：压缩失败时，对话退回 v0.4 的行为（旧历史蒸发）。这是有损的，但**有损的是增强功能，不是核心功能**。下一轮 planCompaction 会再次触发重试——只要模型服务恢复，摘要迟早会补上。
+降级为纯截断意味着：压缩失败时，对话退回按条数硬截断的老行为（旧历史蒸发）。这是有损的，但**有损的是增强功能，不是核心功能**。下一轮 planCompaction 会再次触发重试——只要模型服务恢复，摘要迟早会补上。
 
-同一原则贯穿 v0.5 所有回合后作业：记忆提取失败、摘要记忆化失败、衰减归档失败，全部独立 try/catch + `console.warn('[wbfm] ...')`。post-turn-jobs 的四步（压缩 → 摘要记忆化 → 记忆提取 → 衰减）任何一步炸了，其他步照常执行。
-
----
+同一原则贯穿所有回合后作业：记忆提取失败、摘要记忆化失败、衰减归档失败，全部独立 try/catch + `console.warn(...)`。post-turn-jobs 的四步（压缩 → 摘要记忆化 → 记忆提取 → 衰减）任何一步炸了，其他步照常执行。
 
 ## 摘要的二次利用：情景记忆
 
-M2 落地时发现一个顺水推舟的机会：摘要本身就是高质量的记忆素材。post-turn-jobs 里压缩成功后，摘要会以 `kind: 'event'`、`importance: 0.6`（`MEMORY_SUMMARY_IMPORTANCE`）写入长期记忆（[rememberSummaryEvent](file:///e:/code/traeWork/workBuddyForMe/packages/core/src/chat/post-turn-jobs.ts)），前缀「早期对话摘要：」。
+压缩落地时发现一个顺水推舟的机会：摘要本身就是高质量的记忆素材。post-turn-jobs 里压缩成功后，摘要会以 `kind: 'event'`、`importance: 0.6`（`MEMORY_SUMMARY_IMPORTANCE`）写入长期记忆（`rememberSummaryEvent`），前缀「早期对话摘要：」。
 
-这个设计让 M2 和 M3 形成了闭环：摘要在**会话内**通过 system 区块工作，会话结束后摘要作为**情景记忆**进入跨会话召回体系。用户在会话 A 里聊了一个小时的方案讨论，会话 B 里问「我们上次定的方案是什么」——命中的就是那条摘要记忆。去重管线（L2 ≤ 0.35 合并，见 B05）保证多次压缩的摘要记忆增量合并而不是无限堆积。
-
----
+这个设计让会话内压缩和跨会话记忆形成了闭环：摘要在**会话内**通过 system 区块工作，会话结束后摘要作为**情景记忆**进入跨会话召回体系。用户在会话 A 里聊了一个小时的方案讨论，会话 B 里问「我们上次定的方案是什么」——命中的就是那条摘要记忆。去重管线（L2 ≤ 0.35 合并，见 B05）保证多次压缩的摘要记忆增量合并而不是无限堆积。
 
 ## 小结
 

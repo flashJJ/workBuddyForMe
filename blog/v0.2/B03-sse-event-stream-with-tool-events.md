@@ -1,16 +1,12 @@
----
-title: "SSE 事件流里怎么塞工具过程：meta→tool_call→tool_result→delta 的时序编排与 UI 可见性"
-series: "WorkBuddy For Me v0.2 技术拆解"
-number: "B03"
-tags: ["sse", "streaming", "frontend"]
-date: "2025-Q4"
----
+# 把工具过程塞进 SSE：事件时序编排与前端实时可见
 
-# SSE 事件流里塞工具过程
+聊天界面最忌讳「黑盒等待」：用户发完消息，界面转圈圈五秒钟，不知道模型是在思考、在查东西，还是已经卡死了。纯文本流式输出时代，一个 delta 事件流就能让用户看到字一个个冒出来；一旦接入工具调用，中间多了「模型声明调工具 → 工具执行（可能 10 秒）→ 结果回灌 → 模型继续说」的非文本过程，这些过程如果不透给前端，等待就是盲等。
 
-## v0.1 的 SSE：纯文本管道
+我们的桌面 AI 应用是本地优先、单人开发的私人助手，前后端之间只有一条 SSE 通道（服务器单向推送事件的 HTTP 流式协议）。这篇讲怎么把工具过程编排进这条流，以及前端怎么把它渲染成一条可见的时间线。
 
-v0.1 的 SSE 事件序列很简单，像一个纯文本管道：
+## 只有文本时：一条纯文本管道
+
+没有工具的时候，SSE 事件序列很简单，像一个纯文本管道：
 
 ```
 meta → delta → delta → delta → ... → done
@@ -22,9 +18,9 @@ meta → delta → delta → delta → ... → done
 - `delta` 是流式文本增量，前端一边收一边 append 到消息气泡里。
 - `done` / `error` 是终止事件，连接到此结束。
 
-这个模型的核心假设是：**助手只产出一种东西——文本**。所有"生成"发生在模型内部，前端只消费结果。但一旦引入工具调用，这个假设就破了：助手不再是一个"文本生成器"，而是一个可能多轮循环的"编排器"。中间会穿插非文本事件——工具开始执行、执行完毕、返回引用角标、工具链错误。
+这个模型的核心假设是：**助手只产出一种东西——文本**。所有「生成」发生在模型内部，前端只消费结果。但一旦引入工具调用，这个假设就破了：助手不再是一个「文本生成器」，而是一个可能多轮循环的「编排器」。中间会穿插非文本事件——工具开始执行、执行完毕、返回引用角标、工具链错误。
 
-v0.2 的 SSE 事件序列因此变成了一棵更丰富的时序：
+加入工具后，SSE 事件序列变成了一棵更丰富的时序：
 
 ```
 meta
@@ -147,7 +143,7 @@ for (const call of calls) {
 }
 ```
 
-`summarizeArgs` 做了一件很重要的事：把模型传来的原始参数（可能很长、可能包含多余字段）变成一行可读的摘要。比如 `{"query": "WorkBuddy For Me v0.2 架构升级", "topK": 5}` 被摘要为 `"WorkBuddy For Me v0.2 架构升级"`。这个摘要会立即显示在 UI 的"工具卡片"上，告诉用户助手"正在查什么"。
+`summarizeArgs` 做了一件很重要的事：把模型传来的原始参数（可能很长、可能包含多余字段）变成一行可读的摘要。比如 `{"query": "本地模型冷启动怎么优化", "topK": 5}` 被摘要为 `"本地模型冷启动怎么优化"`。这个摘要会立即显示在 UI 的「工具卡片」上，告诉用户助手「正在查什么」。
 
 ### 工具结束：tool(end)
 
@@ -168,7 +164,7 @@ yield {
 };
 ```
 
-`durationMs` 从 start 到 end 算出来的实际耗时。`fetch_webpage` 可能跑 5-10 秒，这个数字能让用户感知到"这个工具确实花了点功夫"。`status: 'error'` 时额外透传 `error` 字段，前端可以渲染成红色错误态。
+`durationMs` 是从 start 到 end 算出来的实际耗时。`fetch_webpage` 可能跑 5-10 秒，这个数字能让用户感知到「这个工具确实花了点功夫」。`status: 'error'` 时额外透传 `error` 字段，前端可以渲染成红色错误态。
 
 ### 模型产出：delta
 
@@ -184,7 +180,7 @@ for await (const chunk of stream) {
 }
 ```
 
-这里有个关键点：**delta 事件和 tool 事件来自同一台 orchestrator**——它们被 `yield` 的顺序天然保证了时序正确性。同一个 `streamChat` generator 的所有 yield 是串行的，所以前端收到的事件序列一定是 `meta → tool(start) → tool(end) → delta → ...`，不可能乱序。
+这里有个关键点：**delta 事件和 tool 事件来自同一个 orchestrator**——它们被 `yield` 的顺序天然保证了时序正确性。同一个 `streamChat` generator 的所有 yield 是串行的，所以前端收到的事件序列一定是 `meta → tool(start) → tool(end) → delta → ...`，不可能乱序。
 
 ### 终止：done / error
 
@@ -203,7 +199,7 @@ conversations.markMessageError(assistantMessage.id, failure.code, failure.messag
 yield { event: 'error', data: failure };
 ```
 
-`done` 里带上最终拼接好的完整 `content` 和 token usage——虽然前端已经累计了所有 delta，但完整 content 可以用来做"消息落库校验"和"重新渲染"（比如刷新页面时从数据库读取）。
+`done` 里带上最终拼接好的完整 `content` 和 token usage——虽然前端已经累计了所有 delta，但完整 content 可以用来做「消息落库校验」和「重新渲染」（比如刷新页面时从数据库读取）。
 
 ## Next.js Route Handler 里的 SSE 发射
 
@@ -211,8 +207,8 @@ yield { event: 'error', data: failure };
 
 ```typescript
 // apps/web/src/app/api/chat/stream/route.ts（简化）
-import { createChatOrchestrator } from '@wbfm/core';
-import { formatSse, type SseEventName, type SsePayloadMap } from '@wbfm/shared';
+import { createChatOrchestrator } from '@app/core';
+import { formatSse, type SseEventName, type SsePayloadMap } from '@app/shared';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -292,21 +288,21 @@ function handleToolEvent(payload: ToolEventPayload) {
 }
 ```
 
-UI 层渲染这个数组时，running 状态显示一个旋转的 spinner + 灰色工具名，ok 状态显示绿色 ✓ + 结果摘要，error 显示红色 ✗ + 错误信息。同一个 callId 的 start 和 end 被 merge 后，卡片从"正在跑"变成"已完成"。
+UI 层渲染这个数组时，running 状态显示一个旋转的 spinner + 灰色工具名，ok 状态显示绿色 ✓ + 结果摘要，error 显示红色 ✗ + 错误信息。同一个 callId 的 start 和 end 被 merge 后，卡片从「正在跑」变成「已完成」。
 
 ## 工具事件为什么不合并进 delta？
 
 一个自然的问题是：既然都是增量，为什么不把工具过程塞进 delta 里，让前端统一处理？
 
-原因是 **UI 表达需求完全不同**。delta 要"逐字 append 到气泡里"，而工具过程需要"卡片化展示 + 状态切换 + 耗时感知"。如果塞进 delta，前端还得自己做 JSON.split 解析、自己判断边界——这等于把 orchestrator 已经做好的状态管理再做一遍。
+原因是 **UI 表达需求完全不同**。delta 要「逐字 append 到气泡里」，而工具过程需要「卡片化展示 + 状态切换 + 耗时感知」。如果塞进 delta，前端还得自己做 JSON.split 解析、自己判断边界——这等于把 orchestrator 已经做好的状态管理再做一遍。
 
-SSE 里不同 event type 就是为了不同的 UI 语义准备的。这不是过度设计，而是一次把"生成文本"和"执行工具"两个本质不同的视觉元素解耦了。
+SSE 里不同 event type 就是为了不同的 UI 语义准备的。这不是过度设计，而是一次把「生成文本」和「执行工具」两个本质不同的视觉元素解耦了。
 
 ## 并发安全：同一个 message 的 tool trace
 
 还有一个容易被忽略的点：前端可能发起**多次**针对同一个 conversation 的流请求（比如用户快速点两次发送，或者重试）。`tool_trace` 是一个追加数组，如果两次流请求都往同一个 messageId 上写 tool 事件，就会出现重复条目。
 
-WorkBuddy For Me 的处理是：
+我们的处理是：
 
 1. 每条流有一个唯一的 `streamId`（在 `meta` 事件里额外携带，但前端不持久化）。
 2. 新的流请求发起时，**前端先 abort 上一个流**（通过 `AbortController`）。
@@ -316,7 +312,7 @@ WorkBuddy For Me 的处理是：
 
 ## 小结
 
-SSE 事件序列的设计核心是**让前端能实时看到助手在做什么**。在 v0.1 里，助手只在做一件事——生成文本，所以一个 delta 流就够了。到了 v0.2，助手变成了一个可能多轮循环的编排器，中间穿插的工具过程必须有自己的事件通道。
+SSE 事件序列的设计核心是**让前端能实时看到助手在做什么**。助手只生成文本时，一个 delta 流就够了；接入工具之后，它变成了一个可能多轮循环的编排器，中间穿插的工具过程必须有自己的事件通道。
 
 ```
 meta（消息 ID）
@@ -328,4 +324,4 @@ meta（消息 ID）
   → [回到 tool(start) 或 done]
 ```
 
-这个序列的正确性由 AsyncGenerator 的天然串行性保证（`yield` 不会并发），前端消费侧用 `callId` 关联 start/end，就能渲染出完整的"工具链路时间线"。B04 会转到下一个话题：接入 Ollama 这个本地模型 provider 时遇到的坑。
+这个序列的正确性由 AsyncGenerator 的天然串行性保证（`yield` 不会并发），前端消费侧用 `callId` 关联 start/end，就能渲染出完整的「工具链路时间线」。B04 会转到下一个话题：接入 Ollama 这个本地模型 provider 时遇到的坑。

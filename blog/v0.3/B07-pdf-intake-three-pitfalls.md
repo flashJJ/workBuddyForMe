@@ -1,12 +1,4 @@
----
-title: "PDF intake 的三大坑：webpack externals + 中文逐字换行 + 全链路复盘"
-series: "WorkBuddy For Me v0.3 技术拆解"
-number: "B07"
-tags: ["workbuddy", "pdf", "pdfjs", "nextjs", "webpack", "chinese"]
-date: "2025-Q4"
----
-
-## PDF 是 v0.3 最复杂的 intake 格式
+# PDF 接入三个坑：webpack externals、中文逐字换行与 eval 开关
 
 PDF 不像 txt/md 直接 `fs.readFileSync`，也不像 docx 是有明确 schema 的 OOXML zip。PDF 本质上是一个排版描述语言，里面没有「段落」「标题」这些语义，只有「这个矩形里画了这段文字，用这个字体」。
 
@@ -14,22 +6,20 @@ PDF 不像 txt/md 直接 `fs.readFileSync`，也不像 docx 是有明确 schema 
 
 这篇按时间顺序讲三个坑：**坑 1 上线前 3 天发现**、**坑 2 上线后 1 周才接到用户反馈**、**坑 3 写代码时就想到了但差点忘**。
 
----
-
 ## 坑 1：Next bundling 把 pdf.worker.mjs 的相对路径搞丢了
 
 ### 现象
 
 PDF 文档上传到知识库后，ingestion 过程报错：
 
-```
+```text
 Error: Setting up fake worker failed: "Cannot read properties of undefined (reading 'Worker')".
 ```
 
 错误发生在 `readDocumentText` 调用链里的 `readPdf`：
 
 ```typescript
-// packages/core/src/ingestion/read-document.ts
+// core 包 ingestion 目录 read-document.ts
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 async function readPdf(data: Uint8Array): Promise<string> {
@@ -67,7 +57,7 @@ pdfjs 源码里有一个「fake worker」的 fallback——当它找不到真的
 
 ### 修法
 
-`apps/web/next.config.mjs`：
+应用的 `next.config.mjs`：
 
 ```javascript
 /** @type {import('next').NextConfig} */
@@ -113,6 +103,7 @@ const nextConfig = {
 ### 为什么不能用完整 build 而不是 legacy build
 
 pdfjs-dist 有三个 build：
+
 - `legacy/build`——纯 JS + worker，兼容所有 Node 版本 ✅（我们用的）
 - `build`——ESM + worker
 - `minified/build`——压缩版
@@ -130,15 +121,13 @@ GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.mjs'
 
 这个方案在 Vite 里好用，但在 Next.js 里还是会碰到 bundling 把相对路径改坏的问题。externals 是更彻底的方案——**让 bundler 完全不碰这个包，Node 运行时的 require/import 自己处理路径**。
 
----
-
 ## 坑 2：中文 PDF 逐字换行
 
 ### 现象
 
 英文 PDF 完全正常，但中文 PDF（尤其是从 Word 导出或扫描 OCR 后导出的）解析出来是：
 
-```
+```text
 这 是 一 段 中 文 文 本， 用 于 测 试 。
 ```
 
@@ -148,7 +137,7 @@ GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.mjs'
 
 PDF 里没有「段落」这个概念。它存的是：
 
-```
+```text
 在坐标 (x=100, y=200) 处，用字体 SimSun，字号 12pt，画出字符「这」
 在坐标 (x=106, y=200) 处，用字体 SimSun，字号 12pt，画出字符「是」
 在坐标 (x=112, y=200) 处，用字体 SimSun，字号 12pt，画出字符「一」
@@ -174,7 +163,7 @@ return lines.join('');
 ### 第二版：mergePdfTextItems
 
 ```typescript
-// packages/core/src/ingestion/read-document.ts
+// core 包 ingestion 目录 read-document.ts
 export function mergePdfTextItems(items: readonly unknown[]): string {
   const lines: string[] = [];
   let current: string[] = [];
@@ -228,13 +217,12 @@ export function mergePdfTextItems(items: readonly unknown[]): string {
 ### 测试样本
 
 我们用三个真实 PDF 做回归测试：
+
 1. 英文技术文档（按词切的 TextItem）
 2. 中文 Word 导出 PDF（按字切的 TextItem）
 3. 扫描件 OCR 导出 PDF（逐字 + 可能 y 抖动）
 
 每个样本在 ingest 后走 RAG 检索，验证关键段落能否被正确召回。
-
----
 
 ## 坑 3：isEvalSupported 关掉 eval
 
@@ -249,23 +237,21 @@ const doc = await pdfjs.getDocument({
 
 pdfjs 默认开 `eval` 来做一些高性能操作。Next.js production 模式可能有 CSP 限制，或者 standalone 模式下的安全扫描工具会报警告。显式关掉，纯 JS 路径，慢点但稳。
 
----
-
 ## 完整 intake 流水线
 
 把 PDF 放进整个文档处理流水线看：
 
-```
+```text
 用户上传 PDF（multipart/form-data）
   │
   ▼
-apps/web/src/app/api/knowledge-bases/[id]/documents/route.ts
+知识库文档接口 route.ts
   │
   ▼
 document-route.ts 调用 IngestionPipeline.ingest()
   │
   ▼
-packages/core/src/ingestion/ingestion-pipeline.ts
+core 包 ingestion 目录 ingestion-pipeline.ts
   │
   ├── readDocumentText(filename, data)
   │     └── detectKind('.pdf') → readPdf(data)
@@ -279,11 +265,10 @@ packages/core/src/ingestion/ingestion-pipeline.ts
 ```
 
 三个坑正好分布在流水线的三个不同层：
+
 - 坑 1（externals）在**包加载层**
 - 坑 2（merge）在**文本提取层**
 - 坑 3（eval）在**pdfjs 配置层**
-
----
 
 ## 小结
 
@@ -295,4 +280,4 @@ PDF intake 三大坑给我们的教训：
 
 整个 PDF intake 最终代码其实很简洁——`read-document.ts` 里 `readPdf` 函数不到 15 行，`mergePdfTextItems` 不到 40 行。坑都出在**包管理和 PDF 格式本身**，不在业务逻辑。
 
-下一篇 B08 讲 Office 三格式（docx/xlsx/pptx）的解析选型——为什么 mammoth 不直接输出文本、为什么 SheetJS 要锁版本、为什么 pptx 自己手写。
+下一篇讲 Office 三格式（docx/xlsx/pptx）的解析选型——为什么 mammoth 不直接输出文本、为什么 SheetJS 要锁版本、为什么 pptx 自己手写。

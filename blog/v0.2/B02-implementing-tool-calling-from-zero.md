@@ -1,18 +1,12 @@
----
-title: "从零实现工具调用：schema 注册、LLM tool_calls 解析、result 回传的完整 TypeScript 流程"
-series: "WorkBuddy For Me v0.2 技术拆解"
-number: "B02"
-tags: ["tools", "typescript", "function-calling"]
-date: "2025-Q4"
----
+# 从零实现工具调用：schema 注册、tool_calls 解析与结果回传
 
-# 从零实现工具调用
+这篇文章讲我们这个本地优先的桌面 AI 应用（单人开发、数据留在本机的私人助手）怎么从零把工具调用跑通。不依赖任何框架，只用 TypeScript 把协议走一遍。
 
 ## 为什么需要工具调用
 
-在 v0.1 里，模型的唯一输出是文本，助手的唯一动作是"把文本吐给前端"。这条链路的核心矛盾在于：**模型没有办法在生成过程中"做决定"**——比如用户说"今天几号"，模型要么瞎编一个日期，要么说"我不知道"，因为它不知道今天到底是 2026 年的哪一天。
+在只有文本对话的最早阶段，模型的唯一输出是文本，助手的唯一动作是「把文本吐给前端」。这条链路的核心矛盾在于：**模型没有办法在生成过程中「做决定」**——比如用户说「今天几号」，模型要么瞎编一个日期，要么说「我不知道」，因为它不知道今天到底是哪一天。
 
-Function calling（工具体调用）解决的就是这个问题。它不是让模型真的去执行函数，而是让模型**声明**它想调用哪个函数、传什么参数。应用端拿到这个声明，真的去执行函数，把执行结果塞回对话历史，再让模型接着生成。一轮完整的调用链长这样：
+Function calling（工具调用）解决的就是这个问题。它不是让模型真的去执行函数，而是让模型**声明**它想调用哪个函数、传什么参数。应用端拿到这个声明，真的去执行函数，把执行结果塞回对话历史，再让模型接着生成。一轮完整的调用链长这样：
 
 ```
 [
@@ -24,14 +18,14 @@ Function calling（工具体调用）解决的就是这个问题。它不是让�
 ]
 ```
 
-模型看到最后一条 tool 消息后，就知道"哦，真的日期是 9 月 22 日"，接下来就可以生成自然语言回答了。
+模型看到最后一条 tool 消息后，就知道「哦，真的日期是 9 月 22 日」，接下来就可以生成自然语言回答了。
 
 ## 第一步：定义 Tool 接口
 
 我们先写一个最小可用的 Tool 接口，放在 `packages/core/src/tools/types.ts`：
 
 ```typescript
-import type { ToolDefinition } from '@wbfm/ai';
+import type { ToolDefinition } from '@app/ai';
 
 /** 工具执行时可使用的能力（由编排器注入） */
 export interface ToolContext {
@@ -128,13 +122,13 @@ export const currentTimeTool: Tool = {
 
 几个可以借鉴的细节：
 
-1. **description 里直接写使用时机**："用户问'今天几号'、'现在几点'等时机使用"——这种句式比抽象的"返回当前时间"让模型更容易判断什么时候该调。
+1. **description 里直接写使用时机**：「用户问『今天几号』、『现在几点』等时机使用」——这种句式比抽象的「返回当前时间」让模型更容易判断什么时候该调。
 2. **参数做类型收窄**：`rawArgs` 在 JSON.parse 后类型是 `unknown`，我们显式检查 `typeof args.timezone === 'string'` 才使用。
 3. **时区名可能非法**：`Intl.DateTimeFormat` 遇到未知 IANA 名会抛 `RangeError`，必须 try-catch。
 
 ## 第三步：参数解析与执行器
 
-模型传来的 `tool_calls[].function.arguments` 是 **JSON 字符串**（注意不是已经 parse 过的 object）。我们需要一个执行器来统一处理"解析参数 → 超时控制 → 归一化结果"。
+模型传来的 `tool_calls[].function.arguments` 是 **JSON 字符串**（注意不是已经 parse 过的 object）。我们需要一个执行器来统一处理「解析参数 → 超时控制 → 归一化结果」。
 
 核心实现在 `packages/core/src/tools/tool-executor.ts`：
 
@@ -197,13 +191,13 @@ export async function executeToolCall(
 }
 ```
 
-这里有个有趣的设计选择：**ToolArgError 是一个"可以让模型看到详情"的错误**。如果模型生成了非法 JSON，我们不只是吞掉错误，而是把具体原因塞到 output 里回灌模型。模型看到"参数不是合法 JSON"，下次就会改对——这是一种简单但有效的自我纠正机制。
+这里有个有趣的设计选择：**ToolArgError 是一个「可以让模型看到详情」的错误**。如果模型生成了非法 JSON，我们不只是吞掉错误，而是把具体原因塞到 output 里回灌模型。模型看到「参数不是合法 JSON」，下次就会改对——这是一种简单但有效的自我纠正机制。
 
 另一个关键点是 **AbortSignal.any 的组合**。Node 18+ 内置了 `AbortSignal.any`，可以把多个 signal 合并成一个。这样工具内部如果用了 fetch，只要 `fetch(url, { signal })` 接上，就能同时响应用户中断和超时限制。
 
 ## 第四步：运行时（Runtime）与助手白名单
 
-不是所有助手都应该能用所有工具。一个只做问答的助手不需要 `fetch_webpage`，一个不绑定知识库的助手调用 `knowledge_search` 只会返回空。所以我们需要一个运行时来"按助手配置构建可用工具映射"。
+不是所有助手都应该能用所有工具。一个只做问答的助手不需要 `fetch_webpage`，一个不绑定知识库的助手调用 `knowledge_search` 只会返回空。所以我们需要一个运行时来「按助手配置构建可用工具映射」。
 
 这层在 `packages/core/src/tools/tool-runtime.ts`：
 
@@ -313,34 +307,34 @@ async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
 
 ### 坑 1：arguments 是 JSON 字符串不是 object
 
-很多接 OpenAI 兼容 API 的开发者第一次碰到都会被坑：`tool_calls[].function.arguments` 是 **string**，你需要自己 JSON.parse。更坑的是，Ollama 的早期版本在流式返回 tool_call 时可能会把 arguments 拆成几个 chunk——这时候你需要等整个 tool_call 结束再拼起来 parse。WorkBuddy For Me 的 OpenAI 兼容 adapter 做了一个 buffer，等同一个 tool_call 的所有增量到齐后才 resolve 完整对象，这个细节在 B03 讲 SSE 流的时候会展开。
+很多接 OpenAI 兼容 API 的开发者第一次碰到都会被坑：`tool_calls[].function.arguments` 是 **string**，你需要自己 JSON.parse。更坑的是，Ollama 的早期版本在流式返回 tool_call 时可能会把 arguments 拆成几个 chunk——这时候你需要等整个 tool_call 结束再拼起来 parse。我们的 OpenAI 兼容 adapter 做了一个 buffer，等同一个 tool_call 的所有增量到齐后才 resolve 完整对象，这个细节在 B03 讲 SSE 流的时候会展开。
 
 ### 坑 2：模型可能声明不存在的工具
 
 理论上模型只会声明我们下发过的工具（因为 JSON Schema 是我们给的），但实际中可能出现两种情况：
 
-- 模型幻觉了一个工具名（比如它"记得"某个常见工具体的名字，但我们没给）；
+- 模型幻觉了一个工具名（比如它「记得」某个常见工具体系的名字，但我们没给）；
 - 模型大小写不一致（比如写了 `CurrentTime` 而不是 `current_time`）。
 
-WorkBuddy For Me 的处理是 **toolMap.get 失败就返回一个 ok:false 的 ToolResult**，output 里写清楚"工具未启用或不存在"。模型看到这个错误信息后，通常会放弃用工具直接回答。
+我们的处理是 **toolMap.get 失败就返回一个 ok:false 的 ToolResult**，output 里写清楚「工具未启用或不存在」。模型看到这个错误信息后，通常会放弃用工具直接回答。
 
 ### 坑 3：工具结果太长撑爆 token 窗口
 
 `fetch_webpage` 抓回的正文可能有几万字符。直接塞给模型会占用大量 context，甚至超过模型的上下文窗口。
 
-WorkBuddy For Me 的做法是 **在执行器层面裁剪 output**——但这个决定目前留给每个工具自己处理。`fetch_webpage` 内部用 `turndown` 转 markdown 后截断到 4000 字符，`knowledge_search` 只返回 topK 个 chunk。工具本身负责保证 output 可控，执行器只额外负责 summary 裁剪。
+我们的做法是 **在执行器层面裁剪 output**——但这个决定目前留给每个工具自己处理。`fetch_webpage` 内部用 `turndown` 转 markdown 后截断到 4000 字符，`knowledge_search` 只返回 topK 个 chunk。工具本身负责保证 output 可控，执行器只额外负责 summary 裁剪。
 
 ### 坑 4：MAX_TOOL_ROUNDS 的取值
 
-默认设为 8 轮。这个数字的来源是：实际观察发现，绝大多数"工具链"在 2-3 轮就结束了（查时间 → 直接回答；查网页 → 总结 → 回答）。8 轮是一个非常宽松的上限，同时保证一次对话的最坏执行时间可预测（每个工具超时 15s × 8 轮 = 120s）。
+默认设为 8 轮。这个数字的来源是：实际观察发现，绝大多数「工具链」在 2-3 轮就结束了（查时间 → 直接回答；查网页 → 总结 → 回答）。8 轮是一个非常宽松的上限，同时保证一次对话的最坏执行时间可预测（每个工具超时 15s × 8 轮 = 120s）。
 
-达到上限时的 fallback 文本是一句中性的"工具调用已达上限，以下是综合已有信息的回答"——不报错，让模型基于已有的 tool 结果直接出最终回答。
+达到上限时的 fallback 文本是一句中性的「工具调用已达上限，以下是综合已有信息的回答」——不报错，让模型基于已有的 tool 结果直接出最终回答。
 
 ## 小结
 
 工具调用的本质是一个简单协议：**模型声明 → 应用执行 → 结果回灌 → 模型继续**。但实现起来需要处理十几个边角情况：JSON 解析失败、工具不存在、参数错误、执行超时、用户中断、结果过长撑爆 token 窗口。
 
-WorkBuddy For Me 把这些处理分散在三个层次：
+我们把这些处理分散在三个层次：
 
 | 层次 | 职责 | 位置 |
 |------|------|------|
@@ -348,4 +342,4 @@ WorkBuddy For Me 把这些处理分散在三个层次：
 | ToolExecutor | 统一参数解析、超时、错误归一化 | `packages/core/src/tools/tool-executor.ts` |
 | ToolRuntime | 白名单构建、执行上下文注入 | `packages/core/src/tools/tool-runtime.ts` |
 
-这三层的好处是：每一层都可以独立单测（Tool 单测不用考虑 runtime，runtime 单测不用考虑 executor），替换实现也不影响上下游。B03 会接着讲：这些工具事件是怎么被塞进 SSE 流、让前端实时看到"工具正在跑"的。
+这三层的好处是：每一层都可以独立单测（Tool 单测不用考虑 runtime，runtime 单测不用考虑 executor），替换实现也不影响上下游。B03 会接着讲：这些工具事件是怎么被塞进 SSE 流、让前端实时看到「工具正在跑」的。

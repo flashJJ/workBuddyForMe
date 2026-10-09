@@ -1,37 +1,31 @@
-# 一个人的项目也要有 CI：本地一键脚本与 GitHub Actions
+# 一个人的项目也要有 CI：本地一键脚本与流水线
 
-> 没人评审你的代码，CI 就是那个铁面无私的 reviewer。
+单人项目最危险的时刻，是你「觉得」改完没问题、又懒得跑全量检查的那一刻。一个工具函数的改动本地测着正常，第二天某个边缘场景崩了，顺着调用链查半天才发现是昨天那处改动的连锁反应——没有第二双眼睛，这类回归几乎必然发生。
 
-## 为什么一个人也要 CI
+CI 对独立开发者的意义不是团队协作，而是**把「该跑的检查」变成不可能跳过的机械动作**。这篇讲这个本地 AI 应用怎么先做好本地一键脚本，再用一条流水线把 typecheck、测试、覆盖率、行数门禁全部自动化。
 
-「就我一个人写，CI 有啥用？」——曾经我也这么想。直到有一次：
+## 先做好本地一键脚本
 
-改了个工具函数，本地测了没问题，提交后忘了跑全量测试。第二天发现某个边缘场景崩了，查了半天才定位到是那个改动的连锁反应。
-
-从那以后，每次提交都跑一遍全量检查。但手动跑容易忘，也懒得每次都敲一堆命令。**CI 就是把「该跑的检查」自动化**。
-
-## 本地一键脚本
-
-先把本地体验做好。根 `package.json` 聚合所有脚本：
+本地体验不顺，CI 就会被当成黑盒。根 `package.json` 聚合所有常用脚本：
 
 ```json
 {
   "scripts": {
-    "dev:web": "pnpm --filter @wbfm/web dev",
-    "dev:desktop": "pnpm --filter @wbfm/desktop dev",
+    "dev:web": "pnpm --filter @app/web dev",
+    "dev:desktop": "pnpm --filter @app/desktop dev",
     "build": "turbo run build",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines",
     "test:unit": "turbo run test:unit",
-    "test:integration": "pnpm --filter @wbfm/web test:integration",
-    "test:e2e": "pnpm --filter @wbfm/web test:e2e",
-    "test:e2e:desktop": "pnpm --filter @wbfm/desktop test:e2e"
+    "test:integration": "pnpm --filter @app/web test:integration",
+    "test:e2e": "pnpm --filter @app/web test:e2e",
+    "test:e2e:desktop": "pnpm --filter @app/desktop test:e2e"
   }
 }
 ```
 
-Windows 下还有 PowerShell 脚本 `dev-web.ps1` / `dev-desktop.ps1`，做环境检查（Node 版本、依赖是否安装）后再启动。
+Windows 下另配两个 PowerShell 脚本（`dev-web.ps1` / `dev-desktop.ps1`），先做环境检查（Node 版本、依赖是否安装）再启动，把「装了吗、版本对吗」这类问题挡在启动之前。
 
-提交前我只需要跑：
+提交前只需要记三条命令：
 
 ```bash
 pnpm check
@@ -39,11 +33,11 @@ pnpm test:unit
 pnpm test:integration
 ```
 
-全绿再提交。
+全绿再提交，形成肌肉记忆。
 
-## GitHub Actions 流水线
+## 流水线
 
-CI 配置 `.github/workflows/ci.yml`，步骤：
+CI 配置一份 workflow（`.github/workflows/ci.yml`，GitHub Actions），步骤是一条直线：
 
 ```text
 1. checkout
@@ -56,11 +50,11 @@ CI 配置 `.github/workflows/ci.yml`，步骤：
 8. pnpm test:e2e       # Web E2E
 ```
 
-每一步失败就停，不往下走。这样能快速定位是哪层出了问题。
+每一步失败即停，不往下走——这样光看挂在哪一步，就知道是哪一层出的问题，定位成本极低。
 
 ## Turborepo：让 CI 跑得快
 
-Monorepo 的 CI 如果每次都全量构建/测试，很慢。Turborepo 的远程缓存让「没改过的包」直接复用缓存：
+Monorepo 每次全量构建、全量测试会很慢。Turborepo 的缓存让「没改过的包」直接复用历史结果：
 
 ```json
 {
@@ -73,13 +67,11 @@ Monorepo 的 CI 如果每次都全量构建/测试，很慢。Turborepo 的远�
 }
 ```
 
-`dependsOn: ["^build"]` 表示先构建依赖包。`outputs` 声明产物，Turborepo 据此做缓存命中。
-
-本地和 CI 共享缓存（CI 用 GitHub Actions cache），二次运行快很多。
+`dependsOn: ["^build"]` 表示先构建上游依赖包；`outputs` 声明产物路径，Turborepo 据此判断缓存能否命中。本地与 CI 共享同一套缓存机制（CI 上用 actions 缓存），第二次运行的耗时会明显下降。
 
 ## 覆盖率阈值阻断
 
-Vitest 配置里设 thresholds：
+Vitest 配置里写死阈值：
 
 ```ts
 coverage: {
@@ -90,48 +82,42 @@ coverage: {
 }
 ```
 
-覆盖率低于 70%，`test:unit` 非零退出，CI 挂。这逼着你给核心逻辑写测试。
+覆盖率低于 70%，`test:unit` 非零退出，CI 挂。核心逻辑缺测试这件事因此不可能被「下次补上」敷衍过去。
 
-## 行数门禁
+## 行数门禁进 CI
 
-自定义脚本 `check-file-lines.mjs`，扫描手写 `.ts/.tsx`，超 300 行就挂。CI 里也跑，防止有人（包括未来的自己）提交超长文件。
+`check-file-lines.mjs` 扫描所有手写 `.ts/.tsx`，超过 300 行即失败。它在本地和 CI 上跑的是同一个脚本，防止任何人——包括三个月后的自己——悄悄提交超长文件。
 
 ## Windows 打包的特殊处理
 
-Electron 打包在 CI 里跑有几个坑：
+Electron 打包放进 CI 时有三个具体的坑：
 
-1. **electron-builder 二进制下载**：从 GitHub 下载可能超时，用国内镜像：
+1. **electron-builder 二进制下载**：默认源在境外网络下可能超时，改用国内镜像地址：
    ```bash
-   ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
+   ELECTRON_BUILDER_BINARIES_MIRROR=<国内 electron-builder 二进制镜像地址>
    ```
 
-2. **原生模块重编译**：better-sqlite3 需要和 Electron 版本匹配。但我的架构是 fork 真实 Node，所以不需要 electron-rebuild（详见 ABI 篇）。
+2. **原生模块重编译**：通常 better-sqlite3 需要与 Electron 版本匹配、走 electron-rebuild；但本项目架构是 fork 真实 Node 子进程，原生模块按构建 Node 的 ABI 编译即可，这一步整个省掉（详见 ABI 篇）。
 
-3. **未签名 exe**：Windows CI 上打包出的 exe 没有签名，用户运行时 Smart App Control 可能拦截。这是分发层面的问题，CI 只负责打包成功。
+3. **未签名 exe**：CI 打出来的 exe 没有代码签名，用户机器上的 Smart App Control 可能拦截。这是分发层面的问题，CI 的职责边界划在「打包成功」为止，签名走单独的分发流程。
 
-## 本地验证 = CI 验证
+## 核心原则：本地能过的，CI 必须能过
 
-一个原则：**本地能过的，CI 必须能过；反之亦然**。
-
-所以本地脚本和 CI 跑的是同一套命令。如果 CI 挂了，本地跑同样的命令也能复现，不用「在 CI 上好好的」这种玄学。
+本地脚本和 CI 跑的是**完全相同的一套命令**。CI 挂了，在本地跑同一条命令就能复现，不存在「在我机器上好好的」这类玄学。反过来，如果本地全绿而 CI 挂，先怀疑环境差异（Node 版本、平台），而不是重跑碰运气。
 
 ## 一个人的 CI 哲学
 
-- **不追求复杂**：一个 workflow 够了，不用 matrix、不用多环境
-- **全绿才合并**：CI 不过不提交，养成肌肉记忆
-- **快反馈**：门禁和单测优先，几秒到几十秒出结果
-- **覆盖率兜底**：核心逻辑必须有测试，CI 帮你盯着
+- **不追求复杂**：一个 workflow 足够，不搞 matrix、不铺多环境；
+- **全绿才提交**：让检查成为提交动作的一部分，而不是提交后的补救；
+- **快反馈优先**：门禁和单测排在最前，几秒到几十秒出结果；
+- **阈值兜底**：覆盖率和行数由机器盯，人只在红线被触发时做决策。
 
 ## 小结
 
-一个人的项目也要有 CI：
+1. **本地一键脚本**：`pnpm check` 把静态检查串成一条命令；
+2. **一条流水线**：install → check → test → build → e2e，失败即停；
+3. **Turborepo 缓存**：没改过的包不重跑；
+4. **覆盖率 + 行数双阈值**：让 CI 当那个铁面无私的 reviewer；
+5. **本地 = CI**：同一套命令，任何失败都可本地复现。
 
-1. **本地一键脚本**：`pnpm check` 把静态检查串起来
-2. **GitHub Actions**：install → check → test → build → e2e
-3. **Turborepo 缓存**：没改过的包不重跑
-4. **覆盖率 + 行数阈值**：CI 当铁面 reviewer
-5. **本地=CI**：同一套命令，能复现
-
-CI 不是为了好看，是为了让「一个人也能放心改代码」。
-
-下一篇是这个系列的收尾：「从 0 到 1 做一个本地 AI 平台，我学到了什么」。
+CI 不是为了报表好看，是为了让一个人也能放心改代码。下一篇是这个系列的收尾：把整个应用从零做到可交付之后，沉淀下来的 10 条经验。
