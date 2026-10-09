@@ -4,12 +4,15 @@ import AxeBuilder from '@axe-core/playwright';
 /**
  * 核心页面无障碍扫描（v1.2 M3）：
  * 门禁只卡 serious/critical（moderate 出报告人工收敛，避免一次性红灯淹没）。
- * 空数据根下各页为空态/引导态，语义与可命名性与有数据时一致。
+ * 空数据根下各页多为空态/引导态（/flows 会有 3 个种子流程模板卡），语义结构与有数据时一致。
  */
 
 type AxeResults = Awaited<ReturnType<AxeBuilder['analyze']>>;
 
 async function scan(page: Page, name: string): Promise<AxeResults> {
+  // 等数据请求（react-query）与渲染稳定再扫：dev 服务器慢时异步区块（如 /flows 的
+  // 种子流程卡、工具调试台 select）若未渲染会漏扫，造成 dev 绿/CI 红的时序假绿。
+  await page.waitForLoadState('networkidle');
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();
