@@ -67,6 +67,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./version": {
+      "types": "./src/version.ts",
+      "development": "./src/version.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": ["dist", "src"],

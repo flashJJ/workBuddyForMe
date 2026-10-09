@@ -2,6 +2,9 @@ appId: com.wbfm.desktop
 productName: WorkBuddyForMe
 copyright: Copyright © 2025 WorkBuddy For Me
 
+# 历史产物命名惯例（v0.9.0 即连字符），勿改回带空格的默认模板
+artifactName: ${productName}-Setup-${version}.${ext}
+
 directories:
   output: release
   buildResources: build
@@ -26,14 +29,18 @@ extraResources:
     to: server
     filter:
       - "**/*"
+  # 窗口运行时图标（BrowserWindow icon，打包态 resources/icon.ico）
+  - from: build/icon.ico
+    to: icon.ico
 
 asar: true
 asarUnpack:
   - "**/*.node"
 
 win:
-  # 本地/CI 构建无代码签名证书：关闭签名与 rcedit，避免 signApp 阶段失败
-  signAndEditExecutable: false
+  icon: build/icon.ico
+  # 无代码签名证书：electron-builder 在缺省（无 CSC_LINK）时跳过 signtool，
+  # 但保留 rcedit 写入图标与版本资源；CI 注入签名凭据后自动签名（见 release.yml）。
   target:
     - target: nsis
       arch:
@@ -43,6 +50,24 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
+  # 安装器/卸载器/侧栏品牌图（由 scripts/gen-icons.py 生成）
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerSidebar: build/installerSidebar.bmp
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  # 开始菜单独立程序组
+  menuCategory: WorkBuddyForMe
   shortcutName: WorkBuddyForMe
+  # 「应用和功能」中的卸载项显示名
+  uninstallDisplayName: WorkBuddyForMe ${version}
+  # GPL-3.0 许可协议页
+  license: build/installer-license.txt
+  # 安装界面：简中默认，可切英文（electron-builder 自带 NSIS 语言包）
+  installerLanguages:
+    - zh_CN
+    - en_US
+  language: "2052"
+  # 默认保留用户数据；删除选项由 installer.nsh 卸载时交互询问（静默卸载永不删）
+  deleteAppDataOnUninstall: false
+  include: build/installer.nsh

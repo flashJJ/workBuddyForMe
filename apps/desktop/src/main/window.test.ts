@@ -6,6 +6,7 @@ const onMock = vi.fn();
 const ctorMock = vi.fn();
 
 vi.mock('electron', () => ({
+  app: { isPackaged: false },
   BrowserWindow: vi.fn().mockImplementation((options: BrowserWindowConstructorOptions) => {
     ctorMock(options);
     return {
@@ -22,7 +23,7 @@ vi.mock('electron', () => ({
   shell: { openExternal: vi.fn() },
 }));
 
-import { buildWindowOptions, createMainWindow } from './window';
+import { buildWindowOptions, createMainWindow, resolveWindowIcon } from './window';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,6 +48,28 @@ describe('buildWindowOptions 安全配置', () => {
     const args = options.webPreferences?.additionalArguments ?? [];
     expect(args).toContain('--wbfm-token=secret-token');
     expect(args).toContain('--wbfm-base-url=http://127.0.0.1:51234');
+  });
+});
+
+describe('resolveWindowIcon', () => {
+  it('开发态回退源码树 build/icon.ico（仓库内已生成时返回路径）', () => {
+    const icon = resolveWindowIcon(false);
+    // CI/开发树中 gen-icons.py 产物存在时给出绝对路径；不存在时允许 undefined
+    if (icon) expect(icon).toMatch(/[\\/]build[\\/]icon\.ico$/);
+  });
+
+  it('打包态路径指向 resourcesPath 下的 icon.ico', () => {
+    const original = process.resourcesPath;
+    Object.defineProperty(process, 'resourcesPath', {
+      value: '/packaged/resources',
+      configurable: true,
+    });
+    try {
+      // 该文件在测试机不存在 → 返回 undefined（不阻断），但候选路径必须正确
+      expect(resolveWindowIcon(true)).toBeUndefined();
+    } finally {
+      Object.defineProperty(process, 'resourcesPath', { value: original, configurable: true });
+    }
   });
 });
 

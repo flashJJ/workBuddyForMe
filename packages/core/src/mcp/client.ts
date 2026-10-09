@@ -5,6 +5,7 @@ import {
   MCP_MAX_TOOLS_PER_SERVER,
 } from '@wbfm/shared/constants';
 import { buildMcpToolName } from '@wbfm/shared/schemas';
+import { APP_VERSION } from '@wbfm/shared/version';
 import {
   JSON_RPC_ERRORS,
   MCP_PROTOCOL_VERSION,
@@ -95,7 +96,7 @@ export function createMcpClient(options: McpClientOptions): McpClient {
         {
           protocolVersion: MCP_PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: 'workbuddy-for-me', version: '0.6.0' },
+          clientInfo: { name: 'workbuddy-for-me', version: APP_VERSION },
         },
         MCP_CONNECT_TIMEOUT_MS,
       );

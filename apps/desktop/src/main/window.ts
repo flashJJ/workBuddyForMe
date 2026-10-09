@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { resolvePreloadPath } from './config';
 import { loadWindowState, type WindowState } from './window-state';
@@ -41,9 +42,25 @@ export function buildWindowOptions(
   };
 }
 
+/**
+ * 窗口图标解析：
+ * - 打包态：extraResources 收 build/icon.ico → resources/icon.ico
+ * - 开发态：源码树 apps/desktop/build/icon.ico
+ * - 文件缺失（如 CI 精简产物）时返回 undefined，回落 Electron 默认图标，不阻断启动
+ */
+export function resolveWindowIcon(isPackaged: boolean): string | undefined {
+  const candidate = isPackaged
+    ? path.join(process.resourcesPath, 'icon.ico')
+    : path.resolve(__dirname, '..', '..', 'build', 'icon.ico');
+  return fs.existsSync(candidate) ? candidate : undefined;
+}
+
 /** 创建主窗口并加载目标地址；外链交系统浏览器 */
 export function createMainWindow(userDataDir: string, url: string, boot: WindowBootInfo | null): BrowserWindow {
-  const win = new BrowserWindow(buildWindowOptions(userDataDir, boot));
+  const win = new BrowserWindow({
+    ...buildWindowOptions(userDataDir, boot),
+    icon: resolveWindowIcon(app.isPackaged),
+  });
 
   win.once('ready-to-show', () => {
     if (loadWindowState(userDataDir).maximized) win.maximize();
@@ -66,7 +83,3 @@ export function captureWindowState(win: BrowserWindow): WindowState {
   const bounds = win.getBounds();
   return { ...bounds, maximized: win.isMaximized() };
 }
-
-export const windowIconPath: string | undefined = process.resourcesPath
-  ? path.join(process.resourcesPath, 'icon.ico')
-  : undefined;

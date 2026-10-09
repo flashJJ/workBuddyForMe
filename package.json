@@ -24,6 +24,8 @@
     "test:e2e": "pnpm --filter @wbfm/web test:e2e",
     "test:e2e:desktop": "pnpm --filter @wbfm/desktop test:e2e",
     "check:lines": "node scripts/check-file-lines.mjs",
+    "sync-version": "node scripts/sync-version.mjs",
+    "sync-version:check": "node scripts/sync-version.mjs --check",
     "eval:memory": "node scripts/eval/eval-memory.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines"
   },
