@@ -11,9 +11,12 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v1.2 🚧 规划启动
+## 当前版本：v1.2 🚧 代码完成，待真机封版
 
-**主题：正式发布打磨**（原 v1.1 规划顺延）。Windows 代码签名证书（消除 SmartScreen 警告）、NSIS 安装器体验（开始菜单/卸载信息）、深色模式完检与无障碍（a11y）pass、国际化框架（中/英）与帮助中心/使用向导。开工前置已满足：v1.1 已合 main 并打 tag `v1.1.0`（封版合并 `65e184a`）。分支 `feature/v1.2-release-polish`，下一步产出 docs/plan/v1.2 方案四篇并评审。
+**主题：正式发布打磨**（原 v1.1 规划顺延）。品牌素材与 NSIS 安装器（许可页/双语/程序组/卸载数据两态）、签名双态（不买证书，有凭据即签、无凭据保留 rcedit）与 Windows 标签发布流水线（draft Release + 产物自检）、深色模式完检（设置表真源/system 三态/语义色/hljs）、a11y pass（skip link/焦点环/ARIA/应用内确认框/axe serious-critical=0）、自研零依赖 i18n 与核心路径中英双语（错误码本地化/Intl/导出双语）、首启 4 步向导 + 帮助中心 10 条 FAQ + Ctrl+/ 快捷键浮层。分支 `feature/v1.2-release-polish`，M0–M5 已全部推送（末端 `7cc35fa`，版本号 1.2.0），剩余 T5.6 真机验收（pack smoke/0.9→1.2 更新链/打包态抽测）与合 main、tag、Release。
+
+- 方案：[v1.2 正式发布打磨](../plan/v1.2/README.md)（四篇：README/现状差距/功能设计/实施路线与风险）
+- 总结：[v1.2-release-summary.md](v1.2-release-summary.md)（G1–G10 对账、踩坑 8 条、封版剩余清单）
 
 ## 已发布版本：v1.1 ✅（2026-10）
 
@@ -97,7 +100,7 @@
 | v0.9 | Flow Serving：执行解耦 + 本地 API/MCP | ✅ 已发布 | [方案](v0.9-flow-serving.md) | [总结](v0.9-release-summary.md) | B01-B08 | `v0.9.0` |
 | v1.0 | 会说话的桌面伙伴：本地语音 + Live2D + 桌宠 | ✅ 已发布（真人验收通过） | [方案](../plan/v1.0/README.md) | [总结](v1.0-release-summary.md) | [blog/v1.0](../../blog/v1.0/) 10 篇 | `v1.0.0` |
 | v1.1 | 内部加固：分层强制/工具结果压缩/热点拆分/契约防漂移/eval 平台 | ✅ 已发布（含 cipher 桥死锁/fork 炸弹两个真机热修） | [方案](../plan/v1.1/README.md) | [总结](v1.1-release-summary.md) | [blog/v1.1](../../blog/v1.1/) 10 篇 | `v1.1.0` |
-| v1.2 | 正式发布：签名/安装器/a11y/i18n/帮助中心（原 v1.1 顺延） | 🚧 规划启动（分支 `feature/v1.2-release-polish`） | — | — | — | — |
+| v1.2 | 正式发布打磨：品牌安装器/签名双态/发布流水线/深色/a11y/i18n/向导帮助 | 🚧 代码完成待真机封版（`7cc35fa`，v1.2.0） | [方案](../plan/v1.2/README.md) | [总结](v1.2-release-summary.md) | — | 待打 `v1.2.0` |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
