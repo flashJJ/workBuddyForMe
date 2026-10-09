@@ -11,12 +11,17 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v1.2 🚧 代码完成，待真机封版
+## 当前版本：v1.3 📝 主题待评审
 
-**主题：正式发布打磨**（原 v1.1 规划顺延）。品牌素材与 NSIS 安装器（许可页/双语/程序组/卸载数据两态）、签名双态（不买证书，有凭据即签、无凭据保留 rcedit）与 Windows 标签发布流水线（draft Release + 产物自检）、深色模式完检（设置表真源/system 三态/语义色/hljs）、a11y pass（skip link/焦点环/ARIA/应用内确认框/axe serious-critical=0）、自研零依赖 i18n 与核心路径中英双语（错误码本地化/Intl/导出双语）、首启 4 步向导 + 帮助中心 10 条 FAQ + Ctrl+/ 快捷键浮层。分支 `feature/v1.2-release-polish`，M0–M5 已全部推送（末端 `7cc35fa`，版本号 1.2.0），剩余 T5.6 真机验收（pack smoke/0.9→1.2 更新链/打包态抽测）与合 main、tag、Release。
+发布打磨收口后的第一个能力版本，候选主题：**A. 知识变厚——编译式 RAG 与知识治理（推荐）** / B. 最小多智能体编排 / C. 纯收尾（不建议独立成版）。开工前置：v1.2.0 已合 main（`9956592`）并打 tag `v1.2.0`，draft Release 流水线已触发，真机 T5.6 验收与 Release 转正并行。分支 `feature/v1.3-planning`，主题提案与待决策清单见 [v1.3 规划提案](../plan/v1.3/README.md)，拍板后产出正式方案四篇。
 
-- 方案：[v1.2 正式发布打磨](../plan/v1.2/README.md)（四篇：README/现状差距/功能设计/实施路线与风险）
-- 总结：[v1.2-release-summary.md](v1.2-release-summary.md)（G1–G10 对账、踩坑 8 条、封版剩余清单）
+## 已发布版本：v1.2 ✅（2026-10，tag v1.2.0）
+
+**主题：正式发布打磨**。品牌素材与 NSIS 安装器（许可页/双语/程序组/卸载数据两态）、签名双态（不买证书，有凭据即签/无凭据保留 rcedit）与 Windows 标签发布流水线（draft Release + 产物自检）、深色模式完检（设置表真源/system 三态/语义色/hljs）、a11y pass（skip link/焦点环/命令面板 ARIA/应用内确认框/axe serious-critical=0）、自研零依赖 i18n 与核心路径中英双语（错误码本地化/Intl/导出双语）、首启 4 步向导 + 帮助中心 10 条 FAQ + Ctrl+/ 快捷键浮层。分支 `feature/v1.2-release-polish`（`--no-ff` 合入 main `9956592`）。tag `v1.2.0`。
+
+- 方案：[v1.2 正式发布打磨](../plan/v1.2/README.md)（四篇）
+- 总结：[v1.2-release-summary.md](v1.2-release-summary.md)（M0–M5 交付、G1–G10 对账、8 条踩坑、T5.6 封版清单）
+- 英文发行说明：[v1.2-release-notes-en.md](v1.2-release-notes-en.md)（Release 粘贴版；真机验收后填日期/sha256 并转正式 Release）
 
 ## 已发布版本：v1.1 ✅（2026-10）
 
@@ -100,7 +105,8 @@
 | v0.9 | Flow Serving：执行解耦 + 本地 API/MCP | ✅ 已发布 | [方案](v0.9-flow-serving.md) | [总结](v0.9-release-summary.md) | B01-B08 | `v0.9.0` |
 | v1.0 | 会说话的桌面伙伴：本地语音 + Live2D + 桌宠 | ✅ 已发布（真人验收通过） | [方案](../plan/v1.0/README.md) | [总结](v1.0-release-summary.md) | [blog/v1.0](../../blog/v1.0/) 10 篇 | `v1.0.0` |
 | v1.1 | 内部加固：分层强制/工具结果压缩/热点拆分/契约防漂移/eval 平台 | ✅ 已发布（含 cipher 桥死锁/fork 炸弹两个真机热修） | [方案](../plan/v1.1/README.md) | [总结](v1.1-release-summary.md) | [blog/v1.1](../../blog/v1.1/) 10 篇 | `v1.1.0` |
-| v1.2 | 正式发布打磨：品牌安装器/签名双态/发布流水线/深色/a11y/i18n/向导帮助 | 🚧 代码完成待真机封版（`7cc35fa`，v1.2.0） | [方案](../plan/v1.2/README.md) | [总结](v1.2-release-summary.md) | — | 待打 `v1.2.0` |
+| v1.2 | 正式发布打磨：品牌安装器/签名双态/发布流水线/深色/a11y/i18n/向导帮助 | ✅ 已合 main 并打 tag（真机 T5.6/Release 转正验收中） | [方案](../plan/v1.2/README.md) | [总结](v1.2-release-summary.md) | — | `v1.2.0` |
+| v1.3 | 主题待评审（推荐：知识变厚——编译式 RAG 与知识治理） | 📝 规划提案（分支 `feature/v1.3-planning`） | [提案](../plan/v1.3/README.md) | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
@@ -126,12 +132,16 @@
 - 零新功能版本：分层依赖 ESLint 硬门禁、工具结果中央压缩（双视图）、热点文件拆分去白名单、barrel 域子路径化、SSE 契约机械派生、eval 平台化、覆盖率分级门禁
 - 详见 [docs/plan/v1.1](../plan/v1.1/README.md) 与 [v1.1-release-summary.md](v1.1-release-summary.md)。借 elpis 的纯函数压缩器、internal 目录约定与合同式 SDD，不迁 NestJS DI
 
-### v1.2「正式发布」—— 可对外分发（原 v1.1 规划顺延，🚧 规划启动）
+### v1.2「正式发布」—— 可对外分发（✅ 已合 main，tag v1.2.0，真机验收中）
 
-- Windows 代码签名证书（消除 SmartScreen 警告）
-- 安装器体验（NSIS 一键安装、开始菜单/卸载信息）
-- 深色模式完检与无障碍（a11y） pass
-- 国际化框架（中/英）与帮助中心/使用向导
+- Windows 品牌安装器与签名双态（不买证书）、标签发布流水线（draft Release）
+- 深色模式完检、a11y pass、自研 i18n 中英双语、首启向导/帮助中心/快捷键浮层
+- 详见 [v1.2-release-summary.md](v1.2-release-summary.md)。代码签名证书采购仍待决策（接入位已就位）
+
+### v1.3「知识变厚？」—— 主题待评审（📝 规划中）
+
+- 推荐：编译式 RAG（实体/关系/摘要预编译）+ 混合检索重排 + 语句级引用 + 知识治理；备选：最小多智能体
+- 详见 [v1.3 规划提案](../plan/v1.3/README.md)（候选对比、推荐理由、待决策清单），拍板后出正式方案四篇
 
 ## 版本方案文档标准结构
 
