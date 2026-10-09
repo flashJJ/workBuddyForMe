@@ -18,6 +18,7 @@ import { SkillsPanel } from './skills-panel';
 import { MemoryPanel } from '../memory/memory-panel';
 import { BackupPanel } from './backup-panel';
 import { AboutPanel } from './about-panel';
+import { HelpCenterPanel } from '../help-center/help-center-panel';
 import { VoicePreferencePanel } from '../voice/settings/voice-preference-panel';
 
 export function SettingsPage() {
@@ -86,6 +87,8 @@ export function SettingsPage() {
       <MemoryPanel />
 
       <BackupPanel />
+
+      <HelpCenterPanel />
 
       <AboutPanel />
 

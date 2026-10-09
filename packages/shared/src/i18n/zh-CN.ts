@@ -17,6 +17,9 @@ import { zhMemory } from './messages/memory';
 import { zhTasks } from './messages/tasks';
 import { zhFlows } from './messages/flows';
 import { zhShare } from './messages/share';
+import { zhShortcuts } from './messages/shortcuts';
+import { zhOnboarding } from './messages/onboarding';
+import { zhHelp } from './messages/help';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -43,6 +46,9 @@ export const zhCN = {
   tasks: zhTasks,
   flows: zhFlows,
   share: zhShare,
+  shortcuts: zhShortcuts,
+  onboarding: zhOnboarding,
+  help: zhHelp,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

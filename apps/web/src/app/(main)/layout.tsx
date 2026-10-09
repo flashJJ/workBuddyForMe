@@ -1,8 +1,10 @@
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SkipLink } from '@/components/layout/skip-link';
 import { CommandPaletteHost } from '@/features/command-palette/use-command-palette';
+import { ShortcutsHost } from '@/features/shortcuts/use-shortcuts-host';
+import { OnboardingHost } from '@/features/onboarding/use-onboarding-host';
 
-/** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K） */
+/** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K）+ 快捷键浮层（Ctrl+/）+ 首启向导 */
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
@@ -13,6 +15,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <CommandPaletteHost />
+      <ShortcutsHost />
+      <OnboardingHost />
     </div>
   );
 }

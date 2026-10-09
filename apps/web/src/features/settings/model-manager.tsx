@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { ModelCapability } from '@wbfm/shared/constants';
 import type { Provider, ProviderModel } from '@wbfm/shared/types';
-import { MODEL_CAPABILITIES } from '@wbfm/shared/constants';
+import { inferModelCapabilities, MODEL_CAPABILITIES } from '@wbfm/shared/constants';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,8 +55,11 @@ export function ModelManager({ provider }: { provider: Provider }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [form, setForm] = React.useState<AddFormState>(EMPTY_FORM);
+  // 用户是否手动改过能力勾选：改过之后输入模型 ID 不再自动覆盖其选择
+  const capabilitiesTouchedRef = React.useRef(false);
 
   const toggleCapability = (capability: ModelCapability) => {
+    capabilitiesTouchedRef.current = true;
     setForm((prev) => ({
       ...prev,
       capabilities: prev.capabilities.includes(capability)
@@ -77,6 +80,7 @@ export function ModelManager({ provider }: { provider: Provider }) {
     try {
       await modelMutations.add.mutateAsync({ providerId: provider.id, body });
       toast.success(t('settingsProviders.models.modelAdded', { modelId }));
+      capabilitiesTouchedRef.current = false;
       setForm(EMPTY_FORM);
     } catch (error) {
       toast.error(errorText(error, t, { fallback: 'settingsProviders.models.addFailed' }));
@@ -179,7 +183,10 @@ export function ModelManager({ provider }: { provider: Provider }) {
                     : undefined
                 }
                 onClick={() =>
-                  addModel(remote.id, { capabilities: ['chat'], contextWindow: remote.contextLength })
+                  addModel(remote.id, {
+                    capabilities: inferModelCapabilities(remote.id),
+                    contextWindow: remote.contextLength,
+                  })
                 }
               >
                 + {remote.id}
@@ -205,7 +212,16 @@ export function ModelManager({ provider }: { provider: Provider }) {
             id={`model-id-${provider.id}`}
             className="h-8 w-40"
             value={form.modelId}
-            onChange={(e) => setForm((p) => ({ ...p, modelId: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                modelId: e.target.value,
+                // 未手动改过能力时，随模型 ID 自动识别（embedding/vl 等）
+                capabilities: capabilitiesTouchedRef.current
+                  ? p.capabilities
+                  : inferModelCapabilities(e.target.value),
+              }))
+            }
             placeholder="gpt-4o-mini"
           />
         </div>

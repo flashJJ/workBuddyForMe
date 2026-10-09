@@ -20,6 +20,8 @@ export const zhAbout = {
   releaseLink: 'Release 页面',
   releaseHintAfter: '手动下载。',
   checkFailed: '更新检查失败：{message}',
+  replayWizard: '重新打开使用向导',
+  helpCenter: '帮助与常见问题',
   status: {
     idle: '未检查',
     checking: '检查中…',
@@ -52,6 +54,8 @@ export const enAbout = {
   releaseLink: 'Releases page',
   releaseHintAfter: 'for the latest version.',
   checkFailed: 'Update check failed: {message}',
+  replayWizard: 'Replay setup wizard',
+  helpCenter: 'Help & FAQ',
   status: {
     idle: 'Not checked',
     checking: 'Checking…',

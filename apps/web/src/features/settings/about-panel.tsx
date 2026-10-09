@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/common/toast';
+import { openShortcutsOverlay } from '@/features/shortcuts/use-shortcuts-host';
+import { reopenOnboarding } from '@/features/onboarding/use-onboarding-host';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
 
@@ -70,6 +72,34 @@ function Live2DLicenseNotice() {
   );
 }
 
+/** v1.2 M5：关于面板快捷入口（重放向导 / 快捷键浮层 / 帮助中心锚点），两个渲染分支共用 */
+function AboutQuickLinks() {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-wrap items-center gap-2" data-testid="about-quick-links">
+      <Button type="button" variant="outline" size="sm" onClick={reopenOnboarding} data-testid="about-replay-wizard">
+        {t('about.replayWizard')}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={openShortcutsOverlay}
+        data-testid="about-shortcuts"
+      >
+        {t('shortcuts.title')}
+      </Button>
+      <a
+        href="#help-center"
+        className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent"
+        data-testid="about-help"
+      >
+        {t('about.helpCenter')}
+      </a>
+    </div>
+  );
+}
+
 export function AboutPanel() {
   const { t } = useI18n();
   const intl = useIntl();
@@ -102,6 +132,7 @@ export function AboutPanel() {
       <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="about-panel">
         <h3 className="font-medium">{t('about.title')}</h3>
         <p className="text-xs text-muted-foreground">{t('about.desktopOnly')}</p>
+        <AboutQuickLinks />
         <Live2DLicenseNotice />
       </section>
     );
@@ -141,7 +172,11 @@ export function AboutPanel() {
 
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="about-panel">
-      <h3 className="font-medium">{t('about.title')}</h3>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-medium">{t('about.title')}</h3>
+      </div>
+
+      <AboutQuickLinks />
 
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>

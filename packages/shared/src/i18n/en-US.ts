@@ -18,6 +18,9 @@ import { enMemory } from './messages/memory';
 import { enTasks } from './messages/tasks';
 import { enFlows } from './messages/flows';
 import { enShare } from './messages/share';
+import { enShortcuts } from './messages/shortcuts';
+import { enOnboarding } from './messages/onboarding';
+import { enHelp } from './messages/help';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -43,6 +46,9 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   tasks: enTasks,
   flows: enFlows,
   share: enShare,
+  shortcuts: enShortcuts,
+  onboarding: enOnboarding,
+  help: enHelp,
 };
 
 export type EnDictionary = typeof enUS;

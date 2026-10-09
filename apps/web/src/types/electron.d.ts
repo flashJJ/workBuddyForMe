@@ -18,6 +18,8 @@ declare global {
       updater?: WbfmUpdaterBridge;
       /** 命令面板桥：主进程 Ctrl+K 全局快捷键触发 open 事件 */
       commandPalette?: { onOpen: (cb: () => void) => () => void };
+      /** 快捷键浮层桥：主进程 Ctrl+/ 全局快捷键触发 open 事件（M5） */
+      shortcuts?: { onOpen: (cb: () => void) => () => void };
       /** 桌宠桥（M4 伴身；仅桌面端 preload 存在，纯浏览器访问为 undefined） */
       pet?: WbfmPetBridge;
     };
