@@ -196,7 +196,7 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
       {expanded && (
         <div className="space-y-3 border-t px-4 py-3">
           {live.status === 'error' && (
-            <p className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+            <p className="flex items-center gap-2 text-xs text-warning">
               <AlertTriangle className="h-3 w-3" />
               任务事件流连接失败，部分步骤可能缺失。
             </p>

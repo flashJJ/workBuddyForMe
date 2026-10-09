@@ -147,7 +147,7 @@ export function MicSelfTest() {
             </>
           )}
         </Button>
-        {(state === 'denied' || state === 'absent') && <MicOff className="h-4 w-4 text-red-500" />}
+        {(state === 'denied' || state === 'absent') && <MicOff className="h-4 w-4 text-destructive" />}
       </div>
       {checking && (
         <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-muted">
@@ -160,7 +160,7 @@ export function MicSelfTest() {
       )}
       {resultText[state] && (
         <p
-          className="text-xs text-muted-foreground data-[state=ok]:text-emerald-600 data-[state=denied]:text-red-600 data-[state=absent]:text-red-600 data-[state=error]:text-red-600 data-[state=silent]:text-amber-600 dark:data-[state=ok]:text-emerald-400 dark:data-[state=silent]:text-amber-400 dark:data-[state=denied]:text-red-400 dark:data-[state=absent]:text-red-400 dark:data-[state=error]:text-red-400"
+          className="text-xs text-muted-foreground data-[state=ok]:text-success data-[state=denied]:text-destructive data-[state=absent]:text-destructive data-[state=error]:text-destructive data-[state=silent]:text-warning"
           data-state={state}
           data-testid="mic-self-test-result"
         >

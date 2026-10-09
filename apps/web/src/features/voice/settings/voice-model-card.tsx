@@ -108,7 +108,7 @@ export function VoiceModelCard({
       )}
 
       {view.error && !busy && (
-        <p className="break-all text-xs text-red-600 dark:text-red-400" title={view.error}>
+        <p className="break-all text-xs text-destructive" title={view.error}>
           {view.error}
         </p>
       )}

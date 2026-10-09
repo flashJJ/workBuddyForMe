@@ -71,7 +71,7 @@ export function ConfigPanel({ node, nodes, onChangeConfig, onDelete, onClose }: 
           <Button
             type="button"
             variant="outline"
-            className="w-full text-red-500 hover:text-red-600"
+            className="w-full text-destructive hover:text-destructive"
             onClick={() => onDelete(node.id)}
           >
             <Trash2 className="h-4 w-4" />

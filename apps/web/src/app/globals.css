@@ -21,6 +21,25 @@
     --border: 214 32% 88%;
     --input: 214 32% 88%;
     --ring: 221 83% 53%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    /* 状态语义色（Badge/状态徽章明暗两套，取代散落的 emerald/red/amber 硬编码） */
+    --success: 152 62% 36%;
+    --success-bg: 152 54% 95%;
+    --warning: 32 90% 38%;
+    --warning-bg: 38 92% 95%;
+    --info: 217 91% 42%;
+    --info-bg: 214 92% 95%;
+    /* 代码块（rehype-highlight token 配色，亮色取 GitHub light 色板） */
+    --code-bg: 210 29% 97%;
+    --code-border: 214 32% 88%;
+    --code-text: 220 14% 20%;
+    --code-comment: 215 14% 47%;
+    --code-keyword: 0 72% 47%;
+    --code-string: 217 91% 28%;
+    --code-number: 217 91% 36%;
+    --code-function: 282 68% 43%;
+    --code-builtin: 24 90% 31%;
     --radius: 0.625rem;
   }
 
@@ -42,6 +61,26 @@
     --border: 217 33% 22%;
     --input: 217 33% 24%;
     --ring: 217 91% 60%;
+    --popover: 222 44% 12%;
+    --popover-foreground: 210 40% 96%;
+    /* v1.2：65% 提到 72%，深底正文对比度满足 4.5:1 */
+    --muted-foreground: 215 20% 72%;
+    --success: 152 52% 62%;
+    --success-bg: 152 41% 16%;
+    --warning: 38 92% 62%;
+    --warning-bg: 38 45% 16%;
+    --info: 213 100% 74%;
+    --info-bg: 217 60% 17%;
+    /* 代码块暗色取 GitHub dark 色板 */
+    --code-bg: 220 16% 12%;
+    --code-border: 217 33% 22%;
+    --code-text: 213 31% 89%;
+    --code-comment: 215 14% 60%;
+    --code-keyword: 1 100% 74%;
+    --code-string: 213 100% 82%;
+    --code-number: 213 100% 74%;
+    --code-function: 271 92% 82%;
+    --code-builtin: 32 100% 70%;
   }
 
   * {
@@ -94,4 +133,89 @@
   *::-webkit-scrollbar-corner {
     background: transparent;
   }
+}
+
+/* Markdown 代码块与 rehype-highlight 配色（明暗随上方变量切换） */
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+/* 行内 code：浅灰底胶囊；pre 内的 code 不套底色（由 pre 统一给背景） */
+.markdown-body :not(pre) > code {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.3rem;
+  padding: 0.1em 0.35em;
+}
+
+.markdown-body pre {
+  background-color: hsl(var(--code-bg));
+  color: hsl(var(--code-text));
+  border: 1px solid hsl(var(--code-border));
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  margin: 0.6rem 0;
+  font-size: 0.85em;
+  line-height: 1.6;
+}
+
+.markdown-body pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: hsl(var(--code-comment));
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-doctag,
+.hljs-template-tag {
+  color: hsl(var(--code-keyword));
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-addition {
+  color: hsl(var(--code-string));
+}
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+  color: hsl(var(--code-number));
+}
+.hljs-title,
+.hljs-title.function_,
+.hljs-section,
+.hljs-name {
+  color: hsl(var(--code-function));
+}
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-type,
+.hljs-class .hljs-title {
+  color: hsl(var(--code-builtin));
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-meta {
+  color: hsl(var(--code-number));
+}
+.hljs-deletion {
+  color: hsl(var(--destructive));
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
 }

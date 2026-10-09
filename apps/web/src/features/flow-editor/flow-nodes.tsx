@@ -10,11 +10,11 @@ import { configSummary, type FlowCanvasNode } from './graph-utils';
 import { useFlowStatus } from './flow-status-context';
 
 const STATUS_RING: Record<FlowNodeExecStatus, string> = {
-  running: 'ring-2 ring-blue-500 shadow-blue-500/30 shadow-lg',
-  succeeded: 'ring-2 ring-emerald-500/70',
-  failed: 'ring-2 ring-red-500',
+  running: 'ring-2 ring-info shadow-info/30 shadow-lg',
+  succeeded: 'ring-2 ring-success/70',
+  failed: 'ring-2 ring-destructive',
   skipped: 'opacity-45',
-  waiting_human: 'ring-2 ring-amber-500 shadow-amber-500/30 shadow-lg animate-pulse',
+  waiting_human: 'ring-2 ring-warning shadow-warning/30 shadow-lg animate-pulse',
 };
 
 const STATUS_LABEL: Record<FlowNodeExecStatus, string> = {
@@ -46,8 +46,8 @@ function NodeShell({ id, type, config, selected, children }: ShellProps) {
       className={cn(
         'w-52 rounded-lg border bg-card px-3 py-2.5 text-left shadow-sm transition-shadow',
         selected && 'border-primary ring-1 ring-primary',
-        hasError && 'border-red-500 border-dashed ring-1 ring-red-500/60',
-        hasWarning && 'border-amber-500 border-dashed',
+        hasError && 'border-destructive border-dashed ring-1 ring-destructive/60',
+        hasWarning && 'border-warning border-dashed',
         status && STATUS_RING[status],
       )}
     >
@@ -97,19 +97,19 @@ function ConditionNode({ id, data, selected }: FlowNodeProps) {
         type="source"
         position={Position.Right}
         style={{ top: '32%' }}
-        className="!h-2.5 !w-2.5 !bg-emerald-500"
+        className="!h-2.5 !w-2.5 !bg-success"
       />
       <Handle
         id="false"
         type="source"
         position={Position.Right}
         style={{ top: '72%' }}
-        className="!h-2.5 !w-2.5 !bg-red-400"
+        className="!h-2.5 !w-2.5 !bg-destructive"
       />
-      <span className="pointer-events-none absolute right-[-26px] top-[24%] text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+      <span className="pointer-events-none absolute right-[-26px] top-[24%] text-[10px] font-medium text-success">
         是
       </span>
-      <span className="pointer-events-none absolute right-[-26px] top-[64%] text-[10px] font-medium text-red-500">
+      <span className="pointer-events-none absolute right-[-26px] top-[64%] text-[10px] font-medium text-destructive">
         否
       </span>
     </NodeShell>

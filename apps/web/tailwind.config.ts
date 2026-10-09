@@ -35,6 +35,22 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          background: 'hsl(var(--success-bg))',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          background: 'hsl(var(--warning-bg))',
+        },
+        info: {
+          DEFAULT: 'hsl(var(--info))',
+          background: 'hsl(var(--info-bg))',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

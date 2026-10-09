@@ -126,7 +126,7 @@ export function ModelManager({ provider }: { provider: Provider }) {
                   ))}
                   <button
                     type="button"
-                    className="text-xs text-muted-foreground hover:text-red-500"
+                    className="text-xs text-muted-foreground hover:text-destructive"
                     aria-label={`移除模型 ${model.displayName}`}
                     onClick={() => removeModel(model)}
                   >

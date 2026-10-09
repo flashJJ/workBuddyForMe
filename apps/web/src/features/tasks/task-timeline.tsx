@@ -44,7 +44,7 @@ export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
             </details>
           )}
           {step.error && (
-            <p className="mt-2 rounded bg-red-500/10 p-2 text-xs text-red-600 dark:text-red-400">
+            <p className="mt-2 rounded bg-destructive/10 p-2 text-xs text-destructive">
               错误：{step.error}
             </p>
           )}

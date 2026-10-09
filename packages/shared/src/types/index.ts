@@ -15,9 +15,6 @@ export type {
   DocumentRecord,
   Attachment,
   AppSettings,
-  McpServerConfig,
-  McpServerInfo,
-  McpToolInfo,
   SkillPromptTemplate,
   SkillExample,
   SkillManifest,
@@ -26,6 +23,7 @@ export type {
   SkillInfo,
   Timestamped,
 } from './domain';
+export type { McpServerConfig, McpServerInfo, McpToolInfo } from './mcp';
 export type { ContentPart, TextContentPart, ImageContentPart } from './content-part';
 export type {
   ToolTraceEntry,

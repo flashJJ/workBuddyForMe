@@ -164,7 +164,7 @@ function FlowCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-red-500"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
               onClick={onDelete}
               title="删除"
             >

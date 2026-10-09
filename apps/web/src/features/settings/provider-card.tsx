@@ -96,9 +96,9 @@ export function ProviderCard({ provider, onEdit }: Props) {
       </div>
 
       <div className="mt-2 min-h-5 text-sm" role="status" data-testid={`test-result-${provider.id}`}>
-        {testState.status === 'success' && <span className="text-emerald-600">连接成功</span>}
+        {testState.status === 'success' && <span className="text-success">连接成功</span>}
         {testState.status === 'error' && (
-          <span className="text-red-600">连接失败：{testState.message}</span>
+          <span className="text-destructive">连接失败：{testState.message}</span>
         )}
       </div>
 

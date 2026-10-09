@@ -84,7 +84,7 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="ml-auto h-7 w-7 text-muted-foreground hover:text-red-500"
+                  className="ml-auto h-7 w-7 text-muted-foreground hover:text-destructive"
                   onClick={() => remove(i)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />

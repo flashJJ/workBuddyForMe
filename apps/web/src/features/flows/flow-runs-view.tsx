@@ -137,7 +137,7 @@ export function FlowRunsView() {
                       {run.workflowName}
                     </Link>
                     {run.error?.message && (
-                      <p className="mt-0.5 max-w-[260px] truncate text-[10px] text-red-500" title={run.error.message}>
+                      <p className="mt-0.5 max-w-[260px] truncate text-[10px] text-destructive" title={run.error.message}>
                         {run.error.message}
                       </p>
                     )}

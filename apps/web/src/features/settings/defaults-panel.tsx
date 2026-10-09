@@ -10,6 +10,7 @@ import { ApiClientError } from '@/lib/api/client';
 import { apiGet } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';
 import { useAllModels, useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
+import { useTheme, type ThemePreference } from '@/components/theme/theme-provider';
 
 function modelLabel(model: ProviderModel): string {
   return `${model.displayName}（${model.modelId}）`;
@@ -58,6 +59,8 @@ export function DefaultsPanel() {
   const { data: models } = useAllModels();
   const updateSettings = useUpdateSettings();
   const toast = useToast();
+  // 主题以 ThemeProvider 为唯一写路径（侧栏切换/设置下拉/系统三态共用，实时换肤并双写设置表）
+  const { theme, setTheme } = useTheme();
   const [draft, setDraft] = React.useState<AppSettings | null>(null);
 
   React.useEffect(() => {
@@ -119,11 +122,12 @@ export function DefaultsPanel() {
           <Label htmlFor="theme-preference">主题</Label>
           <Select
             id="theme-preference"
-            value={draft.theme}
-            onChange={(e) => void save({ theme: e.target.value as AppSettings['theme'] })}
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as ThemePreference)}
           >
             <option value="light">浅色</option>
             <option value="dark">深色</option>
+            <option value="system">跟随系统</option>
           </Select>
         </div>
       </div>

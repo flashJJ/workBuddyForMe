@@ -79,7 +79,7 @@ function TimelineRow({ event, nodes }: { event: FlowEventPayload; nodes: FlowCan
           )}
         </button>
         {'message' in event && event.message && (
-          <p className="mt-1 text-[11px] leading-snug text-red-500">{event.message}</p>
+          <p className="mt-1 text-[11px] leading-snug text-destructive">{event.message}</p>
         )}
         {'reason' in event && event.reason && (
           <p className="mt-1 text-[11px] text-muted-foreground">{event.reason}</p>
@@ -142,13 +142,13 @@ function eventIcon(type: string, accent: string) {
     case 'node_started':
       return <Loader2 className={cn('h-4 w-4 animate-spin', accent)} />;
     case 'node_succeeded':
-      return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+      return <CheckCircle2 className="h-4 w-4 text-success" />;
     case 'node_skipped':
       return <MinusCircle className="h-4 w-4 text-slate-400" />;
     case 'node_waiting_human':
-      return <PauseCircle className="h-4 w-4 animate-pulse text-amber-500" />;
+      return <PauseCircle className="h-4 w-4 animate-pulse text-warning" />;
     case 'node_failed':
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      return <XCircle className="h-4 w-4 text-destructive" />;
     default:
       return <Circle className="h-4 w-4 text-muted-foreground" />;
   }

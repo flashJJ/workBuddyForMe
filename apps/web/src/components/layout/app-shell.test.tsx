@@ -63,8 +63,13 @@ describe('应用外壳（TR-23.1）', () => {
   });
 
   it('主题切换：点击后 html 挂 dark 类并可切回', () => {
+    // setTheme 会 PUT 设置表：stub 成功响应，避免失败回滚干扰断言
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ success: true, data: {} }), { status: 200 })),
+    );
     render(
-      <ThemeProvider>
+      <ThemeProvider skipHydration>
         <AppSidebar />
       </ThemeProvider>,
     );
@@ -99,7 +104,7 @@ describe('应用外壳（TR-23.1）', () => {
           success: true,
           data:
             url === '/api/settings'
-              ? { defaultChatModelId: null, defaultEmbeddingModelId: null, theme: 'light', language: 'zh-CN' }
+              ? { defaultChatModelId: null, defaultEmbeddingModelId: null, theme: 'light', language: 'zh-CN', hasOnboarded: true }
               : url === '/api/system/info'
                 ? { dataDir: '/tmp/wbfm' }
                 : [],

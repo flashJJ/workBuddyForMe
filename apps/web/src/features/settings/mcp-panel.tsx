@@ -17,10 +17,10 @@ const STATUS_LABELS: Record<McpServerStatus, string> = {
 };
 
 const STATUS_STYLES: Record<McpServerStatus, string> = {
-  connected: 'border-emerald-300 bg-emerald-50 text-emerald-700',
-  connecting: 'border-amber-300 bg-amber-50 text-amber-700',
+  connected: 'border-success/30 bg-success-background text-success',
+  connecting: 'border-warning/30 bg-warning-background text-warning',
   disconnected: 'border-muted bg-muted text-muted-foreground',
-  error: 'border-red-300 bg-red-50 text-red-700',
+  error: 'border-destructive/30 bg-destructive/10 text-destructive',
 };
 
 function commandSummary(server: McpServerInfo): string {
@@ -81,7 +81,7 @@ export function McpPanel() {
 
       {isLoading && <p className="text-sm text-muted-foreground">加载中…</p>}
       {isError && (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-destructive">
           MCP 服务器加载失败，<button className="underline" onClick={() => void refetch()}>重试</button>
         </p>
       )}
@@ -115,7 +115,7 @@ export function McpPanel() {
                   {commandSummary(server) || '—'}
                 </p>
                 {server.status === 'error' && server.statusDetail && (
-                  <p className="text-xs text-red-600">{server.statusDetail}</p>
+                  <p className="text-xs text-destructive">{server.statusDetail}</p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -135,7 +135,7 @@ export function McpPanel() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-destructive hover:text-destructive"
                   onClick={() => remove(server)}
                 >
                   删除

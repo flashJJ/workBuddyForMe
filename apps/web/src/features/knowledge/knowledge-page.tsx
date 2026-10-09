@@ -67,7 +67,7 @@ function KnowledgeBaseNav({
               </button>
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-red-500"
+                className="text-xs text-muted-foreground hover:text-destructive"
                 aria-label={`删除 ${kb.name}`}
                 onClick={() => onDelete(kb)}
               >

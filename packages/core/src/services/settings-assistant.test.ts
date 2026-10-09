@@ -58,6 +58,7 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       defaultEmbeddingModelId: null,
       theme: 'light',
       language: 'zh-CN',
+      hasOnboarded: false,
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

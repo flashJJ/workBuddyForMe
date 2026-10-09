@@ -68,7 +68,7 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
         <Badge variant={badge.variant}>{badge.label}</Badge>
         <span className="font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
         {live.connection === 'error' && !terminal && (
-          <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+          <span className="flex items-center gap-1 text-[11px] text-warning">
             <AlertTriangle className="h-3 w-3" />
             事件流连接异常
           </span>
@@ -103,8 +103,8 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
         )}
         <ExecutionTimeline events={live.events} nodes={nodes} />
         {live.phase === 'succeeded' && (
-          <div className="mx-4 my-2 rounded-md border border-emerald-500/40 bg-emerald-500/5 p-2.5">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <div className="mx-4 my-2 rounded-md border border-success/30 bg-success-background p-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-success">
               <CheckCircle2 className="h-3.5 w-3.5" />
               最终输出
             </p>
@@ -114,8 +114,8 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
           </div>
         )}
         {live.phase === 'failed' && (
-          <div className="mx-4 my-2 rounded-md border border-red-500/40 bg-red-500/5 p-2.5">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-red-500">
+          <div className="mx-4 my-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
               <XCircle className="h-3.5 w-3.5" />
               运行失败
             </p>

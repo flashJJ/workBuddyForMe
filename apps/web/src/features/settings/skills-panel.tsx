@@ -84,9 +84,9 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
           )}
         </div>
         {!skill.exists && (
-          <p className="text-xs text-red-600">源文件夹缺失：{skill.sourcePath}</p>
+          <p className="text-xs text-destructive">源文件夹缺失：{skill.sourcePath}</p>
         )}
-        {skill.error && <p className="text-xs text-red-600">{skill.error}</p>}
+        {skill.error && <p className="text-xs text-destructive">{skill.error}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
@@ -103,7 +103,7 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
           type="button"
           variant="ghost"
           size="sm"
-          className="text-red-600 hover:text-red-700"
+          className="text-destructive hover:text-destructive"
           disabled={mutations.remove.isPending}
           onClick={remove}
         >
@@ -129,7 +129,7 @@ export function SkillsPanel() {
 
       {isLoading && <p className="text-sm text-muted-foreground">加载中…</p>}
       {isError && (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-destructive">
           技能加载失败，
           <button className="underline" onClick={() => void refetch()}>
             重试

@@ -61,7 +61,7 @@ export function AssistantCard({
               type="button"
               size="sm"
               variant="ghost"
-              className="text-red-500 hover:text-red-600"
+              className="text-destructive hover:text-destructive"
               onClick={() => onDelete(assistant)}
             >
               删除

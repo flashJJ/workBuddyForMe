@@ -61,7 +61,7 @@ export function FlowFormDialog({ open, initial, title, onSubmit, onClose }: Flow
               placeholder="例如：资料研究助手"
               className="h-9"
             />
-            {error && <p className="text-[11px] text-red-500">{error}</p>}
+            {error && <p className="text-[11px] text-destructive">{error}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">描述（可选）</label>

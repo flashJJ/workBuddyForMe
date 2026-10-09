@@ -14,6 +14,7 @@ import { migrateV012 } from './v012-flow-studio';
 import { migrateV013 } from './v013-flow-serving';
 import { migrateV014 } from './v014-voice';
 import { migrateV015 } from './v015-assistant-expression';
+import { migrateV016 } from './v016-release-polish';
 
 interface Migration {
   version: number;
@@ -89,6 +90,11 @@ const MIGRATIONS: Migration[] = [
     version: 15,
     description: 'assistant expression: assistants.expression_enabled 表情指令开关',
     up: migrateV015,
+  },
+  {
+    version: 16,
+    description: 'release polish: 老用户 app-settings 回填 hasOnboarded=true（无表结构变更）',
+    up: migrateV016,
   },
 ];
 

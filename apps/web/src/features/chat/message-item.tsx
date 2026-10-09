@@ -194,7 +194,7 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
 
         {message.status === 'error' && (
           <div
-            className="rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs text-red-600"
+            className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive"
             data-testid="message-error"
           >
             <p>生成失败：{message.errorMessage ?? message.errorCode ?? '未知错误'}</p>

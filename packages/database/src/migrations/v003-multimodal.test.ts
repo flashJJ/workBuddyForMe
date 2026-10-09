@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -38,8 +38,8 @@ describe('v003 迁移：多模态字段加法升级', () => {
   it('v2 老库升级：attachments 表就位，老消息/老文档获得兼容默认值', () => {
     const db = createV2Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    expect(LATEST_SCHEMA_VERSION).toBe(15);
+    expect(result.applied).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    expect(LATEST_SCHEMA_VERSION).toBe(16);
 
     const message = db.prepare(`SELECT content_parts FROM messages WHERE id='m1'`).get() as {
       content_parts: string;

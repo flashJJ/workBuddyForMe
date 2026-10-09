@@ -95,7 +95,7 @@ export function DocumentList({ kbId, documents, loading }: {
           </Badge>
           <button
             type="button"
-            className="text-xs text-muted-foreground hover:text-red-500"
+            className="text-xs text-muted-foreground hover:text-destructive"
             aria-label={`删除文档 ${document.filename}`}
             onClick={() => remove(document)}
           >

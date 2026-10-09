@@ -163,7 +163,7 @@ export function JsonObjectEditor({
         className="font-mono text-xs"
         spellCheck={false}
       />
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
     </div>
   );
 }
