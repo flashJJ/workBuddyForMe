@@ -15,8 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/common/toast';
-import { ApiClientError } from '@/lib/api/client';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { useMcpMutations } from '@/lib/hooks/use-mcp';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   open: boolean;
@@ -70,6 +71,7 @@ function parseEnv(text: string): Record<string, string> {
 
 /** MCP stdio 服务器新增/编辑弹窗（http 传输为 M2 预留，本期不提供入口） */
 export function McpServerFormDialog({ open, onOpenChange, server }: Props) {
+  const { t } = useI18n();
   const isEdit = Boolean(server);
   const mutations = useMcpMutations();
   const toast = useToast();
@@ -99,7 +101,7 @@ export function McpServerFormDialog({ open, onOpenChange, server }: Props) {
             enabled: form.enabled,
           },
         });
-        toast.success('MCP 服务器已更新，正在重连');
+        toast.success(t('settingsMcp.mcp.form.updatedReconnecting'));
       } else {
         await mutations.create.mutateAsync({
           transport: 'stdio',
@@ -109,11 +111,11 @@ export function McpServerFormDialog({ open, onOpenChange, server }: Props) {
           env: parseEnv(form.envText),
           enabled: form.enabled,
         });
-        toast.success('MCP 服务器已添加，正在连接');
+        toast.success(t('settingsMcp.mcp.form.addedConnecting'));
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(errorText(error, t, { fallback: 'toast.saveFailed' }));
     } finally {
       setSubmitting(false);
     }
@@ -123,38 +125,40 @@ export function McpServerFormDialog({ open, onOpenChange, server }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? '编辑 MCP 服务器' : '添加 MCP 服务器'}</DialogTitle>
-          <DialogDescription>
-            通过 stdio 启动本地 MCP 服务器，其工具会以 mcp:服务器名:工具名 提供给助手。
-          </DialogDescription>
+          <DialogTitle>
+            {isEdit
+              ? t('settingsMcp.mcp.form.editTitle')
+              : t('settingsMcp.mcp.form.addTitle')}
+          </DialogTitle>
+          <DialogDescription>{t('settingsMcp.mcp.form.description')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="mcp-name">名称（作为工具命名空间）</Label>
+            <Label htmlFor="mcp-name">{t('settingsMcp.mcp.form.nameLabel')}</Label>
             <Input
               id="mcp-name"
               value={form.name}
               onChange={(e) => update({ name: e.target.value })}
-              placeholder="例如：filesystem"
+              placeholder={t('settingsMcp.mcp.form.namePlaceholder')}
               required
               maxLength={40}
               pattern="[a-zA-Z0-9][a-zA-Z0-9_-]*"
-              title="仅允许字母/数字/下划线/中划线，且以字母或数字开头"
+              title={t('settingsMcp.mcp.form.namePatternTitle')}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="mcp-command">启动命令</Label>
+            <Label htmlFor="mcp-command">{t('settingsMcp.mcp.form.commandLabel')}</Label>
             <Input
               id="mcp-command"
               value={form.command}
               onChange={(e) => update({ command: e.target.value })}
-              placeholder="例如：npx"
+              placeholder={t('settingsMcp.mcp.form.commandPlaceholder')}
               required
               maxLength={500}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="mcp-args">启动参数（每行一个）</Label>
+            <Label htmlFor="mcp-args">{t('settingsMcp.mcp.form.argsLabel')}</Label>
             <Textarea
               id="mcp-args"
               value={form.argsText}
@@ -164,7 +168,7 @@ export function McpServerFormDialog({ open, onOpenChange, server }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="mcp-env">环境变量（每行 KEY=VALUE，可选）</Label>
+            <Label htmlFor="mcp-env">{t('settingsMcp.mcp.form.envLabel')}</Label>
             <Textarea
               id="mcp-env"
               value={form.envText}
@@ -180,14 +184,14 @@ export function McpServerFormDialog({ open, onOpenChange, server }: Props) {
               checked={form.enabled}
               onChange={(e) => update({ enabled: e.target.checked })}
             />
-            <span>启用（保存后自动连接）</span>
+            <span>{t('settingsMcp.mcp.form.enableAutoConnect')}</span>
           </label>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.actions.cancel')}
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? '保存中…' : '保存'}
+              {submitting ? t('settings.saving') : t('common.actions.save')}
             </Button>
           </DialogFooter>
         </form>

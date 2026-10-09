@@ -2,6 +2,7 @@
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { AssistantFormShape } from './assistant-form-body';
 
 /**
@@ -14,11 +15,12 @@ export function AssistantIdentityFields(props: {
   color: string;
   onUpdate: (patch: Partial<AssistantFormShape>) => void;
 }) {
+  const { t } = useI18n();
   const { emoji, name, color, onUpdate } = props;
   return (
     <div className="flex gap-3">
       <div className="w-20 space-y-1.5">
-        <Label htmlFor="assistant-emoji">图标</Label>
+        <Label htmlFor="assistant-emoji">{t('assistants.form.emojiLabel')}</Label>
         <Input
           id="assistant-emoji"
           value={emoji}
@@ -27,18 +29,18 @@ export function AssistantIdentityFields(props: {
         />
       </div>
       <div className="flex-1 space-y-1.5">
-        <Label htmlFor="assistant-name">名称</Label>
+        <Label htmlFor="assistant-name">{t('common.words.name')}</Label>
         <Input
           id="assistant-name"
           value={name}
           onChange={(e) => onUpdate({ name: e.target.value })}
-          placeholder="例如：产品经理"
+          placeholder={t('assistants.form.namePlaceholder')}
           required
           maxLength={60}
         />
       </div>
       <div className="w-24 space-y-1.5">
-        <Label htmlFor="assistant-color">配色</Label>
+        <Label htmlFor="assistant-color">{t('assistants.form.colorLabel')}</Label>
         <Input
           id="assistant-color"
           type="color"

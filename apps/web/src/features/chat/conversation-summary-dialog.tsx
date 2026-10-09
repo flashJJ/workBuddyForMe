@@ -2,6 +2,7 @@
 
 import type { Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   Dialog,
   DialogContent,
@@ -19,14 +20,13 @@ interface Props {
 
 /** v0.5：查看当前会话被递归摘要压缩的早期对话内容 */
 export function ConversationSummaryDialog({ conversation, open, onOpenChange }: Props) {
+  const { t } = useI18n();
   return (
     <Dialog open={open && Boolean(conversation?.summary)} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] max-w-lg">
         <DialogHeader>
-          <DialogTitle>早期对话摘要</DialogTitle>
-          <DialogDescription>
-            以下内容由模型在上下文接近上限时自动压缩生成，仍会作为背景参与后续对话。
-          </DialogDescription>
+          <DialogTitle>{t('chat.summary.title')}</DialogTitle>
+          <DialogDescription>{t('chat.summary.description')}</DialogDescription>
         </DialogHeader>
         <div
           data-testid="conversation-summary-text"
@@ -36,7 +36,7 @@ export function ConversationSummaryDialog({ conversation, open, onOpenChange }: 
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            关闭
+            {t('common.actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -7,14 +7,16 @@ import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
-import { ApiClientError } from '@/lib/api/client';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { useAssistants, useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useAllModels } from '@/lib/hooks/use-settings';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantCard } from './assistant-card';
 import { AssistantFormDialog } from './assistant-form-dialog';
 
 export function AssistantsPage() {
+  const { t } = useI18n();
   const { data: assistants, isLoading, isError, refetch } = useAssistants();
   const { data: models } = useAllModels();
   const { data: knowledgeBases } = useKnowledgeBases();
@@ -37,9 +39,9 @@ export function AssistantsPage() {
   const remove = async (assistant: Assistant) => {
     if (
       !(await confirm({
-        title: '删除助手',
-        description: `确定删除助手「${assistant.name}」？相关对话记录不会被删除。`,
-        confirmText: '删除',
+        title: t('assistants.deleteTitle'),
+        description: t('assistants.deleteConfirm', { name: assistant.name }),
+        confirmText: t('common.actions.delete'),
         danger: true,
       }))
     ) {
@@ -47,9 +49,9 @@ export function AssistantsPage() {
     }
     try {
       await mutations.remove.mutateAsync(assistant.id);
-      toast.success('助手已删除');
+      toast.success(t('assistants.deleted'));
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '删除失败');
+      toast.error(errorText(error, t, { fallback: 'assistants.deleteFailed' }));
     }
   };
 
@@ -63,31 +65,31 @@ export function AssistantsPage() {
     try {
       await mutations.reorder.mutateAsync(ordered.map((item) => item.id));
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '排序失败');
+      toast.error(errorText(error, t, { fallback: 'assistants.reorderFailed' }));
     }
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="助手"
-        description="为不同场景定制人设与参数，可绑定专属模型和知识库。"
+        title={t('assistants.title')}
+        description={t('assistants.description')}
         actions={
           <Button type="button" onClick={openCreate}>
-            新建助手
+            {t('assistants.create')}
           </Button>
         }
       />
       <div className="px-6">
         {isLoading && <Spinner />}
-        {isError && <ErrorState message="助手加载失败" onRetry={() => void refetch()} />}
+        {isError && <ErrorState message={t('assistants.loadError')} onRetry={() => void refetch()} />}
         {!isLoading && !isError && assistants && (
           <div className="grid gap-4 pb-8 sm:grid-cols-2 xl:grid-cols-3" data-testid="assistant-grid">
             {assistants.length === 0 && (
               <EmptyState
-                title="还没有自定义助手"
-                description="新建一个助手，为它设定人设和默认参数。"
-                action={<Button onClick={openCreate}>去新建</Button>}
+                title={t('assistants.empty.title')}
+                description={t('assistants.empty.description')}
+                action={<Button onClick={openCreate}>{t('assistants.empty.action')}</Button>}
               />
             )}
             {assistants.map((assistant, index) => (

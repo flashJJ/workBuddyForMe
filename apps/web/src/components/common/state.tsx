@@ -1,12 +1,16 @@
+'use client';
+
 import * as React from 'react';
 import { Inbox, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 export function Spinner({ className, label }: { className?: string; label?: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
       <Loader2 className={cn('h-4 w-4 animate-spin', className)} data-testid="spinner" />
-      {label ?? '加载中…'}
+      {label ?? t('common.actions.loading')}
     </div>
   );
 }
@@ -35,12 +39,13 @@ export function EmptyState({ title, description, action, icon }: EmptyStateProps
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
       <p className="text-sm font-medium text-destructive">{message}</p>
       {onRetry ? (
         <button type="button" className="text-xs text-primary underline" onClick={onRetry}>
-          重试
+          {t('common.actions.retry')}
         </button>
       ) : null}
     </div>

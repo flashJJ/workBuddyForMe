@@ -3,22 +3,24 @@
 import * as React from 'react';
 import type { McpToolInfo } from '@wbfm/shared/types';
 import type { ToolName } from '@wbfm/shared/constants';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { TOOL_NAMES } from '@wbfm/shared/constants';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
-const TOOL_LABELS: Record<ToolName, string> = {
-  current_time: '当前时间（回答时间/日期类问题）',
-  knowledge_search: '知识库检索（需先关联知识库）',
-  fetch_webpage: '读取网页（模型可抓取链接内容）',
-  screen_snapshot: '屏幕截图（需桌面端，视觉模型可解读）',
-  mouse_move: '鼠标移动（需桌面端，危险操作）',
-  mouse_click: '鼠标点击（需桌面端，危险操作）',
-  mouse_scroll: '鼠标滚轮（需桌面端，危险操作）',
-  keyboard_type: '键盘输入文本（需桌面端，危险操作）',
-  keyboard_press: '组合键（需桌面端，危险操作）',
-  window_list: '列出窗口（需桌面端）',
-  uia_list: '枚举窗口控件（需桌面端，精确定位用）',
-  window_focus: '激活窗口到前台（需桌面端）',
-  app_launch: '启动应用（需桌面端，危险操作）',
+const TOOL_LABEL_KEYS: Record<ToolName, MessageKey> = {
+  current_time: 'assistants.tools.currentTime',
+  knowledge_search: 'assistants.tools.knowledgeSearch',
+  fetch_webpage: 'assistants.tools.fetchWebpage',
+  screen_snapshot: 'assistants.tools.screenSnapshot',
+  mouse_move: 'assistants.tools.mouseMove',
+  mouse_click: 'assistants.tools.mouseClick',
+  mouse_scroll: 'assistants.tools.mouseScroll',
+  keyboard_type: 'assistants.tools.keyboardType',
+  keyboard_press: 'assistants.tools.keyboardPress',
+  window_list: 'assistants.tools.windowList',
+  uia_list: 'assistants.tools.uiaList',
+  window_focus: 'assistants.tools.windowFocus',
+  app_launch: 'assistants.tools.appLaunch',
 };
 
 interface Props {
@@ -41,6 +43,7 @@ export function AssistantToolsField({
   onToggleTool,
   onRetrieveAlwaysChange,
 }: Props) {
+  const { t } = useI18n();
   const mcpGroups = React.useMemo(() => {
     const groups = new Map<string, McpToolInfo[]>();
     for (const tool of mcpTools) {
@@ -54,7 +57,7 @@ export function AssistantToolsField({
   return (
     <fieldset className="space-y-2 rounded-md border p-3">
       <legend className="px-1 text-xs font-medium text-muted-foreground">
-        允许使用的工具（需模型支持工具调用）
+        {t('assistants.tools.legend')}
       </legend>
       {TOOL_NAMES.map((tool) => {
         const disabled = tool === 'knowledge_search' && !knowledgeBaseId;
@@ -72,14 +75,14 @@ export function AssistantToolsField({
               disabled={disabled}
               onChange={() => onToggleTool(tool)}
             />
-            <span>{TOOL_LABELS[tool]}</span>
+            <span>{t(TOOL_LABEL_KEYS[tool])}</span>
           </label>
         );
       })}
       {mcpGroups.map(([serverName, tools]) => (
         <div key={serverName} className="space-y-2 border-t pt-2">
           <p className="text-xs font-medium text-muted-foreground">
-            MCP 服务器「{serverName}」
+            {t('assistants.tools.mcpGroup', { name: serverName })}
           </p>
           {tools.map((tool) => (
             <label key={tool.qualifiedName} className="flex cursor-pointer items-start gap-2 text-sm">
@@ -108,9 +111,9 @@ export function AssistantToolsField({
             onChange={(e) => onRetrieveAlwaysChange(e.target.checked)}
           />
           <span>
-            每轮自动检索知识库
+            {t('assistants.tools.retrieveAlways')}
             <span className="ml-1 text-xs text-muted-foreground">
-              （关闭后仅在模型调用检索工具时检索）
+              {t('assistants.tools.retrieveAlwaysHint')}
             </span>
           </span>
         </label>

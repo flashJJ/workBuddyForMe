@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AppProviders } from './providers';
 import { themeInitScript } from '@/components/theme/theme-provider';
+import { languageInitScript } from '@/lib/i18n/i18n-context';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: languageInitScript }} />
         {/* M4 桌宠窗：/pet 独立透明路由，head 阻塞阶段先打标（避免首帧刷不透明底色），
             CSS 据 data-pet 强制 html/body 透明；桌宠是独立 BrowserWindow，无路由跳转 */}
         <script

@@ -2,10 +2,12 @@
 
 import type { DocumentRecord } from '@wbfm/shared/types';
 import type { DocumentStatus } from '@wbfm/shared/constants';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Spinner } from '@/components/common/state';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 const STATUS_VARIANT: Record<DocumentStatus, 'default' | 'success' | 'warning' | 'danger' | 'outline'> = {
   pending: 'outline',
@@ -15,29 +17,13 @@ const STATUS_VARIANT: Record<DocumentStatus, 'default' | 'success' | 'warning' |
   partial: 'warning',
 };
 
-const STATUS_LABEL: Record<DocumentStatus, string> = {
-  pending: '等待中',
-  processing: '索引中',
-  indexed: '已索引',
-  failed: '失败',
-  partial: '部分 OCR',
+const STATUS_KEYS: Record<DocumentStatus, MessageKey> = {
+  pending: 'knowledge.documents.pending',
+  processing: 'knowledge.documents.processing',
+  indexed: 'knowledge.documents.indexed',
+  failed: 'knowledge.documents.failed',
+  partial: 'knowledge.documents.partial',
 };
-
-/** v0.4：OCR 进行中覆盖处理中文案；partial 给出部分识别提示 */
-function badgeLabel(document: DocumentRecord): string {
-  if (document.status === 'processing' && document.ocrStatus === 'running') {
-    return 'OCR 识别中…';
-  }
-  return STATUS_LABEL[document.status];
-}
-
-function badgeTitle(document: DocumentRecord): string | undefined {
-  if (document.status === 'failed') return document.errorMessage ?? '索引失败';
-  if (document.status === 'partial') {
-    return '部分页面 OCR 超时或超出页数上限，已识别内容可检索，但文档不完整';
-  }
-  return undefined;
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -50,15 +36,34 @@ export function DocumentList({ kbId, documents, loading }: {
   documents: DocumentRecord[] | undefined;
   loading: boolean;
 }) {
+  const { t } = useI18n();
   const mutations = useKnowledgeMutations();
   const confirm = useConfirm();
+
+  /** v0.4：OCR 进行中覆盖处理中文案；partial 给出部分识别提示 */
+  const badgeLabel = (document: DocumentRecord): string => {
+    if (document.status === 'processing' && document.ocrStatus === 'running') {
+      return t('knowledge.documents.ocrRunning');
+    }
+    return t(STATUS_KEYS[document.status]);
+  };
+
+  const badgeTitle = (document: DocumentRecord): string | undefined => {
+    if (document.status === 'failed') {
+      return document.errorMessage ?? t('knowledge.documents.indexFailed');
+    }
+    if (document.status === 'partial') {
+      return t('knowledge.documents.partialTitle');
+    }
+    return undefined;
+  };
 
   const remove = async (document: DocumentRecord) => {
     if (
       !(await confirm({
-        title: '删除文档',
-        description: `删除文档「${document.filename}」及其向量索引？`,
-        confirmText: '删除',
+        title: t('knowledge.documents.deleteTitle'),
+        description: t('knowledge.documents.deleteConfirm', { name: document.filename }),
+        confirmText: t('common.actions.delete'),
         danger: true,
       }))
     ) {
@@ -69,7 +74,12 @@ export function DocumentList({ kbId, documents, loading }: {
 
   if (loading) return <Spinner />;
   if (!documents || documents.length === 0) {
-    return <EmptyState title="还没有文档" description="上传文档后会自动分片、向量化并可用于对话引用。" />;
+    return (
+      <EmptyState
+        title={t('knowledge.documents.emptyTitle')}
+        description={t('knowledge.documents.emptyDescription')}
+      />
+    );
   }
 
   return (
@@ -80,13 +90,16 @@ export function DocumentList({ kbId, documents, loading }: {
             <p className="flex items-center gap-1.5 truncate font-medium" title={document.filename}>
               {document.source === 'webpage' && (
                 <Badge variant="outline" className="shrink-0 text-[10px]" data-testid="webpage-badge">
-                  网页
+                  {t('knowledge.documents.webpageBadge')}
                 </Badge>
               )}
               <span className="truncate">{document.filename}</span>
             </p>
             <p className="truncate text-xs text-muted-foreground" title={document.sourceUrl ?? undefined}>
-              {formatSize(document.byteSize)} · {document.chunkCount > 0 ? `${document.chunkCount} 个分片` : '尚未分片'}
+              {formatSize(document.byteSize)} ·{' '}
+              {document.chunkCount > 0
+                ? t('knowledge.documents.chunks', { count: document.chunkCount })
+                : t('knowledge.documents.notChunked')}
               {document.sourceUrl ? ` · ${document.sourceUrl}` : ''}
             </p>
           </div>
@@ -98,7 +111,7 @@ export function DocumentList({ kbId, documents, loading }: {
               className="shrink-0 text-xs text-primary hover:underline"
               data-testid="webpage-source-link"
             >
-              原文
+              {t('knowledge.documents.sourceLink')}
             </a>
           )}
           <Badge variant={STATUS_VARIANT[document.status]} title={badgeTitle(document)}>
@@ -107,10 +120,10 @@ export function DocumentList({ kbId, documents, loading }: {
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-destructive"
-            aria-label={`删除文档 ${document.filename}`}
+            aria-label={t('knowledge.documents.deleteAria', { name: document.filename })}
             onClick={() => remove(document)}
           >
-            删除
+            {t('common.actions.delete')}
           </button>
         </li>
       ))}

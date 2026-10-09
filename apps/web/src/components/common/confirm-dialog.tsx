@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**
  * promise 化确认对话框（替代 window.confirm）：
@@ -40,6 +41,7 @@ interface PendingState extends ConfirmOptions {
 const ConfirmContext = React.createContext<ConfirmFn | null>(null);
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const [pending, setPending] = React.useState<PendingState | null>(null);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
@@ -92,7 +94,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               variant="outline"
               onClick={() => settle(false)}
             >
-              {pending?.cancelText ?? '取消'}
+              {pending?.cancelText ?? t('common.actions.cancel')}
             </Button>
             <Button
               type="button"
@@ -100,7 +102,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               onClick={() => settle(true)}
               autoFocus={!pending?.danger}
             >
-              {pending?.confirmText ?? '确认'}
+              {pending?.confirmText ?? t('common.actions.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

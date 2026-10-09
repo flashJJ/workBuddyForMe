@@ -73,6 +73,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./i18n": {
+      "types": "./src/i18n/index.ts",
+      "development": "./src/i18n/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": ["dist", "src"],

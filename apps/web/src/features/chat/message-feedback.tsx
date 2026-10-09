@@ -5,6 +5,7 @@ import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import type { Message } from '@wbfm/shared/types';
 import type { MessageFeedback } from '@wbfm/shared/constants';
 import { useMessageFeedback } from '@/lib/hooks/use-message-feedback';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   message: Message;
@@ -15,6 +16,7 @@ interface Props {
 
 /** v0.5 P1-2：助手回答下方的 👍/👎；再次点击同项取消评价 */
 export function MessageFeedbackButtons({ message, disabled, onApplied }: Props) {
+  const { t } = useI18n();
   const mutation = useMessageFeedback();
 
   const vote = (value: MessageFeedback) => {
@@ -36,8 +38,8 @@ export function MessageFeedbackButtons({ message, disabled, onApplied }: Props) 
     <span className="inline-flex items-center gap-1">
       <button
         type="button"
-        title="有帮助"
-        aria-label="有帮助"
+        title={t('chatMessages.feedback.helpful')}
+        aria-label={t('chatMessages.feedback.helpful')}
         aria-pressed={message.feedback === 'up'}
         data-testid="feedback-up"
         disabled={disabled || mutation.isPending}
@@ -48,8 +50,8 @@ export function MessageFeedbackButtons({ message, disabled, onApplied }: Props) 
       </button>
       <button
         type="button"
-        title="没帮助"
-        aria-label="没帮助"
+        title={t('chatMessages.feedback.notHelpful')}
+        aria-label={t('chatMessages.feedback.notHelpful')}
         aria-pressed={message.feedback === 'down'}
         data-testid="feedback-down"
         disabled={disabled || mutation.isPending}

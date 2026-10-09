@@ -4,6 +4,13 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useI18nOptional } from '@/lib/i18n/i18n-context';
+
+/** Radix 关闭钮的 sr-only 名称：有 i18n 上下文随语言，无上下文（独立测试）回退中文 */
+function DialogCloseLabel() {
+  const i18n = useI18nOptional();
+  return <span className="sr-only">{i18n?.t('common.actions.close') ?? '关闭'}</span>;
+}
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -42,7 +49,7 @@ const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus:outline-none">
         <X className="h-4 w-4" />
-        <span className="sr-only">关闭</span>
+        <DialogCloseLabel />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>

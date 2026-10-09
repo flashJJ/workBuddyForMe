@@ -1,22 +1,25 @@
+import type { Language } from '@wbfm/shared/constants';
 import type { MemoryKind, MemoryStatus } from '@wbfm/shared/types';
+import type { MessageKey } from '@wbfm/shared/i18n';
+import { formatDateTime } from '@/lib/i18n/intl';
 
-/** 长期记忆展示文案与徽标配色集中管理 */
+/** 长期记忆展示文案键与徽标配色集中管理（文案在渲染处 t() 解析） */
 
-export const MEMORY_KIND_OPTIONS: Array<{ value: MemoryKind; label: string }> = [
-  { value: 'fact', label: '事实' },
-  { value: 'preference', label: '偏好' },
-  { value: 'event', label: '事件' },
+export const MEMORY_KIND_OPTIONS: Array<{ value: MemoryKind; labelKey: MessageKey }> = [
+  { value: 'fact', labelKey: 'memory.kind.fact' },
+  { value: 'preference', labelKey: 'memory.kind.preference' },
+  { value: 'event', labelKey: 'memory.kind.event' },
 ];
 
-export const MEMORY_KIND_LABELS: Record<MemoryKind, string> = {
-  fact: '事实',
-  preference: '偏好',
-  event: '事件',
+export const MEMORY_KIND_LABELS: Record<MemoryKind, MessageKey> = {
+  fact: 'memory.kind.fact',
+  preference: 'memory.kind.preference',
+  event: 'memory.kind.event',
 };
 
-export const MEMORY_STATUS_LABELS: Record<MemoryStatus, string> = {
-  active: '活跃',
-  archived: '已归档',
+export const MEMORY_STATUS_LABELS: Record<MemoryStatus, MessageKey> = {
+  active: 'memory.status.active',
+  archived: 'memory.status.archived',
 };
 
 export const MEMORY_KIND_BADGE: Record<MemoryKind, 'default' | 'success' | 'warning'> = {
@@ -25,13 +28,7 @@ export const MEMORY_KIND_BADGE: Record<MemoryKind, 'default' | 'success' | 'warn
   event: 'warning',
 };
 
-export function formatMemoryDate(iso: string | null): string {
+export function formatMemoryDate(iso: string | null, locale: Language): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(iso, locale);
 }

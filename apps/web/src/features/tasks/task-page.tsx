@@ -16,14 +16,14 @@ import {
   useTaskMutations,
   useTasks,
 } from '@/lib/hooks/use-tasks';
-import { ApiClientError } from '@/lib/api/client';
+import { errorText } from '@/lib/i18n/resolve-error';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { TaskRunStatusBadge } from './task-status-badge';
 import { TaskTimeline } from './task-timeline';
 import { TaskControlBar } from './task-control-bar';
 
-const NEW_TASK_PLACEHOLDER = '描述要完成的桌面任务，例如：打开记事本，写一句「你好 WorkBuddy」并保存到桌面。';
-
 export function TaskPage() {
+  const { t } = useI18n();
   const tasksQuery = useTasks();
   const conversationsQuery = useConversations();
   const assistantsQuery = useAssistants();
@@ -53,11 +53,11 @@ export function TaskPage() {
 
   const submit = async () => {
     if (!conversationId) {
-      toast.error('请先选择会话');
+      toast.error(t('tasks.conversationRequired'));
       return;
     }
     if (!goal.trim()) {
-      toast.error('请填写任务目标');
+      toast.error(t('tasks.goalRequired'));
       return;
     }
     try {
@@ -69,7 +69,7 @@ export function TaskPage() {
       setExpandedId(run.id);
       setGoal('');
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '任务创建失败');
+      toast.error(errorText(error, t, { fallback: 'tasks.createFailed' }));
     }
   };
 
@@ -78,39 +78,39 @@ export function TaskPage() {
   return (
     <div className="flex h-full flex-col">
       <header className="border-b bg-card px-6 py-4">
-        <h1 className="text-lg font-semibold">桌面任务</h1>
+        <h1 className="text-lg font-semibold">{t('tasks.title')}</h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          给助手一个桌面目标，它会观察屏幕 → 决策 → 执行，每一步都需授权。急停 Ctrl+Alt+Esc。
+          {t('tasks.description')}
         </p>
       </header>
 
       <section className="border-b bg-card/50 px-6 py-4">
         <div className="grid gap-3 md:grid-cols-[260px_1fr_auto]">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">挂载会话</label>
+            <label className="text-xs text-muted-foreground">{t('tasks.conversationLabel')}</label>
             <Select
               value={conversationId}
               onChange={(e) => setConversationId(e.target.value)}
-              aria-label="选择会话"
+              aria-label={t('tasks.conversationAria')}
             >
               {(conversationsQuery.data ?? []).map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.title || '(未命名会话)'}
+                  {c.title || t('tasks.unnamedConversation')}
                 </option>
               ))}
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">任务目标</label>
+            <label className="text-xs text-muted-foreground">{t('tasks.goalLabel')}</label>
             <Textarea
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
-              placeholder={NEW_TASK_PLACEHOLDER}
+              placeholder={t('tasks.goalPlaceholder')}
               rows={2}
             />
           </div>
           <div className="flex flex-col items-stretch gap-1">
-            <label className="text-xs text-muted-foreground">步数上限</label>
+            <label className="text-xs text-muted-foreground">{t('tasks.maxStepsLabel')}</label>
             <div className="flex gap-2">
               <Input
                 type="number"
@@ -122,7 +122,7 @@ export function TaskPage() {
               />
               <Button onClick={submit} disabled={mutations.create.isPending}>
                 <Send className="h-4 w-4" />
-                开始
+                {t('tasks.start')}
               </Button>
             </div>
           </div>
@@ -131,9 +131,9 @@ export function TaskPage() {
 
       <div className="flex-1 overflow-auto px-6 py-4">
         {tasksQuery.isLoading ? (
-          <Spinner label="加载任务..." />
+          <Spinner label={t('tasks.loading')} />
         ) : tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">还没有任务运行，先在上方创建一个。</p>
+          <p className="text-sm text-muted-foreground">{t('tasks.empty')}</p>
         ) : (
           <ul className="space-y-2">
             {tasks.map((task) => (
@@ -170,6 +170,7 @@ interface TaskRowProps {
 }
 
 function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, onPause, onResume, onStop }: TaskRowProps) {
+  const { t } = useI18n();
   const live = useTaskEvents(expanded ? task.id : null);
   const displayRun = live.run ?? task;
   const steps = live.steps.length > 0 ? live.steps : [];
@@ -188,7 +189,7 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
         <TaskRunStatusBadge status={displayRun.status} />
         <span className="flex-1 truncate text-sm font-medium">{displayRun.goal}</span>
         <span className="text-xs text-muted-foreground">
-          {displayRun.stepCount}/{displayRun.maxSteps} 步
+          {t('tasks.steps', { done: displayRun.stepCount, max: displayRun.maxSteps })}
         </span>
         <span className="text-xs text-muted-foreground">{assistantName}</span>
         <span className="text-xs text-muted-foreground">{conversationTitle}</span>
@@ -198,7 +199,7 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
           {live.status === 'error' && (
             <p className="flex items-center gap-2 text-xs text-warning">
               <AlertTriangle className="h-3 w-3" />
-              任务事件流连接失败，部分步骤可能缺失。
+              {t('tasks.eventStreamFailed')}
             </p>
           )}
           {isActive && (

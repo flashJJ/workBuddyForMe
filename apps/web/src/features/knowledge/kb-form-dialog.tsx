@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useKnowledgeMutations, type KnowledgeBaseBody } from '@/lib/hooks/use-knowledge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   open: boolean;
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: Props) {
+  const { t } = useI18n();
   const isEdit = Boolean(knowledgeBase);
   const mutations = useKnowledgeMutations();
   const toast = useToast();
@@ -62,14 +64,14 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
     try {
       if (isEdit && knowledgeBase) {
         await mutations.update.mutateAsync({ id: knowledgeBase.id, body: buildBody() });
-        toast.success('知识库已更新');
+        toast.success(t('knowledge.form.updated'));
       } else {
         await mutations.create.mutateAsync(buildBody());
-        toast.success('知识库已创建');
+        toast.success(t('knowledge.form.created'));
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(error instanceof ApiClientError ? error.message : t('toast.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -79,33 +81,33 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? '编辑知识库' : '新建知识库'}</DialogTitle>
-          <DialogDescription>文档会按分片参数切分并向量化，用于对话检索增强。</DialogDescription>
+          <DialogTitle>{isEdit ? t('knowledge.form.editTitle') : t('knowledge.form.createTitle')}</DialogTitle>
+          <DialogDescription>{t('knowledge.form.description')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="kb-name">名称</Label>
+            <Label htmlFor="kb-name">{t('common.words.name')}</Label>
             <Input
               id="kb-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：产品资料库"
+              placeholder={t('knowledge.form.namePlaceholder')}
               required
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="kb-desc">描述</Label>
+            <Label htmlFor="kb-desc">{t('common.words.description')}</Label>
             <Textarea
               id="kb-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="这个知识库包含哪些内容？"
+              placeholder={t('knowledge.form.descPlaceholder')}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="kb-chunk-size">分片大小</Label>
+              <Label htmlFor="kb-chunk-size">{t('knowledge.form.chunkSize')}</Label>
               <Input
                 id="kb-chunk-size"
                 type="number"
@@ -116,7 +118,7 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="kb-chunk-overlap">重叠长度</Label>
+              <Label htmlFor="kb-chunk-overlap">{t('knowledge.form.chunkOverlap')}</Label>
               <Input
                 id="kb-chunk-overlap"
                 type="number"
@@ -127,14 +129,14 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            支持 {MIN_CHUNK_SIZE}-{MAX_CHUNK_SIZE} 字符；仅支持 .txt / .md / .pdf / .docx / .xlsx / .pptx。
+            {t('knowledge.form.paramsHint', { min: MIN_CHUNK_SIZE, max: MAX_CHUNK_SIZE })}
           </p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
+              {t('common.actions.cancel')}
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? '保存中…' : '保存'}
+              {submitting ? t('knowledge.form.saving') : t('common.actions.save')}
             </Button>
           </DialogFooter>
         </form>

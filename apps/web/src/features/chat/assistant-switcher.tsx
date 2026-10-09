@@ -2,6 +2,7 @@
 
 import type { Assistant } from '@wbfm/shared/types';
 import { Select } from '@/components/ui/select';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   assistants: Assistant[];
@@ -11,11 +12,12 @@ interface Props {
 }
 
 export function AssistantSwitcher({ assistants, value, disabled, onChange }: Props) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground">当前助手</span>
+      <span className="text-sm text-muted-foreground">{t('chat.currentAssistant')}</span>
       <Select
-        aria-label="切换助手"
+        aria-label={t('chat.switchAssistantAria')}
         className="h-8 w-44"
         value={value}
         disabled={disabled || assistants.length === 0}

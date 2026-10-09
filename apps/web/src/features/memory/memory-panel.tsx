@@ -10,10 +10,12 @@ import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useMemories, useMemoryMutations } from '@/lib/hooks/use-memories';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   MEMORY_KIND_BADGE,
   MEMORY_KIND_LABELS,
   MEMORY_KIND_OPTIONS,
+  MEMORY_STATUS_LABELS,
   formatMemoryDate,
 } from './memory-labels';
 import { MemoryFormDialog } from './memory-form-dialog';
@@ -31,6 +33,7 @@ function MemoryRow({
   onDelete: () => void;
   deleting: boolean;
 }) {
+  const { t, locale } = useI18n();
   return (
     <div
       data-testid="memory-item"
@@ -39,18 +42,23 @@ function MemoryRow({
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={MEMORY_KIND_BADGE[memory.kind]}>
-            {MEMORY_KIND_LABELS[memory.kind]}
+            {t(MEMORY_KIND_LABELS[memory.kind])}
           </Badge>
-          {memory.status === 'archived' && <Badge variant="outline">已归档</Badge>}
+          {memory.status === 'archived' && (
+            <Badge variant="outline">{t(MEMORY_STATUS_LABELS.archived)}</Badge>
+          )}
           <span className="text-xs text-muted-foreground">
-            重要性 {memory.importance.toFixed(1)} · 更新于 {formatMemoryDate(memory.updatedAt)}
+            {t('memory.importanceLine', {
+              importance: memory.importance.toFixed(1),
+              date: formatMemoryDate(memory.updatedAt, locale),
+            })}
           </span>
         </div>
         <p className="break-words text-sm">{memory.content}</p>
       </div>
       <div className="flex shrink-0 gap-1">
         <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
-          编辑
+          {t('common.actions.edit')}
         </Button>
         <Button
           type="button"
@@ -60,7 +68,7 @@ function MemoryRow({
           disabled={deleting}
           onClick={onDelete}
         >
-          删除
+          {t('common.actions.delete')}
         </Button>
       </div>
     </div>
@@ -69,6 +77,7 @@ function MemoryRow({
 
 /** 设置页：长期记忆库管理（搜索/筛选/增改删/清空） */
 export function MemoryPanel() {
+  const { t } = useI18n();
   const [search, setSearch] = React.useState('');
   const [kind, setKind] = React.useState<'' | MemoryKind>('');
   const [status, setStatus] = React.useState<StatusFilter>('');
@@ -102,9 +111,9 @@ export function MemoryPanel() {
   const remove = async (memory: Memory) => {
     if (
       !(await confirm({
-        title: '删除记忆',
-        description: `确定删除这条记忆吗？\n\n${memory.content}`,
-        confirmText: '删除',
+        title: t('memory.deleteTitle'),
+        description: t('memory.deleteConfirm', { content: memory.content }),
+        confirmText: t('common.actions.delete'),
         danger: true,
       }))
     ) {
@@ -112,18 +121,18 @@ export function MemoryPanel() {
     }
     try {
       await mutations.remove.mutateAsync(memory.id);
-      toast.success('记忆已删除');
+      toast.success(t('memory.deleted'));
     } catch {
-      toast.error('删除失败');
+      toast.error(t('memory.deleteFailed'));
     }
   };
 
   const clearAll = async () => {
     if (
       !(await confirm({
-        title: '清空全部记忆',
-        description: '确定清空全部记忆吗？此操作不可恢复，所有记忆及其向量都会被删除。',
-        confirmText: '全部清空',
+        title: t('memory.clearTitle'),
+        description: t('memory.clearConfirm'),
+        confirmText: t('memory.clearConfirmText'),
         danger: true,
       }))
     ) {
@@ -131,9 +140,9 @@ export function MemoryPanel() {
     }
     try {
       const result = await mutations.clear.mutateAsync();
-      toast.success(`已清空 ${result.removed} 条记忆`);
+      toast.success(t('memory.cleared', { count: result.removed }));
     } catch {
-      toast.error('清空失败');
+      toast.error(t('memory.clearFailed'));
     }
   };
 
@@ -141,14 +150,14 @@ export function MemoryPanel() {
     <section className="space-y-3 rounded-xl border p-4" data-testid="memory-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-base font-semibold">长期记忆</h2>
+          <h2 className="text-base font-semibold">{t('memory.title')}</h2>
           <p className="text-sm text-muted-foreground">
-            对话中自动提取的用户事实、偏好与事件，用于跨会话召回。
+            {t('memory.description')}
           </p>
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="sm" onClick={openCreate}>
-            添加记忆
+            {t('memory.add')}
           </Button>
           <Button
             type="button"
@@ -158,44 +167,44 @@ export function MemoryPanel() {
             disabled={!memories?.length}
             onClick={() => void clearAll()}
           >
-            全部清空
+            {t('memory.clear')}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Input
-          aria-label="搜索记忆"
-          placeholder="搜索记忆内容…"
+          aria-label={t('memory.searchAria')}
+          placeholder={t('memory.searchPlaceholder')}
           value={search}
           className="h-9 max-w-xs"
           onChange={(e) => setSearch(e.target.value)}
         />
         <Select
-          aria-label="按类别筛选"
+          aria-label={t('memory.kindFilterAria')}
           className="h-9 w-28"
           value={kind}
           onChange={(e) => setKind(e.target.value as '' | MemoryKind)}
         >
-          <option value="">全部类别</option>
+          <option value="">{t('memory.kindFilterAll')}</option>
           {MEMORY_KIND_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(option.labelKey)}
             </option>
           ))}
         </Select>
         <Select
-          aria-label="按状态筛选"
+          aria-label={t('memory.statusFilterAria')}
           className="h-9 w-28"
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusFilter)}
         >
-          <option value="">全部状态</option>
-          <option value="active">活跃</option>
-          <option value="archived">已归档</option>
+          <option value="">{t('memory.statusFilterAll')}</option>
+          <option value="active">{t(MEMORY_STATUS_LABELS.active)}</option>
+          <option value="archived">{t(MEMORY_STATUS_LABELS.archived)}</option>
         </Select>
         <Input
-          aria-label="起始日期"
+          aria-label={t('memory.fromAria')}
           type="date"
           className="h-9 w-40"
           value={from}
@@ -203,7 +212,7 @@ export function MemoryPanel() {
           onChange={(e) => setFrom(e.target.value)}
         />
         <Input
-          aria-label="截止日期"
+          aria-label={t('memory.toAria')}
           type="date"
           className="h-9 w-40"
           value={to}
@@ -213,13 +222,13 @@ export function MemoryPanel() {
       </div>
 
       {isLoading && <Spinner />}
-      {isError && <ErrorState message="记忆加载失败" onRetry={() => void refetch()} />}
+      {isError && <ErrorState message={t('memory.loadError')} onRetry={() => void refetch()} />}
       {!isLoading && !isError && memories && (
         <div className="space-y-2" data-testid="memory-list">
           {memories.length === 0 ? (
             <EmptyState
-              title="还没有记忆"
-              description="开启助手的长期记忆后，值得记住的信息会在对话结束后自动出现在这里。"
+              title={t('memory.empty.title')}
+              description={t('memory.empty.description')}
             />
           ) : (
             memories.map((memory) => (

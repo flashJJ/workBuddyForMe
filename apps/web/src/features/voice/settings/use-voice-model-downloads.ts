@@ -56,7 +56,7 @@ export function useVoiceModelDownloads() {
   const viewFor = React.useCallback(
     (kind: VoiceModelKind, ttsModel?: VoiceTtsModel): ModelDownloadView => {
       if (kind === 'asr') {
-        const dl = modelStatus?.downloads.asr;
+        const dl = modelStatus?.downloads?.asr;
         const bytesTotal = dl?.bytesTotal ?? modelStatus?.asrTotalBytes ?? 0;
         const bytesDone = dl?.bytesDone ?? 0;
         return {
@@ -74,7 +74,7 @@ export function useVoiceModelDownloads() {
         modelStatus?.downloads.ttsByModel?.[model] ??
         // 旧服务端无 ttsByModel 时回落当前选中模型的兼容字段
         (model === modelStatus?.activeTtsModel ? modelStatus?.downloads.tts : undefined);
-      const fileInfo = modelStatus?.ttsModels.find((m) => m.model === model);
+      const fileInfo = modelStatus?.ttsModels?.find((m) => m.model === model);
       const bytesTotal = dl?.bytesTotal ?? fileInfo?.totalBytes ?? 0;
       const bytesDone = dl?.bytesDone ?? 0;
       return {

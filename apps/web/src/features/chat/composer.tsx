@@ -4,6 +4,7 @@ import * as React from 'react';
 import { MAX_CHAT_ATTACHMENTS } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAttachmentUpload } from './use-attachment-upload';
 
 interface Props {
@@ -22,6 +23,7 @@ function AttachmentPreviews(props: {
   items: ReturnType<typeof useAttachmentUpload>['items'];
   onRemove: (id: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-wrap gap-2 pb-2" data-testid="attachment-previews">
       {props.items.map((item) => (
@@ -29,12 +31,12 @@ function AttachmentPreviews(props: {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.previewUrl}
-            alt="待发图片"
+            alt={t('chat.composer.attachmentAlt')}
             className="h-16 w-16 rounded-md border object-cover"
           />
           <button
             type="button"
-            aria-label="移除图片"
+            aria-label={t('chat.composer.removeImageAria')}
             className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-xs text-background opacity-80 hover:opacity-100"
             onClick={() => props.onRemove(item.attachmentId)}
           >
@@ -47,6 +49,7 @@ function AttachmentPreviews(props: {
 }
 
 export function Composer({ streaming, disabled, placeholder, visionEnabled, leading, onSend, onStop }: Props) {
+  const { t } = useI18n();
   const [value, setValue] = React.useState('');
   const [dragging, setDragging] = React.useState(false);
   const toast = useToast();
@@ -97,7 +100,7 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
     return (
       <div className="border-t p-3" data-testid="composer">
         <Button type="button" variant="outline" className="w-full" onClick={onStop}>
-          ■ 停止生成
+          ■ {t('chat.composer.stopGenerating')}
         </Button>
       </div>
     );
@@ -126,7 +129,7 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
               type="file"
               accept="image/png,image/jpeg,image/webp"
               multiple
-              aria-label="添加图片附件"
+              aria-label={t('chat.composer.addImageAttachmentAria')}
               className="hidden"
               onChange={(event) => {
                 const files = Array.from(event.target.files ?? []);
@@ -138,32 +141,32 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
               type="button"
               variant="outline"
               className="h-[44px] shrink-0 px-3"
-              aria-label="附加图片"
-              title={`附加图片（最多 ${MAX_CHAT_ATTACHMENTS} 张）`}
+              aria-label={t('chat.composer.attachImageAria')}
+              title={t('chat.composer.attachImageTitle', { max: MAX_CHAT_ATTACHMENTS })}
               disabled={disabled || attachments.uploading}
               onClick={() => fileInputRef.current?.click()}
             >
-              {attachments.uploading ? '上传中…' : '图片'}
+              {attachments.uploading ? t('common.actions.uploading') : t('chat.composer.image')}
             </Button>
           </>
         )}
         <textarea
-          aria-label="消息输入框"
+          aria-label={t('chat.composer.messageInputAria')}
           className="max-h-40 min-h-[44px] flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           rows={2}
           value={value}
           disabled={disabled}
           placeholder={
             visionEnabled
-              ? placeholder ?? '输入消息或粘贴/拖入图片，Enter 发送'
-              : placeholder ?? '输入消息，Enter 发送，Shift+Enter 换行'
+              ? placeholder ?? t('chat.composer.placeholderVision')
+              : placeholder ?? t('chat.composer.placeholder')
           }
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
         />
-        <Button type="button" onClick={submit} disabled={!canSend} aria-label="发送消息">
-          发送
+        <Button type="button" onClick={submit} disabled={!canSend} aria-label={t('chat.composer.sendMessageAria')}>
+          {t('common.actions.send')}
         </Button>
       </div>
     </div>

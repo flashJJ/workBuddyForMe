@@ -44,7 +44,8 @@ const TTS_DISPLAY_ORDER = ['kokoro', 'melo'] as const;
 function ModelDownloadSection() {
   const { modelStatus, settings } = useVoiceSettings();
   const downloads = useVoiceModelDownloads();
-  if (!modelStatus) return null;
+  // 语音状态接口异常/空响应时整个下载区降级不渲染（ttsModels 为必备字段）
+  if (!modelStatus || !Array.isArray(modelStatus.ttsModels)) return null;
   return (
     <div className="space-y-2" data-testid="voice-model-section">
       <p className="text-sm font-medium">离线模型</p>

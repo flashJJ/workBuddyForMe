@@ -4,6 +4,15 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmProvider, useConfirm } from './confirm-dialog';
+import { I18nProvider } from '@/lib/i18n/i18n-context';
+
+function withProviders(element: React.ReactElement) {
+  return (
+    <I18nProvider skipHydration>
+      <ConfirmProvider>{element}</ConfirmProvider>
+    </I18nProvider>
+  );
+}
 
 function Trigger({
   onResult,
@@ -29,11 +38,7 @@ describe('ConfirmDialog', () => {
   it('点确认 resolve(true)，点取消 resolve(false)', async () => {
     const user = userEvent.setup();
     const onResult = vi.fn();
-    render(
-      <ConfirmProvider>
-        <Trigger onResult={onResult} />
-      </ConfirmProvider>,
-    );
+    render(withProviders(<Trigger onResult={onResult} />));
 
     await user.click(screen.getByRole('button', { name: '触发' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -51,11 +56,7 @@ describe('ConfirmDialog', () => {
   it('Esc/遮罩关闭视为取消', async () => {
     const user = userEvent.setup();
     const onResult = vi.fn();
-    render(
-      <ConfirmProvider>
-        <Trigger onResult={onResult} />
-      </ConfirmProvider>,
-    );
+    render(withProviders(<Trigger onResult={onResult} />));
     await user.click(screen.getByRole('button', { name: '触发' }));
     await user.keyboard('{Escape}');
     await waitFor(() => expect(onResult).toHaveBeenCalledWith(false));
@@ -64,11 +65,7 @@ describe('ConfirmDialog', () => {
   it('危险动作：确认钮是 destructive 语义，默认焦点在取消（Enter 不误删）', async () => {
     const user = userEvent.setup();
     const onResult = vi.fn();
-    render(
-      <ConfirmProvider>
-        <Trigger onResult={onResult} danger />
-      </ConfirmProvider>,
-    );
+    render(withProviders(<Trigger onResult={onResult} danger />));
     await user.click(screen.getByRole('button', { name: '触发' }));
 
     const cancel = screen.getByRole('button', { name: '取消' });

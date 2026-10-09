@@ -15,3 +15,4 @@ export * from './updater';
 export * from './pet';
 export * from './command';
 export * from './version';
+export * from './i18n';

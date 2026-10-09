@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
-import { ApiClientError } from '@/lib/api/client';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { useProviderMutations } from '@/lib/hooks/use-providers';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { ModelManager } from './model-manager';
 
 interface Props {
@@ -22,6 +23,7 @@ type TestState =
   | { status: 'error'; message: string };
 
 export function ProviderCard({ provider, onEdit }: Props) {
+  const { t } = useI18n();
   const mutations = useProviderMutations();
   const toast = useToast();
   const confirm = useConfirm();
@@ -31,7 +33,7 @@ export function ProviderCard({ provider, onEdit }: Props) {
     try {
       await mutations.update.mutateAsync({ id: provider.id, body: { enabled } });
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '更新失败');
+      toast.error(errorText(error, t, { fallback: 'settingsProviders.updateFailed' }));
     }
   };
 
@@ -41,9 +43,13 @@ export function ProviderCard({ provider, onEdit }: Props) {
       await mutations.testConnection.mutateAsync(provider.id);
       setTestState({ status: 'success' });
     } catch (error) {
+      // 联调场景：错误码主文案后附加上游细节（如鉴权失败 401）
       setTestState({
         status: 'error',
-        message: error instanceof ApiClientError ? error.message : '连接失败',
+        message: errorText(error, t, {
+          fallback: 'settingsProviders.connectionFailed',
+          withDetail: true,
+        }),
       });
     }
   };
@@ -51,9 +57,9 @@ export function ProviderCard({ provider, onEdit }: Props) {
   const remove = async () => {
     if (
       !(await confirm({
-        title: '删除供应商',
-        description: `确定删除供应商「${provider.name}」及其模型配置？`,
-        confirmText: '删除',
+        title: t('settingsProviders.deleteProviderTitle'),
+        description: t('settingsProviders.deleteProviderConfirm', { name: provider.name }),
+        confirmText: t('common.actions.delete'),
         danger: true,
       }))
     ) {
@@ -61,9 +67,9 @@ export function ProviderCard({ provider, onEdit }: Props) {
     }
     try {
       await mutations.remove.mutateAsync(provider.id);
-      toast.success('供应商已删除');
+      toast.success(t('settingsProviders.providerDeleted'));
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '删除失败');
+      toast.error(errorText(error, t, { fallback: 'settingsProviders.deleteFailed' }));
     }
   };
 
@@ -74,14 +80,16 @@ export function ProviderCard({ provider, onEdit }: Props) {
           <div className="flex items-center gap-2">
             <h3 className="font-medium">{provider.name}</h3>
             {provider.enabled ? (
-              <Badge variant="success">已启用</Badge>
+              <Badge variant="success">{t('common.words.enabled')}</Badge>
             ) : (
-              <Badge variant="outline">已停用</Badge>
+              <Badge variant="outline">{t('common.words.disabled')}</Badge>
             )}
           </div>
           <p className="truncate text-sm text-muted-foreground">{provider.baseUrl}</p>
           <p className="text-xs text-muted-foreground">
-            Key：{provider.apiKeyMasked ?? '未配置'}
+            {t('settingsProviders.keyLabel', {
+              key: provider.apiKeyMasked ?? t('settingsProviders.keyNotConfigured'),
+            })}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -90,26 +98,32 @@ export function ProviderCard({ provider, onEdit }: Props) {
               type="checkbox"
               checked={provider.enabled}
               onChange={(e) => void toggleEnabled(e.target.checked)}
-              aria-label={`启用 ${provider.name}`}
+              aria-label={t('settingsProviders.enableProviderAria', { name: provider.name })}
             />
-            启用
+            {t('common.actions.enable')}
           </label>
           <Button type="button" size="sm" variant="outline" onClick={() => void runTest()}>
-            {testState.status === 'running' ? '测试中…' : '测试连接'}
+            {testState.status === 'running'
+              ? t('settingsProviders.testing')
+              : t('common.actions.testConnection')}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => onEdit(provider)}>
-            编辑
+            {t('common.actions.edit')}
           </Button>
           <Button type="button" size="sm" variant="ghost" onClick={() => void remove()}>
-            删除
+            {t('common.actions.delete')}
           </Button>
         </div>
       </div>
 
       <div className="mt-2 min-h-5 text-sm" role="status" data-testid={`test-result-${provider.id}`}>
-        {testState.status === 'success' && <span className="text-success">连接成功</span>}
+        {testState.status === 'success' && (
+          <span className="text-success">{t('settingsProviders.connectionSuccess')}</span>
+        )}
         {testState.status === 'error' && (
-          <span className="text-destructive">连接失败：{testState.message}</span>
+          <span className="text-destructive">
+            {t('settingsProviders.connectionFailedWith', { message: testState.message })}
+          </span>
         )}
       </div>
 

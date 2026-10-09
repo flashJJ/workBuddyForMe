@@ -7,20 +7,51 @@ import {
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
+import type { MessageKey } from '@wbfm/shared/i18n';
 
 export interface NavItem {
   href: string;
-  label: string;
+  labelKey: MessageKey;
+  descriptionKey: MessageKey;
   icon: LucideIcon;
-  description: string;
 }
 
-/** 侧边栏模块导航（唯一事实源） */
+/** 侧边栏模块导航（唯一事实源；文案走 i18n 键，组件内 t() 解析） */
 export const NAV_ITEMS: NavItem[] = [
-  { href: '/chat', label: '对话', icon: MessageSquare, description: '多会话流式 AI 对话' },
-  { href: '/tasks', label: '任务', icon: MonitorCog, description: '桌面 Agent 任务循环与行动日志' },
-  { href: '/flows', label: '工作流', icon: Workflow, description: '可视化流程编排与试运行' },
-  { href: '/knowledge', label: '知识库', icon: Library, description: '文档管理与 RAG 问答' },
-  { href: '/assistants', label: '助手', icon: Bot, description: '智能体与提示词预设' },
-  { href: '/settings', label: '设置', icon: Settings, description: '供应商、模型与偏好' },
+  {
+    href: '/chat',
+    labelKey: 'nav.chat.label',
+    descriptionKey: 'nav.chat.description',
+    icon: MessageSquare,
+  },
+  {
+    href: '/tasks',
+    labelKey: 'nav.tasks.label',
+    descriptionKey: 'nav.tasks.description',
+    icon: MonitorCog,
+  },
+  {
+    href: '/flows',
+    labelKey: 'nav.flows.label',
+    descriptionKey: 'nav.flows.description',
+    icon: Workflow,
+  },
+  {
+    href: '/knowledge',
+    labelKey: 'nav.knowledge.label',
+    descriptionKey: 'nav.knowledge.description',
+    icon: Library,
+  },
+  {
+    href: '/assistants',
+    labelKey: 'nav.assistants.label',
+    descriptionKey: 'nav.assistants.description',
+    icon: Bot,
+  },
+  {
+    href: '/settings',
+    labelKey: 'nav.settings.label',
+    descriptionKey: 'nav.settings.description',
+    icon: Settings,
+  },
 ];

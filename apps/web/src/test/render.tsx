@@ -3,6 +3,7 @@ import { render, type RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from '@/components/common/toast';
 import { ConfirmProvider } from '@/components/common/confirm-dialog';
+import { I18nProvider } from '@/lib/i18n/i18n-context';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 
 /** 构造关闭重试的 QueryClient，避免测试环境错误重试拖慢用例 */
@@ -21,9 +22,11 @@ export function renderWithProviders(ui: React.ReactElement, options?: RenderOpti
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider skipHydration>
-        <ToastProvider>
-          <ConfirmProvider>{children}</ConfirmProvider>
-        </ToastProvider>
+        <I18nProvider skipHydration>
+          <ToastProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ToastProvider>
+        </I18nProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
