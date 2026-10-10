@@ -1,0 +1,78 @@
+import { createAgentRunRepository } from '@wbfm/database';
+import { ApiError } from '@wbfm/shared/errors';
+import { formatSse, type TokenUsage } from '@wbfm/shared/api';
+import type { AgentHandoffView, AgentRunView } from '@wbfm/shared/schemas';
+import { idParamSchema } from '@wbfm/shared/schemas';
+import { defineRoute } from '@/lib/server/with-api-handler';
+import { sseResponse } from '@/lib/server/sse-stream';
+import { parseParams } from '@/lib/server/validation';
+
+export const dynamic = 'force-dynamic';
+
+const TERMINAL_STATUSES = new Set(['done', 'failed', 'cancelled', 'budget_exceeded']);
+
+/**
+ * GET /api/agent/runs/:id/events：协作 SSE 事件流。
+ * - running 未订阅：启动协作（生命周期 = 本请求；断线联动 abort）。
+ *   M1 骨架期角色通道未接通 → 501；M2 注入真实 clientsProvider 后开放。
+ * - running 已订阅：409（前端只开一个 EventSource）
+ * - 终态：回放已落库 handoffs（agent_handoff）+ done 后关闭（页面刷新用）
+ */
+export const GET = defineRoute(({ request, params, services }) => {
+  const { id } = parseParams(idParamSchema, params);
+  const repo = createAgentRunRepository(services.db);
+  const run = repo.getById(id);
+  if (!run) throw ApiError.notFound('协作运行', id);
+  if (services.agentRuns.isActive(id)) {
+    throw ApiError.conflict('协作事件流已被订阅，请勿重复打开');
+  }
+  if (TERMINAL_STATUSES.has(run.status)) {
+    return replayTerminalRun(run, repo.listHandoffs(id));
+  }
+  const events = services.agentRuns.start({ run, clientSignal: request.signal });
+  return sseResponse(events);
+});
+
+/** 终态运行回放：每条 handoff 一帧 agent_handoff，末尾 done（携带最终用量） */
+function replayTerminalRun(run: AgentRunView, handoffs: AgentHandoffView[]): Response {
+  const encoder = new TextEncoder();
+  const usage: TokenUsage = {
+    promptTokens: run.promptTokens,
+    completionTokens: run.completionTokens,
+    totalTokens: run.totalTokens,
+  };
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const safeEnqueue = (chunk: Uint8Array) => {
+        try {
+          controller.enqueue(chunk);
+        } catch {
+          /* 流已取消 */
+        }
+      };
+      try {
+        for (const handoff of handoffs) {
+          safeEnqueue(encoder.encode(formatSse('agent_handoff', { runId: run.id, handoff })));
+        }
+        safeEnqueue(
+          encoder.encode(
+            formatSse('done', { content: run.finalOutcome?.summary ?? '', usage }),
+          ),
+        );
+      } finally {
+        try {
+          controller.close();
+        } catch {
+          /* 流已取消或已关闭 */
+        }
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+    },
+  });
+}
