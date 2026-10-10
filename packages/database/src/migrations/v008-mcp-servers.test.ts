@@ -27,8 +27,8 @@ describe('v008 迁移：MCP 服务器（mcp_servers）', () => {
   it('v7 老库升级：表可写，name 唯一，transport 受 CHECK 约束', () => {
     const db = createV7Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
-    expect(LATEST_SCHEMA_VERSION).toBe(17);
+    expect(result.applied).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+    expect(LATEST_SCHEMA_VERSION).toBe(18);
 
     const ts = '2026-09-27T00:00:00.000Z';
     db.prepare(

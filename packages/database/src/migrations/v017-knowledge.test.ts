@@ -19,8 +19,8 @@ describe('v017 迁移：chunk 坐标/FTS/知识编译三表/编译状态', () =>
   it('全新空库：user_version=17，全部新结构存在', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(17);
-    expect(LATEST_SCHEMA_VERSION).toBe(17);
+    expect(getSchemaVersion(db)).toBe(18);
+    expect(LATEST_SCHEMA_VERSION).toBe(18);
 
     const chunkCols = tableColumns(db, 'document_chunks');
     expect(chunkCols.has('page_no')).toBe(true);
@@ -114,6 +114,6 @@ describe('v017 迁移：chunk 坐标/FTS/知识编译三表/编译状态', () =>
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(() => applyMigrations(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(17);
+    expect(getSchemaVersion(db)).toBe(18);
   });
 });
