@@ -190,7 +190,7 @@ describe('备份恢复（M1）', () => {
     ensureSeedData(srcDb);
     const { kb, doc } = seedIndexedKnowledge(srcDb, {
       name: '测试', filename: 'test.txt', fileType: 'txt', byteSize: 100, contentHash: 'h1',
-      chunks: [{ ordinal: 0, content: 'hello', charStart: 0, charEnd: 5 }],
+      chunks: [{ ordinal: 0, content: 'hello', charStart: 0, charEnd: 5, pageNo: 3, paragraphNo: 8 }],
       indexedAt: '2025-01-01T00:00:00Z',
     });
 
@@ -202,6 +202,10 @@ describe('备份恢复（M1）', () => {
     expect(restored.status).toBe('pending');
     // indexedAt 应为 null（需要重新索引）
     expect(restored.indexedAt).toBeNull();
+
+    // v1.3：页/段坐标随备份恢复
+    const chunk = dstDb.prepare(`SELECT page_no AS pageNo, paragraph_no AS paragraphNo FROM document_chunks WHERE document_id = ?`).get(doc.id) as { pageNo: number | null; paragraphNo: number | null };
+    expect(chunk).toEqual({ pageNo: 3, paragraphNo: 8 });
   });
 
   it('skills 轨 roundtrip：文件夹落盘 + 启停偏好按 name upsert（v0.6 M3）', async () => {

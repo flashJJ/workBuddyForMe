@@ -124,4 +124,22 @@ export {
   type VoiceModelState,
   type VoiceModelDownloadStatus,
 } from './voice-model-repo';
+export {
+  createCompileWriteRepository,
+  type CompileWriteRepository,
+  type CompilationInput,
+  type CompilationResult,
+  type CompileSummaryInput,
+  type CompileEntityInput,
+  type CompileMentionInput,
+  type CompileExtractor,
+  type CompileStatus,
+} from './compile-write-repo';
+export {
+  createCompileQueryRepository,
+  type CompileQueryRepository,
+  type EntityRecord,
+  type EntityMentionRecord,
+  type DocumentSummaryRecord,
+} from './compile-query-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

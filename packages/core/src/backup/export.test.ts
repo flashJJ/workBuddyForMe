@@ -105,9 +105,7 @@ describe('备份导出（M1）', () => {
       source: 'upload',
     });
     chunkRepo.bulkInsert(doc.id, [
-      { ordinal: 0, content: '第一段产品描述', charStart: 0, charEnd: 12 },
-      { ordinal: 1, content: '第二段产品特性', charStart: 12, charEnd: 24 },
-    ]);
+      { ordinal: 0, content: '第一段产品描述', charStart: 0, charEnd: 12, pageNo: 1, paragraphNo: 1 }, { ordinal: 1, content: '第二段产品特性', charStart: 12, charEnd: 24, pageNo: 1, paragraphNo: 2 }]);
     docRepo.setStatus(doc.id, 'indexed', { chunkCount: 2, indexedAt: '2025-01-01T00:00:00Z' });
 
     const { archive } = await exportBackup({ db, cipher: createWebCipher() }, {
@@ -129,6 +127,8 @@ describe('备份导出（M1）', () => {
     expect(kbs[0].documents[0].document.filename).toBe('产品.md');
     expect(kbs[0].documents[0].chunks).toHaveLength(2);
     expect(kbs[0].documents[0].chunks[0].content).toBe('第一段产品描述');
+    // v1.3：页/段坐标随备份导出
+    expect(kbs[0].documents[0].chunks.map((c: { pageNo: number; paragraphNo: number }) => [c.pageNo, c.paragraphNo])).toEqual([[1, 1], [1, 2]]);
   });
 
   it('settings 脱敏：encrypted:true 的 ciphertext 替换为 [REDACTED]', async () => {

@@ -6,13 +6,20 @@ import type { RetrievedChunk } from './retrieval-service';
 
 export const CITATION_SNIPPET_LENGTH = 160;
 
+/** 条目抬头：静态知识层（实体/要点）与普通分片区分标注，编号由调用方统一 */
+function entryHeader(chunk: Pick<RagChunk, 'documentName' | 'ordinal' | 'staticKind'>): string {
+  if (chunk.staticKind === 'entity') return `实体知识：《${chunk.documentName}》`;
+  if (chunk.staticKind === 'summary') return `文档要点：《${chunk.documentName}》`;
+  return `来源：《${chunk.documentName}》片段 ${chunk.ordinal + 1}`;
+}
+
 /** 单个资料条目的格式化（与资料块内编号一致，从 1 开始） */
-function formatChunkEntry(chunk: Pick<RagChunk, 'documentName' | 'ordinal' | 'content'>, index: number): string {
-  return `[${index + 1}] 来源：《${chunk.documentName}》片段 ${chunk.ordinal + 1}\n${chunk.content}`;
+function formatChunkEntry(chunk: Pick<RagChunk, 'documentName' | 'ordinal' | 'content' | 'staticKind'>, index: number): string {
+  return `[${index + 1}] ${entryHeader(chunk)}\n${chunk.content}`;
 }
 
 /** 将检索片段格式化为注入系统提示词的参考资料块（带编号，供模型引用） */
-export function formatContextBlock(chunks: RetrievedChunk[]): string {
+export function formatContextBlock(chunks: Array<Pick<RagChunk, 'documentName' | 'ordinal' | 'content' | 'staticKind'>>): string {
   return chunks.map((chunk, index) => formatChunkEntry(chunk, index)).join('\n\n');
 }
 
@@ -53,7 +60,7 @@ export function fitContextBlock(chunks: RagChunk[], maxTokens: number): FittedCo
     if (entries.length > 0) break;
 
     // 首条整条放不下：截断正文到剩余预算
-    const header = `[1] 来源：《${chunk.documentName}》片段 ${chunk.ordinal + 1}\n`;
+    const header = `[1] ${entryHeader(chunk)}\n`;
     const bodyBudget = maxTokens - estimateTokens(header);
     if (bodyBudget < RAG_CHUNK_MIN_TOKENS) break;
     const clipped = truncateToTokens(chunk.content, bodyBudget);
@@ -73,16 +80,37 @@ export function fitContextBlock(chunks: RagChunk[], maxTokens: number): FittedCo
   };
 }
 
-/** 转为随答返回的引用信息（snippet 截断，避免 SSE 载荷过大） */
-export function toCitations(chunks: RetrievedChunk[]): Citation[] {
-  return chunks.map((chunk, index) => ({
+/** 统一引用序列化所需的最小条目形状（静态事实与分片都满足） */
+export type CitableEntry = {
+  documentId: string;
+  documentName: string;
+  content: string;
+  sourceUrl?: string | null;
+};
+
+function toSnippet(content: string): string {
+  return content.length > CITATION_SNIPPET_LENGTH
+    ? `${content.slice(0, CITATION_SNIPPET_LENGTH)}…`
+    : content;
+}
+
+/** 转为随答返回的引用信息（按资料块编号统一从 0，snippet 截断控载荷） */
+export function toCitations(entries: CitableEntry[]): Citation[] {
+  return entries.map((entry, index) => ({
+    documentId: entry.documentId,
+    documentName: entry.documentName,
+    ordinal: index,
+    sourceUrl: entry.sourceUrl ?? null,
+    snippet: toSnippet(entry.content),
+  }));
+}
+
+/** RetrievedChunk → 统一引用条目（保持既有调用面） */
+export function toCitableChunks(chunks: RetrievedChunk[]): CitableEntry[] {
+  return chunks.map((chunk) => ({
     documentId: chunk.documentId,
     documentName: chunk.documentName,
-    ordinal: index,
+    content: chunk.content,
     sourceUrl: chunk.sourceUrl,
-    snippet:
-      chunk.content.length > CITATION_SNIPPET_LENGTH
-        ? `${chunk.content.slice(0, CITATION_SNIPPET_LENGTH)}…`
-        : chunk.content,
   }));
 }
