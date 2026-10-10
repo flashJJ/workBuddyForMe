@@ -17,6 +17,7 @@ import { migrateV015 } from './v015-assistant-expression';
 import { migrateV016 } from './v016-release-polish';
 import { migrateV017 } from './v017-knowledge';
 import { migrateV018 } from './v018-fts-backfill';
+import { migrateV019 } from './v019-agent-collab';
 
 interface Migration {
   version: number;
@@ -108,6 +109,11 @@ const MIGRATIONS: Migration[] = [
     version: 18,
     description: 'knowledge: chunks_fts 存量分片回填（v017 只建空表，升级老库关键词路零行）',
     up: migrateV018,
+  },
+  {
+    version: 19,
+    description: 'agents: agent_runs/agent_handoffs 协作运行与交接表 + task_runs/steps 归属列（纯加法）',
+    up: migrateV019,
   },
 ];
 

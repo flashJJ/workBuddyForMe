@@ -95,4 +95,53 @@ describe('tasks 轨备份恢复（v0.7 M4）', () => {
     expect(result.imported.tasks).toBe(0);
     expect(result.skipped.tasks).toBe(1);
   });
+
+  it('v1.4：协作运行记录不进备份；tasks 轨恢复后 agent 表为空、归属列回落 NULL', async () => {
+    ensureSeedData(srcDb);
+    const convRepo = createConversationRepository(srcDb);
+    const taskRepo = createTaskRunRepository(srcDb);
+    const conv = convRepo.create({ assistantId: 'builtin-general', title: '协作对话' });
+
+    // 源库存在一次协作运行与交接，且 task_run 归属该运行（M1 仓储落地前的直接 SQL 形态）
+    const now = new Date().toISOString();
+    srcDb
+      .prepare(
+        `INSERT INTO agent_runs(id,conversation_id,assistant_id,goal,created_at,updated_at)
+         VALUES('ar1',?, 'builtin-general','协作目标',?,?)`,
+      )
+      .run(conv.id, now, now);
+    srcDb
+      .prepare(
+        `INSERT INTO agent_handoffs(id,run_id,round_no,seq,from_role,to_role,payload,created_at)
+         VALUES('h1','ar1',0,0,'planner','executor','{"subtask":{}}',?)`,
+      )
+      .run(now);
+    const run = taskRepo.createRun({
+      conversationId: conv.id,
+      assistantId: 'builtin-general',
+      goal: '执行子任务',
+      maxSteps: 5,
+    });
+    srcDb.prepare(`UPDATE task_runs SET agent_run_id='ar1' WHERE id=?`).run(run.id);
+
+    const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, {
+      tracks: ['tasks', 'conversations'],
+    });
+    const result = await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
+    expect(result.imported.tasks).toBe(1);
+
+    // 协作表随 v019 迁移存在，但不随备份迁移（与 workflow_runs 同级运行记录）
+    const agentRuns = dstDb.prepare(`SELECT COUNT(*) AS n FROM agent_runs`).get() as { n: number };
+    const handoffs = dstDb.prepare(`SELECT COUNT(*) AS n FROM agent_handoffs`).get() as {
+      n: number;
+    };
+    expect(agentRuns.n).toBe(0);
+    expect(handoffs.n).toBe(0);
+
+    // 恢复的 task_run 归属列回落 NULL，无悬空 FK
+    const restored = dstDb
+      .prepare(`SELECT agent_run_id AS agentRunId FROM task_runs WHERE id=?`)
+      .get(run.id) as { agentRunId: string | null };
+    expect(restored.agentRunId).toBeNull();
+  });
 });
