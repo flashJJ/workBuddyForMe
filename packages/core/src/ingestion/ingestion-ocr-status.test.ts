@@ -65,7 +65,11 @@ describe('摄入管线 OCR 状态流转（v0.4）', () => {
       capabilities: ['embedding'],
       contextWindow: null,
     });
-    createSettingsService({ db, cipher }).update({ defaultEmbeddingModelId: embedModel.id });
+    // 本文件专测 OCR 状态流转，关闭 v1.3 自动编译避免后台队列触碰已关闭的 db
+    createSettingsService({ db, cipher }).update({
+      defaultEmbeddingModelId: embedModel.id,
+      autoCompile: false,
+    });
 
     documentId = createDocumentRepository(db).create({
       knowledgeBaseId: kb.id,

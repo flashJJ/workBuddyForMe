@@ -29,6 +29,8 @@ export const SSE_EVENT = {
   VOICE_AUDIO: 'voice_audio',
   /** v1.0 语音：会话状态机变更（idle/listening/thinking/speaking） */
   VOICE_STATE: 'voice_state',
+  /** v1.3 M4：知识编译进度（首帧快照 + 队列增量） */
+  COMPILE: 'compile',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -40,6 +42,28 @@ export interface TokenUsage {
   completionTokens: number;
   totalTokens: number;
 }
+
+/** v1.3 M4：编译进度（队列车道内存态，结构与 core CompileKbProgress 一致） */
+export interface CompileProgressPayload {
+  kbId: string;
+  running: boolean;
+  currentDocumentId: string | null;
+  done: number;
+  failed: number;
+  total: number;
+}
+
+/**
+ * v1.3 M4：compile 事件载荷（判别联合）——
+ * 首帧快照：counts（DB 状态桶）+ progress（无运行时为 null）；
+ * 队列增量：type='progress'|'idle' + progress。
+ */
+export type CompileSsePayload =
+  | {
+      counts: { queued: number; running: number; ready: number; failed: number; skipped: number };
+      progress: CompileProgressPayload | null;
+    }
+  | { type: 'progress' | 'idle'; progress: CompileProgressPayload };
 
 export type SsePayloadMap = {
   meta: { messageId: string; conversationId: string; proactive?: boolean };
@@ -71,6 +95,8 @@ export type SsePayloadMap = {
   };
   /** v1.0：语音状态机变更 */
   voice_state: { state: VoiceState };
+  /** v1.3 M4：编译队列内存态投影（与 core CompileKbProgress 结构一致） */
+  compile: CompileSsePayload;
   done: { content: string; usage: TokenUsage | null };
   error: { code: string; message: string };
 };

@@ -11,8 +11,10 @@ import type { RawSseEvent } from './sse-reader';
 export type WebChatEventName = OrchestratorEventName | 'voice_audio' | 'voice_state';
 export type WebChatSseEvent = SseEvent<WebChatEventName>;
 
-/** SSE 响应序列化层：对话流 + 任务循环（task）；flow 走独立订阅不经此类型 */
-export type WebStreamSseEvent = SseEvent<OrchestratorEventName | 'task' | 'voice_audio' | 'voice_state'>;
+/** SSE 响应序列化层：对话流 + 任务循环（task）+ v1.3 编译进度（compile）；flow 走独立订阅不经此类型 */
+export type WebStreamSseEvent = SseEvent<
+  OrchestratorEventName | 'task' | 'voice_audio' | 'voice_state' | 'compile'
+>;
 
 /**
  * 对话流事件名运行时白名单（wire 边界唯一一次字符串判定）。

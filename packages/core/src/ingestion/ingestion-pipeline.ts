@@ -6,10 +6,12 @@ import {
   createDocumentRepository,
   createFtsChunkRepository,
   createKnowledgeRepository,
+  createSettingsRepository,
   deleteVectorsByDocument,
   ensureVectorTable,
   insertChunkVectors,
 } from '@wbfm/database';
+import { getCompileQueueService } from '../knowledge/compile-queue-service';
 import type { ServiceDeps } from '../services/deps';
 import { chunkText } from './chunking';
 import { resolveEmbeddingTarget } from './embedding-target';
@@ -143,6 +145,16 @@ export function createIngestionPipeline(deps: ServiceDeps) {
           ? { ocrStatus: 'done' as const, ocrEngine: ocrMeta.engine }
           : {}),
       });
+
+      // v1.3 M4：自动编译（autoCompile 缺省开）——索引就绪后入队后台编译，
+      // 失败不影响摄入结果；关闭时文档保持 queued 待手动触发
+      const settings = createSettingsRepository(deps.db).getJson('app-settings', null) as
+        | { autoCompile?: boolean }
+        | null;
+      if (settings?.autoCompile !== false) {
+        getCompileQueueService(deps).enqueue(document.knowledgeBaseId, [documentId]);
+      }
+
       return { documentId, status: finalStatus, chunkCount: slices.length };
     },
   };

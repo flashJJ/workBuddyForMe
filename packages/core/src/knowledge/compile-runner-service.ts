@@ -1,18 +1,24 @@
 /**
- * 知识编译触发服务（v1.3 M3 即时版；M4 将替换为单并发队列+进度/取消）。
+ * 知识编译触发服务（v1.3 M4：入队门面）。
  *
- * 当前语义：在一次调用内顺序编译目标文档集合（顺序即天然单并发），
- * 单文档失败不阻断其余文档，结果逐条返回。规则通道零模型调用；
- * withLlm=true 时挂载可选增强器（任何失败仍在编译器内降级规则）。
+ * 语义：解析编译目标集合后投递到全局单并发后台队列即返回（异步执行）。
+ * scope=new 含 queued+failed（failed 即「重试」入口）；规则通道零模型调用，
+ * withLlm/设置开启时挂载可选增强器（编译器内任何失败仍降级规则）。
+ * 执行/进度/取消详见 compile-queue-service。
  */
 
 import { createDocumentRepository, createKnowledgeRepository } from '@wbfm/database';
-import { createSettingsRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
-import { compileDocument } from './knowledge-compiler';
-import { createLlmKnowledgeEnhancer } from './llm-enhancer';
-
-const SETTINGS_KEY = 'app-settings';
+import {
+  createCompileQueueService,
+  getCompileQueueService,
+  resetCompileQueueServiceForTest,
+  type CompileCancelResult,
+  type CompileEnqueueResult,
+  type CompileKbProgress,
+  type CompileQueueEvent,
+  type CompileQueueService,
+} from './compile-queue-service';
 
 export type CompileScope = 'new' | 'all' | 'document';
 
@@ -20,30 +26,27 @@ export interface CompileScopeOptions {
   scope: CompileScope;
   documentId?: string;
   withLlm?: boolean;
-  signal?: AbortSignal;
 }
 
-export interface CompileDocOutcome {
-  documentId: string;
-  status: 'ready' | 'failed';
-  generation?: number;
-  extractor?: 'rule' | 'llm';
-  error?: string;
-}
-
-export interface CompileScopeResult {
-  total: number;
+export interface CompileStatusCounts {
+  queued: number;
+  running: number;
   ready: number;
   failed: number;
-  results: CompileDocOutcome[];
+  skipped: number;
+}
+
+export interface CompileStatusSnapshot {
+  counts: CompileStatusCounts;
+  progress: CompileKbProgress | null;
 }
 
 export function createCompileRunnerService(deps: ServiceDeps) {
+  const queue = getCompileQueueService(deps);
+
   return {
-    async compileKnowledgeBase(
-      knowledgeBaseId: string,
-      options: CompileScopeOptions,
-    ): Promise<CompileScopeResult> {
+    /** 解析目标并入队（立即返回；执行在后台队列） */
+    compileKnowledgeBase(knowledgeBaseId: string, options: CompileScopeOptions): CompileEnqueueResult {
       const kbRepo = createKnowledgeRepository(deps.db);
       if (!kbRepo.findById(knowledgeBaseId)) {
         throw new Error(`knowledge base not found: ${knowledgeBaseId}`);
@@ -58,48 +61,57 @@ export function createCompileRunnerService(deps: ServiceDeps) {
         if (!target) throw new Error(`document not found in kb: ${options.documentId}`);
         targets = [target];
       } else if (options.scope === 'new') {
-        // queued=重摄取/新摄入待编；ready/failed/skipped 不在「新增」范围
-        targets = all.filter((d) => d.compileStatus === 'queued');
+        // queued=待编；failed=上次失败待重试（重试入口），ready/skipped 不在范围
+        targets = all.filter((d) => d.compileStatus === 'queued' || d.compileStatus === 'failed');
       } else {
         // all：全部已分片文档（chunk_count>0），无论既有编译状态
         targets = all.filter((d) => d.chunkCount > 0);
       }
 
-      const settings = createSettingsRepository(deps.db).getJson(SETTINGS_KEY, null) as
-        | { compileWithLlm?: boolean; compileModelId?: string | null }
-        | null;
-      const useLlm = options.withLlm === true || settings?.compileWithLlm === true;
-      const enhancer = useLlm
-        ? createLlmKnowledgeEnhancer(deps, { modelId: settings?.compileModelId ?? null })
-        : undefined;
+      return queue.enqueue(
+        knowledgeBaseId,
+        targets.map((doc) => doc.id),
+        { withLlm: options.withLlm === true },
+      );
+    },
 
-      const results: CompileDocOutcome[] = [];
-      for (const doc of targets) {
-        try {
-          const saved = await compileDocument(deps, doc.id, { enhancer, signal: options.signal });
-          results.push({
-            documentId: doc.id,
-            status: 'ready',
-            generation: saved.generation,
-            extractor: saved.extractor,
-          });
-        } catch (error) {
-          results.push({
-            documentId: doc.id,
-            status: 'failed',
-            error: error instanceof Error ? error.message.slice(0, 300) : 'compile failed',
-          });
-        }
-      }
+    /** 取消某库编译：丢弃排队任务并协作式中止当前文档 */
+    cancelCompile(knowledgeBaseId: string): CompileCancelResult {
+      return queue.cancel(knowledgeBaseId);
+    },
 
-      return {
-        total: results.length,
-        ready: results.filter((r) => r.status === 'ready').length,
-        failed: results.filter((r) => r.status === 'failed').length,
-        results,
+    /** 编译状态总览：DB 各状态计数 + 队列实时进度（内存态，可能为 null） */
+    getCompileStatus(knowledgeBaseId: string): CompileStatusSnapshot {
+      const docRepo = createDocumentRepository(deps.db);
+      const counts: CompileStatusCounts = {
+        queued: 0,
+        running: 0,
+        ready: 0,
+        failed: 0,
+        skipped: 0,
       };
+      for (const doc of docRepo.listByKnowledgeBase(knowledgeBaseId)) {
+        const key = (doc.compileStatus ?? 'skipped') as keyof CompileStatusCounts;
+        if (key in counts) counts[key] += 1;
+      }
+      return { counts, progress: queue.getProgress(knowledgeBaseId) };
+    },
+
+    /** 订阅某库编译事件（SSE 通道用），返回退订函数 */
+    subscribeCompile(
+      knowledgeBaseId: string,
+      listener: (event: CompileQueueEvent) => void,
+    ): () => void {
+      return queue.subscribe((event) => {
+        if (event.progress.kbId === knowledgeBaseId) listener(event);
+      });
     },
   };
 }
 
 export type CompileRunnerService = ReturnType<typeof createCompileRunnerService>;
+export {
+  createCompileQueueService,
+  resetCompileQueueServiceForTest,
+  type CompileQueueService,
+};

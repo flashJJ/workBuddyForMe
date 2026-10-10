@@ -34,6 +34,10 @@ export const zhSettings = {
     maxChunks: '引用片段上限（1–20）',
     invalidThreshold: '相似度下限需在 0 到 1 之间',
     invalidMaxChunks: '引用片段上限需为 1 到 20 的整数',
+    autoCompile: '摄入后自动编译（后台队列）',
+    compileWithLlm: '编译 LLM 增强（默认关，失败自动降级规则）',
+    compileModel: '编译增强模型',
+    compileModelDefault: '跟随默认对话模型',
   },
 };
 
@@ -73,5 +77,9 @@ export const enSettings = {
     maxChunks: 'Max cited snippets (1–20)',
     invalidThreshold: 'Similarity floor must be between 0 and 1',
     invalidMaxChunks: 'Max snippets must be an integer from 1 to 20',
+    autoCompile: 'Auto-compile after ingestion (background queue)',
+    compileWithLlm: 'LLM enhancement while compiling (off by default; falls back to rules)',
+    compileModel: 'Enhancement model',
+    compileModelDefault: 'Follow default chat model',
   },
 };

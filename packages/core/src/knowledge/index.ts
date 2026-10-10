@@ -75,9 +75,20 @@ export {
   type CompileRunnerService,
   type CompileScope,
   type CompileScopeOptions,
-  type CompileScopeResult,
-  type CompileDocOutcome,
+  type CompileStatusCounts,
+  type CompileStatusSnapshot,
 } from './compile-runner-service';
+export {
+  createCompileQueueService,
+  getCompileQueueService,
+  resetCompileQueueServiceForTest,
+  type CompileQueueService,
+  type CompileQueueJob,
+  type CompileQueueEvent,
+  type CompileKbProgress,
+  type CompileEnqueueResult,
+  type CompileCancelResult,
+} from './compile-queue-service';
 export {
   compileDocument,
   type CompiledSeed,

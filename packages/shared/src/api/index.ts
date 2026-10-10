@@ -15,4 +15,6 @@ export {
   type SsePayloadMap,
   type TokenUsage,
   type RecalledMemoryPayload,
+  type CompileProgressPayload,
+  type CompileSsePayload,
 } from './sse';

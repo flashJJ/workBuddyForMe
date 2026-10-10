@@ -208,6 +208,12 @@ export interface AppSettings {
   retrievalMinSimilarity?: number;
   /** v1.3：RAG 注入片段上限，缺省由 core 给 8 */
   retrievalMaxChunks?: number;
+  /** v1.3 M4：摄入后自动入队编译（缺省视为 true） */
+  autoCompile?: boolean;
+  /** v1.3 M4：编译 LLM 增强（缺省 false；规则通道零模型调用） */
+  compileWithLlm?: boolean;
+  /** v1.3 M4：编译增强所用对话模型（null=跟随默认对话模型） */
+  compileModelId?: string | null;
 }
 
 // ── v0.6 M3 本地技能包 ──

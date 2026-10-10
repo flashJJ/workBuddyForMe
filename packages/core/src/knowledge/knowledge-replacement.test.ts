@@ -50,7 +50,8 @@ describe('T3.5 文档替换：索引重建与编译世代退役', () => {
     const model = createModelRepository(db).create({
       providerId: provider.id, modelId: 'e1', capabilities: ['embedding'], contextWindow: null,
     });
-    createSettingsService({ db, cipher }).update({ defaultEmbeddingModelId: model.id });
+    // 本用例专测替换/退役语义：关掉自动编译，避免队列把 queued 抢跑成 ready
+    createSettingsService({ db, cipher }).update({ defaultEmbeddingModelId: model.id, autoCompile: false });
 
     kbId = createKnowledgeRepository(db).create({ name: '库', chunkSize: 200, chunkOverlap: 10 }).id;
     docId = createDocumentRepository(db).create({

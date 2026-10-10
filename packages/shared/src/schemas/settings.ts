@@ -11,5 +11,9 @@ export const settingsUpdateSchema = z.object({
   hybridRetrievalEnabled: z.boolean().optional(),
   retrievalMinSimilarity: z.number().min(0).max(1).optional(),
   retrievalMaxChunks: z.number().int().min(1).max(20).optional(),
+  // v1.3 M4 知识编译调度
+  autoCompile: z.boolean().optional(),
+  compileWithLlm: z.boolean().optional(),
+  compileModelId: z.string().trim().min(1).nullable().optional(),
 });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;
