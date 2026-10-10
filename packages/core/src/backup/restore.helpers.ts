@@ -43,6 +43,8 @@ export interface SeedKnowledgeChunks {
   content: string;
   charStart: number;
   charEnd: number;
+  pageNo?: number | null;
+  paragraphNo?: number | null;
 }
 
 export interface SeedKnowledgeOptions {

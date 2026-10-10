@@ -99,11 +99,13 @@ export async function exportBackup(
               createdAt: doc.createdAt,
               indexedAt: doc.indexedAt,
             },
-            chunks: chunks.map((c: { ordinal: number; content: string; charStart: number; charEnd: number }) => ({
+            chunks: chunks.map((c: { ordinal: number; content: string; charStart: number; charEnd: number; pageNo?: number | null; paragraphNo?: number | null }) => ({
               ordinal: c.ordinal,
               content: c.content,
               charStart: c.charStart,
               charEnd: c.charEnd,
+              pageNo: c.pageNo ?? null,
+              paragraphNo: c.paragraphNo ?? null,
             })),
           };
         }),

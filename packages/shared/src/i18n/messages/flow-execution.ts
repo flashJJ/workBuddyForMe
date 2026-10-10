@@ -1,0 +1,78 @@
+/** flowExecution 命名空间：工作流试运行面板/逐节点时间线/挂起节点内联操作 */
+export const zhFlowExecution = {
+  title: '试运行',
+  phase: {
+    connecting: '连接中',
+    running: '运行中',
+    succeeded: '成功',
+    failed: '失败',
+    cancelled: '已取消',
+  },
+  connectionError: '事件流连接异常',
+  cancelRun: '取消运行',
+  rerun: '重跑',
+  actionFailed: '操作失败',
+  finalOutput: '最终输出',
+  emptyOutput: '(空)',
+  runFailed: '运行失败',
+  unknownError: '未知错误',
+  waitingEvents: '等待节点事件…',
+  inputs: '输入',
+  outputs: '输出',
+  event: {
+    running: '运行中',
+    succeeded: '成功',
+    skipped: '已跳过',
+    waitingHuman: '等待处理',
+    failed: '失败',
+  },
+  humanWaiting: {
+    title: '人工审核等待中',
+    reject: '驳回',
+    approve: '通过',
+  },
+  toolWaiting: {
+    title: '高危工具请求授权',
+    deny: '拒绝',
+    allow: '允许执行',
+  },
+};
+
+export const enFlowExecution = {
+  title: 'Test run',
+  phase: {
+    connecting: 'Connecting',
+    running: 'Running',
+    succeeded: 'Succeeded',
+    failed: 'Failed',
+    cancelled: 'Cancelled',
+  },
+  connectionError: 'Event stream connection error',
+  cancelRun: 'Cancel run',
+  rerun: 'Rerun',
+  actionFailed: 'Action failed',
+  finalOutput: 'Final output',
+  emptyOutput: '(empty)',
+  runFailed: 'Run failed',
+  unknownError: 'Unknown error',
+  waitingEvents: 'Waiting for node events...',
+  inputs: 'Inputs',
+  outputs: 'Outputs',
+  event: {
+    running: 'Running',
+    succeeded: 'Succeeded',
+    skipped: 'Skipped',
+    waitingHuman: 'Waiting',
+    failed: 'Failed',
+  },
+  humanWaiting: {
+    title: 'Waiting for human review',
+    reject: 'Reject',
+    approve: 'Approve',
+  },
+  toolWaiting: {
+    title: 'Dangerous tool requesting authorization',
+    deny: 'Deny',
+    allow: 'Allow execution',
+  },
+};

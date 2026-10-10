@@ -2,8 +2,18 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement, ReactNode } from 'react';
 import type { ToolTraceEntry } from '@wbfm/shared/types';
+import { I18nProvider } from '@/lib/i18n/i18n-context';
 import { ToolTrace } from './tool-trace';
+
+function I18nWrapper({ children }: { children: ReactNode }) {
+  return <I18nProvider skipHydration>{children}</I18nProvider>;
+}
+
+function renderWithI18n(ui: ReactElement) {
+  return render(ui, { wrapper: I18nWrapper });
+}
 
 const baseEntry: ToolTraceEntry = {
   callId: 'c1',
@@ -19,14 +29,14 @@ const baseEntry: ToolTraceEntry = {
 
 describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
   it('行内展示来源徽章（内置）与权限徽章（读）', () => {
-    render(<ToolTrace trace={[baseEntry]} />);
+    renderWithI18n(<ToolTrace trace={[baseEntry]} />);
     const row = screen.getByTestId('tool-trace-row');
     expect(row.textContent).toContain('内置');
     expect(row.textContent).toContain('120ms');
   });
 
   it('MCP 来源展示服务器名', () => {
-    render(<ToolTrace trace={[{ ...baseEntry, source: 'mcp:filesystem', permission: 'write' }]} />);
+    renderWithI18n(<ToolTrace trace={[{ ...baseEntry, source: 'mcp:filesystem', permission: 'write' }]} />);
     const row = screen.getByTestId('tool-trace-row');
     expect(row.textContent).toContain('MCP / filesystem');
     expect(row.textContent).toContain('写');
@@ -34,7 +44,7 @@ describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
 
   it('展开区显示来源与权限行', async () => {
     const user = userEvent.setup();
-    render(<ToolTrace trace={[baseEntry]} />);
+    renderWithI18n(<ToolTrace trace={[baseEntry]} />);
     await user.click(screen.getByRole('button'));
     const dl = screen.getByText('来源').closest('dl')!;
     expect(dl.textContent).toContain('来源');
@@ -42,7 +52,7 @@ describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
   });
 
   it('无 source/permission 时不渲染徽章', () => {
-    render(<ToolTrace trace={[{ ...baseEntry, source: undefined, permission: undefined }]} />);
+    renderWithI18n(<ToolTrace trace={[{ ...baseEntry, source: undefined, permission: undefined }]} />);
     const row = screen.getByTestId('tool-trace-row');
     expect(row.textContent).not.toContain('内置');
   });
@@ -63,7 +73,7 @@ describe('ToolTrace flow 子步骤（v0.8 M3）', () => {
   };
 
   it('flow 工具显示「工作流」名 + 流程徽章 + 逐节点子步骤', () => {
-    render(<ToolTrace trace={[flowEntry]} />);
+    renderWithI18n(<ToolTrace trace={[flowEntry]} />);
     const row = screen.getByTestId('tool-trace-row');
     expect(row.textContent).toContain('工作流');
     expect(row.textContent).toContain('流程');
@@ -75,7 +85,7 @@ describe('ToolTrace flow 子步骤（v0.8 M3）', () => {
   });
 
   it('无子步骤时不渲染子步骤列表', () => {
-    render(<ToolTrace trace={[baseEntry]} />);
+    renderWithI18n(<ToolTrace trace={[baseEntry]} />);
     expect(screen.queryByTestId('tool-substeps')).toBeNull();
   });
 });

@@ -6,6 +6,10 @@ export interface ChunkContent {
   content: string;
   charStart: number;
   charEnd: number;
+  /** v1.3：PDF 页码（从 1）；非 PDF 为 null/undefined */
+  pageNo?: number | null;
+  /** v1.3：文档内段落序号（从 1）；无法映射时为 null/undefined */
+  paragraphNo?: number | null;
 }
 
 export interface StoredChunk extends ChunkContent {
@@ -15,13 +19,13 @@ export interface StoredChunk extends ChunkContent {
 
 export function createChunkRepository(db: DatabaseInstance) {
   return {
-    /** 批量插入并返回带自增 id 的分片（供写入 vec0 rowid） */
+    /** 批量插入并返回带自增 id 的分片（供写入 vec0 rowid 与 FTS chunk_id） */
     bulkInsert(documentId: string, chunks: ChunkContent[]): StoredChunk[] {
       const ts = nowIso();
       const stmt = db.prepare(
         `INSERT INTO document_chunks
-           (document_id, ordinal, content, char_start, char_end, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+           (document_id, ordinal, content, char_start, char_end, page_no, paragraph_no, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       const insertAll = db.transaction((items: ChunkContent[]): StoredChunk[] =>
         items.map((chunk) => {
@@ -31,6 +35,8 @@ export function createChunkRepository(db: DatabaseInstance) {
             chunk.content,
             chunk.charStart,
             chunk.charEnd,
+            chunk.pageNo ?? null,
+            chunk.paragraphNo ?? null,
             ts,
           );
           return {
@@ -47,7 +53,8 @@ export function createChunkRepository(db: DatabaseInstance) {
       return db
         .prepare(
           `SELECT id, document_id AS documentId, ordinal, content,
-                  char_start AS charStart, char_end AS charEnd
+                  char_start AS charStart, char_end AS charEnd,
+                  page_no AS pageNo, paragraph_no AS paragraphNo
            FROM document_chunks WHERE document_id = ? ORDER BY ordinal ASC`,
         )
         .all(documentId) as StoredChunk[];

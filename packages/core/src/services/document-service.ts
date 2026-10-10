@@ -47,14 +47,28 @@ export function createDocumentService(deps: ServiceDeps) {
       }
       const kind = detectKind(filename); // 不支持类型抛 422
       const contentHash = hashContent(buffer);
-      const existing = documents.findByHash(knowledgeBaseId, contentHash);
-      if (existing) throw ApiError.conflict('相同内容的文档已存在，请勿重复上传');
+      const sameContent = documents.findByHash(knowledgeBaseId, contentHash);
+      if (sameContent) throw ApiError.conflict('相同内容的文档已存在，请勿重复上传');
 
       const dot = filename.lastIndexOf('.');
+      const fileType = dot === -1 ? kind : filename.slice(dot).toLowerCase();
+
+      // v1.3：同库同名即「替换」——复用文档行（id 不变），内容元数据复位，
+      // 由调用方重新摄入：chunk/vec/fts 重建且旧编译产物同事务退役
+      const sameName = documents.findByFilename(knowledgeBaseId, filename);
+      if (sameName) {
+        documents.replaceContent(sameName.id, {
+          fileType,
+          byteSize: buffer.byteLength,
+          contentHash,
+        });
+        return documents.findById(sameName.id)!;
+      }
+
       return documents.create({
         knowledgeBaseId,
         filename,
-        fileType: dot === -1 ? kind : filename.slice(dot).toLowerCase(),
+        fileType,
         byteSize: buffer.byteLength,
         contentHash,
       });

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { FlowCanvasNode } from '../graph-utils';
 import { buildRefOptions } from './ref-options';
 
@@ -63,7 +64,11 @@ export function RefTextarea({
   placeholder?: string;
 }) {
   const ref = React.useRef<HTMLTextAreaElement>(null);
-  const options = React.useMemo(() => buildRefOptions(nodes, currentNodeId), [nodes, currentNodeId]);
+  const { t } = useI18n();
+  const options = React.useMemo(
+    () => buildRefOptions(nodes, currentNodeId, t),
+    [nodes, currentNodeId, t],
+  );
   const groups = React.useMemo(() => {
     const map = new Map<string, typeof options>();
     for (const opt of options) {
@@ -103,7 +108,7 @@ export function RefTextarea({
       />
       <Select value="" onChange={(e) => insert(e.target.value)} disabled={options.length === 0}>
         <option value="">
-          {options.length === 0 ? '暂无可引用变量' : '+ 插入变量'}
+          {options.length === 0 ? t('flowEditor.ref.noVariables') : t('flowEditor.ref.insertVariable')}
         </option>
         {groups.map(([group, list]) => (
           <optgroup key={group} label={group}>
@@ -130,6 +135,7 @@ export function JsonObjectEditor({
   value: Record<string, unknown>;
   onChange: (next: Record<string, unknown>) => void;
 }) {
+  const { t } = useI18n();
   const [text, setText] = React.useState(() => JSON.stringify(value ?? {}, null, 2));
   const [error, setError] = React.useState<string | null>(null);
 
@@ -144,13 +150,13 @@ export function JsonObjectEditor({
     try {
       const parsed = JSON.parse(next || '{}') as unknown;
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        setError('参数必须是 JSON 对象');
+        setError(t('flowEditor.ref.jsonNotObject'));
         return;
       }
       setError(null);
       onChange(parsed as Record<string, unknown>);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'JSON 格式错误');
+      setError(e instanceof Error ? e.message : t('flowEditor.ref.jsonInvalid'));
     }
   };
 

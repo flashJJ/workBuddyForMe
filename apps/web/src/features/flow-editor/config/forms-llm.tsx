@@ -6,6 +6,7 @@ import { API } from '@/lib/api/endpoints';
 import type { KnowledgeBase, ProviderModel } from '@wbfm/shared/types';
 import { useProviders } from '@/lib/hooks/use-providers';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   Field,
   Input,
@@ -35,14 +36,15 @@ function useModelOptions() {
 }
 
 export function LlmForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
+  const { t } = useI18n();
   const modelOptions = useModelOptions();
   const modelId = str(config.modelId);
 
   return (
     <div className="flex flex-col gap-3">
-      <Field label="模型" hint="留空则跟随系统默认对话模型">
+      <Field label={t('flowEditor.form.llm.modelLabel')} hint={t('flowEditor.form.llm.modelHint')}>
         <Select value={modelId} onChange={(e) => patch({ modelId: e.target.value })}>
-          <option value="">跟随默认模型</option>
+          <option value="">{t('flowEditor.form.llm.modelDefault')}</option>
           {modelOptions.map((m) => (
             <option key={m.modelId} value={m.modelId}>
               {m.label}
@@ -50,27 +52,27 @@ export function LlmForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
           ))}
         </Select>
       </Field>
-      <Field label="System 提示词（可选）">
+      <Field label={t('flowEditor.form.llm.systemLabel')}>
         <RefTextarea
           value={str(config.system)}
           nodes={nodes}
           currentNodeId={nodeId}
           onChange={(system) => patch({ system })}
           rows={3}
-          placeholder="设定角色与约束，例如：你是严谨的资料研究助手。"
+          placeholder={t('flowEditor.form.llm.systemPlaceholder')}
         />
       </Field>
-      <Field label="User 提示词">
+      <Field label={t('flowEditor.form.llm.userLabel')}>
         <RefTextarea
           value={str(config.user)}
           nodes={nodes}
           currentNodeId={nodeId}
           onChange={(user) => patch({ user })}
           rows={5}
-          placeholder="支持插入变量，例如：基于以下资料回答：{{$nodes.kb.outputs.context}}"
+          placeholder={t('flowEditor.form.llm.userPlaceholder')}
         />
       </Field>
-      <Field label="采样温度（可选 0–2）">
+      <Field label={t('flowEditor.form.llm.temperatureLabel')}>
         <Input
           type="number"
           min={0}
@@ -88,17 +90,18 @@ export function LlmForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
 }
 
 export function KnowledgeForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
+  const { t } = useI18n();
   const kbs = useKnowledgeBases();
   const list = kbs.data ?? [];
 
   return (
     <div className="flex flex-col gap-3">
-      <Field label="知识库">
+      <Field label={t('flowEditor.form.knowledge.kbLabel')}>
         <Select
           value={str(config.knowledgeBaseId)}
           onChange={(e) => patch({ knowledgeBaseId: e.target.value })}
         >
-          <option value="">请选择知识库</option>
+          <option value="">{t('flowEditor.form.knowledge.kbPlaceholder')}</option>
           {list.map((kb: KnowledgeBase) => (
             <option key={kb.id} value={kb.id}>
               {kb.name}
@@ -106,17 +109,17 @@ export function KnowledgeForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
           ))}
         </Select>
       </Field>
-      <Field label="检索词" hint="支持插入 start 入参或上游节点变量">
+      <Field label={t('flowEditor.form.knowledge.queryLabel')} hint={t('flowEditor.form.knowledge.queryHint')}>
         <RefTextarea
           value={str(config.query)}
           nodes={nodes}
           currentNodeId={nodeId}
           onChange={(query) => patch({ query })}
           rows={3}
-          placeholder="例如：{{$nodes.start.params.topic}}"
+          placeholder={t('flowEditor.form.knowledge.queryPlaceholder')}
         />
       </Field>
-      <Field label="返回条数 topK">
+      <Field label={t('flowEditor.form.knowledge.topKLabel')}>
         <Input
           type="number"
           min={1}

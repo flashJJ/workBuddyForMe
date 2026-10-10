@@ -5,6 +5,7 @@ import { Play } from 'lucide-react';
 import type { FlowInputField } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ export interface RunInputDialogProps {
 }
 
 export function RunInputDialog({ open, fields, initial, onSubmit, onClose }: RunInputDialogProps) {
+  const { t } = useI18n();
   const [values, setValues] = React.useState<Record<string, string | boolean>>({});
 
   React.useEffect(() => {
@@ -59,12 +61,12 @@ export function RunInputDialog({ open, fields, initial, onSubmit, onClose }: Run
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>试运行</DialogTitle>
-          <DialogDescription>填写开始节点声明的入参，流程将从开始节点执行。</DialogDescription>
+          <DialogTitle>{t('flowEditor.run.title')}</DialogTitle>
+          <DialogDescription>{t('flowEditor.run.description')}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           {fields.length === 0 && (
-            <p className="text-sm text-muted-foreground">该流程没有声明入参，可直接运行。</p>
+            <p className="text-sm text-muted-foreground">{t('flowEditor.run.noFields')}</p>
           )}
           {fields.map((f) => (
             <div key={f.name} className="flex flex-col gap-1.5">
@@ -72,7 +74,7 @@ export function RunInputDialog({ open, fields, initial, onSubmit, onClose }: Run
                 {f.name}
                 <span className="ml-1 text-[10px] text-muted-foreground">
                   {f.type}
-                  {f.required !== false && ' · 必填'}
+                  {f.required !== false && ` · ${t('flowEditor.run.required')}`}
                 </span>
               </label>
               {f.type === 'boolean' ? (
@@ -99,11 +101,11 @@ export function RunInputDialog({ open, fields, initial, onSubmit, onClose }: Run
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            取消
+            {t('flowEditor.run.cancel')}
           </Button>
           <Button onClick={submit}>
             <Play className="h-4 w-4" />
-            开始运行
+            {t('flowEditor.run.start')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -63,6 +63,28 @@ export function createDocumentRepository(db: DatabaseInstance) {
       return row ? mapDocument(row) : null;
     },
 
+    /** v1.3：同名替换查找（同库 + 同文件名 → 重传即替换该文档行） */
+    findByFilename(knowledgeBaseId: string, filename: string): DocumentRecord | null {
+      const row = db
+        .prepare(
+          `SELECT * FROM documents WHERE knowledge_base_id = ? AND filename = ?`,
+        )
+        .get(knowledgeBaseId, filename) as DocumentRow | undefined;
+      return row ? mapDocument(row) : null;
+    },
+
+    /** v1.3：同名重传替换内容元数据（文档 id 不变，索引由摄取流水线重建） */
+    replaceContent(
+      id: string,
+      patch: { fileType: string; byteSize: number; contentHash: string },
+    ): void {
+      db.prepare(
+        `UPDATE documents SET file_type = @fileType, byte_size = @byteSize,
+           content_hash = @contentHash, status = 'pending', error_message = NULL,
+           chunk_count = 0, indexed_at = NULL WHERE id = @id`,
+      ).run({ id, ...patch });
+    },
+
     /** v0.3 网页剪藏：按规范化来源 URL 去重（同库内不重复入库） */
     findBySourceUrl(knowledgeBaseId: string, sourceUrl: string): DocumentRecord | null {
       const row = db

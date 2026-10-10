@@ -38,6 +38,12 @@ import {
 } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows, type FlowRunService } from '@wbfm/core/flow';
 import { createIngestionPipeline, type IngestionPipeline } from '@wbfm/core/ingestion';
+import {
+  createCompileRunnerService,
+  createKnowledgeGovernanceService,
+  type CompileRunnerService,
+  type KnowledgeGovernanceService,
+} from '@wbfm/core/knowledge';
 import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
 import { createSkillService, type SkillService } from '@wbfm/core/skills';
@@ -60,6 +66,10 @@ export interface ServiceContainer {
   orchestrator: ChatOrchestrator;
   ingestion: IngestionPipeline;
   knowledgeBases: KnowledgeService;
+  /** v1.3：知识治理只读服务（冲突待裁决 + 疑似重复文档建议） */
+  knowledgeGovernance: KnowledgeGovernanceService;
+  /** v1.3：知识编译触发（M3 即时顺序编译；M4 替换为队列） */
+  knowledgeCompile: CompileRunnerService;
   documents: DocumentService;
   attachments: AttachmentService;
   memories: MemoryService;
@@ -177,6 +187,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),
     knowledgeBases: createKnowledgeService(deps),
+    knowledgeGovernance: createKnowledgeGovernanceService(deps),
+    knowledgeCompile: createCompileRunnerService(deps),
     documents: createDocumentService(deps),
     attachments: createAttachmentService(deps),
     memories: createMemoryService(deps),

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { VadDetector, type VadEvent, type VadGate, type VadSensitivity } from './vad-detector';
 
 const WORKLET_URL = '/worklets/vad-capture.worklet.js';
@@ -51,6 +52,10 @@ interface WorkletFrameMessage {
  */
 export function useVadMonitor(options: VadMonitorOptions): VadMonitor {
   const { enabled, sensitivity, silenceMs, getGate, onSegment, onVadEvent, onLevel } = options;
+  const { t } = useI18n();
+  // t 经 ref 进入 effect：避免语言切换导致音频管线重建（错误文案晚一拍刷新可接受）
+  const tRef = React.useRef(t);
+  tRef.current = t;
   const [phase, setPhase] = React.useState<VadMonitorPhase>('off');
   const [error, setError] = React.useState<VadMonitorError | null>(null);
 
@@ -176,7 +181,7 @@ export function useVadMonitor(options: VadMonitorOptions): VadMonitor {
         cleanupAudio();
         if (cancelled) return;
         setPhase('off');
-        setError(mapAudioError(err));
+        setError(mapAudioError(err, tRef.current));
       }
     })();
 
@@ -213,20 +218,22 @@ class VadUnsupportedError extends Error {
   }
 }
 
-function mapAudioError(err: unknown): VadMonitorError {
+function mapAudioError(err: unknown, t: ReturnType<typeof useI18n>['t']): VadMonitorError {
   if (err instanceof VadUnsupportedError) {
-    return { code: 'unsupported', message: '当前浏览器不支持 AudioWorklet，无法持续聆听' };
+    return { code: 'unsupported', message: t('voice.monitorError.unsupported') };
   }
   const name = (err as DOMException)?.name;
   if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return { code: 'permission_denied', message: '麦克风权限被拒绝，请在浏览器/系统设置中允许' };
+    return { code: 'permission_denied', message: t('voice.micError.permissionDenied') };
   }
   if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-    return { code: 'no_device', message: '未检测到麦克风设备' };
+    return { code: 'no_device', message: t('voice.micError.noDevice') };
   }
   return {
     code: 'unknown',
-    message: `无法启动持续聆听：${err instanceof Error ? err.message : '未知错误'}`,
+    message: t('voice.monitorError.startFailed', {
+      message: err instanceof Error ? err.message : t('voice.monitorError.unknownMessage'),
+    }),
   };
 }
 

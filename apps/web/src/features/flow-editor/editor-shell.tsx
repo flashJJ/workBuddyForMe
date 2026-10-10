@@ -10,6 +10,7 @@ import {
 import type { FlowDiagnostic, WorkflowView } from '@wbfm/shared/types';
 import type { FlowInputField, FlowNodeType } from '@wbfm/shared/schemas';
 import { Spinner } from '@/components/common/state';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { FlowLiveState } from '@/lib/hooks/use-flows';
 import { FlowToolbar } from './flow-toolbar';
 import { NodePalette } from './node-palette';
@@ -23,15 +24,17 @@ import type { FlowStatusContextValue } from './flow-status-context';
 import type { FlowCanvasEdge, FlowCanvasNode } from './graph-utils';
 
 export function EditorLoadingState() {
+  const { t } = useI18n();
   return (
     <div className="flex h-screen items-center justify-center">
-      <Spinner label="加载工作流..." />
+      <Spinner label={t('flowEditor.editor.loading')} />
     </div>
   );
 }
 
 export function EditorMissingState() {
-  return <div className="p-8 text-sm text-muted-foreground">工作流不存在或加载失败。</div>;
+  const { t } = useI18n();
+  return <div className="p-8 text-sm text-muted-foreground">{t('flowEditor.editor.missing')}</div>;
 }
 
 export interface EditorShellProps {

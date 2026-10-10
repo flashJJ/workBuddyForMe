@@ -23,7 +23,7 @@ interface KbEntry {
   knowledgeBase: { id: string; name: string; description: string; chunkSize: number; chunkOverlap: number; createdAt: string; updatedAt: string };
   documents: Array<{
     document: { id: string; filename: string; fileType: string; byteSize: number; contentHash: string; status?: string; source?: string; sourceUrl?: string | null; chunkCount?: number; createdAt?: string; indexedAt?: string | null };
-    chunks: Array<{ ordinal: number; content: string; charStart: number; charEnd: number }>;
+    chunks: Array<{ ordinal: number; content: string; charStart: number; charEnd: number; pageNo?: number | null; paragraphNo?: number | null }>;
   }>;
 }
 
@@ -39,7 +39,8 @@ export function restoreKnowledge(db: any, buf: Buffer): { kb: { imported: number
     `INSERT OR IGNORE INTO documents(id, knowledge_base_id, filename, file_type, byte_size, content_hash, status, source, source_url, chunk_count, created_at, indexed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const insertChunk = db.prepare(
-    `INSERT INTO document_chunks(document_id, ordinal, content, char_start, char_end, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO document_chunks(document_id, ordinal, content, char_start, char_end, page_no, paragraph_no, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
   for (const entry of kbs) {
@@ -55,7 +56,11 @@ export function restoreKnowledge(db: any, buf: Buffer): { kb: { imported: number
       if (docRow.changes > 0) {
         docImported++;
         const ts = new Date().toISOString();
-        for (const c of d.chunks) { insertChunk.run(doc.id, c.ordinal, c.content, c.charStart, c.charEnd, ts); chunkImported++; }
+        for (const c of d.chunks) {
+          // v1.3 坐标随备份走；v1.2 旧归档无这两列，回落 null 不阻断恢复
+          insertChunk.run(doc.id, c.ordinal, c.content, c.charStart, c.charEnd, c.pageNo ?? null, c.paragraphNo ?? null, ts);
+          chunkImported++;
+        }
       } else docSkipped++;
     }
   }

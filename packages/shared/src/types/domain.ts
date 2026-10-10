@@ -96,6 +96,13 @@ export interface Citation {
   snippet?: string;
   /** v0.3：网页剪藏来源；存在时引用角标可悬停看 URL、点击新开原文 */
   sourceUrl?: string | null;
+  /** v1.3：PDF 页码/文档段号（从 1；无则 null）+ 分片字符区间（静态条目可缺省） */
+  pageNo?: number | null;
+  paragraphNo?: number | null;
+  charStart?: number;
+  charEnd?: number;
+  /** v1.3：引用来源层——普通分片/实体原句/文档要点（缺省视同 chunk） */
+  staticKind?: 'chunk' | 'entity' | 'summary';
 }
 
 /** v0.5 长期记忆类别：事实 / 偏好 / 事件 */
@@ -181,6 +188,11 @@ export interface DocumentRecord {
   chunkCount: number;
   createdAt: string;
   indexedAt: string | null;
+  /** v1.3：知识编译状态机（skipped/queued/running/ready/failed）+ 世代/时间/错误 */
+  compileStatus?: 'skipped' | 'queued' | 'running' | 'ready' | 'failed';
+  compiledAt?: string | null;
+  compileError?: string | null;
+  compileGeneration?: number;
 }
 
 export interface AppSettings {
@@ -190,6 +202,20 @@ export interface AppSettings {
   language: Language;
   /** 是否已完成首次启动向导（v1.2 起；仅老用户由 v016 迁移回填为 true） */
   hasOnboarded: boolean;
+  /** v1.3：混合检索（向量+FTS+规则重排）开关，缺省视为 true */
+  hybridRetrievalEnabled?: boolean;
+  /** v1.3：向量相似度软下限（0-1），缺省由 core 给 0.55 */
+  retrievalMinSimilarity?: number;
+  /** v1.3：RAG 注入片段上限，缺省由 core 给 8 */
+  retrievalMaxChunks?: number;
+  /** v1.3：编译优先检索路由（静态知识层前置），缺省视为 true */
+  compileRoutingEnabled?: boolean;
+  /** v1.3 M4：摄入后自动入队编译（缺省视为 true） */
+  autoCompile?: boolean;
+  /** v1.3 M4：编译 LLM 增强（缺省 false；规则通道零模型调用） */
+  compileWithLlm?: boolean;
+  /** v1.3 M4：编译增强所用对话模型（null=跟随默认对话模型） */
+  compileModelId?: string | null;
 }
 
 // ── v0.6 M3 本地技能包 ──

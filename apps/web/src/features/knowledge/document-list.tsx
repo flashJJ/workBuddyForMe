@@ -8,6 +8,7 @@ import { EmptyState, Spinner } from '@/components/common/state';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useIntl } from '@/lib/i18n/use-intl';
 
 const STATUS_VARIANT: Record<DocumentStatus, 'default' | 'success' | 'warning' | 'danger' | 'outline'> = {
   pending: 'outline',
@@ -25,6 +26,22 @@ const STATUS_KEYS: Record<DocumentStatus, MessageKey> = {
   partial: 'knowledge.documents.partial',
 };
 
+type CompileStatus = 'queued' | 'running' | 'ready' | 'failed';
+
+const COMPILE_VARIANT: Record<CompileStatus, 'outline' | 'info' | 'success' | 'danger'> = {
+  queued: 'outline',
+  running: 'info',
+  ready: 'success',
+  failed: 'danger',
+};
+
+const COMPILE_KEYS: Record<CompileStatus, MessageKey> = {
+  queued: 'knowledge.documents.compileQueued',
+  running: 'knowledge.documents.compileRunning',
+  ready: 'knowledge.documents.compileReady',
+  failed: 'knowledge.documents.compileFailed',
+};
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -37,6 +54,7 @@ export function DocumentList({ kbId, documents, loading }: {
   loading: boolean;
 }) {
   const { t } = useI18n();
+  const intl = useIntl();
   const mutations = useKnowledgeMutations();
   const confirm = useConfirm();
 
@@ -102,6 +120,18 @@ export function DocumentList({ kbId, documents, loading }: {
                 : t('knowledge.documents.notChunked')}
               {document.sourceUrl ? ` · ${document.sourceUrl}` : ''}
             </p>
+            {(document.indexedAt || document.compiledAt) && (
+              <p
+                className="truncate text-[11px] text-muted-foreground/80"
+                data-testid="document-timestamps"
+              >
+                {document.indexedAt &&
+                  t('knowledge.documents.indexedAt', { time: intl.formatDate(document.indexedAt) })}
+                {document.indexedAt && document.compiledAt && ' · '}
+                {document.compiledAt &&
+                  t('knowledge.documents.compiledAt', { time: intl.formatDate(document.compiledAt) })}
+              </p>
+            )}
           </div>
           {document.sourceUrl && (
             <a
@@ -117,6 +147,15 @@ export function DocumentList({ kbId, documents, loading }: {
           <Badge variant={STATUS_VARIANT[document.status]} title={badgeTitle(document)}>
             {badgeLabel(document)}
           </Badge>
+          {document.compileStatus && document.compileStatus !== 'skipped' && (
+            <Badge
+              variant={COMPILE_VARIANT[document.compileStatus as CompileStatus]}
+              title={document.compileError ?? undefined}
+              data-testid="compile-status-badge"
+            >
+              {t(COMPILE_KEYS[document.compileStatus as CompileStatus])}
+            </Badge>
+          )}
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-destructive"

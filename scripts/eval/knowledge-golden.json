@@ -1,0 +1,155 @@
+{
+  "description": "v1.3 知识检索评估集（M5/T5.1+T5.2）。在 WBFM_MOCK_AI=1 server 上运行：确定性 2-gram mock embedding + mock chat 回显【参考资料】首条目正文，因此「回答命中期望文本」等价于「该文本位于检索第一名」。三类用例：① 编译层题（breaksWith=compile，静态实体/摘要前置是唯一召回路径，关闭后向量与关键词通道均低于相似度阈值而空检索）；② 精确编号题（breaksWith=fts，仅 FTS 通道可达，关混合检索后空检索）；③ 语义护栏题（无 breaksWith，任何开关组合下都必须通过，证明降级不毁基础能力）。反向验证（--switch=fts|compile）时对应题类必须失败、护栏题必须仍通过。",
+  "seedDocuments": [
+    {
+      "name": "星尘路由器.txt",
+      "content": "这台双频无线路由器面向家庭场景设计。\n星尘 SR5 出厂默认关闭远程唤醒，需要在管理后台手动开启。\n管理后台地址见机身底部标签。"
+    },
+    {
+      "name": "路由器安全.txt",
+      "content": "路由器安全设置建议定期修改管理密码。\n开启访客网络可以隔离家里主要设备。"
+    },
+    {
+      "name": "浩界摄像头.txt",
+      "content": "这款室内云台摄像机支持 360 度旋转。\n浩界 C30 的移动侦测推送默认为关闭状态，可在通知中心打开。\n夜间红外灯轻微发热属于正常现象。"
+    },
+    {
+      "name": "青岚打印机.txt",
+      "content": "这款打印机面向家用场景，性价比出色。\n青岚 P200 的静音模式会明显降低打印速度，夜间批量打印请预留时间。\n卡纸时先打开后盖取出纸张。"
+    },
+    {
+      "name": "星链网关.txt",
+      "content": "星链网关是整套智能家居的控制中枢。\n星链网关支持 Zigbee 与 Matter 双协议。\n所有配件都通过网关统一接入管理。"
+    },
+    {
+      "name": "云鹿门锁.txt",
+      "content": "云鹿门锁是家庭安全的第一道防线。\n云鹿门锁支持指纹与临时密码两种开锁方式。\n开锁记录会同步到手机应用。"
+    },
+    {
+      "name": "智能家居定位.txt",
+      "content": "智能家居系统的定位，是把整个家里的设备连成一体。"
+    },
+    {
+      "name": "家庭安全定位.txt",
+      "content": "家庭安全的关键是看住出入口，不给隐患留死角。"
+    },
+    {
+      "name": "电源附件.txt",
+      "content": "P-88231-A 出厂自带过压保护模块。"
+    },
+    {
+      "name": "配件质保.txt",
+      "content": "所有配件享有两年质保，人为损坏除外。"
+    },
+    {
+      "name": "充电宝出行.txt",
+      "content": "大容量充电宝具有多重电路防护，可放心携带乘坐高铁。"
+    },
+    {
+      "name": "认证证书.txt",
+      "content": "XR-4400 型设备已通过 SRRC 认证，证书编号 2026SR1234。"
+    },
+    {
+      "name": "入网指引.txt",
+      "content": "入网凭证可以在运营商公众号自助打印下载。"
+    },
+    {
+      "name": "TV-77温控阀.txt",
+      "content": "TV-77 型温控阀已预设低温防冻保护。"
+    },
+    {
+      "name": "冬季保养.txt",
+      "content": "北方冬季室内水管容易冻裂，建议提前保温。"
+    },
+    {
+      "name": "功能开关说明.txt",
+      "content": "这个功能默认是不是开启状态，很多人搞不清楚。"
+    },
+    {
+      "name": "直读仪表.txt",
+      "content": "DG-206 电表支持红外抄表，无需停电操作。"
+    },
+    {
+      "name": "设备保养.txt",
+      "content": "定期停电检修有助于延长设备寿命。"
+    },
+    { "name": "手冲指南.txt", "content": "手冲咖啡用 92 度热水最合适。" },
+    { "name": "退货政策.txt", "content": "商品签收后七天内可无理由退货。" },
+    { "name": "会议室预约.txt", "content": "会议室需要提前一天预约。" },
+    { "name": "周报节奏.txt", "content": "每周五下班前提交本周周报。" }
+  ],
+  "cases": [
+    {
+      "id": "entity-remote-wake",
+      "question": "星尘 SR5 有什么需要特别注意的安全设置吗？",
+      "anyOf": ["远程唤醒"],
+      "breaksWith": ["compile"]
+    },
+    {
+      "id": "entity-motion-alert",
+      "question": "浩界 C30 夜里有噪音正常吗？",
+      "anyOf": ["移动侦测"],
+      "breaksWith": ["compile"]
+    },
+    {
+      "id": "entity-silent-mode",
+      "question": "青岚 P200 晚上打印怕吵怎么调？",
+      "anyOf": ["静音模式"],
+      "breaksWith": ["compile"]
+    },
+    {
+      "id": "summary-gateway-role",
+      "question": "星链网关在整个智能家居系统里是什么定位？",
+      "anyOf": ["控制中枢"],
+      "breaksWith": ["fts"]
+    },
+    {
+      "id": "summary-lock-position",
+      "question": "云鹿门锁在家庭安全里的角色定位是什么？",
+      "anyOf": ["第一道防线"],
+      "breaksWith": ["fts"]
+    },
+    {
+      "id": "exact-part-protection",
+      "question": "P-88231-A 有过载防护吗？",
+      "anyOf": ["过压保护"],
+      "breaksWith": ["fts"]
+    },
+    {
+      "id": "exact-cert-number",
+      "question": "XR-4400 那款机器的入网凭证号码麻烦发我一下。",
+      "anyOf": ["2026SR1234"],
+      "breaksWith": ["fts"]
+    },
+    {
+      "id": "exact-valve-frost",
+      "question": "TV-77 这个型号的防冻功能默认是不是开启状态呢？",
+      "anyOf": ["低温防冻"],
+      "breaksWith": ["fts"]
+    },
+    {
+      "id": "exact-meter-poweroff",
+      "question": "DG-206 抄表的时候要停电吗？",
+      "anyOf": ["无需停电"],
+      "breaksWith": ["fts"]
+    },
+    { "id": "semantic-coffee-temp", "question": "手冲咖啡用几度热水？", "anyOf": ["92"] },
+    { "id": "semantic-return-window", "question": "商品几天内可以无理由退货？", "anyOf": ["七天"] },
+    { "id": "semantic-room-booking", "question": "会议室需要提前多久预约？", "anyOf": ["一天"] },
+    { "id": "semantic-weekly-report", "question": "每周五下班前提交周报对吗？", "anyOf": ["周五"] },
+    {
+      "id": "citation-entity-coordinate",
+      "question": "P-88231-A 有过载防护吗？",
+      "anyOf": ["过压保护"],
+      "expect": { "staticKind": "entity", "paragraph": true },
+      "breaksWith": ["compile"]
+    },
+    {
+      "id": "citation-cross-document",
+      "question": "P-88231-A 有过载防护吗？另外充电宝可以带上高铁吗？",
+      "anyOf": ["过压保护"],
+      "expect": { "distinctDocs": 2 },
+      "breaksWith": ["fts"]
+    }
+  ]
+}

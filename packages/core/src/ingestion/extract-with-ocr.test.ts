@@ -50,6 +50,7 @@ describe('extractDocumentText OCR 入口（v0.4）', () => {
     mockPdfPages(['', '', '']);
     runPdfOcr.mockResolvedValue({
       text: 'OCR 全文',
+      pages: [{ pageNo: 1, text: 'OCR 全文' }],
       engine: 'vision',
       partial: false,
       processedPages: 3,

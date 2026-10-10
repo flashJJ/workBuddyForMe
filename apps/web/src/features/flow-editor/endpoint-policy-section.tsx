@@ -3,6 +3,7 @@
 import { FLOW_DESKTOP_CONTROL_TOOLS } from '@wbfm/shared/schemas';
 import { type FlowUnattendedPolicy } from '@wbfm/shared/types';
 import type { FlowDangerNode } from '@wbfm/core/serving';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**
  * 端点对话框中的「无人值守危险操作策略」区块（v0.9 M4）：
@@ -16,6 +17,7 @@ export interface EndpointPolicySectionProps {
 }
 
 export function EndpointPolicySection({ policy, dangerNodes, onChange }: EndpointPolicySectionProps) {
+  const { t } = useI18n();
   const isBanned = (toolName: string) =>
     FLOW_DESKTOP_CONTROL_TOOLS.includes(toolName as never);
 
@@ -29,9 +31,9 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
 
   return (
     <div className="rounded-md border p-2.5 text-[11px] leading-relaxed text-muted-foreground">
-      <p className="font-medium text-foreground">无人值守危险操作策略</p>
+      <p className="font-medium text-foreground">{t('flowEditor.endpoint.policy.title')}</p>
       <p className="mt-1">
-        API/MCP 调用无人在场、不会弹出授权：read 工具始终允许，写入/高危工具按以下策略执行。
+        {t('flowEditor.endpoint.policy.description')}
       </p>
       <div className="mt-2 flex flex-col gap-1.5">
         <label className="flex items-center gap-2">
@@ -41,7 +43,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
             checked={policy.mode === 'deny_all'}
             onChange={() => onChange({ mode: 'deny_all' })}
           />
-          拒绝全部写入/高危操作（推荐，最安全）
+          {t('flowEditor.endpoint.policy.denyAll')}
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -52,13 +54,13 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
               onChange({ mode: 'allowlist', allowed: policy.mode === 'allowlist' ? policy.allowed : [] })
             }
           />
-          自定义白名单（仅勾选的工具可自动执行）
+          {t('flowEditor.endpoint.policy.allowlist')}
         </label>
       </div>
       {dangerNodes.length > 0 && (
         <div className="mt-2 rounded bg-background p-2">
           <p className="text-warning">
-            当前发布图含 {dangerNodes.length} 个写入/高危节点：
+            {t('flowEditor.endpoint.policy.dangerCount', { count: dangerNodes.length })}
           </p>
           <div className="mt-1 flex flex-col gap-1">
             {dangerNodes.map((node) => {
@@ -77,7 +79,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
                   />
                   <span className="font-mono">{node.toolName}</span>
                   <span className="rounded bg-muted px-1 text-[10px]">{node.permission}</span>
-                  {banned && <span className="text-destructive">桌面控制类，API/MCP 永久禁止</span>}
+                  {banned && <span className="text-destructive">{t('flowEditor.endpoint.policy.banned')}</span>}
                 </label>
               );
             })}
@@ -85,7 +87,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
         </div>
       )}
       {policy.mode === 'allowlist' && dangerNodes.length === 0 && (
-        <p className="mt-1">当前发布图没有写入/高危工具节点，白名单为空即等价于全部拒绝。</p>
+        <p className="mt-1">{t('flowEditor.endpoint.policy.emptyAllowlist')}</p>
       )}
     </div>
   );

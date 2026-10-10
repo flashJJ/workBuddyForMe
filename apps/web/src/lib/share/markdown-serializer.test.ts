@@ -133,6 +133,27 @@ describe('serializeMarkdown（M2）', () => {
     expect(md).toContain('[^1]: **架构.md** — 模块分层 — [原文链接](https://a.com/x)');
   });
 
+  it('引用页/段坐标与静态层标签进脚注（zh/en）', () => {
+    const snap = baseSnapshot({
+      messages: [
+        {
+          role: 'assistant', content: '答案在此', createdAt: '', parts: [], toolTrace: [],
+          citations: [
+            { documentId: 'd1', documentName: 'spec.pdf', ordinal: 0, staticKind: 'entity', pageNo: 2, paragraphNo: 5, snippet: '原句' },
+            { documentId: 'd2', documentName: 'notes.txt', ordinal: 0, staticKind: 'summary', paragraphNo: 3 },
+          ],
+        },
+      ],
+    });
+    const zh = serializeMarkdown(snap, 'zh-CN');
+    expect(zh).toContain('**实体知识·spec.pdf** — 第 2 页 · 第 5 段 — 原句');
+    expect(zh).toContain('**文档要点·notes.txt** — 第 3 段');
+
+    const en = serializeMarkdown(snap, 'en-US');
+    expect(en).toContain('**Entity fact·spec.pdf** — p. 2 · para. 5 — 原句');
+    expect(en).toContain('**Doc summary·notes.txt** — para. 3');
+  });
+
   it('相同 documentId+ordinal 的引用复用同一脚注编号', () => {
     const md = serializeMarkdown(
       baseSnapshot({

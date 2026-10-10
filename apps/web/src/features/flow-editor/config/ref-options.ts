@@ -1,3 +1,4 @@
+import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import type { FlowInputField } from '@wbfm/shared/schemas';
 import { NODE_META, nodeTitle, buildRefToken } from '../node-meta';
 import type { FlowCanvasNode } from '../graph-utils';
@@ -17,11 +18,15 @@ export interface RefOption {
  * - 其他节点 outputs.<字段>（按节点元数据）
  * 仅列出当前节点之外的节点（不能引用自己）。
  */
-export function buildRefOptions(nodes: FlowCanvasNode[], currentNodeId: string): RefOption[] {
+export function buildRefOptions(
+  nodes: FlowCanvasNode[],
+  currentNodeId: string,
+  t: (key: MessageKey, vars?: MessageVars) => string,
+): RefOption[] {
   const options: RefOption[] = [];
   for (const node of nodes) {
     if (node.id === currentNodeId) continue;
-    const title = nodeTitle(node.type, node.data.config);
+    const title = nodeTitle(t, node.type, node.data.config);
     const group = `${title} · ${node.id}`;
 
     if (node.type === 'start') {
@@ -32,7 +37,7 @@ export function buildRefOptions(nodes: FlowCanvasNode[], currentNodeId: string):
         if (!field?.name) continue;
         options.push({
           group,
-          label: `入参 ${field.name}`,
+          label: t('flowEditor.ref.param', { name: field.name }),
           token: buildRefToken(node.id, 'params', field.name),
         });
       }
@@ -42,7 +47,7 @@ export function buildRefOptions(nodes: FlowCanvasNode[], currentNodeId: string):
     for (const field of NODE_META[node.type].outputFields) {
       options.push({
         group,
-        label: field.hint,
+        label: t(field.hint),
         token: buildRefToken(node.id, 'outputs', field.key),
       });
     }

@@ -27,6 +27,10 @@ export interface DocumentRow {
   chunk_count: number;
   created_at: string;
   indexed_at: string | null;
+  compile_status?: DocumentRecord['compileStatus'];
+  compiled_at?: string | null;
+  compile_error?: string | null;
+  compile_generation?: number;
 }
 
 export function mapKnowledgeBase(row: KnowledgeBaseRow): KnowledgeBase {
@@ -59,5 +63,9 @@ export function mapDocument(row: DocumentRow): DocumentRecord {
     chunkCount: row.chunk_count,
     createdAt: row.created_at,
     indexedAt: row.indexed_at,
+    compileStatus: row.compile_status ?? 'skipped',
+    compiledAt: row.compiled_at ?? null,
+    compileError: row.compile_error ?? null,
+    compileGeneration: row.compile_generation ?? 0,
   };
 }

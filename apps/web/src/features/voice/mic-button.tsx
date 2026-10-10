@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Mic, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useVoiceSettings } from './use-voice-settings';
 import { useVoiceRecorder } from './use-voice-recorder';
 
@@ -21,6 +22,7 @@ interface MicButtonProps {
  * 并用 setPointerCapture 保证手指/鼠标小幅滑出按钮仍能收到 pointerup。
  */
 export function MicButton({ onRecognizedSend, disabled }: MicButtonProps) {
+  const { t } = useI18n();
   const { modelStatus } = useVoiceSettings();
   const recorder = useVoiceRecorder();
   const toast = useToast();
@@ -40,10 +42,10 @@ export function MicButton({ onRecognizedSend, disabled }: MicButtonProps) {
   }, [recorder, onRecognizedSend]);
 
   const label = !asrReady
-    ? '语音输入不可用：请在设置中下载离线语音识别模型'
+    ? t('voice.mic.unavailable')
     : recording
-      ? '松开发送（正在聆听）'
-      : '按住说话（离线语音识别）';
+      ? t('voice.mic.recording')
+      : t('voice.mic.holdToTalk');
 
   return (
     <Button

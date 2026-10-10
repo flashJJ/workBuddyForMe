@@ -1,0 +1,217 @@
+/** flowEditor namespace: flow canvas editor (en; endpoint subgroup split into flow-editor-endpoint) */
+import { enFlowEditorEndpoint } from './flow-editor-endpoint';
+
+export const enFlowEditor = {
+  editor: {
+    loading: 'Loading workflow...',
+    missing: 'Workflow not found or failed to load.',
+    savedNewVersion: 'Saved as a new version',
+    saveFailed: 'Save failed. Check the graph structure.',
+    validatePassed: 'Validation passed',
+    validateFailed: 'Validation failed',
+    published: 'Published. It can now be called as a tool in chat.',
+    publishFailed: 'Publish failed',
+    runStartFailed: 'Failed to start the run',
+  },
+  toolbar: {
+    status: {
+      draft: 'Draft',
+      published: 'Published',
+      disabled: 'Disabled',
+    },
+    backToList: 'Back to list',
+    unsaved: 'Unsaved',
+    revalidate: 'Re-validate',
+    validatePassed: 'Validation passed',
+    problemCount: '{count} issues',
+    validate: 'Validate',
+    save: 'Save',
+    publishTitleDirty: 'Save your changes first',
+    publishTitleNew: 'Save the flowchart first',
+    publishTitle: 'Publish as a chat-callable tool',
+    publish: 'Publish',
+    servingTitle: 'Manage local API / MCP exposure',
+    servingTitleLocked: 'Available after publishing',
+    serving: 'Local serving',
+    run: 'Test run',
+  },
+  palette: {
+    title: 'Nodes',
+    dragHint: 'Drag onto the canvas, or click to add',
+    tip: 'Tip: drag from the dot on the right side of a node to connect; condition nodes branch into “yes” and “no” paths.',
+  },
+  node: {
+    branch: {
+      yes: 'Yes',
+      no: 'No',
+    },
+    status: {
+      running: 'Running',
+      succeeded: 'Succeeded',
+      failed: 'Failed',
+      skipped: 'Skipped',
+      waitingHuman: 'Waiting',
+    },
+    start: {
+      label: 'Start',
+      description: 'Declare flow inputs',
+    },
+    llm: {
+      label: 'LLM',
+      description: 'Generate complete text in one shot',
+      outputs: {
+        text: 'Generated text',
+        tokens: 'Token usage',
+      },
+    },
+    knowledgeSearch: {
+      label: 'Knowledge search',
+      description: 'Semantic search in knowledge bases',
+      outputs: {
+        context: 'Assembled reference text',
+        chunks: 'Matched chunk array',
+      },
+    },
+    tool: {
+      label: 'Tool',
+      description: 'Call built-in / MCP / flow tools',
+      outputs: {
+        output: 'Execution result text',
+        ok: 'Success flag',
+        summary: 'Result summary',
+      },
+    },
+    condition: {
+      label: 'Condition',
+      description: 'Declarative rules, deterministic branching',
+      outputs: {
+        result: 'true / false',
+      },
+    },
+    human: {
+      label: 'Human approval',
+      description: 'Pause and wait for human review',
+      outputs: {
+        approved: 'Approval flag',
+        values: 'Submitted form values',
+      },
+    },
+    end: {
+      label: 'End',
+      description: 'Map the final flow output',
+      outputs: {
+        output: 'Final result',
+      },
+    },
+  },
+  summary: {
+    inputsCount: '{count} inputs',
+    noInputs: 'No inputs',
+    noPrompt: 'No prompt configured',
+    noQuery: 'No query configured',
+    noTool: 'No tool selected',
+    matchAny: 'Any',
+    matchAll: 'All',
+    rulesCount: '{count} rules',
+    noReviewPrompt: 'No review instructions configured',
+    noOutput: 'No output mapping',
+  },
+  ref: {
+    param: 'Input {name}',
+    insertVariable: '+ Insert variable',
+    noVariables: 'No referenceable variables',
+    jsonNotObject: 'Args must be a JSON object',
+    jsonInvalid: 'Invalid JSON',
+  },
+  form: {
+    panelTitle: '{name} node',
+    nodeName: 'Node name',
+    deleteNode: 'Delete node',
+    start: {
+      inputsLabel: 'Flow inputs',
+      inputsHint: 'Parameters required for test runs and chat calls',
+      namePlaceholder: 'Parameter name (starts with a letter)',
+      required: 'Required',
+      descPlaceholder: 'Parameter description (optional)',
+      addInput: 'Add input',
+    },
+    human: {
+      promptLabel: 'Review instructions',
+      promptHint:
+        'Approve/reject inline during test runs; rejection can branch via downstream condition nodes',
+      promptPlaceholder: 'e.g. Please confirm the retrieved material can be used for the weekly report.',
+    },
+    end: {
+      outputLabel: 'Output',
+      outputHint: 'Bind a variable directly, or compose text with a template; leave empty to output null',
+      outputPlaceholder: 'e.g. {{$nodes.llm_1.outputs.text}}',
+    },
+    llm: {
+      modelLabel: 'Model',
+      modelHint: 'Leave empty to follow the default chat model',
+      modelDefault: 'Follow default model',
+      systemLabel: 'System prompt (optional)',
+      systemPlaceholder: 'Set the role and constraints, e.g. You are a rigorous research assistant.',
+      userLabel: 'User prompt',
+      userPlaceholder:
+        'Variables supported, e.g. Answer based on the following material: {{$nodes.kb.outputs.context}}',
+      temperatureLabel: 'Sampling temperature (optional 0–2)',
+    },
+    knowledge: {
+      kbLabel: 'Knowledge base',
+      kbPlaceholder: 'Select a knowledge base',
+      queryLabel: 'Query',
+      queryHint: 'Supports start inputs or upstream node variables',
+      queryPlaceholder: 'e.g. {{$nodes.start.params.topic}}',
+      topKLabel: 'Top-K results',
+    },
+    tool: {
+      toolLabel: 'Tool',
+      toolPlaceholder: 'Select a tool',
+      argsLabel: 'Tool arguments (JSON)',
+      argsHint:
+        'Values can be reference strings; they are interpolated before runs. High-risk tools request authorization inline during test runs',
+      groupBuiltin: 'Built-in tools',
+      groupFlows: 'Flow tools',
+      flowDesc: 'Published flow: {name}',
+      permission: {
+        read: 'Read-only',
+        write: 'Write (auth required)',
+        danger: 'High-risk (auth required)',
+      },
+    },
+    condition: {
+      matchLabel: 'Match mode',
+      matchAll: 'All rules match (AND)',
+      matchAny: 'Any rule matches (OR)',
+      ruleIndex: 'Rule {index}',
+      leftPlaceholder: 'Left value (paste {{$nodes.…}})',
+      rightPlaceholder: 'Right value',
+      addRule: 'Add rule',
+      op: {
+        eq: 'Equals ==',
+        neq: 'Not equals !=',
+        contains: 'Contains',
+        notContains: 'Does not contain',
+        startsWith: 'Starts with',
+        endsWith: 'Ends with',
+        gt: 'Greater than >',
+        lt: 'Less than <',
+        isEmpty: 'Is empty',
+      },
+    },
+  },
+  run: {
+    title: 'Test run',
+    description: 'Fill in the inputs declared by the start node; the flow runs from the start node.',
+    noFields: 'This flow declares no inputs and can run directly.',
+    required: 'Required',
+    cancel: 'Cancel',
+    start: 'Start run',
+  },
+  diagnostics: {
+    title: 'Validation issues ({count})',
+    close: 'Close',
+  },
+  endpoint: enFlowEditorEndpoint,
+};

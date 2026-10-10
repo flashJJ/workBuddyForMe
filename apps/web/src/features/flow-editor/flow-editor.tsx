@@ -16,6 +16,7 @@ import type { FlowDiagnostic } from '@wbfm/shared/types';
 import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   useFlow,
   useFlowMutations,
@@ -42,6 +43,7 @@ export function FlowEditor({ flowId }: { flowId: string }) {
 }
 
 function EditorInner({ flowId }: { flowId: string }) {
+  const { t } = useI18n();
   const flowQuery = useFlow(flowId);
   const mutations = useFlowMutations();
   const runAction = useFlowRunAction(null);
@@ -137,26 +139,26 @@ function EditorInner({ flowId }: { flowId: string }) {
   const save = async () => {
     try {
       await mutations.saveVersion.mutateAsync({ id: flowId, graph: buildGraph() });
-      toast.success('已保存为新版本');
+      toast.success(t('flowEditor.editor.savedNewVersion'));
     } catch (e) {
-      errToast(e, '保存失败，请检查图结构');
+      errToast(e, t('flowEditor.editor.saveFailed'));
     }
   };
   const validate = async () => {
     try {
       const res = await mutations.validate.mutateAsync({ id: flowId, graph: buildGraph() });
       setDiagnostics(res.diagnostics);
-      if (res.ok) toast.success('校验通过');
+      if (res.ok) toast.success(t('flowEditor.editor.validatePassed'));
     } catch (e) {
-      errToast(e, '校验失败');
+      errToast(e, t('flowEditor.editor.validateFailed'));
     }
   };
   const publish = async () => {
     try {
       await mutations.publish.mutateAsync(flowId);
-      toast.success('已发布，现在可在对话中作为工具被调用');
+      toast.success(t('flowEditor.editor.published'));
     } catch (e) {
-      errToast(e, '发布失败');
+      errToast(e, t('flowEditor.editor.publishFailed'));
     }
   };
 
@@ -170,7 +172,7 @@ function EditorInner({ flowId }: { flowId: string }) {
       const res = await runAction.create.mutateAsync({ workflowId: flowId, input });
       setRunId(res.runId);
     } catch (e) {
-      errToast(e, '启动运行失败');
+      errToast(e, t('flowEditor.editor.runStartFailed'));
     }
   };
 

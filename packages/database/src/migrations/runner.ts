@@ -15,6 +15,7 @@ import { migrateV013 } from './v013-flow-serving';
 import { migrateV014 } from './v014-voice';
 import { migrateV015 } from './v015-assistant-expression';
 import { migrateV016 } from './v016-release-polish';
+import { migrateV017 } from './v017-knowledge';
 
 interface Migration {
   version: number;
@@ -95,6 +96,12 @@ const MIGRATIONS: Migration[] = [
     version: 16,
     description: 'release polish: 老用户 app-settings 回填 hasOnboarded=true（无表结构变更）',
     up: migrateV016,
+  },
+  {
+    version: 17,
+    description:
+      'knowledge: chunk 页段坐标 + chunks_fts 全文表 + 知识编译三表 + documents 编译状态列（纯加法）',
+    up: migrateV017,
   },
 ];
 

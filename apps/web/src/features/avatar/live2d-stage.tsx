@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { getAvatarModel } from './avatar-models';
 import { loadCubismCore } from './live2d-core';
 import type { Live2dController } from './live2d-controller';
@@ -16,6 +17,7 @@ interface StageProps {
 
 /** 形象舞台：挂 Core→建 PIXI 应用→加载模型；rAF 喂口型；点击播放 Tap 动作 */
 export function Live2dStage({ modelId, expression, getLevel, speaking }: StageProps) {
+  const { t } = useI18n();
   const hostRef = React.useRef<HTMLDivElement | null>(null);
   const controllerRef = React.useRef<Live2dController | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -36,7 +38,8 @@ export function Live2dStage({ modelId, expression, getLevel, speaking }: StagePr
       if (cancelled) return;
       const controller = await Live2dController.create(host, {
         model: spec,
-        onError: (message) => !cancelled && setError(message),
+        // 控制器只上报底层错误详情，界面文案在渲染处经 t() 组装
+        onError: (message) => !cancelled && setError(t('avatar.stage.loadFailed', { message })),
       });
       if (cancelled) {
         controller.dispose();
@@ -70,7 +73,7 @@ export function Live2dStage({ modelId, expression, getLevel, speaking }: StagePr
       <div
         ref={hostRef}
         role="img"
-        aria-label="Live2D 虚拟形象（点击互动）"
+        aria-label={t('avatar.stage.ariaLabel')}
         className="h-full w-full cursor-pointer"
         data-speaking={speaking}
         onClick={() => controllerRef.current?.tap()}

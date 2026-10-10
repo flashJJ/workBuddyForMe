@@ -4,6 +4,10 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { useVadMonitor } from './use-vad-monitor';
 import type { VadGate } from './vad-detector';
 
+vi.mock('@/lib/i18n/use-i18n', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'zh-CN' }),
+}));
+
 const FRAME = 512;
 
 class FakeWorkletPort {

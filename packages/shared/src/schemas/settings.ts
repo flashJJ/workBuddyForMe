@@ -7,5 +7,15 @@ export const settingsUpdateSchema = z.object({
   theme: z.enum(THEMES).optional(),
   language: z.enum(LANGUAGES).optional(),
   hasOnboarded: z.boolean().optional(),
+  // v1.3 知识检索（缺省由 core 检索层给默认值：混合开/阈值 0.55/上限 8）
+  hybridRetrievalEnabled: z.boolean().optional(),
+  retrievalMinSimilarity: z.number().min(0).max(1).optional(),
+  retrievalMaxChunks: z.number().int().min(1).max(20).optional(),
+  // v1.3 编译优先检索路由（缺省 true；关=静态知识层零差异回落）
+  compileRoutingEnabled: z.boolean().optional(),
+  // v1.3 M4 知识编译调度
+  autoCompile: z.boolean().optional(),
+  compileWithLlm: z.boolean().optional(),
+  compileModelId: z.string().trim().min(1).nullable().optional(),
 });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;

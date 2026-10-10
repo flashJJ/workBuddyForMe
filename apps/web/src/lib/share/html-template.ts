@@ -1,5 +1,7 @@
 import type { Language } from '@wbfm/shared/constants';
 import type { ConversationSnapshot, SharedPart } from '@wbfm/core/share';
+import type { Citation } from '@wbfm/shared/types';
+import { formatCitationMeta } from '../citation-meta';
 import { formatDuration, formatTime } from './share-format';
 import { createShareTranslator } from './share-i18n';
 
@@ -95,6 +97,7 @@ section.refs { background:#fff; border:1px solid #e5e7eb; border-radius:12px; pa
 section.refs h2 { font-size:15px; margin:0 0 10px; }
 section.refs ol { margin:0; padding-left:20px; } section.refs li { margin-bottom:8px; font-size:13px; }
 section.refs details { margin-top:4px; color:#4b5563; } section.refs a { color:#2563eb; }
+section.refs .loc { color:#64748b; font-size:12px; }
 footer.watermark { text-align:center; color:#9ca3af; font-size:12px; margin:24px 0 8px; }
 `.trim();
 
@@ -104,14 +107,27 @@ export function renderConversationHtml(
 ): string {
   const tt = createShareTranslator(locale);
   const refMap = new Map<string, number>();
-  const refs: Array<{ name: string; snippet?: string; sourceUrl?: string | null }> = [];
-  const citeNo = (documentId: string, ordinal: number, name: string, snippet?: string, sourceUrl?: string | null): number => {
-    const key = `${documentId}#${ordinal}`;
+  const refs: Array<{
+    name: string;
+    snippet?: string;
+    sourceUrl?: string | null;
+    kindLabel: string;
+    location: string;
+  }> = [];
+  const citeNo = (c: Citation): number => {
+    const key = `${c.documentId}#${c.ordinal}`;
     const hit = refMap.get(key);
     if (hit !== undefined) return hit;
     const no = refs.length + 1;
     refMap.set(key, no);
-    refs.push({ name, snippet, sourceUrl });
+    const meta = formatCitationMeta(c, tt);
+    refs.push({
+      name: c.documentName,
+      snippet: c.snippet,
+      sourceUrl: c.sourceUrl,
+      kindLabel: meta.kindLabel,
+      location: meta.location,
+    });
     return no;
   };
 
@@ -138,7 +154,7 @@ export function renderConversationHtml(
         .join('');
       const badges = m.citations
         .map((c) => {
-          const no = citeNo(c.documentId, c.ordinal, c.documentName, c.snippet, c.sourceUrl);
+          const no = citeNo(c);
           return `<sup class="cite"><a href="#cite-${no}">${no}</a></sup>`;
         })
         .join('');
@@ -149,12 +165,16 @@ export function renderConversationHtml(
   const refsHtml = refs.length
     ? `<section class="refs"><h2>${tt('share.refsTitleHtml')}</h2><ol>${refs
         .map(
-          (r, i) =>
-            `<li id="cite-${i + 1}"><strong>${escapeHtml(r.name)}</strong>${
+          (r, i) => {
+            const title = r.kindLabel ? `${r.kindLabel}·${r.name}` : r.name;
+            return `<li id="cite-${i + 1}"><strong>${escapeHtml(title)}</strong>${
+              r.location ? ` <span class="loc">${escapeHtml(r.location)}</span>` : ''
+            }${
               r.snippet
                 ? `<details><summary>${tt('share.viewSummary')}</summary>${escapeHtml(r.snippet)}</details>`
                 : ''
-            }${r.sourceUrl ? ` <a href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener noreferrer">${tt('share.sourceLinkHtml')}</a>` : ''}</li>`,
+            }${r.sourceUrl ? ` <a href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener noreferrer">${tt('share.sourceLinkHtml')}</a>` : ''}</li>`;
+          },
         )
         .join('')}</ol></section>`
     : '';

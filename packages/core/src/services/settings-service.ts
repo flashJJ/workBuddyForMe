@@ -13,6 +13,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'zh-CN',
   // 全新装机默认未引导；老用户由 v016 迁移显式回填 true
   hasOnboarded: false,
+  // v1.3 M4：自动编译默认开；LLM 增强默认关（规则通道零模型调用）
+  autoCompile: true,
+  compileWithLlm: false,
+  compileModelId: null,
 };
 
 export function createSettingsService({ db }: ServiceDeps) {
@@ -33,6 +37,7 @@ export function createSettingsService({ db }: ServiceDeps) {
     update(patch: SettingsUpdateInput): AppSettings {
       ensureModelExists(patch.defaultChatModelId ?? null, '默认对话模型');
       ensureModelExists(patch.defaultEmbeddingModelId ?? null, '默认嵌入模型');
+      ensureModelExists(patch.compileModelId ?? null, '编译增强模型');
       const next = { ...this.get(), ...patch };
       settings.setJson(SETTINGS_KEY, next);
       return next;

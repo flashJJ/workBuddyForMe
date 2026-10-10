@@ -21,6 +21,10 @@ const CHUNK: RetrievedChunk = {
   content: '年假为 5 天',
   distance: 0.12,
   sourceUrl: null,
+  pageNo: 2,
+  paragraphNo: 4,
+  charStart: 120,
+  charEnd: 126,
 };
 
 describe('knowledge_search 工具', () => {
@@ -60,6 +64,11 @@ describe('knowledge_search 工具', () => {
         ordinal: 0,
         sourceUrl: null,
         snippet: '年假为 5 天',
+        pageNo: 2,
+        paragraphNo: 4,
+        charStart: 120,
+        charEnd: 126,
+        staticKind: 'chunk',
       },
     ]);
   });

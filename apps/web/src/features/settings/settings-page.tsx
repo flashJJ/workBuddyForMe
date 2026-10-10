@@ -20,6 +20,7 @@ import { BackupPanel } from './backup-panel';
 import { AboutPanel } from './about-panel';
 import { HelpCenterPanel } from '../help-center/help-center-panel';
 import { VoicePreferencePanel } from '../voice/settings/voice-preference-panel';
+import { KnowledgeRetrievalPanel } from './knowledge-retrieval-panel';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -71,6 +72,8 @@ export function SettingsPage() {
       )}
 
       <DefaultsPanel />
+
+      <KnowledgeRetrievalPanel />
 
       <VoicePreferencePanel />
 

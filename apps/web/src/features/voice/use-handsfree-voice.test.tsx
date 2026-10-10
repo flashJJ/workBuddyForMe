@@ -18,6 +18,9 @@ vi.mock('@/lib/api/client', () => ({
   apiUpload: (...args: unknown[]) => apiUpload(...args),
 }));
 vi.mock('@/lib/api/endpoints', () => ({ API: { voiceAsr: '/api/voice/asr' } }));
+vi.mock('@/lib/i18n/use-i18n', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'zh-CN' }),
+}));
 
 import { useHandsfreeVoice } from './use-handsfree-voice';
 

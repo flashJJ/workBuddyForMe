@@ -59,7 +59,11 @@ describe('检索与 RAG 编排（TR-17.1）', () => {
       capabilities: ['embedding'],
       contextWindow: null,
     });
-    createSettingsService({ db, cipher }).update({ defaultEmbeddingModelId: model.id });
+    // 本文件专测检索管线，关闭 v1.3 自动编译避免编译产物影响断言
+    createSettingsService({ db, cipher }).update({
+      defaultEmbeddingModelId: model.id,
+      autoCompile: false,
+    });
 
     const kb = createKnowledgeRepository(db).create({
       name: '资料库',

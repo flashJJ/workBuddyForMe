@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { AttachmentImage } from './attachment-image';
+import { CitationsList } from './citations-list';
 import { MarkdownContent } from './markdown';
 import { ToolTrace } from './tool-trace';
 import { MessageFeedbackButtons } from './message-feedback';
@@ -41,42 +42,6 @@ function CopyButton({ content }: { content: string }) {
     >
       {copied ? t('chatMessages.copied') : t('common.actions.copy')}
     </button>
-  );
-}
-
-function Citations({ message }: { message: Message }) {
-  const { t } = useI18n();
-  if (message.citations.length === 0) return null;
-  return (
-    <div className="mt-2 space-y-1 border-t pt-2" data-testid="citations">
-      <p className="text-xs font-medium text-muted-foreground">{t('chatMessages.citations')}</p>
-      <ol className="space-y-1">
-        {message.citations.map((citation) => (
-          <li key={`${citation.documentId}-${citation.ordinal}`} className="text-xs">
-            <Badge variant="outline" className="mr-1">
-              [{citation.ordinal}]
-            </Badge>
-            {citation.sourceUrl ? (
-              <a
-                href={citation.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                title={citation.sourceUrl}
-                className="font-medium text-primary hover:underline"
-                data-testid="citation-source-link"
-              >
-                {citation.documentName}
-              </a>
-            ) : (
-              <span className="font-medium">{citation.documentName}</span>
-            )}
-            {citation.snippet && (
-              <span className="ml-1 text-muted-foreground">— {citation.snippet}</span>
-            )}
-          </li>
-        ))}
-      </ol>
-    </div>
   );
 }
 
@@ -232,7 +197,7 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
             )}
           </div>
         )}
-        <Citations message={message} />
+        <CitationsList message={message} />
       </div>
     </div>
   );

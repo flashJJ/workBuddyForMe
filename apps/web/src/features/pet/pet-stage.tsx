@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react';
 import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
 import type { ExpressionTag } from '@/features/avatar/expression-parser';
 import type { PetVoiceState } from '@wbfm/shared/pet';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { getPetBridge } from './pet-bridge';
 import { PetSubtitle } from './pet-subtitle';
 
@@ -33,6 +34,7 @@ const REGION_NO_DRAG = { WebkitAppRegion: 'no-drag' } as unknown as CSSPropertie
  * - 双击：头部 no-drag 区可收到 → 回主窗。
  */
 export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }: Props) {
+  const { t } = useI18n();
   const bridge = React.useMemo(() => getPetBridge(), []);
 
   const handleContextMenu = (event: React.MouseEvent) => {
@@ -61,7 +63,7 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         data-testid="pet-hitbody"
         style={REGION_DRAG}
         className="absolute bottom-0 left-1/2 z-10 h-[72%] w-[72%] -translate-x-1/2 cursor-grab"
-        title="拖动移动位置，右键打开菜单"
+        title={t('pet.stage.dragHint')}
       />
 
       {/* 头部互动盒：no-drag，单击挥手 / 双击回主窗 / 右键菜单；命中列上部约 28% */}
@@ -71,7 +73,7 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         className="absolute left-1/2 top-[11%] z-20 h-[25%] w-[60%] -translate-x-1/2"
         onContextMenu={handleContextMenu}
         onDoubleClick={() => bridge?.focusMain()}
-        title="双击回到主窗口，右键打开菜单"
+        title={t('pet.stage.headHint')}
       />
 
       <PetSubtitle text={subtitle} voiceState={voiceState} />

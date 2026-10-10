@@ -21,6 +21,13 @@ import { enShare } from './messages/share';
 import { enShortcuts } from './messages/shortcuts';
 import { enOnboarding } from './messages/onboarding';
 import { enHelp } from './messages/help';
+import { enFlowEditor } from './messages/flow-editor-en';
+import { enVoice } from './messages/voice-en';
+import { enPet } from './messages/pet';
+import { enAvatar } from './messages/avatar';
+import { enFlowExecution } from './messages/flow-execution';
+import { enToolDebug } from './messages/tool-debug';
+import { enToolTrace } from './messages/tool-trace';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -49,6 +56,13 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   shortcuts: enShortcuts,
   onboarding: enOnboarding,
   help: enHelp,
+  flowEditor: enFlowEditor,
+  voice: enVoice,
+  pet: enPet,
+  avatar: enAvatar,
+  flowExecution: enFlowExecution,
+  toolDebug: enToolDebug,
+  toolTrace: enToolTrace,
 };
 
 export type EnDictionary = typeof enUS;

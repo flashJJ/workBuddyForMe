@@ -55,6 +55,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./knowledge": {
+            "types": "./src/knowledge/index.ts",
+            "development": "./src/knowledge/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./tools": {
             "types": "./src/tools/index.ts",
             "development": "./src/tools/index.ts",

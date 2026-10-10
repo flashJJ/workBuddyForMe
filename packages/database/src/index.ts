@@ -14,10 +14,15 @@ export {
   insertChunkVectors,
   deleteVectorsByDocument,
   searchChunks,
+  recallVectorCandidates,
+  listChunksByIds,
+  listChunkVectorsByKb,
   normalizeVector,
   VECTOR_DIM_META_KEY,
   type ChunkVectorRow,
   type ChunkSearchResult,
+  type ChunkCandidate,
+  type ChunkVectorScanRow,
 } from './vector';
 export {
   ensureMemoryVectorTable,
@@ -33,3 +38,10 @@ export {
 export * from './repositories';
 export { getMeta, setMeta } from './meta';
 export { nowIso, timestamps } from './utils/time';
+export {
+  buildFtsQuery,
+  isCjkChar,
+  normalizeForFtsIndex,
+  tokenizeForFts,
+} from './fts-tokenize';
+export { createFtsChunkRepository, type FtsChunkRow } from './fts-chunk-repo';

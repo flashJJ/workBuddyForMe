@@ -1,11 +1,23 @@
 import type { OcrEngine } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../services/deps';
-import { detectKind, isImagePdf, readDocumentText, readPdfPageTexts } from './read-document';
+import {
+  detectKind,
+  isImagePdf,
+  readDocumentText,
+  readPdfPageTexts,
+} from './read-document';
 import { runPdfOcr } from './ocr-runner';
+import {
+  assemblePagedText,
+  assemblePlainText,
+  type StructuredText,
+} from './text-structure';
 
 export interface ExtractDocumentResult {
   /** 最终用于分片的纯文本 */
   text: string;
+  /** v1.3：源段落块结构（页/段坐标），与 text 偏移对齐 */
+  structure: StructuredText;
   /** 非 null 表示该 PDF 走了 OCR 兜底 */
   ocr: { engine: OcrEngine; partial: boolean } | null;
 }
@@ -31,12 +43,16 @@ export async function extractDocumentText(
   hooks?: ExtractHooks,
 ): Promise<ExtractDocumentResult> {
   if (detectKind(filename) !== 'pdf') {
-    return { text: await readDocumentText(filename, data), ocr: null };
+    const structure = assemblePlainText(await readDocumentText(filename, data));
+    return { text: structure.text, structure, ocr: null };
   }
 
   const pageTexts = await readPdfPageTexts(data);
   if (!isImagePdf(pageTexts)) {
-    return { text: pageTexts.filter(Boolean).join('\n\n'), ocr: null };
+    const structure = assemblePagedText(
+      pageTexts.map((text, index) => ({ pageNo: index + 1, text })),
+    );
+    return { text: structure.text, structure, ocr: null };
   }
 
   hooks?.onOcrStart?.();
@@ -47,5 +63,10 @@ export async function extractDocumentText(
     signal: hooks?.signal,
     onProgress: hooks?.onOcrProgress,
   });
-  return { text: result.text, ocr: { engine: result.engine, partial: result.partial } };
+  const structure = assemblePagedText(result.pages);
+  return {
+    text: structure.text,
+    structure,
+    ocr: { engine: result.engine, partial: result.partial },
+  };
 }

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { Message } from '@wbfm/shared/types';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { Live2dCanvas } from './live2d-canvas';
 import {
   DEFAULT_EXPRESSION,
@@ -44,17 +45,22 @@ function useLastAssistantExpression(messages: Message[], proactiveContent?: stri
  * 挂在独立右侧栏；组件本身轻量，重资源经 live2d-canvas 动态切 chunk。
  */
 export function AvatarHost({ messages, getLevel, speaking, modelId, proactiveContent = null }: AvatarHostProps) {
+  const { t } = useI18n();
   const expression = useLastAssistantExpression(messages, proactiveContent);
   return (
     <div className="flex h-full flex-col" data-testid="avatar-host">
       <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-xs font-medium text-muted-foreground">本地形象</span>
+        <span className="text-xs font-medium text-muted-foreground">{t('avatar.rail.title')}</span>
         <span
           className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
           data-testid="avatar-state"
           data-state={speaking ? 'speaking' : 'idle'}
         >
-          {speaking ? '说话中' : expression === DEFAULT_EXPRESSION ? '待机' : expression}
+          {speaking
+            ? t('avatar.state.speaking')
+            : expression === DEFAULT_EXPRESSION
+              ? t('avatar.state.idle')
+              : expression}
         </span>
       </div>
       <div className="min-h-0 flex-1">

@@ -20,6 +20,13 @@ import { zhShare } from './messages/share';
 import { zhShortcuts } from './messages/shortcuts';
 import { zhOnboarding } from './messages/onboarding';
 import { zhHelp } from './messages/help';
+import { zhFlowEditor } from './messages/flow-editor';
+import { zhVoice } from './messages/voice';
+import { zhPet } from './messages/pet';
+import { zhAvatar } from './messages/avatar';
+import { zhFlowExecution } from './messages/flow-execution';
+import { zhToolDebug } from './messages/tool-debug';
+import { zhToolTrace } from './messages/tool-trace';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -49,6 +56,13 @@ export const zhCN = {
   shortcuts: zhShortcuts,
   onboarding: zhOnboarding,
   help: zhHelp,
+  flowEditor: zhFlowEditor,
+  voice: zhVoice,
+  pet: zhPet,
+  avatar: zhAvatar,
+  flowExecution: zhFlowExecution,
+  toolDebug: zhToolDebug,
+  toolTrace: zhToolTrace,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

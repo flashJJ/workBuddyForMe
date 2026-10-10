@@ -59,6 +59,9 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       theme: 'light',
       language: 'zh-CN',
       hasOnboarded: false,
+      autoCompile: true,
+      compileWithLlm: false,
+      compileModelId: null,
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

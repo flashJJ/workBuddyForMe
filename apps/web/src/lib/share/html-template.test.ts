@@ -136,6 +136,25 @@ describe('renderConversationHtml（M2）', () => {
     expect(html).toContain('href="https://a.com" target="_blank" rel="noopener noreferrer"');
   });
 
+  it('引用静态层标签与页段坐标渲染（zh/en）', () => {
+    const snap = baseSnapshot({
+      messages: [
+        {
+          role: 'assistant', content: '结论', createdAt: '', parts: [], toolTrace: [],
+          citations: [
+            { documentId: 'd1', documentName: 'spec.pdf', ordinal: 0, staticKind: 'entity', pageNo: 2, paragraphNo: 5 },
+          ],
+        },
+      ],
+    });
+    const zh = renderConversationHtml(snap, 'zh-CN');
+    expect(zh).toContain('<strong>实体知识·spec.pdf</strong>');
+    expect(zh).toContain('<span class="loc">第 2 页 · 第 5 段</span>');
+    const en = renderConversationHtml(snap, 'en-US');
+    expect(en).toContain('<strong>Entity fact·spec.pdf</strong>');
+    expect(en).toContain('<span class="loc">p. 2 · para. 5</span>');
+  });
+
   it('单文件零外部样式依赖 + 水印', () => {
     const html = renderConversationHtml(baseSnapshot());
     expect(html).not.toContain('<link');

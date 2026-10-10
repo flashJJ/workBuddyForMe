@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared/schemas';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { ToggleRow } from './voice-engine-params';
 
 interface Props {
@@ -24,18 +25,19 @@ const IDLE_OPTIONS = [
  * 生效前提：已开启 Live2D 形象或桌宠模式（气泡出口）；开启朗读后搭话会自动出声。
  */
 export function ProactiveSection({ settings, onPatch }: Props) {
+  const { t } = useI18n();
   const visualOutlet = settings.avatarEnabled || settings.petEnabled;
 
   return (
     <div className="space-y-3 rounded-md border p-3" data-testid="voice-proactive-section">
-      <p className="text-sm font-medium">AI 主动说话</p>
+      <p className="text-sm font-medium">{t('voice.proactive.title')}</p>
       <ToggleRow
         id="proactive-enabled"
-        label="空闲时主动搭话"
+        label={t('voice.proactive.toggleLabel')}
         hint={
           visualOutlet
-            ? '空闲达到阈值后，角色会主动说一句简短的话（不写入对话历史）'
-            : '需先在下方「Live2D 形象」开启形象栏或桌宠模式，搭话才有展示出口'
+            ? t('voice.proactive.toggleHint')
+            : t('voice.proactive.toggleHintNoOutlet')
         }
         checked={settings.proactiveEnabled}
         disabled={false}
@@ -43,7 +45,7 @@ export function ProactiveSection({ settings, onPatch }: Props) {
       />
 
       <div className="space-y-1.5">
-        <Label htmlFor="proactive-idle">空闲阈值</Label>
+        <Label htmlFor="proactive-idle">{t('voice.proactive.idleLabel')}</Label>
         <Select
           id="proactive-idle"
           data-testid="proactive-idle"
@@ -53,13 +55,13 @@ export function ProactiveSection({ settings, onPatch }: Props) {
         >
           {IDLE_OPTIONS.map((opt) => (
             <option key={opt.seconds} value={opt.seconds}>
-              {opt.minutes} 分钟
+              {t('voice.proactive.idleMinutes', { minutes: opt.minutes })}
             </option>
           ))}
         </Select>
         <p className="text-xs text-muted-foreground">
-          期间无对话操作才触发；你发消息或正在朗读时自动顺延，绝不打断当前对话。
-          {settings.ttsEnabled ? '' : '（未开启朗读时仅显示文字气泡，不会出声）'}
+          {t('voice.proactive.idleHint')}
+          {settings.ttsEnabled ? '' : t('voice.proactive.idleHintNoTts')}
         </p>
       </div>
     </div>
