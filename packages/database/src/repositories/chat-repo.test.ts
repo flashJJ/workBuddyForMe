@@ -76,6 +76,36 @@ describe('conversation/message 仓储', () => {
     expect(saved.status).toBe('completed');
     expect(saved.totalTokens).toBe(18);
 
+    // v1.3：流式结束随 complete 持久化引用（历史重渲染也要能显示脚注）
+    messages.complete(
+      assistantMsg.id,
+      '你好，有什么可以帮你？[1]',
+      { promptTokens: 10, completionTokens: 8, totalTokens: 18 },
+      [
+        {
+          ordinal: 1,
+          documentId: 'doc-1',
+          documentName: '手册.txt',
+          snippet: '片段',
+          sourceUrl: null,
+          pageNo: 2,
+          paragraphNo: 3,
+          charStart: 0,
+          charEnd: 10,
+          staticKind: 'chunk',
+        },
+      ],
+    );
+    const withCitations = messages.findById(assistantMsg.id)!;
+    expect(withCitations.citations).toHaveLength(1);
+    expect(withCitations.citations[0]).toMatchObject({
+      ordinal: 1,
+      documentName: '手册.txt',
+      pageNo: 2,
+      paragraphNo: 3,
+      staticKind: 'chunk',
+    });
+
     const errMsg = messages.add({
       conversationId: c1.id,
       role: 'assistant',
