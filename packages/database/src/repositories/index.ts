@@ -142,4 +142,11 @@ export {
   type EntityMentionRecord,
   type DocumentSummaryRecord,
 } from './compile-query-repo';
+export {
+  createAgentRunRepository,
+  type AgentRunRepository,
+  type AgentRunCreateFields,
+  type AgentHandoffAddFields,
+  type AgentRunTokenPatch,
+} from './agent-run-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';
