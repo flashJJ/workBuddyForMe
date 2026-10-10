@@ -9,6 +9,12 @@ on:
     tags:
       - "v*"
 
+# electron-builder --publish onTag 需要经内置 GITHUB_TOKEN 创建 GitHub Release
+# 并上传安装包资产；新仓库默认 token 为只读，不显式授予会在发布步 403
+# （Resource not accessible by integration）。仅本发布流水线需要写权限。
+permissions:
+  contents: write
+
 jobs:
   windows:
     name: Windows NSIS 安装包
