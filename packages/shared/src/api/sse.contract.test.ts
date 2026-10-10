@@ -40,6 +40,11 @@ const PAYLOAD_KEY_TABLE = {
   voice_audio: 1,
   voice_state: 1,
   compile: 1,
+  agent_phase: 1,
+  agent_handoff: 1,
+  agent_review: 1,
+  agent_budget: 1,
+  agent_delta: 1,
   done: 1,
   error: 1,
 } as const satisfies Record<SseEventName, number>;
@@ -58,8 +63,8 @@ describe('SSE 契约一致性', () => {
   });
 
   it('SseEvent<> 覆盖全部线上事件名（数量对账）', () => {
-    // 与 PAYLOAD_KEY_TABLE/常量同源；显式数量锁住 13 个事件，新增必须显式更新
-    expect(Object.keys(PAYLOAD_KEY_TABLE)).toHaveLength(13);
-    expect(Object.values(SSE_EVENT)).toHaveLength(13);
+    // 与 PAYLOAD_KEY_TABLE/常量同源；显式数量锁住 18 个事件，新增必须显式更新
+    expect(Object.keys(PAYLOAD_KEY_TABLE)).toHaveLength(18);
+    expect(Object.values(SSE_EVENT)).toHaveLength(18);
   });
 });
