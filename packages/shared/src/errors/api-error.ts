@@ -32,6 +32,10 @@ export class ApiError extends Error {
     return new ApiError('CONFLICT', message);
   }
 
+  static notImplemented(message: string): ApiError {
+    return new ApiError('NOT_IMPLEMENTED', message);
+  }
+
   toBody(): ApiErrorBody {
     return this.details === undefined
       ? { code: this.code, message: this.message }
