@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { VoiceAsrResponse, VoiceState } from '@wbfm/shared/schemas';
 import { API } from '@/lib/api/endpoints';
 import { apiUpload } from '@/lib/api/client';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useVadMonitor, type VadMonitorError } from './vad/use-vad-monitor';
 import { AsrTurnTracker } from './vad/asr-turn-tracker';
 import type { VadEvent, VadSensitivity } from './vad/vad-detector';
@@ -47,6 +48,7 @@ type LocalState = 'idle' | 'listening' | 'thinking';
 export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoice {
   const { asrReady, canArm, sensitivity, silenceMs, playback, onRecognizedSend, onAbortTurn } =
     options;
+  const { t } = useI18n();
 
   const [armed, setArmed] = React.useState(false);
   const [local, setLocal] = React.useState<LocalState>('idle');
@@ -110,7 +112,7 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
       if (tracker.finish(turnId)) {
         setLocal('listening');
         if (!controller.signal.aborted) {
-          setAsrError(err instanceof Error ? err.message : '识别失败');
+          setAsrError(err instanceof Error ? err.message : t('voice.handsfree.asrUnknown'));
         }
       }
     } finally {
@@ -122,7 +124,7 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
         void recognize(queued);
       }
     }
-  }, []);
+  }, [t]);
 
   const handleVadEvent = React.useCallback(
     (event: VadEvent) => {

@@ -1,4 +1,5 @@
 import { DEFAULT_AVATAR_MODEL_ID } from '@wbfm/shared/schemas';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import type { ExpressionTag } from './expression-parser';
 
 /**
@@ -9,7 +10,8 @@ import type { ExpressionTag } from './expression-parser';
  */
 export interface AvatarModelSpec {
   id: string;
-  label: string;
+  /** 形象选择器展示名（i18n 键，渲染处 t() 解析） */
+  label: MessageKey;
   /** model3.json 的可访问 URL */
   url: string;
   /** 规范表情 → 模型内表情名（model3.json FileReferences.Expressions[].Name） */
@@ -36,7 +38,7 @@ export interface AvatarModelSpec {
 export const AVATAR_MODELS: Record<string, AvatarModelSpec> = {
   haru: {
     id: 'haru',
-    label: 'Haru · 晴（官方接待员）',
+    label: 'avatar.models.haru',
     url: '/live2d/models/haru/haru_greeter_t03.model3.json',
     // Haru F01~F08 在 model3.json 内命名为 f00~f07。
     // 映射经 2026-10 真机逐表情比对修正（不能只看参数名，pld Add 混合后语义以实测为准）：
@@ -59,7 +61,7 @@ export const AVATAR_MODELS: Record<string, AvatarModelSpec> = {
   },
   hiyori: {
     id: 'hiyori',
-    label: 'Hiyori · 百濑日和（休闲少女）',
+    label: 'avatar.models.hiyori',
     url: '/live2d/models/hiyori/Hiyori.model3.json',
     expressions: {
       neutral: 'Normal',
@@ -78,7 +80,7 @@ export const AVATAR_MODELS: Record<string, AvatarModelSpec> = {
   },
   mark: {
     id: 'mark',
-    label: 'Mark · 马克（帽衫少年）',
+    label: 'avatar.models.mark',
     url: '/live2d/models/mark/Mark.model3.json',
     expressions: {
       neutral: 'Normal',
@@ -99,7 +101,7 @@ export const AVATAR_MODELS: Record<string, AvatarModelSpec> = {
   },
   mao: {
     id: 'mao',
-    label: 'Mao · 虹猫（魔法少女）',
+    label: 'avatar.models.mao',
     url: '/live2d/models/mao/Mao.model3.json',
     expressions: {
       neutral: 'exp_01',
@@ -119,7 +121,7 @@ export const AVATAR_MODELS: Record<string, AvatarModelSpec> = {
   },
   wanko: {
     id: 'wanko',
-    label: 'Wanko · 汪子饼（柴犬吉祥物）',
+    label: 'avatar.models.wanko',
     url: '/live2d/models/wanko/Wanko.model3.json',
     expressions: {
       neutral: 'Normal',

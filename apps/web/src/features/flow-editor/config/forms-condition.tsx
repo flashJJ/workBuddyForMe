@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { Input, Select, str, type NodeConfigFormProps } from './form-primitives';
 import { buildRefOptions } from './ref-options';
 
@@ -24,19 +26,20 @@ interface ConditionRuleDraft {
   right?: unknown;
 }
 
-const OPS: Array<{ value: ConditionOp; label: string; noRight?: boolean }> = [
-  { value: '==', label: '等于 ==' },
-  { value: '!=', label: '不等于 !=' },
-  { value: 'contains', label: '包含' },
-  { value: 'notContains', label: '不包含' },
-  { value: 'startsWith', label: '开头是' },
-  { value: 'endsWith', label: '结尾是' },
-  { value: '>', label: '大于 >' },
-  { value: '<', label: '小于 <' },
-  { value: 'isEmpty', label: '为空', noRight: true },
+const OPS: Array<{ value: ConditionOp; label: MessageKey; noRight?: boolean }> = [
+  { value: '==', label: 'flowEditor.form.condition.op.eq' },
+  { value: '!=', label: 'flowEditor.form.condition.op.neq' },
+  { value: 'contains', label: 'flowEditor.form.condition.op.contains' },
+  { value: 'notContains', label: 'flowEditor.form.condition.op.notContains' },
+  { value: 'startsWith', label: 'flowEditor.form.condition.op.startsWith' },
+  { value: 'endsWith', label: 'flowEditor.form.condition.op.endsWith' },
+  { value: '>', label: 'flowEditor.form.condition.op.gt' },
+  { value: '<', label: 'flowEditor.form.condition.op.lt' },
+  { value: 'isEmpty', label: 'flowEditor.form.condition.op.isEmpty', noRight: true },
 ];
 
 export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
+  const { t } = useI18n();
   const rules = React.useMemo<ConditionRuleDraft[]>(
     () =>
       Array.isArray(config.rules)
@@ -49,7 +52,7 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
     [config.rules],
   );
   const match = (config.match as ConditionMatch) ?? 'all';
-  const refs = buildRefOptions(nodes, nodeId);
+  const refs = buildRefOptions(nodes, nodeId, t);
 
   const update = (index: number, partial: Partial<ConditionRuleDraft>) => {
     const next = rules.map((r, i) => {
@@ -67,10 +70,10 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">满足方式</label>
+        <label className="text-xs font-medium text-muted-foreground">{t('flowEditor.form.condition.matchLabel')}</label>
         <Select value={match} onChange={(e) => patch({ match: e.target.value as ConditionMatch })}>
-          <option value="all">全部规则满足（AND）</option>
-          <option value="any">任一规则满足（OR）</option>
+          <option value="all">{t('flowEditor.form.condition.matchAll')}</option>
+          <option value="any">{t('flowEditor.form.condition.matchAny')}</option>
         </Select>
       </div>
       <div className="flex flex-col gap-2">
@@ -79,7 +82,9 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
           return (
             <div key={i} className="rounded-md border p-2">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">规则 {i + 1}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {t('flowEditor.form.condition.ruleIndex', { index: i + 1 })}
+                </span>
                 <Button
                   type="button"
                   variant="ghost"
@@ -93,12 +98,12 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
               <Input
                 value={rule.left}
                 onChange={(e) => update(i, { left: e.target.value })}
-                placeholder="左值（可粘贴 {{$nodes.…}}）"
+                placeholder={t('flowEditor.form.condition.leftPlaceholder')}
                 className="mt-1.5 h-8 font-mono text-xs"
               />
               {refs.length > 0 && (
                 <Select value="" onChange={(e) => update(i, { left: `${rule.left}${e.target.value}` })}>
-                  <option value="">+ 插入变量</option>
+                  <option value="">{t('flowEditor.ref.insertVariable')}</option>
                   {refs.map((opt) => (
                     <option key={opt.token} value={opt.token}>
                       {opt.group} · {opt.label}
@@ -113,7 +118,7 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
               >
                 {OPS.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(o.label)}
                   </option>
                 ))}
               </Select>
@@ -121,7 +126,7 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
                 <Input
                   value={str(rule.right)}
                   onChange={(e) => update(i, { right: e.target.value })}
-                  placeholder="右值"
+                  placeholder={t('flowEditor.form.condition.rightPlaceholder')}
                   className="mt-2 h-8 font-mono text-xs"
                 />
               )}
@@ -130,7 +135,7 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
         })}
         <Button type="button" variant="outline" size="sm" onClick={add} className="w-full">
           <Plus className="h-3.5 w-3.5" />
-          添加规则
+          {t('flowEditor.form.condition.addRule')}
         </Button>
       </div>
     </div>

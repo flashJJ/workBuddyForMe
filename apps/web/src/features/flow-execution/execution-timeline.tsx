@@ -12,9 +12,14 @@ import {
 } from 'lucide-react';
 import type { FlowEventPayload } from '@wbfm/shared/types';
 import type { FlowNodeType } from '@wbfm/shared/schemas';
+import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { NODE_META, nodeTitle } from '../flow-editor/node-meta';
 import type { FlowCanvasNode } from '../flow-editor/graph-utils';
+
+/** useI18n 返回的翻译函数形状（模块级 helper 需经调用方传入） */
+type TFn = (key: MessageKey, vars?: MessageVars) => string;
 
 const NODE_EVENTS = new Set([
   'node_started',
@@ -24,6 +29,14 @@ const NODE_EVENTS = new Set([
   'node_failed',
 ]);
 
+const EVENT_LABEL_KEYS: Record<string, MessageKey> = {
+  node_started: 'flowExecution.event.running',
+  node_succeeded: 'flowExecution.event.succeeded',
+  node_skipped: 'flowExecution.event.skipped',
+  node_waiting_human: 'flowExecution.event.waitingHuman',
+  node_failed: 'flowExecution.event.failed',
+};
+
 interface TimelineProps {
   events: FlowEventPayload[];
   nodes: FlowCanvasNode[];
@@ -31,9 +44,10 @@ interface TimelineProps {
 
 /** 逐节点事件时间线（run_* 收尾事件由面板主体处理） */
 export function ExecutionTimeline({ events, nodes }: TimelineProps) {
+  const { t } = useI18n();
   const nodeEvents = events.filter((e) => NODE_EVENTS.has(e.type));
   if (nodeEvents.length === 0) {
-    return <p className="px-4 py-3 text-xs text-muted-foreground">等待节点事件…</p>;
+    return <p className="px-4 py-3 text-xs text-muted-foreground">{t('flowExecution.waitingEvents')}</p>;
   }
 
   return (
@@ -47,11 +61,12 @@ export function ExecutionTimeline({ events, nodes }: TimelineProps) {
 
 function TimelineRow({ event, nodes }: { event: FlowEventPayload; nodes: FlowCanvasNode[] }) {
   const [open, setOpen] = React.useState(false);
+  const { t } = useI18n();
   if (!('nodeId' in event)) return null;
   const node = nodes.find((n) => n.id === event.nodeId);
   const type = (node?.type ?? 'llm') as FlowNodeType;
   const meta = NODE_META[type];
-  const title = node ? nodeTitle(type, node.data.config) : event.nodeId;
+  const title = node ? nodeTitle(t, type, node.data.config) : event.nodeId;
   const hasDetail =
     ('inputs' in event && event.inputs !== undefined) ||
     ('outputs' in event && event.outputs !== undefined) ||
@@ -70,7 +85,7 @@ function TimelineRow({ event, nodes }: { event: FlowEventPayload; nodes: FlowCan
         >
           <meta.icon className={cn('h-3.5 w-3.5 shrink-0', meta.accent)} />
           <span className="truncate text-xs font-medium">{title}</span>
-          <span className="shrink-0 text-[10px] text-muted-foreground">{eventLabel(event.type)}</span>
+          <span className="shrink-0 text-[10px] text-muted-foreground">{eventLabel(event.type, t)}</span>
           {'durationMs' in event && typeof event.durationMs === 'number' && (
             <span className="shrink-0 text-[10px] text-muted-foreground">{event.durationMs}ms</span>
           )}
@@ -87,10 +102,10 @@ function TimelineRow({ event, nodes }: { event: FlowEventPayload; nodes: FlowCan
         {open && hasDetail && (
           <div className="mt-1.5 space-y-1.5">
             {'inputs' in event && event.inputs !== undefined && (
-              <JsonBlock title="输入" value={event.inputs} />
+              <JsonBlock title={t('flowExecution.inputs')} value={event.inputs} />
             )}
             {'outputs' in event && event.outputs !== undefined && (
-              <JsonBlock title="输出" value={event.outputs} />
+              <JsonBlock title={t('flowExecution.outputs')} value={event.outputs} />
             )}
           </div>
         )}
@@ -120,21 +135,9 @@ function safeStringify(value: unknown): string {
   }
 }
 
-function eventLabel(type: string): string {
-  switch (type) {
-    case 'node_started':
-      return '运行中';
-    case 'node_succeeded':
-      return '成功';
-    case 'node_skipped':
-      return '已跳过';
-    case 'node_waiting_human':
-      return '等待处理';
-    case 'node_failed':
-      return '失败';
-    default:
-      return type;
-  }
+function eventLabel(type: string, t: TFn): string {
+  const key = EVENT_LABEL_KEYS[type];
+  return key ? t(key) : type;
 }
 
 function eventIcon(type: string, accent: string) {

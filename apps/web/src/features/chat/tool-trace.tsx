@@ -23,47 +23,69 @@ import {
 } from 'lucide-react';
 import type { ToolName } from '@wbfm/shared/constants';
 import type { ToolSubstep, ToolTraceEntry, PermissionLevel } from '@wbfm/shared/types';
+import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
 
-const TOOL_META: Record<ToolName, { label: string; icon: typeof Clock }> = {
-  current_time: { label: '查询当前时间', icon: Clock },
-  knowledge_search: { label: '检索知识库', icon: Search },
-  fetch_webpage: { label: '读取网页', icon: Globe },
-  screen_snapshot: { label: '屏幕截图', icon: Monitor },
-  mouse_move: { label: '鼠标移动', icon: MousePointer2 },
-  mouse_click: { label: '鼠标点击', icon: MousePointerClick },
-  mouse_scroll: { label: '鼠标滚轮', icon: Mouse },
-  keyboard_type: { label: '键盘输入', icon: Keyboard },
-  keyboard_press: { label: '组合键', icon: Keyboard },
-  window_list: { label: '列出窗口', icon: AppWindow },
-  uia_list: { label: '枚举窗口控件', icon: ListTree },
-  window_focus: { label: '激活窗口', icon: AppWindow },
-  app_launch: { label: '启动应用', icon: Rocket },
+/** useI18n 返回的翻译函数形状（模块级 helper 需经调用方传入） */
+type TFn = (key: MessageKey, vars?: MessageVars) => string;
+
+const TOOL_META: Record<ToolName, { labelKey: MessageKey; icon: typeof Clock }> = {
+  current_time: { labelKey: 'toolTrace.tools.currentTime', icon: Clock },
+  knowledge_search: { labelKey: 'toolTrace.tools.knowledgeSearch', icon: Search },
+  fetch_webpage: { labelKey: 'toolTrace.tools.fetchWebpage', icon: Globe },
+  screen_snapshot: { labelKey: 'toolTrace.tools.screenSnapshot', icon: Monitor },
+  mouse_move: { labelKey: 'toolTrace.tools.mouseMove', icon: MousePointer2 },
+  mouse_click: { labelKey: 'toolTrace.tools.mouseClick', icon: MousePointerClick },
+  mouse_scroll: { labelKey: 'toolTrace.tools.mouseScroll', icon: Mouse },
+  keyboard_type: { labelKey: 'toolTrace.tools.keyboardType', icon: Keyboard },
+  keyboard_press: { labelKey: 'toolTrace.tools.keyboardPress', icon: Keyboard },
+  window_list: { labelKey: 'toolTrace.tools.windowList', icon: AppWindow },
+  uia_list: { labelKey: 'toolTrace.tools.uiaList', icon: ListTree },
+  window_focus: { labelKey: 'toolTrace.tools.windowFocus', icon: AppWindow },
+  app_launch: { labelKey: 'toolTrace.tools.appLaunch', icon: Rocket },
 };
 
-/** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>）；v0.8 flow:<id> 统一展示为工作流 */
-function metaOf(name: string): { label: string; icon: typeof Clock } {
-  if (name.startsWith('flow:')) return { label: '工作流', icon: Workflow };
-  return TOOL_META[name as ToolName] ?? { label: name, icon: Wrench };
+interface ToolMeta {
+  /** 内置工具/工作流的展示名 i18n 键；外部工具无键，回落 label */
+  labelKey: MessageKey | null;
+  /** 外部工具（MCP/未知）直接展示的限定名；内置工具缺省回落 entry.tool */
+  label?: string;
+  icon: typeof Clock;
 }
 
-const SOURCE_LABELS: Record<string, string> = { builtin: '内置', unknown: '未知', flow: '流程' };
+/** v0.6：MCP 等外部工具名无内置元数据，展示限定名（mcp:<server>:<tool>）；v0.8 flow:<id> 统一展示为工作流 */
+function metaOf(name: string): ToolMeta {
+  if (name.startsWith('flow:')) return { labelKey: 'toolTrace.flow', label: '', icon: Workflow };
+  return TOOL_META[name as ToolName] ?? { labelKey: null, label: name, icon: Wrench };
+}
+
+const SOURCE_LABEL_KEYS: Record<string, MessageKey> = {
+  builtin: 'toolTrace.source.builtin',
+  unknown: 'toolTrace.source.unknown',
+  flow: 'toolTrace.source.flow',
+};
 const SOURCE_VARIANT: Record<string, 'default' | 'outline' | 'success' | 'warning' | 'danger'> = {
   builtin: 'default',
   unknown: 'outline',
   flow: 'success',
 };
-const PERMISSION_LABELS: Record<PermissionLevel, string> = { read: '读', write: '写', danger: '危险' };
+const PERMISSION_LABEL_KEYS: Record<PermissionLevel, MessageKey> = {
+  read: 'toolTrace.permission.read',
+  write: 'toolTrace.permission.write',
+  danger: 'toolTrace.permission.danger',
+};
 const PERMISSION_VARIANT: Record<PermissionLevel, 'success' | 'warning' | 'danger'> = {
   read: 'success',
   write: 'warning',
   danger: 'danger',
 };
 
-function sourceLabel(source?: string): string {
+function sourceLabel(source: string | undefined, t: TFn): string {
   if (!source) return '';
-  if (SOURCE_LABELS[source]) return SOURCE_LABELS[source]!;
+  const key = SOURCE_LABEL_KEYS[source];
+  if (key) return t(key);
   if (source.startsWith('mcp:')) return `MCP / ${source.slice(4)}`;
   return source;
 }
@@ -95,8 +117,10 @@ function SubstepIcon({ status }: { status: ToolSubstep['status'] }) {
 }
 
 function ToolRow({ entry }: { entry: ToolTraceEntry }) {
+  const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
-  const { label, icon: Icon } = metaOf(entry.tool);
+  const meta = metaOf(entry.tool);
+  const label = meta.labelKey ? t(meta.labelKey) : (meta.label ?? entry.tool);
   const running = entry.status === 'running';
   const failed = entry.status === 'error';
   const substeps = entry.substeps ?? [];
@@ -121,10 +145,10 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
         ) : (
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
         )}
-        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <meta.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium">{label}</span>
-        {entry.source && <Badge variant={SOURCE_VARIANT[entry.source] ?? 'outline'} className="px-1.5 py-0 text-[10px]">{sourceLabel(entry.source)}</Badge>}
-        {entry.permission && <Badge variant={PERMISSION_VARIANT[entry.permission]} className="px-1.5 py-0 text-[10px]">{PERMISSION_LABELS[entry.permission]}</Badge>}
+        {entry.source && <Badge variant={SOURCE_VARIANT[entry.source] ?? 'outline'} className="px-1.5 py-0 text-[10px]">{sourceLabel(entry.source, t)}</Badge>}
+        {entry.permission && <Badge variant={PERMISSION_VARIANT[entry.permission]} className="px-1.5 py-0 text-[10px]">{t(PERMISSION_LABEL_KEYS[entry.permission])}</Badge>}
         {entry.argsSummary && (
           <span className="min-w-0 flex-1 truncate text-muted-foreground">{entry.argsSummary}</span>
         )}
@@ -139,7 +163,7 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
         <ul
           data-testid="tool-substeps"
           className="space-y-1 border-t px-2.5 py-1.5"
-          aria-label={`${label}子步骤`}
+          aria-label={t('toolTrace.substepsAria', { name: label })}
         >
           {substeps.map((step) => (
             <SubstepRow key={step.id} step={step} />
@@ -149,29 +173,29 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
       {open && (
         <dl className="space-y-1 border-t px-2.5 py-2 text-muted-foreground">
           <div className="flex gap-2">
-            <dt className="w-16 shrink-0">工具名</dt>
+            <dt className="w-16 shrink-0">{t('toolTrace.detail.toolName')}</dt>
             <dd className="font-mono text-foreground">{entry.tool}</dd>
           </div>
           {entry.source && (
             <div className="flex gap-2">
-              <dt className="w-16 shrink-0">来源</dt>
-              <dd>{sourceLabel(entry.source)}</dd>
+              <dt className="w-16 shrink-0">{t('toolTrace.detail.source')}</dt>
+              <dd>{sourceLabel(entry.source, t)}</dd>
             </div>
           )}
           {entry.permission && (
             <div className="flex gap-2">
-              <dt className="w-16 shrink-0">权限</dt>
-              <dd>{PERMISSION_LABELS[entry.permission]}</dd>
+              <dt className="w-16 shrink-0">{t('toolTrace.detail.permission')}</dt>
+              <dd>{t(PERMISSION_LABEL_KEYS[entry.permission])}</dd>
             </div>
           )}
           {entry.argsSummary && (
             <div className="flex gap-2">
-              <dt className="w-16 shrink-0">参数</dt>
+              <dt className="w-16 shrink-0">{t('toolTrace.detail.args')}</dt>
               <dd className="break-all">{entry.argsSummary}</dd>
             </div>
           )}
           <div className="flex gap-2">
-            <dt className="w-16 shrink-0">结果</dt>
+            <dt className="w-16 shrink-0">{t('toolTrace.detail.result')}</dt>
             <dd className={cn('break-all', failed && 'text-destructive')}>{entry.resultSummary}</dd>
           </div>
         </dl>

@@ -5,6 +5,7 @@ import { CheckCircle2, Download, Loader2, XCircle } from 'lucide-react';
 import type { VoiceModelKind } from '@wbfm/voice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ModelDownloadView } from './use-voice-model-downloads';
 
 interface Props {
@@ -29,30 +30,31 @@ export function formatBytes(bytes: number): string {
 }
 
 function StateBadge({ view }: { view: ModelDownloadView }) {
+  const { t } = useI18n();
   if (view.ready)
     return (
       <Badge variant="success" data-testid="voice-model-state">
         <CheckCircle2 className="mr-1 h-3 w-3" />
-        已就绪
+        {t('voice.model.ready')}
       </Badge>
     );
   if (view.status === 'downloading' || view.active)
     return (
       <Badge variant="warning" data-testid="voice-model-state">
         <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-        下载中 {Math.round(view.ratio * 100)}%
+        {t('voice.model.downloading', { percent: Math.round(view.ratio * 100) })}
       </Badge>
     );
   if (view.status === 'error')
     return (
       <Badge variant="danger" data-testid="voice-model-state">
         <XCircle className="mr-1 h-3 w-3" />
-        下载失败
+        {t('voice.model.failed')}
       </Badge>
     );
   return (
     <Badge variant="outline" data-testid="voice-model-state">
-      未下载
+      {t('voice.model.missing')}
     </Badge>
   );
 }
@@ -69,6 +71,7 @@ export function VoiceModelCard({
   testIdKey,
   active = false,
 }: Props) {
+  const { t } = useI18n();
   const busy = view.active || view.status === 'downloading';
   const key = testIdKey ?? kind;
   return (
@@ -83,7 +86,7 @@ export function VoiceModelCard({
             <span className="truncate">{name}</span>
             {active && (
               <Badge variant="outline" className="shrink-0" data-testid={`voice-model-active-${key}`}>
-                使用中
+                {t('voice.model.active')}
               </Badge>
             )}
           </p>
@@ -114,7 +117,7 @@ export function VoiceModelCard({
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">约 {formatBytes(totalBytes)}</span>
+        <span className="text-xs text-muted-foreground">{t('voice.model.approxSize', { size: formatBytes(totalBytes) })}</span>
         {view.ready ? (
           !busy && (
             <Button
@@ -124,7 +127,7 @@ export function VoiceModelCard({
               onClick={onStart}
               data-testid={`voice-model-redownload-${key}`}
             >
-              重新下载
+              {t('voice.model.redownload')}
             </Button>
           )
         ) : busy ? (
@@ -135,7 +138,7 @@ export function VoiceModelCard({
             onClick={onCancel}
             data-testid={`voice-model-cancel-${key}`}
           >
-            取消
+            {t('voice.model.cancel')}
           </Button>
         ) : (
           <Button
@@ -146,7 +149,7 @@ export function VoiceModelCard({
             data-testid={`voice-model-start-${key}`}
           >
             <Download className="mr-1 h-3.5 w-3.5" />
-            {view.status === 'error' ? '重试' : '下载'}
+            {view.status === 'error' ? t('voice.model.retry') : t('voice.model.download')}
           </Button>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useFlowStatus } from './flow-status-context';
 
 /**
@@ -19,6 +20,7 @@ export function BranchEdge({
   sourceHandleId,
   selected,
 }: EdgeProps) {
+  const { t } = useI18n();
   const { errorEdgeIds } = useFlowStatus();
   const hasError = errorEdgeIds.has(id);
   const isTrue = sourceHandleId === 'true';
@@ -56,7 +58,7 @@ export function BranchEdge({
             borderColor: color,
           }}
         >
-          {isTrue ? '是' : '否'}
+          {isTrue ? t('flowEditor.node.branch.yes') : t('flowEditor.node.branch.no')}
         </span>
       </EdgeLabelRenderer>
     </>

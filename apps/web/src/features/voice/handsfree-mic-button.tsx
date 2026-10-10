@@ -4,6 +4,7 @@ import * as React from 'react';
 import { AudioLines, Loader2, Mic, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { HandsfreeVoice } from './use-handsfree-voice';
 
 interface HandsfreeMicButtonProps {
@@ -16,6 +17,7 @@ interface HandsfreeMicButtonProps {
  * 按钮不随流式回复禁用——助手说话时它必须保持可触发，开口即 barge-in。
  */
 export function HandsfreeMicButton({ handsfree, disabled }: HandsfreeMicButtonProps) {
+  const { t } = useI18n();
   const toast = useToast();
   const { armed, voiceState, monitorError, asrError } = handsfree;
 
@@ -24,18 +26,18 @@ export function HandsfreeMicButton({ handsfree, disabled }: HandsfreeMicButtonPr
   }, [monitorError, toast]);
 
   React.useEffect(() => {
-    if (asrError) toast.error(`识别失败：${asrError}`);
-  }, [asrError, toast]);
+    if (asrError) toast.error(t('voice.handsfree.asrFailed', { message: asrError }));
+  }, [asrError, toast, t]);
 
   const label = !armed
-    ? '开启免手持续聆听'
+    ? t('voice.handsfree.enable')
     : voiceState === 'listening'
-      ? '正在聆听，说完自动发送'
+      ? t('voice.handsfree.listening')
       : voiceState === 'thinking'
-        ? '正在识别…'
+        ? t('voice.handsfree.thinking')
         : voiceState === 'speaking'
-          ? '助手说话中：开口即可打断'
-          : '免手聆听中（点击关闭）';
+          ? t('voice.handsfree.speaking')
+          : t('voice.handsfree.idle');
 
   return (
     <span className="flex items-center gap-1.5">
@@ -64,7 +66,7 @@ export function HandsfreeMicButton({ handsfree, disabled }: HandsfreeMicButtonPr
       {armed && (
         <span
           className="flex h-4 w-20 items-end overflow-hidden rounded-sm bg-muted"
-          title={`采集：${handsfree.monitorPhase}`}
+          title={t('voice.handsfree.capturePhase', { phase: handsfree.monitorPhase })}
           data-testid="handsfree-level"
           data-phase={handsfree.monitorPhase}
           data-level={handsfree.micLevel.toFixed(3)}

@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/use-i18n';
+
 interface EndpointTogglesProps {
   httpEnabled: boolean;
   mcpEnabled: boolean;
@@ -16,12 +18,13 @@ export function EndpointToggles({
   onHttpChange,
   onMcpChange,
 }: EndpointTogglesProps) {
+  const { t } = useI18n();
   return (
     <>
       <label className="flex items-center justify-between gap-3">
         <span>
-          本地 API
-          <span className="ml-1 text-[11px] text-muted-foreground">HTTP invoke / 轮询 / SSE</span>
+          {t('flowEditor.endpoint.toggles.http')}
+          <span className="ml-1 text-[11px] text-muted-foreground">{t('flowEditor.endpoint.toggles.httpHint')}</span>
         </span>
         <input
           type="checkbox"
@@ -33,8 +36,8 @@ export function EndpointToggles({
       </label>
       <label className="flex items-center justify-between gap-3">
         <span>
-          MCP 暴露
-          <span className="ml-1 text-[11px] text-muted-foreground">供 MCP 客户端发现调用（配置先行，服务 M3 上线）</span>
+          {t('flowEditor.endpoint.toggles.mcp')}
+          <span className="ml-1 text-[11px] text-muted-foreground">{t('flowEditor.endpoint.toggles.mcpHint')}</span>
         </span>
         <input
           type="checkbox"

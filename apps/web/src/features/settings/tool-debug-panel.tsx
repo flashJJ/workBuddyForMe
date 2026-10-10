@@ -2,28 +2,34 @@
 
 import * as React from 'react';
 import type { DebugToolInfo, ToolResult } from '@wbfm/core/tools';
+import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToolDebugExecute, useToolDebugList } from '@/lib/hooks/use-tool-debug';
+
+/** useI18n 返回的翻译函数形状（模块级 helper 需经调用方传入） */
+type TFn = (key: MessageKey, vars?: MessageVars) => string;
 
 function sourceBadgeVariant(source: string): 'default' | 'success' | 'warning' | 'danger' {
   if (source === 'builtin') return 'success';
   return 'warning';
 }
 
-function formatResult(result: ToolResult): string {
+function formatResult(result: ToolResult, t: TFn): string {
   return [
-    `状态：${result.ok ? '成功' : '失败'}`,
-    `摘要：${result.summary}`,
+    t(result.ok ? 'toolDebug.format.statusOk' : 'toolDebug.format.statusFailed'),
+    t('toolDebug.format.summary', { summary: result.summary }),
     '',
-    '输出：',
+    t('toolDebug.format.output'),
     result.output,
   ].join('\n');
 }
 
 export function ToolDebugPanel() {
+  const { t } = useI18n();
   const { data: tools, isLoading } = useToolDebugList();
   const execute = useToolDebugExecute();
   const toast = useToast();
@@ -39,30 +45,30 @@ export function ToolDebugPanel() {
     }
   }, [tools, selected]);
 
-  const currentTool = tools?.find((t) => t.name === selected);
+  const currentTool = tools?.find((tool) => tool.name === selected);
 
   const onExecute = async () => {
     let args: unknown = {};
     try {
       args = argsText.trim() ? JSON.parse(argsText) : {};
     } catch {
-      toast.error('参数不是合法 JSON');
+      toast.error(t('toolDebug.invalidJson'));
       return;
     }
     try {
       const r = await execute.mutateAsync({ name: selected, args });
       setResult(r);
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : '执行失败');
+      toast.error(error instanceof Error ? error.message : t('toolDebug.executeFailed'));
     }
   };
 
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold">工具调试台</h2>
+        <h2 className="text-lg font-semibold">{t('toolDebug.title')}</h2>
         <p className="text-sm text-muted-foreground">
-          选择工具并填参试跑，不经模型/熔断/权限门控；MCP 工具超时 60s。
+          {t('toolDebug.description')}
         </p>
       </div>
 
@@ -70,7 +76,7 @@ export function ToolDebugPanel() {
 
       {!isLoading && tools && tools.length === 0 && (
         <p className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
-          暂无可调试工具。内置工具默认可用；MCP 工具需先在「设置 → MCP」中连接服务器。
+          {t('toolDebug.empty')}
         </p>
       )}
 
@@ -78,7 +84,7 @@ export function ToolDebugPanel() {
         <div className="space-y-3">
           <div className="space-y-1">
             <label htmlFor="tool-debug-select" className="text-xs font-medium text-muted-foreground">
-              工具
+              {t('toolDebug.toolLabel')}
             </label>
             <select
               id="tool-debug-select"
@@ -88,15 +94,15 @@ export function ToolDebugPanel() {
               data-testid="tool-debug-select"
             >
               {Object.entries(
-                tools.reduce<Record<string, DebugToolInfo[]>>((acc, t) => {
-                  (acc[t.source] ??= []).push(t);
+                tools.reduce<Record<string, DebugToolInfo[]>>((acc, item) => {
+                  (acc[item.source] ??= []).push(item);
                   return acc;
                 }, {}),
               ).map(([source, group]) => (
                 <optgroup key={source} label={source}>
-                  {group.map((t) => (
-                    <option key={t.name} value={t.name}>
-                      {t.name}
+                  {group.map((item) => (
+                    <option key={item.name} value={item.name}>
+                      {item.name}
                     </option>
                   ))}
                 </optgroup>
@@ -116,7 +122,7 @@ export function ToolDebugPanel() {
               </div>
               <p className="mt-1 text-muted-foreground">{currentTool.description}</p>
               <details className="mt-1">
-                <summary className="cursor-pointer text-muted-foreground">参数 Schema</summary>
+                <summary className="cursor-pointer text-muted-foreground">{t('toolDebug.argsSchema')}</summary>
                 <pre className="mt-1 max-h-48 overflow-auto rounded bg-muted/40 p-2 text-[11px]">
                   {JSON.stringify(currentTool.parameters, null, 2)}
                 </pre>
@@ -125,7 +131,7 @@ export function ToolDebugPanel() {
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">参数（JSON）</label>
+            <label className="text-xs font-medium text-muted-foreground">{t('toolDebug.argsJson')}</label>
             <textarea
               value={argsText}
               onChange={(e) => setArgsText(e.target.value)}
@@ -142,17 +148,17 @@ export function ToolDebugPanel() {
             disabled={execute.isPending || !selected}
             data-testid="tool-debug-execute"
           >
-            {execute.isPending ? '执行中…' : '执行'}
+            {execute.isPending ? t('toolDebug.executing') : t('toolDebug.execute')}
           </Button>
 
           {result && (
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">结果</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('toolDebug.resultLabel')}</label>
               <pre
                 className="max-h-72 overflow-auto rounded-md border bg-muted/20 p-3 text-xs"
                 data-testid="tool-debug-result"
               >
-                {formatResult(result)}
+                {formatResult(result, t)}
               </pre>
             </div>
           )}

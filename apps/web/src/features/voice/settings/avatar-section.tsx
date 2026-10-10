@@ -10,6 +10,7 @@ import {
 import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar/avatar-models';
 import { getPetBridge } from '@/features/pet/pet-bridge';
 import { usePetOpenState } from '@/features/pet/use-pet-voice-relay';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -23,10 +24,9 @@ interface Props {
   onPatch: (patch: VoiceSettingsUpdateInput) => Promise<void>;
 }
 
-const VOICE_PREVIEW_TEXT = '你好，这是当前角色绑定声线的试听，所有语音都在本机合成。';
-
 /** 角色声线试听：按绑定 sid 合成 WAV 并播放 */
 function AvatarVoicePreview(props: { sid: number; ready: boolean }) {
+  const { t } = useI18n();
   const toast = useToast();
   const [playing, setPlaying] = React.useState(false);
 
@@ -39,14 +39,14 @@ function AvatarVoicePreview(props: { sid: number; ready: boolean }) {
         withManagedHeaders({
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ text: VOICE_PREVIEW_TEXT, speakerId: props.sid }),
+          body: JSON.stringify({ text: t('voice.avatar.previewText'), speakerId: props.sid }),
         }),
       );
       if (!res.ok) {
         const payload = (await res.json().catch(() => null)) as
           | { error?: { message?: string } }
           | null;
-        throw new Error(payload?.error?.message ?? `合成失败（HTTP ${res.status}）`);
+        throw new Error(payload?.error?.message ?? t('voice.preview.synthFailed', { status: res.status }));
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -58,7 +58,7 @@ function AvatarVoicePreview(props: { sid: number; ready: boolean }) {
       audio.onerror = () => {
         URL.revokeObjectURL(url);
         setPlaying(false);
-        toast.error('试听播放失败');
+        toast.error(t('voice.preview.playbackFailed'));
       };
       await audio.play();
     } catch (err) {
@@ -78,7 +78,7 @@ function AvatarVoicePreview(props: { sid: number; ready: boolean }) {
       data-testid="avatar-voice-preview"
     >
       {playing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1 h-3.5 w-3.5" />}
-      试听声线
+      {t('voice.avatar.previewButton')}
     </Button>
   );
 }
@@ -89,6 +89,7 @@ function AvatarVoicePreview(props: { sid: number; ready: boolean }) {
  * M4.5：每个角色绑定固定 Kokoro 声线，可就地试听。
  */
 export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
+  const { t } = useI18n();
   // 本地态在离散事件内同步落 DOM（避免外部存储驱动的受控 Select 二次操作回退），
   // 服务端值通过 effect 回同步
   const [enabled, setEnabled] = React.useState(settings.avatarEnabled);
@@ -127,15 +128,15 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
 
   return (
     <div className="space-y-3 rounded-md border p-3" data-testid="voice-avatar-section">
-      <p className="text-sm font-medium">Live2D 形象</p>
+      <p className="text-sm font-medium">{t('voice.avatar.title')}</p>
       <label
         className="flex cursor-pointer items-start justify-between gap-3"
         data-testid="avatar-enabled-row"
       >
         <span>
-          <span className="block text-sm font-medium">对话页显示虚拟形象</span>
+          <span className="block text-sm font-medium">{t('voice.avatar.chatToggleLabel')}</span>
           <span className="block text-xs text-muted-foreground">
-            右侧出现 Live2D 角色；说话时口型随朗读张合、表情随回复切换
+            {t('voice.avatar.chatToggleHint')}
           </span>
         </span>
         <input
@@ -153,7 +154,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
 
       {enabled && (
         <div className="space-y-1.5" data-testid="avatar-model-row">
-          <Label htmlFor="avatar-model">虚拟角色</Label>
+          <Label htmlFor="avatar-model">{t('voice.avatar.modelLabel')}</Label>
           <Select
             id="avatar-model"
             data-testid="avatar-model"
@@ -169,7 +170,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
           >
             {AVATAR_MODEL_LIST.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.label}
+                {t(item.label)}
               </option>
             ))}
           </Select>
@@ -180,30 +181,31 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
             {settings.ttsModel === 'melo' ? (
               <>
                 <p className="text-xs text-muted-foreground">
-                  当前朗读引擎为 MeloTTS（单声线）：所有角色共用同一中文女声；
-                  需要角色专属声线时请在上方「朗读引擎」切回 Kokoro
+                  {t('voice.avatar.meloNote')}
                 </p>
                 <AvatarVoicePreview sid={0} ready={ttsReady} />
               </>
             ) : (
               <>
                 <p className="text-xs text-muted-foreground">
-                  绑定声线：Kokoro {voice.voice}（{voice.gender === 'female' ? '中文女声' : '中文男声'}，
-                  sid {voice.sid}/102）· 对话朗读自动使用该声线
+                  {t('voice.avatar.voiceBinding', {
+                    voice: voice.voice,
+                    gender: voice.gender === 'female' ? t('voice.avatar.femaleVoice') : t('voice.avatar.maleVoice'),
+                    sid: voice.sid,
+                  })}
                 </p>
                 <AvatarVoicePreview sid={voice.sid} ready={ttsReady} />
               </>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            均为 Live2D 官方样本角色（免费素材许可，仅内置不可导入外部模型）；切换后即时生效
+            {t('voice.avatar.modelsNote')}
           </p>
         </div>
       )}
 
       <p className="text-xs text-muted-foreground">
-        形象资源（约 0.7–4.8MB 贴图/模型 + Cubism 渲染库，gzip 约 157KB）仅在开启后按需加载，
-        关闭时不下载、不初始化
+        {t('voice.avatar.resourceNote')}
       </p>
 
       {petBridge && (
@@ -213,10 +215,9 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
             data-testid="pet-enabled-row"
           >
             <span>
-              <span className="block text-sm font-medium">桌宠模式（桌面端）</span>
+              <span className="block text-sm font-medium">{t('voice.avatar.petModeLabel')}</span>
               <span className="block text-xs text-muted-foreground">
-                角色以透明置顶小窗陪在桌面：身体区拖动、双击回主窗、右键切换鼠标穿透；
-                朗读时桌宠口型/字幕同步
+                {t('voice.avatar.petModeHint')}
               </span>
             </span>
             <input
@@ -229,7 +230,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
             />
           </label>
           <p className="mt-1 text-xs text-muted-foreground">
-            桌宠打开时主窗形象栏自动让位；关闭主窗口不会退出应用，双击桌宠可唤回
+            {t('voice.avatar.petModeNote')}
           </p>
         </div>
       )}

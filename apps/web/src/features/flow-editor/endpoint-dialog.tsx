@@ -10,6 +10,7 @@ import { type FlowUnattendedPolicy } from '@wbfm/shared/types';
 // 策略编辑 UI 在 EndpointPolicySection；白名单过滤见 endpoint-dialog-utils
 import { ApiClientError } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   useFlowEndpoint,
   useFlowEndpointMutations,
@@ -45,6 +46,7 @@ export interface EndpointDialogProps {
 
 /** 对外服务端点管理：开关/密钥（一次明文）/同步超时/限速 + 危险节点提示（策略白名单 M4 提供） */
 export function EndpointDialog({ open, workflowId, published, onClose }: EndpointDialogProps) {
+  const { t } = useI18n();
   const detail = useFlowEndpoint(open ? workflowId : null);
   const mutations = useFlowEndpointMutations(workflowId);
   const toast = useToast();
@@ -100,7 +102,7 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
       const result = await mutations.save.mutateAsync(body);
       if (result.plaintextKey) setRevealedKey(result.plaintextKey);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '保存失败');
+      toast.error(error instanceof ApiClientError ? error.message : t('flowEditor.endpoint.saveFailed'));
     }
   };
 
@@ -117,7 +119,7 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
       const result = await mutations.rotate.mutateAsync();
       setRevealedKey(result.plaintextKey ?? null);
     } catch (error) {
-      toast.error(error instanceof ApiClientError ? error.message : '重置失败');
+      toast.error(error instanceof ApiClientError ? error.message : t('flowEditor.endpoint.rotateFailed'));
     }
   };
 
@@ -128,21 +130,20 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>对外服务</DialogTitle>
+          <DialogTitle>{t('flowEditor.endpoint.title')}</DialogTitle>
           <DialogDescription>
-            把已发布流程暴露为本机 HTTP API（仅 127.0.0.1 可访问），独立密钥、可随时吊销。
+            {t('flowEditor.endpoint.description')}
           </DialogDescription>
         </DialogHeader>
 
         {!published && (
           <p className="rounded-md border border-warning/30 bg-warning-background p-2 text-xs text-warning">
-            流程尚未发布：请先在工具栏「发布」当前版本，发布后才能开启对外调用。
+            {t('flowEditor.endpoint.notPublished')}
           </p>
         )}
         {ep?.policyRevalidationRequired && (
           <p className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
-            流程发布了新版本：请重新核对下方无人值守策略并「保存配置」，保存前所有 API/MCP
-            调用将被拒绝（409 需重新确认策略）。
+            {t('flowEditor.endpoint.revalidationRequired')}
           </p>
         )}
 
@@ -169,7 +170,7 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium">同步等待超时</span>
+                  <span className="text-xs font-medium">{t('flowEditor.endpoint.timeoutLabel')}</span>
                   <select
                     className="h-9 rounded-md border bg-background px-2 text-sm"
                     value={timeoutMs}
@@ -177,13 +178,13 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
                   >
                     {TIMEOUT_OPTIONS.map((ms) => (
                       <option key={ms} value={ms}>
-                        {ms / 1000} 秒（超时自动转异步）
+                        {t('flowEditor.endpoint.timeoutOption', { seconds: ms / 1000 })}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium">速率限制（次/分钟）</span>
+                  <span className="text-xs font-medium">{t('flowEditor.endpoint.rateLimitLabel')}</span>
                   <Input
                     type="number"
                     min={FLOW_ENDPOINT_RATE_LIMIT.min}
@@ -208,10 +209,10 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            关闭
+            {t('flowEditor.endpoint.close')}
           </Button>
           <Button onClick={save} disabled={saving || !published || (!httpEnabled && !mcpEnabled)}>
-            {saving ? '保存中…' : '保存配置'}
+            {saving ? t('flowEditor.endpoint.saving') : t('flowEditor.endpoint.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

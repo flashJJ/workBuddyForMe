@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useVoiceRecorder } from './use-voice-recorder';
 
+vi.mock('@/lib/i18n/use-i18n', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'zh-CN' }),
+}));
+
 interface FakeProcessor {
   onaudioprocess: ((event: { inputBuffer: { getChannelData: (c: number) => Float32Array } }) => void) | null;
   connect: ReturnType<typeof vi.fn>;

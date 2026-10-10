@@ -3,6 +3,7 @@
 import { AlertTriangle, Crosshair, XCircle } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { FlowDiagnostic } from '@wbfm/shared/types';
 import type { FlowCanvasNode } from './graph-utils';
 
@@ -15,6 +16,7 @@ interface DiagnosticsBarProps {
 
 /** 画布底部悬浮诊断条：点击条目定位并选中问题节点 */
 export function DiagnosticsBar({ diagnostics, nodes, onSelectNode, onClose }: DiagnosticsBarProps) {
+  const { t } = useI18n();
   const { setCenter } = useReactFlow();
   if (diagnostics.length === 0) return null;
 
@@ -31,9 +33,9 @@ export function DiagnosticsBar({ diagnostics, nodes, onSelectNode, onClose }: Di
     <div className="absolute bottom-3 left-3 z-10 max-h-44 w-96 overflow-y-auto rounded-lg border bg-card/95 shadow-lg backdrop-blur">
       <div className="flex items-center gap-1.5 border-b px-3 py-1.5 text-xs font-medium">
         <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-        校验问题（{diagnostics.length}）
+        {t('flowEditor.diagnostics.title', { count: diagnostics.length })}
         <button type="button" className="ml-auto text-muted-foreground hover:text-foreground" onClick={onClose}>
-          关闭
+          {t('flowEditor.diagnostics.close')}
         </button>
       </div>
       <ul className="divide-y">

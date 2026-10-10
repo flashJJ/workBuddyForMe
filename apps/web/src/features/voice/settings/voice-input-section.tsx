@@ -5,6 +5,7 @@ import type { VoiceSettings, VadSensitivity } from '@wbfm/shared/schemas';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface VoiceInputSectionProps {
   settings: VoiceSettings;
@@ -14,11 +15,6 @@ interface VoiceInputSectionProps {
 
 /** 尾静音预设（ms）：短=反应快但易截断，长=停顿宽容但等得久 */
 const SILENCE_PRESETS = [600, 900, 1200, 1500] as const;
-const SENSITIVITY_OPTIONS: Array<{ value: VadSensitivity; label: string; hint: string }> = [
-  { value: 'high', label: '高', hint: '小声也能触发，安静/耳机环境' },
-  { value: 'balanced', label: '均衡', hint: '大多数环境' },
-  { value: 'low', label: '低', hint: '外放/嘈杂环境，减少回声误触发' },
-];
 
 /**
  * M4 语音输入方式：PTT 按住说话 / VAD 免手持续聆听。
@@ -26,9 +22,16 @@ const SENSITIVITY_OPTIONS: Array<{ value: VadSensitivity; label: string; hint: s
  * 与 M2 ToggleRow 同源，规避受控控件二次点击翻转。
  */
 export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSectionProps) {
+  const { t } = useI18n();
   const [mode, setMode] = React.useState(settings.inputMode);
   const [sensitivity, setSensitivity] = React.useState<VadSensitivity>(settings.vadSensitivity);
   const [silenceMs, setSilenceMs] = React.useState(settings.vadSilenceMs);
+
+  const SENSITIVITY_OPTIONS: Array<{ value: VadSensitivity; label: string; hint: string }> = [
+    { value: 'high', label: t('voice.input.sensitivityHigh'), hint: t('voice.input.sensitivityHighHint') },
+    { value: 'balanced', label: t('voice.input.sensitivityBalanced'), hint: t('voice.input.sensitivityBalancedHint') },
+    { value: 'low', label: t('voice.input.sensitivityLow'), hint: t('voice.input.sensitivityLowHint') },
+  ];
 
   React.useEffect(() => setMode(settings.inputMode), [settings.inputMode]);
   React.useEffect(() => setSensitivity(settings.vadSensitivity), [settings.vadSensitivity]);
@@ -46,12 +49,12 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
   return (
     <div className="space-y-3 rounded-md border p-3" data-testid="voice-input-section">
       <div className="space-y-1.5">
-        <p className="text-sm font-medium">语音输入方式</p>
-        <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="语音输入方式">
+        <p className="text-sm font-medium">{t('voice.input.title')}</p>
+        <div className="inline-flex rounded-md border p-0.5" role="group" aria-label={t('voice.input.title')}>
           {(
             [
-              { value: 'ptt', label: '按住说话' },
-              { value: 'vad', label: '免手持续聆听' },
+              { value: 'ptt', label: t('voice.input.modePtt') },
+              { value: 'vad', label: t('voice.input.modeVad') },
             ] as const
           ).map((opt) => (
             <button
@@ -74,14 +77,14 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
           ))}
         </div>
         {!asrReady && (
-          <p className="text-xs text-warning">请先下载离线语音识别模型后再切换输入方式。</p>
+          <p className="text-xs text-warning">{t('voice.input.downloadFirst')}</p>
         )}
       </div>
 
       {isVad && (
         <div className="space-y-3" data-testid="voice-vad-params">
           <div className="space-y-1.5">
-            <Label htmlFor="voice-vad-sensitivity">聆听灵敏度</Label>
+            <Label htmlFor="voice-vad-sensitivity">{t('voice.input.sensitivityLabel')}</Label>
             <Select
               id="voice-vad-sensitivity"
               data-testid="voice-vad-sensitivity"
@@ -94,13 +97,13 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
             >
               {SENSITIVITY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}（{opt.hint}）
+                  {t('voice.input.sensitivityOption', { label: opt.label, hint: opt.hint })}
                 </option>
               ))}
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="voice-vad-silence">说完后停顿多久自动发送</Label>
+            <Label htmlFor="voice-vad-silence">{t('voice.input.silenceLabel')}</Label>
             <Select
               id="voice-vad-silence"
               data-testid="voice-vad-silence"
@@ -113,13 +116,14 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
             >
               {SILENCE_PRESETS.map((ms) => (
                 <option key={ms} value={ms}>
-                  {ms / 1000} 秒{ms === 600 ? '（推荐，跟手）' : ''}
+                  {t('voice.input.silenceSeconds', { seconds: ms / 1000 })}
+                  {ms === 600 ? t('voice.input.silenceRecommended') : ''}
                 </option>
               ))}
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            半双工模式：助手朗读时麦克风自动抑制回声，需要明显更大的声音才能打断；建议使用耳机。
+            {t('voice.input.halfDuplexHint')}
           </p>
         </div>
       )}

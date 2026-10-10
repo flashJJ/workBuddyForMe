@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { VoiceAsrResponse } from '@wbfm/shared/schemas';
 import { API } from '@/lib/api/endpoints';
 import { apiUpload } from '@/lib/api/client';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { downsampleTo16k, encodeWav16k, rms } from './pcm-wav';
 
 export type RecorderState = 'idle' | 'requesting' | 'recording' | 'recognizing';
@@ -37,6 +38,7 @@ const MIN_AUDIO_MS = 300;
  * 采样在渲染线程，语音短帧足够。
  */
 export function useVoiceRecorder(): VoiceRecorder {
+  const { t } = useI18n();
   const [state, setState] = React.useState<RecorderState>('idle');
   const [level, setLevel] = React.useState(0);
   const [error, setError] = React.useState<RecorderError | null>(null);
@@ -76,10 +78,13 @@ export function useVoiceRecorder(): VoiceRecorder {
       setState('idle');
       setError(
         name === 'NotAllowedError' || name === 'SecurityError'
-          ? { code: 'permission_denied', message: '麦克风权限被拒绝，请在浏览器/系统设置中允许' }
+          ? { code: 'permission_denied', message: t('voice.micError.permissionDenied') }
           : name === 'NotFoundError' || name === 'OverconstrainedError'
-            ? { code: 'no_device', message: '未检测到麦克风设备' }
-            : { code: 'unknown', message: `无法启动麦克风：${(err as Error).message}` },
+            ? { code: 'no_device', message: t('voice.micError.noDevice') }
+            : {
+                code: 'unknown',
+                message: t('voice.micError.startFailed', { message: (err as Error).message }),
+              },
       );
       return;
     }
@@ -91,7 +96,7 @@ export function useVoiceRecorder(): VoiceRecorder {
     if (!Ctor) {
       cleanup();
       setState('idle');
-      setError({ code: 'unknown', message: '当前浏览器不支持 Web Audio' });
+      setError({ code: 'unknown', message: t('voice.micError.noWebAudio') });
       return;
     }
     const ctx = new Ctor();
@@ -115,7 +120,7 @@ export function useVoiceRecorder(): VoiceRecorder {
     processor.connect(mute);
     mute.connect(ctx.destination);
     setState('recording');
-  }, [cleanup, state]);
+  }, [cleanup, state, t]);
 
   const stopAndRecognize = React.useCallback(async (): Promise<string> => {
     if (state !== 'recording') return '';
@@ -125,7 +130,7 @@ export function useVoiceRecorder(): VoiceRecorder {
     const durationMs = (recorded.length / ctxRate) * 1000;
     if (recorded.length === 0 || durationMs < MIN_AUDIO_MS) {
       setState('idle');
-      setError({ code: 'too_short', message: '录音太短，请按住按钮多说一会儿' });
+      setError({ code: 'too_short', message: t('voice.micError.tooShort') });
       return '';
     }
     const pcm16k = downsampleTo16k(recorded, ctxRate);
@@ -141,11 +146,13 @@ export function useVoiceRecorder(): VoiceRecorder {
       setState('idle');
       setError({
         code: 'network',
-        message: `识别失败：${err instanceof Error ? err.message : '网络错误'}`,
+        message: t('voice.micError.recognizeFailed', {
+          message: err instanceof Error ? err.message : t('voice.micError.network'),
+        }),
       });
       return '';
     }
-  }, [cleanup, state]);
+  }, [cleanup, state, t]);
 
   const cancel = React.useCallback(() => {
     chunksRef.current = [];

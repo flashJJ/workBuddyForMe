@@ -1,6 +1,7 @@
 'use client';
 
 import type { PetVoiceState } from '@wbfm/shared/pet';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   text: string;
@@ -19,8 +20,9 @@ const STATE_DOT: Record<PetVoiceState, string> = {
  * pointer-events-none：不干扰身体区拖拽与命中上报；底色半透明保证深浅壁纸下可读。
  */
 export function PetSubtitle({ text, voiceState }: Props) {
+  const { t } = useI18n();
   if (!text && voiceState === 'idle') return null;
-  const fallback = voiceState === 'listening' ? '聆听中…' : voiceState === 'thinking' ? '思考中…' : '';
+  const fallback = voiceState === 'listening' ? t('pet.subtitle.listening') : voiceState === 'thinking' ? t('pet.subtitle.thinking') : '';
   const content = text || fallback;
   if (!content) return null;
   return (

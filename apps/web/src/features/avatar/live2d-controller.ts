@@ -107,7 +107,8 @@ export class Live2dController {
       // 口型：在模型自身 ticker 更新之后写口型参数，避免被动作曲线覆盖
       controller.app.ticker.add(() => controller.applyLip());
     } catch (error) {
-      options.onError?.(`Live2D 模型加载失败：${(error as Error).message}`);
+      // 只上报底层错误详情；「模型加载失败」前缀文案由调用方渲染时经 t() 组装
+      options.onError?.((error as Error).message);
     }
     return controller;
   }

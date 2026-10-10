@@ -5,6 +5,8 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { FlowNodeExecStatus } from '@wbfm/shared/types';
 import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/use-i18n';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { NODE_META, nodeTitle } from './node-meta';
 import { configSummary, type FlowCanvasNode } from './graph-utils';
 import { useFlowStatus } from './flow-status-context';
@@ -17,12 +19,12 @@ const STATUS_RING: Record<FlowNodeExecStatus, string> = {
   waiting_human: 'ring-2 ring-warning shadow-warning/30 shadow-lg animate-pulse',
 };
 
-const STATUS_LABEL: Record<FlowNodeExecStatus, string> = {
-  running: '运行中',
-  succeeded: '成功',
-  failed: '失败',
-  skipped: '跳过',
-  waiting_human: '待处理',
+const STATUS_LABEL: Record<FlowNodeExecStatus, MessageKey> = {
+  running: 'flowEditor.node.status.running',
+  succeeded: 'flowEditor.node.status.succeeded',
+  failed: 'flowEditor.node.status.failed',
+  skipped: 'flowEditor.node.status.skipped',
+  waiting_human: 'flowEditor.node.status.waitingHuman',
 };
 
 interface ShellProps {
@@ -35,6 +37,7 @@ interface ShellProps {
 
 /** 统一节点外观：图标 + 标题 + 摘要 + 状态描边 */
 function NodeShell({ id, type, config, selected, children }: ShellProps) {
+  const { t } = useI18n();
   const meta = NODE_META[type];
   const { nodeStatus, errorNodeIds, warningNodeIds } = useFlowStatus();
   const status = nodeStatus[id];
@@ -53,13 +56,13 @@ function NodeShell({ id, type, config, selected, children }: ShellProps) {
     >
       <div className="flex items-center gap-2">
         <meta.icon className={cn('h-4 w-4 shrink-0', meta.accent)} />
-        <span className="flex-1 truncate text-sm font-medium">{nodeTitle(type, config)}</span>
+        <span className="flex-1 truncate text-sm font-medium">{nodeTitle(t, type, config)}</span>
         {status && (
-          <span className="shrink-0 text-[10px] text-muted-foreground">{STATUS_LABEL[status]}</span>
+          <span className="shrink-0 text-[10px] text-muted-foreground">{t(STATUS_LABEL[status])}</span>
         )}
       </div>
       <p className="mt-1 truncate text-[11px] text-muted-foreground">
-        {configSummary(type, config)}
+        {configSummary(t, type, config)}
       </p>
       {children}
     </div>
@@ -89,6 +92,7 @@ function makeNode(type: FlowNodeType) {
 
 /** 条件节点：右侧 true/false 两个分支句柄 */
 function ConditionNode({ id, data, selected }: FlowNodeProps) {
+  const { t } = useI18n();
   return (
     <NodeShell id={id} type="condition" config={data.config} selected={selected}>
       <TargetHandle />
@@ -107,10 +111,10 @@ function ConditionNode({ id, data, selected }: FlowNodeProps) {
         className="!h-2.5 !w-2.5 !bg-destructive"
       />
       <span className="pointer-events-none absolute right-[-26px] top-[24%] text-[10px] font-medium text-success">
-        是
+        {t('flowEditor.node.branch.yes')}
       </span>
       <span className="pointer-events-none absolute right-[-26px] top-[64%] text-[10px] font-medium text-destructive">
-        否
+        {t('flowEditor.node.branch.no')}
       </span>
     </NodeShell>
   );

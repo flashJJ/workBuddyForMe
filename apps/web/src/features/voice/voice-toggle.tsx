@@ -2,6 +2,7 @@
 
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useVoiceSettings } from './use-voice-settings';
 
 interface VoiceToggleProps {
@@ -15,14 +16,15 @@ interface VoiceToggleProps {
  * TTS 模型未就绪时禁止打开并给出原因（M2 设置面板提供下载入口）。
  */
 export function VoiceToggle({ enabled, onEnabledChange }: VoiceToggleProps) {
+  const { t } = useI18n();
   const { modelStatus } = useVoiceSettings();
   const ttsReady = modelStatus?.ttsReady ?? false;
 
   const label = !ttsReady
-    ? '语音朗读不可用：请在设置中下载离线语音模型'
+    ? t('voice.toggle.unavailable')
     : enabled
-      ? '关闭语音朗读'
-      : '开启语音朗读（离线）';
+      ? t('voice.toggle.off')
+      : t('voice.toggle.on');
 
   return (
     <Button

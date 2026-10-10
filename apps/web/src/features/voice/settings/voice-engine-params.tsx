@@ -9,6 +9,7 @@ import {
 } from '@wbfm/shared/schemas';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { TtsPreview } from './tts-preview';
 
 interface Props {
@@ -21,32 +22,33 @@ interface Props {
 const THREAD_OPTIONS = [1, 2, 4, 8];
 const SPEED_OPTIONS = [0.8, 1, 1.2, 1.5];
 
-/** v1.1 朗读引擎选项（模型下载状态见「离线模型」区两张 TTS 卡） */
-const TTS_MODEL_OPTIONS: ReadonlyArray<{
-  value: VoiceTtsModel;
-  name: string;
-  hint: string;
-}> = [
-  {
-    value: 'kokoro',
-    name: 'Kokoro 多角色声线',
-    hint: '103 个中英音色，声线按所选 Live2D 角色自动绑定',
-  },
-  {
-    value: 'melo',
-    name: 'MeloTTS 低延迟单声',
-    hint: '单一中文女声，CPU 合成更快，免手聆听首句等待更短',
-  },
-];
-
 /** 朗读引擎选择器：单选卡片，切换即时保存（服务端惰性重建引擎） */
 function TtsModelSelector(props: {
   value: VoiceTtsModel;
   onPatch: (patch: VoiceSettingsUpdateInput) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  /** v1.1 朗读引擎选项（模型下载状态见「离线模型」区两张 TTS 卡） */
+  const TTS_MODEL_OPTIONS: ReadonlyArray<{
+    value: VoiceTtsModel;
+    name: string;
+    hint: string;
+  }> = [
+    {
+      value: 'kokoro',
+      name: t('voice.engine.kokoroName'),
+      hint: t('voice.engine.kokoroHint'),
+    },
+    {
+      value: 'melo',
+      name: t('voice.engine.meloName'),
+      hint: t('voice.engine.meloHint'),
+    },
+  ];
+
   return (
-    <div className="space-y-1.5" role="radiogroup" aria-label="朗读引擎" data-testid="tts-model-selector">
-      <Label>朗读引擎</Label>
+    <div className="space-y-1.5" role="radiogroup" aria-label={t('voice.engine.title')} data-testid="tts-model-selector">
+      <Label>{t('voice.engine.title')}</Label>
       <div className="grid gap-2 sm:grid-cols-2">
         {TTS_MODEL_OPTIONS.map((option) => {
           const selected = props.value === option.value;
@@ -117,17 +119,20 @@ export function ToggleRow(props: {
 
 /** TTS/ASR 引擎参数：开关、语速、线程数、试听（即时保存） */
 export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Props) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4" data-testid="voice-engine-params">
       <div className="space-y-3 rounded-md border p-3">
-        <p className="text-sm font-medium">语音朗读（TTS）</p>
+        <p className="text-sm font-medium">{t('voice.engine.ttsTitle')}</p>
         <ToggleRow
           id="tts-enabled"
-          label="回复自动朗读"
+          label={t('voice.engine.ttsToggleLabel')}
           hint={
             ttsReady
-              ? '对话页也可用朗读按钮临时开关'
-              : `请先下载当前引擎（${settings.ttsModel === 'melo' ? 'MeloTTS' : 'Kokoro'}）的模型`
+              ? t('voice.engine.ttsToggleHintReady')
+              : t('voice.engine.ttsToggleHintNoModel', {
+                  engine: settings.ttsModel === 'melo' ? 'MeloTTS' : 'Kokoro',
+                })
           }
           checked={settings.ttsEnabled}
           disabled={!ttsReady}
@@ -136,7 +141,7 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         <TtsModelSelector value={settings.ttsModel} onPatch={onPatch} />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="tts-speed">语速</Label>
+            <Label htmlFor="tts-speed">{t('voice.engine.speedLabel')}</Label>
             <Select
               id="tts-speed"
               value={settings.ttsSpeed}
@@ -150,7 +155,7 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="tts-threads">推理线程</Label>
+            <Label htmlFor="tts-threads">{t('voice.engine.threadsLabel')}</Label>
             <Select
               id="tts-threads"
               value={settings.ttsNumThreads}
@@ -158,7 +163,7 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
             >
               {THREAD_OPTIONS.map((v) => (
                 <option key={v} value={v}>
-                  {v} 线程
+                  {t('voice.engine.threadsOption', { count: v })}
                 </option>
               ))}
             </Select>
@@ -166,8 +171,8 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         </div>
         <p className="text-xs text-muted-foreground">
           {settings.ttsModel === 'melo'
-            ? 'MeloTTS 为单说话人模型：所有角色共用同一中文女声，切换角色不改变声线'
-            : 'Kokoro 多说话人：声线按「Live2D 形象」选中的角色自动绑定（103 个中英音色，可在形象区逐角色试听）'}
+            ? t('voice.engine.meloNote')
+            : t('voice.engine.kokoroNote')}
         </p>
         <TtsPreview
           ready={ttsReady}
@@ -178,18 +183,18 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
       </div>
 
       <div className="space-y-3 rounded-md border p-3">
-        <p className="text-sm font-medium">语音输入（ASR）</p>
+        <p className="text-sm font-medium">{t('voice.engine.asrTitle')}</p>
         <ToggleRow
           id="asr-enabled"
-          label="启用语音输入"
-          hint={asrReady ? '开启后对话页输入框旁显示麦克风按钮（按住说话）' : '请先下载 ASR 模型'}
+          label={t('voice.engine.asrToggleLabel')}
+          hint={asrReady ? t('voice.engine.asrToggleHintReady') : t('voice.engine.asrToggleHintNoModel')}
           checked={settings.asrEnabled}
           disabled={!asrReady}
           onChange={(next) => void onPatch({ asrEnabled: next })}
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="asr-threads">推理线程</Label>
+            <Label htmlFor="asr-threads">{t('voice.engine.threadsLabel')}</Label>
             <Select
               id="asr-threads"
               value={settings.asrNumThreads}
@@ -197,15 +202,15 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
             >
               {THREAD_OPTIONS.map((v) => (
                 <option key={v} value={v}>
-                  {v} 线程
+                  {t('voice.engine.threadsOption', { count: v })}
                 </option>
               ))}
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="input-mode">输入方式</Label>
+            <Label htmlFor="input-mode">{t('voice.engine.inputModeLabel')}</Label>
             <Select id="input-mode" value={settings.inputMode} disabled>
-              <option value="ptt">按住说话（PTT）· 自动断句后续版本提供</option>
+              <option value="ptt">{t('voice.engine.inputModePttOption')}</option>
             </Select>
           </div>
         </div>

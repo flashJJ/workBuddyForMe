@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Mic, MicOff, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { rms } from '../pcm-wav';
 
 type TestState = 'idle' | 'checking' | 'ok' | 'silent' | 'denied' | 'absent' | 'error';
@@ -16,6 +17,7 @@ const SPEAK_THRESHOLD = 0.02;
  * 纯客户端检测，不录音上传。
  */
 export function MicSelfTest() {
+  const { t } = useI18n();
   const [state, setState] = React.useState<TestState>('idle');
   const [level, setLevel] = React.useState(0);
   const [peak, setPeak] = React.useState(0);
@@ -116,12 +118,12 @@ export function MicSelfTest() {
 
   const resultText: Record<TestState, string | null> = {
     idle: null,
-    checking: `正在聆听…请对着麦克风说话（${TEST_DURATION_MS / 1000} 秒）`,
-    ok: '麦克风工作正常，已采集到清晰声音输入',
-    silent: '设备可用但未采集到声音，请对着麦克风说话或检查系统录音音量',
-    denied: '麦克风权限被拒绝，请在系统/浏览器设置中允许后重试',
-    absent: '未检测到麦克风设备，请连接后重试',
-    error: '麦克风检测失败：当前环境不支持 Web Audio',
+    checking: t('voice.selfTest.checking', { seconds: TEST_DURATION_MS / 1000 }),
+    ok: t('voice.selfTest.ok'),
+    silent: t('voice.selfTest.silent'),
+    denied: t('voice.selfTest.denied'),
+    absent: t('voice.selfTest.absent'),
+    error: t('voice.selfTest.error'),
   };
   const checking = state === 'checking';
 
@@ -138,12 +140,12 @@ export function MicSelfTest() {
           {checking ? (
             <>
               <Square className="mr-1 h-3.5 w-3.5" />
-              停止检测
+              {t('voice.selfTest.stop')}
             </>
           ) : (
             <>
               <Mic className="mr-1 h-3.5 w-3.5" />
-              麦克风自检
+              {t('voice.selfTest.start')}
             </>
           )}
         </Button>
@@ -166,7 +168,7 @@ export function MicSelfTest() {
         >
           {resultText[state]}
           {(state === 'ok' || state === 'silent') && peak > 0
-            ? `（峰值电平 ${peak.toFixed(3)}）`
+            ? t('voice.selfTest.peak', { peak: peak.toFixed(3) })
             : ''}
         </p>
       )}

@@ -5,6 +5,8 @@ import { AlertTriangle, Ban, CheckCircle2, RotateCcw, X, XCircle } from 'lucide-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
+import { useI18n } from '@/lib/i18n/use-i18n';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { ApiClientError } from '@/lib/api/client';
 import { useFlowRunAction, type FlowLiveState, type FlowRunPhase } from '@/lib/hooks/use-flows';
 import type { FlowCanvasNode } from '../flow-editor/graph-utils';
@@ -19,15 +21,16 @@ interface ExecutionPanelProps {
   onRerun: () => void;
 }
 
-const PHASE_BADGE: Record<FlowRunPhase, { label: string; variant: 'default' | 'success' | 'danger' | 'warning' | 'outline' }> = {
-  connecting: { label: '连接中', variant: 'warning' },
-  running: { label: '运行中', variant: 'default' },
-  succeeded: { label: '成功', variant: 'success' },
-  failed: { label: '失败', variant: 'danger' },
-  cancelled: { label: '已取消', variant: 'outline' },
+const PHASE_BADGE: Record<FlowRunPhase, { label: MessageKey; variant: 'default' | 'success' | 'danger' | 'warning' | 'outline' }> = {
+  connecting: { label: 'flowExecution.phase.connecting', variant: 'warning' },
+  running: { label: 'flowExecution.phase.running', variant: 'default' },
+  succeeded: { label: 'flowExecution.phase.succeeded', variant: 'success' },
+  failed: { label: 'flowExecution.phase.failed', variant: 'danger' },
+  cancelled: { label: 'flowExecution.phase.cancelled', variant: 'outline' },
 };
 
 export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: ExecutionPanelProps) {
+  const { t } = useI18n();
   const actions = useFlowRunAction(runId);
   const toast = useToast();
   const terminal = live.phase === 'succeeded' || live.phase === 'failed' || live.phase === 'cancelled';
@@ -35,7 +38,7 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
   const badge = PHASE_BADGE[live.phase];
 
   const guard = (error: unknown) =>
-    toast.error(error instanceof ApiClientError ? error.message : '操作失败');
+    toast.error(error instanceof ApiClientError ? error.message : t('flowExecution.actionFailed'));
 
   const submitHuman = async (approved: boolean) => {
     if (!live.waitingNodeId) return;
@@ -64,26 +67,26 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
   return (
     <section className="flex h-80 shrink-0 flex-col border-t bg-card">
       <header className="flex items-center gap-2 border-b px-4 py-2">
-        <p className="text-sm font-semibold">试运行</p>
-        <Badge variant={badge.variant}>{badge.label}</Badge>
+        <p className="text-sm font-semibold">{t('flowExecution.title')}</p>
+        <Badge variant={badge.variant}>{t(badge.label)}</Badge>
         <span className="font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
         {live.connection === 'error' && !terminal && (
           <span className="flex items-center gap-1 text-[11px] text-warning">
             <AlertTriangle className="h-3 w-3" />
-            事件流连接异常
+            {t('flowExecution.connectionError')}
           </span>
         )}
         <div className="ml-auto flex items-center gap-1.5">
           {!terminal && (
             <Button variant="outline" size="sm" onClick={cancel} disabled={actions.cancel.isPending}>
               <Ban className="h-3.5 w-3.5" />
-              取消运行
+              {t('flowExecution.cancelRun')}
             </Button>
           )}
           {terminal && (
             <Button variant="outline" size="sm" onClick={onRerun}>
               <RotateCcw className="h-3.5 w-3.5" />
-              重跑
+              {t('flowExecution.rerun')}
             </Button>
           )}
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
@@ -106,10 +109,10 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
           <div className="mx-4 my-2 rounded-md border border-success/30 bg-success-background p-2.5">
             <p className="flex items-center gap-1.5 text-xs font-medium text-success">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              最终输出
+              {t('flowExecution.finalOutput')}
             </p>
             <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px]">
-              {stringify(live.output)}
+              {stringify(live.output, t('flowExecution.emptyOutput'))}
             </pre>
           </div>
         )}
@@ -117,9 +120,9 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
           <div className="mx-4 my-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5">
             <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
               <XCircle className="h-3.5 w-3.5" />
-              运行失败
+              {t('flowExecution.runFailed')}
             </p>
-            <p className="mt-1 text-[11px]">{live.errorMessage ?? '未知错误'}</p>
+            <p className="mt-1 text-[11px]">{live.errorMessage ?? t('flowExecution.unknownError')}</p>
           </div>
         )}
       </div>
@@ -127,8 +130,8 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
   );
 }
 
-function stringify(value: unknown): string {
-  if (value === null || value === undefined || value === '') return '(空)';
+function stringify(value: unknown, emptyText: string): string {
+  if (value === null || value === undefined || value === '') return emptyText;
   if (typeof value === 'string') return value;
   try {
     return JSON.stringify(value, null, 2);

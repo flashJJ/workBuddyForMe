@@ -1,5 +1,6 @@
 import type { Edge, Node } from '@xyflow/react';
 import type { FlowEdge, FlowGraph, FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
+import type { TranslateFn } from './node-meta';
 
 /** 画布节点 data：业务配置在 config；运行状态由 FlowStatusContext 注入 */
 export type FlowNodeData = {
@@ -115,8 +116,12 @@ export function toDomain(
   };
 }
 
-/** 节点副标题：配置一句话摘要 */
-export function configSummary(type: FlowNodeType, config: Record<string, unknown>): string {
+/** 节点副标题：配置一句话摘要（文案经 t 翻译；用户配置内容原样截断展示） */
+export function configSummary(
+  t: TranslateFn,
+  type: FlowNodeType,
+  config: Record<string, unknown>,
+): string {
   const truncate = (v: unknown, n = 32): string => {
     const s = String(v ?? '').replace(/\s+/g, ' ').trim();
     return s.length > n ? `${s.slice(0, n)}…` : s;
@@ -124,22 +129,23 @@ export function configSummary(type: FlowNodeType, config: Record<string, unknown
   switch (type) {
     case 'start': {
       const inputs = Array.isArray(config.inputs) ? config.inputs.length : 0;
-      return inputs > 0 ? `${inputs} 个入参` : '无入参';
+      return inputs > 0 ? t('flowEditor.summary.inputsCount', { count: inputs }) : t('flowEditor.summary.noInputs');
     }
     case 'llm':
-      return truncate(config.user) || '未配置提示词';
+      return truncate(config.user) || t('flowEditor.summary.noPrompt');
     case 'knowledgeSearch':
-      return truncate(config.query) || '未配置检索词';
+      return truncate(config.query) || t('flowEditor.summary.noQuery');
     case 'tool':
-      return truncate(config.toolName) || '未选择工具';
+      return truncate(config.toolName) || t('flowEditor.summary.noTool');
     case 'condition': {
       const rules = Array.isArray(config.rules) ? config.rules.length : 0;
-      return `${config.match === 'any' ? '任一' : '全部'} · ${rules} 条规则`;
+      const match = config.match === 'any' ? t('flowEditor.summary.matchAny') : t('flowEditor.summary.matchAll');
+      return `${match} · ${t('flowEditor.summary.rulesCount', { count: rules })}`;
     }
     case 'human':
-      return truncate(config.prompt) || '未配置审核说明';
+      return truncate(config.prompt) || t('flowEditor.summary.noReviewPrompt');
     case 'end':
-      return truncate(config.output) || '未映射输出';
+      return truncate(config.output) || t('flowEditor.summary.noOutput');
   }
 }
 
