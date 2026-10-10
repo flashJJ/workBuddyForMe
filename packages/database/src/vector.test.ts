@@ -6,7 +6,9 @@ import {
   ensureVectorTable,
   getVectorDimension,
   insertChunkVectors,
+  listChunkVectorsByKb,
   normalizeVector,
+  recallVectorCandidates,
   searchChunks,
   type DatabaseInstance,
 } from './index';
@@ -95,5 +97,28 @@ describe('向量存储与检索', () => {
     db.prepare(`DELETE FROM documents WHERE id = 'd1'`).run();
     const count = db.prepare(`SELECT COUNT(*) AS n FROM document_chunks`).get() as { n: number };
     expect(count.n).toBe(0);
+  });
+
+  it('listChunkVectorsByKb 读出的 embedding 恢复写入维度并可回喂 KNN（vec0 BLOB float32 解码）', () => {
+    ensureVectorTable(db, 3);
+    insertChunkVectors(db, [
+      { id: 1, vector: [1, 0, 0] },
+      { id: 2, vector: [0, 1, 0] },
+      { id: 3, vector: [0, 0, 1] },
+    ]);
+    const rows = listChunkVectorsByKb(db, 'kb1');
+    expect(rows).toHaveLength(3);
+    for (const row of rows) {
+      expect(row.embedding).toHaveLength(3);
+      expect(Math.hypot(row.embedding[0]!, row.embedding[1]!, row.embedding[2]!)).toBeCloseTo(1);
+    }
+    // 重复文档检测的闭环：扫描行向量直接作为 KNN 查询，不再报维度不一致
+    const neighbors = recallVectorCandidates(db, {
+      knowledgeBaseId: 'kb1',
+      vector: rows[0]!.embedding,
+      candidateN: 2,
+    });
+    expect(neighbors[0]!.chunkId).toBe(1);
+    expect(neighbors[0]!.similarity).toBeCloseTo(1);
   });
 });

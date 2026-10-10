@@ -208,6 +208,8 @@ export interface AppSettings {
   retrievalMinSimilarity?: number;
   /** v1.3：RAG 注入片段上限，缺省由 core 给 8 */
   retrievalMaxChunks?: number;
+  /** v1.3：编译优先检索路由（静态知识层前置），缺省视为 true */
+  compileRoutingEnabled?: boolean;
   /** v1.3 M4：摄入后自动入队编译（缺省视为 true） */
   autoCompile?: boolean;
   /** v1.3 M4：编译 LLM 增强（缺省 false；规则通道零模型调用） */

@@ -184,6 +184,24 @@ export interface ChunkVectorScanRow {
 }
 
 /**
+ * vec0 虚表读出的 embedding 反序列化：写入走 json()（文本），读出为 float32
+ * 小端 BLOB（Buffer）；单测内存库可能返回字符串或数组。BLOB 必须按 float32
+ * 解码成 4 倍长度的数值数组，否则会把字节当分量（64 维 → 256 长度）。
+ */
+function deserializeEmbedding(raw: string | Uint8Array | number[]): number[] {
+  if (typeof raw === 'string') return JSON.parse(raw) as number[];
+  if (raw instanceof Uint8Array) {
+    const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+    const out: number[] = [];
+    for (let offset = 0; offset + 4 <= raw.byteLength; offset += 4) {
+      out.push(view.getFloat32(offset, true));
+    }
+    return out;
+  }
+  return raw;
+}
+
+/**
  * v1.3：列出知识库分片向量，每文档最多 perDocCap 片（按 ordinal 取首部），
  * 供重复文档建议做跨文档 KNN 聚合。桌面文档规模下全量读取可接受。
  */
@@ -207,7 +225,7 @@ export function listChunkVectorsByKb(
     chunkId: number;
     documentId: string;
     ordinal: number;
-    embedding: string | number[];
+    embedding: string | Uint8Array | number[];
   }>;
   const perDoc = new Map<string, number>();
   const out: ChunkVectorScanRow[] = [];
@@ -219,7 +237,7 @@ export function listChunkVectorsByKb(
       chunkId: row.chunkId,
       documentId: row.documentId,
       ordinal: row.ordinal,
-      embedding: typeof row.embedding === 'string' ? JSON.parse(row.embedding) : row.embedding,
+      embedding: deserializeEmbedding(row.embedding),
     });
   }
   return out;

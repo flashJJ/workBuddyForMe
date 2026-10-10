@@ -23,6 +23,7 @@ export function KnowledgeRetrievalPanel() {
   const [hybrid, setHybrid] = React.useState(true);
   const [minSim, setMinSim] = React.useState('0.55');
   const [maxChunks, setMaxChunks] = React.useState('8');
+  const [compileRouting, setCompileRouting] = React.useState(true);
   const [autoCompile, setAutoCompile] = React.useState(true);
   const [compileLlm, setCompileLlm] = React.useState(false);
   const [compileModelId, setCompileModelId] = React.useState('');
@@ -32,6 +33,7 @@ export function KnowledgeRetrievalPanel() {
     setHybrid(settings.hybridRetrievalEnabled !== false);
     setMinSim(String(settings.retrievalMinSimilarity ?? 0.55));
     setMaxChunks(String(settings.retrievalMaxChunks ?? 8));
+    setCompileRouting(settings.compileRoutingEnabled !== false);
     setAutoCompile(settings.autoCompile !== false);
     setCompileLlm(settings.compileWithLlm === true);
     setCompileModelId(settings.compileModelId ?? '');
@@ -58,6 +60,7 @@ export function KnowledgeRetrievalPanel() {
         hybridRetrievalEnabled: hybrid,
         retrievalMinSimilarity: sim,
         retrievalMaxChunks: chunks,
+        compileRoutingEnabled: compileRouting,
         autoCompile,
         compileWithLlm: compileLlm,
         compileModelId: compileModelId === '' ? null : compileModelId,
@@ -116,6 +119,16 @@ export function KnowledgeRetrievalPanel() {
       </div>
 
       <div className="space-y-2 border-t pt-3">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={compileRouting}
+            onChange={(e) => setCompileRouting(e.target.checked)}
+            data-testid="retrieval-compile-routing"
+            className="h-4 w-4 rounded border-input"
+          />
+          {t('settings.retrieval.compileRouting')}
+        </label>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
