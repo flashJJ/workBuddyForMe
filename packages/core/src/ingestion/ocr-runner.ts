@@ -22,6 +22,11 @@ import { resolveVisionTarget } from './vision-target';
 export interface OcrRunResult {
   /** 合并文字层页与 OCR 页后的全文 */
   text: string;
+  /**
+   * v1.3：逐页合并结果（文字层页与 OCR 页二选一，已过滤空白页），
+   * 保留真实 PDF 页码供摄取侧构造页/段坐标；与 text 同源同序。
+   */
+  pages: Array<{ pageNo: number; text: string }>;
   engine: OcrEngine;
   /** true=存在被跳过页（单页超时/总超时/超 50 页），文本不完整 */
   partial: boolean;
@@ -153,14 +158,18 @@ async function runTesseractPages(
   return { ocrByPage, partial };
 }
 
-function assembleText(pageTexts: string[], ocrByPage: Map<number, string>): string {
+/** 逐页合并：OCR 页优先于文字层页，过滤空白页，保留真实页码（v1.3） */
+function assemblePages(
+  pageTexts: string[],
+  ocrByPage: Map<number, string>,
+): Array<{ pageNo: number; text: string }> {
   return pageTexts
     .map((layer, index) => {
-      const ocr = ocrByPage.get(index + 1);
-      return ocr && ocr.trim() ? ocr : layer;
+      const pageNo = index + 1;
+      const ocr = ocrByPage.get(pageNo);
+      return { pageNo, text: ocr && ocr.trim() ? ocr.trim() : layer.trim() };
     })
-    .filter((t) => t.trim().length > 0)
-    .join('\n\n');
+    .filter((p) => p.text.length > 0);
 }
 
 /**
@@ -176,8 +185,10 @@ export async function runPdfOcr(params: RunPdfOcrParams): Promise<OcrRunResult> 
 
   const totalPages = params.pageTexts.length;
   if (sparsePages.length === 0) {
+    const pages = assemblePages(params.pageTexts, new Map());
     return {
-      text: params.pageTexts.filter(Boolean).join('\n\n'),
+      text: pages.map((p) => p.text).join('\n\n'),
+      pages,
       engine: 'vision',
       partial: false,
       processedPages: 0,
@@ -236,12 +247,14 @@ export async function runPdfOcr(params: RunPdfOcrParams): Promise<OcrRunResult> 
     params.signal?.removeEventListener('abort', onExternalAbort);
   }
 
-  const text = assembleText(params.pageTexts, ocrByPage);
+  const pages = assemblePages(params.pageTexts, ocrByPage);
+  const text = pages.map((p) => p.text).join('\n\n');
   if (!text.trim()) throw new OcrFailedError(OCR_GUIDANCE_MESSAGE);
 
   const timedOut = deadlineController.signal.aborted;
   return {
     text,
+    pages,
     engine,
     partial: partial || capped || timedOut || ocrByPage.size < targets.length,
     processedPages: ocrByPage.size,

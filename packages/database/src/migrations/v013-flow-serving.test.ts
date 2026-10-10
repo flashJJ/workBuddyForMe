@@ -39,8 +39,8 @@ describe('v013 迁移：Flow Serving（endpoints 表 + runs 增列）', () => {
   it('v12 老库升级：新表可写、runs 四增列 NULL、老数据不动', () => {
     const db = createV12Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([13, 14, 15, 16]);
-    expect(LATEST_SCHEMA_VERSION).toBe(16);
+    expect(result.applied).toEqual([13, 14, 15, 16, 17]);
+    expect(LATEST_SCHEMA_VERSION).toBe(17);
 
     db.prepare(
       `INSERT INTO workflows(id, name, status, current_version, created_at, updated_at)

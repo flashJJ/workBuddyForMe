@@ -33,3 +33,10 @@ export {
 export * from './repositories';
 export { getMeta, setMeta } from './meta';
 export { nowIso, timestamps } from './utils/time';
+export {
+  buildFtsQuery,
+  isCjkChar,
+  normalizeForFtsIndex,
+  tokenizeForFts,
+} from './fts-tokenize';
+export { createFtsChunkRepository, type FtsChunkRow } from './fts-chunk-repo';

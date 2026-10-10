@@ -31,8 +31,9 @@ function readAppSettings(db: Database.Database): Record<string, unknown> | undef
 describe('v016 迁移：老用户首启向导标记回填', () => {
   it('全新空库升级：不写 app-settings（首启由读取默认值弹向导）', () => {
     const db = createEmptyDatabase();
-    expect(getSchemaVersion(db)).toBe(16);
-    expect(LATEST_SCHEMA_VERSION).toBe(16);
+    // v017 已接入后，全量迁移终点为 17；v016 自身行为（不写 settings）仍成立
+    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
+    expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(16);
     expect(readAppSettings(db)).toBeUndefined();
   });
 
