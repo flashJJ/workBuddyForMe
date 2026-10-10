@@ -1,5 +1,7 @@
 import type { Language } from '@wbfm/shared/constants';
 import type { ConversationSnapshot, SharedMessage } from '@wbfm/core/share';
+import type { Citation } from '@wbfm/shared/types';
+import { formatCitationMeta } from '../citation-meta';
 import { formatDuration, formatTime } from './share-format';
 import { createShareTranslator } from './share-i18n';
 
@@ -27,6 +29,10 @@ interface Footnote {
   documentName: string;
   snippet?: string;
   sourceUrl?: string | null;
+  /** 静态层标签（实体知识/文档要点），普通引用为空 */
+  kindLabel: string;
+  /** 页/段定位文本，无坐标为空 */
+  location: string;
 }
 
 export function serializeMarkdown(
@@ -38,17 +44,20 @@ export function serializeMarkdown(
   const footnotes: Footnote[] = [];
   const footnoteKey = new Map<string, number>();
 
-  const cite = (c: { documentId: string; ordinal: number; documentName: string; snippet?: string; sourceUrl?: string | null }): number => {
+  const cite = (c: Citation): number => {
     const key = `${c.documentId}#${c.ordinal}`;
     const existing = footnoteKey.get(key);
     if (existing !== undefined) return existing;
     const idx = footnotes.length + 1;
     footnoteKey.set(key, idx);
+    const meta = formatCitationMeta(c, tt);
     footnotes.push({
       index: idx,
       documentName: c.documentName,
       snippet: c.snippet,
       sourceUrl: c.sourceUrl,
+      kindLabel: meta.kindLabel,
+      location: meta.location,
     });
     return idx;
   };
@@ -92,7 +101,9 @@ export function serializeMarkdown(
   if (footnotes.length > 0) {
     lines.push(`## ${tt('share.refsTitleMarkdown')}`, '');
     for (const f of footnotes) {
-      const parts: string[] = [`**${f.documentName}**`];
+      const title = f.kindLabel ? `${f.kindLabel}·${f.documentName}` : f.documentName;
+      const parts: string[] = [`**${title}**`];
+      if (f.location) parts.push(f.location);
       if (f.snippet) parts.push(f.snippet);
       if (f.sourceUrl) parts.push(`[${tt('share.sourceLinkMarkdown')}](${f.sourceUrl})`);
       lines.push(`[^${f.index}]: ${parts.join(' — ')}`);

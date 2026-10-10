@@ -175,6 +175,56 @@ export function recallVectorCandidates(
     .filter((row) => row.similarity >= minSim);
 }
 
+/** v1.3：分片向量扫描行（疑似重复文档检测：跨文档近邻聚合，不另发模型请求） */
+export interface ChunkVectorScanRow {
+  chunkId: number;
+  documentId: string;
+  ordinal: number;
+  embedding: number[];
+}
+
+/**
+ * v1.3：列出知识库分片向量，每文档最多 perDocCap 片（按 ordinal 取首部），
+ * 供重复文档建议做跨文档 KNN 聚合。桌面文档规模下全量读取可接受。
+ */
+export function listChunkVectorsByKb(
+  db: DatabaseInstance,
+  knowledgeBaseId: string,
+  perDocCap = 5,
+): ChunkVectorScanRow[] {
+  if (getVectorDimension(db) === null) return [];
+  const rows = db
+    .prepare(
+      `SELECT c.id AS chunkId, c.document_id AS documentId, c.ordinal AS ordinal,
+              v.embedding AS embedding
+       FROM document_chunks c
+       JOIN ${VECTOR_TABLE} v ON v.rowid = c.id
+       JOIN documents d ON d.id = c.document_id
+       WHERE d.knowledge_base_id = ?
+       ORDER BY c.document_id, c.ordinal`,
+    )
+    .all(knowledgeBaseId) as Array<{
+    chunkId: number;
+    documentId: string;
+    ordinal: number;
+    embedding: string | number[];
+  }>;
+  const perDoc = new Map<string, number>();
+  const out: ChunkVectorScanRow[] = [];
+  for (const row of rows) {
+    const used = perDoc.get(row.documentId) ?? 0;
+    if (used >= perDocCap) continue;
+    perDoc.set(row.documentId, used + 1);
+    out.push({
+      chunkId: row.chunkId,
+      documentId: row.documentId,
+      ordinal: row.ordinal,
+      embedding: typeof row.embedding === 'string' ? JSON.parse(row.embedding) : row.embedding,
+    });
+  }
+  return out;
+}
+
 /**
  * v1.3：按 chunk id 批量取详情（融合/重排后回查正文与出处）。
  * 返回顺序不保证与入参一致，由调用方按融合排名重排。

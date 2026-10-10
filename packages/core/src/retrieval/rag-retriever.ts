@@ -62,10 +62,13 @@ function chunkToRagChunk(chunk: RetrievedChunk): RagChunk {
     documentName: chunk.documentName,
     ordinal: chunk.ordinal,
     content: chunk.content,
+    staticKind: 'chunk',
     documentId: chunk.documentId,
     sourceUrl: chunk.sourceUrl,
     pageNo: chunk.pageNo ?? null,
     paragraphNo: chunk.paragraphNo ?? null,
+    charStart: chunk.charStart,
+    charEnd: chunk.charEnd,
   };
 }
 
@@ -112,6 +115,11 @@ export function createRagRetriever(deps: ServiceDeps): RagRetriever {
           documentName: entry.documentName,
           content: entry.content,
           sourceUrl: entry.sourceUrl ?? null,
+          pageNo: entry.pageNo ?? null,
+          paragraphNo: entry.paragraphNo ?? null,
+          charStart: entry.charStart,
+          charEnd: entry.charEnd,
+          staticKind: entry.staticKind ?? 'chunk',
         })),
       ),
       contextBlock: formatContextBlock(entries),

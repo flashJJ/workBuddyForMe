@@ -16,11 +16,13 @@ export {
   searchChunks,
   recallVectorCandidates,
   listChunksByIds,
+  listChunkVectorsByKb,
   normalizeVector,
   VECTOR_DIM_META_KEY,
   type ChunkVectorRow,
   type ChunkSearchResult,
   type ChunkCandidate,
+  type ChunkVectorScanRow,
 } from './vector';
 export {
   ensureMemoryVectorTable,

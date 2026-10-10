@@ -218,16 +218,31 @@ export function createCompileWriteRepository(db: DatabaseInstance) {
       return doSave(input);
     },
 
-    /** 编译状态机流转（queued/running/failed 等由调度层驱动，M4） */
-    updateCompileStatus(
-      documentId: string,
-      status: CompileStatus,
-      patch: { error?: string | null } = {},
-    ): void {
+    /**
+     * 重摄取/替换时清理旧编译产物（必须在摄取三索引事务内调用，本方法
+     * 不自开事务）：删该文档 mention 与摘要、清扫零提及实体、世代归零、
+     * 状态置 queued。提交后读侧只见「无编译层」，静态路由零差异回落 chunk。
+     */
+    purgeForReingest(documentId: string): void {
+      const affected = db
+        .prepare(`SELECT DISTINCT entity_id AS id FROM knowledge_entity_mentions WHERE document_id = ?`)
+        .all(documentId) as Array<{ id: string }>;
+      deleteDocMentions.run(documentId);
+      db.prepare(`DELETE FROM document_summaries WHERE document_id = ?`).run(documentId);
+      for (const { id } of affected) recountEntity.run({ id });
+      const kb = db
+        .prepare(`SELECT knowledge_base_id AS kbId FROM documents WHERE id = ?`)
+        .get(documentId) as { kbId: string } | undefined;
+      if (kb) gcEntities.run({ kbId: kb.kbId });
       db.prepare(
-        `UPDATE documents SET compile_status = @status,
-           compile_error = @error WHERE id = @id`,
-      ).run({
+        `UPDATE documents SET compile_status = 'queued', compile_generation = 0,
+           compiled_at = NULL, compile_error = NULL WHERE id = ?`,
+      ).run(documentId);
+    },
+
+    /** 编译状态机流转（queued/running/failed 等由调度层驱动，M4） */
+    updateCompileStatus(documentId: string, status: CompileStatus, patch: { error?: string | null } = {}): void {
+      db.prepare(`UPDATE documents SET compile_status = @status, compile_error = @error WHERE id = @id`).run({
         id: documentId,
         status,
         error: patch.error === undefined ? null : patch.error,

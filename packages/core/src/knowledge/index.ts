@@ -48,7 +48,36 @@ export {
   type SelectorSummary,
 } from './static-selector';
 export { createStaticKnowledgeService, type StaticKnowledgeService } from './static-knowledge-service';
+export {
+  detectConflicts,
+  type ConflictItem,
+  type ConflictValue,
+  type ConflictOccurrence,
+  type ConflictEntity,
+  type ConflictMention,
+  type ClaimDimension,
+} from './conflict-detector';
+export {
+  detectDuplicatePairs,
+  normalizeDocumentTitle,
+  type DuplicatePair,
+  type DuplicateDoc,
+  type DuplicateReason,
+  type ChunkNeighborHit,
+} from './duplicate-detector';
+export {
+  createKnowledgeGovernanceService,
+  type KnowledgeGovernanceService,
+} from './knowledge-governance-service';
 export { createLlmKnowledgeEnhancer, validateLlmSeed, type LlmEnhancerOptions } from './llm-enhancer';
+export {
+  createCompileRunnerService,
+  type CompileRunnerService,
+  type CompileScope,
+  type CompileScopeOptions,
+  type CompileScopeResult,
+  type CompileDocOutcome,
+} from './compile-runner-service';
 export {
   compileDocument,
   type CompiledSeed,

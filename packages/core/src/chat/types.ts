@@ -54,13 +54,15 @@ export interface RagChunk {
   /** chunk 条目=分片序号（从 0）；静态条目不使用，固定 0 */
   ordinal: number;
   content: string;
-  /** v1.3：编译优先静态知识层条目（实体原句/文档要点）；缺省=普通分片 */
-  staticKind?: 'entity' | 'summary';
+  /** v1.3：引用来源层（普通分片/实体原句/文档要点）；缺省视同普通分片 */
+  staticKind?: 'chunk' | 'entity' | 'summary';
   /** v1.3：静态条目与统一引用装配所需（分片条目也带上，便于统一编号） */
   documentId?: string;
   sourceUrl?: string | null;
   pageNo?: number | null;
   paragraphNo?: number | null;
+  charStart?: number;
+  charEnd?: number;
 }
 
 export interface RagContext {

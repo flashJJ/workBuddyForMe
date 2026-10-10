@@ -102,6 +102,17 @@ export function createCompileQueryRepository(db: DatabaseInstance) {
       return row ? mapSummary(row) : null;
     },
 
+    /** 列出知识库全部实体（治理 UI/冲突检测用，按提及数排序） */
+    listEntities(knowledgeBaseId: string, mentionsPerEntity = 5, limit = 500): EntityRecord[] {
+      const rows = db
+        .prepare(
+          `SELECT * FROM knowledge_entities WHERE knowledge_base_id = ?
+           ORDER BY mention_count DESC, name ASC LIMIT ?`,
+        )
+        .all(knowledgeBaseId, limit) as EntityRow[];
+      return rows.map((row) => hydrateEntity(row, mentionsPerEntity));
+    },
+
     /** normalized_name 精确批量命中（编译路由主入口） */
     findEntitiesByNames(
       knowledgeBaseId: string,

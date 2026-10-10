@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ConflictItem, DuplicatePair } from '@wbfm/core/knowledge';
 import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost, apiUpload } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -29,6 +30,21 @@ export function useDocuments(kbId: string | null) {
         ? 1500
         : false,
   });
+}
+
+/** v1.3 M3：知识冲突待裁决 + 疑似重复文档建议（只读，按需启用） */
+export function useKnowledgeGovernance(kbId: string | null) {
+  const conflicts = useQuery({
+    queryKey: [...QUERY_KEYS.kbGovernance(kbId ?? '_'), 'conflicts'],
+    queryFn: () => apiGet<{ conflicts: ConflictItem[] }>(API.kbConflicts(kbId!)),
+    enabled: Boolean(kbId),
+  });
+  const duplicates = useQuery({
+    queryKey: [...QUERY_KEYS.kbGovernance(kbId ?? '_'), 'duplicates'],
+    queryFn: () => apiGet<{ duplicates: DuplicatePair[] }>(API.kbDuplicates(kbId!)),
+    enabled: Boolean(kbId),
+  });
+  return { conflicts, duplicates };
 }
 
 export function useKnowledgeMutations() {

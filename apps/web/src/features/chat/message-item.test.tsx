@@ -113,6 +113,40 @@ describe('消息项 MessageItem（TR-27.1）', () => {
     expect(screen.getByText('[1]')).toBeInTheDocument();
   });
 
+  it('v1.3：静态层引用显示实体标签与页段坐标；无页时只显段号', () => {
+    renderWithProviders(
+      <MessageItem
+        message={makeMessage({
+          citations: [
+            {
+              documentId: 'd1',
+              documentName: 'spec.pdf',
+              ordinal: 0,
+              snippet: 'Qwen2.5 兼容 OpenAI 接口。',
+              staticKind: 'entity',
+              pageNo: 3,
+              paragraphNo: 4,
+            },
+            {
+              documentId: 'd2',
+              documentName: 'notes.txt',
+              ordinal: 1,
+              staticKind: 'summary',
+              pageNo: null,
+              paragraphNo: 8,
+            },
+          ],
+        })}
+        assistantName="通用助手"
+      />,
+    );
+    const kindBadges = screen.getAllByTestId('citation-static-kind');
+    expect(kindBadges.map((el) => el.textContent)).toEqual(['实体知识', '文档要点']);
+    const locations = screen.getAllByTestId('citation-location').map((el) => el.textContent);
+    expect(locations.some((text) => text?.includes('第 3 页 · 第 4 段'))).toBe(true);
+    expect(locations.some((text) => text?.includes('第 8 段'))).toBe(true);
+  });
+
   it('反馈：点击 👍 发 up 并回调；已选状态再点发 null 取消', async () => {
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       const body = JSON.parse((init?.body as string) ?? '{}') as {

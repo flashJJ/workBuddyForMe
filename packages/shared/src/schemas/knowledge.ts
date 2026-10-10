@@ -24,6 +24,19 @@ export const knowledgeBaseUpdateSchema = z
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');
 export type KnowledgeBaseUpdateInput = z.infer<typeof knowledgeBaseUpdateSchema>;
 
+/** v1.3：知识编译触发请求（M3；M4 队列化后 body 形状保持兼容） */
+export const compileRequestSchema = z
+  .object({
+    scope: z.enum(['new', 'all', 'document']).default('new'),
+    documentId: z.string().trim().min(1).optional(),
+    withLlm: z.boolean().optional(),
+  })
+  .refine((v) => v.scope !== 'document' || Boolean(v.documentId), {
+    message: 'scope=document 时必须提供 documentId',
+    path: ['documentId'],
+  });
+export type CompileRequest = z.infer<typeof compileRequestSchema>;
+
 /** v0.3 网页剪藏请求 */
 export const clipRequestSchema = z.object({
   url: z

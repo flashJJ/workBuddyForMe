@@ -15,6 +15,7 @@ import { KnowledgeBaseFormDialog } from './kb-form-dialog';
 import { UploadDropzone } from './upload-dropzone';
 import { ClipDialog } from './clip-dialog';
 import { DocumentList } from './document-list';
+import { GovernancePanel } from './governance-panel';
 
 function KnowledgeBaseNav({
   knowledgeBases,
@@ -175,6 +176,7 @@ export function KnowledgePage() {
             </div>
             <UploadDropzone kbId={activeKb.id} />
             <DocumentList kbId={activeKb.id} documents={docs.data} loading={docs.isLoading} />
+            <GovernancePanel kbId={activeKb.id} />
           </div>
         )}
       </main>

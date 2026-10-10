@@ -35,6 +35,9 @@ export interface RetrievedChunk {
   pageNo?: number | null;
   /** v1.3：段落序号（无则 null） */
   paragraphNo?: number | null;
+  /** v1.3：分片在归一化文档中的字符区间 */
+  charStart?: number;
+  charEnd?: number;
 }
 
 export interface RetrieveInput {
@@ -162,6 +165,8 @@ export function createRetrievalService(deps: ServiceDeps) {
         sourceUrl: detail.sourceUrl,
         pageNo: detail.pageNo,
         paragraphNo: detail.paragraphNo,
+        charStart: detail.charStart,
+        charEnd: detail.charEnd,
       }));
   }
 

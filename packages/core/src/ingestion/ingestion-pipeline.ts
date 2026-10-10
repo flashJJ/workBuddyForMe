@@ -2,6 +2,7 @@ import { ApiError } from '@wbfm/shared/errors';
 import { ProviderError } from '@wbfm/ai';
 import {
   createChunkRepository,
+  createCompileWriteRepository,
   createDocumentRepository,
   createFtsChunkRepository,
   createKnowledgeRepository,
@@ -28,6 +29,7 @@ export function createIngestionPipeline(deps: ServiceDeps) {
   const knowledgeBases = createKnowledgeRepository(deps.db);
   const chunks = createChunkRepository(deps.db);
   const fts = createFtsChunkRepository(deps.db);
+  const compileWrite = createCompileWriteRepository(deps.db);
 
   const fail = (documentId: string, message: string): IngestResult => {
     documents.setStatus(documentId, 'failed', { errorMessage: message });
@@ -105,6 +107,9 @@ export function createIngestionPipeline(deps: ServiceDeps) {
         deleteVectorsByDocument(deps.db, documentId);
         fts.deleteByDocument(document.knowledgeBaseId, documentId);
         chunks.deleteByDocument(documentId);
+        // v1.3：旧编译产物随索引重建同事务退役（摘要/mention 删除、世代归 0、
+        // 状态置 queued），保证提交后检索不会读到上一版内容的静态事实
+        compileWrite.purgeForReingest(documentId);
 
         const coordinates = mapChunkCoordinates(slices, structure.blocks);
         const stored = chunks.bulkInsert(

@@ -96,6 +96,13 @@ export interface Citation {
   snippet?: string;
   /** v0.3：网页剪藏来源；存在时引用角标可悬停看 URL、点击新开原文 */
   sourceUrl?: string | null;
+  /** v1.3：PDF 页码/文档段号（从 1；无则 null）+ 分片字符区间（静态条目可缺省） */
+  pageNo?: number | null;
+  paragraphNo?: number | null;
+  charStart?: number;
+  charEnd?: number;
+  /** v1.3：引用来源层——普通分片/实体原句/文档要点（缺省视同 chunk） */
+  staticKind?: 'chunk' | 'entity' | 'summary';
 }
 
 /** v0.5 长期记忆类别：事实 / 偏好 / 事件 */
@@ -181,6 +188,11 @@ export interface DocumentRecord {
   chunkCount: number;
   createdAt: string;
   indexedAt: string | null;
+  /** v1.3：知识编译状态机（skipped/queued/running/ready/failed）+ 世代/时间/错误 */
+  compileStatus?: 'skipped' | 'queued' | 'running' | 'ready' | 'failed';
+  compiledAt?: string | null;
+  compileError?: string | null;
+  compileGeneration?: number;
 }
 
 export interface AppSettings {

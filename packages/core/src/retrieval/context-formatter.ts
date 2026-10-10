@@ -86,6 +86,11 @@ export type CitableEntry = {
   documentName: string;
   content: string;
   sourceUrl?: string | null;
+  pageNo?: number | null;
+  paragraphNo?: number | null;
+  charStart?: number;
+  charEnd?: number;
+  staticKind?: 'chunk' | 'entity' | 'summary';
 };
 
 function toSnippet(content: string): string {
@@ -102,6 +107,11 @@ export function toCitations(entries: CitableEntry[]): Citation[] {
     ordinal: index,
     sourceUrl: entry.sourceUrl ?? null,
     snippet: toSnippet(entry.content),
+    pageNo: entry.pageNo ?? null,
+    paragraphNo: entry.paragraphNo ?? null,
+    ...(entry.charStart !== undefined ? { charStart: entry.charStart } : {}),
+    ...(entry.charEnd !== undefined ? { charEnd: entry.charEnd } : {}),
+    staticKind: entry.staticKind ?? 'chunk',
   }));
 }
 
@@ -112,5 +122,10 @@ export function toCitableChunks(chunks: RetrievedChunk[]): CitableEntry[] {
     documentName: chunk.documentName,
     content: chunk.content,
     sourceUrl: chunk.sourceUrl,
+    pageNo: chunk.pageNo ?? null,
+    paragraphNo: chunk.paragraphNo ?? null,
+    charStart: chunk.charStart,
+    charEnd: chunk.charEnd,
+    staticKind: 'chunk' as const,
   }));
 }
