@@ -25,6 +25,16 @@ export const zhSettings = {
     settingsSaved: '设置已保存',
     hint: '助手可单独指定模型；未指定时使用上方默认对话模型。设置项即时保存。',
   },
+  // v1.3 知识检索
+  retrieval: {
+    title: '知识检索',
+    description: '知识库问答时的检索方式：混合语义向量与关键词，并按相关度重排。',
+    hybridEnabled: '启用混合检索（向量 + 关键词）',
+    minSimilarity: '相似度下限（0–1）',
+    maxChunks: '引用片段上限（1–20）',
+    invalidThreshold: '相似度下限需在 0 到 1 之间',
+    invalidMaxChunks: '引用片段上限需为 1 到 20 的整数',
+  },
 };
 
 export const enSettings = {
@@ -53,5 +63,15 @@ export const enSettings = {
     dataDirCopied: 'Data directory copied',
     settingsSaved: 'Settings saved',
     hint: 'Assistants can override the model; otherwise the default chat model above is used. Changes save instantly.',
+  },
+  retrieval: {
+    title: 'Knowledge retrieval',
+    description:
+      'How knowledge-base answers are retrieved: hybrid semantic vectors + keywords, reranked by relevance.',
+    hybridEnabled: 'Enable hybrid retrieval (vectors + keywords)',
+    minSimilarity: 'Similarity floor (0–1)',
+    maxChunks: 'Max cited snippets (1–20)',
+    invalidThreshold: 'Similarity floor must be between 0 and 1',
+    invalidMaxChunks: 'Max snippets must be an integer from 1 to 20',
   },
 };

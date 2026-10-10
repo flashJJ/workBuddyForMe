@@ -190,6 +190,12 @@ export interface AppSettings {
   language: Language;
   /** 是否已完成首次启动向导（v1.2 起；仅老用户由 v016 迁移回填为 true） */
   hasOnboarded: boolean;
+  /** v1.3：混合检索（向量+FTS+规则重排）开关，缺省视为 true */
+  hybridRetrievalEnabled?: boolean;
+  /** v1.3：向量相似度软下限（0-1），缺省由 core 给 0.55 */
+  retrievalMinSimilarity?: number;
+  /** v1.3：RAG 注入片段上限，缺省由 core 给 8 */
+  retrievalMaxChunks?: number;
 }
 
 // ── v0.6 M3 本地技能包 ──

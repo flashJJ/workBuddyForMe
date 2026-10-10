@@ -22,10 +22,29 @@ export interface ChunkSearchResult {
   content: string;
   charStart: number;
   charEnd: number;
+  /** v1.3：PDF 页码（无则 null） */
+  pageNo: number | null;
+  /** v1.3：文档内段落序号（无则 null） */
+  paragraphNo: number | null;
   distance: number;
-  /** v0.3：网页剪藏文档的来源 URL，命中引用时可跳回原文 */
+  /** v0.3：网页剪藏文档的来源 URL，本地上传文档为 null */
   sourceUrl: string | null;
 }
+
+/** v1.3：候选召回结果（比 ChunkSearchResult 少 join 字段，融合阶段只需要 id/距离） */
+export interface ChunkCandidate {
+  chunkId: number;
+  distance: number;
+  /** 单位向量相似度 1 - distance/2（distance∈[0,2]），越大越相似 */
+  similarity: number;
+}
+
+const CHUNK_DETAIL_SELECT = `
+  c.id AS chunkId, c.document_id AS documentId, d.filename AS documentName,
+  c.ordinal AS ordinal, c.content AS content,
+  c.char_start AS charStart, c.char_end AS charEnd,
+  c.page_no AS pageNo, c.paragraph_no AS paragraphNo,
+  d.source_url AS sourceUrl`;
 
 export function normalizeVector(values: number[]): number[] {
   if (values.length === 0) throw new Error('向量不能为空');
@@ -106,10 +125,7 @@ export function searchChunks(
   return db
     .prepare(
       `SELECT
-         c.id AS chunkId, c.document_id AS documentId, d.filename AS documentName,
-         c.ordinal AS ordinal, c.content AS content,
-         c.char_start AS charStart, c.char_end AS charEnd, v.distance AS distance,
-         d.source_url AS sourceUrl
+         ${CHUNK_DETAIL_SELECT}, v.distance AS distance
        FROM ${VECTOR_TABLE} v
        JOIN document_chunks c ON c.id = v.rowid
        JOIN documents d ON d.id = c.document_id
@@ -121,4 +137,59 @@ export function searchChunks(
       vec: JSON.stringify(normalized),
       k: params.k,
     }) as ChunkSearchResult[];
+}
+
+/**
+ * v1.3：向量候选召回——取 candidateN 个最近邻并按相似度阈值过滤。
+ * 与 searchChunks 区别：候选池更大（默认 20）、只回 id/距离供融合阶段使用，
+ * 由调用方做 RRF/重排，而非直接作为最终结果。
+ */
+export function recallVectorCandidates(
+  db: DatabaseInstance,
+  params: { knowledgeBaseId: string; vector: number[]; candidateN: number; minSimilarity?: number },
+): ChunkCandidate[] {
+  const dimension = getVectorDimension(db);
+  if (dimension === null) return [];
+  const normalized = normalizeVector(params.vector);
+  if (normalized.length !== dimension) {
+    throw new Error(`查询向量维度 ${normalized.length} 与表维度 ${dimension} 不一致`);
+  }
+  const rows = db
+    .prepare(
+      `SELECT v.rowid AS chunkId, v.distance AS distance
+       FROM ${VECTOR_TABLE} v
+       JOIN document_chunks c ON c.id = v.rowid
+       JOIN documents d ON d.id = c.document_id
+       WHERE d.knowledge_base_id = @kbId AND v.embedding MATCH json(@vec) AND k = @n
+       ORDER BY v.distance`,
+    )
+    .all({
+      kbId: params.knowledgeBaseId,
+      vec: JSON.stringify(normalized),
+      n: params.candidateN,
+    }) as Array<{ chunkId: number; distance: number }>;
+
+  const minSim = params.minSimilarity ?? 0;
+  return rows
+    .map((row) => ({ chunkId: row.chunkId, distance: row.distance, similarity: 1 - row.distance / 2 }))
+    .filter((row) => row.similarity >= minSim);
+}
+
+/**
+ * v1.3：按 chunk id 批量取详情（融合/重排后回查正文与出处）。
+ * 返回顺序不保证与入参一致，由调用方按融合排名重排。
+ */
+export function listChunksByIds(
+  db: DatabaseInstance,
+  params: { knowledgeBaseId: string; chunkIds: number[] },
+): ChunkSearchResult[] {
+  if (params.chunkIds.length === 0) return [];
+  const placeholders = params.chunkIds.map(() => '?').join(',');
+  return db
+    .prepare(
+      `SELECT ${CHUNK_DETAIL_SELECT}, 0 AS distance
+       FROM document_chunks c JOIN documents d ON d.id = c.document_id
+       WHERE d.knowledge_base_id = ? AND c.id IN (${placeholders})`,
+    )
+    .all(params.knowledgeBaseId, ...params.chunkIds) as ChunkSearchResult[];
 }

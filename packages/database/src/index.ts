@@ -14,10 +14,13 @@ export {
   insertChunkVectors,
   deleteVectorsByDocument,
   searchChunks,
+  recallVectorCandidates,
+  listChunksByIds,
   normalizeVector,
   VECTOR_DIM_META_KEY,
   type ChunkVectorRow,
   type ChunkSearchResult,
+  type ChunkCandidate,
 } from './vector';
 export {
   ensureMemoryVectorTable,

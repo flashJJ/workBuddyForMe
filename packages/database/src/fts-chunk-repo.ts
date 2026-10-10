@@ -71,9 +71,27 @@ export function createFtsChunkRepository(db: DatabaseInstance) {
     },
 
     /**
-     * 调试/检索共用的最小匹配查询：返回命中的 chunk_id（含总数上限）。
+     * 关键词候选召回：FTS5 MATCH + bm25 排序（bm25 值越小越相关，ASC）。
+     * 返回相关性有序的 chunk_id；RRF 只消费排名，不直接使用 bm25 数值。
      * 查询无有效 token 时返回空数组（不执行 MATCH）。
      */
+    recallChunkIds(knowledgeBaseId: string, query: string, candidateN: number): number[] {
+      const match = buildFtsQuery(query);
+      if (!match) return [];
+      const rows = db
+        .prepare(
+          `SELECT chunk_id AS chunkId FROM chunks_fts
+           WHERE kb_id = @kbId AND chunks_fts MATCH @match
+           ORDER BY bm25(chunks_fts) ASC
+           LIMIT @limit`,
+        )
+        .all({ kbId: knowledgeBaseId, match, limit: candidateN }) as Array<{
+        chunkId: number;
+      }>;
+      return rows.map((r) => r.chunkId);
+    },
+
+    /** 调试/测试用最小匹配查询（无 bm25 排序保证，按行序），返回命中的 chunk_id */
     matchChunkIds(knowledgeBaseId: string, query: string, limit: number): number[] {
       const match = buildFtsQuery(query);
       if (!match) return [];
