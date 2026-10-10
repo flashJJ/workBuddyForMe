@@ -192,7 +192,8 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           return;
         }
 
-        conversations.completeMessage(assistantMessage.id, full, usage);
+        // 持久化最终引用（含开流前 RAG 与工具循环 knowledge_search 两路合并后的全集）
+        conversations.completeMessage(assistantMessage.id, full, usage, citations);
         conversations.saveMessageToolTrace(assistantMessage.id, trace);
 
         // 先把 done 交给用户：回答已完整落库，UI 立即结束 loading。

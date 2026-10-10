@@ -16,6 +16,7 @@ import { migrateV014 } from './v014-voice';
 import { migrateV015 } from './v015-assistant-expression';
 import { migrateV016 } from './v016-release-polish';
 import { migrateV017 } from './v017-knowledge';
+import { migrateV018 } from './v018-fts-backfill';
 
 interface Migration {
   version: number;
@@ -102,6 +103,11 @@ const MIGRATIONS: Migration[] = [
     description:
       'knowledge: chunk 页段坐标 + chunks_fts 全文表 + 知识编译三表 + documents 编译状态列（纯加法）',
     up: migrateV017,
+  },
+  {
+    version: 18,
+    description: 'knowledge: chunks_fts 存量分片回填（v017 只建空表，升级老库关键词路零行）',
+    up: migrateV018,
   },
 ];
 

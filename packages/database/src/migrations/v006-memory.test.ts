@@ -30,8 +30,8 @@ describe('v006 迁移：长期记忆（assistants.memory_enabled + memories）',
   it('v5 老库升级：老助手默认开启记忆，memories 表可写', () => {
     const db = createV5Database();
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
-    expect(LATEST_SCHEMA_VERSION).toBe(17);
+    expect(result.applied).toEqual([6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+    expect(LATEST_SCHEMA_VERSION).toBe(18);
 
     const assistant = db
       .prepare(`SELECT memory_enabled FROM assistants WHERE id='a1'`)

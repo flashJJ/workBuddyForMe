@@ -113,8 +113,13 @@ export function createConversationService({ db }: ServiceDeps) {
       return saved;
     },
 
-    completeMessage(id: string, content: string, usage: MessageUsage | null): void {
-      messages.complete(id, content, usage);
+    completeMessage(
+      id: string,
+      content: string,
+      usage: MessageUsage | null,
+      citations?: Citation[],
+    ): void {
+      messages.complete(id, content, usage, citations);
     },
 
     markMessageError(id: string, code: string, message: string): void {

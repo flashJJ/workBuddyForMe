@@ -103,8 +103,29 @@ export function createMessageRepository(db: DatabaseInstance) {
       return rows.map(mapMessage);
     },
 
-    /** 流式结束后写回完整内容、状态与 token 用量 */
-    complete(id: string, content: string, usage: MessageUsage | null): void {
+    /** 流式结束后写回完整内容、状态与 token 用量；citations 提供时一并持久化 */
+    complete(
+      id: string,
+      content: string,
+      usage: MessageUsage | null,
+      citations?: Citation[],
+    ): void {
+      if (citations !== undefined) {
+        db.prepare(
+          `UPDATE messages SET
+             content = ?, status = 'completed',
+             prompt_tokens = ?, completion_tokens = ?, total_tokens = ?, citations = ?
+           WHERE id = ?`,
+        ).run(
+          content,
+          usage?.promptTokens ?? null,
+          usage?.completionTokens ?? null,
+          usage?.totalTokens ?? null,
+          JSON.stringify(citations),
+          id,
+        );
+        return;
+      }
       db.prepare(
         `UPDATE messages SET
            content = ?, status = 'completed',
