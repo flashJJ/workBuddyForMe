@@ -70,7 +70,9 @@ export {
   type AgentRunServiceDeps,
   type AgentRunStartParams,
   type AgentClientsProvider,
+  type AgentClientOverrides,
   type AgentPlanContextResolver,
+  type FlowNodeStartParams,
 } from './agent-run-service';
 export type {
   AgentClients,

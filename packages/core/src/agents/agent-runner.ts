@@ -75,7 +75,7 @@ function missingRun(runId: string): never {
 export function createAgentRunner(deps: AgentRunnerDeps) {
   const { repo, clients } = deps;
 
-  async function* run(input: StartAgentRunInput): AsyncGenerator<AgentRunEvent> {
+  async function* run(input: StartAgentRunInput): AsyncGenerator<AgentRunEvent, AgentRunView> {
     const runRow = input.runId
       ? (repo.getById(input.runId) ?? missingRun(input.runId))
       : repo.create({
@@ -214,7 +214,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
       if (supervisor.phase === 'done') {
         repo.finalize(runId, { status: 'done', finalOutcome: outcome });
         yield emitDone(outcome?.summary ?? '');
-        return;
+        return repo.getById(runId)!;
       }
 
       const limit = exceededReason(budget, runRow.budget);
@@ -228,7 +228,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
           errorMessage: `预算触顶（${reasonLabel}）`,
         });
         yield emitDone(delivered?.summary ?? '');
-        return;
+        return repo.getById(runId)!;
       }
 
       const last = history[history.length - 1];
@@ -239,6 +239,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         errorMessage: last?.review.reviewNotes ?? '审查裁决终止任务',
       });
       yield emitDone(outcome?.summary ?? '');
+      return repo.getById(runId)!;
     } catch (error) {
       if (isAborted()) {
         repo.finalize(runId, { status: 'cancelled', errorCode: 'AGENT_CANCELLED', errorMessage: '用户取消' });
@@ -249,6 +250,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
       }
       const stopped = repo.getById(runId)!;
       yield { event: 'done', data: { content: stopped.finalOutcome?.summary ?? '', usage: tokenUsage(stopped) } };
+      return stopped;
     }
   }
 

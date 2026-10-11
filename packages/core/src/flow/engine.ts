@@ -3,6 +3,7 @@ import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { resolveFlowRefs } from './refs';
 import { createDefaultHandlers } from './handlers';
 import { toolNodeHandler, type ToolNodeConfig } from './handlers/tool';
+import { runAgentNode } from './engine-agent';
 import { buildIncomingIndex, isNodeLive } from './engine-live';
 import { policyDenyText, type PolicyDecisionReason } from './policy-gate';
 import type {
@@ -106,6 +107,8 @@ export async function* runFlow(
         outputs = yield* runHumanNode(nodeId, resolvedConfig, ctx, base);
       } else if (node.type === 'tool') {
         outputs = yield* runToolNodeWithGate(nodeId, resolvedConfig, ctx, base);
+      } else if (node.type === 'agent') {
+        outputs = yield* runAgentNode(nodeId, resolvedConfig, ctx, base);
       } else {
         outputs = await runPlainNode(node.type, resolvedConfig, ctx, handlers);
       }

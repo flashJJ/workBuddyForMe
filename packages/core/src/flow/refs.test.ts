@@ -87,3 +87,38 @@ describe('extractReferences', () => {
     );
   });
 });
+
+describe('resolveFlowRefs：v1.4 agent 节点输出引用（T3.3）', () => {
+  const agentScope = scopeOf({
+    ag: {
+      outputs: {
+        runId: 'ar1',
+        status: 'done',
+        rounds: 2,
+        summary: '年假 15 天',
+        evidence: [{ documentId: 'd1', documentName: '制度.pdf', ordinal: 1 }],
+        unfinished: [],
+      },
+    },
+  });
+
+  it('标量字段：summary/status/rounds', () => {
+    expect(resolveFlowRefs('{{$nodes.ag.outputs.summary}}', agentScope)).toBe('年假 15 天');
+    expect(resolveFlowRefs('{{$nodes.ag.outputs.status}}', agentScope)).toBe('done');
+    expect(resolveFlowRefs('{{$nodes.ag.outputs.rounds}}', agentScope)).toBe(2);
+  });
+
+  it('evidence 数组支持整体 $ref 与下标路径插值', () => {
+    expect(resolveFlowRefs({ $ref: 'nodes.ag.outputs.evidence' }, agentScope)).toEqual([
+      { documentId: 'd1', documentName: '制度.pdf', ordinal: 1 },
+    ]);
+    expect(
+      resolveFlowRefs('依据：{{$nodes.ag.outputs.evidence.0.documentName}}', agentScope),
+    ).toBe('依据：制度.pdf');
+  });
+
+  it('模板内拼接状态与轮次（条件/结束节点常用）', () => {
+    expect(resolveFlowRefs('协作结果：{{$nodes.ag.outputs.status}}/{{$nodes.ag.outputs.rounds}} 轮', agentScope))
+      .toBe('协作结果：done/2 轮');
+  });
+});

@@ -12,6 +12,7 @@ export const FLOW_NODE_DEFAULT_LABELS: Record<FlowNodeType, string> = {
   tool: '工具',
   condition: '条件分支',
   human: '人工确认',
+  agent: '协作',
   end: '结束',
 };
 
@@ -79,6 +80,9 @@ export function flowEventToSubstep(
       return { id, label, status: 'skipped', detail: nodeEvent.reason };
     case 'node_waiting_human':
       return { id, label, status: 'running', detail: '等待人工确认' };
+    case 'node_agent_event':
+      // 内部协作帧只标记运行中；细粒度泳道由 M4 时间线展开渲染
+      return { id, label, status: 'running' };
     case 'node_failed':
       return { id, label, status: 'error', detail: nodeEvent.message };
     default:
