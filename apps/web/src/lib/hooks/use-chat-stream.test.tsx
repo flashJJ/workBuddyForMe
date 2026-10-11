@@ -112,4 +112,40 @@ describe('useChatStream（TR-24.1）', () => {
     });
     expect(onError).toHaveBeenCalledWith({ code: 'VALIDATION_ERROR', message: '未配置模型' });
   });
+
+  it('语音保活：done 后 streaming 立即复位，尾部 voice_audio/final 仍完整派发', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        sseResponse([
+          'event: delta\ndata: {"content":"你好"}\n\n',
+          'event: done\ndata: {"content":"你好","usage":null}\n\n',
+          'event: voice_audio\ndata: {"fragment":"","spoken":"你好","audio":"wav","sampleRate":16000,"final":false}\n\n',
+          'event: voice_audio\ndata: {"fragment":"","spoken":"","audio":null,"sampleRate":0,"final":true}\n\n',
+          'event: voice_state\ndata: {"state":"idle"}\n\n',
+        ]),
+      ),
+    );
+
+    const handlers = {
+      onDone: vi.fn(),
+      onVoiceAudio: vi.fn(),
+      onVoiceState: vi.fn(),
+      onStreamingChange: vi.fn(),
+    };
+    const { result } = renderHook(() => useChatStream());
+    await act(async () => {
+      await result.current.send(
+        { assistantId: 'a1', content: 'hi', voice: { tts: true } },
+        handlers,
+      );
+    });
+
+    expect(handlers.onDone).toHaveBeenCalledTimes(1);
+    // 尾部音频两帧（含 final）与 idle 均未因 done 而丢失
+    expect(handlers.onVoiceAudio).toHaveBeenCalledTimes(2);
+    expect(handlers.onVoiceAudio.mock.calls[1]![0].final).toBe(true);
+    expect(handlers.onVoiceState).toHaveBeenCalledWith({ state: 'idle' });
+    expect(result.current.streaming).toBe(false);
+  });
 });

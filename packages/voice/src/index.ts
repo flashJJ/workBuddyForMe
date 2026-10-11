@@ -33,7 +33,9 @@ export {
   StreamingSentenceSplitter,
   splitSentences,
   stripForTts,
+  chunkForTts,
   MIN_FIRST_CLAUSE,
+  MAX_TTS_CHUNK,
   type SplitterOptions,
 } from './text/sentence-splitter';
 

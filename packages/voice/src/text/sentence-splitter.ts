@@ -15,13 +15,85 @@ const ELLIPSIS = new Set(['…', '.']);
 /** 首次按逗号提前切分所需的最少可见字符数（避免一个「嗯，」就触发合成） */
 export const MIN_FIRST_CLAUSE = 3;
 
-/** 去掉表情/动作标签与多余空白，得到「可朗读」文本（括号策略与 VTuber 一致：默认全去）。 */
+/** 单块 TTS 合成目标长度（字）：超长句二次切块，压低单句合成尖峰与首音延迟 */
+export const MAX_TTS_CHUNK = 40;
+
+/** 软断点（切块时优先在此断开，标点保留在前一块尾部） */
+const SOFT_BREAK_RE = /(?<=[，、；;：])/;
+
+/** markdown 表格分隔行 / 水平分隔线 / 代码围栏：整行不朗读 */
+function isNoiseOnlyLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('```')) return true;
+  // 去掉首尾管道与空白后，表格分隔行形如 ---|--- 或 :---:|:---
+  const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').replace(/\s/g, '');
+  if (/^:?-{2,}:?(\|:?-{2,}:?)*$/.test(cells)) return true;
+  return /^(-{3,}|\*{3,}|_{3,})$/.test(cells);
+}
+
+/**
+ * 去掉表情/动作标签与 markdown 噪声，得到「可朗读」文本。
+ * - 表格管道 | → 逗号（保留单元格内容的可听停顿）；
+ * - 表格分隔行（|:---:|）、水平分隔线（---）、代码围栏、URL 整段剔除。
+ */
 export function stripForTts(text: string): string {
   return text
+    .split('\n')
+    .filter((line) => !isNoiseOnlyLine(line))
+    .join(' ')
     .replace(/\[[^\]]*\]/g, '') // [joy] 表情标签
-    .replace(/[*_#>`~]/g, '') // markdown 口语噪声
+    .replace(/https?:\/\/\S+|www\.\S+/gi, '') // URL
+    // 表格行首尾管道直接删（避免产生无意义的首尾逗号），行内管道转逗号保留停顿
+    .replace(/^\s*[|｜]\s*/, '')
+    .replace(/\s*[|｜]\s*$/, '')
+    .replace(/\s*[|｜]\s*/g, '，')
+    .replace(/[*_#>`~-]/g, '') // markdown 口语噪声
     .replace(/\s+/g, ' ')
+    .replace(/，{2,}/g, '，')
     .trim();
+}
+
+/**
+ * 超长可朗读文本二次切块（stripForTts 之后调用）：
+ * - 优先在软标点（，、；：）边界贪心打包到 maxLen；
+ * - 无标点的长段在空格（英文词边界）处断，仍超长则按字硬切（中文无害）；
+ * - 拼接结果恒等于入参（除首尾空白），顺序稳定，供逐块合成后顺序播放。
+ */
+export function chunkForTts(text: string, maxLen: number = MAX_TTS_CHUNK): string[] {
+  const input = text.trim();
+  if (!input) return [];
+  const chunks: string[] = [];
+  let buffer = '';
+
+  const hardSplit = (segment: string) => {
+    let rest = segment;
+    while (rest.length > maxLen) {
+      const windowText = rest.slice(0, maxLen + 1);
+      const spaceAt = windowText.lastIndexOf(' ');
+      const cut = spaceAt > maxLen / 2 ? spaceAt : maxLen;
+      chunks.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) buffer = rest;
+  };
+
+  for (const segment of input.split(SOFT_BREAK_RE).filter(Boolean)) {
+    if (segment.length > maxLen) {
+      if (buffer) {
+        chunks.push(buffer);
+        buffer = '';
+      }
+      hardSplit(segment);
+    } else if ((buffer + segment).length > maxLen) {
+      chunks.push(buffer);
+      buffer = segment;
+    } else {
+      buffer += segment;
+    }
+  }
+  if (buffer) chunks.push(buffer);
+  return chunks.filter(Boolean);
 }
 
 function visibleLength(text: string): number {

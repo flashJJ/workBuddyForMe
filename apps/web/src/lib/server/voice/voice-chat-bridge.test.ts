@@ -99,4 +99,61 @@ describe('withVoice 语音桥', () => {
     expect(firstAudio?.data).toMatchObject({ audio: null, spoken: '你好。' });
     expect(out.map((e) => e.event)).toContain('done');
   });
+
+  it('慢合成不阻塞文本：done 文本帧先于合成完成下发（零背压）', async () => {
+    async function* source(): AsyncGenerator<OrchestratorEvent> {
+      yield { event: 'delta', data: { content: '第一句。' } };
+      yield { event: 'delta', data: { content: '第二句。' } };
+      yield { event: 'done', data: { content: '第一句。第二句。', usage: null } };
+    }
+    // 每句合成 50ms；旧串行实现下 done 至少要等 100ms
+    const synth = vi.fn(
+      async () =>
+        new Promise<{ samples: Float32Array; sampleRate: number }>((resolve) =>
+          setTimeout(() => resolve({ samples: new Float32Array([0.1]), sampleRate: 16000 }), 50),
+        ),
+    );
+
+    const timed: Array<{ event: string; t: number }> = [];
+    const t0 = Date.now();
+    for await (const e of withVoice(source(), { tts: { synthesize: synth } })) {
+      timed.push({ event: e.event, t: Date.now() - t0 });
+    }
+
+    const doneAt = timed.find((x) => x.event === 'done')!.t;
+    expect(doneAt).toBeLessThan(40);
+    // 连接为尾部音频保活：两帧音频在 done 之后仍按序到达，再 final 收尾
+    const audioFrames = timed.filter((x) => x.event === 'voice_audio');
+    expect(audioFrames).toHaveLength(3);
+    expect((audioFrames[2] as unknown as { event: string }).event).toBe('voice_audio');
+    expect(synth).toHaveBeenCalledTimes(2);
+  });
+
+  it('超长无标点片段按块合成：多帧音频保序，仅首块携带原字幕片段', async () => {
+    const long = `${'甲'.repeat(45)}。`;
+    async function* source(): AsyncGenerator<OrchestratorEvent> {
+      yield { event: 'delta', data: { content: long } };
+      yield { event: 'done', data: { content: long, usage: null } };
+    }
+    const spokenTexts: string[] = [];
+    const synth = vi.fn(async (text: string) => {
+      spokenTexts.push(text);
+      return { samples: new Float32Array([0.1]), sampleRate: 16000 };
+    });
+    const out: VoiceBridgeEvent[] = [];
+    for await (const e of withVoice(source(), { tts: { synthesize: synth } })) out.push(e);
+
+    expect(synth).toHaveBeenCalledTimes(2);
+    expect(spokenTexts.join('')).toBe(long);
+
+    const audio = out.filter((e) => e.event === 'voice_audio') as Array<{
+      data: { fragment: string; spoken: string; audio: string | null; final: boolean };
+    }>;
+    expect(audio).toHaveLength(3); // 两块音频 + final
+    expect(audio[0]!.data.fragment).toBe(long);
+    expect(audio[1]!.data.fragment).toBe('');
+    expect(audio[0]!.data.audio).toBeTruthy();
+    expect(audio[1]!.data.audio).toBeTruthy();
+    expect(audio[2]!.data.final).toBe(true);
+  });
 });

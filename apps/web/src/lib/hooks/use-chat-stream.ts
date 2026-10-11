@@ -52,10 +52,24 @@ export function useChatStream() {
       setStreaming(true);
       handlers.onStreamingChange?.(true);
 
-      const finish = () => {
-        if (controllerRef.current === controller) controllerRef.current = null;
+      // 文本终态（done/error）与连接生命周期解耦：语音开启时服务端会在 done
+      // 之后继续推 voice_audio 尾部帧，UI 生成态必须随 done 立即结束，不能陪绑
+      // 数分钟的语音保活期；reader 仍继续排空音频帧直到服务端 final + 关流。
+      let settled = false;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
         setStreaming(false);
         handlers.onStreamingChange?.(false);
+      };
+      /** 连接真正关闭时的资源清理（仅在未收到终态帧时补发一次流式结束通知） */
+      const cleanup = () => {
+        if (controllerRef.current === controller) controllerRef.current = null;
+        if (!settled) {
+          settled = true;
+          setStreaming(false);
+          handlers.onStreamingChange?.(false);
+        }
       };
 
       try {
@@ -76,7 +90,7 @@ export function useChatStream() {
           handlers.onError?.(
             payload?.error ?? { code: 'INTERNAL_ERROR', message: '流式连接失败' },
           );
-          finish();
+          settle();
           return;
         }
 
@@ -118,9 +132,11 @@ export function useChatStream() {
                 break;
               case 'done':
                 handlers.onDone?.(event.data);
+                settle();
                 break;
               case 'error':
                 handlers.onError?.(event.data);
+                settle();
                 break;
               default:
                 assertNever(event);
@@ -128,8 +144,9 @@ export function useChatStream() {
           }
         }
       } catch (error) {
-        // 主动 abort 时服务端会以 done(stopped) 收尾；仅对真正的网络错误回调
-        if (!controller.signal.aborted) {
+        // 主动 abort 时服务端会以 done(stopped) 收尾；已落终态后的中断也不报错；
+        // 仅对真正的网络错误回调
+        if (!controller.signal.aborted && !settled) {
           handlers.onError?.(
             error instanceof ApiClientError
               ? { code: error.code, message: error.message }
@@ -137,7 +154,7 @@ export function useChatStream() {
           );
         }
       } finally {
-        finish();
+        cleanup();
       }
     },
     [],
