@@ -252,7 +252,9 @@ export function ChatPage() {
                     ))}
                 </>
               }
-              onSend={(content) => (taskMode ? void session.sendTask(content) : session.send(content))}
+              onSend={(content, attachmentIds) =>
+                taskMode ? void session.sendTask(content) : session.send(content, attachmentIds)
+              }
               onStop={session.stop}
             />
           </>

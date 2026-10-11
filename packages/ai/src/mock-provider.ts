@@ -8,6 +8,7 @@ import type {
 } from './types';
 import type { DiscoveredModel } from '@wbfm/shared/types';
 import { sleep } from './http/backoff';
+import { mockAgentProtocol } from './mock-agent-protocol';
 
 /** mock 向量维度：64 维多热编码，共享 token 的文本相似度高，足以驱动真实 top-k 检索 */
 const EMBED_DIMENSION = 64;
@@ -147,6 +148,17 @@ export function createMockProvider(): ChatProvider {
       const userText = messageText(user?.content ?? '');
       const imageCount = countImages(user?.content ?? '');
       const reference = extractReference(messageText(system?.content ?? ''));
+
+      // v1.4 M5：多智能体角色协议（planner/reviewer/executor 决策器）确定性 JSON 回放
+      const agentReply = mockAgentProtocol({ messages: params.messages });
+      if (agentReply) {
+        if (agentReply.delayMs > 0) await sleep(agentReply.delayMs, params.signal);
+        yield {
+          delta: agentReply.content,
+          usage: { promptTokens: 30, completionTokens: 20, totalTokens: 50 },
+        };
+        return;
+      }
 
       // v0.3：mock 视觉——用户消息带图片时给出确定性「看图」回复，驱动 E2E 全链路
       if (imageCount > 0) {
