@@ -32,6 +32,18 @@ test.describe('i18n 语言切换（v1.2 M4）', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
 
+    // 刷新前确认语言设置已落盘（select 触发的是防抖 PUT，冷编译下 reload 抢跑会读到旧值）
+    await expect
+      .poll(
+        async () => {
+          const res = await page.request.get('/api/settings');
+          const body = (await res.json()) as { data: { language: string } };
+          return body.data.language;
+        },
+        { timeout: 10_000 },
+      )
+      .toBe('en-US');
+
     // 刷新后语言保持（localStorage 缓存 + 服务端设置水合）
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');

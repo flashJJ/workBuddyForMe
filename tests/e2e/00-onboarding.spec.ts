@@ -32,10 +32,17 @@ test.describe('M5 首启体验', () => {
     await page.getByTestId('ob-enter').click();
     await expect(dialog).toBeHidden();
 
-    // 设置已落盘
-    const settings = await page.request.get('/api/settings');
-    const body = (await settings.json()) as { data: { hasOnboarded: boolean } };
-    expect(body.data.hasOnboarded).toBe(true);
+    // 设置已落盘（弹窗隐藏是乐观更新，落盘 PUT 在冷编译下可能稍晚，轮询读不抢跑）
+    await expect
+      .poll(
+        async () => {
+          const settings = await page.request.get('/api/settings');
+          const body = (await settings.json()) as { data: { hasOnboarded: boolean } };
+          return body.data.hasOnboarded;
+        },
+        { timeout: 10_000 },
+      )
+      .toBe(true);
 
     // 刷新不再自动弹
     await page.reload();
