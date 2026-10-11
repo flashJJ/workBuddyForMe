@@ -6,6 +6,7 @@ import {
   FLOW_NAME_MAX,
   FLOW_NODE_ID_PATTERN,
 } from '../constants';
+import { AGENT_BUDGET_BOUNDS } from './agent';
 
 /**
  * v0.8 Flow Studio 图结构与 API 请求契约（zod）。
@@ -21,6 +22,7 @@ export const FLOW_NODE_TYPES = [
   'tool',
   'condition',
   'human',
+  'agent',
   'end',
 ] as const;
 export type FlowNodeType = (typeof FLOW_NODE_TYPES)[number];
@@ -52,6 +54,36 @@ export const flowStartConfigSchema = z.object({
   inputs: z.array(flowInputFieldSchema).max(20).default([]),
 });
 export type FlowStartConfig = z.infer<typeof flowStartConfigSchema>;
+
+/**
+ * v1.4 agent 节点配置：发起一次 Planner/Executor/Reviewer 协作。
+ * goal 支持 {{$nodes.*}} 引用插值；预算缺省取协作默认；角色模型留空逐级回落
+ * （节点角色覆盖→助手角色覆盖→助手通用→系统默认）。
+ */
+export const flowAgentConfigSchema = z.object({
+  /** 协作目标（可含变量插值；编译期只校验非空，运行时解析引用） */
+  goal: z.string().trim().min(1, '协作目标不能为空').max(2000),
+  /** 关联助手（可空：模型/知识库均取节点显式配置或系统默认） */
+  assistantId: z.string().trim().min(1).nullable().optional(),
+  /** 工具域（knowledge / desktop / mcp:<服务器> / flow:<id> 等）；缺省纯推理 */
+  toolScopes: z.array(z.string().trim().min(1).max(80)).max(30).optional(),
+  /** 指定知识库（优先于助手绑定） */
+  knowledgeBaseId: z.string().trim().min(1).nullable().optional(),
+  /** 三角色模型覆盖（models.id；空串视同未设置） */
+  plannerModelId: z.string().trim().min(1).nullable().optional(),
+  executorModelId: z.string().trim().min(1).nullable().optional(),
+  reviewerModelId: z.string().trim().min(1).nullable().optional(),
+  /** 预算覆盖（区间与协作三重预算硬上下界一致） */
+  maxRounds: z.number().int().min(AGENT_BUDGET_BOUNDS.maxRounds.min).max(AGENT_BUDGET_BOUNDS.maxRounds.max).optional(),
+  maxSteps: z.number().int().min(AGENT_BUDGET_BOUNDS.maxSteps.min).max(AGENT_BUDGET_BOUNDS.maxSteps.max).optional(),
+  maxTotalTokens: z
+    .number()
+    .int()
+    .min(AGENT_BUDGET_BOUNDS.maxTotalTokens.min)
+    .max(AGENT_BUDGET_BOUNDS.maxTotalTokens.max)
+    .optional(),
+});
+export type FlowAgentConfig = z.infer<typeof flowAgentConfigSchema>;
 
 /** 把 start 入参字段转为 OpenAI function-calling JSON Schema（flow 工具 parameters） */
 export function buildFlowInputJsonSchema(fields: FlowInputField[]): Record<string, unknown> {

@@ -57,6 +57,7 @@ export type {
   FlowDiagnostic,
   FlowEventType,
   FlowEventPayload,
+  AgentNodeInnerEvent,
   FlowEndpointStatus,
   FlowUnattendedPolicyMode,
   FlowUnattendedPolicy,
