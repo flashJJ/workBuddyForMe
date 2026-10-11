@@ -132,10 +132,18 @@ describe('buildExecutorOutcome 交付物收敛（T2.3）', () => {
     expect(failed.unfinished).toEqual(['缺一页资料', '执行在连续失败上限终止']);
   });
 
-  it('边界：无 final 无成功动作时 summary 为空串而非 undefined', () => {
-    const outcome = buildExecutorOutcome({ run: runView({ status: 'stopped' }), steps: [] });
-    expect(outcome.summary).toBe('');
-    expect(outcome.evidence).toEqual([]);
-    expect(outcome.toolCalls).toEqual([]);
+  it('边界：无 final 无成功动作时 summary 用终态说明/兜底文案填充，绝不为空串', () => {
+    const stopped = buildExecutorOutcome({ run: runView({ status: 'stopped' }), steps: [] });
+    expect(stopped.summary.length).toBeGreaterThan(0);
+    expect(stopped.evidence).toEqual([]);
+    expect(stopped.toolCalls).toEqual([]);
+
+    // 有终态说明时优先用终态说明（让 403 等真实原因直达 reviewer/用户）
+    const withNote = buildExecutorOutcome({
+      run: runView({ status: 'failed', stopReason: 'max_failures' }),
+      steps: [],
+      terminalNote: '执行以失败终态结束（连续失败达上限，末次原因：决策失败：403 overdue）',
+    });
+    expect(withNote.summary).toContain('403 overdue');
   });
 });

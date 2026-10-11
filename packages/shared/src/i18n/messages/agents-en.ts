@@ -68,6 +68,10 @@ export const enAgents = {
     origin: 'Collaboration task · initiated by Executor',
     waiting: 'Waiting for tool authorization; the collaboration resumes once allowed',
   },
+  errors: {
+    streamConnectFailed: 'Failed to connect to the collaboration event stream',
+    networkInterrupted: 'Network connection interrupted',
+  },
   tasks: {
     title: 'Collaboration tasks',
     description: 'Runs coordinated by Planner / Executor / Reviewer',
@@ -75,8 +79,8 @@ export const enAgents = {
     filterAll: 'All statuses',
     detailTitle: 'Handoff details',
     goal: 'Goal',
-    runId: 'Run ID',
-    conversation: 'Conversation',
+    runId: 'Run ID: ',
+    conversation: 'Conversation: ',
     loading: 'Loading collaboration tasks…',
     loadFailed: 'Failed to load',
     cancel: 'Stop',

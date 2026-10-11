@@ -5,8 +5,8 @@ import type { RetrievedChunk } from '../retrieval/retrieval-service';
 /** 工具执行时可使用的能力（由编排器按本轮对话注入） */
 export interface ToolContext {
   signal?: AbortSignal;
-  /** 当前助手绑定的知识库 id；未绑定时 knowledge_search 直接拒绝 */
-  knowledgeBaseId: string | null;
+  /** 当前生效的知识库 id 集合（助手多库绑定 / 协作子任务单库收敛）；空集时 knowledge_search 直接拒绝 */
+  knowledgeBaseIds: string[];
   /** 向量检索回调（复用 RAG 检索内核） */
   retrieve: (
     query: string,

@@ -1,4 +1,4 @@
-import { createTaskRunRepository } from '@wbfm/database';
+import { createKnowledgeRepository, createTaskRunRepository } from '@wbfm/database';
 import type { AgentRunView, SubtaskSpec } from '@wbfm/shared/schemas';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
@@ -6,6 +6,7 @@ import type { TaskPlanner } from '../agent/types';
 import { runTaskLoop } from '../agent/task-loop';
 import type { TaskRunView } from '@wbfm/shared/schemas';
 import { createRetrievalService } from '../retrieval/retrieval-service';
+import { sys } from '../i18n/system-text';
 import { buildExecutorOutcome } from './executor-outcome';
 import type { ExecutorClient } from './runner-types';
 
@@ -44,8 +45,8 @@ export interface CreateExecutorAdapterParams {
   deps: ServiceDeps;
   runtime: ToolRuntime;
   run: Pick<AgentRunView, 'id' | 'conversationId' | 'assistantId' | 'budget' | 'goal'>;
-  /** 助手绑定知识库（子任务未显式指定 knowledgeBaseId 时回落） */
-  assistantKnowledgeBaseId: string | null;
+  /** 助手/节点绑定知识库集合（子任务未显式指定 knowledgeBaseId 时在全部库内检索） */
+  assistantKnowledgeBaseIds: string[];
   /** 按观察模式取得决策器（生产侧完成角色模型三级回落；测试注入脚本） */
   resolvePlanner: (mode: ObserveMode) => ExecutorPlannerResolution;
 }
@@ -81,10 +82,35 @@ function modeFor(subtask: SubtaskSpec): ObserveMode {
   return subtask.toolScopes?.includes('desktop') ? 'screen' : 'tool';
 }
 
-const TERMINAL_NOTE: Partial<Record<TaskRunView['status'], string>> = {
-  stopped: '执行被中断（用户急停/连接断开），未完成',
-  failed: '执行以失败终态结束（连续失败/熔断/决策错误）',
-};
+/**
+ * v1.4 热修：终态说明按真实 stopReason 细分——
+ * 旧文案统一写「连续失败/熔断/决策错误」，但模型一次零工具 fail（stopReason=error）
+ * 也会显示成「连续失败」，误导排查。
+ * lastFailure：最后一个失败步的错误文本（如模型通道 403，可能本身是系统消息标记），
+ * 让真实原因直达审查与用户。
+ */
+function terminalNoteFor(
+  status: TaskRunView['status'],
+  stopReason: TaskRunView['stopReason'] | null,
+  lastFailure?: string,
+): string | undefined {
+  if (status === 'completed') return undefined;
+  if (status === 'failed') {
+    if (stopReason === 'breaker') return sys('agentTrace.terminal.breaker');
+    if (stopReason === 'max_failures') {
+      // cause 截 100 字符，保证嵌套编码后整条不超过 unfinished 的 500 字符 schema 上限
+      return lastFailure
+        ? sys('agentTrace.terminal.maxFailuresCause', { cause: lastFailure.slice(0, 100) })
+        : sys('agentTrace.terminal.maxFailures');
+    }
+    return sys('agentTrace.terminal.modelGaveUp');
+  }
+  if (status === 'stopped') {
+    if (stopReason === 'max_steps') return sys('agentTrace.terminal.maxSteps');
+    return sys('agentTrace.terminal.interrupted');
+  }
+  return undefined;
+}
 
 export function createExecutorAdapter(params: CreateExecutorAdapterParams): ExecutorClient {
   const { deps, runtime } = params;
@@ -96,9 +122,17 @@ export function createExecutorAdapter(params: CreateExecutorAdapterParams): Exec
       const mode = modeFor(subtask);
       const resolution = params.resolvePlanner(mode);
       if (mode === 'screen' && !resolution.visionCapable) {
-        throw new Error('屏幕（screen）观察模式要求视觉模型，当前 executor 模型不具备视觉能力');
+        throw new Error(sys('agentTrace.terminal.visionRequired'));
       }
-      const knowledgeBaseId = subtask.knowledgeBaseId ?? params.assistantKnowledgeBaseId;
+      // 子任务显式指定单库时收敛到该库；否则继承助手/节点绑定的全部库
+      const knowledgeBaseIds = subtask.knowledgeBaseId
+        ? [subtask.knowledgeBaseId]
+        : params.assistantKnowledgeBaseIds;
+      // 库名注入决策提示词：模型需要知道授权库里装的是简历/项目等什么资料才会主动检索
+      const knowledgeRepo = createKnowledgeRepository(deps.db);
+      const knowledgeBaseNames = knowledgeBaseIds
+        .map((id) => knowledgeRepo.findById(id)?.name ?? '')
+        .filter(Boolean);
       const allowedTools = resolveAllowedTools(subtask.toolScopes, deps);
       const repo = createTaskRunRepository(deps.db);
       const taskRun = repo.createRun({
@@ -119,10 +153,19 @@ export function createExecutorAdapter(params: CreateExecutorAdapterParams): Exec
         visionCapable: resolution.visionCapable,
         signal,
         observeMode: mode,
-        knowledgeBaseId,
+        knowledgeBaseIds,
+        // v1.4 热修：把子任务完整要求/验收标准/授权库名下传决策器，消除零工具 fail
+        subtaskBrief: subtask.brief,
+        subtaskAcceptance: subtask.acceptance,
+        knowledgeBaseNames,
         retrieve: async (query, topK, retrieveSignal) =>
-          knowledgeBaseId
-            ? retrieval.retrieve({ knowledgeBaseId, query, ...(topK ? { topK } : {}), signal: retrieveSignal })
+          knowledgeBaseIds.length > 0
+            ? retrieval.retrieveMany({
+                knowledgeBaseIds,
+                query,
+                ...(topK ? { topK } : {}),
+                signal: retrieveSignal,
+              })
             : [],
       });
 
@@ -142,10 +185,11 @@ export function createExecutorAdapter(params: CreateExecutorAdapterParams): Exec
       }
 
       const steps = repo.listSteps(taskRun.id);
+      const lastFailure = [...steps].reverse().find((s) => s.status === 'failed')?.error ?? '';
       const outcome = buildExecutorOutcome({
         run: final,
         steps,
-        terminalNote: TERMINAL_NOTE[final.status],
+        terminalNote: terminalNoteFor(final.status, final.stopReason, lastFailure),
       });
       return {
         outcome,

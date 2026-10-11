@@ -14,8 +14,10 @@ import {
 } from '@wbfm/shared/i18n';
 import { apiGet, apiPut } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
+import { LANGUAGE_STORAGE_KEY } from './current-locale';
 
-export const LANGUAGE_STORAGE_KEY = 'wbfm-language';
+export { LANGUAGE_STORAGE_KEY };
+
 const DEFAULT_LOCALE: Language = 'zh-CN';
 
 const DICTS: Record<Language, MessageNode> = {

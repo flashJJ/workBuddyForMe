@@ -1,4 +1,4 @@
-import type { FlowHumanSubmitInput } from '@wbfm/shared/schemas';
+﻿import type { FlowHumanSubmitInput } from '@wbfm/shared/schemas';
 import { createDatabase } from '@wbfm/database';
 import {
   createWorkflowRepository,
@@ -140,7 +140,7 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     const result = await tool!.run(
       { topic: '本周' },
       {
-        knowledgeBaseId: '',
+        knowledgeBaseIds: [],
         retrieve: async () => [],
         onSubstep: (s) => seen.push(`${s.id}:${s.status}`),
       },

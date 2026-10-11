@@ -140,11 +140,11 @@ function AgentRunRow({
       {expanded && (
         <div className="space-y-2 border-t px-4 py-3">
           <p className="text-[11px] text-muted-foreground">
-            {t('agents.tasks.runId')}：<span className="font-mono">{run.id}</span>
+            {t('agents.tasks.runId')}<span className="font-mono">{run.id}</span>
             {run.conversationId && (
               <>
                 {' · '}
-                {t('agents.tasks.conversation')}：<span className="font-mono">{run.conversationId.slice(0, 8)}</span>
+                {t('agents.tasks.conversation')}<span className="font-mono">{run.conversationId.slice(0, 8)}</span>
               </>
             )}
           </p>

@@ -26,8 +26,12 @@ export interface AgentTaskTurnParams {
   assistantId: string;
   conversationId: string | null;
   onConversationCreated: (id: string) => void;
-  /** 推入用户消息+占位助手消息，返回助手消息 id */
-  pushTurn: (content: string) => string;
+  /**
+   * 推入用户消息+占位助手消息，返回助手消息 id。
+   * regenerate=true：去掉尾部旧助手消息后挂新占位（不重复追加用户消息），
+   * 用于任务模式失败后的「重新生成」。
+   */
+  pushTurn: (content: string, regenerate?: boolean) => string;
   patchAssistant: (patch: Partial<Message>) => void;
   /** 协作 Executor 工具门控帧（HITL 弹窗由会话页统一渲染） */
   onGateConfirm: (pending: PendingToolConfirmation) => void;
@@ -67,8 +71,8 @@ export function useAgentTaskTurn(params: AgentTaskTurnParams) {
   );
 
   const start = React.useCallback(
-    async (content: string) => {
-      const messageId = params.pushTurn(content);
+    async (content: string, options?: { regenerate?: boolean }) => {
+      const messageId = params.pushTurn(content, options?.regenerate ?? false);
       try {
         let convId = params.conversationId;
         if (!convId) {

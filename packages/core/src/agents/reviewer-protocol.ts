@@ -6,6 +6,7 @@ import {
   type ReviewVerdictPayload,
   type SubtaskSpec,
 } from '@wbfm/shared/schemas';
+import { toModelText } from '../i18n/system-text';
 import { extractJsonObject } from './planner-protocol';
 
 /**
@@ -102,7 +103,7 @@ export interface ReviewerPromptInput {
 export function buildReviewMessages(input: ReviewerPromptInput): ChatMessage[] {
   const check = checkAcceptanceStructural(input.subtask, input.outcome);
   const acceptanceLines = input.subtask.acceptance
-    .map((a, i) => `${i + 1}. ${a}`)
+    .map((a, i) => `${i + 1}. ${toModelText(a)}`)
     .join('\n');
   const evidenceLines =
     input.outcome.evidence.length > 0
@@ -114,15 +115,17 @@ export function buildReviewMessages(input: ReviewerPromptInput): ChatMessage[] {
   const toolLine =
     input.outcome.toolCalls.length > 0 ? input.outcome.toolCalls.join(' → ') : '（无工具调用）';
   const unfinishedLine =
-    input.outcome.unfinished.length > 0 ? input.outcome.unfinished.map((u) => `· ${u}`).join('\n') : '（无）';
+    input.outcome.unfinished.length > 0
+      ? input.outcome.unfinished.map((u) => `· ${toModelText(u)}`).join('\n')
+      : '（无）';
   const structuralLine = check.issues.length > 0 ? check.issues.map((x) => `· ${x}`).join('\n') : '· 结构初筛未发现问题';
 
   const text = [
-    `【用户原始目标】${input.goal}`,
+    `【用户原始目标】${toModelText(input.goal)}`,
     `【当前轮次】第 ${input.round + 1} 轮`,
-    `【子任务】${input.subtask.title}\n${input.subtask.brief}`,
+    `【子任务】${toModelText(input.subtask.title)}\n${toModelText(input.subtask.brief)}`,
     `【完成标准】\n${acceptanceLines}`,
-    `【执行者结论】\n${input.outcome.summary}`,
+    `【执行者结论】\n${toModelText(input.outcome.summary)}`,
     `【引用证据】\n${evidenceLines}`,
     `【工具调用序列】${toolLine}`,
     `【未竟事项】\n${unfinishedLine}`,

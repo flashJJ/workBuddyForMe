@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { executeCall, executeToolCall, parseToolArgs, summarizeArgs } from './tool-executor';
 import { ToolArgError, type Tool, type ToolContext } from './types';
 
 const baseCtx: ToolContext = {
-  knowledgeBaseId: null,
+  knowledgeBaseIds: [],
   retrieve: async () => [],
 };
 

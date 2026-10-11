@@ -116,7 +116,7 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
       // visionCapable 固定 false：调试台仅验证通道连通性，截图以文本元数据返回
       return {
         signal,
-        knowledgeBaseId: null,
+        knowledgeBaseIds: [],
         visionCapable: false,
         retrieve: async () => [],
       };
@@ -139,11 +139,11 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
     createContext(assistant, signal, opts) {
       return {
         signal,
-        knowledgeBaseId: assistant.knowledgeBaseId,
+        knowledgeBaseIds: assistant.knowledgeBaseIds,
         visionCapable: opts?.visionCapable ?? false,
         retrieve: (query, topK, retrieveSignal) =>
-          retrieval.retrieve({
-            knowledgeBaseId: assistant.knowledgeBaseId ?? '',
+          retrieval.retrieveMany({
+            knowledgeBaseIds: assistant.knowledgeBaseIds,
             query,
             topK: topK || DEFAULT_RETRIEVAL_TOP_K,
             signal: retrieveSignal,

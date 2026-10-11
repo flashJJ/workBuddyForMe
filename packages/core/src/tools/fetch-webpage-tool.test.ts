@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+﻿import { afterEach, describe, expect, it, vi } from 'vitest';
 import { executeToolCall } from './tool-executor';
 import type { ToolContext } from './types';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 
-const ctx: ToolContext = { knowledgeBaseId: null, retrieve: async () => [] };
+const ctx: ToolContext = { knowledgeBaseIds: [], retrieve: async () => [] };
 
 function htmlResponse(body: string, contentType = 'text/html; charset=utf-8', status = 200) {
   return new Response(body, {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import type { ScreenSnapshotResponse } from '@wbfm/shared/schemas';
 import { ChannelUnavailableError, type ComputerChannelClient } from '../../computer/channel-client';
 import { createScreenSnapshotTool } from './screen-snapshot-tool';
@@ -17,7 +17,7 @@ const SNAP: ScreenSnapshotResponse = {
 };
 
 function makeCtx(visionCapable: boolean): ToolContext {
-  return { knowledgeBaseId: null, retrieve: async () => [], visionCapable };
+  return { knowledgeBaseIds: [], retrieve: async () => [], visionCapable };
 }
 
 function clientWith(run: ComputerChannelClient['snapshot']): ComputerChannelClient {

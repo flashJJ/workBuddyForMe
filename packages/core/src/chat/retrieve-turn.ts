@@ -28,13 +28,13 @@ export async function* runAlwaysRetrieval(params: {
     params;
   let retrieved: RagContext | null = null;
   try {
-    if (retrieve && assistant.knowledgeBaseId && assistant.retrieveAlways) {
+    if (retrieve && assistant.knowledgeBaseIds.length > 0 && assistant.retrieveAlways) {
       retrieved = await traceAsync(
         {
           name: 'knowledge_search',
           runType: 'retriever',
           parent: traceParent,
-          inputs: { query: userContent, knowledgeBaseId: assistant.knowledgeBaseId },
+          inputs: { query: userContent, knowledgeBaseIds: assistant.knowledgeBaseIds },
         },
         () => retrieve(userContent, assistant, signal),
         (result) =>

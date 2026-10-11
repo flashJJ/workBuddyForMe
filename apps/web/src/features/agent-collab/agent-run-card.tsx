@@ -5,6 +5,7 @@ import { Ban, CheckCircle2, Loader2, ShieldQuestion, TriangleAlert, Users, XCirc
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useSystemText } from '@/lib/i18n/use-system-text';
 import { cn } from '@/lib/utils';
 import { AgentRounds } from './agent-rounds';
 import type { AgentCardState, AgentCardStatus } from './agent-run-reducer';
@@ -27,6 +28,7 @@ export function AgentRunCard({
   showSummary?: boolean;
 }) {
   const { t } = useI18n();
+  const sys = useSystemText();
   const terminal = state.status !== 'connecting' && state.status !== 'running';
   return (
     <div
@@ -51,10 +53,10 @@ export function AgentRunCard({
         )}
         <AgentRounds rounds={state.rounds} />
         {showSummary && state.summary && (
-          <p className="whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-[11px] leading-relaxed">{state.summary}</p>
+          <p className="whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-[11px] leading-relaxed">{sys(state.summary)}</p>
         )}
         {state.errorMessage && state.status === 'failed' && (
-          <p className="text-[11px] text-destructive">{state.errorMessage}</p>
+          <p className="text-[11px] text-destructive">{sys(state.errorMessage)}</p>
         )}
         {terminal && <TerminalBanner status={state.status} exceeded={state.status === 'budget_exceeded'} />}
       </div>

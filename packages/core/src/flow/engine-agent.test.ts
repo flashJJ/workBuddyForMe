@@ -95,7 +95,7 @@ describe('runFlow：v1.4 agent 节点', () => {
         node('ag', 'agent', {
           goal: '{{$nodes.start.params.topic}} 的年假天数',
           assistantId: null,
-          knowledgeBaseId: 'kb1',
+          knowledgeBaseIds: ['kb1'],
           toolScopes: ['knowledge', 'mcp:x', 'knowledge'],
           maxRounds: 2,
           plannerModelId: 'm-p',
@@ -120,7 +120,7 @@ describe('runFlow：v1.4 agent 节点', () => {
     expect(calls[0]!.toolScopes).toEqual(['knowledge', 'mcp:x']);
     expect(calls[0]!.budget).toEqual({ maxRounds: 2 });
     expect(calls[0]!.roleModelIds).toEqual({ planner: 'm-p', executor: null, reviewer: null });
-    expect(calls[0]!.knowledgeBaseId).toBe('kb1');
+    expect(calls[0]!.knowledgeBaseIds).toEqual(['kb1']);
     expect(calls[0]!.flowRunId).toBe('run1');
     expect(calls[0]!.nodeExecutionId).toBe('ag');
 

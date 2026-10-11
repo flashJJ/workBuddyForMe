@@ -26,7 +26,8 @@ export interface PlannerClient {
       goal: string;
       history: PlannerRoundHistory[];
       availableToolScopes: string[];
-      knowledgeBaseHint: { id: string | null; name: string } | null;
+      /** 助手/节点绑定的全部知识库（planner 可在子任务单回填其中一个 id；空数组=无知识库） */
+      knowledgeBaseHints: Array<{ id: string; name: string }>;
     },
     signal?: AbortSignal,
   ): Promise<{ subtask: SubtaskSpec; usage: RoleModelUsage }>;
@@ -80,7 +81,8 @@ export interface StartAgentRunInput {
   budget?: Partial<AgentBudget>;
   /** 执行者可见工具域（助手配置/agent 节点传入） */
   availableToolScopes?: string[];
-  knowledgeBaseHint?: { id: string | null; name: string } | null;
+  /** 绑定知识库提示（助手/节点的多库集合；空数组=无知识库） */
+  knowledgeBaseHints?: Array<{ id: string; name: string }>;
   signal?: AbortSignal;
 }
 

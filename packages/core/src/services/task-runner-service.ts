@@ -27,8 +27,8 @@ export interface TaskStartParams {
   /** 客户端请求信号（断线联动）；缺省仅服务自身 abort 控制 */
   clientSignal?: AbortSignal;
   observeToolName?: string;
-  /** v1.4 M2：知识注入与观察模式（协作 Executor 使用；桌面任务缺省即原行为） */
-  knowledgeBaseId?: string | null;
+  /** v1.4 M2：知识注入与观察模式（协作 Executor 使用；桌面任务缺省即原行为）；v1.5 多库 */
+  knowledgeBaseIds?: string[];
   retrieve?: TaskLoopParams['retrieve'];
   observeMode?: 'screen' | 'tool';
 }
@@ -77,7 +77,9 @@ export function createTaskRunnerService(deps: ServiceDeps, runtime: ToolRuntime)
         signal: combined,
         control,
         ...(params.observeToolName ? { observeToolName: params.observeToolName } : {}),
-        ...(params.knowledgeBaseId !== undefined ? { knowledgeBaseId: params.knowledgeBaseId } : {}),
+        ...(params.knowledgeBaseIds !== undefined
+          ? { knowledgeBaseIds: params.knowledgeBaseIds }
+          : {}),
         ...(params.retrieve ? { retrieve: params.retrieve } : {}),
         ...(params.observeMode ? { observeMode: params.observeMode } : {}),
       });

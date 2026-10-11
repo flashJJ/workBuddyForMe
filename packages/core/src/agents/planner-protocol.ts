@@ -5,6 +5,7 @@ import {
   type ReviewVerdictPayload,
   type SubtaskSpec,
 } from '@wbfm/shared/schemas';
+import { toModelText } from '../i18n/system-text';
 
 /**
  * Planner 角色协议（纯函数，M1）：
@@ -35,7 +36,8 @@ export const PLANNER_SYSTEM_PROMPT = `你是多智能体协作中的规划者（
 - title：不超过 ${AGENT_LIMITS.SUBTASK_TITLE_MAX} 字；brief：1-${AGENT_LIMITS.SUBTASK_BRIEF_MAX} 字，写清要做什么、用什么资料、不要做什么
 - acceptance：${AGENT_LIMITS.ACCEPTANCE_MIN}-${AGENT_LIMITS.ACCEPTANCE_MAX} 条可客观核对的完成标准，审查者将逐条验收
 - toolScopes：只用需要的最小工具域（如 "knowledge"、"mcp:服务器名"、"flow:工作流名"、"desktop"）；纯知识问答只给 ["knowledge"]；不需要工具时给空数组
-- knowledgeBaseId：指定知识库 id；继承助手绑定或不指定时给 null
+- desktop 仅在任务明确要求操作电脑上的其他应用或界面（点击按钮、键盘录入、切换窗口、读取当前屏幕）时才允许加入；凡是读取已绑定知识库资料、文档分析、总结、规划、写作、问答、建议类任务，一律只给 ["knowledge"]，严禁附带 desktop（屏幕画面与这类任务无关，加了会让执行者误判「当前页面与任务无关」而失败）
+- knowledgeBaseId：从下方绑定知识库中选择一个回填其 id；需要跨库检索或不指定具体库时给 null（执行器将在全部绑定库中检索）
 
 【准则】
 - 一次只派一个子任务（首期串行执行，不要输出多个）
@@ -53,19 +55,20 @@ export interface PlannerPromptInput {
   history: PlannerHistoryEntry[];
   /** 执行者可用工具域提示（来自助手配置/调用方） */
   availableToolScopes: string[];
-  /** 助手绑定知识库名（提示模型优先使用，id 仍需模型在 knowledgeBaseId 回填） */
-  knowledgeBaseHint?: { id: string | null; name: string } | null;
+  /** 助手/节点绑定的全部知识库（提示模型选择回填；空数组=无知识库） */
+  knowledgeBaseHints?: Array<{ id: string; name: string }>;
 }
 
 function formatHistory(history: PlannerHistoryEntry[]): string {
   if (history.length === 0) return '（首轮，无返工记录）';
   const last = history[history.length - 1]!;
-  const title = last.subtask.title;
-  const notes = last.review.reviewNotes?.trim() || '（审查未附文字意见）';
+  // 模型边界：上轮 title/brief/验收项/审查意见可能含系统消息标记，解码为中文
+  const title = toModelText(last.subtask.title);
+  const notes = toModelText(last.review.reviewNotes?.trim() || '（审查未附文字意见）');
   const failed = last.subtask.acceptance
     .map((a, i) => {
       const r = last.review.acceptanceResults[i];
-      return r?.passed ? null : `· ${a}${r?.note ? `（${r.note}）` : ''}`;
+      return r?.passed ? null : `· ${toModelText(a)}${r?.note ? `（${r.note}）` : ''}`;
     })
     .filter(Boolean)
     .join('\n');
@@ -82,11 +85,14 @@ function formatHistory(history: PlannerHistoryEntry[]): string {
 /** 组装规划消息：system 协议 + user（目标/返工历史/工具域/知识提示）。
  * 命名带 Agent 前缀以区别 v0.7 桌面单 Agent 的 buildPlannerMessages。 */
 export function buildAgentPlannerMessages(input: PlannerPromptInput): ChatMessage[] {
-  const kbLine = input.knowledgeBaseHint?.id
-    ? `助手绑定知识库：${input.knowledgeBaseHint.name}（id=${input.knowledgeBaseHint.id}，需要时在 knowledgeBaseId 回填此 id）`
-    : '助手未绑定知识库（knowledgeBaseId 给 null）';
+  const hints = input.knowledgeBaseHints ?? [];
+  const kbLine =
+    hints.length > 0
+      ? hints.map((h) => `${h.name}（id=${h.id}）`).join('、') +
+        '；子任务可回填其中一个 id，跨库或不限定时给 null（执行器将检索全部绑定库）'
+      : '助手未绑定知识库（knowledgeBaseId 给 null）';
   const text = [
-    `【用户目标】${input.goal}`,
+    `【用户目标】${toModelText(input.goal)}`,
     `【可用工具域】${input.availableToolScopes.join('、') || '（无可用工具，仅能基于已有信息作答）'}`,
     `【知识库】${kbLine}`,
     `【历史交接】\n${formatHistory(input.history)}`,

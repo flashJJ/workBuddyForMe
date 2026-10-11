@@ -33,7 +33,7 @@ describe('agents/planner-protocol 消息装配', () => {
       goal: '写总结',
       history: [],
       availableToolScopes: [],
-      knowledgeBaseHint: null,
+      knowledgeBaseHints: [],
     })[1]!.content as string;
     expect(text).toContain('首轮');
     expect(text).toContain('仅能基于已有信息');
@@ -66,15 +66,20 @@ describe('agents/planner-protocol 消息装配', () => {
     expect(text).not.toContain('列出至少 5 个组件');
   });
 
-  it('知识提示回填绑定 id', () => {
+  it('知识提示列出多库 id 与名称', () => {
     const text = buildAgentPlannerMessages({
       goal: 'g',
       history: [],
       availableToolScopes: ['knowledge'],
-      knowledgeBaseHint: { id: 'kb-9', name: '懂王ai库' },
+      knowledgeBaseHints: [
+        { id: 'kb-9', name: '懂王ai库' },
+        { id: 'kb-2', name: '制度库' },
+      ],
     })[1]!.content as string;
     expect(text).toContain('kb-9');
     expect(text).toContain('懂王ai库');
+    expect(text).toContain('kb-2');
+    expect(text).toContain('制度库');
   });
 });
 

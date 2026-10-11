@@ -18,6 +18,12 @@ export {
   translate,
   type TranslateOptions,
 } from './t';
+export {
+  encodeSystemMessage,
+  parseSystemMessage,
+  renderEmbeddedMessages,
+  type SystemMessageRef,
+} from './system-message';
 
 import type { MessageKeyPaths } from './types';
 import type { ZhDictionary } from './zh-CN';

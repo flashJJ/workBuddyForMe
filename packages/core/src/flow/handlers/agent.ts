@@ -44,6 +44,25 @@ export function readAgentBudget(config: Record<string, unknown>): Partial<AgentB
   return budget;
 }
 
+/**
+ * v1.5：读取节点显式绑定的知识库（去空白/去重保序；非法项忽略）。
+ * 空数组=不覆盖，运行时回落助手绑定集合。
+ */
+export function readAgentKnowledgeBaseIds(config: Record<string, unknown>): string[] {
+  const raw = config.knowledgeBaseIds;
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') continue;
+    const id = item.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
 /** 读取三角色模型覆盖（空串/非字符串归一为 null=回落） */
 export function readAgentRoleModelIds(config: Record<string, unknown>): {
   planner: string | null;

@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { TaskStepView } from '@wbfm/shared/schemas';
 import { AttachmentImage } from '@/features/chat/attachment-image';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useSystemText } from '@/lib/i18n/use-system-text';
 import { useIntl } from '@/lib/i18n/use-intl';
 import { TaskStepStatusBadge } from './task-status-badge';
 
@@ -13,6 +14,7 @@ import { TaskStepStatusBadge } from './task-status-badge';
  */
 export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
   const { t } = useI18n();
+  const sys = useSystemText();
   const intl = useIntl();
   if (steps.length === 0) {
     return <p className="text-sm text-muted-foreground">{t('tasks.timeline.empty')}</p>;
@@ -37,7 +39,7 @@ export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
           )}
           {step.reason && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {t('tasks.timeline.reason', { text: step.reason })}
+              {t('tasks.timeline.reason', { text: sys(step.reason) })}
             </p>
           )}
           {step.argsJson && (
@@ -58,7 +60,7 @@ export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
           )}
           {step.error && (
             <p className="mt-2 rounded bg-destructive/10 p-2 text-xs text-destructive">
-              {t('tasks.timeline.error', { error: step.error })}
+              {t('tasks.timeline.error', { error: sys(step.error) })}
             </p>
           )}
           {step.screenshotPath && (

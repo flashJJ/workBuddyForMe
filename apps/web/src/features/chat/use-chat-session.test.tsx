@@ -78,4 +78,89 @@ describe('useChatSession（TR-27.1）', () => {
     expect(url).toBe('/api/chat/stream');
     expect(JSON.parse(init.body as string)).toMatchObject({ assistantId: 'a1', content: '在吗' });
   });
+
+  it('任务模式失败后 retry：重新发起协作，不追加重复用户消息、不走普通 chat/stream', async () => {
+    const runSeq = { n: 0 };
+    const jsonOk = (obj: unknown) =>
+      new Response(JSON.stringify({ success: true, data: obj }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET';
+      if (url.endsWith('/messages')) return jsonOk([]);
+      if (url.endsWith('/api/agent/runs') && method === 'POST') {
+        runSeq.n += 1;
+        return jsonOk({
+          id: `run-${runSeq.n}`,
+          status: 'running',
+          budget: { maxRounds: 3, maxSteps: 20, maxTotalTokens: 80000 },
+        });
+      }
+      if (/\/agent\/runs\/run-\d+\/events/.test(url)) {
+        const frame = 'event: done\ndata: {"content":"","usage":null}\n\n';
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(frame));
+              controller.close();
+            },
+          }),
+          { status: 200, headers: { 'content-type': 'text/event-stream' } },
+        );
+      }
+      const detail = /\/agent\/runs\/(run-\d+)$/.exec(url);
+      if (detail) {
+        return jsonOk({
+          run: {
+            id: detail[1],
+            status: 'failed',
+            errorCode: 'AGENT_RUN_FAILED',
+            errorMessage: '403 overdue',
+            finalOutcome: null,
+            budget: { maxRounds: 3, maxSteps: 20, maxTotalTokens: 80000 },
+          },
+        });
+      }
+      return new Response(JSON.stringify({ success: false, error: { code: 'X', message: 'unmocked' } }), {
+        status: 500,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useChatSession('a1', 'c1', vi.fn()), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.sendTask('帮我规划职业发展');
+    });
+    await waitFor(() => expect(result.current.streaming).toBe(false));
+
+    let messages = result.current.messages;
+    expect(messages).toHaveLength(2);
+    expect(messages[0]).toMatchObject({ role: 'user', content: '帮我规划职业发展' });
+    expect(messages[1]).toMatchObject({ role: 'assistant', status: 'error' });
+    const firstAssistantId = messages[1]!.id;
+    expect(result.current.agentCards[firstAssistantId]).toBeTruthy();
+    const postRuns = () =>
+      fetchMock.mock.calls.filter(
+        ([u, i]) => (i as RequestInit | undefined)?.method === 'POST' && String(u).endsWith('/api/agent/runs'),
+      );
+    expect(postRuns()).toHaveLength(1);
+
+    await act(async () => {
+      result.current.retry();
+    });
+    await waitFor(() => expect(result.current.streaming).toBe(false));
+
+    // 重新发起了第二次协作，而非普通 regenerate（那条路在任务模式必报「没有可重新生成的用户消息」）
+    expect(postRuns()).toHaveLength(2);
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/chat/stream'))).toBe(false);
+    messages = result.current.messages;
+    expect(messages).toHaveLength(2); // 不重复追加用户消息
+    expect(messages[0]).toMatchObject({ role: 'user', content: '帮我规划职业发展' });
+    expect(messages[1]!.id).not.toBe(firstAssistantId); // 新占位替换旧失败回复
+  });
 });

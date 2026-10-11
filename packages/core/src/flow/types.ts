@@ -121,7 +121,8 @@ export interface AgentCollabStartInput {
   goal: string;
   /** 关联助手（节点未选时 null，回落系统默认模型） */
   assistantId: string | null;
-  knowledgeBaseId: string | null;
+  /** 节点显式绑定知识库（多库，空数组=回落助手绑定） */
+  knowledgeBaseIds: string[];
   toolScopes: string[];
   budget: Partial<AgentBudget>;
   roleModelIds: {

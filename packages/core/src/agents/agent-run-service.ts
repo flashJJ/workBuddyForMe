@@ -25,7 +25,7 @@ interface ActiveEntry {
 /** Flow/节点级覆盖：角色模型与知识库优先于助手配置 */
 export interface AgentClientOverrides {
   roleModelIds?: Partial<Record<AgentRoleKey, string | null>>;
-  knowledgeBaseId?: string | null;
+  knowledgeBaseIds?: string[] | null;
 }
 
 /** 角色客户端解析端口（按运行配置 + 可选节点覆盖解析三级模型回落与 executor 通道） */
@@ -37,7 +37,7 @@ export type AgentClientsProvider = (context: {
 /** 规划上下文端口（web 对话任务模式：由助手启用工具推导工具域、绑定知识库名提示） */
 export type AgentPlanContextResolver = (run: AgentRunView) => {
   availableToolScopes: string[];
-  knowledgeBaseHint: { id: string | null; name: string } | null;
+  knowledgeBaseHints: Array<{ id: string; name: string }>;
 };
 
 export interface AgentRunStartParams {
@@ -51,7 +51,6 @@ export interface AgentRunStartParams {
 export interface FlowNodeStartParams {
   goal: string;
   assistantId: string | null;
-  knowledgeBaseId: string | null;
   toolScopes: string[];
   budget: Partial<AgentBudget>;
   roleModelIds: {
@@ -61,6 +60,8 @@ export interface FlowNodeStartParams {
   };
   flowRunId: string;
   nodeExecutionId: string;
+  /** 节点显式绑定的知识库（多库）；空数组=回落助手绑定 */
+  knowledgeBaseIds: string[];
   signal?: AbortSignal;
 }
 
@@ -156,7 +157,7 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
         ...(planContext
           ? {
               availableToolScopes: planContext.availableToolScopes,
-              knowledgeBaseHint: planContext.knowledgeBaseHint,
+              knowledgeBaseHints: planContext.knowledgeBaseHints,
             }
           : {}),
       });
@@ -179,7 +180,7 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       });
       const overrides: AgentClientOverrides = {
         roleModelIds: params.roleModelIds,
-        knowledgeBaseId: params.knowledgeBaseId,
+        knowledgeBaseIds: params.knowledgeBaseIds,
       };
       const { signal, clients } = await prepare({ run, overrides, clientSignal: params.signal });
       const gen = createAgentRunner({ repo, clients }).run({
@@ -192,9 +193,7 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
         budget: run.budget,
         signal,
         availableToolScopes: params.toolScopes,
-        knowledgeBaseHint: params.knowledgeBaseId
-          ? { id: params.knowledgeBaseId, name: params.knowledgeBaseId }
-          : null,
+        knowledgeBaseHints: params.knowledgeBaseIds.map((id) => ({ id, name: id })),
       });
       return { runId: run.id, events: withCleanup(run.id, active, gen) };
     },

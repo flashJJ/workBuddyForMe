@@ -74,10 +74,10 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
 
     const toolContext = {
       signal,
-      knowledgeBaseId: null as string | null,
+      knowledgeBaseIds: [] as string[],
       visionCapable: false,
       retrieve: (query: string, topK: number) =>
-        retrieval.retrieve({ knowledgeBaseId: '', query, topK }),
+        retrieval.retrieveMany({ knowledgeBaseIds: [], query, topK }),
     };
 
     const inner = runFlow(compiled, {

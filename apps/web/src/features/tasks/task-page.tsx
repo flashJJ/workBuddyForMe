@@ -18,6 +18,7 @@ import {
 } from '@/lib/hooks/use-tasks';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useSystemText } from '@/lib/i18n/use-system-text';
 import { TaskRunStatusBadge } from './task-status-badge';
 import { TaskTimeline } from './task-timeline';
 import { TaskControlBar } from './task-control-bar';
@@ -173,6 +174,7 @@ interface TaskRowProps {
 
 function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, onPause, onResume, onStop }: TaskRowProps) {
   const { t } = useI18n();
+  const sys = useSystemText();
   const live = useTaskEvents(expanded ? task.id : null);
   const displayRun = live.run ?? task;
   const steps = live.steps.length > 0 ? live.steps : [];
@@ -189,7 +191,7 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
           className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
         />
         <TaskRunStatusBadge status={displayRun.status} />
-        <span className="flex-1 truncate text-sm font-medium">{displayRun.goal}</span>
+        <span className="flex-1 truncate text-sm font-medium">{sys(displayRun.goal)}</span>
         <span className="text-xs text-muted-foreground">
           {t('tasks.steps', { done: displayRun.stepCount, max: displayRun.maxSteps })}
         </span>

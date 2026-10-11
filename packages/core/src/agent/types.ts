@@ -42,6 +42,18 @@ export interface TaskPlannerInput {
   allowedTools: string[];
   /** v1.4 M2：观察模式（screen=屏幕截图；tool=工具/检索结果，无截图，提示词随模式切换） */
   observeMode?: 'screen' | 'tool';
+  /**
+   * v1.4 热修：协作 Executor 子任务完整上下文。
+   * 仅传 goal+标题时模型不知道 Planner 的具体要求与验收标准，
+   * 会误判「知识检索只能提供通用方法」而零工具调用直接 fail。
+   */
+  subtask?: { brief: string; acceptance: string[] };
+  /** 已授权可检索知识库名称（tool 模式告知模型库内资料性质，如《我的简历》） */
+  knowledgeBaseNames?: string[];
+  /** 白名单工具目录（「工具名：用途描述」），由循环经 runtime 从白名单解析 */
+  toolCatalog?: string[];
+  /** 本任务步数上限（提示词展示预算，引导模型及时收尾，避免耗尽步数仍未产出） */
+  maxSteps?: number;
 }
 
 export interface TaskPlanner {

@@ -16,6 +16,7 @@ import type { Citation } from '@wbfm/shared/types';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useSystemText } from '@/lib/i18n/use-system-text';
 import { cn } from '@/lib/utils';
 import type { AgentRoundState } from './agent-run-reducer';
 
@@ -80,17 +81,18 @@ function LaneShell({
 
 function PlanningCard({ round }: { round: AgentRoundState }) {
   const { t } = useI18n();
+  const sys = useSystemText();
   const active = round.activePhase === 'planning';
   const results = round.review?.acceptanceResults ?? [];
   return (
     <LaneShell icon={<ClipboardList className="h-3.5 w-3.5" />} title={t('agents.planning.title')} active={active} tone="text-violet-500">
       {round.subtask ? (
         <>
-          <p className="text-xs font-medium">{round.subtask.title}</p>
-          <p className="whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">{round.subtask.brief}</p>
+          <p className="text-xs font-medium">{sys(round.subtask.title)}</p>
+          <p className="whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">{sys(round.subtask.brief)}</p>
           <ul className="space-y-0.5">
             {round.subtask.acceptance.map((item, i) => (
-              <AcceptanceItem key={i} text={item} result={results[i]} index={i} />
+              <AcceptanceItem key={i} text={sys(item)} result={results[i]} index={i} />
             ))}
           </ul>
         </>
@@ -140,6 +142,7 @@ function AcceptanceItem({
 
 function ExecutionCard({ round }: { round: AgentRoundState }) {
   const { t } = useI18n();
+  const sys = useSystemText();
   const active = round.activePhase === 'executing';
   const o = round.outcome;
   const empty = !o || (o.toolCalls.length === 0 && o.evidence.length === 0);
@@ -166,7 +169,7 @@ function ExecutionCard({ round }: { round: AgentRoundState }) {
                 {t('agents.execution.unfinished')}
               </p>
               <ul className="mt-0.5 list-disc pl-4 text-[11px] text-warning/90">
-                {o.unfinished.map((u, i) => <li key={i}>{u}</li>)}
+                {o.unfinished.map((u, i) => <li key={i}>{sys(u)}</li>)}
               </ul>
             </div>
           )}
@@ -207,6 +210,7 @@ const VERDICT_STYLE: Record<ReviewVerdict, { variant: 'success' | 'warning' | 'd
 
 function ReviewCard({ round }: { round: AgentRoundState }) {
   const { t } = useI18n();
+  const sys = useSystemText();
   const active = round.activePhase === 'reviewing';
   const review = round.review;
   return (
@@ -217,7 +221,7 @@ function ReviewCard({ round }: { round: AgentRoundState }) {
             {t(VERDICT_STYLE[review.verdict].key)}
           </Badge>
           {review.reviewNotes && (
-            <p className="whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">{review.reviewNotes}</p>
+            <p className="whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">{sys(review.reviewNotes)}</p>
           )}
         </>
       ) : active ? (

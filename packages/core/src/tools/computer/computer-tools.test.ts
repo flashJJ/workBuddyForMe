@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import type {
   ComputerChannelClient,
 } from '../../computer/channel-client';
@@ -8,7 +8,7 @@ import { createWindowTools } from './window-tools';
 import { ToolArgError, type ToolContext } from '../types';
 
 const CTX: ToolContext = {
-  knowledgeBaseId: null,
+  knowledgeBaseIds: [],
   retrieve: async () => [],
 };
 

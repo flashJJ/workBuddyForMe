@@ -5,10 +5,13 @@ import { createToolRuntime } from './tool-runtime';
 import { toToolDefinitions } from './types';
 import type { Tool } from './types';
 
-function assistantWith(enabledTools: Assistant['enabledTools'], knowledgeBaseId: string | null = null) {
+function assistantWith(
+  enabledTools: Assistant['enabledTools'],
+  knowledgeBaseIds: string[] = [],
+) {
   return {
     enabledTools,
-    knowledgeBaseId,
+    knowledgeBaseIds,
   } as Assistant;
 }
 
@@ -51,8 +54,8 @@ describe('工具运行时白名单', () => {
 
   it('createContext 透传知识库绑定与中断信号', () => {
     const controller = new AbortController();
-    const ctx = runtime.createContext(assistantWith([], 'kb-9'), controller.signal);
-    expect(ctx.knowledgeBaseId).toBe('kb-9');
+    const ctx = runtime.createContext(assistantWith([], ['kb-9']), controller.signal);
+    expect(ctx.knowledgeBaseIds).toEqual(['kb-9']);
     expect(ctx.signal).toBe(controller.signal);
     expect(typeof ctx.retrieve).toBe('function');
   });
@@ -92,7 +95,7 @@ describe('工具运行时白名单', () => {
   it('createDebugToolContext 不绑知识库，retrieve 返回空数组', async () => {
     const controller = new AbortController();
     const ctx = runtime.createDebugToolContext(controller.signal);
-    expect(ctx.knowledgeBaseId).toBeNull();
+    expect(ctx.knowledgeBaseIds).toEqual([]);
     expect(ctx.signal).toBe(controller.signal);
     await expect(ctx.retrieve('q', 5)).resolves.toEqual([]);
   });

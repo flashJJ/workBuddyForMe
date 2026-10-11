@@ -42,7 +42,7 @@ describe('LLM 协作角色客户端（T2.4 通道接线）', () => {
       fakeTarget([delta('结果：'), delta(JSON.stringify(subtask)), usage()]),
     );
     const result = await client.plan(
-      { goal: '年假', history: [], availableToolScopes: ['knowledge'], knowledgeBaseHint: null },
+      { goal: '年假', history: [], availableToolScopes: ['knowledge'], knowledgeBaseHints: [] },
       undefined,
     );
     expect(result.subtask).toMatchObject({ title: '查年假', brief: '在制度库查明年假天数' });
@@ -51,7 +51,7 @@ describe('LLM 协作角色客户端（T2.4 通道接线）', () => {
 
     const bad = createLlmPlannerClient(fakeTarget([delta('我不会输出 JSON')]));
     await expect(
-      bad.plan({ goal: 'g', history: [], availableToolScopes: [], knowledgeBaseHint: null }, undefined),
+      bad.plan({ goal: 'g', history: [], availableToolScopes: [], knowledgeBaseHints: [] }, undefined),
     ).rejects.toBeInstanceOf(PlannerProtocolError);
   });
 

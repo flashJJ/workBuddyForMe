@@ -86,16 +86,18 @@ export function createRagRetriever(deps: ServiceDeps): RagRetriever {
     assistant: Assistant,
     signal?: AbortSignal,
   ): Promise<RagContext | null> => {
-    if (!assistant.knowledgeBaseId) return null;
+    const kbIds = assistant.knowledgeBaseIds;
+    if (kbIds.length === 0) return null;
     const options = readRetrievalOptions(deps);
     const { compileRoutingEnabled, ...retrievalOptions } = options;
 
+    // v1.5：静态编译事实跨库汇总（各库内部已按实体/摘要上限截断）
     const facts = compileRoutingEnabled
-      ? staticKnowledge.retrieve(assistant.knowledgeBaseId, question)
+      ? kbIds.flatMap((kbId) => staticKnowledge.retrieve(kbId, question))
       : [];
-    const chunks = await retrieval.retrieve(
+    const chunks = await retrieval.retrieveMany(
       {
-        knowledgeBaseId: assistant.knowledgeBaseId,
+        knowledgeBaseIds: kbIds,
         query: question,
         signal,
       },

@@ -29,6 +29,7 @@ import { enFlowExecution } from './messages/flow-execution';
 import { enToolDebug } from './messages/tool-debug';
 import { enToolTrace } from './messages/tool-trace';
 import { enAgents } from './messages/agents-en';
+import { enAgentTrace } from './messages/agent-trace-en';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -65,6 +66,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   toolDebug: enToolDebug,
   toolTrace: enToolTrace,
   agents: enAgents,
+  agentTrace: enAgentTrace,
 };
 
 export type EnDictionary = typeof enUS;

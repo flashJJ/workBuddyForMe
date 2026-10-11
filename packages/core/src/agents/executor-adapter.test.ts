@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createAgentRunRepository,
   createDatabase,
+  createKnowledgeRepository,
   createTaskRunRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
@@ -15,6 +16,7 @@ import type { ServiceDeps } from '../services/deps';
 import type { TaskPlanner, TaskPlannerInput } from '../agent/types';
 import { makeRuntime, mockTool, okObserve, sequencePlanner } from '../agent/task-loop.helpers';
 import { createExecutorAdapter, resolveAllowedTools, type ObserveMode } from './executor-adapter';
+import { toModelText } from '../i18n/system-text';
 
 function makeSubtask(overrides: Partial<SubtaskSpec> = {}): SubtaskSpec {
   return {
@@ -72,7 +74,7 @@ describe('executor-adapter 两观察模式（T2.2/T2.3）', () => {
       deps,
       runtime,
       run: agentRun,
-      assistantKnowledgeBaseId: 'kb-assistant',
+      assistantKnowledgeBaseIds: ['kb-assistant'],
       resolvePlanner: (mode) => {
         expect(mode).toBe('tool');
         return { planner, usage, visionCapable: false };
@@ -99,7 +101,7 @@ describe('executor-adapter 两观察模式（T2.2/T2.3）', () => {
       .all(agentRun.id) as Array<{ id: string; a: string }>;
     expect(taskRuns).toHaveLength(1);
     const taskSteps = createTaskRunRepository(db).listSteps(taskRuns[0]!.id);
-    expect(taskSteps.some((s) => s.reason === '工具模式观察')).toBe(true);
+    expect(taskSteps.some((s) => toModelText(s.reason) === '工具模式观察')).toBe(true);
   });
 
   it('screen 模式：desktop 域展开桌面白名单，视觉门控通过后走截图循环', async () => {
@@ -117,7 +119,7 @@ describe('executor-adapter 两观察模式（T2.2/T2.3）', () => {
       deps,
       runtime,
       run: agentRun,
-      assistantKnowledgeBaseId: null,
+      assistantKnowledgeBaseIds: [],
       resolvePlanner: (mode) => {
         expect(mode).toBe('screen');
         return { planner, usage: { promptTokens: 1, completionTokens: 1 }, visionCapable: true };
@@ -141,19 +143,20 @@ describe('executor-adapter 两观察模式（T2.2/T2.3）', () => {
       deps,
       runtime,
       run: agentRun,
-      assistantKnowledgeBaseId: null,
+      assistantKnowledgeBaseIds: [],
       resolvePlanner: () => ({
         planner: sequencePlanner([{ action: 'done', reason: 'r', message: 'm' }]),
         usage: { promptTokens: 0, completionTokens: 0 },
         visionCapable: false,
       }),
     });
-    await expect(
-      adapter.run(
+    const error = await adapter
+      .run(
         { goal: 'G', round: 0, subtask: makeSubtask({ toolScopes: ['desktop'] }) },
         undefined,
-      ),
-    ).rejects.toThrow(/视觉/);
+      )
+      .then(() => null, (e: unknown) => e as Error);
+    expect(toModelText(error?.message ?? '')).toContain('视觉');
   });
 
   it('fail 终态：unfinished 带边界说明，evidence/toolCalls 仍如实收敛', async () => {
@@ -170,7 +173,7 @@ describe('executor-adapter 两观察模式（T2.2/T2.3）', () => {
       deps,
       runtime,
       run: agentRun,
-      assistantKnowledgeBaseId: null,
+      assistantKnowledgeBaseIds: [],
       // 非 desktop 子任务 → tool 模式，不需要视觉
       resolvePlanner: () => ({
         planner,
@@ -184,7 +187,90 @@ describe('executor-adapter 两观察模式（T2.2/T2.3）', () => {
       undefined,
     );
     expect(result.outcome.summary).toBe('无法完成');
-    expect(result.outcome.unfinished.some((u) => u.includes('失败终态'))).toBe(true);
+    const unfinished = result.outcome.unfinished.map(toModelText);
+    expect(unfinished.some((u) => u.includes('失败终态'))).toBe(true);
+    // stopReason=error（模型主动 fail）文案与「连续失败/熔断」区分
+    expect(unfinished.some((u) => u.includes('模型主动宣告无法完成'))).toBe(true);
+  });
+
+  it('fail 终态细分：决策连续抛错达上限时标注「连续失败达上限」', async () => {
+    const runtime = makeRuntime({});
+    const planner: TaskPlanner = {
+      async decide() {
+        throw new Error('模型通道 500');
+      },
+    };
+    const adapter = createExecutorAdapter({
+      deps,
+      runtime,
+      run: agentRun,
+      assistantKnowledgeBaseIds: [],
+      resolvePlanner: () => ({
+        planner,
+        usage: { promptTokens: 0, completionTokens: 0 },
+        visionCapable: false,
+      }),
+    });
+
+    const result = await adapter.run(
+      { goal: 'G', round: 0, subtask: makeSubtask({ toolScopes: [] }) },
+      undefined,
+    );
+    const unfinished = result.outcome.unfinished.map(toModelText);
+    expect(unfinished.some((u) => u.includes('连续失败达上限'))).toBe(true);
+    // 无 final 步时 summary 也必须非空且携带末次真实原因（否则交接 zod 校验整体失败）
+    expect(toModelText(result.outcome.summary).length).toBeGreaterThan(0);
+    expect(toModelText(result.outcome.summary)).toContain('模型通道 500');
+  });
+
+  it('tool 模式：子任务要求/验收/授权库名/工具目录注入决策器（零工具 fail 热修）', async () => {
+    const kb = createKnowledgeRepository(db).create({
+      name: '我的简历',
+      chunkSize: 500,
+      chunkOverlap: 80,
+    });
+    const runtime = makeRuntime({
+      knowledge_search: mockTool('knowledge_search', 'read', async () => ({
+        ok: true,
+        output: '简历片段',
+        summary: '命中 1 片',
+      })),
+    });
+    const seen: TaskPlannerInput[] = [];
+    const planner: TaskPlanner = {
+      async decide(input) {
+        seen.push(input);
+        return { action: 'done', reason: '无需工具', message: '完成' };
+      },
+    };
+    const adapter = createExecutorAdapter({
+      deps,
+      runtime,
+      run: agentRun,
+      assistantKnowledgeBaseIds: [kb.id],
+      resolvePlanner: () => ({
+        planner,
+        usage: { promptTokens: 0, completionTokens: 0 },
+        visionCapable: false,
+      }),
+    });
+
+    // 子任务不指定单库 → 继承助手绑定；toolScopes=knowledge → knowledge_search 在白名单
+    await adapter.run(
+      {
+        goal: 'G',
+        round: 0,
+        subtask: makeSubtask({ title: '基于简历规划', toolScopes: ['knowledge'] }),
+      },
+      undefined,
+    );
+
+    const first = seen[0]!;
+    expect(first.subtask?.brief).toBe('检索制度库给出年假天数');
+    expect(first.subtask?.acceptance).toEqual(['结论有证据']);
+    expect(first.knowledgeBaseNames).toEqual(['我的简历']);
+    expect(first.allowedTools).toEqual(['knowledge_search']);
+    expect(first.toolCatalog?.some((t) => t.startsWith('knowledge_search：'))).toBe(true);
   });
 
   it('resolveAllowedTools：knowledge/desktop/mcp 域展开，未知限定名原样透传', () => {

@@ -44,7 +44,7 @@ export interface ChatSession {
   agentCards: Record<string, AgentCardEntry>;
   send: (content: string, attachmentIds?: string[]) => void;
   /** v1.4 任务模式：发起一次三角色协作（与会话关联），泳道卡内联在消息流 */
-  sendTask: (content: string) => Promise<void>;
+  sendTask: (content: string, options?: { regenerate?: boolean }) => Promise<void>;
   /** 重新生成最后一条助手回复（沿用上一条用户消息） */
   retry: () => void;
   stop: () => void;
@@ -84,14 +84,20 @@ export function useChatSession(
     assistantId,
     conversationId,
     onConversationCreated,
-    pushTurn: (content) => {
+    pushTurn: (content, regenerate = false) => {
       setRecalledMemories([]);
       setPendingConfirmation(null);
-      const assistantMessage: Message = { ...pendingMessage('assistant', ''), status: 'streaming' };
+      // 任务消息不入 messages 表，需本地唯一 id 挂接泳道卡（pendingMessage 默认空 id，
+      // 多轮任务会同挂 '' 键串卡，并使失败重试的任务卡判据失效）
+      const assistantMessage: Message = {
+        ...pendingMessage('assistant', ''),
+        id: `task-${crypto.randomUUID()}`,
+        status: 'streaming',
+      };
       setLive((prev) =>
         buildTurnMessages(prev ?? historyQuery.data ?? [], assistantMessage, {
           content,
-          regenerate: false,
+          regenerate,
           attachments: [],
         }),
       );
@@ -214,8 +220,17 @@ export function useChatSession(
     if (streaming) return;
     const source = live ?? historyQuery.data ?? [];
     const lastUser = [...source].reverse().find((m) => m.role === 'user');
-    if (lastUser && conversationId) runTurn({ content: lastUser.content, regenerate: true });
-  }, [runTurn, streaming, live, historyQuery.data, conversationId]);
+    if (!lastUser || !conversationId) return;
+    const lastAssistant = [...source].reverse().find((m) => m.role === 'assistant');
+    // v1.4 任务模式：用户消息不落 messages 表（仅 live+agent_runs），普通 regenerate
+    // 会报「没有可重新生成的用户消息」；挂着协作卡的失败回复直接重新发起协作
+    if (lastAssistant && taskTurn.agentCards[lastAssistant.id]) {
+      void taskTurn.start(lastUser.content, { regenerate: true });
+      return;
+    }
+    runTurn({ content: lastUser.content, regenerate: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runTurn, streaming, live, historyQuery.data, conversationId, taskTurn]);
 
   /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
   const stop = React.useCallback(() => {

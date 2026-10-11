@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+﻿import { describe, expect, it, vi } from 'vitest';
 import { debugExecuteTool } from './debug-executor';
 import type { ToolRuntime, ResolvedTool } from './tool-runtime';
 import { ToolArgError, type Tool } from './types';
@@ -18,8 +18,8 @@ function makeRuntime(resolved: ResolvedTool | null, tool?: Tool): ToolRuntime {
   return {
     resolveTool: () => resolved,
     buildTools: () => new Map(tool ? [[tool.name, tool]] : []),
-    createContext: () => ({ signal: undefined, knowledgeBaseId: null, retrieve: async () => [] }),
-    createDebugToolContext: (signal) => ({ signal, knowledgeBaseId: null, retrieve: async () => [] }),
+    createContext: () => ({ signal: undefined, knowledgeBaseIds: [], retrieve: async () => [] }),
+    createDebugToolContext: (signal) => ({ signal, knowledgeBaseIds: [], retrieve: async () => [] }),
     listDebugTools: () => [],
   };
 }
@@ -97,13 +97,13 @@ describe('debug-executor（v0.6 M4）', () => {
     const resolveSpy = vi.fn(() => ({ tool, source: 'builtin' } as ResolvedTool));
     const ctxSpy = vi.fn((signal?: AbortSignal) => ({
       signal,
-      knowledgeBaseId: null,
+      knowledgeBaseIds: [],
       retrieve: async () => [],
     }));
     const runtime: ToolRuntime = {
       resolveTool: resolveSpy,
       buildTools: () => new Map(),
-      createContext: () => ({ signal: undefined, knowledgeBaseId: null, retrieve: async () => [] }),
+      createContext: () => ({ signal: undefined, knowledgeBaseIds: [], retrieve: async () => [] }),
       createDebugToolContext: ctxSpy,
       listDebugTools: () => [],
     };

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ChatProvider } from '@wbfm/ai';
 import type { ProviderModel } from '@wbfm/shared/types';
 import type { ResolvedChatTarget } from '../chat/model-resolver';
+import type { TaskStepView } from '@wbfm/shared/schemas';
 import { buildPlannerMessages, createLlmPlanner, parseDecision, PlannerParseError } from './llm-planner';
 
 describe('parseDecision（v0.7 M3 决策协议）', () => {
@@ -66,6 +67,128 @@ describe('buildPlannerMessages', () => {
     const parts = content as Array<{ type: string; image_url?: { url: string } }>;
     expect(parts[1]?.type).toBe('image_url');
     expect(parts[1]?.image_url?.url).toBe('data:image/png;base64,Qk==');
+  });
+
+  it('tool 模式注入子任务要求/验收标准/授权知识库/工具用途说明', () => {
+    const messages = buildPlannerMessages({
+      goal: '帮我规划下职业发展。',
+      steps: [],
+      observation: { summary: '工具模式观察', screenshotPath: '' },
+      allowedTools: ['knowledge_search'],
+      observeMode: 'tool',
+      subtask: { brief: '先从《我的简历》读取教育与工作经历', acceptance: ['给出 1/3/5 年目标', '列出能力差距'] },
+      knowledgeBaseNames: ['我的简历'],
+      toolCatalog: ['knowledge_search：在用户授权的私有知识库中语义检索资料。'],
+    });
+    const text = messages[1]?.content as string;
+    expect(text).toContain('【子任务具体要求】先从《我的简历》读取教育与工作经历');
+    expect(text).toContain('【完成必须满足的验收标准】');
+    expect(text).toContain('1. 给出 1/3/5 年目标');
+    expect(text).toContain('《我的简历》');
+    expect(text).toContain('knowledge_search：在用户授权的私有知识库中语义检索资料。');
+    // 硬规则进入 system 提示词：未检索禁止以资料缺失为由 fail
+    const systemText = messages[0]?.content as string;
+    expect(systemText).toContain('严禁以');
+  });
+
+  it('tool 模式但缺省子任务上下文时区块缺省，不渲染空标题', () => {
+    const messages = buildPlannerMessages({
+      goal: 'g',
+      steps: [],
+      observation: null,
+      allowedTools: [],
+      observeMode: 'tool',
+      maxSteps: 20,
+    });
+    const text = messages[1]?.content as string;
+    expect(text).not.toContain('【子任务具体要求】');
+    expect(text).not.toContain('【已授权可检索的私有知识库】');
+    expect(text).not.toContain('【工具用途说明】');
+    // 预算区块恒定展示，首轮检索 0 次
+    expect(text).toContain('【执行预算】已用动作 0/20');
+    expect(text).toContain('knowledge_search 已调用 0/3 次');
+  });
+
+  it('检索达 3 次上限时预算区块强提示必须 done，且系统提示词声明上限', () => {
+    const retrievalSteps = Array.from({ length: 3 }, (_, i) => ({
+      stepIndex: i * 2 + 2,
+      kind: 'action',
+      toolName: 'knowledge_search',
+      status: 'completed',
+      reason: `检索${i}`,
+      resultJson: JSON.stringify({ summary: `命中 ${i + 1} 片` }),
+    })) as unknown as TaskStepView[];
+    const messages = buildPlannerMessages({
+      goal: 'g',
+      steps: retrievalSteps,
+      observation: null,
+      allowedTools: ['knowledge_search'],
+      observeMode: 'tool',
+      maxSteps: 20,
+    });
+    const text = messages[1]?.content as string;
+    expect(text).toContain('已用动作 3/20');
+    expect(text).toContain('knowledge_search 已调用 3/3 次（已达上限，禁止再检索，本轮必须 done 输出完整结论）');
+    expect(messages[0]?.content as string).toContain('全任务累计最多调用 3 次');
+  });
+
+  it('screen 模式同样注入子任务/知识库/工具目录（避免看无关截图误 fail）', () => {
+    const messages = buildPlannerMessages({
+      ...base,
+      observeMode: 'screen',
+      allowedTools: ['knowledge_search'],
+      subtask: { brief: '读取简历并规划', acceptance: ['x'] },
+      knowledgeBaseNames: ['我的简历'],
+      toolCatalog: ['knowledge_search：在私有知识库中语义检索资料。'],
+      maxSteps: 20,
+    });
+    const text = messages[1]?.content as string;
+    expect(text).toContain('【子任务具体要求】读取简历并规划');
+    expect(text).toContain('《我的简历》');
+    expect(text).toContain('knowledge_search：在私有知识库中语义检索资料。');
+    expect(text).toContain('【执行预算】已用动作 0/20');
+    // screen 模式授权了知识库：必须有「未检索禁 fail / 忽略无关画面」硬规则
+    expect(text).toContain('【重要规则】');
+    expect(text).toContain('当前页面与任务无关');
+  });
+
+  it('screen 模式未授权知识库（纯桌面任务）时不加知识硬规则', () => {
+    const messages = buildPlannerMessages({
+      ...base,
+      observeMode: 'screen',
+      allowedTools: ['mouse_click'],
+    });
+    const text = messages[1]?.content as string;
+    expect(text).not.toContain('【重要规则】');
+  });
+
+  it('历史动作步成功时 digest 附带结果摘要，失败时附带错误', () => {
+    const okStep = {
+      stepIndex: 2,
+      kind: 'action',
+      toolName: 'knowledge_search',
+      status: 'completed',
+      reason: '查简历',
+      resultJson: JSON.stringify({ summary: '命中 3 个片段：教育背景', output: '正文不进 digest' }),
+    } as unknown as TaskStepView;
+    const badStep = {
+      stepIndex: 4,
+      kind: 'action',
+      toolName: 'knowledge_search',
+      status: 'failed',
+      reason: '再查',
+      error: '检索词不能为空',
+      resultJson: null,
+    } as unknown as TaskStepView;
+    const messages = buildPlannerMessages({
+      ...base,
+      observeMode: 'tool',
+      steps: [okStep, badStep],
+    });
+    const text = messages[1]?.content as string;
+    expect(text).toContain('knowledge_search（查简历） → completed：命中 3 个片段：教育背景');
+    expect(text).toContain('knowledge_search（再查） → 失败：检索词不能为空');
+    expect(text).not.toContain('正文不进 digest');
   });
 });
 

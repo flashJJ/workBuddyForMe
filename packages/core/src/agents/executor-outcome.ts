@@ -1,6 +1,8 @@
 import { AGENT_LIMITS, type ExecutorOutcome } from '@wbfm/shared/schemas';
 import type { TaskRunView, TaskStepView } from '@wbfm/shared/schemas';
 import type { Citation } from '@wbfm/shared/types';
+import { parseSystemMessage } from '@wbfm/shared/i18n';
+import { sys } from '../i18n/system-text';
 
 /**
  * v1.4 M2 ExecutorOutcome 收敛（纯函数，T2.3）：
@@ -44,6 +46,22 @@ function clipSummary(text: string): string {
   return trimmed.length > AGENT_LIMITS.OUTCOME_SUMMARY_MAX
     ? trimmed.slice(0, AGENT_LIMITS.OUTCOME_SUMMARY_MAX)
     : trimmed;
+}
+
+/**
+ * 终态兜底说明：决策连续失败/熔断/急停时没有 final 步也没有成功动作，
+ * summary 绝不能空——executorOutcomeSchema 要求 min(1)，空串会让 executor→reviewer
+ * 交接以「非法交接载荷」整体失败，真实原因（如模型通道 403）反被吞掉。
+ */
+const FALLBACK_TERMINAL_SUMMARY = sys('agentTrace.terminal.noConclusion');
+
+/**
+ * unfinished 项长度限制：纯系统消息标记不可切断（会破坏 STX 定界导致解码失败），
+ * 生产端已保证标记串远短于 500；普通文本按 schema 上限截断。
+ */
+function clipUnfinishedItem(text: string): string {
+  if (parseSystemMessage(text)) return text;
+  return text.slice(0, 500);
 }
 
 /** 合并各步引用：按步序去重，角标 ordinal 从 1 连续重排（单次检索内编号不能跨调用拼接） */
@@ -102,10 +120,14 @@ function resolveSummary(steps: TaskStepView[]): string {
 export function buildExecutorOutcome(input: BuildExecutorOutcomeInput): ExecutorOutcome {
   const unfinished = collectUnfinished(input.steps);
   if (input.run.status !== 'completed' && input.terminalNote && !unfinished.includes(input.terminalNote)) {
-    unfinished.push(input.terminalNote.slice(0, 500));
+    unfinished.push(clipUnfinishedItem(input.terminalNote));
   }
+  const resolved = resolveSummary(input.steps);
+  const summary = resolved
+    ? clipSummary(resolved)
+    : clipSummary(input.terminalNote?.trim() || FALLBACK_TERMINAL_SUMMARY);
   return {
-    summary: resolveSummary(input.steps),
+    summary,
     evidence: collectEvidence(input.steps),
     toolCalls: collectToolCalls(input.steps),
     unfinished: unfinished.slice(0, 20),

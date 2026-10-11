@@ -12,6 +12,7 @@ import type { ServiceDeps } from '../services/deps';
 import type { TaskPlanner } from './types';
 import { runTaskLoop } from './task-loop';
 import { createTaskLoopControl } from './control';
+import { toModelText } from '../i18n/system-text';
 import { collect, constantPlanner, makeRuntime, mockTool, okObserve, sequencePlanner } from './task-loop.helpers';
 
 describe('任务 Agent 循环（v0.7 M3）', () => {
@@ -130,7 +131,7 @@ describe('任务 Agent 循环（v0.7 M3）', () => {
     expect(final.stopReason).toBe('breaker');
     expect(runtime.resolveTool('mouse_click')?.tool.run).not.toHaveBeenCalled();
     const failedStep = stepsOf().find((s) => s.kind === 'action');
-    expect(failedStep?.error).toContain('熔断');
+    expect(toModelText(failedStep?.error ?? '')).toContain('熔断');
     expect(events.some((e) => e.event === 'task' && e.data.type === 'run_finished')).toBe(true);
   });
 
@@ -191,7 +192,7 @@ describe('任务 Agent 循环（v0.7 M3）', () => {
     expect(runtime.resolveTool('app_launch')?.tool.run).not.toHaveBeenCalled();
     const denied = stepsOf().find((s) => s.kind === 'action');
     expect(denied?.status).toBe('failed');
-    expect(denied?.error).toBe('用户拒绝授权');
+    expect(toModelText(denied?.error ?? '')).toBe('用户拒绝授权');
     expect(final.status).toBe('completed'); // 第二个决策为默认 done
   });
 
@@ -230,7 +231,7 @@ describe('任务 Agent 循环（v0.7 M3）', () => {
 
     const rejected = stepsOf().find((s) => s.kind === 'action');
     expect(rejected?.status).toBe('failed');
-    expect(rejected?.error).toContain('白名单');
+    expect(toModelText(rejected?.error ?? '')).toContain('白名单');
     expect(runtime.resolveTool('keyboard_type')?.tool.run).not.toHaveBeenCalled();
     expect(final.status).toBe('completed');
   });
@@ -245,6 +246,45 @@ describe('任务 Agent 循环（v0.7 M3）', () => {
     expect(final.status).toBe('failed');
     expect(final.stopReason).toBe('max_failures');
     expect(final.failureCount).toBe(3);
-    expect(stepsOf().filter((s) => s.error.includes('决策失败'))).toHaveLength(3);
+    expect(stepsOf().filter((s) => toModelText(s.error).includes('决策失败'))).toHaveLength(3);
+  });
+
+  it('tool 模式：工具返回正文注入下一次决策观察，模型不再盲调', async () => {
+    const deps = setup();
+    const runtime = makeRuntime({
+      knowledge_search: mockTool('knowledge_search', 'read', async () => ({
+        ok: true,
+        output: '【片段1】黄俊杰，AI 全栈工程师，本科吉林大学，曾任职啪啪运动科技。',
+        summary: '命中 1 个片段：简历',
+      })),
+    });
+    const seenObservations: string[] = [];
+    const planner: TaskPlanner = {
+      async decide(input) {
+        seenObservations.push(input.observation?.summary ?? '');
+        if (!input.steps.some((s) => s.kind === 'action')) {
+          return { action: 'tool', tool: 'knowledge_search', args: { query: '简历' }, reason: '检索简历' };
+        }
+        return { action: 'done', reason: '已取证', message: '规划如下…' };
+      },
+    };
+
+    const { final } = await collect(
+      runTaskLoop({
+        deps,
+        runtime,
+        planner,
+        run,
+        allowedTools: ['knowledge_search'],
+        visionCapable: false,
+        observeMode: 'tool',
+      }),
+    );
+
+    expect(final.status).toBe('completed');
+    // 首轮：引导文案；动作后一轮：必须能看到工具真实正文与摘要
+    expect(seenObservations[0]).toContain('请直接决策');
+    expect(seenObservations[1]).toContain('黄俊杰，AI 全栈工程师');
+    expect(seenObservations[1]).toContain('命中 1 个片段：简历');
   });
 });

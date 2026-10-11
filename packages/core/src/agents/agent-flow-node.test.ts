@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+﻿import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -81,7 +81,7 @@ describe('agent-run-service.startFlowNode（Flow agent 节点）', () => {
     const { runId, events } = await service.startFlowNode({
       goal: '查证报销制度',
       assistantId: null,
-      knowledgeBaseId: 'kb-9',
+      knowledgeBaseIds: ['kb-9'],
       toolScopes: ['knowledge'],
       budget: { maxRounds: 2 },
       roleModelIds: { planner: 'mp', executor: null, reviewer: null },
@@ -108,7 +108,7 @@ describe('agent-run-service.startFlowNode（Flow agent 节点）', () => {
 
     expect(seen[0]!.overrides).toEqual({
       roleModelIds: { planner: 'mp', executor: null, reviewer: null },
-      knowledgeBaseId: 'kb-9',
+      knowledgeBaseIds: ['kb-9'],
     });
 
     const row = createAgentRunRepository(db).getById(runId)!;
@@ -121,7 +121,7 @@ describe('agent-run-service.startFlowNode（Flow agent 节点）', () => {
     const first = await service.startFlowNode({
       goal: 'g',
       assistantId: null,
-      knowledgeBaseId: null,
+      knowledgeBaseIds: [],
       toolScopes: [],
       budget: {},
       roleModelIds: { planner: null, executor: null, reviewer: null },
@@ -132,7 +132,7 @@ describe('agent-run-service.startFlowNode（Flow agent 节点）', () => {
     const second = await service.startFlowNode({
       goal: 'g',
       assistantId: null,
-      knowledgeBaseId: null,
+      knowledgeBaseIds: [],
       toolScopes: [],
       budget: {},
       roleModelIds: { planner: null, executor: null, reviewer: null },
@@ -178,7 +178,7 @@ describe('agent-run-service.startFlowNode（Flow agent 节点）', () => {
     const { events } = await service.startFlowNode({
       goal: 'g',
       assistantId: null,
-      knowledgeBaseId: null,
+      knowledgeBaseIds: [],
       toolScopes: [],
       budget: {},
       roleModelIds: { planner: null, executor: null, reviewer: null },
@@ -202,7 +202,7 @@ describe('agent-run-service.startFlowNode（Flow agent 节点）', () => {
       service.startFlowNode({
         goal: 'g',
         assistantId: null,
-        knowledgeBaseId: null,
+        knowledgeBaseIds: [],
         toolScopes: [],
         budget: {},
         roleModelIds: { planner: null, executor: null, reviewer: null },

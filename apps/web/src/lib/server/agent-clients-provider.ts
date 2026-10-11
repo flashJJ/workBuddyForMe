@@ -62,15 +62,14 @@ export function createAgentPlanContextResolver(
 ): AgentPlanContextResolver {
   return (run: AgentRunView) => {
     const assistant = run.assistantId ? factory.assistants.get(run.assistantId) : null;
-    const knowledgeBaseHint = assistant?.knowledgeBaseId
-      ? {
-          id: assistant.knowledgeBaseId,
-          name: factory.knowledgeBases.get(assistant.knowledgeBaseId)?.name ?? '已绑定知识库',
-        }
-      : null;
+    const knowledgeBaseHints = (assistant?.knowledgeBaseIds ?? [])
+      .map((id) => ({
+        id,
+        name: factory.knowledgeBases.get(id)?.name ?? '已绑定知识库',
+      }));
     return {
       availableToolScopes: assistant ? deriveToolScopes(assistant.enabledTools) : [],
-      knowledgeBaseHint,
+      knowledgeBaseHints,
     };
   };
 }
@@ -88,14 +87,18 @@ export function createAgentClientsProvider(factory: AgentClientsFactoryDeps): Ag
         overrides?.roleModelIds?.[role] ?? assistant?.[ROLE_FIELD[role]] ?? assistant?.modelId ?? null,
       );
 
-    const knowledgeBaseId = overrides?.knowledgeBaseId ?? assistant?.knowledgeBaseId ?? null;
+    // 节点显式多库优先；未配置（空数组）回落助手绑定集合
+    const knowledgeBaseIds =
+      overrides && overrides.knowledgeBaseIds && overrides.knowledgeBaseIds.length > 0
+        ? overrides.knowledgeBaseIds
+        : assistant?.knowledgeBaseIds ?? [];
     const executorTarget = resolveTarget('executor');
 
     const executor = createExecutorAdapter({
       deps: factory.deps,
       runtime: factory.runtime,
       run,
-      assistantKnowledgeBaseId: knowledgeBaseId,
+      assistantKnowledgeBaseIds: knowledgeBaseIds,
       resolvePlanner: () => {
         // 用量对象由 planner onUsage 就地累计，适配器在本轮结束时读账
         const usage = { promptTokens: 0, completionTokens: 0 };

@@ -7,6 +7,7 @@ import { ApiClientError, apiPost, withManagedHeaders } from '@/lib/api/client';
 import { SseReader } from '@/lib/api/sse-reader';
 import type { RawSseEvent } from '@/lib/api/sse-reader';
 import type { AgentStreamFrame } from './agent-run-reducer';
+import { translateSystemKey, translateSystemText } from '@/lib/i18n/system-text-runtime';
 
 /** v1.4 协作 SSE：POST 建行后订阅 /api/agent/runs/:id/events，支持客户端主动中断（联动服务端 abort） */
 
@@ -75,7 +76,9 @@ export function useAgentRunStream() {
             | null;
           handlers.onFrame?.({
             event: 'error',
-            data: payload?.error ?? { code: 'INTERNAL_ERROR', message: '协作事件流连接失败' },
+            data: payload?.error
+              ? { ...payload.error, message: translateSystemText(payload.error.message) || payload.error.message }
+              : { code: 'INTERNAL_ERROR', message: translateSystemKey('agents.errors.streamConnectFailed') },
           });
           finish();
           return;
@@ -97,8 +100,8 @@ export function useAgentRunStream() {
           handlers.onFrame?.({
             event: 'error',
             data: error instanceof ApiClientError
-              ? { code: error.code, message: error.message }
-              : { code: 'NETWORK_ERROR', message: '网络连接中断' },
+              ? { code: error.code, message: translateSystemText(error.message) }
+              : { code: 'NETWORK_ERROR', message: translateSystemKey('agents.errors.networkInterrupted') },
           });
         }
       } finally {

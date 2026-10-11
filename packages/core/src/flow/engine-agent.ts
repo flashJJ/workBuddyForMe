@@ -2,6 +2,7 @@ import type { FlowEventPayload } from '@wbfm/shared/types';
 import {
   AGENT_DESKTOP_SCOPE,
   readAgentBudget,
+  readAgentKnowledgeBaseIds,
   readAgentRoleModelIds,
   readAgentToolScopes,
 } from './handlers/agent';
@@ -40,7 +41,7 @@ export async function* runAgentNode(
   const { runId, events } = await ctx.startAgentCollab({
     goal,
     assistantId: strOrNull(config.assistantId),
-    knowledgeBaseId: strOrNull(config.knowledgeBaseId),
+    knowledgeBaseIds: readAgentKnowledgeBaseIds(config),
     toolScopes,
     budget: readAgentBudget(config),
     roleModelIds: readAgentRoleModelIds(config),

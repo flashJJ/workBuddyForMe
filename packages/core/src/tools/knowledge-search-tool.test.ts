@@ -5,11 +5,11 @@ import { currentTimeTool } from './current-time-tool';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 import type { ToolContext } from './types';
 
-const noKb: ToolContext = { knowledgeBaseId: null, retrieve: async () => [] };
+const noKb: ToolContext = { knowledgeBaseIds: [], retrieve: async () => [] };
 
 function ctxWithKb(chunks: RetrievedChunk[]): ToolContext {
   return {
-    knowledgeBaseId: 'kb-1',
+    knowledgeBaseIds: ['kb-1'],
     retrieve: async () => chunks,
   };
 }

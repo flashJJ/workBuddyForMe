@@ -1,6 +1,21 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 
 /**
+ * 服务端系统文案以 system-message 线格式（SOH + {k,vars} + STX）语言中立持久化。
+ * e2e 运行时不打包 workspace 源码，这里只做最小 key 提取（断言系统模板身份），
+ * 完整翻译渲染由 shared 单测覆盖。
+ */
+const decodeKey = (raw: string): string => {
+  const m = /\u0001([^\u0001\u0002]+)\u0002/.exec(raw);
+  if (!m) return raw;
+  try {
+    return (JSON.parse(m[1]!) as { k?: string }).k ?? raw;
+  } catch {
+    return raw;
+  }
+};
+
+/**
  * v1.4 M5 多智能体协作端到端（WBFM_MOCK_AI=1，mock 角色协议确定性回放）：
  * ⓪ 普通对话路径零变化（任务模式关 → 无协作卡，mock 常规回复）
  * ① 一次通过：泳道卡一轮三角色 → done
@@ -100,14 +115,14 @@ async function seedStack(page: Page): Promise<Seeded> {
   const existing = assistants.find((a) => a.name === ASSISTANT_NAME);
   const assistant: { id: string; name: string } = existing
     ? await api(request, 'PATCH', `/assistants/${existing.id}`, {
-        knowledgeBaseId: kb.id,
+        knowledgeBaseIds: [kb.id],
         enabledTools: ['current_time', 'knowledge_search'],
       })
         .then(() => ({ id: existing.id, name: ASSISTANT_NAME }))
     : await api(request, 'POST', '/assistants', {
         name: ASSISTANT_NAME,
         systemPrompt: '你是协作 e2e 助手。',
-        knowledgeBaseId: kb.id,
+        knowledgeBaseIds: [kb.id],
         enabledTools: ['current_time', 'knowledge_search'],
       });
   return {
@@ -258,7 +273,7 @@ test.describe.serial('v1.4 多智能体协作', () => {
       budget: { maxRounds: 1 },
     });
     expect(run.status).toBe('budget_exceeded');
-    expect(run.errorMessage as string).toContain('预算');
+    expect(decodeKey(run.errorMessage as string)).toBe('agentTrace.budget.exceeded');
   });
 
   test('⑤ Flow agent 节点：发布 → 试运行成功，agent_runs 记录归属该 flow run', async ({ page }) => {
@@ -277,7 +292,7 @@ test.describe.serial('v1.4 多智能体协作', () => {
           config: {
             goal: '查证年假天数 [conclusion:年假15天]',
             assistantId: seeded.assistantId,
-            knowledgeBaseId: seeded.kbId,
+            knowledgeBaseIds: [seeded.kbId],
             toolScopes: ['knowledge'],
           },
         },

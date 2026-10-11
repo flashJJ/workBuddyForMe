@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useSystemText } from '@/lib/i18n/use-system-text';
 import { AgentRunCard, type AgentCardEntry } from '../agent-collab';
 import { AttachmentImage } from './attachment-image';
 import { CitationsList } from './citations-list';
@@ -120,6 +121,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
 
 export function MessageItem({ message, assistantName, agentCard, onRetry, onResend, onFeedback, disabled }: Props) {
   const { t } = useI18n();
+  const sys = useSystemText();
   const isUser = message.role === 'user';
   const canRegenerate =
     !isUser &&
@@ -174,7 +176,7 @@ export function MessageItem({ message, assistantName, agentCard, onRetry, onRese
           >
             <p>
               {t('chatMessages.generateFailed', {
-                reason: message.errorMessage ?? message.errorCode ?? t('chatMessages.unknownError'),
+                reason: sys(message.errorMessage) || sys(message.errorCode) || t('chatMessages.unknownError'),
               })}
             </p>
           </div>

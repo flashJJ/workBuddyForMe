@@ -26,9 +26,11 @@ import {
   AGENT_PROTOCOL_FAILURE_LIMITS,
   buildFallbackSubtask,
   buildFallbackVerdict,
+  callWithFallback,
   withBudgetNote,
 } from './runner-fallbacks';
 import { GateMailbox, MAILBOX_DONE } from './gate-mailbox';
+import { sys } from '../i18n/system-text';
 import type {
   AgentClients,
   AgentRunnerDeps,
@@ -46,21 +48,7 @@ export type AgentRunEvent = SseEvent<
   | 'error'
 >;
 
-/** 带协议级容错的角色调用：连续失败达上限后由 fallback 兜底（不静默，标注 degraded） */
-async function callWithFallback<T>(
-  attempt: () => Promise<T>,
-  limit: number,
-  fallback: () => T,
-): Promise<{ value: T; degraded: boolean }> {
-  for (let i = 0; i < limit; i += 1) {
-    try {
-      return { value: await attempt(), degraded: false };
-    } catch {
-      // 协议/网络失败均计一次；达上限走降级（M2 生产客户端内部可再细分）
-    }
-  }
-  return { value: fallback(), degraded: true };
-}
+/** 带协议级容错的角色调用实现在 runner-fallbacks.ts（行数门禁外迁） */
 
 function tokenUsage(run: AgentRunView): TokenUsage {
   return {
@@ -71,7 +59,7 @@ function tokenUsage(run: AgentRunView): TokenUsage {
 }
 
 function missingRun(runId: string): never {
-  throw new Error(`协作运行不存在：${runId}`);
+  throw new Error(sys('agentTrace.run.notFound', { id: runId }));
 }
 
 /**
@@ -125,21 +113,23 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         // ---- 规划（连续失败 → 原目标直派降级） ----
         yield evtPhase('planning', 'planner', budget.round);
         const plan = await callWithFallback(
+          'planner',
           () =>
             clients.planner.plan(
               {
                 goal: input.goal,
                 history,
                 availableToolScopes: input.availableToolScopes ?? [],
-                knowledgeBaseHint: input.knowledgeBaseHint ?? null,
+                knowledgeBaseHints: input.knowledgeBaseHints ?? [],
               },
               signal,
             ),
           AGENT_PROTOCOL_FAILURE_LIMITS.planner,
           () => ({
-            subtask: buildFallbackSubtask(input.goal),
+            subtask: buildFallbackSubtask(input.goal, input.availableToolScopes ?? []),
             usage: { promptTokens: 0, completionTokens: 0 },
           }),
+          signal,
         );
         const currentSubtask = plan.value.subtask;
         if (!plan.degraded) {
@@ -198,6 +188,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         // ---- 审查（连续失败 → 标注自动通过降级） ----
         yield evtPhase('reviewing', 'reviewer', budget.round);
         const review = await callWithFallback(
+          'reviewer',
           () =>
             clients.reviewer.review(
               { goal: input.goal, subtask: currentSubtask, outcome: exec.outcome, round: budget.round },
@@ -205,6 +196,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
             ),
           AGENT_PROTOCOL_FAILURE_LIMITS.reviewer,
           () => ({ review: buildFallbackVerdict(), usage: { promptTokens: 0, completionTokens: 0 } }),
+          signal,
         );
         if (!review.degraded) {
           budget = consume(budget, review.value.usage);
@@ -250,13 +242,15 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
 
       const limit = exceededReason(budget, runRow.budget);
       if (terminalReason === 'budget_exceeded' || limit) {
-        const reasonLabel = limit?.kind ?? 'rounds';
-        const delivered = outcome ? withBudgetNote(outcome, `${reasonLabel} 达上限`) : null;
+        const reasonKind = (limit?.kind ?? 'rounds') as 'rounds' | 'steps' | 'tokens';
+        const delivered = outcome ? withBudgetNote(outcome, reasonKind) : null;
         repo.finalize(runId, {
           status: 'budget_exceeded',
           finalOutcome: delivered,
           errorCode: 'AGENT_BUDGET_EXCEEDED',
-          errorMessage: `预算触顶（${reasonLabel}）`,
+          errorMessage: sys('agentTrace.budget.exceeded', {
+            kind: sys(`agentTrace.budget.kind.${reasonKind}`),
+          }),
         });
         yield emitDone(delivered?.summary ?? '');
         return repo.getById(runId)!;
@@ -267,13 +261,14 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         status: 'failed',
         finalOutcome: outcome,
         errorCode: 'AGENT_REJECTED',
-        errorMessage: last?.review.reviewNotes ?? '审查裁决终止任务',
+        // 模型自写的审查意见原样入库（自由文本）；缺意见时用系统兜底标记
+        errorMessage: last?.review.reviewNotes || sys('agentTrace.run.rejected'),
       });
       yield emitDone(outcome?.summary ?? '');
       return repo.getById(runId)!;
     } catch (error) {
       if (isAborted()) {
-        repo.finalize(runId, { status: 'cancelled', errorCode: 'AGENT_CANCELLED', errorMessage: '用户取消' });
+        repo.finalize(runId, { status: 'cancelled', errorCode: 'AGENT_CANCELLED', errorMessage: sys('agentTrace.run.cancelled') });
       } else {
         const message = error instanceof Error ? error.message : String(error);
         repo.finalize(runId, { status: 'failed', errorCode: 'AGENT_RUN_FAILED', errorMessage: message });

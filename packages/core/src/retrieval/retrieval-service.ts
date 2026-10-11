@@ -1,12 +1,13 @@
 import {
   createFtsChunkRepository,
   listChunksByIds,
+  listChunksByIdsGlobal,
   recallVectorCandidates,
   searchChunks,
 } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 import { resolveEmbeddingTarget } from '../ingestion/embedding-target';
-import { diversify, reciprocalRankFusion } from './hybrid-fusion';
+import { diversify, reciprocalRankFusion, type ChannelHits } from './hybrid-fusion';
 import { ruleRerank } from './rule-rerank';
 
 /** 纯向量回退路径的固定条数（与 v1.2 行为严格一致） */
@@ -47,6 +48,14 @@ export interface RetrieveInput {
   signal?: AbortSignal;
 }
 
+/** v1.5 多库检索入参（query embedding 只计算一次，跨库召回后统一融合） */
+export interface RetrieveManyInput {
+  knowledgeBaseIds: string[];
+  query: string;
+  topK?: number;
+  signal?: AbortSignal;
+}
+
 /** v1.3 检索选项；缺省即全增强（混合+规则重排），关 hybrid 严格回退 v1.2 纯向量 */
 export interface RetrievalOptions {
   /** 混合检索（向量+FTS+RRF+规则重排），默认 true；false=v1.2 纯向量 top4 */
@@ -76,58 +85,65 @@ export function createRetrievalService(deps: ServiceDeps) {
     return vectors[0] ?? null;
   }
 
-  /** v1.2 纯向量路径（hybridEnabled=false 的严格回退，固定 top4） */
-  async function retrieveVectorOnly(
-    input: RetrieveInput,
+  /** v1.2 纯向量路径（hybridEnabled=false 的严格回退，固定 top4），v1.5 支持多库 */
+  async function retrieveVectorOnlyMany(
+    kbIds: string[],
+    vector: number[],
+    topK: number,
   ): Promise<RetrievedChunk[]> {
-    const vector = await embedQuery(input.query, input.signal);
-    if (!vector) return [];
-    return searchChunks(deps.db, {
-      knowledgeBaseId: input.knowledgeBaseId,
-      vector,
-      k: input.topK ?? DEFAULT_RETRIEVAL_TOP_K,
-    });
+    const perKb = await Promise.all(
+      kbIds.map((knowledgeBaseId) =>
+        searchChunks(deps.db, { knowledgeBaseId, vector, k: topK }),
+      ),
+    );
+    return perKb
+      .flat()
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, topK);
   }
 
-  /** v1.3 混合路径：双通道召回 → RRF → 多样性 → 规则重排 */
-  async function retrieveHybrid(
-    input: RetrieveInput,
+  /** v1.3 混合路径：每库双通道召回 → 跨库 RRF → 多样性 → 规则重排 */
+  async function retrieveHybridMany(
+    kbIds: string[],
+    query: string,
+    vector: number[],
     options: Required<Omit<RetrievalOptions, 'hybridEnabled' | 'topK'>>,
+    signal?: AbortSignal,
   ): Promise<RetrievedChunk[]> {
-    const vector = await embedQuery(input.query, input.signal);
-    if (!vector) return [];
-
-    // 向量候选（不在 SQL 层硬砍：sim 阈值做「软下限」——高相关不足保底数量时
-    // 回补次相关，避免弱相关但仍可参考的片段被一刀切导致结果骤空）
-    const allVec = recallVectorCandidates(deps.db, {
-      knowledgeBaseId: input.knowledgeBaseId,
-      vector,
-      candidateN: options.candidateN,
-    });
-    const strongVec = allVec.filter((c) => c.similarity >= options.minVecSimilarity);
-    const vecHits = strongVec.length >= options.maxChunks ? strongVec : allVec;
-    const distanceById = new Map(allVec.map((c) => [c.chunkId, c.distance]));
+    // 各库向量候选（软下限策略在库内保持：强相关不足保底时回补次相关）
+    const distanceById = new Map<number, number>();
+    const channels: ChannelHits[] = [];
     const fts = createFtsChunkRepository(deps.db);
-    const ftsIds = fts.recallChunkIds(input.knowledgeBaseId, input.query, options.candidateN);
 
-    if (vecHits.length === 0 && ftsIds.length === 0) return [];
+    for (const kb of kbIds) {
+      const allVec = recallVectorCandidates(deps.db, {
+        knowledgeBaseId: kb,
+        vector,
+        candidateN: options.candidateN,
+      });
+      const strongVec = allVec.filter((c) => c.similarity >= options.minVecSimilarity);
+      const vecHits = strongVec.length >= options.maxChunks ? strongVec : allVec;
+      for (const c of allVec) distanceById.set(c.chunkId, c.distance);
+      channels.push({ channel: 'vec', hits: vecHits.map((c) => c.chunkId) });
+      channels.push({ channel: 'fts', hits: fts.recallChunkIds(kb, query, options.candidateN) });
+    }
 
-    const fused = reciprocalRankFusion([
-      { channel: 'vec', hits: vecHits.map((c) => c.chunkId) },
-      { channel: 'fts', hits: ftsIds },
-    ]);
+    const hasAny = channels.some((c) => c.hits.length > 0);
+    if (!hasAny) return [];
 
-    // 取融合后候选详情（多样性需真实文档 id，先 join 再按文档去重）
-    const details = listChunksByIds(deps.db, {
-      knowledgeBaseId: input.knowledgeBaseId,
-      chunkIds: fused.map((h) => h.chunkId),
-    });
+    const fused = reciprocalRankFusion(channels);
+
+    // 取融合后候选详情（多库：chunk id 全局唯一，直接跨库回查）
+    const singleKb = kbIds.length === 1 ? kbIds[0]! : null;
+    const details = singleKb
+      ? listChunksByIds(deps.db, { knowledgeBaseId: singleKb, chunkIds: fused.map((h) => h.chunkId) })
+      : listChunksByIdsGlobal(deps.db, { chunkIds: fused.map((h) => h.chunkId) });
     if (details.length === 0) return [];
 
     const detailById = new Map(details.map((d) => [d.chunkId, d]));
     const rrfById = new Map(fused.map((h) => [h.chunkId, h]));
 
-    // 多样性去重（纯函数，真实文档维度），再按上限截取
+    // 多样性去重（真实文档维度），再按上限截取
     const diverse = diversify(
       fused,
       (chunkId) => detailById.get(chunkId)?.documentId ?? `missing-${chunkId}`,
@@ -145,7 +161,7 @@ export function createRetrievalService(deps: ServiceDeps) {
         channels: rrfById.get(detail.chunkId)?.channels ?? ['vec'],
         rrf: rrfById.get(detail.chunkId)?.rrf ?? 0,
       })),
-      input.query,
+      query,
     );
     const scoreById = new Map(scored.map((s) => [s.chunkId, s.score]));
 
@@ -172,18 +188,48 @@ export function createRetrievalService(deps: ServiceDeps) {
 
   return {
     async retrieve(input: RetrieveInput, options: RetrievalOptions = {}): Promise<RetrievedChunk[]> {
+      return this.retrieveMany(
+        {
+          knowledgeBaseIds: [input.knowledgeBaseId],
+          query: input.query,
+          ...(input.topK ? { topK: input.topK } : {}),
+          ...(input.signal ? { signal: input.signal } : {}),
+        },
+        options,
+      );
+    },
+
+    /**
+     * v1.5 多库联合检索：query 只 embed 一次，各库分别召回，跨库 RRF 融合后
+     * 统一多样性去重与规则重排（混量纲由 RRF k=60 天然归一）；空库数组零成本返回。
+     */
+    async retrieveMany(
+      input: RetrieveManyInput,
+      options: RetrievalOptions = {},
+    ): Promise<RetrievedChunk[]> {
+      const kbIds = [...new Set(input.knowledgeBaseIds)].filter(Boolean);
       const trimmed = input.query.trim();
-      if (!trimmed) return [];
-      const nextInput = { ...input, query: trimmed };
+      if (!trimmed || kbIds.length === 0) return [];
 
-      if (options.hybridEnabled === false) return retrieveVectorOnly(nextInput);
+      const vector = await embedQuery(trimmed, input.signal);
+      if (!vector) return [];
+      const topK = input.topK ?? DEFAULT_RETRIEVAL_TOP_K;
 
-      return retrieveHybrid(nextInput, {
-        candidateN: options.candidateN ?? DEFAULT_CANDIDATE_N,
-        minVecSimilarity: options.minVecSimilarity ?? DEFAULT_MIN_VEC_SIMILARITY,
-        maxPerDoc: options.maxPerDoc ?? DEFAULT_MAX_PER_DOC,
-        maxChunks: options.maxChunks ?? DEFAULT_MAX_CHUNKS,
-      });
+      if (options.hybridEnabled === false) {
+        return retrieveVectorOnlyMany(kbIds, vector, topK);
+      }
+      return retrieveHybridMany(
+        kbIds,
+        trimmed,
+        vector,
+        {
+          candidateN: options.candidateN ?? DEFAULT_CANDIDATE_N,
+          minVecSimilarity: options.minVecSimilarity ?? DEFAULT_MIN_VEC_SIMILARITY,
+          maxPerDoc: options.maxPerDoc ?? DEFAULT_MAX_PER_DOC,
+          maxChunks: options.maxChunks ?? DEFAULT_MAX_CHUNKS,
+        },
+        input.signal,
+      );
     },
   };
 }

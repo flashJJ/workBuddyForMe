@@ -68,6 +68,10 @@ export const zhAgents = {
     origin: '协作任务 · Executor 发起',
     waiting: '等待工具授权，授权后协作继续',
   },
+  errors: {
+    streamConnectFailed: '协作事件流连接失败',
+    networkInterrupted: '网络连接中断',
+  },
   tasks: {
     title: '协作任务',
     description: 'Planner/Executor/Reviewer 三角色协作运行记录',
@@ -75,8 +79,8 @@ export const zhAgents = {
     filterAll: '全部状态',
     detailTitle: '交接明细',
     goal: '目标',
-    runId: '运行 ID',
-    conversation: '所属会话',
+    runId: '运行 ID：',
+    conversation: '所属会话：',
     loading: '加载协作任务…',
     loadFailed: '加载失败',
     cancel: '急停',

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import type { ToolCall } from '@wbfm/ai';
 import type { ToolTraceEntry } from '@wbfm/shared/types';
 import { runToolCallLoop } from './tool-call-loop';
@@ -51,7 +51,7 @@ describe('runToolCallLoop：v0.8 flow 工具子步骤', () => {
       runToolCallLoop({
         calls,
         toolMap,
-        toolCtx: { knowledgeBaseId: null, retrieve: async () => [] },
+        toolCtx: { knowledgeBaseIds: [], retrieve: async () => [] },
         deps: {} as ServiceDeps,
         runtime,
         assistantId: 'a1',
@@ -126,7 +126,7 @@ describe('runToolCallLoop：v0.8 flow 工具子步骤', () => {
       runToolCallLoop({
         calls,
         toolMap,
-        toolCtx: { knowledgeBaseId: null, retrieve: async () => [] },
+        toolCtx: { knowledgeBaseIds: [], retrieve: async () => [] },
         deps: {} as ServiceDeps,
         runtime,
         assistantId: 'a1',

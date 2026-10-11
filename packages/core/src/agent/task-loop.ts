@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { MANDATORY_RETRIEVAL_GRACE } from '@wbfm/shared/constants';
 import type { TaskRunView } from '@wbfm/shared/schemas';
 import { createTaskRunRepository } from '@wbfm/database';
 import type { ToolContext } from '../tools/types';
@@ -12,12 +13,13 @@ import {
 } from './control';
 import {
   STEP_RESULT_MAX_CHARS,
-  buildToolObservation,
+  addFinalStep,
   createTaskLoopInternals,
-  runObservation,
+  produceObserveStep,
+  mandatoryRetrievalCorrection,
   type TaskLoopState,
 } from './task-loop-helpers';
-import type { TaskObservation } from './types';
+import { sys } from '../i18n/system-text';
 
 /**
  * 任务 Agent 循环：观察 → 决策 → 门控 → 执行 → 再观察。
@@ -35,7 +37,7 @@ export async function* runTaskLoop(
   const observeToolName = params.observeToolName ?? 'screen_snapshot';
   const toolCtx: ToolContext = {
     signal,
-    knowledgeBaseId: params.knowledgeBaseId ?? null,
+    knowledgeBaseIds: params.knowledgeBaseIds ?? [],
     visionCapable,
     retrieve: params.retrieve ?? (async () => []),
   };
@@ -44,7 +46,20 @@ export async function* runTaskLoop(
     run: repo.updateRunStatus(params.run.id, 'running') ?? params.run,
     stepIndex: 0,
     consecutiveFailures: 0,
+    correctionViolations: 0,
   };
+  // 上一轮决策被「零检索收尾」门控驳回时，本轮观察替换为强制纠正文本
+  let pendingCorrection: string | undefined;
+  // 白名单工具目录（工具名→用途描述）：工具集全程不变，循环外解析一次供每轮决策注入
+  const toolCatalog = allowedTools
+    .map((name) => {
+      const resolvedCatalog = runtime.resolveTool(name);
+      return resolvedCatalog ? `${name}：${resolvedCatalog.tool.description}` : null;
+    })
+    .filter((x): x is string => Boolean(x));
+  const subtaskContext = params.subtaskBrief
+    ? { brief: params.subtaskBrief, acceptance: params.subtaskAcceptance ?? [] }
+    : undefined;
   const { taskEvent, stepStarted, stepFinished, finalize, checkLimits, failStep, afterFail } =
     createTaskLoopInternals({ repo, deps, state });
 
@@ -69,29 +84,42 @@ export async function* runTaskLoop(
       yield taskEvent('run_resumed');
     }
 
-    /* ---- 观察（screen=截图；tool=合成工具观察，不截图） ---- */
+    /* ---- 观察（screen=截图；tool=合成工具观察，不截图；correction=强制纠正文本） ---- */
     state.stepIndex += 1;
-    const observeStep = repo.addStep({ runId: state.run.id, stepIndex: state.stepIndex, kind: 'observe', reason: observeMode === 'tool' ? '工具模式观察' : '观察当前屏幕状态' });
+    const observeStep = repo.addStep({
+      runId: state.run.id,
+      stepIndex: state.stepIndex,
+      kind: 'observe',
+      reason: pendingCorrection
+        ? sys('agentTrace.step.retrievalCorrection')
+        : observeMode === 'tool'
+          ? sys('agentTrace.step.toolObserve')
+          : sys('agentTrace.step.screenObserve'),
+    });
     yield stepStarted(observeStep);
-    const obsStarted = Date.now();
-    let observation: TaskObservation | null;
-    if (observeMode === 'tool') {
-      observation = buildToolObservation(state.run.goal, repo.listSteps(state.run.id));
-      repo.finishStep(observeStep.id, {
-        status: 'completed',
-        resultJson: JSON.stringify({ summary: observation.summary.slice(0, STEP_RESULT_MAX_CHARS) }),
-        durationMs: Date.now() - obsStarted,
-      });
-    } else {
-      observation = await runObservation(runtime, deps, observeToolName, toolCtx, state.run.id, state.stepIndex);
-      repo.finishStep(observeStep.id, {
-        status: observation ? 'completed' : 'failed',
-        resultJson: JSON.stringify({ summary: (observation?.summary ?? '').slice(0, STEP_RESULT_MAX_CHARS) }),
-        ...(observation ? {} : { error: '观察失败：屏幕感知不可用' }),
-        durationMs: Date.now() - obsStarted,
-        ...(observation?.screenshotPath ? { screenshotPath: observation.screenshotPath } : {}),
-      });
-    }
+    const observed = await produceObserveStep({
+      mode: observeMode,
+      goal: state.run.goal,
+      steps: repo.listSteps(state.run.id),
+      pendingCorrection,
+      consumeCorrection: () => {
+        pendingCorrection = undefined;
+      },
+      runtime,
+      deps,
+      observeToolName,
+      toolCtx,
+      runId: state.run.id,
+      stepIndex: state.stepIndex,
+    });
+    const observation = observed.observation;
+    repo.finishStep(observeStep.id, {
+      status: observed.status,
+      resultJson: observed.resultJson,
+      ...(observed.error ? { error: observed.error } : {}),
+      durationMs: observed.durationMs,
+      ...(observed.screenshotPath ? { screenshotPath: observed.screenshotPath } : {}),
+    });
     const obsFinished = stepFinished(observeStep.id);
     if (obsFinished) yield obsFinished;
     if (!observation && observeMode === 'screen') {
@@ -118,6 +146,10 @@ export async function* runTaskLoop(
           observation,
           allowedTools,
           observeMode,
+          ...(subtaskContext ? { subtask: subtaskContext } : {}),
+          ...(params.knowledgeBaseNames?.length ? { knowledgeBaseNames: params.knowledgeBaseNames } : {}),
+          toolCatalog,
+          maxSteps: state.run.maxSteps,
         },
         signal,
       );
@@ -128,7 +160,10 @@ export async function* runTaskLoop(
         return fin.run;
       }
       const message = error instanceof Error ? error.message : String(error);
-      const s = failStep('模型决策', `决策失败：${message}`);
+      const s = failStep(
+        sys('agentTrace.step.modelDecision'),
+        sys('agentTrace.step.decideFailed', { message }),
+      );
       const f = stepFinished(s.id);
       if (f) yield f;
       const hit = afterFail();
@@ -144,23 +179,26 @@ export async function* runTaskLoop(
       return fin.run;
     }
 
+    /* ---- 零检索收尾门控：授权知识库且未成功检索前，done/fail 驳回为强制纠正 ---- */
+    const correction = mandatoryRetrievalCorrection({
+      allowedTools,
+      steps: repo.listSteps(state.run.id),
+      decision,
+      graceLeft: state.correctionViolations < MANDATORY_RETRIEVAL_GRACE,
+    });
+    if (correction) {
+      state.correctionViolations += 1;
+      pendingCorrection = correction;
+      continue;
+    }
+
     /* ---- 完成 / 宣告失败 ---- */
     if (decision.action !== 'tool') {
-      state.stepIndex += 1;
-      const ok = decision.action === 'done';
-      const finalStep = repo.addStep({ runId: state.run.id, stepIndex: state.stepIndex, kind: 'final', reason: decision.reason });
+      const finalStep = addFinalStep(repo, state, decision);
       yield stepStarted(finalStep);
-      repo.finishStep(finalStep.id, {
-        status: ok ? 'completed' : 'failed',
-        resultJson: JSON.stringify({
-          message: decision.message ?? '',
-          ...(decision.unfinished ? { unfinished: decision.unfinished } : {}),
-        }),
-        ...(ok ? {} : { error: decision.message || decision.reason }),
-      });
       const finalFinished = stepFinished(finalStep.id);
       if (finalFinished) yield finalFinished;
-      const fin = ok ? finalize('completed', 'completed') : finalize('failed', 'error');
+      const fin = decision.action === 'done' ? finalize('completed', 'completed') : finalize('failed', 'error');
       yield fin.event;
       return fin.run;
     }
@@ -180,7 +218,10 @@ export async function* runTaskLoop(
     yield stepStarted(actionStep);
 
     if (!resolved || !allowedTools.includes(toolName)) {
-      repo.finishStep(actionStep.id, { status: 'failed', error: `工具不可用或不在任务白名单：${toolName}` });
+      repo.finishStep(actionStep.id, {
+        status: 'failed',
+        error: sys('agentTrace.step.toolNotAllowed', { tool: toolName }),
+      });
       const bad = stepFinished(actionStep.id);
       if (bad) yield bad;
       const hit = afterFail();
@@ -191,7 +232,10 @@ export async function* runTaskLoop(
       continue;
     }
     if (deps.breakers?.isTripped(toolName)) {
-      repo.finishStep(actionStep.id, { status: 'failed', error: `工具 ${toolName} 已熔断，任务终止` });
+      repo.finishStep(actionStep.id, {
+        status: 'failed',
+        error: sys('agentTrace.step.breakerTripped', { tool: toolName }),
+      });
       const tripped = stepFinished(actionStep.id);
       if (tripped) yield tripped;
       const fin = finalize('failed', 'breaker');
@@ -218,7 +262,7 @@ export async function* runTaskLoop(
         yield fin.event;
         return fin.run;
       }
-      repo.finishStep(actionStep.id, { status: 'failed', error: '用户拒绝授权' });
+      repo.finishStep(actionStep.id, { status: 'failed', error: sys('agentTrace.step.denied') });
       const denied = stepFinished(actionStep.id);
       if (denied) yield denied;
       const hit = afterFail();

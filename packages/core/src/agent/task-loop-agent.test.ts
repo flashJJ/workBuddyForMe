@@ -10,6 +10,7 @@ import type { ServiceDeps } from '../services/deps';
 import type { ToolContext } from '../tools/types';
 import type { TaskPlanner } from './types';
 import { runTaskLoop } from './task-loop';
+import { toModelText } from '../i18n/system-text';
 import { collect, makeRuntime, mockTool, okObserve, sequencePlanner } from './task-loop.helpers';
 
 /**
@@ -80,13 +81,13 @@ describe('任务 Agent 循环 v1.4 扩展（知识注入/tool 观察模式）', 
         run,
         allowedTools: ['knowledge_search'],
         visionCapable: false,
-        knowledgeBaseId: 'kb-1',
+        knowledgeBaseIds: ['kb-1'],
         retrieve,
       }),
     );
 
     expect(final.status).toBe('completed');
-    expect(captured.ctx?.knowledgeBaseId).toBe('kb-1');
+    expect(captured.ctx?.knowledgeBaseIds).toEqual(['kb-1']);
     expect(retrieve.mock.calls[0]!.slice(0, 2)).toEqual(['年假几天', 4]);
     const actionStep = stepsOf().find((s) => s.kind === 'action' && s.toolName === 'knowledge_search');
     expect(actionStep?.citations).toEqual([{ documentId: 'd1', documentName: '制度.pdf', ordinal: 1 }]);
@@ -134,7 +135,7 @@ describe('任务 Agent 循环 v1.4 扩展（知识注入/tool 观察模式）', 
       'final:completed',
     ]);
     expect(steps[0]?.screenshotPath).toBe('');
-    expect(steps[0]?.reason).toBe('工具模式观察');
+    expect(toModelText(steps[0]?.reason)).toBe('工具模式观察');
   });
 
   it('T2.1 缺省行为不变：不传知识参数时 ctx 为 null 知识库 + 空检索（桌面路径）', async () => {
@@ -158,7 +159,7 @@ describe('任务 Agent 循环 v1.4 扩展（知识注入/tool 观察模式）', 
     );
 
     expect(final.status).toBe('completed');
-    expect(captured.ctx?.knowledgeBaseId).toBeNull();
+    expect(captured.ctx?.knowledgeBaseIds).toEqual([]);
     await expect(captured.ctx!.retrieve('q', 1)).resolves.toEqual([]);
   });
 });

@@ -19,7 +19,7 @@ function makeAssistant(partial: Partial<Assistant> = {}): Assistant {
     plannerModelId: null,
     executorModelId: null,
     reviewerModelId: null,
-    knowledgeBaseId: null,
+    knowledgeBaseIds: [],
     enabledTools: [],
     retrieveAlways: true,
     memoryEnabled: true,

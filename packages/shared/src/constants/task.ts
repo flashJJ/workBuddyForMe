@@ -7,3 +7,10 @@
  */
 export const TASK_MAX_STEPS = 20;
 export const TASK_MAX_FAILURES = 3;
+
+/**
+ * v1.4 热修：授权知识库后「零检索即收尾」的强制纠正次数上限。
+ * 弱模型会无视提示词硬规则直接 fail/done，由 task-loop 确定性拦截并注入纠正；
+ * 超过此次数仍坚持收尾则尊重模型终态（避免死循环）。
+ */
+export const MANDATORY_RETRIEVAL_GRACE = 2;

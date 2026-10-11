@@ -28,6 +28,7 @@ import { zhFlowExecution } from './messages/flow-execution';
 import { zhToolDebug } from './messages/tool-debug';
 import { zhToolTrace } from './messages/tool-trace';
 import { zhAgents } from './messages/agents';
+import { zhAgentTrace } from './messages/agent-trace';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -65,6 +66,7 @@ export const zhCN = {
   toolDebug: zhToolDebug,
   toolTrace: zhToolTrace,
   agents: zhAgents,
+  agentTrace: zhAgentTrace,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

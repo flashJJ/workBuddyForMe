@@ -11,8 +11,8 @@ const argsSchema = z.object({
 const DEFAULT_KNOWLEDGE_TOP_K = 4;
 
 /**
- * knowledge_search：在助手绑定的知识库内做语义检索。
- * 只能访问绑定库（ToolContext.knowledgeBaseId），未绑定直接拒绝。
+ * knowledge_search：在助手绑定的知识库内做语义检索（v1.5 起支持多库联合检索）。
+ * 只能访问绑定库集合（ToolContext.knowledgeBaseIds），未绑定直接拒绝。
  * 命中结果同时以 citations 形式透传，编排器据此发引用角标。
  */
 export const knowledgeSearchTool: Tool = {
@@ -41,7 +41,7 @@ export const knowledgeSearchTool: Tool = {
     if (!parsed.success) {
       throw new ToolArgError(parsed.error.issues.map((i) => i.message).join('；'));
     }
-    if (!ctx.knowledgeBaseId) {
+    if (ctx.knowledgeBaseIds.length === 0) {
       return {
         ok: false,
         output: '当前助手未绑定知识库，无法检索。请直接基于常识回答或告知用户未配置知识库。',

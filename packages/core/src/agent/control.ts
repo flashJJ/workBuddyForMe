@@ -74,12 +74,20 @@ export interface TaskLoopParams {
   /** 观察工具名（默认 screen_snapshot，测试可替换） */
   observeToolName?: string;
   /**
-   * v1.4 M2：知识能力注入（修复 D2 硬编码空）。
-   * 缺省 knowledgeBaseId=null/retrieve=空——桌面任务服务原行为不变；
-   * 协作 Executor 的 tool 模式注入助手绑定知识库与 RAG 检索回调。
+   * v1.4 M2：知识能力注入（修复 D2 硬编码空），v1.5 支持多库。
+   * 缺省 knowledgeBaseIds=[]/retrieve=空——桌面任务服务原行为不变；
+   * 协作 Executor 的 tool 模式注入生效知识库集合与 RAG 检索回调。
    */
-  knowledgeBaseId?: string | null;
+  knowledgeBaseIds?: string[];
   retrieve?: ToolContext['retrieve'];
   /** v1.4 M2：观察模式（screen=截图循环；tool=无截图，观察内容=工具结果/检索片段） */
   observeMode?: 'screen' | 'tool';
+  /**
+   * v1.4 热修：协作子任务完整上下文（tool 模式注入决策提示词）。
+   * 桌面直派任务缺省——goal 本身即完整指令。
+   */
+  subtaskBrief?: string;
+  subtaskAcceptance?: string[];
+  /** 已授权知识库名称（与 knowledgeBaseIds 对应，提示词展示用） */
+  knowledgeBaseNames?: string[];
 }

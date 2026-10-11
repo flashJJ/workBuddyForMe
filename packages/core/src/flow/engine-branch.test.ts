@@ -1,4 +1,4 @@
-import type { PermissionLevel } from '@wbfm/shared/types';
+﻿import type { PermissionLevel } from '@wbfm/shared/types';
 import type { FlowGraph } from '@wbfm/shared/schemas';
 import { describe, expect, it } from 'vitest';
 import { runFlow } from './engine';
@@ -167,7 +167,7 @@ describe('runFlow：tool 节点门控', () => {
         version: 1,
         context: ctxOverrides({
           resolveTool: async () => fakeTool('read'),
-          executeTool: async (tool, args) => tool.run(args, { knowledgeBaseId: '', retrieve: async () => [] }),
+          executeTool: async (tool, args) => tool.run(args, { knowledgeBaseIds: [], retrieve: async () => [] }),
         }),
       }),
     );
@@ -183,7 +183,7 @@ describe('runFlow：tool 节点门控', () => {
         context: ctxOverrides({
           resolveTool: async () => fakeTool('danger'),
           checkToolAllowed: () => true,
-          executeTool: async (tool, args) => tool.run(args, { knowledgeBaseId: '', retrieve: async () => [] }),
+          executeTool: async (tool, args) => tool.run(args, { knowledgeBaseIds: [], retrieve: async () => [] }),
         }),
       }),
     );
@@ -200,7 +200,7 @@ describe('runFlow：tool 节点门控', () => {
           resolveTool: async () => fakeTool('danger'),
           checkToolAllowed: () => false,
           requestToolConfirmation: async () => true,
-          executeTool: async (tool, args) => tool.run(args, { knowledgeBaseId: '', retrieve: async () => [] }),
+          executeTool: async (tool, args) => tool.run(args, { knowledgeBaseIds: [], retrieve: async () => [] }),
         }),
       }),
     );
