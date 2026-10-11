@@ -146,6 +146,16 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   };
   const runtime = createToolRuntime(deps);
   const taskRunner = createTaskRunnerService(deps, runtime);
+  // v1.4：协作角色生产通道（三级模型回落 + executor task-loop 适配器）。
+  // 必须在 flowRunner 前构造——agent 节点执行经 startFlowNode 发起协作。
+  const assistants = createAssistantsService(deps);
+  const knowledgeBases = createKnowledgeService(deps);
+  const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
+  const agentRuns = createAgentRunService({
+    db,
+    clientsProvider: createAgentClientsProvider(agentClientsFactory),
+    resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
+  });
   // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
   // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
   const workflows = createWorkflowRepository(db);
@@ -157,6 +167,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     workflows,
     runs: createWorkflowRunRepository(db),
     endpoints: endpointRepo,
+    agentRuns,
   });
   // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
   const starterCount = ensureStarterFlows(workflows);
@@ -165,15 +176,6 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   deps.flowToolLister = () => flowRunner.listPublishedTools();
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
-  // v1.4 M2：协作角色生产通道（三级模型回落 + executor task-loop 适配器）
-  const assistants = createAssistantsService(deps);
-  const knowledgeBases = createKnowledgeService(deps);
-  const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
-  const agentRuns = createAgentRunService({
-    db,
-    clientsProvider: createAgentClientsProvider(agentClientsFactory),
-    resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
-  });
   return {
     endpoints,
     rateLimiter,

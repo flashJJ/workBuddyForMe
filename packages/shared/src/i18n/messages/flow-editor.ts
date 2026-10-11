@@ -96,6 +96,17 @@ export const zhFlowEditor = {
         values: '回填表单值',
       },
     },
+    agent: {
+      label: '多智能体协作',
+      description: 'Planner/Executor/Reviewer 分工达成目标',
+      outputs: {
+        summary: '协作结论摘要',
+        status: '终态（done/failed/cancelled 等）',
+        rounds: '协作轮次',
+        evidence: '证据列表（含文档名/序号）',
+        unfinished: '未完成项',
+      },
+    },
     end: {
       label: '结束',
       description: '映射流程最终输出',
@@ -115,6 +126,7 @@ export const zhFlowEditor = {
     rulesCount: '{count} 条规则',
     noReviewPrompt: '未配置审核说明',
     noOutput: '未映射输出',
+    noGoal: '未配置协作目标',
   },
   ref: {
     param: '入参 {name}',

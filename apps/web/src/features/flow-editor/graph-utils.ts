@@ -42,6 +42,9 @@ export function defaultConfig(type: FlowNodeType): Record<string, unknown> {
       return { rules: [{ left: '', op: '==', right: '' }], match: 'all' };
     case 'human':
       return { prompt: '' };
+    case 'agent':
+      // v1.4：配置面板在 M4 提供；默认值与 flowAgentConfigSchema 对齐
+      return { goal: '', toolScopes: [], budget: {} };
     case 'end':
       return { output: '' };
   }
@@ -144,6 +147,8 @@ export function configSummary(
     }
     case 'human':
       return truncate(config.prompt) || t('flowEditor.summary.noReviewPrompt');
+    case 'agent':
+      return truncate(config.goal) || t('flowEditor.summary.noGoal');
     case 'end':
       return truncate(config.output) || t('flowEditor.summary.noOutput');
   }

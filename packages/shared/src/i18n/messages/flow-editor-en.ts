@@ -96,6 +96,17 @@ export const enFlowEditor = {
         values: 'Submitted form values',
       },
     },
+    agent: {
+      label: 'Multi-agent collaboration',
+      description: 'Planner/Executor/Reviewer split work to reach the goal',
+      outputs: {
+        summary: 'Collaboration summary',
+        status: 'Terminal status (done/failed/cancelled, etc.)',
+        rounds: 'Collaboration rounds',
+        evidence: 'Evidence list (document name/ordinal)',
+        unfinished: 'Unfinished items',
+      },
+    },
     end: {
       label: 'End',
       description: 'Map the final flow output',
@@ -115,6 +126,7 @@ export const enFlowEditor = {
     rulesCount: '{count} rules',
     noReviewPrompt: 'No review instructions configured',
     noOutput: 'No output mapping',
+    noGoal: 'No collaboration goal configured',
   },
   ref: {
     param: 'Input {name}',
