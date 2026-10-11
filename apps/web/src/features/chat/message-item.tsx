@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/utils/clipboard';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { AgentRunCard, type AgentCardEntry } from '../agent-collab';
 import { AttachmentImage } from './attachment-image';
 import { CitationsList } from './citations-list';
 import { MarkdownContent } from './markdown';
@@ -16,6 +17,8 @@ import { MessageFeedbackButtons } from './message-feedback';
 interface Props {
   message: Message;
   assistantName: string;
+  /** v1.4 任务模式：协作泳道卡（存在时渲染于正文上方，结论仍走消息正文） */
+  agentCard?: AgentCardEntry;
   /** 重新生成该助手回复（仅最后一条助手消息会传入） */
   onRetry?: () => void;
   /** 用户消息编辑后作为新一轮重新发送 */
@@ -115,7 +118,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
   );
 }
 
-export function MessageItem({ message, assistantName, onRetry, onResend, onFeedback, disabled }: Props) {
+export function MessageItem({ message, assistantName, agentCard, onRetry, onResend, onFeedback, disabled }: Props) {
   const { t } = useI18n();
   const isUser = message.role === 'user';
   const canRegenerate =
@@ -151,6 +154,8 @@ export function MessageItem({ message, assistantName, onRetry, onResend, onFeedb
         </div>
 
         {!isUser && message.toolTrace.length > 0 && <ToolTrace trace={message.toolTrace} />}
+
+        {!isUser && agentCard && <AgentRunCard state={agentCard.state} runId={agentCard.runId} />}
 
         {isUser ? (
           <UserBody message={message} onResend={onResend} disabled={disabled} />

@@ -3,6 +3,8 @@
  * 图结构的 zod 校验契约见 schemas/flow.ts。
  */
 
+import type { SseEvent } from '../api';
+
 export const FLOW_STATUSES = ['draft', 'published', 'disabled'] as const;
 export type FlowStatus = (typeof FLOW_STATUSES)[number];
 
@@ -180,12 +182,28 @@ export const FLOW_EVENT_TYPES = [
   'node_succeeded',
   'node_skipped',
   'node_waiting_human',
+  'node_agent_event',
   'node_failed',
   'run_succeeded',
   'run_failed',
   'run_cancelled',
 ] as const;
 export type FlowEventType = (typeof FLOW_EVENT_TYPES)[number];
+
+/**
+ * v1.4：agent 节点内部协作事件（Planner/Executor/Reviewer 帧原样桥接）。
+ * 复用 agent SSE 帧联合，包在 flow 的 node_agent_event 载荷内下发，
+ * 时间线据此展开只读子泳道（M4 提供完整泳道组件）。
+ */
+export type AgentNodeInnerEvent = SseEvent<
+  | 'agent_phase'
+  | 'agent_handoff'
+  | 'agent_review'
+  | 'agent_budget'
+  | 'agent_tool_confirm'
+  | 'done'
+  | 'error'
+>;
 
 interface FlowRunEventBase {
   runId: string;
@@ -211,6 +229,14 @@ export type FlowEventPayload =
     })
   | (FlowRunEventBase & { type: 'node_skipped'; nodeId: string; reason: string })
   | (FlowRunEventBase & { type: 'node_waiting_human'; nodeId: string })
+  | (FlowRunEventBase & {
+      type: 'node_agent_event';
+      nodeId: string;
+      /** 协作运行 id（agent_runs.id） */
+      agentRunId: string;
+      /** 内部协作帧（phase/handoff/review/budget/done/error） */
+      event: AgentNodeInnerEvent;
+    })
   | (FlowRunEventBase & { type: 'node_failed'; nodeId: string; message: string })
   | (FlowRunEventBase & { type: 'run_succeeded'; output: unknown })
   | (FlowRunEventBase & { type: 'run_failed'; message: string; nodeId?: string })

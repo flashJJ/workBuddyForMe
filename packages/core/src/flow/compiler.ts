@@ -1,5 +1,6 @@
 import type { FlowDiagnostic } from '@wbfm/shared/types';
 import type { FlowGraph } from '@wbfm/shared/schemas';
+import { AGENT_BUDGET_BOUNDS } from '@wbfm/shared/schemas';
 import {
   buildAdjacency,
   findCyclePath,
@@ -7,6 +8,7 @@ import {
   reverseReachableTo,
   topoSortKahn,
 } from './graph-utils';
+import { AGENT_DESKTOP_SCOPE, readAgentToolScopes } from './handlers/agent';
 import type { CompiledFlow } from './types';
 
 export interface CompileResult {
@@ -26,6 +28,8 @@ function diagnostic(
 }
 const error = (code: string, message: string, ref?: { nodeId?: string; edgeId?: string }) =>
   diagnostic('error', `flow/${code}`, message, ref);
+const warning = (code: string, message: string, ref?: { nodeId?: string; edgeId?: string }) =>
+  diagnostic('warning', `flow/${code}`, message, ref);
 
 /**
  * 编译流程图：结构校验（环/端点/句柄/可达/入度）→ Kahn 拓扑计划。
@@ -123,6 +127,65 @@ export function compileFlow(graph: FlowGraph): CompileResult {
     }
     if (ins === 0) {
       diagnostics.push(error('missing-incoming', `节点「${node.id}」没有入边（孤立）`, { nodeId: node.id }));
+    }
+  }
+
+  // 5b. v1.4 agent 节点配置校验：goal 必填、预算三重区间、桌面域警告
+  /** goal 允许非空字符串，或 `{ $ref: "nodes.xxx.outputs.field" }` 整字段绑定（运行时解析） */
+  const isGoalValid = (value: unknown): boolean => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 && trimmed.length <= 2000;
+    }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+    const ref = (value as Record<string, unknown>).$ref;
+    return typeof ref === 'string' && ref.trim().length > 0;
+  };
+  for (const node of graph.nodes.filter((n) => n.type === 'agent')) {
+    const goal = node.config.goal;
+    if (typeof goal === 'string' && goal.trim().length > 2000) {
+      diagnostics.push(error('agent-goal-too-long', '协作目标不能超过 2000 字', { nodeId: node.id }));
+    } else if (!isGoalValid(goal)) {
+      diagnostics.push(
+        error('agent-goal-required', '协作（agent）节点必须填写非空目标（文本或变量引用）', {
+          nodeId: node.id,
+        }),
+      );
+    }
+
+    const budgetChecks: Array<{ key: 'maxRounds' | 'maxSteps' | 'maxTotalTokens'; label: string; bound: { min: number; max: number } }> = [
+      { key: 'maxRounds', label: '轮次', bound: AGENT_BUDGET_BOUNDS.maxRounds },
+      { key: 'maxSteps', label: '步数', bound: AGENT_BUDGET_BOUNDS.maxSteps },
+      { key: 'maxTotalTokens', label: '总 token', bound: AGENT_BUDGET_BOUNDS.maxTotalTokens },
+    ];
+    for (const check of budgetChecks) {
+      const value = node.config[check.key];
+      if (value === undefined || value === null || value === '') continue;
+      if (
+        typeof value !== 'number' ||
+        !Number.isInteger(value) ||
+        value < check.bound.min ||
+        value > check.bound.max
+      ) {
+        diagnostics.push(
+          error(
+            'agent-budget-range',
+            `协作预算${check.label}必须是 ${check.bound.min}–${check.bound.max} 的整数`,
+            { nodeId: node.id },
+          ),
+        );
+      }
+    }
+
+    const scopes = readAgentToolScopes(node.config);
+    if (scopes.includes(AGENT_DESKTOP_SCOPE)) {
+      diagnostics.push(
+        warning(
+          'agent-desktop-unattended',
+          '该协作声明了桌面（desktop）工具域：仅画布人工试运行可执行；API/MCP 无人值守调用会被策略默认拒绝',
+          { nodeId: node.id },
+        ),
+      );
     }
   }
 

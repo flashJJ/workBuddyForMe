@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "description": "v1.4 多智能体协作 golden（≥15，四类：知识证据/工具序列/审查拦截/预算急停）。WBFM_MOCK_AI=1 下 mock 角色协议确定性回放，全程零外网。",
+  "seedDocuments": [
+    {
+      "name": "报销管理制度.txt",
+      "content": "《差旅报销管理制度》\n第一条 员工出差住宿费上限为每晚 500 元，凭发票据实报销。\n第二条 城际交通优先高铁二等座，特殊情况经部门负责人审批可乘飞机经济舱。\n第三条 差旅报销需在返程后 10 个工作日内提交，逾期需说明理由。\n第四条 招待费单次超过 2000 元需分管副总事前审批。"
+    },
+    {
+      "name": "年假与考勤制度.txt",
+      "content": "《年假与考勤管理制度》\n第一条 员工年假按工龄计算：入职满一年享有年假 15 天；未满一年按比例折算。\n第二条 年假应提前 5 个工作日申请，由直属主管审批。\n第三条 病假需在复工当日补交医院证明。\n第四条 全年事假累计超过 10 天的，不再享受当年全勤奖。"
+    },
+    {
+      "name": "采购审批流程.txt",
+      "content": "《采购审批流程规范》\n第一条 单笔采购金额超过 5 万元的，必须由总监审批后方可下单。\n第二条 金额 1 万至 5 万元的采购由部门经理审批。\n第三条 供应商需在合格供方名录内，新供应商先准入后采购。\n第四条 验收合格后 30 日内付款。"
+    }
+  ],
+  "cases": [
+    {
+      "id": "knowledge-01-hotel-cap",
+      "category": "knowledge",
+      "goal": "查证差旅报销住宿费上限每晚多少元 [conclusion:住宿费上限每晚500元]",
+      "expect": { "status": "done", "evidenceDoc": "报销管理制度.txt", "toolCalls": ["knowledge_search"], "summaryContains": "500" },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "knowledge-02-train-class",
+      "category": "knowledge",
+      "goal": "查证差旅城际交通优先选择什么座位等级 [conclusion:优先高铁二等座]",
+      "expect": { "status": "done", "evidenceDoc": "报销管理制度.txt", "toolCallsContains": "knowledge_search", "summaryContains": "高铁二等座" },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "knowledge-03-annual-leave",
+      "category": "knowledge",
+      "goal": "查证入职满一年员工的年假天数是多少 [conclusion:年假15天]",
+      "expect": { "status": "done", "evidenceDoc": "年假与考勤制度.txt", "summaryContains": "年假15天" },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "knowledge-04-leave-apply",
+      "category": "knowledge",
+      "goal": "查证件休假需要提前几个工作日申请 [conclusion:提前5个工作日申请年假]",
+      "expect": { "status": "done", "evidenceDoc": "年假与考勤制度.txt", "summaryContains": "5" },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "knowledge-05-procurement-approval",
+      "category": "knowledge",
+      "goal": "查证单笔采购超过多少万元必须总监审批 [conclusion:采购超过5万元总监审批]",
+      "expect": { "status": "done", "evidenceDoc": "采购审批流程.txt", "toolCalls": ["knowledge_search"], "summaryContains": "5" },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "knowledge-06-payment-term",
+      "category": "knowledge",
+      "goal": "查证采购验收合格后多少日内付款 [conclusion:验收后30日内付款]",
+      "expect": { "status": "done", "evidenceDoc": "采购审批流程.txt", "summaryContains": "30" },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "tools-01-time-then-search",
+      "category": "tools",
+      "goal": "先确认当前时间再查证年假天数 [tools:current_time,knowledge_search] [conclusion:年假15天]",
+      "expect": { "status": "done", "evidenceDoc": "年假与考勤制度.txt", "toolCalls": ["current_time", "knowledge_search"], "summaryContains": "年假15天" },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "tools-02-search-ordered",
+      "category": "tools",
+      "goal": "查证住宿费上限并给出依据 [tools:knowledge_search,current_time] [conclusion:住宿费上限每晚500元]",
+      "expect": { "status": "done", "evidenceDoc": "报销管理制度.txt", "toolCalls": ["knowledge_search", "current_time"] },
+      "breaksWith": ["knowledge"]
+    },
+    {
+      "id": "tools-03-time-only-guard",
+      "category": "tools",
+      "goal": "确认当前日期并汇报 [tools:current_time] [conclusion:已确认时间]",
+      "expect": { "status": "done", "toolCalls": ["current_time"] }
+    },
+    {
+      "id": "review-01-revise-once",
+      "category": "review",
+      "goal": "查证年假天数并严格核对依据 [review:revise-once] [conclusion:年假15天]",
+      "expect": { "status": "done", "rounds": 2, "hasVerdict": "revise", "evidenceDoc": "年假与考勤制度.txt" },
+      "breaksWith": ["reviewer"]
+    },
+    {
+      "id": "review-02-revise-hotel",
+      "category": "review",
+      "goal": "查证住宿费上限并严格核对依据 [review:revise-once] [conclusion:住宿费上限每晚500元]",
+      "expect": { "status": "done", "rounds": 2, "hasVerdict": "revise", "evidenceDoc": "报销管理制度.txt" },
+      "breaksWith": ["reviewer"]
+    },
+    {
+      "id": "review-03-reject-terminates",
+      "category": "review",
+      "goal": "完成一个前提不成立的任务 [review:reject]",
+      "expect": { "status": "failed", "hasVerdict": "reject" },
+      "breaksWith": ["reviewer"]
+    },
+    {
+      "id": "budget-01-rounds-exceeded",
+      "category": "budget",
+      "goal": "查证年假天数 [review:revise-once] [conclusion:年假15天]",
+      "expect": { "status": "done", "rounds": 2, "hasVerdict": "revise" },
+      "breaksWith": ["budget", "reviewer"]
+    },
+    {
+      "id": "budget-02-rounds-exceeded-hotel",
+      "category": "budget",
+      "goal": "查证住宿费上限 [review:revise-once] [conclusion:住宿费上限每晚500元]",
+      "expect": { "status": "done", "rounds": 2 },
+      "breaksWith": ["budget", "reviewer"]
+    },
+    {
+      "id": "budget-03-cancel",
+      "category": "budget",
+      "goal": "查证采购审批流程并整理报告 [slow:3000] [conclusion:采购超过5万元总监审批]",
+      "expect": { "status": "cancelled" },
+      "cancelAfterFirstEvent": true
+    }
+  ]
+}

@@ -42,6 +42,8 @@ export function ChatPage() {
   const [shareOpen, setShareOpen] = React.useState(false);
   const [summaryOpen, setSummaryOpen] = React.useState(false);
   const [confirmSubmitting, setConfirmSubmitting] = React.useState(false);
+  // v1.4：任务模式会话级开关（默认关，不跨会话/助手持久化；切换即复位）
+  const [taskMode, setTaskMode] = React.useState(false);
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -88,17 +90,20 @@ export function ChatPage() {
 
   const switchAssistant = (id: string) => {
     session.reset();
+    setTaskMode(false);
     setAssistantId(id);
     setConversationId(null);
   };
 
   const newChat = () => {
     session.reset();
+    setTaskMode(false);
     setConversationId(null);
   };
 
   const selectConversation = (id: string) => {
     session.reset();
+    setTaskMode(false);
     setConversationId(id);
   };
 
@@ -185,7 +190,8 @@ export function ChatPage() {
         permission={session.pendingConfirmation?.permission ?? 'write'}
         argsSummary={session.pendingConfirmation?.argsSummary ?? ''}
         submitting={confirmSubmitting}
-        taskScopeAvailable={Boolean(conversationId)}
+        taskScopeAvailable={Boolean(conversationId || session.pendingConfirmation?.taskScope)}
+        origin={session.pendingConfirmation?.taskScope ? 'agent' : undefined}
         onOpenChange={(open) => {
           // 不允许点遮罩/ESC 直接关闭而不做决策——必须显式拒绝
           if (!open && !confirmSubmitting) void submitToolConfirm('deny');
@@ -218,6 +224,7 @@ export function ChatPage() {
               messages={session.messages}
               assistantName={currentAssistant?.name ?? t('chat.defaultAssistantName')}
               streaming={session.streaming}
+              agentCards={session.agentCards}
               onRetry={session.retry}
               onResend={session.send}
               onFeedback={session.applyFeedback}
@@ -231,7 +238,9 @@ export function ChatPage() {
             )}
             <Composer
               streaming={session.streaming}
-              visionEnabled={visionEnabled}
+              visionEnabled={visionEnabled && !taskMode}
+              taskMode={taskMode}
+              onTaskModeChange={setTaskMode}
               leading={
                 <>
                   <VoiceToggle enabled={ttsEnabled} onEnabledChange={handleTtsToggle} />
@@ -243,7 +252,9 @@ export function ChatPage() {
                     ))}
                 </>
               }
-              onSend={session.send}
+              onSend={(content, attachmentIds) =>
+                taskMode ? void session.sendTask(content) : session.send(content, attachmentIds)
+              }
               onStop={session.stop}
             />
           </>

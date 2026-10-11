@@ -13,6 +13,7 @@ import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { Tool } from '../tools/types';
 import type { FlowWaitRegistry } from './wait-registry';
+import type { AgentRunService } from '../agents';
 
 export interface FlowRunServiceDeps {
   deps: ServiceDeps;
@@ -22,6 +23,8 @@ export interface FlowRunServiceDeps {
   waiters?: FlowWaitRegistry;
   /** v0.9：读取端点策略快照（api/mcp 运行门控）；内部路由/测试可不传 */
   endpoints?: WorkflowEndpointRepository;
+  /** v1.4：agent 节点发起协作（M3 起注入；缺省时 agent 节点运行报错） */
+  agentRuns?: AgentRunService;
 }
 
 export interface CreateRunParams {

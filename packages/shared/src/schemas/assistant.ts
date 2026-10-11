@@ -27,6 +27,10 @@ const samplingFields = {
   topP: z.number().min(0).max(1).default(1),
   maxTokens: z.number().int().positive().max(1_000_000).nullable().default(null),
   modelId: z.string().trim().min(1).nullable().default(null),
+  /** v1.4：协作三角色模型覆盖；留空=跟随助手默认/系统默认 */
+  plannerModelId: z.string().trim().min(1).nullable().default(null),
+  executorModelId: z.string().trim().min(1).nullable().default(null),
+  reviewerModelId: z.string().trim().min(1).nullable().default(null),
   knowledgeBaseId: z.string().trim().min(1).nullable().default(null),
   enabledTools: enabledToolsSchema,
   retrieveAlways: retrieveAlwaysSchema,

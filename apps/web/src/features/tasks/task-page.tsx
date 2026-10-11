@@ -21,6 +21,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { TaskRunStatusBadge } from './task-status-badge';
 import { TaskTimeline } from './task-timeline';
 import { TaskControlBar } from './task-control-bar';
+import { AgentTasksSection } from './agent-tasks-section';
 
 export function TaskPage() {
   const { t } = useI18n();
@@ -153,6 +154,7 @@ export function TaskPage() {
             ))}
           </ul>
         )}
+        <AgentTasksSection />
       </div>
     </div>
   );

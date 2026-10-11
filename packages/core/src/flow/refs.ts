@@ -8,10 +8,10 @@ import type { FlowScope } from './types';
  * - 整字段绑定：`{ "$ref": "nodes.<id>.outputs.<路径>" }`，对象/数组/数字原样透传。
  */
 
-/** token：节点 id 允许 字母数字_-，字段路径为点分标识符（至少一段） */
-const REF_TOKEN = /\{\{\$nodes\.([a-zA-Z0-9][\w-]*)((?:\.[a-zA-Z_][\w]*)+)\}\}/g;
+/** token：节点 id 允许 字母数字_-，字段路径为点分标识符或数字下标（至少一段，如 evidence.0.docName） */
+const REF_TOKEN = /\{\{\$nodes\.([a-zA-Z0-9][\w-]*)((?:\.(?:[a-zA-Z_][\w]*|\d+))+)\}\}/g;
 /** 整串恰好一个 token（前后允许空白），命中则保留原始类型 */
-const SOLE_TOKEN = /^\s*\{\{\$nodes\.[a-zA-Z0-9][\w-]*(?:\.[a-zA-Z_][\w]*)+\}\}\s*$/;
+const SOLE_TOKEN = /^\s*\{\{\$nodes\.[a-zA-Z0-9][\w-]*(?:\.(?:[a-zA-Z_][\w]*|\d+))+\}\}\s*$/;
 const REF_KEY = '$ref';
 
 export class RefResolutionError extends Error {

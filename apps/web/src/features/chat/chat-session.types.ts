@@ -7,6 +7,12 @@ export interface PendingToolConfirmation {
   tool: string;
   permission: PermissionLevel;
   argsSummary: string;
+  /**
+   * v1.4 M4：协作 Executor 门控帧携带的 task run 作用域。
+   * 存在即表示请求来自协作链路（弹窗标注「协作任务·Executor 发起」）；
+   * remember=task 时原样回传作为授权作用域。
+   */
+  taskScope?: string;
 }
 
 /** v1.0：语音接线（朗读开关 + 音频帧/状态回调），由对话页注入播放队列 */

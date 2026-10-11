@@ -60,6 +60,7 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     waiters,
     retrieval,
     active,
+    ...(serviceDeps.agentRuns ? { agentRuns: serviceDeps.agentRuns } : {}),
   });
 
   /** 队列执行体：认领后的 run → 编译 → 执行 → 事件发布到总线 */

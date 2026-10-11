@@ -61,6 +61,8 @@ export interface Assistant extends Timestamped {
   maxTokens: number | null;
   /** 绑定 models.id；null 表示跟随系统默认对话模型 */
   modelId: string | null;
+  /** v1.4：协作三角色模型覆盖（null=逐级回落：角色覆盖→助手 modelId→系统默认） */
+  plannerModelId: string | null; executorModelId: string | null; reviewerModelId: string | null;
   /** 绑定 knowledge_bases.id；非空时对话自动 RAG */
   knowledgeBaseId: string | null;
   /**

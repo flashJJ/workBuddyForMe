@@ -2,17 +2,22 @@
 
 import * as React from 'react';
 import { MAX_CHAT_ATTACHMENTS } from '@wbfm/shared/constants';
+import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { cn } from '@/lib/utils';
 import { useAttachmentUpload } from './use-attachment-upload';
 
 interface Props {
   streaming: boolean;
   disabled?: boolean;
   placeholder?: string;
-  /** 当前对话模型具备 vision 能力时才开放图片附加 */
+  /** 当前对话模型具备 vision 能力时才开放图片附加（任务模式下由调用方强制关闭） */
   visionEnabled?: boolean;
+  /** v1.4：任务模式开关（会话级，默认关，不跨会话持久化） */
+  taskMode?: boolean;
+  onTaskModeChange?: (enabled: boolean) => void;
   /** 输入框左侧附加控件（v1.0：语音朗读开关） */
   leading?: React.ReactNode;
   onSend: (content: string, attachmentIds: string[]) => void;
@@ -48,7 +53,17 @@ function AttachmentPreviews(props: {
   );
 }
 
-export function Composer({ streaming, disabled, placeholder, visionEnabled, leading, onSend, onStop }: Props) {
+export function Composer({
+  streaming,
+  disabled,
+  placeholder,
+  visionEnabled,
+  taskMode = false,
+  onTaskModeChange,
+  leading,
+  onSend,
+  onStop,
+}: Props) {
   const { t } = useI18n();
   const [value, setValue] = React.useState('');
   const [dragging, setDragging] = React.useState(false);
@@ -80,7 +95,7 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    if (!visionEnabled) return;
+    if (!visionEnabled || taskMode) return;
     const files = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
     if (files.length > 0) {
       event.preventDefault();
@@ -91,7 +106,7 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragging(false);
-    if (!visionEnabled) return;
+    if (!visionEnabled || taskMode) return;
     const files = Array.from(event.dataTransfer.files).filter((file) => file.type.startsWith('image/'));
     if (files.length > 0) void attachments.addFiles(files);
   };
@@ -112,7 +127,7 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
       data-testid="composer"
       onDragOver={(event) => {
         event.preventDefault();
-        if (visionEnabled) setDragging(true);
+        if (visionEnabled && !taskMode) setDragging(true);
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
@@ -120,9 +135,33 @@ export function Composer({ streaming, disabled, placeholder, visionEnabled, lead
       {attachments.items.length > 0 && (
         <AttachmentPreviews items={attachments.items} onRemove={attachments.remove} />
       )}
+      {taskMode && (
+        <p className="pb-1 text-[11px] text-teal-600 dark:text-teal-400" data-testid="task-mode-hint">
+          {t('agents.entry.hint')}
+        </p>
+      )}
       <div className="flex items-end gap-2">
+        {onTaskModeChange && (
+          <button
+            type="button"
+            aria-pressed={taskMode}
+            aria-label={t('agents.entry.label')}
+            title={t('agents.entry.hint')}
+            data-testid="task-mode-toggle"
+            onClick={() => onTaskModeChange(!taskMode)}
+            className={cn(
+              'flex h-[44px] shrink-0 items-center gap-1 rounded-md border px-2.5 text-xs transition-colors',
+              taskMode
+                ? 'border-teal-500/60 bg-teal-500/10 text-teal-700 dark:text-teal-300'
+                : 'text-muted-foreground hover:border-primary/50 hover:text-foreground',
+            )}
+          >
+            <Users className="h-4 w-4" />
+            {t('agents.entry.label')}
+          </button>
+        )}
         {leading}
-        {visionEnabled && (
+        {visionEnabled && !taskMode && (
           <>
             <input
               ref={fileInputRef}

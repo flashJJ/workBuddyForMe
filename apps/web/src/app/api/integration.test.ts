@@ -196,7 +196,7 @@ describe('API 集成测试全集（TR-33.1）', () => {
       ['PROVIDER_TIMEOUT', 504],
       ['INTERNAL_ERROR', 500],
     ];
-    expect(Object.keys(ERROR_CODES)).toHaveLength(expectations.length + 2); // 另含 422/501 两个补充码
+    expect(Object.keys(ERROR_CODES)).toHaveLength(expectations.length + 3); // 另含 422/501×2 三个补充码
 
     for (const [code, status] of expectations) {
       const response = toErrorResponse(new ApiError(code, `示例错误：${code}`));

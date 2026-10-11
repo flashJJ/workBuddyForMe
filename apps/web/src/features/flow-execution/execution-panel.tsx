@@ -7,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { MessageKey } from '@wbfm/shared/i18n';
-import { ApiClientError } from '@/lib/api/client';
+import { ApiClientError, apiPost } from '@/lib/api/client';
+import { API } from '@/lib/api/endpoints';
 import { useFlowRunAction, type FlowLiveState, type FlowRunPhase } from '@/lib/hooks/use-flows';
+import type { SsePayloadMap } from '@wbfm/shared/api';
+import { ToolConfirmDialog } from '../chat/tool-confirm-dialog';
 import type { FlowCanvasNode } from '../flow-editor/graph-utils';
 import { ExecutionTimeline } from './execution-timeline';
 import { WaitingCard } from './waiting-card';
@@ -36,6 +39,42 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
   const terminal = live.phase === 'succeeded' || live.phase === 'failed' || live.phase === 'cancelled';
   const waitingNode = live.waitingNodeId ? nodes.find((n) => n.id === live.waitingNodeId) : null;
   const badge = PHASE_BADGE[live.phase];
+
+  // v1.4：agent 节点内 Executor 的桌面工具门控帧（最新一条未决策且运行未结束时弹窗）
+  const [resolvedGates, setResolvedGates] = React.useState<ReadonlySet<string>>(new Set());
+  const pendingGate = React.useMemo(() => {
+    for (let i = live.events.length - 1; i >= 0; i -= 1) {
+      const e = live.events[i]!;
+      if (e.type === 'node_agent_event' && e.event.event === 'agent_tool_confirm') {
+        return e.event.data as SsePayloadMap['agent_tool_confirm'];
+      }
+    }
+    return null;
+  }, [live.events]);
+  const activeGate =
+    pendingGate && !terminal && !resolvedGates.has(pendingGate.callId) ? pendingGate : null;
+
+  const submitGate = async (
+    action: 'allow' | 'deny',
+    remember?: 'assistant' | 'all' | 'task',
+  ): Promise<boolean> => {
+    if (!activeGate) return false;
+    const extra =
+      remember === 'task' ? { remember, taskScope: activeGate.taskScope } : {};
+    try {
+      await apiPost(API.toolConfirm, {
+        callId: activeGate.callId,
+        tool: activeGate.tool,
+        action,
+        ...extra,
+      });
+      setResolvedGates((prev) => new Set(prev).add(activeGate!.callId));
+      return true;
+    } catch (error) {
+      toast.error(error instanceof ApiClientError ? error.message : t('flowExecution.actionFailed'));
+      return false;
+    }
+  };
 
   const guard = (error: unknown) =>
     toast.error(error instanceof ApiClientError ? error.message : t('flowExecution.actionFailed'));
@@ -126,6 +165,22 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
           </div>
         )}
       </div>
+      {activeGate && (
+        <ToolConfirmDialog
+          open
+          origin="agent"
+          hideAllowAlways
+          tool={activeGate.tool}
+          permission={activeGate.permission}
+          argsSummary={activeGate.argsSummary}
+          submitting={false}
+          taskScopeAvailable
+          onOpenChange={(open) => {
+            if (!open) void submitGate('deny');
+          }}
+          onSubmit={submitGate}
+        />
+      )}
     </section>
   );
 }

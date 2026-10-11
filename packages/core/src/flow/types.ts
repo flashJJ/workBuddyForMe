@@ -1,10 +1,18 @@
 import type {
+  AgentBudget,
+  AgentRunView,
+  FlowGraph,
+  FlowEdge,
+  FlowNode,
+  FlowNodeType,
+} from '@wbfm/shared/schemas';
+import type {
   FlowEventPayload,
   FlowTrigger,
+  AgentNodeInnerEvent,
   PermissionLevel,
   ProviderModel,
 } from '@wbfm/shared/types';
-import type { FlowGraph, FlowEdge, FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
 import type { ChatProvider } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 import type { Tool, ToolResult } from '../tools/types';
@@ -98,6 +106,35 @@ export interface FlowExecutionContext {
   requestToolConfirmation?(req: FlowToolConfirmationRequest): Promise<boolean>;
   /** 人工节点挂起等待（非交互环境返回 approved:false） */
   requestHuman?(nodeId: string, config: Record<string, unknown>): Promise<FlowHumanDecision>;
+
+  /**
+   * v1.4 agent 节点：发起一次三角色协作（由 agent-run-service 提供）。
+   * 引擎桥接内部帧为 node_agent_event；生成器返回值即终态 agent_run（取输出引用）。
+   */
+  startAgentCollab?(
+    input: AgentCollabStartInput,
+  ): Promise<{ runId: string; events: AsyncGenerator<AgentNodeInnerEvent, AgentRunView> }>;
+}
+
+/** agent 节点发起协作的入参（引擎从节点配置解析后传入） */
+export interface AgentCollabStartInput {
+  goal: string;
+  /** 关联助手（节点未选时 null，回落系统默认模型） */
+  assistantId: string | null;
+  knowledgeBaseId: string | null;
+  toolScopes: string[];
+  budget: Partial<AgentBudget>;
+  roleModelIds: {
+    planner: string | null;
+    executor: string | null;
+    reviewer: string | null;
+  };
+  /** 所属工作流运行（回填 agent_runs.flow_run_id） */
+  flowRunId: string;
+  /** 节点标识（回填 agent_runs.node_execution_id；与 node_executions 按 run+node 关联） */
+  nodeExecutionId: string;
+  /** 流程级取消信号（协作随流程一并取消） */
+  signal?: AbortSignal;
 }
 
 export interface FlowNodeHandler<

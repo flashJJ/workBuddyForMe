@@ -188,6 +188,7 @@ export {
   FLOW_INPUT_VALUE_TYPES,
   flowInputFieldSchema,
   flowStartConfigSchema,
+  flowAgentConfigSchema,
   buildFlowInputJsonSchema,
   flowNodeSchema,
   flowEdgeSchema,
@@ -206,6 +207,7 @@ export {
   type FlowInputValueType,
   type FlowInputField,
   type FlowStartConfig,
+  type FlowAgentConfig,
   type FlowNode,
   type FlowEdge,
   type FlowGraph,
@@ -225,6 +227,40 @@ export {
   flowEndpointStatusSchema,
   type FlowEndpointUpsertInput,
 } from './flow-serving';
+
+// v1.4 多智能体协作契约
+export {
+  AGENT_ROLES,
+  AGENT_PHASES,
+  REVIEW_VERDICTS,
+  AGENT_RUN_STATUSES,
+  AGENT_LIMITS,
+  AGENT_BUDGET_DEFAULTS,
+  AGENT_BUDGET_BOUNDS,
+  AGENT_HANDOFF_EDGES,
+  agentBudgetSchema,
+  subtaskSpecSchema,
+  executorOutcomeSchema,
+  reviewVerdictSchema,
+  agentHandoffPayloadSchema,
+  agentRunCreateSchema,
+  agentHandoffEdge,
+  isValidHandoffEdge,
+  type AgentRole,
+  type AgentPhase,
+  type ReviewVerdict,
+  type AgentRunStatus,
+  type AgentBudget,
+  type AgentBudgetUsage,
+  type SubtaskSpec,
+  type ExecutorOutcome,
+  type ReviewVerdictPayload,
+  type AgentHandoffPayload,
+  type AgentHandoffEdge,
+  type AgentRunCreateInput,
+  type AgentRunView,
+  type AgentHandoffView,
+} from './agent';
 
 // v0.6 M2：工具权限分级（HITL）调试/确认入参契约
 export {

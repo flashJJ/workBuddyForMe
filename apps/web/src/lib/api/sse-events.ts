@@ -11,9 +11,19 @@ import type { RawSseEvent } from './sse-reader';
 export type WebChatEventName = OrchestratorEventName | 'voice_audio' | 'voice_state';
 export type WebChatSseEvent = SseEvent<WebChatEventName>;
 
-/** SSE 响应序列化层：对话流 + 任务循环（task）+ v1.3 编译进度（compile）；flow 走独立订阅不经此类型 */
+/** SSE 响应序列化层：对话流 + 任务循环（task）+ v1.3 编译进度（compile）+ v1.4 协作帧；flow 走独立订阅不经此类型 */
 export type WebStreamSseEvent = SseEvent<
-  OrchestratorEventName | 'task' | 'voice_audio' | 'voice_state' | 'compile'
+  | OrchestratorEventName
+  | 'task'
+  | 'voice_audio'
+  | 'voice_state'
+  | 'compile'
+  | 'agent_phase'
+  | 'agent_handoff'
+  | 'agent_review'
+  | 'agent_budget'
+  | 'agent_delta'
+  | 'agent_tool_confirm'
 >;
 
 /**

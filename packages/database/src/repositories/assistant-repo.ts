@@ -13,6 +13,10 @@ export interface AssistantCreateFields {
   topP: number;
   maxTokens: number | null;
   modelId: string | null;
+  /** v1.4：协作三角色模型覆盖（缺省 NULL=不覆盖） */
+  plannerModelId?: string | null;
+  executorModelId?: string | null;
+  reviewerModelId?: string | null;
   knowledgeBaseId: string | null;
   /** v0.6：内置工具名或 mcp:<server>:<tool> */
   enabledTools: string[];
@@ -36,6 +40,9 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   topP: 'top_p',
   maxTokens: 'max_tokens',
   modelId: 'model_id',
+  plannerModelId: 'planner_model_id',
+  executorModelId: 'executor_model_id',
+  reviewerModelId: 'reviewer_model_id',
   knowledgeBaseId: 'knowledge_base_id',
   enabledTools: 'enabled_tools',
   retrieveAlways: 'retrieve_always',

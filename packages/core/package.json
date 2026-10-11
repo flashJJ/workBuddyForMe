@@ -19,6 +19,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./agents": {
+            "types": "./src/agents/index.ts",
+            "development": "./src/agents/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./secrets": {
             "types": "./src/secrets/index.ts",
             "development": "./src/secrets/index.ts",

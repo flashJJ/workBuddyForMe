@@ -30,6 +30,8 @@ import {
   type TaskRunnerService,
 } from '@wbfm/core/services';
 import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
+import { createAgentRunService, type AgentRunService } from '@wbfm/core/agents';
+import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
 import {
   createEndpointService,
   createRateLimiter,
@@ -87,6 +89,8 @@ export interface ServiceContainer {
   taskGrants: TaskGrantRegistry;
   /** v0.7 M3：任务运行管理服务（包装 runTaskLoop 为可外部控制） */
   taskRunner: TaskRunnerService;
+  /** v1.4 M1：多智能体协作运行管理服务（M1 骨架期无角色客户端通道，M2 接通） */
+  agentRuns: AgentRunService;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
   runtime: ToolRuntime;
   /** v0.8 M1：工作流运行服务（试运行/落库；已发布流程经 runtime 第三来源解析） */
@@ -142,6 +146,16 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   };
   const runtime = createToolRuntime(deps);
   const taskRunner = createTaskRunnerService(deps, runtime);
+  // v1.4：协作角色生产通道（三级模型回落 + executor task-loop 适配器）。
+  // 必须在 flowRunner 前构造——agent 节点执行经 startFlowNode 发起协作。
+  const assistants = createAssistantsService(deps);
+  const knowledgeBases = createKnowledgeService(deps);
+  const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
+  const agentRuns = createAgentRunService({
+    db,
+    clientsProvider: createAgentClientsProvider(agentClientsFactory),
+    resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
+  });
   // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
   // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
   const workflows = createWorkflowRepository(db);
@@ -153,17 +167,14 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     workflows,
     runs: createWorkflowRunRepository(db),
     endpoints: endpointRepo,
+    agentRuns,
   });
   // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
   const starterCount = ensureStarterFlows(workflows);
   if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
   deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
   deps.flowToolLister = () => flowRunner.listPublishedTools();
-  // v0.9：对外端点服务 + 公开 API 限流器
-  const endpoints = createEndpointService({
-    endpoints: endpointRepo,
-    workflows,
-  });
+  const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
   return {
     endpoints,
@@ -177,16 +188,17 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     breakers,
     taskGrants,
     taskRunner,
+    agentRuns,
     runtime,
     flowRunner,
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),
-    assistants: createAssistantsService(deps),
+    assistants,
     conversations: createConversationService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),
-    knowledgeBases: createKnowledgeService(deps),
+    knowledgeBases,
     knowledgeGovernance: createKnowledgeGovernanceService(deps),
     knowledgeCompile: createCompileRunnerService(deps),
     documents: createDocumentService(deps),

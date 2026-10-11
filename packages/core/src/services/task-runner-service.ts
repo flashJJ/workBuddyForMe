@@ -3,7 +3,7 @@ import { type TaskRunView } from '@wbfm/shared/schemas';
 import type { ServiceDeps } from './deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import { runTaskLoop } from '../agent/task-loop';
-import { createTaskLoopControl, type TaskLoopControl, type TaskLoopEvent } from '../agent/control';
+import { createTaskLoopControl, type TaskLoopControl, type TaskLoopEvent, type TaskLoopParams } from '../agent/control';
 import type { TaskPlanner } from '../agent/types';
 
 /**
@@ -27,6 +27,10 @@ export interface TaskStartParams {
   /** 客户端请求信号（断线联动）；缺省仅服务自身 abort 控制 */
   clientSignal?: AbortSignal;
   observeToolName?: string;
+  /** v1.4 M2：知识注入与观察模式（协作 Executor 使用；桌面任务缺省即原行为） */
+  knowledgeBaseId?: string | null;
+  retrieve?: TaskLoopParams['retrieve'];
+  observeMode?: 'screen' | 'tool';
 }
 
 export interface TaskRunnerService {
@@ -73,6 +77,9 @@ export function createTaskRunnerService(deps: ServiceDeps, runtime: ToolRuntime)
         signal: combined,
         control,
         ...(params.observeToolName ? { observeToolName: params.observeToolName } : {}),
+        ...(params.knowledgeBaseId !== undefined ? { knowledgeBaseId: params.knowledgeBaseId } : {}),
+        ...(params.retrieve ? { retrieve: params.retrieve } : {}),
+        ...(params.observeMode ? { observeMode: params.observeMode } : {}),
       });
       // 包装：消费完（return/throw/break）从注册表移除
       return (async function* () {

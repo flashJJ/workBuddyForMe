@@ -62,6 +62,27 @@ export async function runObservation(
   };
 }
 
+/**
+ * v1.4 M2 tool 观察模式：不截图，观察内容=工具结果与检索片段。
+ * - 首轮：给出目标/工具模式提示（动作历史为空）；
+ * - 后续轮：摘要上一动作（成功/失败），详细结果在 planner 的 steps 历史里。
+ */
+export function buildToolObservation(goal: string, steps: TaskStepView[]): TaskObservation {
+  const lastAction = [...steps].reverse().find((s) => s.kind === 'action');
+  const summary = lastAction
+    ? [
+        `【工具模式·无截图】上一动作：${lastAction.toolName ?? '(未命名)'} → ${lastAction.status}`,
+        lastAction.error ? `失败信息：${lastAction.error}` : '详细结果见历史步骤。',
+        '请依据工具结果决定下一步：继续调工具取证，或 done/fail 收尾。',
+      ].join('\n')
+    : [
+        '【工具模式·无截图】本轮不观察屏幕，请直接决策。',
+        `任务目标：${goal}`,
+        '需要资料时调用知识检索类工具；拿到足够证据后以 done 给出结论。',
+      ].join('\n');
+  return { summary, screenshotPath: '' };
+}
+
 /** 主循环内部闭包：事件构造 / 终态收尾 / 步数与连续失败护栏 / 失败步落库 */
 export function createTaskLoopInternals(params: {
   repo: TaskRunRepository;

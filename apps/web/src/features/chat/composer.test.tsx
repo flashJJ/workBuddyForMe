@@ -106,5 +106,29 @@ describe('输入区 Composer（TR-27.1）', () => {
     vi.unstubAllGlobals();
   });
 
+  it('v1.4 任务模式：开关 aria-pressed 切换、显示提示；开启后隐藏图片附加', async () => {
+    const onTaskModeChange = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Composer
+        streaming={false}
+        visionEnabled
+        taskMode
+        onTaskModeChange={onTaskModeChange}
+        onSend={() => undefined}
+        onStop={() => undefined}
+      />,
+    );
+
+    const toggle = screen.getByTestId('task-mode-toggle');
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('task-mode-hint')).toBeInTheDocument();
+    // 任务模式下不提供图片附加（agent runs 不接受图片）
+    expect(screen.queryByRole('button', { name: '附加图片' })).not.toBeInTheDocument();
+
+    await user.click(toggle);
+    expect(onTaskModeChange).toHaveBeenCalledWith(false);
+  });
+
   afterEach(() => vi.unstubAllGlobals());
 });

@@ -7,6 +7,7 @@ import {
   Wrench,
   GitBranch,
   UserCheck,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 import type { FlowNodeType } from '@wbfm/shared/schemas';
@@ -89,6 +90,20 @@ export const NODE_META: Record<FlowNodeType, NodeMeta> = {
       { key: 'values', hint: 'flowEditor.node.human.outputs.values' },
     ],
   },
+  agent: {
+    type: 'agent',
+    label: 'flowEditor.node.agent.label',
+    description: 'flowEditor.node.agent.description',
+    icon: Users,
+    accent: 'text-teal-600 dark:text-teal-400',
+    outputFields: [
+      { key: 'summary', hint: 'flowEditor.node.agent.outputs.summary' },
+      { key: 'status', hint: 'flowEditor.node.agent.outputs.status' },
+      { key: 'rounds', hint: 'flowEditor.node.agent.outputs.rounds' },
+      { key: 'evidence', hint: 'flowEditor.node.agent.outputs.evidence' },
+      { key: 'unfinished', hint: 'flowEditor.node.agent.outputs.unfinished' },
+    ],
+  },
   end: {
     type: 'end',
     label: 'flowEditor.node.end.label',
@@ -106,6 +121,7 @@ export const PALETTE_TYPES: FlowNodeType[] = [
   'tool',
   'condition',
   'human',
+  'agent',
 ];
 
 /** 节点标题：优先读 config.label（用户自填），其次类型默认名（经 t 翻译） */

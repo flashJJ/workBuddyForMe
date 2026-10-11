@@ -3,6 +3,7 @@ import type { TaskRunView } from '@wbfm/shared/schemas';
 import type { OrchestratorEvent } from '../chat/types';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
+import type { ToolContext } from '../tools/types';
 import type { TaskPlanner } from './types';
 
 /** 循环对外事件：task 时间线事件（wire 真源派生）+ 门控/工具事件（透传 SSE） */
@@ -72,4 +73,13 @@ export interface TaskLoopParams {
   control?: TaskLoopControl;
   /** 观察工具名（默认 screen_snapshot，测试可替换） */
   observeToolName?: string;
+  /**
+   * v1.4 M2：知识能力注入（修复 D2 硬编码空）。
+   * 缺省 knowledgeBaseId=null/retrieve=空——桌面任务服务原行为不变；
+   * 协作 Executor 的 tool 模式注入助手绑定知识库与 RAG 检索回调。
+   */
+  knowledgeBaseId?: string | null;
+  retrieve?: ToolContext['retrieve'];
+  /** v1.4 M2：观察模式（screen=截图循环；tool=无截图，观察内容=工具结果/检索片段） */
+  observeMode?: 'screen' | 'tool';
 }

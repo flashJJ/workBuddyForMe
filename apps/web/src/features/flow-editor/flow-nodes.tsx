@@ -128,4 +128,6 @@ export const flowNodeTypes = {
   tool: makeNode('tool'),
   condition: ConditionNode,
   human: makeNode('human'),
+  // v1.4 M3：通用卡片渲染（配置面板/泳道时间线在 M4）
+  agent: makeNode('agent'),
 } as const;

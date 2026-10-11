@@ -1,14 +1,18 @@
 import { vi } from 'vitest';
 import type { TaskRunView } from '@wbfm/shared/schemas';
-import type { Tool, ToolResult } from '../tools/types';
+import type { Tool, ToolContext, ToolResult } from '../tools/types';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { TaskLoopEvent } from './control';
 import type { TaskPlanner, TaskPlanDecision } from './types';
 
 const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-function mockTool(name: string, permission: Tool['permission'], run: () => Promise<ToolResult>): Tool {
-  return { name, description: '', parameters: {}, permission, run: vi.fn(run) };
+function mockTool(
+  name: string,
+  permission: Tool['permission'],
+  run: (rawArgs?: unknown, ctx?: ToolContext) => Promise<ToolResult>,
+): Tool {
+  return { name, description: '', parameters: {}, permission, run: vi.fn(run) } as Tool;
 }
 
 const okObserve = () =>

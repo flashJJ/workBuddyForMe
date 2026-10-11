@@ -28,6 +28,8 @@ export interface TaskPlanDecision {
   reason: string;
   /** done/fail 时给用户的总结 */
   message?: string;
+  /** v1.4 M2：done 时模型可声明未竟事项（Executor 收敛进 outcome.unfinished） */
+  unfinished?: string[];
 }
 
 export interface TaskPlannerInput {
@@ -38,6 +40,8 @@ export interface TaskPlannerInput {
   observation: TaskObservation | null;
   /** 本任务可用工具白名单 */
   allowedTools: string[];
+  /** v1.4 M2：观察模式（screen=屏幕截图；tool=工具/检索结果，无截图，提示词随模式切换） */
+  observeMode?: 'screen' | 'tool';
 }
 
 export interface TaskPlanner {

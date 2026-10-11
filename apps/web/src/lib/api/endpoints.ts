@@ -48,6 +48,11 @@ export const API = {
   taskEvents: (id: string) => `/api/tasks/${id}/events`,
   taskControl: (id: string) => `/api/tasks/${id}/control`,
   taskStopAll: '/api/tasks/stop-all',
+  // v1.4 多智能体协作
+  agentRuns: '/api/agent/runs',
+  agentRun: (id: string) => `/api/agent/runs/${id}`,
+  agentRunEvents: (id: string) => `/api/agent/runs/${id}/events`,
+  agentRunCancel: (id: string) => `/api/agent/runs/${id}/cancel`,
   // v0.8 Flow Studio
   flows: '/api/flows',
   flow: (id: string) => `/api/flows/${id}`,
@@ -98,6 +103,10 @@ export const QUERY_KEYS = {
   tasksByConversation: (conversationId: string) =>
     ['tasks', { conversationId }] as const,
   task: (id: string) => ['task', id] as const,
+  agentRuns: ['agent-runs'] as const,
+  agentRunsByConversation: (conversationId: string) =>
+    ['agent-runs', { conversationId }] as const,
+  agentRun: (id: string) => ['agent-run', id] as const,
   flows: ['flows'] as const,
   flow: (id: string) => ['flows', id] as const,
   flowRun: (id: string) => ['flow-run', id] as const,

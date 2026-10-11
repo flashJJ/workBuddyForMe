@@ -14,6 +14,7 @@ export * from './memory';
 export * from './ingestion';
 export * from './retrieval';
 export * from './knowledge';
+export * from './agents';
 export * from './tools';
 export * from './computer';
 export * from './mcp';

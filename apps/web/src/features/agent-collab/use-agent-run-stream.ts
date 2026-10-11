@@ -1,0 +1,101 @@
+'use client';
+
+import * as React from 'react';
+import type { SsePayloadMap } from '@wbfm/shared/api';
+import { API } from '@/lib/api/endpoints';
+import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
+import { SseReader } from '@/lib/api/sse-reader';
+import type { RawSseEvent } from '@/lib/api/sse-reader';
+import type { AgentStreamFrame } from './agent-run-reducer';
+
+/** v1.4 协作 SSE：POST 建行后订阅 /api/agent/runs/:id/events，支持客户端主动中断（联动服务端 abort） */
+
+export interface AgentRunStreamHandlers {
+  onFrame?: (frame: AgentStreamFrame) => void;
+  onStreamingChange?: (streaming: boolean) => void;
+}
+
+const AGENT_EVENT_NAMES = new Set([
+  'agent_phase',
+  'agent_handoff',
+  'agent_review',
+  'agent_budget',
+  'agent_tool_confirm',
+  'done',
+  'error',
+]);
+
+function narrow(raw: RawSseEvent): AgentStreamFrame | null {
+  return AGENT_EVENT_NAMES.has(raw.event) ? (raw as unknown as AgentStreamFrame) : null;
+}
+
+export function useAgentRunStream() {
+  const controllerRef = React.useRef<AbortController | null>(null);
+  const [streaming, setStreaming] = React.useState(false);
+
+  const stop = React.useCallback(() => {
+    controllerRef.current?.abort();
+  }, []);
+
+  const start = React.useCallback(
+    async (runId: string, handlers: AgentRunStreamHandlers): Promise<void> => {
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      setStreaming(true);
+      handlers.onStreamingChange?.(true);
+
+      const finish = () => {
+        if (controllerRef.current === controller) controllerRef.current = null;
+        setStreaming(false);
+        handlers.onStreamingChange?.(false);
+      };
+
+      try {
+        const response = await fetch(
+          API.agentRunEvents(runId),
+          withManagedHeaders({ signal: controller.signal }),
+        );
+        if (!response.ok || !response.body) {
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: SsePayloadMap['error'] }
+            | null;
+          handlers.onFrame?.({
+            event: 'error',
+            data: payload?.error ?? { code: 'INTERNAL_ERROR', message: '协作事件流连接失败' },
+          });
+          finish();
+          return;
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const parser = new SseReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          for (const raw of parser.feed(decoder.decode(value, { stream: true }))) {
+            const frame = narrow(raw);
+            if (frame) handlers.onFrame?.(frame);
+          }
+        }
+      } catch (error) {
+        // 主动 abort：服务端以 done(cancelled) 收尾，仅对真正的网络错误回调
+        if (!controller.signal.aborted) {
+          handlers.onFrame?.({
+            event: 'error',
+            data: error instanceof ApiClientError
+              ? { code: error.code, message: error.message }
+              : { code: 'NETWORK_ERROR', message: '网络连接中断' },
+          });
+        }
+      } finally {
+        finish();
+      }
+    },
+    [],
+  );
+
+  React.useEffect(() => () => controllerRef.current?.abort(), []);
+
+  return { start, stop, streaming };
+}

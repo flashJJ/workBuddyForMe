@@ -150,5 +150,7 @@ function miniMapColor(type: FlowNodeType): string {
       return '#ec4899';
     case 'human':
       return '#f97316';
+    case 'agent':
+      return '#14b8a6';
   }
 }

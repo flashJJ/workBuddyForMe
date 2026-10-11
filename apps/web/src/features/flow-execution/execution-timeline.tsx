@@ -15,6 +15,8 @@ import type { FlowNodeType } from '@wbfm/shared/schemas';
 import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { AgentRunCard } from '../agent-collab';
+import { buildAgentView } from './agent-node-view';
 import { NODE_META, nodeTitle } from '../flow-editor/node-meta';
 import type { FlowCanvasNode } from '../flow-editor/graph-utils';
 
@@ -42,27 +44,95 @@ interface TimelineProps {
   nodes: FlowCanvasNode[];
 }
 
-/** 逐节点事件时间线（run_* 收尾事件由面板主体处理） */
+interface RowModel {
+  key: string;
+  nodeId: string;
+  events: FlowEventPayload[];
+  isAgent: boolean;
+}
+
+/** 逐节点事件时间线：agent 节点聚合成单行并可展开只读子泳道（v1.4 M4） */
 export function ExecutionTimeline({ events, nodes }: TimelineProps) {
   const { t } = useI18n();
-  const nodeEvents = events.filter((e) => NODE_EVENTS.has(e.type));
-  if (nodeEvents.length === 0) {
+  const rows = buildRows(events, nodes);
+  if (rows.length === 0) {
     return <p className="px-4 py-3 text-xs text-muted-foreground">{t('flowExecution.waitingEvents')}</p>;
   }
-
   return (
     <ol className="flex flex-col">
-      {nodeEvents.map((e, idx) => (
-        <TimelineRow key={`${e.type}-${idx}`} event={e} nodes={nodes} />
-      ))}
+      {rows.map((row) =>
+        row.isAgent ? (
+          <AgentTimelineRow key={row.key} row={row} nodes={nodes} />
+        ) : (
+          <TimelineRow key={row.key} event={row.events[0]!} nodes={nodes} />
+        ),
+      )}
     </ol>
+  );
+}
+
+function buildRows(events: FlowEventPayload[], nodes: FlowCanvasNode[]): RowModel[] {
+  const rows: RowModel[] = [];
+  const agentRowIndex = new Map<string, number>();
+  for (const e of events) {
+    // run_failed.nodeId 为可选，需显式收窄到 string
+    if (!('nodeId' in e) || typeof e.nodeId !== 'string') continue;
+    const node = nodes.find((n) => n.id === e.nodeId);
+    if (node?.type === 'agent') {
+      let idx = agentRowIndex.get(e.nodeId);
+      if (idx === undefined) {
+        idx = rows.length;
+        agentRowIndex.set(e.nodeId, idx);
+        rows.push({ key: `agent-${e.nodeId}`, nodeId: e.nodeId, events: [], isAgent: true });
+      }
+      rows[idx]!.events.push(e);
+    } else if (NODE_EVENTS.has(e.type)) {
+      rows.push({ key: `${e.type}-${rows.length}`, nodeId: e.nodeId, events: [e], isAgent: false });
+    }
+  }
+  return rows;
+}
+
+/** agent 节点：单行标题 + 展开只读协作子泳道（帧实时驱动） */
+function AgentTimelineRow({ row, nodes }: { row: RowModel; nodes: FlowCanvasNode[] }) {
+  const [open, setOpen] = React.useState(true);
+  const { t } = useI18n();
+  const node = nodes.find((n) => n.id === row.nodeId);
+  const type = (node?.type ?? 'agent') as FlowNodeType;
+  const meta = NODE_META[type];
+  const title = node ? nodeTitle(t, node.type, node.data.config) : row.nodeId;
+  const failed = row.events.some((e) => e.type === 'node_failed');
+  const succeeded = row.events.some((e) => e.type === 'node_succeeded');
+  const statusType = failed ? 'node_failed' : succeeded ? 'node_succeeded' : 'node_started';
+  const view = React.useMemo(() => buildAgentView(row.events, node), [row.events, node]);
+
+  return (
+    <li className="border-b px-4 py-2.5 last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1.5 text-left"
+        aria-expanded={open}
+      >
+        {eventIcon(statusType, meta.accent)}
+        <meta.icon className={cn('h-3.5 w-3.5 shrink-0', meta.accent)} />
+        <span className="truncate text-xs font-medium">{title}</span>
+        <span className="shrink-0 text-[10px] text-muted-foreground">{eventLabel(statusType, t)}</span>
+        <ChevronRight className={cn('ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground', open && 'rotate-90')} />
+      </button>
+      {open && view && (
+        <div className="mt-2" data-testid={`agent-sub-swimlane-${row.nodeId}`}>
+          <AgentRunCard state={view.state} runId={view.runId} compact showSummary />
+        </div>
+      )}
+    </li>
   );
 }
 
 function TimelineRow({ event, nodes }: { event: FlowEventPayload; nodes: FlowCanvasNode[] }) {
   const [open, setOpen] = React.useState(false);
   const { t } = useI18n();
-  if (!('nodeId' in event)) return null;
+  if (!('nodeId' in event) || typeof event.nodeId !== 'string') return null;
   const node = nodes.find((n) => n.id === event.nodeId);
   const type = (node?.type ?? 'llm') as FlowNodeType;
   const meta = NODE_META[type];

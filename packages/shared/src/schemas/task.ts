@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Citation } from '../types/domain';
 
 /**
  * v0.7 M3 任务级 Agent 循环契约：
@@ -74,6 +75,8 @@ export interface TaskStepView {
   resultJson: string;
   /** 观察截图 attachments 相对路径（空串=本步无截图） */
   screenshotPath: string;
+  /** v1.4：action 步工具产出的引用（如 knowledge_search 命中），供 Executor 收敛证据 */
+  citations?: Citation[];
   status: TaskStepStatus;
   error: string;
   durationMs: number;

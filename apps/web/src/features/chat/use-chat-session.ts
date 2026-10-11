@@ -8,6 +8,8 @@ import { useMessages } from '@/lib/hooks/use-conversations';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiPost } from '@/lib/api/client';
 import { useChatStream } from '@/lib/hooks/use-chat-stream';
+import { useAgentTaskTurn } from './use-agent-task-turn';
+import type { AgentCardEntry } from '../agent-collab';
 import {
   applyToolSubsteps,
   applyToolTraceEnd,
@@ -28,6 +30,9 @@ import {
 
 export type { ChatSessionVoice, PendingToolConfirmation } from './chat-session.types';
 
+/** v1.4 任务模式：助手消息 id → 协作泳道卡（live only，历史在任务中心查看） */
+export type { AgentCardEntry };
+
 export interface ChatSession {
   messages: Message[];
   streaming: boolean;
@@ -35,7 +40,11 @@ export interface ChatSession {
   recalledMemories: RecalledMemoryPayload[];
   /** v0.6 M2：当前待确认的工具调用（null=无弹窗） */
   pendingConfirmation: PendingToolConfirmation | null;
+  /** v1.4 任务模式：消息内协作泳道卡（live only） */
+  agentCards: Record<string, AgentCardEntry>;
   send: (content: string, attachmentIds?: string[]) => void;
+  /** v1.4 任务模式：发起一次三角色协作（与会话关联），泳道卡内联在消息流 */
+  sendTask: (content: string) => Promise<void>;
   /** 重新生成最后一条助手回复（沿用上一条用户消息） */
   retry: () => void;
   stop: () => void;
@@ -59,25 +68,56 @@ export function useChatSession(
 ): ChatSession {
   const historyQuery = useMessages(conversationId);
   const queryClient = useQueryClient();
-  const { send: streamSend, stop: streamStop, streaming } = useChatStream();
+  const { send: streamSend, stop: streamStop, streaming: chatStreaming } = useChatStream();
   const [live, setLive] = React.useState<Message[] | null>(null);
   const [recalledMemories, setRecalledMemories] = React.useState<RecalledMemoryPayload[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = React.useState<PendingToolConfirmation | null>(null);
 
+  const patchLastAssistant = React.useCallback(
+    (patch: Partial<Message>) => {
+      setLive((prev) => patchLastAssistantMessage(prev, patch));
+    },
+    [],
+  );
+
+  const taskTurn = useAgentTaskTurn({
+    assistantId,
+    conversationId,
+    onConversationCreated,
+    pushTurn: (content) => {
+      setRecalledMemories([]);
+      setPendingConfirmation(null);
+      const assistantMessage: Message = { ...pendingMessage('assistant', ''), status: 'streaming' };
+      setLive((prev) =>
+        buildTurnMessages(prev ?? historyQuery.data ?? [], assistantMessage, {
+          content,
+          regenerate: false,
+          attachments: [],
+        }),
+      );
+      return assistantMessage.id;
+    },
+    patchAssistant: patchLastAssistant,
+    onGateConfirm: setPendingConfirmation,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
+      void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
+    },
+  });
+  const streaming = chatStreaming || taskTurn.streaming;
+
   // 注意：不能在 conversationId 变化时自动清空 live——新会话首轮 meta 会回传
   // 新的 conversationId，自动清空会抹掉正在进行的流式消息；改由页面显式 reset。
   const reset = React.useCallback(() => {
+    taskTurn.reset();
     setLive(null);
     setRecalledMemories([]);
     setPendingConfirmation(null);
     voice?.cancelPlayback?.();
-  }, [voice]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voice, taskTurn]);
 
   const baseMessages = live ?? historyQuery.data ?? [];
-
-  const patchLastAssistant = (patch: Partial<Message>) => {
-    setLive((prev) => patchLastAssistantMessage(prev, patch));
-  };
 
   const runTurn = React.useCallback(
     (options: { content: string; regenerate: boolean; attachments?: string[] }) => {
@@ -167,6 +207,9 @@ export function useChatSession(
     [runTurn],
   );
 
+  /** v1.4 任务模式：委托 useAgentTaskTurn（建会话→建行→协作 SSE→终态对账） */
+  const sendTask = taskTurn.start;
+
   const retry = React.useCallback(() => {
     if (streaming) return;
     const source = live ?? historyQuery.data ?? [];
@@ -177,10 +220,12 @@ export function useChatSession(
   /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
   const stop = React.useCallback(() => {
     streamStop();
+    taskTurn.stop();
     voice?.cancelPlayback?.();
     setPendingConfirmation(null);
     setLive((prev) => markStreamingAssistantStopped(prev));
-  }, [streamStop, voice]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamStop, taskTurn, voice]);
 
   const applyFeedback = React.useCallback(
     (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => {
@@ -194,21 +239,24 @@ export function useChatSession(
     async (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task'): Promise<boolean> => {
       const pending = pendingConfirmation;
       if (!pending) return false;
+      // v1.4：协作链路门控帧自带 task run 作用域（原样回传）；对话链路沿用会话作用域
+      const taskScope = pending.taskScope ?? conversationId ?? '';
       const extra =
         remember === 'task'
-          ? { remember, taskScope: conversationId ?? '' }
+          ? { remember, taskScope }
           : remember
             ? { remember, assistantId }
             : {};
       try {
         await apiPost(API.toolConfirm, { callId: pending.callId, tool: pending.tool, action, ...extra });
         setPendingConfirmation(null);
+        taskTurn.clearGate(pending.callId);
         return true;
       } catch {
         return false;
       }
     },
-    [pendingConfirmation, assistantId, conversationId],
+    [pendingConfirmation, conversationId, taskTurn],
   );
 
   return {
@@ -216,7 +264,9 @@ export function useChatSession(
     streaming,
     recalledMemories,
     pendingConfirmation,
+    agentCards: taskTurn.agentCards,
     send,
+    sendTask,
     retry,
     stop,
     reset,

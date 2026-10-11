@@ -10,7 +10,8 @@ import type { RetrievalService } from '../retrieval/retrieval-service';
 import type { WorkflowRunRepository } from '@wbfm/database';
 import { executeToolCall } from '../tools/tool-executor';
 import { resolveChatTargetForModelId } from '../chat/model-resolver';
-import type { CompiledFlow } from './types';
+import type { AgentRunService } from '../agents';
+import type { CompiledFlow, FlowExecutionContext } from './types';
 import { runFlow } from './engine';
 import { createFlowRunStore } from './run-store';
 import { evaluateUnattendedPolicy } from './policy-gate';
@@ -43,6 +44,8 @@ export interface FlowExecutorDeps {
   waiters: FlowWaitRegistry;
   retrieval: RetrievalService;
   active: Map<string, ActiveEntry>;
+  /** v1.4：agent 节点协作运行服务 */
+  agentRuns?: AgentRunService;
 }
 
 export interface FlowExecutor {
@@ -57,7 +60,7 @@ const humanKey = (runId: string, nodeId: string) => `${runId}:human:${nodeId}`;
 const toolKey = (runId: string, nodeId: string) => `${runId}:tool:${nodeId}`;
 
 export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor {
-  const { deps, runtime, runs, waiters, retrieval, active } = executorDeps;
+  const { deps, runtime, runs, waiters, retrieval, active, agentRuns } = executorDeps;
 
   function execute(
     compiled: CompiledFlow,
@@ -115,6 +118,13 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
           waiters.request(humanKey(runId, nodeId), signal).then((payload) =>
             coerceHumanDecision(payload),
           ),
+        // v1.4 agent 节点：协作随流程信号取消；节点 id 即 node_execution 关联键
+        ...(agentRuns
+          ? {
+              startAgentCollab: (input: Parameters<NonNullable<FlowExecutionContext['startAgentCollab']>>[0]) =>
+                agentRuns.startFlowNode({ ...input, signal }),
+            }
+          : {}),
       },
     });
 

@@ -19,6 +19,7 @@ export { normalizeHttpError, extractErrorMessage } from './http/error-normalize'
 // 适配器与注册中心
 export { createProvider } from './registry';
 export { createMockProvider, MOCK_CHAT_MODEL, MOCK_EMBED_MODEL } from './mock-provider';
+export { mockAgentProtocol } from './mock-agent-protocol';
 export { createOpenAiCompatibleAdapter } from './adapters/openai/adapter';
 export { openAiChatStream } from './adapters/openai/chat-stream';
 export { openAiEmbed, EMBED_BATCH_SIZE } from './adapters/openai/embeddings';

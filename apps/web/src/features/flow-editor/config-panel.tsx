@@ -12,6 +12,7 @@ import { StartForm, HumanForm, EndForm } from './config/forms-basic';
 import { LlmForm, KnowledgeForm } from './config/forms-llm';
 import { ToolForm } from './config/forms-tool';
 import { ConditionForm } from './config/forms-condition';
+import { AgentForm } from './config/forms-agent';
 import type { NodeConfigFormProps } from './config/form-primitives';
 
 interface ConfigPanelProps {
@@ -67,6 +68,7 @@ export function ConfigPanel({ node, nodes, onChangeConfig, onDelete, onClose }: 
         {node.type === 'tool' && <ToolForm {...formProps} />}
         {node.type === 'condition' && <ConditionForm {...formProps} />}
         {node.type === 'human' && <HumanForm {...formProps} />}
+        {node.type === 'agent' && <AgentForm {...formProps} />}
         {node.type === 'end' && <EndForm {...formProps} />}
       </div>
 

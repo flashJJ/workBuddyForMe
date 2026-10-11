@@ -22,12 +22,16 @@ interface Props {
   submitting: boolean;
   /** v0.7 M2：是否存在任务作用域（对话已建立），决定「本任务内允许」按钮可用性 */
   taskScopeAvailable: boolean;
+  /** v1.4 M4：请求来源（协作 Executor 发起时标注） */
+  origin?: 'agent';
+  /** v1.4 M4：隐藏「一直允许」（Flow 上下文无助手作用域） */
+  hideAllowAlways?: boolean;
   onOpenChange: (open: boolean) => void;
   /** 用户点击拒绝 / 本次允许 / 本任务内允许 / 一直允许；返回 false 时保持弹窗 */
   onSubmit: (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => Promise<boolean>;
 }
 
-export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitting, taskScopeAvailable, onOpenChange, onSubmit }: Props) {
+export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitting, taskScopeAvailable, origin, hideAllowAlways, onOpenChange, onSubmit }: Props) {
   const { t } = useI18n();
   // 未知权限等级回退展示枚举原值（write/danger 走本地化文案）
   const permissionVariant = permission === 'danger' ? 'danger' : 'warning';
@@ -68,6 +72,14 @@ export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitt
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {origin === 'agent' && (
+            <div
+              data-testid="tool-confirm-origin"
+              className="rounded-md border border-teal-500/40 bg-teal-500/10 px-2.5 py-1.5 text-xs font-medium text-teal-700 dark:text-teal-300"
+            >
+              {t('agents.confirm.origin')}
+            </div>
+          )}
           <div className="rounded-md bg-muted p-3 text-sm font-mono break-all">{tool}</div>
           {argsSummary && (
             <div className="text-sm text-muted-foreground space-y-1">
@@ -97,9 +109,11 @@ export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitt
           >
             {t('chat.toolConfirm.allowTask')}
           </Button>
-          <Button type="button" className="w-full sm:w-auto" onClick={handleAllowAlways} disabled={submitting}>
-            {t('chat.toolConfirm.allowAlways')}
-          </Button>
+          {!hideAllowAlways && (
+            <Button type="button" className="w-full sm:w-auto" onClick={handleAllowAlways} disabled={submitting}>
+              {t('chat.toolConfirm.allowAlways')}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

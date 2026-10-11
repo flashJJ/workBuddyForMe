@@ -86,8 +86,8 @@ export {
   type TaskStepAddFields,
   type TaskStepFinishFields,
   type TaskRunRow,
-  type TaskStepRow,
 } from './task-run-repo';
+export { type TaskStepRow } from './task-run-types';
 export {
   createWorkflowRepository,
   type WorkflowRepository,
@@ -142,4 +142,11 @@ export {
   type EntityMentionRecord,
   type DocumentSummaryRecord,
 } from './compile-query-repo';
+export {
+  createAgentRunRepository,
+  type AgentRunRepository,
+  type AgentRunCreateFields,
+  type AgentHandoffAddFields,
+  type AgentRunTokenPatch,
+} from './agent-run-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

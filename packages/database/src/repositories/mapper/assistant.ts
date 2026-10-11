@@ -11,6 +11,10 @@ export interface AssistantRow {
   top_p: number;
   max_tokens: number | null;
   model_id: string | null;
+  /** v1.4：协作三角色模型覆盖 */
+  planner_model_id: string | null;
+  executor_model_id: string | null;
+  reviewer_model_id: string | null;
   knowledge_base_id: string | null;
   enabled_tools: string;
   retrieve_always: number;
@@ -35,6 +39,9 @@ export function mapAssistant(row: AssistantRow): Assistant {
     topP: row.top_p,
     maxTokens: row.max_tokens,
     modelId: row.model_id,
+    plannerModelId: row.planner_model_id,
+    executorModelId: row.executor_model_id,
+    reviewerModelId: row.reviewer_model_id,
     knowledgeBaseId: row.knowledge_base_id,
     enabledTools: parseJsonArray<string>(row.enabled_tools),
     retrieveAlways: row.retrieve_always === 1,

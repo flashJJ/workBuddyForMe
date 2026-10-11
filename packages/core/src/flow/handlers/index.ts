@@ -24,6 +24,13 @@ export {
   type ConditionMatch,
 } from './condition';
 export { evaluateCondition, evalRule, CONDITION_OPS } from './condition-eval';
+export {
+  AGENT_DESKTOP_SCOPE,
+  readAgentBudget,
+  readAgentRoleModelIds,
+  readAgentToolScopes,
+  type FlowAgentConfig,
+} from './agent';
 
 /**
  * 默认处理器注册表（human 节点由引擎内联处理，不在此注册）。
