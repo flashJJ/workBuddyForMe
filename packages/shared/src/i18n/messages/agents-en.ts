@@ -1,0 +1,85 @@
+/** agents namespace: v1.4 multi-agent collaboration (task-mode entry / swimlane / budget / terminal / task center / HITL) */
+
+export const enAgents = {
+  entry: {
+    label: 'Task mode',
+    on: 'Task mode: on',
+    off: 'Task mode: off',
+    hint: 'When on, Planner/Executor/Reviewer split the work. Applies to this conversation only and is not persisted.',
+  },
+  status: {
+    connecting: 'Connecting',
+    running: 'Running',
+    done: 'Done',
+    failed: 'Failed',
+    cancelled: 'Cancelled',
+    budget_exceeded: 'Budget exceeded',
+  },
+  role: {
+    planner: 'Planner',
+    executor: 'Executor',
+    reviewer: 'Reviewer',
+  },
+  phase: {
+    planning: 'Planning',
+    executing: 'Executing',
+    reviewing: 'Reviewing',
+  },
+  round: {
+    label: 'Round {round}',
+    reworkBadge: 'Rework',
+  },
+  budget: {
+    label: 'Budget',
+    rounds: 'Rounds {used}/{max}',
+    steps: 'Steps {used}/{max}',
+    tokens: 'Tokens {used}/{max}',
+    over: 'limit exceeded',
+  },
+  planning: {
+    title: 'Planning · subtask',
+    brief: 'Brief',
+    acceptance: 'Acceptance criteria',
+  },
+  execution: {
+    title: 'Execution · delivery',
+    tools: 'Tools called',
+    evidence: 'Evidence',
+    none: 'No tool calls or evidence in this round',
+    unfinished: 'Unfinished',
+  },
+  review: {
+    title: 'Review · verdict',
+    approve: 'Approve',
+    revise: 'Rework',
+    reject: 'Reject',
+    passed: 'Met',
+    failed: 'Not met',
+    notes: 'Review notes',
+    awaiting: 'Awaiting review…',
+  },
+  terminal: {
+    done: 'Collaboration completed',
+    budgetExceeded: 'Budget exceeded; best-effort result delivered (see unfinished items in the execution card)',
+    failed: 'Collaboration failed',
+    cancelled: 'Collaboration cancelled',
+  },
+  confirm: {
+    origin: 'Collaboration task · initiated by Executor',
+    waiting: 'Waiting for tool authorization; the collaboration resumes once allowed',
+  },
+  tasks: {
+    title: 'Collaboration tasks',
+    description: 'Runs coordinated by Planner / Executor / Reviewer',
+    empty: 'No collaboration tasks yet',
+    filterAll: 'All statuses',
+    detailTitle: 'Handoff details',
+    goal: 'Goal',
+    runId: 'Run ID',
+    conversation: 'Conversation',
+    loading: 'Loading collaboration tasks…',
+    loadFailed: 'Failed to load',
+    cancel: 'Stop',
+    cancelling: 'Stopping…',
+  },
+};

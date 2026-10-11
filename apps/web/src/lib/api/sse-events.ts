@@ -23,6 +23,7 @@ export type WebStreamSseEvent = SseEvent<
   | 'agent_review'
   | 'agent_budget'
   | 'agent_delta'
+  | 'agent_tool_confirm'
 >;
 
 /**

@@ -4,12 +4,15 @@ import * as React from 'react';
 import type { Message } from '@wbfm/shared/types';
 import { EmptyState } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import type { AgentCardEntry } from '../agent-collab';
 import { MessageItem } from './message-item';
 
 interface Props {
   messages: Message[];
   assistantName: string;
   streaming: boolean;
+  /** v1.4 任务模式：助手消息 id → 协作泳道卡 */
+  agentCards?: Record<string, AgentCardEntry>;
   /** 重新生成最后一条助手回复 */
   onRetry: () => void;
   /** 用户消息编辑后重新发送 */
@@ -18,7 +21,7 @@ interface Props {
   onFeedback?: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
 }
 
-export function MessageList({ messages, assistantName, streaming, onRetry, onResend, onFeedback }: Props) {
+export function MessageList({ messages, assistantName, streaming, agentCards, onRetry, onResend, onFeedback }: Props) {
   const { t } = useI18n();
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
@@ -58,6 +61,7 @@ export function MessageList({ messages, assistantName, streaming, onRetry, onRes
           message={message}
           assistantName={assistantName}
           disabled={streaming}
+          agentCard={agentCards?.[message.id]}
           onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
           onResend={message.role === 'user' && !streaming ? onResend : undefined}
           onFeedback={onFeedback}

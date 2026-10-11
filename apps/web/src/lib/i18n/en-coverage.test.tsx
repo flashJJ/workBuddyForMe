@@ -14,6 +14,8 @@ import AssistantsPage from '@/app/(main)/assistants/page';
 import SettingsPage from '@/app/(main)/settings/page';
 import TasksPage from '@/app/(main)/tasks/page';
 import { FlowsListPage } from '@/features/flows/flows-list-page';
+import { ConfigPanel } from '@/features/flow-editor/config-panel';
+import type { FlowCanvasNode } from '@/features/flow-editor/graph-utils';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -92,4 +94,28 @@ describe('英文态 P0 覆盖（strict 缺键即失败）', () => {
       );
     });
   }
+
+  it('flow 画布 agent 配置面板英文态挂载无缺键（goal/工具域/预算/角色模型表单）', async () => {
+    const agentNode = {
+      id: 'agent_1',
+      type: 'agent',
+      position: { x: 0, y: 0 },
+      data: { config: { goal: 'g', toolScopes: ['knowledge', 'desktop'] } },
+    } as unknown as FlowCanvasNode;
+    renderEnStrict(
+      <ConfigPanel
+        node={agentNode}
+        nodes={[agentNode]}
+        onChangeConfig={() => undefined}
+        onDelete={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Something went wrong')).toBeNull(),
+    );
+    // 关键英文文案存在（strict 下缺键会直接 throw，此处再锁定可见标签）
+    expect(screen.getByText('Collaboration goal')).toBeInTheDocument();
+    expect(screen.getByText('Desktop control (vision)')).toBeInTheDocument();
+  });
 });
