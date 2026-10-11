@@ -49,12 +49,28 @@ export {
   withBudgetNote,
 } from './runner-fallbacks';
 export { createAgentRunner, type AgentRunEvent } from './agent-runner';
+export { createExecutorAdapter, resolveAllowedTools, DESKTOP_BUILTIN_TOOLS } from './executor-adapter';
+export type {
+  CreateExecutorAdapterParams,
+  ExecutorPlannerResolution,
+  ObserveMode,
+} from './executor-adapter';
+export { buildExecutorOutcome, collectEvidence, collectToolCalls } from './executor-outcome';
+export type { BuildExecutorOutcomeInput } from './executor-outcome';
+export {
+  resolveRoleTarget,
+  targetHasVision,
+  AGENT_ROLE_MODEL_FIELDS,
+  type AgentRoleKey,
+} from './role-models';
+export { createLlmPlannerClient, createLlmReviewerClient } from './llm-agent-clients';
 export {
   createAgentRunService,
   type AgentRunService,
   type AgentRunServiceDeps,
   type AgentRunStartParams,
   type AgentClientsProvider,
+  type AgentPlanContextResolver,
 } from './agent-run-service';
 export type {
   AgentClients,

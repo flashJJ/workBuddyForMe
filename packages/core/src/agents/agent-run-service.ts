@@ -21,6 +21,12 @@ export type AgentClientsProvider = (context: {
   run: AgentRunView;
 }) => Promise<AgentClients> | AgentClients;
 
+/** 规划上下文端口（M2 web 实现：由助手启用工具推导工具域、绑定知识库名提示） */
+export type AgentPlanContextResolver = (run: AgentRunView) => {
+  availableToolScopes: string[];
+  knowledgeBaseHint: { id: string | null; name: string } | null;
+};
+
 export interface AgentRunStartParams {
   /** 已由 POST /api/agent/runs 预建（status=running）的运行记录 */
   run: AgentRunView;
@@ -29,8 +35,8 @@ export interface AgentRunStartParams {
 }
 
 export interface AgentRunService {
-  /** 启动协作：返回事件生成器（消费完自动注销）；重复/终态启动 409，无通道 501 */
-  start(params: AgentRunStartParams): AsyncGenerator<AgentRunEvent>;
+  /** 启动协作：解析客户端可能拒绝（ApiError→HTTP 响应）；成功返回事件生成器，重复/终态 409，无通道 501 */
+  start(params: AgentRunStartParams): Promise<AsyncGenerator<AgentRunEvent>>;
   /** 急停：活跃→abort 返回 true；未启动返回 false；不存在 404；终态 409 */
   cancel(runId: string): boolean;
   /** 急停全部活跃协作（急停热键复用）；返回中断数量 */
@@ -44,6 +50,7 @@ export interface AgentRunService {
 export interface AgentRunServiceDeps {
   db: DatabaseInstance;
   clientsProvider?: AgentClientsProvider;
+  resolvePlanContext?: AgentPlanContextResolver;
 }
 
 export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunService {
@@ -51,42 +58,59 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
   const active = new Map<string, ActiveEntry>();
 
   return {
-    start(params) {
-      const run = repo.getById(params.run.id);
-      if (!run) throw ApiError.notFound('协作运行', params.run.id);
-      if (active.has(run.id)) throw ApiError.conflict('协作事件流已被订阅，请勿重复打开');
-      if (run.status !== 'running') {
-        throw ApiError.conflict(`协作已终态（${run.status}），不能再次启动`);
+  /**
+   * 启动协作：异步解析角色客户端后返回事件生成器（消费完自动注销）。
+   * 模型/配置错误（ApiError）在 await 阶段抛出，由路由转成对应 HTTP 响应；
+   * 重复/终态启动 409，无通道 501。
+   */
+  async start(params: AgentRunStartParams): Promise<AsyncGenerator<AgentRunEvent>> {
+    const run = repo.getById(params.run.id);
+    if (!run) throw ApiError.notFound('协作运行', params.run.id);
+    if (active.has(run.id)) throw ApiError.conflict('协作事件流已被订阅，请勿重复打开');
+    if (run.status !== 'running') {
+      throw ApiError.conflict(`协作已终态（${run.status}），不能再次启动`);
+    }
+    if (!deps.clientsProvider) {
+      throw ApiError.notImplemented('多智能体协作通道将在后续版本接通（当前为骨架期）');
+    }
+    const abort = new AbortController();
+    // 先占注册：并发订阅在 provider 解析期也会命中 409
+    active.set(run.id, { abort });
+    let clients: AgentClients;
+    try {
+      clients = await deps.clientsProvider({ run });
+    } catch (error) {
+      active.delete(run.id);
+      throw error;
+    }
+    const signal = params.clientSignal
+      ? AbortSignal.any([params.clientSignal, abort.signal])
+      : abort.signal;
+    const planContext = deps.resolvePlanContext?.(run);
+    return (async function* () {
+      try {
+        const gen = createAgentRunner({ repo, clients }).run({
+          runId: run.id,
+          assistantId: run.assistantId,
+          goal: run.goal,
+          conversationId: run.conversationId,
+          flowRunId: run.flowRunId,
+          nodeExecutionId: run.nodeExecutionId,
+          budget: run.budget,
+          signal,
+          ...(planContext
+            ? {
+                availableToolScopes: planContext.availableToolScopes,
+                knowledgeBaseHint: planContext.knowledgeBaseHint,
+              }
+            : {}),
+        });
+        return yield* gen;
+      } finally {
+        active.delete(run.id);
       }
-      if (!deps.clientsProvider) {
-        throw ApiError.notImplemented('多智能体协作通道将在后续版本接通（当前为 M1 骨架期）');
-      }
-      const abort = new AbortController();
-      const signal = params.clientSignal
-        ? AbortSignal.any([params.clientSignal, abort.signal])
-        : abort.signal;
-      active.set(run.id, { abort });
-      const provider = deps.clientsProvider;
-      // provider 解析放进生成器：async 提供者拒绝时走 SSE error 帧而非路由 500
-      return (async function* () {
-        try {
-          const clients = await provider({ run });
-          const gen = createAgentRunner({ repo, clients }).run({
-            runId: run.id,
-            assistantId: run.assistantId,
-            goal: run.goal,
-            conversationId: run.conversationId,
-            flowRunId: run.flowRunId,
-            nodeExecutionId: run.nodeExecutionId,
-            budget: run.budget,
-            signal,
-          });
-          return yield* gen;
-        } finally {
-          active.delete(run.id);
-        }
-      })();
-    },
+    })();
+  },
 
     cancel(runId) {
       const run = repo.getById(runId);

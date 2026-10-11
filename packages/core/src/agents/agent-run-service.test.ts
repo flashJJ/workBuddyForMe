@@ -101,7 +101,7 @@ describe('agent-run-service 运行管理', () => {
     const run = repo.create({ assistantId: 'a', goal: 'G' });
     const service = createAgentRunService({ db, clientsProvider: provider });
 
-    const gen = service.start({ run });
+    const gen = await service.start({ run });
     expect(service.isActive(run.id)).toBe(true);
     const events = await collect(gen);
 
@@ -120,39 +120,51 @@ describe('agent-run-service 运行管理', () => {
     const hangProvider: AgentClientsProvider = () => scriptedClients({ executorHang: true });
     const service = createAgentRunService({ db, clientsProvider: hangProvider });
 
-    const gen = service.start({ run });
+    const gen = await service.start({ run });
     const { pending } = await driveIntoExecutor(gen);
     expect(service.isActive(run.id)).toBe(true);
-    expect(() => service.start({ run })).toThrow(ApiError);
+    await expect(service.start({ run })).rejects.toBeInstanceOf(ApiError);
     service.stopAll();
     await pending;
     await collect(gen);
     expect(repo.getById(run.id)!.status).toBe('cancelled');
   });
 
-  it('终态 run 再 start 抛 409；不存在 run 抛 404', () => {
+  it('终态 run 再 start 抛 409；不存在 run 抛 404', async () => {
     const repo = createAgentRunRepository(db);
     const run = repo.create({ assistantId: 'a', goal: 'G' });
     repo.finalize(run.id, { status: 'done', finalOutcome: makeOutcome() });
     const service = createAgentRunService({ db, clientsProvider: provider });
 
-    expect(() => service.start({ run: repo.getById(run.id)! })).toThrow(/已终态/);
-    expect(() => service.start({ run: { ...run, id: 'ghost' } })).toThrow(/不存在/);
+    await expect(service.start({ run: repo.getById(run.id)! })).rejects.toThrow(/已终态/);
+    await expect(service.start({ run: { ...run, id: 'ghost' } })).rejects.toThrow(/不存在/);
   });
 
-  it('未接角色通道（M1 骨架）：start 抛 501 NOT_IMPLEMENTED', () => {
+  it('未接角色通道（骨架）：start 抛 501 NOT_IMPLEMENTED', async () => {
     const repo = createAgentRunRepository(db);
     const run = repo.create({ assistantId: 'a', goal: 'G' });
     const service = createAgentRunService({ db });
     expect(service.hasClientsChannel()).toBe(false);
-    try {
-      service.start({ run });
-      throw new Error('应当抛错');
-    } catch (error) {
-      expect(error).toBeInstanceOf(ApiError);
-      expect((error as ApiError).status).toBe(501);
-      expect((error as ApiError).code).toBe('NOT_IMPLEMENTED');
-    }
+    const error = await service.start({ run }).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(501);
+    expect((error as ApiError).code).toBe('NOT_IMPLEMENTED');
+  });
+
+  it('provider 解析拒绝：start 抛业务错误且不占用活跃注册表', async () => {
+    const repo = createAgentRunRepository(db);
+    const run = repo.create({ assistantId: 'a', goal: 'G' });
+    const failing = createAgentRunService({
+      db,
+      clientsProvider: () => {
+        throw new ApiError('VALIDATION_ERROR', '未配置对话模型');
+      },
+    });
+    await expect(failing.start({ run })).rejects.toThrow(/未配置对话模型/);
+    expect(failing.activeRunIds()).toHaveLength(0);
   });
 
   it('cancel：活跃→abort 收敛 cancelled；不存在 404；终态 409；未启动 false', async () => {
@@ -168,7 +180,7 @@ describe('agent-run-service 运行管理', () => {
     expect(service.cancel(dormant.id)).toBe(false);
 
     const run = repo.create({ assistantId: 'a', goal: 'G' });
-    const gen = service.start({ run });
+    const gen = await service.start({ run });
     const { pending } = await driveIntoExecutor(gen);
     expect(service.cancel(run.id)).toBe(true);
     await pending;
@@ -186,8 +198,8 @@ describe('agent-run-service 运行管理', () => {
     });
     const r1 = repo.create({ assistantId: 'a', goal: 'G1' });
     const r2 = repo.create({ assistantId: 'a', goal: 'G2' });
-    const g1 = service.start({ run: r1 });
-    const g2 = service.start({ run: r2 });
+    const g1 = await service.start({ run: r1 });
+    const g2 = await service.start({ run: r2 });
     const [d1, d2] = await Promise.all([driveIntoExecutor(g1), driveIntoExecutor(g2)]);
     expect(service.stopAll()).toBe(2);
     await Promise.all([d1.pending, d2.pending]);
