@@ -28,7 +28,9 @@ export function AssistantCard({
 }: Props) {
   const { t } = useI18n();
   const boundModel = models.find((model) => model.id === assistant.modelId);
-  const boundKb = knowledgeBases.find((kb) => kb.id === assistant.knowledgeBaseId);
+  const boundKbs = assistant.knowledgeBaseIds
+    .map((id) => knowledgeBases.find((kb) => kb.id === id))
+    .filter((kb): kb is KnowledgeBase => Boolean(kb));
 
   return (
     <article
@@ -76,9 +78,11 @@ export function AssistantCard({
         <Badge variant="default">
           {boundModel ? boundModel.displayName : t('assistants.card.defaultModel')}
         </Badge>
-        {boundKb && (
-          <Badge variant="success">{t('assistants.card.knowledgeBase', { name: boundKb.name })}</Badge>
-        )}
+        {boundKbs.map((kb) => (
+          <Badge key={kb.id} variant="success">
+            {t('assistants.card.knowledgeBase', { name: kb.name })}
+          </Badge>
+        ))}
         <span className="text-muted-foreground">
           T={assistant.temperature} · P={assistant.topP}
           {assistant.maxTokens ? ` · ≤${assistant.maxTokens}` : ''}

@@ -15,7 +15,7 @@ export interface AssistantRow {
   planner_model_id: string | null;
   executor_model_id: string | null;
   reviewer_model_id: string | null;
-  knowledge_base_id: string | null;
+  knowledge_base_ids?: string;
   enabled_tools: string;
   retrieve_always: number;
   /** v0.5：长期记忆开关（0/1） */
@@ -42,7 +42,7 @@ export function mapAssistant(row: AssistantRow): Assistant {
     plannerModelId: row.planner_model_id,
     executorModelId: row.executor_model_id,
     reviewerModelId: row.reviewer_model_id,
-    knowledgeBaseId: row.knowledge_base_id,
+    knowledgeBaseIds: parseJsonArray<string>(row.knowledge_base_ids ?? '[]'),
     enabledTools: parseJsonArray<string>(row.enabled_tools),
     retrieveAlways: row.retrieve_always === 1,
     memoryEnabled: row.memory_enabled !== 0,

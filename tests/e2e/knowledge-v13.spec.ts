@@ -144,7 +144,7 @@ test.describe.serial('v1.3 知识链路', () => {
       .locator('[data-testid^="assistant-card-"]')
       .filter({ hasText: ASSISTANT_NAME });
     await assistantCard.getByRole('button', { name: '编辑' }).click();
-    await page.getByLabel('关联知识库（自动 RAG）').selectOption({ label: KB_NAME });
+    await page.getByRole('checkbox', { name: KB_NAME }).check();
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByText('助手已更新')).toBeVisible();
 

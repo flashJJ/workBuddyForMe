@@ -63,8 +63,8 @@ export interface Assistant extends Timestamped {
   modelId: string | null;
   /** v1.4：协作三角色模型覆盖（null=逐级回落：角色覆盖→助手 modelId→系统默认） */
   plannerModelId: string | null; executorModelId: string | null; reviewerModelId: string | null;
-  /** 绑定 knowledge_bases.id；非空时对话自动 RAG */
-  knowledgeBaseId: string | null;
+  /** v1.5：绑定 knowledge_bases.id（支持多库联合检索）；空数组=纯对话 */
+  knowledgeBaseIds: string[];
   /**
    * v0.2：可用工具白名单（空数组 = 纯对话，与 v0.1 行为一致）。
    * v0.6：元素为内置工具名或 mcp:<server>:<tool> 命名空间名。

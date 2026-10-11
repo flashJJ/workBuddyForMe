@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+﻿import { describe, expect, it, beforeEach } from 'vitest';
 import {
   createAssistantRepository,
   createDatabase,
@@ -74,7 +74,7 @@ describe('provider/model/assistant/settings 仓储', () => {
       topP: 1,
       maxTokens: null,
       modelId: null,
-      knowledgeBaseId: null,
+      knowledgeBaseIds: [],
       enabledTools: [],
       retrieveAlways: false,
       isBuiltin: true,
@@ -89,7 +89,7 @@ describe('provider/model/assistant/settings 仓储', () => {
       topP: 0.8,
       maxTokens: 100,
       modelId: null,
-      knowledgeBaseId: null,
+      knowledgeBaseIds: [],
       enabledTools: [],
       retrieveAlways: false,
       isBuiltin: false,

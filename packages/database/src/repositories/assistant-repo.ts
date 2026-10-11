@@ -17,7 +17,8 @@ export interface AssistantCreateFields {
   plannerModelId?: string | null;
   executorModelId?: string | null;
   reviewerModelId?: string | null;
-  knowledgeBaseId: string | null;
+  /** v1.5：绑定知识库 id 列表（多库联合检索；空数组=纯对话） */
+  knowledgeBaseIds: string[];
   /** v0.6：内置工具名或 mcp:<server>:<tool> */
   enabledTools: string[];
   retrieveAlways: boolean;
@@ -43,7 +44,7 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   plannerModelId: 'planner_model_id',
   executorModelId: 'executor_model_id',
   reviewerModelId: 'reviewer_model_id',
-  knowledgeBaseId: 'knowledge_base_id',
+  knowledgeBaseIds: 'knowledge_base_ids',
   enabledTools: 'enabled_tools',
   retrieveAlways: 'retrieve_always',
   memoryEnabled: 'memory_enabled',
@@ -55,6 +56,9 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
 function toRowValues(fields: Partial<AssistantCreateFields>): Record<string, unknown> {
   const values: Record<string, unknown> = { ...fields };
   if (fields.enabledTools !== undefined) values.enabledTools = JSON.stringify(fields.enabledTools);
+  if (fields.knowledgeBaseIds !== undefined) {
+    values.knowledgeBaseIds = JSON.stringify(fields.knowledgeBaseIds);
+  }
   if (fields.retrieveAlways !== undefined) {
     values.retrieveAlways = fields.retrieveAlways ? 1 : 0;
   }
@@ -75,11 +79,11 @@ export function createAssistantRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO assistants
            (id, name, emoji, color, system_prompt, temperature, top_p, max_tokens,
-            model_id, knowledge_base_id, enabled_tools, retrieve_always, memory_enabled,
+            model_id, knowledge_base_ids, enabled_tools, retrieve_always, memory_enabled,
             expression_enabled, is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
-            @modelId, @knowledgeBaseId, @enabledTools, @retrieveAlways, @memoryEnabled,
+            @modelId, @knowledgeBaseIds, @enabledTools, @retrieveAlways, @memoryEnabled,
             @expressionEnabled, @isBuiltin, @sortOrder, @ts, @ts)`,
       ).run({
         ...toRowValues(fields),

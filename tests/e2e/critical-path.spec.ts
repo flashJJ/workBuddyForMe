@@ -108,9 +108,7 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     // 编辑助手绑定知识库
     await page.goto('/assistants');
     await page.getByRole('button', { name: '编辑' }).last().click();
-    await page
-      .getByLabel('关联知识库（自动 RAG）')
-      .selectOption({ label: '产品资料库' });
+    await page.getByRole('checkbox', { name: '产品资料库' }).check();
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByText('助手已更新')).toBeVisible();
 

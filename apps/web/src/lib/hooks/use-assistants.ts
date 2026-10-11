@@ -14,7 +14,8 @@ export interface AssistantBody {
   topP?: number;
   maxTokens?: number | null;
   modelId?: string | null;
-  knowledgeBaseId?: string | null;
+  /** v1.5：关联多个知识库（空数组=不关联） */
+  knowledgeBaseIds?: string[];
   /** v0.6：内置工具名或 mcp:<server>:<tool> */
   enabledTools?: string[];
   retrieveAlways?: boolean;

@@ -15,18 +15,20 @@ export function createAssistantsService({ db }: ServiceDeps) {
   const models = createModelRepository(db);
   const knowledgeBases = createKnowledgeRepository(db);
 
-  const validateBindings = (modelId: string | null, knowledgeBaseId: string | null) => {
+  const validateBindings = (modelId: string | null, knowledgeBaseIds: string[]) => {
     if (modelId !== null && !models.findById(modelId)) {
       throw ApiError.validation(`绑定的模型不存在：${modelId}`);
     }
-    if (knowledgeBaseId !== null && !knowledgeBases.findById(knowledgeBaseId)) {
-      throw ApiError.validation(`绑定的知识库不存在：${knowledgeBaseId}`);
+    for (const kbId of knowledgeBaseIds) {
+      if (!knowledgeBases.findById(kbId)) {
+        throw ApiError.validation(`绑定的知识库不存在：${kbId}`);
+      }
     }
   };
 
   /** knowledge_search 工具必须与知识库绑定同时存在 */
-  const validateTools = (enabledTools: string[], knowledgeBaseId: string | null) => {
-    if (enabledTools.includes('knowledge_search') && knowledgeBaseId === null) {
+  const validateTools = (enabledTools: string[], knowledgeBaseIds: string[]) => {
+    if (enabledTools.includes('knowledge_search') && knowledgeBaseIds.length === 0) {
       throw ApiError.validation('启用知识库检索工具前，请先关联知识库');
     }
   };
@@ -47,8 +49,8 @@ export function createAssistantsService({ db }: ServiceDeps) {
     },
 
     create(input: AssistantCreateInput): Assistant {
-      validateBindings(input.modelId, input.knowledgeBaseId);
-      validateTools(input.enabledTools, input.knowledgeBaseId);
+      validateBindings(input.modelId, input.knowledgeBaseIds);
+      validateTools(input.enabledTools, input.knowledgeBaseIds);
       const sortOrder =
         input.sortOrder || assistants.list().length;
       return assistants.create({
@@ -60,7 +62,7 @@ export function createAssistantsService({ db }: ServiceDeps) {
         topP: input.topP,
         maxTokens: input.maxTokens,
         modelId: input.modelId,
-        knowledgeBaseId: input.knowledgeBaseId,
+        knowledgeBaseIds: input.knowledgeBaseIds,
         enabledTools: input.enabledTools,
         retrieveAlways: input.retrieveAlways,
         memoryEnabled: input.memoryEnabled,
@@ -73,11 +75,11 @@ export function createAssistantsService({ db }: ServiceDeps) {
     update(id: string, input: AssistantUpdateInput): Assistant {
       const existing = requireExisting(id);
       const nextModelId = input.modelId !== undefined ? input.modelId : existing.modelId;
-      const nextKbId =
-        input.knowledgeBaseId !== undefined ? input.knowledgeBaseId : existing.knowledgeBaseId;
+      const nextKbIds =
+        input.knowledgeBaseIds !== undefined ? input.knowledgeBaseIds : existing.knowledgeBaseIds;
       const nextTools = input.enabledTools ?? existing.enabledTools;
-      validateBindings(nextModelId, nextKbId);
-      validateTools(nextTools, nextKbId);
+      validateBindings(nextModelId, nextKbIds);
+      validateTools(nextTools, nextKbIds);
       return assistants.update(id, input)!;
     },
 

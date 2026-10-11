@@ -19,6 +19,7 @@ import { migrateV017 } from './v017-knowledge';
 import { migrateV018 } from './v018-fts-backfill';
 import { migrateV019 } from './v019-agent-collab';
 import { migrateV020 } from './v020-agent-roles';
+import { migrateV021 } from './v021-assistant-multi-kb';
 
 interface Migration {
   version: number;
@@ -120,6 +121,11 @@ const MIGRATIONS: Migration[] = [
     version: 20,
     description: 'agents: assistants 三角色模型覆盖列 + task_steps.citations_json（纯加法）',
     up: migrateV020,
+  },
+  {
+    version: 21,
+    description: 'assistant multi-kb: assistants.knowledge_base_ids JSON 数组列（旧单值回填）',
+    up: migrateV021,
   },
 ];
 

@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+﻿import { describe, expect, it, beforeEach } from 'vitest';
 import {
   createAssistantRepository,
   createConversationRepository,
@@ -17,7 +17,7 @@ function makeAssistant(db: DatabaseInstance) {
     topP: 1,
     maxTokens: null,
     modelId: null,
-    knowledgeBaseId: null,
+    knowledgeBaseIds: [],
     enabledTools: [],
     retrieveAlways: false,
     isBuiltin: true,
@@ -168,7 +168,7 @@ describe('conversation/message 仓储', () => {
       topP: 1,
       maxTokens: null,
       modelId: null,
-      knowledgeBaseId: null,
+      knowledgeBaseIds: [],
       enabledTools: [],
       retrieveAlways: false,
       isBuiltin: false,

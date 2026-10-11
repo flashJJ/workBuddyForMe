@@ -23,7 +23,7 @@ export function ensureSeedData(db: DatabaseInstance): void {
     topP: 1,
     maxTokens: null,
     modelId: null,
-    knowledgeBaseId: null,
+    knowledgeBaseIds: [],
     enabledTools: [],
     retrieveAlways: false,
     isBuiltin: true,

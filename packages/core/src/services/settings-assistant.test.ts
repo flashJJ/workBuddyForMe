@@ -98,9 +98,34 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       chunkOverlap: 80,
     });
     expect(
-      assistants.create(assistantCreateSchema.parse({ name: '带知识库', knowledgeBaseId: kb.id }))
-        .knowledgeBaseId,
-    ).toBe(kb.id);
+      assistants.create(assistantCreateSchema.parse({ name: '带知识库', knowledgeBaseIds: [kb.id] }))
+        .knowledgeBaseIds,
+    ).toEqual([kb.id]);
+
+    // v1.5：关联多个知识库全部落库；引用不存在的库被拒；空库启用 knowledge_search 被拒
+    const kb2 = createKnowledgeRepository(db).create({
+      name: 'kb2',
+      chunkSize: 500,
+      chunkOverlap: 80,
+    });
+    const multi = assistants.create(
+      assistantCreateSchema.parse({
+        name: '多库助手',
+        knowledgeBaseIds: [kb.id, kb2.id],
+        enabledTools: ['knowledge_search'],
+      }),
+    );
+    expect(multi.knowledgeBaseIds).toEqual([kb.id, kb2.id]);
+    expect(() =>
+      assistants.create(
+        assistantCreateSchema.parse({ name: '坏库', knowledgeBaseIds: ['no-such-kb'] }),
+      ),
+    ).toThrow(/知识库不存在/);
+    expect(() =>
+      assistants.create(
+        assistantCreateSchema.parse({ name: '空库工具', enabledTools: ['knowledge_search'] }),
+      ),
+    ).toThrow(/关联知识库/);
 
     const a2 = assistants.create(assistantCreateSchema.parse({ name: '第二位' }));
     const a3 = assistants.create(assistantCreateSchema.parse({ name: '第三位' }));

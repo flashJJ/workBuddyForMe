@@ -13,6 +13,10 @@ export const zhChatMessages = {
   resend: '重新发送',
   editAndResend: '编辑并重发',
   citations: '引用来源',
+  /** v1.5：引用超过折叠阈值时标题条（默认折叠，不挤占正文） */
+  citationsCollapsed: '引用来源 · {count} 条',
+  citationsExpand: '展开',
+  citationsCollapse: '收起',
   feedback: {
     helpful: '有帮助',
     notHelpful: '没帮助',
@@ -42,6 +46,9 @@ export const enChatMessages = {
   resend: 'Send again',
   editAndResend: 'Edit and resend',
   citations: 'Sources',
+  citationsCollapsed: 'Sources · {count}',
+  citationsExpand: 'Show',
+  citationsCollapse: 'Hide',
   feedback: {
     helpful: 'Helpful',
     notHelpful: 'Not helpful',

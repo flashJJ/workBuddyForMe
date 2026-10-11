@@ -16,6 +16,7 @@ export {
   searchChunks,
   recallVectorCandidates,
   listChunksByIds,
+  listChunksByIdsGlobal,
   listChunkVectorsByKb,
   normalizeVector,
   VECTOR_DIM_META_KEY,

@@ -261,3 +261,22 @@ export function listChunksByIds(
     )
     .all(params.knowledgeBaseId, ...params.chunkIds) as ChunkSearchResult[];
 }
+
+/**
+ * v1.5：跨知识库按 chunk id 批量取详情（多库联合 RRF 后回查）。
+ * chunk id 全局唯一（rowid），入参经各库召回融合后无需再按库过滤。
+ */
+export function listChunksByIdsGlobal(
+  db: DatabaseInstance,
+  params: { chunkIds: number[] },
+): ChunkSearchResult[] {
+  if (params.chunkIds.length === 0) return [];
+  const placeholders = params.chunkIds.map(() => '?').join(',');
+  return db
+    .prepare(
+      `SELECT ${CHUNK_DETAIL_SELECT}, 0 AS distance
+       FROM document_chunks c JOIN documents d ON d.id = c.document_id
+       WHERE c.id IN (${placeholders})`,
+    )
+    .all(...params.chunkIds) as ChunkSearchResult[];
+}

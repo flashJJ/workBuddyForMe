@@ -10,7 +10,8 @@ export interface AssistantFormShape {
   topP: string;
   maxTokens: string;
   modelId: string;
-  knowledgeBaseId: string;
+  /** v1.5：多选知识库 id */
+  knowledgeBaseIds: string[];
   enabledTools: string[];
   retrieveAlways: boolean;
   memoryEnabled: boolean;
@@ -19,13 +20,14 @@ export interface AssistantFormShape {
 
 /**
  * 表单状态 → API 请求体。
- * 未关联知识库时自动剔除 knowledge_search，避免后端 422。
+ * 未关联任何知识库时自动剔除 knowledge_search，避免后端 422。
  */
 export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
-  const knowledgeBaseId = form.knowledgeBaseId || null;
-  const enabledTools = knowledgeBaseId
-    ? form.enabledTools
-    : form.enabledTools.filter((t) => t !== 'knowledge_search');
+  const knowledgeBaseIds = form.knowledgeBaseIds;
+  const enabledTools =
+    knowledgeBaseIds.length > 0
+      ? form.enabledTools
+      : form.enabledTools.filter((t) => t !== 'knowledge_search');
   return {
     name: form.name.trim(),
     emoji: form.emoji.trim() || null,
@@ -35,7 +37,7 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
     topP: Number(form.topP),
     maxTokens: form.maxTokens ? Number(form.maxTokens) : null,
     modelId: form.modelId || null,
-    knowledgeBaseId,
+    knowledgeBaseIds,
     enabledTools,
     retrieveAlways: form.retrieveAlways,
     memoryEnabled: form.memoryEnabled,

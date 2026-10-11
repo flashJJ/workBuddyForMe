@@ -26,10 +26,18 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
   const scopes: string[] = Array.isArray(config.toolScopes)
     ? (config.toolScopes.filter((s): s is string => typeof s === 'string'))
     : [];
+  const kbIds: string[] = Array.isArray(config.knowledgeBaseIds)
+    ? (config.knowledgeBaseIds.filter((s): s is string => typeof s === 'string'))
+    : [];
 
   const toggleScope = (scope: string) => {
     const next = scopes.includes(scope) ? scopes.filter((s) => s !== scope) : [...scopes, scope];
     patch({ toolScopes: next });
+  };
+
+  const toggleKb = (kbId: string) => {
+    const next = kbIds.includes(kbId) ? kbIds.filter((id) => id !== kbId) : [...kbIds, kbId];
+    patch({ knowledgeBaseIds: next });
   };
 
   const budgetField = (
@@ -92,17 +100,24 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
       </Field>
 
       <Field label={t('flowEditor.form.agent.kbLabel')}>
-        <Select
-          value={str(config.knowledgeBaseId)}
-          onChange={(e) => patch({ knowledgeBaseId: e.target.value || null })}
-        >
-          <option value="">{t('flowEditor.form.agent.kbDefault')}</option>
-          {(kbs.data ?? []).map((kb) => (
-            <option key={kb.id} value={kb.id}>
-              {kb.name}
-            </option>
-          ))}
-        </Select>
+        {(kbs.data ?? []).length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            {(kbs.data ?? []).map((kb) => (
+              <ScopeChip
+                key={kb.id}
+                active={kbIds.includes(kb.id)}
+                icon={<LibraryBig className="h-3.5 w-3.5" />}
+                label={kb.name}
+                onClick={() => toggleKb(kb.id)}
+              />
+            ))}
+            <p className="text-[11px] leading-tight text-muted-foreground">
+              {t('flowEditor.form.agent.kbMultiHint')}
+            </p>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">{t('flowEditor.form.agent.kbEmpty')}</p>
+        )}
       </Field>
 
       <Field label={t('flowEditor.form.agent.scopesLabel')} hint={t('flowEditor.form.agent.scopesHint')}>

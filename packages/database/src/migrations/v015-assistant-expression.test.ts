@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -15,7 +15,7 @@ function createV14Database(): Database.Database {
 describe('v015 迁移：助手表情指令开关（assistants.expression_enabled）', () => {
   it('LATEST 升至 15；新建助手默认开启表情指令，可关闭', () => {
     const db = createV14Database();
-    expect(LATEST_SCHEMA_VERSION).toBe(20);
+    expect(LATEST_SCHEMA_VERSION).toBe(21);
 
     const now = '2026-10-06T00:00:00.000Z';
     db.prepare(

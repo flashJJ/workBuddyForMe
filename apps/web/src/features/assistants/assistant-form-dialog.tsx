@@ -67,15 +67,22 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
     });
   };
 
-  const changeKnowledgeBase = (knowledgeBaseId: string) => {
-    setForm((prev) => ({
-      ...prev,
-      knowledgeBaseId,
-      // 取消关联知识库时，连带移除知识库检索工具
-      enabledTools: knowledgeBaseId
-        ? prev.enabledTools
-        : prev.enabledTools.filter((t) => t !== 'knowledge_search'),
-    }));
+  const toggleKnowledgeBase = (kbId: string) => {
+    setForm((prev) => {
+      const has = prev.knowledgeBaseIds.includes(kbId);
+      const knowledgeBaseIds = has
+        ? prev.knowledgeBaseIds.filter((id) => id !== kbId)
+        : [...prev.knowledgeBaseIds, kbId];
+      return {
+        ...prev,
+        knowledgeBaseIds,
+        // 全部取消关联时，连带移除知识库检索工具
+        enabledTools:
+          knowledgeBaseIds.length > 0
+            ? prev.enabledTools
+            : prev.enabledTools.filter((tool) => tool !== 'knowledge_search'),
+      };
+    });
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -173,24 +180,40 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="assistant-kb">{t('assistants.form.kbLabel')}</Label>
-            <Select
-              id="assistant-kb"
-              value={form.knowledgeBaseId}
-              onChange={(e) => changeKnowledgeBase(e.target.value)}
-            >
-              <option value="">{t('assistants.form.kbNone')}</option>
-              {knowledgeBases?.map((kb) => (
-                <option key={kb.id} value={kb.id}>
-                  {kb.name}
-                </option>
-              ))}
-            </Select>
+            <Label>{t('assistants.form.kbLabel')}</Label>
+            {knowledgeBases && knowledgeBases.length > 0 ? (
+              <div
+                className="space-y-1 rounded-md border p-2.5"
+                role="group"
+                aria-label={t('assistants.form.kbLabel')}
+              >
+                {knowledgeBases.map((kb) => (
+                  <label
+                    key={kb.id}
+                    className="flex cursor-pointer items-center gap-2 text-sm"
+                    data-testid={`assistant-kb-option-${kb.id}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={form.knowledgeBaseIds.includes(kb.id)}
+                      onChange={() => toggleKnowledgeBase(kb.id)}
+                    />
+                    <span>{kb.name}</span>
+                  </label>
+                ))}
+                <p className="pt-0.5 text-[11px] text-muted-foreground">
+                  {t('assistants.form.kbMultiHint')}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t('assistants.form.kbEmpty')}</p>
+            )}
           </div>
 
           <AssistantToolsField
             enabledTools={form.enabledTools}
-            knowledgeBaseId={form.knowledgeBaseId}
+            hasKnowledgeBases={form.knowledgeBaseIds.length > 0}
             retrieveAlways={form.retrieveAlways}
             mcpTools={mcpTools ?? []}
             onToggleTool={toggleTool}

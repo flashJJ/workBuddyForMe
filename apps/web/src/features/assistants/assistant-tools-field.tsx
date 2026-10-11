@@ -26,7 +26,8 @@ const TOOL_LABEL_KEYS: Record<ToolName, MessageKey> = {
 interface Props {
   /** v0.6：白名单元素可为 MCP 限定名（由外层渲染对应分组） */
   enabledTools: string[];
-  knowledgeBaseId: string;
+  /** 是否已关联至少一个知识库（决定 knowledge_search 是否可用与自动检索开关可见） */
+  hasKnowledgeBases: boolean;
   retrieveAlways: boolean;
   /** 已连接 MCP 服务器的工具（按服务器分组展示） */
   mcpTools: McpToolInfo[];
@@ -37,7 +38,7 @@ interface Props {
 /** 助手编辑表单中的工具白名单 + 自动检索开关区块 */
 export function AssistantToolsField({
   enabledTools,
-  knowledgeBaseId,
+  hasKnowledgeBases,
   retrieveAlways,
   mcpTools,
   onToggleTool,
@@ -60,7 +61,7 @@ export function AssistantToolsField({
         {t('assistants.tools.legend')}
       </legend>
       {TOOL_NAMES.map((tool) => {
-        const disabled = tool === 'knowledge_search' && !knowledgeBaseId;
+        const disabled = tool === 'knowledge_search' && !hasKnowledgeBases;
         return (
           <label
             key={tool}
@@ -102,7 +103,7 @@ export function AssistantToolsField({
           ))}
         </div>
       ))}
-      {knowledgeBaseId && (
+      {hasKnowledgeBases && (
         <label className="flex cursor-pointer items-center gap-2 border-t pt-2 text-sm">
           <input
             type="checkbox"

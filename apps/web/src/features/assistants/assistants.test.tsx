@@ -18,7 +18,7 @@ function makeAssistant(partial: Partial<Assistant> & { id: string; name: string 
     plannerModelId: null,
     executorModelId: null,
     reviewerModelId: null,
-    knowledgeBaseId: null,
+    knowledgeBaseIds: [],
     enabledTools: [],
     retrieveAlways: false,
     memoryEnabled: true,

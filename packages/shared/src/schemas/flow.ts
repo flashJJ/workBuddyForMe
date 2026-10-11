@@ -67,8 +67,8 @@ export const flowAgentConfigSchema = z.object({
   assistantId: z.string().trim().min(1).nullable().optional(),
   /** 工具域（knowledge / desktop / mcp:<服务器> / flow:<id> 等）；缺省纯推理 */
   toolScopes: z.array(z.string().trim().min(1).max(80)).max(30).optional(),
-  /** 指定知识库（优先于助手绑定） */
-  knowledgeBaseId: z.string().trim().min(1).nullable().optional(),
+  /** 指定知识库（优先于助手绑定，支持多库联合检索）；缺省/空数组回落助手绑定 */
+  knowledgeBaseIds: z.array(z.string().trim().min(1)).max(10).optional(),
   /** 三角色模型覆盖（models.id；空串视同未设置） */
   plannerModelId: z.string().trim().min(1).nullable().optional(),
   executorModelId: z.string().trim().min(1).nullable().optional(),
