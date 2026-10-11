@@ -86,8 +86,8 @@ export {
   type TaskStepAddFields,
   type TaskStepFinishFields,
   type TaskRunRow,
-  type TaskStepRow,
 } from './task-run-repo';
+export { type TaskStepRow } from './task-run-types';
 export {
   createWorkflowRepository,
   type WorkflowRepository,

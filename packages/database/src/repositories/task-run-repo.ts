@@ -1,17 +1,24 @@
 import type {
   TaskRunStatus,
   TaskRunView,
-  TaskStepKind,
-  TaskStepStatus,
   TaskStepView,
   TaskStopReason,
 } from '@wbfm/shared/schemas';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
+import {
+  mapTaskStep,
+  type TaskStepAddFields,
+  type TaskStepFinishFields,
+  type TaskStepRow,
+} from './task-run-types';
+
+export type { TaskStepAddFields, TaskStepFinishFields } from './task-run-types';
 
 export interface TaskRunRow {
   id: string;
-  conversation_id: string;
+  /** v020 起可空（无会话入口） */
+  conversation_id: string | null;
   assistant_id: string;
   goal: string;
   status: string;
@@ -19,59 +26,25 @@ export interface TaskRunRow {
   failure_count: number;
   max_steps: number;
   stop_reason: string | null;
+  agent_run_id: string | null;
   created_at: string;
   updated_at: string;
   finished_at: string | null;
 }
 
-export interface TaskStepRow {
-  id: string;
-  run_id: string;
-  step_index: number;
-  kind: string;
-  tool_name: string | null;
-  reason: string;
-  args_json: string;
-  result_json: string;
-  screenshot_path: string;
-  status: string;
-  error: string;
-  duration_ms: number;
-  created_at: string;
-}
-
 export interface TaskRunCreateFields {
   id?: string;
-  conversationId: string;
+  conversationId: string | null;
   assistantId: string;
   goal: string;
   maxSteps: number;
-}
-
-export interface TaskStepAddFields {
-  id?: string;
-  runId: string;
-  stepIndex: number;
-  kind: TaskStepKind;
-  toolName?: string | null;
-  reason?: string;
-  argsJson?: string;
-  screenshotPath?: string;
-}
-
-export interface TaskStepFinishFields {
-  status: Exclude<TaskStepStatus, 'running'>;
-  resultJson?: string;
-  error?: string;
-  durationMs?: number;
-  /** M3-2：观察步截图附件 id（截图落盘在步完成后才可知） */
-  screenshotPath?: string;
+  agentRunId?: string | null;
 }
 
 function mapRun(row: TaskRunRow): TaskRunView {
   return {
     id: row.id,
-    conversationId: row.conversation_id,
+    conversationId: row.conversation_id ?? '',
     assistantId: row.assistant_id,
     goal: row.goal,
     status: row.status as TaskRunStatus,
@@ -85,24 +58,6 @@ function mapRun(row: TaskRunRow): TaskRunView {
   };
 }
 
-function mapStep(row: TaskStepRow): TaskStepView {
-  return {
-    id: row.id,
-    runId: row.run_id,
-    stepIndex: row.step_index,
-    kind: row.kind as TaskStepKind,
-    toolName: row.tool_name,
-    reason: row.reason,
-    argsJson: row.args_json,
-    resultJson: row.result_json,
-    screenshotPath: row.screenshot_path,
-    status: row.status as TaskStepStatus,
-    error: row.error,
-    durationMs: row.duration_ms,
-    createdAt: row.created_at,
-  };
-}
-
 export function createTaskRunRepository(db: DatabaseInstance) {
   return {
     /* ---------------- runs ---------------- */
@@ -113,17 +68,18 @@ export function createTaskRunRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO task_runs
            (id, conversation_id, assistant_id, goal, status, step_count, failure_count,
-            max_steps, stop_reason, created_at, updated_at, finished_at)
+            max_steps, stop_reason, agent_run_id, created_at, updated_at, finished_at)
          VALUES
            (@id, @conversationId, @assistantId, @goal, 'queued', 0, 0,
-            @maxSteps, NULL, @ts, @ts, NULL)`,
+            @maxSteps, NULL, @agentRunId, @ts, @ts, NULL)`,
       ).run({
         id,
         conversationId: fields.conversationId,
         assistantId: fields.assistantId,
         goal: fields.goal,
         maxSteps: fields.maxSteps,
-        ts,
+        agentRunId: fields.agentRunId ?? null,
+        ts: nowIso(),
       });
       return mapRun(this.getRunRow(id)!);
     },
@@ -215,7 +171,7 @@ export function createTaskRunRepository(db: DatabaseInstance) {
         screenshotPath: fields.screenshotPath ?? '',
         ts: nowIso(),
       });
-      return mapStep(this.getStepRow(id)!);
+      return mapTaskStep(this.getStepRow(id)!);
     },
 
     finishStep(id: string, fields: TaskStepFinishFields): TaskStepView | null {
@@ -224,7 +180,8 @@ export function createTaskRunRepository(db: DatabaseInstance) {
       db.prepare(
         `UPDATE task_steps
          SET status = @status, result_json = @resultJson, error = @error,
-             duration_ms = @durationMs, screenshot_path = @screenshotPath
+             duration_ms = @durationMs, screenshot_path = @screenshotPath,
+             citations_json = @citationsJson
          WHERE id = @id`,
       ).run({
         id,
@@ -233,8 +190,10 @@ export function createTaskRunRepository(db: DatabaseInstance) {
         error: fields.error ?? row.error,
         durationMs: fields.durationMs ?? row.duration_ms,
         screenshotPath: fields.screenshotPath ?? row.screenshot_path,
+        citationsJson:
+          fields.citations !== undefined ? JSON.stringify(fields.citations) : row.citations_json,
       });
-      return mapStep(this.getStepRow(id)!);
+      return mapTaskStep(this.getStepRow(id)!);
     },
 
     getStepRow(id: string): TaskStepRow | null {
@@ -248,7 +207,7 @@ export function createTaskRunRepository(db: DatabaseInstance) {
       const rows = db
         .prepare('SELECT * FROM task_steps WHERE run_id = ? ORDER BY step_index ASC')
         .all(runId) as TaskStepRow[];
-      return rows.map(mapStep);
+      return rows.map(mapTaskStep);
     },
   };
 }

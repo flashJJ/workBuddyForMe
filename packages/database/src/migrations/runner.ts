@@ -18,6 +18,7 @@ import { migrateV016 } from './v016-release-polish';
 import { migrateV017 } from './v017-knowledge';
 import { migrateV018 } from './v018-fts-backfill';
 import { migrateV019 } from './v019-agent-collab';
+import { migrateV020 } from './v020-agent-roles';
 
 interface Migration {
   version: number;
@@ -114,6 +115,11 @@ const MIGRATIONS: Migration[] = [
     version: 19,
     description: 'agents: agent_runs/agent_handoffs 协作运行与交接表 + task_runs/steps 归属列（纯加法）',
     up: migrateV019,
+  },
+  {
+    version: 20,
+    description: 'agents: assistants 三角色模型覆盖列 + task_steps.citations_json（纯加法）',
+    up: migrateV020,
   },
 ];
 
