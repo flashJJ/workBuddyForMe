@@ -14,11 +14,11 @@ const TERMINAL_STATUSES = new Set(['done', 'failed', 'cancelled', 'budget_exceed
 /**
  * GET /api/agent/runs/:id/events：协作 SSE 事件流。
  * - running 未订阅：启动协作（生命周期 = 本请求；断线联动 abort）。
- *   M1 骨架期角色通道未接通 → 501；M2 注入真实 clientsProvider 后开放。
+ *   角色模型/配置错误在启动预检阶段返回 422/404；
  * - running 已订阅：409（前端只开一个 EventSource）
- * - 终态：回放已落库 handoffs（agent_handoff）+ done 后关闭（页面刷新用）
+ * - 终态：回放已落库 handoffs（agent_handoffs）+ done 后关闭（页面刷新用）
  */
-export const GET = defineRoute(({ request, params, services }) => {
+export const GET = defineRoute(async ({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
   const repo = createAgentRunRepository(services.db);
   const run = repo.getById(id);
@@ -29,7 +29,7 @@ export const GET = defineRoute(({ request, params, services }) => {
   if (TERMINAL_STATUSES.has(run.status)) {
     return replayTerminalRun(run, repo.listHandoffs(id));
   }
-  const events = services.agentRuns.start({ run, clientSignal: request.signal });
+  const events = await services.agentRuns.start({ run, clientSignal: request.signal });
   return sseResponse(events);
 });
 

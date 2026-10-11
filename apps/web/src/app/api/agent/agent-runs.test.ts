@@ -155,7 +155,7 @@ describe('协作运行 API（v1.4 M1 骨架）', () => {
     expect((await resp.json()).error.code).toBe('CONFLICT');
   });
 
-  it('events 不存在 404；未启动运行 501（M1 骨架期角色通道未接通）', async () => {
+  it('events 不存在 404；未启动运行在模型未配置时 422（M2 生产通道预检验）', async () => {
     const missing = await runEvents(new Request('http://127.0.0.1/x'), {
       params: Promise.resolve({ id: 'nope' }),
     });
@@ -166,8 +166,8 @@ describe('协作运行 API（v1.4 M1 骨架）', () => {
     const fresh = await runEvents(new Request('http://127.0.0.1/x'), {
       params: Promise.resolve({ id: run.id }),
     });
-    expect(fresh.status).toBe(501);
-    expect((await fresh.json()).error.code).toBe('NOT_IMPLEMENTED');
+    expect(fresh.status).toBe(422);
+    expect((await fresh.json()).error.code).toBe('VALIDATION_ERROR');
   });
 
   it('events 终态运行回放：handoffs 帧 + done 后关闭', async () => {

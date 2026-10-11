@@ -31,6 +31,7 @@ import {
 } from '@wbfm/core/services';
 import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
 import { createAgentRunService, type AgentRunService } from '@wbfm/core/agents';
+import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
 import {
   createEndpointService,
   createRateLimiter,
@@ -145,8 +146,6 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   };
   const runtime = createToolRuntime(deps);
   const taskRunner = createTaskRunnerService(deps, runtime);
-  // v1.4 M1：协作运行服务（骨架期不注入 clientsProvider；M2 接通真实角色通道）
-  const agentRuns = createAgentRunService({ db });
   // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
   // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
   const workflows = createWorkflowRepository(db);
@@ -164,12 +163,17 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
   deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
   deps.flowToolLister = () => flowRunner.listPublishedTools();
-  // v0.9：对外端点服务 + 公开 API 限流器
-  const endpoints = createEndpointService({
-    endpoints: endpointRepo,
-    workflows,
-  });
+  const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
+  // v1.4 M2：协作角色生产通道（三级模型回落 + executor task-loop 适配器）
+  const assistants = createAssistantsService(deps);
+  const knowledgeBases = createKnowledgeService(deps);
+  const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
+  const agentRuns = createAgentRunService({
+    db,
+    clientsProvider: createAgentClientsProvider(agentClientsFactory),
+    resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
+  });
   return {
     endpoints,
     rateLimiter,
@@ -188,11 +192,11 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: createSettingsService(deps),
-    assistants: createAssistantsService(deps),
+    assistants,
     conversations: createConversationService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),
-    knowledgeBases: createKnowledgeService(deps),
+    knowledgeBases,
     knowledgeGovernance: createKnowledgeGovernanceService(deps),
     knowledgeCompile: createCompileRunnerService(deps),
     documents: createDocumentService(deps),
