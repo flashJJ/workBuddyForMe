@@ -126,13 +126,18 @@ export function createExecutorAdapter(params: CreateExecutorAdapterParams): Exec
             : [],
       });
 
-      // M2 不转发子步事件（M3 Flow 泳道接线）；显式 next 以取生成器返回值
+      // 子步事件不逐条上抬（泳道以 handoff/outcome 为粒度）；
+      // M4：write/danger HITL 门控帧必须上抬给协作 SSE（用户决策回 /api/tools/confirm 按 callId 解决）
       let final: TaskRunView = taskRun;
       for (;;) {
         const step = await gen.next();
         if (step.done) {
           final = step.value;
           break;
+        }
+        const loopEvent = step.value;
+        if (loopEvent.event === 'tool_confirmation_required') {
+          input.emitGateConfirm?.({ ...loopEvent.data, taskScope: taskRun.id });
         }
       }
 

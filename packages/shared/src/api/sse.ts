@@ -44,6 +44,8 @@ export const SSE_EVENT = {
   AGENT_REVIEW: 'agent_review',
   AGENT_BUDGET: 'agent_budget',
   AGENT_DELTA: 'agent_delta',
+  /** v1.4 M4：协作 Executor 调用 write/danger 工具前的人工授权请求（HITL；决策回 POST /api/tools/confirm） */
+  AGENT_TOOL_CONFIRM: 'agent_tool_confirm',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -125,6 +127,18 @@ export type SsePayloadMap = {
   agent_budget: { runId: string; usage: AgentBudgetUsage };
   /** v1.4：角色产出增量文本（可选；执行/规划思考流，非终态） */
   agent_delta: { runId: string; role: AgentRole; content: string };
+  /**
+   * v1.4 M4：协作链路工具授权请求。taskScope 为 task-loop 内 task run id，
+   * 客户端「本任务内允许」时原样回传（remember=task 授权作用域）。
+   */
+  agent_tool_confirm: {
+    runId: string;
+    callId: string;
+    tool: string;
+    permission: PermissionLevel;
+    argsSummary: string;
+    taskScope: string;
+  };
   done: { content: string; usage: TokenUsage | null };
   error: { code: string; message: string };
 };

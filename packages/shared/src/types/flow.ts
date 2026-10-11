@@ -196,7 +196,13 @@ export type FlowEventType = (typeof FLOW_EVENT_TYPES)[number];
  * 时间线据此展开只读子泳道（M4 提供完整泳道组件）。
  */
 export type AgentNodeInnerEvent = SseEvent<
-  'agent_phase' | 'agent_handoff' | 'agent_review' | 'agent_budget' | 'done' | 'error'
+  | 'agent_phase'
+  | 'agent_handoff'
+  | 'agent_review'
+  | 'agent_budget'
+  | 'agent_tool_confirm'
+  | 'done'
+  | 'error'
 >;
 
 interface FlowRunEventBase {

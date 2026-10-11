@@ -28,6 +28,7 @@ import {
   buildFallbackVerdict,
   withBudgetNote,
 } from './runner-fallbacks';
+import { GateMailbox, MAILBOX_DONE } from './gate-mailbox';
 import type {
   AgentClients,
   AgentRunnerDeps,
@@ -36,7 +37,13 @@ import type {
 } from './runner-types';
 
 export type AgentRunEvent = SseEvent<
-  'agent_phase' | 'agent_handoff' | 'agent_review' | 'agent_budget' | 'done' | 'error'
+  | 'agent_phase'
+  | 'agent_handoff'
+  | 'agent_review'
+  | 'agent_budget'
+  | 'agent_tool_confirm'
+  | 'done'
+  | 'error'
 >;
 
 /** 带协议级容错的角色调用：连续失败达上限后由 fallback 兜底（不静默，标注 degraded） */
@@ -149,10 +156,34 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
 
         // ---- 执行 ----
         yield evtPhase('executing', 'executor', budget.round);
-        const exec = await clients.executor.run(
-          { goal: input.goal, subtask: currentSubtask, round: budget.round },
-          signal,
-        );
+        // M4：executor 内 task-loop 的 HITL 门控帧经邮箱竞速取出并下发，
+        // 保证授权弹窗先于决策到达客户端（帧下发后决策由全局 confirmations 异步解决）
+        const gateMailbox = new GateMailbox();
+        const execSettled: Promise<
+          | { value: Awaited<ReturnType<AgentClients['executor']['run']>> }
+          | { error: unknown }
+        > = clients
+          .executor.run(
+            {
+              goal: input.goal,
+              subtask: currentSubtask,
+              round: budget.round,
+              emitGateConfirm: (frame) => gateMailbox.post(frame),
+            },
+            signal,
+          )
+          .then(
+            (value) => ({ value }),
+            (error: unknown) => ({ error }),
+          );
+        for (;;) {
+          const item = await gateMailbox.takeOrDone(execSettled, signal);
+          if (item === MAILBOX_DONE) break;
+          yield { event: 'agent_tool_confirm', data: { runId, ...item } };
+        }
+        const execResult = await execSettled;
+        if ('error' in execResult) throw execResult.error;
+        const exec = execResult.value;
         budget = consume(budget, { ...exec.usage, steps: exec.steps });
         repo.addTokens(runId, exec.usage);
         yield evtBudget(budget);

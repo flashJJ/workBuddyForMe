@@ -241,6 +241,41 @@ describe('agent-runner-service 协作五场景', () => {
     expect(names(events)).toContain('done');
   });
 
+  it('M4 HITL：executor 门控帧桥接为 agent_tool_confirm（runId/taskScope 齐全）后正常收敛', async () => {
+    const clients = scriptedClients({
+      plans: [subtask()],
+      verdicts: [verdict('approve')],
+    });
+    (clients.executor as { run: AgentClients['executor']['run'] }).run = async (input) => {
+      input.emitGateConfirm?.({
+        callId: 'call-1',
+        tool: 'mouse_click',
+        permission: 'danger',
+        argsSummary: '{"x":100}',
+        taskScope: 'task-9',
+      });
+      return { outcome: outcome(), usage: { promptTokens: 20, completionTokens: 10 }, steps: 1 };
+    };
+    const repo = createAgentRunRepository(db);
+    const events = await collect(createAgentRunner({ repo, clients }).run(startInput));
+
+    const confirm = events.find((e) => e.event === 'agent_tool_confirm');
+    expect(confirm).toBeDefined();
+    expect(confirm!.data).toMatchObject({
+      callId: 'call-1',
+      tool: 'mouse_click',
+      permission: 'danger',
+      taskScope: 'task-9',
+    });
+    expect(confirm!.data.runId).toBeTruthy();
+    // 时序：门控帧在执行阶段下发，早于 executor→reviewer 交接
+    const order = names(events);
+    const idx = order.indexOf('agent_tool_confirm');
+    expect(order.slice(0, idx)).toContain('agent_phase');
+    expect(order.slice(idx + 1)).toContain('agent_handoff');
+    expect(repo.list()[0]!.status).toBe('done');
+  });
+
   it('reject 裁决：终态 failed/AGENT_REJECTED 但保留交付物', async () => {
     const clients = scriptedClients({
       plans: [subtask()],

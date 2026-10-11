@@ -6,6 +6,7 @@ import type {
   SubtaskSpec,
 } from '@wbfm/shared/schemas';
 import type { AgentRunRepository } from '@wbfm/database';
+import type { ExecutorGateFrame } from './gate-mailbox';
 
 /**
  * 三角色客户端端口（M1 定义、测试注入脚本化 mock；M2 接真实模型/task-loop）：
@@ -40,7 +41,17 @@ export interface ReviewerClient {
 
 export interface ExecutorClient {
   run(
-    input: { goal: string; subtask: SubtaskSpec; round: number },
+    input: {
+      goal: string;
+      subtask: SubtaskSpec;
+      round: number;
+      /**
+       * v1.4 M4：task-loop 内 write/danger 工具门控帧出口。
+       * runner 竞速消费并 yield 为 agent_tool_confirm SSE 帧（HITL）；
+       * 决策由全局 confirmations 经 POST /api/tools/confirm 解决，执行侧自动放行/拒绝。
+       */
+      emitGateConfirm?: (frame: ExecutorGateFrame) => void;
+    },
     signal?: AbortSignal,
   ): Promise<{ outcome: ExecutorOutcome; usage: RoleModelUsage; steps: number }>;
 }
