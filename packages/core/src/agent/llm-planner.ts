@@ -1,4 +1,4 @@
-import type { ChatMessage } from '@wbfm/ai';
+import type { ChatMessage, TokenUsage } from '@wbfm/ai';
 import type { TaskStepView } from '@wbfm/shared/schemas';
 import type { ResolvedChatTarget } from '../chat/model-resolver';
 import type { TaskObservation, TaskPlanDecision, TaskPlanner, TaskPlannerInput } from './types';
@@ -28,6 +28,20 @@ export const TASK_PLANNER_SYSTEM_PROMPT = `你是一个桌面任务 Agent 的决
 - 同一动作连续失败时换路径，不要原样重试
 - 目标已达成时立即输出 done，不要多做无谓动作`;
 
+/** v1.4 M2：tool 观察模式协议（无截图；观察内容=工具结果与检索片段） */
+export const TOOL_PLANNER_SYSTEM_PROMPT = `你是一个工具型任务 Agent 的决策器。根据任务目标、工具/检索结果与历史步骤，决定下一步动作。本模式不提供屏幕截图。
+
+【输出协议】只输出一个 JSON 对象，禁止输出任何其他文字或 markdown 代码块标记：
+- 执行工具：{"action":"tool","tool":"工具名","args":{...},"reason":"为什么做这一步"}
+- 任务完成：{"action":"done","reason":"完成依据","message":"给用户的中文总结（含关键事实）","unfinished":["未能确认/未完成的事项"]}
+- 无法完成：{"action":"fail","reason":"失败原因","message":"给用户的中文说明","unfinished":["受限事项"]}
+
+【决策准则】
+- 优先用知识检索/MCP/Flow 类工具取证：结论必须基于工具返回的真实资料，禁止臆造引用
+- 每步只调一个工具；拿到足够证据后立即 done，并在 message 给出结论
+- unfinished 只列真实边界（资料缺失/工具不可达），全部完成时给空数组或省略
+- 同一动作连续失败时换路径，不要原样重试`;
+
 function formatStepDigest(step: TaskStepView): string {
   const head = `#${step.stepIndex} [${step.kind}]${step.toolName ? ` ${step.toolName}` : ''}`;
   const tail = step.status === 'failed' ? `失败：${step.error}` : step.status;
@@ -39,6 +53,7 @@ function formatStepDigest(step: TaskStepView): string {
 export function buildPlannerMessages(input: TaskPlannerInput): ChatMessage[] {
   const recent = input.steps.slice(-HISTORY_STEP_CAP);
   const history = recent.length > 0 ? recent.map(formatStepDigest).join('\n') : '（暂无）';
+  const mode = input.observeMode ?? 'screen';
   const observation: TaskObservation | null = input.observation;
   const text = [
     `【任务目标】${input.goal}`,
@@ -48,18 +63,22 @@ export function buildPlannerMessages(input: TaskPlannerInput): ChatMessage[] {
     '请输出下一步决策 JSON。',
   ].join('\n\n');
 
-  const content: ChatMessage['content'] = observation?.imageBase64
-    ? [
-        { type: 'text', text },
-        {
-          type: 'image_url',
-          image_url: { url: `data:${observation.mimeType ?? 'image/png'};base64,${observation.imageBase64}` },
-        },
-      ]
-    : text;
+  const content: ChatMessage['content'] =
+    mode === 'screen' && observation?.imageBase64
+      ? [
+          { type: 'text', text },
+          {
+            type: 'image_url',
+            image_url: { url: `data:${observation.mimeType ?? 'image/png'};base64,${observation.imageBase64}` },
+          },
+        ]
+      : text;
 
   return [
-    { role: 'system', content: TASK_PLANNER_SYSTEM_PROMPT },
+    {
+      role: 'system',
+      content: mode === 'tool' ? TOOL_PLANNER_SYSTEM_PROMPT : TASK_PLANNER_SYSTEM_PROMPT,
+    },
     { role: 'user', content },
   ];
 }
@@ -91,14 +110,21 @@ export function parseDecision(content: string): TaskPlanDecision {
       : {}),
     reason: typeof record.reason === 'string' ? record.reason : '',
     ...(typeof record.message === 'string' ? { message: record.message } : {}),
+    ...(Array.isArray(record.unfinished)
+      ? { unfinished: record.unfinished.filter((x): x is string => typeof x === 'string') }
+      : {}),
   };
 }
 
 /**
  * 生产决策器：调用对话模型产出决策 JSON。
  * temperature 固定 0（决策求稳）；maxTokens 限制输出长度（JSON 很小）。
+ * v1.4：onUsage 可选回调，Executor 适配器据此累计角色 token 账。
  */
-export function createLlmPlanner(target: ResolvedChatTarget): TaskPlanner {
+export function createLlmPlanner(
+  target: ResolvedChatTarget,
+  options: { onUsage?: (usage: TokenUsage) => void } = {},
+): TaskPlanner {
   return {
     async decide(input, signal) {
       let content = '';
@@ -111,6 +137,7 @@ export function createLlmPlanner(target: ResolvedChatTarget): TaskPlanner {
       });
       for await (const chunk of stream) {
         if (chunk.delta) content += chunk.delta;
+        if (chunk.usage) options.onUsage?.(chunk.usage);
       }
       return parseDecision(content);
     },

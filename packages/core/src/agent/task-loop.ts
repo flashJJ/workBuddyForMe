@@ -12,10 +12,12 @@ import {
 } from './control';
 import {
   STEP_RESULT_MAX_CHARS,
+  buildToolObservation,
   createTaskLoopInternals,
   runObservation,
   type TaskLoopState,
 } from './task-loop-helpers';
+import type { TaskObservation } from './types';
 
 /**
  * 任务 Agent 循环：观察 → 决策 → 门控 → 执行 → 再观察。
@@ -28,13 +30,14 @@ export async function* runTaskLoop(
 ): AsyncGenerator<TaskLoopEvent, TaskRunView> {
   const { deps, runtime, planner, allowedTools, visionCapable, signal } = params;
   const control = params.control ?? createTaskLoopControl();
+  const observeMode = params.observeMode ?? 'screen';
   const repo = createTaskRunRepository(deps.db);
   const observeToolName = params.observeToolName ?? 'screen_snapshot';
   const toolCtx: ToolContext = {
     signal,
-    knowledgeBaseId: null,
+    knowledgeBaseId: params.knowledgeBaseId ?? null,
     visionCapable,
-    retrieve: async () => [],
+    retrieve: params.retrieve ?? (async () => []),
   };
 
   const state: TaskLoopState = {
@@ -66,22 +69,32 @@ export async function* runTaskLoop(
       yield taskEvent('run_resumed');
     }
 
-    /* ---- 观察 ---- */
+    /* ---- 观察（screen=截图；tool=合成工具观察，不截图） ---- */
     state.stepIndex += 1;
-    const observeStep = repo.addStep({ runId: state.run.id, stepIndex: state.stepIndex, kind: 'observe', reason: '观察当前屏幕状态' });
+    const observeStep = repo.addStep({ runId: state.run.id, stepIndex: state.stepIndex, kind: 'observe', reason: observeMode === 'tool' ? '工具模式观察' : '观察当前屏幕状态' });
     yield stepStarted(observeStep);
     const obsStarted = Date.now();
-    const observation = await runObservation(runtime, deps, observeToolName, toolCtx, state.run.id, state.stepIndex);
-    repo.finishStep(observeStep.id, {
-      status: observation ? 'completed' : 'failed',
-      resultJson: JSON.stringify({ summary: (observation?.summary ?? '').slice(0, STEP_RESULT_MAX_CHARS) }),
-      ...(observation ? {} : { error: '观察失败：屏幕感知不可用' }),
-      durationMs: Date.now() - obsStarted,
-      ...(observation?.screenshotPath ? { screenshotPath: observation.screenshotPath } : {}),
-    });
+    let observation: TaskObservation | null;
+    if (observeMode === 'tool') {
+      observation = buildToolObservation(state.run.goal, repo.listSteps(state.run.id));
+      repo.finishStep(observeStep.id, {
+        status: 'completed',
+        resultJson: JSON.stringify({ summary: observation.summary.slice(0, STEP_RESULT_MAX_CHARS) }),
+        durationMs: Date.now() - obsStarted,
+      });
+    } else {
+      observation = await runObservation(runtime, deps, observeToolName, toolCtx, state.run.id, state.stepIndex);
+      repo.finishStep(observeStep.id, {
+        status: observation ? 'completed' : 'failed',
+        resultJson: JSON.stringify({ summary: (observation?.summary ?? '').slice(0, STEP_RESULT_MAX_CHARS) }),
+        ...(observation ? {} : { error: '观察失败：屏幕感知不可用' }),
+        durationMs: Date.now() - obsStarted,
+        ...(observation?.screenshotPath ? { screenshotPath: observation.screenshotPath } : {}),
+      });
+    }
     const obsFinished = stepFinished(observeStep.id);
     if (obsFinished) yield obsFinished;
-    if (!observation) {
+    if (!observation && observeMode === 'screen') {
       const hit = afterFail();
       if (hit) {
         yield hit.event;
@@ -99,7 +112,13 @@ export async function* runTaskLoop(
     let decision: TaskPlanDecision;
     try {
       decision = await planner.decide(
-        { goal: state.run.goal, steps: repo.listSteps(state.run.id), observation, allowedTools },
+        {
+          goal: state.run.goal,
+          steps: repo.listSteps(state.run.id),
+          observation,
+          allowedTools,
+          observeMode,
+        },
         signal,
       );
     } catch (error) {
@@ -133,7 +152,10 @@ export async function* runTaskLoop(
       yield stepStarted(finalStep);
       repo.finishStep(finalStep.id, {
         status: ok ? 'completed' : 'failed',
-        resultJson: JSON.stringify({ message: decision.message ?? '' }),
+        resultJson: JSON.stringify({
+          message: decision.message ?? '',
+          ...(decision.unfinished ? { unfinished: decision.unfinished } : {}),
+        }),
         ...(ok ? {} : { error: decision.message || decision.reason }),
       });
       const finalFinished = stepFinished(finalStep.id);
@@ -216,6 +238,7 @@ export async function* runTaskLoop(
       resultJson: JSON.stringify({ summary: result.summary, output: result.output.slice(0, STEP_RESULT_MAX_CHARS) }),
       ...(result.ok ? {} : { error: result.summary }),
       durationMs,
+      ...(result.citations ? { citations: result.citations } : {}),
     });
     const actFinished = stepFinished(actionStep.id);
     if (actFinished) yield actFinished;
