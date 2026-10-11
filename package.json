@@ -27,6 +27,7 @@
     "sync-version": "node scripts/sync-version.mjs",
     "sync-version:check": "node scripts/sync-version.mjs --check",
     "eval:memory": "node scripts/eval/eval-memory.mjs",
+    "eval:agent": "node scripts/eval/eval-agent.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines"
   },
   "devDependencies": {
