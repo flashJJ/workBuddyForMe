@@ -43,8 +43,8 @@ export function defaultConfig(type: FlowNodeType): Record<string, unknown> {
     case 'human':
       return { prompt: '' };
     case 'agent':
-      // v1.4：配置面板在 M4 提供；默认值与 flowAgentConfigSchema 对齐
-      return { goal: '', toolScopes: [], budget: {} };
+      // 预算字段缺省=协作默认（与 flowAgentConfigSchema / compiler 校验对齐）
+      return { goal: '', toolScopes: [] };
     case 'end':
       return { output: '' };
   }

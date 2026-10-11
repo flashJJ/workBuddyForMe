@@ -121,6 +121,7 @@ export const PALETTE_TYPES: FlowNodeType[] = [
   'tool',
   'condition',
   'human',
+  'agent',
 ];
 
 /** 节点标题：优先读 config.label（用户自填），其次类型默认名（经 t 翻译） */

@@ -1,10 +1,6 @@
 'use client';
 
-import { useQueries } from '@tanstack/react-query';
-import { apiGet } from '@/lib/api/client';
-import { API } from '@/lib/api/endpoints';
-import type { KnowledgeBase, ProviderModel } from '@wbfm/shared/types';
-import { useProviders } from '@/lib/hooks/use-providers';
+import type { KnowledgeBase } from '@wbfm/shared/types';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import {
@@ -16,24 +12,7 @@ import {
   str,
   type NodeConfigFormProps,
 } from './form-primitives';
-
-/** 跨供应商模型扁平选项（modelId 为全局唯一标识） */
-function useModelOptions() {
-  const providers = useProviders();
-  const ids = (providers.data ?? []).map((p) => p.id);
-  const results = useQueries({
-    queries: ids.map((id) => ({
-      queryKey: ['models', id],
-      queryFn: () => apiGet<ProviderModel[]>(API.providerModels(id)),
-    })),
-  });
-  return (providers.data ?? []).flatMap((p, i) =>
-    (results[i]?.data ?? []).map((m) => ({
-      modelId: m.modelId,
-      label: `${p.name} / ${m.displayName || m.modelId}`,
-    })),
-  );
-}
+import { useModelOptions } from './use-model-options';
 
 export function LlmForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
   const { t } = useI18n();
