@@ -167,7 +167,7 @@ describe('agent-run-service 运行管理', () => {
     expect(failing.activeRunIds()).toHaveLength(0);
   });
 
-  it('cancel：活跃→abort 收敛 cancelled；不存在 404；终态 409；未启动 false', async () => {
+  it('cancel：活跃→abort 收敛 cancelled；未订阅 running→直接 cancelled；不存在 404；终态 409', async () => {
     const repo = createAgentRunRepository(db);
     const service = createAgentRunService({
       db,
@@ -176,8 +176,10 @@ describe('agent-run-service 运行管理', () => {
 
     expect(() => service.cancel('ghost')).toThrow(/不存在/);
 
+    // 已建行但事件流从未接通：直接落 cancelled，不遗留 running 孤儿
     const dormant = repo.create({ assistantId: 'a', goal: '休眠' });
-    expect(service.cancel(dormant.id)).toBe(false);
+    expect(service.cancel(dormant.id)).toBe(true);
+    expect(repo.getById(dormant.id)!.status).toBe('cancelled');
 
     const run = repo.create({ assistantId: 'a', goal: 'G' });
     const gen = await service.start({ run });

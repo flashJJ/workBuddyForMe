@@ -75,7 +75,7 @@ export interface AgentRunService {
   startFlowNode(
     params: FlowNodeStartParams,
   ): Promise<{ runId: string; events: AsyncGenerator<AgentNodeInnerEvent, AgentRunView> }>;
-  /** 急停：活跃→abort 返回 true；未启动返回 false；不存在 404；终态 409 */
+  /** 急停：活跃→abort；running 未订阅→直接收敛 cancelled；均返回 true；不存在 404；终态 409 */
   cancel(runId: string): boolean;
   /** 急停全部活跃协作（急停热键复用）；返回中断数量 */
   stopAll(): number;
@@ -210,7 +210,14 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       if (run.status !== 'running') {
         throw ApiError.conflict(`协作已终态（${run.status}），无法取消`);
       }
-      return false;
+      // running 但事件流尚未接通（急停早于 SSE 建连，生产模式常见竞态）：
+      // 直接落 cancelled，避免运行永久孤儿；迟到的 GET /events 会因状态机拒绝启动
+      repo.finalize(runId, {
+        status: 'cancelled',
+        errorCode: 'AGENT_CANCELLED',
+        errorMessage: '用户取消',
+      });
+      return true;
     },
 
     stopAll() {

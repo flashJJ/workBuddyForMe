@@ -37,6 +37,19 @@ export interface AgentTaskTurnParams {
 
 const TERMINAL_STATUS: Message['status'] = 'completed';
 
+const TERMINAL_RUN_STATUSES = new Set(['done', 'failed', 'cancelled', 'budget_exceeded']);
+
+/** 终态权威对账：急停可能早于 SSE 建连，服务端收敛有短暂延迟，轮询至终态（上限 10s） */
+async function fetchTerminalDetail(runId: string): Promise<AgentRunDetail> {
+  const deadline = Date.now() + 10_000;
+  let detail = await apiGet<AgentRunDetail>(API.agentRun(runId));
+  while (!TERMINAL_RUN_STATUSES.has(detail.run.status) && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    detail = await apiGet<AgentRunDetail>(API.agentRun(runId));
+  }
+  return detail;
+}
+
 export function useAgentTaskTurn(params: AgentTaskTurnParams) {
   const conversationMutations = useConversationMutations();
   const agentStream = useAgentRunStream();
@@ -90,7 +103,7 @@ export function useAgentTaskTurn(params: AgentTaskTurnParams) {
           },
         });
         // 终态权威对账（SSE done 不含终态枚举；status/outcome/error 以 GET 为准）
-        const detail = await apiGet<AgentRunDetail>(API.agentRun(run.id));
+        const detail = await fetchTerminalDetail(run.id);
         patchCard(messageId, (state) => mergeRunView(state, detail.run));
         const outcome = detail.run.finalOutcome;
         const finalStatus: Message['status'] =

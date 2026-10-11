@@ -121,7 +121,7 @@ describe('协作运行 API（v1.4 M1 骨架）', () => {
     expect(badConv.status).toBe(404);
   });
 
-  it('GET 详情 404；cancel 不存在 404；未启动运行 cancel 404', async () => {
+  it('GET 详情 404；cancel 不存在 404；未订阅 running 直接收敛 cancelled', async () => {
     const missing = await getRun(new Request('http://127.0.0.1/x'), {
       params: Promise.resolve({ id: 'nope' }),
     });
@@ -138,7 +138,8 @@ describe('协作运行 API（v1.4 M1 骨架）', () => {
       new Request('http://127.0.0.1/x', { method: 'POST' }),
       { params: Promise.resolve({ id: run.id }) },
     );
-    expect(cancelDormant.status).toBe(404);
+    expect(cancelDormant.status).toBe(200);
+    expect(repo.getById(run.id)!.status).toBe('cancelled');
   });
 
   it('cancel 终态运行 → 409（状态机非法转移）', async () => {

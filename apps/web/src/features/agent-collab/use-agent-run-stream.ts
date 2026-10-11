@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { SsePayloadMap } from '@wbfm/shared/api';
 import { API } from '@/lib/api/endpoints';
-import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
+import { ApiClientError, apiPost, withManagedHeaders } from '@/lib/api/client';
 import { SseReader } from '@/lib/api/sse-reader';
 import type { RawSseEvent } from '@/lib/api/sse-reader';
 import type { AgentStreamFrame } from './agent-run-reducer';
@@ -31,22 +31,35 @@ function narrow(raw: RawSseEvent): AgentStreamFrame | null {
 
 export function useAgentRunStream() {
   const controllerRef = React.useRef<AbortController | null>(null);
+  const runIdRef = React.useRef<string | null>(null);
   const [streaming, setStreaming] = React.useState(false);
 
   const stop = React.useCallback(() => {
     controllerRef.current?.abort();
+    // 显式急停：不能只靠 SSE 断线联动——生产模式下点击可能早于事件流建连，
+    // 断线信号永远到不了服务端。cancel 对活跃/未订阅两种 running 都能收敛。
+    const runId = runIdRef.current;
+    if (runId) {
+      void apiPost(API.agentRunCancel(runId), {}).catch(() => {
+        /* 404/409/网络错误均不阻塞 UI 收尾 */
+      });
+    }
   }, []);
 
   const start = React.useCallback(
     async (runId: string, handlers: AgentRunStreamHandlers): Promise<void> => {
       controllerRef.current?.abort();
+      runIdRef.current = runId;
       const controller = new AbortController();
       controllerRef.current = controller;
       setStreaming(true);
       handlers.onStreamingChange?.(true);
 
       const finish = () => {
-        if (controllerRef.current === controller) controllerRef.current = null;
+        if (controllerRef.current === controller) {
+          controllerRef.current = null;
+          runIdRef.current = null;
+        }
         setStreaming(false);
         handlers.onStreamingChange?.(false);
       };
