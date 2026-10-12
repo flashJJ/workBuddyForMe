@@ -181,11 +181,11 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
   const isActive = displayRun.status === 'running' || displayRun.status === 'paused';
 
   return (
-    <li className="rounded-md border bg-card">
+    <li className="min-w-0 overflow-hidden rounded-md border bg-card">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-accent/50"
+        className="flex w-full min-w-0 items-center gap-3 px-4 py-3 text-left hover:bg-accent/50"
       >
         <ChevronRight
           className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
@@ -199,7 +199,7 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
         <span className="text-xs text-muted-foreground">{conversationTitle}</span>
       </button>
       {expanded && (
-        <div className="space-y-3 border-t px-4 py-3">
+        <div className="min-w-0 space-y-3 border-t px-4 py-3">
           {live.status === 'error' && (
             <p className="flex items-center gap-2 text-xs text-warning">
               <AlertTriangle className="h-3 w-3" />

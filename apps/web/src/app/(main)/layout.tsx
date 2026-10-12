@@ -7,7 +7,7 @@ import { OnboardingHost } from '@/features/onboarding/use-onboarding-host';
 /** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K）+ 快捷键浮层（Ctrl+/）+ 首启向导 */
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="relative flex h-screen overflow-hidden">
       {/* 键盘用户首站：视觉隐藏，聚焦时显现 */}
       <SkipLink />
       <AppSidebar />

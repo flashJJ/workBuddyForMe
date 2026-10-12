@@ -24,7 +24,7 @@ export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
       {steps.map((step) => (
         <li
           key={step.id}
-          className="rounded-md border bg-card p-3"
+          className="min-w-0 overflow-hidden rounded-md border bg-card p-3"
           data-testid={`task-step-${step.stepIndex}`}
         >
           <div className="flex items-center justify-between gap-2">
@@ -32,34 +32,34 @@ export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
             <TaskStepStatusBadge kind={step.kind} status={step.status} />
           </div>
           {step.toolName && (
-            <p className="mt-1 text-sm font-medium">
+            <p className="mt-1 break-words text-sm font-medium">
               {t('tasks.timeline.tool')}
               <span className="font-mono text-xs">{step.toolName}</span>
             </p>
           )}
           {step.reason && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 break-words text-xs text-muted-foreground">
               {t('tasks.timeline.reason', { text: sys(step.reason) })}
             </p>
           )}
           {step.argsJson && (
-            <details className="mt-2">
+            <details className="mt-2 min-w-0">
               <summary className="cursor-pointer text-xs text-muted-foreground">
                 {t('tasks.timeline.args')}
               </summary>
-              <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted/50 p-2 text-xs">{step.argsJson}</pre>
+              <pre className="mt-1 max-h-40 max-w-full overflow-auto whitespace-pre-wrap break-all rounded bg-muted/50 p-2 text-xs">{step.argsJson}</pre>
             </details>
           )}
           {step.resultJson && (
-            <details className="mt-1">
+            <details className="mt-1 min-w-0">
               <summary className="cursor-pointer text-xs text-muted-foreground">
                 {t('tasks.timeline.result')}
               </summary>
-              <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted/50 p-2 text-xs">{step.resultJson}</pre>
+              <pre className="mt-1 max-h-40 max-w-full overflow-auto whitespace-pre-wrap break-all rounded bg-muted/50 p-2 text-xs">{step.resultJson}</pre>
             </details>
           )}
           {step.error && (
-            <p className="mt-2 rounded bg-destructive/10 p-2 text-xs text-destructive">
+            <p className="mt-2 min-w-0 break-words rounded bg-destructive/10 p-2 text-xs text-destructive">
               {t('tasks.timeline.error', { error: sys(step.error) })}
             </p>
           )}

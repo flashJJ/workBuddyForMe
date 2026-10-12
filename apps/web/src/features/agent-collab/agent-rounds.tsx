@@ -37,9 +37,12 @@ export function AgentRounds({ rounds }: { rounds: AgentRoundState[] }) {
 function RoundGroup({ round }: { round: AgentRoundState }) {
   const { t } = useI18n();
   return (
-    <section className="rounded-md border bg-muted/20 p-2" data-testid={`agent-round-${round.round}`}>
+    <section
+      className="min-w-0 rounded-md border bg-muted/20 p-2"
+      data-testid={`agent-round-${round.round}`}
+    >
       <header className="mb-1.5 flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold text-muted-foreground">
+        <span className="min-w-0 truncate text-[11px] font-semibold text-muted-foreground">
           {t('agents.round.label', { round: round.round + 1 })}
         </span>
         {round.round > 0 && <Badge variant="warning" className="px-1.5 py-0 text-[10px]">{t('agents.round.reworkBadge')}</Badge>}
@@ -68,13 +71,13 @@ function LaneShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('rounded border bg-background px-2 py-1.5', active && 'ring-1 ring-info/50')}>
+    <div className={cn('min-w-0 overflow-hidden rounded border bg-background px-2 py-1.5', active && 'ring-1 ring-info/50')}>
       <div className="flex items-center gap-1.5">
-        <span className={tone}>{icon}</span>
-        <span className="text-[11px] font-medium">{title}</span>
-        {active && <Loader2 className="ml-auto h-3 w-3 animate-spin text-info" />}
+        <span className={cn('shrink-0', tone)}>{icon}</span>
+        <span className="truncate text-[11px] font-medium">{title}</span>
+        {active && <Loader2 className="ml-auto h-3 w-3 shrink-0 animate-spin text-info" />}
       </div>
-      {children && <div className="mt-1 space-y-1">{children}</div>}
+      {children && <div className="mt-1 min-w-0 space-y-1">{children}</div>}
     </div>
   );
 }
@@ -88,8 +91,8 @@ function PlanningCard({ round }: { round: AgentRoundState }) {
     <LaneShell icon={<ClipboardList className="h-3.5 w-3.5" />} title={t('agents.planning.title')} active={active} tone="text-violet-500">
       {round.subtask ? (
         <>
-          <p className="text-xs font-medium">{sys(round.subtask.title)}</p>
-          <p className="whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">{sys(round.subtask.brief)}</p>
+          <p className="break-words text-xs font-medium">{sys(round.subtask.title)}</p>
+          <p className="whitespace-pre-wrap break-words text-[11px] leading-snug text-muted-foreground">{sys(round.subtask.brief)}</p>
           <ul className="space-y-0.5">
             {round.subtask.acceptance.map((item, i) => (
               <AcceptanceItem key={i} text={sys(item)} result={results[i]} index={i} />
@@ -115,22 +118,22 @@ function AcceptanceItem({
   const { t } = useI18n();
   if (!result) {
     return (
-      <li className="flex items-start gap-1 text-[11px] text-muted-foreground">
-        <span className="mt-0.5 text-slate-400">•</span>
-        {text}
+      <li className="relative flex min-w-0 items-start gap-1 text-[11px]">
+        <span className="mt-0.5 shrink-0 text-slate-400">•</span>
+        <span className="min-w-0 break-words">{text}</span>
       </li>
     );
   }
   return (
-    <li className="flex items-start gap-1 text-[11px]">
+    <li className="relative flex min-w-0 items-start gap-1 text-[11px]">
       {result.passed ? (
         <Check className="mt-0.5 h-3 w-3 shrink-0 text-success" />
       ) : (
         <X className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
       )}
-      <span>
+      <span className="min-w-0 break-words">
         <span className="text-muted-foreground">{text}</span>
-        <span className="ml-1 text-[10px] text-muted-foreground/70">
+        <span className="ml-1 break-words text-[10px] text-muted-foreground/70">
           {result.passed ? t('agents.review.passed') : t('agents.review.failed')}
           {result.note ? `：${result.note}` : ''}
         </span>
@@ -168,8 +171,8 @@ function ExecutionCard({ round }: { round: AgentRoundState }) {
                 <TriangleAlert className="h-3 w-3" />
                 {t('agents.execution.unfinished')}
               </p>
-              <ul className="mt-0.5 list-disc pl-4 text-[11px] text-warning/90">
-                {o.unfinished.map((u, i) => <li key={i}>{sys(u)}</li>)}
+              <ul className="mt-0.5 min-w-0 list-disc break-words pl-4 text-[11px] text-warning/90">
+                {o.unfinished.map((u, i) => <li key={i} className="min-w-0">{sys(u)}</li>)}
               </ul>
             </div>
           )}
@@ -184,16 +187,23 @@ function ExecutionCard({ round }: { round: AgentRoundState }) {
 export function EvidenceList({ evidence }: { evidence: Citation[] }) {
   const { t } = useI18n();
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-[10px] text-muted-foreground">{t('agents.execution.evidence')}</p>
       <ul className="mt-0.5 space-y-0.5">
         {evidence.map((c, i) => (
-          <li key={`${c.documentId}-${c.ordinal}-${i}`} className="flex items-start gap-1 text-[11px]">
+          <li
+            key={`${c.documentId}-${c.ordinal}-${i}`}
+            className="flex min-w-0 items-start gap-1 text-[11px]"
+          >
             <FileText className="mt-0.5 h-3 w-3 shrink-0 text-sky-500" />
-            <span className="min-w-0">
+            <span className="min-w-0 break-words">
               <span className="font-medium">[{c.ordinal}] {c.documentName}</span>
               {c.pageNo ? <span className="text-muted-foreground"> · p.{c.pageNo}</span> : null}
-              {c.snippet && <span className="block truncate text-muted-foreground/80" title={c.snippet}>{c.snippet}</span>}
+              {c.snippet && (
+                <span className="line-clamp-2 block text-muted-foreground/80" title={c.snippet}>
+                  {c.snippet}
+                </span>
+              )}
             </span>
           </li>
         ))}
@@ -221,7 +231,7 @@ function ReviewCard({ round }: { round: AgentRoundState }) {
             {t(VERDICT_STYLE[review.verdict].key)}
           </Badge>
           {review.reviewNotes && (
-            <p className="whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">{sys(review.reviewNotes)}</p>
+            <p className="min-w-0 whitespace-pre-wrap break-words text-[11px] leading-snug text-muted-foreground">{sys(review.reviewNotes)}</p>
           )}
         </>
       ) : active ? (

@@ -110,8 +110,8 @@ function AgentRunRow({
   };
 
   return (
-    <li className="rounded-md border bg-card">
-      <div className="flex items-center gap-3 px-4 py-3">
+    <li className="min-w-0 overflow-hidden rounded-md border bg-card">
+      <div className="flex min-w-0 items-center gap-3 px-4 py-3">
         <button type="button" onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-3 text-left">
           <ChevronRight
             className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
@@ -138,8 +138,8 @@ function AgentRunRow({
         )}
       </div>
       {expanded && (
-        <div className="space-y-2 border-t px-4 py-3">
-          <p className="text-[11px] text-muted-foreground">
+        <div className="min-w-0 space-y-2 border-t px-4 py-3">
+          <p className="min-w-0 break-words text-[11px] text-muted-foreground">
             {t('agents.tasks.runId')}<span className="font-mono">{run.id}</span>
             {run.conversationId && (
               <>
