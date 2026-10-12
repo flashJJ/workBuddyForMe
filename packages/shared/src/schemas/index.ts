@@ -269,3 +269,30 @@ export {
   type ToolConfirmInput,
   type ToolDebugExecuteInput,
 } from './tool';
+
+// v1.6 情绪内核契约（情绪/关系状态、事件、模型情绪信号）
+export {
+  SOUL_EVENT_TYPES,
+  EMOTION_NEEDS,
+  EMOTION_EVENT_SOURCES,
+  MOOD_LEVELS,
+  RELATION_LEVELS,
+  emotionMoodSchema,
+  emotionRelationSchema,
+  emotionEventSchema,
+  emotionStateSchema,
+  emotionSignalSchema,
+  createDefaultEmotionState,
+  moodLevelOf,
+  relationLevelOf,
+  type SoulEventType,
+  type EmotionNeed,
+  type EmotionEventSource,
+  type EmotionMood,
+  type EmotionRelation,
+  type EmotionEvent,
+  type EmotionState,
+  type EmotionSignal,
+  type MoodLevel,
+  type RelationLevel,
+} from './emotion';
