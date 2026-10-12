@@ -1,4 +1,4 @@
-import { MAX_TOOL_ROUNDS } from '@wbfm/shared/constants';
+﻿import { MAX_TOOL_ROUNDS } from '@wbfm/shared/constants';
 import { type TokenUsage } from '@wbfm/shared/api';
 import { startRun, type TraceHandle, type ToolCall } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/deps';
@@ -15,6 +15,8 @@ import type { OrchestratorEvent, StreamChatInput } from './types';
 import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
 import { createMemoryService } from '../memory/memory-service';
+import { createEmotionService, resolveTurnEmotion } from '../emotion';
+import { stripEmotionSignalBlock, type EmotionSignal } from '@wbfm/shared/schemas';
 import { prepareTurnContext, type PreparedTurnContext } from './turn-context-assembly';
 import { schedulePostTurnJobs } from './post-turn-schedule';
 
@@ -24,6 +26,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
   const attachments = createAttachmentService(deps);
   const runtime = createToolRuntime(deps);
   const memory = createMemoryService(deps);
+  const emotion = createEmotionService(deps);
   const streamProactiveTurn = createProactiveTurn(deps);
   // done 之后异步执行的旁路任务（摘要/记忆）；不阻塞响应，但保留句柄供测试与优雅关闭等待
   const backgroundJobs = new Set<Promise<unknown>>();
@@ -106,6 +109,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           conversations,
           attachments,
           memory,
+          emotion,
           conversationId,
           assistantMessageId: assistantMessage.id,
           userContent,
@@ -117,6 +121,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace } =
           prepared;
         let citations = prepared.citations;
+        const emotionEnabled = prepared.emotionEnabled;
 
         try {
           for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
@@ -162,13 +167,19 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               toolMessageBudgetTokens,
               signal: input.signal,
               onAbort: () => {
-                conversations.stopMessage(assistantMessage.id, full);
+                conversations.stopMessage(
+                  assistantMessage.id,
+                  emotionEnabled ? stripEmotionSignalBlock(full) : full,
+                );
                 conversations.saveMessageToolTrace(assistantMessage.id, trace);
               },
             });
             citations = loopOutcome.citations;
             if (loopOutcome.aborted) {
-              yield { event: 'done', data: { content: full, usage } };
+              const abortedContent = emotionEnabled
+                ? stripEmotionSignalBlock(full)
+                : full;
+              yield { event: 'done', data: { content: abortedContent, usage } };
               return;
             }
           }
@@ -179,9 +190,13 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           }
         } catch (error) {
           if (input.signal?.aborted) {
-            conversations.stopMessage(assistantMessage.id, full);
+            // 中止不记录情绪；但持久化前剥离可能已流出的半截尾块
+            const abortedContent = emotionEnabled
+              ? stripEmotionSignalBlock(full)
+              : full;
+            conversations.stopMessage(assistantMessage.id, abortedContent);
             conversations.saveMessageToolTrace(assistantMessage.id, trace);
-            yield { event: 'done', data: { content: full, usage } };
+            yield { event: 'done', data: { content: abortedContent, usage } };
             return;
           }
           turnError = error;
@@ -192,6 +207,29 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           return;
         }
 
+        // v1.6：成功回合的情绪解析——尾块剥离（落库/气泡/TTS 均不含协议块）、
+        // 弱模型规则保底、写入情绪状态。任何异常都不得影响已完成的正文。
+        let resolvedEmotion: EmotionSignal | undefined;
+        if (emotionEnabled) {
+          try {
+            const resolved = resolveTurnEmotion(full, userContent);
+            full = resolved.content;
+            resolvedEmotion = resolved.signal;
+            emotion.record(
+              assistant.id,
+              { type: resolved.signal.soulEvent, source: resolved.source },
+              Date.now(),
+            );
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[wbfm] 情绪回合处理失败，已降级为普通回复：${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+        }
+
         // 持久化最终引用（含开流前 RAG 与工具循环 knowledge_search 两路合并后的全集）
         conversations.completeMessage(assistantMessage.id, full, usage, citations);
         conversations.saveMessageToolTrace(assistantMessage.id, trace);
@@ -199,7 +237,12 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         // 先把 done 交给用户：回答已完整落库，UI 立即结束 loading。
         // 摘要压缩/长期记忆是旁路 LLM 任务（本地 14B 上可能再花十几秒），
         // 绝不能阻塞 done——否则会出现「文字已出完但停止生成一直转」。
-        yield { event: 'done', data: { content: full, usage } };
+        yield {
+          event: 'done',
+          data: resolvedEmotion
+            ? { content: full, usage, emotion: resolvedEmotion }
+            : { content: full, usage },
+        };
 
         // 后台任务 fire-and-forget：用独立 signal（响应关闭会 abort 请求 signal，
         // 但摘要/记忆不应随之丢弃），超时兜底；失败内部均已静默。

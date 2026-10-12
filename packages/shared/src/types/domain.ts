@@ -218,6 +218,8 @@ export interface AppSettings {
   compileWithLlm?: boolean;
   /** v1.3 M4：编译增强所用对话模型（null=跟随默认对话模型） */
   compileModelId?: string | null;
+  /** v1.6：情绪/关系内核总开关（缺省视为 true；与助手 expressionEnabled 同时为真才生效） */
+  emotionEnabled?: boolean;
 }
 
 // ── v0.6 M3 本地技能包 ──

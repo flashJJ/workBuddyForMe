@@ -52,6 +52,7 @@ export const zhEmotion = {
     rule: '规则识别',
     event: '剧情事件',
     manual: '手动设置',
+    default: '常规回合',
   },
 };
 
@@ -110,5 +111,6 @@ export const enEmotion: typeof zhEmotion = {
     rule: 'Detected by rules',
     event: 'Story event',
     manual: 'Manual',
+    default: 'Ordinary turn',
   },
 };

@@ -41,8 +41,12 @@ export type SoulEventType = (typeof SOUL_EVENT_TYPES)[number];
 export const EMOTION_NEEDS = ['none', 'attention', 'comfort', 'play', 'rest'] as const;
 export type EmotionNeed = (typeof EMOTION_NEEDS)[number];
 
-/** 情绪事件的产生来源：决定可信度与 UI 展示 */
-export const EMOTION_EVENT_SOURCES = ['model', 'rule', 'event', 'manual'] as const;
+/**
+ * 情绪事件的产生来源：决定可信度与 UI 展示。
+ * M2 增补 'default'：模型未给尾块、规则也未命中时的普通 chat 回合，
+ * 与 model（尾块识别）区分以支持协议合法率统计。
+ */
+export const EMOTION_EVENT_SOURCES = ['model', 'rule', 'event', 'manual', 'default'] as const;
 export type EmotionEventSource = (typeof EMOTION_EVENT_SOURCES)[number];
 
 // ── 状态结构 ────────────────────────────────────────────

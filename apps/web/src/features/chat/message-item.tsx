@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { stripExpressionDirectives } from '@wbfm/shared/schemas';
+import { stripExpressionDirectives, stripEmotionSignalBlock } from '@wbfm/shared/schemas';
 import { type Message } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,7 +131,10 @@ export function MessageItem({ message, assistantName, agentCard, onRetry, onRese
   const showCopy = !isUser && message.status === 'completed' && Boolean(message.content);
   const canFeedback = !isUser && message.status === 'completed' && Boolean(message.id && onFeedback);
   // v1.0 M3：助手消息上屏/复制时剥离表情指令标签（标签驱动形象，不属于回复文本）
-  const displayContent = isUser ? message.content : stripExpressionDirectives(message.content);
+  // v1.6：同时剥离情绪信号尾块 JSON（流式半截也隐藏，防止协议文本闪入气泡）
+  const displayContent = isUser
+    ? message.content
+    : stripEmotionSignalBlock(stripExpressionDirectives(message.content));
 
   return (
     <div

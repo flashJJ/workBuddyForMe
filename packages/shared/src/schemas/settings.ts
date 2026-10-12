@@ -17,5 +17,7 @@ export const settingsUpdateSchema = z.object({
   autoCompile: z.boolean().optional(),
   compileWithLlm: z.boolean().optional(),
   compileModelId: z.string().trim().min(1).nullable().optional(),
+  // v1.6 情绪内核总开关（缺省视为 true；关闭后不注入/不解析/不写情绪状态）
+  emotionEnabled: z.boolean().optional(),
 });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;

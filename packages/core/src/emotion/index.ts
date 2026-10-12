@@ -12,3 +12,10 @@ export {
   type EmotionService,
   type RecordEmotionInput,
 } from './emotion-service';
+export { EMOTION_DIRECTIVE_BLOCK, buildEmotionStateBlock } from './emotion-prompt';
+export { inferSoulEventFromUserText } from './emotion-rule-guard';
+export {
+  resolveTurnEmotion,
+  type ResolvedTurnEmotion,
+  type ResolvedEmotionSource,
+} from './emotion-turn';
