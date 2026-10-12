@@ -1,82 +1,131 @@
 'use client';
 
 import * as React from 'react';
-import type { CSSProperties } from 'react';
 import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
-import type { ExpressionTag } from '@/features/avatar/expression-parser';
+import type { Live2dController } from '@/features/avatar/live2d-controller';
+import { useHeadTouch, type TouchControllerLike } from '@/features/avatar/use-head-touch';
 import type { PetVoiceState } from '@wbfm/shared/pet';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { getPetBridge } from './pet-bridge';
-import { PetSubtitle } from './pet-subtitle';
+import { getPetBridge, isPetBodyPoint } from './pet-bridge';
 
 interface Props {
   modelId: string;
-  expression: ExpressionTag;
+  expression: import('@/features/avatar/expression-parser').ExpressionTag;
   voiceState: PetVoiceState;
   subtitle: string;
   getLevel: () => number;
 }
 
-// Electron 扩展 CSS 属性（React 类型未声明）
-const REGION_DRAG = { WebkitAppRegion: 'drag' } as unknown as CSSProperties;
-const REGION_NO_DRAG = { WebkitAppRegion: 'no-drag' } as unknown as CSSProperties;
-
 /**
- * 桌宠舞台（透明窗满铺）。交互分区（互斥，全部交给系统手势层，无手动移窗）：
+ * 桌宠舞台（透明窗满铺）。
  *
- * - 身体盒 `-webkit-app-region: drag`：系统原生拖拽窗口。关键收益——drag 区
- *   **忽略一切指针事件**，因此按下/微移/松手都不会冒泡到 Live2D canvas，
- *   从根上杜绝误触 tap 动作（带凑近放大）造成的「一拖就变大」；也没有
- *   setPosition 高频移窗带来的坐标错位/闪烁。
- * - 头部盒 `no-drag`：单击播 Live2D tap 挥手、右键弹菜单（DOM contextmenu 可达）。
- * - 身体 drag 区的右键被系统拖拽层吞掉，由主进程钩 WM_RBUTTONUP 弹菜单兜底
- *   （见 pet-manager），所以整个舞台仍保留 onContextMenu 处理头部路径。
- * - 双击：头部 no-drag 区可收到 → 回主窗。
+ * 分区（互斥，全部交给手势层，无 -webkit-app-region）：
+ * - 身体盒 `-webkit-app-region: drag`：系统拖拽层吞指针事件，拖拽不触发 Live2D tap
+ *   （v1.0 经验：drag 区的 click 派发不可靠）；
+ * - 头部盒 no-drag：单击挥手/双击回主窗/右键菜单（v1.6 单击增加摸头弹性/表情/本地短句）。
  */
 export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }: Props) {
   const { t } = useI18n();
-  const bridge = React.useMemo(() => getPetBridge(), []);
+  const bridge = getPetBridge();
+  const controllerRef = React.useRef<Live2dController | null>(null);
+  const [touchLine, setTouchLine] = React.useState<string>('');
+  const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    bridge?.showMenu();
-  };
+  // 摸头短句：本地文案气泡约 3.2s 后消失（零模型调用、零 IPC）
+  const onHeadTouch = useHeadTouch(
+    controllerRef as React.MutableRefObject<TouchControllerLike | null>,
+    {
+      onLine: (key: MessageKey) => {
+        setTouchLine(t(key));
+        if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+        lineTimerRef.current = setTimeout(() => setTouchLine(''), 3200);
+      },
+    },
+  );
+
+  React.useEffect(
+    () => () => {
+      if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+    },
+    [],
+  );
 
   return (
-    <div
-      data-testid="pet-stage"
-      data-state={voiceState}
-      className="relative h-screen w-screen overflow-hidden bg-transparent"
-    >
+    <div className="relative h-screen w-screen overflow-hidden bg-transparent">
       <div className="absolute inset-0">
         <Live2dCanvas
           modelId={modelId}
           expression={expression}
           getLevel={getLevel}
           speaking={voiceState === 'speaking'}
+          controllerRef={controllerRef}
         />
       </div>
 
-      {/* 身体拖拽盒：系统 drag，吞掉全部点击/右键（右键由主进程 WM_RBUTTONUP 兜底） */}
+      {/* 身体拖拽盒（底部 62%）：系统拖拽，吞点击 */}
       <div
         data-testid="pet-hitbody"
-        style={REGION_DRAG}
-        className="absolute bottom-0 left-1/2 z-10 h-[72%] w-[72%] -translate-x-1/2 cursor-grab"
-        title={t('pet.stage.dragHint')}
+        style={
+          {
+            WebkitAppRegion: 'drag',
+            left: '15%',
+            right: '15%',
+            top: '38%',
+            bottom: '0',
+          } as React.CSSProperties
+        }
+        className="absolute cursor-grab"
+        onDragStart={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          if (!isPetBodyPoint(e.clientX, e.clientY, w, h)) return;
+          bridge?.dragBegin();
+        }}
+        onPointerUp={() => bridge?.dragEnd()}
       />
 
-      {/* 头部互动盒：no-drag，单击挥手 / 双击回主窗 / 右键菜单；命中列上部约 28% */}
+      {/* 头部互动盒（上部 27%）：单击摸头 / 双击回主窗 / 右键菜单 */}
       <div
         data-testid="pet-hithead"
-        style={REGION_NO_DRAG}
-        className="absolute left-1/2 top-[11%] z-20 h-[25%] w-[60%] -translate-x-1/2"
-        onContextMenu={handleContextMenu}
-        onDoubleClick={() => bridge?.focusMain()}
+        style={
+          {
+            WebkitAppRegion: 'no-drag',
+            left: '15%',
+            right: '15%',
+            top: '11%',
+            height: '27%',
+          } as React.CSSProperties
+        }
+        className="absolute z-10 cursor-pointer"
         title={t('pet.stage.headHint')}
+        onClick={() => onHeadTouch()}
+        onDoubleClick={() => bridge?.focusMain()}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          bridge?.showMenu();
+        }}
       />
 
-      <PetSubtitle text={subtitle} voiceState={voiceState} />
+      {/* 字幕气泡 */}
+      <PetSubtitle text={touchLine || subtitle} voiceState={voiceState} />
+    </div>
+  );
+}
+
+function PetSubtitle({ text, voiceState }: { text: string; voiceState: PetVoiceState }) {
+  if (!text) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-[4%] flex justify-center px-4">
+      <div
+        className="max-w-[85%] rounded-xl border border-border/50 bg-background/85 px-3 py-1.5 text-center text-sm leading-relaxed text-foreground shadow-sm backdrop-blur-sm"
+        data-testid="pet-subtitle"
+        data-voice-state={voiceState}
+      >
+        {text}
+      </div>
     </div>
   );
 }

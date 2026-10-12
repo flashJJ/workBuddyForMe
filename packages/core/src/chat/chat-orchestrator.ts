@@ -40,6 +40,13 @@ export function createChatOrchestrator(deps: ServiceDeps) {
     waitForBackgroundJobs: async (): Promise<void> => {
       await Promise.allSettled([...backgroundJobs]);
     },
+    /**
+     * v1.6：读取助手当前情绪/关系状态（已按离线时长惰性衰减，不写库）。
+     * 助手不存在时由情绪服务回落默认状态（无行=默认），故不做存在性 404。
+     */
+    viewEmotion(assistantId: string) {
+      return emotion.view(assistantId);
+    },
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
       const assistant = assistants.get(input.assistantId);
 

@@ -12,6 +12,12 @@ import { Live2DModel as PldLive2DModel } from 'pixi-live2d-display/cubism4';
 import type { AvatarModelSpec } from './avatar-models';
 import type { ExpressionTag } from './expression-parser';
 import { DEFAULT_EXPRESSION } from './expression-parser';
+import { Live2dMicrodynamics } from './live2d-microdynamics';
+import {
+  TOUCH_SQUASH_MS,
+  TOUCH_SQUASH_SCALE_X,
+  TOUCH_SQUASH_SCALE_Y,
+} from '@wbfm/shared/constants';
 
 if (typeof window !== 'undefined') {
   (window as unknown as { PIXI: unknown }).PIXI = PIXI;
@@ -23,7 +29,8 @@ interface PldCoreModel {
 }
 interface PldModel {
   anchor: { set(x: number, y: number): void };
-  scale: { set(v: number): void };
+  /** PIXI ObservablePoint：set(x, y?) 第二参数省略时 y=x */
+  scale: { set(x: number, y?: number): void };
   x: number;
   y: number;
   internalModel: {
@@ -55,11 +62,20 @@ const LIP_GAIN = 3.2;
 export class Live2dController {
   private readonly app: PIXI.Application;
   private model: PldModel | null = null;
+  private readonly micro = new Live2dMicrodynamics();
   private lipLevel = 0;
   private lastSpeechAt = 0;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private disposed = false;
   private readonly resizeObserver: ResizeObserver;
+  /** layout 计算出的基础等比缩放（squash 动画围绕它做包络） */
+  private baseScale = 1;
+  /** 基础表情（React prop 驱动）；闪现表情期间暂存，结束后恢复 */
+  private baseExpression: ExpressionTag = DEFAULT_EXPRESSION;
+  private flashUntil = 0;
+  private flashTag: ExpressionTag | null = null;
+  /** squash 动画起始时刻；0=未在播放 */
+  private squashStart = 0;
 
   private constructor(
     private readonly host: HTMLElement,
@@ -102,10 +118,11 @@ export class Live2dController {
       controller.app.stage.addChild(model as unknown as PIXI.DisplayObject);
       model.anchor.set(0.5, 1);
       controller.layout();
+      controller.baseExpression = DEFAULT_EXPRESSION;
       await model.expression(options.model.expressions[DEFAULT_EXPRESSION] ?? '');
       controller.scheduleIdle();
-      // 口型：在模型自身 ticker 更新之后写口型参数，避免被动作曲线覆盖
-      controller.app.ticker.add(() => controller.applyLip());
+      // 每帧：口型 → squash 缩放 → 微动作参数；在 pld 自身更新之后写，避免被曲线覆盖
+      controller.app.ticker.add(() => controller.applyFrame());
     } catch (error) {
       // 只上报底层错误详情；「模型加载失败」前缀文案由调用方渲染时经 t() 组装
       options.onError?.((error as Error).message);
@@ -125,8 +142,42 @@ export class Live2dController {
       h / model.internalModel.originalHeight,
     );
     model.scale.set(fit * 0.92);
+    this.baseScale = fit * 0.92;
     model.x = w / 2;
     model.y = h + 4;
+  }
+
+  /** 每帧综合：口型 + squash 包络 + 微动作 + 闪现表情到期回收 */
+  private applyFrame(): void {
+    const model = this.model;
+    if (!model) return;
+    this.applyLip();
+    this.applySquash();
+    if (this.flashTag && performance.now() > this.flashUntil) {
+      this.flashTag = null;
+      void this.applyExpressionNow(this.baseExpression);
+    }
+    const quiet =
+      performance.now() - this.lastSpeechAt > IDLE_QUIET_MS && this.squashStart === 0;
+    this.micro.update(model.internalModel.coreModel, quiet);
+  }
+
+  /** squash：sin 包络的缩头弹性（按下纵向压扁、横向微张，约 210ms） */
+  private applySquash(): void {
+    const model = this.model;
+    if (!model || this.squashStart === 0) return;
+    const t = (performance.now() - this.squashStart) / TOUCH_SQUASH_MS;
+    if (t >= 1) {
+      this.squashStart = 0;
+      model.scale.set(this.baseScale);
+      return;
+    }
+    // 0→峰值→0 的半正弦包络
+    const envelope = Math.sin(t * Math.PI);
+    model.scale.set(
+      this.baseScale * (1 + (TOUCH_SQUASH_SCALE_X - 1) * envelope),
+      this.baseScale * (1 - (1 - TOUCH_SQUASH_SCALE_Y) * envelope),
+    );
   }
 
   private applyLip(): void {
@@ -142,15 +193,46 @@ export class Live2dController {
     this.lipLevel = level;
   }
 
-  /** 切换规范表情；未知表情回落中性 */
+  /**
+   * 设置基础表情（React prop 驱动）。闪现表情生效期间只更新基准、不立即切换，
+   * 闪现到期后自动恢复为最新基准。
+   */
   async setExpression(tag: ExpressionTag): Promise<void> {
+    this.baseExpression = tag;
+    if (this.flashTag) return;
+    await this.applyExpressionNow(tag);
+  }
+
+  private async applyExpressionNow(tag: ExpressionTag): Promise<void> {
     const model = this.model;
     if (!model) return;
     const name = this.spec.expressions[tag] ?? this.spec.expressions[DEFAULT_EXPRESSION];
     if (name) await model.expression(name);
   }
 
-  /** 点击/触碰：播放 Tap 组随机动作（autoInteract 命中头部/身体时也会自动触发） */
+  /**
+   * 临时闪现表情（摸头害羞/连摸抗议），durationMs 后自动回基础表情。
+   * 连续闪现会重置计时（以最新一次为准）。
+   */
+  flashExpression(tag: ExpressionTag, durationMs: number): void {
+    if (!this.model) return;
+    this.flashTag = tag;
+    this.flashUntil = performance.now() + durationMs;
+    void this.applyExpressionNow(tag);
+  }
+
+  /** 摸头：缩头弹性动画（由调用方配合 flashExpression 使用） */
+  playSquash(): void {
+    if (!this.model) return;
+    this.squashStart = performance.now();
+  }
+
+  /** 归一化指针（-1..1，相对舞台中心）→ 微动作视线跟随 */
+  setGaze(nx: number, ny: number): void {
+    this.micro.setPointer(nx, ny);
+  }
+
+  /** 身体点击/触碰：播放 Tap 组随机动作（头部摸头不走这里） */
   tap(): void {
     if (!this.model) return;
     void this.model.motion(this.spec.tapGroup);

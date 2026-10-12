@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from './expression-parser';
+import type { Live2dController } from './live2d-controller';
 
 interface Live2dCanvasProps {
   /** 模型 id（avatar-models 注册表） */
@@ -15,6 +16,10 @@ interface Live2dCanvasProps {
   getLevel: () => number;
   /** 是否正在说话（仅用于无障碍/状态展示） */
   speaking: boolean;
+  /** v1.6：头部摸头回调（传入后舞台上 40% 为摸头区，其余为身体 tap） */
+  onHeadTouch?: () => void;
+  /** v1.6：控制器实例回传（摸头弹性/闪现表情需要直接驱动模型） */
+  controllerRef?: React.MutableRefObject<Live2dController | null>;
 }
 
 /** 动态 chunk 加载占位（独立组件以便 useI18n） */

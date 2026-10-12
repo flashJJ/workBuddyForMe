@@ -6,6 +6,8 @@ import { AvatarHost } from './avatar-host';
 interface Props {
   modelId: string;
   messages: Message[];
+  /** 当前助手 id（v1.6 情绪基线） */
+  assistantId: string;
   /** TTS 播放电平读取器（口型） */
   getLevel: () => number;
   speaking: boolean;
@@ -18,7 +20,14 @@ interface Props {
  * 大屏（lg+）才显示；内部 Live2dCanvas 自带动态 import，关闭形象时本组件根本不挂载，
  * Cubism/PIXI chunk 零加载。
  */
-export function ChatAvatarRail({ modelId, messages, getLevel, speaking, proactiveContent = null }: Props) {
+export function ChatAvatarRail({
+  modelId,
+  assistantId,
+  messages,
+  getLevel,
+  speaking,
+  proactiveContent = null,
+}: Props) {
   return (
     <aside
       className="hidden w-64 shrink-0 border-l bg-background lg:block xl:w-72"
@@ -26,6 +35,7 @@ export function ChatAvatarRail({ modelId, messages, getLevel, speaking, proactiv
     >
       <AvatarHost
         modelId={modelId}
+        assistantId={assistantId}
         messages={messages}
         getLevel={getLevel}
         speaking={speaking}

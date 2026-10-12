@@ -28,3 +28,17 @@ export {
   type RelationLevel,
 } from './emotion';
 export { extractEmotionSignal, stripEmotionSignalBlock } from './emotion-signal-text';
+export {
+  baselineExpression,
+  fuseExpression,
+  type FusedExpression,
+} from './emotion-expression';
+export {
+  createTouchState,
+  registerHeadTouch,
+  localDateKey,
+  pickTouchLineKey,
+  type TouchState,
+  type TouchOutcome,
+  type TouchReaction,
+} from './pet-interaction';

@@ -13,14 +13,33 @@ interface StageProps {
   expression: ExpressionTag;
   getLevel: () => number;
   speaking: boolean;
+  /** v1.6：头部摸头（区别于身体 tap）；不传时整个画布回落为身体 tap */
+  onHeadTouch?: () => void;
+  /** 舞台顶部多少比例算头部区（与 pet 命中盒口径接近；默认 0.4） */
+  headZoneRatio?: number;
+  /** v1.6：控制器实例回传（外部摸头 hook 直接驱动模型） */
+  controllerRef?: React.MutableRefObject<Live2dController | null>;
 }
 
-/** 形象舞台：挂 Core→建 PIXI 应用→加载模型；rAF 喂口型；点击播放 Tap 动作 */
-export function Live2dStage({ modelId, expression, getLevel, speaking }: StageProps) {
+export function Live2dStage({
+  modelId,
+  expression,
+  getLevel,
+  speaking,
+  onHeadTouch,
+  headZoneRatio = 0.4,
+  controllerRef: externalControllerRef,
+}: StageProps) {
   const { t } = useI18n();
   const hostRef = React.useRef<HTMLDivElement | null>(null);
-  const controllerRef = React.useRef<Live2dController | null>(null);
+  const internalRef = React.useRef<Live2dController | null>(null);
+  const controllerRef = externalControllerRef ?? internalRef;
   const [error, setError] = React.useState<string | null>(null);
+  // 回调放 ref，避免非 React 事件读到旧闭包
+  const headTouchRef = React.useRef(onHeadTouch);
+  headTouchRef.current = onHeadTouch;
+  const ratioRef = React.useRef(headZoneRatio);
+  ratioRef.current = headZoneRatio;
 
   React.useEffect(() => {
     const host = hostRef.current;
@@ -68,6 +87,36 @@ export function Live2dStage({ modelId, expression, getLevel, speaking }: StagePr
     void controllerRef.current?.setExpression(expression);
   }, [expression]);
 
+  // v1.6：视线跟随——指针在舞台内移动时归一化喂给控制器
+  React.useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const onMove = (event: PointerEvent) => {
+      const rect = host.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const nx = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+      const ny = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+      controllerRef.current?.setGaze(nx, ny);
+    };
+    host.addEventListener('pointermove', onMove);
+    return () => host.removeEventListener('pointermove', onMove);
+  }, []);
+
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const controller = controllerRef.current;
+    if (!controller) return;
+    if (headTouchRef.current) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const inHeadZone =
+        rect.height > 0 && (event.clientY - rect.top) / rect.height < ratioRef.current;
+      if (inHeadZone) {
+        headTouchRef.current();
+        return;
+      }
+    }
+    controller.tap();
+  };
+
   return (
     <div className="relative h-full w-full" data-testid="live2d-stage">
       <div
@@ -76,7 +125,8 @@ export function Live2dStage({ modelId, expression, getLevel, speaking }: StagePr
         aria-label={t('avatar.stage.ariaLabel')}
         className="h-full w-full cursor-pointer"
         data-speaking={speaking}
-        onClick={() => controllerRef.current?.tap()}
+        data-has-head-touch={Boolean(onHeadTouch)}
+        onClick={handleClick}
       />
       {error && (
         <div

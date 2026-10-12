@@ -10,3 +10,4 @@ export * from './task';
 export * from './flow';
 export * from './upload';
 export * from './emotion';
+export * from './pet-interaction';

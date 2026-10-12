@@ -54,6 +54,19 @@ export const zhEmotion = {
     manual: '手动设置',
     default: '常规回合',
   },
+  /** M3：摸头本地短句（随机抽取，零模型调用） */
+  touch: {
+    blush0: '嗯……怎么啦？',
+    blush1: '嘿嘿，有点痒~',
+    blush2: '摸摸头，电量加一。',
+    blush3: '今天也辛苦你啦。',
+    blush4: '再多陪我一会儿嘛。',
+    blush5: '被你摸得有点不好意思了。',
+    protect0: '呜，头发都被你弄乱啦！',
+    protect1: '再摸我可要收摸摸费了哦。',
+    protect2: '够了够了，让我歇一会儿嘛~',
+    protect3: '哼，再摸我就不理你了。',
+  },
 };
 
 export const enEmotion: typeof zhEmotion = {
@@ -112,5 +125,18 @@ export const enEmotion: typeof zhEmotion = {
     event: 'Story event',
     manual: 'Manual',
     default: 'Ordinary turn',
+  },
+  /** M3: local head-pet lines (random, no model call) */
+  touch: {
+    blush0: 'Hm... what is it?',
+    blush1: 'Hehe, that tickles~',
+    blush2: 'Head pats: battery +1.',
+    blush3: "You've worked hard today too.",
+    blush4: 'Stay with me a little longer.',
+    blush5: "You're making me a little shy.",
+    protect0: 'Hey, my hair is getting messy!',
+    protect1: 'Keep this up and I will start charging petting fees.',
+    protect2: 'Okay okay, let me rest for a bit~',
+    protect3: "Hmph, pet me again and I'll ignore you.",
   },
 };
