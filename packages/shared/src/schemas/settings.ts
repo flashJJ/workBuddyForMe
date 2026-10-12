@@ -19,5 +19,7 @@ export const settingsUpdateSchema = z.object({
   compileModelId: z.string().trim().min(1).nullable().optional(),
   // v1.6 情绪内核总开关（缺省视为 true；关闭后不注入/不解析/不写情绪状态）
   emotionEnabled: z.boolean().optional(),
+  // v1.6 M5 互动本地短句（摸头/久别迎接；缺省视为 true，关闭只留无声音的表情动作）
+  interactionLinesEnabled: z.boolean().optional(),
 });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;

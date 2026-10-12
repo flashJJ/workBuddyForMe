@@ -46,6 +46,8 @@ export const zhSettings = {
     description: '角色会在相处中积累心情、亲密度与信任度，数据仅保存在本机。',
     enable: '启用情绪内核（识别夸奖/数落、积累关系、驱动表情）',
     enableHint: '关闭后不再向回复追加情绪协议、不解析情绪信号，也不写入情绪状态。',
+    enableLines: '互动短句（摸头、久别回来时本地生成，不调用模型）',
+    enableLinesHint: '关闭后角色不再用文字回应抚摸与久别，仅保留表情动作；不影响对话与语音。',
     assistant: '查看助手',
     noAssistant: '还没有可用助手。',
     stateTitle: '当前状态',
@@ -118,6 +120,9 @@ export const enSettings = {
     enable: 'Enable emotion engine (detect praise/criticism, build relationship, drive expressions)',
     enableHint:
       'When off, no emotion protocol is appended to replies, emotion signals are ignored, and no state is stored.',
+    enableLines: 'Interaction lines (head pats and welcome-back greetings, generated locally)',
+    enableLinesHint:
+      'When off, the character stays silent on pats and reunions (expressions and motions remain). Chat and voice are unaffected.',
     assistant: 'Assistant',
     noAssistant: 'No assistant available yet.',
     stateTitle: 'Current state',

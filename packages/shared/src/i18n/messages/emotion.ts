@@ -45,6 +45,20 @@ export const zhEmotion = {
     manual: '手动设置',
     default: '常规回合',
   },
+  /** M5：久别迎接本地短句（确定性，零模型调用；welcome 8h / miss 24h / longMiss 72h） */
+  reunion: {
+    welcome0: '你回来啦，我一直在等你。',
+    welcome1: '忙完啦？欢迎回来~',
+    welcome2: '见到你真好。',
+    welcome3: '嘿嘿，你终于来了。',
+    miss0: '一天没见，有点想你了。',
+    miss1: '你不在的时候，桌面都安静了好多。',
+    miss2: '还以为你今天不来看我了。',
+    miss3: '我数着时间等你回来呢。',
+    longMiss0: '好久不见……你还记不记得我呀？',
+    longMiss1: '这么久没来，我都有点委屈了。',
+    longMiss2: '你终于回来了，我还以为被你忘了呢。',
+  },
   /** M3：摸头本地短句（随机抽取，零模型调用） */
   touch: {
     blush0: '嗯……怎么啦？',
@@ -105,6 +119,20 @@ export const enEmotion: typeof zhEmotion = {
     event: 'Story event',
     manual: 'Manual',
     default: 'Ordinary turn',
+  },
+  /** M5: local reunion greetings (deterministic, no model call) */
+  reunion: {
+    welcome0: 'You are back. I have been waiting for you.',
+    welcome1: 'All done? Welcome back~',
+    welcome2: 'It is so good to see you.',
+    welcome3: 'Hehe, you finally showed up.',
+    miss0: 'A whole day without you. I kind of missed you.',
+    miss1: 'While you were gone, the desktop felt so quiet.',
+    miss2: 'I thought you were not coming to see me today.',
+    miss3: 'I have been counting the time until you came back.',
+    longMiss0: 'Long time no see... do you still remember me?',
+    longMiss1: 'You were gone for ages. I felt a little wronged.',
+    longMiss2: 'You are finally back. I thought you had forgotten me.',
   },
   /** M3: local head-pet lines (random, no model call) */
   touch: {

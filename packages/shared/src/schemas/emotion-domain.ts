@@ -43,3 +43,12 @@ export {
   type TouchOutcome,
   type TouchReaction,
 } from './pet-interaction';
+export {
+  decideReunion,
+  pickReunionLineKey,
+  REUNION_TIER_EXPRESSION,
+  type ReunionInput,
+  type ReunionDecision,
+  type ReunionTier,
+  type ReunionMemory,
+} from './reunion';

@@ -4,9 +4,12 @@ import * as React from 'react';
 import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
 import type { Live2dController } from '@/features/avatar/live2d-controller';
 import { useHeadTouch, type TouchControllerLike } from '@/features/avatar/use-head-touch';
+import { REUNION_EXPRESSION_MS, REUNION_LINE_MS } from '@wbfm/shared/constants';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useSettings } from '@/lib/hooks/use-settings';
+import { useReunionGreeting } from '@/features/avatar/use-reunion-greeting';
 import { getPetBridge, isPetBodyPoint } from './pet-bridge';
 
 interface Props {
@@ -24,25 +27,21 @@ interface Props {
  * - 身体盒 `-webkit-app-region: drag`：系统拖拽层吞指针事件，拖拽不触发 Live2D tap
  *   （v1.0 经验：drag 区的 click 派发不可靠）；
  * - 头部盒 no-drag：单击挥手/双击回主窗/右键菜单（v1.6 单击增加摸头弹性/表情/本地短句）。
+ * v1.6 M5：久别迎接本地短句/表情、全域视线跟随、互动短句开关门控。
  */
 export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }: Props) {
   const { t } = useI18n();
+  const { data: settings } = useSettings();
   const bridge = getPetBridge();
   const controllerRef = React.useRef<Live2dController | null>(null);
-  const [touchLine, setTouchLine] = React.useState<string>('');
+  const [line, setLine] = React.useState<string>('');
   const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 摸头短句：本地文案气泡约 3.2s 后消失（零模型调用、零 IPC）
-  const onHeadTouch = useHeadTouch(
-    controllerRef as React.MutableRefObject<TouchControllerLike | null>,
-    {
-      onLine: (key: MessageKey) => {
-        setTouchLine(t(key));
-        if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
-        lineTimerRef.current = setTimeout(() => setTouchLine(''), 3200);
-      },
-    },
-  );
+  const showLine = React.useCallback((text: string, durationMs: number) => {
+    setLine(text);
+    if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+    lineTimerRef.current = setTimeout(() => setLine(''), durationMs);
+  }, []);
 
   React.useEffect(
     () => () => {
@@ -50,6 +49,58 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
     },
     [],
   );
+
+  // 互动短句开关（缺省开）；关闭后摸头只保留弹性/表情，久别不迎接
+  const linesEnabled = settings?.interactionLinesEnabled !== false;
+  const emotionEnabled = settings?.emotionEnabled !== false;
+
+  // 摸头短句：本地文案气泡（零模型调用、零 IPC），受短句开关门控
+  const onHeadTouch = useHeadTouch(
+    controllerRef as React.MutableRefObject<TouchControllerLike | null>,
+    {
+      onLine: (key: MessageKey) => {
+        if (linesEnabled) showLine(t(key), 3200);
+      },
+    },
+  );
+
+  // G6 久别迎接：命中后本地短句气泡 + 表情闪现，同样不发模型请求
+  const pokeReunion = useReunionGreeting({
+    enabled: linesEnabled && emotionEnabled,
+    onGreet: ({ lineKey, expression: greetExpression }) => {
+      controllerRef.current?.flashExpression(greetExpression, REUNION_EXPRESSION_MS);
+      showLine(t(lineKey), REUNION_LINE_MS);
+    },
+  });
+
+  // 全域视线跟随（拖拽盒遮挡 canvas 宿主，故在舞台根层归一化喂指针）；
+  // 指针重新进入窗口 → 久别判定一次（人回到桌宠前的「被重新关注」信号）
+  React.useEffect(() => {
+    let inside = false;
+    const onMove = (event: PointerEvent) => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      if (w > 0 && h > 0) {
+        controllerRef.current?.setGaze(
+          (event.clientX / w - 0.5) * 2,
+          (event.clientY / h - 0.5) * 2,
+        );
+      }
+      if (!inside) {
+        inside = true;
+        pokeReunion();
+      }
+    };
+    const onLeave = () => {
+      inside = false;
+    };
+    window.addEventListener('pointermove', onMove);
+    document.documentElement.addEventListener('mouseleave', onLeave);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      document.documentElement.removeEventListener('mouseleave', onLeave);
+    };
+  }, [pokeReunion]);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-transparent">
@@ -109,8 +160,8 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         }}
       />
 
-      {/* 字幕气泡 */}
-      <PetSubtitle text={touchLine || subtitle} voiceState={voiceState} />
+      {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}
+      <PetSubtitle text={line || subtitle} voiceState={voiceState} />
     </div>
   );
 }
