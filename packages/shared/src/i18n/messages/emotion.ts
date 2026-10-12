@@ -1,14 +1,5 @@
-/** emotion 命名空间：v1.6 情绪/关系状态展示（面板、等级文案、事件与来源） */
+/** emotion 命名空间：v1.6 情绪/关系状态展示（等级文案、事件与来源；面板文案在 settings.emotion） */
 export const zhEmotion = {
-  panel: {
-    title: '情绪与互动',
-    description: '角色会记住相处中的心情变化：情绪会随时间平复，亲密与信任缓慢积累。',
-    sectionState: '当前状态',
-    enableEmotion: '启用情绪状态',
-    enableEmotionHint: '关闭后不再识别与积累情绪，表情只跟随当前回复',
-    reset: '重置情绪与关系',
-    resetConfirm: '将清空与该助手的心情、亲密度、信任度与最近事件，且不可恢复。确定重置吗？',
-  },
   mood: {
     happiness: '心情',
     anger: '生气',
@@ -70,17 +61,6 @@ export const zhEmotion = {
 };
 
 export const enEmotion: typeof zhEmotion = {
-  panel: {
-    title: 'Emotion & interaction',
-    description:
-      'Your companion remembers the emotional tone of your time together: moods fade over time, while intimacy and trust build slowly.',
-    sectionState: 'Current state',
-    enableEmotion: 'Enable emotional state',
-    enableEmotionHint: 'When off, emotions are not detected or stored; expressions follow the current reply only',
-    reset: 'Reset mood and relationship',
-    resetConfirm:
-      'This clears mood, intimacy, trust and recent events with this assistant. This cannot be undone. Reset anyway?',
-  },
   mood: {
     happiness: 'Mood',
     anger: 'Anger',

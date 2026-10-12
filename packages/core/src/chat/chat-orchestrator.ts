@@ -15,7 +15,7 @@ import type { OrchestratorEvent, StreamChatInput } from './types';
 import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
 import { createMemoryService } from '../memory/memory-service';
-import { createEmotionService, resolveTurnEmotion } from '../emotion';
+import { createEmotionService, recordTurnEmotion } from '../emotion';
 import { stripEmotionSignalBlock, type EmotionSignal } from '@wbfm/shared/schemas';
 import { prepareTurnContext, type PreparedTurnContext } from './turn-context-assembly';
 import { schedulePostTurnJobs } from './post-turn-schedule';
@@ -46,6 +46,14 @@ export function createChatOrchestrator(deps: ServiceDeps) {
      */
     viewEmotion(assistantId: string) {
       return emotion.view(assistantId);
+    },
+    /** v1.6 M4：状态快照 + 近期事件流水（情绪面板用） */
+    viewEmotionDetail(assistantId: string, eventLimit?: number) {
+      return emotion.viewWithEvents(assistantId, eventLimit);
+    },
+    /** v1.6 M4：清除情绪/关系状态与事件流水 */
+    resetEmotion(assistantId: string) {
+      return emotion.reset(assistantId);
     },
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
       const assistant = assistants.get(input.assistantId);
@@ -215,27 +223,17 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         }
 
         // v1.6：成功回合的情绪解析——尾块剥离（落库/气泡/TTS 均不含协议块）、
-        // 弱模型规则保底、写入情绪状态。任何异常都不得影响已完成的正文。
-        let resolvedEmotion: EmotionSignal | undefined;
-        if (emotionEnabled) {
-          try {
-            const resolved = resolveTurnEmotion(full, userContent);
-            full = resolved.content;
-            resolvedEmotion = resolved.signal;
-            emotion.record(
-              assistant.id,
-              { type: resolved.signal.soulEvent, source: resolved.source },
-              Date.now(),
-            );
-          } catch (error) {
-            // eslint-disable-next-line no-console
-            console.warn(
-              `[wbfm] 情绪回合处理失败，已降级为普通回复：${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            );
-          }
-        }
+        // 弱模型规则保底、写入情绪状态与事件流水。任何异常都不得影响已完成的正文。
+        const recordedEmotion = recordTurnEmotion({
+          enabled: emotionEnabled,
+          rawContent: full,
+          userContent,
+          assistantId: assistant.id,
+          messageId: assistantMessage.id,
+          record: emotion.record,
+        });
+        if (recordedEmotion) full = recordedEmotion.content;
+        const resolvedEmotion: EmotionSignal | undefined = recordedEmotion?.signal;
 
         // 持久化最终引用（含开流前 RAG 与工具循环 knowledge_search 两路合并后的全集）
         conversations.completeMessage(assistantMessage.id, full, usage, citations);

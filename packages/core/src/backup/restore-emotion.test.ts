@@ -4,7 +4,9 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createDatabase,
+  createConversationRepository,
   createEmotionStateRepository,
+  createMessageRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
@@ -81,6 +83,49 @@ describe('备份恢复 · emotion 轨（v1.6）', () => {
     const r2 = await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
     expect(r2.imported.emotion).toBe(0);
     expect(r2.skipped.emotion).toBe(2);
+  });
+
+  it('M4：事件流水随状态一起导出/恢复（消息外键缺失事件跳过）', async () => {
+    ensureSeedData(srcDb);
+    const NOW = Date.UTC(2026, 9, 12, 8, 0, 0);
+    const stateRepo = createEmotionStateRepository(srcDb);
+    const state = createDefaultEmotionState(NOW);
+    state.mood.happiness = 50;
+    stateRepo.upsert('builtin-general', state);
+
+    // 直接写事件表（一条有合法消息外键，一条消息不存在）
+    const convRepo = createConversationRepository(srcDb);
+    const conv = convRepo.create({ assistantId: 'builtin-general' });
+    const msgId = createMessageRepository(srcDb).add({
+      conversationId: conv.id,
+      role: 'user',
+      content: '你真棒',
+      status: 'completed',
+    }).id;
+    srcDb
+      .prepare(
+        `INSERT INTO emotion_events(id,assistant_id,type,source,emotion,intensity,message_id,created_at)
+         VALUES ('ev1','builtin-general','praise','model','joy',0.7,?,?)`,
+      )
+      .run(msgId, new Date(NOW).toISOString());
+    srcDb
+      .prepare(
+        `INSERT INTO emotion_events(id,assistant_id,type,source,created_at)
+         VALUES ('ev2','builtin-general','chat','rule',?)`,
+      )
+      .run(new Date(NOW + 1000).toISOString());
+
+    const { archive } = await exportBackup(
+      { db: srcDb, cipher: createWebCipher() },
+      { tracks: ['emotion'] },
+    );
+    await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
+
+    const rows = dstDb
+      .prepare(`SELECT id, type, message_id AS mid FROM emotion_events ORDER BY id`)
+      .all() as Array<{ id: string; type: string; mid: string | null }>;
+    // 消息未随备份（未选 conversations 轨）→ ev1 外键缺失被跳过；ev2 无外键正常导入
+    expect(rows.map((r) => r.id)).toEqual(['ev2']);
   });
 
   it('损坏 JSON：恢复抛出 VALIDATION_ERROR', async () => {

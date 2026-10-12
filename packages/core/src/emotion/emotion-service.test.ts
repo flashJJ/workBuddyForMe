@@ -45,6 +45,49 @@ describe('createEmotionService（v1.6）', () => {
     close();
   });
 
+  it('M4：record 同时追加事件流水，viewWithEvents 倒序返回', () => {
+    const { deps, close } = setup();
+    const now = new Date(T0).toISOString();
+    // 事件外键引用真实消息（消息删除时 message_id 置空）
+    deps.db
+      .prepare(
+        `INSERT INTO conversations(id,assistant_id,created_at,updated_at) VALUES('c1','a1',?,?)`,
+      )
+      .run(now, now);
+    deps.db
+      .prepare(
+        `INSERT INTO messages(id,conversation_id,role,content,created_at) VALUES('m-1','c1','assistant','hi',?)`,
+      )
+      .run(now);
+    const service = createEmotionService(deps);
+    service.record(
+      'a1',
+      { type: 'praise', source: 'model', emotion: 'joy', intensity: 0.7, messageId: 'm-1' },
+      T0,
+    );
+    service.record('a1', { type: 'chat', source: 'rule' }, T0 + 1000);
+
+    const detail = service.viewWithEvents('a1', 10, T0 + 1000);
+    expect(detail.events).toHaveLength(2);
+    expect(detail.events[0]).toMatchObject({
+      type: 'chat',
+      source: 'rule',
+      emotion: null,
+      messageId: null,
+    });
+    expect(detail.events[1]).toMatchObject({
+      type: 'praise',
+      source: 'model',
+      emotion: 'joy',
+      intensity: 0.7,
+      messageId: 'm-1',
+    });
+    // 流水（倒序）与快照 recentEvents（正序）同一事件 id 一致
+    expect(detail.state.recentEvents[0]!.id).toBe(detail.events[1]!.id); // praise
+    expect(detail.state.recentEvents[1]!.id).toBe(detail.events[0]!.id); // chat
+    close();
+  });
+
   it('离线期间情绪在下次互动时结算衰减，关系保留', () => {
     const { deps, close } = setup();
     const service = createEmotionService(deps);
@@ -71,21 +114,29 @@ describe('createEmotionService（v1.6）', () => {
     close();
   });
 
-  it('setNeed 持久化需求；reset 删除行并回默认', () => {
+  it('setNeed 持久化需求；reset 删除状态行与事件流水并回默认', () => {
     const { deps, close } = setup();
     const service = createEmotionService(deps);
     const withNeed = service.setNeed('a1', 'comfort', T0);
     expect(withNeed.currentNeed).toBe('comfort');
     expect(service.view('a1', T0).currentNeed).toBe('comfort');
 
+    service.record('a1', { type: 'praise', source: 'model' }, T0 + 500);
+    expect(service.viewWithEvents('a1').events).toHaveLength(1);
+
     const reset = service.reset('a1', T0 + 1000);
     expect(reset.mood.happiness).toBe(10);
     expect(reset.currentNeed).toBe('none');
     expect(service.view('a1', T0 + 1000).relation.intimacy).toBe(20);
-    const count = deps.db
+    expect(service.viewWithEvents('a1').events).toHaveLength(0);
+    const stateCount = deps.db
       .prepare(`SELECT COUNT(*) AS n FROM assistant_emotion_states`)
       .get() as { n: number };
-    expect(count.n).toBe(0);
+    const eventCount = deps.db
+      .prepare(`SELECT COUNT(*) AS n FROM emotion_events`)
+      .get() as { n: number };
+    expect(stateCount.n).toBe(0);
+    expect(eventCount.n).toBe(0);
     close();
   });
 

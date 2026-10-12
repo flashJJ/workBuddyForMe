@@ -14,6 +14,7 @@ import {
   type SoulEventType,
 } from '@wbfm/shared/schemas';
 import { inferSoulEventFromUserText } from './emotion-rule-guard';
+import type { RecordEmotionInput } from './emotion-service';
 
 export type ResolvedEmotionSource = 'model' | 'rule' | 'default';
 
@@ -46,4 +47,59 @@ export function resolveTurnEmotion(
     signal: fallbackSignal('chat'),
     source: 'default',
   };
+}
+
+type TurnEmotionRecord = (
+  assistantId: string,
+  input: RecordEmotionInput,
+  now?: number,
+) => unknown;
+
+export interface RecordTurnEmotionParams {
+  /** 情绪开关关闭时直接返回 null，正文保持原样 */
+  enabled: boolean;
+  rawContent: string;
+  userContent: string;
+  assistantId: string;
+  messageId: string;
+  record: TurnEmotionRecord;
+  now?: number;
+}
+
+export interface RecordedTurnEmotion {
+  /** 已剥离情绪尾块的正文 */
+  content: string;
+  signal: EmotionSignal;
+}
+
+/**
+ * v1.6 M4：成功回合的情绪一体化落库——尾块剥离/规则保底/写状态与流水。
+ * 任何异常只告警并返回 null（情绪永不阻断已完成的正文）；
+ * 返回 null 时调用方必须保留原始正文与 undefined 信号。
+ */
+export function recordTurnEmotion(params: RecordTurnEmotionParams): RecordedTurnEmotion | null {
+  if (!params.enabled) return null;
+  try {
+    const resolved = resolveTurnEmotion(params.rawContent, params.userContent);
+    params.record(
+      params.assistantId,
+      {
+        type: resolved.signal.soulEvent,
+        source: resolved.source,
+        emotion: resolved.signal.emotion,
+        intensity: resolved.signal.intensity,
+        messageId: params.messageId,
+      },
+      params.now ?? Date.now(),
+    );
+    return { content: resolved.content, signal: resolved.signal };
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[wbfm] 情绪回合处理失败，已降级为普通回复：${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return null;
+  }
 }

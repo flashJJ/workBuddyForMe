@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { resolveTurnEmotion } from './emotion-turn';
+import { describe, expect, it, vi } from 'vitest';
+import { recordTurnEmotion, resolveTurnEmotion } from './emotion-turn';
 
 describe('resolveTurnEmotion 单回合情绪回落链', () => {
   it('模型合规尾块（围栏）：source=model，正文剥离，信号保留', () => {
@@ -54,5 +54,53 @@ describe('resolveTurnEmotion 单回合情绪回落链', () => {
     const resolved = resolveTurnEmotion(content, '你真棒');
     expect(resolved.source).toBe('rule');
     expect(resolved.content).toBe(content);
+  });
+});
+
+describe('recordTurnEmotion 一体化落库（M4）', () => {
+  const base = {
+    rawContent: '好的。\n{"emotion":"joy","intensity":0.8,"soulEvent":"praise"}',
+    userContent: '你真棒',
+    assistantId: 'a1',
+    messageId: 'm1',
+  };
+
+  it('开关关闭：返回 null 且不调用 record', () => {
+    const record = vi.fn();
+    const result = recordTurnEmotion({ ...base, enabled: false, record });
+    expect(result).toBeNull();
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it('正常路径：record 收到尾块信号与 messageId，返回剥离后正文', () => {
+    const record = vi.fn();
+    const result = recordTurnEmotion({ ...base, enabled: true, record, now: 1000 });
+    expect(result).toEqual({
+      content: '好的。',
+      signal: { emotion: 'joy', intensity: 0.8, soulEvent: 'praise' },
+    });
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith(
+      'a1',
+      {
+        type: 'praise',
+        source: 'model',
+        emotion: 'joy',
+        intensity: 0.8,
+        messageId: 'm1',
+      },
+      1000,
+    );
+  });
+
+  it('record 抛错：软降为 null 不抛出（情绪永不阻断正文）', () => {
+    const record = vi.fn(() => {
+      throw new Error('db locked');
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => recordTurnEmotion({ ...base, enabled: true, record })).not.toThrow();
+    expect(recordTurnEmotion({ ...base, enabled: true, record })).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });

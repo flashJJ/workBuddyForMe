@@ -22,6 +22,7 @@ export {
   type EmotionMood,
   type EmotionRelation,
   type EmotionEvent,
+  type EmotionEventView,
   type EmotionState,
   type EmotionSignal,
   type MoodLevel,

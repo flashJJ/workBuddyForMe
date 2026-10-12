@@ -156,4 +156,10 @@ export {
   type EmotionStateEntry,
   type EmotionStateRow,
 } from './emotion-state-repo';
+export {
+  createEmotionEventRepository,
+  type EmotionEventRepository,
+  type EmotionEventRecord,
+  type AddEmotionEventInput,
+} from './emotion-event-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

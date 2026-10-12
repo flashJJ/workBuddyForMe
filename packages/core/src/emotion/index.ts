@@ -16,6 +16,9 @@ export { EMOTION_DIRECTIVE_BLOCK, buildEmotionStateBlock } from './emotion-promp
 export { inferSoulEventFromUserText } from './emotion-rule-guard';
 export {
   resolveTurnEmotion,
+  recordTurnEmotion,
   type ResolvedTurnEmotion,
   type ResolvedEmotionSource,
+  type RecordTurnEmotionParams,
+  type RecordedTurnEmotion,
 } from './emotion-turn';

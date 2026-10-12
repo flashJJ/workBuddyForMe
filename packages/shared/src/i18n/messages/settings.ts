@@ -40,6 +40,32 @@ export const zhSettings = {
     compileModel: '编译增强模型',
     compileModelDefault: '跟随默认对话模型',
   },
+  // v1.6 M4 情绪与互动
+  emotion: {
+    title: '情绪与互动',
+    description: '角色会在相处中积累心情、亲密度与信任度，数据仅保存在本机。',
+    enable: '启用情绪内核（识别夸奖/数落、积累关系、驱动表情）',
+    enableHint: '关闭后不再向回复追加情绪协议、不解析情绪信号，也不写入情绪状态。',
+    assistant: '查看助手',
+    noAssistant: '还没有可用助手。',
+    stateTitle: '当前状态',
+    moodHappiness: '心情',
+    moodAnger: '生气',
+    moodSadness: '难过',
+    intimacy: '亲密度',
+    trust: '信任度',
+    need: '当前需求',
+    eventsTitle: '最近互动',
+    eventsEmpty: '还没有互动记录，去和 TA 聊聊吧。',
+    intensity: '强度',
+    reset: '重新认识',
+    resetTitle: '重置该助手的情绪？',
+    resetConfirm: '将清空与该助手的心情、亲密度、信任度及全部互动记录，且不可恢复。助手本身不会被删除。',
+    resetConfirmText: '重置情绪',
+    resetDone: '已重置情绪状态',
+    loadFailed: '情绪状态加载失败',
+    hint: '情绪会随时间自然平复；关系（亲密度/信任度）只增不减，重置才会清零。',
+  },
 };
 
 export const enSettings = {
@@ -83,5 +109,34 @@ export const enSettings = {
     compileWithLlm: 'LLM enhancement while compiling (off by default; falls back to rules)',
     compileModel: 'Enhancement model',
     compileModelDefault: 'Follow default chat model',
+  },
+  // v1.6 M4 emotion & interaction
+  emotion: {
+    title: 'Mood & relationship',
+    description:
+      'Your companion builds mood, intimacy and trust over time. All data stays on this device.',
+    enable: 'Enable emotion engine (detect praise/criticism, build relationship, drive expressions)',
+    enableHint:
+      'When off, no emotion protocol is appended to replies, emotion signals are ignored, and no state is stored.',
+    assistant: 'Assistant',
+    noAssistant: 'No assistant available yet.',
+    stateTitle: 'Current state',
+    moodHappiness: 'Mood',
+    moodAnger: 'Anger',
+    moodSadness: 'Sadness',
+    intimacy: 'Intimacy',
+    trust: 'Trust',
+    need: 'Current need',
+    eventsTitle: 'Recent interactions',
+    eventsEmpty: 'No interactions yet — go have a chat.',
+    intensity: 'Intensity',
+    reset: 'Start over',
+    resetTitle: 'Reset this assistant’s emotions?',
+    resetConfirm:
+      'This clears mood, intimacy, trust and all interaction history for this assistant and cannot be undone. The assistant itself is not deleted.',
+    resetConfirmText: 'Reset emotions',
+    resetDone: 'Emotion state reset',
+    loadFailed: 'Failed to load emotion state',
+    hint: 'Mood settles over time; relationship (intimacy/trust) only grows and is cleared only by reset.',
   },
 };

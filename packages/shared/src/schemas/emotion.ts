@@ -10,7 +10,7 @@
  * 无副作用的等级分级函数，UI 文案与模型注入文案共用同一分级口径。
  */
 import { z } from 'zod';
-import { EXPRESSION_TAGS } from './expression';
+import { EXPRESSION_TAGS, type ExpressionTag } from './expression';
 import {
   DEFAULT_ANGER,
   DEFAULT_EMOTION_INTENSITY,
@@ -47,7 +47,22 @@ export type EmotionNeed = (typeof EMOTION_NEEDS)[number];
  * 与 model（尾块识别）区分以支持协议合法率统计。
  */
 export const EMOTION_EVENT_SOURCES = ['model', 'rule', 'event', 'manual', 'default'] as const;
-export type EmotionEventSource = (typeof EMOTION_EVENT_SOURCES)[number];
+export type EmotionEventSource = (typeof EMOTION_EVENT_SOURCES)[number]
+
+/**
+ * 情绪事件流水的 wire 视图（M4）：数据库仓储行经映射后的对外结构，
+ * 也是 GET emotion?events=N 与备份轨的事件条目形状（ISO 时间、无对话原文）。
+ */
+export interface EmotionEventView {
+  id: string;
+  assistantId: string;
+  type: SoulEventType;
+  source: EmotionEventSource;
+  emotion: ExpressionTag | null;
+  intensity: number | null;
+  messageId: string | null;
+  createdAt: string;
+}
 
 // ── 状态结构 ────────────────────────────────────────────
 export const emotionMoodSchema = z.object({
