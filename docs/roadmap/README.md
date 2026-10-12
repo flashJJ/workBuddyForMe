@@ -11,9 +11,13 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 当前版本：v1.4 📐 正式方案已产出（A 方案，待评审开工）
+## 当前版本：v1.5 🔧 真机打磨（增量版本，已合 main，待 bump/tag）
 
-v1.3 知识层封版后的能力版本，主题已定：**A. 会分工——规划/执行/审查的最小多智能体协作**（2026-10-11 拍板，B 活知识/C 桌面可靠性/D 生态模板留后续评估）。开工前置：v1.3.0 已合 main（合并节点 `8df9d9c`，含真机热修；tag/Release 转正为发布运维并行项）。正式方案四篇见 [v1.4 方案](../plan/v1.4/README.md)：固定三角色 Planner/Executor/Reviewer + 结构化 Handoff（v019 agent_runs/agent_handoffs）→ 复用并泛化 task-loop（修复 v0.7 知识检索硬编码断点）→ Flow 新增 agent 节点（确定性 DAG 与概率性子任务同图）→ 角色泳道可观测 + 三重预算硬上限 + 权限不自动提权 → agent eval golden（含去审查者/关知识/限轮次三开关反向验证），M0–M5 合同任务板待评审。
+v1.4 协作真机（本地 7B 弱模型）反馈驱动的补课版本，无独立规划四篇、直接在 main 迭代（5 提交，139 文件 +2963/-729）：**多知识库联合检索**（助手/Agent 节点 ≤10 库，一次 embed + 跨库 RRF 融合，引用 >3 折叠）；**协作失败链热修**（子任务完整上下文下传、工具正文回注、检索 3 次上限、零检索收尾确定性门控、空 summary 兜底等 10 处）；**系统轨迹双语**（语言中立线格式 SOH+JSON{k,vars}+STX，存稳定 key，历史随语言切换即时变化）；**真机热修**（语音长回复 429s→解耦后台合成、急停早于 SSE 建连致 running 孤儿、sr-only 包含块逃逸撑高文档）。check 8/8，单测 shared 132/core 797/web 357/voice 71 全绿，协作 e2e 6/6。总结：[v1.5-release-summary.md](v1.5-release-summary.md)；博客：[blog/v1.5](../../blog/v1.5/)（3 篇）。
+
+## 已合 main：v1.4 ✅ 会分工——最小多智能体协作（2026-10-11 封版，tag v1.4.0）
+
+v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行/审查的最小多智能体协作**。固定三角色 Planner/Executor/Reviewer + 结构化 Handoff（v019 agent_runs/agent_handoffs）→ 复用并泛化 task-loop（修复 v0.7 知识检索硬编码断点）→ Flow 新增 agent 节点（确定性 DAG 与概率性子任务同图）→ 角色泳道可观测 + 三重预算硬上限 + 权限不自动提权 → agent eval golden（含去审查者/关知识/限轮次三开关反向验证）。144 文件 +9238/-202；check 14/14、单测 1663、e2e 43/43、eval 四态 33 例全绿。正式方案四篇见 [v1.4 方案](../plan/v1.4/README.md)。
 
 ## 已合 main 待发布：v1.3 ✅ 代码已封版并入 main（2026-10，tag/Release 待发布运维）
 
@@ -113,9 +117,10 @@ v1.3 知识层封版后的能力版本，主题已定：**A. 会分工——规�
 | v0.9 | Flow Serving：执行解耦 + 本地 API/MCP | ✅ 已发布 | [方案](v0.9-flow-serving.md) | [总结](v0.9-release-summary.md) | B01-B08 | `v0.9.0` |
 | v1.0 | 会说话的桌面伙伴：本地语音 + Live2D + 桌宠 | ✅ 已发布（真人验收通过） | [方案](../plan/v1.0/README.md) | [总结](v1.0-release-summary.md) | [blog/v1.0](../../blog/v1.0/) 10 篇 | `v1.0.0` |
 | v1.1 | 内部加固：分层强制/工具结果压缩/热点拆分/契约防漂移/eval 平台 | ✅ 已发布（含 cipher 桥死锁/fork 炸弹两个真机热修） | [方案](../plan/v1.1/README.md) | [总结](v1.1-release-summary.md) | [blog/v1.1](../../blog/v1.1/) 10 篇 | `v1.1.0` |
-| v1.2 | 正式发布打磨：品牌安装器/签名双态/发布流水线/深色/a11y/i18n/向导帮助 | ✅ 已合 main 并打 tag（真机 T5.6/Release 转正验收中） | [方案](../plan/v1.2/README.md) | [总结](v1.2-release-summary.md) | — | `v1.2.0` |
-| v1.3 | 知识变厚：编译式 RAG 与知识治理（混合检索/重排/语句级引用/治理/eval） | ✅ 已合 main（`8df9d9c`，tag/Release 待发布运维） | [方案](../plan/v1.3/README.md) | [总结](v1.3-release-summary.md) | — | 待打 |
-| v1.4 | 会分工：规划/执行/审查最小多智能体协作（Handoff/agent 节点/泳道/预算/eval） | 📐 方案已产出待评审（分支 `feature/v1.4-planning`） | [方案](../plan/v1.4/README.md) | — | — | — |
+| v1.2 | 正式发布打磨：品牌安装器/签名双态/发布流水线/深色/a11y/i18n/向导帮助 | ✅ 已合 main 并打 tag（真机 T5.6/Release 转正验收中） | [方案](../plan/v1.2/README.md) | [总结](v1.2-release-summary.md) | [blog/v1.2](../../blog/v1.2/) 3 篇 | `v1.2.0` |
+| v1.3 | 知识变厚：编译式 RAG 与知识治理（混合检索/重排/语句级引用/治理/eval） | ✅ 已合 main（`8df9d9c`，tag/Release 待发布运维） | [方案](../plan/v1.3/README.md) | [总结](v1.3-release-summary.md) | [blog/v1.3](../../blog/v1.3/) 3 篇 | 待打 |
+| v1.4 | 会分工：规划/执行/审查最小多智能体协作（Handoff/agent 节点/泳道/预算/eval） | ✅ 已封版并打 tag v1.4.0（真机抽测后 Release 转正） | [方案](../plan/v1.4/README.md) | [总结](v1.4-release-summary.md) | [blog/v1.4](../../blog/v1.4/) 3 篇 | `v1.4.0` |
+| v1.5 | 真机打磨：多库联合检索/弱模型协作收敛/双语系统轨迹/语音与竞态热修 | ✅ 已合 main（版本号 bump/tag/Release 待执行） | — | [总结](v1.5-release-summary.md) | [blog/v1.5](../../blog/v1.5/) 3 篇 | 待打 |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
