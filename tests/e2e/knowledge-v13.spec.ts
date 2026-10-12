@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { waitForHydrated } from './utils';
 
 /**
  * v1.3 知识链路 E2E（TR-5.3）：WBFM_MOCK_AI=1，编译/静态引用/同名替换/治理全链路。
@@ -82,6 +83,7 @@ test.describe.serial('v1.3 知识链路', () => {
     // 供应商 + 对话/向量模型（照 critical-path 模式）
     await page.goto('/settings');
     await skipOnboardingIfShown(page);
+    await waitForHydrated(page);
     await page.getByRole('button', { name: '新增供应商' }).click();
     await page.getByLabel('名称').fill('v13 Mock 供应商');
     await page.getByLabel('Base URL').fill('http://mock.local/v1');

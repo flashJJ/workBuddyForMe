@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { waitForHydrated } from './utils';
 
 /**
  * M4 免手持续聆听（VAD）E2E：
@@ -157,6 +158,7 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
 
   test('① 准备对话模型（mock 供应商 + vad-chat）', async ({ page }) => {
     await page.goto('/settings');
+    await waitForHydrated(page);
     await page.getByRole('button', { name: '新增供应商' }).click();
     await page.getByLabel('名称').fill('VAD Mock 供应商');
     await page.getByLabel('Base URL').fill('http://mock.local/v1');

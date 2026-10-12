@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { waitForHydrated } from './utils';
 
 /**
  * M2 语音输入全链路 E2E（mock 语音引擎，真 mic 采集链路）：
@@ -96,6 +97,7 @@ test.describe.serial('M2 语音输入（ASR）', () => {
 
   test('① 准备对话模型（mock 供应商 + mock-chat）', async ({ page }) => {
     await page.goto('/settings');
+    await waitForHydrated(page);
     await page.getByRole('button', { name: '新增供应商' }).click();
     await page.getByLabel('名称').fill('语音 Mock 供应商');
     await page.getByLabel('Base URL').fill('http://mock.local/v1');

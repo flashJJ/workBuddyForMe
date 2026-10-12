@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { waitForHydrated } from './utils';
 
 /**
  * M3 Live2D 形象 e2e：
@@ -22,6 +23,7 @@ function collectLive2dRequests(page: Page): string[] {
 test.describe.serial('M3 Live2D 形象', () => {
   test('① 准备对话模型（mock 供应商 + l2d-chat 默认模型）', async ({ page }) => {
     await page.goto('/settings');
+    await waitForHydrated(page);
     await page.getByRole('button', { name: '新增供应商' }).click();
     await page.getByLabel('名称').fill('形象 Mock 供应商');
     await page.getByLabel('Base URL').fill('http://mock.local/v1');

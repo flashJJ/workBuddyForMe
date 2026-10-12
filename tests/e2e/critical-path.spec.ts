@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { mkdtempSync, readFileSync } from 'node:fs';
+import { waitForHydrated } from './utils';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -23,6 +24,7 @@ const TINY_PNG = Buffer.from(
 test.describe.serial('WorkBuddy 关键路径', () => {
   test('① 配置供应商与模型，连接测试成功', async ({ page }) => {
     await page.goto('/settings');
+    await waitForHydrated(page);
 
     await page.getByRole('button', { name: '新增供应商' }).click();
     await page.getByLabel('名称').fill('Mock 供应商');
@@ -121,7 +123,16 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     await expect(page.getByText(/根据检索到的资料/)).toBeVisible();
     const citations = page.getByTestId('citations');
     await expect(citations).toBeVisible();
-    await expect(citations.getByText(DOC_FILENAME).first()).toBeVisible();
+    // 命中 >3 条时引用列表折叠；流式期间引用分批到达 + meta 回填可能重挂载，
+    // 展开态存在竞态。轮询保证最终列表已展开且文件名可见
+    await expect(async () => {
+      const toggle = citations.getByTestId('citations-toggle');
+      if (await toggle.count()) {
+        const expanded = await toggle.getAttribute('aria-expanded');
+        if (expanded !== 'true') await toggle.click();
+      }
+      await expect(citations.getByText(DOC_FILENAME).first()).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
   });
 
   test('⑥ 视觉对话：添加视觉模型并附加图片，mock 识别图片', async ({ page }) => {

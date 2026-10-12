@@ -18,6 +18,11 @@ export function EmotionPanel() {
   const updateSettings = useUpdateSettings();
   const { data: assistants } = useAssistants();
   const [selectedId, setSelectedId] = React.useState<string>('');
+  // 水合门控：assistants 到达时机早于整页水合完成时，select/兜底文案的结构交换
+  // 会在未水合子树提交，触发 React #418/#422（整根降级客户端渲染，慢机下按钮死点击）。
+  // 首帧恒与 SSR 一致渲染兜底文案，挂载后再按数据切换。
+  const [hydrated, setHydrated] = React.useState(false);
+  React.useEffect(() => setHydrated(true), []);
 
   // 默认选中第一个助手
   React.useEffect(() => {
@@ -98,7 +103,7 @@ export function EmotionPanel() {
         <div className="space-y-3 border-t pt-3">
           <div className="space-y-1.5">
             <Label htmlFor="emotion-assistant-select">{t('settings.emotion.assistant')}</Label>
-            {assistants && assistants.length > 0 ? (
+            {hydrated && assistants && assistants.length > 0 ? (
               <select
                 id="emotion-assistant-select"
                 className="h-9 w-full rounded-md border bg-background px-3 text-sm"
