@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import type { MessageKey } from '@wbfm/shared/i18n';
 import { apiUpload, ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/ui/button';
@@ -9,43 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { BackupTrack, BackupPrecheck } from '@wbfm/shared/backup';
 import type { BackupRestoreResult } from '@wbfm/core/backup';
-
-/** 轨道展示键（顺序即 UI 展示顺序） */
-const TRACK_KEYS: Record<BackupTrack, { label: MessageKey; desc: MessageKey }> = {
-  conversations: {
-    label: 'settingsBackup.tracks.conversationsLabel',
-    desc: 'settingsBackup.tracks.conversationsDesc',
-  },
-  knowledge: {
-    label: 'settingsBackup.tracks.knowledgeLabel',
-    desc: 'settingsBackup.tracks.knowledgeDesc',
-  },
-  settings: {
-    label: 'settingsBackup.tracks.settingsLabel',
-    desc: 'settingsBackup.tracks.settingsDesc',
-  },
-  attachments: {
-    label: 'settingsBackup.tracks.attachmentsLabel',
-    desc: 'settingsBackup.tracks.attachmentsDesc',
-  },
-  skills: {
-    label: 'settingsBackup.tracks.skillsLabel',
-    desc: 'settingsBackup.tracks.skillsDesc',
-  },
-  tasks: {
-    label: 'settingsBackup.tracks.tasksLabel',
-    desc: 'settingsBackup.tracks.tasksDesc',
-  },
-};
-
-const TRACK_ORDER: BackupTrack[] = [
-  'conversations',
-  'knowledge',
-  'settings',
-  'attachments',
-  'skills',
-  'tasks',
-];
+import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
 
 type RestoreResponse = { ok: true; precheck: BackupPrecheck; result: BackupRestoreResult };
 
@@ -138,6 +101,9 @@ export function BackupPanel() {
       if (r.imported.tasks) {
         parts.push(t('settingsBackup.imported.tasks', { count: r.imported.tasks }));
       }
+      if (r.imported.emotion) {
+        parts.push(t('settingsBackup.imported.emotion', { count: r.imported.emotion }));
+      }
 
       const skippedParts: string[] = [];
       if (r.skipped.conversations) {
@@ -153,6 +119,9 @@ export function BackupPanel() {
       }
       if (r.skipped.tasks) {
         skippedParts.push(t('settingsBackup.skipped.tasks', { count: r.skipped.tasks }));
+      }
+      if (r.skipped.emotion) {
+        skippedParts.push(t('settingsBackup.skipped.emotion', { count: r.skipped.emotion }));
       }
 
       let msg = t('settingsBackup.restoreDone', {

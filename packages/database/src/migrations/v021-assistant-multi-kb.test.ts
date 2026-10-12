@@ -14,8 +14,8 @@ describe('v021 迁移：助手多知识库 knowledge_base_ids', () => {
   it('全新空库：user_version=21，新列就位且默认 []', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(21);
-    expect(LATEST_SCHEMA_VERSION).toBe(21);
+    expect(getSchemaVersion(db)).toBe(22);
+    expect(LATEST_SCHEMA_VERSION).toBe(22);
     const cols = db.prepare(`PRAGMA table_info(assistants)`).all() as Array<{ name: string }>;
     expect(cols.some((c) => c.name === 'knowledge_base_ids')).toBe(true);
   });
@@ -31,7 +31,7 @@ describe('v021 迁移：助手多知识库 knowledge_base_ids', () => {
     ).run();
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(21);
+    expect(getSchemaVersion(db)).toBe(22);
 
     const rows = db
       .prepare(`SELECT id, knowledge_base_ids AS ids FROM assistants ORDER BY id`)

@@ -149,4 +149,11 @@ export {
   type AgentHandoffAddFields,
   type AgentRunTokenPatch,
 } from './agent-run-repo';
+export {
+  createEmotionStateRepository,
+  type EmotionStateRepository,
+  type EmotionStateRecord,
+  type EmotionStateEntry,
+  type EmotionStateRow,
+} from './emotion-state-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

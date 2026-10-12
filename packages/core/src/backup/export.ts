@@ -15,6 +15,7 @@ import {
   createSettingsRepository,
   createAttachmentRepository,
   createSkillStateRepository,
+  createEmotionStateRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { getAppVersion } from './app-version';
@@ -54,6 +55,7 @@ export async function exportBackup(
   const settingsRepo = createSettingsRepository(deps.db);
   const attachmentsRepo = createAttachmentRepository(deps.db);
   const skillStateRepo = createSkillStateRepository(deps.db);
+  const emotionStateRepo = createEmotionStateRepository(deps.db);
 
   // 1. 逐轨序列化（纯 JSON，进 tar）
   const files: Record<string, string> = {};
@@ -64,6 +66,7 @@ export async function exportBackup(
     attachments: { files: 'attachments/', entryCount: 0, totalBytes: 0 },
     skills: { files: 'skills.json', entryCount: 0 },
     tasks: { files: 'tasks.json', entryCount: 0 },
+    emotion: { files: 'emotion.json', entryCount: 0 },
   };
 
   if (tracks.includes('conversations')) {
@@ -149,6 +152,14 @@ export async function exportBackup(
     files['tasks.json'] = JSON.stringify(serialized, null, 2);
     manifestPartial.tasks = { files: 'tasks.json', entryCount: serialized.length };
     onProgress?.({ track: 'tasks', processed: serialized.length, total: serialized.length });
+  }
+
+  if (tracks.includes('emotion')) {
+    // v1.6：情绪/关系轨——每助手一行完整状态 JSON（不含对话原文，仅状态与最近事件）
+    const records = emotionStateRepo.list();
+    files['emotion.json'] = JSON.stringify(records, null, 2);
+    manifestPartial.emotion = { files: 'emotion.json', entryCount: records.length };
+    onProgress?.({ track: 'emotion', processed: records.length, total: records.length });
   }
 
   // 2. 附件：元数据 JSON + 二进制（可选）

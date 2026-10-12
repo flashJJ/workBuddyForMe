@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -27,8 +27,8 @@ describe('v019 迁移：agent_runs/agent_handoffs 与归属列', () => {
   it('全新空库：user_version=19，新表与归属列就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(21);
-    expect(LATEST_SCHEMA_VERSION).toBe(21);
+    expect(getSchemaVersion(db)).toBe(22);
+    expect(LATEST_SCHEMA_VERSION).toBe(22);
     expect(tableExists(db, 'agent_runs')).toBe(true);
     expect(tableExists(db, 'agent_handoffs')).toBe(true);
     expect(columnNames(db, 'task_runs').has('agent_run_id')).toBe(true);
@@ -55,7 +55,7 @@ describe('v019 迁移：agent_runs/agent_handoffs 与归属列', () => {
     ).run();
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(21);
+    expect(getSchemaVersion(db)).toBe(22);
 
     const run = db.prepare(`SELECT agent_run_id FROM task_runs WHERE id='tr'`).get() as {
       agent_run_id: string | null;

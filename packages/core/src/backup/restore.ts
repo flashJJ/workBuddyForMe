@@ -15,6 +15,7 @@ import type { ServiceDeps } from '../services/deps';
 import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
+import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
 import { ensureSeedData } from '../services/seed';
 
 export interface BackupRestoreOptions {
@@ -26,8 +27,8 @@ export interface BackupRestoreOptions {
 
 export interface BackupRestoreResult {
   manifest: BackupManifest;
-  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number };
-  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number };
+  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number; emotion: number };
+  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number; emotion: number };
 }
 
 /** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
@@ -65,6 +66,7 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       attachments: manifest.tracks.attachments.entryCount,
       skills: manifest.tracks.skills?.entryCount ?? 0,
       tasks: manifest.tracks.tasks?.entryCount ?? 0,
+      emotion: manifest.tracks.emotion?.entryCount ?? 0,
     },
     warnings,
   });
@@ -101,8 +103,8 @@ export async function restoreBackup(
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
     const result: Omit<BackupRestoreResult, 'manifest'> = {
-      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0 },
-      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0 },
+      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0 },
+      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0 },
     };
 
     if (tracksToRestore.includes('settings') && files.has('settings.json')) {
@@ -150,6 +152,14 @@ export async function restoreBackup(
       onProgress?.({ track: 'tasks', processed: imported + skipped, total: manifest.tracks.tasks?.entryCount ?? taskPayload.length });
     }
 
+    if (tracksToRestore.includes('emotion') && files.has('emotion.json')) {
+      const emotionPayload = readEmotionTrackPayload(files.get('emotion.json')!);
+      const { imported, skipped } = restoreEmotionStates(deps.db, emotionPayload);
+      result.imported.emotion = imported;
+      result.skipped.emotion = skipped;
+      onProgress?.({ track: 'emotion', processed: imported + skipped, total: manifest.tracks.emotion?.entryCount ?? emotionPayload.length });
+    }
+
     return result;
   }).immediate();
 
@@ -195,6 +205,7 @@ function determineTracks(manifest: BackupManifest, files: Map<string, Buffer>): 
   if (files.has('attachments.json') && manifest.tracks.attachments.entryCount > 0) tracks.push('attachments');
   if (files.has('skills.json') && (manifest.tracks.skills?.entryCount ?? 0) > 0) tracks.push('skills');
   if (files.has('tasks.json') && (manifest.tracks.tasks?.entryCount ?? 0) > 0) tracks.push('tasks');
+  if (files.has('emotion.json') && (manifest.tracks.emotion?.entryCount ?? 0) > 0) tracks.push('emotion');
   return tracks;
 }
 

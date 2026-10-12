@@ -1,6 +1,6 @@
 /**
  * 备份恢复：各轨道的实际 DB 写入 SQL 函数。
- * 与 restore.ts 分离以通过 300 行门禁。
+ * 与 restore.ts 分离以通过 300 行门禁；v1.6 情绪轨另见 restore-emotion.ts。
  */
 
 type DBRunResult = { changes: number; lastInsertRowid: number | bigint };
