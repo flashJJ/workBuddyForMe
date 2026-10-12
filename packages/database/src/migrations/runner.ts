@@ -20,6 +20,8 @@ import { migrateV018 } from './v018-fts-backfill';
 import { migrateV019 } from './v019-agent-collab';
 import { migrateV020 } from './v020-agent-roles';
 import { migrateV021 } from './v021-assistant-multi-kb';
+import { migrateV022 } from './v022-assistant-emotion';
+import { migrateV023 } from './v023-emotion-events';
 
 interface Migration {
   version: number;
@@ -126,6 +128,16 @@ const MIGRATIONS: Migration[] = [
     version: 21,
     description: 'assistant multi-kb: assistants.knowledge_base_ids JSON 数组列（旧单值回填）',
     up: migrateV021,
+  },
+  {
+    version: 22,
+    description: 'assistant emotion: assistant_emotion_states 情绪/关系状态表（每助手一行）',
+    up: migrateV022,
+  },
+  {
+    version: 23,
+    description: 'assistant emotion: emotion_events 情绪事件流水（不可变追加，无对话原文）',
+    up: migrateV023,
   },
 ];
 

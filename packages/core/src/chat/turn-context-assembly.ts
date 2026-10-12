@@ -17,6 +17,12 @@ import type { ResolvedChatTarget } from './model-resolver';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import { toToolDefinitions, type ToolContext, type ToolMap } from '../tools/types';
 import { buildSkillPromptBlock, mergeSkillAllowedTools } from '../skills/skill-assembly';
+import { createSettingsService } from '../services/settings-service';
+import {
+  buildEmotionStateBlock,
+  EMOTION_DIRECTIVE_BLOCK,
+  type EmotionService,
+} from '../emotion';
 
 export interface PrepareTurnContextParams {
   deps: ServiceDeps;
@@ -25,6 +31,8 @@ export interface PrepareTurnContextParams {
   conversations: ConversationService;
   attachments: Pick<AttachmentService, 'loadImages'>;
   memory: MemoryService;
+  /** v1.6：情绪服务（读当前情绪/关系状态）；未提供时本轮不注入情绪段 */
+  emotion?: EmotionService;
   conversationId: string;
   assistantMessageId: string;
   userContent: string;
@@ -40,6 +48,11 @@ export interface PreparedTurnContext {
   toolDefs: ToolDefinition[];
   outgoing: ChatMessage[];
   toolCtx: ToolContext;
+  /**
+   * v1.6：本轮情绪功能是否生效（总开关 && 助手表情开关 && 情绪服务可用）。
+   * 编排器据此决定回复后是否解析尾块/记录情绪；仅装配时计算一次。
+   */
+  emotionEnabled: boolean;
   /** v1.1：每条工具消息的入模 token 预算（context-budget 装配时下发） */
   toolMessageBudgetTokens: number;
   /** 工具调用追踪（交由工具循环 push 条目） */
@@ -69,7 +82,19 @@ export async function* prepareTurnContext(
     signal,
     traceParent,
     target,
+    emotion,
   } = params;
+
+  // v1.6：情绪功能双开关——app-settings.emotionEnabled（缺省 true）与
+  // 助手 expressionEnabled 同时为真，且情绪服务已注入时才注入情绪段。
+  const emotionEnabled =
+    emotion !== undefined &&
+    assistant.expressionEnabled &&
+    createSettingsService(deps).get().emotionEnabled !== false;
+  const emotionBlock =
+    emotionEnabled && emotion
+      ? `${buildEmotionStateBlock(emotion.view(assistant.id))}\n\n${EMOTION_DIRECTIVE_BLOCK}`
+      : null;
 
   const conversation = conversations.get(conversationId);
   const history = conversations
@@ -109,6 +134,7 @@ export async function* prepareTurnContext(
     summary: conversation.summary,
     memoryBlock,
     skillBlock,
+    emotionBlock,
   });
   if (budgetStats) await recordBudgetSpan(budgetStats, traceParent);
   // v0.7 M1：向工具上下文透传视觉能力（screen_snapshot 据此决定是否携带截图图片）
@@ -128,6 +154,7 @@ export async function* prepareTurnContext(
     toolDefs,
     outgoing,
     toolCtx,
+    emotionEnabled,
     toolMessageBudgetTokens,
     trace,
     citations,

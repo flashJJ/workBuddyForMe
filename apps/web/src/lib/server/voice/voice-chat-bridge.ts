@@ -5,6 +5,7 @@ import {
   StreamingSentenceSplitter,
   type TtsEngine,
 } from '@wbfm/voice';
+import { stripEmotionSignalBlock } from '@wbfm/shared/schemas';
 import type { OrchestratorEvent } from '@wbfm/core/chat';
 import type { WebChatSseEvent } from '@/lib/api/sse-events';
 
@@ -66,7 +67,10 @@ export async function* withVoice(
   deps: VoiceBridgeDeps,
 ): AsyncGenerator<VoiceBridgeEvent> {
   const splitter = new StreamingSentenceSplitter();
-  let emittedText = '';
+  /** 模型累计原始全文（增量/全文兼容） */
+  let rawFull = '';
+  /** 已送入切句器的「清洗后」全文（v1.6：情绪尾块永不进入 TTS） */
+  let spokenFull = '';
   let speaking = false;
 
   // 已合成、待下发的语音帧 FIFO
@@ -122,11 +126,15 @@ export async function* withVoice(
 
       if (event.event === 'delta') {
         const content = event.data.content;
-        // 增量/全文兼容：只取「已朗读前缀」之后的新增部分
-        const suffix = content.startsWith(emittedText)
-          ? content.slice(emittedText.length)
-          : content;
-        emittedText = content.startsWith(emittedText) ? content : emittedText + content;
+        // 增量/全文兼容：累计原始全文
+        rawFull = content.startsWith(rawFull) ? content : rawFull + content;
+        // v1.6：对累计全文做流式剥离（含半截尾块），只把新增的干净文本送切句器；
+        // 清洗结果理论上单调增长，极端回退（隐藏窗口扩大）时该差分丢弃不补读
+        const cleanFull = stripEmotionSignalBlock(rawFull);
+        const suffix = cleanFull.startsWith(spokenFull)
+          ? cleanFull.slice(spokenFull.length)
+          : '';
+        spokenFull += suffix;
 
         for (const fragment of splitter.push(suffix)) enqueue(fragment);
       }

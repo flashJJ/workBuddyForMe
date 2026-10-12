@@ -265,6 +265,7 @@ export function ChatPage() {
       {voiceSettings?.avatarEnabled && hasChatModel && !petOpen && (
         <ChatAvatarRail
           modelId={voiceSettings.avatarModelId || 'haru'}
+          assistantId={assistantId}
           messages={session.messages}
           getLevel={companion.playback.getLevel}
           speaking={companion.playback.speaking}

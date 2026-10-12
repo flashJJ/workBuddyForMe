@@ -49,6 +49,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./emotion": {
+            "types": "./src/emotion/index.ts",
+            "development": "./src/emotion/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./ingestion": {
             "types": "./src/ingestion/index.ts",
             "development": "./src/ingestion/index.ts",

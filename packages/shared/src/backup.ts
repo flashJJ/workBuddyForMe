@@ -5,10 +5,10 @@ import { z } from 'zod';
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。
- * 当前版本：1（v0.4 首发）。
+ * 当前版本：2（v1.6 新增 emotion 情绪/关系轨；v1 旧归档仍可恢复，缺轨按 0 处理）。
  */
 
-export const CURRENT_BACKUP_SCHEMA_VERSION = 1 as const;
+export const CURRENT_BACKUP_SCHEMA_VERSION = 2 as const;
 
 export const backupTrackSchema = z.enum([
   'conversations',
@@ -17,6 +17,7 @@ export const backupTrackSchema = z.enum([
   'attachments',
   'skills',
   'tasks',
+  'emotion',
 ]);
 export type BackupTrack = z.infer<typeof backupTrackSchema>;
 
@@ -43,6 +44,8 @@ export const backupManifestSchema = z.object({
     skills: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
     /** v0.7 新增；旧归档无此键，故 optional 保持向前兼容 */
     tasks: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
+    /** v1.6 新增：助手情绪/关系状态；v1 旧归档无此键 */
+    emotion: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
   }),
   /** 归档整体 SHA-256 摘要（可选，快速校验用） */
   archiveSha256: z.string().optional(),
@@ -66,6 +69,7 @@ export const backupPrecheckSchema = z.object({
     attachments: z.number().int().min(0),
     skills: z.number().int().min(0),
     tasks: z.number().int().min(0),
+    emotion: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

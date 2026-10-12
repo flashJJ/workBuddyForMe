@@ -36,6 +36,8 @@ export interface TurnMessageParams {
   memoryBlock: string | null;
   /** v0.6 M3：启用技能的提示词模板块（注入 system 区块） */
   skillBlock: string | null;
+  /** v1.6：情绪状态段 + 尾块协议（仅情绪功能开启时传入） */
+  emotionBlock: string | null;
 }
 
 /**
@@ -47,7 +49,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
   stats: HistoryBudgetStats | null;
 } {
   const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
-    summary, memoryBlock, skillBlock } = params;
+    summary, memoryBlock, skillBlock, emotionBlock } = params;
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
@@ -55,6 +57,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
     summary,
     memoryBlock,
     skillBlock,
+    emotionBlock,
   });
 }
 

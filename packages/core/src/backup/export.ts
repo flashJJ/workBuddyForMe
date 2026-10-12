@@ -15,6 +15,8 @@ import {
   createSettingsRepository,
   createAttachmentRepository,
   createSkillStateRepository,
+  createEmotionStateRepository,
+  createEmotionEventRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { getAppVersion } from './app-version';
@@ -54,6 +56,8 @@ export async function exportBackup(
   const settingsRepo = createSettingsRepository(deps.db);
   const attachmentsRepo = createAttachmentRepository(deps.db);
   const skillStateRepo = createSkillStateRepository(deps.db);
+  const emotionStateRepo = createEmotionStateRepository(deps.db);
+  const emotionEventRepo = createEmotionEventRepository(deps.db);
 
   // 1. 逐轨序列化（纯 JSON，进 tar）
   const files: Record<string, string> = {};
@@ -64,6 +68,7 @@ export async function exportBackup(
     attachments: { files: 'attachments/', entryCount: 0, totalBytes: 0 },
     skills: { files: 'skills.json', entryCount: 0 },
     tasks: { files: 'tasks.json', entryCount: 0 },
+    emotion: { files: 'emotion.json', entryCount: 0 },
   };
 
   if (tracks.includes('conversations')) {
@@ -149,6 +154,23 @@ export async function exportBackup(
     files['tasks.json'] = JSON.stringify(serialized, null, 2);
     manifestPartial.tasks = { files: 'tasks.json', entryCount: serialized.length };
     onProgress?.({ track: 'tasks', processed: serialized.length, total: serialized.length });
+  }
+
+  if (tracks.includes('emotion')) {
+    // v1.6：情绪/关系轨——每助手一行状态快照 + 其事件流水（均不含对话原文）
+    const eventsByAssistant = new Map<string, unknown[]>();
+    for (const event of emotionEventRepo.listAll()) {
+      const list = eventsByAssistant.get(event.assistantId) ?? [];
+      list.push(event);
+      eventsByAssistant.set(event.assistantId, list);
+    }
+    const records = emotionStateRepo.list().map((record) => ({
+      ...record,
+      events: eventsByAssistant.get(record.assistantId) ?? [],
+    }));
+    files['emotion.json'] = JSON.stringify(records, null, 2);
+    manifestPartial.emotion = { files: 'emotion.json', entryCount: records.length };
+    onProgress?.({ track: 'emotion', processed: records.length, total: records.length });
   }
 
   // 2. 附件：元数据 JSON + 二进制（可选）

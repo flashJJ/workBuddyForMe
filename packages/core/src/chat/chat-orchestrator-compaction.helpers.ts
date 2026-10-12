@@ -48,7 +48,11 @@ export function seedLongConversation(
     capabilities: ['chat'],
     contextWindow: 3000,
   });
-  createSettingsService({ db, cipher }).update({ defaultChatModelId: model.id });
+  // 压缩用例隔离 v1.6 情绪：关闭情绪总开关，避免情绪固定块改变预算装配条数
+  createSettingsService({ db, cipher }).update({
+    defaultChatModelId: model.id,
+    emotionEnabled: false,
+  });
   const assistantService = createAssistantsService({ db, cipher });
   const assistant = assistantService.list()[0]!;
   // 压缩用例隔离长期记忆：关闭开关，避免回合后提取额外占用 fetch mock 队列

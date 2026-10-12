@@ -269,3 +269,6 @@ export {
   type ToolConfirmInput,
   type ToolDebugExecuteInput,
 } from './tool';
+
+// v1.6 情绪内核契约（域子 barrel，见 emotion-domain.ts）
+export * from './emotion-domain';

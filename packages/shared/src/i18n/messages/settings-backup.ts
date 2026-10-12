@@ -30,6 +30,8 @@ export const zhSettingsBackup = {
     skillsDesc: '技能文件夹（skill.json）与启停状态',
     tasksLabel: '任务记录',
     tasksDesc: '桌面 Agent 任务运行与步骤日志（v0.7+）',
+    emotionLabel: '情绪与关系',
+    emotionDesc: '各助手的心情、亲密度与信任度状态（v1.6+）',
   },
   imported: {
     conversations: '{count} 对话',
@@ -40,12 +42,14 @@ export const zhSettingsBackup = {
     attachments: '{count} 附件',
     skills: '{count} 技能',
     tasks: '{count} 任务',
+    emotion: '{count} 情绪状态',
   },
   skipped: {
     conversations: '{count} 对话（已存在或助手不存在）',
     documents: '{count} 文档',
     skills: '{count} 技能（文件夹已存在）',
     tasks: '{count} 任务（已存在或会话/助手不存在）',
+    emotion: '{count} 情绪状态（已存在、助手不存在或数据损坏）',
   },
 };
 
@@ -83,6 +87,8 @@ export const enSettingsBackup = {
     skillsDesc: 'Skill folders (skill.json) and enabled state',
     tasksLabel: 'Task records',
     tasksDesc: 'Desktop agent task runs and step logs (v0.7+)',
+    emotionLabel: 'Mood & relationship',
+    emotionDesc: 'Per-assistant mood, intimacy and trust state (v1.6+)',
   },
   imported: {
     conversations: '{count} conversations',
@@ -93,11 +99,13 @@ export const enSettingsBackup = {
     attachments: '{count} attachments',
     skills: '{count} skills',
     tasks: '{count} tasks',
+    emotion: '{count} emotion states',
   },
   skipped: {
     conversations: '{count} conversations (already exist or assistant missing)',
     documents: '{count} documents',
     skills: '{count} skills (folder already exists)',
     tasks: '{count} tasks (already exist or conversation/assistant missing)',
+    emotion: '{count} emotion states (already exist, assistant missing or corrupted)',
   },
 };

@@ -4,11 +4,10 @@ import * as React from 'react';
 import type { Message } from '@wbfm/shared/types';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { Live2dCanvas } from './live2d-canvas';
-import {
-  DEFAULT_EXPRESSION,
-  latestExpression,
-  type ExpressionTag,
-} from './expression-parser';
+import type { Live2dController } from './live2d-controller';
+import { DEFAULT_EXPRESSION } from './expression-parser';
+import { useHeadTouch, type TouchControllerLike } from './use-head-touch';
+import { useEmotionExpression } from './use-emotion-expression';
 
 interface AvatarHostProps {
   /** 当前会话消息（含流式 live 消息），用于从回复标签推导表情 */
@@ -19,34 +18,33 @@ interface AvatarHostProps {
   speaking: boolean;
   /** 模型 id（语音设置 avatarModelId） */
   modelId: string;
+  /** 当前助手 id（v1.6：情绪基线拉取） */
+  assistantId: string;
   /** F8：主动轮气泡文本（存在时表情优先跟随它） */
   proactiveContent?: string | null;
 }
 
-/** 取表情：F8 主动轮进行时以主动气泡内容为准，否则取最后一条助手消息 */
-function useLastAssistantExpression(messages: Message[], proactiveContent?: string | null): ExpressionTag {
-  return React.useMemo(() => {
-    if (proactiveContent) {
-      const proactiveTag = latestExpression(proactiveContent);
-      if (proactiveTag) return proactiveTag;
-    }
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      const m = messages[i];
-      if (m?.role === 'assistant') {
-        return latestExpression(m.content) ?? DEFAULT_EXPRESSION;
-      }
-    }
-    return DEFAULT_EXPRESSION;
-  }, [messages, proactiveContent]);
-}
-
 /**
- * 对话页形象区（M3）：Live2D 画布 + 状态角标。
- * 挂在独立右侧栏；组件本身轻量，重资源经 live2d-canvas 动态切 chunk。
+ * 对话页形象区：Live2D 画布 + 状态角标。
+ * v1.6：表情经 useEmotionExpression 融合（内联标签优先，无标签回落情绪基线），
+ * 头部摸头给害羞/抗议反馈（rail 不出短句，短句在桌宠气泡呈现）。
  */
-export function AvatarHost({ messages, getLevel, speaking, modelId, proactiveContent = null }: AvatarHostProps) {
+export function AvatarHost({
+  messages,
+  getLevel,
+  speaking,
+  modelId,
+  assistantId,
+  proactiveContent = null,
+}: AvatarHostProps) {
   const { t } = useI18n();
-  const expression = useLastAssistantExpression(messages, proactiveContent);
+  const expression = useEmotionExpression(assistantId, messages, proactiveContent);
+  // 舞台内 Live2dController 由动态 chunk 创建；ref 结构兼容触摸所需动作子集
+  const controllerRef = React.useRef<Live2dController | null>(null);
+  const onHeadTouch = useHeadTouch(
+    controllerRef as React.MutableRefObject<TouchControllerLike | null>,
+  );
+
   return (
     <div className="flex h-full flex-col" data-testid="avatar-host">
       <div className="flex items-center justify-between border-b px-3 py-2">
@@ -69,6 +67,8 @@ export function AvatarHost({ messages, getLevel, speaking, modelId, proactiveCon
           expression={expression}
           getLevel={getLevel}
           speaking={speaking}
+          controllerRef={controllerRef}
+          onHeadTouch={() => onHeadTouch()}
         />
       </div>
     </div>

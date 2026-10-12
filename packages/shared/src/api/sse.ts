@@ -4,6 +4,7 @@ import type { FlowEventPayload } from '../types/flow';
 import type { TaskEventPayload } from '../schemas/task';
 import type { ToolEventPayload } from '../types/tool';
 import type { VoiceState } from '../schemas/voice';
+import type { EmotionSignal } from '../schemas/emotion';
 import type {
   AgentBudgetUsage,
   AgentHandoffView,
@@ -139,7 +140,16 @@ export type SsePayloadMap = {
     argsSummary: string;
     taskScope: string;
   };
-  done: { content: string; usage: TokenUsage | null };
+  /**
+   * done：content 为已剥离情绪尾块的正文。
+   * emotion 仅在情绪功能开启时附带（本轮解析后的情绪信号，含弱模型规则保底结果）；
+   * 关闭情绪或主动搭话轮次不附带。
+   */
+  done: {
+    content: string;
+    usage: TokenUsage | null;
+    emotion?: EmotionSignal;
+  };
   error: { code: string; message: string };
 };
 

@@ -31,16 +31,23 @@ export const EXPRESSION_DIRECTIVE_BLOCK = [
 export const RAG_INTRO =
   '请优先参考以下检索到的资料回答；资料不足时再使用你的常识，并在回答中给出引用。\n\n【参考资料】\n';
 
-/** 组装系统提示词：助手人设 + 表情指令 + 可选对话摘要 + 可选长期记忆 + 可选技能流程块 + 可选 RAG 参考资料块 */
+/**
+ * 组装系统提示词：助手人设 + 表情指令 +（v1.6）情绪状态与信号协议 +
+ * 可选对话摘要 + 可选长期记忆 + 可选技能流程块 + 可选 RAG 参考资料块。
+ * 注入顺序经快照测试锁定（见 prompt.test.ts）。
+ */
 export function buildSystemPrompt(
   assistant: Assistant,
   rag: RagContext | null,
   summary: string | null = null,
   memoryBlock: string | null = null,
   skillBlock: string | null = null,
+  emotionBlock: string | null = null,
 ): string {
   const parts = [assistant.systemPrompt.trim()];
   if (assistant.expressionEnabled) parts.push(EXPRESSION_DIRECTIVE_BLOCK);
+  // v1.6：情绪块内已自带「当前状态段 + 尾块协议」两段，调用方在情绪功能开启时整体传入
+  if (emotionBlock?.trim()) parts.push(emotionBlock.trim());
   if (summary?.trim()) {
     parts.push('以下是本次对话早期内容的摘要，其中的事实与约定仍然有效：\n\n【对话摘要】\n' + summary.trim());
   }
@@ -74,6 +81,8 @@ export interface ChatBudgetOptions {
   memoryBlock?: string | null;
   /** v0.6 M3：启用技能的提示词模板块（注入 system，占用预算） */
   skillBlock?: string | null;
+  /** v1.6：情绪状态段 + 尾块协议（仅情绪功能开启时由调用方组装） */
+  emotionBlock?: string | null;
 }
 
 /**
@@ -95,7 +104,7 @@ export function buildChatMessages(
   );
 
   if (!budget) {
-    const systemPrompt = buildSystemPrompt(assistant, rag, null, null, null);
+    const systemPrompt = buildSystemPrompt(assistant, rag);
     const prefix: ChatMessage[] = systemPrompt
       ? [{ role: 'system', content: systemPrompt }]
       : [];
@@ -109,9 +118,17 @@ export function buildChatMessages(
   const summary = budget.summary ?? null;
   const memoryBlock = budget.memoryBlock ?? null;
   const skillBlock = budget.skillBlock ?? null;
+  const emotionBlock = budget.emotionBlock ?? null;
 
-  // 1) 先装不含 RAG 的固定系统块（人设/表情/摘要/记忆/技能）
-  const fixedSystem = buildSystemPrompt(assistant, null, summary, memoryBlock, skillBlock);
+  // 1) 先装不含 RAG 的固定系统块（人设/表情/情绪/摘要/记忆/技能）
+  const fixedSystem = buildSystemPrompt(
+    assistant,
+    null,
+    summary,
+    memoryBlock,
+    skillBlock,
+    emotionBlock,
+  );
   const fixedTokens = fixedSystem ? estimateTokens(fixedSystem) : 0;
   // 2) 本轮用户消息恒保留：先把它的占用从 RAG 预算里扣掉，防止资料挤掉当前问题
   const userLastTokens =
@@ -127,7 +144,14 @@ export function buildChatMessages(
     PER_MESSAGE_STRUCTURE_TOKENS;
   const effectiveRag = fitRagToBudget(rag, ragCapacity);
 
-  const systemPrompt = buildSystemPrompt(assistant, effectiveRag, summary, memoryBlock, skillBlock);
+  const systemPrompt = buildSystemPrompt(
+    assistant,
+    effectiveRag,
+    summary,
+    memoryBlock,
+    skillBlock,
+    emotionBlock,
+  );
   const prefix: ChatMessage[] = systemPrompt
     ? [{ role: 'system', content: systemPrompt }]
     : [];
