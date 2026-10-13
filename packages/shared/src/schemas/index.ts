@@ -272,3 +272,6 @@ export {
 
 // v1.6 情绪内核契约（域子 barrel，见 emotion-domain.ts）
 export * from './emotion-domain';
+
+// v1.7 剧情事件引擎契约
+export * from './event';
