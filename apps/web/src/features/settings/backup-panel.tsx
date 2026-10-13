@@ -10,7 +10,8 @@ import type { BackupTrack, BackupPrecheck } from '@wbfm/shared/backup';
 import type { BackupRestoreResult } from '@wbfm/core/backup';
 import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
 
-type RestoreResponse = { ok: true; precheck: BackupPrecheck; result: BackupRestoreResult };
+/** /api/backup/restore 成功信封解包后的 data（route 返回 jsonOk({precheck,result})） */
+type RestoreResponse = { precheck: BackupPrecheck; result: BackupRestoreResult };
 
 export function BackupPanel() {
   const { t } = useI18n();

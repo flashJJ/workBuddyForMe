@@ -1,6 +1,7 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { precheckBackup, restoreBackup } from '@wbfm/core/backup';
 import { defineRoute } from '@/lib/server/with-api-handler';
+import { jsonOk } from '@/lib/server/api-response';
 import { readUploadPart } from '@/lib/server/multipart';
 
 export const dynamic = 'force-dynamic';
@@ -24,5 +25,7 @@ export const POST = defineRoute(async ({ request, services }) => {
   const deps = { db: services.db, cipher: services.cipher };
   const result = await restoreBackup(deps, archive);
 
-  return Response.json({ ok: true, precheck, result });
+  // 统一 {success,data} 信封（客户端 request() 依赖 payload.success 判定成败，
+  // 裸返回会导致恢复实际成功但前端误报「请求失败」）
+  return jsonOk({ precheck, result });
 });
