@@ -79,6 +79,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./events": {
+      "types": "./src/events/index.ts",
+      "development": "./src/events/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": ["dist", "src"],

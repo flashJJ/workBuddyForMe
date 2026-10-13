@@ -22,6 +22,8 @@ export interface HeadTouchResult {
   /** 防抖拒绝（重复点击）时 false，调用方可忽略 */
   accepted: boolean;
   inProtection: boolean;
+  /** 本次是否新进入保护期（v1.7：=连摸第 3 次，触发 ev.touch.shy） */
+  enteredProtection: boolean;
   expression: ExpressionTag;
   /** 应展示的本地短句 i18n 键（无则 null） */
   lineKey: MessageKey | null;
@@ -58,6 +60,7 @@ export function useHeadTouch(
       return {
         accepted: false,
         inProtection: outcome.inProtection,
+        enteredProtection: false,
         expression: outcome.expression,
         lineKey: null,
       };
@@ -77,6 +80,7 @@ export function useHeadTouch(
     return {
       accepted: true,
       inProtection: outcome.inProtection,
+      enteredProtection: outcome.enteredProtection,
       expression: outcome.expression,
       lineKey,
     };

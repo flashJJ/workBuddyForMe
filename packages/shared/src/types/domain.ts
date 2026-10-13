@@ -12,6 +12,7 @@ import type {
   Language,
 } from '../constants';
 import type { ContentPart } from './content-part';
+import type { EventSettingsFields } from '../events/event-settings';
 import type { PermissionLevel } from './permission';
 import type { ToolTraceEntry } from './tool';
 
@@ -197,7 +198,7 @@ export interface DocumentRecord {
   compileGeneration?: number;
 }
 
-export interface AppSettings {
+export interface AppSettings extends EventSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;
@@ -225,6 +226,7 @@ export interface AppSettings {
    * 关闭后摸头/久别迎接不再说话（零文案气泡）；摸头表情与弹性等无音效动作反馈保留。
    */
   interactionLinesEnabled?: boolean;
+  // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
 }
 
 // ── v0.6 M3 本地技能包 ──

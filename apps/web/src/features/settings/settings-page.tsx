@@ -22,6 +22,7 @@ import { HelpCenterPanel } from '../help-center/help-center-panel';
 import { VoicePreferencePanel } from '../voice/settings/voice-preference-panel';
 import { KnowledgeRetrievalPanel } from './knowledge-retrieval-panel';
 import { EmotionPanel } from './emotion-panel';
+import { EventPanel } from './event-panel';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -79,6 +80,8 @@ export function SettingsPage() {
       <VoicePreferencePanel />
 
       <EmotionPanel />
+
+      <EventPanel />
 
       <McpPanel />
 

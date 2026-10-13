@@ -25,6 +25,7 @@ import { MicButton } from '../voice/mic-button';
 import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
 import { ProactiveBubbleBar } from './proactive-bubble';
 import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
+import { useChatEvents } from './use-chat-events';
 import { ChatSetupGuide } from './chat-setup-guide';
 
 export function ChatPage() {
@@ -76,6 +77,25 @@ export function ChatPage() {
     hasChatModel,
   });
   const { session, voiceSettings, ttsEnabled, handleTtsToggle, handsfree, petOpen } = companion;
+
+  // v1.7 剧情事件编排（情绪基线/舞台/触发器；桌宠打开时主窗仍承接 TTS 与中继）
+  const { expression: avatarExpression, stage: eventStage } = useChatEvents({
+    assistantId,
+    messages: session.messages,
+    proactiveContent: companion.proactiveBubble?.content ?? null,
+    settings,
+    voiceSettings,
+    hasChatModel,
+    ttsEnabled,
+    ttsReady: Boolean(companion.voiceModelStatus?.ttsReady),
+    convLocked: session.streaming || handsfree.voiceState !== 'idle',
+    ttsSpeaking: companion.playback.speaking,
+    playback: {
+      enqueue: companion.playback.enqueue,
+      cancel: companion.playback.cancel,
+      waitDrained: companion.playback.waitDrained,
+    },
+  });
 
   // v0.3：当前生效模型（助手绑定优先，否则全局默认）是否具备视觉能力
   const visionEnabled = React.useMemo(() => {
@@ -265,18 +285,10 @@ export function ChatPage() {
       {voiceSettings?.avatarEnabled && hasChatModel && !petOpen && (
         <ChatAvatarRail
           modelId={voiceSettings.avatarModelId || 'haru'}
-          assistantId={assistantId}
-          messages={session.messages}
+          expression={avatarExpression}
+          eventStage={eventStage}
           getLevel={companion.playback.getLevel}
           speaking={companion.playback.speaking}
-          proactiveContent={companion.proactiveBubble?.content ?? null}
-          eventPlayback={{
-            enqueue: companion.playback.enqueue,
-            cancel: companion.playback.cancel,
-            waitDrained: companion.playback.waitDrained,
-          }}
-          eventTtsEnabled={companion.ttsEnabled}
-          eventTtsReady={Boolean(companion.voiceModelStatus?.ttsReady)}
         />
       )}
     </div>

@@ -26,6 +26,26 @@ describe('EventDirector 仲裁与队列', () => {
     expect(h2.director.queuedCount()).toBe(1);
   });
 
+  it('skipCurrent：用户跳过→user_skip；空闲时 no-op；排队项保留', async () => {
+    const h = makeDirectorHarness();
+    // 空闲跳过：无 runner、不抛错
+    h.director.skipCurrent();
+
+    h.director.trigger(makeDef({ id: 'ev.cur', priority: 2 }), makeContext());
+    h.director.trigger(
+      makeDef({ id: 'ev.waiting', priority: 1, interruptPolicy: 'replaceLowerPriority' }),
+      makeContext(),
+    );
+    expect(h.director.queuedCount()).toBe(1);
+
+    h.director.skipCurrent();
+    expect(h.runners[0]!.interrupts).toEqual(['user_skip']);
+    h.runners[0]!.settle('skipped', 'user_skip');
+    await h.flush();
+    // 跳过后 FIFO 补位，排队项未被清
+    expect(h.createdFor).toEqual(['ev.cur', 'ev.waiting']);
+  });
+
   it('replace：无视优先级抢占', () => {
     const h = makeDirectorHarness();
     h.director.trigger(makeDef({ id: 'ev.current', priority: 3 }), makeContext());

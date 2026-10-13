@@ -21,5 +21,11 @@ export const settingsUpdateSchema = z.object({
   emotionEnabled: z.boolean().optional(),
   // v1.6 M5 互动本地短句（摸头/久别迎接；缺省视为 true，关闭只留无声音的表情动作）
   interactionLinesEnabled: z.boolean().optional(),
+  // v1.7 剧情事件总开关（缺省视为 true；出口/勿扰/对话锁仍由导演层兜底）
+  eventsEnabled: z.boolean().optional(),
+  // v1.7 主动频率档（冷却系数 1.5/1/0.6；缺省 standard）
+  eventFrequencyTier: z.enum(['low', 'standard', 'high']).optional(),
+  // v1.7 被用户停用的内置剧本 id（单条停用；缺省空=全部启用）
+  disabledEventIds: z.array(z.string().min(3).max(80)).max(50).optional(),
 });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;

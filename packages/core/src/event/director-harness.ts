@@ -47,6 +47,11 @@ export class TestRunner {
     this.interrupts.push(reason);
   }
 
+  /** 真实 EventRunner.skip 即 interrupt('user_skip')，桩保持同语义 */
+  skip(): void {
+    this.interrupt('user_skip');
+  }
+
   done() {
     return this.donePromise as Promise<{ eventId: string; outcome: EventRunOutcome; reason?: string }>;
   }

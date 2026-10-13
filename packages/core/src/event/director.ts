@@ -63,6 +63,14 @@ export class EventDirector {
     return this.current !== null;
   }
 
+  /**
+   * 用户跳过当前演出（Esc/点击跳过层）：无负面情绪，记 skipped。
+   * 排队项保留（跳过不影响后续 FIFO）；无当前演出时 no-op。
+   */
+  skipCurrent(): void {
+    this.current?.runner.skip();
+  }
+
   queuedCount(): number {
     return this.queue.length;
   }

@@ -68,6 +68,21 @@ export const zhSettings = {
     loadFailed: '情绪状态加载失败',
     hint: '情绪会随时间自然平复；关系（亲密度/信任度）只增不减，重置才会清零。',
   },
+  // v1.7 剧情事件
+  events: {
+    title: '剧情演出',
+    description: '在早安、晚安、久别重逢、被夸奖等时刻自动演一小段，全部本地判定，不调用模型。',
+    enable: '启用剧情演出',
+    enableHint: '关闭后不会主动触发任何剧本；23:00–8:00 勿扰时段与对话进行中也不会演出。',
+    frequency: '主动频率',
+    frequencyLow: '克制',
+    frequencyStandard: '标准',
+    frequencyHigh: '亲近',
+    frequencyHint: '改变剧本冷却时长的乘数：克制 ×1.5，标准 ×1，亲近 ×0.6。',
+    scenesTitle: '内置剧本',
+    sceneEnabled: '启用',
+    previewHint: '可在对话页右侧形象栏的「试运行」按钮里随时手动观看。',
+  },
 };
 
 export const enSettings = {
@@ -143,5 +158,22 @@ export const enSettings = {
     resetDone: 'Emotion state reset',
     loadFailed: 'Failed to load emotion state',
     hint: 'Mood settles over time; relationship (intimacy/trust) only grows and is cleared only by reset.',
+  },
+  // v1.7 staged events
+  events: {
+    title: 'Staged scenes',
+    description:
+      'Short scripted moments for mornings, goodnights, reunions and praise — all decided locally, no model calls.',
+    enable: 'Enable staged scenes',
+    enableHint:
+      'When off, no scene triggers automatically. Scenes also stay quiet during 23:00–8:00 and conversations.',
+    frequency: 'Proactive frequency',
+    frequencyLow: 'Reserved',
+    frequencyStandard: 'Standard',
+    frequencyHigh: 'Affectionate',
+    frequencyHint: 'Multiplier on scene cooldowns: Reserved ×1.5, Standard ×1, Affectionate ×0.6.',
+    scenesTitle: 'Built-in scenes',
+    sceneEnabled: 'Enabled',
+    previewHint: 'Use the preview button on the avatar rail in the chat to watch any scene anytime.',
   },
 };
