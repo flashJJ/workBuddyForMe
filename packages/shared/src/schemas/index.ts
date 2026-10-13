@@ -275,3 +275,7 @@ export * from './emotion-domain';
 
 // v1.7 剧情事件引擎契约
 export * from './event';
+// v1.7 角色化提醒（scheduled_tasks）
+export * from './scheduled-task';
+// v1.7 演出用量 HTTP 契约
+export * from './event-usage';

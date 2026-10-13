@@ -7,7 +7,7 @@
  * - 触发器临时计数器（reunionTier/touchStreak/interactionsToday）由调用方合并。
  */
 import type { EmotionState } from '@wbfm/shared/schemas';
-import type { ConditionContext, PersonalityWeights } from '@wbfm/core';
+import type { ConditionContext, PersonalityWeights } from '@wbfm/core/event-client';
 
 /** v024 前的人格中性默认（不偏向任何支线） */
 export const DEFAULT_PERSONALITY: PersonalityWeights = {

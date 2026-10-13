@@ -31,6 +31,10 @@ export const BACKUP_TRACK_KEYS: Record<BackupTrack, { label: MessageKey; desc: M
     label: 'settingsBackup.tracks.emotionLabel',
     desc: 'settingsBackup.tracks.emotionDesc',
   },
+  events: {
+    label: 'settingsBackup.tracks.eventsLabel',
+    desc: 'settingsBackup.tracks.eventsDesc',
+  },
 };
 
 /** UI 展示/默认勾选顺序 */
@@ -42,4 +46,5 @@ export const BACKUP_TRACK_ORDER: BackupTrack[] = [
   'skills',
   'tasks',
   'emotion',
+  'events',
 ];

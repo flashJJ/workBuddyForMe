@@ -7,12 +7,11 @@ import {
   DEFAULT_QUIET,
   EventDirector,
   EventRunner,
-  InMemoryEventUsageStore,
-  defaultDateKey,
   type ConditionContext,
   type EventEffectSink,
-} from '@wbfm/core';
+} from '@wbfm/core/event-client';
 import type { EventPlayer } from './event-player';
+import { RemoteEventUsageStore, shanghaiDateKey } from './remote-usage-store';
 
 export interface EventDirectorSettings {
   masterEnabled: boolean;
@@ -22,6 +21,8 @@ export interface EventDirectorSettings {
 export type PreviewResult = 'ok' | 'busy' | 'conv';
 
 interface UseEventDirectorArgs {
+  /** M4：用量闸门按助手持久化（切换助手需重建导演，事件不跨助手串角） */
+  assistantId: string;
   /** M2 播放器（effect 序保证先于本 hook 的 effect 创建；委托 sink 再做一层 null 兜底） */
   playerRef: React.MutableRefObject<EventPlayer | null>;
   isConvLocked: () => boolean;
@@ -66,7 +67,9 @@ export function useEventDirector(args: UseEventDirectorArgs) {
 
   React.useEffect(() => {
     const clock = createWallClock();
-    const usage = new InMemoryEventUsageStore();
+    // M4：用量走 event_usage 持久化（快照+写穿）；M1-M3 的内存实现仅留作单测
+    const usage = new RemoteEventUsageStore(args.assistantId, shanghaiDateKey);
+    void usage.hydrate();
     const gates = {
       isConvLocked: () => argsRef.current.isConvLocked(),
       isTtsLocked: () => argsRef.current.isTtsLocked(),
@@ -77,7 +80,7 @@ export function useEventDirector(args: UseEventDirectorArgs) {
       clock,
       sink: sinkRef.current!,
       usage,
-      toDateKey: (ms) => defaultDateKey(ms),
+      toDateKey: (ms) => shanghaiDateKey(ms),
       settings: {
         masterEnabled: argsRef.current.getSettings().masterEnabled,
         quietStart: DEFAULT_QUIET.start,
@@ -96,9 +99,9 @@ export function useEventDirector(args: UseEventDirectorArgs) {
       previewRunnerRef.current?.interrupt('higher_priority');
       previewRunnerRef.current = null;
     };
-    // 仅挂载期创建；锁/设置变化经 ref 读取
+    // 助手切换即重建：事件/用量严格按当前助手隔离；锁/设置变化经 ref 读取
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [args.assistantId]);
 
   // 设置热同步（不重建导演/不丢队列）
   React.useEffect(() => {

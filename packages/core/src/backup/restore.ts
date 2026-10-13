@@ -16,6 +16,10 @@ import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
 import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
+import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
+import { determineTracks, hasRedactedPlaceholder } from './restore-track-select';
+import { createScheduledTaskRepository } from '@wbfm/database';
+import { computeNextRunMs } from '../scheduler/next-run';
 import { ensureSeedData } from '../services/seed';
 
 export interface BackupRestoreOptions {
@@ -27,8 +31,8 @@ export interface BackupRestoreOptions {
 
 export interface BackupRestoreResult {
   manifest: BackupManifest;
-  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number; emotion: number };
-  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number; emotion: number };
+  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number; emotion: number; events: number };
+  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number; emotion: number; events: number };
 }
 
 /** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
@@ -67,6 +71,8 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       skills: manifest.tracks.skills?.entryCount ?? 0,
       tasks: manifest.tracks.tasks?.entryCount ?? 0,
       emotion: manifest.tracks.emotion?.entryCount ?? 0,
+      schedules: manifest.tracks.events?.scheduleCount ?? 0,
+      eventUsage: manifest.tracks.events?.usageCount ?? 0,
     },
     warnings,
   });
@@ -103,8 +109,8 @@ export async function restoreBackup(
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
     const result: Omit<BackupRestoreResult, 'manifest'> = {
-      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0 },
-      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0 },
+      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0 },
+      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0 },
     };
 
     if (tracksToRestore.includes('settings') && files.has('settings.json')) {
@@ -160,6 +166,26 @@ export async function restoreBackup(
       onProgress?.({ track: 'emotion', processed: imported + skipped, total: manifest.tracks.emotion?.entryCount ?? emotionPayload.length });
     }
 
+    if (tracksToRestore.includes('events') && files.has('events.json')) {
+      // 顺序：自定义助手 → 提醒 → 流水（后两者外键依赖助手；全部 INSERT OR IGNORE）
+      const eventsPayload = readEventsTrackPayload(files.get('events.json')!);
+      const counts = restoreEventsTrack(deps.db, eventsPayload);
+      result.imported.events = counts.schedules.imported;
+      result.skipped.events = counts.schedules.skipped;
+      const eventsTotal =
+        counts.assistants.imported + counts.assistants.skipped +
+        counts.schedules.imported + counts.schedules.skipped +
+        counts.usage.imported + counts.usage.skipped;
+      onProgress?.({
+        track: 'events',
+        processed: eventsTotal,
+        total:
+          (manifest.tracks.events?.assistantCount ?? 0) +
+          (manifest.tracks.events?.scheduleCount ?? 0) +
+          (manifest.tracks.events?.usageCount ?? 0),
+      });
+    }
+
     return result;
   }).immediate();
 
@@ -192,29 +218,20 @@ export async function restoreBackup(
     }
   }
 
+  // --- 事务外：events 轨恢复后统一重排启用提醒（防备份时刻过期/未来漂移） ---
+  if (tracksToRestore.includes('events') && files.has('events.json')) {
+    try {
+      createScheduledTaskRepository(deps.db, { computeNextRunMs }).recomputeEnabled();
+    } catch (error) {
+      // 重排失败不判定恢复失败：提醒行已入库，下条编辑/tick 会自然纠偏
+      console.warn('[backup] 提醒时刻重排失败', error);
+    }
+  }
+
   return { manifest, ...txResult };
 }
 
 // ==================== 辅助函数 ====================
-
-function determineTracks(manifest: BackupManifest, files: Map<string, Buffer>): BackupTrack[] {
-  const tracks: BackupTrack[] = [];
-  if (files.has('conversations.json') && manifest.tracks.conversations.entryCount > 0) tracks.push('conversations');
-  if (files.has('knowledge.json') && manifest.tracks.knowledge.knowledgeBaseCount > 0) tracks.push('knowledge');
-  if (files.has('settings.json')) tracks.push('settings');
-  if (files.has('attachments.json') && manifest.tracks.attachments.entryCount > 0) tracks.push('attachments');
-  if (files.has('skills.json') && (manifest.tracks.skills?.entryCount ?? 0) > 0) tracks.push('skills');
-  if (files.has('tasks.json') && (manifest.tracks.tasks?.entryCount ?? 0) > 0) tracks.push('tasks');
-  if (files.has('emotion.json') && (manifest.tracks.emotion?.entryCount ?? 0) > 0) tracks.push('emotion');
-  return tracks;
-}
-
-function hasRedactedPlaceholder(value: unknown): boolean {
-  if (value === '[REDACTED]') return true;
-  if (value === null || value === undefined || typeof value !== 'object') return false;
-  if (Array.isArray(value)) return value.some(hasRedactedPlaceholder);
-  return Object.values(value as Record<string, unknown>).some(hasRedactedPlaceholder);
-}
 
 async function extractArchive(buf: Buffer): Promise<{ manifest: BackupManifest; files: Map<string, Buffer> }> {
   const r = await extractArchiveFull(buf);

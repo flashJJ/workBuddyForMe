@@ -17,8 +17,12 @@ import {
   createSkillStateRepository,
   createEmotionStateRepository,
   createEmotionEventRepository,
+  createAssistantRepository,
+  createScheduledTaskRepository,
+  createEventUsageRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
+import { computeNextRunMs } from '../scheduler/next-run';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared/errors';
 import { getDataRoot } from '@wbfm/config';
@@ -58,6 +62,9 @@ export async function exportBackup(
   const skillStateRepo = createSkillStateRepository(deps.db);
   const emotionStateRepo = createEmotionStateRepository(deps.db);
   const emotionEventRepo = createEmotionEventRepository(deps.db);
+  const assistantsRepo = createAssistantRepository(deps.db);
+  const scheduledTaskRepo = createScheduledTaskRepository(deps.db, { computeNextRunMs });
+  const eventUsageRepo = createEventUsageRepository(deps.db);
 
   // 1. 逐轨序列化（纯 JSON，进 tar）
   const files: Record<string, string> = {};
@@ -69,6 +76,7 @@ export async function exportBackup(
     skills: { files: 'skills.json', entryCount: 0 },
     tasks: { files: 'tasks.json', entryCount: 0 },
     emotion: { files: 'emotion.json', entryCount: 0 },
+    events: { files: 'events.json', scheduleCount: 0, usageCount: 0, assistantCount: 0 },
   };
 
   if (tracks.includes('conversations')) {
@@ -171,6 +179,26 @@ export async function exportBackup(
     files['emotion.json'] = JSON.stringify(records, null, 2);
     manifestPartial.emotion = { files: 'emotion.json', entryCount: records.length };
     onProgress?.({ track: 'emotion', processed: records.length, total: records.length });
+  }
+
+  if (tracks.includes('events')) {
+    // v1.7：自定义助手（含人格权重）+ 全量提醒 + 近 90 天演出流水（与保留策略对齐）
+    const customAssistants = assistantsRepo.list().filter((assistant) => !assistant.isBuiltin);
+    const schedules = scheduledTaskRepo.listAll();
+    const usage = eventUsageRepo.listAll({ sinceMs: Date.now() - 90 * 24 * 3600_000 });
+    files['events.json'] = JSON.stringify(
+      { assistants: customAssistants, schedules, usage },
+      null,
+      2,
+    );
+    manifestPartial.events = {
+      files: 'events.json',
+      scheduleCount: schedules.length,
+      usageCount: usage.length,
+      assistantCount: customAssistants.length,
+    };
+    const eventsTotal = schedules.length + usage.length + customAssistants.length;
+    onProgress?.({ track: 'events', processed: eventsTotal, total: eventsTotal });
   }
 
   // 2. 附件：元数据 JSON + 二进制（可选）

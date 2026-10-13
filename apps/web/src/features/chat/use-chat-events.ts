@@ -6,6 +6,7 @@ import { useEmotionState } from '@/features/avatar/use-emotion-expression';
 import type { EventPlaybackBridge } from '@/features/events/use-event-player';
 import { useEventStage, type EventStage } from '@/features/events/use-event-stage';
 import { useEventTriggers } from '@/features/events/use-event-triggers';
+import { useSchedulerTick } from '@/features/reminders/use-scheduler-tick';
 
 export interface UseChatEventsArgs {
   assistantId: string;
@@ -43,6 +44,7 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
   const eventsEnabled = args.settings?.eventsEnabled !== false;
 
   const stage = useEventStage({
+    assistantId: args.assistantId,
     emotionState,
     baselineExpression: expression,
     playback: args.hasChatModel
@@ -69,6 +71,14 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
       args.settings?.emotionEnabled !== false &&
       args.settings?.interactionLinesEnabled !== false,
     triggerEvent: stage.triggerEvent,
+  });
+
+  // v1.7：角色化提醒 10s tick（独立于剧情事件总开关——用户显式订阅的提醒必达）
+  useSchedulerTick({
+    currentAssistantId: args.assistantId,
+    hasOutlet: () => hasOutlet,
+    isConvLocked: () => args.convLocked,
+    deliverReminder: stage.deliverReminder,
   });
 
   return { expression, stage };

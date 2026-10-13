@@ -16,6 +16,11 @@ export interface AssistantFormShape {
   retrieveAlways: boolean;
   memoryEnabled: boolean;
   expressionEnabled: boolean;
+  /** v1.7：人格四权重 0..1 */
+  personalityFrankness: number;
+  personalityTsundere: number;
+  personalityShy: number;
+  personalityTolerance: number;
 }
 
 /**
@@ -42,5 +47,9 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
     retrieveAlways: form.retrieveAlways,
     memoryEnabled: form.memoryEnabled,
     expressionEnabled: form.expressionEnabled,
+    personalityFrankness: form.personalityFrankness,
+    personalityTsundere: form.personalityTsundere,
+    personalityShy: form.personalityShy,
+    personalityTolerance: form.personalityTolerance,
   };
 }

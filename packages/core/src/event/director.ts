@@ -12,11 +12,13 @@ import {
   type EventSuppressReason,
 } from '@wbfm/shared/schemas';
 import type { EventRunGates, ConditionContext, QueuedEvent } from './types';
-import type { EventEffectSink } from './types';
+import type { EventEffectSink, EventUsageReader, EventUsageWriter } from './types';
 import type { EventClock } from './clock';
 import { EventRunner } from './runner';
 import { effectiveCooldown, isQuietHour } from './gates';
-import { InMemoryEventUsageStore } from './usage-store';
+
+/** 用量闸门：内存实现与 M4 远程快照写穿实现均满足该结构化类型 */
+export type EventUsageStore = EventUsageReader & EventUsageWriter;
 
 export interface DirectorSettings {
   masterEnabled: boolean;
@@ -36,7 +38,7 @@ export interface EventDirectorDeps {
   gates: EventRunGates;
   clock: EventClock;
   sink: EventEffectSink;
-  usage: InMemoryEventUsageStore;
+  usage: EventUsageStore;
   settings: DirectorSettings;
   /** 本地日界（与 usage store 同一口径） */
   toDateKey: (nowMs: number) => string;

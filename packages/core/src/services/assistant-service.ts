@@ -67,6 +67,10 @@ export function createAssistantsService({ db }: ServiceDeps) {
         retrieveAlways: input.retrieveAlways,
         memoryEnabled: input.memoryEnabled,
         expressionEnabled: input.expressionEnabled,
+        personalityFrankness: input.personalityFrankness,
+        personalityTsundere: input.personalityTsundere,
+        personalityShy: input.personalityShy,
+        personalityTolerance: input.personalityTolerance,
         isBuiltin: false,
         sortOrder,
       });

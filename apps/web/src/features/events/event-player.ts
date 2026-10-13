@@ -22,7 +22,7 @@ import type {
   EventSpatialAction,
   ExpressionTag,
 } from '@wbfm/shared/schemas';
-import type { EventEffectSink } from '@wbfm/core';
+import type { EventEffectSink } from '@wbfm/core/event-client';
 import { clampGaze, EVENT_FX_DURATION_MS, type ActiveFx } from './fx-registry';
 
 /** 纯气泡也至少展示此时长，避免极短合成/无声台词一闪而过 */
@@ -126,9 +126,26 @@ export class EventPlayer implements EventEffectSink {
   }
 
   async speech(lineKey: string, speak: boolean, signal: AbortSignal): Promise<void> {
-    this.begin();
     const text = this.deps.resolveLine(lineKey);
-    if (!text) this.deps.onWarn?.('event.line.missing', lineKey);
+    await this.present(text, speak, signal, lineKey);
+  }
+
+  /**
+   * v1.7 动态台词（角色化提醒原文）：与 speech 同管线（气泡+TTS+最短展示），
+   * 但跳过 lineKey 解析。缺文本时 onWarn 并立即结束。
+   */
+  async speakText(text: string, speak: boolean, signal: AbortSignal): Promise<void> {
+    await this.present(text, speak, signal);
+  }
+
+  private async present(
+    text: string,
+    speak: boolean,
+    signal: AbortSignal,
+    warnDetail?: string,
+  ): Promise<void> {
+    this.begin();
+    if (!text) this.deps.onWarn?.('event.line.missing', warnDetail);
     this.update({ subtitle: text || null });
     this.relayPet({ kind: 'subtitle', text: (text || '').slice(0, PET_SUBTITLE_MAX) });
 

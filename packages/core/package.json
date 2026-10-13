@@ -55,6 +55,24 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./event": {
+            "types": "./src/event/index.ts",
+            "development": "./src/event/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./event-client": {
+            "types": "./src/event/client.ts",
+            "development": "./src/event/client.ts",
+            "import": "./dist/event-client.mjs",
+            "require": "./dist/event-client.cjs"
+        },
+        "./scheduler": {
+            "types": "./src/scheduler/index.ts",
+            "development": "./src/scheduler/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./ingestion": {
             "types": "./src/ingestion/index.ts",
             "development": "./src/ingestion/index.ts",

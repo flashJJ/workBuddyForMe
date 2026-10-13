@@ -22,6 +22,11 @@ export interface AssistantRow {
   memory_enabled: number;
   /** v1.0 M3：表情指令开关（0/1） */
   expression_enabled: number;
+  /** v1.7：人格四权重（v024；老库结果集缺列时回落 0.5） */
+  personality_frankness?: number;
+  personality_tsundere?: number;
+  personality_shy?: number;
+  personality_tolerance?: number;
   is_builtin: number;
   sort_order: number;
   created_at: string;
@@ -47,6 +52,10 @@ export function mapAssistant(row: AssistantRow): Assistant {
     retrieveAlways: row.retrieve_always === 1,
     memoryEnabled: row.memory_enabled !== 0,
     expressionEnabled: row.expression_enabled !== 0,
+    personalityFrankness: row.personality_frankness ?? 0.5,
+    personalityTsundere: row.personality_tsundere ?? 0.5,
+    personalityShy: row.personality_shy ?? 0.5,
+    personalityTolerance: row.personality_tolerance ?? 0.5,
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,

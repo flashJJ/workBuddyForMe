@@ -1,5 +1,6 @@
 import {
   initDatabase,
+  createEventUsageRepository,
   createWorkflowRepository,
   createWorkflowEndpointRepository,
   createWorkflowRunRepository,
@@ -48,6 +49,8 @@ import {
 } from '@wbfm/core/knowledge';
 import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
+import { createSchedulesService, type SchedulesService } from '@wbfm/core/scheduler';
+import { createEventUsageService, type EventUsageService } from '@wbfm/core/event';
 import { createSkillService, type SkillService } from '@wbfm/core/skills';
 import {
   createToolBreaker,
@@ -75,6 +78,9 @@ export interface ServiceContainer {
   documents: DocumentService;
   attachments: AttachmentService;
   memories: MemoryService;
+  /** v1.7：角色化提醒调度与演出用量 */
+  schedules: SchedulesService;
+  eventUsage: EventUsageService;
   /** v0.6：MCP 注册表（设置页与工具运行时共享同一连接池） */
   mcp: McpRegistry;
   /** v0.6 M2：工具权限服务（HITL 授权记忆） */
@@ -172,6 +178,15 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
   const starterCount = ensureStarterFlows(workflows);
   if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
+  // v1.7：清理 90 天前的事件演出流水（小表，不无限增长；失败不阻断启动）
+  try {
+    const purged = createEventUsageRepository(deps.db).purgeBefore(
+      Date.now() - 90 * 24 * 3600_000,
+    );
+    if (purged > 0) console.info(`[event] 已清理 ${purged} 条过期演出流水`);
+  } catch (error) {
+    console.warn('[event] 演出流水清理失败', error);
+  }
   deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
   deps.flowToolLister = () => flowRunner.listPublishedTools();
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
@@ -204,6 +219,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     documents: createDocumentService(deps),
     attachments: createAttachmentService(deps),
     memories: createMemoryService(deps),
+    schedules: createSchedulesService(deps),
+    eventUsage: createEventUsageService(deps),
   };
 }
 

@@ -5,10 +5,11 @@ import { z } from 'zod';
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。
- * 当前版本：2（v1.6 新增 emotion 情绪/关系轨；v1 旧归档仍可恢复，缺轨按 0 处理）。
+ * 当前版本：3（v1.7 新增 events 轨：自定义助手机行+角色化提醒+90 天演出流水；
+ * v1/v2 旧归档仍可恢复，缺轨按 0 处理）。
  */
 
-export const CURRENT_BACKUP_SCHEMA_VERSION = 2 as const;
+export const CURRENT_BACKUP_SCHEMA_VERSION = 3 as const;
 
 export const backupTrackSchema = z.enum([
   'conversations',
@@ -18,6 +19,7 @@ export const backupTrackSchema = z.enum([
   'skills',
   'tasks',
   'emotion',
+  'events',
 ]);
 export type BackupTrack = z.infer<typeof backupTrackSchema>;
 
@@ -46,6 +48,15 @@ export const backupManifestSchema = z.object({
     tasks: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
     /** v1.6 新增：助手情绪/关系状态；v1 旧归档无此键 */
     emotion: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
+    /** v1.7 新增：自定义助手+提醒+演出流水；v2 及更早归档无此键 */
+    events: z
+      .object({
+        files: z.string(),
+        scheduleCount: z.number().int().min(0),
+        usageCount: z.number().int().min(0),
+        assistantCount: z.number().int().min(0),
+      })
+      .optional(),
   }),
   /** 归档整体 SHA-256 摘要（可选，快速校验用） */
   archiveSha256: z.string().optional(),
@@ -70,6 +81,9 @@ export const backupPrecheckSchema = z.object({
     skills: z.number().int().min(0),
     tasks: z.number().int().min(0),
     emotion: z.number().int().min(0),
+    /** v1.7：提醒条数与演出流水条数（自定义助手机行数在恢复日志中体现） */
+    schedules: z.number().int().min(0),
+    eventUsage: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

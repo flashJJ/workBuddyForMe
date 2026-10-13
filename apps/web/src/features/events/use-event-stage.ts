@@ -16,6 +16,8 @@ import { readLastInteractionMinutes } from './event-activity';
 import { useEventDirector, type PreviewResult } from './use-event-director';
 
 export interface UseEventStageArgs {
+  /** 当前助手（用量闸门/事件隔离按此 id；切换即重建导演） */
+  assistantId: string;
   /** 情绪状态快照（chat 页统一拉取，供条件上下文；不触发渲染） */
   emotionState: EmotionState | null;
   /** release 时交还的情绪基线表情 */
@@ -40,6 +42,11 @@ export interface EventStage {
   previewBuiltIn: (eventId: string) => PreviewResult | 'missing';
   skip: () => void;
   onHeadTouchStreak: () => void;
+  /**
+   * v1.7 角色化提醒投递（动态原文，非剧本 lineKey）。
+   * 仅在有演出出口且无对话/无事件占用时演出；否则返回 false 由调用方走通知兜底。
+   */
+  deliverReminder: (text: string) => Promise<boolean>;
 }
 
 /**
@@ -64,7 +71,8 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
     ttsReady: args.ttsReady,
   });
 
-  const { admit, skip, preview } = useEventDirector({
+  const { admit, skip, preview, isBusy } = useEventDirector({
+    assistantId: args.assistantId,
     playerRef,
     isConvLocked: () => argsRef.current.convLocked,
     isTtsLocked: () => argsRef.current.ttsLocked,
@@ -113,6 +121,45 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
     triggerEvent('ev.touch.shy', { touchStreak: 3 });
   }, [triggerEvent]);
 
+  // 提醒演出中止器：对话锁上升沿/卸载立即中止（CONV 最高优先级，不与对话抢 TTS）
+  const reminderAbortRef = React.useRef<AbortController | null>(null);
+  React.useEffect(() => {
+    if (args.convLocked) reminderAbortRef.current?.abort();
+  }, [args.convLocked]);
+  React.useEffect(
+    () => () => {
+      reminderAbortRef.current?.abort();
+    },
+    [],
+  );
+
+  const deliverReminder = React.useCallback(
+    async (text: string): Promise<boolean> => {
+      const current = argsRef.current;
+      if (!current.hasOutlet || current.convLocked || current.ttsLocked) return false;
+      if (isBusy()) return false;
+      const player = playerRef.current;
+      if (!player) return false;
+      const controller = new AbortController();
+      reminderAbortRef.current = controller;
+      try {
+        player.expression('joy');
+        await player.speakText(
+          text,
+          current.ttsEnabled && current.ttsReady,
+          controller.signal,
+        );
+        return !controller.signal.aborted;
+      } catch {
+        return false;
+      } finally {
+        if (reminderAbortRef.current === controller) reminderAbortRef.current = null;
+        player.release();
+      }
+    },
+    [isBusy, playerRef],
+  );
+
   // Esc 跳过（仅演出中监听；演出是模态性打断，输入框聚焦时也允许）
   React.useEffect(() => {
     if (!view.playing) return;
@@ -135,5 +182,6 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
     previewBuiltIn,
     skip,
     onHeadTouchStreak,
+    deliverReminder,
   };
 }

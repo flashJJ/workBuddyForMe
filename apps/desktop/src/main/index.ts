@@ -6,7 +6,7 @@
  * updater-bootstrap / global-shortcuts / computer/control-bootstrap。
  */
 import { randomBytes } from 'node:crypto';
-import { app, BrowserWindow, globalShortcut, safeStorage } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, safeStorage } from 'electron';
 import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
 import { startCipherServer, type CipherEndpoint } from './cipher-server';
@@ -18,6 +18,7 @@ import { PetManager } from './pet/pet-manager';
 import { createAppPetManager } from './pet/pet-bootstrap';
 import { installUpdater } from './updater-bootstrap';
 import { registerGlobalShortcuts } from './global-shortcuts';
+import { registerNotifyIpc } from './notify-ipc';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
 
@@ -69,6 +70,8 @@ async function start(): Promise<void> {
   const boot = await startManagedStack();
 
   await createWindow(boot);
+  // v1.7：系统通知兜底（角色化提醒到点但无演出出口时）
+  registerNotifyIpc(ipcMain);
   // M4 伴身：pet:* IPC 注册；主窗 close 在桌宠存活时被改为隐藏
   petManager = createAppPetManager(boot, () => mainWindow);
   installUpdater(() => mainWindow);

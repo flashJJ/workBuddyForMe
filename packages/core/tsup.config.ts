@@ -4,9 +4,12 @@ export default defineConfig({
   // voice 是叶子域（仅依赖外部包，不被 core 其他域引用），独立成入口：
   // 它不聚合进根 barrel（隔离 sherpa-onnx-node 原生模块图），子路径生产条件
   // 指向本入口产物 dist/voice.*；与 index 之间无内部共享代码，不存在多 chunk 类身份副本。
+  // event-client 是纯逻辑事件引擎（无 database/原生依赖），供浏览器客户端独立打入口，
+  // 避免客户端经根 barrel 拖入 better-sqlite3/@napi-rs/canvas（服务端另用 ./event）。
   entry: {
     index: 'src/index.ts',
     voice: 'src/voice/index.ts',
+    'event-client': 'src/event/client.ts',
   },
   format: ['esm', 'cjs'],
   sourcemap: true,

@@ -32,6 +32,7 @@ import { enAgents } from './messages/agents-en';
 import { enAgentTrace } from './messages/agent-trace-en';
 import { enEmotion } from './messages/emotion';
 import { enEvent } from './messages/event-en';
+import { enReminders } from './messages/reminder-en';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -71,6 +72,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   agentTrace: enAgentTrace,
   emotion: enEmotion,
   event: enEvent,
+  reminders: enReminders,
 };
 
 export type EnDictionary = typeof enUS;

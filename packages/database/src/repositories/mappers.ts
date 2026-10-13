@@ -11,6 +11,7 @@ export {
   type ModelRow,
 } from './mapper/provider';
 export { mapAssistant, type AssistantRow } from './mapper/assistant';
+export { mapScheduledTask, type ScheduledTaskRow } from './mapper/scheduled-task';
 export {
   mapConversation,
   mapMessage,
