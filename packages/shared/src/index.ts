@@ -18,3 +18,5 @@ export * from './command';
 export * from './version';
 export * from './i18n';
 export * from './events';
+// v1.8 角色卡（Markdown 文本 mod：schema + 零依赖解析器）
+export * from './character-card';
