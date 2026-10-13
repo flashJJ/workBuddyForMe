@@ -54,6 +54,7 @@ export function EventUsageStats() {
         <select
           className="rounded-md border bg-background px-2 py-1 text-xs"
           value={assistantId}
+          aria-label={t('eventStats.selectAssistant')}
           data-testid="event-usage-assistant"
           onChange={(e) => setAssistantId(e.target.value)}
         >
