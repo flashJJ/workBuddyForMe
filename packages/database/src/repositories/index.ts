@@ -162,4 +162,21 @@ export {
   type EmotionEventRecord,
   type AddEmotionEventInput,
 } from './emotion-event-repo';
+export {
+  createScheduledTaskRepository,
+  type ScheduledTaskRepository,
+  type ScheduledTaskRepositoryDeps,
+} from './scheduled-task-repo';
+export { mapScheduledTask, type ScheduledTaskRow } from './mapper/scheduled-task';
+export {
+  createEventUsageRepository,
+  type EventUsageRepository,
+  type EventUsageRecord,
+  type EventUsageStats,
+  type AppendEventUsageInput,
+} from './event-usage-repo';
+export {
+  createEventTriggerRepository,
+  type EventTriggerRepository,
+} from './event-trigger-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

@@ -13,6 +13,8 @@ export * from './schemas';
 export * from './backup';
 export * from './updater';
 export * from './pet';
+export * from './notify';
 export * from './command';
 export * from './version';
 export * from './i18n';
+export * from './events';

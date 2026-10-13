@@ -26,6 +26,11 @@ export interface AssistantCreateFields {
   memoryEnabled?: boolean;
   /** v1.0 M3：表情指令开关；建库老数据走列默认 1 */
   expressionEnabled?: boolean;
+  /** v1.7：人格四权重（缺省 0.5） */
+  personalityFrankness?: number;
+  personalityTsundere?: number;
+  personalityShy?: number;
+  personalityTolerance?: number;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -49,6 +54,10 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   retrieveAlways: 'retrieve_always',
   memoryEnabled: 'memory_enabled',
   expressionEnabled: 'expression_enabled',
+  personalityFrankness: 'personality_frankness',
+  personalityTsundere: 'personality_tsundere',
+  personalityShy: 'personality_shy',
+  personalityTolerance: 'personality_tolerance',
   sortOrder: 'sort_order',
 };
 
@@ -80,17 +89,25 @@ export function createAssistantRepository(db: DatabaseInstance) {
         `INSERT INTO assistants
            (id, name, emoji, color, system_prompt, temperature, top_p, max_tokens,
             model_id, knowledge_base_ids, enabled_tools, retrieve_always, memory_enabled,
-            expression_enabled, is_builtin, sort_order, created_at, updated_at)
+            expression_enabled,
+            personality_frankness, personality_tsundere, personality_shy, personality_tolerance,
+            is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
             @modelId, @knowledgeBaseIds, @enabledTools, @retrieveAlways, @memoryEnabled,
-            @expressionEnabled, @isBuiltin, @sortOrder, @ts, @ts)`,
+            @expressionEnabled,
+            @personalityFrankness, @personalityTsundere, @personalityShy, @personalityTolerance,
+            @isBuiltin, @sortOrder, @ts, @ts)`,
       ).run({
         ...toRowValues(fields),
         id,
         // 显式缺省（种子路径）时落 1，避免 NOT NULL 绑定问题
         memoryEnabled: fields.memoryEnabled === false ? 0 : 1,
         expressionEnabled: fields.expressionEnabled === false ? 0 : 1,
+        personalityFrankness: fields.personalityFrankness ?? 0.5,
+        personalityTsundere: fields.personalityTsundere ?? 0.5,
+        personalityShy: fields.personalityShy ?? 0.5,
+        personalityTolerance: fields.personalityTolerance ?? 0.5,
         isBuiltin: fields.isBuiltin ? 1 : 0,
         ts,
       });

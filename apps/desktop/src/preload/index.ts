@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
+import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 
 /**
  * 最小 preload：
@@ -80,6 +81,13 @@ const pet: WbfmPetBridge = {
   onOpenChange: (cb) => subscribe('pet:open-changed', (payload) => cb(Boolean(payload))),
 };
 
+/**
+ * v1.7 系统通知桥：角色化提醒无演出出口时的兜底（白名单单一通道）。
+ */
+const notify: WbfmNotifyBridge = {
+  show: (payload) => ipcRenderer.invoke('notify:show', payload),
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
@@ -88,4 +96,5 @@ contextBridge.exposeInMainWorld('wbfm', {
   commandPalette,
   shortcuts,
   pet,
+  notify,
 });

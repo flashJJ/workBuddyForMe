@@ -28,6 +28,7 @@ function makePlayback(speaking: boolean): VoicePlayback {
   return {
     enqueue: vi.fn(),
     cancel: vi.fn(),
+    waitDrained: vi.fn(() => Promise.resolve()),
     getLevel: vi.fn(() => 0),
     getGate: vi.fn(() => ({ speaking, inCooldown: false })),
     subscribeLevel: vi.fn(() => () => undefined),

@@ -261,3 +261,77 @@
 .hljs-strong {
   font-weight: 700;
 }
+
+/* ── v1.7 事件演出 fx（零三方粒子库；DOM/CSS 实现） ─────────────── */
+.event-fx-instance {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.event-fx-glyph {
+  position: absolute;
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+  /* 时长由 .event-fx-instance 内联 animationDuration 统一携带（fx-registry 单一口径） */
+  animation-duration: inherit;
+  will-change: transform, opacity;
+}
+.event-fx-heart {
+  color: hsl(350 85% 65%);
+  animation-name: event-fx-float-up;
+}
+.event-fx-heart-2 { animation-delay: 120ms; }
+.event-fx-heart-3 { animation-delay: 240ms; }
+.event-fx-sweat {
+  color: hsl(205 80% 60%);
+  animation-name: event-fx-drop;
+}
+.event-fx-spark {
+  color: hsl(var(--primary));
+  animation-name: event-fx-twinkle;
+}
+.event-fx-spark-2 { animation-delay: 220ms; }
+.event-fx-fadein {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 42%,
+    hsl(var(--primary) / 0.14),
+    transparent 62%
+  );
+  opacity: 0;
+  animation-name: event-fx-fade-in;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+  animation-duration: inherit;
+}
+@keyframes event-fx-float-up {
+  0% { transform: translateY(8px) scale(0.8); opacity: 0; }
+  35% { opacity: 1; }
+  100% { transform: translateY(-30px) scale(1.12); opacity: 0; }
+}
+@keyframes event-fx-drop {
+  0% { transform: translateY(-4px); opacity: 0; }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translateY(10px); opacity: 0; }
+}
+@keyframes event-fx-twinkle {
+  0%, 100% { transform: scale(0.6) rotate(0deg); opacity: 0; }
+  45% { transform: scale(1.15) rotate(35deg); opacity: 1; }
+}
+@keyframes event-fx-fade-in {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-fx-glyph,
+  .event-fx-fadein {
+    animation: none;
+    opacity: 0.75;
+  }
+}

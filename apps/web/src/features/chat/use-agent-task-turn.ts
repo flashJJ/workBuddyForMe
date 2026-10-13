@@ -15,6 +15,7 @@ import {
   type AgentCardState,
   type AgentRunDetail,
 } from '../agent-collab';
+import { uiTaskEventBus } from '@/features/events/event-bus';
 import type { PendingToolConfirmation } from './chat-session.types';
 
 /**
@@ -124,6 +125,12 @@ export function useAgentTaskTurn(params: AgentTaskTurnParams) {
             ? { errorCode: detail.run.errorCode, errorMessage: detail.run.errorMessage }
             : {}),
         });
+        // v1.7 任务族事件：仅 UI 会话总线（api/mcp/远端终态不经过），cancelled 不庆祝也不打气
+        if (detail.run.status === 'done') {
+          uiTaskEventBus.emit('success');
+        } else if (detail.run.status === 'failed' || detail.run.status === 'budget_exceeded') {
+          uiTaskEventBus.emit('failure');
+        }
         params.onSettled();
       } catch (error) {
         params.patchAssistant({

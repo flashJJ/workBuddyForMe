@@ -32,6 +32,8 @@ export const zhSettingsBackup = {
     tasksDesc: '桌面 Agent 任务运行与步骤日志（v0.7+）',
     emotionLabel: '情绪与关系',
     emotionDesc: '各助手的心情、亲密度与信任度状态（v1.6+）',
+    eventsLabel: '角色与提醒',
+    eventsDesc: '自定义助手与人设、角色化提醒计划、近 90 天剧情演出记录（v1.7+）',
   },
   imported: {
     conversations: '{count} 对话',
@@ -43,6 +45,7 @@ export const zhSettingsBackup = {
     skills: '{count} 技能',
     tasks: '{count} 任务',
     emotion: '{count} 情绪状态',
+    events: '{count} 条提醒',
   },
   skipped: {
     conversations: '{count} 对话（已存在或助手不存在）',
@@ -50,6 +53,7 @@ export const zhSettingsBackup = {
     skills: '{count} 技能（文件夹已存在）',
     tasks: '{count} 任务（已存在或会话/助手不存在）',
     emotion: '{count} 情绪状态（已存在、助手不存在或数据损坏）',
+    events: '{count} 条提醒（已存在或助手不存在）',
   },
 };
 
@@ -89,6 +93,8 @@ export const enSettingsBackup = {
     tasksDesc: 'Desktop agent task runs and step logs (v0.7+)',
     emotionLabel: 'Mood & relationship',
     emotionDesc: 'Per-assistant mood, intimacy and trust state (v1.6+)',
+    eventsLabel: 'Personas & reminders',
+    eventsDesc: 'Custom assistants and personas, character reminders, and 90 days of event history (v1.7+)',
   },
   imported: {
     conversations: '{count} conversations',
@@ -100,6 +106,7 @@ export const enSettingsBackup = {
     skills: '{count} skills',
     tasks: '{count} tasks',
     emotion: '{count} emotion states',
+    events: '{count} reminders',
   },
   skipped: {
     conversations: '{count} conversations (already exist or assistant missing)',
@@ -107,5 +114,6 @@ export const enSettingsBackup = {
     skills: '{count} skills (folder already exists)',
     tasks: '{count} tasks (already exist or conversation/assistant missing)',
     emotion: '{count} emotion states (already exist, assistant missing or corrupted)',
+    events: '{count} reminders (already exist or assistant missing)',
   },
 };

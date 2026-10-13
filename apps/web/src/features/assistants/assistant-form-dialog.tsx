@@ -24,6 +24,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantToolsField } from './assistant-tools-field';
 import { AssistantMemoryField } from './assistant-memory-field';
 import { AssistantExpressionField } from './assistant-expression-field';
+import { AssistantPersonalityField } from './assistant-personality-field';
 import { buildAssistantBody, type AssistantFormShape } from './assistant-form-body';
 import { toForm } from './assistant-form-state';
 import { AssistantIdentityFields } from './assistant-identity-fields';
@@ -228,6 +229,16 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
           <AssistantExpressionField
             checked={form.expressionEnabled}
             onChange={(value) => update({ expressionEnabled: value })}
+          />
+
+          <AssistantPersonalityField
+            values={{
+              personalityFrankness: form.personalityFrankness,
+              personalityTsundere: form.personalityTsundere,
+              personalityShy: form.personalityShy,
+              personalityTolerance: form.personalityTolerance,
+            }}
+            onChange={(patch) => update(patch)}
           />
 
           <DialogFooter>

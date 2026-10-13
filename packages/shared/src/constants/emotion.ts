@@ -33,6 +33,8 @@ export const EMOTION_EVENT_DELTAS = {
   praise: { happiness: 8, anger: 0, sadness: 0, intimacy: 2, trust: 1 },
   chat: { happiness: 0, anger: 0, sadness: 0, intimacy: 0.25, trust: 0.1 },
   belittle: { happiness: -6, anger: 8, sadness: 3, intimacy: -1, trust: -2 },
+  // v1.7：剧情「哄好」演出完成——消难过、小幅回暖开心与亲密（幅度小于 praise）
+  comfort: { happiness: 3, anger: -2, sadness: -5, intimacy: 1, trust: 0.5 },
 } as const;
 
 /**

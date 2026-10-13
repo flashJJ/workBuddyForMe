@@ -14,8 +14,8 @@ describe('v023 迁移：emotion_events 情绪事件流水', () => {
   it('全新空库：user_version=23，表与索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(23);
-    expect(LATEST_SCHEMA_VERSION).toBe(23);
+    expect(getSchemaVersion(db)).toBe(25);
+    expect(LATEST_SCHEMA_VERSION).toBe(25);
 
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='emotion_events'`)
@@ -35,7 +35,7 @@ describe('v023 迁移：emotion_events 情绪事件流水', () => {
       `INSERT INTO assistants(id,name,created_at,updated_at) VALUES('a1','助手','t','t')`,
     ).run();
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(23);
+    expect(getSchemaVersion(db)).toBe(25);
 
     const now = '2026-10-12T08:00:00.000Z';
     db.prepare(

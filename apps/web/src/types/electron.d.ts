@@ -1,5 +1,6 @@
 import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
+import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 
 /**
  * Electron preload 通过 contextBridge 注入的桥（window.wbfm）。
@@ -22,6 +23,8 @@ declare global {
       shortcuts?: { onOpen: (cb: () => void) => () => void };
       /** 桌宠桥（M4 伴身；仅桌面端 preload 存在，纯浏览器访问为 undefined） */
       pet?: WbfmPetBridge;
+      /** v1.7 系统通知桥（提醒兜底；仅桌面端 preload 存在） */
+      notify?: WbfmNotifyBridge;
     };
   }
 }

@@ -13,6 +13,8 @@ const retrieveAlwaysSchema = z.boolean().default(true);
 const memoryEnabledSchema = z.boolean().default(true);
 /** v1.0 M3：表情指令标签开关默认开启（形象关闭时标签也不上屏/不出声） */
 const expressionEnabledSchema = z.boolean().default(true);
+/** v1.7：人格权重 0..1（缺省 0.5；驱动剧本 branch 支线） */
+const personalityWeightSchema = z.number().min(0).max(1).default(0.5);
 
 const samplingFields = {
   emoji: z.string().trim().max(8).nullable().default(null),
@@ -36,6 +38,11 @@ const samplingFields = {
   retrieveAlways: retrieveAlwaysSchema,
   memoryEnabled: memoryEnabledSchema,
   expressionEnabled: expressionEnabledSchema,
+  // v1.7：人格四权重（坦率/傲娇/害羞/包容）
+  personalityFrankness: personalityWeightSchema,
+  personalityTsundere: personalityWeightSchema,
+  personalityShy: personalityWeightSchema,
+  personalityTolerance: personalityWeightSchema,
 };
 
 export const assistantCreateSchema = z.object({
@@ -60,6 +67,10 @@ export const assistantUpdateSchema = z
     retrieveAlways: samplingFields.retrieveAlways.optional(),
     memoryEnabled: samplingFields.memoryEnabled.optional(),
     expressionEnabled: samplingFields.expressionEnabled.optional(),
+    personalityFrankness: samplingFields.personalityFrankness.optional(),
+    personalityTsundere: samplingFields.personalityTsundere.optional(),
+    personalityShy: samplingFields.personalityShy.optional(),
+    personalityTolerance: samplingFields.personalityTolerance.optional(),
     sortOrder: z.number().int().min(0).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');

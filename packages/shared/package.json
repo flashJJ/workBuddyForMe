@@ -61,6 +61,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./notify": {
+      "types": "./src/notify.ts",
+      "development": "./src/notify.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./command": {
       "types": "./src/command.ts",
       "development": "./src/command.ts",
@@ -76,6 +82,12 @@
     "./i18n": {
       "types": "./src/i18n/index.ts",
       "development": "./src/i18n/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./events": {
+      "types": "./src/events/index.ts",
+      "development": "./src/events/index.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },

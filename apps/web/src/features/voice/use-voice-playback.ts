@@ -18,6 +18,8 @@ export interface VoicePlayback {
   enqueue: (frame: SsePayloadMap['voice_audio']) => void;
   /** 立即停止播放并清空队列（停止生成/急停/切换会话/barge-in） */
   cancel: () => void;
+  /** v1.7：事件台词入队后等待排空（同一 AudioContext，不另开通道） */
+  waitDrained: (signal?: AbortSignal) => Promise<void>;
   /** 当前播放电平 RMS（Live2D 口型 rAF 轮询用） */
   getLevel: () => number;
   /** M4：VAD 回声门控快照（speaking 提阈值；停播冷却窗内静音） */
@@ -76,6 +78,10 @@ export function useVoicePlayback(): VoicePlayback {
     queueRef.current?.enqueue(frame);
   }, []);
   const cancel = React.useCallback(() => queueRef.current?.cancel(), []);
+  const waitDrained = React.useCallback(
+    (signal?: AbortSignal) => queueRef.current?.waitDrained(signal) ?? Promise.resolve(),
+    [],
+  );
   const getLevel = React.useCallback(() => queueRef.current?.getLevel() ?? 0, []);
   const getGate = React.useCallback(
     (): VadGate => ({
@@ -97,6 +103,7 @@ export function useVoicePlayback(): VoicePlayback {
   return {
     enqueue,
     cancel,
+    waitDrained,
     getLevel,
     getGate,
     subscribeLevel,

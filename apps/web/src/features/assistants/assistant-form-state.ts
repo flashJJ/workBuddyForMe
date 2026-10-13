@@ -17,6 +17,10 @@ export function emptyAssistantForm(): AssistantFormShape {
     retrieveAlways: true,
     memoryEnabled: true,
     expressionEnabled: true,
+    personalityFrankness: 0.5,
+    personalityTsundere: 0.5,
+    personalityShy: 0.5,
+    personalityTolerance: 0.5,
   };
 }
 
@@ -37,5 +41,9 @@ export function toForm(assistant: Assistant | null | undefined): AssistantFormSh
     retrieveAlways: assistant.retrieveAlways,
     memoryEnabled: assistant.memoryEnabled,
     expressionEnabled: assistant.expressionEnabled,
+    personalityFrankness: assistant.personalityFrankness,
+    personalityTsundere: assistant.personalityTsundere,
+    personalityShy: assistant.personalityShy,
+    personalityTolerance: assistant.personalityTolerance,
   };
 }

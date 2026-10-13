@@ -22,6 +22,11 @@ export interface AssistantBody {
   memoryEnabled?: boolean;
   /** v1.0 M3：表情指令标签开关 */
   expressionEnabled?: boolean;
+  /** v1.7：人格四权重（0..1，缺省 0.5） */
+  personalityFrankness?: number;
+  personalityTsundere?: number;
+  personalityShy?: number;
+  personalityTolerance?: number;
 }
 
 export function useAssistants() {

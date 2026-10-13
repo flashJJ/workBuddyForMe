@@ -37,6 +37,7 @@ export const zhEmotion = {
     praise: '被夸奖',
     chat: '日常相处',
     belittle: '被数落',
+    comfort: '被哄好',
   },
   source: {
     model: '模型识别',
@@ -112,6 +113,7 @@ export const enEmotion: typeof zhEmotion = {
     praise: 'Praised',
     chat: 'Everyday chat',
     belittle: 'Belittled',
+    comfort: 'Comforted',
   },
   source: {
     model: 'Detected by model',

@@ -4,12 +4,11 @@ import * as React from 'react';
 import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
 import type { Live2dController } from '@/features/avatar/live2d-controller';
 import { useHeadTouch, type TouchControllerLike } from '@/features/avatar/use-head-touch';
-import { REUNION_EXPRESSION_MS, REUNION_LINE_MS } from '@wbfm/shared/constants';
+import { pulseReunionSignal } from '@/features/avatar/reunion-storage';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings } from '@/lib/hooks/use-settings';
-import { useReunionGreeting } from '@/features/avatar/use-reunion-greeting';
 import { getPetBridge, isPetBodyPoint } from './pet-bridge';
 
 interface Props {
@@ -64,17 +63,13 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
     },
   );
 
-  // G6 久别迎接：命中后本地短句气泡 + 表情闪现，同样不发模型请求
-  const pokeReunion = useReunionGreeting({
-    enabled: linesEnabled && emotionEnabled,
-    onGreet: ({ lineKey, expression: greetExpression }) => {
-      controllerRef.current?.flashExpression(greetExpression, REUNION_EXPRESSION_MS);
-      showLine(t(lineKey), REUNION_LINE_MS);
-    },
-  });
+  // v1.7 久别迎接收归主窗事件导演（唯一出口，禁止双播）：
+  // 桌宠仅在指针重新进入窗口时发跨窗信号；主窗 storage 监听后自行判定/去重/演出。
+  // 情绪/短句任一总开关关闭时不发信号。
+  const lastReunionPulseRef = React.useRef(0);
 
   // 全域视线跟随（拖拽盒遮挡 canvas 宿主，故在舞台根层归一化喂指针）；
-  // 指针重新进入窗口 → 久别判定一次（人回到桌宠前的「被重新关注」信号）
+  // 指针重新进入窗口 → 节流发一次久别信号（人回到桌宠前的「被重新关注」信号）
   React.useEffect(() => {
     let inside = false;
     const onMove = (event: PointerEvent) => {
@@ -88,7 +83,13 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
       }
       if (!inside) {
         inside = true;
-        pokeReunion();
+        if (linesEnabled && emotionEnabled) {
+          const now = Date.now();
+          if (now - lastReunionPulseRef.current >= 30_000) {
+            lastReunionPulseRef.current = now;
+            pulseReunionSignal(now);
+          }
+        }
       }
     };
     const onLeave = () => {
@@ -100,7 +101,7 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
       window.removeEventListener('pointermove', onMove);
       document.documentElement.removeEventListener('mouseleave', onLeave);
     };
-  }, [pokeReunion]);
+  }, [linesEnabled, emotionEnabled]);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-transparent">
