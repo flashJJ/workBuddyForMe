@@ -1,8 +1,18 @@
+import { createRequire } from 'node:module';
+
+// 根 package.json 版本构建期内联到客户端（侧边栏版本号随 sync-version 自动同步，
+// 避免再次出现硬编码版本号停留在旧版）
+const require = createRequire(import.meta.url);
+const appVersion = /** @type {string} */ (require('../../package.json').version);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
+  env: {
+    NEXT_PUBLIC_APP_VERSION: appVersion,
+  },
   // 工作区 TS 源码包在 Next 编译管线中转译
   transpilePackages: ['@wbfm/shared', '@wbfm/config', '@wbfm/database', '@wbfm/ai', '@wbfm/core'],
   experimental: {
