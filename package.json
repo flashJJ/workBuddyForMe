@@ -15,6 +15,8 @@
     "build": "turbo run build",
     "build:web": "pnpm --filter @wbfm/web build",
     "dist:win": "pnpm --filter @wbfm/desktop dist:win",
+    "archive:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/archive-installer.ps1",
+    "release:win": "pnpm dist:win && pnpm archive:win",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "lint:boundaries": "eslint . --ext .ts,.tsx",
