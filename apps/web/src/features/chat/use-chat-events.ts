@@ -70,6 +70,8 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
     reunionEnabled:
       args.settings?.emotionEnabled !== false &&
       args.settings?.interactionLinesEnabled !== false,
+    assistantId: args.assistantId,
+    intimacy: emotionState?.relation.intimacy ?? 0,
     triggerEvent: stage.triggerEvent,
   });
 

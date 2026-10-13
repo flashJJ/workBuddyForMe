@@ -20,6 +20,7 @@ import {
   createAssistantRepository,
   createScheduledTaskRepository,
   createEventUsageRepository,
+  createEventTriggerRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { computeNextRunMs } from '../scheduler/next-run';
@@ -65,6 +66,7 @@ export async function exportBackup(
   const assistantsRepo = createAssistantRepository(deps.db);
   const scheduledTaskRepo = createScheduledTaskRepository(deps.db, { computeNextRunMs });
   const eventUsageRepo = createEventUsageRepository(deps.db);
+  const eventTriggerRepo = createEventTriggerRepository(deps.db);
 
   // 1. 逐轨序列化（纯 JSON，进 tar）
   const files: Record<string, string> = {};
@@ -76,7 +78,7 @@ export async function exportBackup(
     skills: { files: 'skills.json', entryCount: 0 },
     tasks: { files: 'tasks.json', entryCount: 0 },
     emotion: { files: 'emotion.json', entryCount: 0 },
-    events: { files: 'events.json', scheduleCount: 0, usageCount: 0, assistantCount: 0 },
+    events: { files: 'events.json', scheduleCount: 0, usageCount: 0, assistantCount: 0, triggerCount: 0 },
   };
 
   if (tracks.includes('conversations')) {
@@ -186,8 +188,9 @@ export async function exportBackup(
     const customAssistants = assistantsRepo.list().filter((assistant) => !assistant.isBuiltin);
     const schedules = scheduledTaskRepo.listAll();
     const usage = eventUsageRepo.listAll({ sinceMs: Date.now() - 90 * 24 * 3600_000 });
+    const triggers = eventTriggerRepo.list();
     files['events.json'] = JSON.stringify(
-      { assistants: customAssistants, schedules, usage },
+      { assistants: customAssistants, schedules, usage, triggers },
       null,
       2,
     );
@@ -196,8 +199,9 @@ export async function exportBackup(
       scheduleCount: schedules.length,
       usageCount: usage.length,
       assistantCount: customAssistants.length,
+      triggerCount: triggers.length,
     };
-    const eventsTotal = schedules.length + usage.length + customAssistants.length;
+    const eventsTotal = schedules.length + usage.length + customAssistants.length + triggers.length;
     onProgress?.({ track: 'events', processed: eventsTotal, total: eventsTotal });
   }
 

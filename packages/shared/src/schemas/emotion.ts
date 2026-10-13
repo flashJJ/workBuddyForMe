@@ -35,7 +35,7 @@ import {
 } from '../constants/emotion';
 
 // ── 枚举 ────────────────────────────────────────────────
-export const SOUL_EVENT_TYPES = ['praise', 'chat', 'belittle'] as const;
+export const SOUL_EVENT_TYPES = ['praise', 'chat', 'belittle', 'comfort'] as const;
 export type SoulEventType = (typeof SOUL_EVENT_TYPES)[number];
 
 export const EMOTION_NEEDS = ['none', 'attention', 'comfort', 'play', 'rest'] as const;

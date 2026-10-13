@@ -50,7 +50,7 @@ import {
 import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
 import { createSchedulesService, type SchedulesService } from '@wbfm/core/scheduler';
-import { createEventUsageService, type EventUsageService } from '@wbfm/core/event';
+import { createEventUsageService, type EventUsageService, createEventTriggersService, type EventTriggersService } from '@wbfm/core/event';
 import { createSkillService, type SkillService } from '@wbfm/core/skills';
 import {
   createToolBreaker,
@@ -81,6 +81,8 @@ export interface ServiceContainer {
   /** v1.7：角色化提醒调度与演出用量 */
   schedules: SchedulesService;
   eventUsage: EventUsageService;
+  /** v1.7 M5：自定义短语触发器 */
+  eventTriggers: EventTriggersService;
   /** v0.6：MCP 注册表（设置页与工具运行时共享同一连接池） */
   mcp: McpRegistry;
   /** v0.6 M2：工具权限服务（HITL 授权记忆） */
@@ -221,6 +223,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     memories: createMemoryService(deps),
     schedules: createSchedulesService(deps),
     eventUsage: createEventUsageService(deps),
+    eventTriggers: createEventTriggersService(deps),
   };
 }
 

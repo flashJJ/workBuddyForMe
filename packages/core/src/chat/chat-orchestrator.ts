@@ -11,6 +11,8 @@ import { prepareUserTurn } from './turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from './tool-runner';
 import { runToolCallLoop } from './tool-call-loop';
 import { createProactiveTurn, type StreamProactiveInput } from './proactive-turn';
+import { tryReminderTurn } from './reminder-turn';
+import { createEmotionGate } from './emotion-gate';
 import type { OrchestratorEvent, StreamChatInput } from './types';
 import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
@@ -40,21 +42,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
     waitForBackgroundJobs: async (): Promise<void> => {
       await Promise.allSettled([...backgroundJobs]);
     },
-    /**
-     * v1.6：读取助手当前情绪/关系状态（已按离线时长惰性衰减，不写库）。
-     * 助手不存在时由情绪服务回落默认状态（无行=默认），故不做存在性 404。
-     */
-    viewEmotion(assistantId: string) {
-      return emotion.view(assistantId);
-    },
-    /** v1.6 M4：状态快照 + 近期事件流水（情绪面板用） */
-    viewEmotionDetail(assistantId: string, eventLimit?: number) {
-      return emotion.viewWithEvents(assistantId, eventLimit);
-    },
-    /** v1.6 M4：清除情绪/关系状态与事件流水 */
-    resetEmotion(assistantId: string) {
-      return emotion.reset(assistantId);
-    },
+    ...createEmotionGate(emotion),
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
       const assistant = assistants.get(input.assistantId);
 
@@ -86,6 +74,19 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         event: 'meta',
         data: { messageId: assistantMessage.id, conversationId },
       };
+
+      // v1.7 M5：「提醒我/叫我…」本地解析短路——建提醒或追问，零模型调用
+      const reminderEvents = await tryReminderTurn({
+        deps,
+        db: deps.db,
+        assistantId: input.assistantId,
+        assistantMessageId: assistantMessage.id,
+        userText: userContent,
+      });
+      if (reminderEvents) {
+        for (const event of reminderEvents) yield event;
+        return;
+      }
 
       // LangSmith 顶层 span：一次完整对话（含模型多轮 + 工具 + RAG）聚成一棵树
       const turnTrace: TraceHandle | null = await startRun({

@@ -279,3 +279,5 @@ export * from './event';
 export * from './scheduled-task';
 // v1.7 演出用量 HTTP 契约
 export * from './event-usage';
+// v1.7 M5 自定义短语触发器
+export * from './event-trigger';

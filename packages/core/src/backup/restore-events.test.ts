@@ -4,6 +4,7 @@ import {
   createAssistantRepository,
   createScheduledTaskRepository,
   createEventUsageRepository,
+  createEventTriggerRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
 import { createWebCipher } from '../secrets/cipher';
@@ -70,6 +71,15 @@ describe('备份 events 轨（v1.7）', () => {
       reason: 'cooldown',
       priority: 2,
     });
+
+    // M5：一条自定义短语触发器（时间戳必须为合法 ISO，与仓储 nowIso() 落库口径一致）
+    db.prepare(
+      `INSERT INTO event_triggers(
+         id, assistant_id, event_id, phrases_json, cooldown_ms, start_hour, end_hour,
+         max_per_day, min_intimacy, enabled, created_at, updated_at)
+       VALUES ('tg1', ?, 'ev.relation.praised', '["真棒","辛苦了"]', 600000, 8, 22, 3, 10, 1,
+               '2026-10-13T08:00:00.000Z', '2026-10-13T08:00:00.000Z')`,
+    ).run(created.id);
     return db;
   }
 
@@ -85,7 +95,8 @@ describe('备份 events 轨（v1.7）', () => {
     const dstDb = createDatabase(':memory:');
     const dstDeps = { db: dstDb, cipher: createWebCipher() } as unknown as ServiceDeps;
     const result = await restoreBackup(dstDeps, archive);
-    expect(result.imported.events).toBe(1);
+    // events 用户可见计数 = 提醒 1 + 触发器 1（助手/流水为附属数据不单列）
+    expect(result.imported.events).toBe(2);
     expect(result.skipped.events).toBe(0);
 
     const assistants = createAssistantRepository(dstDb);
@@ -104,6 +115,16 @@ describe('备份 events 轨（v1.7）', () => {
     expect(usageRows).toHaveLength(2);
     expect(usageRows.filter((r) => r.outcome === 'played')).toHaveLength(1);
 
+    // M5：自定义触发器随轨恢复且字段不丢失
+    const triggers = createEventTriggerRepository(dstDb).list();
+    expect(triggers).toHaveLength(1);
+    expect(triggers[0]!.id).toBe('tg1');
+    expect(triggers[0]!.eventId).toBe('ev.relation.praised');
+    expect(triggers[0]!.phrases).toEqual(['真棒', '辛苦了']);
+    expect(triggers[0]!.cooldownMs).toBe(600000);
+    expect(triggers[0]!.minIntimacy).toBe(10);
+    expect(triggers[0]!.enabled).toBe(true);
+
     srcDb.close();
     dstDb.close();
   });
@@ -118,7 +139,8 @@ describe('备份 events 轨（v1.7）', () => {
     await restoreBackup(dstDeps, archive);
     const second = await restoreBackup(dstDeps, archive);
     expect(second.imported.events).toBe(0);
-    expect(second.skipped.events).toBe(1);
+    // 幂等：提醒 1 + 触发器 1 均已存在
+    expect(second.skipped.events).toBe(2);
 
     srcDb.close();
     dstDb.close();

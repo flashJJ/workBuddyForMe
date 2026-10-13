@@ -17,6 +17,7 @@ const RAW_BUILT_IN_EVENTS = [
     maxPerDay: 1,
     speechLock: 'queue',
     builtIn: true,
+    emotionOnPlayed: { type: 'praise' },
     steps: [
       { kind: 'spatial', action: 'slideIn' },
       { kind: 'expression', tag: 'joy' },
@@ -57,6 +58,7 @@ const RAW_BUILT_IN_EVENTS = [
     maxPerDay: 3,
     speechLock: 'queue',
     builtIn: true,
+    emotionOnPlayed: { type: 'praise' },
     steps: [
       { kind: 'spatial', action: 'slideIn' },
       { kind: 'fx', id: 'fadeIn' },
@@ -81,6 +83,7 @@ const RAW_BUILT_IN_EVENTS = [
     maxPerDay: 3,
     speechLock: 'skip',
     builtIn: true,
+    emotionOnPlayed: { type: 'praise' },
     steps: [
       { kind: 'fx', id: 'hearts' },
       {
@@ -130,6 +133,7 @@ const RAW_BUILT_IN_EVENTS = [
     maxPerDay: 2,
     speechLock: 'queue',
     builtIn: true,
+    emotionOnPlayed: { type: 'comfort' },
     steps: [
       { kind: 'expression', tag: 'sadness', durationMs: 900 },
       { kind: 'gaze', x: 0, y: 0.25 },
@@ -152,6 +156,7 @@ const RAW_BUILT_IN_EVENTS = [
     maxPerDay: 5,
     speechLock: 'skip',
     builtIn: true,
+    emotionOnPlayed: { type: 'praise' },
     steps: [
       { kind: 'spatial', action: 'hop' },
       { kind: 'expression', tag: 'joy' },

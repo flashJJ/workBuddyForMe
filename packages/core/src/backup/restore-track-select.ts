@@ -17,7 +17,8 @@ export function determineTracks(manifest: BackupManifest, files: ReadonlyMap<str
     files.has('events.json') &&
     ((manifest.tracks.events?.scheduleCount ?? 0) > 0 ||
       (manifest.tracks.events?.usageCount ?? 0) > 0 ||
-      (manifest.tracks.events?.assistantCount ?? 0) > 0)
+      (manifest.tracks.events?.assistantCount ?? 0) > 0 ||
+      (manifest.tracks.events?.triggerCount ?? 0) > 0)
   ) {
     tracks.push('events');
   }

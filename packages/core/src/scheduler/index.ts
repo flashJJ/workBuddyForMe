@@ -7,3 +7,8 @@ export {
 } from './next-run';
 export { createSchedulerTick, type SchedulerTickDeps, type DueTask } from './scheduler-tick';
 export { createSchedulesService, type SchedulesService } from './schedules-service';
+export {
+  parseReminderRequest,
+  type ReminderParseResult,
+  type ParsedReminder,
+} from './reminder-parse';

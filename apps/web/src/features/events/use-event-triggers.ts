@@ -4,10 +4,13 @@ import * as React from 'react';
 import { extractEmotionSignal } from '@wbfm/shared/schemas';
 import { eventIdForIntent } from '@wbfm/shared/events';
 import type { Message } from '@wbfm/shared/types';
+import { CustomTriggerGate } from '@wbfm/core/event-client';
 import { useReunionGreeting } from '@/features/avatar/use-reunion-greeting';
 import { bumpInteractionCounter } from './daily-counter';
 import { ACTIVITY_WRITE_THROTTLE_MS, markActivity } from './event-activity';
 import { uiTaskEventBus } from './event-bus';
+import { shanghaiDateKey } from './remote-usage-store';
+import { useEventTriggers as useEventTriggersData } from './use-event-triggers-data';
 import {
   REUNION_TIER_TO_NUMBER,
   resolveSoulEventIntent,
@@ -19,6 +22,10 @@ interface UseEventTriggersArgs {
   enabled: boolean;
   /** v1.6 久别迎接切净：需同时过情绪/短句两个既有开关 */
   reunionEnabled: boolean;
+  /** M5：自定义短语触发器按当前助手拉取 */
+  assistantId: string;
+  /** 当前亲密度（自定义规则 minIntimacy 闸门用） */
+  intimacy: number;
   triggerEvent: (eventId: string, extraCounters?: Record<string, number>) => boolean;
 }
 
@@ -37,15 +44,33 @@ export function useEventTriggers({
   messages,
   enabled,
   reunionEnabled,
+  assistantId,
+  intimacy,
   triggerEvent,
 }: UseEventTriggersArgs): void {
   const triggerRef = React.useRef(triggerEvent);
   triggerRef.current = triggerEvent;
   const enabledRef = React.useRef(enabled);
   enabledRef.current = enabled;
+  const intimacyRef = React.useRef(intimacy);
+  intimacyRef.current = intimacy;
   const lastBelittleAtRef = React.useRef<number | null>(null);
   const seenMessagesRef = React.useRef<Set<string>>(new Set());
   const lastActivityWriteRef = React.useRef(0);
+
+  // M5：自定义规则与规则粒度闸门（切助手即重置，规则不跨助手串）
+  const { data: customTriggers } = useEventTriggersData(assistantId);
+  const customTriggersRef = React.useRef(customTriggers);
+  customTriggersRef.current = customTriggers;
+  const customGateRef = React.useRef<CustomTriggerGate | null>(null);
+  if (!customGateRef.current) {
+    customGateRef.current = new CustomTriggerGate({ toDateKey: shanghaiDateKey });
+  }
+  const gateAssistantRef = React.useRef(assistantId);
+  if (gateAssistantRef.current !== assistantId) {
+    gateAssistantRef.current = assistantId;
+    customGateRef.current.reset();
+  }
 
   // 归来事件（主窗判定；桌宠窗仅发跨窗信号，见 pet-stage）
   useReunionGreeting({
@@ -106,6 +131,21 @@ export function useEventTriggers({
         });
         for (const intent of intents) {
           triggerRef.current(eventIdForIntent(intent)!, INTENT_EXTRA[intent]);
+        }
+
+        // M5：自定义短语规则（本地闸门：短语/亲密度/时段/冷却/每日上限；
+        // 命中后仍交导演做剧本级三锁/冷却仲裁）
+        const shanghaiHour = new Date(now + 8 * 3600_000).getUTCHours();
+        for (const rule of customTriggersRef.current ?? []) {
+          if (
+            customGateRef.current?.admit(rule, {
+              text: message.content,
+              hour: shanghaiHour,
+              intimacy: intimacyRef.current,
+            })
+          ) {
+            triggerRef.current(rule.eventId);
+          }
         }
       } else if (message.role === 'assistant' && message.status === 'completed') {
         const extracted = extractEmotionSignal(message.content);

@@ -175,4 +175,8 @@ export {
   type EventUsageStats,
   type AppendEventUsageInput,
 } from './event-usage-repo';
+export {
+  createEventTriggerRepository,
+  type EventTriggerRepository,
+} from './event-trigger-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

@@ -133,6 +133,16 @@ export const eventDefinitionSchema = z
     /** speech 遇 TTS 锁：queue=等待授权，skip=跳过出声（视觉照演） */
     speechLock: z.enum(['queue', 'skip']),
     builtIn: z.boolean().optional(),
+    /**
+     * v1.7 M5：演出完整播完（outcome=played）后的情绪联动。
+     * praise=庆祝/被夸/迎接（+开心+亲密）；comfort=生气哄好（−难过+小幅回暖）。
+     * 跳过/打断不施加；suppressed 更不施加。
+     */
+    emotionOnPlayed: z
+      .object({
+        type: z.enum(['praise', 'comfort']),
+      })
+      .optional(),
     steps: z.array(eventStepSchema).min(1).max(EVENT_MAX_STEPS),
   })
   /**

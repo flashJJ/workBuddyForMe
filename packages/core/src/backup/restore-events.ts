@@ -6,7 +6,9 @@
 import {
   EVENT_RUN_OUTCOMES,
   EVENT_SUPPRESS_REASONS,
+  eventTriggerViewSchema,
   scheduledTaskViewSchema,
+  type EventTriggerView,
   type ScheduledTaskView,
 } from '@wbfm/shared/schemas';
 import { ApiError } from '@wbfm/shared/errors';
@@ -50,12 +52,14 @@ export interface EventsTrackPayload {
   assistants?: AssistantEntry[];
   schedules?: unknown[];
   usage?: UsageEntry[];
+  triggers?: unknown[];
 }
 
 export interface EventsRestoreCounts {
   assistants: { imported: number; skipped: number };
   schedules: { imported: number; skipped: number };
   usage: { imported: number; skipped: number };
+  triggers: { imported: number; skipped: number };
 }
 
 /** 解析 events.json（损坏归档给出与其他轨一致的校验错误） */
@@ -96,6 +100,7 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
     assistants: { imported: 0, skipped: 0 },
     schedules: { imported: 0, skipped: 0 },
     usage: { imported: 0, skipped: 0 },
+    triggers: { imported: 0, skipped: 0 },
   };
 
   const assistantExists = db.prepare(`SELECT 1 FROM assistants WHERE id = ?`);
@@ -125,6 +130,14 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
     `INSERT OR IGNORE INTO event_usage(
        id, assistant_id, event_id, date_key, played_at, outcome, reason, priority)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+  const insertTrigger = db.prepare(
+    `INSERT OR IGNORE INTO event_triggers(
+       id, assistant_id, event_id, phrases_json, cooldown_ms, start_hour, end_hour,
+       max_per_day, min_intimacy, enabled, created_at, updated_at)
+     VALUES (
+       @id, @assistantId, @eventId, @phrases, @cooldownMs, @startHour, @endHour,
+       @maxPerDay, @minIntimacy, @enabled, @createdAt, @updatedAt)`,
   );
 
   // 1. 自定义助手（仅恢复非内置；id/name 必须合法）
@@ -224,6 +237,36 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
       else counts.usage.skipped++;
     } catch {
       counts.usage.skipped++;
+    }
+  }
+
+  // 4. 自定义触发器（schema 全量校验；助手不存在由 FK 拒绝 → 跳过）
+  for (const raw of payload.triggers ?? []) {
+    const parsed = eventTriggerViewSchema.safeParse(raw);
+    if (!parsed.success) {
+      counts.triggers.skipped++;
+      continue;
+    }
+    const view: EventTriggerView = parsed.data;
+    try {
+      const result = insertTrigger.run({
+        id: view.id,
+        assistantId: view.assistantId,
+        eventId: view.eventId,
+        phrases: JSON.stringify(view.phrases),
+        cooldownMs: view.cooldownMs,
+        startHour: view.startHour,
+        endHour: view.endHour,
+        maxPerDay: view.maxPerDay,
+        minIntimacy: view.minIntimacy,
+        enabled: view.enabled ? 1 : 0,
+        createdAt: view.createdAt,
+        updatedAt: view.updatedAt,
+      });
+      if (result.changes > 0) counts.triggers.imported++;
+      else counts.triggers.skipped++;
+    } catch {
+      counts.triggers.skipped++;
     }
   }
 

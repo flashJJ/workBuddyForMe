@@ -5,6 +5,8 @@ import type { EventFrequencyTier } from '@wbfm/shared/schemas';
 import { BUILT_IN_EVENTS } from '@wbfm/shared/events';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { CustomTriggerSection } from '@/features/events/custom-trigger-section';
+import { EventUsageStats } from '@/features/events/event-usage-stats';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
 
 const TIERS: ReadonlyArray<{ id: EventFrequencyTier; labelKey: MessageKey }> = [
@@ -129,6 +131,10 @@ export function EventPanel() {
               })}
             <p className="pt-1 text-xs text-muted-foreground">{t('settings.events.previewHint')}</p>
           </div>
+
+          {hydrated && <CustomTriggerSection />}
+
+          {hydrated && <EventUsageStats />}
         </div>
       )}
     </section>

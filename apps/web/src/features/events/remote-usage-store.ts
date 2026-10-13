@@ -8,6 +8,7 @@
  * - 跨午夜后 countPlayedToday 自然读到新 dateKey 的空计数。
  */
 import type { EventRunOutcome } from '@wbfm/shared/schemas';
+import { getBuiltInEvent } from '@wbfm/shared/events';
 import type { EventUsageStore } from '@wbfm/core/event-client';
 import { apiGet, apiPost } from '@/lib/api/client';
 
@@ -88,8 +89,21 @@ export class RemoteEventUsageStore implements EventUsageStore {
       outcome: entry.outcome,
       reason: entry.reason ?? null,
       priority: entry.priority,
-    }).catch((error: unknown) => {
-      console.warn('[event-usage] 流水持久化失败（不影响演出）', error);
-    });
+    })
+      .then(() => {
+        // M5：完整播完的内置剧本按声明施加情绪联动（best-effort，失败静默）
+        if (entry.outcome !== 'played') return;
+        const def = getBuiltInEvent(entry.eventId);
+        const emotion = def?.emotionOnPlayed;
+        if (!emotion) return;
+        void apiPost(`/api/assistants/${encodeURIComponent(this.assistantId)}/emotion/event`, {
+          type: emotion.type,
+        }).catch((error: unknown) => {
+          console.warn('[event-usage] 情绪联动写入失败（不影响演出）', error);
+        });
+      })
+      .catch((error: unknown) => {
+        console.warn('[event-usage] 流水持久化失败（不影响演出）', error);
+      });
   }
 }

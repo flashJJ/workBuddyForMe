@@ -55,6 +55,8 @@ export const backupManifestSchema = z.object({
         scheduleCount: z.number().int().min(0),
         usageCount: z.number().int().min(0),
         assistantCount: z.number().int().min(0),
+        /** v1.7 M5：自定义短语触发器（同轨加法字段；v3 早期归档缺省 0） */
+        triggerCount: z.number().int().min(0).optional(),
       })
       .optional(),
   }),

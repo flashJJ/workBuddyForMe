@@ -167,22 +167,25 @@ export async function restoreBackup(
     }
 
     if (tracksToRestore.includes('events') && files.has('events.json')) {
-      // 顺序：自定义助手 → 提醒 → 流水（后两者外键依赖助手；全部 INSERT OR IGNORE）
+      // 顺序：自定义助手 → 提醒 → 流水 → 触发器（后三类外键依赖助手；全部 INSERT OR IGNORE）
       const eventsPayload = readEventsTrackPayload(files.get('events.json')!);
       const counts = restoreEventsTrack(deps.db, eventsPayload);
-      result.imported.events = counts.schedules.imported;
-      result.skipped.events = counts.schedules.skipped;
+      // 用户可见计数：提醒 + 自定义触发器（助手/流水为附属数据，不单列）
+      result.imported.events = counts.schedules.imported + counts.triggers.imported;
+      result.skipped.events = counts.schedules.skipped + counts.triggers.skipped;
       const eventsTotal =
         counts.assistants.imported + counts.assistants.skipped +
         counts.schedules.imported + counts.schedules.skipped +
-        counts.usage.imported + counts.usage.skipped;
+        counts.usage.imported + counts.usage.skipped +
+        counts.triggers.imported + counts.triggers.skipped;
       onProgress?.({
         track: 'events',
         processed: eventsTotal,
         total:
           (manifest.tracks.events?.assistantCount ?? 0) +
           (manifest.tracks.events?.scheduleCount ?? 0) +
-          (manifest.tracks.events?.usageCount ?? 0),
+          (manifest.tracks.events?.usageCount ?? 0) +
+          (manifest.tracks.events?.triggerCount ?? 0),
       });
     }
 

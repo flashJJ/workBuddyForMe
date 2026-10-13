@@ -23,6 +23,14 @@ export {
 export { isQuietHour, effectiveCooldown } from './gates';
 export { createWallClock, createManualClock, type EventClock } from './clock';
 export { InMemoryEventUsageStore, defaultDateKey } from './usage-store';
+export {
+  CustomTriggerGate,
+  phraseIncludes,
+  matchTrigger,
+  isWithinHourWindow,
+  meetsIntimacy,
+  type CustomTriggerGateDeps,
+} from './custom-trigger-gate';
 export type {
   ConditionContext,
   EventEffectSink,

@@ -32,6 +32,7 @@ import { zhAgentTrace } from './messages/agent-trace';
 import { zhEmotion } from './messages/emotion';
 import { zhEvent } from './messages/event';
 import { zhReminders } from './messages/reminder';
+import { zhEventM5 } from './messages/event-m5';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -73,6 +74,8 @@ export const zhCN = {
   emotion: zhEmotion,
   event: zhEvent,
   reminders: zhReminders,
+  customTriggers: zhEventM5.customTriggers,
+  eventStats: zhEventM5.eventStats,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

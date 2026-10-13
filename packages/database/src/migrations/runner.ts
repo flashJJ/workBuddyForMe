@@ -23,6 +23,7 @@ import { migrateV021 } from './v021-assistant-multi-kb';
 import { migrateV022 } from './v022-assistant-emotion';
 import { migrateV023 } from './v023-emotion-events';
 import { migrateV024 } from './v024-events-scheduler';
+import { migrateV025 } from './v025-event-triggers';
 
 interface Migration {
   version: number;
@@ -145,6 +146,11 @@ const MIGRATIONS: Migration[] = [
     description:
       'v1.7 events: assistants 人格 4 列 + scheduled_tasks 提醒表 + event_usage 演出流水（纯加法）',
     up: migrateV024,
+  },
+  {
+    version: 25,
+    description: 'v1.7 events: event_triggers 自定义短语触发器（纯加法）',
+    up: migrateV025,
   },
 ];
 
