@@ -270,6 +270,13 @@ export function ChatPage() {
           getLevel={companion.playback.getLevel}
           speaking={companion.playback.speaking}
           proactiveContent={companion.proactiveBubble?.content ?? null}
+          eventPlayback={{
+            enqueue: companion.playback.enqueue,
+            cancel: companion.playback.cancel,
+            waitDrained: companion.playback.waitDrained,
+          }}
+          eventTtsEnabled={companion.ttsEnabled}
+          eventTtsReady={Boolean(companion.voiceModelStatus?.ttsReady)}
         />
       )}
     </div>

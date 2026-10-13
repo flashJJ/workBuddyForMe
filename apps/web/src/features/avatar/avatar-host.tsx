@@ -2,12 +2,20 @@
 
 import * as React from 'react';
 import type { Message } from '@wbfm/shared/types';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { Live2dCanvas } from './live2d-canvas';
 import type { Live2dController } from './live2d-controller';
 import { DEFAULT_EXPRESSION } from './expression-parser';
 import { useHeadTouch, type TouchControllerLike } from './use-head-touch';
 import { useEmotionExpression } from './use-emotion-expression';
+import { EventFxLayer } from '@/features/events/event-fx-layer';
+import { EventSubtitleSlot } from '@/features/events/event-subtitle-bubble';
+import {
+  useEventPlayer,
+  type EventPlaybackBridge,
+} from '@/features/events/use-event-player';
+import type { EventPlayerControllerLike } from '@/features/events/event-player';
 
 interface AvatarHostProps {
   /** 当前会话消息（含流式 live 消息），用于从回复标签推导表情 */
@@ -22,6 +30,11 @@ interface AvatarHostProps {
   assistantId: string;
   /** F8：主动轮气泡文本（存在时表情优先跟随它） */
   proactiveContent?: string | null;
+  /** v1.7：事件台词复用的播放队列（口型/单 AudioContext 同通道） */
+  eventPlayback?: EventPlaybackBridge | null;
+  /** v1.7：事件台词是否允许出声（全局朗读开关 + TTS 模型就绪） */
+  eventTtsEnabled?: boolean;
+  eventTtsReady?: boolean;
 }
 
 /**
@@ -36,14 +49,32 @@ export function AvatarHost({
   modelId,
   assistantId,
   proactiveContent = null,
+  eventPlayback = null,
+  eventTtsEnabled = false,
+  eventTtsReady = false,
 }: AvatarHostProps) {
   const { t } = useI18n();
   const expression = useEmotionExpression(assistantId, messages, proactiveContent);
-  // 舞台内 Live2dController 由动态 chunk 创建；ref 结构兼容触摸所需动作子集
+  // 舞台内 Live2dController 由动态 chunk 创建；ref 结构面转型与触摸 hook 同口径
   const controllerRef = React.useRef<Live2dController | null>(null);
   const onHeadTouch = useHeadTouch(
     controllerRef as React.MutableRefObject<TouchControllerLike | null>,
   );
+
+  // v1.7：事件演出播放器（M2 仅挂载；M3 触发器/director 接入后开始驱动）
+  // event.* 键 M3 随内置剧本入词典，此前缺键由 i18n 回退键名
+  const resolveEventLine = React.useCallback(
+    (key: string) => t(key as MessageKey),
+    [t],
+  );
+  const { view: eventView } = useEventPlayer({
+    controllerRef: controllerRef as React.MutableRefObject<EventPlayerControllerLike | null>,
+    baselineExpression: expression,
+    resolveLine: resolveEventLine,
+    playback: eventPlayback,
+    ttsEnabled: eventTtsEnabled,
+    ttsReady: eventTtsReady,
+  });
 
   return (
     <div className="flex h-full flex-col" data-testid="avatar-host">
@@ -61,7 +92,7 @@ export function AvatarHost({
               : expression}
         </span>
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
         <Live2dCanvas
           modelId={modelId}
           expression={expression}
@@ -70,6 +101,8 @@ export function AvatarHost({
           controllerRef={controllerRef}
           onHeadTouch={() => onHeadTouch()}
         />
+        <EventFxLayer fx={eventView.fx} />
+        <EventSubtitleSlot text={eventView.subtitle} />
       </div>
     </div>
   );

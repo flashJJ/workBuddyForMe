@@ -33,6 +33,8 @@ export class AudioPlaybackQueue {
   private epoch = 0;
   /** 当前泵循环令牌；cancel 作废旧泵，防止 await 返回后与新泵并发 */
   private pumpToken: object | null = null;
+  /** v1.7：队列排空等待者（事件台词入队后等播完，不新开音频通道） */
+  private drainWaiters: Array<() => void> = [];
 
   constructor(
     private readonly player: AudioPlayer,
@@ -53,6 +55,36 @@ export class AudioPlaybackQueue {
     this.pumpToken = null;
     this.player.cancelAll();
     this.onState?.('idle');
+    // 代际作废：等待者按「本次占用结束」立即解除（调用方自行复查 abort 信号）
+    this.flushDrainWaiters();
+  }
+
+  /**
+   * v1.7：等待当前播放轮排空（事件 speech 复用同一 AudioContext 队列）。
+   * 以泵循环存活为准——帧在播放开始时即 shift 出队列，但 pump 要等播放器 resolve
+   * 才结束；无泵/已 dispose 立即 resolve；cancel 代际切换或 signal abort 立即 resolve。
+   * 注意：以「final 收尾的单段剪辑」为使用口径——流式多帧在调用瞬间若无泵也会解除。
+   */
+  waitDrained(signal?: AbortSignal): Promise<void> {
+    if (this.disposed || this.pumpToken === null) return Promise.resolve();
+    return new Promise((resolve) => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        signal?.removeEventListener('abort', done);
+        this.drainWaiters = this.drainWaiters.filter((w) => w !== done);
+        resolve();
+      };
+      signal?.addEventListener('abort', done, { once: true });
+      this.drainWaiters.push(done);
+    });
+  }
+
+  private flushDrainWaiters(): void {
+    const waiters = this.drainWaiters;
+    this.drainWaiters = [];
+    for (const done of waiters) done();
   }
 
   /** 当前代际（编排/测试用） */
@@ -95,7 +127,11 @@ export class AudioPlaybackQueue {
         }
       }
     } finally {
-      if (this.pumpToken === token) this.pumpToken = null;
+      if (this.pumpToken === token) {
+        // 泵循环走到此处必然已无排队帧；解除事件台词的排空等待
+        this.pumpToken = null;
+        this.flushDrainWaiters();
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import type { Message } from '@wbfm/shared/types';
+import type { EventPlaybackBridge } from '@/features/events/use-event-player';
 import { AvatarHost } from './avatar-host';
 
 interface Props {
@@ -13,6 +14,10 @@ interface Props {
   speaking: boolean;
   /** F8：主动轮气泡文本（存在时表情优先跟随它） */
   proactiveContent?: string | null;
+  /** v1.7：事件台词播放桥 + 出声门控（M3 触发器接入前播放器保持休眠） */
+  eventPlayback?: EventPlaybackBridge | null;
+  eventTtsEnabled?: boolean;
+  eventTtsReady?: boolean;
 }
 
 /**
@@ -27,6 +32,9 @@ export function ChatAvatarRail({
   getLevel,
   speaking,
   proactiveContent = null,
+  eventPlayback = null,
+  eventTtsEnabled = false,
+  eventTtsReady = false,
 }: Props) {
   return (
     <aside
@@ -40,6 +48,9 @@ export function ChatAvatarRail({
         getLevel={getLevel}
         speaking={speaking}
         proactiveContent={proactiveContent}
+        eventPlayback={eventPlayback}
+        eventTtsEnabled={eventTtsEnabled}
+        eventTtsReady={eventTtsReady}
       />
     </aside>
   );

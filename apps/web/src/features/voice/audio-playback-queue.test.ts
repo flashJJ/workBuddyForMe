@@ -129,4 +129,58 @@ describe('AudioPlaybackQueue', () => {
     expect(player.played).toEqual(['a', 'c']);
     expect(states.filter((s) => s === 'idle')).toHaveLength(2);
   });
+
+  it('v1.7 waitDrained：空队列立即 resolve', async () => {
+    const q = new AudioPlaybackQueue(makePlayer());
+    let done = false;
+    void q.waitDrained().then(() => {
+      done = true;
+    });
+    await flushTicks();
+    expect(done).toBe(true);
+  });
+
+  it('v1.7 waitDrained：final 帧播完排空后 resolve', async () => {
+    const player = makePlayer();
+    const q = new AudioPlaybackQueue(player);
+    q.enqueue(frame({ spoken: 'evt', final: true }));
+    let drained = false;
+    void q.waitDrained().then(() => {
+      drained = true;
+    });
+    await flushTicks();
+    expect(drained).toBe(false);
+    player.gate();
+    await flushTicks();
+    expect(drained).toBe(true);
+  });
+
+  it('v1.7 waitDrained：cancel 代际切换与外部 abort 都立即解除', async () => {
+    const player = makePlayer();
+    const q = new AudioPlaybackQueue(player);
+    q.enqueue(frame({ spoken: 'a' }));
+    await flushTicks();
+
+    let cancelled = false;
+    void q.waitDrained().then(() => {
+      cancelled = true;
+    });
+    q.cancel();
+    await flushTicks();
+    expect(cancelled).toBe(true);
+
+    // 外部 signal abort：不取消队列，仅解除等待
+    q.enqueue(frame({ spoken: 'b' }));
+    await flushTicks();
+    const ac = new AbortController();
+    let aborted = false;
+    void q.waitDrained(ac.signal).then(() => {
+      aborted = true;
+    });
+    ac.abort();
+    await flushTicks(); // resolve 回调在微任务中执行
+    expect(aborted).toBe(true);
+    player.gate();
+    q.dispose();
+  });
 });
