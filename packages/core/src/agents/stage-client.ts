@@ -14,3 +14,14 @@ export {
   type StageAdapterState,
   type StageAgentFrame,
 } from './stage-adapter';
+
+// v1.9 M3：会议帧 → 舞台指令（纯映射，浏览器安全）
+export {
+  adaptMeetingFrame,
+  createMeetingAdapterState,
+  createMeetingCast,
+  DEFAULT_MEETING_AVATAR,
+  type MeetingAdapterState,
+  type MeetingCastMemberInput,
+} from '../meeting/meeting-stage-adapter';
+export type { MeetingEvent } from '../meeting/meeting-types';

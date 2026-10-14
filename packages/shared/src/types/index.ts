@@ -66,3 +66,8 @@ export type {
 } from './flow';
 export type { PermissionLevel, PermissionAction, ToolPermission } from './permission';
 export type { StageSceneRecord } from './stage';
+export type {
+  MeetingRecord,
+  MeetingMessageRecord,
+  MeetingDetailView,
+} from './meeting';

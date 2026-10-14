@@ -56,24 +56,29 @@ export function buildStageWindowOptions(
   };
 }
 
-/** 舞台路由：runId 非空时直达 /stage?run=<id>（v1.9 M2 只读观看协作 run） */
-export function buildStageUrl(baseUrl: string, runId?: string): string {
+/** 舞台路由：runId/meetingId 非空时直达对应只读现场（v1.9 M2/M3） */
+export function buildStageUrl(
+  baseUrl: string,
+  target?: { runId?: string; meetingId?: string },
+): string {
   const root = `${baseUrl}/stage`;
-  return runId ? `${root}?run=${encodeURIComponent(runId)}` : root;
+  if (target?.meetingId) return `${root}?meeting=${encodeURIComponent(target.meetingId)}`;
+  if (target?.runId) return `${root}?run=${encodeURIComponent(target.runId)}`;
+  return root;
 }
 
-/** 创建舞台窗并加载 /stage（可带 runId 直达协作现场） */
+/** 创建舞台窗并加载 /stage（可带 run/meeting 直达现场） */
 export function createStageWindow(
   boot: WindowBootInfo | null,
   fullscreen: boolean,
   bounds: StageBounds | null,
-  runId?: string,
+  target?: { runId?: string; meetingId?: string },
 ): BrowserWindow {
   const baseUrl = boot?.url ?? DEV_SERVER_URL;
   const win = new BrowserWindow(buildStageWindowOptions(boot, fullscreen, bounds));
   win.once('ready-to-show', () => {
     if (!win.isDestroyed()) win.show();
   });
-  void win.loadURL(buildStageUrl(baseUrl, runId));
+  void win.loadURL(buildStageUrl(baseUrl, target));
   return win;
 }

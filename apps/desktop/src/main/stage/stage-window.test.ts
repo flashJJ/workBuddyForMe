@@ -79,12 +79,19 @@ describe('v1.9 舞台窗选项', () => {
     expect(win).toBeTruthy();
   });
 
-  it('v1.9 M2：runId 直达 /stage?run=<id>，并做 URL 编码', () => {
-    expect(buildStageUrl('http://127.0.0.1:3100', 'run_1-2')).toBe(
+  it('v1.9 M2/M3：runId/meetingId 直达对应舞台现场，并做 URL 编码', () => {
+    expect(buildStageUrl('http://127.0.0.1:3100', { runId: 'run_1-2' })).toBe(
       'http://127.0.0.1:3100/stage?run=run_1-2',
     );
+    expect(buildStageUrl('http://127.0.0.1:3100', { meetingId: 'mtg-9' })).toBe(
+      'http://127.0.0.1:3100/stage?meeting=mtg-9',
+    );
+    // meeting 优先（互斥目标，防御）
+    expect(
+      buildStageUrl('http://127.0.0.1:3100', { runId: 'r', meetingId: 'm' }),
+    ).toBe('http://127.0.0.1:3100/stage?meeting=m');
     expect(buildStageUrl('http://127.0.0.1:3100')).toBe('http://127.0.0.1:3100/stage');
-    createStageWindow({ url: 'http://127.0.0.1:3100' }, true, null, 'run-9');
+    createStageWindow({ url: 'http://127.0.0.1:3100' }, true, null, { runId: 'run-9' });
     expect(m.loadURL).toHaveBeenCalledWith('http://127.0.0.1:3100/stage?run=run-9');
   });
 });

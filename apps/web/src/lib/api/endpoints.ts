@@ -65,6 +65,14 @@ export const API = {
   agentRunEvents: (id: string, observe = false) =>
     `/api/agent/runs/${id}/events${observe ? '?observe=1' : ''}`,
   agentRunCancel: (id: string) => `/api/agent/runs/${id}/cancel`,
+  // v1.9 M3 多助手会议
+  meetings: '/api/meetings',
+  meeting: (id: string) => `/api/meetings/${id}`,
+  meetingTurns: (id: string) => `/api/meetings/${id}/turns`,
+  meetingMode: (id: string) => `/api/meetings/${id}/mode`,
+  meetingFinish: (id: string) => `/api/meetings/${id}/finish`,
+  meetingAbort: (id: string) => `/api/meetings/${id}/abort`,
+  meetingEvents: (id: string) => `/api/meetings/${id}/events`,
   // v0.8 Flow Studio
   flows: '/api/flows',
   flow: (id: string) => `/api/flows/${id}`,

@@ -14,6 +14,7 @@ import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
 import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
+import { readV19TrackPayloads, restoreV19TrackData, v19TrackTotal } from './restore-meetings';
 import {
   nullifyDanglingCardRefs,
   readCardsTrackPayload,
@@ -77,6 +78,9 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       schedules: manifest.tracks.events?.scheduleCount ?? 0,
       eventUsage: manifest.tracks.events?.usageCount ?? 0,
       cards: manifest.tracks.events?.cardCount ?? 0,
+      stageScenes: manifest.tracks.events?.stageSceneCount ?? 0,
+      meetings: manifest.tracks.events?.meetingCount ?? 0,
+      meetingMessages: manifest.tracks.events?.meetingMessageCount ?? 0,
     },
     warnings,
   });
@@ -115,6 +119,11 @@ export async function restoreBackup(
   if (tracksToRestore.includes('events') && files.has('characterCards.json')) {
     cardRows = readCardsTrackPayload(files.get('characterCards.json')!);
   }
+
+  // v1.9：舞台场景 + 多助手会议/转录（同 events 轨；缺文件视为空，v4 及更早归档兼容）
+  const v19Payloads = tracksToRestore.includes('events')
+    ? readV19TrackPayloads(files)
+    : null;
 
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
@@ -192,12 +201,15 @@ export async function restoreBackup(
       result.skipped.events = counts.schedules.skipped + counts.triggers.skipped;
       // v1.8：助手机行恢复后清理悬挂 card_id（卡未随档恢复/旧档残缺 → 回落默认卡）
       nullifyDanglingCardRefs(deps.db);
+      // v1.9：舞台场景/会议/转录（助手行已落库，悬空成员在恢复函数内剔除）
+      const v19Counts = v19Payloads ? restoreV19TrackData(deps.db, v19Payloads) : null;
       const eventsTotal =
         counts.assistants.imported + counts.assistants.skipped +
         counts.schedules.imported + counts.schedules.skipped +
         counts.usage.imported + counts.usage.skipped +
         counts.triggers.imported + counts.triggers.skipped +
-        result.imported.cards + result.skipped.cards;
+        result.imported.cards + result.skipped.cards +
+        (v19Counts ? v19TrackTotal(v19Counts) : 0);
       onProgress?.({
         track: 'events',
         processed: eventsTotal,
@@ -206,7 +218,10 @@ export async function restoreBackup(
           (manifest.tracks.events?.scheduleCount ?? 0) +
           (manifest.tracks.events?.usageCount ?? 0) +
           (manifest.tracks.events?.triggerCount ?? 0) +
-          (manifest.tracks.events?.cardCount ?? 0),
+          (manifest.tracks.events?.cardCount ?? 0) +
+          (manifest.tracks.events?.stageSceneCount ?? 0) +
+          (manifest.tracks.events?.meetingCount ?? 0) +
+          (manifest.tracks.events?.meetingMessageCount ?? 0),
       });
     }
 

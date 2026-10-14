@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
 describe('v027 迁移：stage_scenes', () => {
-  it('全新空库：user_version=27，stage_scenes 就位', () => {
+  it('全新空库：user_version=28，stage_scenes 就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(27);
-    expect(LATEST_SCHEMA_VERSION).toBe(27);
+    expect(getSchemaVersion(db)).toBe(28);
+    expect(LATEST_SCHEMA_VERSION).toBe(28);
     const rows = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='stage_scenes'`)
       .all() as Array<{ name: string }>;
@@ -15,7 +15,7 @@ describe('v027 迁移：stage_scenes', () => {
     db.close();
   });
 
-  it('停在 v26 的老库可平滑升级，老表不受影响', () => {
+  it('停在 v26 的老库可平滑升级到最新，老表不受影响', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     db.pragma('user_version = 26');
@@ -29,7 +29,7 @@ describe('v027 迁移：stage_scenes', () => {
     ).toBe(1);
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(27);
+    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     expect(
       (
         db
@@ -40,11 +40,11 @@ describe('v027 迁移：stage_scenes', () => {
     db.close();
   });
 
-  it('幂等：重复执行迁移不报错且版本保持 27', () => {
+  it('幂等：重复执行迁移不报错且版本保持最新', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(() => applyMigrations(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(27);
+    expect(getSchemaVersion(db)).toBe(28);
     db.close();
   });
 

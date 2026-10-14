@@ -287,3 +287,4 @@ export * from './character-card';
 
 // v1.9 舞台契约（cast/指令/场景）
 export * from './stage';
+export * from './meeting';

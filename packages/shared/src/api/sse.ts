@@ -47,6 +47,11 @@ export const SSE_EVENT = {
   AGENT_DELTA: 'agent_delta',
   /** v1.4 M4：协作 Executor 调用 write/danger 工具前的人工授权请求（HITL；决策回 POST /api/tools/confirm） */
   AGENT_TOOL_CONFIRM: 'agent_tool_confirm',
+  /** v1.9 M3：会议模式（本轮发言序列/流式台词/落库消息/状态机） */
+  MEETING_TURN: 'meeting_turn',
+  MEETING_DELTA: 'meeting_delta',
+  MEETING_MESSAGE: 'meeting_message',
+  MEETING_STATUS: 'meeting_status',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -139,6 +144,34 @@ export type SsePayloadMap = {
     permission: PermissionLevel;
     argsSummary: string;
     taskScope: string;
+  };
+  /** v1.9 M3：一轮发言开始（按服务端校验后的顺序串行，舞台 focus 序列） */
+  meeting_turn: {
+    meetingId: string;
+    mode: import('../schemas/meeting').MeetingMode;
+    /** 本轮将依次发言的成员 id（manual=@ 序列；all=全成员；auto=接龙当前位） */
+    speakerIds: string[];
+    /** 已用 auto 接龙轮次 */
+    autoRounds: number;
+  };
+  /** v1.9 M3：单成员发言流式增量（口型/字幕驱动；不代表落库） */
+  meeting_delta: {
+    meetingId: string;
+    speakerId: string;
+    /** 该成员本轮累计全文（非分片，随流更新） */
+    content: string;
+  };
+  /** v1.9 M3：一条消息已落库（user/assistant，渲染归属以此为准，不采信正文自我宣称） */
+  meeting_message: {
+    meetingId: string;
+    message: import('../types/meeting').MeetingMessageRecord;
+  };
+  /** v1.9 M3：会议状态机变更（mode 自动收回 manual / finished / aborted） */
+  meeting_status: {
+    meetingId: string;
+    status: import('../schemas/meeting').MeetingStatus;
+    mode: import('../schemas/meeting').MeetingMode;
+    autoRounds: number;
   };
   /**
    * done：content 为已剥离情绪尾块的正文。

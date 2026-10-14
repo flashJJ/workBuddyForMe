@@ -9,8 +9,8 @@ import type { IpcEventLike, IpcMainLike } from '../pet/pet-ipc';
 
 export interface StageIpcActions {
   isOpen(): boolean;
-  /** runId 非空：舞台窗导航到 /stage?run=<id>（v1.9 M2 只读观看协作 run） */
-  open(runId?: string): Promise<boolean> | boolean;
+  /** 舞台窗导航到 /stage?run= 或 ?meeting=（v1.9 M2/M3 只读观看） */
+  open(target?: { runId?: string; meetingId?: string }): Promise<boolean> | boolean;
   close(): Promise<unknown> | unknown;
   capture(): Promise<{ saved: boolean; canceled?: boolean }>;
 }
@@ -21,12 +21,15 @@ export interface StageIpcGuards {
 }
 
 export function registerStageIpc(ipc: IpcMainLike, actions: StageIpcActions, guards: StageIpcGuards): void {
-  ipc.handle('stage:open', (event, runId?: unknown) => {
+  ipc.handle('stage:open', (event, target?: unknown) => {
     if (!guards.fromMain(event.sender)) return actions.isOpen();
-    // runId 来自渲染层，严格白名单校验，防注入成任意 URL/query
-    const safeRunId =
-      typeof runId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(runId) ? runId : undefined;
-    return actions.open(safeRunId);
+    // 目标 id 来自渲染层，严格白名单校验，防注入成任意 URL/query
+    const raw = (target ?? {}) as { runId?: unknown; meetingId?: unknown };
+    const clean = (v: unknown): string | undefined =>
+      typeof v === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(v) ? v : undefined;
+    const runId = clean(raw.runId);
+    const meetingId = clean(raw.meetingId);
+    return actions.open(runId || meetingId ? { runId, meetingId } : undefined);
   });
   ipc.handle('stage:close', (event) => {
     if (!guards.fromMain(event.sender) && !guards.fromStage(event.sender)) return undefined;

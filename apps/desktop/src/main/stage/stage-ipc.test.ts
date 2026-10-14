@@ -39,13 +39,22 @@ describe('v1.9 stage IPC 身份校验', () => {
     },
   );
 
-  it('stage:open：仅主窗可发起；其他发送方只查状态；runId 透传且非法值被丢弃', () => {
+  it('stage:open：仅主窗可发起；其他发送方只查状态；目标 id 透传且非法值被丢弃', () => {
     expect(ipc.handlers.get('stage:open')!({ sender: stageSender })).toBe(false);
     expect(actions.open).not.toHaveBeenCalled();
-    expect(ipc.handlers.get('stage:open')!({ sender: mainSender }, 'run-123_A')).toBe(true);
-    expect(actions.open).toHaveBeenLastCalledWith('run-123_A');
+    expect(
+      ipc.handlers.get('stage:open')!({ sender: mainSender }, { runId: 'run-123_A' }),
+    ).toBe(true);
+    expect(actions.open).toHaveBeenLastCalledWith({ runId: 'run-123_A', meetingId: undefined });
+    // 会议目标透传
+    expect(
+      ipc.handlers.get('stage:open')!({ sender: mainSender }, { meetingId: 'mtg_1' }),
+    ).toBe(true);
+    expect(actions.open).toHaveBeenLastCalledWith({ runId: undefined, meetingId: 'mtg_1' });
     // 注入尝试（任意 query/路径字符）不允许透传
-    expect(ipc.handlers.get('stage:open')!({ sender: mainSender }, 'a?observe=1#/x')).toBe(true);
+    expect(
+      ipc.handlers.get('stage:open')!({ sender: mainSender }, { runId: 'a?observe=1#/x' }),
+    ).toBe(true);
     expect(actions.open).toHaveBeenLastCalledWith(undefined);
   });
 

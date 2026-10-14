@@ -37,6 +37,7 @@ import { enEventM5 } from './messages/event-m5-en';
 import { enCharacterCards } from './messages/character-cards';
 import { enTuning } from './messages/tuning';
 import { enStage } from './messages/stage-en';
+import { enMeeting } from './messages/meeting-en';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -60,6 +61,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   characterCards: enCharacterCards,
   tuning: enTuning,
   stage: enStage,
+  meeting: enMeeting,
   knowledge: enKnowledge,
   memory: enMemory,
   tasks: enTasks,

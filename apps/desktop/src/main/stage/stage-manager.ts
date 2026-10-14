@@ -36,12 +36,12 @@ export class StageManager {
     return Boolean(this.win && !this.win.isDestroyed());
   }
 
-  async open(runId?: string): Promise<boolean> {
+  async open(target?: { runId?: string; meetingId?: string }): Promise<boolean> {
     if (this.isOpen()) {
-      // 已开窗：幂等聚焦；带 runId 时导航到指定协作现场（切换观看对象）
-      if (runId) {
+      // 已开窗：幂等聚焦；带目标时导航到指定现场（切换观看对象）
+      if (target && (target.runId || target.meetingId)) {
         const baseUrl = this.deps.boot?.url ?? DEV_SERVER_URL;
-        await this.win!.loadURL(buildStageUrl(baseUrl, runId));
+        await this.win!.loadURL(buildStageUrl(baseUrl, target));
       }
       this.win?.focus();
       return true;
@@ -51,7 +51,7 @@ export class StageManager {
     if (this.petWasOpen) await this.deps.petManager.close();
 
     const state = loadStageState(this.deps.userDataDir);
-    this.win = createStageWindow(this.deps.boot, state.fullscreen, state.bounds, runId);
+    this.win = createStageWindow(this.deps.boot, state.fullscreen, state.bounds, target);
     this.attach(this.win);
     this.broadcast(true);
     return true;
@@ -95,7 +95,7 @@ export class StageManager {
       ipc,
       {
         isOpen: () => this.isOpen(),
-        open: (runId?: string) => this.open(runId),
+        open: (target?: { runId?: string; meetingId?: string }) => this.open(target),
         close: () => this.close(),
         capture: () => this.capture(),
       },

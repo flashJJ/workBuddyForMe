@@ -25,6 +25,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./meeting": {
+            "types": "./src/meeting/index.ts",
+            "development": "./src/meeting/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./secrets": {
             "types": "./src/secrets/index.ts",
             "development": "./src/secrets/index.ts",

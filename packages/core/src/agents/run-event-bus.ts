@@ -16,25 +16,40 @@ interface WakeEntry {
   (): void;
 }
 
+export interface RunEventBusOptions {
+  /**
+   * 缓冲帧上限（超出丢最旧）。协作 run 有界用默认 Infinity；
+   * v1.9 M3 会议长连跨多轮，调用方传有界值防长跑膨胀——
+   * live 订阅者只收订阅后的新帧，历史由调用方从落库回放补齐。
+   */
+  maxBuffer?: number;
+}
+
 export interface RunEventBus<T> {
   /** owner 侧：广播一帧（同步入 buffer 并唤醒等待中的观察者） */
   publish(event: T): void;
   /** owner 侧：终态关闭，观察者读完 buffer 后自然结束 */
   close(): void;
-  /** 观察者侧：只读异步迭代器；break/return 退订，不触碰 run 生命周期 */
+  /** 观察者侧：从缓冲头读（晚加入整场回放）；break/return 退订 */
   subscribe(): AsyncIterableIterator<T>;
+  /** 观察者侧：只收订阅后的新帧（历史调用方自行从落库回放，避免重复） */
+  subscribeLive(): AsyncIterableIterator<T>;
   /** 当前已缓冲帧数（观测/测试用） */
   size(): number;
 }
 
-export function createRunEventBus<T>(): RunEventBus<T> {
+export function createRunEventBus<T>(options: RunEventBusOptions = {}): RunEventBus<T> {
   const buffer: T[] = [];
   const waiters = new Set<WakeEntry>();
   let closed = false;
+  const maxBuffer = options.maxBuffer ?? Number.POSITIVE_INFINITY;
 
   return {
     publish(event) {
       buffer.push(event);
+      if (Number.isFinite(maxBuffer) && buffer.length > maxBuffer) {
+        buffer.splice(0, buffer.length - maxBuffer);
+      }
       if (waiters.size === 0) return;
       const woke = [...waiters];
       waiters.clear();
@@ -49,39 +64,47 @@ export function createRunEventBus<T>(): RunEventBus<T> {
     },
     size: () => buffer.length,
     subscribe() {
-      let index = 0;
-      let resolver: (() => void) | null = null;
-      const wake: WakeEntry = () => {
-        const r = resolver;
-        resolver = null;
-        r?.();
-      };
-      const waitForWake = (): Promise<void> =>
-        new Promise((resolve) => {
-          resolver = resolve;
-          waiters.add(wake);
-        });
-      const iterator: AsyncIterableIterator<T> = {
-        [Symbol.asyncIterator]() {
-          return iterator;
-        },
-        async next() {
-          // 被唤醒但本订阅者游标已到末尾（多观察者竞争）时继续等，不误报终态
-          while (index >= buffer.length) {
-            if (closed) return { value: undefined, done: true };
-            await waitForWake();
-          }
-          return { value: buffer[index++]!, done: false };
-        },
-        return() {
-          waiters.delete(wake);
-          resolver = null;
-          return Promise.resolve({ value: undefined, done: true });
-        },
-      };
-      return iterator;
+      return makeIterator(0);
+    },
+    subscribeLive() {
+      return makeIterator(buffer.length);
     },
   };
+
+  /** 游标可从任意位置开始（0=整场回放；length=只收新帧） */
+  function makeIterator(startIndex: number): AsyncIterableIterator<T> {
+    let index = startIndex;
+    let resolver: (() => void) | null = null;
+    const wake: WakeEntry = () => {
+      const r = resolver;
+      resolver = null;
+      r?.();
+    };
+    const waitForWake = (): Promise<void> =>
+      new Promise((resolve) => {
+        resolver = resolve;
+        waiters.add(wake);
+      });
+    const iterator: AsyncIterableIterator<T> = {
+      [Symbol.asyncIterator]() {
+        return iterator;
+      },
+      async next() {
+        // 被唤醒但本订阅者游标已到末尾（多观察者竞争）时继续等，不误报终态
+        while (index >= buffer.length) {
+          if (closed) return { value: undefined, done: true };
+          await waitForWake();
+        }
+        return { value: buffer[index++]!, done: false };
+      },
+      return() {
+        waiters.delete(wake);
+        resolver = null;
+        return Promise.resolve({ value: undefined, done: true });
+      },
+    };
+    return iterator;
+  }
 }
 
 /**

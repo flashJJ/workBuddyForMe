@@ -19,9 +19,12 @@ export interface WbfmStageBridge {
   /**
    * 主窗：打开全屏舞台（幂等；与桌宠互斥由主进程保证）；返回当前是否打开。
    * v1.9 M2：runId 非空时舞台窗承载 /stage?run=<id> 只读观看指定协作 run；
-   * 已开窗时导航到该 run。不传为裸舞台（mock 演示/等待会议）。
+   * v1.9 M3：meetingId 非空时承载 /stage?meeting=<id> 只读观看会议。
+   * 已开窗时导航到该目标。不传为裸舞台（mock 演示/等待会议）。
    */
-  open(runId?: string): Promise<boolean>;
+  open(target?: { runId?: string; meetingId?: string }): Promise<boolean>;
+  /** v1.9 M3：舞台窗直达会议现场（open({meetingId}) 语义糖） */
+  openMeeting(meetingId: string): Promise<boolean>;
   /** 舞台窗：关闭自己（幂等），协作/会议在主会话继续 */
   close(): Promise<void>;
   isOpen(): Promise<boolean>;

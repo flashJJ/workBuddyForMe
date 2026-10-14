@@ -38,6 +38,8 @@ export const MOCK_SPEECH: Record<StageSlot, string> = {
   left: '我先把目标拆成三步，我们按顺序推进。',
   center: '收到，第一步开始执行，状态会实时同步。',
   right: '结果我看过了，验收点全部满足，通过。',
+  // farRight 仅 v1.9 M3 四人会议使用，mock 演示无此席
+  farRight: '',
 };
 
 export const MOCK_EXPRESSIONS = ['neutral', 'joy', 'sadness', 'anger'] as const;

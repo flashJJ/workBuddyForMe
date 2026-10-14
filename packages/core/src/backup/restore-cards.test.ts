@@ -68,7 +68,7 @@ describe('备份角色卡轨（v1.8 schema v4）', () => {
 
     const { archive, manifest } = await exportBackup(depsOf(srcDb), { tracks: ['events'] });
     // 6 内置 + 内置助手迁移卡 + 自建卡
-    expect(manifest.backupSchemaVersion).toBe(4);
+    expect(manifest.backupSchemaVersion).toBe(5);
     expect(manifest.tracks.events?.cardCount).toBe(BUILTIN_CARD_SEEDS.length + 2);
     const pre = await precheckBackup(archive);
     expect(pre.tracks.cards).toBe(BUILTIN_CARD_SEEDS.length + 2);

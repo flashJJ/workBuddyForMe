@@ -19,7 +19,7 @@ import type { AgentCardState, AgentCardStatus } from './agent-run-reducer';
 function openRunStage(runId: string): void {
   const bridge = getStageBridge();
   if (bridge) {
-    void bridge.open(runId);
+    void bridge.open({ runId });
     return;
   }
   window.open(`/stage?run=${encodeURIComponent(runId)}`, '_blank', 'noopener,noreferrer');

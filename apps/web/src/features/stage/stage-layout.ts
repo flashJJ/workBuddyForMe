@@ -5,11 +5,16 @@ import type { StageScenePayload, StageSlot, StageSlotPlacement } from '@wbfm/sha
  * 坐标系：x/y 都是相对舞台的 0..1 比例，锚点为角色包围盒中心。
  */
 
-/** 三槽默认站位：左/右稍后靠两侧，中略前居中 */
+/**
+ * 槽位默认站位：v1.9 M1 三槽（左/中/右）；
+ * farRight 为 v1.9 M3 会议第 4 席，其实际坐标在会议 4 人布局里由 meetingPosition 按
+ * 席次均布覆盖（此处给兜底值，保证拖拽/独立使用时不失位）。
+ */
 export const DEFAULT_SLOT_PLACEMENTS: Record<StageSlot, StageSlotPlacement> = {
   left: { x: 0.21, y: 0.66, scale: 0.92 },
   center: { x: 0.5, y: 0.6, scale: 1 },
   right: { x: 0.79, y: 0.66, scale: 0.92 },
+  farRight: { x: 0.9, y: 0.68, scale: 0.86 },
 };
 
 /** 角色盒基础高（占舞台高比例）；宽度由 aspect 比推出 */
@@ -24,7 +29,27 @@ export const NON_FOCUS_SCALE = 1; // 槽位 scale 已在默认站位表达，这
 export const NON_FOCUS_FILTER = 'brightness(0.68) saturate(0.78)';
 export const FOCUS_FILTER = 'none';
 
-export const SLOT_ORDER: StageSlot[] = ['left', 'center', 'right'];
+export const SLOT_ORDER: StageSlot[] = ['left', 'center', 'right', 'farRight'];
+
+/**
+ * v1.9 M3 会议 N 人均布站位（2–4）。坐标按席次 index 在舞台上均分，
+ * 4 人稍缩小并下沉，保证不挤出场；scale 作为额外乘数传给布局。
+ */
+export function meetingPosition(
+  index: number,
+  count: number,
+): { x: number; y: number; scale: number } {
+  if (count <= 2) {
+    return index === 0
+      ? { x: 0.31, y: 0.66, scale: 0.96 }
+      : { x: 0.69, y: 0.66, scale: 0.96 };
+  }
+  if (count >= 4) {
+    const xs = [0.13, 0.38, 0.62, 0.87];
+    return { x: xs[index] ?? 0.5, y: 0.68, scale: 0.86 };
+  }
+  return { x: [0.21, 0.5, 0.79][index] ?? 0.5, y: 0.66, scale: index === 1 ? 1 : 0.92 };
+}
 
 export function resolvePlacement(
   slot: StageSlot,
@@ -58,13 +83,17 @@ export interface ActorLayout {
  * @param slot 槽位
  * @param payload 场景（站位覆盖 + 画面缩放）
  * @param focusedSlot 当前聚焦槽；null=散焦（全员同权）
+ * @param positionOverride v1.9 M3 会议 N 人均布坐标（提供时替代场景/默认站位）
  */
 export function computeActorLayout(
   slot: StageSlot,
   payload: Pick<StageScenePayload, 'slots' | 'sceneZoom'>,
   focusedSlot: StageSlot | null,
+  positionOverride?: { x: number; y: number; scale: number } | null,
 ): ActorLayout {
-  const p = resolvePlacement(slot, payload);
+  const p = positionOverride
+    ? { ...positionOverride, zoom: payload.sceneZoom }
+    : resolvePlacement(slot, payload);
   const focused = focusedSlot === slot;
   // 散焦时不施加聚焦差异
   const boost = focusedSlot === null ? 1 : focused ? FOCUS_SCALE_BOOST : NON_FOCUS_SCALE;

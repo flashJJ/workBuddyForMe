@@ -4,6 +4,7 @@ import {
   Bot,
   Settings,
   MonitorCog,
+  Users,
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
@@ -29,6 +30,12 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.tasks.label',
     descriptionKey: 'nav.tasks.description',
     icon: MonitorCog,
+  },
+  {
+    href: '/meetings',
+    labelKey: 'meeting.nav',
+    descriptionKey: 'meeting.subtitle',
+    icon: Users,
   },
   {
     href: '/flows',

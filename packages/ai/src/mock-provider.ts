@@ -9,6 +9,7 @@ import type {
 import type { DiscoveredModel } from '@wbfm/shared/types';
 import { sleep } from './http/backoff';
 import { mockAgentProtocol } from './mock-agent-protocol';
+import { mockMeetingProtocol } from './mock-meeting-protocol';
 
 /** mock 向量维度：64 维多热编码，共享 token 的文本相似度高，足以驱动真实 top-k 检索 */
 const EMBED_DIMENSION = 64;
@@ -156,6 +157,16 @@ export function createMockProvider(): ChatProvider {
         yield {
           delta: agentReply.content,
           usage: { promptTokens: 30, completionTokens: 20, totalTokens: 50 },
+        };
+        return;
+      }
+
+      // v1.9 M3：多助手会议接龙协议（[meeting-chain:…] 名单驱动，仅供 eval/e2e）
+      const meetingReply = mockMeetingProtocol(params.messages);
+      if (meetingReply) {
+        yield {
+          delta: meetingReply.content,
+          usage: { promptTokens: 40, completionTokens: 24, totalTokens: 64 },
         };
         return;
       }

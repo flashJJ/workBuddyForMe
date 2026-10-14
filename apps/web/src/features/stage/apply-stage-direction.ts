@@ -28,12 +28,14 @@ const INITIAL_EXPRESSION: Record<StageSlot, ExpressionTag> = {
   left: 'neutral',
   center: 'neutral',
   right: 'neutral',
+  farRight: 'neutral',
 };
 
 const LISTENING: Record<StageSlot, StageMotionGroup> = {
   left: 'listening',
   center: 'listening',
   right: 'listening',
+  farRight: 'listening',
 };
 
 export function applyStageDirection(setters: StageRuntimeSetters, d: StageDirection): void {

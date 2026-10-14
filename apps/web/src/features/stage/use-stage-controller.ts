@@ -23,8 +23,8 @@ import type { StagePowerMode } from './stage-toolbar';
 const FOCUS_CYCLE: StageSlot[] = ['left', 'center', 'right'];
 const CONTROLS_FADE_MS = 2600;
 
-/** mock=本地演示（M1）；run=真实协作 run 只读驱动（M2） */
-export type StageMode = 'mock' | 'run';
+/** mock=本地演示（M1）；run=真实协作 run（M2）；meeting=多助手会议（M3），后两者只读驱动 */
+export type StageMode = 'mock' | 'run' | 'meeting';
 export type StageRunStatus = 'connecting' | 'running' | 'done' | 'failed';
 
 export interface StageController {
@@ -73,16 +73,19 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     left: 'neutral',
     center: 'neutral',
     right: 'neutral',
+    farRight: 'neutral',
   });
   const [motions, setMotions] = React.useState<Record<StageSlot, StageMotionGroup>>({
     left: 'idle',
     center: 'idle',
     right: 'idle',
+    farRight: 'idle',
   });
   const [speech, setSpeech] = React.useState<Record<StageSlot, string | null>>({
     left: null,
     center: null,
     right: null,
+    farRight: null,
   });
   const [lastLine, setLastLine] = React.useState<{ slot: StageSlot; text: string } | null>(null);
   const [runStatus, setRunStatus] = React.useState<StageRunStatus | null>(

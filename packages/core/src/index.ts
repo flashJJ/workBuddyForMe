@@ -15,6 +15,7 @@ export * from './ingestion';
 export * from './retrieval';
 export * from './knowledge';
 export * from './agents';
+export * from './meeting';
 export * from './emotion';
 export * from './tools';
 export * from './computer';

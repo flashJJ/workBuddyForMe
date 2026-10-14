@@ -7,7 +7,7 @@ import { z } from 'zod';
  * - stage_scenes 场景=背景+站位+cast 覆盖+显隐+滤镜。
  */
 
-export const STAGE_SLOTS = ['left', 'center', 'right'] as const;
+export const STAGE_SLOTS = ['left', 'center', 'right', 'farRight'] as const;
 export type StageSlot = (typeof STAGE_SLOTS)[number];
 
 /** 舞台指令允许的微动作分组 */
@@ -107,12 +107,13 @@ export type StageWarmFilter = z.infer<typeof stageWarmFilterSchema>;
 export const stageScenePayloadSchema = z
   .object({
     background: stageBackgroundSchema,
-    /** 逐槽覆盖；缺省槽走 cast/全局形象 */
+    /** 逐槽覆盖；缺省槽走 cast/全局形象（farRight 为 v1.9 M3 会议第 4 席） */
     slots: z
       .object({
         left: stageSlotPlacementSchema.optional(),
         center: stageSlotPlacementSchema.optional(),
         right: stageSlotPlacementSchema.optional(),
+        farRight: stageSlotPlacementSchema.optional(),
       })
       .strict(),
     /** 逐槽形象覆盖（avatar 注册表 id） */
@@ -121,6 +122,7 @@ export const stageScenePayloadSchema = z
         left: z.string().trim().max(80).optional(),
         center: z.string().trim().max(80).optional(),
         right: z.string().trim().max(80).optional(),
+        farRight: z.string().trim().max(80).optional(),
       })
       .strict(),
     /** 画面整体缩放（Ctrl+滚轮，0.7–1.3） */

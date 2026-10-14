@@ -81,7 +81,7 @@ export function StageToolbar(props: Props) {
         </div>
       </div>
 
-      <section className="space-y-1 rounded border border-white/10 p-2" data-testid="stage-demo-section" hidden={props.mode === 'run'}>
+      <section className="space-y-1 rounded border border-white/10 p-2" data-testid="stage-demo-section" hidden={props.mode !== 'mock'}>
         {props.mode === 'mock' && (
           <>
             <p className="text-xs font-medium text-white/70">{t('stage.panel.demo')}</p>
