@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { waitForHydrated } from './utils';
 
 /**
  * v1.2 M5 首启向导 / 快捷键浮层 / 帮助中心 e2e。
@@ -51,6 +52,9 @@ test.describe('M5 首启体验', () => {
 
   test('关于面板可重放向导；Ctrl+/ 唤起快捷键浮层；帮助锚点可达', async ({ page }) => {
     await page.goto('/settings');
+    // 重放入口在 SSR HTML 中已可见但点击依赖水合后挂载的 window 事件；
+    // 慢机（CI）不等水合直接点会成为死点击（v1.8 设置页面板变重后必现）
+    await waitForHydrated(page);
 
     // 重放向导（关于面板在纯浏览器走无桥分支，快捷入口仍在）
     await page.getByTestId('about-replay-wizard').click();
