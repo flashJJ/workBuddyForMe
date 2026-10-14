@@ -6,6 +6,8 @@ import { expect, test, type Page, type APIRequestContext } from '@playwright/tes
  * 完整翻译渲染由 shared 单测覆盖。
  */
 const decodeKey = (raw: string): string => {
+  // 故意匹配系统消息线协议的 SOH/STX 控制字符，豁免 no-control-regex
+  // eslint-disable-next-line no-control-regex
   const m = /\u0001([^\u0001\u0002]+)\u0002/.exec(raw);
   if (!m) return raw;
   try {
