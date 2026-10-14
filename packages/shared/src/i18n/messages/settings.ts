@@ -83,6 +83,24 @@ export const zhSettings = {
     sceneEnabled: '启用',
     previewHint: '可在对话页右侧形象栏的「试运行」按钮里随时手动观看。',
   },
+  // v1.8 外观（命名主题）
+  appearance: {
+    title: '外观',
+    description: '命名主题与明暗模式，切换即时生效并随设置同步到所有窗口。',
+    groupLabel: '命名主题',
+    active: '当前',
+    stellar: '星际蓝',
+    stellarDesc: '品牌默认，浅色 / 深色 / 跟随系统三态可切。',
+    nocturneGold: '夜金',
+    nocturneGoldDesc: '暗色暖金，适合夜间与弱光环境。',
+    moonwhite: '月白',
+    moonwhiteDesc: '亮色素净，冷调低刺激。',
+    sakura: '樱粉',
+    sakuraDesc: '亮色柔粉，暖调陪伴感。',
+    fixedDark: '暗色主题',
+    fixedLight: '亮色主题',
+    modeHint: '星际蓝可在浅色、深色与跟随系统间切换；其他主题自带明暗。',
+  },
 };
 
 export const enSettings = {
@@ -175,5 +193,25 @@ export const enSettings = {
     scenesTitle: 'Built-in scenes',
     sceneEnabled: 'Enabled',
     previewHint: 'Use the preview button on the avatar rail in the chat to watch any scene anytime.',
+  },
+  // v1.8 appearance (named themes)
+  appearance: {
+    title: 'Appearance',
+    description:
+      'Named themes and light/dark mode. Changes apply instantly and sync to every window.',
+    groupLabel: 'Named themes',
+    active: 'Active',
+    stellar: 'Stellar Blue',
+    stellarDesc: 'Brand default; switchable between light, dark and match-system.',
+    nocturneGold: 'Nocturne Gold',
+    nocturneGoldDesc: 'Warm dark palette for nights and low-light rooms.',
+    moonwhite: 'Moonwhite',
+    moonwhiteDesc: 'Clean light palette in calm cool tones.',
+    sakura: 'Sakura',
+    sakuraDesc: 'Soft light palette with a warm companion feel.',
+    fixedDark: 'Dark theme',
+    fixedLight: 'Light theme',
+    modeHint:
+      'Stellar Blue supports light, dark and match-system. The other themes carry their own mode.',
   },
 };

@@ -42,6 +42,9 @@
     --code-number: 217 91% 36%;
     --code-function: 282 68% 43%;
     --code-builtin: 24 90% 31%;
+    /* v1.8 事件 fx 语义变量（亮色基线；暗色在 .dark 覆盖） */
+    --fx-heart: 350 85% 65%;
+    --fx-sweat: 205 80% 60%;
     --radius: 0.625rem;
   }
 
@@ -83,6 +86,104 @@
     --code-number: 213 100% 74%;
     --code-function: 271 92% 82%;
     --code-builtin: 32 100% 70%;
+    /* v1.8 事件 fx：暗色下提亮一档保证可见 */
+    --fx-heart: 350 80% 72%;
+    --fx-sweat: 205 85% 72%;
+  }
+
+  /*
+   * v1.8 命名主题（data-theme）。
+   * 选择器特异性（:root + 属性 = 0,1,1）高于 .dark（0,1,0），命名主题取值必然胜出；
+   * 未在此覆写的 token（radius、代码块 9 色等）按明暗归属自动继承 :root / .dark。
+   * stellar 不出现在此：它就是 :root / .dark 现值，保证品牌默认零视觉漂移。
+   * 色值契约与对比度计算见 docs/plan/v1.8/01-主题令牌审计与色板契约.md。
+   */
+
+  /* 夜金（暗色·暖金） */
+  :root[data-theme='nocturne-gold'] {
+    --background: 30 14% 9%;
+    --foreground: 40 30% 88%;
+    --card: 30 13% 12%;
+    --card-foreground: 40 30% 88%;
+    --primary: 38 72% 58%;
+    --primary-foreground: 32 42% 10%;
+    --secondary: 32 16% 18%;
+    --secondary-foreground: 40 30% 88%;
+    --muted: 32 16% 18%;
+    --muted-foreground: 38 18% 64%;
+    --accent: 34 24% 24%;
+    --accent-foreground: 40 35% 86%;
+    --destructive: 6 68% 58%;
+    --destructive-foreground: 30 30% 10%;
+    --border: 32 14% 22%;
+    --input: 32 14% 26%;
+    --ring: 38 72% 58%;
+    --popover: 30 13% 12%;
+    --popover-foreground: 40 30% 88%;
+    --success: 150 48% 64%;
+    --success-bg: 150 30% 15%;
+    --warning: 38 88% 62%;
+    --warning-bg: 36 40% 15%;
+    --info: 42 80% 70%;
+    --info-bg: 40 32% 16%;
+  }
+
+  /* 月白（亮色·素净冷调） */
+  :root[data-theme='moonwhite'] {
+    --background: 210 20% 98%;
+    --foreground: 222 32% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 32% 14%;
+    --primary: 222 45% 42%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 214 22% 93%;
+    --secondary-foreground: 222 32% 14%;
+    --muted: 214 22% 93%;
+    --muted-foreground: 215 18% 38%;
+    --accent: 214 28% 90%;
+    --accent-foreground: 222 32% 16%;
+    --destructive: 0 68% 46%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 20% 89%;
+    --input: 214 20% 86%;
+    --ring: 222 45% 42%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 32% 14%;
+    --success: 158 52% 26%;
+    --success-bg: 152 44% 94%;
+    --warning: 30 78% 30%;
+    --warning-bg: 38 80% 94%;
+    --info: 212 60% 38%;
+    --info-bg: 212 80% 95%;
+  }
+
+  /* 樱粉（亮色·柔粉暖调） */
+  :root[data-theme='sakura'] {
+    --background: 340 30% 97%;
+    --foreground: 328 28% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 328 28% 16%;
+    --primary: 340 65% 44%;
+    --primary-foreground: 340 60% 98%;
+    --secondary: 340 24% 93%;
+    --secondary-foreground: 328 28% 16%;
+    --muted: 340 24% 93%;
+    --muted-foreground: 328 14% 40%;
+    --accent: 340 32% 90%;
+    --accent-foreground: 328 30% 18%;
+    --destructive: 0 66% 48%;
+    --destructive-foreground: 340 60% 98%;
+    --border: 340 22% 89%;
+    --input: 340 22% 86%;
+    --ring: 340 65% 44%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 328 28% 16%;
+    --success: 160 52% 26%;
+    --success-bg: 158 40% 94%;
+    --warning: 28 80% 30%;
+    --warning-bg: 36 84% 94%;
+    --info: 332 55% 42%;
+    --info-bg: 334 80% 95%;
   }
 
   * {
@@ -280,13 +381,13 @@
   will-change: transform, opacity;
 }
 .event-fx-heart {
-  color: hsl(350 85% 65%);
+  color: hsl(var(--fx-heart));
   animation-name: event-fx-float-up;
 }
 .event-fx-heart-2 { animation-delay: 120ms; }
 .event-fx-heart-3 { animation-delay: 240ms; }
 .event-fx-sweat {
-  color: hsl(205 80% 60%);
+  color: hsl(var(--fx-sweat));
   animation-name: event-fx-drop;
 }
 .event-fx-spark {

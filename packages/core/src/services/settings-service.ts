@@ -10,6 +10,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultChatModelId: null,
   defaultEmbeddingModelId: null,
   theme: 'light',
+  // v1.8：品牌默认主题（亮/暗仍由 theme 三态决定）
+  themeId: 'stellar',
   language: 'zh-CN',
   // 全新装机默认未引导；老用户由 v016 迁移显式回填 true
   hasOnboarded: false,

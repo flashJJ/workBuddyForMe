@@ -10,6 +10,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { ProviderCard } from './provider-card';
 import { ProviderFormDialog } from './provider-form-dialog';
 import { DefaultsPanel } from './defaults-panel';
+import { AppearancePanel } from './appearance-panel';
 import { McpPanel } from './mcp-panel';
 import { PermissionPanel } from './permission-panel';
 import { ToolBreakerPanel } from './tool-breaker-panel';
@@ -75,6 +76,8 @@ export function SettingsPage() {
       )}
 
       <DefaultsPanel />
+
+      <AppearancePanel />
 
       <KnowledgeRetrievalPanel />
 

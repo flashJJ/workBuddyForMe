@@ -9,6 +9,7 @@ import type {
   OcrStatus,
   ProviderProtocol,
   Theme,
+  ThemeId,
   Language,
 } from '../constants';
 import type { ContentPart } from './content-part';
@@ -206,6 +207,8 @@ export interface AppSettings extends EventSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;
+  /** v1.8 命名主题（缺省 stellar；与 theme 三态正交，stellar 时三态决定亮暗） */
+  themeId?: ThemeId;
   language: Language;
   /** 是否已完成首次启动向导（v1.2 起；仅老用户由 v016 迁移回填为 true） */
   hasOnboarded: boolean;
