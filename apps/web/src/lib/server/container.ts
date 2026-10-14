@@ -10,6 +10,7 @@ import {
   createAssistantsService,
   createAttachmentService,
   createCharacterCardService,
+  createStageSceneService,
   createConversationService,
   createDocumentService,
   createKnowledgeService,
@@ -71,6 +72,8 @@ export interface ServiceContainer {
   assistants: AssistantsService;
   /** v1.8：角色卡库（内置只读卡 + 自建卡 CRUD/导入导出/助手选卡） */
   characterCards: CharacterCardService;
+  /** v1.9：舞台场景 CRUD + 自定义背景落盘 */
+  stageScenes: ReturnType<typeof createStageSceneService>;
   conversations: ConversationService;
   orchestrator: ChatOrchestrator;
   ingestion: IngestionPipeline;
@@ -217,6 +220,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     settings: createSettingsService(deps),
     assistants,
     characterCards: createCharacterCardService(deps),
+    stageScenes: createStageSceneService(deps),
     conversations: createConversationService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),

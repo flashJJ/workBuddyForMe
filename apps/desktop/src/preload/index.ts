@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { WbfmPetBridge } from '@wbfm/shared/pet';
+import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 
@@ -82,6 +83,18 @@ const pet: WbfmPetBridge = {
 };
 
 /**
+ * 舞台桥（v1.9）：主窗 open/isOpen/onOpenChange；舞台窗 close/capture。
+ */
+const stage: WbfmStageBridge = {
+  open: () => ipcRenderer.invoke('stage:open') as Promise<boolean>,
+  close: () => ipcRenderer.invoke('stage:close'),
+  isOpen: () => ipcRenderer.invoke('stage:is-open') as Promise<boolean>,
+  capture: () =>
+    ipcRenderer.invoke('stage:capture') as Promise<{ saved: boolean; canceled?: boolean }>,
+  onOpenChange: (cb) => subscribe('stage:open-changed', (payload) => cb(Boolean(payload))),
+};
+
+/**
  * v1.7 系统通知桥：角色化提醒无演出出口时的兜底（白名单单一通道）。
  */
 const notify: WbfmNotifyBridge = {
@@ -96,5 +109,6 @@ contextBridge.exposeInMainWorld('wbfm', {
   commandPalette,
   shortcuts,
   pet,
+  stage,
   notify,
 });

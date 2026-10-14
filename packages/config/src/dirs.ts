@@ -19,6 +19,8 @@ export const DATA_SUBDIRS = {
   config: 'config',
   /** v0.6 M3 本地技能包（skills/<name>/skill.json） */
   skills: 'skills',
+  /** v1.9 舞台自定义背景图（复制进数据目录，不引用原路径） */
+  stageBackgrounds: 'stage-backgrounds',
 } as const;
 
 export type DataSubdirKey = keyof typeof DATA_SUBDIRS;

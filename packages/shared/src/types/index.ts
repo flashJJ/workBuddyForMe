@@ -65,3 +65,4 @@ export type {
   WorkflowEndpointSecretView,
 } from './flow';
 export type { PermissionLevel, PermissionAction, ToolPermission } from './permission';
+export type { StageSceneRecord } from './stage';

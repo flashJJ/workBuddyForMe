@@ -67,6 +67,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./stage": {
+      "types": "./src/stage.ts",
+      "development": "./src/stage.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./notify": {
       "types": "./src/notify.ts",
       "development": "./src/notify.ts",

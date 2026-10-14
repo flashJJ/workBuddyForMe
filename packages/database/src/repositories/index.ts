@@ -184,4 +184,9 @@ export {
   type CharacterCardRepository,
   type CharacterCardCreateFields,
 } from './character-card-repo';
+export {
+  createStageSceneRepository,
+  type StageSceneRepository,
+  type StageSceneUpsertFields,
+} from './stage-scene-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';
