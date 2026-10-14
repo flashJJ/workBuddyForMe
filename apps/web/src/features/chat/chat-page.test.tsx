@@ -37,6 +37,7 @@ const ASSISTANT: Assistant = {
   personalityTsundere: 0.5,
   personalityShy: 0.5,
   personalityTolerance: 0.5,
+  cardId: null,
   isBuiltin: true,
   sortOrder: 0,
   createdAt: '2025-01-01T00:00:00.000Z',

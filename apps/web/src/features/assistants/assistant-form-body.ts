@@ -6,6 +6,8 @@ export interface AssistantFormShape {
   emoji: string;
   color: string;
   systemPrompt: string;
+  /** v1.8：当前选用角色卡 id；'' = 默认卡/原文模式 */
+  cardId: string;
   temperature: string;
   topP: string;
   maxTokens: string;
@@ -33,7 +35,7 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
     knowledgeBaseIds.length > 0
       ? form.enabledTools
       : form.enabledTools.filter((t) => t !== 'knowledge_search');
-  return {
+  const body: AssistantBody = {
     name: form.name.trim(),
     emoji: form.emoji.trim() || null,
     color: form.color || null,
@@ -52,4 +54,12 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
     personalityShy: form.personalityShy,
     personalityTolerance: form.personalityTolerance,
   };
+  // v1.8：选中卡片走卡模式；未选卡时由后端按非空原文自动包 identity 卡，空原文显式回默认卡
+  if (form.cardId) {
+    body.cardId = form.cardId;
+  } else if (!form.systemPrompt.trim()) {
+    body.cardId = null;
+    body.systemPrompt = '';
+  }
+  return body;
 }

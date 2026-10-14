@@ -1,5 +1,6 @@
 import { DEFAULT_CONTEXT_TOKEN_BUDGET, HISTORY_MESSAGE_SAFETY_CAP } from '@wbfm/shared/constants';
 import { type Assistant, type Conversation, type Message } from '@wbfm/shared/types';
+import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
 import {
   traceAsync,
   type ChatMessage,
@@ -38,6 +39,8 @@ export interface TurnMessageParams {
   skillBlock: string | null;
   /** v1.6：情绪状态段 + 尾块协议（仅情绪功能开启时传入） */
   emotionBlock: string | null;
+  /** v1.8：助手当前选用角色卡（已解析；null=默认卡回落 systemPrompt） */
+  card: ParsedCharacterCard | null;
 }
 
 /**
@@ -49,7 +52,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
   stats: HistoryBudgetStats | null;
 } {
   const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
-    summary, memoryBlock, skillBlock, emotionBlock } = params;
+    summary, memoryBlock, skillBlock, emotionBlock, card } = params;
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
@@ -58,6 +61,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
     memoryBlock,
     skillBlock,
     emotionBlock,
+    card,
   });
 }
 

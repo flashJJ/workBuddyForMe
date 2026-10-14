@@ -24,6 +24,7 @@ import { migrateV022 } from './v022-assistant-emotion';
 import { migrateV023 } from './v023-emotion-events';
 import { migrateV024 } from './v024-events-scheduler';
 import { migrateV025 } from './v025-event-triggers';
+import { migrateV026 } from './v026-character-cards';
 
 interface Migration {
   version: number;
@@ -151,6 +152,11 @@ const MIGRATIONS: Migration[] = [
     version: 25,
     description: 'v1.7 events: event_triggers 自定义短语触发器（纯加法）',
     up: migrateV025,
+  },
+  {
+    version: 26,
+    description: 'v1.8 personalize: character_cards 角色卡库 + assistants.card_id（纯加法）',
+    up: migrateV026,
   },
 ];
 

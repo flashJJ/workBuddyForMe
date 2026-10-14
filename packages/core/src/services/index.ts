@@ -31,7 +31,18 @@ export {
   createAssistantsService,
   type AssistantsService,
 } from './assistant-service';
-export { ensureSeedData, BUILTIN_ASSISTANT } from './seed';
+export {
+  createCharacterCardService,
+  type CharacterCardService,
+} from './character-card-service';
+export {
+  ensureSeedData,
+  ensureBuiltinCharacterCards,
+  migrateLegacySystemPrompts,
+  BUILTIN_ASSISTANT,
+  LEGACY_CARD_MIGRATION_KEY,
+} from './seed';
+export { buildIdentityCardMarkdown, createIdentityCard } from './persona-card';
 export { createKnowledgeService, type KnowledgeService } from './knowledge-service';
 export {
   createDocumentService,

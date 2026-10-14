@@ -25,6 +25,7 @@ import { KnowledgeRetrievalPanel } from './knowledge-retrieval-panel';
 import { EmotionPanel } from './emotion-panel';
 import { EventPanel } from './event-panel';
 import { ReminderPanel } from '../reminders/reminder-panel';
+import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -78,6 +79,8 @@ export function SettingsPage() {
       <DefaultsPanel />
 
       <AppearancePanel />
+
+      <CharacterCardsPanel />
 
       <KnowledgeRetrievalPanel />
 

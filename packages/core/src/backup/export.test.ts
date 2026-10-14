@@ -64,7 +64,7 @@ describe('备份导出（M1）', () => {
     });
 
     expect(size).toBeGreaterThan(0);
-    expect(manifest.backupSchemaVersion).toBe(3);
+    expect(manifest.backupSchemaVersion).toBe(4);
     expect(manifest.tracks.conversations.entryCount).toBe(0);
     expect(manifest.tracks.knowledge.knowledgeBaseCount).toBe(0);
     // v1.6：manifest 携带 emotion 轨元数据（未选轨时计数 0）

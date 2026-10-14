@@ -3,7 +3,9 @@ import {
   HISTORY_MESSAGE_SAFETY_CAP,
 } from '@wbfm/shared/constants';
 import type { Assistant, Citation, Conversation, ToolTraceEntry } from '@wbfm/shared/types';
+import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
 import type { ChatMessage, ToolDefinition, TraceHandle } from '@wbfm/ai';
+import { createCharacterCardRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 import type { AttachmentService } from '../services/attachment-service';
 import type { ConversationService } from '../services/conversation-service';
@@ -119,6 +121,11 @@ export async function* prepareTurnContext(
   const skillBlock = buildSkillPromptBlock(enabledSkills);
   const effectiveAssistant = mergeSkillAllowedTools(assistant, enabledSkills);
 
+  // v1.8：解析助手当前角色卡；悬挂引用（卡已删/旧档残缺）静默回落默认卡，不阻断对话
+  const card: ParsedCharacterCard | null = assistant.cardId
+    ? createCharacterCardRepository(deps.db).findById(assistant.cardId)?.parsed ?? null
+    : null;
+
   // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
   const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools);
   const toolDefs = toToolDefinitions([...toolMap.values()]);
@@ -135,6 +142,7 @@ export async function* prepareTurnContext(
     memoryBlock,
     skillBlock,
     emotionBlock,
+    card,
   });
   if (budgetStats) await recordBudgetSpan(budgetStats, traceParent);
   // v0.7 M1：向工具上下文透传视觉能力（screen_snapshot 据此决定是否携带截图图片）

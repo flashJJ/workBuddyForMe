@@ -1,8 +1,10 @@
 import { CONTEXT_BUDGET_SAFETY_RATIO, RAG_CHUNK_MIN_TOKENS } from '@wbfm/shared/constants';
 import type { Assistant, Message } from '@wbfm/shared/types';
+import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
 import type { ChatMessage } from '@wbfm/ai';
 import type { RagContext } from './types';
 import type { ResolvedImage } from '../services/attachment-service';
+import { buildPersonaBlock } from './persona-prompt';
 import { fitContextBlock } from '../retrieval/context-formatter';
 import {
   assembleHistoryWithinBudget,
@@ -32,9 +34,18 @@ export const RAG_INTRO =
   '请优先参考以下检索到的资料回答；资料不足时再使用你的常识，并在回答中给出引用。\n\n【参考资料】\n';
 
 /**
- * 组装系统提示词：助手人设 + 表情指令 +（v1.6）情绪状态与信号协议 +
- * 可选对话摘要 + 可选长期记忆 + 可选技能流程块 + 可选 RAG 参考资料块。
- * 注入顺序经快照测试锁定（见 prompt.test.ts）。
+ * v1.8 组装可选段：角色卡（已解析结构）与全局追加提示词（M3 设置域接线，M2 预埋）。
+ */
+export interface BuildPromptOptions {
+  /** 助手当前选用卡；null/缺省 = 回落 assistant.systemPrompt（默认卡/旧数据） */
+  card?: ParsedCharacterCard | null;
+  /** 固定位于身份卡之后、情绪段之前 */
+  globalAppendPrompt?: string | null;
+}
+
+/**
+ * 组装系统提示词，固定段落顺序（v1.8 契约，快照测试锁死）：
+ * 系统层（表情指令）→ 身份卡/旧人设 → 全局追加 → 情绪 → 摘要 → 记忆 → 技能 → RAG。
  */
 export function buildSystemPrompt(
   assistant: Assistant,
@@ -43,9 +54,18 @@ export function buildSystemPrompt(
   memoryBlock: string | null = null,
   skillBlock: string | null = null,
   emotionBlock: string | null = null,
+  options: BuildPromptOptions = {},
 ): string {
-  const parts = [assistant.systemPrompt.trim()];
+  // 身份卡优先；卡缺省或空壳时回落旧 systemPrompt（默认卡/悬挂引用不阻断对话）
+  const personaBlock = options.card ? buildPersonaBlock(options.card) : null;
+  const personaText = personaBlock ?? assistant.systemPrompt.trim();
+
+  const parts: string[] = [];
+  // 系统层（输出格式控制）先于身份内容
   if (assistant.expressionEnabled) parts.push(EXPRESSION_DIRECTIVE_BLOCK);
+  if (personaText) parts.push(personaText);
+  // v1.8：全局追加固定夹在身份与情绪之间（M3 设置域接线）
+  if (options.globalAppendPrompt?.trim()) parts.push(options.globalAppendPrompt.trim());
   // v1.6：情绪块内已自带「当前状态段 + 尾块协议」两段，调用方在情绪功能开启时整体传入
   if (emotionBlock?.trim()) parts.push(emotionBlock.trim());
   if (summary?.trim()) {
@@ -83,6 +103,10 @@ export interface ChatBudgetOptions {
   skillBlock?: string | null;
   /** v1.6：情绪状态段 + 尾块协议（仅情绪功能开启时由调用方组装） */
   emotionBlock?: string | null;
+  /** v1.8：当前选用角色卡（解析结构）；缺省回落助手 systemPrompt */
+  card?: ParsedCharacterCard | null;
+  /** v1.8 M3 预埋：全局追加提示词 */
+  globalAppendPrompt?: string | null;
 }
 
 /**
@@ -119,8 +143,12 @@ export function buildChatMessages(
   const memoryBlock = budget.memoryBlock ?? null;
   const skillBlock = budget.skillBlock ?? null;
   const emotionBlock = budget.emotionBlock ?? null;
+  const promptOptions: BuildPromptOptions = {
+    card: budget.card ?? null,
+    globalAppendPrompt: budget.globalAppendPrompt ?? null,
+  };
 
-  // 1) 先装不含 RAG 的固定系统块（人设/表情/情绪/摘要/记忆/技能）
+  // 1) 先装不含 RAG 的固定系统块（系统层/身份卡/全局追加/情绪/摘要/记忆/技能）
   const fixedSystem = buildSystemPrompt(
     assistant,
     null,
@@ -128,6 +156,7 @@ export function buildChatMessages(
     memoryBlock,
     skillBlock,
     emotionBlock,
+    promptOptions,
   );
   const fixedTokens = fixedSystem ? estimateTokens(fixedSystem) : 0;
   // 2) 本轮用户消息恒保留：先把它的占用从 RAG 预算里扣掉，防止资料挤掉当前问题
@@ -151,6 +180,7 @@ export function buildChatMessages(
     memoryBlock,
     skillBlock,
     emotionBlock,
+    promptOptions,
   );
   const prefix: ChatMessage[] = systemPrompt
     ? [{ role: 'system', content: systemPrompt }]

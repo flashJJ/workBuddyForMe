@@ -43,6 +43,8 @@ const samplingFields = {
   personalityTsundere: personalityWeightSchema,
   personalityShy: personalityWeightSchema,
   personalityTolerance: personalityWeightSchema,
+  // v1.8：当前选用的角色卡 id（null=使用默认卡/不启用卡）
+  cardId: z.string().trim().min(1).nullable().default(null),
 };
 
 export const assistantCreateSchema = z.object({
@@ -71,6 +73,7 @@ export const assistantUpdateSchema = z
     personalityTsundere: samplingFields.personalityTsundere.optional(),
     personalityShy: samplingFields.personalityShy.optional(),
     personalityTolerance: samplingFields.personalityTolerance.optional(),
+    cardId: samplingFields.cardId.optional(),
     sortOrder: z.number().int().min(0).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');

@@ -89,4 +89,23 @@ export const characterCardRecordSchema = z.object({
 });
 export type CharacterCardRecord = z.infer<typeof characterCardRecordSchema>;
 
+// ── HTTP 契约（创建/更新入参；source/parsed 由服务端负责） ──────────────
+
+/** 新建卡：提交 Markdown 原文，服务端解析后落库（解析失败返回诊断） */
+export const characterCardCreateSchema = z.object({
+  rawMarkdown: z.string().min(1).max(CARD_FILE_MAX_BYTES),
+});
+export type CharacterCardCreateInput = z.infer<typeof characterCardCreateSchema>;
+
+/** 更新卡：仅允许改原文（重新解析）；内置卡不可改（服务端拦截） */
+export const characterCardUpdateSchema = z.object({
+  rawMarkdown: z.string().min(1).max(CARD_FILE_MAX_BYTES),
+});
+export type CharacterCardUpdateInput = z.infer<typeof characterCardUpdateSchema>;
+
+/** 助手选卡：cardId 为 null 表示回到默认卡 */
+export const assistantCardAssignSchema = z.object({
+  cardId: z.string().trim().min(1).nullable(),
+});
+
 export type { ExpressionTag };

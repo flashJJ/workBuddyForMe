@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Assistant, Message } from '@wbfm/shared/types';
+import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
 import { buildChatMessages, buildSystemPrompt, EXPRESSION_DIRECTIVE_BLOCK } from './prompt';
+import { buildPersonaBlock } from './persona-prompt';
 import { estimateMessageTokens } from './context-budget';
 import type { ChatMessage } from '@wbfm/ai';
 import type { RagChunk, RagContext } from './types';
@@ -28,6 +30,7 @@ function makeAssistant(partial: Partial<Assistant> = {}): Assistant {
     personalityTsundere: 0.5,
     personalityShy: 0.5,
     personalityTolerance: 0.5,
+    cardId: null,
     isBuiltin: false,
     sortOrder: 0,
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -36,10 +39,24 @@ function makeAssistant(partial: Partial<Assistant> = {}): Assistant {
   };
 }
 
+function makeCard(partial: Partial<ParsedCharacterCard> = {}): ParsedCharacterCard {
+  return {
+    name: '干练同事',
+    description: '测试副文案',
+    defaultEmotion: 'neutral',
+    voice: null,
+    identity: '你是用户的资深同事，先给结论再给依据。',
+    traits: ['先结论后依据', '不堆套话'],
+    speakingStyle: ['短句分点'],
+    boundaries: ['不替用户做不可逆决定'],
+    ...partial,
+  };
+}
+
 describe('buildSystemPrompt 表情指令（M3）', () => {
-  it('expressionEnabled=true：人设后注入表情指令片段，含全部 8 个标签', () => {
+  it('expressionEnabled=true：系统层注入表情指令片段，含全部 8 个标签', () => {
     const prompt = buildSystemPrompt(makeAssistant(), null);
-    expect(prompt.startsWith('你是一个简洁的助手。')).toBe(true);
+    expect(prompt).toContain('你是一个简洁的助手。');
     expect(prompt).toContain(EXPRESSION_DIRECTIVE_BLOCK);
     for (const tag of [
       '[neutral]',
@@ -61,7 +78,7 @@ describe('buildSystemPrompt 表情指令（M3）', () => {
     expect(prompt).not.toContain('表情指令');
   });
 
-  it('注入顺序：人设 → 表情指令 → RAG 资料', () => {
+  it('注入顺序：表情指令（系统层）→ 人设 → RAG 资料', () => {
     const prompt = buildSystemPrompt(makeAssistant(), {
       citations: [],
       contextBlock: '资料A',
@@ -70,8 +87,86 @@ describe('buildSystemPrompt 表情指令（M3）', () => {
     const idxPersona = prompt.indexOf('简洁的助手');
     const idxExpr = prompt.indexOf('表情指令');
     const idxRag = prompt.indexOf('资料A');
-    expect(idxPersona).toBeLessThan(idxExpr);
-    expect(idxExpr).toBeLessThan(idxRag);
+    expect(idxExpr).toBeLessThan(idxPersona);
+    expect(idxPersona).toBeLessThan(idxRag);
+  });
+});
+
+describe('v1.8 身份卡 / 全局追加段落契约', () => {
+  it('buildPersonaBlock：固定小节序 identity→性格→风格→边界，缺章节省略', () => {
+    const block = buildPersonaBlock(makeCard())!;
+    expect(block).toBe(`【角色卡】
+你是用户的资深同事，先给结论再给依据。
+
+性格特征：
+- 先结论后依据
+- 不堆套话
+
+说话风格：
+- 短句分点
+
+边界：
+- 不替用户做不可逆决定`);
+    const sparse = buildPersonaBlock(makeCard({ traits: [], speakingStyle: [], boundaries: [] }))!;
+    expect(sparse).toBe('【角色卡】\n你是用户的资深同事，先给结论再给依据。');
+    expect(buildPersonaBlock(makeCard({ identity: '', traits: [], speakingStyle: [], boundaries: [] })))
+      .toBeNull();
+  });
+
+  it('选卡后：身份卡替代 systemPrompt 入模，原文提示词不再出现', () => {
+    const prompt = buildSystemPrompt(makeAssistant(), null, null, null, null, null, {
+      card: makeCard(),
+    });
+    expect(prompt).toContain('【角色卡】');
+    expect(prompt).toContain('先结论后依据');
+    expect(prompt).not.toContain('你是一个简洁的助手。');
+  });
+
+  it('固定段落顺序：系统层 → 身份卡 → 全局追加 → 情绪 → 摘要 → 记忆 → 技能 → RAG', () => {
+    const prompt = buildSystemPrompt(
+      makeAssistant(),
+      { citations: [], contextBlock: '资料A', chunks: [] },
+      '早期摘要',
+      '用户偏好记忆',
+      '技能流程块',
+      '【当前心情】平静',
+      { card: makeCard(), globalAppendPrompt: '全局追加：回答末尾标注置信度。' },
+    );
+    const positions = [
+      prompt.indexOf('表情指令'),
+      prompt.indexOf('【角色卡】'),
+      prompt.indexOf('全局追加'),
+      prompt.indexOf('【当前心情】'),
+      prompt.indexOf('【对话摘要】'),
+      prompt.indexOf('【长期记忆】'),
+      prompt.indexOf('技能流程块'),
+      prompt.indexOf('资料A'),
+    ];
+    expect(positions.every((p) => p >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    expect(prompt).toMatchSnapshot();
+  });
+
+  it('空壳卡（四节全空）回落 systemPrompt；全局追加空白串忽略', () => {
+    const prompt = buildSystemPrompt(makeAssistant(), null, null, null, null, null, {
+      card: makeCard({ identity: '', traits: [], speakingStyle: [], boundaries: [] }),
+      globalAppendPrompt: '   ',
+    });
+    expect(prompt).toContain('你是一个简洁的助手。');
+    expect(prompt).not.toContain('【角色卡】');
+  });
+
+  it('预算装配路径同样携带身份卡段', () => {
+    const { messages } = buildChatMessages(
+      makeAssistant({ expressionEnabled: false }),
+      [textMsg('user', '你好')],
+      null,
+      undefined,
+      { contextWindow: 4096, toolsTokens: 0, lastCompletionTokens: null, card: makeCard() },
+    );
+    const system = messages[0]!.content as string;
+    expect(system).toContain('【角色卡】');
+    expect(system).toContain('先结论后依据');
   });
 });
 

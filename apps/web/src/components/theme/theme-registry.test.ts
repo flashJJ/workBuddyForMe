@@ -52,7 +52,7 @@ describe('theme registry', () => {
             matches: q === '(prefers-color-scheme: dark)',
             addEventListener: () => undefined,
             removeEventListener: () => undefined,
-          }) as MediaQueryList,
+          }) as unknown as MediaQueryList,
       );
     expect(resolveThemeMode('stellar', 'system')).toBe('dark');
     expect(resolveThemeMode('nocturne-gold', 'system')).toBe('dark');

@@ -1,6 +1,7 @@
 import { HISTORY_MESSAGE_SAFETY_CAP } from '@wbfm/shared/constants';
 import { type TokenUsage } from '@wbfm/shared/api';
 import { startRun, type ChatMessage, type TraceHandle } from '@wbfm/ai';
+import { createCharacterCardRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
 import { createConversationService } from '../services/conversation-service';
@@ -93,8 +94,12 @@ export function createProactiveTurn(deps: ServiceDeps) {
       }
     }
 
+    // v1.8：主动轮与正常回合共用同一身份卡（悬挂引用静默回落默认卡）
+    const card = assistant.cardId
+      ? createCharacterCardRepository(deps.db).findById(assistant.cardId)?.parsed ?? null
+      : null;
     const outgoing: ChatMessage[] = [
-      { role: 'system', content: buildSystemPrompt(assistant, null) },
+      { role: 'system', content: buildSystemPrompt(assistant, null, null, null, null, null, { card }) },
       ...history,
       { role: 'user', content: PROACTIVE_TRIGGER_PROMPT },
     ];

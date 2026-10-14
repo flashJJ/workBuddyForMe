@@ -281,3 +281,6 @@ export * from './scheduled-task';
 export * from './event-usage';
 // v1.7 M5 自定义短语触发器
 export * from './event-trigger';
+
+// v1.8 角色卡库契约（ExpressionTag 与 ./expression 重名，显式导出优先不冲突）
+export * from './character-card';

@@ -31,6 +31,8 @@ export interface AssistantCreateFields {
   personalityTsundere?: number;
   personalityShy?: number;
   personalityTolerance?: number;
+  /** v1.8：选用的角色卡 id（null=默认卡） */
+  cardId?: string | null;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -58,6 +60,7 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   personalityTsundere: 'personality_tsundere',
   personalityShy: 'personality_shy',
   personalityTolerance: 'personality_tolerance',
+  cardId: 'card_id',
   sortOrder: 'sort_order',
 };
 
@@ -91,13 +94,13 @@ export function createAssistantRepository(db: DatabaseInstance) {
             model_id, knowledge_base_ids, enabled_tools, retrieve_always, memory_enabled,
             expression_enabled,
             personality_frankness, personality_tsundere, personality_shy, personality_tolerance,
-            is_builtin, sort_order, created_at, updated_at)
+            card_id, is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
             @modelId, @knowledgeBaseIds, @enabledTools, @retrieveAlways, @memoryEnabled,
             @expressionEnabled,
             @personalityFrankness, @personalityTsundere, @personalityShy, @personalityTolerance,
-            @isBuiltin, @sortOrder, @ts, @ts)`,
+            @cardId, @isBuiltin, @sortOrder, @ts, @ts)`,
       ).run({
         ...toRowValues(fields),
         id,
@@ -108,6 +111,7 @@ export function createAssistantRepository(db: DatabaseInstance) {
         personalityTsundere: fields.personalityTsundere ?? 0.5,
         personalityShy: fields.personalityShy ?? 0.5,
         personalityTolerance: fields.personalityTolerance ?? 0.5,
+        cardId: fields.cardId ?? null,
         isBuiltin: fields.isBuiltin ? 1 : 0,
         ts,
       });

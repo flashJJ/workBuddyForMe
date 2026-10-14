@@ -35,7 +35,7 @@ describe('备份恢复 · emotion 轨（v1.6）', () => {
     rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it('roundtrip：内置助手导入、缺失助手跳过、幂等不覆盖、归档版本 v3', async () => {
+  it('roundtrip：内置助手导入、缺失助手跳过、幂等不覆盖、归档版本当前', async () => {
     ensureSeedData(srcDb);
     const NOW = Date.UTC(2026, 9, 12, 8, 0, 0);
     // 内置助手有真实关系状态；自定义助手仅存在于源库（目标库缺失→跳过）
@@ -61,7 +61,7 @@ describe('备份恢复 · emotion 轨（v1.6）', () => {
       { db: srcDb, cipher: createWebCipher() },
       { tracks: ['emotion'] },
     );
-    expect(manifest.backupSchemaVersion).toBe(3);
+    expect(manifest.backupSchemaVersion).toBe(4);
     expect(manifest.tracks.emotion?.entryCount).toBe(2);
 
     const pre = await precheckBackup(archive);

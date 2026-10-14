@@ -33,6 +33,7 @@ import { zhEmotion } from './messages/emotion';
 import { zhEvent } from './messages/event';
 import { zhReminders } from './messages/reminder';
 import { zhEventM5 } from './messages/event-m5';
+import { zhCharacterCards } from './messages/character-cards';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -54,6 +55,7 @@ export const zhCN = {
   toast: zhToast,
   errors: zhErrors,
   assistants: zhAssistants,
+  characterCards: zhCharacterCards,
   knowledge: zhKnowledge,
   memory: zhMemory,
   tasks: zhTasks,

@@ -82,6 +82,8 @@ export interface Assistant extends Timestamped {
   personalityTsundere: number;
   personalityShy: number;
   personalityTolerance: number;
+  /** v1.8：当前选用的角色卡 id（v026 列；null=默认卡） */
+  cardId: string | null;
   isBuiltin: boolean;
   sortOrder: number;
 }

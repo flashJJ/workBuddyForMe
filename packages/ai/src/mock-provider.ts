@@ -226,6 +226,16 @@ export function createMockProvider(): ChatProvider {
         return;
       }
 
+      // v1.8 e2e 专用：[eval-persona] 回报本轮 system 是否由角色卡组装、身份口令是否入模
+      if (/\[eval-persona\]/.test(userText)) {
+        const sysText = messageText(system?.content ?? '');
+        const reply = `persona=${sysText.includes('【角色卡】') ? 'card' : 'raw'}|marker=${
+          sysText.includes('E2E_PERSONA_MARKER_X9') ? 'hit' : 'miss'
+        }`;
+        yield { delta: reply, usage: { promptTokens: 30, completionTokens: 8, totalTokens: 38 } };
+        return;
+      }
+
       const reply = reference
         ? `根据检索到的资料：${truncate(reference, 60)}。以上回答依据知识库中的相关内容给出。`
         : LONG_ANSWER_TRIGGER.test(userText)
