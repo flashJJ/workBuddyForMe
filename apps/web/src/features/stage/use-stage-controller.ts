@@ -3,23 +3,44 @@
 import * as React from 'react';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
-import type { StageScenePayload, StageSlot, StageSlotPlacement } from '@wbfm/shared/schemas';
+import type {
+  StageCastMember,
+  StageDirection,
+  StageMotionGroup,
+  StageScenePayload,
+  StageSlot,
+  StageSlotPlacement,
+} from '@wbfm/shared/schemas';
 import type { ExpressionTag } from '@/features/avatar/expression-parser';
 import { FrameWatchdog } from './frame-watchdog';
 import { clampSceneZoom } from './stage-layout';
-import { MOCK_CAST, MOCK_EXPRESSIONS, MOCK_SPEECH, findMockMember } from './mock-cast';
+import { MOCK_CAST, MOCK_EXPRESSIONS, MOCK_SPEECH } from './mock-cast';
 import { defaultScenePayload } from './stage-defaults';
+import { applyStageDirection } from './apply-stage-direction';
+import { useStageScreenshot } from './use-stage-screenshot';
 import type { StagePowerMode } from './stage-toolbar';
 
 const FOCUS_CYCLE: StageSlot[] = ['left', 'center', 'right'];
 const CONTROLS_FADE_MS = 2600;
 
+/** mock=本地演示（M1）；run=真实协作 run 只读驱动（M2） */
+export type StageMode = 'mock' | 'run';
+export type StageRunStatus = 'connecting' | 'running' | 'done' | 'failed';
+
 export interface StageController {
+  mode: StageMode;
   payload: StageScenePayload;
   setPayload: (p: StageScenePayload) => void;
+  cast: StageCastMember[];
   focus: StageSlot | null;
   expressions: Record<StageSlot, ExpressionTag>;
+  motions: Record<StageSlot, StageMotionGroup>;
   speech: Record<StageSlot, string | null>;
+  /** run 模式最近一句台词（散焦后对话框仍挂住，直到下一句） */
+  lastLine: { slot: StageSlot; text: string } | null;
+  runStatus: StageRunStatus | null;
+  setRunStatus: (s: StageRunStatus) => void;
+  applyDirection: (d: StageDirection) => void;
   speakingSlot: StageSlot | null;
   powerMode: StagePowerMode;
   uiHidden: boolean;
@@ -39,7 +60,7 @@ export interface StageController {
   poke: () => void;
 }
 
-export function useStageController(): StageController & {
+export function useStageController(mode: StageMode = 'mock'): StageController & {
   requestScreenshot: () => Promise<'saved' | 'canceled' | 'unsupported'>;
   handleEsc: () => 'defocused' | 'shown' | 'exited';
 } {
@@ -47,16 +68,26 @@ export function useStageController(): StageController & {
   const toast = useToast();
   const [payload, setPayloadState] = React.useState<StageScenePayload>(() => defaultScenePayload());
   const [focus, setFocus] = React.useState<StageSlot | null>('center');
+  const [cast, setCast] = React.useState<StageCastMember[]>(MOCK_CAST);
   const [expressions, setExpressions] = React.useState<Record<StageSlot, ExpressionTag>>({
     left: 'neutral',
     center: 'neutral',
     right: 'neutral',
+  });
+  const [motions, setMotions] = React.useState<Record<StageSlot, StageMotionGroup>>({
+    left: 'idle',
+    center: 'idle',
+    right: 'idle',
   });
   const [speech, setSpeech] = React.useState<Record<StageSlot, string | null>>({
     left: null,
     center: null,
     right: null,
   });
+  const [lastLine, setLastLine] = React.useState<{ slot: StageSlot; text: string } | null>(null);
+  const [runStatus, setRunStatus] = React.useState<StageRunStatus | null>(
+    mode === 'run' ? 'connecting' : null,
+  );
   const [powerMode, setPowerModeState] = React.useState<StagePowerMode>('live');
   const [uiHidden, setUiHidden] = React.useState(false);
   const [controlsVisible, setControlsVisible] = React.useState(true);
@@ -96,6 +127,24 @@ export function useStageController(): StageController & {
 
   const setPayload = React.useCallback((p: StageScenePayload) => setPayloadState(p), []);
   const loadPayload = React.useCallback((p: StageScenePayload) => setPayloadState(p), []);
+
+  /** v1.9 M2：消费 StageDirection（由 use-stage-run 经适配器喂入） */
+  const applyDirection = React.useCallback(
+    (d: StageDirection) => {
+      applyStageDirection(
+        {
+          setCast,
+          setFocus,
+          setExpressions,
+          setSpeech,
+          setMotions,
+          setLastLine,
+        },
+        d,
+      );
+    },
+    [],
+  );
 
   const nextSpeaker = React.useCallback(() => {
     const current = focusRef.current;
@@ -158,22 +207,7 @@ export function useStageController(): StageController & {
     [speech],
   );
 
-  const requestScreenshot = React.useCallback(async () => {
-    const { getStageBridge } = await import('./stage-bridge');
-    const bridge = getStageBridge();
-    if (!bridge) {
-      toast.error(t('stage.ui.screenshotUnsupported'));
-      return 'unsupported' as const;
-    }
-    setUiHidden(true);
-    // 等一帧让 UI 隐藏渲染完成，主进程截到的才是无 UI 画面
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    const result = await bridge.capture();
-    setUiHidden(false);
-    if (result.canceled) toast.info?.(t('stage.ui.screenshotCanceled'));
-    else toast.success(t('stage.ui.screenshotSaved'));
-    return result.canceled ? ('canceled' as const) : ('saved' as const);
-  }, [t, toast]);
+  const requestScreenshot = useStageScreenshot(setUiHidden);
 
   const handleEsc = React.useCallback((): 'defocused' | 'shown' | 'exited' => {
     if (focusRef.current) {
@@ -189,11 +223,18 @@ export function useStageController(): StageController & {
   }, [uiHidden, pokeControls]);
 
   return {
+    mode,
     payload,
     setPayload,
+    cast,
     focus,
     expressions,
+    motions,
     speech,
+    lastLine,
+    runStatus,
+    setRunStatus,
+    applyDirection,
     speakingSlot: focus,
     powerMode,
     uiHidden,

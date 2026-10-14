@@ -59,10 +59,11 @@ export const API = {
   taskEvents: (id: string) => `/api/tasks/${id}/events`,
   taskControl: (id: string) => `/api/tasks/${id}/control`,
   taskStopAll: '/api/tasks/stop-all',
-  // v1.4 多智能体协作
+  // v1.4 多智能体协作；v1.9 M2 observe=1 为舞台只读第二客户端
   agentRuns: '/api/agent/runs',
   agentRun: (id: string) => `/api/agent/runs/${id}`,
-  agentRunEvents: (id: string) => `/api/agent/runs/${id}/events`,
+  agentRunEvents: (id: string, observe = false) =>
+    `/api/agent/runs/${id}/events${observe ? '?observe=1' : ''}`,
   agentRunCancel: (id: string) => `/api/agent/runs/${id}/cancel`,
   // v0.8 Flow Studio
   flows: '/api/flows',

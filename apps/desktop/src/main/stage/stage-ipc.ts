@@ -9,7 +9,8 @@ import type { IpcEventLike, IpcMainLike } from '../pet/pet-ipc';
 
 export interface StageIpcActions {
   isOpen(): boolean;
-  open(): Promise<boolean> | boolean;
+  /** runId 非空：舞台窗导航到 /stage?run=<id>（v1.9 M2 只读观看协作 run） */
+  open(runId?: string): Promise<boolean> | boolean;
   close(): Promise<unknown> | unknown;
   capture(): Promise<{ saved: boolean; canceled?: boolean }>;
 }
@@ -20,9 +21,12 @@ export interface StageIpcGuards {
 }
 
 export function registerStageIpc(ipc: IpcMainLike, actions: StageIpcActions, guards: StageIpcGuards): void {
-  ipc.handle('stage:open', (event) => {
+  ipc.handle('stage:open', (event, runId?: unknown) => {
     if (!guards.fromMain(event.sender)) return actions.isOpen();
-    return actions.open();
+    // runId 来自渲染层，严格白名单校验，防注入成任意 URL/query
+    const safeRunId =
+      typeof runId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(runId) ? runId : undefined;
+    return actions.open(safeRunId);
   });
   ipc.handle('stage:close', (event) => {
     if (!guards.fromMain(event.sender) && !guards.fromStage(event.sender)) return undefined;

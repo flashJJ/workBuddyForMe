@@ -67,6 +67,12 @@
             "import": "./dist/event-client.mjs",
             "require": "./dist/event-client.cjs"
         },
+        "./stage-client": {
+            "types": "./src/agents/stage-client.ts",
+            "development": "./src/agents/stage-client.ts",
+            "import": "./dist/stage-client.mjs",
+            "require": "./dist/stage-client.cjs"
+        },
         "./scheduler": {
             "types": "./src/scheduler/index.ts",
             "development": "./src/scheduler/index.ts",

@@ -7,6 +7,8 @@ import {
 } from '@wbfm/shared/schemas';
 import type { AgentNodeInnerEvent } from '@wbfm/shared/types';
 import { createAgentRunner } from './agent-runner';
+import { createRunEventBus, tapRunEvents, type RunEventBus } from './run-event-bus';
+import { PendingObserverRegistry } from './observer-registry';
 import type { AgentClients, AgentRunEvent } from './index';
 import type { AgentRoleKey } from './role-models';
 
@@ -16,10 +18,14 @@ import type { AgentRoleKey } from './role-models';
  * Map<runId, AbortController>；客户端断线 → clientSignal 联动 abort。
  * 角色客户端经 provider 端口解析（M2 注入真实模型与 executor 通道，
  * M3 Flow agent 节点经 startFlowNode 传入节点级覆盖）。
+ *
+ * v1.9 M2：每个活跃 run 挂只读事件总线，舞台作为第二客户端 observe() 续看，
+ * 不拥有生命周期、断线不 abort（队列所有方在主会话）。
  */
 
 interface ActiveEntry {
   abort: AbortController;
+  bus: RunEventBus<AgentRunEvent>;
 }
 
 /** Flow/节点级覆盖：角色模型与知识库优先于助手配置 */
@@ -82,6 +88,20 @@ export interface AgentRunService {
   stopAll(): number;
   isActive(runId: string): boolean;
   activeRunIds(): string[];
+  /**
+   * v1.9 M2：只读观察订阅（舞台第二客户端）。活跃 run 返回事件迭代器
+   * （自动回放本场已广播帧 + 后续帧），退订不影响 run；非活跃返回 null，
+   * 调用方回落终态回放（已落库 handoffs + done）。
+   */
+  observe(runId: string): AsyncIterableIterator<AgentRunEvent> | null;
+  /**
+   * v1.9 M2：舞台先于 owner 开窗时的有界等待观察——run 已建行但 owner SSE
+   * 未建连期间挂起，owner 一启动即原子挂到总线（不丢第一帧）；超时/取消回 null。
+   */
+  observeWhenReady(
+    runId: string,
+    waitMs: number,
+  ): Promise<AsyncIterableIterator<AgentRunEvent> | null>;
   /** 是否已接通角色客户端通道 */
   hasClientsChannel(): boolean;
 }
@@ -110,29 +130,63 @@ function withCleanup<T, R>(
 export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunService {
   const repo = createAgentRunRepository(deps.db);
   const active = new Map<string, ActiveEntry>();
+  /** 先开窗等 owner 的舞台观察者队列（原子挂接，不丢第一帧） */
+  const pendingObservers = new PendingObserverRegistry<RunEventBus<AgentRunEvent>>();
 
   /** 解析客户端 + 信号合并的共用前置（失败回滚注册） */
   async function prepare(params: {
     run: AgentRunView;
     overrides?: AgentClientOverrides;
     clientSignal?: AbortSignal;
-  }): Promise<{ signal: AbortSignal; clients: AgentClients }> {
+  }): Promise<{ signal: AbortSignal; clients: AgentClients; bus: RunEventBus<AgentRunEvent> }> {
     if (!deps.clientsProvider) {
       throw ApiError.notImplemented('多智能体协作通道未接通');
     }
     const abort = new AbortController();
-    active.set(params.run.id, { abort });
+    const bus = createRunEventBus<AgentRunEvent>();
+    active.set(params.run.id, { abort, bus });
+    // 总线一登记即唤醒等待中的舞台观察者（在客户端解析 await 之前，绝不漏帧）
+    pendingObservers.publish(params.run.id, bus);
     let clients: AgentClients;
     try {
       clients = await deps.clientsProvider({ run: params.run, overrides: params.overrides });
     } catch (error) {
+      const entry = active.get(params.run.id);
+      entry?.bus.close();
       active.delete(params.run.id);
+      pendingObservers.fail(params.run.id);
       throw error;
     }
     const signal = params.clientSignal
       ? AbortSignal.any([params.clientSignal, abort.signal])
       : abort.signal;
-    return { signal, clients };
+    return { signal, clients, bus };
+  }
+
+  /** 事件先广播给观察者再交 owner；终态关总线并注销活跃注册 */
+  function own(runId: string, bus: RunEventBus<AgentRunEvent>, gen: AsyncGenerator<AgentRunEvent>) {
+    return withCleanup(runId, active, tapRunEvents(bus, gen));
+  }
+
+  /** 组装 runner 并接上观察总线 + 注销清理 */
+  function launch(
+    run: AgentRunView,
+    prepared: { signal: AbortSignal; clients: AgentClients; bus: RunEventBus<AgentRunEvent> },
+    extra: { availableToolScopes?: string[]; knowledgeBaseHints?: { id: string; name: string }[] },
+  ) {
+    const gen = createAgentRunner({ repo, clients: prepared.clients }).run({
+      runId: run.id,
+      assistantId: run.assistantId,
+      goal: run.goal,
+      conversationId: run.conversationId,
+      flowRunId: run.flowRunId,
+      nodeExecutionId: run.nodeExecutionId,
+      budget: run.budget,
+      signal: prepared.signal,
+      ...(extra.availableToolScopes ? { availableToolScopes: extra.availableToolScopes } : {}),
+      ...(extra.knowledgeBaseHints ? { knowledgeBaseHints: extra.knowledgeBaseHints } : {}),
+    });
+    return own(run.id, prepared.bus, gen);
   }
 
   return {
@@ -143,25 +197,8 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       if (run.status !== 'running') {
         throw ApiError.conflict(`协作已终态（${run.status}），不能再次启动`);
       }
-      const { signal, clients } = await prepare({ run, clientSignal: params.clientSignal });
-      const planContext = deps.resolvePlanContext?.(run);
-      const gen = createAgentRunner({ repo, clients }).run({
-        runId: run.id,
-        assistantId: run.assistantId,
-        goal: run.goal,
-        conversationId: run.conversationId,
-        flowRunId: run.flowRunId,
-        nodeExecutionId: run.nodeExecutionId,
-        budget: run.budget,
-        signal,
-        ...(planContext
-          ? {
-              availableToolScopes: planContext.availableToolScopes,
-              knowledgeBaseHints: planContext.knowledgeBaseHints,
-            }
-          : {}),
-      });
-      return withCleanup(run.id, active, gen);
+      const prepared = await prepare({ run, clientSignal: params.clientSignal });
+      return launch(run, prepared, deps.resolvePlanContext?.(run) ?? {});
     },
 
     async startFlowNode(params) {
@@ -178,24 +215,16 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
         nodeExecutionId: params.nodeExecutionId,
         budget: { ...AGENT_BUDGET_DEFAULTS, ...params.budget },
       });
-      const overrides: AgentClientOverrides = {
-        roleModelIds: params.roleModelIds,
-        knowledgeBaseIds: params.knowledgeBaseIds,
-      };
-      const { signal, clients } = await prepare({ run, overrides, clientSignal: params.signal });
-      const gen = createAgentRunner({ repo, clients }).run({
-        runId: run.id,
-        assistantId: run.assistantId,
-        goal,
-        conversationId: null,
-        flowRunId: params.flowRunId,
-        nodeExecutionId: params.nodeExecutionId,
-        budget: run.budget,
-        signal,
+      const prepared = await prepare({
+        run,
+        overrides: { roleModelIds: params.roleModelIds, knowledgeBaseIds: params.knowledgeBaseIds },
+        clientSignal: params.signal,
+      });
+      const events = launch(run, prepared, {
         availableToolScopes: params.toolScopes,
         knowledgeBaseHints: params.knowledgeBaseIds.map((id) => ({ id, name: id })),
       });
-      return { runId: run.id, events: withCleanup(run.id, active, gen) };
+      return { runId: run.id, events };
     },
 
     cancel(runId) {
@@ -216,6 +245,8 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
         errorCode: 'AGENT_CANCELLED',
         errorMessage: '用户取消',
       });
+      // 唤醒等待开窗的舞台观察者，让其回落终态回放而非等满超时
+      pendingObservers.fail(runId);
       return true;
     },
 
@@ -231,6 +262,19 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
 
     activeRunIds() {
       return [...active.keys()];
+    },
+
+    observe(runId) {
+      return active.get(runId)?.bus.subscribe() ?? null;
+    },
+
+    async observeWhenReady(runId, waitMs) {
+      const bus = await pendingObservers.await(
+        runId,
+        waitMs,
+        () => active.get(runId)?.bus,
+      );
+      return bus?.subscribe() ?? null;
     },
 
     hasClientsChannel() {

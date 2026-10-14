@@ -56,13 +56,24 @@ export function buildStageWindowOptions(
   };
 }
 
-/** 创建舞台窗并加载 /stage */
-export function createStageWindow(boot: WindowBootInfo | null, fullscreen: boolean, bounds: StageBounds | null): BrowserWindow {
+/** 舞台路由：runId 非空时直达 /stage?run=<id>（v1.9 M2 只读观看协作 run） */
+export function buildStageUrl(baseUrl: string, runId?: string): string {
+  const root = `${baseUrl}/stage`;
+  return runId ? `${root}?run=${encodeURIComponent(runId)}` : root;
+}
+
+/** 创建舞台窗并加载 /stage（可带 runId 直达协作现场） */
+export function createStageWindow(
+  boot: WindowBootInfo | null,
+  fullscreen: boolean,
+  bounds: StageBounds | null,
+  runId?: string,
+): BrowserWindow {
   const baseUrl = boot?.url ?? DEV_SERVER_URL;
   const win = new BrowserWindow(buildStageWindowOptions(boot, fullscreen, bounds));
   win.once('ready-to-show', () => {
     if (!win.isDestroyed()) win.show();
   });
-  void win.loadURL(`${baseUrl}/stage`);
+  void win.loadURL(buildStageUrl(baseUrl, runId));
   return win;
 }

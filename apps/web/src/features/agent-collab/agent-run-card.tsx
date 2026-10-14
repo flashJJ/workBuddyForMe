@@ -1,14 +1,29 @@
 'use client';
 
 import * as React from 'react';
-import { Ban, CheckCircle2, Loader2, ShieldQuestion, TriangleAlert, Users, XCircle } from 'lucide-react';
+import { Ban, CheckCircle2, Loader2, MonitorPlay, ShieldQuestion, TriangleAlert, Users, XCircle } from 'lucide-react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
+import { getStageBridge } from '@/features/stage/stage-bridge';
 import { cn } from '@/lib/utils';
 import { AgentRounds } from './agent-rounds';
 import type { AgentCardState, AgentCardStatus } from './agent-run-reducer';
+
+/**
+ * v1.9 M2：在舞台只读观看本 run。
+ * Electron 走舞台窗 IPC（与桌宠互斥/几何恢复由主进程负责）；
+ * 裸浏览器开新标签承载 /stage?run=。舞台无任何 run 控制权。
+ */
+function openRunStage(runId: string): void {
+  const bridge = getStageBridge();
+  if (bridge) {
+    void bridge.open(runId);
+    return;
+  }
+  window.open(`/stage?run=${encodeURIComponent(runId)}`, '_blank', 'noopener,noreferrer');
+}
 
 /**
  * v1.4 M4：协作运行卡（聊天内嵌/Flow 子泳道/任务中心共用）。
@@ -40,7 +55,17 @@ export function AgentRunCard({
         <Users className="h-4 w-4 shrink-0 text-teal-500" />
         <span className="text-xs font-semibold">{t('agents.entry.label')}</span>
         <StatusBadge status={state.status} />
-        <span className="ml-auto font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
+        <button
+          type="button"
+          className="ml-auto flex items-center gap-1 rounded border border-teal-500/40 px-1.5 py-0.5 text-[10px] text-teal-600 transition-colors hover:bg-teal-500/10 dark:text-teal-400"
+          data-testid="watch-on-stage"
+          title={t('stage.run.watch')}
+          onClick={() => openRunStage(runId)}
+        >
+          <MonitorPlay className="h-3 w-3" />
+          {t('stage.run.watch')}
+        </button>
+        <span className="font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
       </header>
 
       <div className={cn('space-y-2 px-3', compact ? 'py-2' : 'py-2.5')}>

@@ -8,8 +8,9 @@
 import fs from 'node:fs';
 import { BrowserWindow, dialog } from 'electron';
 import type { PetManager } from '../pet/pet-manager';
+import { DEV_SERVER_URL } from '../config';
 import type { WindowBootInfo } from '../window';
-import { createStageWindow } from './stage-window';
+import { buildStageUrl, createStageWindow } from './stage-window';
 import { registerStageIpc } from './stage-ipc';
 import type { IpcMainLike } from '../pet/pet-ipc';
 import { loadStageState, saveStageState, type StageBounds } from './stage-state';
@@ -35,8 +36,13 @@ export class StageManager {
     return Boolean(this.win && !this.win.isDestroyed());
   }
 
-  async open(): Promise<boolean> {
+  async open(runId?: string): Promise<boolean> {
     if (this.isOpen()) {
+      // 已开窗：幂等聚焦；带 runId 时导航到指定协作现场（切换观看对象）
+      if (runId) {
+        const baseUrl = this.deps.boot?.url ?? DEV_SERVER_URL;
+        await this.win!.loadURL(buildStageUrl(baseUrl, runId));
+      }
       this.win?.focus();
       return true;
     }
@@ -45,7 +51,7 @@ export class StageManager {
     if (this.petWasOpen) await this.deps.petManager.close();
 
     const state = loadStageState(this.deps.userDataDir);
-    this.win = createStageWindow(this.deps.boot, state.fullscreen, state.bounds);
+    this.win = createStageWindow(this.deps.boot, state.fullscreen, state.bounds, runId);
     this.attach(this.win);
     this.broadcast(true);
     return true;
@@ -89,7 +95,7 @@ export class StageManager {
       ipc,
       {
         isOpen: () => this.isOpen(),
-        open: () => this.open(),
+        open: (runId?: string) => this.open(runId),
         close: () => this.close(),
         capture: () => this.capture(),
       },

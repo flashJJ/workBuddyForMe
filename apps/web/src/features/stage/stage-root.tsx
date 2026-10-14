@@ -3,25 +3,40 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { StageSlot } from '@wbfm/shared/schemas';
+import { translateSystemText } from '@/lib/i18n/system-text-runtime';
+import type { StageCastMember, StageSlot } from '@wbfm/shared/schemas';
 import { StageBackgroundLayer } from './stage-background';
 import { StageActor } from './stage-actor';
 import { StageDialogBox } from './stage-dialog-box';
 import { StageToolbar } from './stage-toolbar';
 import { computeActorLayout, SLOT_ORDER } from './stage-layout';
-import { MOCK_CAST, findMockMember } from './mock-cast';
-import { useStageController } from './use-stage-controller';
+import { useStageController, type StageMode } from './use-stage-controller';
+import { useStageRun } from './use-stage-run';
 import { getStageBridge } from './stage-bridge';
 
+/** 从 ?run=<id> 取协作 run（effect 内读 window，首帧恒等于 SSR 避免水合错配） */
+function useRunId(): string | null {
+  const [runId, setRunId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('run');
+    setRunId(id && /^[a-zA-Z0-9_-]{1,80}$/.test(id) ? id : null);
+  }, []);
+  return runId;
+}
+
 /**
- * 舞台根（M1 mock cast 可演）：
- * 背景层 → 暖光层 → 三槽角色 → 对话框 → 控制栏。
+ * 舞台根：
+ * - mock 模式（M1）：本地演示 cast 可演；
+ * - run 模式（M2，?run=id）：只读订阅真实协作 run，零执行控件，关窗不杀 run。
  * 快捷键：H 隐 UI / F11 全屏 / Esc 逐级退出 / Ctrl+滚轮画面缩放。
  */
 export function StageRoot() {
   const { t } = useI18n();
   const router = useRouter();
-  const c = useStageController();
+  const runId = useRunId();
+  const mode: StageMode = runId ? 'run' : 'mock';
+  const c = useStageController(mode);
+  useStageRun(runId, c);
   const rootRef = React.useRef<HTMLDivElement>(null);
 
   // 鼠标移动唤醒控制栏（pointermove 足够频繁，无需节流，poke 内部幂等重置计时）
@@ -66,7 +81,21 @@ export function StageRoot() {
     }
   };
 
-  const focusedMember = c.focus ? findMockMember(c.focus) : null;
+  const memberOf = React.useCallback(
+    (slot: StageSlot): StageCastMember =>
+      c.cast.find((m) => m.slot === slot) ?? c.cast[1]!,
+    [c.cast],
+  );
+
+  // mock：散焦即收台词；run：最近一句台词挂住（跨 phase 等待期不空白）
+  const activeLine =
+    mode === 'run'
+      ? c.lastLine
+      : c.focus && c.speech[c.focus]
+        ? { slot: c.focus, text: c.speech[c.focus]! }
+        : null;
+  const dialogSpeaker = activeLine ? memberOf(activeLine.slot).displayName : '';
+  const dialogText = activeLine ? (translateSystemText(activeLine.text) || activeLine.text) : '';
   const showChrome = !c.uiHidden && c.controlsVisible;
 
   return (
@@ -74,7 +103,9 @@ export function StageRoot() {
       ref={rootRef}
       className="relative h-screen w-screen overflow-hidden bg-black"
       data-testid="stage-root"
+      data-mode={mode}
       data-power={c.powerMode}
+      data-run-status={c.runStatus ?? undefined}
       onWheel={onRootWheel}
     >
       <StageBackgroundLayer background={c.payload.background} />
@@ -91,10 +122,21 @@ export function StageRoot() {
         }}
       />
 
+      {/* run 模式接入状态角标（只读信息，非控制件；截图前随 UI 一并隐藏） */}
+      {mode === 'run' && c.runStatus && (
+        <div
+          className="pointer-events-none absolute right-3 top-3 z-40 rounded bg-black/45 px-2 py-0.5 text-[11px] text-white/80"
+          data-testid="stage-run-status"
+          data-state={c.runStatus}
+        >
+          {c.runStatus === 'connecting' ? t('stage.run.reconnecting') : c.runStatus}
+        </div>
+      )}
+
       {/* 三槽角色 */}
       <div className="absolute inset-0 z-10" data-testid="stage-cast">
         {SLOT_ORDER.map((slot: StageSlot) => {
-          const member = MOCK_CAST.find((m) => m.slot === slot) ?? MOCK_CAST[1]!;
+          const member = memberOf(slot);
           const live = c.powerMode === 'live' || slot === c.focus;
           return (
             <StageActor
@@ -104,7 +146,9 @@ export function StageRoot() {
               layout={computeActorLayout(slot, c.payload, c.focus)}
               live={live}
               expression={c.expressions[slot]!}
-              actionLabelKey={member.actionLabelKey}
+              actionLabelKey={
+                mode === 'run' ? `stage.run.action.${c.motions[slot]}` : member.actionLabelKey
+              }
               speaking={slot === c.speakingSlot && Boolean(c.speech[slot])}
               showNameplate={c.payload.showNameplates}
               getLevel={c.levelReader(slot)}
@@ -124,9 +168,9 @@ export function StageRoot() {
       </div>
 
       <StageDialogBox
-        speakerName={focusedMember?.displayName ?? ''}
-        text={c.focus ? c.speech[c.focus] : null}
-        visible={c.payload.showDialog && !c.uiHidden}
+        speakerName={dialogSpeaker}
+        text={dialogText}
+        visible={c.payload.showDialog && !c.uiHidden && Boolean(activeLine)}
       />
 
       {/* 控制栏（空闲淡出） */}
@@ -137,6 +181,7 @@ export function StageRoot() {
         data-visible={showChrome}
       >
         <StageToolbar
+          mode={mode}
           powerMode={c.powerMode}
           onPowerModeChange={c.setPowerMode}
           payload={c.payload}

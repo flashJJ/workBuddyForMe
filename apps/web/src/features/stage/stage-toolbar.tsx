@@ -6,10 +6,13 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useStageScenes, useStageSceneMutations } from './use-stage-scenes';
 import { StageBackgroundEditor } from './stage-background-editor';
 import type { StageScenePayload } from '@wbfm/shared/schemas';
+import type { StageMode } from './use-stage-controller';
 
 export type StagePowerMode = 'live' | 'portrait';
 
 interface Props {
+  /** run 模式隐藏全部 mock 演示控件（舞台零执行面，控制只发生在任务中心） */
+  mode: StageMode;
   powerMode: StagePowerMode;
   onPowerModeChange: (mode: StagePowerMode) => void;
   payload: StageScenePayload;
@@ -78,22 +81,26 @@ export function StageToolbar(props: Props) {
         </div>
       </div>
 
-      <section className="space-y-1 rounded border border-white/10 p-2" data-testid="stage-demo-section">
-        <p className="text-xs font-medium text-white/70">{t('stage.panel.demo')}</p>
-        <div className="grid grid-cols-2 gap-1">
-          <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-next" onClick={props.onNextSpeaker}>
-            {t('stage.demo.nextSpeaker')}
-          </button>
-          <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-say" onClick={props.onSayLine}>
-            {t('stage.demo.sayLine')}
-          </button>
-          <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-expr" onClick={props.onCycleExpression}>
-            {t('stage.demo.expression')}
-          </button>
-          <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-defocus" onClick={props.onDefocus}>
-            {t('stage.demo.clearFocus')}
-          </button>
-        </div>
+      <section className="space-y-1 rounded border border-white/10 p-2" data-testid="stage-demo-section" hidden={props.mode === 'run'}>
+        {props.mode === 'mock' && (
+          <>
+            <p className="text-xs font-medium text-white/70">{t('stage.panel.demo')}</p>
+            <div className="grid grid-cols-2 gap-1">
+              <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-next" onClick={props.onNextSpeaker}>
+                {t('stage.demo.nextSpeaker')}
+              </button>
+              <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-say" onClick={props.onSayLine}>
+                {t('stage.demo.sayLine')}
+              </button>
+              <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-expr" onClick={props.onCycleExpression}>
+                {t('stage.demo.expression')}
+              </button>
+              <button type="button" className="rounded border px-1 py-0.5 text-xs" data-testid="stage-demo-defocus" onClick={props.onDefocus}>
+                {t('stage.demo.clearFocus')}
+              </button>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="space-y-1 rounded border border-white/10 p-2">

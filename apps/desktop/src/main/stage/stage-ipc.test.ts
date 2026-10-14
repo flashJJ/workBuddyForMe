@@ -39,11 +39,14 @@ describe('v1.9 stage IPC 身份校验', () => {
     },
   );
 
-  it('stage:open：仅主窗可发起；其他发送方只查状态', () => {
+  it('stage:open：仅主窗可发起；其他发送方只查状态；runId 透传且非法值被丢弃', () => {
     expect(ipc.handlers.get('stage:open')!({ sender: stageSender })).toBe(false);
     expect(actions.open).not.toHaveBeenCalled();
-    expect(ipc.handlers.get('stage:open')!({ sender: mainSender })).toBe(true);
-    expect(actions.open).toHaveBeenCalledOnce();
+    expect(ipc.handlers.get('stage:open')!({ sender: mainSender }, 'run-123_A')).toBe(true);
+    expect(actions.open).toHaveBeenLastCalledWith('run-123_A');
+    // 注入尝试（任意 query/路径字符）不允许透传
+    expect(ipc.handlers.get('stage:open')!({ sender: mainSender }, 'a?observe=1#/x')).toBe(true);
+    expect(actions.open).toHaveBeenLastCalledWith(undefined);
   });
 
   it('stage:close：主窗与舞台窗自身可关，陌生人被忽略', () => {

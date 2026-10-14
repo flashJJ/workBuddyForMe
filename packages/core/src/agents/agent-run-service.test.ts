@@ -1,97 +1,26 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  createAgentRunRepository,
-  createDatabase,
-  type DatabaseInstance,
-} from '@wbfm/database';
-import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { createAgentRunRepository, type DatabaseInstance } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
-import type { ExecutorOutcome, SubtaskSpec } from '@wbfm/shared/schemas';
 import { createAgentRunService, type AgentClientsProvider } from './index';
-import type { AgentClients, AgentRunEvent } from './index';
-
-async function collect(gen: AsyncGenerator<AgentRunEvent>): Promise<AgentRunEvent[]> {
-  const events: AgentRunEvent[] = [];
-  for (;;) {
-    const r = await gen.next();
-    if (r.done) break;
-    events.push(r.value);
-  }
-  return events;
-}
-
-/**
- * 驱动运行进入 executor 挂起点：
- * executor.run 前有 4 个 yield（planning/budget/plan-handoff/executing），
- * 第 5 次 next 恢复时同步进入 executor 并挂起；让微任务跑完后返回该 pending。
- * 注意 pending 必须用对象包装返回：直接 return Promise 会被外层 await 采用，
- * 在 abort（cancel/stopAll）之前形成死锁。
- */
-async function driveIntoExecutor(
-  gen: AsyncGenerator<AgentRunEvent>,
-): Promise<{ pending: Promise<IteratorResult<AgentRunEvent>> }> {
-  for (let i = 0; i < 4; i += 1) {
-    await gen.next();
-  }
-  const pending = gen.next();
-  await Promise.resolve();
-  await Promise.resolve();
-  return { pending };
-}
-
-function makeSubtask(): SubtaskSpec {
-  return { title: '子任务', brief: '说明', acceptance: ['标准1'] };
-}
-function makeOutcome(): ExecutorOutcome {
-  return { summary: '交付', evidence: [], toolCalls: [], unfinished: [] };
-}
-
-/** 可挂起的脚本化客户端（executorHang 返回永不 resolve 的 promise 模拟长任务） */
-function scriptedClients(options: { executorHang?: boolean } = {}): AgentClients {
-  return {
-    planner: {
-      async plan() {
-        return { subtask: makeSubtask(), usage: { promptTokens: 1, completionTokens: 1 } };
-      },
-    },
-    executor: {
-      async run(_input, signal) {
-        if (options.executorHang) {
-          await new Promise<void>((resolve) => {
-            signal?.addEventListener('abort', () => resolve());
-          });
-          throw new Error('aborted');
-        }
-        return { outcome: makeOutcome(), usage: { promptTokens: 1, completionTokens: 1 }, steps: 1 };
-      },
-    },
-    reviewer: {
-      async review() {
-        return {
-          review: { verdict: 'approve', acceptanceResults: [] },
-          usage: { promptTokens: 1, completionTokens: 1 },
-        };
-      },
-    },
-  };
-}
+import {
+  collect,
+  createTestDb,
+  driveIntoExecutor,
+  makeOutcome,
+  scriptedClients,
+} from './agent-run-test-harness';
 
 describe('agent-run-service 运行管理', () => {
   let db: DatabaseInstance;
-  let tempRoot: string;
+  let testDb: ReturnType<typeof createTestDb>;
 
   beforeEach(() => {
-    tempRoot = mkdtempSync(join(tmpdir(), 'wbfm-agent-svc-'));
-    setDataRootForTest(tempRoot);
-    db = createDatabase(':memory:');
+    testDb = createTestDb();
+    db = testDb.db;
   });
 
   afterEach(() => {
-    db.close();
-    resetDataRootForTest();
+    testDb.cleanup();
   });
 
   const provider: AgentClientsProvider = () => scriptedClients();

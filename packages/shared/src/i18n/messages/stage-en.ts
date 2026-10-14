@@ -21,6 +21,26 @@ export const enStage = {
       idle: 'idle',
     },
   },
+  /** v1.9 M2：live agent run adapter actions + curtain lines */
+  run: {
+    action: {
+      listening: 'listening',
+      thinking: 'thinking',
+      working: 'working',
+      idle: 'idle',
+    },
+    curtain: {
+      done: 'Collaboration complete. Curtain call.',
+      failed: 'The collaboration did not finish — see the task center for details.',
+    },
+    verdict: {
+      approve: 'Accepted — ready to deliver.',
+      revise: 'Issues found — one more revision round.',
+      reject: 'Review rejected; collaboration stopped.',
+    },
+    watch: 'Watch on stage',
+    reconnecting: 'Reconnecting to the live session…',
+  },
   expression: {
     neutral: 'Neutral',
     joy: 'Joy',

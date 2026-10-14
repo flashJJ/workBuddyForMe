@@ -21,6 +21,26 @@ export const zhStage = {
       idle: '待机',
     },
   },
+  /** v1.9 M2：真实协作 run 适配器驱动时的动作副线与谢幕文案 */
+  run: {
+    action: {
+      listening: '倾听中',
+      thinking: '思考中',
+      working: '执行中',
+      idle: '待机',
+    },
+    curtain: {
+      done: '协作完成，谢幕。',
+      failed: '协作未能完成，请返回任务中心查看详情。',
+    },
+    verdict: {
+      approve: '验收通过，可以交付。',
+      revise: '还有问题，需要返工一轮。',
+      reject: '审查驳回，协作终止。',
+    },
+    watch: '在舞台观看',
+    reconnecting: '正在重新接入协作现场…',
+  },
   expression: {
     neutral: '平静',
     joy: '开心',

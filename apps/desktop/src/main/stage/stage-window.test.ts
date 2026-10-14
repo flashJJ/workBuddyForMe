@@ -26,7 +26,7 @@ vi.mock('electron', () => ({
   screen: { getPrimaryDisplay: m.getPrimaryDisplay },
 }));
 
-import { buildStageWindowOptions, createStageWindow } from './stage-window';
+import { buildStageUrl, buildStageWindowOptions, createStageWindow } from './stage-window';
 
 const primary = { workArea: { x: 0, y: 0, width: 1920, height: 1040 } };
 
@@ -77,5 +77,14 @@ describe('v1.9 舞台窗选项', () => {
     expect(m.loadURL).toHaveBeenCalledWith('http://127.0.0.1:3100/stage');
     expect(m.show).toHaveBeenCalled();
     expect(win).toBeTruthy();
+  });
+
+  it('v1.9 M2：runId 直达 /stage?run=<id>，并做 URL 编码', () => {
+    expect(buildStageUrl('http://127.0.0.1:3100', 'run_1-2')).toBe(
+      'http://127.0.0.1:3100/stage?run=run_1-2',
+    );
+    expect(buildStageUrl('http://127.0.0.1:3100')).toBe('http://127.0.0.1:3100/stage');
+    createStageWindow({ url: 'http://127.0.0.1:3100' }, true, null, 'run-9');
+    expect(m.loadURL).toHaveBeenCalledWith('http://127.0.0.1:3100/stage?run=run-9');
   });
 });
