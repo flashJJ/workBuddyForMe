@@ -28,6 +28,7 @@ import { AssistantPersonalityField } from './assistant-personality-field';
 import { buildAssistantBody, type AssistantFormShape } from './assistant-form-body';
 import { toForm } from './assistant-form-state';
 import { AssistantIdentityFields } from './assistant-identity-fields';
+import { AssistantCardField } from './assistant-card-field';
 import { NumberField } from './number-field';
 
 interface Props {
@@ -121,6 +122,8 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             onUpdate={update}
           />
 
+          <AssistantCardField value={form.cardId} onChange={(cardId) => update({ cardId })} />
+
           <div className="space-y-1.5">
             <Label htmlFor="assistant-prompt">{t('assistants.form.promptLabel')}</Label>
             <Textarea
@@ -129,6 +132,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
               onChange={(e) => update({ systemPrompt: e.target.value })}
               rows={5}
               maxLength={8000}
+              disabled={Boolean(form.cardId)}
               placeholder={t('assistants.form.promptPlaceholder')}
             />
           </div>

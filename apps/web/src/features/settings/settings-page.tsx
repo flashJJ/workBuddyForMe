@@ -10,6 +10,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { ProviderCard } from './provider-card';
 import { ProviderFormDialog } from './provider-form-dialog';
 import { DefaultsPanel } from './defaults-panel';
+import { AppearancePanel } from './appearance-panel';
 import { McpPanel } from './mcp-panel';
 import { PermissionPanel } from './permission-panel';
 import { ToolBreakerPanel } from './tool-breaker-panel';
@@ -24,6 +25,8 @@ import { KnowledgeRetrievalPanel } from './knowledge-retrieval-panel';
 import { EmotionPanel } from './emotion-panel';
 import { EventPanel } from './event-panel';
 import { ReminderPanel } from '../reminders/reminder-panel';
+import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
+import { TuningPanel } from '../tuning/tuning-panel';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -75,6 +78,12 @@ export function SettingsPage() {
       )}
 
       <DefaultsPanel />
+
+      <AppearancePanel />
+
+      <TuningPanel />
+
+      <CharacterCardsPanel />
 
       <KnowledgeRetrievalPanel />
 

@@ -9,6 +9,7 @@ import {
 import {
   createAssistantsService,
   createAttachmentService,
+  createCharacterCardService,
   createConversationService,
   createDocumentService,
   createKnowledgeService,
@@ -21,6 +22,7 @@ import {
   createTaskRunnerService,
   type AssistantsService,
   type AttachmentService,
+  type CharacterCardService,
   type ConversationService,
   type DocumentService,
   type KnowledgeService,
@@ -67,6 +69,8 @@ export interface ServiceContainer {
   models: ReturnType<typeof createModelService>;
   settings: ReturnType<typeof createSettingsService>;
   assistants: AssistantsService;
+  /** v1.8：角色卡库（内置只读卡 + 自建卡 CRUD/导入导出/助手选卡） */
+  characterCards: CharacterCardService;
   conversations: ConversationService;
   orchestrator: ChatOrchestrator;
   ingestion: IngestionPipeline;
@@ -212,6 +216,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     models: createModelService(deps),
     settings: createSettingsService(deps),
     assistants,
+    characterCards: createCharacterCardService(deps),
     conversations: createConversationService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),

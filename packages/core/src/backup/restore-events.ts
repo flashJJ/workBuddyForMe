@@ -32,6 +32,8 @@ interface AssistantEntry {
   personalityTsundere?: unknown;
   personalityShy?: unknown;
   personalityTolerance?: unknown;
+  /** v1.8：助手选用的角色卡 id（旧档缺省；无 FK，配合恢复后悬挂清理 */
+  cardId?: unknown;
   sortOrder?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -110,13 +112,13 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
        model_id, planner_model_id, executor_model_id, reviewer_model_id,
        knowledge_base_ids, enabled_tools, retrieve_always, memory_enabled, expression_enabled,
        personality_frankness, personality_tsundere, personality_shy, personality_tolerance,
-       is_builtin, sort_order, created_at, updated_at)
+       card_id, is_builtin, sort_order, created_at, updated_at)
      VALUES (
        @id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
        NULL, NULL, NULL, NULL,
        @knowledgeBaseIds, @enabledTools, @retrieveAlways, @memoryEnabled, @expressionEnabled,
        @pFrank, @pTsun, @pShy, @pTol,
-       0, @sortOrder, @createdAt, @updatedAt)`,
+       @cardId, 0, @sortOrder, @createdAt, @updatedAt)`,
   );
   const insertSchedule = db.prepare(
     `INSERT OR IGNORE INTO scheduled_tasks(
@@ -174,6 +176,7 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
         pTsun: num01(entry.personalityTsundere),
         pShy: num01(entry.personalityShy),
         pTol: num01(entry.personalityTolerance),
+        cardId: typeof entry.cardId === 'string' && entry.cardId ? entry.cardId : null,
         sortOrder: typeof entry.sortOrder === 'number' ? Math.trunc(entry.sortOrder) : 0,
         createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : nowIso,
         updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : nowIso,

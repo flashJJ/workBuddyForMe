@@ -179,4 +179,9 @@ export {
   createEventTriggerRepository,
   type EventTriggerRepository,
 } from './event-trigger-repo';
+export {
+  createCharacterCardRepository,
+  type CharacterCardRepository,
+  type CharacterCardCreateFields,
+} from './character-card-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

@@ -11,7 +11,6 @@ import { errorText } from '@/lib/i18n/resolve-error';
 import { apiGet } from '@/lib/api/client';
 import { copyText } from '@/lib/utils/clipboard';
 import { useAllModels, useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
-import { useTheme, type ThemePreference } from '@/components/theme/theme-provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 function DataDirField() {
@@ -59,8 +58,6 @@ export function DefaultsPanel() {
   const { data: models } = useAllModels();
   const updateSettings = useUpdateSettings();
   const toast = useToast();
-  // 主题以 ThemeProvider 为唯一写路径（侧栏切换/设置下拉/系统三态共用，实时换肤并双写设置表）
-  const { theme, setTheme } = useTheme();
   const [draft, setDraft] = React.useState<AppSettings | null>(null);
 
   React.useEffect(() => {
@@ -119,18 +116,6 @@ export function DefaultsPanel() {
                 {modelLabel(model)}
               </option>
             ))}
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="theme-preference">{t('settings.defaults.theme')}</Label>
-          <Select
-            id="theme-preference"
-            value={theme}
-            onChange={(e) => setTheme(e.target.value as ThemePreference)}
-          >
-            <option value="light">{t('settings.defaults.themeLight')}</option>
-            <option value="dark">{t('settings.defaults.themeDark')}</option>
-            <option value="system">{t('settings.defaults.themeSystem')}</option>
           </Select>
         </div>
         <div className="space-y-1.5">

@@ -1,5 +1,6 @@
-import { DEFAULT_CONTEXT_TOKEN_BUDGET, HISTORY_MESSAGE_SAFETY_CAP } from '@wbfm/shared/constants';
+import { DEFAULT_CONTEXT_TOKEN_BUDGET, HISTORY_MESSAGE_SAFETY_CAP, CONTEXT_MESSAGES_MIN, CONTEXT_MESSAGES_MAX, DEFAULT_CONTEXT_MESSAGES } from '@wbfm/shared/constants';
 import { type Assistant, type Conversation, type Message } from '@wbfm/shared/types';
+import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
 import {
   traceAsync,
   type ChatMessage,
@@ -38,6 +39,25 @@ export interface TurnMessageParams {
   skillBlock: string | null;
   /** v1.6：情绪状态段 + 尾块协议（仅情绪功能开启时传入） */
   emotionBlock: string | null;
+  /** v1.8：助手当前选用角色卡（已解析；null=默认卡回落 systemPrompt） */
+  card: ParsedCharacterCard | null;
+  /** v1.8 M3：全局追加提示词（开关开且非空才传；固定在身份卡之后、情绪段之前） */
+  globalAppendPrompt?: string | null;
+}
+
+/**
+ * v1.8 M3：上下文条数钳制（服务端为准）。
+ * 取最近 N 条历史（N 越界/非整数时回落默认 20）；条数裁剪先于 token 预算裁剪。
+ */
+export function applyContextMessageCap<T>(messages: readonly T[], count: number | undefined | null): T[] {
+  const n =
+    typeof count === 'number' &&
+    Number.isInteger(count) &&
+    count >= CONTEXT_MESSAGES_MIN &&
+    count <= CONTEXT_MESSAGES_MAX
+      ? count
+      : DEFAULT_CONTEXT_MESSAGES;
+  return messages.length > n ? messages.slice(messages.length - n) : [...messages];
 }
 
 /**
@@ -49,7 +69,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
   stats: HistoryBudgetStats | null;
 } {
   const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
-    summary, memoryBlock, skillBlock, emotionBlock } = params;
+    summary, memoryBlock, skillBlock, emotionBlock, card, globalAppendPrompt } = params;
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
@@ -58,6 +78,8 @@ export function buildTurnMessages(params: TurnMessageParams): {
     memoryBlock,
     skillBlock,
     emotionBlock,
+    card,
+    globalAppendPrompt: globalAppendPrompt ?? null,
   });
 }
 

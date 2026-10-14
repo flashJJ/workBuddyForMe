@@ -9,6 +9,7 @@ import type {
   OcrStatus,
   ProviderProtocol,
   Theme,
+  ThemeId,
   Language,
 } from '../constants';
 import type { ContentPart } from './content-part';
@@ -81,6 +82,8 @@ export interface Assistant extends Timestamped {
   personalityTsundere: number;
   personalityShy: number;
   personalityTolerance: number;
+  /** v1.8：当前选用的角色卡 id（v026 列；null=默认卡） */
+  cardId: string | null;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -206,6 +209,8 @@ export interface AppSettings extends EventSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;
+  /** v1.8 命名主题（缺省 stellar；与 theme 三态正交，stellar 时三态决定亮暗） */
+  themeId?: ThemeId;
   language: Language;
   /** 是否已完成首次启动向导（v1.2 起；仅老用户由 v016 迁移回填为 true） */
   hasOnboarded: boolean;
@@ -231,6 +236,23 @@ export interface AppSettings extends EventSettingsFields {
    */
   interactionLinesEnabled?: boolean;
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
+  /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
+  contextMessageCount?: number;
+  /** v1.8 M3：全局追加提示词（角色卡之后、情绪段之前；空串=无） */
+  globalAppendPrompt?: string;
+  /** v1.8 M3：全局追加开关（内容为空时无效；缺省 false） */
+  globalAppendPromptEnabled?: boolean;
+  /** v1.8 M4：音色收藏（M3 冻结契约，M4 才有 UI） */
+  voiceFavorites?: VoiceFavorite[];
+}
+
+/** v1.8 M4：音色收藏条目（形状随 settings 持久化） */
+export interface VoiceFavorite {
+  id: string;
+  label: string;
+  providerId: string;
+  modelId: string;
+  voice: string;
 }
 
 // ── v0.6 M3 本地技能包 ──

@@ -57,15 +57,22 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       defaultChatModelId: null,
       defaultEmbeddingModelId: null,
       theme: 'light',
+      themeId: 'stellar',
       language: 'zh-CN',
       hasOnboarded: false,
       autoCompile: true,
       compileWithLlm: false,
       compileModelId: null,
+      contextMessageCount: 20,
+      globalAppendPrompt: '',
+      globalAppendPromptEnabled: false,
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');
     expect(settings.get().defaultChatModelId).toBeNull();
+    // v1.8 命名主题持久化
+    const themed = settings.update({ themeId: 'sakura' });
+    expect(themed.themeId).toBe('sakura');
   });
 
   it('设置绑定不存在的模型被拒', () => {

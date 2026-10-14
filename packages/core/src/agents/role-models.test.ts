@@ -32,6 +32,7 @@ function makeAssistant(overrides: Partial<Assistant> = {}): Assistant {
     personalityTsundere: 0.5,
     personalityShy: 0.5,
     personalityTolerance: 0.5,
+    cardId: null,
     isBuiltin: false,
     sortOrder: 0,
     createdAt: '',

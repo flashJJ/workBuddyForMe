@@ -9,7 +9,8 @@ export {
   type StreamProactiveInput,
 } from './proactive-turn';
 export { resolveChatTarget, resolveChatTargetForModelId, type ResolvedChatTarget } from './model-resolver';
-export { buildChatMessages, buildSystemPrompt, type ChatBudgetOptions } from './prompt';
+export { buildChatMessages, buildSystemPrompt, type ChatBudgetOptions, type BuildPromptOptions } from './prompt';
+export { buildPersonaBlock } from './persona-prompt';
 export {
   estimateTokens,
   estimateMessageTokens,

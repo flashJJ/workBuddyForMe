@@ -5,11 +5,11 @@ import { z } from 'zod';
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。
- * 当前版本：3（v1.7 新增 events 轨：自定义助手机行+角色化提醒+90 天演出流水；
- * v1/v2 旧归档仍可恢复，缺轨按 0 处理）。
+ * 当前版本：4（v1.8 events 轨追加 characterCards.json 角色卡负载，manifest.events.cardCount；
+ * v1/v2/v3 旧归档仍可恢复，缺文件/缺键按 0 处理）。
  */
 
-export const CURRENT_BACKUP_SCHEMA_VERSION = 3 as const;
+export const CURRENT_BACKUP_SCHEMA_VERSION = 4 as const;
 
 export const backupTrackSchema = z.enum([
   'conversations',
@@ -57,6 +57,8 @@ export const backupManifestSchema = z.object({
         assistantCount: z.number().int().min(0),
         /** v1.7 M5：自定义短语触发器（同轨加法字段；v3 早期归档缺省 0） */
         triggerCount: z.number().int().min(0).optional(),
+        /** v1.8：角色卡条数（负载文件 characterCards.json；v3 归档缺省 0） */
+        cardCount: z.number().int().min(0).optional(),
       })
       .optional(),
   }),
@@ -86,6 +88,8 @@ export const backupPrecheckSchema = z.object({
     /** v1.7：提醒条数与演出流水条数（自定义助手机行数在恢复日志中体现） */
     schedules: z.number().int().min(0),
     eventUsage: z.number().int().min(0),
+    /** v1.8：角色卡条数（随 events 轨） */
+    cards: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

@@ -33,7 +33,7 @@ export const zhSettingsBackup = {
     emotionLabel: '情绪与关系',
     emotionDesc: '各助手的心情、亲密度与信任度状态（v1.6+）',
     eventsLabel: '角色与提醒',
-    eventsDesc: '自定义助手与人设、角色化提醒计划、近 90 天剧情演出记录（v1.7+）',
+    eventsDesc: '自定义助手与人设、角色卡库、角色化提醒计划、近 90 天剧情演出记录（v1.7+）',
   },
   imported: {
     conversations: '{count} 对话',
@@ -94,7 +94,7 @@ export const enSettingsBackup = {
     emotionLabel: 'Mood & relationship',
     emotionDesc: 'Per-assistant mood, intimacy and trust state (v1.6+)',
     eventsLabel: 'Personas & reminders',
-    eventsDesc: 'Custom assistants and personas, character reminders, and 90 days of event history (v1.7+)',
+    eventsDesc: 'Custom assistants and personas, character cards, character reminders, and 90 days of event history (v1.7+)',
   },
   imported: {
     conversations: '{count} conversations',

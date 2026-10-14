@@ -1,10 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import zlib from 'node:zlib';
-import tar from 'tar-stream';
 import {
   CURRENT_BACKUP_SCHEMA_VERSION,
-  backupManifestSchema,
   backupPrecheckSchema,
   type BackupManifest,
   type BackupPrecheck,
@@ -17,10 +14,16 @@ import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
 import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
+import {
+  nullifyDanglingCardRefs,
+  readCardsTrackPayload,
+  restoreCharacterCards,
+} from './restore-cards';
 import { determineTracks, hasRedactedPlaceholder } from './restore-track-select';
+import { extractArchive, extractArchiveFull } from './restore-archive';
 import { createScheduledTaskRepository } from '@wbfm/database';
 import { computeNextRunMs } from '../scheduler/next-run';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData, migrateLegacySystemPrompts } from '../services/seed';
 
 export interface BackupRestoreOptions {
   /** 指定恢复轨道；不传则恢复 manifest 中有数据的全部轨道 */
@@ -31,8 +34,8 @@ export interface BackupRestoreOptions {
 
 export interface BackupRestoreResult {
   manifest: BackupManifest;
-  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number; emotion: number; events: number };
-  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number; emotion: number; events: number };
+  imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number; emotion: number; events: number; cards: number };
+  skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number; emotion: number; events: number; cards: number };
 }
 
 /** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
@@ -73,6 +76,7 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       emotion: manifest.tracks.emotion?.entryCount ?? 0,
       schedules: manifest.tracks.events?.scheduleCount ?? 0,
       eventUsage: manifest.tracks.events?.usageCount ?? 0,
+      cards: manifest.tracks.events?.cardCount ?? 0,
     },
     warnings,
   });
@@ -106,12 +110,25 @@ export async function restoreBackup(
     }
   }
 
+  // v1.8：角色卡负载（随 events 轨；v3 旧档无此文件视为空）
+  let cardRows: unknown[] = [];
+  if (tracksToRestore.includes('events') && files.has('characterCards.json')) {
+    cardRows = readCardsTrackPayload(files.get('characterCards.json')!);
+  }
+
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
     const result: Omit<BackupRestoreResult, 'manifest'> = {
-      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0 },
-      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0 },
+      imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0, cards: 0 },
+      skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0, cards: 0 },
     };
+
+    // v1.8：卡先于助手机行恢复，使 card_id 引用恢复后即对上
+    if (cardRows.length > 0) {
+      const cardCounts = restoreCharacterCards(deps.db, cardRows);
+      result.imported.cards = cardCounts.imported;
+      result.skipped.cards = cardCounts.skipped;
+    }
 
     if (tracksToRestore.includes('settings') && files.has('settings.json')) {
       restoreSettings(deps.db, files.get('settings.json')!);
@@ -173,11 +190,14 @@ export async function restoreBackup(
       // 用户可见计数：提醒 + 自定义触发器（助手/流水为附属数据，不单列）
       result.imported.events = counts.schedules.imported + counts.triggers.imported;
       result.skipped.events = counts.schedules.skipped + counts.triggers.skipped;
+      // v1.8：助手机行恢复后清理悬挂 card_id（卡未随档恢复/旧档残缺 → 回落默认卡）
+      nullifyDanglingCardRefs(deps.db);
       const eventsTotal =
         counts.assistants.imported + counts.assistants.skipped +
         counts.schedules.imported + counts.schedules.skipped +
         counts.usage.imported + counts.usage.skipped +
-        counts.triggers.imported + counts.triggers.skipped;
+        counts.triggers.imported + counts.triggers.skipped +
+        result.imported.cards + result.skipped.cards;
       onProgress?.({
         track: 'events',
         processed: eventsTotal,
@@ -185,12 +205,16 @@ export async function restoreBackup(
           (manifest.tracks.events?.assistantCount ?? 0) +
           (manifest.tracks.events?.scheduleCount ?? 0) +
           (manifest.tracks.events?.usageCount ?? 0) +
-          (manifest.tracks.events?.triggerCount ?? 0),
+          (manifest.tracks.events?.triggerCount ?? 0) +
+          (manifest.tracks.events?.cardCount ?? 0),
       });
     }
 
     return result;
   }).immediate();
+
+  // v1.8：旧档（无 card_id 的助手行）恢复后补跑提示词迁移；已选卡助手天然跳过
+  migrateLegacySystemPrompts(deps.db, { force: true });
 
   // --- 事务外：附件二进制落盘 ---
   if (tracksToRestore.includes('attachments') && binaries.length > 0) {
@@ -232,50 +256,4 @@ export async function restoreBackup(
   }
 
   return { manifest, ...txResult };
-}
-
-// ==================== 辅助函数 ====================
-
-async function extractArchive(buf: Buffer): Promise<{ manifest: BackupManifest; files: Map<string, Buffer> }> {
-  const r = await extractArchiveFull(buf);
-  return { manifest: r.manifest, files: r.files };
-}
-
-async function extractArchiveFull(buf: Buffer): Promise<{
-  manifest: BackupManifest;
-  files: Map<string, Buffer>;
-  binaries: Array<{ name: string; data: Buffer }>;
-}> {
-  return new Promise((resolve, reject) => {
-    const gunzip = zlib.createGunzip();
-    const extract = tar.extract();
-    const files = new Map<string, Buffer>();
-    const binaries: Array<{ name: string; data: Buffer }> = [];
-    let manifest: BackupManifest | null = null;
-
-    extract.on('entry', (header, stream, next) => {
-      const chunks: Buffer[] = [];
-      stream.on('data', (c: unknown) => chunks.push(c as Buffer));
-      stream.on('end', () => {
-        const full = Buffer.concat(chunks);
-        if (header.name === 'manifest.json') {
-          try { manifest = backupManifestSchema.parse(JSON.parse(full.toString('utf-8'))); }
-          catch { reject(new ApiError('VALIDATION_ERROR', 'manifest.json schema 校验失败')); return; }
-        } else if (header.name.startsWith('attachments/')) {
-          binaries.push({ name: header.name, data: full });
-        } else {
-          files.set(header.name, full);
-        }
-        next();
-      });
-      stream.on('error', reject);
-    });
-
-    extract.on('finish', () => {
-      if (!manifest) { reject(new ApiError('VALIDATION_ERROR', '归档缺少 manifest.json')); return; }
-      resolve({ manifest, files, binaries });
-    });
-    gunzip.on('error', reject); extract.on('error', reject);
-    gunzip.pipe(extract); gunzip.end(buf);
-  });
 }

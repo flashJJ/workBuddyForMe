@@ -27,6 +27,7 @@ function makeAssistant(partial: Partial<Assistant> & { id: string; name: string 
     personalityTsundere: 0.5,
     personalityShy: 0.5,
     personalityTolerance: 0.5,
+    cardId: null,
     isBuiltin: false,
     sortOrder: 0,
     createdAt: '2025-01-01T00:00:00.000Z',

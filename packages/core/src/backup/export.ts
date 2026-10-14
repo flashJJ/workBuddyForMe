@@ -21,6 +21,7 @@ import {
   createScheduledTaskRepository,
   createEventUsageRepository,
   createEventTriggerRepository,
+  createCharacterCardRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { computeNextRunMs } from '../scheduler/next-run';
@@ -78,7 +79,7 @@ export async function exportBackup(
     skills: { files: 'skills.json', entryCount: 0 },
     tasks: { files: 'tasks.json', entryCount: 0 },
     emotion: { files: 'emotion.json', entryCount: 0 },
-    events: { files: 'events.json', scheduleCount: 0, usageCount: 0, assistantCount: 0, triggerCount: 0 },
+    events: { files: 'events.json', scheduleCount: 0, usageCount: 0, assistantCount: 0, triggerCount: 0, cardCount: 0 },
   };
 
   if (tracks.includes('conversations')) {
@@ -185,23 +186,27 @@ export async function exportBackup(
 
   if (tracks.includes('events')) {
     // v1.7：自定义助手（含人格权重）+ 全量提醒 + 近 90 天演出流水（与保留策略对齐）
+    // v1.8：角色卡全量行单独成文件 characterCards.json（内置卡也导出，恢复端固定 id 冲突跳过）
     const customAssistants = assistantsRepo.list().filter((assistant) => !assistant.isBuiltin);
     const schedules = scheduledTaskRepo.listAll();
     const usage = eventUsageRepo.listAll({ sinceMs: Date.now() - 90 * 24 * 3600_000 });
     const triggers = eventTriggerRepo.list();
+    const cards = createCharacterCardRepository(deps.db).list();
     files['events.json'] = JSON.stringify(
       { assistants: customAssistants, schedules, usage, triggers },
       null,
       2,
     );
+    files['characterCards.json'] = JSON.stringify(cards, null, 2);
     manifestPartial.events = {
       files: 'events.json',
       scheduleCount: schedules.length,
       usageCount: usage.length,
       assistantCount: customAssistants.length,
       triggerCount: triggers.length,
+      cardCount: cards.length,
     };
-    const eventsTotal = schedules.length + usage.length + customAssistants.length + triggers.length;
+    const eventsTotal = schedules.length + usage.length + customAssistants.length + triggers.length + cards.length;
     onProgress?.({ track: 'events', processed: eventsTotal, total: eventsTotal });
   }
 

@@ -27,6 +27,8 @@ export interface AssistantRow {
   personality_tsundere?: number;
   personality_shy?: number;
   personality_tolerance?: number;
+  /** v1.8：角色卡 id（v026；老库结果集缺列时回落 null） */
+  card_id?: string | null;
   is_builtin: number;
   sort_order: number;
   created_at: string;
@@ -56,6 +58,7 @@ export function mapAssistant(row: AssistantRow): Assistant {
     personalityTsundere: row.personality_tsundere ?? 0.5,
     personalityShy: row.personality_shy ?? 0.5,
     personalityTolerance: row.personality_tolerance ?? 0.5,
+    cardId: row.card_id ?? null,
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,

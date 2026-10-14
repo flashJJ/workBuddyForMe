@@ -3,17 +3,20 @@ import { type Assistant } from '@wbfm/shared/types';
 import { type AssistantCreateInput, type AssistantUpdateInput } from '@wbfm/shared/schemas';
 import {
   createAssistantRepository,
+  createCharacterCardRepository,
   createKnowledgeRepository,
   createModelRepository,
 } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
 import { ensureSeedData } from './seed';
+import { buildIdentityCardMarkdown, parseWrappedPrompt } from './persona-card';
 
 export function createAssistantsService({ db }: ServiceDeps) {
   ensureSeedData(db);
   const assistants = createAssistantRepository(db);
   const models = createModelRepository(db);
   const knowledgeBases = createKnowledgeRepository(db);
+  const cards = createCharacterCardRepository(db);
 
   const validateBindings = (modelId: string | null, knowledgeBaseIds: string[]) => {
     if (modelId !== null && !models.findById(modelId)) {
@@ -39,6 +42,29 @@ export function createAssistantsService({ db }: ServiceDeps) {
     return assistant;
   };
 
+  const requireCardExists = (cardId: string): void => {
+    if (!cards.findById(cardId)) throw ApiError.validation(`角色卡不存在：${cardId}`);
+  };
+  const requireModelExists = (modelId: string): void => {
+    if (!models.findById(modelId)) throw ApiError.validation(`模型不存在：${modelId}`);
+  };
+
+  /**
+   * v1.8「直接写提示词原文」模式落卡：
+   * 当前绑定的是 custom 卡 → 原地更新（同一张卡）；内置卡/无卡 → 新建 identity 卡。
+   * 内置卡只读不可改写；绝不删除用户卡库中的任何卡片。
+   */
+  const saveRawPromptCard = (existing: Assistant, systemPrompt: string): string => {
+    const rawMarkdown = buildIdentityCardMarkdown(systemPrompt);
+    const parsed = parseWrappedPrompt(rawMarkdown, '提示词保存');
+    const current = existing.cardId ? cards.findById(existing.cardId) : null;
+    if (current && current.source === 'custom') {
+      cards.updateContent(current.id, rawMarkdown, parsed);
+      return current.id;
+    }
+    return cards.create({ source: 'custom', rawMarkdown, parsed }).id;
+  };
+
   return {
     list(): Assistant[] {
       return assistants.list();
@@ -53,6 +79,14 @@ export function createAssistantsService({ db }: ServiceDeps) {
       validateTools(input.enabledTools, input.knowledgeBaseIds);
       const sortOrder =
         input.sortOrder || assistants.list().length;
+      // v1.8：显式选卡走卡模式（校验存在）；否则非空原文自动包成 identity 卡
+      let cardId = input.cardId;
+      if (cardId) requireCardExists(cardId);
+      else if (input.systemPrompt.trim()) {
+        const rawMarkdown = buildIdentityCardMarkdown(input.systemPrompt);
+        const parsed = parseWrappedPrompt(rawMarkdown, '提示词保存');
+        cardId = cards.create({ source: 'custom', rawMarkdown, parsed }).id;
+      }
       return assistants.create({
         name: input.name,
         emoji: input.emoji,
@@ -71,6 +105,7 @@ export function createAssistantsService({ db }: ServiceDeps) {
         personalityTsundere: input.personalityTsundere,
         personalityShy: input.personalityShy,
         personalityTolerance: input.personalityTolerance,
+        cardId,
         isBuiltin: false,
         sortOrder,
       });
@@ -84,7 +119,26 @@ export function createAssistantsService({ db }: ServiceDeps) {
       const nextTools = input.enabledTools ?? existing.enabledTools;
       validateBindings(nextModelId, nextKbIds);
       validateTools(nextTools, nextKbIds);
-      return assistants.update(id, input)!;
+      // v1.8 M3：三角色模型覆盖在调优中心矩阵 PATCH，存在性早校验（null=跟随，跳过）
+      for (const roleId of [input.plannerModelId, input.executorModelId, input.reviewerModelId]) {
+        if (roleId !== undefined && roleId !== null) requireModelExists(roleId);
+      }
+
+      const patch: AssistantUpdateInput = { ...input };
+      if (input.cardId !== undefined) {
+        // 卡模式：cardId 非空校验存在；cardId=null + 同批原文=切到原文模式
+        if (input.cardId !== null) {
+          requireCardExists(input.cardId);
+        } else if (input.systemPrompt?.trim()) {
+          patch.cardId = saveRawPromptCard(existing, input.systemPrompt);
+        }
+      } else if (input.systemPrompt !== undefined) {
+        // 仅改原文：非空更新/生成 identity 卡；清空原文回默认卡
+        patch.cardId = input.systemPrompt.trim()
+          ? saveRawPromptCard(existing, input.systemPrompt)
+          : null;
+      }
+      return assistants.update(id, patch)!;
     },
 
     delete(id: string): void {

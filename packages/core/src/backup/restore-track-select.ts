@@ -18,7 +18,9 @@ export function determineTracks(manifest: BackupManifest, files: ReadonlyMap<str
     ((manifest.tracks.events?.scheduleCount ?? 0) > 0 ||
       (manifest.tracks.events?.usageCount ?? 0) > 0 ||
       (manifest.tracks.events?.assistantCount ?? 0) > 0 ||
-      (manifest.tracks.events?.triggerCount ?? 0) > 0)
+      (manifest.tracks.events?.triggerCount ?? 0) > 0 ||
+      // v1.8：只有角色卡（无助手/提醒/流水）的归档也要恢复 events 轨
+      (manifest.tracks.events?.cardCount ?? 0) > 0)
   ) {
     tracks.push('events');
   }
