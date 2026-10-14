@@ -226,12 +226,12 @@ export function createMockProvider(): ChatProvider {
         return;
       }
 
-      // v1.8 e2e 专用：[eval-persona] 回报本轮 system 是否由角色卡组装、身份口令是否入模
+      // v1.8 e2e 专用：[eval-persona] 回报本轮 system 是否由角色卡组装、身份口令/全局追加是否入模
       if (/\[eval-persona\]/.test(userText)) {
         const sysText = messageText(system?.content ?? '');
         const reply = `persona=${sysText.includes('【角色卡】') ? 'card' : 'raw'}|marker=${
           sysText.includes('E2E_PERSONA_MARKER_X9') ? 'hit' : 'miss'
-        }`;
+        }|append=${sysText.includes('E2E_APPEND_MARKER_Y8') ? 'hit' : 'miss'}`;
         yield { delta: reply, usage: { promptTokens: 30, completionTokens: 8, totalTokens: 38 } };
         return;
       }

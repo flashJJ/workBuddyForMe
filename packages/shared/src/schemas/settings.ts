@@ -1,5 +1,22 @@
 import { z } from 'zod';
-import { LANGUAGES, THEMES, THEME_IDS } from '../constants';
+import {
+  LANGUAGES,
+  THEMES,
+  THEME_IDS,
+  CONTEXT_MESSAGES_MIN,
+  CONTEXT_MESSAGES_MAX,
+  GLOBAL_APPEND_PROMPT_MAX,
+} from '../constants';
+
+/** v1.8 M4 音色收藏形状（M3 冻结数据契约；M4 才出 UI） */
+export const voiceFavoriteSchema = z.object({
+  id: z.string().trim().min(1),
+  label: z.string().trim().min(1).max(20),
+  providerId: z.string().trim().min(1),
+  modelId: z.string().trim().min(1),
+  voice: z.string().trim().min(1).max(80),
+});
+export type VoiceFavoriteInput = z.infer<typeof voiceFavoriteSchema>;
 
 export const settingsUpdateSchema = z.object({
   defaultChatModelId: z.string().trim().min(1).nullable().optional(),
@@ -29,5 +46,13 @@ export const settingsUpdateSchema = z.object({
   eventFrequencyTier: z.enum(['low', 'standard', 'high']).optional(),
   // v1.7 被用户停用的内置剧本 id（单条停用；缺省空=全部启用）
   disabledEventIds: z.array(z.string().min(3).max(80)).max(50).optional(),
+  // v1.8 M3：上下文条数（服务端钳制 2–50；先条数裁剪再 token 预算裁剪）
+  contextMessageCount: z.number().int().min(CONTEXT_MESSAGES_MIN).max(CONTEXT_MESSAGES_MAX).optional(),
+  // v1.8 M3：全局追加提示词（固定注入在角色卡之后、情绪段之前；空串=无内容）
+  globalAppendPrompt: z.string().max(GLOBAL_APPEND_PROMPT_MAX).optional(),
+  /** v1.8 M3：全局追加开关（内容为空时开关无效；缺省 false） */
+  globalAppendPromptEnabled: z.boolean().optional(),
+  // v1.8 M4：音色收藏（M3 仅冻结契约，≤20 条）
+  voiceFavorites: z.array(voiceFavoriteSchema).max(20).optional(),
 });
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;

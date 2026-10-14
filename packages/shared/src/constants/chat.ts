@@ -30,6 +30,15 @@ export const RAG_CHUNK_MIN_TOKENS = 96;
 export const OLLAMA_DEFAULT_CONTEXT_WINDOW = 4096;
 /** 历史条数安全帽：token 预算裁剪之外的极端长会话兜底 */
 export const HISTORY_MESSAGE_SAFETY_CAP = 200;
+/**
+ * v1.8 M3：上下文条数（用户设置，服务端钳制为准）。
+ * 条数裁剪先于 token 预算裁剪：先取最近 N 条，再在窗口内做 token 双保险。
+ */
+export const DEFAULT_CONTEXT_MESSAGES = 20;
+export const CONTEXT_MESSAGES_MIN = 2;
+export const CONTEXT_MESSAGES_MAX = 50;
+/** v1.8 M3：全局追加提示词长度上限 */
+export const GLOBAL_APPEND_PROMPT_MAX = 2000;
 /** 为模型回答预留的输出 token（无上次真实 usage 时使用） */
 export const OUTPUT_RESERVE_TOKENS = 2048;
 

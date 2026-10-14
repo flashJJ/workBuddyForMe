@@ -161,8 +161,10 @@ export function AppearancePanel() {
                 className={cn(
                   'flex-1 rounded-md border px-3 py-1.5 text-xs transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  // 选中态用实底主色（primary-foreground 对 primary 对比度 ≥4.5）；
+                  // 原 bg-primary/10 + text-primary 在星际蓝亮态仅 4.49:1，不达 WCAG AA
                   theme === mode.id
-                    ? 'border-primary bg-primary/10 text-primary'
+                    ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-muted-foreground hover:bg-accent',
                 )}
               >

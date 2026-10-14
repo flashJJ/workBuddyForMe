@@ -12,14 +12,14 @@ import type { ConversationService } from '../services/conversation-service';
 import type { MemoryService } from '../memory/memory-service';
 import { formatMemoryBlock, safeRecallEvent } from '../memory/turn-memory';
 import { buildImageMap } from './multimodal';
-import { buildTurnMessages, recordBudgetSpan } from './turn-context';
+import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap } from './turn-context';
 import { resolveToolMessageBudget } from './context-budget';
 import type { OrchestratorEvent, RagContext } from './types';
 import type { ResolvedChatTarget } from './model-resolver';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import { toToolDefinitions, type ToolContext, type ToolMap } from '../tools/types';
 import { buildSkillPromptBlock, mergeSkillAllowedTools } from '../skills/skill-assembly';
-import { createSettingsService } from '../services/settings-service';
+import { createSettingsService, resolveGlobalAppendPrompt } from '../services/settings-service';
 import {
   buildEmotionStateBlock,
   EMOTION_DIRECTIVE_BLOCK,
@@ -89,19 +89,24 @@ export async function* prepareTurnContext(
 
   // v1.6：情绪功能双开关——app-settings.emotionEnabled（缺省 true）与
   // 助手 expressionEnabled 同时为真，且情绪服务已注入时才注入情绪段。
+  // v1.8 M3：同一处读上下文条数与全局追加（管线参数与系统级追加）。
+  const appSettings = createSettingsService(deps).get();
   const emotionEnabled =
     emotion !== undefined &&
     assistant.expressionEnabled &&
-    createSettingsService(deps).get().emotionEnabled !== false;
+    appSettings.emotionEnabled !== false;
   const emotionBlock =
     emotionEnabled && emotion
       ? `${buildEmotionStateBlock(emotion.view(assistant.id))}\n\n${EMOTION_DIRECTIVE_BLOCK}`
       : null;
+  const globalAppendPrompt = resolveGlobalAppendPrompt(appSettings);
 
   const conversation = conversations.get(conversationId);
-  const history = conversations
+  const fetchedHistory = conversations
     .recentMessagesAfter(conversationId, conversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
     .filter((m) => m.id !== assistantMessageId);
+  // v1.8 M3：先条数钳制（2–50，服务端为准），再交 token 预算双保险裁剪
+  const history = applyContextMessageCap(fetchedHistory, appSettings.contextMessageCount);
   // 历史图片（含本轮新图与重生成旧图）解析为 data URL
   const imageMap = buildImageMap(attachments, history);
 
@@ -143,6 +148,7 @@ export async function* prepareTurnContext(
     skillBlock,
     emotionBlock,
     card,
+    globalAppendPrompt,
   });
   if (budgetStats) await recordBudgetSpan(budgetStats, traceParent);
   // v0.7 M1：向工具上下文透传视觉能力（screen_snapshot 据此决定是否携带截图图片）

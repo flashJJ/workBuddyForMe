@@ -45,6 +45,9 @@ export function createAssistantsService({ db }: ServiceDeps) {
   const requireCardExists = (cardId: string): void => {
     if (!cards.findById(cardId)) throw ApiError.validation(`角色卡不存在：${cardId}`);
   };
+  const requireModelExists = (modelId: string): void => {
+    if (!models.findById(modelId)) throw ApiError.validation(`模型不存在：${modelId}`);
+  };
 
   /**
    * v1.8「直接写提示词原文」模式落卡：
@@ -116,6 +119,10 @@ export function createAssistantsService({ db }: ServiceDeps) {
       const nextTools = input.enabledTools ?? existing.enabledTools;
       validateBindings(nextModelId, nextKbIds);
       validateTools(nextTools, nextKbIds);
+      // v1.8 M3：三角色模型覆盖在调优中心矩阵 PATCH，存在性早校验（null=跟随，跳过）
+      for (const roleId of [input.plannerModelId, input.executorModelId, input.reviewerModelId]) {
+        if (roleId !== undefined && roleId !== null) requireModelExists(roleId);
+      }
 
       const patch: AssistantUpdateInput = { ...input };
       if (input.cardId !== undefined) {

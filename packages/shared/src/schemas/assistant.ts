@@ -64,6 +64,10 @@ export const assistantUpdateSchema = z
     topP: samplingFields.topP.optional(),
     maxTokens: samplingFields.maxTokens.optional(),
     modelId: samplingFields.modelId.optional(),
+    // v1.8 M3：三角色模型覆盖可在调优中心矩阵中改（创建期字段，PATCH 同步开放）
+    plannerModelId: samplingFields.plannerModelId.optional(),
+    executorModelId: samplingFields.executorModelId.optional(),
+    reviewerModelId: samplingFields.reviewerModelId.optional(),
     knowledgeBaseIds: samplingFields.knowledgeBaseIds.optional(),
     enabledTools: samplingFields.enabledTools.optional(),
     retrieveAlways: samplingFields.retrieveAlways.optional(),

@@ -63,6 +63,9 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       autoCompile: true,
       compileWithLlm: false,
       compileModelId: null,
+      contextMessageCount: 20,
+      globalAppendPrompt: '',
+      globalAppendPromptEnabled: false,
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

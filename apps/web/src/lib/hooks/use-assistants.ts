@@ -14,6 +14,10 @@ export interface AssistantBody {
   topP?: number;
   maxTokens?: number | null;
   modelId?: string | null;
+  /** v1.4：协作三角色模型覆盖（v1.8 M3 调优中心矩阵可改） */
+  plannerModelId?: string | null;
+  executorModelId?: string | null;
+  reviewerModelId?: string | null;
   /** v1.5：关联多个知识库（空数组=不关联） */
   knowledgeBaseIds?: string[];
   /** v0.6：内置工具名或 mcp:<server>:<tool> */

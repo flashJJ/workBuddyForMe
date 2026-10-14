@@ -64,8 +64,10 @@ export function buildSystemPrompt(
   // 系统层（输出格式控制）先于身份内容
   if (assistant.expressionEnabled) parts.push(EXPRESSION_DIRECTIVE_BLOCK);
   if (personaText) parts.push(personaText);
-  // v1.8：全局追加固定夹在身份与情绪之间（M3 设置域接线）
-  if (options.globalAppendPrompt?.trim()) parts.push(options.globalAppendPrompt.trim());
+  // v1.8 M3：全局追加独立成段并带固定小标题（避免与卡正文粘连），位置在身份后、情绪前
+  if (options.globalAppendPrompt?.trim()) {
+    parts.push(`【全局追加】\n${options.globalAppendPrompt.trim()}`);
+  }
   // v1.6：情绪块内已自带「当前状态段 + 尾块协议」两段，调用方在情绪功能开启时整体传入
   if (emotionBlock?.trim()) parts.push(emotionBlock.trim());
   if (summary?.trim()) {

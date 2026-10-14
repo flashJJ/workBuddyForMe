@@ -26,6 +26,7 @@ import { EmotionPanel } from './emotion-panel';
 import { EventPanel } from './event-panel';
 import { ReminderPanel } from '../reminders/reminder-panel';
 import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
+import { TuningPanel } from '../tuning/tuning-panel';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -79,6 +80,8 @@ export function SettingsPage() {
       <DefaultsPanel />
 
       <AppearancePanel />
+
+      <TuningPanel />
 
       <CharacterCardsPanel />
 
