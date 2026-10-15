@@ -2,6 +2,7 @@ import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
+import type { WbfmAwarenessBridge } from '@wbfm/shared/awareness';
 
 /**
  * Electron preload 通过 contextBridge 注入的桥（window.wbfm）。
@@ -28,6 +29,8 @@ declare global {
       stage?: WbfmStageBridge;
       /** v1.7 系统通知桥（提醒兜底；仅桌面端 preload 存在） */
       notify?: WbfmNotifyBridge;
+      /** v2.0 M3 系统事件感知桥（解锁/锁屏/空闲；默认未武装，仅桌面端存在） */
+      awareness?: WbfmAwarenessBridge;
     };
   }
 }

@@ -98,4 +98,28 @@ describe('EventPanel（v1.7 剧情演出设置）', () => {
       expect(body.disabledEventIds).toEqual(['ev.touch.shy']);
     });
   });
+
+  it('v2.0 M3 系统事件感知：默认未勾选，勾选写入 systemEventAwarenessEnabled=true', async () => {
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) =>
+      ok(
+        init?.method === 'PUT'
+          ? { ...BASE_SETTINGS, systemEventAwarenessEnabled: true }
+          : BASE_SETTINGS,
+      ),
+    );
+    renderWithProviders(<EventPanel />);
+
+    const toggle = (await screen.findByTestId(
+      'awareness-enabled-toggle',
+    )) as HTMLInputElement;
+    expect(toggle.checked).toBe(false);
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      const bodies = fetchMock.mock.calls
+        .filter(([url, init]) => url === '/api/settings' && (init as RequestInit)?.method === 'PUT')
+        .map(([, init]) => (init as RequestInit).body);
+      expect(bodies).toContain(JSON.stringify({ systemEventAwarenessEnabled: true }));
+    });
+  });
 });
