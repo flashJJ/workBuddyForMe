@@ -49,6 +49,9 @@ export const settingsUpdateSchema = z.object({
   eventFrequencyTier: z.enum(['low', 'standard', 'high']).optional(),
   // v1.7 被用户停用的内置剧本 id（单条停用；缺省空=全部启用）
   disabledEventIds: z.array(z.string().min(3).max(80)).max(50).optional(),
+  // v2.0 M3 系统事件感知授权（解锁/锁屏/系统空闲计时；缺省 false，必须用户显式开启。
+  // 关闭时仅用应用内活动回落；原始信号不落盘，只产出剧本触发）
+  systemEventAwarenessEnabled: z.boolean().optional(),
   // v1.8 M3：上下文条数（服务端钳制 2–50；先条数裁剪再 token 预算裁剪）
   contextMessageCount: z.number().int().min(CONTEXT_MESSAGES_MIN).max(CONTEXT_MESSAGES_MAX).optional(),
   // v1.8 M3：全局追加提示词（固定注入在角色卡之后、情绪段之前；空串=无内容）

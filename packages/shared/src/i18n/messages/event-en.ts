@@ -70,6 +70,23 @@ export const enEvent: DeepPartialMessages<ZhDictionary>['event'] = {
       shy1: 'Keep it up and I will charge a patting fee.',
     },
   },
+  // v2.0 M3 proactive context-awareness care scenes (local state-machine edges only)
+  context: {
+    latenight: {
+      title: 'Still up late',
+      latenight0: 'Still awake? Don’t push yourself too hard.',
+      latenight1: 'The work can wait. How about some rest?',
+    },
+    workstreak: {
+      title: 'Long work stretch',
+      workstreak0: 'You have been busy for ages — stretch a little?',
+      workstreak1: 'Resting now means going further later. I’ll be here.',
+    },
+    longnochat: {
+      title: 'Long time no chat',
+      longnochat0: 'It has been days! How have you been lately?',
+    },
+  },
   task: {
     success: {
       title: 'Task success celebration',

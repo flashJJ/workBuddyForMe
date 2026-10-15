@@ -7,6 +7,7 @@
  */
 import { eventDefinitionSchema, type EventDefinition } from '../schemas/event';
 import { RAW_V20_EVENTS } from './built-in-events-v2';
+import { RAW_V20_M3_EVENTS } from './built-in-events-v3';
 
 const RAW_BUILT_IN_EVENTS: EventDefinition[] = [
   {
@@ -188,6 +189,8 @@ const RAW_BUILT_IN_EVENTS: EventDefinition[] = [
   },
   // v1.7 八位之后按版本追加（顺序即 UI 展示顺序）
   ...RAW_V20_EVENTS,
+  // v2.0 M3：3 个主动感知上下文关怀剧本（深夜/连续工作/久未对话）
+  ...RAW_V20_M3_EVENTS,
 ];
 
 /** 内置剧本（模块加载期 zod 全量校验；顺序即 UI 展示顺序） */

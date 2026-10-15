@@ -30,10 +30,14 @@ const FROZEN_TABLE: Record<string, [number, number, number, number]> = {
   'ev.milestone.day365': [2, 0, 1, 8],
   'ev.milestone.collab10': [2, 0, 1, 6],
   'ev.milestone.collab50': [2, 0, 1, 8],
+  // v2.0 M3：3 个上下文关怀剧本（无意图映射，状态机边沿触发；无情绪反灌）
+  'ev.context.latenight': [1, 12 * 3600_000, 1, 6],
+  'ev.context.workstreak': [1, 2 * 3600_000, 2, 8],
+  'ev.context.longnochat': [2, 24 * 3600_000, 1, 6],
 };
 
-describe('内置剧本注册表（M0 冻结 + v2.0 等级/里程碑剧本）', () => {
-  it('恰好 17 个内置剧本且全部可按 id 取回', () => {
+describe('内置剧本注册表（M0 冻结 + v2.0 等级/里程碑/上下文剧本）', () => {
+  it('恰好 20 个内置剧本且全部可按 id 取回', () => {
     expect(BUILT_IN_EVENTS.map((e) => e.id).sort()).toEqual(Object.keys(FROZEN_TABLE).sort());
     for (const id of Object.keys(FROZEN_TABLE)) {
       expect(getBuiltInEvent(id)?.id).toBe(id);
@@ -74,6 +78,13 @@ describe('内置剧本注册表（M0 冻结 + v2.0 等级/里程碑剧本）', (
 
   it('v2.0 M2 里程碑剧本无 emotionOnPlayed（避免演出反灌情绪造成自激）', () => {
     for (const id of Object.keys(FROZEN_TABLE).filter((x) => x.includes('milestone'))) {
+      expect(getBuiltInEvent(id)?.emotionOnPlayed).toBeUndefined();
+    }
+  });
+
+  it('v2.0 M3 上下文剧本无等级闸门且无 emotionOnPlayed（关怀不反灌情绪）', () => {
+    for (const id of Object.keys(FROZEN_TABLE).filter((x) => x.startsWith('ev.context.'))) {
+      expect(getBuiltInEvent(id)?.minRelationshipLevel).toBeUndefined();
       expect(getBuiltInEvent(id)?.emotionOnPlayed).toBeUndefined();
     }
   });

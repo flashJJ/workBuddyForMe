@@ -69,6 +69,23 @@ export const zhEvent = {
       shy1: '再摸要收摸摸费了哦。',
     },
   },
+  // v2.0 M3 主动感知上下文关怀剧本（仅本地状态机边沿触发，≤32 字）
+  context: {
+    latenight: {
+      title: '深夜仍在',
+      latenight0: '这么晚还没睡呀，别太勉强自己。',
+      latenight1: '事情做不完的，先去休息好不好？',
+    },
+    workstreak: {
+      title: '连续工作关怀',
+      workstreak0: '已经连续忙了好久啦，起来活动一下吧。',
+      workstreak1: '休息是为了走更远的路，我等你回来。',
+    },
+    longnochat: {
+      title: '久未对话',
+      longnochat0: '好几天没见啦，最近过得怎么样？',
+    },
+  },
   task: {
     success: {
       title: '任务成功庆祝',

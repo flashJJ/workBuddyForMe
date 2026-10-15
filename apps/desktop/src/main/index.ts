@@ -6,7 +6,14 @@
  * updater-bootstrap / global-shortcuts / computer/control-bootstrap。
  */
 import { randomBytes } from 'node:crypto';
-import { app, BrowserWindow, globalShortcut, ipcMain, safeStorage } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  ipcMain,
+  powerMonitor,
+  safeStorage,
+} from 'electron';
 import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
 import { startCipherServer, type CipherEndpoint } from './cipher-server';
@@ -20,6 +27,7 @@ import { StageManager } from './stage/stage-manager';
 import { installUpdater } from './updater-bootstrap';
 import { registerGlobalShortcuts } from './global-shortcuts';
 import { registerNotifyIpc } from './notify-ipc';
+import { registerAwarenessIpc } from './awareness/awareness-ipc';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
 
@@ -77,6 +85,16 @@ async function start(): Promise<void> {
   await createWindow(boot);
   // v1.7：系统通知兜底（角色化提醒到点但无演出出口时）
   registerNotifyIpc(ipcMain);
+  // v2.0 M3：系统事件感知（默认关闭，渲染端按授权设置显式武装；广播给所有窗口）
+  registerAwarenessIpc({
+    ipc: ipcMain,
+    powerMonitor,
+    broadcast: (event) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) win.webContents.send('awareness:event', event);
+      }
+    },
+  });
   // M4 伴身：pet:* IPC 注册；主窗 close 在桌宠存活时被改为隐藏
   petManager = createAppPetManager(boot, () => mainWindow);
   // v1.9：舞台窗（stage:* IPC + 菜单入口；与桌宠互斥、几何持久化）

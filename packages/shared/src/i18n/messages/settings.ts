@@ -90,6 +90,11 @@ export const zhSettings = {
     scenesTitle: '内置剧本',
     sceneEnabled: '启用',
     previewHint: '可在对话页右侧形象栏的「试运行」按钮里随时手动观看。',
+    // v2.0 M3 系统事件感知授权（独立开关，默认关闭）
+    awarenessTitle: '系统事件感知（可选）',
+    awarenessEnable: '允许读取系统解锁、锁屏与空闲状态',
+    awarenessHint:
+      '用于判断你是否在电脑前连续工作或深夜仍在忙碌：仅在本机判定，不读取窗口标题、屏幕或文档内容，原始信号不会保存，可随时关闭。未授权或浏览器中仅依据应用内活动判断。',
   },
   // v1.8 外观（命名主题）
   appearance: {
@@ -211,6 +216,10 @@ export const enSettings = {
     scenesTitle: 'Built-in scenes',
     sceneEnabled: 'Enabled',
     previewHint: 'Use the preview button on the avatar rail in the chat to watch any scene anytime.',
+    awarenessTitle: 'System event awareness (optional)',
+    awarenessEnable: 'Allow reading system unlock, lock and idle state',
+    awarenessHint:
+      'Used to tell whether you are working continuously or still up late. Everything is evaluated locally on this machine — no window titles, screen contents or documents are read, and raw signals are never stored. Turn it off anytime. Without permission, or in a browser, only in-app activity is used.',
   },
   // v1.8 appearance (named themes)
   appearance: {

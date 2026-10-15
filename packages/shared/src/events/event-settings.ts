@@ -10,4 +10,9 @@ export interface EventSettingsFields {
   eventFrequencyTier?: EventFrequencyTier;
   /** 被停用的内置剧本 id 列表（缺省空=全部启用） */
   disabledEventIds?: string[];
+  /**
+   * v2.0 M3 系统事件感知授权（解锁/锁屏/系统空闲计时；缺省 false，须用户显式开启）。
+   * 关闭时上下文触发器回落为应用内活动口径；原始信号不落盘。
+   */
+  systemEventAwarenessEnabled?: boolean;
 }

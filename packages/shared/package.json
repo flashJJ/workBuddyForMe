@@ -79,6 +79,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./awareness": {
+      "types": "./src/awareness.ts",
+      "development": "./src/awareness.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./command": {
       "types": "./src/command.ts",
       "development": "./src/command.ts",
