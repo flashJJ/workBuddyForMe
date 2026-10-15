@@ -111,6 +111,8 @@ export const SUPPORTED_AVATAR_MODEL_IDS = ['haru', 'hiyori', 'mark', 'mao', 'wan
 export type SupportedAvatarModelId = (typeof SUPPORTED_AVATAR_MODEL_IDS)[number];
 export const DEFAULT_AVATAR_MODEL_ID: SupportedAvatarModelId = 'haru';
 
+// M4：VRM 形象 id 以 vrm: 为前缀，不在内置列表中
+
 /**
  * Kokoro 多说话人 TTS（kokoro-multi-lang-v1_1，共 103 音色，sid 0-102）。
  * sid 对照 sherpa-onnx 官方音色表：

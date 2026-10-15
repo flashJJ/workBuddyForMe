@@ -6,8 +6,8 @@ describe('v028 迁移：meetings + meeting_messages', () => {
   it('全新空库：user_version=28，两张表就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(29);
-    expect(LATEST_SCHEMA_VERSION).toBe(29);
+    expect(getSchemaVersion(db)).toBe(30);
+    expect(LATEST_SCHEMA_VERSION).toBe(30);
     for (const table of ['meetings', 'meeting_messages']) {
       const rows = db
         .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
@@ -35,7 +35,7 @@ describe('v028 迁移：meetings + meeting_messages', () => {
     ).toBe(1);
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(29);
+    expect(getSchemaVersion(db)).toBe(30);
     expect(
       (
         db
@@ -50,7 +50,7 @@ describe('v028 迁移：meetings + meeting_messages', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(() => applyMigrations(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(29);
+    expect(getSchemaVersion(db)).toBe(30);
     db.close();
   });
 

@@ -21,6 +21,8 @@ export const DATA_SUBDIRS = {
   skills: 'skills',
   /** v1.9 舞台自定义背景图（复制进数据目录，不引用原路径） */
   stageBackgrounds: 'stage-backgrounds',
+  /** v2.0 M4 用户导入 VRM 形象文件 */
+  vrmAvatars: 'vrm-avatars',
 } as const;
 
 export type DataSubdirKey = keyof typeof DATA_SUBDIRS;

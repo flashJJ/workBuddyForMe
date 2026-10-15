@@ -16,6 +16,8 @@ const nextConfig = {
   // 工作区 TS 源码包在 Next 编译管线中转译
   transpilePackages: ['@wbfm/shared', '@wbfm/config', '@wbfm/database', '@wbfm/ai', '@wbfm/core'],
   experimental: {
+    // Windows 页面文件有限时降低构建 worker 并发，避免 spawn UNKNOWN / OOM
+    cpus: 2,
     // Next 14：原生/带二进制资源/自带 worker 的包保持外部 require，
     // 避免 bundler 篡改内部相对路径（pdfjs-dist 的 pdf.worker.mjs 依赖；
     // v0.4：@napi-rs/canvas 的 .node 与 tesseract.js 的 worker/wasm 同理）

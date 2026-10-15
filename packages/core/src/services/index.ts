@@ -65,3 +65,7 @@ export {
   type AttachmentInput,
   type ResolvedImage,
 } from './attachment-service';
+export {
+  createVrmAvatarService,
+  type VrmAvatarService,
+} from './vrm-avatar-service';

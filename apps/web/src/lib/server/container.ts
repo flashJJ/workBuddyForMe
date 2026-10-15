@@ -57,7 +57,9 @@ import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
 import { createSchedulesService, type SchedulesService } from '@wbfm/core/scheduler';
 import { createEventUsageService, type EventUsageService, createEventTriggersService, type EventTriggersService } from '@wbfm/core/event';
+import { createVrmAvatarService, type VrmAvatarService } from '@wbfm/core/services';
 import { createSkillService, type SkillService } from '@wbfm/core/skills';
+import { registerExitCleanup } from './container-exit';
 import {
   createToolBreaker,
   createToolRuntime,
@@ -121,6 +123,8 @@ export interface ServiceContainer {
   endpoints: EndpointService;
   /** v0.9：公开 API 每端点速率限制器（进程内单例） */
   rateLimiter: RateLimiter;
+  /** v2.0 M4：VRM 形象导入/存储/删除 */
+  vrmAvatars: VrmAvatarService;
 }
 
 let container: ServiceContainer | null = null;
@@ -244,32 +248,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     schedules: createSchedulesService(deps),
     eventUsage: createEventUsageService(deps),
     eventTriggers: createEventTriggersService(deps),
+    vrmAvatars: createVrmAvatarService(db),
   };
-}
-
-/**
- * 进程退出清理：断开全部 MCP 子进程（幂等 best-effort）。
- * 断开链路在首个 await 前同步发出 kill 信号，signal 处理器内随后 exit 也不会遗漏。
- * 标志挂 globalThis：dev server 模块重载会重置模块级变量，重复注册会触发
- * MaxListenersExceededWarning。
- */
-function registerExitCleanup(registry: McpRegistry): void {
-  const holder = globalThis as { __WBFM_MCP_EXIT_CLEANUP__?: boolean };
-  if (holder.__WBFM_MCP_EXIT_CLEANUP__) return;
-  holder.__WBFM_MCP_EXIT_CLEANUP__ = true;
-  const disconnectAll = () => {
-    void registry.disconnectAll().catch(() => undefined);
-  };
-  process.once('exit', disconnectAll);
-  // 注册处理器会接管默认信号行为，故 cleanup 后显式退出
-  process.once('SIGTERM', () => {
-    disconnectAll();
-    process.exit(0);
-  });
-  process.once('SIGINT', () => {
-    disconnectAll();
-    process.exit(0);
-  });
 }
 
 /** 获取服务单例：首次访问时初始化文件数据库与全部业务服务 */

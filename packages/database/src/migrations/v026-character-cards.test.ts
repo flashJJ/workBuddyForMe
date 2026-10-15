@@ -14,8 +14,8 @@ describe('v026 迁移：character_cards + assistants.card_id', () => {
   it('全新空库：user_version=26，character_cards 就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(29);
-    expect(LATEST_SCHEMA_VERSION).toBe(29);
+    expect(getSchemaVersion(db)).toBe(30);
+    expect(LATEST_SCHEMA_VERSION).toBe(30);
     const rows = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='character_cards'`)
       .all() as Array<{ name: string }>;
@@ -29,7 +29,7 @@ describe('v026 迁移：character_cards + assistants.card_id', () => {
       `INSERT INTO assistants(id,name,created_at,updated_at) VALUES('a1','助手','t','t')`,
     ).run();
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(29);
+    expect(getSchemaVersion(db)).toBe(30);
 
     const cols = db.prepare(`PRAGMA table_info(assistants)`).all() as Array<{ name: string }>;
     expect(cols.map((c) => c.name)).toContain('card_id');
@@ -78,7 +78,7 @@ describe('v026 迁移：character_cards + assistants.card_id', () => {
       .all() as Array<{ name: string }>;
     expect(idx).toHaveLength(1);
     expect(() => applyMigrations(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(29);
+    expect(getSchemaVersion(db)).toBe(30);
     db.close();
   });
 });

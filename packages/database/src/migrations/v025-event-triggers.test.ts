@@ -6,8 +6,8 @@ describe('v025 迁移：event_triggers 自定义短语触发器', () => {
   it('全新空库：表与索引就位，user_version=25', () => {
     const db = createDatabase(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(29);
-    expect(LATEST_SCHEMA_VERSION).toBe(29);
+    expect(getSchemaVersion(db)).toBe(30);
+    expect(LATEST_SCHEMA_VERSION).toBe(30);
 
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='event_triggers'`)

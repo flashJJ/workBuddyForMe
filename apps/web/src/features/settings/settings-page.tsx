@@ -28,6 +28,8 @@ import { EventPanel } from './event-panel';
 import { ReminderPanel } from '../reminders/reminder-panel';
 import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
 import { TuningPanel } from '../tuning/tuning-panel';
+import { VrmImportSection } from './vrm-import-section';
+import { VrmAvatarList } from './vrm-avatar-list';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -95,6 +97,10 @@ export function SettingsPage() {
       <RelationshipPanel />
 
       <EventPanel />
+
+      <VrmImportSection />
+
+      <VrmAvatarList />
 
       <ReminderPanel />
 

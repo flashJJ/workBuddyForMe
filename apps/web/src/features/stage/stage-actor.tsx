@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
+import { AvatarCanvasRouter } from '@/features/avatar/avatar-canvas-router';
 import type { Live2dController } from '@/features/avatar/live2d-controller';
 import type { ExpressionTag } from '@/features/avatar/expression-parser';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -113,7 +113,7 @@ export function StageActor(props: StageActorProps) {
       onWheel={onWheel}
     >
       {renderLive ? (
-        <Live2dCanvas
+        <AvatarCanvasRouter
           modelId={props.member.avatarModelId}
           expression={props.expression}
           getLevel={props.getLevel}

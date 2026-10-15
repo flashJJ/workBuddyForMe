@@ -291,3 +291,5 @@ export * from './meeting';
 
 // v2.0 关系等级块（挂 emotion state v2）
 export * from './relationship';
+// v2.0 M4 VRM 形象契约
+export * from './vrm-avatar';
