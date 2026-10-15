@@ -3,7 +3,7 @@ import { waitForHydrated } from './utils';
 
 /**
  * v1.7 M5 剧情演出设置抽测：
- * - 面板默认态（总开关/三档/11 剧本（v2.0 新增 3 个等级剧本）/自定义区块/统计区）；
+ * - 面板默认态（总开关/三档/17 剧本（v2.0：3 等级剧本 + 6 里程碑剧本）/自定义区块/统计区）；
  * - 自定义短语规则新建→持久化→删除全链路（真实 API）；
  * - 打扰率统计：选助手后渲染三指标与无数据文案。
  * 全新临时数据根，无跨文件污染；规则在创建用例末尾自删。
@@ -29,11 +29,11 @@ async function gotoSettings(page: Page): Promise<void> {
 }
 
 test.describe.serial('v1.7 剧情演出与自定义短语（M5）', () => {
-  test('面板默认态：总开关开、标准档、11 剧本开关、自定义与统计区块可见', async ({ page }) => {
+  test('面板默认态：总开关开、标准档、17 剧本开关、自定义与统计区块可见', async ({ page }) => {
     await gotoSettings(page);
     await expect(page.getByTestId('event-enabled-toggle')).toBeChecked();
     await expect(page.getByTestId('event-tier-standard')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.getByTestId(/^event-scene-toggle-/)).toHaveCount(11);
+    await expect(page.getByTestId(/^event-scene-toggle-/)).toHaveCount(17);
     await expect(page.getByTestId('custom-trigger-section')).toBeVisible();
     await expect(page.getByTestId('custom-trigger-empty')).toBeVisible();
     await expect(page.getByTestId('event-usage-stats')).toBeVisible();

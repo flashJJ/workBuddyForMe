@@ -6,6 +6,7 @@ import { useEmotionState } from '@/features/avatar/use-emotion-expression';
 import type { EventPlaybackBridge } from '@/features/events/use-event-player';
 import { useEventStage, type EventStage } from '@/features/events/use-event-stage';
 import { useEventTriggers } from '@/features/events/use-event-triggers';
+import { useMilestoneScenes } from '@/features/events/use-milestone-scenes';
 import { useSchedulerTick } from '@/features/reminders/use-scheduler-tick';
 
 export interface UseChatEventsArgs {
@@ -76,6 +77,16 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
     intimacy: emotionState?.relation.intimacy ?? 0,
     emotionState,
     relationshipEnabled,
+    triggerEvent: stage.triggerEvent,
+  });
+
+  // v2.0 M2：共同里程碑达成 → 纪念剧本（首次只见基线，localStorage 防重放）
+  useMilestoneScenes({
+    assistantId: args.assistantId,
+    relationshipEnabled,
+    eventsEnabled,
+    hasOutlet,
+    convLocked: args.convLocked,
     triggerEvent: stage.triggerEvent,
   });
 

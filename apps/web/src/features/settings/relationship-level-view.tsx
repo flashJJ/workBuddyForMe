@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { EmotionState } from '@wbfm/shared/schemas';
 import type { MessageKey } from '@wbfm/shared/i18n';
+import { RELATIONSHIP_MILESTONES } from '@wbfm/shared/constants';
 import { displayLevelOf } from '@wbfm/core/relationship-client';
 import { Spinner } from '@/components/common/state';
 import { apiGet } from '@/lib/api/client';
@@ -11,6 +12,10 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useCharacterCards } from '@/lib/hooks/use-character-cards';
+import {
+  milestoneI18nKey,
+  useRelationshipMilestones,
+} from '@/lib/hooks/use-relationship-milestones';
 
 const LEVELS = [1, 2, 3] as const;
 
@@ -26,6 +31,8 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
   const [loading, setLoading] = React.useState(true);
   const { data: assistants } = useAssistants();
   const { data: cards } = useCharacterCards();
+  // 注意：该 hook 必须在 loading 提前返回之前调用（React hooks 顺序约束）
+  const { data: milestones } = useRelationshipMilestones(assistantId, true);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -58,6 +65,8 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
   const level = displayLevelOf(state.relationship, state.relation);
   const cardId = assistants?.find((a) => a.id === assistantId)?.cardId ?? null;
   const nicknames = cards?.find((c) => c.id === cardId)?.parsed.nicknameByLevel;
+  const achievedByKey = new Map((milestones ?? []).map((m) => [m.milestoneKey, m]));
+  const timeFmt = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' });
 
   return (
     <div className="space-y-3" data-testid="relationship-level-view">
@@ -129,6 +138,40 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
           );
         })}
       </ul>
+
+      <div className="space-y-1.5" data-testid="relationship-milestones">
+        <div className="text-xs font-medium">{t('relationship.milestones.title')}</div>
+        {(!milestones || milestones.length === 0) && (
+          <p className="text-[11px] text-muted-foreground">{t('relationship.milestones.empty')}</p>
+        )}
+        <ul className="space-y-1">
+          {RELATIONSHIP_MILESTONES.map((def) => {
+            const achieved = achievedByKey.get(def.key);
+            return (
+              <li
+                key={def.key}
+                data-testid={`relationship-milestone-row-${milestoneI18nKey(def.key)}`}
+                className="flex items-center justify-between gap-2 rounded border bg-card px-2.5 py-1.5 text-xs"
+              >
+                <span className={achieved ? 'font-medium' : 'text-muted-foreground'}>
+                  {t(`relationship.milestones.${milestoneI18nKey(def.key)}` as MessageKey)}
+                </span>
+                {achieved ? (
+                  <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+                    {t('relationship.milestones.achievedAt', {
+                      date: timeFmt.format(new Date(achieved.achievedAt)),
+                    })}
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    {t('relationship.milestones.lockedHint')}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       <div className="space-y-1">
         <div className="text-xs font-medium">{t('relationship.rules.title')}</div>

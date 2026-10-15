@@ -34,6 +34,7 @@ import {
   type TaskRunnerService,
 } from '@wbfm/core/services';
 import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
+import { createMilestoneService, type MilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService, type AgentRunService } from '@wbfm/core/agents';
 import { createMeetingService, type MeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
@@ -108,6 +109,8 @@ export interface ServiceContainer {
   taskRunner: TaskRunnerService;
   /** v1.4 多智能体协作 */
   agentRuns: AgentRunService;
+  /** v2.0 M2：共同里程碑达成评估与查询 */
+  relationshipMilestones: MilestoneService;
   /** v1.9 M3 多助手会议 */
   meetings: MeetingService;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
@@ -219,6 +222,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     taskGrants,
     taskRunner,
     agentRuns,
+    relationshipMilestones: createMilestoneService(deps),
     meetings,
     runtime,
     flowRunner,

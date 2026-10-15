@@ -16,7 +16,7 @@ const TIERS: ReadonlyArray<{ id: EventFrequencyTier; labelKey: MessageKey }> = [
 ];
 
 /**
- * v1.7 剧情演出设置：总开关 + 频率三档 + 8 个内置剧本单条停用。
+ * v1.7 剧情演出设置：总开关 + 频率三档 + 内置剧本单条停用（v1.7 八个 + v2.0 九个）。
  * 与 EmotionPanel 同口径：乐观覆盖即时保存、挂载门控防水合结构交换。
  */
 export function EventPanel() {
