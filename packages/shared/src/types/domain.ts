@@ -115,8 +115,8 @@ export interface Citation {
   staticKind?: 'chunk' | 'entity' | 'summary';
 }
 
-/** v0.5 长期记忆类别：事实 / 偏好 / 事件 */
-export const MEMORY_KINDS = ['fact', 'preference', 'event'] as const;
+/** v0.5 长期记忆类别：事实 / 偏好 / 事件；v2.0 新增 relationship（共同经历） */
+export const MEMORY_KINDS = ['fact', 'preference', 'event', 'relationship'] as const;
 export type MemoryKind = (typeof MEMORY_KINDS)[number];
 
 /** active=参与召回；archived=软遗忘（P1，暂不自动产生，UI 可见） */

@@ -46,6 +46,11 @@ export interface BuildPromptOptions {
    * 仅在 card 存在时随身份卡段落注入；未解锁/无卡为 null，不产生任何称呼文本。
    */
   cardNickname?: string | null;
+  /**
+   * v2.0 M2：共同经历关系记忆软引用段（主动搭话用；正常回合走 RRF 记忆块）。
+   * 组装侧负责只传 relationship 类记忆并做完删除一致性；null=不注入。
+   */
+  relationshipMemoryBlock?: string | null;
 }
 
 /**
@@ -71,9 +76,13 @@ export function buildSystemPrompt(
   // 系统层（输出格式控制）先于身份内容
   if (assistant.expressionEnabled) parts.push(EXPRESSION_DIRECTIVE_BLOCK);
   if (personaText) parts.push(personaText);
-  // v1.8 M3：全局追加独立成段并带固定小标题（避免与卡正文粘连），位置在身份后、情绪前
+  // v1.8 M3：全局追加独立成段并带固定小标题（避免与身份卡粘连）
   if (options.globalAppendPrompt?.trim()) {
     parts.push(`【全局追加】\n${options.globalAppendPrompt.trim()}`);
+  }
+  // v2.0 M2：共同经历软引用（主动搭话；无把握不提的纪律在区块文案内约束）
+  if (options.relationshipMemoryBlock?.trim()) {
+    parts.push(options.relationshipMemoryBlock.trim());
   }
   // v1.6：情绪块内已自带「当前状态段 + 尾块协议」两段，调用方在情绪功能开启时整体传入
   if (emotionBlock?.trim()) parts.push(emotionBlock.trim());

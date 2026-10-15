@@ -25,6 +25,8 @@ export {
   type EmotionService,
   type RecordEmotionInput,
 } from './emotion-service';
+export { createMilestoneService, type MilestoneService } from './milestone-service';
+export { evaluateMilestones, dayKeyBetween, type MilestoneStats } from './milestone';
 export { EMOTION_DIRECTIVE_BLOCK, buildEmotionStateBlock } from './emotion-prompt';
 export { inferSoulEventFromUserText } from './emotion-rule-guard';
 export {

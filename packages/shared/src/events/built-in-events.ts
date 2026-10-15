@@ -6,8 +6,9 @@
  * 模块加载即过 zod：非法内置剧本在 import 期直接失败，绝不带病上线。
  */
 import { eventDefinitionSchema, type EventDefinition } from '../schemas/event';
+import { RAW_V20_EVENTS } from './built-in-events-v2';
 
-const RAW_BUILT_IN_EVENTS = [
+const RAW_BUILT_IN_EVENTS: EventDefinition[] = [
   {
     id: 'ev.greeting.morning',
     titleKey: 'event.greeting.morning.title',
@@ -185,71 +186,9 @@ const RAW_BUILT_IN_EVENTS = [
       { kind: 'gaze', x: 0, y: 0 },
     ],
   },
-  // ── v2.0 关系等级解锁剧本（仅升级瞬间由客户端等级跃迁触发；无意图映射） ──
-  {
-    id: 'ev.relation.levelup.acquainted',
-    titleKey: 'event.relation.levelup.acquainted.title',
-    priority: 2,
-    interruptPolicy: 'ignore',
-    cooldownMs: 7 * 24 * 3600_000,
-    maxPerDay: 1,
-    speechLock: 'queue',
-    builtIn: true,
-    minRelationshipLevel: 1,
-    steps: [
-      { kind: 'spatial', action: 'slideIn' },
-      { kind: 'fx', id: 'fadeIn' },
-      { kind: 'expression', tag: 'joy' },
-      { kind: 'speech', lineKey: 'event.relation.levelup.acquainted0' },
-      { kind: 'wait', ms: 1200 },
-      { kind: 'expression', tag: 'neutral' },
-    ],
-  },
-  {
-    id: 'ev.relation.levelup.partner',
-    titleKey: 'event.relation.levelup.partner.title',
-    priority: 2,
-    interruptPolicy: 'ignore',
-    cooldownMs: 7 * 24 * 3600_000,
-    maxPerDay: 1,
-    speechLock: 'queue',
-    builtIn: true,
-    minRelationshipLevel: 2,
-    steps: [
-      { kind: 'spatial', action: 'slideIn' },
-      { kind: 'fx', id: 'hearts' },
-      { kind: 'expression', tag: 'joy' },
-      { kind: 'speech', lineKey: 'event.relation.levelup.partner0' },
-      { kind: 'wait', ms: 1100 },
-      { kind: 'speech', lineKey: 'event.relation.levelup.partner1', tts: false },
-      { kind: 'wait', ms: 1200 },
-      { kind: 'expression', tag: 'neutral' },
-    ],
-  },
-  {
-    id: 'ev.relation.levelup.confidant',
-    titleKey: 'event.relation.levelup.confidant.title',
-    priority: 2,
-    interruptPolicy: 'replaceLowerPriority',
-    cooldownMs: 7 * 24 * 3600_000,
-    maxPerDay: 1,
-    speechLock: 'queue',
-    builtIn: true,
-    minRelationshipLevel: 3,
-    steps: [
-      { kind: 'spatial', action: 'slideIn' },
-      { kind: 'fx', id: 'hearts' },
-      { kind: 'expression', tag: 'joy' },
-      { kind: 'speech', lineKey: 'event.relation.levelup.confidant0' },
-      { kind: 'wait', ms: 1200 },
-      { kind: 'gaze', x: 0, y: 0.25 },
-      { kind: 'speech', lineKey: 'event.relation.levelup.confidant1', tts: false },
-      { kind: 'wait', ms: 1400 },
-      { kind: 'gaze', x: 0, y: 0 },
-      { kind: 'expression', tag: 'neutral' },
-    ],
-  },
-] satisfies EventDefinition[];
+  // v1.7 八位之后按版本追加（顺序即 UI 展示顺序）
+  ...RAW_V20_EVENTS,
+];
 
 /** 内置剧本（模块加载期 zod 全量校验；顺序即 UI 展示顺序） */
 export const BUILT_IN_EVENTS: readonly EventDefinition[] = RAW_BUILT_IN_EVENTS.map((raw) =>

@@ -12,12 +12,30 @@ const KIND_LABELS: Record<Memory['kind'], string> = {
   fact: '事实',
   preference: '偏好',
   event: '事件',
+  relationship: '共同经历',
 };
 
 /** 召回记忆格式化为 system 区块正文；无记忆返回 null */
 export function formatMemoryBlock(memories: Memory[]): string | null {
   if (memories.length === 0) return null;
   return memories.map((m) => `- ［${KIND_LABELS[m.kind]}］${m.content}`).join('\n');
+}
+
+/**
+ * v2.0 M2 主动搭话的关系记忆软引用块（G2）：
+ * 只取 relationship 类记忆；纪律=无把握不提、不逐条复述、删除后因召回不到自然不再引用
+ * （「可删即不引用」由存储侧保证，此处不做额外固化）。无关系记忆返回 null。
+ */
+export function buildRelationshipMemoryBlock(memories: Memory[]): string | null {
+  const shared = memories.filter((m) => m.kind === 'relationship');
+  if (shared.length === 0) return null;
+  return [
+    '【你和用户的共同经历】',
+    '以下是你和用户一起经历过、只属于你们两人的事：',
+    shared.map((m) => `- ${m.content}`).join('\n'),
+    '搭话时只有在某条经历与当下自然相关时，才轻轻带一句；不确定相关性就完全不提；',
+    '不要逐条罗列，不要说“根据记忆/记录”，也不要生硬煽情。',
+  ].join('\n');
 }
 
 /** SSE memories 事件负载（只下发展示必需字段，不暴露内部 id 之外的管理字段） */

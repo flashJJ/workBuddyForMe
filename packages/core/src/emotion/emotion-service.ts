@@ -13,6 +13,7 @@
 import {
   createEmotionStateRepository,
   createEmotionEventRepository,
+  createRelationshipMilestoneRepository,
   type EmotionEventRecord,
 } from '@wbfm/database';
 import { EMOTION_EVENT_DELTAS } from '@wbfm/shared/constants';
@@ -83,6 +84,8 @@ export function createEmotionService(deps: ServiceDeps): EmotionService {
   const { db } = deps;
   const stateRepo = createEmotionStateRepository(db);
   const eventRepo = createEmotionEventRepository(db);
+  // v2.0 M2：「重新认识」语义——重置情绪/关系时共同里程碑一并清空（05 §4）
+  const milestoneRepo = createRelationshipMilestoneRepository(db);
   const settings = createSettingsService(deps);
   /** 进程内检查点去重（重启后重跑由 kernel 当日幂等兜底） */
   let checkpointDay: string | null = null;
@@ -190,6 +193,7 @@ export function createEmotionService(deps: ServiceDeps): EmotionService {
 
   const reset = (assistantId: string, now = Date.now()): EmotionState => {
     eventRepo.deleteByAssistant(assistantId);
+    milestoneRepo.deleteByAssistant(assistantId);
     stateRepo.delete(assistantId);
     return createDefaultEmotionState(now);
   };

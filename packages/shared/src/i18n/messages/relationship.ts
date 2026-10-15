@@ -33,6 +33,19 @@ export const zhRelationship = {
     unlocked: '已解锁',
     locked: '尚未解锁',
   },
+  /** M2 共同里程碑（首日/30/100/365 天、协作 10/50 次；只读统计，无打卡引导） */
+  milestones: {
+    title: '共同里程碑',
+    empty: '还没有达成的里程碑。自然地相处与协作，纪念时刻会自己到来。',
+    achievedAt: '{date} 达成',
+    lockedHint: '尚未达成',
+    day1: '相识第一天',
+    day30: '相伴满 30 天',
+    day100: '相伴满 100 天',
+    day365: '相伴满一年',
+    collab10: '协作十次',
+    collab50: '协作五十次',
+  },
   rules: {
     title: '等级是怎么变化的',
     body: '等级来自日常相处中积累的亲近与信任，不是打卡积分：它会随自然对话慢慢提升，每天能积累的好感有上限，刻意刷并没有意义。很长一段时间没有正向互动时，等级只会缓慢回落，且永远不低于「认识」、不会清零；重新熟络之后可以再升回来。',
@@ -66,6 +79,19 @@ export const enRelationship: typeof zhRelationship = {
     scene: 'Level-up keepsake scene',
     unlocked: 'Unlocked',
     locked: 'Not yet unlocked',
+  },
+  /** M2 shared milestones (read-only stats, no check-in nudges) */
+  milestones: {
+    title: 'Shared milestones',
+    empty: 'No milestones yet. Milestones arrive on their own through natural time together.',
+    achievedAt: 'Reached on {date}',
+    lockedHint: 'Not reached yet',
+    day1: 'First day together',
+    day30: '30 days together',
+    day100: '100 days together',
+    day365: 'One year together',
+    collab10: 'Ten collaborations',
+    collab50: 'Fifty collaborations',
   },
   rules: {
     title: 'How levels change',

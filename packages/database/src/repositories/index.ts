@@ -195,4 +195,11 @@ export {
   type MeetingCreateFields,
   type MeetingMessageInsert,
 } from './meeting-repo';
+export {
+  createRelationshipMilestoneRepository,
+  type RelationshipMilestoneRepository,
+  type RelationshipMilestoneRow,
+  type RelationshipMilestoneStats,
+  type AchieveMilestoneInput,
+} from './relationship-milestone-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

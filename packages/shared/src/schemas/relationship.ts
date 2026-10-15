@@ -65,10 +65,35 @@ export function localDayKey(ms: number): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-/** 等级变迁事件（写 emotion_events，type=level_up/level_down，intensity=新等级） */
+/** 等级变迁事件（写 emotion_events：type=level_up/level_down，intensity=新等级） */
 export const RELATIONSHIP_LEVEL_EVENT_TYPES = ['level_up', 'level_down'] as const;
-export type RelationshipLevelEventType =
-  (typeof RELATIONSHIP_LEVEL_EVENT_TYPES)[number];
+export type RelationshipLevelEventType = (typeof RELATIONSHIP_LEVEL_EVENT_TYPES)[number];
+
+// ── 里程碑达成记录（M2；relationship_milestones 表行的 wire 视图） ──
+
+/** 里程碑 key 形状（代码常量集在 core 评估时校验，schema 只封闭字符形状） */
+export const relationshipMilestoneKeySchema = z
+  .string()
+  .min(3)
+  .max(40)
+  .regex(/^[a-z][a-z0-9_]*$/, '里程碑 key 必须为小写下划线标识符');
+
+export const relationshipMilestonePayloadSchema = z
+  .object({
+    /** 达成时触发的剧本 id（审计/回放用；不存对话原文） */
+    sceneId: z.string().min(3).max(80).optional(),
+  })
+  .catchall(z.unknown());
+
+export const relationshipMilestoneRecordSchema = z.object({
+  id: z.string().min(1),
+  assistantId: z.string().min(1),
+  milestoneKey: relationshipMilestoneKeySchema,
+  achievedAt: z.string().datetime(),
+  /** 轻量上下文（默认 {}；恢复与展示均宽容未知键） */
+  payload: relationshipMilestonePayloadSchema.default({}),
+});
+export type RelationshipMilestoneRecord = z.infer<typeof relationshipMilestoneRecordSchema>;
 
 export interface RelationshipLevelEvent {
   type: RelationshipLevelEventType;

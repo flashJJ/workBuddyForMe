@@ -23,10 +23,17 @@ const FROZEN_TABLE: Record<string, [number, number, number, number]> = {
   'ev.relation.levelup.acquainted': [2, 7 * 24 * 3600_000, 1, 6],
   'ev.relation.levelup.partner': [2, 7 * 24 * 3600_000, 1, 8],
   'ev.relation.levelup.confidant': [2, 7 * 24 * 3600_000, 1, 10],
+  // v2.0 M2：6 个共同里程碑纪念剧本（成就即闸门，cooldown=0，每日至多 1 次）
+  'ev.milestone.day1': [2, 0, 1, 6],
+  'ev.milestone.day30': [2, 0, 1, 8],
+  'ev.milestone.day100': [2, 0, 1, 6],
+  'ev.milestone.day365': [2, 0, 1, 8],
+  'ev.milestone.collab10': [2, 0, 1, 6],
+  'ev.milestone.collab50': [2, 0, 1, 8],
 };
 
-describe('内置剧本注册表（M0 冻结 + v2.0 等级剧本）', () => {
-  it('恰好 11 个内置剧本且全部可按 id 取回', () => {
+describe('内置剧本注册表（M0 冻结 + v2.0 等级/里程碑剧本）', () => {
+  it('恰好 17 个内置剧本且全部可按 id 取回', () => {
     expect(BUILT_IN_EVENTS.map((e) => e.id).sort()).toEqual(Object.keys(FROZEN_TABLE).sort());
     for (const id of Object.keys(FROZEN_TABLE)) {
       expect(getBuiltInEvent(id)?.id).toBe(id);
@@ -59,9 +66,15 @@ describe('内置剧本注册表（M0 冻结 + v2.0 等级剧本）', () => {
     expect(getBuiltInEvent('ev.relation.levelup.acquainted')?.minRelationshipLevel).toBe(1);
     expect(getBuiltInEvent('ev.relation.levelup.partner')?.minRelationshipLevel).toBe(2);
     expect(getBuiltInEvent('ev.relation.levelup.confidant')?.minRelationshipLevel).toBe(3);
-    // v1.7 老剧本一律不带等级闸门（缺省=不限制）
+    // v1.7 老剧本与 v2.0 M2 里程碑剧本一律不带等级闸门（成就本身即闸门）
     for (const id of Object.keys(FROZEN_TABLE).filter((x) => !x.includes('levelup'))) {
       expect(getBuiltInEvent(id)?.minRelationshipLevel).toBeUndefined();
+    }
+  });
+
+  it('v2.0 M2 里程碑剧本无 emotionOnPlayed（避免演出反灌情绪造成自激）', () => {
+    for (const id of Object.keys(FROZEN_TABLE).filter((x) => x.includes('milestone'))) {
+      expect(getBuiltInEvent(id)?.emotionOnPlayed).toBeUndefined();
     }
   });
 });

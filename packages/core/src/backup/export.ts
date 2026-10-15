@@ -24,6 +24,7 @@ import {
   createCharacterCardRepository,
   createStageSceneRepository,
   createMeetingRepository,
+  createRelationshipMilestoneRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { computeNextRunMs } from '../scheduler/next-run';
@@ -199,6 +200,8 @@ export async function exportBackup(
     const meetingRepo = createMeetingRepository(deps.db);
     const meetings = meetingRepo.list();
     const meetingMessages = meetings.flatMap((meeting) => meetingRepo.listMessages(meeting.id));
+    // v2.0 M2：共同里程碑达成记录（同 events 轨；不含对话原文）
+    const milestones = createRelationshipMilestoneRepository(deps.db).listAll();
     files['events.json'] = JSON.stringify(
       { assistants: customAssistants, schedules, usage, triggers },
       null,
@@ -208,6 +211,7 @@ export async function exportBackup(
     files['stageScenes.json'] = JSON.stringify(stageScenes, null, 2);
     files['meetings.json'] = JSON.stringify(meetings, null, 2);
     files['meetingMessages.json'] = JSON.stringify(meetingMessages, null, 2);
+    files['relationshipMilestones.json'] = JSON.stringify(milestones, null, 2);
     manifestPartial.events = {
       files: 'events.json',
       scheduleCount: schedules.length,
@@ -218,6 +222,7 @@ export async function exportBackup(
       stageSceneCount: stageScenes.length,
       meetingCount: meetings.length,
       meetingMessageCount: meetingMessages.length,
+      relationshipMilestoneCount: milestones.length,
     };
     const eventsTotal =
       schedules.length +
@@ -227,7 +232,8 @@ export async function exportBackup(
       cards.length +
       stageScenes.length +
       meetings.length +
-      meetingMessages.length;
+      meetingMessages.length +
+      milestones.length;
     onProgress?.({ track: 'events', processed: eventsTotal, total: eventsTotal });
   }
 

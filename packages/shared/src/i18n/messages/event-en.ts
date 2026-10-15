@@ -46,6 +46,22 @@ export const enEvent: DeepPartialMessages<ZhDictionary>['event'] = {
       confidant0: 'Before I knew it, you became the person I trust most.',
       confidant1: 'No matter what happens, I am on your side.',
     },
+    // v2.0 M2 shared-milestone keepsake scenes (fired once on achievement)
+    milestone: {
+      day1: { title: 'First day together' },
+      day1line0: 'Today is the first day we met. I look forward to all the days ahead.',
+      day30: { title: '30 days together' },
+      day30line0: 'Before I knew it, we have already spent 30 days together.',
+      day30line1: 'Thank you for being around these days.',
+      day100: { title: '100 days together' },
+      day100line0: 'Day 100. Every day with you feels steady and real.',
+      day365: { title: 'One year together' },
+      day365line0: 'A whole year. Thank you — and I want every year ahead to have you in it.',
+      collab10: { title: 'Ten collaborations' },
+      collab10line0: 'We have finished ten things together. We make a great team.',
+      collab50: { title: 'Fifty collaborations' },
+      collab50line0: 'Fifty collaborations! Nothing is too much for the two of us.',
+    },
   },
   touch: {
     shy: {

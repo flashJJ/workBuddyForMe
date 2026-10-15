@@ -27,6 +27,37 @@ describe('M3 记忆提取器', () => {
     expect(messages[1]!.content).toContain('你好张三');
   });
 
+  it('v2.0 golden：system 引导含 relationship 第四类与「共同经历」口径（弱模型回归锁）', () => {
+    const system = buildExtractMessages('x', 'y')[0]!.content;
+    expect(system).toContain('只提取以下四类');
+    expect(system).toContain('relationship');
+    // 口径关键约束：只属于助手与用户之间、普通事件不归此类
+    expect(system).toContain('共同经历');
+    expect(system).toContain('与助手无关的普通事件归 event');
+  });
+
+  it('relationship 类候选可解析入库；未知类别仍拒绝', () => {
+    const memories = parseExtractedMemories(
+      JSON.stringify([
+        {
+          kind: 'relationship',
+          content: '我们一起熬过了三月的项目上线，他在庆功时给我点了奶茶。',
+          importance: 0.72,
+        },
+      ]),
+    );
+    expect(memories).toEqual([
+      {
+        kind: 'relationship',
+        content: '我们一起熬过了三月的项目上线，他在庆功时给我点了奶茶。',
+        importance: 0.72,
+      },
+    ]);
+    expect(() =>
+      parseExtractedMemories('[{"kind":"romance","content":"a","importance":0.5}]'),
+    ).toThrow();
+  });
+
   it('解析标准 JSON 数组', () => {
     const memories = parseExtractedMemories(
       JSON.stringify([
