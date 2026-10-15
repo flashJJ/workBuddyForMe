@@ -47,6 +47,12 @@ export class FrameMetrics {
   private rafId = 0;
   private lastTs = 0;
   private heapTimer: ReturnType<typeof setInterval> | null = null;
+  /**
+   * 帧间隔丢弃上限（ms）：默认 1000（切窗/后台标签的异常大值）。
+   * v2.0 VRM 混排工装传 10000——双 WebGL context 退化时单帧可能 >1s，
+   * 丢弃会采到 0 帧无法定位问题，慢帧本身就是要取证的对象。
+   */
+  constructor(private readonly maxFrameDeltaMs = 1000) {}
 
   start(): void {
     this.frames = [];
@@ -55,8 +61,8 @@ export class FrameMetrics {
     const tick = (ts: number) => {
       if (this.lastTs > 0) {
         const delta = ts - this.lastTs;
-        // 后台标签页/首帧异常大值剔除（>1s 视为切窗，不代表渲染性能）
-        if (delta > 0 && delta < 1000) this.frames.push(delta);
+        // 后台标签页/首帧异常大值剔除（>上限视为切窗，不代表渲染性能）
+        if (delta > 0 && delta < this.maxFrameDeltaMs) this.frames.push(delta);
       }
       this.lastTs = ts;
       this.rafId = requestAnimationFrame(tick);
