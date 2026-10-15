@@ -33,7 +33,23 @@ describe('buildConditionContext', () => {
     });
     expect(ctx.mood).toEqual({ happiness: 0, anger: 0, sadness: 0 });
     expect(ctx.relation).toEqual({ intimacy: 0, trust: 0 });
+    expect(ctx.relationship.level).toBe(0);
     expect(ctx.personality.frankness).toBe(0.8);
     expect(ctx.time.lastInteractionMin).toBeGreaterThan(24 * 60 * 365);
+  });
+
+  it('v2.0：relationship.level 取展示等级（地板与迟滞同口径）；开关关闭恒 0', () => {
+    const emotion = createDefaultEmotionState(NOW);
+    emotion.relation = { intimacy: 60, trust: 60 };
+    emotion.relationship.levelFloor = 2;
+    const on = buildConditionContext({ emotion, now: NOW, lastInteractionMin: null });
+    expect(on.relationship.level).toBe(2);
+    const off = buildConditionContext({
+      emotion,
+      now: NOW,
+      lastInteractionMin: null,
+      relationshipEnabled: false,
+    });
+    expect(off.relationship.level).toBe(0);
   });
 });

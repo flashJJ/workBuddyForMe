@@ -23,6 +23,7 @@ import { HelpCenterPanel } from '../help-center/help-center-panel';
 import { VoicePreferencePanel } from '../voice/settings/voice-preference-panel';
 import { KnowledgeRetrievalPanel } from './knowledge-retrieval-panel';
 import { EmotionPanel } from './emotion-panel';
+import { RelationshipPanel } from './relationship-panel';
 import { EventPanel } from './event-panel';
 import { ReminderPanel } from '../reminders/reminder-panel';
 import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
@@ -90,6 +91,8 @@ export function SettingsPage() {
       <VoicePreferencePanel />
 
       <EmotionPanel />
+
+      <RelationshipPanel />
 
       <EventPanel />
 

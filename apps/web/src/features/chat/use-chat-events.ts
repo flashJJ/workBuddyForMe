@@ -42,6 +42,7 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
   );
   const hasOutlet = Boolean(args.voiceSettings?.avatarEnabled || args.voiceSettings?.petEnabled);
   const eventsEnabled = args.settings?.eventsEnabled !== false;
+  const relationshipEnabled = args.settings?.relationshipEnabled !== false;
 
   const stage = useEventStage({
     assistantId: args.assistantId,
@@ -62,6 +63,7 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
     eventsEnabled,
     frequencyTier: args.settings?.eventFrequencyTier ?? 'standard',
     disabledEventIds: args.settings?.disabledEventIds ?? [],
+    relationshipEnabled,
   });
 
   useEventTriggers({
@@ -72,6 +74,8 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
       args.settings?.interactionLinesEnabled !== false,
     assistantId: args.assistantId,
     intimacy: emotionState?.relation.intimacy ?? 0,
+    emotionState,
+    relationshipEnabled,
     triggerEvent: stage.triggerEvent,
   });
 
