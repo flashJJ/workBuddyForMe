@@ -35,6 +35,17 @@ export const enEvent: DeepPartialMessages<ZhDictionary>['event'] = {
       comfort0: "It's fine, I'm not angry anymore.",
       comfort1: "I'm okay as long as you're here.",
     },
+    // v2.0 relationship level unlock scenes (fired only on level-up)
+    levelup: {
+      acquainted: { title: 'First acquaintance' },
+      acquainted0: 'Mm, I will remember you. Nice to meet you.',
+      partner: { title: 'Becoming partners' },
+      partner0: 'Looks like we are partners now.',
+      partner1: "Whatever comes next, let's handle it together.",
+      confidant: { title: 'Becoming confidants' },
+      confidant0: 'Before I knew it, you became the person I trust most.',
+      confidant1: 'No matter what happens, I am on your side.',
+    },
   },
   touch: {
     shy: {

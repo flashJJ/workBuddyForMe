@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createDatabase } from '../client';
 import { createEmotionStateRepository } from './emotion-state-repo';
-import { createDefaultEmotionState } from '@wbfm/shared/schemas';
+import { createDefaultEmotionState, createDefaultRelationshipBlock } from '@wbfm/shared/schemas';
+import { EMOTION_SCHEMA_VERSION } from '@wbfm/shared/constants';
 
 const NOW = Date.UTC(2026, 9, 12, 8, 0, 0);
 
@@ -33,9 +34,35 @@ describe('emotion-state-repo（v1.6）', () => {
     const loaded = repo.get('a1');
     expect(loaded).not.toBeNull();
     expect(loaded?.state.mood.happiness).toBe(42);
-    expect(loaded?.state.schemaVersion).toBe(1);
+    expect(loaded?.state.schemaVersion).toBe(EMOTION_SCHEMA_VERSION);
+    expect(loaded?.state.relationship).toEqual(createDefaultRelationshipBlock());
     expect(loaded?.updatedAt).toBe(saved.updatedAt);
     expect(repo.list()).toHaveLength(1);
+    db.close();
+  });
+
+  it('v2.0：v1 旧行（无 relationship 块）读侧自动迁移为 v2，补默认关系块且不改原字段', () => {
+    const db = createDatabase();
+    seedAssistant(db);
+    const v1 = {
+      schemaVersion: 1,
+      mood: { happiness: 12, anger: 1, sadness: 2 },
+      relation: { intimacy: 44, trust: 33 },
+      currentNeed: 'none',
+      counters: {},
+      recentEvents: [],
+      updatedAt: NOW,
+    };
+    db.prepare(
+      `INSERT INTO assistant_emotion_states(assistant_id, state_json, updated_at)
+       VALUES('a1', @json, @iso)`,
+    ).run({ json: JSON.stringify(v1), iso: new Date(NOW).toISOString() });
+
+    const loaded = createEmotionStateRepository(db).get('a1');
+    expect(loaded?.state.schemaVersion).toBe(EMOTION_SCHEMA_VERSION);
+    expect(loaded?.state.relationship).toEqual(createDefaultRelationshipBlock());
+    expect(loaded?.state.relation).toEqual({ intimacy: 44, trust: 33 });
+    expect(loaded?.state.mood.happiness).toBe(12);
     db.close();
   });
 

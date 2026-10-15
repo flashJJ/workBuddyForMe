@@ -68,6 +68,25 @@ describe('EventDirector 准入闸门', () => {
     });
   });
 
+  it('v2.0 关系等级闸门：minRelationshipLevel 不足 → relationship_locked，达标放行', () => {
+    const h = makeDirectorHarness();
+    const def = makeDef({ id: 'ev.level', minRelationshipLevel: 2 });
+    expect(
+      h.director.trigger(def, makeContext({ relationship: { level: 1 } })),
+    ).toMatchObject({ kind: 'suppressed', reason: 'relationship_locked' });
+    // 被闸门拒绝不产生 runner
+    expect(h.runners).toHaveLength(0);
+    const h2 = makeDirectorHarness();
+    expect(
+      h2.director.trigger(def, makeContext({ relationship: { level: 2 } })).kind,
+    ).toBe('admitted');
+    // 无等级字段的普通剧本不受影响（harness 默认 level 0）
+    const h3 = makeDirectorHarness();
+    expect(h3.director.trigger(makeDef({ id: 'ev.plain' }), makeContext()).kind).toBe(
+      'admitted',
+    );
+  });
+
   it('默认工厂接真实 EventRunner：短剧本自动落幕并释放', async () => {
     const { EventDirector } = await import('./director');
     const { createManualClock } = await import('./clock');

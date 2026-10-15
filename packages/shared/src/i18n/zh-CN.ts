@@ -37,6 +37,7 @@ import { zhCharacterCards } from './messages/character-cards';
 import { zhTuning } from './messages/tuning';
 import { zhStage } from './messages/stage';
 import { zhMeeting } from './messages/meeting';
+import { zhRelationship } from './messages/relationship';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -84,6 +85,7 @@ export const zhCN = {
   reminders: zhReminders,
   customTriggers: zhEventM5.customTriggers,
   eventStats: zhEventM5.eventStats,
+  relationship: zhRelationship,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

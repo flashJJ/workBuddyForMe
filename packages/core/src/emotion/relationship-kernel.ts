@@ -19,12 +19,18 @@ import {
   RELATIONSHIP_TRUST_WEIGHT,
   RELATIONSHIP_UPGRADE_HYSTERESIS,
 } from '@wbfm/shared/constants';
-import type {
-  RelationshipBlock,
-  RelationshipDailyGain,
-  RelationshipLevelEvent,
-  RelationshipLevelValue,
+import {
+  createDefaultRelationshipBlock,
+  type RelationshipBlock,
+  type RelationshipDailyGain,
+  type RelationshipLevelEvent,
+  type RelationshipLevelValue,
 } from '@wbfm/shared/schemas';
+
+export { createDefaultRelationshipBlock };
+
+/** @deprecated 改名收口到 shared：createDefaultRelationshipBlock */
+export const defaultRelationshipBlock = createDefaultRelationshipBlock;
 
 export interface RelationScores {
   intimacy: number;
@@ -48,6 +54,11 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+/** 关系原始分累加沿用 v1.6 的 3 位小数口径，避免 chat +0.25 步进被 0.1 量化带偏 */
+function round3(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
 function daysBetween(fromDay: string, toDay: string): number {
   const from = Date.parse(`${fromDay}T00:00:00Z`);
   const to = Date.parse(`${toDay}T00:00:00Z`);
@@ -55,16 +66,7 @@ function daysBetween(fromDay: string, toDay: string): number {
   return Math.max(0, Math.round((to - from) / 86_400_000));
 }
 
-/** v1 状态（无关系块）读侧补的默认块；新助手首条事件前也用它 */
-export function defaultRelationshipBlock(): RelationshipBlock {
-  return {
-    levelFloor: 0,
-    highestLevelEver: 0,
-    lastPositiveDay: null,
-    lastFloorDownAt: null,
-    dailyGain: { dayKey: '', intimacy: 0, trust: 0 },
-  };
-}
+/** v1 状态（无关系块）读侧补的默认块见 shared createDefaultRelationshipBlock */
 
 /** 复合分 = 0.6×亲密 + 0.4×信任（0–100） */
 export function levelScoreOf(relation: RelationScores): number {
@@ -172,8 +174,8 @@ export function applyRelationshipEvent(
   if (delta.intimacy > 0 || delta.trust > 0) block.lastPositiveDay = dayKey;
 
   const relation: RelationScores = {
-    intimacy: round1(clamp(prevRelation.intimacy + grantedIntimacy, 0, 100)),
-    trust: round1(clamp(prevRelation.trust + grantedTrust, 0, 100)),
+    intimacy: round3(clamp(prevRelation.intimacy + grantedIntimacy, 0, 100)),
+    trust: round3(clamp(prevRelation.trust + grantedTrust, 0, 100)),
   };
 
   const before = displayLevelOf(prevBlock, prevRelation);

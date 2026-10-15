@@ -26,6 +26,11 @@ export interface PersonalityWeights {
 export interface ConditionContext {
   mood: { happiness: number; anger: number; sadness: number };
   relation: { intimacy: number; trust: number };
+  /**
+   * v2.0 关系等级快照：displayLevelOf(block, relation)。
+   * 功能关闭/无状态时给 0（带等级闸门的剧本一律不放行）。
+   */
+  relationship: { level: number };
   personality: PersonalityWeights;
   /** emotionState.counters 命名计数器（含临时上下文如 reunionTier） */
   counters: Record<string, number>;

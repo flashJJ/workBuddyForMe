@@ -68,6 +68,14 @@ export const zhSettings = {
     loadFailed: '情绪状态加载失败',
     hint: '情绪会随时间自然平复；关系（亲密度/信任度）只增不减，重置才会清零。',
   },
+  // v2.0 关系等级（养成；与情绪内核独立开关）
+  relationship: {
+    title: '关系等级',
+    description: '相处会沉淀为陌生、认识、搭档、挚友四个等级，解锁专属称呼与纪念演出。数据仅保存在本机。',
+    enable: '启用关系等级（等级成长、回落保底与解锁内容）',
+    enableHint: '关闭后冻结等级变化与解锁内容，进入纯工具模式；不影响情绪识别与亲密度、信任度的积累。',
+    current: '当前关系',
+  },
   // v1.7 剧情事件
   events: {
     title: '剧情演出',
@@ -176,6 +184,16 @@ export const enSettings = {
     resetDone: 'Emotion state reset',
     loadFailed: 'Failed to load emotion state',
     hint: 'Mood settles over time; relationship (intimacy/trust) only grows and is cleared only by reset.',
+  },
+  // v2.0 relationship levels (independent of the emotion engine switch)
+  relationship: {
+    title: 'Relationship levels',
+    description:
+      'Time together settles into four levels — Stranger, Acquainted, Partner, Confidant — unlocking exclusive nicknames and keepsake scenes. All data stays on this device.',
+    enable: 'Enable relationship levels (growth, gentle fallback and unlockables)',
+    enableHint:
+      'When off, level changes and unlockables are frozen in a tool-only mode; emotion detection and intimacy/trust growth are unaffected.',
+    current: 'Current relationship',
   },
   // v1.7 staged events
   events: {

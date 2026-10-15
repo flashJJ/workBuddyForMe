@@ -68,23 +68,29 @@ describe('createEmotionService（v1.6）', () => {
     service.record('a1', { type: 'chat', source: 'rule' }, T0 + 1000);
 
     const detail = service.viewWithEvents('a1', 10, T0 + 1000);
-    expect(detail.events).toHaveLength(2);
-    expect(detail.events[0]).toMatchObject({
+    // v2.0：初始 24 分，首次 praise（+2/+1）即跨过 25 升「认识」，多一条 system 流水
+    expect(detail.events).toHaveLength(3);
+    const chatEvent = detail.events.find((e) => e.type === 'chat');
+    const praiseEvent = detail.events.find((e) => e.type === 'praise');
+    const levelEvent = detail.events.find((e) => e.type === 'level_up');
+    expect(chatEvent).toMatchObject({
       type: 'chat',
       source: 'rule',
       emotion: null,
       messageId: null,
     });
-    expect(detail.events[1]).toMatchObject({
+    expect(praiseEvent).toMatchObject({
       type: 'praise',
       source: 'model',
       emotion: 'joy',
       intensity: 0.7,
       messageId: 'm-1',
     });
-    // 流水（倒序）与快照 recentEvents（正序）同一事件 id 一致
-    expect(detail.state.recentEvents[0]!.id).toBe(detail.events[1]!.id); // praise
-    expect(detail.state.recentEvents[1]!.id).toBe(detail.events[0]!.id); // chat
+    expect(levelEvent).toMatchObject({ source: 'system', emotion: null, intensity: 1 });
+    // 流水与快照 recentEvents 同一 soul 事件 id 一致（system 等级事件不进快照）
+    expect(detail.state.recentEvents).toHaveLength(2);
+    expect(detail.state.recentEvents[0]!.id).toBe(praiseEvent!.id);
+    expect(detail.state.recentEvents[1]!.id).toBe(chatEvent!.id);
     close();
   });
 
@@ -122,7 +128,10 @@ describe('createEmotionService（v1.6）', () => {
     expect(service.view('a1', T0).currentNeed).toBe('comfort');
 
     service.record('a1', { type: 'praise', source: 'model' }, T0 + 500);
-    expect(service.viewWithEvents('a1').events).toHaveLength(1);
+    // praise 本身 1 条 + v2.0 首次 praise 触发的 level_up 1 条
+    const beforeReset = service.viewWithEvents('a1').events;
+    expect(beforeReset.filter((e) => e.type === 'praise')).toHaveLength(1);
+    expect(beforeReset.filter((e) => e.type === 'level_up')).toHaveLength(1);
 
     const reset = service.reset('a1', T0 + 1000);
     expect(reset.mood.happiness).toBe(10);

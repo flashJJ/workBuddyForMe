@@ -34,6 +34,17 @@ export const zhEvent = {
       comfort0: '没关系，我不生气啦。',
       comfort1: '有你在就好了。',
     },
+    // v2.0 关系等级解锁剧本（仅升级瞬间触发；台词单条 ≤32 字）
+    levelup: {
+      acquainted: { title: '初次相识' },
+      acquainted0: '嗯，我记住你了。以后请多关照。',
+      partner: { title: '成为搭档' },
+      partner0: '我们现在是搭档了呢。',
+      partner1: '接下来的事，就一起搞定吧。',
+      confidant: { title: '结为挚友' },
+      confidant0: '不知不觉，你已经是我最信任的人了。',
+      confidant1: '不管发生什么，我都会站在你这边。',
+    },
   },
   touch: {
     shy: {

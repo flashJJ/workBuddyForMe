@@ -1,12 +1,12 @@
 import type { DatabaseInstance } from '../client';
 import {
   EMOTION_EVENT_SOURCES,
-  SOUL_EVENT_TYPES,
+  EMOTION_PERSISTED_EVENT_TYPES,
   EXPRESSION_TAGS,
   type EmotionEventSource,
   type EmotionEventView,
+  type EmotionPersistedEventType,
   type ExpressionTag,
-  type SoulEventType,
 } from '@wbfm/shared/schemas';
 
 /** 情绪事件流水行（不含对话原文） */
@@ -26,7 +26,8 @@ export type EmotionEventRecord = EmotionEventView;
 
 export interface AddEmotionEventInput {
   id: string;
-  type: SoulEventType;
+  /** soulEvent 四类或 v2.0 等级变迁（level_up/down 时 intensity=新等级 0–3） */
+  type: EmotionPersistedEventType;
   source: EmotionEventSource;
   emotion?: ExpressionTag | null;
   intensity?: number | null;
@@ -36,21 +37,37 @@ export interface AddEmotionEventInput {
 }
 
 function mapRow(row: EmotionEventRow): EmotionEventRecord | null {
-  if (!(SOUL_EVENT_TYPES as readonly string[]).includes(row.type)) return null;
+  if (!(EMOTION_PERSISTED_EVENT_TYPES as readonly string[]).includes(row.type)) return null;
   if (!(EMOTION_EVENT_SOURCES as readonly string[]).includes(row.source)) return null;
-  if (
+  const isLevelEvent = row.type === 'level_up' || row.type === 'level_down';
+  if (isLevelEvent) {
+    // 等级事件：无表情/无消息外键，intensity=新等级（整数 0–3）
+    if (row.emotion !== null || row.message_id !== null) return null;
+    if (
+      row.intensity === null ||
+      !Number.isInteger(row.intensity) ||
+      row.intensity < 0 ||
+      row.intensity > 3
+    ) {
+      return null;
+    }
+  } else if (
     row.emotion !== null &&
     !(EXPRESSION_TAGS as readonly string[]).includes(row.emotion)
   ) {
     return null;
   }
-  if (row.intensity !== null && (!Number.isFinite(row.intensity) || row.intensity < 0 || row.intensity > 1)) {
+  if (
+    !isLevelEvent &&
+    row.intensity !== null &&
+    (!Number.isFinite(row.intensity) || row.intensity < 0 || row.intensity > 1)
+  ) {
     return null;
   }
   return {
     id: row.id,
     assistantId: row.assistant_id,
-    type: row.type as SoulEventType,
+    type: row.type as EmotionPersistedEventType,
     source: row.source as EmotionEventSource,
     emotion: row.emotion as ExpressionTag | null,
     intensity: row.intensity,

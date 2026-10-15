@@ -19,10 +19,14 @@ const FROZEN_TABLE: Record<string, [number, number, number, number]> = {
   'ev.task.success': [2, 300_000, 5, 6],
   // failure 正文 JSON 为 7 步（02 文档汇总表写 6 系笔误，以冻结 JSON 为准）
   'ev.task.failure': [3, 300_000, 5, 7],
+  // v2.0：3 个关系等级解锁剧本（无意图映射，仅升级瞬间触发）
+  'ev.relation.levelup.acquainted': [2, 7 * 24 * 3600_000, 1, 6],
+  'ev.relation.levelup.partner': [2, 7 * 24 * 3600_000, 1, 8],
+  'ev.relation.levelup.confidant': [2, 7 * 24 * 3600_000, 1, 10],
 };
 
-describe('内置剧本注册表（M0 冻结）', () => {
-  it('恰好 8 个内置剧本且全部可按 id 取回', () => {
+describe('内置剧本注册表（M0 冻结 + v2.0 等级剧本）', () => {
+  it('恰好 11 个内置剧本且全部可按 id 取回', () => {
     expect(BUILT_IN_EVENTS.map((e) => e.id).sort()).toEqual(Object.keys(FROZEN_TABLE).sort());
     for (const id of Object.keys(FROZEN_TABLE)) {
       expect(getBuiltInEvent(id)?.id).toBe(id);
@@ -50,10 +54,20 @@ describe('内置剧本注册表（M0 冻结）', () => {
       }
     }
   });
+
+  it('v2.0 等级剧本的 minRelationshipLevel 分别锁定 1/2/3', () => {
+    expect(getBuiltInEvent('ev.relation.levelup.acquainted')?.minRelationshipLevel).toBe(1);
+    expect(getBuiltInEvent('ev.relation.levelup.partner')?.minRelationshipLevel).toBe(2);
+    expect(getBuiltInEvent('ev.relation.levelup.confidant')?.minRelationshipLevel).toBe(3);
+    // v1.7 老剧本一律不带等级闸门（缺省=不限制）
+    for (const id of Object.keys(FROZEN_TABLE).filter((x) => !x.includes('levelup'))) {
+      expect(getBuiltInEvent(id)?.minRelationshipLevel).toBeUndefined();
+    }
+  });
 });
 
 describe('内置触发器元数据', () => {
-  it('8 个意图一一映射到 8 个内置剧本且 uiOnly 仅任务族', () => {
+  it('8 个意图一一映射到 8 个 v1.7 内置剧本且 uiOnly 仅任务族（v2.0 等级剧本无意图）', () => {
     expect(BUILT_IN_TRIGGERS).toHaveLength(BUILT_IN_EVENT_INTENTS.length);
     for (const spec of BUILT_IN_TRIGGERS) {
       expect(eventIdForIntent(spec.intent)).toBe(spec.eventId);

@@ -12,6 +12,7 @@ import {
   CARD_LIST_ITEM_MAX_CHARS,
   CARD_LIST_ITEMS_MAX,
   CARD_NAME_MAX_CHARS,
+  type CardNicknameByLevel,
   type CharacterCardDiagnostic,
   type ParseCharacterCardResult,
   type ParsedCharacterCard,
@@ -192,6 +193,19 @@ export function parseCharacterCard(markdown: string): ParseCharacterCardResult {
     speakingStyle: [],
     boundaries: [],
   };
+  // v2.0：稀疏等级称呼（仅收集非空档；解析期已做长度校验）
+  const nicknameByLevel: CardNicknameByLevel = {};
+  (
+    [
+      [1, fm.nickname1],
+      [2, fm.nickname2],
+      [3, fm.nickname3],
+    ] as const
+  ).forEach(([level, raw]) => {
+    const value = raw?.trim();
+    if (value) nicknameByLevel[level] = value;
+  });
+  if (Object.keys(nicknameByLevel).length > 0) card.nicknameByLevel = nicknameByLevel;
   for (const block of blocks) {
     if (block.key === 'identity') card.identity = normalizeIdentity(block, warnings);
     else card[block.key] = normalizeList(block, warnings);

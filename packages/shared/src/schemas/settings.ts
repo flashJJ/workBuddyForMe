@@ -38,6 +38,9 @@ export const settingsUpdateSchema = z.object({
   compileModelId: z.string().trim().min(1).nullable().optional(),
   // v1.6 情绪内核总开关（缺省视为 true；关闭后不注入/不解析/不写情绪状态）
   emotionEnabled: z.boolean().optional(),
+  // v2.0 关系等级（养成）开关（缺省视为 true；关闭后冻结等级演算/检查点/展示与解锁，
+  // 不影响 v1.6 intimacy/trust 原始分；与 emotionEnabled 独立，可分别关闭）
+  relationshipEnabled: z.boolean().optional(),
   // v1.6 M5 互动本地短句（摸头/久别迎接；缺省视为 true，关闭只留无声音的表情动作）
   interactionLinesEnabled: z.boolean().optional(),
   // v1.7 剧情事件总开关（缺省视为 true；出口/勿扰/对话锁仍由导演层兜底）

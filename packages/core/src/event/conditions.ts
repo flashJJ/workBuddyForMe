@@ -10,6 +10,8 @@ import type { EventCondition, ConditionOp } from '@wbfm/shared/schemas';
 
 const MOOD_KEYS = new Set(['happiness', 'anger', 'sadness']);
 const RELATION_KEYS = new Set(['intimacy', 'trust']);
+/** v2.0：关系展示等级（0–3），与剧本 minRelationshipLevel 闸门同源 */
+const RELATIONSHIP_KEYS = new Set(['level']);
 const PERSONALITY_KEYS = new Set(['frankness', 'tsundere', 'shy', 'tolerance']);
 const TIME_KEYS = new Set(['hour', 'lastInteractionMin']);
 // 计数器名与 emotionState.counters 既有键对齐：小驼峰（touchStreak）/下划线均可，
@@ -26,6 +28,8 @@ export function isValidConditionPath(path: string): boolean {
       return parts.length === 2 && MOOD_KEYS.has(leaf);
     case 'relation':
       return parts.length === 2 && RELATION_KEYS.has(leaf);
+    case 'relationship':
+      return parts.length === 2 && RELATIONSHIP_KEYS.has(leaf);
     case 'personality':
       return parts.length === 2 && PERSONALITY_KEYS.has(leaf);
     case 'time':

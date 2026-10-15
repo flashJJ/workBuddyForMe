@@ -34,6 +34,7 @@ import {
   type EmotionState,
   type SoulEventType,
 } from '@wbfm/shared/schemas';
+import { normalizeRelationshipBlock } from './relationship-kernel';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -142,6 +143,8 @@ export function normalizeEmotionState(value: unknown, now: number): EmotionState
       : ('none' satisfies EmotionNeed),
     counters,
     recentEvents,
+    // v2.0：关系块随状态一起归一化（v1 行/坏数据回落默认块，日上限计数不丢）
+    relationship: normalizeRelationshipBlock(source.relationship),
     updatedAt: readTimestamp(source.updatedAt, base.updatedAt),
   };
 }

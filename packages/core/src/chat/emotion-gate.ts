@@ -18,6 +18,8 @@ export interface OrchestratorEmotionGate {
     assistantId: string,
     input: { type: 'praise' | 'comfort'; description?: string },
   ): EmotionState;
+  /** v2.0：每日关系地板检查点（scheduler 心跳驱动；进程内按日去重） */
+  runRelationshipCheckpoint(now?: number): void;
 }
 
 export function createEmotionGate(emotion: EmotionService): OrchestratorEmotionGate {
@@ -37,6 +39,9 @@ export function createEmotionGate(emotion: EmotionService): OrchestratorEmotionG
         source: 'event',
         ...(input.description ? { description: input.description } : {}),
       });
+    },
+    runRelationshipCheckpoint(now) {
+      emotion.runRelationshipCheckpoint(now);
     },
   };
 }

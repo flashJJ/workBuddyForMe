@@ -46,6 +46,25 @@ export const relationshipBlockSchema = z.object({
 });
 export type RelationshipBlock = z.infer<typeof relationshipBlockSchema>;
 
+/** v1 状态（无关系块）读侧补的默认块；新助手首条事件前也用它 */
+export function createDefaultRelationshipBlock(): RelationshipBlock {
+  return {
+    levelFloor: 0,
+    highestLevelEver: 0,
+    lastPositiveDay: null,
+    lastFloorDownAt: null,
+    dailyGain: { dayKey: '', intimacy: 0, trust: 0 },
+  };
+}
+
+/** 本地日期键（YYYY-MM-DD，按运行机器时区；桌面本地服务即用户时区） */
+export function localDayKey(ms: number): string {
+  const d = new Date(ms);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 /** 等级变迁事件（写 emotion_events，type=level_up/level_down，intensity=新等级） */
 export const RELATIONSHIP_LEVEL_EVENT_TYPES = ['level_up', 'level_down'] as const;
 export type RelationshipLevelEventType =

@@ -41,6 +41,11 @@ export interface BuildPromptOptions {
   card?: ParsedCharacterCard | null;
   /** 固定位于身份卡之后、情绪段之前 */
   globalAppendPrompt?: string | null;
+  /**
+   * v2.0：当前关系等级已解锁的用户称呼（由组装侧经闸门计算后传入）。
+   * 仅在 card 存在时随身份卡段落注入；未解锁/无卡为 null，不产生任何称呼文本。
+   */
+  cardNickname?: string | null;
 }
 
 /**
@@ -57,7 +62,9 @@ export function buildSystemPrompt(
   options: BuildPromptOptions = {},
 ): string {
   // 身份卡优先；卡缺省或空壳时回落旧 systemPrompt（默认卡/悬挂引用不阻断对话）
-  const personaBlock = options.card ? buildPersonaBlock(options.card) : null;
+  const personaBlock = options.card
+    ? buildPersonaBlock(options.card, options.cardNickname ?? null)
+    : null;
   const personaText = personaBlock ?? assistant.systemPrompt.trim();
 
   const parts: string[] = [];
@@ -109,6 +116,8 @@ export interface ChatBudgetOptions {
   card?: ParsedCharacterCard | null;
   /** v1.8 M3 预埋：全局追加提示词 */
   globalAppendPrompt?: string | null;
+  /** v2.0：关系等级已解锁的用户称呼（未解锁不传，组装闸门在调用侧） */
+  cardNickname?: string | null;
 }
 
 /**
@@ -148,6 +157,7 @@ export function buildChatMessages(
   const promptOptions: BuildPromptOptions = {
     card: budget.card ?? null,
     globalAppendPrompt: budget.globalAppendPrompt ?? null,
+    cardNickname: budget.cardNickname ?? null,
   };
 
   // 1) 先装不含 RAG 的固定系统块（系统层/身份卡/全局追加/情绪/摘要/记忆/技能）

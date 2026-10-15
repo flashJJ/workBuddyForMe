@@ -79,6 +79,12 @@
             "import": "./dist/stage-client.mjs",
             "require": "./dist/stage-client.cjs"
         },
+        "./relationship-client": {
+            "types": "./src/emotion/relationship-client.ts",
+            "development": "./src/emotion/relationship-client.ts",
+            "import": "./dist/relationship-client.mjs",
+            "require": "./dist/relationship-client.cjs"
+        },
         "./scheduler": {
             "types": "./src/scheduler/index.ts",
             "development": "./src/scheduler/index.ts",

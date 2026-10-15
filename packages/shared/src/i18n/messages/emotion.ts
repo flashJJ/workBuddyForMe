@@ -38,6 +38,9 @@ export const zhEmotion = {
     chat: '日常相处',
     belittle: '被数落',
     comfort: '被哄好',
+    // v2.0 关系等级变迁（系统派生，面板时间线用；降级不主动通知）
+    level_up: '关系升级',
+    level_down: '关系回落',
   },
   source: {
     model: '模型识别',
@@ -45,6 +48,7 @@ export const zhEmotion = {
     event: '剧情事件',
     manual: '手动设置',
     default: '常规回合',
+    system: '系统',
   },
   /** M5：久别迎接本地短句（确定性，零模型调用；welcome 8h / miss 24h / longMiss 72h） */
   reunion: {
@@ -114,6 +118,9 @@ export const enEmotion: typeof zhEmotion = {
     chat: 'Everyday chat',
     belittle: 'Belittled',
     comfort: 'Comforted',
+    // v2.0 relationship level changes (system-derived; downgrades never notify)
+    level_up: 'Relationship upgraded',
+    level_down: 'Relationship settled back',
   },
   source: {
     model: 'Detected by model',
@@ -121,6 +128,7 @@ export const enEmotion: typeof zhEmotion = {
     event: 'Story event',
     manual: 'Manual',
     default: 'Ordinary turn',
+    system: 'System',
   },
   /** M5: local reunion greetings (deterministic, no model call) */
   reunion: {

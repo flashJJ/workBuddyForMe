@@ -6,8 +6,13 @@
  * 禁止在 core/web 里散落魔法数。真机一轮后允许整体重标定，但须同步本文件与协议文档。
  */
 
-/** 状态 JSON 结构版本（assistant_emotion_states.schema_version） */
-export const EMOTION_SCHEMA_VERSION = 1;
+/**
+ * 状态 JSON 结构版本（assistant_emotion_states.state_json）
+ * v1（v1.6）：mood/relation/need/counters/recentEvents
+ * v2（v2.0）：追加 relationship 等级地板块（见 schemas/relationship.ts），
+ *   v1 行经读侧 preprocess 迁移补默认块，无需 SQL 迁移。
+ */
+export const EMOTION_SCHEMA_VERSION = 2;
 
 // ── 值域 ────────────────────────────────────────────────
 /** happiness 允许负值（低落）；anger/sadness 为单向非负量 */

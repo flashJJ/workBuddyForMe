@@ -231,6 +231,11 @@ export interface AppSettings extends EventSettingsFields {
   /** v1.6：情绪/关系内核总开关（缺省视为 true；与助手 expressionEnabled 同时为真才生效） */
   emotionEnabled?: boolean;
   /**
+   * v2.0：关系等级养成开关（缺省视为 true）。
+   * 关闭后等级演算/每日检查点/等级展示与解锁全部冻结；不影响 intimacy/trust 原始分。
+   */
+  relationshipEnabled?: boolean;
+  /**
    * v1.6 M5：互动本地短句开关（缺省视为 true）。
    * 关闭后摸头/久别迎接不再说话（零文案气泡）；摸头表情与弹性等无音效动作反馈保留。
    */
