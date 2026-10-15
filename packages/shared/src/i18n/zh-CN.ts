@@ -35,6 +35,8 @@ import { zhReminders } from './messages/reminder';
 import { zhEventM5 } from './messages/event-m5';
 import { zhCharacterCards } from './messages/character-cards';
 import { zhTuning } from './messages/tuning';
+import { zhStage } from './messages/stage';
+import { zhMeeting } from './messages/meeting';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -58,6 +60,8 @@ export const zhCN = {
   assistants: zhAssistants,
   characterCards: zhCharacterCards,
   tuning: zhTuning,
+  stage: zhStage,
+  meeting: zhMeeting,
   knowledge: zhKnowledge,
   memory: zhMemory,
   tasks: zhTasks,

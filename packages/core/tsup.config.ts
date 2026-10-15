@@ -10,6 +10,7 @@ export default defineConfig({
     index: 'src/index.ts',
     voice: 'src/voice/index.ts',
     'event-client': 'src/event/client.ts',
+    'stage-client': 'src/agents/stage-client.ts',
   },
   format: ['esm', 'cjs'],
   sourcemap: true,

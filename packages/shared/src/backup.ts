@@ -5,11 +5,12 @@ import { z } from 'zod';
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。
- * 当前版本：4（v1.8 events 轨追加 characterCards.json 角色卡负载，manifest.events.cardCount；
- * v1/v2/v3 旧归档仍可恢复，缺文件/缺键按 0 处理）。
+ * 当前版本：5（v1.9 events 轨追加 stageScenes.json 舞台场景 + meetings.json/meetingMessages.json
+ * 多助手会议，manifest.events.stageSceneCount/meetingCount/meetingMessageCount；
+ * v1–v4 旧归档仍可恢复，缺文件/缺键按 0 处理）。
  */
 
-export const CURRENT_BACKUP_SCHEMA_VERSION = 4 as const;
+export const CURRENT_BACKUP_SCHEMA_VERSION = 5 as const;
 
 export const backupTrackSchema = z.enum([
   'conversations',
@@ -59,6 +60,11 @@ export const backupManifestSchema = z.object({
         triggerCount: z.number().int().min(0).optional(),
         /** v1.8：角色卡条数（负载文件 characterCards.json；v3 归档缺省 0） */
         cardCount: z.number().int().min(0).optional(),
+        /** v1.9 M1：舞台场景条数（stageScenes.json；v4 及更早归档缺省 0） */
+        stageSceneCount: z.number().int().min(0).optional(),
+        /** v1.9 M3：会议与会议消息条数（meetings.json/meetingMessages.json；缺省 0） */
+        meetingCount: z.number().int().min(0).optional(),
+        meetingMessageCount: z.number().int().min(0).optional(),
       })
       .optional(),
   }),
@@ -90,6 +96,10 @@ export const backupPrecheckSchema = z.object({
     eventUsage: z.number().int().min(0),
     /** v1.8：角色卡条数（随 events 轨） */
     cards: z.number().int().min(0),
+    /** v1.9：舞台场景/会议/会议消息条数（随 events 轨；v4 及更早归档为 0） */
+    stageScenes: z.number().int().min(0),
+    meetings: z.number().int().min(0),
+    meetingMessages: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

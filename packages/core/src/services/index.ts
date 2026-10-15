@@ -36,6 +36,10 @@ export {
   type CharacterCardService,
 } from './character-card-service';
 export {
+  createStageSceneService,
+  type StageSceneService,
+} from './stage-scene-service';
+export {
   ensureSeedData,
   ensureBuiltinCharacterCards,
   migrateLegacySystemPrompts,

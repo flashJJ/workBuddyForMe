@@ -15,6 +15,11 @@ export const API = {
   characterCardDuplicate: (id: string) => `/api/character-cards/${id}/duplicate`,
   characterCardRaw: (id: string) => `/api/character-cards/${id}/raw`,
   assistantCard: (id: string) => `/api/assistants/${id}/card`,
+  // v1.9 舞台场景
+  stageScenes: '/api/stage-scenes',
+  stageScene: (id: string) => `/api/stage-scenes/${id}`,
+  stageBackgrounds: '/api/stage-scenes/backgrounds',
+  stageBackground: (ref: string) => `/api/stage-scenes/backgrounds/${ref}`,
   conversations: '/api/conversations',
   conversation: (id: string) => `/api/conversations/${id}`,
   messages: (id: string) => `/api/conversations/${id}/messages`,
@@ -54,11 +59,20 @@ export const API = {
   taskEvents: (id: string) => `/api/tasks/${id}/events`,
   taskControl: (id: string) => `/api/tasks/${id}/control`,
   taskStopAll: '/api/tasks/stop-all',
-  // v1.4 多智能体协作
+  // v1.4 多智能体协作；v1.9 M2 observe=1 为舞台只读第二客户端
   agentRuns: '/api/agent/runs',
   agentRun: (id: string) => `/api/agent/runs/${id}`,
-  agentRunEvents: (id: string) => `/api/agent/runs/${id}/events`,
+  agentRunEvents: (id: string, observe = false) =>
+    `/api/agent/runs/${id}/events${observe ? '?observe=1' : ''}`,
   agentRunCancel: (id: string) => `/api/agent/runs/${id}/cancel`,
+  // v1.9 M3 多助手会议
+  meetings: '/api/meetings',
+  meeting: (id: string) => `/api/meetings/${id}`,
+  meetingTurns: (id: string) => `/api/meetings/${id}/turns`,
+  meetingMode: (id: string) => `/api/meetings/${id}/mode`,
+  meetingFinish: (id: string) => `/api/meetings/${id}/finish`,
+  meetingAbort: (id: string) => `/api/meetings/${id}/abort`,
+  meetingEvents: (id: string) => `/api/meetings/${id}/events`,
   // v0.8 Flow Studio
   flows: '/api/flows',
   flow: (id: string) => `/api/flows/${id}`,
@@ -92,6 +106,7 @@ export const QUERY_KEYS = {
   settings: ['settings'] as const,
   assistants: ['assistants'] as const,
   characterCards: ['character-cards'] as const,
+  stageScenes: ['stage-scenes'] as const,
   conversations: ['conversations'] as const,
   messages: (conversationId: string) => ['messages', conversationId] as const,
   knowledgeBases: ['knowledge-bases'] as const,

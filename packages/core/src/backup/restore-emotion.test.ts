@@ -61,7 +61,7 @@ describe('备份恢复 · emotion 轨（v1.6）', () => {
       { db: srcDb, cipher: createWebCipher() },
       { tracks: ['emotion'] },
     );
-    expect(manifest.backupSchemaVersion).toBe(4);
+    expect(manifest.backupSchemaVersion).toBe(5);
     expect(manifest.tracks.emotion?.entryCount).toBe(2);
 
     const pre = await precheckBackup(archive);

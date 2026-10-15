@@ -22,6 +22,8 @@ import {
   createEventUsageRepository,
   createEventTriggerRepository,
   createCharacterCardRepository,
+  createStageSceneRepository,
+  createMeetingRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { computeNextRunMs } from '../scheduler/next-run';
@@ -192,12 +194,20 @@ export async function exportBackup(
     const usage = eventUsageRepo.listAll({ sinceMs: Date.now() - 90 * 24 * 3600_000 });
     const triggers = eventTriggerRepo.list();
     const cards = createCharacterCardRepository(deps.db).list();
+    // v1.9：舞台场景 + 多助手会议（同 events 轨加法负载，背景图片只带引用不进档）
+    const stageScenes = createStageSceneRepository(deps.db).list();
+    const meetingRepo = createMeetingRepository(deps.db);
+    const meetings = meetingRepo.list();
+    const meetingMessages = meetings.flatMap((meeting) => meetingRepo.listMessages(meeting.id));
     files['events.json'] = JSON.stringify(
       { assistants: customAssistants, schedules, usage, triggers },
       null,
       2,
     );
     files['characterCards.json'] = JSON.stringify(cards, null, 2);
+    files['stageScenes.json'] = JSON.stringify(stageScenes, null, 2);
+    files['meetings.json'] = JSON.stringify(meetings, null, 2);
+    files['meetingMessages.json'] = JSON.stringify(meetingMessages, null, 2);
     manifestPartial.events = {
       files: 'events.json',
       scheduleCount: schedules.length,
@@ -205,8 +215,19 @@ export async function exportBackup(
       assistantCount: customAssistants.length,
       triggerCount: triggers.length,
       cardCount: cards.length,
+      stageSceneCount: stageScenes.length,
+      meetingCount: meetings.length,
+      meetingMessageCount: meetingMessages.length,
     };
-    const eventsTotal = schedules.length + usage.length + customAssistants.length + triggers.length + cards.length;
+    const eventsTotal =
+      schedules.length +
+      usage.length +
+      customAssistants.length +
+      triggers.length +
+      cards.length +
+      stageScenes.length +
+      meetings.length +
+      meetingMessages.length;
     onProgress?.({ track: 'events', processed: eventsTotal, total: eventsTotal });
   }
 

@@ -25,6 +25,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./meeting": {
+            "types": "./src/meeting/index.ts",
+            "development": "./src/meeting/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./secrets": {
             "types": "./src/secrets/index.ts",
             "development": "./src/secrets/index.ts",
@@ -66,6 +72,12 @@
             "development": "./src/event/client.ts",
             "import": "./dist/event-client.mjs",
             "require": "./dist/event-client.cjs"
+        },
+        "./stage-client": {
+            "types": "./src/agents/stage-client.ts",
+            "development": "./src/agents/stage-client.ts",
+            "import": "./dist/stage-client.mjs",
+            "require": "./dist/stage-client.cjs"
         },
         "./scheduler": {
             "types": "./src/scheduler/index.ts",

@@ -184,4 +184,15 @@ export {
   type CharacterCardRepository,
   type CharacterCardCreateFields,
 } from './character-card-repo';
+export {
+  createStageSceneRepository,
+  type StageSceneRepository,
+  type StageSceneUpsertFields,
+} from './stage-scene-repo';
+export {
+  createMeetingRepository,
+  type MeetingRepository,
+  type MeetingCreateFields,
+  type MeetingMessageInsert,
+} from './meeting-repo';
 export type { ProviderRecord, MemoryRow } from './mappers';

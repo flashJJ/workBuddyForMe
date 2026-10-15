@@ -1,7 +1,7 @@
 import { app, Menu, shell } from 'electron';
 
 /** 基础应用菜单；开发态额外提供 DevTools/强制刷新 */
-export function buildAppMenu(isDev: boolean): Menu {
+export function buildAppMenu(isDev: boolean, onOpenStage?: () => void): Menu {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: app.name,
@@ -31,6 +31,12 @@ export function buildAppMenu(isDev: boolean): Menu {
         { role: 'zoomOut', label: '缩小' },
         { type: 'separator' },
         { role: 'togglefullscreen', label: '全屏' },
+        ...(onOpenStage
+          ? ([
+              { type: 'separator' as const },
+              { label: '舞台…', accelerator: 'CommandOrControl+Shift+S', click: () => onOpenStage() },
+            ] satisfies Electron.MenuItemConstructorOptions[])
+          : []),
       ],
     },
     {
@@ -50,6 +56,6 @@ export function buildAppMenu(isDev: boolean): Menu {
   return Menu.buildFromTemplate(template);
 }
 
-export function installAppMenu(isDev: boolean): void {
-  Menu.setApplicationMenu(buildAppMenu(isDev));
+export function installAppMenu(isDev: boolean, onOpenStage?: () => void): void {
+  Menu.setApplicationMenu(buildAppMenu(isDev, onOpenStage));
 }

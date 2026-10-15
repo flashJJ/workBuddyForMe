@@ -10,6 +10,7 @@ import {
   createAssistantsService,
   createAttachmentService,
   createCharacterCardService,
+  createStageSceneService,
   createConversationService,
   createDocumentService,
   createKnowledgeService,
@@ -34,6 +35,8 @@ import {
 } from '@wbfm/core/services';
 import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
 import { createAgentRunService, type AgentRunService } from '@wbfm/core/agents';
+import { createMeetingService, type MeetingService } from '@wbfm/core/meeting';
+import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
 import {
   createEndpointService,
@@ -71,6 +74,8 @@ export interface ServiceContainer {
   assistants: AssistantsService;
   /** v1.8：角色卡库（内置只读卡 + 自建卡 CRUD/导入导出/助手选卡） */
   characterCards: CharacterCardService;
+  /** v1.9：舞台场景 CRUD + 自定义背景落盘 */
+  stageScenes: ReturnType<typeof createStageSceneService>;
   conversations: ConversationService;
   orchestrator: ChatOrchestrator;
   ingestion: IngestionPipeline;
@@ -101,8 +106,10 @@ export interface ServiceContainer {
   taskGrants: TaskGrantRegistry;
   /** v0.7 M3：任务运行管理服务（包装 runTaskLoop 为可外部控制） */
   taskRunner: TaskRunnerService;
-  /** v1.4 M1：多智能体协作运行管理服务（M1 骨架期无角色客户端通道，M2 接通） */
+  /** v1.4 多智能体协作 */
   agentRuns: AgentRunService;
+  /** v1.9 M3 多助手会议 */
+  meetings: MeetingService;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
   runtime: ToolRuntime;
   /** v0.8 M1：工作流运行服务（试运行/落库；已发布流程经 runtime 第三来源解析） */
@@ -168,6 +175,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     clientsProvider: createAgentClientsProvider(agentClientsFactory),
     resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
   });
+  // v1.9 M3：多助手会议（新表新调度，共用模型/角色卡人格；与协作分账）
+  const meetings = createMeetingService(createMeetingDeps(deps, assistants));
   // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
   // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
   const workflows = createWorkflowRepository(db);
@@ -210,6 +219,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     taskGrants,
     taskRunner,
     agentRuns,
+    meetings,
     runtime,
     flowRunner,
     providers: createProviderService(deps),
@@ -217,6 +227,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     settings: createSettingsService(deps),
     assistants,
     characterCards: createCharacterCardService(deps),
+    stageScenes: createStageSceneService(deps),
     conversations: createConversationService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),

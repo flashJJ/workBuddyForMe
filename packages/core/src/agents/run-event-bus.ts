@@ -1,0 +1,128 @@
+/**
+ * v1.9 M2：协作 run 事件观察总线（进程内 fan-out）。
+ *
+ * 背景：v1.4 的 /events SSE 是「单订阅者拥有生命周期」模型——主会话独占消费，
+ * 断线联动 abort run。舞台是只读第二客户端，要求：
+ * - 不启动/不拥有 run（owner 生成器仍是唯一消费方）；
+ * - 观察连接断开绝不 abort run（队列所有方在主会话）；
+ * - 晚加入/重开能从本场开头续看（owner 消费过的事件全部留在 buffer）。
+ *
+ * 实现：owner 生成器每 yield 一帧即 publish（不阻塞 owner）；观察者各自持游标，
+ * buffer 存活到 run 终态（协作有三重预算，事件量天然有界）。
+ */
+
+/** 唤醒柄：resolve + 所属集合（退订时精确摘除） */
+interface WakeEntry {
+  (): void;
+}
+
+export interface RunEventBusOptions {
+  /**
+   * 缓冲帧上限（超出丢最旧）。协作 run 有界用默认 Infinity；
+   * v1.9 M3 会议长连跨多轮，调用方传有界值防长跑膨胀——
+   * live 订阅者只收订阅后的新帧，历史由调用方从落库回放补齐。
+   */
+  maxBuffer?: number;
+}
+
+export interface RunEventBus<T> {
+  /** owner 侧：广播一帧（同步入 buffer 并唤醒等待中的观察者） */
+  publish(event: T): void;
+  /** owner 侧：终态关闭，观察者读完 buffer 后自然结束 */
+  close(): void;
+  /** 观察者侧：从缓冲头读（晚加入整场回放）；break/return 退订 */
+  subscribe(): AsyncIterableIterator<T>;
+  /** 观察者侧：只收订阅后的新帧（历史调用方自行从落库回放，避免重复） */
+  subscribeLive(): AsyncIterableIterator<T>;
+  /** 当前已缓冲帧数（观测/测试用） */
+  size(): number;
+}
+
+export function createRunEventBus<T>(options: RunEventBusOptions = {}): RunEventBus<T> {
+  const buffer: T[] = [];
+  const waiters = new Set<WakeEntry>();
+  let closed = false;
+  const maxBuffer = options.maxBuffer ?? Number.POSITIVE_INFINITY;
+
+  return {
+    publish(event) {
+      buffer.push(event);
+      if (Number.isFinite(maxBuffer) && buffer.length > maxBuffer) {
+        buffer.splice(0, buffer.length - maxBuffer);
+      }
+      if (waiters.size === 0) return;
+      const woke = [...waiters];
+      waiters.clear();
+      for (const wake of woke) wake();
+    },
+    close() {
+      if (closed) return;
+      closed = true;
+      const woke = [...waiters];
+      waiters.clear();
+      for (const wake of woke) wake();
+    },
+    size: () => buffer.length,
+    subscribe() {
+      return makeIterator(0);
+    },
+    subscribeLive() {
+      return makeIterator(buffer.length);
+    },
+  };
+
+  /** 游标可从任意位置开始（0=整场回放；length=只收新帧） */
+  function makeIterator(startIndex: number): AsyncIterableIterator<T> {
+    let index = startIndex;
+    let resolver: (() => void) | null = null;
+    const wake: WakeEntry = () => {
+      const r = resolver;
+      resolver = null;
+      r?.();
+    };
+    const waitForWake = (): Promise<void> =>
+      new Promise((resolve) => {
+        resolver = resolve;
+        waiters.add(wake);
+      });
+    const iterator: AsyncIterableIterator<T> = {
+      [Symbol.asyncIterator]() {
+        return iterator;
+      },
+      async next() {
+        // 被唤醒但本订阅者游标已到末尾（多观察者竞争）时继续等，不误报终态
+        while (index >= buffer.length) {
+          if (closed) return { value: undefined, done: true };
+          await waitForWake();
+        }
+        return { value: buffer[index++]!, done: false };
+      },
+      return() {
+        waiters.delete(wake);
+        resolver = null;
+        return Promise.resolve({ value: undefined, done: true });
+      },
+    };
+    return iterator;
+  }
+}
+
+/**
+ * owner 生成器包装：每产出一帧先广播给观察者再 yield 给 owner；
+ * 正常返回/抛错/abort 都关总线。事件对 owner 与观察者严格同序。
+ */
+export async function* tapRunEvents<T, R>(
+  bus: Pick<RunEventBus<T>, 'publish' | 'close'>,
+  gen: AsyncGenerator<T, R>,
+): AsyncGenerator<T, R> {
+  try {
+    let result: IteratorResult<T, R>;
+    while (!(result = await gen.next()).done) {
+      bus.publish(result.value);
+      yield result.value;
+    }
+    return result.value;
+  } finally {
+    bus.close();
+  }
+}

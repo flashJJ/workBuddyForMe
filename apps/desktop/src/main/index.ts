@@ -16,6 +16,7 @@ import { captureWindowState, createMainWindow, type WindowBootInfo } from './win
 import { saveWindowState } from './window-state';
 import { PetManager } from './pet/pet-manager';
 import { createAppPetManager } from './pet/pet-bootstrap';
+import { StageManager } from './stage/stage-manager';
 import { installUpdater } from './updater-bootstrap';
 import { registerGlobalShortcuts } from './global-shortcuts';
 import { registerNotifyIpc } from './notify-ipc';
@@ -33,6 +34,8 @@ let managedServer: ManagedServer | null = null;
 let cipherEndpoint: CipherEndpoint | null = null;
 let computerControl: ComputerControl | null = null;
 let petManager: PetManager | null = null;
+/** v1.9 全屏舞台窗（与桌宠互斥） */
+let stageManager: StageManager | null = null;
 
 // 单实例锁：重复启动聚焦到已有窗口
 const gotLock = app.requestSingleInstanceLock();
@@ -55,6 +58,8 @@ if (!gotLock) {
   app.on('before-quit', () => {
     // M4 伴身：退出前置位（拦截主窗关闭的 hide 语义放行）+ 立即销毁桌宠窗
     petManager?.prepareQuit();
+    // v1.9：舞台窗几何持久化后立即销毁
+    stageManager?.prepareQuit();
     if (mainWindow) saveWindowState(app.getPath('userData'), captureWindowState(mainWindow));
   });
 
@@ -74,6 +79,16 @@ async function start(): Promise<void> {
   registerNotifyIpc(ipcMain);
   // M4 伴身：pet:* IPC 注册；主窗 close 在桌宠存活时被改为隐藏
   petManager = createAppPetManager(boot, () => mainWindow);
+  // v1.9：舞台窗（stage:* IPC + 菜单入口；与桌宠互斥、几何持久化）
+  stageManager = new StageManager({
+    boot,
+    userDataDir: app.getPath('userData'),
+    getMainWindow: () => mainWindow,
+    petManager,
+  });
+  stageManager.registerIpc(ipcMain);
+  // 舞台入口就绪后重建菜单（首装菜单无舞台项）
+  installAppMenu(isDev, () => void stageManager?.open());
   installUpdater(() => mainWindow);
   registerGlobalShortcuts({
     getMainWindow: () => mainWindow,

@@ -227,6 +227,23 @@ export class Live2dController {
     this.squashStart = performance.now();
   }
 
+  /**
+   * v1.9 舞台省电档：截当前舞台一帧为 PNG dataURL（非发言者立绘缓存）。
+   * 用 extract 同步取 canvas，不依赖 preserveDrawingBuffer；失败返回 null。
+   */
+  captureDataUrl(): string | null {
+    try {
+      // pixi v7 的 extract 插件挂在 Renderer 实例上，AbstractRenderer 基类类型不含它
+      const renderer = this.app.renderer as unknown as {
+        extract: { canvas: (target: unknown) => HTMLCanvasElement };
+      };
+      const frame = renderer.extract.canvas(this.app.stage);
+      return frame.toDataURL('image/png');
+    } catch {
+      return null;
+    }
+  }
+
   /** 归一化指针（-1..1，相对舞台中心）→ 微动作视线跟随 */
   setGaze(nx: number, ny: number): void {
     this.micro.setPointer(nx, ny);

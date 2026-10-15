@@ -284,3 +284,7 @@ export * from './event-trigger';
 
 // v1.8 角色卡库契约（ExpressionTag 与 ./expression 重名，显式导出优先不冲突）
 export * from './character-card';
+
+// v1.9 舞台契约（cast/指令/场景）
+export * from './stage';
+export * from './meeting';

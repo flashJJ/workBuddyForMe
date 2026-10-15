@@ -25,6 +25,8 @@ import { migrateV023 } from './v023-emotion-events';
 import { migrateV024 } from './v024-events-scheduler';
 import { migrateV025 } from './v025-event-triggers';
 import { migrateV026 } from './v026-character-cards';
+import { migrateV027 } from './v027-stage-scenes';
+import { migrateV028 } from './v028-meetings';
 
 interface Migration {
   version: number;
@@ -157,6 +159,16 @@ const MIGRATIONS: Migration[] = [
     version: 26,
     description: 'v1.8 personalize: character_cards 角色卡库 + assistants.card_id（纯加法）',
     up: migrateV026,
+  },
+  {
+    version: 27,
+    description: 'v1.9 stage: stage_scenes 舞台场景表（纯加法）',
+    up: migrateV027,
+  },
+  {
+    version: 28,
+    description: 'v1.9 meeting: meetings + meeting_messages 多助手会议（纯加法）',
+    up: migrateV028,
   },
 ];
 

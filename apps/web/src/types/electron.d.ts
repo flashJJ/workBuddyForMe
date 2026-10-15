@@ -1,4 +1,5 @@
 import type { WbfmPetBridge } from '@wbfm/shared/pet';
+import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 
@@ -23,6 +24,8 @@ declare global {
       shortcuts?: { onOpen: (cb: () => void) => () => void };
       /** 桌宠桥（M4 伴身；仅桌面端 preload 存在，纯浏览器访问为 undefined） */
       pet?: WbfmPetBridge;
+      /** v1.9 舞台窗桥（全屏舞台/截图/互斥） */
+      stage?: WbfmStageBridge;
       /** v1.7 系统通知桥（提醒兜底；仅桌面端 preload 存在） */
       notify?: WbfmNotifyBridge;
     };
