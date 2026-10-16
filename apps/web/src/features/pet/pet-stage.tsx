@@ -41,10 +41,19 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // M0: 三段式交互状态——头部按住判定
-  const headPressStartRef = React.useRef<number>(0);
+  const headPressStartPosRef = React.useRef<{ x: number; y: number; at: number }>({ x: 0, y: 0, at: 0 });
   const headPressMovedRef = React.useRef<boolean>(false);
+  const headPressBridgeActiveRef = React.useRef<boolean>(false);
   const headLongPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // M1: body 区域手势判定（和 head 对齐：no-drag + 手动拖拽）
+  const bodyPressStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const bodyPressMovedRef = React.useRef<boolean>(false);
+  const bodyPressBridgeActiveRef = React.useRef<boolean>(false);
+  const bodyLongPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const LONGPRESS_THRESHOLD_MS = 500;
+  const DRAG_THRESHOLD_PX = 3;
 
   const showLine = React.useCallback((text: string, durationMs: number) => {
     setLine(text);
@@ -56,6 +65,7 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
     () => () => {
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
       if (headLongPressTimerRef.current) clearTimeout(headLongPressTimerRef.current);
+      if (bodyLongPressTimerRef.current) clearTimeout(bodyLongPressTimerRef.current);
     },
     [],
   );
@@ -73,12 +83,14 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   const linesEnabled = settings?.interactionLinesEnabled !== false;
   const emotionEnabled = settings?.emotionEnabled !== false;
 
-  // M0: Resolver 影子执行——dev only，新旧输出一致时双写
+  // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底
   const lastTriggerAtRef = React.useRef<Partial<Record<'head' | 'body', number>>>({});
-  const resolveAndDispatch = React.useCallback((event: InteractionEvent) => {
-    // 影子模式：dev 下同时跑 Resolver，输出可观测
-    const isDev = process.env.NODE_ENV === 'development';
-    if (isDev) {
+
+  // M1: resolveAndDispatch 正式模式（生产环境也生效），旧 useHeadTouch 逐步退役
+  const resolveAndDispatch = React.useCallback(
+    (event: InteractionEvent) => {
+      const relationshipLevel =
+        (settings as any)?.relationshipLevel ?? 'stranger'; // 未开启关系等级时回落
       const ctx = {
         hour: new Date().getHours(),
         capabilities: {
@@ -86,20 +98,25 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           hasSpringBone: false,
         },
         lastTriggerAt: lastTriggerAtRef.current,
+        relationshipLevel,
+        emotionEnabled,
       };
       const chain = resolveInteraction(event, ctx);
-      if (chain) {
+      // 更新冷却时间戳
+      if (event.kind === 'touch') {
         lastTriggerAtRef.current = {
           ...lastTriggerAtRef.current,
-          head: event.kind === 'touch' && event.region === 'head' ? Date.now() : lastTriggerAtRef.current.head,
+          [event.region]: Date.now(),
         };
-        // M0 影子：Resolver 通过 -> 新 executor 也执行（双写兜底）
+      }
+      if (chain) {
         executorRef.current?.dispatch(chain);
       }
-    }
-    // 同时 emit 到 TriggerBus（M0 还没人订阅，但已打通）
-    TriggerBus.emit(event);
-  }, []);
+      // 始终 emit 到 TriggerBus（M1 打通）
+      TriggerBus.emit(event);
+    },
+    [settings, emotionEnabled],
+  );
 
   // 摸头短句：本地文案气泡（零模型调用、零 IPC），受短句开关门控
   const onHeadTouch = useHeadTouch(
@@ -163,12 +180,12 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         />
       </div>
 
-      {/* 身体拖拽盒（底部 62%）：系统拖拽，吞点击 */}
+      {/* 身体互动盒（底部 62%）：no-drag + 手动拖拽 + 纯点击动作（M1） */}
       <div
         data-testid="pet-hitbody"
         style={
           {
-            WebkitAppRegion: 'drag',
+            WebkitAppRegion: 'no-drag',
             left: '15%',
             right: '15%',
             top: '38%',
@@ -176,18 +193,69 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           } as React.CSSProperties
         }
         className="absolute cursor-grab"
-        onDragStart={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           if (e.button !== 0) return;
-          const w = window.innerWidth;
-          const h = window.innerHeight;
-          if (!isPetBodyPoint(e.clientX, e.clientY, w, h)) return;
-          bridge?.dragBegin();
+          bodyPressStartRef.current = { x: e.clientX, y: e.clientY };
+          bodyPressMovedRef.current = false;
+          bodyPressBridgeActiveRef.current = false;
+          // body-touch 程序化 start（让角色提前进入 phase='start'，等待后续判定）
+          (controllerRef.current as any)?.startInteraction?.('body-touch');
+          bodyLongPressTimerRef.current = setTimeout(() => {
+            if (!bodyPressMovedRef.current) {
+              resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'longpress' });
+            }
+          }, LONGPRESS_THRESHOLD_MS);
         }}
-        onPointerUp={() => bridge?.dragEnd()}
+        onPointerMove={(e) => {
+          const start = bodyPressStartRef.current;
+          const dx = e.clientX - start.x;
+          const dy = e.clientY - start.y;
+          if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+            bodyPressMovedRef.current = true;
+            if (bodyLongPressTimerRef.current) {
+              clearTimeout(bodyLongPressTimerRef.current);
+              bodyLongPressTimerRef.current = null;
+            }
+            if (!bodyPressBridgeActiveRef.current) {
+              bodyPressBridgeActiveRef.current = true;
+              bridge?.dragBegin();
+              // 进入拖拽模式 → 取消 body-touch 交互状态
+              (controllerRef.current as any)?.endInteraction?.();
+            }
+          }
+        }}
+        onClick={() => {
+          // 纯点击（pointerdown → pointerup 间 move ≤ 3px）→ body-touch
+          if (!bodyPressBridgeActiveRef.current) {
+            resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'tap' });
+          }
+        }}
+        onPointerUp={() => {
+          if (bodyPressBridgeActiveRef.current) {
+            bridge?.dragEnd();
+            bodyPressBridgeActiveRef.current = false;
+          } else {
+            (controllerRef.current as any)?.endInteraction?.();
+          }
+          if (bodyLongPressTimerRef.current) {
+            clearTimeout(bodyLongPressTimerRef.current);
+            bodyLongPressTimerRef.current = null;
+          }
+        }}
+        onPointerCancel={() => {
+          if (bodyPressBridgeActiveRef.current) {
+            bridge?.dragEnd();
+            bodyPressBridgeActiveRef.current = false;
+          }
+          (controllerRef.current as any)?.endInteraction?.();
+          if (bodyLongPressTimerRef.current) {
+            clearTimeout(bodyLongPressTimerRef.current);
+            bodyLongPressTimerRef.current = null;
+          }
+        }}
       />
 
-      {/* 头部互动盒（上部 27%）：单击摸头 / 长按持续 loop / 双击回主窗 / 右键菜单 */}
+      {/* 头部互动盒（上部 27%）：no-drag + 单击摸头 / 长按持续 loop / 拖拽移动 / 双击回主窗 / 右键菜单 */}
       <div
         data-testid="pet-hithead"
         style={
@@ -203,33 +271,47 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         title={t('pet.stage.headHint')}
         onPointerDown={(e) => {
           if (e.button !== 0) return;
-          headPressStartRef.current = performance.now();
+          headPressStartPosRef.current = { x: e.clientX, y: e.clientY, at: performance.now() };
           headPressMovedRef.current = false;
+          headPressBridgeActiveRef.current = false;
           (controllerRef.current as any)?.startInteraction?.('head-touch');
           if (headLongPressTimerRef.current) clearTimeout(headLongPressTimerRef.current);
           headLongPressTimerRef.current = setTimeout(() => {
-            if (!headPressMovedRef.current) {
-              // 长按 500ms 没移动 → longpress gesture
+            if (!headPressMovedRef.current && !headPressBridgeActiveRef.current) {
               resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'longpress' });
             }
           }, LONGPRESS_THRESHOLD_MS);
         }}
-        onPointerMove={() => {
-          // 超过微小位移 → 判定为移动（可能准备拖拽）
-          headPressMovedRef.current = true;
-          if (headLongPressTimerRef.current) {
-            clearTimeout(headLongPressTimerRef.current);
-            headLongPressTimerRef.current = null;
+        onPointerMove={(e) => {
+          const start = headPressStartPosRef.current;
+          const dx = e.clientX - start.x;
+          const dy = e.clientY - start.y;
+          if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+            headPressMovedRef.current = true;
+            if (headLongPressTimerRef.current) {
+              clearTimeout(headLongPressTimerRef.current);
+              headLongPressTimerRef.current = null;
+            }
+            // head 区域也支持拖拽移动窗口
+            if (!headPressBridgeActiveRef.current) {
+              headPressBridgeActiveRef.current = true;
+              bridge?.dragBegin();
+              (controllerRef.current as any)?.endInteraction?.();
+            }
           }
         }}
         onClick={() => {
-          // 旧链路：onClick 作为 tap 触发（保持主力）
-          onHeadTouch();
-          // 新管道影子：Resolver + executor 双写（dev only）
+          // M1: 新管道主力——旧 useHeadTouch 退役（保留文件但不再被调用）
           resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'tap' });
+          // 旧链路 fallback（deprecated，M1 仍保留 1 次调用兜底，M2 可删）
+          onHeadTouch();
         }}
         onPointerUp={() => {
           (controllerRef.current as any)?.endInteraction?.();
+          if (headPressBridgeActiveRef.current) {
+            bridge?.dragEnd();
+            headPressBridgeActiveRef.current = false;
+          }
           if (headLongPressTimerRef.current) {
             clearTimeout(headLongPressTimerRef.current);
             headLongPressTimerRef.current = null;
@@ -237,6 +319,10 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         }}
         onPointerCancel={() => {
           (controllerRef.current as any)?.endInteraction?.();
+          if (headPressBridgeActiveRef.current) {
+            bridge?.dragEnd();
+            headPressBridgeActiveRef.current = false;
+          }
           if (headLongPressTimerRef.current) {
             clearTimeout(headLongPressTimerRef.current);
             headLongPressTimerRef.current = null;
