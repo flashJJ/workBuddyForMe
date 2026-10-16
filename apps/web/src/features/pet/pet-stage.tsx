@@ -301,10 +301,8 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           }
         }}
         onClick={() => {
-          // M1: 新管道主力——旧 useHeadTouch 退役（保留文件但不再被调用）
+          // M2: 新管道主力，旧 useHeadTouch 退役（文件保留标记 deprecated，不再被 PetStage 调用）
           resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'tap' });
-          // 旧链路 fallback（deprecated，M1 仍保留 1 次调用兜底，M2 可删）
-          onHeadTouch();
         }}
         onPointerUp={() => {
           (controllerRef.current as any)?.endInteraction?.();

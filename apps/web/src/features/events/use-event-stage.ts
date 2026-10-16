@@ -14,6 +14,8 @@ import { useEventPlayer, type EventPlaybackBridge } from './use-event-player';
 import { buildConditionContext } from './condition-context';
 import { readLastInteractionMinutes } from './event-activity';
 import { useEventDirector, type PreviewResult } from './use-event-director';
+// M2: EventDirector ↔ TriggerBus 桥
+import { bridgeEventFire } from '@/features/interaction/event-bridge';
 
 export interface UseEventStageArgs {
   /** 当前助手（用量闸门/事件隔离按此 id；切换即重建导演） */
@@ -90,6 +92,10 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
       const def = getBuiltInEvent(eventId);
       if (!def) return false;
       if (argsRef.current.disabledEventIds.includes(eventId)) return false;
+
+      // M2: emit 到 TriggerBus（让交互管道/未来感知能统一观测）
+      bridgeEventFire(eventId);
+
       const now = Date.now();
       const ctx = buildConditionContext({
         emotion: argsRef.current.emotionState,
