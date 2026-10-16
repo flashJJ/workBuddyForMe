@@ -147,7 +147,7 @@ export function MemoryPanel() {
   };
 
   return (
-    <section className="space-y-3 rounded-xl border p-4" data-testid="memory-panel">
+    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="memory-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold">{t('memory.title')}</h2>

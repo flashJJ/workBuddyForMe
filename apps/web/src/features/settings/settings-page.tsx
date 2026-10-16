@@ -33,6 +33,19 @@ import { VrmAvatarList } from './vrm-avatar-list';
 import { ModPackPanel } from './mod-pack-panel';
 import { RelationshipReportPanel } from './relationship-report-panel';
 
+/**
+ * 设置页 4 大分组（右侧 sticky 锚点导航）：
+ * - appearance 形象外观：命名主题、VRM 导入与列表
+ * - dialog 对话互动：语音偏好、情绪内核、关系等级、剧情事件、提醒、关系报告
+ * - tools 工具与权限：MCP 服务器、工具权限/熔断/调试、技能包、参数调优
+ * - data 数据与备份：角色卡、知识检索、个性化包、记忆、备份、关于
+ */
+interface SettingsSection {
+  id: 'appearance' | 'dialog' | 'tools' | 'data';
+  labelKey: `settings.sections.${'appearance' | 'dialog' | 'tools' | 'data'}`;
+  panels: React.ReactNode[];
+}
+
 export function SettingsPage() {
   const { t } = useI18n();
   const { data: providers, isLoading, isError, refetch } = useProviders();
@@ -49,90 +62,130 @@ export function SettingsPage() {
     setDialogOpen(true);
   };
 
+  const sections: SettingsSection[] = [
+    {
+      id: 'appearance',
+      labelKey: 'settings.sections.appearance',
+      panels: [
+        <AppearancePanel key="appear" />,
+        <VrmImportSection key="vrm-import" />,
+        <VrmAvatarList key="vrm-list" />,
+      ],
+    },
+    {
+      id: 'dialog',
+      labelKey: 'settings.sections.dialog',
+      panels: [
+        <VoicePreferencePanel key="voice" />,
+        <EmotionPanel key="emotion" />,
+        <RelationshipPanel key="relationship" />,
+        <EventPanel key="events" />,
+        <RelationshipReportPanel key="report" />,
+        <ReminderPanel key="reminder" />,
+      ],
+    },
+    {
+      id: 'tools',
+      labelKey: 'settings.sections.tools',
+      panels: [
+        <McpPanel key="mcp" />,
+        <PermissionPanel key="perm" />,
+        <ToolBreakerPanel key="breaker" />,
+        <ToolDebugPanel key="tool-debug" />,
+        <SkillsPanel key="skills" />,
+        <TuningPanel key="tuning" />,
+      ],
+    },
+    {
+      id: 'data',
+      labelKey: 'settings.sections.data',
+      panels: [
+        <CharacterCardsPanel key="cards" />,
+        <KnowledgeRetrievalPanel key="knowledge" />,
+        <ModPackPanel key="modpack" />,
+        <MemoryPanel key="memory" />,
+        <BackupPanel key="backup" />,
+        <HelpCenterPanel key="help" />,
+        <AboutPanel key="about" />,
+      ],
+    },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
-      <PageHeader
-        title={t('settings.title')}
-        description={t('settings.description')}
-        actions={
-          <Button type="button" onClick={openCreate}>
-            {t('settings.addProvider')}
-          </Button>
-        }
-      />
+    <div className="mx-auto flex w-full max-w-6xl gap-8 p-6">
+      {/* 左侧：设置主内容 */}
+      <div className="min-w-0 flex-1 space-y-8">
+        <PageHeader
+          title={t('settings.title')}
+          description={t('settings.description')}
+          actions={
+            <Button type="button" onClick={openCreate}>
+              {t('settings.addProvider')}
+            </Button>
+          }
+        />
 
-      {isLoading && <Spinner />}
-      {isError && <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />}
-      {!isLoading && !isError && providers && (
-        <div className="space-y-4" data-testid="provider-list">
-          {providers.length === 0 && (
-            <EmptyState
-              title={t('settings.empty.title')}
-              description={t('settings.empty.description')}
-              action={
-                <Button type="button" onClick={openCreate}>
-                  {t('settings.empty.action')}
-                </Button>
-              }
-            />
-          )}
-          {providers.map((provider) => (
-            <ProviderCard key={provider.id} provider={provider} onEdit={openEdit} />
-          ))}
-        </div>
-      )}
+        {/* 基础设置：供应商 + 默认偏好（不进分组，始终置顶） */}
+        {isLoading && <Spinner />}
+        {isError && (
+          <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />
+        )}
+        {!isLoading && !isError && providers && (
+          <div className="space-y-4" data-testid="provider-list">
+            {providers.length === 0 && (
+              <EmptyState
+                title={t('settings.empty.title')}
+                description={t('settings.empty.description')}
+                action={
+                  <Button type="button" onClick={openCreate}>
+                    {t('settings.empty.action')}
+                  </Button>
+                }
+              />
+            )}
+            {providers.map((provider) => (
+              <ProviderCard key={provider.id} provider={provider} onEdit={openEdit} />
+            ))}
+          </div>
+        )}
 
-      <DefaultsPanel />
+        <DefaultsPanel />
 
-      <AppearancePanel />
+        {/* 4 大分组 */}
+        {sections.map((section) => (
+          <div key={section.id} data-testid={`settings-section-${section.id}`}>
+            <div
+              id={`setting-${section.id}`}
+              className="scroll-mt-6 border-b pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            >
+              {t(section.labelKey)}
+            </div>
+            <div className="space-y-4 pt-4">{section.panels}</div>
+          </div>
+        ))}
 
-      <TuningPanel />
+        <ProviderFormDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          provider={editing}
+        />
+      </div>
 
-      <CharacterCardsPanel />
-
-      <KnowledgeRetrievalPanel />
-
-      <VoicePreferencePanel />
-
-      <EmotionPanel />
-
-      <RelationshipPanel />
-
-      <RelationshipReportPanel />
-
-      <EventPanel />
-
-      <VrmImportSection />
-
-      <VrmAvatarList />
-
-      <ModPackPanel />
-
-      <ReminderPanel />
-
-      <McpPanel />
-
-      <PermissionPanel />
-
-      <ToolBreakerPanel />
-
-      <ToolDebugPanel />
-
-      <SkillsPanel />
-
-      <MemoryPanel />
-
-      <BackupPanel />
-
-      <HelpCenterPanel />
-
-      <AboutPanel />
-
-      <ProviderFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        provider={editing}
-      />
+      {/* 右侧：sticky 分组导航（lg+ 可见） */}
+      <nav
+        aria-label={t('settings.title')}
+        className="sticky top-6 hidden h-fit w-48 shrink-0 space-y-1 lg:block"
+      >
+        {sections.map((section) => (
+          <a
+            key={section.id}
+            href={`#setting-${section.id}`}
+            className="block rounded px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+          >
+            {t(section.labelKey)}
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }
