@@ -47,6 +47,8 @@ interface VrmRuntime {
   breathePhase: number;
   targetRotation: { x: number; y: number };
   currentRotation: { x: number; y: number };
+  /** 待机动画 mixer（用户导入的 VRM 通常自带 Idle/Loop 动画 clip） */
+  idleMixer: THREE.AnimationMixer | null;
 }
 
 /**
@@ -82,6 +84,7 @@ export function VrmCanvas({
   }, [expression]);
 
   const fileRef = parseVrmAvatarId(modelId);
+  console.log('[VRM] VrmCanvas mount, modelId=', modelId, 'fileRef=', fileRef);
   React.useEffect(() => {
     if (!fileRef || !hostRef.current) return;
 
@@ -90,6 +93,7 @@ export function VrmCanvas({
 
     const runtime = initVrm(host);
     runtimeRef.current = runtime;
+    console.log('[VRM] GLTFLoader loading: /api/vrm-avatars/' + fileRef + '/file');
 
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));
@@ -110,6 +114,27 @@ export function VrmCanvas({
         runtime.scene.add(vrm.scene);
         runtime.vrm = vrm;
         fitVrmToCamera(vrm, runtime.camera);
+
+        // 尝试播内置待机动画（glTF.animations 里通常有 Idle/Loop clip；
+        // 只有 T Pose 静态姿势的 VRM 继续 fallback 到呼吸浮动）
+        console.log('[VRM] gltf.animations count =', gltf.animations?.length ?? 0);
+        if (gltf.animations && gltf.animations.length > 0) {
+          gltf.animations.forEach((clip, i) => {
+            console.log(`[VRM]   clip[${i}] name="${clip.name}" duration=${clip.duration}s tracks=${clip.tracks?.length ?? 0}`);
+          });
+          // 优先选名字带 idle/loop/待机动的 clip，否则拿最长的
+          const sorted = [...gltf.animations].sort((a, b) => b.duration - a.duration);
+          const idleClip = gltf.animations.find((a) => /idle|loop|待机/i.test(a.name)) ?? sorted[0];
+          if (idleClip) {
+            console.log('[VRM] choosing clip:', idleClip.name, 'duration=', idleClip.duration);
+            runtime.idleMixer = new THREE.AnimationMixer(vrm.scene);
+            const action = runtime.idleMixer.clipAction(idleClip);
+            action.play();
+          }
+        } else {
+          console.warn('[VRM] glTF 里没找到任何 animation clip（纯静态/无内嵌动作）');
+        }
+
         setReady(true);
       },
       undefined,
@@ -131,6 +156,8 @@ export function VrmCanvas({
       raf = requestAnimationFrame(animate);
       const dt = runtime.clock.getDelta();
       const tNow = runtime.clock.elapsedTime;
+      // AnimationMixer 先驱动骨骼 → VRM.update(dt) 再把 Humanoid/FK 同步到场景
+      runtime.idleMixer?.update(dt);
       runtime.currentRotation.x += (runtime.targetRotation.x - runtime.currentRotation.x) * 0.12;
       runtime.currentRotation.y += (runtime.targetRotation.y - runtime.currentRotation.y) * 0.12;
       if (runtime.vrm) {
@@ -180,7 +207,12 @@ export function VrmCanvas({
 
   return (
     <div className="relative h-full w-full">
-      <div ref={hostRef} className={className} style={style} data-testid={testId} />
+      <div
+        ref={hostRef}
+        className={className ? `h-full w-full ${className}` : 'h-full w-full'}
+        style={style}
+        data-testid={testId}
+      />
       {!ready && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5 text-xs text-muted-foreground">
           {t('avatar.stage.loading')}
@@ -220,6 +252,7 @@ function initVrm(container: HTMLElement): VrmRuntime {
     breathePhase: 0,
     targetRotation: { x: 0, y: 0 },
     currentRotation: { x: 0, y: 0 },
+    idleMixer: null as THREE.AnimationMixer | null,
   };
 }
 
@@ -242,6 +275,7 @@ function resizeVrm(runtime: VrmRuntime, w: number, h: number) {
 }
 
 function disposeVrm(runtime: VrmRuntime) {
+  runtime.idleMixer?.stopAllAction();
   if (runtime.vrm) {
     VRMUtils.deepDispose(runtime.vrm.scene);
   }

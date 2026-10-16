@@ -9,6 +9,12 @@ describe('normalizeAvatarModelId', () => {
     }
   });
 
+  it('v2.0：vrm: 前缀动态 id 原样放行（白名单无法枚举用户导入的 VRM）', () => {
+    expect(normalizeAvatarModelId('vrm:abc123.vrm')).toBe('vrm:abc123.vrm');
+    expect(normalizeAvatarModelId('vrm:')).toBe('vrm:');
+    expect(normalizeAvatarModelId('vrm:中文角色.vrm')).toBe('vrm:中文角色.vrm');
+  });
+
   it('空值/未知 id/非字符串回落 haru', () => {
     expect(normalizeAvatarModelId(undefined)).toBe('haru');
     expect(normalizeAvatarModelId(null)).toBe('haru');
