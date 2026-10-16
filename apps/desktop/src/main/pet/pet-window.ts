@@ -8,7 +8,7 @@
  * 本文件只负责「造窗 + 定位 + 加载 /pet」；穿透滞回接线、右键菜单、
  * 语音表现转发与生命周期由 pet-manager.ts 承担。
  */
-import { BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { normalizeAvatarModelId } from '@wbfm/shared/pet';
 import { DEV_SERVER_URL, resolvePreloadPath } from '../config';
