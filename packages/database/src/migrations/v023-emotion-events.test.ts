@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -14,8 +14,8 @@ describe('v023 迁移：emotion_events 情绪事件流水', () => {
   it('全新空库：user_version=23，表与索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(30);
-    expect(LATEST_SCHEMA_VERSION).toBe(30);
+    expect(getSchemaVersion(db)).toBe(31);
+    expect(LATEST_SCHEMA_VERSION).toBe(31);
 
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='emotion_events'`)
@@ -35,7 +35,7 @@ describe('v023 迁移：emotion_events 情绪事件流水', () => {
       `INSERT INTO assistants(id,name,created_at,updated_at) VALUES('a1','助手','t','t')`,
     ).run();
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(30);
+    expect(getSchemaVersion(db)).toBe(31);
 
     const now = '2026-10-12T08:00:00.000Z';
     db.prepare(

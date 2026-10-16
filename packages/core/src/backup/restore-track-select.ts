@@ -20,7 +20,14 @@ export function determineTracks(manifest: BackupManifest, files: ReadonlyMap<str
       (manifest.tracks.events?.assistantCount ?? 0) > 0 ||
       (manifest.tracks.events?.triggerCount ?? 0) > 0 ||
       // v1.8：只有角色卡（无助手/提醒/流水）的归档也要恢复 events 轨
-      (manifest.tracks.events?.cardCount ?? 0) > 0)
+      (manifest.tracks.events?.cardCount ?? 0) > 0 ||
+      // v1.9–v2.0：舞台/会议/里程碑/mod 登记/VRM 引用任一非空同样入选
+      (manifest.tracks.events?.stageSceneCount ?? 0) > 0 ||
+      (manifest.tracks.events?.meetingCount ?? 0) > 0 ||
+      (manifest.tracks.events?.meetingMessageCount ?? 0) > 0 ||
+      (manifest.tracks.events?.relationshipMilestoneCount ?? 0) > 0 ||
+      (manifest.tracks.events?.modInstallCount ?? 0) > 0 ||
+      (manifest.tracks.events?.vrmAvatarCount ?? 0) > 0)
   ) {
     tracks.push('events');
   }

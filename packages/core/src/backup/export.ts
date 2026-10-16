@@ -17,17 +17,9 @@ import {
   createSkillStateRepository,
   createEmotionStateRepository,
   createEmotionEventRepository,
-  createAssistantRepository,
-  createScheduledTaskRepository,
-  createEventUsageRepository,
-  createEventTriggerRepository,
-  createCharacterCardRepository,
-  createStageSceneRepository,
-  createMeetingRepository,
-  createRelationshipMilestoneRepository,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
-import { computeNextRunMs } from '../scheduler/next-run';
+import { serializeEventsTrack } from './export-events-track';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared/errors';
 import { getDataRoot } from '@wbfm/config';
@@ -67,10 +59,6 @@ export async function exportBackup(
   const skillStateRepo = createSkillStateRepository(deps.db);
   const emotionStateRepo = createEmotionStateRepository(deps.db);
   const emotionEventRepo = createEmotionEventRepository(deps.db);
-  const assistantsRepo = createAssistantRepository(deps.db);
-  const scheduledTaskRepo = createScheduledTaskRepository(deps.db, { computeNextRunMs });
-  const eventUsageRepo = createEventUsageRepository(deps.db);
-  const eventTriggerRepo = createEventTriggerRepository(deps.db);
 
   // 1. 逐轨序列化（纯 JSON，进 tar）
   const files: Record<string, string> = {};
@@ -188,53 +176,12 @@ export async function exportBackup(
   }
 
   if (tracks.includes('events')) {
-    // v1.7：自定义助手（含人格权重）+ 全量提醒 + 近 90 天演出流水（与保留策略对齐）
-    // v1.8：角色卡全量行单独成文件 characterCards.json（内置卡也导出，恢复端固定 id 冲突跳过）
-    const customAssistants = assistantsRepo.list().filter((assistant) => !assistant.isBuiltin);
-    const schedules = scheduledTaskRepo.listAll();
-    const usage = eventUsageRepo.listAll({ sinceMs: Date.now() - 90 * 24 * 3600_000 });
-    const triggers = eventTriggerRepo.list();
-    const cards = createCharacterCardRepository(deps.db).list();
-    // v1.9：舞台场景 + 多助手会议（同 events 轨加法负载，背景图片只带引用不进档）
-    const stageScenes = createStageSceneRepository(deps.db).list();
-    const meetingRepo = createMeetingRepository(deps.db);
-    const meetings = meetingRepo.list();
-    const meetingMessages = meetings.flatMap((meeting) => meetingRepo.listMessages(meeting.id));
-    // v2.0 M2：共同里程碑达成记录（同 events 轨；不含对话原文）
-    const milestones = createRelationshipMilestoneRepository(deps.db).listAll();
-    files['events.json'] = JSON.stringify(
-      { assistants: customAssistants, schedules, usage, triggers },
-      null,
-      2,
-    );
-    files['characterCards.json'] = JSON.stringify(cards, null, 2);
-    files['stageScenes.json'] = JSON.stringify(stageScenes, null, 2);
-    files['meetings.json'] = JSON.stringify(meetings, null, 2);
-    files['meetingMessages.json'] = JSON.stringify(meetingMessages, null, 2);
-    files['relationshipMilestones.json'] = JSON.stringify(milestones, null, 2);
-    manifestPartial.events = {
-      files: 'events.json',
-      scheduleCount: schedules.length,
-      usageCount: usage.length,
-      assistantCount: customAssistants.length,
-      triggerCount: triggers.length,
-      cardCount: cards.length,
-      stageSceneCount: stageScenes.length,
-      meetingCount: meetings.length,
-      meetingMessageCount: meetingMessages.length,
-      relationshipMilestoneCount: milestones.length,
-    };
-    const eventsTotal =
-      schedules.length +
-      usage.length +
-      customAssistants.length +
-      triggers.length +
-      cards.length +
-      stageScenes.length +
-      meetings.length +
-      meetingMessages.length +
-      milestones.length;
-    onProgress?.({ track: 'events', processed: eventsTotal, total: eventsTotal });
+    // v1.7–v2.0：自定义助手/提醒/演出流水/角色卡/舞台/会议/里程碑/mod 安装记录/
+    // VRM 形象引用（仅元数据）。背景图与 .vrm 二进制只带引用不进档。
+    const payload = serializeEventsTrack(deps.db);
+    Object.assign(files, payload.files);
+    manifestPartial.events = payload.manifest;
+    onProgress?.({ track: 'events', processed: payload.total, total: payload.total });
   }
 
   // 2. 附件：元数据 JSON + 二进制（可选）

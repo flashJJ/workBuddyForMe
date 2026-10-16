@@ -5,8 +5,9 @@ import { z } from 'zod';
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。
- * 当前版本：6（v2.0 events 轨追加 relationshipMilestones.json 共同里程碑，
- * manifest.events.relationshipMilestoneCount；v5 及更早归档缺文件按 0 降级）。
+ * 当前版本：6（v2.0 events 轨加法负载：relationshipMilestones.json 共同里程碑、
+ * modInstalls.json mod 包安装记录、vrmAvatars.json VRM 形象引用（仅元数据不带二进制）；
+ * manifest.events 对应三个 optional 计数；v5 及更早归档缺文件按 0 降级）。
  * v5：events 轨 stageScenes.json 舞台场景 + meetings.json/meetingMessages.json 多助手会议。
  * v1–v4 旧归档仍可恢复，缺文件/缺键按 0 处理。
  */
@@ -68,6 +69,10 @@ export const backupManifestSchema = z.object({
         meetingMessageCount: z.number().int().min(0).optional(),
         /** v2.0 M2：共同里程碑条数（relationshipMilestones.json；v5 及更早缺省 0） */
         relationshipMilestoneCount: z.number().int().min(0).optional(),
+        /** v2.0 M5：mod 包安装记录条数（modInstalls.json；v5 及更早缺省 0） */
+        modInstallCount: z.number().int().min(0).optional(),
+        /** v2.0 M5：VRM 形象引用条数（vrmAvatars.json，仅元数据不带二进制；缺省 0） */
+        vrmAvatarCount: z.number().int().min(0).optional(),
       })
       .optional(),
   }),
@@ -105,6 +110,10 @@ export const backupPrecheckSchema = z.object({
     meetingMessages: z.number().int().min(0),
     /** v2.0 M2：共同里程碑条数（随 events 轨；v5 及更早归档为 0） */
     relationshipMilestones: z.number().int().min(0),
+    /** v2.0 M5：mod 包安装记录条数（随 events 轨；v5 及更早归档为 0） */
+    modInstalls: z.number().int().min(0),
+    /** v2.0 M5：VRM 形象引用条数（随 events 轨，仅元数据；v5 及更早归档为 0） */
+    vrmAvatars: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

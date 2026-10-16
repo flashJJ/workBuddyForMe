@@ -19,9 +19,13 @@ describe('v030 vrm_avatars', () => {
     const db = new Database(':memory:');
     db.pragma('user_version = 29');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(30);
+    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const cols = db.prepare('PRAGMA table_info(vrm_avatars)').all() as Array<{ name: string }>;
     expect(cols.map((c) => c.name)).toEqual(['id', 'name', 'file_ref', 'byte_length', 'meta_json', 'created_at']);
+    const modTable = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='mod_installs'",
+    ).get();
+    expect(modTable).toBeTruthy();
     db.close();
   });
 });

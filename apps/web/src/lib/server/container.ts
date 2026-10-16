@@ -57,7 +57,12 @@ import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
 import { createSchedulesService, type SchedulesService } from '@wbfm/core/scheduler';
 import { createEventUsageService, type EventUsageService, createEventTriggersService, type EventTriggersService } from '@wbfm/core/event';
-import { createVrmAvatarService, type VrmAvatarService } from '@wbfm/core/services';
+import {
+  createVrmAvatarService,
+  type VrmAvatarService,
+  createModPackService,
+  type ModPackService,
+} from '@wbfm/core/services';
 import { createSkillService, type SkillService } from '@wbfm/core/skills';
 import { registerExitCleanup } from './container-exit';
 import {
@@ -125,6 +130,8 @@ export interface ServiceContainer {
   rateLimiter: RateLimiter;
   /** v2.0 M4：VRM 形象导入/存储/删除 */
   vrmAvatars: VrmAvatarService;
+  /** v2.0 M5：.wbfm-pack 打包/预检/导入 */
+  modPacks: ModPackService;
 }
 
 let container: ServiceContainer | null = null;
@@ -213,6 +220,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   deps.flowToolLister = () => flowRunner.listPublishedTools();
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
+  const stageScenes = createStageSceneService(deps);
+  const modPacks = createModPackService({ db, stageScenes });
   return {
     endpoints,
     rateLimiter,
@@ -235,7 +244,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     settings: createSettingsService(deps),
     assistants,
     characterCards: createCharacterCardService(deps),
-    stageScenes: createStageSceneService(deps),
+    stageScenes,
     conversations: createConversationService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),
@@ -249,6 +258,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     eventUsage: createEventUsageService(deps),
     eventTriggers: createEventTriggersService(deps),
     vrmAvatars: createVrmAvatarService(db),
+    modPacks,
   };
 }
 

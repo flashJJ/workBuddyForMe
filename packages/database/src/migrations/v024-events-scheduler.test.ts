@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -14,8 +14,8 @@ describe('v024 迁移：人格列 + scheduled_tasks + event_usage', () => {
   it('全新空库：user_version=24，两新表就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(30);
-    expect(LATEST_SCHEMA_VERSION).toBe(30);
+    expect(getSchemaVersion(db)).toBe(31);
+    expect(LATEST_SCHEMA_VERSION).toBe(31);
     for (const table of ['scheduled_tasks', 'event_usage']) {
       const rows = db
         .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
@@ -31,7 +31,7 @@ describe('v024 迁移：人格列 + scheduled_tasks + event_usage', () => {
       `INSERT INTO assistants(id,name,created_at,updated_at) VALUES('a1','助手','t','t')`,
     ).run();
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(30);
+    expect(getSchemaVersion(db)).toBe(31);
 
     const cols = db.prepare(`PRAGMA table_info(assistants)`).all() as Array<{ name: string }>;
     const names = cols.map((c) => c.name);
@@ -110,7 +110,7 @@ describe('v024 迁移：人格列 + scheduled_tasks + event_usage', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(() => applyMigrations(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(30);
+    expect(getSchemaVersion(db)).toBe(31);
     db.close();
   });
 });

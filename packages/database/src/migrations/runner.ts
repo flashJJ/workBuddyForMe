@@ -29,6 +29,7 @@ import { migrateV027 } from './v027-stage-scenes';
 import { migrateV028 } from './v028-meetings';
 import { migrateV029 } from './v029-relationship-milestones';
 import { migrateV030 } from './v030-vrm-avatars';
+import { migrateV031 } from './v031-mod-installs';
 
 interface Migration {
   version: number;
@@ -181,6 +182,11 @@ const MIGRATIONS: Migration[] = [
     version: 30,
     description: 'v2.0 M4: vrm_avatars 用户导入 VRM 形象表（纯加法）',
     up: migrateV030,
+  },
+  {
+    version: 31,
+    description: 'v2.0 M5: mod_installs .wbfm-pack 导入安装记录表（纯加法）',
+    up: migrateV031,
   },
 ];
 

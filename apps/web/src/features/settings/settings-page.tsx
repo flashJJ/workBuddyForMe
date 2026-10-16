@@ -30,6 +30,8 @@ import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
 import { TuningPanel } from '../tuning/tuning-panel';
 import { VrmImportSection } from './vrm-import-section';
 import { VrmAvatarList } from './vrm-avatar-list';
+import { ModPackPanel } from './mod-pack-panel';
+import { RelationshipReportPanel } from './relationship-report-panel';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -96,11 +98,15 @@ export function SettingsPage() {
 
       <RelationshipPanel />
 
+      <RelationshipReportPanel />
+
       <EventPanel />
 
       <VrmImportSection />
 
       <VrmAvatarList />
+
+      <ModPackPanel />
 
       <ReminderPanel />
 

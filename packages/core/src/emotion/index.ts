@@ -37,3 +37,16 @@ export {
   type RecordTurnEmotionParams,
   type RecordedTurnEmotion,
 } from './emotion-turn';
+export {
+  aggregateRelationshipReport,
+  REPORT_SECTION_KEYS,
+  REPORT_DEFAULT_SERIES_DAYS,
+  type RelationshipReportInput,
+  type RelationshipReportData,
+  type RelationshipReportOptions,
+  type ReportSectionKey,
+} from './relationship-report';
+export {
+  renderRelationshipReportHtml,
+  type ReportHtmlOptions,
+} from './relationship-report-html';
