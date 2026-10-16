@@ -4,12 +4,28 @@ import * as React from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-import type { VRM } from '@pixiv/three-vrm';
+import type { VRM, VRMPose } from '@pixiv/three-vrm';
 import { parseVrmAvatarId } from '@wbfm/shared/schemas';
 import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 export type { VRM };
+
+/**
+ * Relax pose：相对 T-pose 的骨骼偏移（四元数 local transform）。
+ * 只动肩/肘/头——不动脊柱/腿/手，避免极端模型兼容性问题。
+ * setNormalizedPose 会静默忽略不存在的骨骼名，安全。
+ */
+const RELAX_POSE: VRMPose = {
+  // 两臂向前下微垂（从 T-pose 水平）
+  leftShoulder: { rotation: [0.0, 0.0, -0.174, 0.985] },
+  rightShoulder: { rotation: [0.0, 0.0, 0.174, 0.985] },
+  // 手肘微弯 ~30°
+  leftUpperArm: { rotation: [-0.259, 0.0, 0.0, 0.966] },
+  rightUpperArm: { rotation: [0.259, 0.0, 0.0, 0.966] },
+  // 头微前倾 ~5°
+  head: { rotation: [-0.087, 0.0, 0.0, 0.996] },
+};
 
 /** 8 表情 → VRM 预设映射（用户决策：disgust→angry / fear→sad / smirk→surprised） */
 const VRM_EXPRESSION_MAP: Record<string, string> = {
@@ -113,6 +129,12 @@ export function VrmCanvas({
         }
         VRMUtils.removeUnnecessaryVertices(gltf.scene);
         VRMUtils.combineSkeletons(gltf.scene);
+        VRMUtils.removeUnnecessaryJoints(gltf.scene);
+        VRMUtils.rotateVRM0(vrm);
+        // 初始 relax pose：把 VRM 从 T-pose 拉到自然站姿（相对 rest pose 的安全偏移）
+        try {
+          vrm.humanoid?.setNormalizedPose(RELAX_POSE);
+        } catch { /* noop */ }
         vrm.scene.traverse((o) => {
           o.frustumCulled = false;
         });
@@ -120,24 +142,24 @@ export function VrmCanvas({
         runtime.vrm = vrm;
         fitVrmToCamera(vrm, runtime.camera);
 
-        // 尝试播内置待机动画（glTF.animations 里通常有 Idle/Loop clip；
-        // 只有 T Pose 静态姿势的 VRM 继续 fallback 到呼吸浮动）
+        // 优先播 glTF 内嵌 idle clip；无 clip 时靠程序化 idle fallback（animate loop）
         console.log('[VRM] gltf.animations count =', gltf.animations?.length ?? 0);
         if (gltf.animations && gltf.animations.length > 0) {
           gltf.animations.forEach((clip, i) => {
             console.log(`[VRM]   clip[${i}] name="${clip.name}" duration=${clip.duration}s tracks=${clip.tracks?.length ?? 0}`);
           });
-          // 优先选名字带 idle/loop/待机动的 clip，否则拿最长的
           const sorted = [...gltf.animations].sort((a, b) => b.duration - a.duration);
-          const idleClip = gltf.animations.find((a) => /idle|loop|待机/i.test(a.name)) ?? sorted[0];
+          const idleClip =
+            gltf.animations.find((a) => /idle|loop|待机/i.test(a.name)) ?? sorted[0];
           if (idleClip) {
             console.log('[VRM] choosing clip:', idleClip.name, 'duration=', idleClip.duration);
-            runtime.idleMixer = new THREE.AnimationMixer(vrm.scene);
-            const action = runtime.idleMixer.clipAction(idleClip);
-            action.play();
+            // mixer 绑 normalizedHumanBonesRoot（更精确），fallback 到 vrm.scene
+            const mixerRoot = vrm.humanoid?.normalizedHumanBonesRoot ?? vrm.scene;
+            runtime.idleMixer = new THREE.AnimationMixer(mixerRoot);
+            runtime.idleMixer.clipAction(idleClip).play();
           }
         } else {
-          console.warn('[VRM] glTF 里没找到任何 animation clip（纯静态/无内嵌动作）');
+          console.warn('[VRM] glTF 无内嵌 animation clip，使用程序化 idle fallback（SpringBone + 头部微摆）');
         }
 
         setReady(true);
@@ -182,10 +204,25 @@ export function VrmCanvas({
             em.setValue(name, name === preset ? 1 : 0);
           }
         }
-        // 呼吸浮动（替代摸头弹性）
+        // 呼吸浮动
         runtime.breathePhase += dt;
         const breathe = Math.sin(runtime.breathePhase * 1.2) * 0.02;
         runtime.vrm.scene.position.y = breathe;
+
+        // 程序化 idle fallback（仅当无 glTF animation clip）：
+        // relax pose 已在加载时 setNormalizedPose 设置好，
+        // 这里叠加头部微摆（yaw ±5° + pitch ±3°）+ 身体微晃
+        if (!runtime.idleMixer && runtime.vrm.humanoid) {
+          const t = runtime.clock.elapsedTime;
+          const head = runtime.vrm.humanoid.getNormalizedBoneNode('head');
+          if (head) {
+            head.rotation.x = -0.087 + Math.sin(t * 0.8) * 0.052;
+            head.rotation.y = Math.sin(t * 0.6) * 0.09;
+          }
+          // 身体微晃（叠加到 head tracking 的 y rotation 上）
+          runtime.vrm.scene.rotation.y =
+            runtime.currentRotation.y + Math.sin(t * 0.4) * 0.035;
+        }
       }
       runtime.renderer.render(runtime.scene, runtime.camera);
     };
