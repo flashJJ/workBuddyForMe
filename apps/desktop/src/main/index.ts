@@ -6,6 +6,8 @@
  * updater-bootstrap / global-shortcuts / computer/control-bootstrap。
  */
 import { randomBytes } from 'node:crypto';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   app,
   BrowserWindow,
@@ -13,6 +15,7 @@ import {
   ipcMain,
   powerMonitor,
   safeStorage,
+  session,
 } from 'electron';
 import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
@@ -77,6 +80,10 @@ if (!gotLock) {
 }
 
 async function start(): Promise<void> {
+  // 打包态：版本变更时清 Electron session，防止升级后旧 bundle 的 JS/CSS 缓存
+  // 继续命中新托管服务（表现为前端打 v1.x 古董端点 /api/voice/avatar-model，后端 404）。
+  if (app.isPackaged) clearSessionIfVersionChanged();
+
   console.error('[wbfm] boot: isDev=', isDev, 'serverPath=', isDev ? '(dev)' : resolveServerPath());
   installAppMenu(isDev);
 
@@ -182,3 +189,38 @@ app.on('will-quit', async (event) => {
     app.exit(0);
   }
 });
+
+/**
+ * 记录上一次启动的 app.getVersion()；若本次不同则清 defaultSession 的所有存储
+ * （localStorage / sessionStorage / cacheStorage / HTTP cache），防止升级后旧前端
+ * bundle（Service Worker / 静态资源哈希命中）继续请求新托管服务里已删除的端点。
+ * 写入位置：userData/last-version。
+ */
+function clearSessionIfVersionChanged(): void {
+  const markerPath = join(app.getPath('userData'), 'last-version');
+  const current = app.getVersion();
+  let last: string | null = null;
+  try {
+    if (existsSync(markerPath)) {
+      last = readFileSync(markerPath, 'utf8').trim();
+    }
+  } catch {
+    last = null;
+  }
+
+  if (last !== null && last !== current) {
+    console.warn('[wbfm] 版本变更 detected:', last, '→', current, '，清理 session storage');
+    void session.defaultSession
+      .clearStorageData({
+        storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage', 'filesystem', 'shadercache'],
+        quotas: ['temporary', 'syncable'],
+      })
+      .catch((err) => console.error('[wbfm] clearStorageData 失败:', err));
+  }
+
+  try {
+    writeFileSync(markerPath, current, 'utf8');
+  } catch {
+    // userData 不可写时静默降级；下次启动会再试
+  }
+}
