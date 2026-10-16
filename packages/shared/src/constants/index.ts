@@ -10,5 +10,7 @@ export * from './task';
 export * from './flow';
 export * from './upload';
 export * from './emotion';
+export * from './relationship';
 export * from './pet-interaction';
 export * from './reunion';
+export * from './vrm';

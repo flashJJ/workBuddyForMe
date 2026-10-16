@@ -7,6 +7,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { CustomTriggerSection } from '@/features/events/custom-trigger-section';
 import { EventUsageStats } from '@/features/events/event-usage-stats';
+import { AwarenessPermissionSection } from './awareness-permission-section';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
 
 const TIERS: ReadonlyArray<{ id: EventFrequencyTier; labelKey: MessageKey }> = [
@@ -16,7 +17,8 @@ const TIERS: ReadonlyArray<{ id: EventFrequencyTier; labelKey: MessageKey }> = [
 ];
 
 /**
- * v1.7 剧情演出设置：总开关 + 频率三档 + 8 个内置剧本单条停用。
+ * v1.7 剧情演出设置：总开关 + 频率三档 + 内置剧本单条停用（共 20 个内置剧本）
+ * + v2.0 M3 系统事件感知独立授权分组。
  * 与 EmotionPanel 同口径：乐观覆盖即时保存、挂载门控防水合结构交换。
  */
 export function EventPanel() {
@@ -38,6 +40,20 @@ export function EventPanel() {
   React.useEffect(() => setMasterOverride(null), [settings?.eventsEnabled]);
   const shownEnabled = masterOverride ?? enabled;
 
+  // 单剧本开关乐观覆盖（PATCH→重拉窗口内服务端旧值会把勾选弹回，v1.7 M5 同款纪律）。
+  // 服务端值追平某项后才移除该项覆盖，避免旧数据引用把翻转中的勾选弹回。
+  const [sceneOverride, setSceneOverride] = React.useState<Map<string, boolean>>(new Map());
+  React.useEffect(() => {
+    setSceneOverride((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Map(prev);
+      for (const [id, overridden] of next) {
+        if (overridden === !disabledIds.has(id)) next.delete(id);
+      }
+      return next.size === prev.size ? prev : next;
+    });
+  }, [disabledIds]);
+
   const toggleMaster = async (next: boolean) => {
     setMasterOverride(next);
     try {
@@ -57,7 +73,20 @@ export function EventPanel() {
     const next = nowEnabled
       ? current.filter((id) => id !== eventId)
       : [...current, eventId];
-    await updateSettings.mutateAsync({ disabledEventIds: next });
+    setSceneOverride((prev) => {
+      const merged = new Map(prev);
+      merged.set(eventId, nowEnabled);
+      return merged;
+    });
+    try {
+      await updateSettings.mutateAsync({ disabledEventIds: next });
+    } catch {
+      setSceneOverride((prev) => {
+        const merged = new Map(prev);
+        merged.delete(eventId);
+        return merged;
+      });
+    }
   };
 
   return (
@@ -112,7 +141,7 @@ export function EventPanel() {
             <div className="text-sm font-medium">{t('settings.events.scenesTitle')}</div>
             {hydrated &&
               BUILT_IN_EVENTS.map((def) => {
-                const sceneEnabled = !disabledIds.has(def.id);
+                const sceneEnabled = sceneOverride.get(def.id) ?? !disabledIds.has(def.id);
                 return (
                   <label
                     key={def.id}
@@ -135,6 +164,8 @@ export function EventPanel() {
           {hydrated && <CustomTriggerSection />}
 
           {hydrated && <EventUsageStats />}
+
+          {hydrated && <AwarenessPermissionSection />}
         </div>
       )}
     </section>

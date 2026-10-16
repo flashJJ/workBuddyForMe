@@ -6,6 +6,7 @@
  */
 import {
   CARD_DESCRIPTION_MAX_CHARS,
+  CARD_NICKNAME_MAX_CHARS,
   CARD_VOICE_MAX_CHARS,
   type CharacterCardDiagnostic,
 } from '../schemas/character-card';
@@ -15,10 +16,22 @@ export interface RawFrontmatter {
   description?: string;
   defaultEmotion?: string;
   voice?: string;
+  /** v2.0 等级称呼标量（1=认识 2=搭档 3=挚友） */
+  nickname1?: string;
+  nickname2?: string;
+  nickname3?: string;
 }
 
 /** 规范字段名（白名单；其他字段一律忽略） */
-const KNOWN_FM_KEYS = new Set(['name', 'description', 'defaultEmotion', 'voice']);
+const KNOWN_FM_KEYS = new Set([
+  'name',
+  'description',
+  'defaultEmotion',
+  'voice',
+  'nickname1',
+  'nickname2',
+  'nickname3',
+]);
 
 function err(
   code: CharacterCardDiagnostic['code'],
@@ -81,6 +94,14 @@ export function parseFrontmatter(
   }
   if (out.voice && out.voice.length > CARD_VOICE_MAX_CHARS) {
     errors.push(err('frontmatterInvalid', `voice 不能超过 ${CARD_VOICE_MAX_CHARS} 字符`, null));
+  }
+  for (const key of ['nickname1', 'nickname2', 'nickname3'] as const) {
+    const value = out[key];
+    if (value && value.length > CARD_NICKNAME_MAX_CHARS) {
+      errors.push(
+        err('frontmatterInvalid', `${key} 不能超过 ${CARD_NICKNAME_MAX_CHARS} 字符`, null),
+      );
+    }
   }
   return errors.length ? errors : out;
 }

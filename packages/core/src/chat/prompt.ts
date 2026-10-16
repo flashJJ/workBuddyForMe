@@ -41,6 +41,16 @@ export interface BuildPromptOptions {
   card?: ParsedCharacterCard | null;
   /** 固定位于身份卡之后、情绪段之前 */
   globalAppendPrompt?: string | null;
+  /**
+   * v2.0：当前关系等级已解锁的用户称呼（由组装侧经闸门计算后传入）。
+   * 仅在 card 存在时随身份卡段落注入；未解锁/无卡为 null，不产生任何称呼文本。
+   */
+  cardNickname?: string | null;
+  /**
+   * v2.0 M2：共同经历关系记忆软引用段（主动搭话用；正常回合走 RRF 记忆块）。
+   * 组装侧负责只传 relationship 类记忆并做完删除一致性；null=不注入。
+   */
+  relationshipMemoryBlock?: string | null;
 }
 
 /**
@@ -57,16 +67,22 @@ export function buildSystemPrompt(
   options: BuildPromptOptions = {},
 ): string {
   // 身份卡优先；卡缺省或空壳时回落旧 systemPrompt（默认卡/悬挂引用不阻断对话）
-  const personaBlock = options.card ? buildPersonaBlock(options.card) : null;
+  const personaBlock = options.card
+    ? buildPersonaBlock(options.card, options.cardNickname ?? null)
+    : null;
   const personaText = personaBlock ?? assistant.systemPrompt.trim();
 
   const parts: string[] = [];
   // 系统层（输出格式控制）先于身份内容
   if (assistant.expressionEnabled) parts.push(EXPRESSION_DIRECTIVE_BLOCK);
   if (personaText) parts.push(personaText);
-  // v1.8 M3：全局追加独立成段并带固定小标题（避免与卡正文粘连），位置在身份后、情绪前
+  // v1.8 M3：全局追加独立成段并带固定小标题（避免与身份卡粘连）
   if (options.globalAppendPrompt?.trim()) {
     parts.push(`【全局追加】\n${options.globalAppendPrompt.trim()}`);
+  }
+  // v2.0 M2：共同经历软引用（主动搭话；无把握不提的纪律在区块文案内约束）
+  if (options.relationshipMemoryBlock?.trim()) {
+    parts.push(options.relationshipMemoryBlock.trim());
   }
   // v1.6：情绪块内已自带「当前状态段 + 尾块协议」两段，调用方在情绪功能开启时整体传入
   if (emotionBlock?.trim()) parts.push(emotionBlock.trim());
@@ -109,6 +125,8 @@ export interface ChatBudgetOptions {
   card?: ParsedCharacterCard | null;
   /** v1.8 M3 预埋：全局追加提示词 */
   globalAppendPrompt?: string | null;
+  /** v2.0：关系等级已解锁的用户称呼（未解锁不传，组装闸门在调用侧） */
+  cardNickname?: string | null;
 }
 
 /**
@@ -148,6 +166,7 @@ export function buildChatMessages(
   const promptOptions: BuildPromptOptions = {
     card: budget.card ?? null,
     globalAppendPrompt: budget.globalAppendPrompt ?? null,
+    cardNickname: budget.cardNickname ?? null,
   };
 
   // 1) 先装不含 RAG 的固定系统块（系统层/身份卡/全局追加/情绪/摘要/记忆/技能）

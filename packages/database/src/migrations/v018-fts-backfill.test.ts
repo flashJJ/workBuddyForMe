@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion } from './runner';
 
@@ -30,7 +30,7 @@ describe('v018 迁移：chunks_fts 存量回填', () => {
     ).toBe(0);
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(28);
+    expect(getSchemaVersion(db)).toBe(31);
 
     expect(
       (db.prepare(`SELECT COUNT(*) AS n FROM chunks_fts`).get() as { n: number }).n,
@@ -70,7 +70,7 @@ describe('v018 迁移：chunks_fts 存量回填', () => {
   it('全新空库：回填零行，版本直达 18', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(28);
+    expect(getSchemaVersion(db)).toBe(31);
     expect(
       (db.prepare(`SELECT COUNT(*) AS n FROM chunks_fts`).get() as { n: number }).n,
     ).toBe(0);

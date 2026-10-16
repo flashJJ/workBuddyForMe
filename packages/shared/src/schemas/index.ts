@@ -288,3 +288,10 @@ export * from './character-card';
 // v1.9 舞台契约（cast/指令/场景）
 export * from './stage';
 export * from './meeting';
+
+// v2.0 关系等级块（挂 emotion state v2）
+export * from './relationship';
+// v2.0 M4 VRM 形象契约
+export * from './vrm-avatar';
+// v2.0 M5 .wbfm-pack mod 包契约
+export * from './wbfm-pack';

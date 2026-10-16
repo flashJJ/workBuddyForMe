@@ -65,3 +65,21 @@ export {
   type AttachmentInput,
   type ResolvedImage,
 } from './attachment-service';
+export {
+  createVrmAvatarService,
+  type VrmAvatarService,
+} from './vrm-avatar-service';
+export {
+  createModPackService,
+  type ModPackService,
+  type ModPackServiceDeps,
+  type ExportCandidate,
+} from './mod-pack-service';
+export type {
+  PackPreview,
+  PackPreviewEntry,
+  PackPreviewPackInfo,
+  PackImportResult,
+  PackImportEntryResult,
+  PackEntryKind,
+} from './mod-pack/pack-types';

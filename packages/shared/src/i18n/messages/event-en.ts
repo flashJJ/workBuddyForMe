@@ -35,12 +35,56 @@ export const enEvent: DeepPartialMessages<ZhDictionary>['event'] = {
       comfort0: "It's fine, I'm not angry anymore.",
       comfort1: "I'm okay as long as you're here.",
     },
+    // v2.0 relationship level unlock scenes (fired only on level-up)
+    levelup: {
+      acquainted: { title: 'First acquaintance' },
+      acquainted0: 'Mm, I will remember you. Nice to meet you.',
+      partner: { title: 'Becoming partners' },
+      partner0: 'Looks like we are partners now.',
+      partner1: "Whatever comes next, let's handle it together.",
+      confidant: { title: 'Becoming confidants' },
+      confidant0: 'Before I knew it, you became the person I trust most.',
+      confidant1: 'No matter what happens, I am on your side.',
+    },
+    // v2.0 M2 shared-milestone keepsake scenes (fired once on achievement)
+    milestone: {
+      day1: { title: 'First day together' },
+      day1line0: 'Today is the first day we met. I look forward to all the days ahead.',
+      day30: { title: '30 days together' },
+      day30line0: 'Before I knew it, we have already spent 30 days together.',
+      day30line1: 'Thank you for being around these days.',
+      day100: { title: '100 days together' },
+      day100line0: 'Day 100. Every day with you feels steady and real.',
+      day365: { title: 'One year together' },
+      day365line0: 'A whole year. Thank you — and I want every year ahead to have you in it.',
+      collab10: { title: 'Ten collaborations' },
+      collab10line0: 'We have finished ten things together. We make a great team.',
+      collab50: { title: 'Fifty collaborations' },
+      collab50line0: 'Fifty collaborations! Nothing is too much for the two of us.',
+    },
   },
   touch: {
     shy: {
       title: 'Shy after repeated pats',
       shy0: "H-hey, stop patting my head...",
       shy1: 'Keep it up and I will charge a patting fee.',
+    },
+  },
+  // v2.0 M3 proactive context-awareness care scenes (local state-machine edges only)
+  context: {
+    latenight: {
+      title: 'Still up late',
+      latenight0: 'Still awake? Don’t push yourself too hard.',
+      latenight1: 'The work can wait. How about some rest?',
+    },
+    workstreak: {
+      title: 'Long work stretch',
+      workstreak0: 'You have been busy for ages — stretch a little?',
+      workstreak1: 'Resting now means going further later. I’ll be here.',
+    },
+    longnochat: {
+      title: 'Long time no chat',
+      longnochat0: 'It has been days! How have you been lately?',
     },
   },
   task: {

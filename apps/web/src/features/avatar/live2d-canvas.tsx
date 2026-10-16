@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from './expression-parser';
 import type { Live2dController } from './live2d-controller';
 
-interface Live2dCanvasProps {
+export interface Live2dCanvasProps {
   /** 模型 id（avatar-models 注册表） */
   modelId: string;
   /** 当前表情（规范标签） */

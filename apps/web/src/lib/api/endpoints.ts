@@ -20,6 +20,13 @@ export const API = {
   stageScene: (id: string) => `/api/stage-scenes/${id}`,
   stageBackgrounds: '/api/stage-scenes/backgrounds',
   stageBackground: (ref: string) => `/api/stage-scenes/backgrounds/${ref}`,
+  // v2.0 M5 个性化内容包
+  modPackCandidates: '/api/mod-packs/candidates',
+  modPackInspect: '/api/mod-packs/inspect',
+  modPackImport: '/api/mod-packs/import',
+  modPackExport: '/api/mod-packs/export',
+  modPackInstalls: '/api/mod-packs/installs',
+  relationshipReport: '/api/relationship-report',
   conversations: '/api/conversations',
   conversation: (id: string) => `/api/conversations/${id}`,
   messages: (id: string) => `/api/conversations/${id}/messages`,

@@ -1,0 +1,124 @@
+{
+  "warmupMs": 12000,
+  "measureMs": 15000,
+  "environment": {
+    "hardwareConcurrency": 24,
+    "devicePixelRatio": 1.0000000298023224,
+    "viewport": "1920x1080",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+    "gpuRenderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D67) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "webgl": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "sniff": [
+    {
+      "fixture": "validVrm",
+      "result": {
+        "ok": true,
+        "vrmVersion": "1.0",
+        "byteLength": 10776032
+      }
+    },
+    {
+      "fixture": "textRenamed",
+      "result": {
+        "ok": false,
+        "reason": "not_glb",
+        "byteLength": 34
+      }
+    },
+    {
+      "fixture": "zipRenamed",
+      "result": {
+        "ok": false,
+        "reason": "not_glb",
+        "byteLength": 17
+      }
+    },
+    {
+      "fixture": "textGltf",
+      "result": {
+        "ok": false,
+        "reason": "not_glb",
+        "byteLength": 27
+      }
+    },
+    {
+      "fixture": "glbWithoutVrm",
+      "result": {
+        "ok": false,
+        "reason": "not_vrm_extension",
+        "byteLength": 48
+      }
+    }
+  ],
+  "results": [
+    {
+      "key": "s1",
+      "vrmCount": 1,
+      "live2dCount": 0,
+      "load": {
+        "firstFrameMs": 910,
+        "vrmVersion": "1.0",
+        "box": {
+          "minY": 0,
+          "maxY": 1.615,
+          "height": 1.615
+        }
+      },
+      "metrics": {
+        "elapsedSec": 14.98,
+        "fpsMean": 82.3,
+        "fpsOnePercentLow": 39.6,
+        "frameP50": 12.5,
+        "frameP95": 20.8,
+        "frameP99": 24.9,
+        "frameMax": 29.2,
+        "longFrames": 0,
+        "hitchFrames": 0,
+        "heap": {
+          "startMb": 51.3,
+          "endMb": 52,
+          "peakMb": 53,
+          "samples": 15
+        }
+      }
+    },
+    {
+      "key": "s2",
+      "vrmCount": 1,
+      "live2dCount": 2,
+      "load": {
+        "firstFrameMs": 617,
+        "vrmVersion": "1.0",
+        "box": {
+          "minY": 0,
+          "maxY": 1.615,
+          "height": 1.615
+        }
+      },
+      "metrics": {
+        "elapsedSec": 14.98,
+        "fpsMean": 71.5,
+        "fpsOnePercentLow": 38.5,
+        "frameP50": 12.6,
+        "frameP95": 20.9,
+        "frameP99": 25,
+        "frameMax": 33.5,
+        "longFrames": 1,
+        "hitchFrames": 0,
+        "heap": {
+          "startMb": 78,
+          "endMb": 73,
+          "peakMb": 78.9,
+          "samples": 15
+        }
+      }
+    }
+  ],
+  "collectedAt": "2026-10-15T05:50:59.097Z",
+  "runner": {
+    "headed": true,
+    "viewport": "1920x1080",
+    "pageErrors": []
+  }
+}

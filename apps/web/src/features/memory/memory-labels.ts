@@ -9,12 +9,14 @@ export const MEMORY_KIND_OPTIONS: Array<{ value: MemoryKind; labelKey: MessageKe
   { value: 'fact', labelKey: 'memory.kind.fact' },
   { value: 'preference', labelKey: 'memory.kind.preference' },
   { value: 'event', labelKey: 'memory.kind.event' },
+  { value: 'relationship', labelKey: 'memory.kind.relationship' },
 ];
 
 export const MEMORY_KIND_LABELS: Record<MemoryKind, MessageKey> = {
   fact: 'memory.kind.fact',
   preference: 'memory.kind.preference',
   event: 'memory.kind.event',
+  relationship: 'memory.kind.relationship',
 };
 
 export const MEMORY_STATUS_LABELS: Record<MemoryStatus, MessageKey> = {
@@ -26,6 +28,7 @@ export const MEMORY_KIND_BADGE: Record<MemoryKind, 'default' | 'success' | 'warn
   fact: 'default',
   preference: 'success',
   event: 'warning',
+  relationship: 'success',
 };
 
 export function formatMemoryDate(iso: string | null, locale: Language): string {

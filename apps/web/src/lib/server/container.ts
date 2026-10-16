@@ -34,6 +34,7 @@ import {
   type TaskRunnerService,
 } from '@wbfm/core/services';
 import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
+import { createMilestoneService, type MilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService, type AgentRunService } from '@wbfm/core/agents';
 import { createMeetingService, type MeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
@@ -56,7 +57,14 @@ import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
 import { createSchedulesService, type SchedulesService } from '@wbfm/core/scheduler';
 import { createEventUsageService, type EventUsageService, createEventTriggersService, type EventTriggersService } from '@wbfm/core/event';
+import {
+  createVrmAvatarService,
+  type VrmAvatarService,
+  createModPackService,
+  type ModPackService,
+} from '@wbfm/core/services';
 import { createSkillService, type SkillService } from '@wbfm/core/skills';
+import { registerExitCleanup } from './container-exit';
 import {
   createToolBreaker,
   createToolRuntime,
@@ -108,6 +116,8 @@ export interface ServiceContainer {
   taskRunner: TaskRunnerService;
   /** v1.4 多智能体协作 */
   agentRuns: AgentRunService;
+  /** v2.0 M2：共同里程碑达成评估与查询 */
+  relationshipMilestones: MilestoneService;
   /** v1.9 M3 多助手会议 */
   meetings: MeetingService;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
@@ -118,6 +128,10 @@ export interface ServiceContainer {
   endpoints: EndpointService;
   /** v0.9：公开 API 每端点速率限制器（进程内单例） */
   rateLimiter: RateLimiter;
+  /** v2.0 M4：VRM 形象导入/存储/删除 */
+  vrmAvatars: VrmAvatarService;
+  /** v2.0 M5：.wbfm-pack 打包/预检/导入 */
+  modPacks: ModPackService;
 }
 
 let container: ServiceContainer | null = null;
@@ -206,6 +220,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   deps.flowToolLister = () => flowRunner.listPublishedTools();
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
+  const stageScenes = createStageSceneService(deps);
+  const modPacks = createModPackService({ db, stageScenes });
   return {
     endpoints,
     rateLimiter,
@@ -219,6 +235,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     taskGrants,
     taskRunner,
     agentRuns,
+    relationshipMilestones: createMilestoneService(deps),
     meetings,
     runtime,
     flowRunner,
@@ -227,7 +244,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     settings: createSettingsService(deps),
     assistants,
     characterCards: createCharacterCardService(deps),
-    stageScenes: createStageSceneService(deps),
+    stageScenes,
     conversations: createConversationService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),
@@ -240,32 +257,9 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     schedules: createSchedulesService(deps),
     eventUsage: createEventUsageService(deps),
     eventTriggers: createEventTriggersService(deps),
+    vrmAvatars: createVrmAvatarService(db),
+    modPacks,
   };
-}
-
-/**
- * 进程退出清理：断开全部 MCP 子进程（幂等 best-effort）。
- * 断开链路在首个 await 前同步发出 kill 信号，signal 处理器内随后 exit 也不会遗漏。
- * 标志挂 globalThis：dev server 模块重载会重置模块级变量，重复注册会触发
- * MaxListenersExceededWarning。
- */
-function registerExitCleanup(registry: McpRegistry): void {
-  const holder = globalThis as { __WBFM_MCP_EXIT_CLEANUP__?: boolean };
-  if (holder.__WBFM_MCP_EXIT_CLEANUP__) return;
-  holder.__WBFM_MCP_EXIT_CLEANUP__ = true;
-  const disconnectAll = () => {
-    void registry.disconnectAll().catch(() => undefined);
-  };
-  process.once('exit', disconnectAll);
-  // 注册处理器会接管默认信号行为，故 cleanup 后显式退出
-  process.once('SIGTERM', () => {
-    disconnectAll();
-    process.exit(0);
-  });
-  process.once('SIGINT', () => {
-    disconnectAll();
-    process.exit(0);
-  });
 }
 
 /** 获取服务单例：首次访问时初始化文件数据库与全部业务服务 */

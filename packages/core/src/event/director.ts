@@ -94,6 +94,13 @@ export class EventDirector {
     if (isQuietHour(context.time.hour, this.settings.quietStart, this.settings.quietEnd)) {
       return this.deny(def, 'quiet_hours');
     }
+    // v2.0：定义级关系等级闸门（内置等级剧本；用户剧本走 branch relationship.level）
+    if (
+      def.minRelationshipLevel !== undefined &&
+      context.relationship.level < def.minRelationshipLevel
+    ) {
+      return this.deny(def, 'relationship_locked');
+    }
 
     const now = clock.now();
     const lastPlayed = this.deps.usage.lastPlayedAt(def.id);

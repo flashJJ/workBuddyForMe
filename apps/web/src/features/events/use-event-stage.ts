@@ -31,6 +31,8 @@ export interface UseEventStageArgs {
   eventsEnabled: boolean;
   frequencyTier: EventFrequencyTier;
   disabledEventIds: readonly string[];
+  /** v2.0：关系等级开关（关闭时等级快照恒 0，等级剧本/relationship.level 条件不放行） */
+  relationshipEnabled: boolean;
 }
 
 export interface EventStage {
@@ -94,6 +96,7 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
         now,
         lastInteractionMin: readLastInteractionMinutes(now),
         extraCounters,
+        relationshipEnabled: argsRef.current.relationshipEnabled,
       });
       const decision = admit(def, ctx);
       return decision.kind === 'admitted' || decision.kind === 'queued';
@@ -111,6 +114,7 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
         emotion: argsRef.current.emotionState,
         now,
         lastInteractionMin: readLastInteractionMinutes(now),
+        relationshipEnabled: argsRef.current.relationshipEnabled,
       });
       return preview(def, ctx);
     },

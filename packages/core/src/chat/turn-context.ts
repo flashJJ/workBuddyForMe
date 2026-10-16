@@ -43,6 +43,8 @@ export interface TurnMessageParams {
   card: ParsedCharacterCard | null;
   /** v1.8 M3：全局追加提示词（开关开且非空才传；固定在身份卡之后、情绪段之前） */
   globalAppendPrompt?: string | null;
+  /** v2.0：关系等级已解锁的用户称呼（未解锁不传） */
+  cardNickname?: string | null;
 }
 
 /**
@@ -69,7 +71,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
   stats: HistoryBudgetStats | null;
 } {
   const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
-    summary, memoryBlock, skillBlock, emotionBlock, card, globalAppendPrompt } = params;
+    summary, memoryBlock, skillBlock, emotionBlock, card, globalAppendPrompt, cardNickname } = params;
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
@@ -80,6 +82,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
     emotionBlock,
     card,
     globalAppendPrompt: globalAppendPrompt ?? null,
+    cardNickname: cardNickname ?? null,
   });
 }
 

@@ -36,5 +36,9 @@ export function toErrorResponse(error: unknown): Response {
   }
   if (error instanceof ZodError) return jsonError(fromZodError(error));
   console.error('[api] 未处理错误：', error);
-  return jsonError(new ApiError('INTERNAL_ERROR', '服务器内部错误'));
+  const detail =
+    process.env.NODE_ENV === 'development' && error instanceof Error
+      ? `${error.message}\n${error.stack}`
+      : '服务器内部错误';
+  return jsonError(new ApiError('INTERNAL_ERROR', detail));
 }

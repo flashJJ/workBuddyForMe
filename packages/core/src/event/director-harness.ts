@@ -7,13 +7,28 @@ import { EventDirector, InMemoryEventUsageStore, createManualClock } from './ind
 import type { ConditionContext, DirectorSettings } from './index';
 import type { EventRunner } from './runner';
 
-export function makeContext(over: Partial<ConditionContext['time']> = {}): ConditionContext {
+/**
+ * 测试上下文桩：默认中性值；既支持整块 time 覆盖（{ time: { hour } }），
+ * 也兼容历史扁平写法（{ hour: 8 }，扁平字段优先）。
+ */
+export function makeContext(
+  over: Partial<ConditionContext> & Partial<ConditionContext['time']> = {},
+): ConditionContext {
+  const { hour, lastInteractionMin, time: timeOver, ...rest } = over;
   return {
     mood: { happiness: 0, anger: 0, sadness: 0 },
     relation: { intimacy: 10, trust: 5 },
+    relationship: { level: 0 },
     personality: { frankness: 0.5, tsundere: 0.2, shy: 0.2, tolerance: 0.5 },
     counters: {},
-    time: { hour: 12, lastInteractionMin: 3, ...over },
+    ...rest,
+    time: {
+      hour: 12,
+      lastInteractionMin: 3,
+      ...timeOver,
+      ...(hour !== undefined ? { hour } : {}),
+      ...(lastInteractionMin !== undefined ? { lastInteractionMin } : {}),
+    },
   };
 }
 

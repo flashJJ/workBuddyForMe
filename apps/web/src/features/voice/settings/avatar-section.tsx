@@ -17,6 +17,9 @@ import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
+import { useQuery } from '@tanstack/react-query';
+import { apiGet } from '@/lib/api/client';
+import type { VrmAvatarListResponse } from '@wbfm/shared/schemas';
 
 interface Props {
   settings: VoiceSettings;
@@ -97,6 +100,12 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
   React.useEffect(() => setEnabled(settings.avatarEnabled), [settings.avatarEnabled]);
   React.useEffect(() => setModelId(settings.avatarModelId), [settings.avatarModelId]);
 
+  const { data: vrmData } = useQuery({
+    queryKey: ['vrm-avatars'],
+    queryFn: () => apiGet<VrmAvatarListResponse>('/api/vrm-avatars'),
+  });
+  const vrmAvatars = vrmData?.avatars ?? [];
+
   const model = getAvatarModel(modelId);
   const voice = AVATAR_TTS_VOICES[model.id as keyof typeof AVATAR_TTS_VOICES] ?? AVATAR_TTS_VOICES.haru;
   const petBridge = React.useMemo(() => getPetBridge(), []);
@@ -158,7 +167,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
           <Select
             id="avatar-model"
             data-testid="avatar-model"
-            value={model.id}
+            value={modelId}
             onChange={(e) => {
               const next = e.target.value;
               setModelId(next);
@@ -168,11 +177,22 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
               if (petBridge && petOpen) void petBridge.open(next);
             }}
           >
-            {AVATAR_MODEL_LIST.map((item) => (
-              <option key={item.id} value={item.id}>
-                {t(item.label)}
-              </option>
-            ))}
+            <optgroup label={t('avatar.rail.title')}>
+              {AVATAR_MODEL_LIST.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {t(item.label)}
+                </option>
+              ))}
+            </optgroup>
+            {vrmAvatars.length > 0 && (
+              <optgroup label={t('avatar.vrm.sectionTitle')}>
+                {vrmAvatars.map((item) => (
+                  <option key={item.id} value={`vrm:${item.fileRef}`}>
+                    {item.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </Select>
           <div
             className="flex items-center justify-between gap-2"

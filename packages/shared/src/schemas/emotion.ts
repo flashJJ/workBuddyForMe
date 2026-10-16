@@ -9,6 +9,12 @@
  * 归一化（夹值域/坏数据回落/事件截断）在 core 情绪内核完成；本文件只提供契约与
  * 无副作用的等级分级函数，UI 文案与模型注入文案共用同一分级口径。
  */
+import {
+  createDefaultRelationshipBlock,
+  relationshipBlockSchema,
+  RELATIONSHIP_LEVEL_EVENT_TYPES,
+  type RelationshipLevelEventType,
+} from './relationship';
 import { z } from 'zod';
 import { EXPRESSION_TAGS, type ExpressionTag } from './expression';
 import {
@@ -45,9 +51,30 @@ export type EmotionNeed = (typeof EMOTION_NEEDS)[number];
  * 情绪事件的产生来源：决定可信度与 UI 展示。
  * M2 增补 'default'：模型未给尾块、规则也未命中时的普通 chat 回合，
  * 与 model（尾块识别）区分以支持协议合法率统计。
+ * v2.0 增补 'system'：关系等级升/降等系统派生事件（无对话原文）。
  */
-export const EMOTION_EVENT_SOURCES = ['model', 'rule', 'event', 'manual', 'default'] as const;
-export type EmotionEventSource = (typeof EMOTION_EVENT_SOURCES)[number]
+export const EMOTION_EVENT_SOURCES = [
+  'model',
+  'rule',
+  'event',
+  'manual',
+  'default',
+  'system',
+] as const;
+export type EmotionEventSource = (typeof EMOTION_EVENT_SOURCES)[number];
+
+/**
+ * 流水持久化事件类型：4 类 soulEvent + v2.0 等级变迁（level_up/level_down）。
+ * 等级事件是系统派生（source='system'），只进 emotion_events 流水，
+ * 不进 state.recentEvents（emotionEventSchema 仍只收 soulEvent）。
+ */
+export const EMOTION_PERSISTED_EVENT_TYPES = [
+  ...SOUL_EVENT_TYPES,
+  ...RELATIONSHIP_LEVEL_EVENT_TYPES,
+] as const;
+export type EmotionPersistedEventType =
+  | SoulEventType
+  | RelationshipLevelEventType;
 
 /**
  * 情绪事件流水的 wire 视图（M4）：数据库仓储行经映射后的对外结构，
@@ -56,7 +83,8 @@ export type EmotionEventSource = (typeof EMOTION_EVENT_SOURCES)[number]
 export interface EmotionEventView {
   id: string;
   assistantId: string;
-  type: SoulEventType;
+  /** soulEvent 四类或 v2.0 等级变迁（level_up/down 时 intensity=新等级） */
+  type: EmotionPersistedEventType;
   source: EmotionEventSource;
   emotion: ExpressionTag | null;
   intensity: number | null;
@@ -85,18 +113,43 @@ export const emotionEventSchema = z.object({
 });
 
 /**
- * 持久化状态。counters 为 v1.7 剧本 branch 条件预留的命名计数器
- * （如连续摸头次数、当日交互次数），v1.6 只保证读写不丢。
+ * v2 持久化状态。counters 为 v1.7 剧本 branch 条件预留的命名计数器
+ * （如连续摸头次数、当日交互次数）；relationship 为 v2.0 等级地板块。
  */
-export const emotionStateSchema = z.object({
+const emotionStateV2Shape = z.object({
   schemaVersion: z.literal(EMOTION_SCHEMA_VERSION),
   mood: emotionMoodSchema,
   relation: emotionRelationSchema,
   currentNeed: z.enum(EMOTION_NEEDS),
   counters: z.record(z.string(), z.number()),
   recentEvents: z.array(emotionEventSchema).max(RECENT_EMOTION_EVENTS_LIMIT),
+  relationship: relationshipBlockSchema,
   updatedAt: z.number().int().nonnegative(),
 });
+
+/**
+ * v1→v2 读侧迁移：旧行缺 relationship 块时补默认块并把结构版本抬到 2。
+ * 坏输入原样透传（交由 zod 拒绝），不做猜测性重建。
+ */
+function migrateEmotionStateV1ToV2(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw;
+  const src = raw as Record<string, unknown>;
+  if (src.schemaVersion === 2 && src.relationship) return raw;
+  return {
+    ...src,
+    schemaVersion: EMOTION_SCHEMA_VERSION,
+    relationship:
+      src.relationship && typeof src.relationship === 'object'
+        ? src.relationship
+        : createDefaultRelationshipBlock(),
+  };
+}
+
+/**
+ * 持久化状态契约：parse 时自动把 v1 行迁移为 v2（repo safeParse 直接受益，
+ * 旧备份/v022 老库无需 SQL 迁移）。
+ */
+export const emotionStateSchema = z.preprocess(migrateEmotionStateV1ToV2, emotionStateV2Shape);
 
 export type EmotionMood = z.infer<typeof emotionMoodSchema>;
 export type EmotionRelation = z.infer<typeof emotionRelationSchema>;
@@ -111,6 +164,7 @@ export function createDefaultEmotionState(now: number): EmotionState {
     currentNeed: 'none',
     counters: {},
     recentEvents: [],
+    relationship: createDefaultRelationshipBlock(),
     updatedAt: now,
   };
 }

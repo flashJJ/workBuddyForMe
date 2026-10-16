@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { Live2dCanvas } from './live2d-canvas';
+import { AvatarCanvasRouter } from './avatar-canvas-router';
 import type { Live2dController } from './live2d-controller';
 import { DEFAULT_EXPRESSION } from './expression-parser';
 import type { ExpressionTag } from './expression-parser';
@@ -82,7 +82,7 @@ export function AvatarHost({
         </div>
       </div>
       <div className="relative min-h-0 flex-1">
-        <Live2dCanvas
+        <AvatarCanvasRouter
           modelId={modelId}
           expression={expression}
           getLevel={getLevel}

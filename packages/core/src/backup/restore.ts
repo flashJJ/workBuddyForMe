@@ -2,9 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   CURRENT_BACKUP_SCHEMA_VERSION,
-  backupPrecheckSchema,
   type BackupManifest,
-  type BackupPrecheck,
   type BackupTrack,
   type BackupProgressEvent,
 } from '@wbfm/shared/backup';
@@ -16,12 +14,22 @@ import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
 import { readV19TrackPayloads, restoreV19TrackData, v19TrackTotal } from './restore-meetings';
 import {
+  readRelationshipMilestonesPayload,
+  restoreRelationshipMilestones,
+} from './restore-milestones';
+import {
+  readModInstallsPayload,
+  readVrmAvatarsPayload,
+  restoreModInstalls,
+  restoreVrmAvatars,
+} from './restore-mod-installs';
+import {
   nullifyDanglingCardRefs,
   readCardsTrackPayload,
   restoreCharacterCards,
 } from './restore-cards';
-import { determineTracks, hasRedactedPlaceholder } from './restore-track-select';
-import { extractArchive, extractArchiveFull } from './restore-archive';
+import { determineTracks } from './restore-track-select';
+import { extractArchiveFull } from './restore-archive';
 import { createScheduledTaskRepository } from '@wbfm/database';
 import { computeNextRunMs } from '../scheduler/next-run';
 import { ensureSeedData, migrateLegacySystemPrompts } from '../services/seed';
@@ -37,53 +45,14 @@ export interface BackupRestoreResult {
   manifest: BackupManifest;
   imported: { conversations: number; messages: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number; emotion: number; events: number; cards: number };
   skipped: { conversations: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number; emotion: number; events: number; cards: number };
+  /** 非致命提醒（如 VRM 模型文件需重新导入） */
+  warnings: string[];
 }
 
 /** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
 interface SkillsTrackPayload {
   states?: SkillStateEntry[];
   skills?: Array<{ name: string; skillJson: string }>;
-}
-
-/**
- * 预检查：先于正式恢复调用，告知兼容性与将导入多少条目。
- * 版本不兼容时 compatible=false；settings 有 [REDACTED] 值时 warnings 提示敏感字段需重填。
- */
-export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrecheck> {
-  const { manifest, files } = await extractArchive(archiveBuffer);
-  const warnings: string[] = [];
-
-  if (manifest.backupSchemaVersion > CURRENT_BACKUP_SCHEMA_VERSION) {
-    warnings.push(`备份 schema 版本 ${manifest.backupSchemaVersion} 高于当前支持的 ${CURRENT_BACKUP_SCHEMA_VERSION}，请升级应用后再恢复`);
-  }
-
-  if (files.has('settings.json')) {
-    try {
-      const parsed = JSON.parse(files.get('settings.json')!.toString('utf-8'));
-      if (hasRedactedPlaceholder(parsed)) warnings.push('检测到敏感字段已被脱敏（[REDACTED]），恢复后需手动重新填写凭证');
-    } catch { /* settings 可能为空 */ }
-  }
-
-  return backupPrecheckSchema.parse({
-    compatible: manifest.backupSchemaVersion <= CURRENT_BACKUP_SCHEMA_VERSION,
-    sourceVersion: manifest.appVersion,
-    tracks: {
-      conversations: manifest.tracks.conversations.entryCount,
-      knowledgeBases: manifest.tracks.knowledge.knowledgeBaseCount,
-      documents: manifest.tracks.knowledge.documentCount,
-      attachments: manifest.tracks.attachments.entryCount,
-      skills: manifest.tracks.skills?.entryCount ?? 0,
-      tasks: manifest.tracks.tasks?.entryCount ?? 0,
-      emotion: manifest.tracks.emotion?.entryCount ?? 0,
-      schedules: manifest.tracks.events?.scheduleCount ?? 0,
-      eventUsage: manifest.tracks.events?.usageCount ?? 0,
-      cards: manifest.tracks.events?.cardCount ?? 0,
-      stageScenes: manifest.tracks.events?.stageSceneCount ?? 0,
-      meetings: manifest.tracks.events?.meetingCount ?? 0,
-      meetingMessages: manifest.tracks.events?.meetingMessageCount ?? 0,
-    },
-    warnings,
-  });
 }
 
 /** 正式恢复：事务包裹 DB 写入，附件二进制在事务外落盘 */
@@ -125,9 +94,29 @@ export async function restoreBackup(
     ? readV19TrackPayloads(files)
     : null;
 
+  // v2.0 M2：共同里程碑（同 events 轨；v5 及更早归档缺文件视为空数组）
+  const milestoneEntries =
+    tracksToRestore.includes('events') && files.has('relationshipMilestones.json')
+      ? readRelationshipMilestonesPayload(files.get('relationshipMilestones.json')!)
+      : [];
+
+  // v2.0 M5：mod 安装登记 + VRM 形象引用（同 events 轨；旧档缺文件视为空数组）
+  const modInstallEntries =
+    tracksToRestore.includes('events') && files.has('modInstalls.json')
+      ? readModInstallsPayload(files.get('modInstalls.json')!)
+      : [];
+  const vrmAvatarEntries =
+    tracksToRestore.includes('events') && files.has('vrmAvatars.json')
+      ? readVrmAvatarsPayload(files.get('vrmAvatars.json')!)
+      : [];
+
+  // VRM 引用恢复后在事务外拼 warning（模型文件不在备份中，引用预期悬空）
+  let restoredVrmRefs: string[] = [];
+  const warnings: string[] = [];
+
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
-    const result: Omit<BackupRestoreResult, 'manifest'> = {
+    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings'> = {
       imported: { conversations: 0, messages: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0, cards: 0 },
       skipped: { conversations: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0, cards: 0 },
     };
@@ -203,13 +192,22 @@ export async function restoreBackup(
       nullifyDanglingCardRefs(deps.db);
       // v1.9：舞台场景/会议/转录（助手行已落库，悬空成员在恢复函数内剔除）
       const v19Counts = v19Payloads ? restoreV19TrackData(deps.db, v19Payloads) : null;
+      // v2.0 M2：共同里程碑最后恢复（外键依赖助手；在会议之后）
+      const milestoneCounts = restoreRelationshipMilestones(deps.db, milestoneEntries);
+      // v2.0 M5：mod 安装登记（无外键）与 VRM 形象引用（悬空由调用方提示）
+      const modInstallCounts = restoreModInstalls(deps.db, modInstallEntries);
+      const vrmCounts = restoreVrmAvatars(deps.db, vrmAvatarEntries);
+      restoredVrmRefs = vrmCounts.importedRefs;
       const eventsTotal =
         counts.assistants.imported + counts.assistants.skipped +
         counts.schedules.imported + counts.schedules.skipped +
         counts.usage.imported + counts.usage.skipped +
         counts.triggers.imported + counts.triggers.skipped +
         result.imported.cards + result.skipped.cards +
-        (v19Counts ? v19TrackTotal(v19Counts) : 0);
+        (v19Counts ? v19TrackTotal(v19Counts) : 0) +
+        milestoneCounts.imported + milestoneCounts.skipped +
+        modInstallCounts.imported + modInstallCounts.skipped +
+        vrmCounts.imported + vrmCounts.skipped;
       onProgress?.({
         track: 'events',
         processed: eventsTotal,
@@ -221,7 +219,10 @@ export async function restoreBackup(
           (manifest.tracks.events?.cardCount ?? 0) +
           (manifest.tracks.events?.stageSceneCount ?? 0) +
           (manifest.tracks.events?.meetingCount ?? 0) +
-          (manifest.tracks.events?.meetingMessageCount ?? 0),
+          (manifest.tracks.events?.meetingMessageCount ?? 0) +
+          (manifest.tracks.events?.relationshipMilestoneCount ?? 0) +
+          (manifest.tracks.events?.modInstallCount ?? 0) +
+          (manifest.tracks.events?.vrmAvatarCount ?? 0),
       });
     }
 
@@ -270,5 +271,14 @@ export async function restoreBackup(
     }
   }
 
-  return { manifest, ...txResult };
+  // --- v2.0 M5：VRM 引用悬空提示（二进制按红线从不入备份） ---
+  if (restoredVrmRefs.length > 0) {
+    warnings.push(
+      `已恢复 ${restoredVrmRefs.length} 个 VRM 形象引用（${restoredVrmRefs.join('、')}），但 .vrm 模型文件不随备份携带；请重新导入对应模型文件后形象才能上舞台`,
+    );
+  }
+
+  return { manifest, ...txResult, warnings };
 }
+
+export { precheckBackup } from './restore-precheck';

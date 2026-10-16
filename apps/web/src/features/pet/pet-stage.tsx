@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
+import { AvatarCanvasRouter } from '@/features/avatar/avatar-canvas-router';
 import type { Live2dController } from '@/features/avatar/live2d-controller';
 import { useHeadTouch, type TouchControllerLike } from '@/features/avatar/use-head-touch';
 import { pulseReunionSignal } from '@/features/avatar/reunion-storage';
@@ -106,7 +106,7 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-transparent">
       <div className="absolute inset-0">
-        <Live2dCanvas
+        <AvatarCanvasRouter
           modelId={modelId}
           expression={expression}
           getLevel={getLevel}

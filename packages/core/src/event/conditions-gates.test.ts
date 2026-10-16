@@ -6,6 +6,7 @@ import type { ConditionContext } from './types';
 const ctx: ConditionContext = {
   mood: { happiness: 0.8, anger: 0.2, sadness: -0.4 },
   relation: { intimacy: 30, trust: 12 },
+  relationship: { level: 2 },
   personality: { frankness: 0.8, tsundere: 0.2, shy: 0.1, tolerance: 0.6 },
   counters: { touchStreak: 3, reunionTier: 2 },
   time: { hour: 23, lastInteractionMin: 5 },
@@ -16,6 +17,7 @@ describe('条件白名单 path', () => {
     for (const p of [
       'mood.happiness', 'mood.anger', 'mood.sadness',
       'relation.intimacy', 'relation.trust',
+      'relationship.level',
       'personality.frankness', 'personality.tsundere', 'personality.shy', 'personality.tolerance',
       'time.hour', 'time.lastInteractionMin',
       'counters.touchStreak', 'counters.reunion_tier_2',
@@ -36,6 +38,7 @@ describe('条件白名单 path', () => {
 
   it('读到数值与缺失回落 null', () => {
     expect(readConditionValue(ctx, 'relation.intimacy')).toBe(30);
+    expect(readConditionValue(ctx, 'relationship.level')).toBe(2);
     expect(readConditionValue(ctx, 'counters.missing')).toBeNull();
     expect(readConditionValue(ctx, 'mood.unknown')).toBeNull();
   });

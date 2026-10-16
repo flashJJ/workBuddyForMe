@@ -38,6 +38,9 @@ import { enCharacterCards } from './messages/character-cards';
 import { enTuning } from './messages/tuning';
 import { enStage } from './messages/stage-en';
 import { enMeeting } from './messages/meeting-en';
+import { enRelationship } from './messages/relationship';
+import { enModPack } from './messages/mod-pack';
+import { enRelationshipReport } from './messages/relationship-report';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -84,6 +87,9 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   reminders: enReminders,
   customTriggers: enEventM5.customTriggers,
   eventStats: enEventM5.eventStats,
+  relationship: enRelationship,
+  modPack: enModPack,
+  relationshipReport: enRelationshipReport,
 };
 
 export type EnDictionary = typeof enUS;

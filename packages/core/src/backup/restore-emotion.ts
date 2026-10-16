@@ -5,7 +5,8 @@
 import {
   emotionStateSchema,
   EMOTION_EVENT_SOURCES,
-  SOUL_EVENT_TYPES,
+  EMOTION_PERSISTED_EVENT_TYPES,
+  RELATIONSHIP_LEVEL_EVENT_TYPES,
   EXPRESSION_TAGS,
   type EmotionState,
 } from '@wbfm/shared/schemas';
@@ -41,8 +42,21 @@ export function readEmotionTrackPayload(buf: Buffer): EmotionTrackEntry[] {
 
 function validEvent(event: EmotionEventEntry): boolean {
   if (typeof event.id !== 'string' || typeof event.createdAt !== 'string') return false;
-  if (!(SOUL_EVENT_TYPES as readonly string[]).includes(event.type as string)) return false;
+  const type = event.type as string;
+  if (!(EMOTION_PERSISTED_EVENT_TYPES as readonly string[]).includes(type)) return false;
   if (!(EMOTION_EVENT_SOURCES as readonly string[]).includes(event.source as string)) return false;
+  const isLevelEvent = (RELATIONSHIP_LEVEL_EVENT_TYPES as readonly string[]).includes(type);
+  if (isLevelEvent) {
+    // v2.0 等级事件：无表情/无消息外键，intensity=新等级（整数 0–3）
+    if (event.emotion !== null && event.emotion !== undefined) return false;
+    if (event.messageId !== null && event.messageId !== undefined) return false;
+    return (
+      typeof event.intensity === 'number' &&
+      Number.isInteger(event.intensity) &&
+      event.intensity >= 0 &&
+      event.intensity <= 3
+    );
+  }
   if (
     event.emotion !== null &&
     event.emotion !== undefined &&

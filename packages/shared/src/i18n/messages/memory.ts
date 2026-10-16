@@ -31,6 +31,7 @@ export const zhMemory = {
     fact: '事实',
     preference: '偏好',
     event: '事件',
+    relationship: '共同经历',
   },
   status: {
     active: '活跃',
@@ -90,6 +91,7 @@ export const enMemory = {
     fact: 'Fact',
     preference: 'Preference',
     event: 'Event',
+    relationship: 'Shared moment',
   },
   status: {
     active: 'Active',

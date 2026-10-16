@@ -23,10 +23,15 @@ import { HelpCenterPanel } from '../help-center/help-center-panel';
 import { VoicePreferencePanel } from '../voice/settings/voice-preference-panel';
 import { KnowledgeRetrievalPanel } from './knowledge-retrieval-panel';
 import { EmotionPanel } from './emotion-panel';
+import { RelationshipPanel } from './relationship-panel';
 import { EventPanel } from './event-panel';
 import { ReminderPanel } from '../reminders/reminder-panel';
 import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
 import { TuningPanel } from '../tuning/tuning-panel';
+import { VrmImportSection } from './vrm-import-section';
+import { VrmAvatarList } from './vrm-avatar-list';
+import { ModPackPanel } from './mod-pack-panel';
+import { RelationshipReportPanel } from './relationship-report-panel';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -91,7 +96,17 @@ export function SettingsPage() {
 
       <EmotionPanel />
 
+      <RelationshipPanel />
+
+      <RelationshipReportPanel />
+
       <EventPanel />
+
+      <VrmImportSection />
+
+      <VrmAvatarList />
+
+      <ModPackPanel />
 
       <ReminderPanel />
 

@@ -6,8 +6,10 @@
  * 模块加载即过 zod：非法内置剧本在 import 期直接失败，绝不带病上线。
  */
 import { eventDefinitionSchema, type EventDefinition } from '../schemas/event';
+import { RAW_V20_EVENTS } from './built-in-events-v2';
+import { RAW_V20_M3_EVENTS } from './built-in-events-v3';
 
-const RAW_BUILT_IN_EVENTS = [
+const RAW_BUILT_IN_EVENTS: EventDefinition[] = [
   {
     id: 'ev.greeting.morning',
     titleKey: 'event.greeting.morning.title',
@@ -170,7 +172,7 @@ const RAW_BUILT_IN_EVENTS = [
     id: 'ev.task.failure',
     titleKey: 'event.task.failure.title',
     priority: 3,
-    interruptPolicy: 'replaceLowerPriority',
+    interruptPolicy: 'ignore',
     cooldownMs: 300_000,
     maxPerDay: 5,
     speechLock: 'skip',
@@ -185,7 +187,11 @@ const RAW_BUILT_IN_EVENTS = [
       { kind: 'gaze', x: 0, y: 0 },
     ],
   },
-] satisfies EventDefinition[];
+  // v1.7 八位之后按版本追加（顺序即 UI 展示顺序）
+  ...RAW_V20_EVENTS,
+  // v2.0 M3：3 个主动感知上下文关怀剧本（深夜/连续工作/久未对话）
+  ...RAW_V20_M3_EVENTS,
+];
 
 /** 内置剧本（模块加载期 zod 全量校验；顺序即 UI 展示顺序） */
 export const BUILT_IN_EVENTS: readonly EventDefinition[] = RAW_BUILT_IN_EVENTS.map((raw) =>

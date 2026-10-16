@@ -8,6 +8,7 @@ function makeCtx(over: Partial<ConditionContext> = {}): ConditionContext {
   return {
     mood: { happiness: 0.1, anger: 0, sadness: 0 },
     relation: { intimacy: 10, trust: 5 },
+    relationship: { level: 0 },
     personality: { frankness: 0.5, tsundere: 0.2, shy: 0.2, tolerance: 0.5 },
     counters: {},
     time: { hour: 12, lastInteractionMin: 2 },

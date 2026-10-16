@@ -68,6 +68,14 @@ export const zhSettings = {
     loadFailed: '情绪状态加载失败',
     hint: '情绪会随时间自然平复；关系（亲密度/信任度）只增不减，重置才会清零。',
   },
+  // v2.0 关系等级（养成；与情绪内核独立开关）
+  relationship: {
+    title: '关系等级',
+    description: '相处会沉淀为陌生、认识、搭档、挚友四个等级，解锁专属称呼与纪念演出。数据仅保存在本机。',
+    enable: '启用关系等级（等级成长、回落保底与解锁内容）',
+    enableHint: '关闭后冻结等级变化与解锁内容，进入纯工具模式；不影响情绪识别与亲密度、信任度的积累。',
+    current: '当前关系',
+  },
   // v1.7 剧情事件
   events: {
     title: '剧情演出',
@@ -82,6 +90,11 @@ export const zhSettings = {
     scenesTitle: '内置剧本',
     sceneEnabled: '启用',
     previewHint: '可在对话页右侧形象栏的「试运行」按钮里随时手动观看。',
+    // v2.0 M3 系统事件感知授权（独立开关，默认关闭）
+    awarenessTitle: '系统事件感知（可选）',
+    awarenessEnable: '允许读取系统解锁、锁屏与空闲状态',
+    awarenessHint:
+      '用于判断你是否在电脑前连续工作或深夜仍在忙碌：仅在本机判定，不读取窗口标题、屏幕或文档内容，原始信号不会保存，可随时关闭。未授权或浏览器中仅依据应用内活动判断。',
   },
   // v1.8 外观（命名主题）
   appearance: {
@@ -177,6 +190,16 @@ export const enSettings = {
     loadFailed: 'Failed to load emotion state',
     hint: 'Mood settles over time; relationship (intimacy/trust) only grows and is cleared only by reset.',
   },
+  // v2.0 relationship levels (independent of the emotion engine switch)
+  relationship: {
+    title: 'Relationship levels',
+    description:
+      'Time together settles into four levels — Stranger, Acquainted, Partner, Confidant — unlocking exclusive nicknames and keepsake scenes. All data stays on this device.',
+    enable: 'Enable relationship levels (growth, gentle fallback and unlockables)',
+    enableHint:
+      'When off, level changes and unlockables are frozen in a tool-only mode; emotion detection and intimacy/trust growth are unaffected.',
+    current: 'Current relationship',
+  },
   // v1.7 staged events
   events: {
     title: 'Staged scenes',
@@ -193,6 +216,10 @@ export const enSettings = {
     scenesTitle: 'Built-in scenes',
     sceneEnabled: 'Enabled',
     previewHint: 'Use the preview button on the avatar rail in the chat to watch any scene anytime.',
+    awarenessTitle: 'System event awareness (optional)',
+    awarenessEnable: 'Allow reading system unlock, lock and idle state',
+    awarenessHint:
+      'Used to tell whether you are working continuously or still up late. Everything is evaluated locally on this machine — no window titles, screen contents or documents are read, and raw signals are never stored. Turn it off anytime. Without permission, or in a browser, only in-app activity is used.',
   },
   // v1.8 appearance (named themes)
   appearance: {

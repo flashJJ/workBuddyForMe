@@ -3,6 +3,7 @@ import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
+import type { WbfmAwarenessBridge } from '@wbfm/shared/awareness';
 
 /**
  * 最小 preload：
@@ -104,6 +105,16 @@ const notify: WbfmNotifyBridge = {
   show: (payload) => ipcRenderer.invoke('notify:show', payload),
 };
 
+/**
+ * v2.0 M3 系统事件感知桥：默认关闭，渲染端按用户授权 setEnabled；
+ * 主进程仅在武装后广播电源/空闲事件，白名单两通道。
+ */
+const awareness: WbfmAwarenessBridge = {
+  setEnabled: (enabled) => ipcRenderer.invoke('awareness:set-enabled', enabled),
+  onEvent: (cb) =>
+    subscribe('awareness:event', (payload) => cb(payload as Parameters<typeof cb>[0])),
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
@@ -114,4 +125,5 @@ contextBridge.exposeInMainWorld('wbfm', {
   pet,
   stage,
   notify,
+  awareness,
 });

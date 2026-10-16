@@ -143,6 +143,12 @@ export const eventDefinitionSchema = z
         type: z.enum(['praise', 'comfort']),
       })
       .optional(),
+    /**
+     * v2.0：开演最低关系等级（0 陌生 / 1 认识 / 2 搭档 / 3 挚友）。
+     * 与 branch 条件的 relationship.level 路径同源，这是定义级快捷闸门；
+     * 缺省 0=不限制。仅内置等级剧本使用（用户剧本走 branch）。
+     */
+    minRelationshipLevel: z.number().int().min(0).max(3).optional(),
     steps: z.array(eventStepSchema).min(1).max(EVENT_MAX_STEPS),
   })
   /**
@@ -192,6 +198,8 @@ export const EVENT_SUPPRESS_REASONS = [
   'queue_full',
   'no_outlet',
   'ignored',
+  /** v2.0：展示等级未达剧本 minRelationshipLevel */
+  'relationship_locked',
 ] as const;
 export type EventSuppressReason = (typeof EVENT_SUPPRESS_REASONS)[number];
 

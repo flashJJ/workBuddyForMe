@@ -14,6 +14,8 @@ export * from './backup';
 export * from './updater';
 export * from './pet';
 export * from './notify';
+// v2.0 M3 系统事件感知桥（powerMonitor ↔ renderer）
+export * from './awareness';
 export * from './command';
 export * from './version';
 export * from './i18n';

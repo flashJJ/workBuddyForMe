@@ -8,6 +8,7 @@
  */
 import type { EmotionState } from '@wbfm/shared/schemas';
 import type { ConditionContext, PersonalityWeights } from '@wbfm/core/event-client';
+import { defaultRelationshipBlock, displayLevelOf } from '@wbfm/core/relationship-client';
 
 /** v024 前的人格中性默认（不偏向任何支线） */
 export const DEFAULT_PERSONALITY: PersonalityWeights = {
@@ -25,10 +26,22 @@ export interface BuildContextArgs {
   /** 触发时携带的临时/本地计数器（覆盖同名 emotion counters） */
   extraCounters?: Record<string, number>;
   personality?: PersonalityWeights;
+  /**
+   * v2.0：关系等级功能是否开启（缺省 true）。关闭时等级恒按 0 快照，
+   * 带 minRelationshipLevel 的剧本与 relationship.level 条件一律不成立。
+   */
+  relationshipEnabled?: boolean;
 }
 
 export function buildConditionContext(args: BuildContextArgs): ConditionContext {
   const date = new Date(args.now);
+  const level =
+    args.relationshipEnabled === false || !args.emotion
+      ? 0
+      : displayLevelOf(
+          args.emotion.relationship ?? defaultRelationshipBlock(),
+          args.emotion.relation,
+        );
   return {
     // 防御缺字段的旧/异常情绪快照（测试 fixture、损坏数据），逐级回落中性值
     mood: {
@@ -40,6 +53,7 @@ export function buildConditionContext(args: BuildContextArgs): ConditionContext 
       intimacy: args.emotion?.relation?.intimacy ?? 0,
       trust: args.emotion?.relation?.trust ?? 0,
     },
+    relationship: { level },
     personality: args.personality ?? DEFAULT_PERSONALITY,
     counters: {
       ...(args.emotion?.counters ?? {}),

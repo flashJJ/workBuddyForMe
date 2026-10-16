@@ -3,6 +3,7 @@ import {
   DEFAULT_VOICE_SETTINGS,
   SUPPORTED_AVATAR_MODEL_IDS,
   VOICE_TTS_MODELS,
+  isVrmAvatarId,
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared/schemas';
@@ -15,9 +16,11 @@ export function readVoiceSettings(settings: SettingsRepository): VoiceSettings {
   const raw = settings.getJson<Partial<VoiceSettings>>(VOICE_SETTINGS_KEY, {});
   const merged: VoiceSettings = { ...DEFAULT_VOICE_SETTINGS, ...raw };
   // v1.0 M3：旧版本默认模型 id（如 shizuku）已下线，读取时归一到受支持的内置模型
+  // M4：vrm: 前缀的用户导入 VRM 形象不在内置列表中，放行
   if (
     !merged.avatarModelId ||
-    !(SUPPORTED_AVATAR_MODEL_IDS as readonly string[]).includes(merged.avatarModelId)
+    (!(SUPPORTED_AVATAR_MODEL_IDS as readonly string[]).includes(merged.avatarModelId) &&
+      !isVrmAvatarId(merged.avatarModelId))
   ) {
     merged.avatarModelId = DEFAULT_AVATAR_MODEL_ID;
   }

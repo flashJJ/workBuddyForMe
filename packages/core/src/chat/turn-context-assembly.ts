@@ -22,9 +22,11 @@ import { buildSkillPromptBlock, mergeSkillAllowedTools } from '../skills/skill-a
 import { createSettingsService, resolveGlobalAppendPrompt } from '../services/settings-service';
 import {
   buildEmotionStateBlock,
+  displayLevelOf,
   EMOTION_DIRECTIVE_BLOCK,
   type EmotionService,
 } from '../emotion';
+import { resolveUnlockedNickname } from './persona-prompt';
 
 export interface PrepareTurnContextParams {
   deps: ServiceDeps;
@@ -95,9 +97,12 @@ export async function* prepareTurnContext(
     emotion !== undefined &&
     assistant.expressionEnabled &&
     appSettings.emotionEnabled !== false;
+  // v2.0：关系等级独立于情绪协议开关——情绪关而养成开时，等级与称呼仍可读
+  const relationshipEnabled = appSettings.relationshipEnabled !== false;
+  const emotionState = emotion ? emotion.view(assistant.id) : null;
   const emotionBlock =
-    emotionEnabled && emotion
-      ? `${buildEmotionStateBlock(emotion.view(assistant.id))}\n\n${EMOTION_DIRECTIVE_BLOCK}`
+    emotionEnabled && emotionState
+      ? `${buildEmotionStateBlock(emotionState)}\n\n${EMOTION_DIRECTIVE_BLOCK}`
       : null;
   const globalAppendPrompt = resolveGlobalAppendPrompt(appSettings);
 
@@ -131,6 +136,16 @@ export async function* prepareTurnContext(
     ? createCharacterCardRepository(deps.db).findById(assistant.cardId)?.parsed ?? null
     : null;
 
+  // v2.0：等级称呼组装前闸门——关系功能开启且有已解锁称呼时才入 prompt，
+  // 未解锁内容（高等级称呼）永不进 system 段（03 契约 §7.3）。
+  const cardNickname =
+    relationshipEnabled && card && emotionState
+      ? resolveUnlockedNickname(
+          card.nicknameByLevel,
+          displayLevelOf(emotionState.relationship, emotionState.relation),
+        )
+      : null;
+
   // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
   const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools);
   const toolDefs = toToolDefinitions([...toolMap.values()]);
@@ -149,6 +164,7 @@ export async function* prepareTurnContext(
     emotionBlock,
     card,
     globalAppendPrompt,
+    cardNickname,
   });
   if (budgetStats) await recordBudgetSpan(budgetStats, traceParent);
   // v0.7 M1：向工具上下文透传视觉能力（screen_snapshot 据此决定是否携带截图图片）

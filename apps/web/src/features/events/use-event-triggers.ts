@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { extractEmotionSignal } from '@wbfm/shared/schemas';
+import { extractEmotionSignal, type EmotionState } from '@wbfm/shared/schemas';
 import { eventIdForIntent } from '@wbfm/shared/events';
 import type { Message } from '@wbfm/shared/types';
 import { CustomTriggerGate } from '@wbfm/core/event-client';
+import { defaultRelationshipBlock, displayLevelOf } from '@wbfm/core/relationship-client';
 import { useReunionGreeting } from '@/features/avatar/use-reunion-greeting';
 import { bumpInteractionCounter } from './daily-counter';
 import { ACTIVITY_WRITE_THROTTLE_MS, markActivity } from './event-activity';
@@ -26,8 +27,19 @@ interface UseEventTriggersArgs {
   assistantId: string;
   /** 当前亲密度（自定义规则 minIntimacy 闸门用） */
   intimacy: number;
+  /** v2.0：最新情绪状态（含 relationship 块），用于检测等级跃迁 */
+  emotionState: EmotionState | null;
+  /** v2.0：关系等级开关（关闭时不触发等级剧本） */
+  relationshipEnabled: boolean;
   triggerEvent: (eventId: string, extraCounters?: Record<string, number>) => boolean;
 }
+
+/** 展示等级 → 升级纪念演出 id（仅 1/2/3） */
+const LEVEL_UP_EVENT_ID: Record<number, string> = {
+  1: 'ev.relation.levelup.acquainted',
+  2: 'ev.relation.levelup.partner',
+  3: 'ev.relation.levelup.confidant',
+};
 
 const INTENT_EXTRA: Partial<Record<string, Record<string, number>>> = {
   firstDailyInteraction: { interactionsToday: 0 },
@@ -46,6 +58,8 @@ export function useEventTriggers({
   reunionEnabled,
   assistantId,
   intimacy,
+  emotionState,
+  relationshipEnabled,
   triggerEvent,
 }: UseEventTriggersArgs): void {
   const triggerRef = React.useRef(triggerEvent);
@@ -54,6 +68,8 @@ export function useEventTriggers({
   enabledRef.current = enabled;
   const intimacyRef = React.useRef(intimacy);
   intimacyRef.current = intimacy;
+  const relationshipEnabledRef = React.useRef(relationshipEnabled);
+  relationshipEnabledRef.current = relationshipEnabled;
   const lastBelittleAtRef = React.useRef<number | null>(null);
   const seenMessagesRef = React.useRef<Set<string>>(new Set());
   const lastActivityWriteRef = React.useRef(0);
@@ -71,6 +87,30 @@ export function useEventTriggers({
     gateAssistantRef.current = assistantId;
     customGateRef.current.reset();
   }
+
+  // v2.0：展示等级跃迁 → 对应等级的纪念演出（仅升级；降档不演出、不通知）。
+  // 切助手或首次见到状态时只立基线，避免进页面补演历史等级。
+  const levelBaselineRef = React.useRef<{ assistantId: string; level: number } | null>(null);
+  React.useEffect(() => {
+    if (!emotionState) return;
+    const nextLevel = displayLevelOf(
+      emotionState.relationship ?? defaultRelationshipBlock(),
+      emotionState.relation,
+    );
+    if (levelBaselineRef.current?.assistantId !== assistantId) {
+      levelBaselineRef.current = { assistantId, level: nextLevel };
+      return;
+    }
+    const prevLevel = levelBaselineRef.current.level;
+    levelBaselineRef.current = { assistantId, level: nextLevel };
+    if (nextLevel <= prevLevel) return;
+    if (!enabledRef.current || !relationshipEnabledRef.current) return;
+    // 理论上一次事件只跨一档；跨多档时按序补演各档纪念剧本
+    for (let level = prevLevel + 1; level <= nextLevel; level += 1) {
+      const eventId = LEVEL_UP_EVENT_ID[level];
+      if (eventId) triggerRef.current(eventId);
+    }
+  }, [emotionState, assistantId, relationshipEnabled]);
 
   // 归来事件（主窗判定；桌宠窗仅发跨窗信号，见 pet-stage）
   useReunionGreeting({

@@ -1,13 +1,14 @@
 import { HISTORY_MESSAGE_SAFETY_CAP } from '@wbfm/shared/constants';
 import { type TokenUsage } from '@wbfm/shared/api';
 import { startRun, type ChatMessage, type TraceHandle } from '@wbfm/ai';
-import { createCharacterCardRepository } from '@wbfm/database';
+import { createCharacterCardRepository, createMemoryRepository } from '@wbfm/database';
 import { createSettingsService, resolveGlobalAppendPrompt } from '../services/settings-service';
 import type { ServiceDeps } from '../services/deps';
 import { createAssistantsService } from '../services/assistant-service';
 import { createConversationService } from '../services/conversation-service';
 import { resolveChatTarget } from './model-resolver';
 import { buildSystemPrompt } from './prompt';
+import { buildRelationshipMemoryBlock } from '../memory/turn-memory';
 import { runProviderTurn } from './tool-runner';
 import { normalizeFailure } from './orchestrator-helpers';
 import type { OrchestratorEvent } from './types';
@@ -99,14 +100,31 @@ export function createProactiveTurn(deps: ServiceDeps) {
     const card = assistant.cardId
       ? createCharacterCardRepository(deps.db).findById(assistant.cardId)?.parsed ?? null
       : null;
+    const appSettings = createSettingsService(deps).get();
     // v1.8 M3：全局追加与正常回合保持同一注入位置
-    const globalAppendPrompt = resolveGlobalAppendPrompt(createSettingsService(deps).get());
+    const globalAppendPrompt = resolveGlobalAppendPrompt(appSettings);
+    // v2.0 M2：主动搭话软引用共同经历——助手记忆开关与关系等级开关同时开启才注入；
+    // 不走嵌入（轻量心跳路径），直接按重要度/时间取最近 3 条 active 关系记忆。
+    let relationshipMemoryBlock: string | null = null;
+    if (assistant.memoryEnabled && appSettings.relationshipEnabled !== false) {
+      try {
+        const shared = createMemoryRepository(deps.db).list({
+          kind: 'relationship',
+          status: 'active',
+          limit: 3,
+        });
+        relationshipMemoryBlock = buildRelationshipMemoryBlock(shared);
+      } catch {
+        relationshipMemoryBlock = null;
+      }
+    }
     const outgoing: ChatMessage[] = [
       {
         role: 'system',
         content: buildSystemPrompt(assistant, null, null, null, null, null, {
           card,
           globalAppendPrompt,
+          relationshipMemoryBlock,
         }),
       },
       ...history,

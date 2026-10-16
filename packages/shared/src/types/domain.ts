@@ -115,8 +115,8 @@ export interface Citation {
   staticKind?: 'chunk' | 'entity' | 'summary';
 }
 
-/** v0.5 长期记忆类别：事实 / 偏好 / 事件 */
-export const MEMORY_KINDS = ['fact', 'preference', 'event'] as const;
+/** v0.5 长期记忆类别：事实 / 偏好 / 事件；v2.0 新增 relationship（共同经历） */
+export const MEMORY_KINDS = ['fact', 'preference', 'event', 'relationship'] as const;
 export type MemoryKind = (typeof MEMORY_KINDS)[number];
 
 /** active=参与召回；archived=软遗忘（P1，暂不自动产生，UI 可见） */
@@ -230,6 +230,11 @@ export interface AppSettings extends EventSettingsFields {
   compileModelId?: string | null;
   /** v1.6：情绪/关系内核总开关（缺省视为 true；与助手 expressionEnabled 同时为真才生效） */
   emotionEnabled?: boolean;
+  /**
+   * v2.0：关系等级养成开关（缺省视为 true）。
+   * 关闭后等级演算/每日检查点/等级展示与解锁全部冻结；不影响 intimacy/trust 原始分。
+   */
+  relationshipEnabled?: boolean;
   /**
    * v1.6 M5：互动本地短句开关（缺省视为 true）。
    * 关闭后摸头/久别迎接不再说话（零文案气泡）；摸头表情与弹性等无音效动作反馈保留。

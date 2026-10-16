@@ -14,6 +14,8 @@ export const CARD_FILE_MAX_BYTES = 16 * 1024;
 export const CARD_NAME_MAX_CHARS = 30;
 export const CARD_DESCRIPTION_MAX_CHARS = 120;
 export const CARD_VOICE_MAX_CHARS = 80;
+/** v2.0 等级称呼（助手对用户的称呼）单档上限 */
+export const CARD_NICKNAME_MAX_CHARS = 20;
 export const CARD_IDENTITY_MAX_CHARS = 1000;
 export const CARD_LIST_ITEMS_MAX = 8;
 export const CARD_LIST_ITEM_MAX_CHARS = 40;
@@ -22,12 +24,29 @@ export const CARD_LIST_ITEM_MAX_CHARS = 40;
 export const CHARACTER_CARD_SOURCES = ['builtin', 'custom'] as const;
 export type CharacterCardSource = (typeof CHARACTER_CARD_SOURCES)[number];
 
+/**
+ * v2.0 等级称呼（助手对用户的称呼，按关系等级解锁）：
+ * 键 1=认识 2=搭档 3=挚友，值为非空短文本；缺省档回落全局昵称/不注入。
+ * frontmatter 无嵌套对象（解析器仅支持标量），序列化为 nickname1/nickname2/nickname3。
+ */
+export const cardNicknameByLevelSchema = z
+  .object({
+    1: z.string().trim().min(1).max(CARD_NICKNAME_MAX_CHARS).optional(),
+    2: z.string().trim().min(1).max(CARD_NICKNAME_MAX_CHARS).optional(),
+    3: z.string().trim().min(1).max(CARD_NICKNAME_MAX_CHARS).optional(),
+  })
+  .strict();
+export type CardNicknameByLevel = z.infer<typeof cardNicknameByLevelSchema>;
+
 /** frontmatter（仅标量字段；未知字段忽略不报错） */
 export const characterCardFrontmatterSchema = z.object({
   name: z.string().trim().min(1).max(CARD_NAME_MAX_CHARS),
   description: z.string().trim().max(CARD_DESCRIPTION_MAX_CHARS).default(''),
   defaultEmotion: z.enum(EXPRESSION_TAGS).default('neutral'),
   voice: z.string().trim().min(1).max(CARD_VOICE_MAX_CHARS).nullable().default(null),
+  nickname1: z.string().trim().min(1).max(CARD_NICKNAME_MAX_CHARS).optional(),
+  nickname2: z.string().trim().min(1).max(CARD_NICKNAME_MAX_CHARS).optional(),
+  nickname3: z.string().trim().min(1).max(CARD_NICKNAME_MAX_CHARS).optional(),
 });
 export type CharacterCardFrontmatter = z.infer<typeof characterCardFrontmatterSchema>;
 
@@ -37,6 +56,8 @@ export const parsedCharacterCardSchema = z.object({
   description: z.string().max(CARD_DESCRIPTION_MAX_CHARS),
   defaultEmotion: z.enum(EXPRESSION_TAGS),
   voice: z.string().min(1).max(CARD_VOICE_MAX_CHARS).nullable(),
+  /** v2.0 等级称呼（稀疏；未配置档缺键） */
+  nicknameByLevel: cardNicknameByLevelSchema.optional(),
   identity: z.string().max(CARD_IDENTITY_MAX_CHARS),
   traits: z.array(z.string().min(1).max(CARD_LIST_ITEM_MAX_CHARS)).max(CARD_LIST_ITEMS_MAX),
   speakingStyle: z.array(z.string().min(1).max(CARD_LIST_ITEM_MAX_CHARS)).max(CARD_LIST_ITEMS_MAX),

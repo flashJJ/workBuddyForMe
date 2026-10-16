@@ -11,6 +11,7 @@ export default defineConfig({
     voice: 'src/voice/index.ts',
     'event-client': 'src/event/client.ts',
     'stage-client': 'src/agents/stage-client.ts',
+    'relationship-client': 'src/emotion/relationship-client.ts',
   },
   format: ['esm', 'cjs'],
   sourcemap: true,
