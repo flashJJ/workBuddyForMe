@@ -7,9 +7,13 @@ import { useHeadTouch, type TouchControllerLike } from '@/features/avatar/use-he
 import { pulseReunionSignal } from '@/features/avatar/reunion-storage';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
+import type { InteractionEvent } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings } from '@/lib/hooks/use-settings';
 import { getPetBridge, isPetBodyPoint } from './pet-bridge';
+import { TriggerBus } from '@/features/interaction/trigger-bus';
+import { ActionExecutor } from '@/features/interaction/action-executor';
+import { resolveInteraction } from '@wbfm/shared/schemas';
 
 interface Props {
   modelId: string;
@@ -36,6 +40,12 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   const [line, setLine] = React.useState<string>('');
   const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // M0: 三段式交互状态——头部按住判定
+  const headPressStartRef = React.useRef<number>(0);
+  const headPressMovedRef = React.useRef<boolean>(false);
+  const headLongPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const LONGPRESS_THRESHOLD_MS = 500;
+
   const showLine = React.useCallback((text: string, durationMs: number) => {
     setLine(text);
     if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
@@ -45,13 +55,51 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   React.useEffect(
     () => () => {
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+      if (headLongPressTimerRef.current) clearTimeout(headLongPressTimerRef.current);
     },
     [],
   );
 
+  // M0: ActionExecutor 实例——绑定 controller + showLine
+  const executorRef = React.useRef<ActionExecutor | null>(null);
+  React.useEffect(() => {
+    executorRef.current = new ActionExecutor({
+      controllerRef: controllerRef as React.MutableRefObject<any>,
+      showSubtitle: (key, ms) => showLine(t(key as MessageKey), ms ?? 3200),
+    });
+  }, [showLine, t]);
+
   // 互动短句开关（缺省开）；关闭后摸头只保留弹性/表情，久别不迎接
   const linesEnabled = settings?.interactionLinesEnabled !== false;
   const emotionEnabled = settings?.emotionEnabled !== false;
+
+  // M0: Resolver 影子执行——dev only，新旧输出一致时双写
+  const lastTriggerAtRef = React.useRef<Partial<Record<'head' | 'body', number>>>({});
+  const resolveAndDispatch = React.useCallback((event: InteractionEvent) => {
+    // 影子模式：dev 下同时跑 Resolver，输出可观测
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
+      const ctx = {
+        hour: new Date().getHours(),
+        capabilities: {
+          hasTapClip: Boolean((controllerRef.current as any)?.tapClip),
+          hasSpringBone: false,
+        },
+        lastTriggerAt: lastTriggerAtRef.current,
+      };
+      const chain = resolveInteraction(event, ctx);
+      if (chain) {
+        lastTriggerAtRef.current = {
+          ...lastTriggerAtRef.current,
+          head: event.kind === 'touch' && event.region === 'head' ? Date.now() : lastTriggerAtRef.current.head,
+        };
+        // M0 影子：Resolver 通过 -> 新 executor 也执行（双写兜底）
+        executorRef.current?.dispatch(chain);
+      }
+    }
+    // 同时 emit 到 TriggerBus（M0 还没人订阅，但已打通）
+    TriggerBus.emit(event);
+  }, []);
 
   // 摸头短句：本地文案气泡（零模型调用、零 IPC），受短句开关门控
   const onHeadTouch = useHeadTouch(
@@ -139,7 +187,7 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         onPointerUp={() => bridge?.dragEnd()}
       />
 
-      {/* 头部互动盒（上部 27%）：单击摸头 / 双击回主窗 / 右键菜单 */}
+      {/* 头部互动盒（上部 27%）：单击摸头 / 长按持续 loop / 双击回主窗 / 右键菜单 */}
       <div
         data-testid="pet-hithead"
         style={
@@ -153,7 +201,47 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         }
         className="absolute z-10 cursor-pointer"
         title={t('pet.stage.headHint')}
-        onClick={() => onHeadTouch()}
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          headPressStartRef.current = performance.now();
+          headPressMovedRef.current = false;
+          (controllerRef.current as any)?.startInteraction?.('head-touch');
+          if (headLongPressTimerRef.current) clearTimeout(headLongPressTimerRef.current);
+          headLongPressTimerRef.current = setTimeout(() => {
+            if (!headPressMovedRef.current) {
+              // 长按 500ms 没移动 → longpress gesture
+              resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'longpress' });
+            }
+          }, LONGPRESS_THRESHOLD_MS);
+        }}
+        onPointerMove={() => {
+          // 超过微小位移 → 判定为移动（可能准备拖拽）
+          headPressMovedRef.current = true;
+          if (headLongPressTimerRef.current) {
+            clearTimeout(headLongPressTimerRef.current);
+            headLongPressTimerRef.current = null;
+          }
+        }}
+        onClick={() => {
+          // 旧链路：onClick 作为 tap 触发（保持主力）
+          onHeadTouch();
+          // 新管道影子：Resolver + executor 双写（dev only）
+          resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'tap' });
+        }}
+        onPointerUp={() => {
+          (controllerRef.current as any)?.endInteraction?.();
+          if (headLongPressTimerRef.current) {
+            clearTimeout(headLongPressTimerRef.current);
+            headLongPressTimerRef.current = null;
+          }
+        }}
+        onPointerCancel={() => {
+          (controllerRef.current as any)?.endInteraction?.();
+          if (headLongPressTimerRef.current) {
+            clearTimeout(headLongPressTimerRef.current);
+            headLongPressTimerRef.current = null;
+          }
+        }}
         onDoubleClick={() => bridge?.focusMain()}
         onContextMenu={(event) => {
           event.preventDefault();

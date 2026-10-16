@@ -17,6 +17,12 @@ import {
   safeStorage,
   session,
 } from 'electron';
+
+// Dev 调试：暴露 CDP 端口让 electron-mcp-server / Puppeteer 能连进来
+// 注意：appendSwitch 必须在 app.whenReady() 之前调用
+if (process.env.WBFM_DEV) {
+  app.commandLine.appendSwitch('remote-debugging-port', '9222');
+}
 import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
 import { installAppMenu } from './menu';
 import { startCipherServer, type CipherEndpoint } from './cipher-server';
