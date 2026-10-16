@@ -1,13 +1,15 @@
 ﻿# WorkBuddy For Me Windows 安装包自动归档
 #
 # 把 electron-builder 产物中的三件套（安装包 exe / blockmap / latest.yml）归集到
-# <ArchiveRoot>\v<Version>\，并生成 SHA256SUMS.txt；默认清理 win-unpacked 等中间产物。
+# <ArchiveRoot>\v<Version>\，并生成 SHA256SUMS.txt；归档后默认**彻底清空** Source 目录
+# （解包目录数百 MB + tsinup dist/build + builder debug），避免工作区残留老构建。
 #
 # 用法：
 #   powershell -NoProfile -ExecutionPolicy Bypass -File scripts/archive-installer.ps1
 #   powershell -File scripts/archive-installer.ps1 -Source E:\builds\wbfm-v160-fix1
 #   powershell -File scripts/archive-installer.ps1 -Copy              # 复制而非移动
-#   powershell -File scripts/archive-installer.ps1 -KeepIntermediate  # 保留 win-unpacked
+#   powershell -File scripts/archive-installer.ps1 -KeepIntermediate  # 保留 win-unpacked（只清最终目录）
+#   powershell -File scripts/archive-installer.ps1 -SkipClean         # 归档后**不清** Source 目录（等价 v1.9 行为）
 #
 # 可覆盖项（参数优先）：
 #   -Source       默认 <repo>\apps\desktop\release（dist:win 的默认输出目录）
@@ -18,7 +20,8 @@ param(
     [string]$ArchiveRoot,
     [string]$Version,
     [switch]$Copy,
-    [switch]$KeepIntermediate
+    [switch]$KeepIntermediate,
+    [switch]$SkipCleanSource
 )
 
 $ErrorActionPreference = 'Stop'
@@ -74,14 +77,51 @@ $sums = foreach ($name in $required) {
 }
 Set-Content -Path (Join-Path $dest 'SHA256SUMS.txt') -Value $sums -Encoding ASCII
 
-# 清理构建中间产物（解包目录数百 MB；调试日志不进归档）
-if (-not $KeepIntermediate) {
-    foreach ($name in @('win-unpacked', 'builder-debug.yml', 'builder-effective-config.yaml')) {
+# 清理 Source 目录：**默认彻底清空**（最干净，归档后三件套已移/拷走）；
+# 若 Trae/IDE 句柄锁住子目录无法整删，降级为逐项扫删已知模式。
+# -SkipCleanSource 保留 v1.9 旧行为（只清 win-unpacked / builder-debug / builder-effective-config，最终目录保留），
+#   此时 -KeepIntermediate 才生效（进一步跳过 win-unpacked）。
+$cleanPatterns = @('win-unpacked', 'builder-debug.yml', 'builder-effective-config.yaml')
+
+if (-not $SkipCleanSource) {
+    try {
+        Remove-Item $Source -Recurse -Force -ErrorAction Stop
+        Write-Host "    已清空 Source：$Source" -ForegroundColor DarkGray
+    } catch {
+        # IDE/杀软句柄锁时降级逐项清
+        Write-Host "    整删失败（句柄被锁），降级逐项清：$($_.Exception.Message)" -ForegroundColor DarkYellow
+        foreach ($name in $cleanPatterns) {
+            $p = Join-Path $Source $name
+            if (Test-Path $p) {
+                Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue
+                Write-Host "      已清：$name" -ForegroundColor DarkGray
+            }
+        }
+    }
+    New-Item -ItemType Directory -Force -Path $Source | Out-Null
+} else {
+    # -SkipCleanSource：保留 Source、只清中间产物
+    if ($KeepIntermediate) {
+        $patterns = @('builder-debug.yml', 'builder-effective-config.yaml')
+    } else {
+        $patterns = $cleanPatterns
+    }
+    foreach ($name in $patterns) {
         $p = Join-Path $Source $name
         if (Test-Path $p) {
             Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue
             Write-Host "    已清理中间产物：$name" -ForegroundColor DarkGray
         }
+    }
+}
+
+# 额外清 Source 同级残留（不在 Source 内，但每次 dist:win 后必然长出来）
+$siblingRoot = Split-Path -Parent $Source
+foreach ($name in @('dist', 'build', 'playwright-report', 'test-results')) {
+    $p = Join-Path $siblingRoot $name
+    if (Test-Path $p) {
+        Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "    已清理同级残留：$name" -ForegroundColor DarkGray
     }
 }
 
