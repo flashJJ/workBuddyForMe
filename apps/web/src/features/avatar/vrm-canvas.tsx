@@ -6,6 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
 import { parseVrmAvatarId } from '@wbfm/shared/schemas';
+import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 export type { VRM };
@@ -93,12 +94,16 @@ export function VrmCanvas({
 
     const runtime = initVrm(host);
     runtimeRef.current = runtime;
-    console.log('[VRM] GLTFLoader loading: /api/vrm-avatars/' + fileRef + '/file');
+    const token = getManagedToken();
+    const vrmUrl = token
+      ? `/api/vrm-avatars/${fileRef}/file?token=${encodeURIComponent(token)}`
+      : `/api/vrm-avatars/${fileRef}/file`;
+    console.log('[VRM] GLTFLoader loading:', vrmUrl);
 
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));
     loader.load(
-      `/api/vrm-avatars/${fileRef}/file`,
+      vrmUrl,
       (gltf) => {
         if (disposed) return;
         const vrm = gltf.userData.vrm as VRM | undefined;
