@@ -11,6 +11,12 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
+## 进行中：v2.2 有手感——桌宠交互反馈升级（分支 `feature/v2.2-pet-interaction`）
+
+桌宠交互从「扁平反馈」升级为「有形状的反馈」：**动作段模型**（动作条目分 入场 / 循环 / 退场 三段，长按走 A→B 维持、松手走 C 退场）、**状态驱动的待机动作**（动作池按情绪档位与关系等级分组，查找带向下兼容与 Default 兜底）、**拖拽物理与贴边回正**（速度采样 + 惯性滑行 + 双阈值贴边），并补齐滑动/双击手势与配置化动画图。借鉴开源桌宠模拟器 VPet 的 `AnimatType` 三段式与 `ModeType` 状态兼容查找机制，只取机制不搬实现（不引入 2D 帧动画、合图缓存与养成数值）。
+
+- 方案：[v2.2 方案](../plan/v2.2/README.md) · [VPet 借鉴分析](../plan/v2.2/01-VPet借鉴分析.md)
+
 ## 已合 main：v2.1 🎬 会动——VRM 待机动作与桌宠交互管道（2026-10-17，tag 待打）
 
 形象「会动」版：**待机动作（VRMA）导入**（v032 motion_assets 表 + core motion-service 双校验与落盘 + `/api/motions` 列表/上传/文件流/删除 + 设置页导入向导与列表）→ **动作池**（内置 daiji 常驻 + 全部已导入动作，选中项排首位）→ **定时随机轮播**（3–60s，默认 8s，`motionRotationEnabled` / `motionRotationSeconds`）→ **点击触发一次性动作**（Resolver 动作链新增 `controller.tap`，LoopOnce + mixer finished 回待机）；取景从「单段动画」升级为采样**整个动作池**的包围盒并集（按 clip 时长占比分配采样帧、总帧上限 900）。桌宠交互收口为**归一化 → 纯函数门控（勿扰时段/关系等级/区域冷却）→ ActionExecutor → TriggerBus** 四段式管道。工程侧删死代码、抽 `glb.ts` / `animated-bounds.ts` / 通用导入向导与列表组件，并把本版涨起来的 3 个超 300 行文件与 1 个域 barrel 处理干净（行数门禁违规 4 → 0）。typecheck 14/14、ESLint 0 error、单测 14 包全绿（web 478 / database 93 / core 90 / desktop 45 / shared i18n 35）。总结：[v2.1-release-summary.md](v2.1-release-summary.md)；英文发行说明：[v2.1-release-notes-en.md](v2.1-release-notes-en.md)；博客：[blog/v2.1](../../blog/v2.1/) 4 篇。
