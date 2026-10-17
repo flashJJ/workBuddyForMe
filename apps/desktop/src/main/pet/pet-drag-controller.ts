@@ -30,13 +30,20 @@ export interface PetDragWindow {
 
 export interface PetDragHooks {
   getCursor: () => PetPoint;
+  /**
+   * 窗口规范尺寸（DIP）：桌宠窗不可缩放，拖拽/滑行时一律用它钉住尺寸，
+   * **不能取 getBounds().width/height**——透明置顶窗移动时 Windows 会按物理像素
+   * 取整调整尺寸，拿漂移后的尺寸回写会「棘轮式」越拖越大（进而触发画布重取景）。
+   */
+  getFixedSize?: () => { width: number; height: number } | null;
   /** 注入时钟（测试用；默认 Date.now） */
   now?: () => number;
   /**
-   * 真拖动结束时回调，带释放速度（DIP/s）：manager 据此交给抛掷控制器做惯性滑行。
+   * 真拖动结束时回调，带释放速度（DIP/s）与本次拖拽累计位移（DIP）：
+   * manager 据此交给抛掷控制器做惯性滑行；位移过小视为误触（不滑行、不贴边）。
    * 松手前已停住时速度为 0。
    */
-  onDragEnd?: (win: PetDragWindow, velocity: PetVelocity) => void;
+  onDragEnd?: (win: PetDragWindow, velocity: PetVelocity, dragDistance: number) => void;
   /** 拖拽开始时回调（manager 用于强制可交互，防轮询把穿透翻回来） */
   onDragStart?: () => void;
 }
@@ -69,11 +76,14 @@ export class PetDragController {
   /** 拖拽开始：记录按下点与偏移 + 基准尺寸；拖拽期间强制窗口可交互 */
   begin(win: PetDragWindow | null): void {
     if (!win || win.isDestroyed()) return;
+    // 幂等：一次手势里重复 begin（重复 pointerdown/合成事件）会重锚 offset 与起点，
+    // 让窗口按陈旧偏移「跳走」——正在拖拽时直接忽略新的 begin。
+    if (this.offset || this.start) return;
     const cursor = this.hooks.getCursor();
     const bounds = win.getBounds();
     this.offset = { x: cursor.x - bounds.x, y: cursor.y - bounds.y };
     this.start = { x: cursor.x, y: cursor.y };
-    this.size = { width: bounds.width, height: bounds.height };
+    this.size = this.hooks.getFixedSize?.() ?? { width: bounds.width, height: bounds.height };
     this.samples = [{ x: cursor.x, y: cursor.y, t: this.now() }];
     this.hooks.onDragStart?.();
   }
@@ -98,17 +108,15 @@ export class PetDragController {
     }
   }
 
-  /** 拖拽结束：位移达阈值才视为真拖动并回调（带释放速度）；复位手势状态 */
+  /** 拖拽结束：位移达阈值才视为真拖动并回调（带释放速度 + 累计位移）；复位手势状态 */
   end(win: PetDragWindow | null): void {
     const velocity = this.takeVelocity();
-    const wasDrag =
-      this.offset !== null &&
-      this.start !== null &&
-      this.manhattanFromStart(this.hooks.getCursor()) >= DRAG_THRESHOLD_PX;
+    const dragDistance = this.manhattanFromStart(this.hooks.getCursor());
+    const wasDrag = this.offset !== null && this.start !== null && dragDistance >= DRAG_THRESHOLD_PX;
     this.offset = null;
     this.start = null;
     this.size = null;
-    if (win && !win.isDestroyed() && wasDrag) this.hooks.onDragEnd?.(win, velocity);
+    if (win && !win.isDestroyed() && wasDrag) this.hooks.onDragEnd?.(win, velocity, dragDistance);
   }
 
   private manhattanFromStart(cursor: PetPoint): number {

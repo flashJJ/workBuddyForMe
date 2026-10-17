@@ -71,6 +71,19 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
         }, LONGPRESS_THRESHOLD_MS);
       }}
       onPointerMove={(e) => {
+        // 自愈：OS 层面左键已松开（buttons=0）时，任何指针移动都不能算拖拽。
+        // 命中盒的 pointerup 在指针移出盒子/丢指针捕获时可能收不到，会留下「幽灵按下」状态，
+        // 之后仅悬停就会持续 dragBegin/dragTo，把窗口按陈旧偏移一路带着走
+        //（表现：鼠标一靠近桌宠就被挪走、怎么追都追不上）。
+        if (e.buttons === 0) {
+          if (bridgeActiveRef.current) {
+            bridge?.dragEnd();
+            bridgeActiveRef.current = false;
+          }
+          pointerDownRef.current = false;
+          pressMovedRef.current = false;
+          return;
+        }
         // 穿透态 forward=true 时 pointermove 也会到达渲染层，但没有 pointerdown——
         // 必须确认按下确实发生过才进入拖拽判定，避免假 dragBegin 把窗口追着光标拖
         if (!pointerDownRef.current) return;
@@ -96,7 +109,9 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
           bridge?.dragTo();
         }
       }}
-      onClick={() => {
+      onClick={(e) => {
+        // 双击的第二下不再重复派发单击链（双击由 onDoubleClick 接管，避免叠两次反馈）
+        if (e.detail > 1) return;
         // 长按已触发 → 跳过 tap（防表情覆盖）
         if (longPressFiredRef.current) {
           longPressFiredRef.current = false;
@@ -194,6 +209,19 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch }: PetHit
         }, LONGPRESS_THRESHOLD_MS);
       }}
       onPointerMove={(e) => {
+        // 自愈：OS 层面左键已松开（buttons=0）时，任何指针移动都不能算拖拽。
+        // 命中盒的 pointerup 在指针移出盒子/丢指针捕获时可能收不到，会留下「幽灵按下」状态，
+        // 之后仅悬停就会持续 dragBegin/dragTo，把窗口按陈旧偏移一路带着走
+        //（表现：鼠标一靠近桌宠就被挪走、怎么追都追不上）。
+        if (e.buttons === 0) {
+          if (bridgeActiveRef.current) {
+            bridge?.dragEnd();
+            bridgeActiveRef.current = false;
+          }
+          pointerDownRef.current = false;
+          pressMovedRef.current = false;
+          return;
+        }
         // 穿透态 forward=true 时 pointermove 也会到达渲染层，但没有 pointerdown——
         // 必须确认按下确实发生过才进入拖拽判定，避免假 dragBegin 把窗口追着光标拖
         if (!pointerDownRef.current) return;

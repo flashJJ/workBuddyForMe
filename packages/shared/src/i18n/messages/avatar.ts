@@ -67,6 +67,20 @@ export const zhAvatar = {
     rotationLabel: '自动轮播动作',
     rotationHint: '每隔几秒在动作池（内置 + 已导入）里随机切换一个待机动作',
     rotationSeconds: '轮播间隔（秒）',
+    // v2.2 导入标注：段 / 档位 / 条目键 / 关系门槛（可选；留空按整段处理）
+    segmentLabel: '动作段',
+    segmentSingle: '整段（single）',
+    segmentAStart: '入场段（a_start）',
+    segmentBLoop: '循环段（b_loop）',
+    segmentCEnd: '退场段（c_end）',
+    moodLabel: '心情档位',
+    moodGood: '活跃（good）',
+    moodNormal: '中性（normal）',
+    moodLow: '安静（low）',
+    entryKeyLabel: '动作条目键',
+    entryKeyPlaceholder: '留空＝自成条目',
+    minLevelLabel: '关系门槛',
+    optionNone: '无门槛',
   },
 };
 
@@ -139,5 +153,19 @@ export const enAvatar = {
     rotationHint:
       'Randomly switch to another idle motion every few seconds (built-in + imported pool)',
     rotationSeconds: 'Rotation interval (s)',
+    // v2.2 import labels: segment / mood tier / entry key / relationship gate (optional)
+    segmentLabel: 'Segment',
+    segmentSingle: 'Whole (single)',
+    segmentAStart: 'Enter (a_start)',
+    segmentBLoop: 'Loop (b_loop)',
+    segmentCEnd: 'Exit (c_end)',
+    moodLabel: 'Mood tier',
+    moodGood: 'Active (good)',
+    moodNormal: 'Neutral (normal)',
+    moodLow: 'Quiet (low)',
+    entryKeyLabel: 'Entry key',
+    entryKeyPlaceholder: 'Blank = own entry',
+    minLevelLabel: 'Relationship gate',
+    optionNone: 'No gate',
   },
 };

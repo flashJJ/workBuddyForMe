@@ -44,10 +44,10 @@ describe('PetDragController（DIP 手势拖拽）', () => {
     drag.dragTo(win);
     expect(setPosition).toHaveBeenLastCalledWith(380, 542);
 
-    // end：位移达阈值 → 回调持久化（无时钟注入 → 采样同刻，速度 0）
+    // end：位移达阈值 → 回调持久化（无时钟注入 → 采样同刻，速度 0）；累计位移 = |510-451|+|710-600| = 169
     drag.end(win);
     expect(onDragEnd).toHaveBeenCalledTimes(1);
-    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 0, y: 0 });
+    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 0, y: 0 }, 169);
     expect(drag.isDragging()).toBe(false);
   });
 
@@ -68,8 +68,8 @@ describe('PetDragController（DIP 手势拖拽）', () => {
     t = 1040; // 距最后采样 8ms（<=80 未过期）
     drag.end(win);
 
-    // 窗口内首末 (100,100)@1000 → (180,100)@1032：dx=80 / 32ms → 2500 DIP/s
-    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 2500, y: 0 });
+    // 窗口内首末 (100,100)@1000 → (180,100)@1032：dx=80 / 32ms → 2500 DIP/s（累计位移 80）
+    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 2500, y: 0 }, 80);
   });
 
   it('松手前已停住：最后一个采样过期 → 速度 0（不算抛掷）', () => {
@@ -86,7 +86,7 @@ describe('PetDragController（DIP 手势拖拽）', () => {
     t = 1300; // 距最后采样 200ms > 80ms → 视为已停住
     drag.end(win);
 
-    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 0, y: 0 });
+    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 0, y: 0 }, 200);
   });
 
   it('位移未达 3px 阈值：end 不回调持久化（点击 tap 语义）', () => {
@@ -109,6 +109,30 @@ describe('PetDragController（DIP 手势拖拽）', () => {
     const drag = new PetDragController({ getCursor: () => ({ x: 0, y: 0 }), onDragStart });
     drag.begin(win);
     expect(onDragStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('重复 begin 被忽略（不按陈旧偏移跳窗）；getFixedSize 钉住规范尺寸', () => {
+    const setBounds = vi.fn();
+    const win: PetDragWindow = {
+      isDestroyed: () => false,
+      getBounds: () => ({ x: 321, y: 432, width: 300, height: 380 }), // 漂移后的尺寸
+      setPosition: vi.fn(),
+      setBounds,
+    };
+    let cursor = { x: 451, y: 600 };
+    const drag = new PetDragController({
+      getCursor: () => cursor,
+      getFixedSize: () => ({ width: 260, height: 340 }),
+    });
+
+    drag.begin(win); // offset = (451-321, 600-432) = (130, 168)
+    cursor = { x: 900, y: 900 };
+    drag.begin(win); // 正在拖拽 → 忽略（否则 offset 会被重锚成 (579, 468)）
+    cursor = { x: 500, y: 700 };
+    drag.dragTo(win);
+
+    // 位置按首次 offset；尺寸用规范 260x340（而非 getBounds 的 300x380）
+    expect(setBounds).toHaveBeenLastCalledWith({ x: 370, y: 532, width: 260, height: 340 });
   });
 
   it('窗口已销毁/为空：begin/dragTo/end 全部安全空转', () => {

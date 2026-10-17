@@ -130,12 +130,13 @@ const ACTION_TABLE: Record<string, () => ActionChain> = {
   }),
 
   // body 双击：角色动作（与头部盒双击「回主窗」的窗口行为分开）
+  // 注意：双击必经单击，squash 包络若在此再触发会「重置回弹起点」造成抖动，故这里只加深反馈，不重复 squash
   'touch::body::double': () => ({
     actions: [
       { type: 'interaction.start', kind: 'body-touch' },
-      { type: 'controller.playSquash', scaleX: 1.05, scaleY: 0.95, durationMs: 240 },
+      { type: 'controller.setExpression', tag: 'smirk' },
       { type: 'controller.tap' },
-      { type: 'controller.flashExpression', tag: 'smirk', durationMs: 2000 },
+      { type: 'controller.flashExpression', tag: 'joy', durationMs: 1400 },
     ],
     priority: 'normal',
     cooldownMs: DEFAULT_COOLDOWN.body * 2,

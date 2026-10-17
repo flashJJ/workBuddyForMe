@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Rect } from './pet-state';
 import type { PetDragWindow } from './pet-drag-controller';
 import { PetThrowController, THROW_FRAME_MS, type PetThrowDeps } from './pet-throw-controller';
+import { THROW_MIN_DRAG_PX } from './pet-throw-physics';
 
 const AREA: Rect = { x: 0, y: 0, width: 1920, height: 1040 };
 const SIZE = { width: 260, height: 340 };
@@ -110,6 +111,17 @@ describe('PetThrowController 惯性滑行', () => {
     timers.tick();
 
     expect(controller.isThrowing()).toBe(false);
+    expect(onSettle).toHaveBeenCalledTimes(1);
+  });
+
+  it('误触拖拽（累计位移 < THROW_MIN_DRAG_PX）：不滑行也不贴边，只落位', () => {
+    const { controller, timers, onSettle } = makeController();
+    const { win, state } = makeWindow({ x: 1650, y: 400 }); // 距右边缘 10px：正常应会被吸附
+
+    controller.start(win, { x: 1000, y: 0 }, THROW_MIN_DRAG_PX - 1);
+
+    expect(timers.set).not.toHaveBeenCalled();
+    expect(state.x).toBe(1650); // 未被吸附、未滑行
     expect(onSettle).toHaveBeenCalledTimes(1);
   });
 

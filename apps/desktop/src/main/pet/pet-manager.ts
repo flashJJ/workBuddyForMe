@@ -12,7 +12,12 @@ import {
 } from '@wbfm/shared/pet';
 import { PetClickThroughController } from './pet-penetration';
 import { loadPetState, savePetState, type PetState, type Rect } from './pet-state';
-import { createPetWindow, type CursorPoint } from './pet-window';
+import {
+  createPetWindow,
+  PET_WINDOW_HEIGHT,
+  PET_WINDOW_WIDTH,
+  type CursorPoint,
+} from './pet-window';
 import { PetDragController, type PetDragWindow } from './pet-drag-controller';
 import { PetThrowController } from './pet-throw-controller';
 import { PetHoverPoller } from './pet-hover-poller';
@@ -42,16 +47,32 @@ export class PetManager {
       onHover: (h) => this.controller?.update(h),
       onForceInteractive: () => this.controller?.force(false),
     });
+    // 桌宠窗固定尺寸（不可缩放）：拖拽/滑行一律回写规范尺寸，避免棘轮式变大
+    const fixedSize = () => ({ width: PET_WINDOW_WIDTH, height: PET_WINDOW_HEIGHT });
     this.thrower = new PetThrowController({
       setInterval: deps.setInterval, clearInterval: deps.clearInterval,
       getWorkArea: (bounds) => this.readWorkArea(bounds),
+      getFixedSize: fixedSize,
       onSettle: (win) => this.persistBounds(win),
+      // 真机排查用（滑行/贴边的调用与坐标轨迹）
+      log: (message) => process.stdout.write(`[pet-throw] ${message}\n`),
     });
     this.drag = new PetDragController({
       getCursor: () => this.readCursor(),
-      onDragStart: () => this.controller?.force(false),
-      // 松手带释放速度 → 抛掷控制器做惯性滑行 + 贴边回正，落位后持久化
-      onDragEnd: (win, velocity) => this.thrower.start(win, velocity),
+      getFixedSize: fixedSize,
+      onDragStart: () => {
+        // 新一轮拖拽开始：先停掉可能在跑的滑行，否则抛掷与拖拽会互相抢窗口位置（卡顿/乱跳）
+        this.thrower.stop();
+        process.stdout.write('[pet-drag] begin\n');
+        this.controller?.force(false);
+      },
+      // 松手带释放速度 + 本次拖拽累计位移 → 抛掷控制器做惯性滑行 + 贴边回正（位移过小视为误触，不动作）
+      onDragEnd: (win, velocity, distance) => {
+        process.stdout.write(
+          `[pet-drag] end dist=${Math.round(distance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)}\n`,
+        );
+        this.thrower.start(win, velocity, distance);
+      },
     });
   }
 

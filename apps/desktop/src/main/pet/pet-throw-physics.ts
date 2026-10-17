@@ -24,10 +24,19 @@ export const THROW_DAMPING_RETAIN_PER_SECOND = 0.1;
 export const THROW_STOP_SPEED = 90;
 /** 速度上限（DIP/s）：防极端甩动一帧跨屏 */
 export const THROW_MAX_SPEED = 3200;
-/** 贴边进入阈值（DIP） */
-export const SNAP_ENTER_PX = 28;
+/**
+ * 贴边进入阈值（DIP）：只收紧到 12——桌宠默认落点距屏幕角约 24px（PET_DEFAULT_MARGIN），
+ * 阈值若 ≥ 24 会导致「每次松手都被吸到边上」，表现为一碰就被重置挪走。
+ */
+export const SNAP_ENTER_PX = 12;
 /** 贴边维持阈值（DIP）：已起意后超出即放弃 */
 export const SNAP_KEEP_PX = 72;
+/**
+ * 认定「真实拖拽」的最小累计位移（DIP）：低于此值视为误触——
+ * 既不滑行也不贴边。否则一次几像素的误触拖拽就会被按光标扫过的速度「甩」出去，
+ * 表现为「鼠标一靠近桌宠就被弹开/自动远离」。
+ */
+export const THROW_MIN_DRAG_PX = 28;
 
 /** 速度大小（DIP/s） */
 export function velocitySpeed(velocity: PetVelocity): number {

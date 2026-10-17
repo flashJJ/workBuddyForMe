@@ -14,6 +14,20 @@ import type { MessageKey } from '@wbfm/shared/i18n';
  * 上传落库 → 失效列表缓存。差异（扩展名/上限/接口/meta 渲染/表单字段）由 config 提供。
  */
 
+/** 可选的上传标注字段（渲染在元数据预览与免责声明之间，值并入上传 FormData） */
+export interface AssetExtraField {
+  /** FormData 字段名 */
+  name: string;
+  labelKey: MessageKey;
+  kind: 'select' | 'text';
+  /** select 选项；value 为空串表示「不设/无」 */
+  options?: Array<{ value: string; labelKey: MessageKey }>;
+  /** 初值（select / text 共用） */
+  defaultValue?: string;
+  /** text 占位提示 */
+  placeholderKey?: MessageKey;
+}
+
 export interface AssetImportConfig<TMeta, TResponse> {
   /** i18n 前缀（如 'avatar.vrm'）：需提供 importTitle/importHint/fileLabel/metaTitle/
    * disclaimerTitle/disclaimerText/disclaimerConfirm/importSuccess/importFailed/unsupportedType/tooLarge */
@@ -34,8 +48,10 @@ export interface AssetImportConfig<TMeta, TResponse> {
   renderMeta: (meta: TMeta) => React.ReactNode;
   /** 从上传响应取展示名（用于成功提示） */
   pickName: (response: TResponse) => string;
-  /** 组装上传表单；缺省仅带 file */
+  /** 组装上传表单；缺省仅带 file（另会附加 extraFields 的取值） */
   buildForm?: (file: File, meta: TMeta | null) => FormData;
+  /** 可选上传标注字段（如 VRMA 的动作段/档位/条目键/关系门槛） */
+  extraFields?: AssetExtraField[];
 }
 
 /** 读取 GLB 的 JSON chunk（本地快速嗅探，不做完整校验） */
@@ -64,10 +80,18 @@ export function AssetImportSection<TMeta, TResponse>({
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const key = (suffix: string) => `${config.i18nPrefix}.${suffix}` as MessageKey;
 
+  /** 标注字段初值（每次成功上传后复位） */
+  const initialExtras = (): Record<string, string> =>
+    Object.fromEntries((config.extraFields ?? []).map((field) => [field.name, field.defaultValue ?? '']));
+  const [extras, setExtras] = React.useState<Record<string, string>>(initialExtras);
+
   const uploadMutation = useMutation({
-    mutationFn: (payload: { file: File; meta: TMeta | null }) => {
+    mutationFn: (payload: { file: File; meta: TMeta | null; extras: Record<string, string> }) => {
       const formData = config.buildForm?.(payload.file, payload.meta) ?? new FormData();
       if (!config.buildForm) formData.append('file', payload.file);
+      for (const [name, value] of Object.entries(payload.extras)) {
+        if (value) formData.append(name, value);
+      }
       return apiUpload<TResponse>(config.endpoint, formData);
     },
     onSuccess: (data) => {
@@ -75,6 +99,7 @@ export function AssetImportSection<TMeta, TResponse>({
       setFile(null);
       setMeta(null);
       setDisclaimerChecked(false);
+      setExtras(initialExtras());
       if (fileInputRef.current) fileInputRef.current.value = '';
       void queryClient.invalidateQueries({ queryKey: config.queryKey });
     },
@@ -106,7 +131,7 @@ export function AssetImportSection<TMeta, TResponse>({
 
   const onImport = () => {
     if (!file || !disclaimerChecked) return;
-    uploadMutation.mutate({ file, meta });
+    uploadMutation.mutate({ file, meta, extras });
   };
 
   const prefix = config.testIdPrefix;
@@ -138,6 +163,46 @@ export function AssetImportSection<TMeta, TResponse>({
           <div className="space-y-1 rounded border p-2 text-xs">
             <div className="font-medium">{t(key('metaTitle'))}</div>
             {config.renderMeta(meta)}
+          </div>
+        )}
+
+        {file && config.extraFields && config.extraFields.length > 0 && (
+          <div
+            className="space-y-2 rounded border p-2 text-xs"
+            data-testid={`${prefix}-extra-fields`}
+          >
+            {config.extraFields.map((field) => (
+              <label key={field.name} className="flex items-center gap-2">
+                <span className="text-muted-foreground">{t(field.labelKey)}</span>
+                {field.kind === 'select' ? (
+                  <select
+                    className="rounded-md border px-2 py-1 text-xs"
+                    data-testid={`${prefix}-${field.name}`}
+                    value={extras[field.name] ?? ''}
+                    onChange={(e) =>
+                      setExtras((prev) => ({ ...prev, [field.name]: e.target.value }))
+                    }
+                  >
+                    {field.options?.map((option) => (
+                      <option key={option.value || '__none'} value={option.value}>
+                        {t(option.labelKey)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="w-40 rounded-md border px-2 py-1 text-xs"
+                    data-testid={`${prefix}-${field.name}`}
+                    placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
+                    value={extras[field.name] ?? ''}
+                    onChange={(e) =>
+                      setExtras((prev) => ({ ...prev, [field.name]: e.target.value }))
+                    }
+                  />
+                )}
+              </label>
+            ))}
           </div>
         )}
 

@@ -16,6 +16,7 @@ import {
   velocitySpeed,
   SNAP_ENTER_PX,
   SNAP_KEEP_PX,
+  THROW_MIN_DRAG_PX,
   THROW_STOP_SPEED,
   type PetEdge,
   type PetVelocity,
@@ -32,6 +33,10 @@ export interface PetThrowDeps {
   getWorkArea: (bounds: Rect) => Rect | null;
   /** 滑行/贴边结束（含无需滑行）后回调，manager 持久化最终位置 */
   onSettle: (win: PetDragWindow) => void;
+  /** 窗口规范尺寸（DIP）：滑行/贴边时钉住尺寸，避免拿漂移后的 getBounds 尺寸回写（棘轮） */
+  getFixedSize?: () => { width: number; height: number } | null;
+  /** 可选调试输出（真机排查用；测试不传则静默） */
+  log?: (message: string) => void;
 }
 
 export class PetThrowController {
@@ -45,10 +50,24 @@ export class PetThrowController {
     return this.timer !== null;
   }
 
-  /** 松手：速度够快则滑行；否则只做贴边回正 + 落位持久化 */
-  start(win: PetDragWindow | null, velocity: PetVelocity): void {
+  /**
+   * 松手：速度够快则滑行；否则只做贴边回正 + 落位持久化。
+   * `dragDistance` 为本次拖拽累计位移——**低于 THROW_MIN_DRAG_PX 视为误触**：
+   * 直接落位、不滑行也不贴边（否则几像素误触就会被按光标速度甩出去）。
+   */
+  start(win: PetDragWindow | null, velocity: PetVelocity, dragDistance = Number.POSITIVE_INFINITY): void {
     if (!win || win.isDestroyed()) return;
+    // 防御：任何情况下先清掉可能仍在跑的定时器，保证同一时刻只有一个滑行循环
     this.stop();
+    const b = win.getBounds();
+    this.deps.log?.(
+      `start dist=${Math.round(dragDistance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)} bounds=${b.x},${b.y} ${b.width}x${b.height}`,
+    );
+    if (dragDistance < THROW_MIN_DRAG_PX) {
+      this.deps.log?.(`skip: 误触（dist<${THROW_MIN_DRAG_PX}）`);
+      this.deps.onSettle(win);
+      return;
+    }
     const clamped = clampVelocity(velocity);
     if (velocitySpeed(clamped) < THROW_STOP_SPEED) {
       this.settle(win);
@@ -68,6 +87,7 @@ export class PetThrowController {
     this.timer = null;
     this.velocity = null;
     this.snapEdge = null;
+    this.deps.log?.('stop');
   }
 
   /** 单帧推进：位移 + 阻尼 → 约束进工作区 → 贴边起意/维持 → 速度衰减到阈值即落位 */
@@ -82,7 +102,7 @@ export class PetThrowController {
       return;
     }
     const bounds = win.getBounds();
-    const size = { width: bounds.width, height: bounds.height };
+    const size = this.deps.getFixedSize?.() ?? { width: bounds.width, height: bounds.height };
     const area = this.deps.getWorkArea(bounds);
     if (!area) {
       this.stop();
@@ -105,7 +125,11 @@ export class PetThrowController {
 
     if (velocitySpeed(stepped.velocity) < THROW_STOP_SPEED) {
       if (this.snapEdge) {
-        this.applyPosition(win, edgeSnapPosition(rect, area, this.snapEdge, PET_EDGE_MARGIN), size);
+        const snap = edgeSnapPosition(rect, area, this.snapEdge, PET_EDGE_MARGIN);
+        this.deps.log?.(
+          `snap(${this.snapEdge}) from=${point.x},${point.y} to=${Math.round(snap.x)},${Math.round(snap.y)}`,
+        );
+        this.applyPosition(win, snap, size);
       }
       this.stop();
       this.deps.onSettle(win);
@@ -115,12 +139,18 @@ export class PetThrowController {
   /** 无速度/已停下：边缘阈值内才贴边回正，然后持久化 */
   private settle(win: PetDragWindow): void {
     const bounds = win.getBounds();
-    const size = { width: bounds.width, height: bounds.height };
+    const size = this.deps.getFixedSize?.() ?? { width: bounds.width, height: bounds.height };
     const area = this.deps.getWorkArea(bounds);
     if (area) {
       const rect: Rect = { x: bounds.x, y: bounds.y, ...size };
       const edge = nearestEdgeWithin(rect, area, SNAP_ENTER_PX);
-      if (edge) this.applyPosition(win, edgeSnapPosition(rect, area, edge, PET_EDGE_MARGIN), size);
+      if (edge) {
+        const snap = edgeSnapPosition(rect, area, edge, PET_EDGE_MARGIN);
+        this.deps.log?.(`snap(${edge}) from=${rect.x},${rect.y} to=${snap.x},${snap.y}`);
+        this.applyPosition(win, snap, size);
+      } else {
+        this.deps.log?.(`settle no-snap at=${rect.x},${rect.y}`);
+      }
     }
     this.deps.onSettle(win);
   }

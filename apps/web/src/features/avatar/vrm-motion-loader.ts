@@ -2,6 +2,10 @@ import type { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 import {
   parseMotionId,
+  motionMoodSchema,
+  motionSegmentSchema,
+  DEFAULT_MOTION_MOOD,
+  DEFAULT_MOTION_SEGMENT,
   DEFAULT_VOICE_SETTINGS,
   type MotionAsset,
   type MotionAssetListResponse,
@@ -108,12 +112,16 @@ export async function loadMotionPool(
         }
         const clip = anims[0] ? createVRMAnimationClip(anims[0], vrm) : null;
         if (!clip) return null;
+        // 读兼容（与 core 的 rowToMotion 同口径）：服务端版本落后/字段缺失或词表外的值一律回落缺省，
+        // 绝不因一条动作的坏元数据让整个动作池搭不起来。
+        const segment = motionSegmentSchema.safeParse(d.segment);
+        const mood = motionMoodSchema.safeParse(d.mood);
         return {
           clip,
           name: d.name,
-          segment: d.segment,
+          segment: segment.success ? segment.data : DEFAULT_MOTION_SEGMENT,
           entryKey: d.entryKey,
-          mood: d.mood,
+          mood: mood.success ? mood.data : DEFAULT_MOTION_MOOD,
           minRelationshipLevel: d.minRelationshipLevel,
         };
       } catch (e) {

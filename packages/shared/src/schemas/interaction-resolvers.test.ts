@@ -57,7 +57,9 @@ describe('touchTriggerKey 与按手势冷却（v2.2 手势补齐）', () => {
     // body double 有自己的冷却键 → 不受 body tap 影响，正常放行
     const chain = resolveInteraction({ kind: 'touch', region: 'body', gesture: 'double' }, ctx);
     expect(chain).not.toBeNull();
-    expect(chain?.actions.some((action) => action.type === 'controller.playSquash')).toBe(true);
+    expect(chain?.actions.some((action) => action.type === 'controller.tap')).toBe(true);
+    // 双击必经单击：这里不得再触发 squash，否则包络重置会抖动
+    expect(chain?.actions.some((action) => action.type === 'controller.playSquash')).toBe(false);
   });
 
   it('关系门槛：陌生人长按头部被拒（head::longpress 需 acquaintance）', () => {
