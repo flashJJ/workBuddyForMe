@@ -100,13 +100,13 @@ v2.1 把交互管道收口成「归一化 → 纯函数门控 → ActionExecutor
 
 ## 5. 里程碑拆分
 
-| 里程碑 | 内容 | 出口 |
-|---|---|---|
-| M0 契约冻结 | 动作段契约、动画图条目类型、迁移列设计、**后端作用域确认（本版口径）** | 类型与迁移评审通过，旧数据降级路径明确，Live2D 零改动被写进验收项 |
-| M1 段调度（VRM） | `MotionMixer` 支持 A/B/C，按住进循环段、松手走退场段 | 长按有「抬手 → 维持 → 放下」三段；单击行为不回归 |
-| M2 状态驱动（策略通用 / 候选集 VRM） | shared 增加分组与向下兼容查找纯函数；VRM 动作池按档位分组 | 情绪/等级切换见效；任何状态下都有可播动作 |
-| M3 拖拽物理与手势（通用） | 速度采样、惯性滑行、贴边回正、滑动/双击手势 | 甩出去有惯性、边缘能回正；手势表补齐；**2D 与 3D 形象下同款生效** |
-| M4 收口 | 配置化、过渡段（P2 视时间）、真机验收与门禁 | 行数门禁/E2E/真机三尺寸全部通过；**2D 形象回归无差异** |
+| 里程碑 | 内容 | 出口 | 状态 |
+|---|---|---|---|
+| M0 契约冻结 | 动作段契约、动画图条目类型、迁移列设计、**后端作用域确认（本版口径）** | 类型与迁移评审通过，旧数据降级路径明确，Live2D 零改动被写进验收项 | ✅ `3cdd0dc` |
+| M1 段调度（VRM） | `MotionMixer` 支持 A/B/C，按住进循环段、松手走退场段 | 长按有「抬手 → 维持 → 放下」三段；单击行为不回归 | ✅ `fadf573` |
+| M2 状态驱动（策略通用 / 候选集 VRM） | shared 增加分组与向下兼容查找纯函数；VRM 动作池按档位分组 | 情绪/等级切换见效；任何状态下都有可播动作 | ✅ `5ced854` |
+| M3 拖拽物理与手势（通用） | 速度采样、惯性滑行、贴边回正、滑动/双击手势 | 甩出去有惯性、边缘能回正；手势表补齐；**2D 与 3D 形象下同款生效** | ✅ `b324b23` |
+| M4 收口 | 配置化、过渡段（P2 视时间）、真机验收与门禁 | 行数门禁/E2E/真机三尺寸全部通过；**2D 形象回归无差异** | ⏳ 见第 8 节 |
 
 ## 6. 风险与取舍
 
@@ -127,3 +127,29 @@ v2.1 把交互管道收口成「归一化 → 纯函数门控 → ActionExecutor
 - 不放开外部 Live2D 模型导入（授权边界不变）；
 - 不改动作导入的校验口径与免责声明流程；
 - 不改 `ControllerLike` 公开契约（新增能力一律走可选调用或后端自有接口）。
+
+## 8. M4 交付状态（收口）
+
+### 8.1 已交付（M0–M3）
+
+| 里程碑 | 代码锚点 |
+|---|---|
+| M0 | `packages/shared/src/schemas/motion-asset.ts`、`packages/database/src/migrations/v033-motion-segments.ts`、`packages/core/src/services/motion-service.ts`、`docs/plan/v2.2/02-动作段与动画图契约.md` |
+| M1 | `apps/web/src/features/avatar/motion-segments.ts`（条目聚合 + 段位退化）、`motion-hold.ts`（A→B→C 调度）、`motion-clips.ts`、`motion-fit-sampler.ts`、`vrm-motion-mixer.ts`、`vrm-controller.ts` |
+| M2 | `packages/shared/src/schemas/motion-selection.ts`（档位分组 + 兼容挑选 + `motionMoodOf`）、`interaction-resolvers.ts#relationshipLevelName`、`packages/shared/src/pet.ts`（`relationship` 表现事件）、`use-chat-pet-relay.ts` / `use-pet-bridge.ts` / `pet-stage.tsx`（真源接线）、`vrm-motion-mixer.ts#setPreference` |
+| M3 | `apps/desktop/src/main/pet/pet-throw-physics.ts`、`pet-throw-controller.ts`、`pet-drag-controller.ts`（速度采样）、`pet-manager.ts`（接线）、`interaction-resolvers.ts#touchTriggerKey` + `touch:body:double`、`pet-hit-regions.tsx`（身体盒双击） |
+
+### 8.2 门禁结果（本机）
+
+- `pnpm check`（typecheck 全包 + lint + 行数门禁）：8/8 任务通过；行数门禁 0 error（36 个 260–300 行预警文件均为历史项，其中本版新增/改动者：`pet-manager.ts` 278、`vrm-canvas.tsx` 284、`vrm-motion-mixer.ts` 290、`pet-hit-regions.tsx` 261）；
+- `pnpm test`（全包单测/集成）：8/8 任务通过（web 92 文件 / 488 例；shared、database、core、desktop、ai、voice、config 全绿）；
+- 本版新增单测：`motion-segments`(7)、`vrm-motion-mixer`(3)、`motion-selection`(12)、`interaction-resolvers`(6)、`pet` 表现事件净化(1)、`pet-throw-physics`(6)、`pet-throw-controller`(6)、`pet-drag-controller`(+2)。
+
+### 8.3 待办与顺延（需真机，本机无法执行）
+
+- **真机三尺寸验收**（需 Windows + 真实多显示器）：长按三段式手感的视觉确认；甩出去惯性与贴边回正；双击身体的角色动作；2D（Live2D）形象下拖拽惯性同款、其余行为回归无差异；
+- **E2E**（`pnpm test:e2e` / `test:e2e:desktop`，需 Playwright 浏览器与 Electron 打包产物）：本机未执行，留待 CI/真机；
+- **P1-1 交互动画图配置化**：属 P1「争取」项。体量与风险（引入数据驱动的动作选择 + 配置界面 + 持久化，且需保持「查不到返回空」语义）足以独立成一个里程碑，**本版暂缓**；
+- **P2-1 情绪档位过渡动画**（仅 VRM）：需为内置动作补 `Switch_Up/Switch_Down` 过渡段素材，属资源成本，按计划顺延；
+- **P2-2 事件链接线**（context/system/relationship 事件的 Resolver 解析）：v2.1 遗留，本版未接。
+
