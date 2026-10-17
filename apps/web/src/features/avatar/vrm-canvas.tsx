@@ -118,13 +118,21 @@ export function VrmCanvas({
 
         // 模型自身不含 AnimationClip（静止姿态就是 T-pose），
         // 加载动作池（内置 daiji + 全部已导入 VRMA）与轮播配置
-        const [pool, rotation] = await Promise.all([
+        const [poolEntries, rotation] = await Promise.all([
           loadMotionPool(loader, vrm),
           loadRotationConfig(),
         ]);
         if (disposed) return;
 
-        controller = new VrmController(vrm, gltf.animations, renderer, scene, camera, pool, rotation);
+        controller = new VrmController(
+          vrm,
+          gltf.animations,
+          renderer,
+          scene,
+          camera,
+          poolEntries,
+          rotation,
+        );
         controllerRefInternal.current = controller;
         if (controllerRef) controllerRef.current = controller;
 
@@ -135,7 +143,7 @@ export function VrmCanvas({
             vrm,
             camera,
             controller,
-            pool,
+            pool: poolEntries.map((entry) => entry.clip),
             fit: null,
             state: () => ({
               scale: vrm!.scene.scale.toArray(),
@@ -146,6 +154,8 @@ export function VrmCanvas({
               idle: (controller as any)?.mixer?.idleClipName ?? null,
               poolSize: (controller as any)?.mixer?.poolSize ?? 0,
               gesture: Boolean((controller as any)?.mixer?.hasGesture),
+              holding: Boolean((controller as any)?.mixer?.isHolding),
+              clip: (controller as any)?.mixer?.currentClipName ?? null,
             }),
           };
           (window as unknown as Record<string, unknown>).__vrmDebug = debug;

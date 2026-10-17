@@ -7,8 +7,9 @@ import type { ExpressionTag } from './expression-parser';
 import type { TouchControllerLike } from './use-head-touch';
 import { MotionMixer, type MotionRotationConfig } from './vrm-motion-mixer';
 import { VrmFaceLayer } from './vrm-face-layer';
-import { VrmInteractionState } from './vrm-interaction-state';
+import { VrmInteractionState, type InteractionPhase } from './vrm-interaction-state';
 import { VrmPoseLayer, type NormalizedBoneRef } from './vrm-pose-layer';
+import type { MotionPoolEntry } from './motion-segments';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
 
@@ -64,6 +65,8 @@ export class VrmController implements VrmControllerLike {
   private readonly face: VrmFaceLayer;
   private readonly pose: VrmPoseLayer;
   private readonly interaction = new VrmInteractionState();
+  /** 上一帧交互阶段（用于检测阶段跃迁，驱动长按三段式） */
+  private lastPhase: InteractionPhase = 'idle';
 
   private disposed = false;
 
@@ -76,7 +79,7 @@ export class VrmController implements VrmControllerLike {
     scene: THREE.Scene,
     camera: THREE.PerspectiveCamera,
     /** 动作池（内置 + 已导入 VRMA）；空数组/undefined 时退回模型内嵌 clip 或程序化姿态 */
-    motionPool?: THREE.AnimationClip[] | null,
+    motionPool?: MotionPoolEntry[] | null,
     rotationConfig?: MotionRotationConfig | null,
   ) {
     this.vrm = vrm;
@@ -181,6 +184,14 @@ export class VrmController implements VrmControllerLike {
 
     // --- Step 0: InteractionState phase 推进 ---
     this.interaction.tick();
+
+    // --- Step 0.5: 阶段跃迁 → 长按三段式（loop 进 B 段维持，end 播 C 段回待机）---
+    const phase = this.interaction.currentPhase;
+    if (phase !== this.lastPhase) {
+      if (phase === 'loop') this.mixer.beginHoldMotion();
+      else if (phase === 'end') this.mixer.endHoldMotion();
+      this.lastPhase = phase;
+    }
 
     // --- Step 1: mixer 驱动动作池 clip ---
     this.mixer.update(dt);
