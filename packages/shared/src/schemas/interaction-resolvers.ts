@@ -18,6 +18,21 @@ import type { ActionChain } from './interaction-actions';
 
 export type RelationshipLevel = 'stranger' | 'acquaintance' | 'partner' | 'intimate';
 
+/** 展示关系等级（数值 0–3）→ 门控等级名的顺序口径（与 relationshipLevelSchema 一致） */
+export const RELATIONSHIP_LEVEL_NAMES: readonly RelationshipLevel[] = [
+  'stranger',
+  'acquaintance',
+  'partner',
+  'intimate',
+];
+
+/** 数值等级 0–3 → 门控等级名（越界夹紧；非有限值回落「陌生」） */
+export function relationshipLevelName(level: number): RelationshipLevel {
+  if (!Number.isFinite(level)) return 'stranger';
+  const index = Math.min(RELATIONSHIP_LEVEL_NAMES.length - 1, Math.max(0, Math.round(level)));
+  return RELATIONSHIP_LEVEL_NAMES[index] ?? 'stranger';
+}
+
 export interface ResolverContext {
   /** 当前小时 0..23，用于勿扰时段 */
   hour: number;

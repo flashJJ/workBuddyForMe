@@ -5,6 +5,12 @@ import {
   MOTION_ROTATION_SECONDS_MAX,
   MOTION_ROTATION_SECONDS_MIN,
 } from '@wbfm/shared/constants';
+import {
+  DEFAULT_MOTION_MOOD,
+  meetsLevelGate,
+  pickMotionCandidate,
+  type MotionSelectionContext,
+} from '@wbfm/shared/schemas';
 import { entryLoopClip, groupMotionEntries, type MotionEntry, type MotionPoolEntry } from './motion-segments';
 import {
   allEntryClips,
@@ -47,6 +53,11 @@ export class MotionMixer {
   /** 正在播的一次性手势 action（非 null 时不打断轮播） */
   private gestureAction: THREE.AnimationAction | null = null;
   private readonly hold: HoldMotionScheduler;
+  /** v2.2 状态驱动挑选输入（情绪档位 + 关系等级）；由 VrmController 每帧同步 */
+  private preference: MotionSelectionContext = {
+    mood: DEFAULT_MOTION_MOOD,
+    relationshipLevel: 0,
+  };
   private rotationConfig: MotionRotationConfig = {
     enabled: true,
     seconds: MOTION_ROTATION_SECONDS_DEFAULT,
@@ -78,7 +89,6 @@ export class MotionMixer {
     }
     this.hold = new HoldMotionScheduler({
       mixer: this.mixer,
-      entries: this.entries,
       getIdleAction: () => this.currentIdleAction,
       returnToIdle: (from) => this.returnToIdle(from),
     });
@@ -132,6 +142,11 @@ export class MotionMixer {
     };
   }
 
+  /** v2.2：注入状态驱动挑选输入（情绪档位 + 关系等级）；由 VrmController 每帧同步 */
+  setPreference(preference: MotionSelectionContext): void {
+    this.preference = preference;
+  }
+
   /** 推进 mixer 时间轴（每帧 Step 1） */
   update(dt: number): void {
     this.mixer.update(dt);
@@ -151,17 +166,30 @@ export class MotionMixer {
     }
   }
 
-  /** 从条目池随机换一个 ≠ 当前的待机动作；手势/长按中不打断，返回是否切换成功 */
+  /** 从条目池按「情绪档位 + 关系门槛」换一个 ≠ 当前的待机动作；手势/长按中不打断 */
   rotateIdleMotion(): boolean {
     if (this.gestureAction || this.hold.isHolding) return false;
-    const candidates = this.entries.filter((entry) => entry !== this.currentIdleEntry);
-    const next = candidates[Math.floor(Math.random() * candidates.length)];
     const current = this.currentIdleAction;
+    const next = this.pickIdleEntry();
     if (!next || !current) return false;
 
     this.currentIdleAction = crossFadeLoopAction(this.mixer, current, entryLoopClip(next), 0.4, true);
     this.currentIdleEntry = next;
     return true;
+  }
+
+  /**
+   * v2.2 状态驱动挑选：剔除当前条目后**洗牌**，交给 shared 纯函数按「精确 → 更差 → 更好」档位顺序挑。
+   * 洗牌使同档位内保持随机（不丢 v2.1 的轮播变化）；关系门槛由纯函数一并过滤。
+   * 若除当前条目外无候选（含门槛全不满足）返回 null —— 不轮播，但内置条目无门槛故池非空时不会空手。
+   */
+  private pickIdleEntry(): MotionEntry | null {
+    const candidates = this.entries.filter((entry) => entry !== this.currentIdleEntry);
+    for (let i = candidates.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j]!, candidates[i]!];
+    }
+    return pickMotionCandidate(candidates, this.preference);
   }
 
   /** 从条目池随机播一条一次性动作；池空（且无内嵌 tap clip）时返回 false 交给调用方回落 */
@@ -176,7 +204,10 @@ export class MotionMixer {
   /** 进入长按：播入场段 A（缺 A 直接进循环段）；手势播放中不打断，返回是否真的开始 */
   beginHoldMotion(rng: () => number = Math.random): boolean {
     if (this.gestureAction) return false;
-    return this.hold.begin(rng);
+    const eligible = this.entries.filter((entry) =>
+      meetsLevelGate(entry, this.preference.relationshipLevel),
+    );
+    return this.hold.begin(eligible, rng);
   }
 
   /** 松手：播退场段 C（缺 C 直接回待机） */

@@ -13,7 +13,6 @@ type HoldPhase = 'start' | 'loop' | 'end';
 /** 长按调度器向宿主（MotionMixer）索要的能力 */
 export interface HoldHost {
   mixer: THREE.AnimationMixer;
-  entries: MotionEntry[];
   /** 当前待机 action（用于 A 段起播时的淡入与回待机） */
   getIdleAction(): THREE.AnimationAction | null;
   /** 一次性动作播完/缺 C 段时回待机循环 */
@@ -44,10 +43,10 @@ export class HoldMotionScheduler {
     return this.action;
   }
 
-  /** 进入长按：播入场段 A（缺 A 直接进循环段）；返回是否真的开始 */
-  begin(rng: () => number = Math.random): boolean {
+  /** 进入长按：播入场段 A（缺 A 直接进循环段）；候选由宿主按关系门槛预筛，返回是否真的开始 */
+  begin(candidates: MotionEntry[], rng: () => number = Math.random): boolean {
     if (this.entry) return false;
-    const entry = pickHoldEntry(this.host.entries, rng);
+    const entry = pickHoldEntry(candidates, rng);
     if (!entry) return false;
 
     this.entry = entry;

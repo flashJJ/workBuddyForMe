@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
-import type { InteractionKind } from '@wbfm/shared/schemas';
+import type { InteractionKind, MotionSelectionContext } from '@wbfm/shared/schemas';
 import type { ExpressionTag } from './expression-parser';
 import type { TouchControllerLike } from './use-head-touch';
 import { MotionMixer, type MotionRotationConfig } from './vrm-motion-mixer';
@@ -106,6 +106,12 @@ export class VrmController implements VrmControllerLike {
   /** 注入待机动作轮播配置（开关 + 间隔秒数） */
   setRotationConfig(config: MotionRotationConfig): void {
     this.mixer.setRotationConfig(config);
+  }
+
+  /** v2.2：注入状态驱动挑选输入（情绪档位 + 关系等级）；由 VrmCanvas 每帧同步 */
+  setMotionPreference(preference: MotionSelectionContext): void {
+    if (this.disposed) return;
+    this.mixer.setPreference(preference);
   }
 
   /** 从动作池随机换一个 ≠ 当前的待机动作 */

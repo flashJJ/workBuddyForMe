@@ -296,9 +296,15 @@ export * from './vrm-avatar';
 // v2.0 交互触发管道契约
 export * from './interaction-events';
 export * from './interaction-actions';
-export { resolveInteraction } from './interaction-resolvers';
+export {
+  resolveInteraction,
+  relationshipLevelName,
+  RELATIONSHIP_LEVEL_NAMES,
+} from './interaction-resolvers';
 export * from './interaction-hitbox';
 // v2.0 M5 .wbfm-pack mod 包契约
 export * from './wbfm-pack';
 // v2.0 待机动作（VRMA）契约
 export * from './motion-asset';
+// v2.2 M2 待机动作状态驱动挑选（策略层纯函数，两后端共用）
+export * from './motion-selection';

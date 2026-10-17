@@ -46,6 +46,8 @@ export default function PetPage() {
       voiceState={runtime.voiceState}
       subtitle={runtime.subtitle}
       getLevel={runtime.getLevel}
+      relationshipLevel={runtime.relationshipLevel}
+      mood={runtime.mood}
     />
   );
 }

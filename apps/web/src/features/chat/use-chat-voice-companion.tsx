@@ -99,6 +99,7 @@ export function useChatVoiceCompanion({
   });
 
   const { petOpen, onAudioFrame: relayPetAudio } = useChatPetRelay({
+    assistantId,
     voiceSettings,
     voiceState: handsfree.voiceState,
     messages: session.messages,

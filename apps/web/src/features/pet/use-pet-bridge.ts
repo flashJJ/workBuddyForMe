@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import type { PetPerformanceEvent, PetVoiceState } from '@wbfm/shared/pet';
+import { DEFAULT_MOTION_MOOD, type MotionMood } from '@wbfm/shared/schemas';
 import { DEFAULT_EXPRESSION, type ExpressionTag } from '@/features/avatar/expression-parser';
 import { getPetBridge, isPetHitPoint } from './pet-bridge';
 
@@ -12,6 +13,13 @@ export interface PetRuntime {
   voiceState: PetVoiceState;
   subtitle: string;
   expression: ExpressionTag;
+  /**
+   * v2.2：主窗经 IPC 中继的展示关系等级（0 陌生 / 1 认识 / 2 搭档 / 3 挚友）。
+   * 无快照（主窗未推）恒 0 —— 交互门控按「陌生」保守处理，不再读不存在的 settings 字段。
+   */
+  relationshipLevel: number;
+  /** v2.2：主窗经 IPC 中继的情绪档位（驱动待机动作挑选）；无快照回落 normal */
+  mood: MotionMood;
   /** Live2D 口型电平读取器（rAF 轮询，不走渲染） */
   getLevel: () => number;
 }
@@ -29,6 +37,8 @@ export function usePetBridge(): PetRuntime {
   const [voiceState, setVoiceState] = React.useState<PetVoiceState>('idle');
   const [subtitle, setSubtitle] = React.useState('');
   const [expression, setExpression] = React.useState<ExpressionTag>(DEFAULT_EXPRESSION);
+  const [relationshipLevel, setRelationshipLevel] = React.useState(0);
+  const [mood, setMood] = React.useState<MotionMood>(DEFAULT_MOTION_MOOD);
   const levelRef = React.useRef(0);
 
   React.useEffect(() => {
@@ -51,6 +61,10 @@ export function usePetBridge(): PetRuntime {
           break;
         case 'expression':
           setExpression(event.tag as ExpressionTag);
+          break;
+        case 'relationship':
+          setRelationshipLevel(event.level);
+          setMood(event.mood);
           break;
         case 'conversation':
           setSubtitle('');
@@ -93,5 +107,13 @@ export function usePetBridge(): PetRuntime {
 
   const getLevel = React.useCallback(() => levelRef.current, []);
 
-  return { ready: Boolean(bridge), voiceState, subtitle, expression, getLevel };
+  return {
+    ready: Boolean(bridge),
+    voiceState,
+    subtitle,
+    expression,
+    relationshipLevel,
+    mood,
+    getLevel,
+  };
 }
