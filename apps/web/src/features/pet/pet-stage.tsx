@@ -45,12 +45,14 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   const headPressMovedRef = React.useRef<boolean>(false);
   const headPressBridgeActiveRef = React.useRef<boolean>(false);
   const headLongPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const headLongPressFiredRef = React.useRef<boolean>(false); // 长按已触发过 → 挡 onClick tap
 
   // M1: body 区域手势判定（和 head 对齐：no-drag + 手动拖拽）
   const bodyPressStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const bodyPressMovedRef = React.useRef<boolean>(false);
   const bodyPressBridgeActiveRef = React.useRef<boolean>(false);
   const bodyLongPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bodyLongPressFiredRef = React.useRef<boolean>(false);
 
   const LONGPRESS_THRESHOLD_MS = 500;
   const DRAG_THRESHOLD_PX = 3;
@@ -198,10 +200,12 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           bodyPressStartRef.current = { x: e.clientX, y: e.clientY };
           bodyPressMovedRef.current = false;
           bodyPressBridgeActiveRef.current = false;
+          bodyLongPressFiredRef.current = false;
           // body-touch 程序化 start（让角色提前进入 phase='start'，等待后续判定）
           (controllerRef.current as any)?.startInteraction?.('body-touch');
           bodyLongPressTimerRef.current = setTimeout(() => {
             if (!bodyPressMovedRef.current) {
+              bodyLongPressFiredRef.current = true;
               resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'longpress' });
             }
           }, LONGPRESS_THRESHOLD_MS);
@@ -225,6 +229,11 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           }
         }}
         onClick={() => {
+          // 长按已触发 → 跳过 tap（防表情覆盖）
+          if (bodyLongPressFiredRef.current) {
+            bodyLongPressFiredRef.current = false;
+            return;
+          }
           // 纯点击（pointerdown → pointerup 间 move ≤ 3px）→ body-touch
           if (!bodyPressBridgeActiveRef.current) {
             resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'tap' });
@@ -274,10 +283,12 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           headPressStartPosRef.current = { x: e.clientX, y: e.clientY, at: performance.now() };
           headPressMovedRef.current = false;
           headPressBridgeActiveRef.current = false;
+          headLongPressFiredRef.current = false; // 重置长按标记
           (controllerRef.current as any)?.startInteraction?.('head-touch');
           if (headLongPressTimerRef.current) clearTimeout(headLongPressTimerRef.current);
           headLongPressTimerRef.current = setTimeout(() => {
             if (!headPressMovedRef.current && !headPressBridgeActiveRef.current) {
+              headLongPressFiredRef.current = true;
               resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'longpress' });
             }
           }, LONGPRESS_THRESHOLD_MS);
@@ -301,7 +312,11 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           }
         }}
         onClick={() => {
-          // M2: 新管道主力，旧 useHeadTouch 退役（文件保留标记 deprecated，不再被 PetStage 调用）
+          // 长按已触发 → 跳过 tap（否则 flashExpression(joy) 会覆盖 longpress 的 surprise）
+          if (headLongPressFiredRef.current) {
+            headLongPressFiredRef.current = false;
+            return;
+          }
           resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'tap' });
         }}
         onPointerUp={() => {

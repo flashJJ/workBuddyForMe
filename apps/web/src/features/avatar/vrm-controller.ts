@@ -277,6 +277,11 @@ export class VrmController implements VrmControllerLike {
     if (this.interactionPhase === 'start' || this.interactionPhase === 'loop') {
       this.interactionPhase = 'end';
       this.interactionEndAt = performance.now() + VrmController.END_DURATION_MS;
+      // 关键：三段式收尾时**强制取消临时表情**，让角色回 idle。
+      // 否则 Resolver ActionChain 里 flashExpression(tag, 2600ms) 会独立挂着不走。
+      this.flashTag = null;
+      this.flashUntil = 0;
+      this.applyExpressionNow(this.baseExpression);
     }
     // idle / end 状态下 endInteraction 是 no-op
   }
@@ -575,7 +580,15 @@ export class VrmController implements VrmControllerLike {
     const em = this.vrm.expressionManager;
     if (!em) return;
     const preset = VRM_EXPRESSION_MAP[tag] ?? 'relaxed';
-    try { em.setValue(preset, 1); } catch { /* preset 可能不存在 */ }
+    // 关键：先把所有 preset 清 0 再设目标——避免残留表情叠加（surprised + relaxed 同时 = 混乱）
+    for (const name of ['happy', 'sad', 'angry', 'relaxed', 'surprised']) {
+      try { em.setValue(name, name === preset ? 1 : 0); } catch { /* preset 可能不存在 */ }
+    }
+    console.log('[VRM] applyExpressionNow', tag, '→', preset, {
+      happy: em.getValue?.('happy'),
+      surprised: em.getValue?.('surprised'),
+      relaxed: em.getValue?.('relaxed'),
+    });
   }
 
   private applyLipSync(speaking: boolean, getLevel: () => number): void {
