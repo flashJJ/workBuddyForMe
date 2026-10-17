@@ -6,8 +6,8 @@ describe('v027 迁移：stage_scenes', () => {
   it('全新空库：user_version=28，stage_scenes 就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(32);
-    expect(LATEST_SCHEMA_VERSION).toBe(32);
+    expect(getSchemaVersion(db)).toBe(33);
+    expect(LATEST_SCHEMA_VERSION).toBe(33);
     const rows = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='stage_scenes'`)
       .all() as Array<{ name: string }>;
@@ -44,7 +44,7 @@ describe('v027 迁移：stage_scenes', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(() => applyMigrations(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(32);
+    expect(getSchemaVersion(db)).toBe(33);
     db.close();
   });
 

@@ -61,6 +61,53 @@ describe('motion-service', () => {
     expect(() => svc.readFile('../evil.vrma')).toThrow(/不存在/);
     expect(() => svc.readFile('motion-%2e%2e%2fevil.vrma')).toThrow(/不存在/);
   });
+
+  // ── v2.2 M0：段 / 情绪档位 / 关系门槛 ──────────────────
+
+  it('段与档位缺省：single + normal + 无门槛', () => {
+    const motion = svc.importMotion({ filename: 'd.vrma', buffer: buildFakeVrma() });
+    expect(motion.segment).toBe('single');
+    expect(motion.mood).toBe('normal');
+    expect(motion.entryKey).toBeUndefined();
+    expect(motion.minRelationshipLevel).toBeUndefined();
+  });
+
+  it('显式段/档位/条目键/关系门槛落库并原样读回', () => {
+    const motion = svc.importMotion({
+      filename: 'b.vrma',
+      buffer: buildFakeVrma(),
+      name: '摸头循环段',
+      segment: 'b_loop',
+      mood: 'good',
+      entryKey: 'head-pet',
+      minRelationshipLevel: 2,
+    });
+    expect(motion).toMatchObject({
+      segment: 'b_loop',
+      mood: 'good',
+      entryKey: 'head-pet',
+      minRelationshipLevel: 2,
+    });
+    // 经 list/get 走同一行映射，读回一致
+    expect(svc.list().find((m) => m.id === motion.id)).toMatchObject({
+      segment: 'b_loop',
+      mood: 'good',
+      entryKey: 'head-pet',
+      minRelationshipLevel: 2,
+    });
+    expect(svc.get(motion.id)).toMatchObject({ segment: 'b_loop', mood: 'good' });
+  });
+
+  it('库里出现词表外的段/档位/门槛时按缺省回落（读兼容，不炸整条记录）', () => {
+    const motion = svc.importMotion({ filename: 'x.vrma', buffer: buildFakeVrma() });
+    db.prepare(
+      "UPDATE motion_assets SET segment='weird', mood='bogus', min_relationship_level=9 WHERE id = ?",
+    ).run(motion.id);
+    const read = svc.get(motion.id);
+    expect(read?.segment).toBe('single');
+    expect(read?.mood).toBe('normal');
+    expect(read?.minRelationshipLevel).toBeUndefined();
+  });
 });
 
 function buildFakeVrma(): Uint8Array {

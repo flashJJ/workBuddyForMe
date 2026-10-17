@@ -31,6 +31,7 @@ import { migrateV029 } from './v029-relationship-milestones';
 import { migrateV030 } from './v030-vrm-avatars';
 import { migrateV031 } from './v031-mod-installs';
 import { migrateV032 } from './v032-motion-assets';
+import { migrateV033 } from './v033-motion-segments';
 
 interface Migration {
   version: number;
@@ -193,6 +194,11 @@ const MIGRATIONS: Migration[] = [
     version: 32,
     description: 'v2.0: motion_assets 用户导入 VRMA 待机动作表（纯加法）',
     up: migrateV032,
+  },
+  {
+    version: 33,
+    description: 'v2.2 M0: motion_assets 动作段与情绪档位四列（纯加法）',
+    up: migrateV033,
   },
 ];
 
