@@ -9,6 +9,7 @@ import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
   relationshipLevelName,
+  touchTriggerKey,
   type InteractionEvent,
   type MotionMood,
 } from '@wbfm/shared/schemas';
@@ -84,8 +85,8 @@ export function PetStage({
   const linesEnabled = settings?.interactionLinesEnabled !== false;
   const emotionEnabled = settings?.emotionEnabled !== false;
 
-  // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底
-  const lastTriggerAtRef = React.useRef<Partial<Record<'head' | 'body', number>>>({});
+  // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底（键为 region::gesture）
+  const lastTriggerAtRef = React.useRef<Record<string, number>>({});
 
   // M1: resolveAndDispatch 正式模式（生产环境也生效），旧 useHeadTouch 逐步退役
   const resolveAndDispatch = React.useCallback(
@@ -102,11 +103,11 @@ export function PetStage({
         emotionEnabled,
       };
       const chain = resolveInteraction(event, ctx);
-      // 更新冷却时间戳
+      // 更新冷却时间戳（按 region::gesture 记，双击不被单击冷却吃掉）
       if (event.kind === 'touch') {
         lastTriggerAtRef.current = {
           ...lastTriggerAtRef.current,
-          [event.region]: Date.now(),
+          [touchTriggerKey(event.region, event.gesture)]: Date.now(),
         };
       }
       if (chain) {

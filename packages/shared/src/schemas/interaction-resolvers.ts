@@ -33,13 +33,21 @@ export function relationshipLevelName(level: number): RelationshipLevel {
   return RELATIONSHIP_LEVEL_NAMES[index] ?? 'stranger';
 }
 
+/**
+ * 触发冷却键 `touch::<region>::<gesture>`：调用方按此键记录 lastTriggerAt。
+ * **按手势分别冷却**——否则双击的第二下会被单击的冷却吃掉，双击动作永远不触发。
+ */
+export function touchTriggerKey(region: TouchRegion, gesture: string): string {
+  return `touch::${region}::${gesture}`;
+}
+
 export interface ResolverContext {
   /** 当前小时 0..23，用于勿扰时段 */
   hour: number;
   /** 模型能力标记 */
   capabilities: { hasTapClip: boolean; hasSpringBone: boolean };
-  /** 上次触发时间戳 per region */
-  lastTriggerAt?: Partial<Record<TouchRegion, number>>;
+  /** 上次触发时间戳 per 触发键（region::gesture，见 touchTriggerKey） */
+  lastTriggerAt?: Partial<Record<string, number>>;
   /** 当前关系等级（v2.0 relationship kernel 读） */
   relationshipLevel: RelationshipLevel;
   /** 情绪系统开关 */
@@ -120,6 +128,18 @@ const ACTION_TABLE: Record<string, () => ActionChain> = {
     priority: 'high',
     cooldownMs: DEFAULT_COOLDOWN.raised,
   }),
+
+  // body 双击：角色动作（与头部盒双击「回主窗」的窗口行为分开）
+  'touch::body::double': () => ({
+    actions: [
+      { type: 'interaction.start', kind: 'body-touch' },
+      { type: 'controller.playSquash', scaleX: 1.05, scaleY: 0.95, durationMs: 240 },
+      { type: 'controller.tap' },
+      { type: 'controller.flashExpression', tag: 'smirk', durationMs: 2000 },
+    ],
+    priority: 'normal',
+    cooldownMs: DEFAULT_COOLDOWN.body * 2,
+  }),
 };
 
 const LEVEL_ORDER: RelationshipLevel[] = ['stranger', 'acquaintance', 'partner', 'intimate'];
@@ -147,7 +167,7 @@ export function resolveInteraction(
 }
 
 function resolveTouch(e: TouchEvent, ctx: ResolverContext): ActionChain | null {
-  const key = `touch::${e.region}::${e.gesture}`;
+  const key = touchTriggerKey(e.region, e.gesture);
 
   // 关系等级门控
   const minLevel = MIN_LEVEL[key];
@@ -155,8 +175,8 @@ function resolveTouch(e: TouchEvent, ctx: ResolverContext): ActionChain | null {
     return null;
   }
 
-  // 冷却闸门
-  const last = ctx.lastTriggerAt?.[e.region] ?? 0;
+  // 冷却闸门（按 region::gesture 计时，不同手势互不吃冷却）
+  const last = ctx.lastTriggerAt?.[key] ?? 0;
   const cooldown = DEFAULT_COOLDOWN[e.region];
   if (Date.now() - last < cooldown) {
     return null;

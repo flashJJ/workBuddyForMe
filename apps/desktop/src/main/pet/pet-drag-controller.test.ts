@@ -23,7 +23,7 @@ describe('PetDragController（DIP 手势拖拽）', () => {
     const { win, setPosition } = createFakeWindow();
     let cursor = { x: 451, y: 600 };
     const onDragEnd = vi.fn();
-    const drag = new PetDragController({ getCursor: () => cursor, onDragEnd });
+    const drag = new PetDragController({ getCursor: () => cursor, now: () => 1000, onDragEnd });
 
     // begin 时光标在 (451,600)，bounds 原点 (321,432) → 偏移 (130,168)
     drag.begin(win);
@@ -44,11 +44,49 @@ describe('PetDragController（DIP 手势拖拽）', () => {
     drag.dragTo(win);
     expect(setPosition).toHaveBeenLastCalledWith(380, 542);
 
-    // end：位移达阈值 → 回调持久化
+    // end：位移达阈值 → 回调持久化（无时钟注入 → 采样同刻，速度 0）
     drag.end(win);
     expect(onDragEnd).toHaveBeenCalledTimes(1);
-    expect(onDragEnd).toHaveBeenCalledWith(win);
+    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 0, y: 0 });
     expect(drag.isDragging()).toBe(false);
+  });
+
+  it('释放速度：按采样窗口内位移/时长计算（注入时钟）', () => {
+    const { win } = createFakeWindow();
+    let t = 1000;
+    let cursor = { x: 100, y: 100 };
+    const onDragEnd = vi.fn();
+    const drag = new PetDragController({ getCursor: () => cursor, now: () => t, onDragEnd });
+
+    drag.begin(win); // 采样 (100,100)@1000
+    t = 1016;
+    cursor = { x: 140, y: 100 };
+    drag.dragTo(win); // 采样 (140,100)@1016
+    t = 1032;
+    cursor = { x: 180, y: 100 };
+    drag.dragTo(win); // 采样 (180,100)@1032
+    t = 1040; // 距最后采样 8ms（<=80 未过期）
+    drag.end(win);
+
+    // 窗口内首末 (100,100)@1000 → (180,100)@1032：dx=80 / 32ms → 2500 DIP/s
+    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 2500, y: 0 });
+  });
+
+  it('松手前已停住：最后一个采样过期 → 速度 0（不算抛掷）', () => {
+    const { win } = createFakeWindow();
+    let t = 1000;
+    let cursor = { x: 100, y: 100 };
+    const onDragEnd = vi.fn();
+    const drag = new PetDragController({ getCursor: () => cursor, now: () => t, onDragEnd });
+
+    drag.begin(win);
+    t = 1100;
+    cursor = { x: 300, y: 100 };
+    drag.dragTo(win); // 采样 (300,100)@1100
+    t = 1300; // 距最后采样 200ms > 80ms → 视为已停住
+    drag.end(win);
+
+    expect(onDragEnd).toHaveBeenCalledWith(win, { x: 0, y: 0 });
   });
 
   it('位移未达 3px 阈值：end 不回调持久化（点击 tap 语义）', () => {

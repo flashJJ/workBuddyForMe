@@ -107,6 +107,12 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
           resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'tap' });
         }
       }}
+      onDoubleClick={() => {
+        // v2.2：双击身体 = 角色动作；头部盒的双击仍是「回主窗」的窗口行为，两者分开
+        if (!bridgeActiveRef.current) {
+          resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'double' });
+        }
+      }}
       onPointerUp={() => {
         pointerDownRef.current = false;
         if (bridgeActiveRef.current) {

@@ -9,6 +9,8 @@
  * 纯逻辑（窗口/光标均经最小结构接口注入），不直接依赖 Electron，可纯单测。
  */
 
+import type { PetVelocity } from './pet-throw-physics';
+
 export interface PetPoint {
   x: number;
   y: number;
@@ -28,14 +30,25 @@ export interface PetDragWindow {
 
 export interface PetDragHooks {
   getCursor: () => PetPoint;
-  /** 真拖动结束时回调（manager 用于持久化窗口位置） */
-  onDragEnd?: (win: PetDragWindow) => void;
+  /** 注入时钟（测试用；默认 Date.now） */
+  now?: () => number;
+  /**
+   * 真拖动结束时回调，带释放速度（DIP/s）：manager 据此交给抛掷控制器做惯性滑行。
+   * 松手前已停住时速度为 0。
+   */
+  onDragEnd?: (win: PetDragWindow, velocity: PetVelocity) => void;
   /** 拖拽开始时回调（manager 用于强制可交互，防轮询把穿透翻回来） */
   onDragStart?: () => void;
 }
 
 /** 点击/抖动与真拖动的判定阈值（DIP）——两端统一值，避免 CSS/DIP 缩放下判定错位 */
 export const DRAG_THRESHOLD_PX = 6;
+/** 速度采样窗口（ms）：只用释放前这段时间的位移算释放速度 */
+export const VELOCITY_WINDOW_MS = 100;
+/** 采样陈旧阈值（ms）：最后一个采样早于此值视为「松手前已停住」→ 速度 0 */
+export const VELOCITY_STALE_MS = 80;
+/** 采样点数上限 */
+const VELOCITY_MAX_SAMPLES = 32;
 
 export class PetDragController {
   /** 按下点与窗口原点的偏移（DIP） */
@@ -44,6 +57,8 @@ export class PetDragController {
   private start: PetPoint | null = null;
   /** 按下时的窗口尺寸——拖拽全程用它复位，抵消移动过程中的尺寸漂移 */
   private size: { width: number; height: number } | null = null;
+  /** 光标速度采样（滚动窗口，仅保留最近 VELOCITY_WINDOW_MS） */
+  private samples: { x: number; y: number; t: number }[] = [];
 
   constructor(private readonly hooks: PetDragHooks) {}
 
@@ -59,6 +74,7 @@ export class PetDragController {
     this.offset = { x: cursor.x - bounds.x, y: cursor.y - bounds.y };
     this.start = { x: cursor.x, y: cursor.y };
     this.size = { width: bounds.width, height: bounds.height };
+    this.samples = [{ x: cursor.x, y: cursor.y, t: this.now() }];
     this.hooks.onDragStart?.();
   }
 
@@ -66,6 +82,7 @@ export class PetDragController {
   dragTo(win: PetDragWindow | null): void {
     if (!win || win.isDestroyed() || !this.offset || !this.start) return;
     const cursor = this.hooks.getCursor();
+    this.pushSample(cursor);
     if (
       Math.abs(cursor.x - this.start.x) < DRAG_THRESHOLD_PX &&
       Math.abs(cursor.y - this.start.y) < DRAG_THRESHOLD_PX
@@ -81,8 +98,9 @@ export class PetDragController {
     }
   }
 
-  /** 拖拽结束：位移达阈值才视为真拖动并回调持久化；复位手势状态 */
+  /** 拖拽结束：位移达阈值才视为真拖动并回调（带释放速度）；复位手势状态 */
   end(win: PetDragWindow | null): void {
+    const velocity = this.takeVelocity();
     const wasDrag =
       this.offset !== null &&
       this.start !== null &&
@@ -90,11 +108,43 @@ export class PetDragController {
     this.offset = null;
     this.start = null;
     this.size = null;
-    if (win && !win.isDestroyed() && wasDrag) this.hooks.onDragEnd?.(win);
+    if (win && !win.isDestroyed() && wasDrag) this.hooks.onDragEnd?.(win, velocity);
   }
 
   private manhattanFromStart(cursor: PetPoint): number {
     if (!this.start) return 0;
     return Math.abs(cursor.x - this.start.x) + Math.abs(cursor.y - this.start.y);
+  }
+
+  private now(): number {
+    return this.hooks.now?.() ?? Date.now();
+  }
+
+  /** 记录一次采样并裁剪到速度窗口内 */
+  private pushSample(cursor: PetPoint): void {
+    const t = this.now();
+    this.samples.push({ x: cursor.x, y: cursor.y, t });
+    const cutoff = t - VELOCITY_WINDOW_MS;
+    while (
+      this.samples.length > 0 &&
+      (this.samples[0]!.t < cutoff || this.samples.length > VELOCITY_MAX_SAMPLES)
+    ) {
+      this.samples.shift();
+    }
+  }
+
+  /** 释放速度（DIP/s）：取样窗口内首末位移 / 时长；采样陈旧或不足则 0 */
+  private takeVelocity(): PetVelocity {
+    const samples = this.samples;
+    this.samples = [];
+    const last = samples[samples.length - 1];
+    if (!last) return { x: 0, y: 0 };
+    // 松手前已停住（最后一个采样已过期）→ 不算抛掷
+    if (this.now() - last.t > VELOCITY_STALE_MS) return { x: 0, y: 0 };
+    const cutoff = last.t - VELOCITY_WINDOW_MS;
+    const first = samples.find((sample) => sample.t >= cutoff) ?? samples[0]!;
+    const dt = last.t - first.t;
+    if (dt <= 0) return { x: 0, y: 0 };
+    return { x: ((last.x - first.x) / dt) * 1000, y: ((last.y - first.y) / dt) * 1000 };
   }
 }
