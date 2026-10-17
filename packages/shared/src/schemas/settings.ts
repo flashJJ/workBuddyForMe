@@ -43,6 +43,10 @@ export const settingsUpdateSchema = z.object({
   relationshipEnabled: z.boolean().optional(),
   // v1.6 M5 互动本地短句（摸头/久别迎接；缺省视为 true，关闭只留无声音的表情动作）
   interactionLinesEnabled: z.boolean().optional(),
+  // v2.2 勿扰时段（缺省开启 23:00–06:00；关闭后任何时段都可交互）
+  doNotDisturbEnabled: z.boolean().optional(),
+  doNotDisturbStartHour: z.number().int().min(0).max(23).optional(),
+  doNotDisturbEndHour: z.number().int().min(0).max(23).optional(),
   // v1.7 剧情事件总开关（缺省视为 true；出口/勿扰/对话锁仍由导演层兜底）
   eventsEnabled: z.boolean().optional(),
   // v1.7 主动频率档（冷却系数 1.5/1/0.6；缺省 standard）

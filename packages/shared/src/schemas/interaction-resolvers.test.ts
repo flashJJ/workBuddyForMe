@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_DO_NOT_DISTURB,
+  isDoNotDisturbHour,
   RELATIONSHIP_LEVEL_NAMES,
   relationshipLevelName,
   resolveInteraction,
@@ -13,6 +15,7 @@ function baseContext(overrides: Partial<ResolverContext> = {}): ResolverContext 
     capabilities: { hasTapClip: true, hasSpringBone: false },
     relationshipLevel: 'partner',
     emotionEnabled: true,
+    doNotDisturb: DEFAULT_DO_NOT_DISTURB,
     ...overrides,
   };
 }
@@ -65,5 +68,46 @@ describe('touchTriggerKey 与按手势冷却（v2.2 手势补齐）', () => {
   it('关系门槛：陌生人长按头部被拒（head::longpress 需 acquaintance）', () => {
     const ctx = baseContext({ relationshipLevel: 'stranger' });
     expect(resolveInteraction({ kind: 'touch', region: 'head', gesture: 'longpress' }, ctx)).toBeNull();
+  });
+});
+
+describe('勿扰时段可配置（v2.2：替换硬编码 23:00–06:00）', () => {
+  it('缺省 23:00–06:00 为跨零点窗口（含起、不含止）', () => {
+    expect(DEFAULT_DO_NOT_DISTURB).toEqual({ enabled: true, startHour: 23, endHour: 6 });
+    expect(isDoNotDisturbHour(23, DEFAULT_DO_NOT_DISTURB)).toBe(true);
+    expect(isDoNotDisturbHour(0, DEFAULT_DO_NOT_DISTURB)).toBe(true);
+    expect(isDoNotDisturbHour(5, DEFAULT_DO_NOT_DISTURB)).toBe(true);
+    expect(isDoNotDisturbHour(6, DEFAULT_DO_NOT_DISTURB)).toBe(false);
+    expect(isDoNotDisturbHour(12, DEFAULT_DO_NOT_DISTURB)).toBe(false);
+    expect(isDoNotDisturbHour(22, DEFAULT_DO_NOT_DISTURB)).toBe(false);
+  });
+
+  it('关闭开关后任何小时都不拦截', () => {
+    const off = { ...DEFAULT_DO_NOT_DISTURB, enabled: false };
+    expect(isDoNotDisturbHour(2, off)).toBe(false);
+    expect(isDoNotDisturbHour(23, off)).toBe(false);
+  });
+
+  it('非跨零点窗口按半开区间判定；起止相同视为空窗口', () => {
+    expect(isDoNotDisturbHour(13, { enabled: true, startHour: 13, endHour: 13 })).toBe(false);
+    const noonBreak = { enabled: true, startHour: 12, endHour: 14 };
+    expect(isDoNotDisturbHour(12, noonBreak)).toBe(true);
+    expect(isDoNotDisturbHour(13, noonBreak)).toBe(true);
+    expect(isDoNotDisturbHour(14, noonBreak)).toBe(false);
+  });
+
+  it('resolveInteraction：勿扰时段拦 touch，非勿扰时段放行', () => {
+    const dndCtx = baseContext({ hour: 2 });
+    expect(resolveInteraction({ kind: 'touch', region: 'head', gesture: 'tap' }, dndCtx)).toBeNull();
+    const dayCtx = baseContext({ hour: 12 });
+    expect(resolveInteraction({ kind: 'touch', region: 'head', gesture: 'tap' }, dayCtx)).not.toBeNull();
+  });
+
+  it('resolveInteraction：关闭勿扰后凌晨也能交互', () => {
+    const ctx = baseContext({
+      hour: 2,
+      doNotDisturb: { ...DEFAULT_DO_NOT_DISTURB, enabled: false },
+    });
+    expect(resolveInteraction({ kind: 'touch', region: 'head', gesture: 'tap' }, ctx)).not.toBeNull();
   });
 });

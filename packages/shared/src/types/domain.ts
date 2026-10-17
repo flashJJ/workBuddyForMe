@@ -240,6 +240,12 @@ export interface AppSettings extends EventSettingsFields {
    * 关闭后摸头/久别迎接不再说话（零文案气泡）；摸头表情与弹性等无音效动作反馈保留。
    */
   interactionLinesEnabled?: boolean;
+  /** v2.2：勿扰时段开关（缺省视为 true，即 23:00–06:00 内不响应桌宠交互） */
+  doNotDisturbEnabled?: boolean;
+  /** v2.2：勿扰起始小时 0–23（含），缺省 23 */
+  doNotDisturbStartHour?: number;
+  /** v2.2：勿扰结束小时 0–23（不含），缺省 6 */
+  doNotDisturbEndHour?: number;
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;

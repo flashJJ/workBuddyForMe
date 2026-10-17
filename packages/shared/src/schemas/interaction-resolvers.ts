@@ -52,10 +52,38 @@ export interface ResolverContext {
   relationshipLevel: RelationshipLevel;
   /** 情绪系统开关 */
   emotionEnabled: boolean;
+  /** v2.2：勿扰时段配置（缺省 DEFAULT_DO_NOT_DISTURB：23:00–06:00 开启） */
+  doNotDisturb: DoNotDisturbConfig;
 }
 
-/** 勿扰时段：23:00-06:00 */
-const DO_NOT_DISTURB_HOURS = new Set([0, 1, 2, 3, 4, 5, 23]);
+/**
+ * 勿扰配置（v2.2 起改为可配置；缺省 23:00–06:00 开启）。
+ * enabled=false 时不拦截任何交互；startHour===endHour 视为无勿扰窗口（恒放行）。
+ */
+export interface DoNotDisturbConfig {
+  enabled: boolean;
+  /** 起始小时（含），0–23 */
+  startHour: number;
+  /** 结束小时（不含），0–23 */
+  endHour: number;
+}
+
+/** 勿扰缺省：开启，23:00–06:00（等价 v2.2 之前的硬编码口径） */
+export const DEFAULT_DO_NOT_DISTURB: DoNotDisturbConfig = {
+  enabled: true,
+  startHour: 23,
+  endHour: 6,
+};
+
+/** 纯函数：当前小时是否落在勿扰窗口内（支持跨零点；空窗口恒 false） */
+export function isDoNotDisturbHour(hour: number, config: DoNotDisturbConfig): boolean {
+  if (!config.enabled) return false;
+  if (config.startHour === config.endHour) return false;
+  if (config.startHour < config.endHour) {
+    return hour >= config.startHour && hour < config.endHour;
+  }
+  return hour >= config.startHour || hour < config.endHour;
+}
 
 /** 冷却 per region（ms） */
 const DEFAULT_COOLDOWN = {
@@ -154,7 +182,7 @@ export function resolveInteraction(
   ctx: ResolverContext,
 ): ActionChain | null {
   // 勿扰时段——只有 system.voice-end 放行
-  if (DO_NOT_DISTURB_HOURS.has(ctx.hour)) {
+  if (isDoNotDisturbHour(ctx.hour, ctx.doNotDisturb)) {
     if (!(event.kind === 'system' && event.signal === 'voice-end')) {
       return null;
     }

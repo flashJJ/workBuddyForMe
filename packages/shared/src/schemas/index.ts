@@ -301,6 +301,9 @@ export {
   relationshipLevelName,
   RELATIONSHIP_LEVEL_NAMES,
   touchTriggerKey,
+  isDoNotDisturbHour,
+  DEFAULT_DO_NOT_DISTURB,
+  type DoNotDisturbConfig,
 } from './interaction-resolvers';
 export * from './interaction-hitbox';
 // v2.0 M5 .wbfm-pack mod 包契约
