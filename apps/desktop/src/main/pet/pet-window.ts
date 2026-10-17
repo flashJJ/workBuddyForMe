@@ -8,7 +8,7 @@
  * 本文件只负责「造窗 + 定位 + 加载 /pet」；穿透滞回接线、右键菜单、
  * 语音表现转发与生命周期由 pet-manager.ts 承担。
  */
-import { BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { normalizeAvatarModelId } from '@wbfm/shared/pet';
 import { DEV_SERVER_URL, resolvePreloadPath } from '../config';
@@ -126,10 +126,27 @@ export function createPetWindow(
     screen.getPrimaryDisplay()?.workArea ?? null,
   );
   const win = new BrowserWindow(buildPetWindowOptions(position.x, position.y, boot));
+  // ⚠️ 必须在 loadURL **之前**绑 renderer 控制台转发，否则 VrmCanvas 早期日志丢失
+  win.webContents.on('console-message', (_e, level, msg) => {
+    const prefix = ['VERBOSE', 'INFO', 'WARN', 'ERROR'][level] ?? 'LOG';
+    process.stdout.write(`[pet-renderer:${prefix}] ${msg}\n`);
+  });
+  // 也捕获 window.onerror 和 unhandledrejection
+  win.webContents.on('render-process-gone', (_e, details) => {
+    process.stdout.write(`[pet-renderer:CRASH] reason=${details.reason} exitCode=${details.exitCode}\n`);
+  });
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    process.stdout.write(`[pet-renderer:FAIL] url=${url} code=${code} desc=${desc}\n`);
+  });
+  process.stdout.write(`[pet-window] created id=${win.id} modelId=${modelId}\n`);
   // 'screen-saver' 层级：高于普通置顶窗，且不触发全屏独占应用的焦点切换
   win.setAlwaysOnTop(true, 'screen-saver');
   win.once('ready-to-show', () => {
-    if (!win.isDestroyed()) win.showInactive();
+    if (!win.isDestroyed()) {
+      win.showInactive();
+    }
+    // dev 下自动开 devtools，便于看 VRM 渲染日志
+    if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' });
   });
   void win.loadURL(buildPetUrl(baseUrl, modelId));
   return win;

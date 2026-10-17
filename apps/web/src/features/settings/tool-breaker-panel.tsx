@@ -39,7 +39,7 @@ export function ToolBreakerPanel() {
   };
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-3 rounded-lg border bg-card p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">{t('settingsMcp.breaker.title')}</h2>

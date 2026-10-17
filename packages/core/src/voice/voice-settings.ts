@@ -3,10 +3,16 @@ import {
   DEFAULT_VOICE_SETTINGS,
   SUPPORTED_AVATAR_MODEL_IDS,
   VOICE_TTS_MODELS,
+  isMotionId,
   isVrmAvatarId,
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared/schemas';
+import {
+  BUILTIN_IDLE_MOTION_ID,
+  MOTION_ROTATION_SECONDS_MAX,
+  MOTION_ROTATION_SECONDS_MIN,
+} from '@wbfm/shared/constants';
 import type { SettingsRepository } from '@wbfm/database';
 
 const VOICE_SETTINGS_KEY = 'voice';
@@ -26,6 +32,25 @@ export function readVoiceSettings(settings: SettingsRepository): VoiceSettings {
   }
   // v1.1：旧库无 ttsModel 字段时默认 Kokoro（与历史默认一致）
   if (!merged.ttsModel || !VOICE_TTS_MODELS.includes(merged.ttsModel)) merged.ttsModel = 'kokoro';
+  // v2.0：待机动作 id 仅允许 motion:<fileRef> 或内置默认（null/builtin:daiji）；未知 id 回落 null
+  if (
+    merged.idleMotionId &&
+    !isMotionId(merged.idleMotionId) &&
+    merged.idleMotionId !== BUILTIN_IDLE_MOTION_ID
+  ) {
+    merged.idleMotionId = null;
+  }
+  // v2.1：轮播开关缺省开启；间隔越界/非整数回落默认
+  if (typeof merged.motionRotationEnabled !== 'boolean') {
+    merged.motionRotationEnabled = DEFAULT_VOICE_SETTINGS.motionRotationEnabled;
+  }
+  if (
+    !Number.isInteger(merged.motionRotationSeconds) ||
+    merged.motionRotationSeconds < MOTION_ROTATION_SECONDS_MIN ||
+    merged.motionRotationSeconds > MOTION_ROTATION_SECONDS_MAX
+  ) {
+    merged.motionRotationSeconds = DEFAULT_VOICE_SETTINGS.motionRotationSeconds;
+  }
   return merged;
 }
 

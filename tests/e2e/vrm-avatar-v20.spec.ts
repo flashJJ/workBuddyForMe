@@ -167,7 +167,11 @@ test.describe.serial('v2.0 M4 VRM 形象导入', () => {
     }
 
     await gotoSettings(page);
-    // 形象选择器位于 voice 设置区
+    // 默认 avatarEnabled=false，形象选择器被条件渲染挡掉——先勾选开启
+    const avatarEnabled = page.getByTestId('avatar-enabled');
+    if (!(await avatarEnabled.isChecked())) {
+      await avatarEnabled.check();
+    }
     const modelSelect = page.getByTestId('avatar-model');
     await expect(modelSelect).toBeVisible();
     // VRM optgroup 出现（option 在 select 收起时视为 hidden，只断言存在性）

@@ -6,8 +6,8 @@ describe('v029 迁移：relationship_milestones 共同里程碑表', () => {
   it('全新空库：user_version=29，新表与唯一索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(31);
-    expect(LATEST_SCHEMA_VERSION).toBe(31);
+    expect(getSchemaVersion(db)).toBe(32);
+    expect(LATEST_SCHEMA_VERSION).toBe(32);
     const tables = db
       .prepare(
         `SELECT name FROM sqlite_master WHERE type='table' AND name='relationship_milestones'`,
@@ -66,7 +66,7 @@ describe('v029 迁移：relationship_milestones 共同里程碑表', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(() => applyMigrations(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(31);
+    expect(getSchemaVersion(db)).toBe(32);
     db.close();
   });
 });

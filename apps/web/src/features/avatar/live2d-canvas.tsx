@@ -20,6 +20,8 @@ export interface Live2dCanvasProps {
   onHeadTouch?: () => void;
   /** v1.6：控制器实例回传（摸头弹性/闪现表情需要直接驱动模型） */
   controllerRef?: React.MutableRefObject<Live2dController | null>;
+  /** 是否需要接收鼠标事件（默认 false → 穿透不挡点击；桌宠交互场景显式传 true） */
+  interactive?: boolean;
 }
 
 /** 动态 chunk 加载占位（独立组件以便 useI18n） */

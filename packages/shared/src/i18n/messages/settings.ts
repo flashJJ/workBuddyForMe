@@ -2,6 +2,13 @@
 export const zhSettings = {
   title: '设置',
   description: '管理模型供应商、默认模型与本地偏好，所有数据仅保存在本机。',
+  // v2.0 设置页分组锚点（右侧导航 / 滚动定位）
+  sections: {
+    appearance: '形象外观',
+    dialog: '对话互动',
+    tools: '工具与权限',
+    data: '数据与备份',
+  },
   addProvider: '新增供应商',
   loadError: '供应商加载失败',
   saving: '保存中…',
@@ -120,6 +127,13 @@ export const enSettings = {
   title: 'Settings',
   description:
     'Manage model providers, default models and local preferences. All data stays on this device.',
+  // v2.0 section anchors (right-side nav / scroll-to)
+  sections: {
+    appearance: 'Avatar & appearance',
+    dialog: 'Conversation',
+    tools: 'Tools & permissions',
+    data: 'Data & backup',
+  },
   addProvider: 'Add provider',
   loadError: 'Failed to load providers',
   saving: 'Saving…',

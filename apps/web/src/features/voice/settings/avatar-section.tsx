@@ -126,13 +126,16 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
       if (!petBridge) return;
       if (next) {
         void onPatch({ petEnabled: true });
-        void petBridge.open(model.id);
+        // 注意：传原始 modelId（settings.avatarModelId），**不**走 getAvatarModel 查表——
+        // v2.0 VRM 模型 id 是 `vrm:{fileRef}` 动态值，不在硬编码 AVATAR_MODELS 白名单里，
+        // 查表会回落 haru。主进程 PetManager.open() 需要的就是原始 avatarModelId。
+        void petBridge.open(modelId || undefined);
       } else {
         void onPatch({ petEnabled: false });
         void petBridge.close();
       }
     },
-    [petBridge, onPatch, model.id],
+    [petBridge, onPatch, modelId],
   );
 
   return (

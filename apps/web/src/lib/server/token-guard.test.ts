@@ -36,6 +36,16 @@ describe('token-guard（TR-30.1）', () => {
       expect(() => assertToken(makeRequest({ 'x-wbfm-token': 'secret' }))).toThrowError(/未配置访问令牌/);
       process.env.WBFM_TOKEN = 'secret';
       expect(() => assertToken(makeRequest({ 'x-wbfm-token': 'secret' }))).not.toThrow();
+      // v2.0.1 hotfix：支持 URL query ?token= 给 three.js GLTFLoader 等原生 fetch 用
+      const withQuery = new Request('http://localhost:3000/api/vrm-avatars/x/file?token=secret');
+      expect(() => assertToken(withQuery)).not.toThrow();
+      const wrongQuery = new Request('http://localhost:3000/api/vrm-avatars/x/file?token=wrong');
+      expect(() => assertToken(wrongQuery)).toThrowError(/访问令牌/);
+      // header 优先于 query
+      const both = new Request('http://localhost:3000/api/x?token=wrong', {
+        headers: { 'x-wbfm-token': 'secret' },
+      });
+      expect(() => assertToken(both)).not.toThrow();
     } finally {
       delete process.env.WBFM_SERVER_MANAGED;
       delete process.env.WBFM_TOKEN;

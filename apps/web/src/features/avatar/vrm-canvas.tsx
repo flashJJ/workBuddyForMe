@@ -4,183 +4,248 @@ import * as React from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-import type { VRM } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin } from '@pixiv/three-vrm-animation';
 import { parseVrmAvatarId } from '@wbfm/shared/schemas';
+import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import type { ExpressionTag } from './expression-parser';
+import { loadMotionPool, loadRotationConfig } from './vrm-motion-loader';
+import { fitVrmToCamera, type VrmFitResult } from './vrm-fit';
+import { VrmController, type VrmControllerLike } from './vrm-controller';
 
-export type { VRM };
-
-/** 8 表情 → VRM 预设映射（用户决策：disgust→angry / fear→sad / smirk→surprised） */
-const VRM_EXPRESSION_MAP: Record<string, string> = {
-  joy: 'happy',
-  sadness: 'sad',
-  anger: 'angry',
-  neutral: 'relaxed',
-  surprise: 'surprised',
-  disgust: 'angry',
-  fear: 'sad',
-  smirk: 'surprised',
-};
+export type { VrmControllerLike };
+export type { VRM } from '@pixiv/three-vrm';
 
 export interface VrmCanvasProps {
   modelId: string;
   speaking?: boolean;
-  /** TTS 播放电平读取器（与 Live2dCanvas 同口径） */
   getLevel?: () => number;
-  expression?: string | null;
-  /** Live2D 专用：controllerRef / onHeadTouch / motionGroup，VRM 忽略 */
-  controllerRef?: React.MutableRefObject<unknown | null>;
-  onHeadTouch?: () => void;
-  motionAction?: string | null;
-  motionGroup?: string;
+  expression?: ExpressionTag | null;
+  /** Live2D 已有：传入 TouchControllerLike 实例，PetStage 的 useHeadTouch 会调用它 */
+  controllerRef?: React.MutableRefObject<VrmControllerLike | null>;
+  /** 是否需要接收鼠标事件（默认 false → 穿透不挡点击；桌宠交互场景显式传 true） */
+  interactive?: boolean;
   className?: string;
   style?: React.CSSProperties;
   'data-testid'?: string;
 }
 
-interface VrmRuntime {
-  scene: THREE.Scene;
+/** dev 调试钩子（window.__vrmDebug）暴露的形状 */
+interface VrmDebugProbe {
+  three: typeof THREE;
+  vrm: import('@pixiv/three-vrm').VRM;
   camera: THREE.PerspectiveCamera;
-  renderer: THREE.WebGLRenderer;
-  vrm: VRM;
-  clock: THREE.Clock;
-  breathePhase: number;
-  targetRotation: { x: number; y: number };
-  currentRotation: { x: number; y: number };
+  controller: VrmController;
+  pool: THREE.AnimationClip[];
+  fit: VrmFitResult | null;
+  state: () => Record<string, unknown>;
 }
 
-/**
- * VRM 形象渲染组件（three.js）
- * 与 Live2dCanvas 同口径 props，外部无感知。
- */
 export function VrmCanvas({
   modelId,
   speaking = false,
   getLevel,
   expression = null,
+  controllerRef,
+  interactive = false,
   className,
   style,
   'data-testid': testId,
 }: VrmCanvasProps) {
   const { t } = useI18n();
   const hostRef = React.useRef<HTMLDivElement | null>(null);
-  const runtimeRef = React.useRef<VrmRuntime | null>(null);
+  const controllerRefInternal = React.useRef<VrmController | null>(null);
   const speakingRef = React.useRef(speaking);
   const getLevelRef = React.useRef(getLevel);
   const expressionRef = React.useRef(expression);
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    speakingRef.current = speaking;
-  }, [speaking]);
-  React.useEffect(() => {
-    getLevelRef.current = getLevel;
-  }, [getLevel]);
-  React.useEffect(() => {
-    expressionRef.current = expression;
-  }, [expression]);
+  React.useEffect(() => { speakingRef.current = speaking; }, [speaking]);
+  React.useEffect(() => { getLevelRef.current = getLevel; }, [getLevel]);
+  React.useEffect(() => { expressionRef.current = expression; }, [expression]);
 
   const fileRef = parseVrmAvatarId(modelId);
   React.useEffect(() => {
     if (!fileRef || !hostRef.current) return;
-
     let disposed = false;
     const host = hostRef.current;
 
-    const runtime = initVrm(host);
-    runtimeRef.current = runtime;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+    camera.position.set(0, 1.2, 2.5);
+    camera.lookAt(0, 1, 0);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    host.appendChild(renderer.domElement);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.5);
+    dir.position.set(1, 2, 2);
+    scene.add(dir);
+
+    // 提升到顶层——让 useEffect cleanup 能访问
+    let controller: VrmController | null = null;
+    let vrm: import('@pixiv/three-vrm').VRM | null = null;
+    let debug: VrmDebugProbe | null = null;
+    let raf = 0;
+    let observer: ResizeObserver | null = null;
+    let onPointerMove: ((e: PointerEvent) => void) | null = null;
+
+    const token = getManagedToken();
+    const vrmUrl = token
+      ? `/api/vrm-avatars/${fileRef}/file?token=${encodeURIComponent(token)}`
+      : `/api/vrm-avatars/${fileRef}/file`;
 
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));
-    loader.load(
-      `/api/vrm-avatars/${fileRef}/file`,
-      (gltf) => {
+    loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
+
+    void (async () => {
+      try {
+        const gltf = await loader.loadAsync(vrmUrl);
         if (disposed) return;
-        const vrm = gltf.userData.vrm as VRM | undefined;
-        if (!vrm) {
-          setError('VRM 解析失败');
-          return;
-        }
+        vrm = (gltf.userData.vrm as import('@pixiv/three-vrm').VRM | undefined) ?? null;
+        if (!vrm) { setError('VRM 解析失败'); return; }
+
         VRMUtils.removeUnnecessaryVertices(gltf.scene);
         VRMUtils.combineSkeletons(gltf.scene);
-        vrm.scene.traverse((o) => {
-          o.frustumCulled = false;
-        });
-        runtime.scene.add(vrm.scene);
-        runtime.vrm = vrm;
-        fitVrmToCamera(vrm, runtime.camera);
-        setReady(true);
-      },
-      undefined,
-      (err) => {
-        if (!disposed) setError(err instanceof Error ? err.message : String(err));
-      },
-    );
+        VRMUtils.removeUnnecessaryJoints(gltf.scene);
+        VRMUtils.rotateVRM0(vrm);
 
-    const onPointerMove = (e: PointerEvent) => {
-      const r = host.getBoundingClientRect();
-      runtime.targetRotation.x = ((e.clientY - r.top) / r.height - 0.5) * -0.5;
-      runtime.targetRotation.y = ((e.clientX - r.left) / r.width - 0.5) * 0.8;
-    };
-    host.addEventListener('pointermove', onPointerMove);
+        vrm.scene.traverse((o) => { o.frustumCulled = false; });
+        scene.add(vrm.scene);
 
-    let raf = 0;
-    const animate = () => {
-      if (disposed) return;
-      raf = requestAnimationFrame(animate);
-      const dt = runtime.clock.getDelta();
-      const tNow = runtime.clock.elapsedTime;
-      runtime.currentRotation.x += (runtime.targetRotation.x - runtime.currentRotation.x) * 0.12;
-      runtime.currentRotation.y += (runtime.targetRotation.y - runtime.currentRotation.y) * 0.12;
-      if (runtime.vrm) {
-        runtime.vrm.scene.rotation.x = runtime.currentRotation.x;
-        runtime.vrm.scene.rotation.y = runtime.currentRotation.y;
-        runtime.vrm.update(dt);
-        // 口型
-        const em = runtime.vrm.expressionManager;
-        if (em) {
-          const level = getLevelRef.current?.() ?? 0;
-          const target = speakingRef.current ? Math.min(1, level * 3.2) : 0;
-          em.setValue('aa', target);
-          // 表情
-          const expr = expressionRef.current;
-          const preset = expr ? VRM_EXPRESSION_MAP[expr] ?? 'relaxed' : 'relaxed';
-          for (const name of ['happy', 'sad', 'angry', 'relaxed', 'surprised']) {
-            em.setValue(name, name === preset ? 1 : 0);
-          }
+        // 模型自身不含 AnimationClip（静止姿态就是 T-pose），
+        // 加载动作池（内置 daiji + 全部已导入 VRMA）与轮播配置
+        const [pool, rotation] = await Promise.all([
+          loadMotionPool(loader, vrm),
+          loadRotationConfig(),
+        ]);
+        if (disposed) return;
+
+        controller = new VrmController(vrm, gltf.animations, renderer, scene, camera, pool, rotation);
+        controllerRefInternal.current = controller;
+        if (controllerRef) controllerRef.current = controller;
+
+        // 调试钩子（仅 dev）：MCP/CDP 读取实时缩放/位置/相机/当前待机动作/取景自检结果
+        if (process.env.NODE_ENV !== 'production') {
+          debug = {
+            three: THREE,
+            vrm,
+            camera,
+            controller,
+            pool,
+            fit: null,
+            state: () => ({
+              scale: vrm!.scene.scale.toArray(),
+              pos: vrm!.scene.position.toArray(),
+              cam: camera.position.toArray(),
+              host: [host.offsetWidth, host.offsetHeight],
+              phase: (controller as any)?.interaction?.currentPhase ?? null,
+              idle: (controller as any)?.mixer?.idleClipName ?? null,
+              poolSize: (controller as any)?.mixer?.poolSize ?? 0,
+              gesture: Boolean((controller as any)?.mixer?.hasGesture),
+            }),
+          };
+          (window as unknown as Record<string, unknown>).__vrmDebug = debug;
         }
-        // 呼吸浮动（替代摸头弹性）
-        runtime.breathePhase += dt;
-        const breathe = Math.sin(runtime.breathePhase * 1.2) * 0.02;
-        runtime.vrm.scene.position.y = breathe;
+
+        onPointerMove = (e: PointerEvent) => {
+          if (!controller) return;
+          const r = host.getBoundingClientRect();
+          const nx = (e.clientX - r.left) / r.width * 2 - 1;
+          const ny = (e.clientY - r.top) / r.height * 2 - 1;
+          controller.setGaze(nx, ny);
+        };
+        host.addEventListener('pointermove', onPointerMove);
+
+        const animate = () => {
+          if (disposed || !controller) return;
+          raf = requestAnimationFrame(animate);
+          if (expressionRef.current) controller.setExpression(expressionRef.current);
+          controller.update(speakingRef.current, () => getLevelRef.current?.() ?? 0);
+        };
+        animate();
+
+        let fitted = false;
+        let lastW = 0, lastH = 0;
+        // 上一次 fit 时的容器尺寸——容器尺寸变了必须重算 scale
+        let fitW = 0, fitH = 0;
+        // 整个动作池的包围盒并集（primeForFit 采样一次，后续重 fit 复用）
+        let fitBounds: { min: THREE.Vector3; max: THREE.Vector3 } | null = null;
+        const resize = () => {
+          requestAnimationFrame(() => {
+            if (disposed) return;
+            const w = host.offsetWidth || host.clientWidth;
+            const h = host.offsetHeight || host.clientHeight;
+            if (!w || !h) return;
+            if (w === lastW && h === lastH) return;
+            lastW = w; lastH = h;
+            renderer.setSize(w, h, false);
+            renderer.domElement.style.width = w + 'px';
+            renderer.domElement.style.height = h + 'px';
+            renderer.domElement.style.display = 'block';
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            // 只 fit 一次会漏两件事：① 布局未稳定时量到错误容器尺寸；
+            // ② 只按单帧包围盒取景，待机动画的大幅摆臂会被裁。
+            // 因此：首次 primeForFit 采样「整个动作池」的包围盒并集，之后容器尺寸变了就重 fit。
+            let animBounds = fitBounds;
+            const sizeChanged = Math.abs(w - fitW) > 2 || Math.abs(h - fitH) > 2;
+            if (controller && vrm && (!fitted || sizeChanged)) {
+              if (!fitted) {
+                animBounds = controller.primeForFit();
+                fitBounds = animBounds;
+              }
+              fitted = true;
+              fitW = w; fitH = h;
+              const fitResult = fitVrmToCamera(vrm, camera, host, animBounds);
+              if (debug) debug.fit = fitResult;
+              controller.captureBaseScale();
+            }
+          });
+        };
+        observer = new ResizeObserver(resize);
+        observer.observe(host);
+        resize();
+
+        setReady(true);
+      } catch (err) {
+        if (!disposed) setError(err instanceof Error ? err.message : String(err));
       }
-      runtime.renderer.render(runtime.scene, runtime.camera);
-    };
-    animate();
+    })();
 
-    const resize = () => {
-      const w = host.clientWidth;
-      const h = host.clientHeight;
-      if (w > 0 && h > 0) resizeVrm(runtime, w, h);
-    };
-    const observer = new ResizeObserver(resize);
-    observer.observe(host);
-    resize();
-
+    // 顶层 cleanup——React StrictMode 触发时必调，彻底释放所有资源
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
-      observer.disconnect();
-      host.removeEventListener('pointermove', onPointerMove);
-      disposeVrm(runtime);
-      runtimeRef.current = null;
+      if (observer) observer.disconnect();
+      if (onPointerMove) host.removeEventListener('pointermove', onPointerMove);
+      if (controller) {
+        controller.dispose();
+        if (controllerRef && controllerRef.current === controller) controllerRef.current = null;
+      }
+      if (vrm) VRMUtils.deepDispose(vrm.scene);
+      if (debug && (window as unknown as Record<string, unknown>).__vrmDebug === debug) {
+        delete (window as unknown as Record<string, unknown>).__vrmDebug;
+      }
+      controllerRefInternal.current = null;
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer.domElement.remove(); // 关键！从 DOM 移除 canvas，StrictMode 第二次 setup 才不会叠加
     };
   }, [fileRef]);
 
+  const pointerClass = interactive ? '' : 'pointer-events-none';
   return (
-    <div className="relative h-full w-full">
-      <div ref={hostRef} className={className} style={style} data-testid={testId} />
+    <div className={`relative h-full w-full ${pointerClass}`}>
+      <div
+        ref={hostRef}
+        className={className ? `h-full w-full ${className}` : 'h-full w-full'}
+        style={style}
+        data-testid={testId}
+      />
       {!ready && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5 text-xs text-muted-foreground">
           {t('avatar.stage.loading')}
@@ -193,59 +258,4 @@ export function VrmCanvas({
       )}
     </div>
   );
-}
-
-function initVrm(container: HTMLElement): VrmRuntime {
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-  camera.position.set(0, 1.3, 2.2);
-  camera.lookAt(0, 1, 0);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setClearColor(0x000000, 0);
-  container.appendChild(renderer.domElement);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.5);
-  dir.position.set(1, 2, 2);
-  scene.add(dir);
-  const grid = new THREE.GridHelper(10, 10, 0x888888, 0x444444);
-  grid.visible = false;
-  scene.add(grid);
-  return {
-    scene,
-    camera,
-    renderer,
-    vrm: null as unknown as VRM,
-    clock: new THREE.Clock(),
-    breathePhase: 0,
-    targetRotation: { x: 0, y: 0 },
-    currentRotation: { x: 0, y: 0 },
-  };
-}
-
-function fitVrmToCamera(vrm: VRM, camera: THREE.PerspectiveCamera) {
-  const box = new THREE.Box3().setFromObject(vrm.scene);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.y, size.z);
-  const fov = (camera.fov * Math.PI) / 180;
-  const distance = (maxDim / 2 / Math.tan(fov / 2)) * 1.8;
-  camera.position.set(center.x, center.y, center.z + distance);
-  camera.lookAt(center);
-  camera.updateProjectionMatrix();
-}
-
-function resizeVrm(runtime: VrmRuntime, w: number, h: number) {
-  runtime.renderer.setSize(w, h);
-  runtime.camera.aspect = w / h;
-  runtime.camera.updateProjectionMatrix();
-}
-
-function disposeVrm(runtime: VrmRuntime) {
-  if (runtime.vrm) {
-    VRMUtils.deepDispose(runtime.vrm.scene);
-  }
-  runtime.renderer.dispose();
-  runtime.renderer.forceContextLoss();
-  runtime.renderer.domElement.remove();
 }

@@ -23,6 +23,8 @@ export const DATA_SUBDIRS = {
   stageBackgrounds: 'stage-backgrounds',
   /** v2.0 M4 用户导入 VRM 形象文件 */
   vrmAvatars: 'vrm-avatars',
+  /** v2.0 用户导入的待机动作（VRMA）文件 */
+  motions: 'motions',
 } as const;
 
 export type DataSubdirKey = keyof typeof DATA_SUBDIRS;

@@ -3,6 +3,10 @@
     {
       "path": "packages/voice/src/models/manifest-kokoro-files.ts",
       "reason": "由 HF tree API 自动生成的 Kokoro 模型文件清单（377 项，含 espeak-ng-data 全量小文件），纯数据无逻辑；拆分会破坏生成器的单文件覆盖写入约定"
+    },
+    {
+      "path": "packages/shared/src/schemas/index.ts",
+      "reason": "域 barrel 聚合：纯 re-export 的单一导出面（无逻辑），v1.1 M2 域子路径化后作为 @wbfm/shared/schemas 的公开面；拆分/子路径化需改 package.json exports，不属于行为无变更的拆分范围"
     }
   ]
 }

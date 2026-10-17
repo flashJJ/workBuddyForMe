@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  MOTION_ROTATION_SECONDS_DEFAULT,
+  MOTION_ROTATION_SECONDS_MAX,
+  MOTION_ROTATION_SECONDS_MIN,
+} from '../constants';
 
 /**
  * v1.0 语音/形象/桌宠契约（zod）。
@@ -77,6 +82,20 @@ export const voiceSettingsUpdateSchema = z
     /** AI 主动说话（P1） */
     proactiveEnabled: z.boolean().optional(),
     proactiveIdleSeconds: z.number().int().min(30).max(3600).optional(),
+    /**
+     * v2.0 待机动作（VRMA）id：motion:<fileRef> 为用户导入动作；
+     * null/缺省表示内置默认待机动作（daiji）。
+     */
+    idleMotionId: z.string().max(200).nullable().optional(),
+    /** v2.1 待机动作自动轮播开关（在动作池里随机切换） */
+    motionRotationEnabled: z.boolean().optional(),
+    /** v2.1 待机动作轮播间隔（秒，3-60） */
+    motionRotationSeconds: z
+      .number()
+      .int()
+      .min(MOTION_ROTATION_SECONDS_MIN)
+      .max(MOTION_ROTATION_SECONDS_MAX)
+      .optional(),
   })
   .strict();
 export type VoiceSettingsUpdateInput = z.infer<typeof voiceSettingsUpdateSchema>;
@@ -103,6 +122,9 @@ export const voiceSettingsSchema = voiceSettingsUpdateSchema.required({
   petClickThrough: true,
   proactiveEnabled: true,
   proactiveIdleSeconds: true,
+  idleMotionId: true,
+  motionRotationEnabled: true,
+  motionRotationSeconds: true,
 });
 export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 
@@ -179,6 +201,11 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   petClickThrough: false,
   proactiveEnabled: false,
   proactiveIdleSeconds: 300,
+  // v2.0：缺省内置默认待机动作（null 表示内置 daiji）
+  idleMotionId: null,
+  // v2.1：默认开启待机动作轮播，8 秒随机切换一个动作
+  motionRotationEnabled: true,
+  motionRotationSeconds: MOTION_ROTATION_SECONDS_DEFAULT,
 };
 
 // ---------- HTTP 载荷 ----------

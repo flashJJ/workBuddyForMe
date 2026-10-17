@@ -30,6 +30,7 @@ import { migrateV028 } from './v028-meetings';
 import { migrateV029 } from './v029-relationship-milestones';
 import { migrateV030 } from './v030-vrm-avatars';
 import { migrateV031 } from './v031-mod-installs';
+import { migrateV032 } from './v032-motion-assets';
 
 interface Migration {
   version: number;
@@ -187,6 +188,11 @@ const MIGRATIONS: Migration[] = [
     version: 31,
     description: 'v2.0 M5: mod_installs .wbfm-pack 导入安装记录表（纯加法）',
     up: migrateV031,
+  },
+  {
+    version: 32,
+    description: 'v2.0: motion_assets 用户导入 VRMA 待机动作表（纯加法）',
+    up: migrateV032,
   },
 ];
 

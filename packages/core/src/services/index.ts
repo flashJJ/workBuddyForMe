@@ -70,6 +70,10 @@ export {
   type VrmAvatarService,
 } from './vrm-avatar-service';
 export {
+  createMotionService,
+  type MotionService,
+} from './motion-service';
+export {
   createModPackService,
   type ModPackService,
   type ModPackServiceDeps,

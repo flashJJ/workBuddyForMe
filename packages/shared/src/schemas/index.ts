@@ -293,5 +293,12 @@ export * from './meeting';
 export * from './relationship';
 // v2.0 M4 VRM 形象契约
 export * from './vrm-avatar';
+// v2.0 交互触发管道契约
+export * from './interaction-events';
+export * from './interaction-actions';
+export { resolveInteraction } from './interaction-resolvers';
+export * from './interaction-hitbox';
 // v2.0 M5 .wbfm-pack mod 包契约
 export * from './wbfm-pack';
+// v2.0 待机动作（VRMA）契约
+export * from './motion-asset';

@@ -18,6 +18,12 @@ export interface PetDragWindow {
   isDestroyed(): boolean;
   getBounds(): { x: number; y: number; width: number; height: number };
   setPosition(x: number, y: number): void;
+  /**
+   * 位置+尺寸原子设置。真机必须用它而非 setPosition：
+   * 透明置顶窗在跨 DPI 缩放的显示器上移动时，Windows/Chromium 会按物理像素
+   * 取整调整窗口尺寸，只调用 setPosition 会让窗口在拖拽过程中棘轮式「越来越大」。
+   */
+  setBounds?(bounds: { x: number; y: number; width: number; height: number }): void;
 }
 
 export interface PetDragHooks {
@@ -28,14 +34,16 @@ export interface PetDragHooks {
   onDragStart?: () => void;
 }
 
-/** 点击/抖动与真拖动的判定阈值（DIP） */
-export const DRAG_THRESHOLD_PX = 3;
+/** 点击/抖动与真拖动的判定阈值（DIP）——两端统一值，避免 CSS/DIP 缩放下判定错位 */
+export const DRAG_THRESHOLD_PX = 6;
 
 export class PetDragController {
   /** 按下点与窗口原点的偏移（DIP） */
   private offset: PetPoint | null = null;
   /** 拖拽手势起点（DIP） */
   private start: PetPoint | null = null;
+  /** 按下时的窗口尺寸——拖拽全程用它复位，抵消移动过程中的尺寸漂移 */
+  private size: { width: number; height: number } | null = null;
 
   constructor(private readonly hooks: PetDragHooks) {}
 
@@ -43,17 +51,18 @@ export class PetDragController {
     return this.offset !== null;
   }
 
-  /** 拖拽开始：记录按下点与偏移；拖拽期间强制窗口可交互 */
+  /** 拖拽开始：记录按下点与偏移 + 基准尺寸；拖拽期间强制窗口可交互 */
   begin(win: PetDragWindow | null): void {
     if (!win || win.isDestroyed()) return;
     const cursor = this.hooks.getCursor();
     const bounds = win.getBounds();
     this.offset = { x: cursor.x - bounds.x, y: cursor.y - bounds.y };
     this.start = { x: cursor.x, y: cursor.y };
+    this.size = { width: bounds.width, height: bounds.height };
     this.hooks.onDragStart?.();
   }
 
-  /** 拖动心跳：超 3px 阈值后按全局光标定位窗口 */
+  /** 拖动心跳：超阈值后按全局光标定位窗口；有 setBounds 时同时钉住尺寸 */
   dragTo(win: PetDragWindow | null): void {
     if (!win || win.isDestroyed() || !this.offset || !this.start) return;
     const cursor = this.hooks.getCursor();
@@ -63,10 +72,13 @@ export class PetDragController {
     ) {
       return;
     }
-    win.setPosition(
-      Math.round(cursor.x - this.offset.x),
-      Math.round(cursor.y - this.offset.y),
-    );
+    const x = Math.round(cursor.x - this.offset.x);
+    const y = Math.round(cursor.y - this.offset.y);
+    if (win.setBounds && this.size) {
+      win.setBounds({ x, y, width: this.size.width, height: this.size.height });
+    } else {
+      win.setPosition(x, y);
+    }
   }
 
   /** 拖拽结束：位移达阈值才视为真拖动并回调持久化；复位手势状态 */
@@ -77,6 +89,7 @@ export class PetDragController {
       this.manhattanFromStart(this.hooks.getCursor()) >= DRAG_THRESHOLD_PX;
     this.offset = null;
     this.start = null;
+    this.size = null;
     if (win && !win.isDestroyed() && wasDrag) this.hooks.onDragEnd?.(win);
   }
 
