@@ -227,6 +227,10 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
               (controllerRef.current as any)?.endInteraction?.();
             }
           }
+          // 拖拽已激活 → 持续调 dragTo 更新位置（无 dragTo 就不会移动）
+          if (bodyPressBridgeActiveRef.current) {
+            bridge?.dragTo();
+          }
         }}
         onClick={() => {
           // 长按已触发 → 跳过 tap（防表情覆盖）
@@ -309,6 +313,10 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
               bridge?.dragBegin();
               (controllerRef.current as any)?.endInteraction?.();
             }
+          }
+          // 拖拽已激活 → 持续调 dragTo 更新位置
+          if (headPressBridgeActiveRef.current) {
+            bridge?.dragTo();
           }
         }}
         onClick={() => {
