@@ -11,6 +11,10 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
+## 已合 main：v2.1 🎬 会动——VRM 待机动作与桌宠交互管道（2026-10-17，tag 待打）
+
+形象「会动」版：**待机动作（VRMA）导入**（v032 motion_assets 表 + core motion-service 双校验与落盘 + `/api/motions` 列表/上传/文件流/删除 + 设置页导入向导与列表）→ **动作池**（内置 daiji 常驻 + 全部已导入动作，选中项排首位）→ **定时随机轮播**（3–60s，默认 8s，`motionRotationEnabled` / `motionRotationSeconds`）→ **点击触发一次性动作**（Resolver 动作链新增 `controller.tap`，LoopOnce + mixer finished 回待机）；取景从「单段动画」升级为采样**整个动作池**的包围盒并集（按 clip 时长占比分配采样帧、总帧上限 900）。桌宠交互收口为**归一化 → 纯函数门控（勿扰时段/关系等级/区域冷却）→ ActionExecutor → TriggerBus** 四段式管道。工程侧删死代码、抽 `glb.ts` / `animated-bounds.ts` / 通用导入向导与列表组件，并把本版涨起来的 3 个超 300 行文件与 1 个域 barrel 处理干净（行数门禁违规 4 → 0）。typecheck 14/14、ESLint 0 error、单测 14 包全绿（web 478 / database 93 / core 90 / desktop 45 / shared i18n 35）。总结：[v2.1-release-summary.md](v2.1-release-summary.md)；英文发行说明：[v2.1-release-notes-en.md](v2.1-release-notes-en.md)；博客：[blog/v2.1](../../blog/v2.1/) 4 篇。
+
 ## 已正式发布：v2.0 💞 有羁绊——情感闭环、VRM 形象与 mod 生态（2026-10-16，tag v2.0.0）
 
 陪伴化路线收束版，225 文件 +12989/-295（M0–M5）：**关系四档双轴演算**（亲密/信任复合门槛、迟滞与回落地板、kernel 纯函数）驱动**等级事件与解锁闸门**；**六个共同里程碑**（day_1/30/100/365、collab_10/50）只认落库证据，达成走三锁通道播放纪念演出，新增 relationship 长期记忆类别（v029）；**主动感知**仅上报 unlock/lock/idle 边沿、原始信号不落盘，系统事件分组授权默认关；**VRM 第二渲染后端**（three.js 动态 import，与 Live2D 分层）+ 导入向导双校验与免责（v030）；**.wbfm-pack 导入导出**（角色卡/场景/背景图三类白名单、黑名单拒二进制与 eval、VRM 只带引用、builtin 不可覆盖、v031 安装记录）；**关系报告**单文件零外链双语 HTML（五节可选/记忆项可删）；备份 schema v6（events + mod_installs 轨道，五处同步）。typecheck 14/14、单测 14 包全绿、集成 12/12、CI e2e 87/87。总结：[v2.0-release-summary.md](v2.0-release-summary.md)；英文发行说明：[v2.0-release-notes-en.md](v2.0-release-notes-en.md)。
@@ -141,6 +145,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v1.6 | 有情绪：跨回合心情/关系状态机 + 弱模型安全情绪协议 + 摸头/久别桌宠互动 | ✅ 已正式发布（2026-10-13，真机抽测通过） | [分册](../plan/v1.6-v2.0/v1.6-情绪内核与桌宠交互.md) | [总结](v1.6-release-summary.md) | — | `v1.6.0` |
 | v1.7 | 有仪式：声明式剧情引擎（8 剧本+三锁）/角色化提醒/自定义短语/打扰率统计/人格权重 | ✅ 已正式发布（2026-10-14，真机抽测通过） | [分册](../plan/v1.6-v2.0/v1.7-事件演出与主动关怀.md) · [冻结稿](../plan/v1.7/01-step契约与三锁状态机.md) | [总结](v1.7-release-summary.md) | — | `v1.7.0` |
 | v2.0 | 有羁绊：关系四档双轴演算/共同里程碑/主动感知边沿信号/VRM 导入与第二渲染后端/.wbfm-pack 生态/关系报告/备份 v6 | ✅ 已正式发布（2026-10-16，真机抽测通过） | [总览](../plan/v2.0/README.md) · [契约](../plan/v2.0/03-关系等级与解锁契约.md) · [mod 规范](../plan/v2.0/04-mod包manifest规范.md) | [总结](v2.0-release-summary.md) | [EN](v2.0-release-notes-en.md) | `v2.0.0` |
+| v2.1 | 会动：待机动作导入与动作池轮播、点击触发动作、动作池取景采样、桌宠交互门控管道 | ✅ 已合 main（tag/Release 待发布运维） | — | [总结](v2.1-release-summary.md) | [EN](v2.1-release-notes-en.md) · [blog/v2.1](../../blog/v2.1/) 4 篇 | 待打 |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
