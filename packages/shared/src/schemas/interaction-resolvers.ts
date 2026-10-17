@@ -54,6 +54,8 @@ const ACTION_TABLE: Record<string, () => ActionChain> = {
     actions: [
       { type: 'interaction.start', kind: 'head-touch' },
       { type: 'controller.playSquash' },
+      // v2.1：点击头部顺带随机播一个一次性动作（动作池为空时 controller 内部走程序化回退）
+      { type: 'controller.tap' },
       { type: 'controller.flashExpression', tag: 'joy', durationMs: 2600 },
     ],
     priority: 'normal',
@@ -75,6 +77,8 @@ const ACTION_TABLE: Record<string, () => ActionChain> = {
     actions: [
       { type: 'interaction.start', kind: 'body-touch' },
       { type: 'controller.playSquash', scaleX: 1.02, scaleY: 0.98, durationMs: 160 },
+      // v2.1：点击身体顺带随机播一个一次性动作
+      { type: 'controller.tap' },
       { type: 'controller.flashExpression', tag: 'smirk', durationMs: 1800 },
     ],
     priority: 'normal',

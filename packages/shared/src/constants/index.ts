@@ -14,3 +14,4 @@ export * from './relationship';
 export * from './pet-interaction';
 export * from './reunion';
 export * from './vrm';
+export * from './motion';

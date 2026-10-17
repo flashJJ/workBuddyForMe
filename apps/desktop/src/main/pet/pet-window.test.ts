@@ -15,11 +15,13 @@ const m = vi.hoisted(() => ({
     cb(); // 默认同步触发 ready-to-show
   }),
   webContentsOn: vi.fn(),
+  openDevTools: vi.fn(),
   getAllDisplays: vi.fn(),
   getPrimaryDisplay: vi.fn(),
 }));
 
 vi.mock('electron', () => ({
+  app: { isPackaged: false },
   BrowserWindow: vi.fn().mockImplementation((options: BrowserWindowConstructorOptions) => {
     m.ctor(options);
     return {
@@ -28,7 +30,7 @@ vi.mock('electron', () => ({
       showInactive: m.showInactive,
       isDestroyed: m.isDestroyed,
       once: m.once,
-      webContents: { on: m.webContentsOn },
+      webContents: { on: m.webContentsOn, openDevTools: m.openDevTools },
     };
   }),
   screen: {

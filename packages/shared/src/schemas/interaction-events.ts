@@ -21,7 +21,7 @@ export interface TouchEventBase {
 export type TouchRegion = 'head' | 'body' | 'raised' | 'pinch' | 'unknown';
 export type TouchGesture = 'tap' | 'longpress' | 'double' | 'swipe' | 'release';
 
-export interface TouchEvent extends TouchEventBase {}
+export type TouchEvent = TouchEventBase;
 
 export interface ContextEvent {
   kind: 'context';

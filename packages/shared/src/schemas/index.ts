@@ -300,3 +300,5 @@ export { resolveInteraction } from './interaction-resolvers';
 export * from './interaction-hitbox';
 // v2.0 M5 .wbfm-pack mod 包契约
 export * from './wbfm-pack';
+// v2.0 待机动作（VRMA）契约
+export * from './motion-asset';

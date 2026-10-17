@@ -32,6 +32,13 @@ export interface PetHoverPollerDeps {
 export const HOVER_POLL_MS = 16;
 /** 系统拖拽 move 事件后暂停悬停翻转的宽限（ms），覆盖连续拖动 */
 export const NATIVE_DRAG_GRACE_MS = 200;
+/**
+ * move 事件最小间隔（ms）：低于此值视为系统抖动，跳过宽限刷新。
+ * Windows transparent+alwaysOnTop 窗口 showInactive 后，系统会因位置确认/重排
+ * 持续触发 'move' 事件（间隔可达 ~16ms），导致宽限永不超时、poller 完全瘫痪。
+ * 真实用户系统拖拽的 move 间隔不会低于 ~50ms，因此以此为界过滤系统抖动。
+ */
+export const MOVE_EVENT_DEBOUNCE_MS = 50;
 
 export class PetHoverPoller {
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -41,15 +48,21 @@ export class PetHoverPoller {
   /** 绑定 move 宽限窗并启动轮询（新建/换模型后调用一次） */
   start(win: PetHoverWindow): void {
     let nativeMovingUntil = 0;
+    let lastMoveAt = 0;
     win.on('move', () => {
-      nativeMovingUntil = Date.now() + NATIVE_DRAG_GRACE_MS;
+      const now = Date.now();
+      // 系统抖动保护：连续 move 间隔 < MOVE_EVENT_DEBOUNCE_MS 时只刷新首次，后续跳过
+      if (now - lastMoveAt < MOVE_EVENT_DEBOUNCE_MS) return;
+      lastMoveAt = now;
+      nativeMovingUntil = now + NATIVE_DRAG_GRACE_MS;
       this.deps.onForceInteractive();
     });
     const tick = () => {
       if (win.isDestroyed()) return;
       if (win.isMinimized?.() || win.isVisible?.() === false) return;
       if (Date.now() < nativeMovingUntil) return;
-      this.deps.onHover(isCursorOverPet(this.deps.getCursor(), win.getBounds()));
+      const hovering = isCursorOverPet(this.deps.getCursor(), win.getBounds());
+      this.deps.onHover(hovering);
     };
     tick();
     const setter = this.deps.setInterval ?? setInterval;

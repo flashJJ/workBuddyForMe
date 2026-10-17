@@ -40,7 +40,7 @@ async function main() {
   // apps/desktop/node_modules/.bin 下不存在，因此必须从 repoRoot 解析绝对路径。
   const binName = process.platform === 'win32' ? 'electron.cmd' : 'electron';
   const bin = path.join(repoRoot, 'node_modules', '.bin', binName);
-  const electron = spawn(`"${bin}" .`, {
+  const electron = spawn(`"${bin}" . --remote-debugging-port=9222`, {
     cwd: desktopDir,
     shell: true,
     stdio: 'inherit',

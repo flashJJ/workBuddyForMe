@@ -10,10 +10,11 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import type { InteractionEvent } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings } from '@/lib/hooks/use-settings';
-import { getPetBridge, isPetBodyPoint } from './pet-bridge';
+import { getPetBridge } from './pet-bridge';
 import { TriggerBus } from '@/features/interaction/trigger-bus';
 import { ActionExecutor } from '@/features/interaction/action-executor';
 import { resolveInteraction } from '@wbfm/shared/schemas';
+import { PetHitBody, PetHitHead } from './pet-hit-regions';
 
 interface Props {
   modelId: string;
@@ -30,6 +31,7 @@ interface Props {
  * - 身体盒 `-webkit-app-region: drag`：系统拖拽层吞指针事件，拖拽不触发 Live2D tap
  *   （v1.0 经验：drag 区的 click 派发不可靠）；
  * - 头部盒 no-drag：单击挥手/双击回主窗/右键菜单（v1.6 单击增加摸头弹性/表情/本地短句）。
+ * 两个命中盒实体在 pet-hit-regions.tsx，本组件只做接线与舞台合成。
  * v1.6 M5：久别迎接本地短句/表情、全域视线跟随、互动短句开关门控。
  */
 export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }: Props) {
@@ -40,23 +42,6 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   const [line, setLine] = React.useState<string>('');
   const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // M0: 三段式交互状态——头部按住判定
-  const headPressStartPosRef = React.useRef<{ x: number; y: number; at: number }>({ x: 0, y: 0, at: 0 });
-  const headPressMovedRef = React.useRef<boolean>(false);
-  const headPressBridgeActiveRef = React.useRef<boolean>(false);
-  const headLongPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const headLongPressFiredRef = React.useRef<boolean>(false); // 长按已触发过 → 挡 onClick tap
-
-  // M1: body 区域手势判定（和 head 对齐：no-drag + 手动拖拽）
-  const bodyPressStartRef = React.useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const bodyPressMovedRef = React.useRef<boolean>(false);
-  const bodyPressBridgeActiveRef = React.useRef<boolean>(false);
-  const bodyLongPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bodyLongPressFiredRef = React.useRef<boolean>(false);
-
-  const LONGPRESS_THRESHOLD_MS = 500;
-  const DRAG_THRESHOLD_PX = 3;
-
   const showLine = React.useCallback((text: string, durationMs: number) => {
     setLine(text);
     if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
@@ -66,8 +51,6 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
   React.useEffect(
     () => () => {
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
-      if (headLongPressTimerRef.current) clearTimeout(headLongPressTimerRef.current);
-      if (bodyLongPressTimerRef.current) clearTimeout(bodyLongPressTimerRef.current);
     },
     [],
   );
@@ -183,178 +166,15 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
         />
       </div>
 
-      {/* 身体互动盒（底部 62%）：no-drag + 手动拖拽 + 纯点击动作（M1） */}
-      <div
-        data-testid="pet-hitbody"
-        style={
-          {
-            WebkitAppRegion: 'no-drag',
-            left: '15%',
-            right: '15%',
-            top: '38%',
-            bottom: '0',
-          } as React.CSSProperties
-        }
-        className="absolute cursor-grab"
-        onPointerDown={(e) => {
-          if (e.button !== 0) return;
-          bodyPressStartRef.current = { x: e.clientX, y: e.clientY };
-          bodyPressMovedRef.current = false;
-          bodyPressBridgeActiveRef.current = false;
-          bodyLongPressFiredRef.current = false;
-          // body-touch 程序化 start（让角色提前进入 phase='start'，等待后续判定）
-          (controllerRef.current as any)?.startInteraction?.('body-touch');
-          bodyLongPressTimerRef.current = setTimeout(() => {
-            if (!bodyPressMovedRef.current) {
-              bodyLongPressFiredRef.current = true;
-              resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'longpress' });
-            }
-          }, LONGPRESS_THRESHOLD_MS);
-        }}
-        onPointerMove={(e) => {
-          const start = bodyPressStartRef.current;
-          const dx = e.clientX - start.x;
-          const dy = e.clientY - start.y;
-          if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
-            bodyPressMovedRef.current = true;
-            if (bodyLongPressTimerRef.current) {
-              clearTimeout(bodyLongPressTimerRef.current);
-              bodyLongPressTimerRef.current = null;
-            }
-            if (!bodyPressBridgeActiveRef.current) {
-              bodyPressBridgeActiveRef.current = true;
-              bridge?.dragBegin();
-              // 进入拖拽模式 → 取消 body-touch 交互状态
-              (controllerRef.current as any)?.endInteraction?.();
-            }
-          }
-          // 拖拽已激活 → 持续调 dragTo 更新位置（无 dragTo 就不会移动）
-          if (bodyPressBridgeActiveRef.current) {
-            bridge?.dragTo();
-          }
-        }}
-        onClick={() => {
-          // 长按已触发 → 跳过 tap（防表情覆盖）
-          if (bodyLongPressFiredRef.current) {
-            bodyLongPressFiredRef.current = false;
-            return;
-          }
-          // 纯点击（pointerdown → pointerup 间 move ≤ 3px）→ body-touch
-          if (!bodyPressBridgeActiveRef.current) {
-            resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'tap' });
-          }
-        }}
-        onPointerUp={() => {
-          if (bodyPressBridgeActiveRef.current) {
-            bridge?.dragEnd();
-            bodyPressBridgeActiveRef.current = false;
-          } else {
-            (controllerRef.current as any)?.endInteraction?.();
-          }
-          if (bodyLongPressTimerRef.current) {
-            clearTimeout(bodyLongPressTimerRef.current);
-            bodyLongPressTimerRef.current = null;
-          }
-        }}
-        onPointerCancel={() => {
-          if (bodyPressBridgeActiveRef.current) {
-            bridge?.dragEnd();
-            bodyPressBridgeActiveRef.current = false;
-          }
-          (controllerRef.current as any)?.endInteraction?.();
-          if (bodyLongPressTimerRef.current) {
-            clearTimeout(bodyLongPressTimerRef.current);
-            bodyLongPressTimerRef.current = null;
-          }
-        }}
+      <PetHitBody
+        bridge={bridge}
+        controllerRef={controllerRef}
+        resolveAndDispatch={resolveAndDispatch}
       />
-
-      {/* 头部互动盒（上部 27%）：no-drag + 单击摸头 / 长按持续 loop / 拖拽移动 / 双击回主窗 / 右键菜单 */}
-      <div
-        data-testid="pet-hithead"
-        style={
-          {
-            WebkitAppRegion: 'no-drag',
-            left: '15%',
-            right: '15%',
-            top: '11%',
-            height: '27%',
-          } as React.CSSProperties
-        }
-        className="absolute z-10 cursor-pointer"
-        title={t('pet.stage.headHint')}
-        onPointerDown={(e) => {
-          if (e.button !== 0) return;
-          headPressStartPosRef.current = { x: e.clientX, y: e.clientY, at: performance.now() };
-          headPressMovedRef.current = false;
-          headPressBridgeActiveRef.current = false;
-          headLongPressFiredRef.current = false; // 重置长按标记
-          (controllerRef.current as any)?.startInteraction?.('head-touch');
-          if (headLongPressTimerRef.current) clearTimeout(headLongPressTimerRef.current);
-          headLongPressTimerRef.current = setTimeout(() => {
-            if (!headPressMovedRef.current && !headPressBridgeActiveRef.current) {
-              headLongPressFiredRef.current = true;
-              resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'longpress' });
-            }
-          }, LONGPRESS_THRESHOLD_MS);
-        }}
-        onPointerMove={(e) => {
-          const start = headPressStartPosRef.current;
-          const dx = e.clientX - start.x;
-          const dy = e.clientY - start.y;
-          if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
-            headPressMovedRef.current = true;
-            if (headLongPressTimerRef.current) {
-              clearTimeout(headLongPressTimerRef.current);
-              headLongPressTimerRef.current = null;
-            }
-            // head 区域也支持拖拽移动窗口
-            if (!headPressBridgeActiveRef.current) {
-              headPressBridgeActiveRef.current = true;
-              bridge?.dragBegin();
-              (controllerRef.current as any)?.endInteraction?.();
-            }
-          }
-          // 拖拽已激活 → 持续调 dragTo 更新位置
-          if (headPressBridgeActiveRef.current) {
-            bridge?.dragTo();
-          }
-        }}
-        onClick={() => {
-          // 长按已触发 → 跳过 tap（否则 flashExpression(joy) 会覆盖 longpress 的 surprise）
-          if (headLongPressFiredRef.current) {
-            headLongPressFiredRef.current = false;
-            return;
-          }
-          resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'tap' });
-        }}
-        onPointerUp={() => {
-          (controllerRef.current as any)?.endInteraction?.();
-          if (headPressBridgeActiveRef.current) {
-            bridge?.dragEnd();
-            headPressBridgeActiveRef.current = false;
-          }
-          if (headLongPressTimerRef.current) {
-            clearTimeout(headLongPressTimerRef.current);
-            headLongPressTimerRef.current = null;
-          }
-        }}
-        onPointerCancel={() => {
-          (controllerRef.current as any)?.endInteraction?.();
-          if (headPressBridgeActiveRef.current) {
-            bridge?.dragEnd();
-            headPressBridgeActiveRef.current = false;
-          }
-          if (headLongPressTimerRef.current) {
-            clearTimeout(headLongPressTimerRef.current);
-            headLongPressTimerRef.current = null;
-          }
-        }}
-        onDoubleClick={() => bridge?.focusMain()}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          bridge?.showMenu();
-        }}
+      <PetHitHead
+        bridge={bridge}
+        controllerRef={controllerRef}
+        resolveAndDispatch={resolveAndDispatch}
       />
 
       {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}

@@ -30,6 +30,8 @@ import { CharacterCardsPanel } from '../character-cards/character-cards-panel';
 import { TuningPanel } from '../tuning/tuning-panel';
 import { VrmImportSection } from './vrm-import-section';
 import { VrmAvatarList } from './vrm-avatar-list';
+import { MotionImportSection } from './motion-import-section';
+import { MotionList } from './motion-list';
 import { ModPackPanel } from './mod-pack-panel';
 import { RelationshipReportPanel } from './relationship-report-panel';
 
@@ -70,6 +72,8 @@ export function SettingsPage() {
         <AppearancePanel key="appear" />,
         <VrmImportSection key="vrm-import" />,
         <VrmAvatarList key="vrm-list" />,
+        <MotionImportSection key="motion-import" />,
+        <MotionList key="motion-list" />,
       ],
     },
     {

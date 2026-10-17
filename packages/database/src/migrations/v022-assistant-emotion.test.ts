@@ -14,8 +14,8 @@ describe('v022 迁移：assistant_emotion_states 情绪状态表', () => {
   it('全新空库：user_version=22，新表就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(31);
-    expect(LATEST_SCHEMA_VERSION).toBe(31);
+    expect(getSchemaVersion(db)).toBe(32);
+    expect(LATEST_SCHEMA_VERSION).toBe(32);
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='assistant_emotion_states'`)
       .all() as Array<{ name: string }>;
@@ -41,7 +41,7 @@ describe('v022 迁移：assistant_emotion_states 情绪状态表', () => {
       `INSERT INTO assistants(id,name,created_at,updated_at) VALUES('a1','助手','t','t')`,
     ).run();
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(31);
+    expect(getSchemaVersion(db)).toBe(32);
     const count = db
       .prepare(`SELECT COUNT(*) AS n FROM assistant_emotion_states`)
       .get() as { n: number };
@@ -80,7 +80,7 @@ describe('v022 迁移：assistant_emotion_states 情绪状态表', () => {
     const db = createV21Database();
     applyMigrations(db);
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(31);
+    expect(getSchemaVersion(db)).toBe(32);
     db.close();
   });
 });

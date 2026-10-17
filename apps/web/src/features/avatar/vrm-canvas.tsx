@@ -4,12 +4,14 @@ import * as React from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin } from '@pixiv/three-vrm-animation';
 import { parseVrmAvatarId } from '@wbfm/shared/schemas';
 import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from './expression-parser';
-import { VrmController } from './vrm-controller';
-import type { VrmControllerLike } from './vrm-controller';
+import { loadMotionPool, loadRotationConfig } from './vrm-motion-loader';
+import { fitVrmToCamera, type VrmFitResult } from './vrm-fit';
+import { VrmController, type VrmControllerLike } from './vrm-controller';
 
 export type { VrmControllerLike };
 export type { VRM } from '@pixiv/three-vrm';
@@ -26,6 +28,17 @@ export interface VrmCanvasProps {
   className?: string;
   style?: React.CSSProperties;
   'data-testid'?: string;
+}
+
+/** dev 调试钩子（window.__vrmDebug）暴露的形状 */
+interface VrmDebugProbe {
+  three: typeof THREE;
+  vrm: import('@pixiv/three-vrm').VRM;
+  camera: THREE.PerspectiveCamera;
+  controller: VrmController;
+  pool: THREE.AnimationClip[];
+  fit: VrmFitResult | null;
+  state: () => Record<string, unknown>;
 }
 
 export function VrmCanvas({
@@ -71,6 +84,14 @@ export function VrmCanvas({
     dir.position.set(1, 2, 2);
     scene.add(dir);
 
+    // 提升到顶层——让 useEffect cleanup 能访问
+    let controller: VrmController | null = null;
+    let vrm: import('@pixiv/three-vrm').VRM | null = null;
+    let debug: VrmDebugProbe | null = null;
+    let raf = 0;
+    let observer: ResizeObserver | null = null;
+    let onPointerMove: ((e: PointerEvent) => void) | null = null;
+
     const token = getManagedToken();
     const vrmUrl = token
       ? `/api/vrm-avatars/${fileRef}/file?token=${encodeURIComponent(token)}`
@@ -78,11 +99,13 @@ export function VrmCanvas({
 
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));
-    loader.load(
-      vrmUrl,
-      (gltf) => {
+    loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
+
+    void (async () => {
+      try {
+        const gltf = await loader.loadAsync(vrmUrl);
         if (disposed) return;
-        const vrm = gltf.userData.vrm as import('@pixiv/three-vrm').VRM | undefined;
+        vrm = (gltf.userData.vrm as import('@pixiv/three-vrm').VRM | undefined) ?? null;
         if (!vrm) { setError('VRM 解析失败'); return; }
 
         VRMUtils.removeUnnecessaryVertices(gltf.scene);
@@ -93,19 +116,43 @@ export function VrmCanvas({
         vrm.scene.traverse((o) => { o.frustumCulled = false; });
         scene.add(vrm.scene);
 
-        // 创建 VrmController（会立即应用 relax pose + 选 idle/tap clip + 起 mixer）
-        const controller = new VrmController(
-          vrm,
-          gltf.animations,
-          renderer,
-          scene,
-          camera,
-        );
+        // 模型自身不含 AnimationClip（静止姿态就是 T-pose），
+        // 加载动作池（内置 daiji + 全部已导入 VRMA）与轮播配置
+        const [pool, rotation] = await Promise.all([
+          loadMotionPool(loader, vrm),
+          loadRotationConfig(),
+        ]);
+        if (disposed) return;
+
+        controller = new VrmController(vrm, gltf.animations, renderer, scene, camera, pool, rotation);
         controllerRefInternal.current = controller;
         if (controllerRef) controllerRef.current = controller;
 
-        // gaze 跟随：把 mouse 相对 canvas 的归一化位置喂给 controller
-        const onPointerMove = (e: PointerEvent) => {
+        // 调试钩子（仅 dev）：MCP/CDP 读取实时缩放/位置/相机/当前待机动作/取景自检结果
+        if (process.env.NODE_ENV !== 'production') {
+          debug = {
+            three: THREE,
+            vrm,
+            camera,
+            controller,
+            pool,
+            fit: null,
+            state: () => ({
+              scale: vrm!.scene.scale.toArray(),
+              pos: vrm!.scene.position.toArray(),
+              cam: camera.position.toArray(),
+              host: [host.offsetWidth, host.offsetHeight],
+              phase: (controller as any)?.interaction?.currentPhase ?? null,
+              idle: (controller as any)?.mixer?.idleClipName ?? null,
+              poolSize: (controller as any)?.mixer?.poolSize ?? 0,
+              gesture: Boolean((controller as any)?.mixer?.hasGesture),
+            }),
+          };
+          (window as unknown as Record<string, unknown>).__vrmDebug = debug;
+        }
+
+        onPointerMove = (e: PointerEvent) => {
+          if (!controller) return;
           const r = host.getBoundingClientRect();
           const nx = (e.clientX - r.left) / r.width * 2 - 1;
           const ny = (e.clientY - r.top) / r.height * 2 - 1;
@@ -113,62 +160,80 @@ export function VrmCanvas({
         };
         host.addEventListener('pointermove', onPointerMove);
 
-        let raf = 0;
         const animate = () => {
-          if (disposed) return;
+          if (disposed || !controller) return;
           raf = requestAnimationFrame(animate);
-          // props → controller 桥接
           if (expressionRef.current) controller.setExpression(expressionRef.current);
           controller.update(speakingRef.current, () => getLevelRef.current?.() ?? 0);
         };
         animate();
 
-        // 等第一次拿到正确的 host 尺寸再 fit——GLTFLoader callback 里 host 可能还没 layout
         let fitted = false;
+        let lastW = 0, lastH = 0;
+        // 上一次 fit 时的容器尺寸——容器尺寸变了必须重算 scale
+        let fitW = 0, fitH = 0;
+        // 整个动作池的包围盒并集（primeForFit 采样一次，后续重 fit 复用）
+        let fitBounds: { min: THREE.Vector3; max: THREE.Vector3 } | null = null;
         const resize = () => {
-          const w = host.offsetWidth || host.clientWidth;
-          const h = host.offsetHeight || host.clientHeight;
-          if (!w || !h) return; // 还没 layout，跳过
-          renderer.setSize(w, h, true); // updateStyle=true，让 three.js 直接设 canvas CSS
-          camera.aspect = w / h;
-          camera.updateProjectionMatrix();
-          // 第一次拿到有效尺寸时做 fitVrmToCamera（只做一次）
-          if (!fitted) {
-            fitted = true;
-            fitVrmToCamera(vrm, camera, host);
-            controller.captureBaseScale(); // fit 后同步 controller 内的 baseSceneScale
-          }
+          requestAnimationFrame(() => {
+            if (disposed) return;
+            const w = host.offsetWidth || host.clientWidth;
+            const h = host.offsetHeight || host.clientHeight;
+            if (!w || !h) return;
+            if (w === lastW && h === lastH) return;
+            lastW = w; lastH = h;
+            renderer.setSize(w, h, false);
+            renderer.domElement.style.width = w + 'px';
+            renderer.domElement.style.height = h + 'px';
+            renderer.domElement.style.display = 'block';
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            // 只 fit 一次会漏两件事：① 布局未稳定时量到错误容器尺寸；
+            // ② 只按单帧包围盒取景，待机动画的大幅摆臂会被裁。
+            // 因此：首次 primeForFit 采样「整个动作池」的包围盒并集，之后容器尺寸变了就重 fit。
+            let animBounds = fitBounds;
+            const sizeChanged = Math.abs(w - fitW) > 2 || Math.abs(h - fitH) > 2;
+            if (controller && vrm && (!fitted || sizeChanged)) {
+              if (!fitted) {
+                animBounds = controller.primeForFit();
+                fitBounds = animBounds;
+              }
+              fitted = true;
+              fitW = w; fitH = h;
+              const fitResult = fitVrmToCamera(vrm, camera, host, animBounds);
+              if (debug) debug.fit = fitResult;
+              controller.captureBaseScale();
+            }
+          });
         };
-        const observer = new ResizeObserver(resize);
+        observer = new ResizeObserver(resize);
         observer.observe(host);
         resize();
 
         setReady(true);
-
-        return () => {
-          disposed = true;
-          cancelAnimationFrame(raf);
-          observer.disconnect();
-          host.removeEventListener('pointermove', onPointerMove);
-          controller.dispose();
-          VRMUtils.deepDispose(vrm.scene);
-          renderer.dispose();
-          renderer.forceContextLoss();
-          renderer.domElement.remove();
-          controllerRefInternal.current = null;
-          if (controllerRef && controllerRef.current === controller) {
-            controllerRef.current = null;
-          }
-        };
-      },
-      undefined,
-      (err) => {
+      } catch (err) {
         if (!disposed) setError(err instanceof Error ? err.message : String(err));
-      },
-    );
+      }
+    })();
 
+    // 顶层 cleanup——React StrictMode 触发时必调，彻底释放所有资源
     return () => {
       disposed = true;
+      cancelAnimationFrame(raf);
+      if (observer) observer.disconnect();
+      if (onPointerMove) host.removeEventListener('pointermove', onPointerMove);
+      if (controller) {
+        controller.dispose();
+        if (controllerRef && controllerRef.current === controller) controllerRef.current = null;
+      }
+      if (vrm) VRMUtils.deepDispose(vrm.scene);
+      if (debug && (window as unknown as Record<string, unknown>).__vrmDebug === debug) {
+        delete (window as unknown as Record<string, unknown>).__vrmDebug;
+      }
+      controllerRefInternal.current = null;
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer.domElement.remove(); // 关键！从 DOM 移除 canvas，StrictMode 第二次 setup 才不会叠加
     };
   }, [fileRef]);
 
@@ -193,50 +258,4 @@ export function VrmCanvas({
       )}
     </div>
   );
-}
-
-function fitVrmToCamera(
-  vrm: import('@pixiv/three-vrm').VRM,
-  camera: THREE.PerspectiveCamera,
-  host: HTMLElement,
-) {
-  const box = new THREE.Box3().setFromObject(vrm.scene);
-  const size = box.getSize(new THREE.Vector3());
-
-  // 1) 先把模型底部对齐 y=0（脚踩地面）
-  vrm.scene.position.y -= box.min.y;
-
-  // 2) 模型原始尺寸
-  const modelHeight = size.y;
-  const modelWidth = size.x;
-
-  // 3) 相机参数（必须用 offsetWidth/Height——clientWidth 在某些布局下为 0）
-  const fovRad = (camera.fov * Math.PI) / 180;
-  const hostH = host.offsetHeight || host.clientHeight || 400;
-  const hostW = host.offsetWidth || host.clientWidth || 300;
-  const aspect = hostW / hostH;
-
-  // 4) 目标：模型完整显示，上下留 8% padding
-  const targetPadding = 0.08;
-  const targetVisibleRatio = 1 - targetPadding * 2; // 模型占视野的 84%
-
-  // 4a) 固定距离 3m（VRM 世界单位下的合理观察距离）
-  const targetDistance = 3.0;
-  const visibleH = 2 * Math.tan(fovRad / 2) * targetDistance;
-  const visibleW = visibleH * aspect;
-
-  // 4b) 让模型高度等于 visibleH * targetVisibleRatio，算 scale
-  const scaleFromHeight = (visibleH * targetVisibleRatio) / modelHeight;
-  const scaleFromWidth = (visibleW * 0.95) / modelWidth;
-  const scale = Math.min(scaleFromHeight, scaleFromWidth);
-
-  // 4c) 应用 scale
-  vrm.scene.scale.set(scale, scale, scale);
-
-  // 5) 相机对准缩放后的模型中心
-  const newBox = new THREE.Box3().setFromObject(vrm.scene);
-  const newCenter = newBox.getCenter(new THREE.Vector3());
-  camera.position.set(newCenter.x, newCenter.y, newCenter.z + targetDistance);
-  camera.lookAt(newCenter);
-  camera.updateProjectionMatrix();
 }

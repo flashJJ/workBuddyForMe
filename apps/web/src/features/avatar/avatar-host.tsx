@@ -81,7 +81,7 @@ export function AvatarHost({
           </span>
         </div>
       </div>
-      <div className="relative min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         <AvatarCanvasRouter
           modelId={modelId}
           expression={expression}

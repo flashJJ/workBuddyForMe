@@ -142,7 +142,9 @@ export function createPetWindow(
   // 'screen-saver' 层级：高于普通置顶窗，且不触发全屏独占应用的焦点切换
   win.setAlwaysOnTop(true, 'screen-saver');
   win.once('ready-to-show', () => {
-    if (!win.isDestroyed()) win.showInactive();
+    if (!win.isDestroyed()) {
+      win.showInactive();
+    }
     // dev 下自动开 devtools，便于看 VRM 渲染日志
     if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' });
   });

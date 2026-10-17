@@ -60,6 +60,8 @@ import { createEventUsageService, type EventUsageService, createEventTriggersSer
 import {
   createVrmAvatarService,
   type VrmAvatarService,
+  createMotionService,
+  type MotionService,
   createModPackService,
   type ModPackService,
 } from '@wbfm/core/services';
@@ -130,6 +132,8 @@ export interface ServiceContainer {
   rateLimiter: RateLimiter;
   /** v2.0 M4：VRM 形象导入/存储/删除 */
   vrmAvatars: VrmAvatarService;
+  /** v2.0：待机动作（VRMA）导入/存储/删除 */
+  motions: MotionService;
   /** v2.0 M5：.wbfm-pack 打包/预检/导入 */
   modPacks: ModPackService;
 }
@@ -258,6 +262,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     eventUsage: createEventUsageService(deps),
     eventTriggers: createEventTriggersService(deps),
     vrmAvatars: createVrmAvatarService(db),
+    motions: createMotionService(db),
     modPacks,
   };
 }
