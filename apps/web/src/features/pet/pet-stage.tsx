@@ -179,6 +179,7 @@ export function PetStage({ modelId, expression, voiceState, subtitle, getLevel }
           getLevel={getLevel}
           speaking={voiceState === 'speaking'}
           controllerRef={controllerRef}
+          interactive={true}
         />
       </div>
 

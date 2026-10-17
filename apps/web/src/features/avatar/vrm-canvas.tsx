@@ -21,6 +21,8 @@ export interface VrmCanvasProps {
   expression?: ExpressionTag | null;
   /** Live2D 已有：传入 TouchControllerLike 实例，PetStage 的 useHeadTouch 会调用它 */
   controllerRef?: React.MutableRefObject<VrmControllerLike | null>;
+  /** 是否需要接收鼠标事件（默认 false → 穿透不挡点击；桌宠交互场景显式传 true） */
+  interactive?: boolean;
   className?: string;
   style?: React.CSSProperties;
   'data-testid'?: string;
@@ -32,6 +34,7 @@ export function VrmCanvas({
   getLevel,
   expression = null,
   controllerRef,
+  interactive = false,
   className,
   style,
   'data-testid': testId,
@@ -169,8 +172,9 @@ export function VrmCanvas({
     };
   }, [fileRef]);
 
+  const pointerClass = interactive ? '' : 'pointer-events-none';
   return (
-    <div className="relative h-full w-full">
+    <div className={`relative h-full w-full ${pointerClass}`}>
       <div
         ref={hostRef}
         className={className ? `h-full w-full ${className}` : 'h-full w-full'}
