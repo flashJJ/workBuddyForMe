@@ -19,6 +19,8 @@ interface StageProps {
   headZoneRatio?: number;
   /** v1.6：控制器实例回传（外部摸头 hook 直接驱动模型） */
   controllerRef?: React.MutableRefObject<Live2dController | null>;
+  /** 是否需要接收鼠标事件（默认 false → 穿透不挡点击；桌宠显式传 true） */
+  interactive?: boolean;
 }
 
 export function Live2dStage({
@@ -29,6 +31,7 @@ export function Live2dStage({
   onHeadTouch,
   headZoneRatio = 0.4,
   controllerRef: externalControllerRef,
+  interactive = false,
 }: StageProps) {
   const { t } = useI18n();
   const hostRef = React.useRef<HTMLDivElement | null>(null);
@@ -117,8 +120,9 @@ export function Live2dStage({
     controller.tap();
   };
 
+  const pointerClass = interactive ? '' : 'pointer-events-none';
   return (
-    <div className="relative h-full w-full" data-testid="live2d-stage">
+    <div className={`relative h-full w-full ${pointerClass}`} data-testid="live2d-stage">
       <div
         ref={hostRef}
         role="img"
