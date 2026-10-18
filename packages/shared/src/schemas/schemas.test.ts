@@ -3,6 +3,8 @@ import {
   assistantCreateSchema,
   buildMcpToolName,
   chatRequestSchema,
+  INTERACTION_GRAPH_OVERRIDES_MAX,
+  interactionGraphEntrySchema,
   isMcpToolName,
   knowledgeBaseCreateSchema,
   mcpServerCreateSchema,
@@ -63,6 +65,51 @@ describe('model / assistant / settings schemas', () => {
   it('设置仅接受 zh-CN 与枚举主题', () => {
     expect(settingsUpdateSchema.safeParse({ theme: 'purple' }).success).toBe(false);
     expect(settingsUpdateSchema.parse({ theme: 'dark' }).theme).toBe('dark');
+  });
+});
+
+describe('交互动画图覆盖条目 schema (v2.3)', () => {
+  it('合法条目通过；触发键非法 / 动作条目 id 未知 / 时段越界被拒', () => {
+    expect(
+      interactionGraphEntrySchema.safeParse({ key: 'touch::head::tap', chainId: 'head-tap' }).success,
+    ).toBe(true);
+    expect(
+      interactionGraphEntrySchema.safeParse({ key: 'touch::tail::tap', chainId: 'head-tap' }).success,
+    ).toBe(false);
+    expect(
+      interactionGraphEntrySchema.safeParse({ key: 'touch::head::tap', chainId: 'nope' }).success,
+    ).toBe(false);
+    expect(
+      interactionGraphEntrySchema.safeParse({
+        key: 'touch::head::tap',
+        chainId: 'head-tap',
+        condition: { hours: { startHour: 24, endHour: 0 } },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('条件可全部留空（表示该维度不限制）', () => {
+    expect(
+      interactionGraphEntrySchema.safeParse({
+        key: 'touch::body::double',
+        chainId: 'body-double',
+        condition: {},
+      }).success,
+    ).toBe(true);
+    expect(
+      interactionGraphEntrySchema.safeParse({
+        key: 'touch::head::tap',
+        chainId: 'head-longpress',
+        condition: { minLevel: 'partner', mood: 'good', hours: { startHour: 9, endHour: 10 } },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('设置体：覆盖条目数组上限 50', () => {
+    const one = { key: 'touch::head::tap', chainId: 'head-tap' as const };
+    expect(settingsUpdateSchema.safeParse({ interactionGraphOverrides: [one, one] }).success).toBe(true);
+    const many = Array.from({ length: INTERACTION_GRAPH_OVERRIDES_MAX + 1 }, () => one);
+    expect(settingsUpdateSchema.safeParse({ interactionGraphOverrides: many }).success).toBe(false);
   });
 });
 

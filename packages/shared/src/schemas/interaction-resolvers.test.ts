@@ -119,7 +119,7 @@ describe('动画图可注入（v2.3 M1 配置接缝）', () => {
     {
       key: 'touch::head::tap',
       condition: { minLevel: 'partner' },
-      chain: () => ({ actions: [], priority: 'normal', cooldownMs: 0 }),
+      chainId: 'head-tap',
     },
   ];
 

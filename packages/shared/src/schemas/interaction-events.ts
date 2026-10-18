@@ -2,7 +2,7 @@
  * 桌宠交互事件归一化类型。
  *
  * 所有触发源（触摸/感知/对话/关系等级）在进入 Resolver 之前统一归一成 InteractionEvent。
- * 纯类型文件（<60 行），无运行时依赖。
+ * 类型 + 少量运行时枚举（区域/手势常量与触发键构造），无外部依赖。
  */
 
 /** 触发来源 */
@@ -18,8 +18,21 @@ export interface TouchEventBase {
   durationMs?: number;
 }
 
-export type TouchRegion = 'head' | 'body' | 'raised' | 'pinch' | 'unknown';
-export type TouchGesture = 'tap' | 'longpress' | 'double' | 'swipe' | 'release';
+/** 命中区域运行时枚举（类型从常量派生，UI/配置校验共用一份真源） */
+export const TOUCH_REGIONS = ['head', 'body', 'raised', 'pinch', 'unknown'] as const;
+export type TouchRegion = (typeof TOUCH_REGIONS)[number];
+
+/** 手势运行时枚举 */
+export const TOUCH_GESTURES = ['tap', 'longpress', 'double', 'swipe', 'release'] as const;
+export type TouchGesture = (typeof TOUCH_GESTURES)[number];
+
+/**
+ * 触发冷却键 `touch::<region>::<gesture>`：调用方按此键记录 lastTriggerAt，
+ * 配置侧也按此键校验动画图条目的合法触发键。
+ */
+export function touchTriggerKey(region: TouchRegion, gesture: TouchGesture): string {
+  return `touch::${region}::${gesture}`;
+}
 
 export type TouchEvent = TouchEventBase;
 

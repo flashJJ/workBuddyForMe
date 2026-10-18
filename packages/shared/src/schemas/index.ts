@@ -48,7 +48,13 @@ export {
   type CompileRequest,
   type ClipRequest,
 } from './knowledge';
-export { settingsUpdateSchema, type SettingsUpdateInput } from './settings';
+export {
+  settingsUpdateSchema,
+  interactionGraphEntrySchema,
+  INTERACTION_GRAPH_OVERRIDES_MAX,
+  type InteractionGraphOverride,
+  type SettingsUpdateInput,
+} from './settings';
 
 // v1.0 语音/形象契约
 export {

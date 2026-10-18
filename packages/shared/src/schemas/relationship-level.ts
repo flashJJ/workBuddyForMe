@@ -5,15 +5,15 @@
  * 数值 0–3 ↔ 等级名顺序与 relationshipLevelSchema 一致（0 陌生 / 1 认识 / 2 搭档 / 3 挚友）。
  */
 
-export type RelationshipLevel = 'stranger' | 'acquaintance' | 'partner' | 'intimate';
-
-/** 展示关系等级（数值 0–3）→ 门控等级名的顺序口径 */
-export const RELATIONSHIP_LEVEL_NAMES: readonly RelationshipLevel[] = [
+/** 门控等级名（数值 0–3）的顺序真源：既作类型，也供 zod 枚举与遍历用 */
+export const RELATIONSHIP_LEVEL_NAMES = [
   'stranger',
   'acquaintance',
   'partner',
   'intimate',
-];
+] as const;
+
+export type RelationshipLevel = (typeof RELATIONSHIP_LEVEL_NAMES)[number];
 
 /** 数值等级 0–3 → 门控等级名（越界夹紧；非有限值回落「陌生」） */
 export function relationshipLevelName(level: number): RelationshipLevel {

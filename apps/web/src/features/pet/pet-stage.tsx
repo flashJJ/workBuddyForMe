@@ -8,6 +8,7 @@ import { pulseReunionSignal } from '@/features/avatar/reunion-storage';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
+  buildInteractionGraph,
   DEFAULT_DO_NOT_DISTURB,
   relationshipLevelName,
   touchTriggerKey,
@@ -89,6 +90,12 @@ export function PetStage({
   const dndEnabled = settings?.doNotDisturbEnabled !== false;
   const dndStartHour = settings?.doNotDisturbStartHour ?? DEFAULT_DO_NOT_DISTURB.startHour;
   const dndEndHour = settings?.doNotDisturbEndHour ?? DEFAULT_DO_NOT_DISTURB.endHour;
+  // v2.3：交互动画图 = 用户覆盖条目（排前）+ 内置图兜底
+  const graphOverrides = settings?.interactionGraphOverrides;
+  const interactionGraph = React.useMemo(
+    () => buildInteractionGraph(graphOverrides),
+    [graphOverrides],
+  );
 
   // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底（键为 region::gesture）
   const lastTriggerAtRef = React.useRef<Record<string, number>>({});
@@ -109,7 +116,7 @@ export function PetStage({
         mood,
         doNotDisturb: { enabled: dndEnabled, startHour: dndStartHour, endHour: dndEndHour },
       };
-      const chain = resolveInteraction(event, ctx);
+      const chain = resolveInteraction(event, ctx, interactionGraph);
       // 更新冷却时间戳（按 region::gesture 记，双击不被单击冷却吃掉）
       if (event.kind === 'touch') {
         lastTriggerAtRef.current = {
@@ -123,7 +130,15 @@ export function PetStage({
       // 始终 emit 到 TriggerBus（M1 打通）
       TriggerBus.emit(event);
     },
-    [relationshipLevel, emotionEnabled, mood, dndEnabled, dndStartHour, dndEndHour],
+    [
+      relationshipLevel,
+      emotionEnabled,
+      mood,
+      dndEnabled,
+      dndStartHour,
+      dndEndHour,
+      interactionGraph,
+    ],
   );
 
   // 摸头短句：本地文案气泡（零模型调用、零 IPC），受短句开关门控

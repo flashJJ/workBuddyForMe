@@ -14,6 +14,7 @@ import type {
 } from '../constants';
 import type { ContentPart } from './content-part';
 import type { EventSettingsFields } from '../events/event-settings';
+import type { InteractionGraphEntry } from '../schemas/interaction-graph';
 import type { ToolTraceEntry } from './tool';
 
 export interface Timestamped {
@@ -246,6 +247,11 @@ export interface AppSettings extends EventSettingsFields {
   doNotDisturbStartHour?: number;
   /** v2.2：勿扰结束小时 0–23（不含），缺省 6 */
   doNotDisturbEndHour?: number;
+  /**
+   * v2.3：交互动画图的用户覆盖条目（缺省空 = 只用内置图）。
+   * 覆盖条目排在内置图之前生效，内置图仍兜底，保证任何状态下都有可播动作。
+   */
+  interactionGraphOverrides?: InteractionGraphEntry[];
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;

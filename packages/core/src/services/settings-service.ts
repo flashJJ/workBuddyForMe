@@ -1,6 +1,11 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { type AppSettings } from '@wbfm/shared/types';
-import { type SettingsUpdateInput } from '@wbfm/shared/schemas';
+import {
+  interactionGraphEntrySchema,
+  INTERACTION_GRAPH_OVERRIDES_MAX,
+  type InteractionGraphOverride,
+  type SettingsUpdateInput,
+} from '@wbfm/shared/schemas';
 import {
   createModelRepository,
   createSettingsRepository,
@@ -50,6 +55,21 @@ export function resolveGlobalAppendPrompt(settings: AppSettings): string | null 
   return text ? text : null;
 }
 
+/**
+ * 服务端钳制交互动画图覆盖：settings_kv 可被手改，逐条校验（触发键 / 动作条目 id / 条件），
+ * 非法条目直接丢弃（不影响其余条目），并截断到上限。
+ */
+export function resolveInteractionGraphOverrides(value: unknown): InteractionGraphOverride[] {
+  if (!Array.isArray(value)) return [];
+  const out: InteractionGraphOverride[] = [];
+  for (const item of value) {
+    const parsed = interactionGraphEntrySchema.safeParse(item);
+    if (parsed.success) out.push(parsed.data);
+    if (out.length >= INTERACTION_GRAPH_OVERRIDES_MAX) break;
+  }
+  return out;
+}
+
 export function createSettingsService({ db }: ServiceDeps) {
   const settings = createSettingsRepository(db);
   const models = createModelRepository(db);
@@ -65,6 +85,9 @@ export function createSettingsService({ db }: ServiceDeps) {
       const merged = { ...DEFAULT_SETTINGS, ...settings.getJson(SETTINGS_KEY, {}) };
       // 服务端钳制为准：手改 settings_kv 的越界条数不进对话管线
       merged.contextMessageCount = resolveContextMessageCount(merged.contextMessageCount);
+      merged.interactionGraphOverrides = resolveInteractionGraphOverrides(
+        merged.interactionGraphOverrides,
+      );
       return merged;
     },
 

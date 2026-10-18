@@ -40,6 +40,7 @@ import { zhMeeting } from './messages/meeting';
 import { zhRelationship } from './messages/relationship';
 import { zhModPack } from './messages/mod-pack';
 import { zhRelationshipReport } from './messages/relationship-report';
+import { zhSettingsGraph } from './messages/settings-graph';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -55,6 +56,7 @@ export const zhCN = {
   settingsProviders: zhSettingsProviders,
   settingsMcp: zhSettingsMcp,
   settingsBackup: zhSettingsBackup,
+  settingsGraph: zhSettingsGraph,
   about: zhAbout,
   chat: zhChat,
   chatMessages: zhChatMessages,

@@ -11,11 +11,13 @@
  * - shared 包严格 ≤240 行
  */
 
-import type { InteractionEvent, TouchEvent, TouchRegion } from './interaction-events';
+import type { InteractionEvent, TouchEvent } from './interaction-events';
+import { touchTriggerKey } from './interaction-events';
 import type { ActionChain } from './interaction-actions';
 import type { MotionMood } from './motion-asset';
 import type { RelationshipLevel } from './relationship-level';
 import {
+  chainOf,
   DEFAULT_COOLDOWN,
   DEFAULT_INTERACTION_GRAPH,
   isHourInWindow,
@@ -23,16 +25,9 @@ import {
   type InteractionGraphEntry,
 } from './interaction-graph';
 
+export { touchTriggerKey } from './interaction-events';
 export { RELATIONSHIP_LEVEL_NAMES, relationshipLevelName } from './relationship-level';
 export type { RelationshipLevel } from './relationship-level';
-
-/**
- * 触发冷却键 `touch::<region>::<gesture>`：调用方按此键记录 lastTriggerAt。
- * **按手势分别冷却**——否则双击的第二下会被单击的冷却吃掉，双击动作永远不触发。
- */
-export function touchTriggerKey(region: TouchRegion, gesture: string): string {
-  return `touch::${region}::${gesture}`;
-}
 
 /**
  * 勿扰配置（v2.2 起可配置；缺省 23:00–06:00 开启）。
@@ -117,5 +112,5 @@ function resolveTouch(
     mood: ctx.mood,
     hour: ctx.hour,
   });
-  return entry ? entry.chain() : null;
+  return entry ? chainOf(entry) : null;
 }
