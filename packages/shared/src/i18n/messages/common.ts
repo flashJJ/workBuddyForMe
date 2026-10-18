@@ -1,6 +1,6 @@
 /** common 命名空间：跨模块复用的按钮/通用词/空态/语言（硬边界，禁止随业务漂移） */
 export const zhCommon = {
-  appName: 'WorkBuddy For Me',
+  appName: 'WorkBuddyForMe',
   brandTagline: '私人 AI 平台',
   actions: {
     save: '保存',
@@ -87,7 +87,7 @@ export const zhCommon = {
 };
 
 export const enCommon = {
-  appName: 'WorkBuddy For Me',
+  appName: 'WorkBuddyForMe',
   brandTagline: 'Private AI workspace',
   actions: {
     save: 'Save',

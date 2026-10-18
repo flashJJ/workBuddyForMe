@@ -73,7 +73,7 @@ export async function deliverDueTask(
     if (performed) return 'performed';
   }
 
-  const name = assistants?.find((a) => a.id === task.assistantId)?.name ?? 'WorkBuddy';
+  const name = assistants?.find((a) => a.id === task.assistantId)?.name ?? 'WorkBuddyForMe';
   const bridge = typeof window !== 'undefined' ? window.wbfm?.notify : undefined;
   if (bridge) {
     await bridge.show({ title: name, body: task.text }).catch(() => undefined);

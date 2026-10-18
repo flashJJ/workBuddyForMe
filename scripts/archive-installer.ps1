@@ -1,4 +1,4 @@
-﻿# WorkBuddy For Me Windows 安装包自动归档
+# WorkBuddyForMe Windows 安装包自动归档
 #
 # 把 electron-builder 产物中的三件套（安装包 exe / blockmap / latest.yml）归集到
 # <ArchiveRoot>\v<Version>\，并生成 SHA256SUMS.txt；归档后默认**彻底清空** Source 目录

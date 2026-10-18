@@ -9,7 +9,7 @@ export const zhOnboarding = {
     finish: '完成',
   },
   welcome: {
-    heading: '欢迎使用 WorkBuddy For Me',
+    heading: '欢迎使用 WorkBuddyForMe',
     lead: '你的私人 AI 工作台：对话、知识库、桌面自动化与 Flow，全部在本机运行。',
     bulletLocal: '本地优先：数据保存在本机数据目录，不上传云端。',
     bulletPrivate: '密钥仅加密存储于本机，自行选择模型供应商。',
@@ -82,7 +82,7 @@ export const enOnboarding = {
     finish: 'Done',
   },
   welcome: {
-    heading: 'Welcome to WorkBuddy For Me',
+    heading: 'Welcome to WorkBuddyForMe',
     lead: 'Your private AI workspace: chat, knowledge base, desktop automation and Flows — all running on your machine.',
     bulletLocal: 'Local-first: your data stays in a local data directory, never uploaded.',
     bulletPrivate: 'API keys are encrypted on this machine; you choose the model providers.',

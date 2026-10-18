@@ -15,7 +15,7 @@ export function AppSidebar() {
   return (
     <aside className="flex h-full w-14 shrink-0 flex-col border-r bg-card md:w-56">
       <div className="px-2 py-4 md:px-5">
-        <p className="hidden text-base font-semibold tracking-tight md:block">WorkBuddy</p>
+        <p className="hidden text-base font-semibold tracking-tight md:block">{t('common.appName')}</p>
         <p className="hidden text-xs text-muted-foreground md:block">{t('common.brandTagline')}</p>
       </div>
       <nav className="flex-1 space-y-1 px-2 md:px-3" aria-label={t('nav.mainNav')}>

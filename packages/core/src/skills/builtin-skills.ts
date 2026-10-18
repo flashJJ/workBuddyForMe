@@ -35,7 +35,7 @@ export const BUILTIN_WEEKLY_REPORT: SkillManifest = {
       expectedBehavior: '先检索知识库素材，再按四段结构输出周报，素材缺失处标注待补充',
     },
   ],
-  author: 'WorkBuddy 内置',
+  author: 'WorkBuddyForMe 内置',
 };
 
 export const BUILTIN_MEETING_NOTES: SkillManifest = {
@@ -65,7 +65,7 @@ export const BUILTIN_MEETING_NOTES: SkillManifest = {
       expectedBehavior: '输出议题/结论/行动项/遗留问题四段结构，行动项含负责人与截止时间',
     },
   ],
-  author: 'WorkBuddy 内置',
+  author: 'WorkBuddyForMe 内置',
 };
 
 export const BUILTIN_FILE_SEARCH: SkillManifest = {
@@ -94,7 +94,7 @@ export const BUILTIN_FILE_SEARCH: SkillManifest = {
       expectedBehavior: '调用 list_directory/read_file，返回命中文件路径与片段；未挂载时提示用户去设置中添加',
     },
   ],
-  author: 'WorkBuddy 内置',
+  author: 'WorkBuddyForMe 内置',
 };
 
 export const BUILTIN_SKILLS: SkillManifest[] = [

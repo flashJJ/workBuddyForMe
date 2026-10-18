@@ -5,7 +5,7 @@ import { languageInitScript } from '@/lib/i18n/i18n-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'WorkBuddy For Me',
+  title: 'WorkBuddyForMe',
   description: '类 WorkBuddy 的私人 AI 平台：多模型对话、知识库 RAG 与助手预设',
 };
 

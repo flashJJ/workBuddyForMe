@@ -68,7 +68,7 @@ test.beforeAll(async () => {
   });
   mainPage = await electronApp.firstWindow();
   await mainPage.waitForLoadState('domcontentloaded');
-  await expect(mainPage).toHaveTitle('WorkBuddy For Me', { timeout: 90_000 });
+  await expect(mainPage).toHaveTitle('WorkBuddyForMe', { timeout: 90_000 });
 });
 
 test.afterAll(async () => {

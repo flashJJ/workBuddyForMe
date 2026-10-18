@@ -190,7 +190,7 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     expect(md).toContain('### 🧑 用户');
     expect(md).toContain('[REDACTED]');
     expect(md).not.toContain('sk-testABCDEF123456');
-    expect(md).toMatch(/由 WorkBuddy For Me v\d+\.\d+\.\d+ 生成/);
+    expect(md).toMatch(/由 WorkBuddyForMe v\d+\.\d+\.\d+ 生成/);
 
     // HTML 导出（成功后弹窗自动关闭，重新打开）
     await page.getByTestId('share-conversation-button').click();

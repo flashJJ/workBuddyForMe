@@ -2,8 +2,8 @@
   "name": "@wbfm/desktop",
   "version": "2.2.0",
   "private": true,
-  "description": "WorkBuddy For Me Electron 桌面壳",
-  "author": "WorkBuddy For Me",
+  "description": "WorkBuddyForMe Electron 桌面壳",
+  "author": "WorkBuddyForMe",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsup",
