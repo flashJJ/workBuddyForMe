@@ -37,6 +37,9 @@ export function ToolDebugPanel() {
   const [selected, setSelected] = React.useState<string>('');
   const [argsText, setArgsText] = React.useState('{}');
   const [result, setResult] = React.useState<ToolResult | null>(null);
+  // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   // 默认选第一个工具
   React.useEffect(() => {
@@ -72,15 +75,15 @@ export function ToolDebugPanel() {
         </p>
       </div>
 
-      {isLoading && <Spinner />}
+      {mounted && isLoading && <Spinner />}
 
-      {!isLoading && tools && tools.length === 0 && (
+      {mounted && !isLoading && tools && tools.length === 0 && (
         <p className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
           {t('toolDebug.empty')}
         </p>
       )}
 
-      {!isLoading && tools && tools.length > 0 && (
+      {mounted && !isLoading && tools && tools.length > 0 && (
         <div className="space-y-3">
           <div className="space-y-1">
             <label htmlFor="tool-debug-select" className="text-xs font-medium text-muted-foreground">

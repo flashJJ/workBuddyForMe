@@ -91,6 +91,9 @@ export function CharacterCardsPanel() {
   const mutations = useCharacterCardMutations();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [editor, setEditor] = React.useState<CardEditorState | null>(null);
+  // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const builtins = (cards ?? []).filter((card) => card.source === 'builtin');
   const customs = (cards ?? []).filter((card) => card.source === 'custom');
@@ -180,9 +183,11 @@ export function CharacterCardsPanel() {
         {t('characterCards.trustNotice')}
       </p>
 
-      {isLoading && <Spinner />}
-      {isError && <ErrorState message={t('characterCards.loadError')} onRetry={() => void refetch()} />}
-      {cards && (
+      {mounted && isLoading && <Spinner />}
+      {mounted && isError && (
+        <ErrorState message={t('characterCards.loadError')} onRetry={() => void refetch()} />
+      )}
+      {mounted && cards && (
         <div className="space-y-4">
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground">{t('characterCards.sectionBuiltin')}</p>

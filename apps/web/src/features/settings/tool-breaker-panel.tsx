@@ -28,6 +28,9 @@ export function ToolBreakerPanel() {
   const { data: breakers, isLoading } = useToolBreakers();
   const mutations = useToolBreakerMutations();
   const toast = useToast();
+  // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const reset = async (name: string) => {
     try {
@@ -49,18 +52,18 @@ export function ToolBreakerPanel() {
         </div>
       </div>
 
-      {isLoading && (
+      {mounted && isLoading && (
         <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>
       )}
 
-      {!isLoading && (!breakers || breakers.length === 0) && (
+      {mounted && !isLoading && (!breakers || breakers.length === 0) && (
         <EmptyState
           title={t('settingsMcp.breaker.emptyTitle')}
           description={t('settingsMcp.breaker.emptyDescription')}
         />
       )}
 
-      {!isLoading && breakers && breakers.length > 0 && (
+      {mounted && !isLoading && breakers && breakers.length > 0 && (
         <div className="space-y-2">
           {breakers.map((b) => {
             const { labelKey, variant } = statusMeta(b.status);

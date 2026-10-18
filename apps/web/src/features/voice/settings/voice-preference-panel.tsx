@@ -166,6 +166,10 @@ export function VoicePreferencePanel() {
   const { t } = useI18n();
   const { settings, modelStatus, update } = useVoiceSettings();
   const toast = useToast();
+  // 水合门控：以下各区块（模型状态 / settings 派生）在 SSR 与客户端首帧可能不一致，
+  // 直接据此切结构会水合失配（React #418/#422）。首帧恒与 SSR 一致（仅标题），挂载后再展开。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const patch = async (next: Parameters<typeof update>[0]) => {
     try {
@@ -184,15 +188,17 @@ export function VoicePreferencePanel() {
         </p>
       </div>
 
-      <ModelDownloadSection />
+      {mounted && <ModelDownloadSection />}
 
       {/* 真机基准取证（2026-10，高性能 x86 PC）：Windows「平衡」电源下
           CPU 持续功耗受限，Kokoro 合成 RTF 约 2.2（首句等待 5s+）；高性能电源下 RTF≈1.0 */}
-      <p className="rounded-md border border-warning/30 bg-warning-background p-2 text-xs text-muted-foreground" data-testid="voice-power-hint">
-        {t('voice.powerHint')}
-      </p>
+      {mounted && (
+        <p className="rounded-md border border-warning/30 bg-warning-background p-2 text-xs text-muted-foreground" data-testid="voice-power-hint">
+          {t('voice.powerHint')}
+        </p>
+      )}
 
-      {settings && (
+      {mounted && settings && (
         <VoiceEngineParams
           settings={settings}
           ttsReady={!!modelStatus?.ttsReady}
@@ -201,7 +207,7 @@ export function VoicePreferencePanel() {
         />
       )}
 
-      {settings && (
+      {mounted && settings && (
         <VoiceInputSection
           settings={settings}
           asrReady={!!modelStatus?.asrReady}
@@ -209,9 +215,9 @@ export function VoicePreferencePanel() {
         />
       )}
 
-      <StorageSection />
+      {mounted && <StorageSection />}
 
-      {settings && (
+      {mounted && settings && (
         <AvatarSection
           settings={settings}
           ttsReady={!!modelStatus?.ttsReady}
@@ -219,12 +225,14 @@ export function VoicePreferencePanel() {
         />
       )}
 
-      {settings && <ProactiveSection settings={settings} onPatch={patch} />}
+      {mounted && settings && <ProactiveSection settings={settings} onPatch={patch} />}
 
-      <div className="space-y-2 rounded-md border p-3" data-testid="voice-device-section">
-        <p className="text-sm font-medium">{t('voice.section.deviceTest')}</p>
-        <MicSelfTest />
-      </div>
+      {mounted && (
+        <div className="space-y-2 rounded-md border p-3" data-testid="voice-device-section">
+          <p className="text-sm font-medium">{t('voice.section.deviceTest')}</p>
+          <MicSelfTest />
+        </div>
+      )}
     </section>
   );
 }
