@@ -14,6 +14,7 @@ import type { VoiceAudioFrame } from '@/features/voice/audio-playback-queue';
 import { useEmotionState } from '@/features/avatar/use-emotion-expression';
 import { getPetBridge } from './pet-bridge';
 import { usePetOpenState, usePetVoiceRelay } from './use-pet-voice-relay';
+import { usePetSignalRelay } from './use-pet-signal-relay';
 
 interface UseChatPetRelayArgs {
   /** v2.2：当前助手（用于读取真实情绪/关系快照并中继给桌宠） */
@@ -76,6 +77,9 @@ export function useChatPetRelay({
     relationshipLevel,
     mood,
   });
+
+  // v2.3 P2-2：系统信号中继（语音起点/结束 + 授权后的锁屏/唤醒/空闲越阈）
+  usePetSignalRelay({ active: petOpen, voiceState });
 
   const autoOpenTried = React.useRef(false);
   React.useEffect(() => {
