@@ -36,6 +36,8 @@ export interface InteractionGraphCondition {
 
 /** 一条动画图条目：触发键 + 条件 + 动作条目 id（见 ACTION_CHAINS） */
 export interface InteractionGraphEntry {
+  /** 条目 id：内置条目必有（供「停用」配置引用）；用户覆盖条目不参与停用 */
+  id?: string;
   /** 触发键 `touch::<region>::<gesture>`（见 touchTriggerKey） */
   key: string;
   condition?: InteractionGraphCondition;
@@ -186,26 +188,56 @@ export const DEFAULT_COOLDOWN = {
   unknown: 800,
 } as const satisfies Record<TouchRegion, number>;
 
-/** 内置默认动画图（与 v2.2 的硬编码表逐条等价） */
+/** 内置默认动画图（与 v2.2 的硬编码表逐条等价；id 供停用配置引用） */
 export const DEFAULT_INTERACTION_GRAPH: readonly InteractionGraphEntry[] = [
-  { key: 'touch::head::tap', chainId: 'head-tap' },
+  { id: 'builtin:head-tap', key: 'touch::head::tap', chainId: 'head-tap' },
   // 陌生人：不让长按（害羞链太亲密）
-  { key: 'touch::head::longpress', condition: { minLevel: 'acquaintance' }, chainId: 'head-longpress' },
-  { key: 'touch::body::tap', chainId: 'body-tap' },
-  { key: 'touch::body::longpress', chainId: 'body-longpress' },
+  {
+    id: 'builtin:head-longpress',
+    key: 'touch::head::longpress',
+    condition: { minLevel: 'acquaintance' },
+    chainId: 'head-longpress',
+  },
+  { id: 'builtin:body-tap', key: 'touch::body::tap', chainId: 'body-tap' },
+  { id: 'builtin:body-longpress', key: 'touch::body::longpress', chainId: 'body-longpress' },
   // 提起需要搭档以上
-  { key: 'touch::raised::tap', condition: { minLevel: 'partner' }, chainId: 'raised-tap' },
-  { key: 'touch::body::double', chainId: 'body-double' },
+  {
+    id: 'builtin:raised-tap',
+    key: 'touch::raised::tap',
+    condition: { minLevel: 'partner' },
+    chainId: 'raised-tap',
+  },
+  { id: 'builtin:body-double', key: 'touch::body::double', chainId: 'body-double' },
 ];
 
+/** 内置条目 id 集合（「停用」配置的合法值域；手改 settings_kv 的未知 id 由服务端丢弃） */
+const BUILTIN_ENTRY_IDS: ReadonlySet<string> = new Set(
+  DEFAULT_INTERACTION_GRAPH.map((entry) => entry.id).filter((id): id is string => Boolean(id)),
+);
+
+/** 该 id 是否对应一个内置条目 */
+export function isBuiltinEntryId(id: string): boolean {
+  return BUILTIN_ENTRY_IDS.has(id);
+}
+
 /**
- * 装配最终动画图：用户覆盖条目**排在内置图之前**（覆盖优先生效，内置图仍兜底，
- * 因此任何状态下都不会「没有可播动作」）。无覆盖时直接复用内置图。
+ * 装配最终动画图：用户覆盖条目**排在内置图之前**（覆盖优先生效），
+ * 内置图中被「停用」的条目剔除；两者都没有时直接复用内置图（保持引用相等）。
+ *
+ * 注意语义：停用某触发键的**全部**条目后，该键匹配为空 —— 即「查不到返回空」，
+ * 该交互不再有任何动作（这正是「停用」的预期）。
  */
 export function buildInteractionGraph(
   overrides?: readonly InteractionGraphEntry[] | null,
+  disabledEntryIds?: readonly string[] | null,
 ): readonly InteractionGraphEntry[] {
-  return overrides && overrides.length > 0
-    ? [...overrides, ...DEFAULT_INTERACTION_GRAPH]
+  const hasOverrides = Boolean(overrides && overrides.length > 0);
+  const hasDisabled = Boolean(disabledEntryIds && disabledEntryIds.length > 0);
+  if (!hasOverrides && !hasDisabled) return DEFAULT_INTERACTION_GRAPH;
+
+  const disabled = new Set(disabledEntryIds ?? []);
+  const builtins = hasDisabled
+    ? DEFAULT_INTERACTION_GRAPH.filter((entry) => !entry.id || !disabled.has(entry.id))
     : DEFAULT_INTERACTION_GRAPH;
+  return hasOverrides ? [...overrides!, ...builtins] : builtins;
 }

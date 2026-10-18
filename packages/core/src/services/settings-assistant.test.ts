@@ -67,8 +67,9 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       contextMessageCount: 20,
       globalAppendPrompt: '',
       globalAppendPromptEnabled: false,
-      // v2.3：动画图覆盖条目缺省为空（服务端钳制产出，保证字段恒存在）
+      // v2.3：动画图覆盖条目与停用列表缺省为空（服务端钳制产出，保证字段恒存在）
       interactionGraphOverrides: [],
+      interactionGraphDisabledEntryIds: [],
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');
@@ -92,6 +93,19 @@ describe('settings / assistants 服务（TR-13.1）', () => {
     expect(settings.get().interactionGraphOverrides).toEqual([
       { key: 'touch::head::tap', chainId: 'head-tap' },
     ]);
+  });
+
+  it('v2.3：停用列表的未知 id 被丢弃并去重', () => {
+    const settings = createSettingsService({ db, cipher });
+    createSettingsRepository(db).setJson('app-settings', {
+      interactionGraphDisabledEntryIds: [
+        'builtin:head-tap',
+        'builtin:head-tap',
+        'builtin:nope',
+        42,
+      ],
+    });
+    expect(settings.get().interactionGraphDisabledEntryIds).toEqual(['builtin:head-tap']);
   });
 
   it('设置绑定不存在的模型被拒', () => {

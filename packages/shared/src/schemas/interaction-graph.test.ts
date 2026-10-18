@@ -4,6 +4,7 @@ import {
   buildInteractionGraph,
   chainOf,
   DEFAULT_INTERACTION_GRAPH,
+  isBuiltinEntryId,
   isHourInWindow,
   isValidTriggerKey,
   resolveInteractionEntry,
@@ -149,5 +150,36 @@ describe('buildInteractionGraph（覆盖条目叠加）', () => {
     expect(
       resolveInteractionEntry(graph, 'touch::head::tap', ctx({ relationshipLevel: 'partner' }))?.chainId,
     ).toBe('head-tap');
+  });
+});
+
+describe('buildInteractionGraph 停用内置条目（v2.3 收尾）', () => {
+  it('停用后该内置条目被剔除，其余内置条目仍在', () => {
+    const graph = buildInteractionGraph(null, ['builtin:head-tap']);
+    expect(graph).not.toBe(DEFAULT_INTERACTION_GRAPH);
+    expect(graph.some((item) => item.id === 'builtin:head-tap')).toBe(false);
+    expect(graph.some((item) => item.id === 'builtin:body-tap')).toBe(true);
+  });
+
+  it('停用某触发键的全部条目后该键匹配为空（「查不到返回空」）', () => {
+    const graph = buildInteractionGraph(null, ['builtin:head-tap']);
+    expect(resolveInteractionEntry(graph, 'touch::head::tap', ctx())).toBeNull();
+    // 其它键不受影响
+    expect(resolveInteractionEntry(graph, 'touch::body::tap', ctx())).not.toBeNull();
+  });
+
+  it('覆盖与停用同时生效：覆盖条目排前，被停用的兜底被剔除', () => {
+    const override = entry({ condition: { mood: 'good' }, chainId: 'raised-tap' });
+    const graph = buildInteractionGraph([override], ['builtin:head-tap']);
+    expect(graph[0]).toBe(override);
+    expect(
+      resolveInteractionEntry(graph, 'touch::head::tap', ctx({ mood: 'good' }))?.chainId,
+    ).toBe('raised-tap');
+  });
+
+  it('isBuiltinEntryId 只认内置条目 id', () => {
+    expect(isBuiltinEntryId('builtin:head-tap')).toBe(true);
+    expect(isBuiltinEntryId('builtin:nope')).toBe(false);
+    expect(isBuiltinEntryId('head-tap')).toBe(false);
   });
 });

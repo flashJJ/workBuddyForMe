@@ -3,6 +3,7 @@ import { type AppSettings } from '@wbfm/shared/types';
 import {
   interactionGraphEntrySchema,
   INTERACTION_GRAPH_OVERRIDES_MAX,
+  isBuiltinEntryId,
   type InteractionGraphOverride,
   type SettingsUpdateInput,
 } from '@wbfm/shared/schemas';
@@ -70,6 +71,20 @@ export function resolveInteractionGraphOverrides(value: unknown): InteractionGra
   return out;
 }
 
+/**
+ * 服务端钳制「停用内置条目」列表：未知 id（内置条目被移除 / 手改 settings_kv）丢弃并去重。
+ */
+export function resolveInteractionGraphDisabledEntryIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || !isBuiltinEntryId(item) || out.includes(item)) continue;
+    out.push(item);
+    if (out.length >= INTERACTION_GRAPH_OVERRIDES_MAX) break;
+  }
+  return out;
+}
+
 export function createSettingsService({ db }: ServiceDeps) {
   const settings = createSettingsRepository(db);
   const models = createModelRepository(db);
@@ -87,6 +102,9 @@ export function createSettingsService({ db }: ServiceDeps) {
       merged.contextMessageCount = resolveContextMessageCount(merged.contextMessageCount);
       merged.interactionGraphOverrides = resolveInteractionGraphOverrides(
         merged.interactionGraphOverrides,
+      );
+      merged.interactionGraphDisabledEntryIds = resolveInteractionGraphDisabledEntryIds(
+        merged.interactionGraphDisabledEntryIds,
       );
       return merged;
     },

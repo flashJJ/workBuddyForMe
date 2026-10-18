@@ -21,6 +21,11 @@ export const zhSettingsGraph = {
   hoursStart: '开始',
   hoursEnd: '结束',
   savedHint: '保存后立即对桌宠生效（重启无需重载）。',
+  builtinsTitle: '内置条目',
+  builtinsHint: '内置条目始终兜底。停用后该条目不再参与；若某触发键的条目因此全部失效，该交互就不会再有动作。',
+  enabledLabel: '启用',
+  overrideAction: '覆盖',
+  overriddenBadge: '已覆盖',
 };
 
 export const enSettingsGraph = {
@@ -46,4 +51,9 @@ export const enSettingsGraph = {
   hoursStart: 'From',
   hoursEnd: 'To',
   savedHint: 'Takes effect on the desktop pet right after saving (no reload needed).',
+  builtinsTitle: 'Built-in entries',
+  builtinsHint: 'Built-in entries always act as a fallback. A disabled entry no longer participates; if that leaves a trigger with no entry, the interaction has no action.',
+  enabledLabel: 'Enabled',
+  overrideAction: 'Override',
+  overriddenBadge: 'Overridden',
 };

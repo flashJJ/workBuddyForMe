@@ -90,11 +90,12 @@ export function PetStage({
   const dndEnabled = settings?.doNotDisturbEnabled !== false;
   const dndStartHour = settings?.doNotDisturbStartHour ?? DEFAULT_DO_NOT_DISTURB.startHour;
   const dndEndHour = settings?.doNotDisturbEndHour ?? DEFAULT_DO_NOT_DISTURB.endHour;
-  // v2.3：交互动画图 = 用户覆盖条目（排前）+ 内置图兜底
+  // v2.3：交互动画图 = 用户覆盖条目（排前）+ 内置图（剔除被停用条目）
   const graphOverrides = settings?.interactionGraphOverrides;
+  const graphDisabled = settings?.interactionGraphDisabledEntryIds;
   const interactionGraph = React.useMemo(
-    () => buildInteractionGraph(graphOverrides),
-    [graphOverrides],
+    () => buildInteractionGraph(graphOverrides, graphDisabled),
+    [graphOverrides, graphDisabled],
   );
 
   // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底（键为 region::gesture）

@@ -252,6 +252,11 @@ export interface AppSettings extends EventSettingsFields {
    * 覆盖条目排在内置图之前生效，内置图仍兜底，保证任何状态下都有可播动作。
    */
   interactionGraphOverrides?: InteractionGraphEntry[];
+  /**
+   * v2.3：被停用的内置动画图条目 id（缺省空 = 内置条目全部生效）。
+   * 停用某触发键的全部条目后该交互不再有动作（「查不到返回空」）。
+   */
+  interactionGraphDisabledEntryIds?: string[];
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;

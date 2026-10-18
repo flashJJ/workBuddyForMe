@@ -111,6 +111,14 @@ describe('交互动画图覆盖条目 schema (v2.3)', () => {
     const many = Array.from({ length: INTERACTION_GRAPH_OVERRIDES_MAX + 1 }, () => one);
     expect(settingsUpdateSchema.safeParse({ interactionGraphOverrides: many }).success).toBe(false);
   });
+
+  it('设置体：停用内置条目 id 列表上限 50（未知 id 由服务端丢弃，schema 不拦）', () => {
+    expect(
+      settingsUpdateSchema.safeParse({ interactionGraphDisabledEntryIds: ['builtin:head-tap'] }).success,
+    ).toBe(true);
+    const many = Array.from({ length: INTERACTION_GRAPH_OVERRIDES_MAX + 1 }, () => 'builtin:head-tap');
+    expect(settingsUpdateSchema.safeParse({ interactionGraphDisabledEntryIds: many }).success).toBe(false);
+  });
 });
 
 describe('chat / knowledge schemas', () => {

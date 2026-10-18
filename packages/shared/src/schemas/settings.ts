@@ -80,6 +80,11 @@ export const settingsUpdateSchema = z.object({
     .array(interactionGraphEntrySchema)
     .max(INTERACTION_GRAPH_OVERRIDES_MAX)
     .optional(),
+  // v2.3 内置动画图条目的停用列表（≤50；未知 id 服务端丢弃，见 isBuiltinEntryId）
+  interactionGraphDisabledEntryIds: z
+    .array(z.string().trim().min(1).max(80))
+    .max(INTERACTION_GRAPH_OVERRIDES_MAX)
+    .optional(),
   // v1.7 剧情事件总开关（缺省视为 true；出口/勿扰/对话锁仍由导演层兜底）
   eventsEnabled: z.boolean().optional(),
   // v1.7 主动频率档（冷却系数 1.5/1/0.6；缺省 standard）
