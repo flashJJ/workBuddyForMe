@@ -169,3 +169,31 @@
 - 窄窗：侧栏 [app-sidebar.tsx](../../../apps/web/src/components/layout/app-sidebar.tsx) `w-56` 无折叠；[task-page.tsx:90](../../../apps/web/src/features/tasks/task-page.tsx#L90)、[scenario-model-matrix.tsx:26](../../../apps/web/src/features/tuning/scenario-model-matrix.tsx#L26) 固定网格列。
 - 开箱即用：工作流 [starters.ts](../../../packages/core/src/flow/starters/starters.ts) 3 个；技能 [builtin-skills.ts](../../../packages/core/src/skills/builtin-skills.ts) 3 个；知识库 [seed.ts](../../../packages/core/src/services/seed.ts) 零播种。
 - MCP / 技能入口：[mcp-panel.tsx](../../../apps/web/src/features/settings/mcp-panel.tsx) 手填；[skills-panel.tsx](../../../apps/web/src/features/settings/skills-panel.tsx) 只列；[assistant-form-dialog.tsx](../../../apps/web/src/features/assistants/assistant-form-dialog.tsx) 仅工具级绑定。
+
+## 8. 交付状态（M0–M3 已落地）
+
+### 8.1 已交付
+
+| 里程碑 | 内容 | 代码锚点 |
+|---|---|---|
+| M0 基座 | Radix 组合式 `Select`（Trigger/Content/Item/Group/Label/Separator）、`SimpleSelect`（原生语义外观层 + 空值哨兵适配）、`NumberInput`（步进器 + `allowEmpty`）、`FormField`；common 命名空间新增 `controls` 文案 | [select.tsx](../../../apps/web/src/components/ui/select.tsx)、[simple-select.tsx](../../../apps/web/src/components/ui/simple-select.tsx)、[number-input.tsx](../../../apps/web/src/components/ui/number-input.tsx)、[form-field.tsx](../../../apps/web/src/components/ui/form-field.tsx)、[common.ts](../../../packages/shared/src/i18n/messages/common.ts) |
+| M1 全量迁移 | 26 个文件：裸 `<select>` 13 处 + 导入旧 `Select` 18 处 + 裸 `type="number"` 11 处，全部改走统一组件；`components/ui/select.tsx` 由原生封装升级为 Radix 组合原语 | 见各 feature 目录；`Grep '<select' / 'type="number"' / "ui/select"` 在业务代码中归零 |
+| M2 窄窗响应式 | 侧栏 `<768px` 自动折叠为图标态（`w-14 md:w-56` + `hidden md:inline`）；task-page 网格改 `lg:grid-cols-[260px_minmax(0,1fr)_auto]` 且按钮/数值框 `shrink-0`；场景模型矩阵改 `sm:grid-cols-[10rem_minmax(0,1fr)]`；助手切换器改 `min-w-0 max-w-[12rem]` | [app-sidebar.tsx](../../../apps/web/src/components/layout/app-sidebar.tsx)、[task-page.tsx](../../../apps/web/src/features/tasks/task-page.tsx)、[scenario-model-matrix.tsx](../../../apps/web/src/features/tuning/scenario-model-matrix.tsx)、[assistant-switcher.tsx](../../../apps/web/src/features/chat/assistant-switcher.tsx) |
+| M3 开箱即用 | 内置知识库模板 3 个（固定 id 幂等播种）+ 新建弹窗「从模板开始」；工作流 starter 3 → 6（会议纪要整理 / 竞品对比 / 知识库问答）；MCP 预置目录 4 个（filesystem/fetch/git/memory）一键填入表单；技能面板「重新扫描」（`POST /api/skills` → reconcile）+ 全局口径文案 | [knowledge-starters.ts](../../../packages/shared/src/constants/knowledge-starters.ts)、[seed-starter-knowledge-bases.ts](../../../packages/core/src/knowledge/seed-starter-knowledge-bases.ts)、[container.ts](../../../apps/web/src/lib/server/container.ts)、[starters.ts](../../../packages/core/src/flow/starters/starters.ts)、[mcp-presets.ts](../../../packages/shared/src/constants/mcp-presets.ts)、[mcp-panel.tsx](../../../apps/web/src/features/settings/mcp-panel.tsx)、[skills/route.ts](../../../apps/web/src/app/api/skills/route.ts) |
+
+**门禁**：`pnpm check` 8/8（typecheck 通过、lint 0 error、行数门禁通过）；`pnpm test` 8/8（web 507、shared 314、core、database、desktop 164 全绿）。
+
+### 8.2 与计划的取舍差异（实现时定稿）
+
+- **Radix Select 采用 `item-aligned` 定位（非 popper）**：`position="popper"` 依赖 Radix Popper 的持续 rAF 测量循环，在 jsdom 下会让下拉相关测试从 ~0.2s 涨到 ~34s 甚至超时；改用 Radix 默认的 `item-aligned` 后交互与视觉等效而测试恢复正常。组件仍保留 `position` prop 可覆写。
+- **侧栏折叠用 CSS 断点自动折叠，未做「手动折叠 + 持久化」**：更简单、无需新增设置项；<768px 即图标态（`title` 提供可访问名）。
+- **技能侧落地为「重新扫描」而非「导入本地技能包」**：技能本就是数据目录 `skills/` 下的文件夹，`reconcile` 即可加载（无需重启），避免引入上传落盘的安全面。
+- **助手级技能绑定仍未做（P2）**：按计划先把面板文案改为「全局启停」口径，绑定留后续版本。
+- **知识库模板默认不带样本文档**（按第 6 节取舍），只预填名称/说明/推荐分片参数。
+- **`NumberInput` 增加 `allowEmpty`**：保住模型 `contextWindow` 等「可空数值」字段的既有语义（空 = 未设置），避免迁移把「未设置」压成 0。
+
+### 8.3 待办（未随本次提交完成）
+
+- **窄窗真机手动验收**：浏览器自动化无法精确缩放到 <768px，故「侧栏折叠 + 无文字重叠」需在真机窗口手动核对一次（已确认 `md:inline` / `w-14` / 768px 断点已编入产物 CSS）。
+- **E2E 三尺寸截图**：计划 M2 出口要求的三尺寸截图用例尚未补。
+- **P1 项**（表单排版规范收敛、MCP 添加后一键测试连接、设计 token 文档）未在本轮落地。

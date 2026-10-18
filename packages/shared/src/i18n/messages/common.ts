@@ -65,6 +65,12 @@ export const zhCommon = {
     noData: '暂无数据',
     noResults: '没有匹配结果',
   },
+  /** 通用控件文案（v2.3 统一选择器 / 数值输入） */
+  controls: {
+    selectPlaceholder: '请选择',
+    decreaseNumber: '减少',
+    increaseNumber: '增加',
+  },
   /** 跳转链接/路由级加载与错误兜底（公共外壳） */
   skipToContent: '跳到主内容',
   pageLoading: '页面加载中…',
@@ -145,6 +151,11 @@ export const enCommon = {
   empty: {
     noData: 'No data',
     noResults: 'No matching results',
+  },
+  controls: {
+    selectPlaceholder: 'Select…',
+    decreaseNumber: 'Decrease',
+    increaseNumber: 'Increase',
   },
   skipToContent: 'Skip to main content',
   pageLoading: 'Loading page…',

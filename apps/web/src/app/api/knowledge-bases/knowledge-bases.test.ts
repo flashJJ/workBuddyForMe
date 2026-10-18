@@ -11,6 +11,7 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
+import { STARTER_KNOWLEDGE_BASES } from '@wbfm/shared/constants';
 import { createSettingsService } from '@wbfm/core/services';
 import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
@@ -99,7 +100,11 @@ describe('知识库与文档路由（TR-22.1）', () => {
   }
 
   it('知识库 CRUD：默认分片参数、读取/更新/404', async () => {
-    expect((await (await listKb(new Request('http://x'))).json()).data).toHaveLength(1);
+    // v2.3：容器启动会额外播种内置知识库模板，故列表 = 模板数 + 本用例新建的 1 个
+    const list = (await (await listKb(new Request('http://x'))).json()).data as { id: string }[];
+    expect(list).toHaveLength(STARTER_KNOWLEDGE_BASES.length + 1);
+    expect(list.some((kb) => kb.id === kbId)).toBe(true);
+
     const detail = await getKb(new Request('http://x'), { params: Promise.resolve({ id: kbId }) });
     expect((await detail.json()).data.chunkSize).toBeGreaterThan(0);
 

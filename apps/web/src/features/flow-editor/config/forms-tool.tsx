@@ -6,7 +6,7 @@ import { useToolDebugList } from '@/lib/hooks/use-tool-debug';
 import { useFlows } from '@/lib/hooks/use-flows';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { MessageKey } from '@wbfm/shared/i18n';
-import { Field, JsonObjectEditor, Select, str, type NodeConfigFormProps } from './form-primitives';
+import { Field, JsonObjectEditor, SimpleSelect, str, type NodeConfigFormProps } from './form-primitives';
 
 const PERMISSION_LABEL: Record<string, MessageKey> = {
   read: 'flowEditor.form.tool.permission.read',
@@ -67,7 +67,7 @@ export function ToolForm({ config, patch }: NodeConfigFormProps) {
   return (
     <div className="flex flex-col gap-3">
       <Field label={t('flowEditor.form.tool.toolLabel')}>
-        <Select value={toolName} onChange={(e) => patch({ toolName: e.target.value })}>
+        <SimpleSelect value={toolName} onValueChange={(v) => patch({ toolName: v })}>
           <option value="">{t('flowEditor.form.tool.toolPlaceholder')}</option>
           {groups.map((g) => (
             <optgroup key={g.label} label={g.label}>
@@ -78,7 +78,7 @@ export function ToolForm({ config, patch }: NodeConfigFormProps) {
               ))}
             </optgroup>
           ))}
-        </Select>
+        </SimpleSelect>
       </Field>
       {selected && (
         <div className="flex flex-col gap-1.5 rounded-md border bg-muted/30 p-2">

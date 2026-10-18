@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Ban, ChevronRight, Loader2, Users } from 'lucide-react';
 import type { AgentRunStatus, AgentRunView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -52,9 +52,9 @@ export function AgentTasksSection() {
         <Users className="h-4 w-4 text-teal-500" />
         <h2 className="text-sm font-semibold">{t('agents.tasks.title')}</h2>
         <span className="text-xs text-muted-foreground">{t('agents.tasks.description')}</span>
-        <Select
+        <SimpleSelect
           value={filter}
-          onChange={(e) => setFilter(e.target.value as AgentRunStatus | 'all')}
+          onValueChange={(v) => setFilter(v as AgentRunStatus | 'all')}
           className="ml-auto h-8 w-36 text-xs"
           aria-label={t('agents.tasks.filterAll')}
         >
@@ -63,7 +63,7 @@ export function AgentTasksSection() {
               {s === 'all' ? t('agents.tasks.filterAll') : t(STATUS_KEY[s])}
             </option>
           ))}
-        </Select>
+        </SimpleSelect>
       </div>
 
       {runsQuery.isLoading ? (

@@ -5,7 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import type { FlowInputField, FlowInputValueType } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { Field, Input, RefTextarea, Select, str, type NodeConfigFormProps } from './form-primitives';
+import { Field, Input, RefTextarea, SimpleSelect, str, type NodeConfigFormProps } from './form-primitives';
 
 const INPUT_TYPES: FlowInputValueType[] = ['string', 'number', 'boolean'];
 
@@ -55,9 +55,9 @@ export function StartForm({ config, patch }: NodeConfigFormProps) {
                 </Button>
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <Select
+                <SimpleSelect
                   value={field.type}
-                  onChange={(e) => update(i, { type: e.target.value as FlowInputValueType })}
+                  onValueChange={(v) => update(i, { type: v as FlowInputValueType })}
                   className="h-8 text-xs"
                 >
                   {INPUT_TYPES.map((ty) => (
@@ -65,7 +65,7 @@ export function StartForm({ config, patch }: NodeConfigFormProps) {
                       {ty}
                     </option>
                   ))}
-                </Select>
+                </SimpleSelect>
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <input
                     type="checkbox"

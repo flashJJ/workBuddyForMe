@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { EventUsageStatsView } from '@wbfm/shared/schemas';
 import { apiGet } from '@/lib/api/client';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 
@@ -51,12 +52,12 @@ export function EventUsageStats() {
     <div className="space-y-2 border-t pt-3" data-testid="event-usage-stats">
       <div className="flex items-center justify-between gap-3">
         <h4 className="text-sm font-medium">{t('eventStats.title')}</h4>
-        <select
+        <SimpleSelect
           className="rounded-md border bg-background px-2 py-1 text-xs"
           value={assistantId}
           aria-label={t('eventStats.selectAssistant')}
           data-testid="event-usage-assistant"
-          onChange={(e) => setAssistantId(e.target.value)}
+          onValueChange={(v) => setAssistantId(v)}
         >
           <option value="" disabled>
             {t('eventStats.selectAssistant')}
@@ -67,7 +68,7 @@ export function EventUsageStats() {
               {assistant.name}
             </option>
           ))}
-        </select>
+        </SimpleSelect>
       </div>
 
       {assistantId && (

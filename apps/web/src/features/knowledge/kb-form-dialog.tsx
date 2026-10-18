@@ -7,6 +7,7 @@ import {
   DEFAULT_CHUNK_SIZE,
   MAX_CHUNK_SIZE,
   MIN_CHUNK_SIZE,
+  STARTER_KNOWLEDGE_BASES,
 } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +19,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/common/toast';
@@ -57,6 +60,15 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
     chunkOverlap: Number(chunkOverlap),
   });
 
+  /** v2.3 从模板创建：预填名称 / 说明 / 推荐分片参数；选「空白知识库」则重置为默认 */
+  const applyTemplate = (templateId: string) => {
+    const template = STARTER_KNOWLEDGE_BASES.find((item) => item.id === templateId);
+    setName(template?.name ?? '');
+    setDescription(template?.description ?? '');
+    setChunkSize(String(template?.chunkSize ?? DEFAULT_CHUNK_SIZE));
+    setChunkOverlap(String(template?.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP));
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return;
@@ -85,6 +97,20 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
           <DialogDescription>{t('knowledge.form.description')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isEdit && (
+            <div className="space-y-1.5 rounded-md border bg-muted/30 p-3">
+              <Label htmlFor="kb-template">{t('knowledge.form.templateLabel')}</Label>
+              <SimpleSelect id="kb-template" value="" onValueChange={applyTemplate}>
+                <option value="">{t('knowledge.form.templateBlank')}</option>
+                {STARTER_KNOWLEDGE_BASES.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </SimpleSelect>
+              <p className="text-xs text-muted-foreground">{t('knowledge.form.templateHint')}</p>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="kb-name">{t('common.words.name')}</Label>
             <Input
@@ -108,23 +134,21 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="kb-chunk-size">{t('knowledge.form.chunkSize')}</Label>
-              <Input
+              <NumberInput
                 id="kb-chunk-size"
-                type="number"
                 min={MIN_CHUNK_SIZE}
                 max={MAX_CHUNK_SIZE}
-                value={chunkSize}
-                onChange={(e) => setChunkSize(e.target.value)}
+                value={Number(chunkSize)}
+                onValueChange={(v) => setChunkSize(String(v))}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="kb-chunk-overlap">{t('knowledge.form.chunkOverlap')}</Label>
-              <Input
+              <NumberInput
                 id="kb-chunk-overlap"
-                type="number"
                 min={0}
-                value={chunkOverlap}
-                onChange={(e) => setChunkOverlap(e.target.value)}
+                value={Number(chunkOverlap)}
+                onValueChange={(v) => setChunkOverlap(String(v))}
               />
             </div>
           </div>

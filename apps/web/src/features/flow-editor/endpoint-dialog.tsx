@@ -27,7 +27,8 @@ import {
   getEndpointBaseUrl,
 } from './endpoint-dialog-utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SimpleSelect } from '@/components/ui/simple-select';
+import { NumberInput } from '@/components/ui/number-input';
 import {
   Dialog,
   DialogContent,
@@ -171,27 +172,26 @@ export function EndpointDialog({ open, workflowId, published, onClose }: Endpoin
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-medium">{t('flowEditor.endpoint.timeoutLabel')}</span>
-                  <select
-                    className="h-9 rounded-md border bg-background px-2 text-sm"
-                    value={timeoutMs}
-                    onChange={(e) => setTimeoutMs(Number(e.target.value))}
+                  <SimpleSelect
+                    className="h-9 text-sm"
+                    value={String(timeoutMs)}
+                    onValueChange={(v) => setTimeoutMs(Number(v))}
                   >
                     {TIMEOUT_OPTIONS.map((ms) => (
                       <option key={ms} value={ms}>
                         {t('flowEditor.endpoint.timeoutOption', { seconds: ms / 1000 })}
                       </option>
                     ))}
-                  </select>
+                  </SimpleSelect>
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-medium">{t('flowEditor.endpoint.rateLimitLabel')}</span>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={FLOW_ENDPOINT_RATE_LIMIT.min}
                     max={FLOW_ENDPOINT_RATE_LIMIT.max}
                     value={rateLimit}
                     className="h-9 text-sm"
-                    onChange={(e) => setRateLimit(Number(e.target.value))}
+                    onValueChange={setRateLimit}
                   />
                 </label>
               </div>

@@ -7,6 +7,7 @@ import { History, RefreshCw, RotateCcw } from 'lucide-react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
@@ -83,22 +84,22 @@ export function FlowRunsView() {
 
       <div className="flex items-center gap-2 border-b bg-card px-6 py-2.5 text-xs">
         <span className="text-muted-foreground">{t('flows.runs.source')}</span>
-        <select
+        <SimpleSelect
           className="h-8 rounded-md border bg-background px-2"
           value={trigger}
-          onChange={(e) => setTrigger(e.target.value)}
+          onValueChange={(v) => setTrigger(v)}
         >
           <option value="">{t('common.words.all')}</option>
           <option value="manual">{t(TRIGGER_KEYS.manual!)}</option>
           <option value="chat">{t(TRIGGER_KEYS.chat!)}</option>
           <option value="api">{t(TRIGGER_KEYS.api!)}</option>
           <option value="mcp">{t(TRIGGER_KEYS.mcp!)}</option>
-        </select>
+        </SimpleSelect>
         <span className="ml-2 text-muted-foreground">{t('common.words.status')}</span>
-        <select
+        <SimpleSelect
           className="h-8 rounded-md border bg-background px-2"
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onValueChange={(v) => setStatus(v)}
         >
           <option value="">{t('common.words.all')}</option>
           <option value="queued">{t(STATUS_KEYS.queued!)}</option>
@@ -108,7 +109,7 @@ export function FlowRunsView() {
           <option value="failed">{t(STATUS_KEYS.failed!)}</option>
           <option value="cancelled">{t(STATUS_KEYS.cancelled!)}</option>
           <option value="interrupted">{t(STATUS_KEYS.interrupted!)}</option>
-        </select>
+        </SimpleSelect>
       </div>
 
       <div className="flex-1 overflow-auto p-4">

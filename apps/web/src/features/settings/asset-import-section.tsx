@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { apiUpload } from '@/lib/api/client';
 import type { MessageKey } from '@wbfm/shared/i18n';
 
@@ -175,12 +176,12 @@ export function AssetImportSection<TMeta, TResponse>({
               <label key={field.name} className="flex items-center gap-2">
                 <span className="text-muted-foreground">{t(field.labelKey)}</span>
                 {field.kind === 'select' ? (
-                  <select
-                    className="rounded-md border px-2 py-1 text-xs"
+                  <SimpleSelect
+                    className="rounded-md border text-xs"
                     data-testid={`${prefix}-${field.name}`}
                     value={extras[field.name] ?? ''}
-                    onChange={(e) =>
-                      setExtras((prev) => ({ ...prev, [field.name]: e.target.value }))
+                    onValueChange={(v) =>
+                      setExtras((prev) => ({ ...prev, [field.name]: v }))
                     }
                   >
                     {field.options?.map((option) => (
@@ -188,7 +189,7 @@ export function AssetImportSection<TMeta, TResponse>({
                         {t(option.labelKey)}
                       </option>
                     ))}
-                  </select>
+                  </SimpleSelect>
                 ) : (
                   <input
                     type="text"

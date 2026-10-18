@@ -1,6 +1,7 @@
 import {
   initDatabase,
   createEventUsageRepository,
+  createKnowledgeRepository,
   createWorkflowRepository,
   createWorkflowEndpointRepository,
   createWorkflowRunRepository,
@@ -50,6 +51,7 @@ import { createIngestionPipeline, type IngestionPipeline } from '@wbfm/core/inge
 import {
   createCompileRunnerService,
   createKnowledgeGovernanceService,
+  ensureStarterKnowledgeBases,
   type CompileRunnerService,
   type KnowledgeGovernanceService,
 } from '@wbfm/core/knowledge';
@@ -211,6 +213,9 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
   const starterCount = ensureStarterFlows(workflows);
   if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
+  // v2.3：启动播种内置知识库模板（幂等，固定 id，只增不改）
+  const kbStarterCount = ensureStarterKnowledgeBases(createKnowledgeRepository(db));
+  if (kbStarterCount > 0) console.info(`[knowledge] 已播种 ${kbStarterCount} 个内置知识库模板`);
   // v1.7：清理 90 天前的事件演出流水（小表，不无限增长；失败不阻断启动）
   try {
     const purged = createEventUsageRepository(deps.db).purgeBefore(

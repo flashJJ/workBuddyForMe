@@ -6,6 +6,7 @@ import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToolDebugExecute, useToolDebugList } from '@/lib/hooks/use-tool-debug';
@@ -89,11 +90,11 @@ export function ToolDebugPanel() {
             <label htmlFor="tool-debug-select" className="text-xs font-medium text-muted-foreground">
               {t('toolDebug.toolLabel')}
             </label>
-            <select
+            <SimpleSelect
               id="tool-debug-select"
               value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              onValueChange={(v) => setSelected(v)}
+              className="w-full rounded-md border bg-background text-sm"
               data-testid="tool-debug-select"
             >
               {Object.entries(
@@ -110,7 +111,7 @@ export function ToolDebugPanel() {
                   ))}
                 </optgroup>
               ))}
-            </select>
+            </SimpleSelect>
           </div>
 
           {currentTool && (

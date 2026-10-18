@@ -6,6 +6,10 @@ export const zhSettingsMcp = {
     description:
       '接入本地 MCP（Model Context Protocol）服务器，为助手扩展文件搜索等外部工具。',
     addServer: '添加服务器',
+    presets: {
+      title: '预置服务器',
+      hint: '常见 MCP 服务器一键填入表单；参数（如目标目录、仓库路径）仍需按你的环境调整。',
+    },
     loadFailed: 'MCP 服务器加载失败，',
     empty: '还没有 MCP 服务器。添加后可在助手编辑里勾选其工具。',
     toolCount: '{count} 个工具',
@@ -40,7 +44,11 @@ export const zhSettingsMcp = {
   skills: {
     title: '技能包',
     description:
-      '数据目录 skills/ 下的技能文件夹（含 skill.json），重启后自动识别；启停即时生效。',
+      '数据目录 skills/ 下的技能文件夹（含 skill.json）在启动时自动识别；启停为全局生效，对所有助手可用。把新技能包放入该目录后点「重新扫描」即可加载。',
+    rescan: '重新扫描',
+    rescanDone: '已重新扫描，新增 {count} 个技能',
+    rescanNone: '已重新扫描，没有新增技能',
+    rescanFailed: '扫描失败',
     loadFailed: '技能加载失败，',
     empty: '还没有技能。内置示例（周报生成、会议纪要整理）会在启动后自动出现在这里。',
     shapePrompt: '提示词',
@@ -88,6 +96,10 @@ export const enSettingsMcp = {
     description:
       'Connect local MCP (Model Context Protocol) servers to give assistants external tools such as file search.',
     addServer: 'Add server',
+    presets: {
+      title: 'Preset servers',
+      hint: 'Fill the form with a common MCP server in one click; adjust parameters (target directory, repo path) for your environment.',
+    },
     loadFailed: 'Failed to load MCP servers. ',
     empty:
       'No MCP servers yet. Add one and enable its tools when editing an assistant.',
@@ -124,7 +136,11 @@ export const enSettingsMcp = {
   skills: {
     title: 'Skills',
     description:
-      'Skill folders (with skill.json) under the skills/ data directory are detected on restart. Toggling takes effect immediately.',
+      'Skill folders (with skill.json) under the skills/ data directory are detected on startup. Toggling is global and applies to all assistants. Drop a new skill folder there and click "Rescan" to load it.',
+    rescan: 'Rescan',
+    rescanDone: 'Rescanned; {count} new skill(s)',
+    rescanNone: 'Rescanned; no new skills',
+    rescanFailed: 'Rescan failed',
     loadFailed: 'Failed to load skills. ',
     empty:
       'No skills yet. Built-in examples (weekly report, meeting notes) will appear here automatically after startup.',

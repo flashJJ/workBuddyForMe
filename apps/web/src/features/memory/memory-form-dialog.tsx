@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -109,17 +109,17 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>{t('memory.form.kindLabel')}</Label>
-              <Select
+              <SimpleSelect
                 aria-label={t('memory.form.kindAria')}
                 value={form.kind}
-                onChange={(e) => update({ kind: e.target.value as MemoryKind })}
+                onValueChange={(v) => update({ kind: v as MemoryKind })}
               >
                 {MEMORY_KIND_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {t(option.labelKey)}
                   </option>
                 ))}
-              </Select>
+              </SimpleSelect>
             </div>
             <div className="space-y-1.5">
               <Label>{t('memory.form.importanceLabel', { value: Number(form.importance).toFixed(1) })}</Label>
@@ -154,14 +154,14 @@ export function MemoryFormDialog({ open, onOpenChange, memory }: Props) {
           {memory && (
             <div className="space-y-1.5">
               <Label>{t('memory.form.statusLabel')}</Label>
-              <Select
+              <SimpleSelect
                 aria-label={t('memory.form.statusAria')}
                 value={form.status}
-                onChange={(e) => update({ status: e.target.value as MemoryStatus })}
+                onValueChange={(v) => update({ status: v as MemoryStatus })}
               >
                 <option value="active">{t(MEMORY_STATUS_LABELS.active)}</option>
                 <option value="archived">{t(MEMORY_STATUS_LABELS.archived)}</option>
-              </Select>
+              </SimpleSelect>
             </div>
           )}
         </div>

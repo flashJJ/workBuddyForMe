@@ -3,11 +3,11 @@
 import type { KnowledgeBase } from '@wbfm/shared/types';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { NumberInput } from '@/components/ui/number-input';
 import {
   Field,
-  Input,
   RefTextarea,
-  Select,
+  SimpleSelect,
   num,
   str,
   type NodeConfigFormProps,
@@ -22,14 +22,14 @@ export function LlmForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
   return (
     <div className="flex flex-col gap-3">
       <Field label={t('flowEditor.form.llm.modelLabel')} hint={t('flowEditor.form.llm.modelHint')}>
-        <Select value={modelId} onChange={(e) => patch({ modelId: e.target.value })}>
+        <SimpleSelect value={modelId} onValueChange={(v) => patch({ modelId: v })}>
           <option value="">{t('flowEditor.form.llm.modelDefault')}</option>
           {modelOptions.map((m) => (
             <option key={m.modelId} value={m.modelId}>
               {m.label}
             </option>
           ))}
-        </Select>
+        </SimpleSelect>
       </Field>
       <Field label={t('flowEditor.form.llm.systemLabel')}>
         <RefTextarea
@@ -52,15 +52,12 @@ export function LlmForm({ nodeId, config, nodes, patch }: NodeConfigFormProps) {
         />
       </Field>
       <Field label={t('flowEditor.form.llm.temperatureLabel')}>
-        <Input
-          type="number"
+        <NumberInput
+          value={num(config.temperature, 0.7)}
+          onValueChange={(v) => patch({ temperature: v })}
           min={0}
           max={2}
           step={0.1}
-          value={config.temperature === undefined ? '' : num(config.temperature, 0.7)}
-          onChange={(e) =>
-            patch({ temperature: e.target.value === '' ? undefined : Number(e.target.value) })
-          }
           className="h-8 text-xs"
         />
       </Field>
@@ -76,9 +73,9 @@ export function KnowledgeForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
   return (
     <div className="flex flex-col gap-3">
       <Field label={t('flowEditor.form.knowledge.kbLabel')}>
-        <Select
+        <SimpleSelect
           value={str(config.knowledgeBaseId)}
-          onChange={(e) => patch({ knowledgeBaseId: e.target.value })}
+          onValueChange={(v) => patch({ knowledgeBaseId: v })}
         >
           <option value="">{t('flowEditor.form.knowledge.kbPlaceholder')}</option>
           {list.map((kb: KnowledgeBase) => (
@@ -86,7 +83,7 @@ export function KnowledgeForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
               {kb.name}
             </option>
           ))}
-        </Select>
+        </SimpleSelect>
       </Field>
       <Field label={t('flowEditor.form.knowledge.queryLabel')} hint={t('flowEditor.form.knowledge.queryHint')}>
         <RefTextarea
@@ -99,12 +96,11 @@ export function KnowledgeForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
         />
       </Field>
       <Field label={t('flowEditor.form.knowledge.topKLabel')}>
-        <Input
-          type="number"
+        <NumberInput
+          value={num(config.topK, 4)}
+          onValueChange={(v) => patch({ topK: v })}
           min={1}
           max={20}
-          value={num(config.topK, 4)}
-          onChange={(e) => patch({ topK: Number(e.target.value) || 4 })}
           className="h-8 text-xs"
         />
       </Field>

@@ -5,7 +5,7 @@ import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
@@ -184,11 +184,11 @@ export function MemoryPanel() {
           className="h-9 max-w-xs"
           onChange={(e) => setSearch(e.target.value)}
         />
-        <Select
+        <SimpleSelect
           aria-label={t('memory.kindFilterAria')}
           className="h-9 w-28"
           value={kind}
-          onChange={(e) => setKind(e.target.value as '' | MemoryKind)}
+          onValueChange={(v) => setKind(v as '' | MemoryKind)}
         >
           <option value="">{t('memory.kindFilterAll')}</option>
           {MEMORY_KIND_OPTIONS.map((option) => (
@@ -196,17 +196,17 @@ export function MemoryPanel() {
               {t(option.labelKey)}
             </option>
           ))}
-        </Select>
-        <Select
+        </SimpleSelect>
+        <SimpleSelect
           aria-label={t('memory.statusFilterAria')}
           className="h-9 w-28"
           value={status}
-          onChange={(e) => setStatus(e.target.value as StatusFilter)}
+          onValueChange={(v) => setStatus(v as StatusFilter)}
         >
           <option value="">{t('memory.statusFilterAll')}</option>
           <option value="active">{t(MEMORY_STATUS_LABELS.active)}</option>
           <option value="archived">{t(MEMORY_STATUS_LABELS.archived)}</option>
-        </Select>
+        </SimpleSelect>
         <Input
           aria-label={t('memory.fromAria')}
           type="date"

@@ -13,7 +13,7 @@ import { usePetOpenState } from '@/features/pet/use-pet-voice-relay';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
@@ -167,12 +167,11 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
       {enabled && (
         <div className="space-y-1.5" data-testid="avatar-model-row">
           <Label htmlFor="avatar-model">{t('voice.avatar.modelLabel')}</Label>
-          <Select
+          <SimpleSelect
             id="avatar-model"
             data-testid="avatar-model"
             value={modelId}
-            onChange={(e) => {
-              const next = e.target.value;
+            onValueChange={(next) => {
               setModelId(next);
               void onPatch({ avatarModelId: next });
               // 桌宠正开着：原位切换桌宠模型（主进程 open 对不同模型做静默换窗），
@@ -196,7 +195,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
                 ))}
               </optgroup>
             )}
-          </Select>
+          </SimpleSelect>
           <div
             className="flex items-center justify-between gap-2"
             data-testid="avatar-voice-row"

@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { VoiceSettings, VadSensitivity } from '@wbfm/shared/schemas';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface VoiceInputSectionProps {
@@ -85,12 +85,12 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
         <div className="space-y-3" data-testid="voice-vad-params">
           <div className="space-y-1.5">
             <Label htmlFor="voice-vad-sensitivity">{t('voice.input.sensitivityLabel')}</Label>
-            <Select
+            <SimpleSelect
               id="voice-vad-sensitivity"
               data-testid="voice-vad-sensitivity"
               value={sensitivity}
-              onChange={(e) => {
-                const next = e.target.value as VadSensitivity;
+              onValueChange={(v) => {
+                const next = v as VadSensitivity;
                 setSensitivity(next);
                 void onPatch({ vadSensitivity: next });
               }}
@@ -100,16 +100,16 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
                   {t('voice.input.sensitivityOption', { label: opt.label, hint: opt.hint })}
                 </option>
               ))}
-            </Select>
+            </SimpleSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="voice-vad-silence">{t('voice.input.silenceLabel')}</Label>
-            <Select
+            <SimpleSelect
               id="voice-vad-silence"
               data-testid="voice-vad-silence"
               value={String(silenceMs)}
-              onChange={(e) => {
-                const next = Number(e.target.value);
+              onValueChange={(v) => {
+                const next = Number(v);
                 setSilenceMs(next);
                 void onPatch({ vadSilenceMs: next });
               }}
@@ -120,7 +120,7 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
                   {ms === 600 ? t('voice.input.silenceRecommended') : ''}
                 </option>
               ))}
-            </Select>
+            </SimpleSelect>
           </div>
           <p className="text-xs text-muted-foreground">
             {t('voice.input.halfDuplexHint')}

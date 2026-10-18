@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { FlowCanvasNode } from '../graph-utils';
 import { buildRefOptions } from './ref-options';
@@ -106,7 +106,7 @@ export function RefTextarea({
         onChange={(e) => onChange(e.target.value)}
         className="font-mono text-xs leading-relaxed"
       />
-      <Select value="" onChange={(e) => insert(e.target.value)} disabled={options.length === 0}>
+      <SimpleSelect value="" onValueChange={(v) => insert(v)} disabled={options.length === 0}>
         <option value="">
           {options.length === 0 ? t('flowEditor.ref.noVariables') : t('flowEditor.ref.insertVariable')}
         </option>
@@ -119,7 +119,7 @@ export function RefTextarea({
             ))}
           </optgroup>
         ))}
-      </Select>
+      </SimpleSelect>
     </div>
   );
 }
@@ -174,4 +174,4 @@ export function JsonObjectEditor({
   );
 }
 
-export { Input, Select };
+export { Input, SimpleSelect };

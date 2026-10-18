@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { McpServerInfo } from '@wbfm/shared/types';
 import type { McpServerStatus } from '@wbfm/shared/constants';
+import { MCP_PRESET_SERVERS, type McpPresetServer } from '@wbfm/shared/constants';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
@@ -40,6 +41,8 @@ export function McpPanel() {
   const confirm = useConfirm();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<McpServerInfo | null>(null);
+  // v2.3：从预置目录打开表单时携带的预置项（仅新增）
+  const [preset, setPreset] = React.useState<McpPresetServer | null>(null);
   // 水合门控：查询在途/到达的时机在 SSR 与客户端首帧不一致，直接据此切结构会水合失配
   // （React #418/#422）。首帧恒与 SSR 一致（仅标题栏），挂载后再按数据展开。
   const [mounted, setMounted] = React.useState(false);
@@ -47,11 +50,19 @@ export function McpPanel() {
 
   const openCreate = () => {
     setEditing(null);
+    setPreset(null);
     setDialogOpen(true);
   };
 
   const openEdit = (server: McpServerInfo) => {
     setEditing(server);
+    setPreset(null);
+    setDialogOpen(true);
+  };
+
+  const openPreset = (item: McpPresetServer) => {
+    setEditing(null);
+    setPreset(item);
     setDialogOpen(true);
   };
 
@@ -100,6 +111,27 @@ export function McpPanel() {
         <Button type="button" variant="outline" onClick={openCreate}>
           {t('settingsMcp.mcp.addServer')}
         </Button>
+      </div>
+
+      {/* v2.3：预置服务器目录——一键填入新增表单，仍需按环境改参数 */}
+      <div className="space-y-2" data-testid="mcp-presets">
+        <div className="text-sm font-medium">{t('settingsMcp.mcp.presets.title')}</div>
+        <p className="text-xs text-muted-foreground">{t('settingsMcp.mcp.presets.hint')}</p>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {MCP_PRESET_SERVERS.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                data-testid={`mcp-preset-${item.id}`}
+                onClick={() => openPreset(item)}
+                className="h-full w-full rounded-md border bg-background p-2 text-left hover:bg-accent"
+              >
+                <div className="font-mono text-xs font-medium">{item.name}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{item.description}</div>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {mounted && isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
@@ -172,7 +204,12 @@ export function McpPanel() {
         </ul>
       )}
 
-      <McpServerFormDialog open={dialogOpen} onOpenChange={setDialogOpen} server={editing} />
+      <McpServerFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        server={editing}
+        preset={preset}
+      />
     </section>
   );
 }

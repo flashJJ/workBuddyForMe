@@ -140,17 +140,46 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
 export function SkillsPanel() {
   const { t } = useI18n();
   const { data: skills, isLoading, isError, refetch } = useSkills();
+  const mutations = useSkillMutations();
+  const toast = useToast();
   // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
+  /** v2.3：重新扫描技能目录，把新放入的 skill 文件夹加载进来（无需重启） */
+  const rescan = () => {
+    const before = skills?.length ?? 0;
+    mutations.rescan.mutate(undefined, {
+      onSuccess: (list) => {
+        const added = list.length - before;
+        toast.success(
+          added > 0
+            ? t('settingsMcp.skills.rescanDone', { count: added })
+            : t('settingsMcp.skills.rescanNone'),
+        );
+      },
+      onError: () => toast.error(t('settingsMcp.skills.rescanFailed')),
+    });
+  };
+
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="skills-panel">
-      <div>
-        <h3 className="font-medium">{t('settingsMcp.skills.title')}</h3>
-        <p className="text-xs text-muted-foreground">
-          {t('settingsMcp.skills.description')}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-medium">{t('settingsMcp.skills.title')}</h3>
+          <p className="text-xs text-muted-foreground">
+            {t('settingsMcp.skills.description')}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={mutations.rescan.isPending}
+          onClick={rescan}
+        >
+          {t('settingsMcp.skills.rescan')}
+        </Button>
       </div>
 
       {mounted && isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}

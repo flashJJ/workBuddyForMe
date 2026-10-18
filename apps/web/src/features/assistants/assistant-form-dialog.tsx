@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useAllModels } from '@/lib/hooks/use-settings';
@@ -166,10 +166,10 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             />
             <div className="space-y-1.5">
               <Label htmlFor="assistant-model">{t('assistants.form.modelLabel')}</Label>
-              <Select
+              <SimpleSelect
                 id="assistant-model"
                 value={form.modelId}
-                onChange={(e) => update({ modelId: e.target.value })}
+                onValueChange={(v) => update({ modelId: v })}
               >
                 <option value="">{t('assistants.form.modelFollowDefault')}</option>
                 {chatModels.map((model) => (
@@ -180,7 +180,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
                     })}
                   </option>
                 ))}
-              </Select>
+              </SimpleSelect>
             </div>
           </div>
 

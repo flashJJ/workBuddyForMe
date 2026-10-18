@@ -1,7 +1,7 @@
 'use client';
 
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useCharacterCards } from '@/lib/hooks/use-character-cards';
@@ -39,12 +39,12 @@ export function AssistantCardField(props: {
   return (
     <div className="space-y-1.5">
       <Label htmlFor="assistant-card">{t('assistants.form.cardLabel')}</Label>
-      <Select
+      <SimpleSelect
         id="assistant-card"
         data-testid="assistant-card-select"
         aria-label={t('assistants.form.cardLabel')}
         value={value}
-        onChange={(e) => void handleChange(e.target.value)}
+        onValueChange={(v) => void handleChange(v)}
       >
         <option value="">{t('assistants.form.cardDefault')}</option>
         {builtins.length > 0 && (
@@ -65,7 +65,7 @@ export function AssistantCardField(props: {
             ))}
           </optgroup>
         )}
-      </Select>
+      </SimpleSelect>
       {cardMode && !cardExists && (
         <p className="text-[11px] text-destructive" data-testid="assistant-card-missing">
           {t('assistants.form.cardMissing')}

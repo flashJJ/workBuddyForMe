@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import type { StageBackground, StageScenePayload } from '@wbfm/shared/schemas';
+import { NumberInput } from '@/components/ui/number-input';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { BUILTIN_BACKGROUNDS, getBuiltinBackground } from './builtin-backgrounds';
 import { useStageSceneMutations } from './use-stage-scenes';
@@ -50,12 +52,12 @@ export function StageBackgroundEditor({ payload, onChange }: Props) {
     <div className="space-y-2" data-testid="stage-bg-editor">
       <label className="flex items-center gap-2 text-xs">
         <span className="w-10 shrink-0">{t('stage.bg.type')}</span>
-        <select
+        <SimpleSelect
           className="flex-1 rounded border bg-background px-1 py-0.5 text-xs"
           aria-label={t('stage.bg.type')}
           value={bg.type}
-          onChange={(e) => {
-            const type = e.target.value as StageBackground['type'];
+          onValueChange={(v) => {
+            const type = v as StageBackground['type'];
             if (type === 'builtin') {
               const preset = getBuiltinBackground(bg.builtinId);
               patch({ type, builtinId: preset.id });
@@ -72,7 +74,7 @@ export function StageBackgroundEditor({ payload, onChange }: Props) {
           <option value="gradient">{t('stage.bg.gradient')}</option>
           <option value="builtin">{t('stage.bg.builtinLabel')}</option>
           <option value="image">{t('stage.bg.image')}</option>
-        </select>
+        </SimpleSelect>
       </label>
 
       {bg.type === 'solid' && (
@@ -89,23 +91,23 @@ export function StageBackgroundEditor({ payload, onChange }: Props) {
         <div className="grid grid-cols-3 items-center gap-2 text-xs">
           <input type="color" aria-label={t('stage.bg.from')} className="h-7" value={bg.from ?? '#1b2748'} onChange={(e) => patch({ from: e.target.value })} />
           <input type="color" aria-label={t('stage.bg.to')} className="h-7" value={bg.to ?? '#0a0d16'} onChange={(e) => patch({ to: e.target.value })} />
-          <input type="number" min={0} max={360} className="w-full rounded border bg-background px-1 py-0.5" value={bg.angle ?? 180} onChange={(e) => patch({ angle: Number(e.target.value) })} />
+          <NumberInput min={0} max={360} className="w-full rounded border bg-background px-1 py-0.5" value={bg.angle ?? 180} onValueChange={(v) => patch({ angle: v })} />
         </div>
       )}
 
       {bg.type === 'builtin' && (
-        <select
+        <SimpleSelect
           aria-label={t('stage.bg.preset')}
           className="w-full rounded border bg-background px-1 py-0.5 text-xs"
           value={bg.builtinId ?? BUILTIN_BACKGROUNDS[0]!.id}
-          onChange={(e) => patch({ builtinId: e.target.value })}
+          onValueChange={(v) => patch({ builtinId: v })}
         >
           {BUILTIN_BACKGROUNDS.map((b) => (
             <option key={b.id} value={b.id}>
               {t(`stage.bg.builtin.${b.nameKey}` as never)}
             </option>
           ))}
-        </select>
+        </SimpleSelect>
       )}
 
       {bg.type === 'image' && (

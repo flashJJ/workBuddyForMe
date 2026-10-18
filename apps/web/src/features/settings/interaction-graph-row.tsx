@@ -14,8 +14,9 @@ import {
 } from '@wbfm/shared/schemas';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { SimpleSelect } from '@/components/ui/simple-select';
 
-const SELECT = 'h-8 rounded-md border bg-background px-2 text-sm';
+const SELECT = 'h-8 rounded-md border bg-background text-sm';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -54,11 +55,11 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
     <div className="space-y-2 rounded-md border bg-background/60 p-3" data-testid={`graph-row-${index}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground">{t('settingsGraph.triggerKey')}</span>
-        <select
+        <SimpleSelect
           className={SELECT}
           data-testid={`graph-key-${index}`}
           value={entry.key}
-          onChange={(e) => patch({ key: e.target.value })}
+          onValueChange={(v) => patch({ key: v })}
         >
           {TRIGGER_KEY_GROUPS.map((group) => (
             <optgroup
@@ -72,7 +73,7 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
               ))}
             </optgroup>
           ))}
-        </select>
+        </SimpleSelect>
         <button
           type="button"
           onClick={onRemove}
@@ -87,12 +88,12 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
         <span className="text-xs font-medium text-muted-foreground">{t('settingsGraph.condition')}</span>
         <label className="flex items-center gap-1 text-xs text-muted-foreground">
           {t('settingsGraph.levelLabel')}
-          <select
+          <SimpleSelect
             className={SELECT}
             data-testid={`graph-level-${index}`}
             value={condition.minLevel ?? ''}
-            onChange={(e) =>
-              patchCondition({ minLevel: (e.target.value || undefined) as RelationshipLevel | undefined })
+            onValueChange={(v) =>
+              patchCondition({ minLevel: (v || undefined) as RelationshipLevel | undefined })
             }
           >
             <option value="">{t('settingsGraph.any')}</option>
@@ -101,15 +102,15 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
                 {item}
               </option>
             ))}
-          </select>
+          </SimpleSelect>
         </label>
         <label className="flex items-center gap-1 text-xs text-muted-foreground">
           {t('settingsGraph.moodLabel')}
-          <select
+          <SimpleSelect
             className={SELECT}
             data-testid={`graph-mood-${index}`}
             value={condition.mood ?? ''}
-            onChange={(e) => patchCondition({ mood: (e.target.value || undefined) as MotionMood | undefined })}
+            onValueChange={(v) => patchCondition({ mood: (v || undefined) as MotionMood | undefined })}
           >
             <option value="">{t('settingsGraph.any')}</option>
             {MOTION_MOODS.map((item) => (
@@ -117,7 +118,7 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
                 {item}
               </option>
             ))}
-          </select>
+          </SimpleSelect>
         </label>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <input
@@ -133,48 +134,48 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
         </label>
         {hours && (
           <>
-            <select
+            <SimpleSelect
               className={SELECT}
               data-testid={`graph-hours-start-${index}`}
-              value={hours.startHour}
-              onChange={(e) => patchCondition({ hours: { ...hours, startHour: Number(e.target.value) } })}
+              value={String(hours.startHour)}
+              onValueChange={(v) => patchCondition({ hours: { ...hours, startHour: Number(v) } })}
             >
               {HOURS.map((hour) => (
                 <option key={hour} value={hour}>
                   {hourLabel(hour)}
                 </option>
               ))}
-            </select>
-            <select
+            </SimpleSelect>
+            <SimpleSelect
               className={SELECT}
               data-testid={`graph-hours-end-${index}`}
-              value={hours.endHour}
-              onChange={(e) => patchCondition({ hours: { ...hours, endHour: Number(e.target.value) } })}
+              value={String(hours.endHour)}
+              onValueChange={(v) => patchCondition({ hours: { ...hours, endHour: Number(v) } })}
             >
               {HOURS.map((hour) => (
                 <option key={hour} value={hour}>
                   {hourLabel(hour)}
                 </option>
               ))}
-            </select>
+            </SimpleSelect>
           </>
         )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground">{t('settingsGraph.chain')}</span>
-        <select
+        <SimpleSelect
           className={SELECT}
           data-testid={`graph-chain-${index}`}
           value={entry.chainId}
-          onChange={(e) => patch({ chainId: e.target.value as ActionChainId })}
+          onValueChange={(v) => patch({ chainId: v as ActionChainId })}
         >
           {ACTION_CHAIN_IDS.map((id) => (
             <option key={id} value={id}>
               {id}
             </option>
           ))}
-        </select>
+        </SimpleSelect>
       </div>
     </div>
   );
