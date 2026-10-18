@@ -161,8 +161,23 @@ describe('非触摸事件（v2.3 P2-2 事件链接线）', () => {
     ).not.toBeNull();
   });
 
-  it('内置图没有这些触发键 → 缺省不表演（返回空）', () => {
+  it('内置默认表现：久未对话 / 连续工作 → 抬头看一眼；回来 / 关系升级 → 高兴一下', () => {
+    const notice = resolveInteraction({ kind: 'context', trigger: 'longNoChat' }, baseContext());
+    expect(notice?.actions.some((a) => a.type === 'controller.flashExpression')).toBe(true);
+    expect(resolveInteraction({ kind: 'context', trigger: 'workStreak' }, baseContext())).not.toBeNull();
+    const cheer = resolveInteraction({ kind: 'system', signal: 'wake' }, baseContext());
+    expect(cheer?.actions.some((a) => a.type === 'controller.tap')).toBe(true);
+    expect(
+      resolveInteraction({ kind: 'relationship', level: 'partner', delta: 1 }, baseContext()),
+    ).not.toBeNull();
+  });
+
+  it('刻意留空的触发键仍为空（lateNight 被勿扰射程挡住 / voice-end 会变噪音 / 降级不给表现…）', () => {
     expect(resolveInteraction({ kind: 'context', trigger: 'lateNight' }, baseContext())).toBeNull();
+    expect(resolveInteraction({ kind: 'system', signal: 'voice-end' }, baseContext())).toBeNull();
+    expect(resolveInteraction({ kind: 'system', signal: 'voice-start' }, baseContext())).toBeNull();
+    expect(resolveInteraction({ kind: 'system', signal: 'idle' }, baseContext())).toBeNull();
+    expect(resolveInteraction({ kind: 'system', signal: 'locked' }, baseContext())).toBeNull();
     expect(
       resolveInteraction({ kind: 'relationship', level: 'partner', delta: -1 }, baseContext()),
     ).toBeNull();

@@ -111,6 +111,12 @@ describe('条目目录 ACTION_CHAINS', () => {
       ACTION_CHAINS['body-double']().cooldownMs,
     );
   });
+
+  it('非触摸动作条目不含 interaction.start（没人碰它，不驱动三段式）', () => {
+    for (const id of ['notice', 'cheer'] as const) {
+      expect(ACTION_CHAINS[id]().actions.some((a) => a.type === 'interaction.start')).toBe(false);
+    }
+  });
 });
 
 describe('resolveInteractionEntry（动画图条件匹配）', () => {

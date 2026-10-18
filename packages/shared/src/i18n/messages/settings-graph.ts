@@ -2,7 +2,7 @@
 export const zhSettingsGraph = {
   title: '交互动画图',
   description: '自定义「区域 / 手势 / 状态 → 动作条目」的映射，覆盖条目优先于内置条目生效。',
-  hint: '内置条目始终兜底，任何状态下都不会没有动作。留空的条件表示该维度不限制。感知 / 系统 / 关系三类触发键缺省没有内置条目——要它们真的表演，需要自己加覆盖条目。',
+  hint: '内置条目始终兜底，任何状态下都不会没有动作。留空的条件表示该维度不限制。感知 / 系统 / 关系触发键只有少部分带内置条目（见上方内置条目区）——其余要真的表演，需要自己加覆盖条目。',
   empty: '还没有自定义条目，点「添加条目」开始。',
   add: '添加条目',
   remove: '删除',
@@ -36,7 +36,7 @@ export const enSettingsGraph = {
   title: 'Interaction animation graph',
   description:
     'Customize the region / gesture / state → action-entry mapping. Your entries take priority over the built-in ones.',
-  hint: 'Built-in entries always remain as a fallback, so a state never ends up with no action. An empty condition leaves that dimension unrestricted. Context / system / relationship triggers have no built-in entries by default — add an override entry to make them perform.',
+  hint: 'Built-in entries always remain as a fallback, so a state never ends up with no action. An empty condition leaves that dimension unrestricted. Only some context / system / relationship triggers ship with built-in entries (see the built-in list above) — add an override entry for the rest to make them perform.',
   empty: 'No custom entries yet. Click "Add entry" to start.',
   add: 'Add entry',
   remove: 'Remove',

@@ -16,6 +16,8 @@ export const ACTION_CHAIN_IDS = [
   'body-longpress',
   'body-double',
   'raised-tap',
+  'notice',
+  'cheer',
 ] as const;
 export type ActionChainId = (typeof ACTION_CHAIN_IDS)[number];
 
@@ -82,6 +84,24 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
     ],
     priority: 'high',
     cooldownMs: 1500,
+  }),
+
+  // ── 非触摸事件的默认表现（P2-2 内置条目用）────────────────────────
+  // 都不含 interaction.start：没人碰它，不该驱动「入场/循环/退场」三段式。
+  // 察觉到：只换一下表情、不动身体——「抬头看一眼」的轻反馈
+  'notice': () => ({
+    actions: [{ type: 'controller.flashExpression', tag: 'surprise', durationMs: 1600 }],
+    priority: 'normal',
+    cooldownMs: 4000,
+  }),
+  // 高兴一下：播动作池里一个一次性动作 + 开心表情（欢迎回来 / 关系升级庆祝）
+  'cheer': () => ({
+    actions: [
+      { type: 'controller.tap' },
+      { type: 'controller.flashExpression', tag: 'joy', durationMs: 2600 },
+    ],
+    priority: 'normal',
+    cooldownMs: 5000,
   }),
 };
 

@@ -147,7 +147,16 @@ export const TRIGGER_KEY_GROUPS: ReadonlyArray<{ id: string; keys: readonly stri
   { id: 'relationship', keys: RELATIONSHIP_TRIGGER_KEYS },
 ];
 
-/** 内置默认动画图（与 v2.2 的硬编码表逐条等价；id 供停用配置引用） */
+/**
+ * 内置默认动画图（触摸键与 v2.2 硬编码表逐条等价；id 供停用配置引用）。
+ *
+ * 非触摸键只给 4 个「可感知且不吵」的场景配默认表现，其余刻意留空：
+ * - `context::lateNight`：射程落在默认勿扰时段内（23:00–06:00），被门控挡住，配了也不生效；
+ * - `system::voice-end`：每念完一句都触发，默认给动作会变成噪音；
+ * - `system::voice-start`：说话期已有说话表情与口型，再叠动作会打架；
+ * - `system::idle` / `system::locked`：发生时用户看不见屏幕，加默认表现没有观感收益；
+ * - `relationship::down`：关系契约明确「降级不推送、不制造愧疚」，不给默认表现。
+ */
 export const DEFAULT_INTERACTION_GRAPH: readonly InteractionGraphEntry[] = [
   { id: 'builtin:head-tap', key: 'touch::head::tap', chainId: 'head-tap' },
   // 陌生人：不让长按（害羞链太亲密）
@@ -167,6 +176,11 @@ export const DEFAULT_INTERACTION_GRAPH: readonly InteractionGraphEntry[] = [
     chainId: 'raised-tap',
   },
   { id: 'builtin:body-double', key: 'touch::body::double', chainId: 'body-double' },
+  // 非触摸：久未对话 / 连续工作 → 抬头看一眼；回来 / 关系升级 → 高兴一下
+  { id: 'builtin:context-longnochat', key: 'context::longNoChat', chainId: 'notice' },
+  { id: 'builtin:context-workstreak', key: 'context::workStreak', chainId: 'notice' },
+  { id: 'builtin:system-wake', key: 'system::wake', chainId: 'cheer' },
+  { id: 'builtin:relationship-up', key: 'relationship::up', chainId: 'cheer' },
 ];
 
 /** 内置条目 id 集合（「停用」配置的合法值域；手改 settings_kv 的未知 id 由服务端丢弃） */
