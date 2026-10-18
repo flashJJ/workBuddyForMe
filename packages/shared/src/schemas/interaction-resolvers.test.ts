@@ -8,6 +8,7 @@ import {
   touchTriggerKey,
   type ResolverContext,
 } from './interaction-resolvers';
+import type { InteractionGraphEntry } from './interaction-graph';
 
 function baseContext(overrides: Partial<ResolverContext> = {}): ResolverContext {
   return {
@@ -15,6 +16,7 @@ function baseContext(overrides: Partial<ResolverContext> = {}): ResolverContext 
     capabilities: { hasTapClip: true, hasSpringBone: false },
     relationshipLevel: 'partner',
     emotionEnabled: true,
+    mood: 'normal',
     doNotDisturb: DEFAULT_DO_NOT_DISTURB,
     ...overrides,
   };
@@ -109,5 +111,33 @@ describe('勿扰时段可配置（v2.2：替换硬编码 23:00–06:00）', () =
       doNotDisturb: { ...DEFAULT_DO_NOT_DISTURB, enabled: false },
     });
     expect(resolveInteraction({ kind: 'touch', region: 'head', gesture: 'tap' }, ctx)).not.toBeNull();
+  });
+});
+
+describe('动画图可注入（v2.3 M1 配置接缝）', () => {
+  const customGraph: InteractionGraphEntry[] = [
+    {
+      key: 'touch::head::tap',
+      condition: { minLevel: 'partner' },
+      chain: () => ({ actions: [], priority: 'normal', cooldownMs: 0 }),
+    },
+  ];
+
+  it('注入的图取代内置默认图：门槛按图声明生效', () => {
+    const stranger = baseContext({ relationshipLevel: 'stranger' });
+    expect(
+      resolveInteraction({ kind: 'touch', region: 'head', gesture: 'tap' }, stranger, customGraph),
+    ).toBeNull();
+    const partner = baseContext({ relationshipLevel: 'partner' });
+    expect(
+      resolveInteraction({ kind: 'touch', region: 'head', gesture: 'tap' }, partner, customGraph),
+    ).not.toBeNull();
+  });
+
+  it('图中没有该键 → 返回 null（保持「查不到返回空」语义）', () => {
+    const empty: InteractionGraphEntry[] = [];
+    expect(
+      resolveInteraction({ kind: 'touch', region: 'head', gesture: 'tap' }, baseContext(), empty),
+    ).toBeNull();
   });
 });

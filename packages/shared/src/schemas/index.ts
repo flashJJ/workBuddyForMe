@@ -306,6 +306,9 @@ export {
   type DoNotDisturbConfig,
 } from './interaction-resolvers';
 export * from './interaction-hitbox';
+// v2.3 M1 交互动画图（数据配置层；条目条件 = 关系等级/情绪档位/时段）
+export * from './interaction-graph';
+export * from './relationship-level';
 // v2.0 M5 .wbfm-pack mod 包契约
 export * from './wbfm-pack';
 // v2.0 待机动作（VRMA）契约

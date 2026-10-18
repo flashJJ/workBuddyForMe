@@ -106,6 +106,7 @@ export function PetStage({
         // v2.2：真源是主窗经 IPC 中继的展示关系等级（数值 0–3），不再读不存在的 settings 字段
         relationshipLevel: relationshipLevelName(relationshipLevel),
         emotionEnabled,
+        mood,
         doNotDisturb: { enabled: dndEnabled, startHour: dndStartHour, endHour: dndEndHour },
       };
       const chain = resolveInteraction(event, ctx);
@@ -122,7 +123,7 @@ export function PetStage({
       // 始终 emit 到 TriggerBus（M1 打通）
       TriggerBus.emit(event);
     },
-    [relationshipLevel, emotionEnabled, dndEnabled, dndStartHour, dndEndHour],
+    [relationshipLevel, emotionEnabled, mood, dndEnabled, dndStartHour, dndEndHour],
   );
 
   // 摸头短句：本地文案气泡（零模型调用、零 IPC），受短句开关门控
