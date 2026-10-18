@@ -312,8 +312,10 @@ export {
   type DoNotDisturbConfig,
 } from './interaction-resolvers';
 export * from './interaction-hitbox';
-// v2.3 M1 交互动画图（数据配置层；条目条件 = 关系等级/情绪档位/时段）
+// v2.3 交互动画图（数据配置层：条目条件 = 关系等级/情绪档位/时段；触发键覆盖全事件类型）
 export * from './interaction-graph';
+// v2.3 动画图动作条目目录（id → 动作链；与条目/匹配分离，各守 240 行）
+export * from './interaction-chains';
 export * from './relationship-level';
 // v2.0 M5 .wbfm-pack mod 包契约
 export * from './wbfm-pack';

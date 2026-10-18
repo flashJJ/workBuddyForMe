@@ -1,8 +1,11 @@
 /**
- * v2.3：交互动画图——把「区域::手势 → 动作链」从硬编码查表升级为数据配置。
+ * v2.3：交互动画图——把「触发键 → 动作链」从硬编码查表升级为数据配置。
  *
  * 一条目 = 触发键 + 可选条件（关系等级门槛 / 情绪档位 / 时段）+ **动作条目 id**。
- * 动作链内容仍是代码（目录 ACTION_CHAINS），条目只引用 id —— 因此整张图可 JSON 化持久化。
+ * 动作条目目录见 interaction-chains（内容仍是代码，条目只引用 id）——整张图可 JSON 化。
+ *
+ * 触发键口径（v2.3 P2-2 起覆盖全事件类型）：`touch::<region>::<gesture>` /
+ * `context::<trigger>` / `system::<signal>` / `relationship::<up|down>`。
  *
  * 解析顺序（同键内）：按情绪档位兼容顺序（精确 → 更差 → 更好）取第一个
  * 「过关系门槛且时段命中」的条目，末位以「无档位条件」的条目兜底；
@@ -11,11 +14,40 @@
  * shared 包严格 ≤240 行。
  */
 
-import type { ActionChain } from './interaction-actions';
-import { TOUCH_GESTURES, TOUCH_REGIONS, touchTriggerKey, type TouchRegion } from './interaction-events';
+import { type ActionChainId } from './interaction-chains';
+import {
+  CONTEXT_TRIGGERS,
+  RELATIONSHIP_DIRECTIONS,
+  SYSTEM_SIGNALS,
+  TOUCH_GESTURES,
+  TOUCH_REGIONS,
+  touchTriggerKey,
+  type InteractionEvent,
+} from './interaction-events';
 import type { MotionMood } from './motion-asset';
 import { moodFallbackOrder } from './motion-selection';
 import { levelAtLeast, type RelationshipLevel } from './relationship-level';
+
+/**
+ * 事件 → 触发键（全类型统一口径，v2.3 P2-2）。
+ * 关系事件按方向建键（delta 为 0 不建键）；对话事件本版不接（返回 null）。
+ */
+export function eventTriggerKey(event: InteractionEvent): string | null {
+  switch (event.kind) {
+    case 'touch':
+      return touchTriggerKey(event.region, event.gesture);
+    case 'context':
+      return `context::${event.trigger}`;
+    case 'system':
+      return `system::${event.signal}`;
+    case 'relationship':
+      if (event.delta > 0) return 'relationship::up';
+      if (event.delta < 0) return 'relationship::down';
+      return null;
+    case 'chat':
+      return null;
+  }
+}
 
 /** 当前小时是否落在 [startHour, endHour) 窗口内（支持跨零点；起止相同 = 空窗口） */
 export function isHourInWindow(hour: number, startHour: number, endHour: number): boolean {
@@ -38,7 +70,7 @@ export interface InteractionGraphCondition {
 export interface InteractionGraphEntry {
   /** 条目 id：内置条目必有（供「停用」配置引用）；用户覆盖条目不参与停用 */
   id?: string;
-  /** 触发键 `touch::<region>::<gesture>`（见 touchTriggerKey） */
+  /** 触发键（见 eventTriggerKey / touchTriggerKey） */
   key: string;
   condition?: InteractionGraphCondition;
   /** 动作条目 id（内置目录内） */
@@ -87,106 +119,33 @@ export function resolveInteractionEntry(
   );
 }
 
-/** 内置动作条目 id（配置与 UI 的下拉真源） */
-export const ACTION_CHAIN_IDS = [
-  'head-tap',
-  'head-longpress',
-  'body-tap',
-  'body-longpress',
-  'body-double',
-  'raised-tap',
-] as const;
-export type ActionChainId = (typeof ACTION_CHAIN_IDS)[number];
-
-/** 动作条目目录：id → 动作链工厂（每次调用产出新的 ActionChain） */
-export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
-  'head-tap': () => ({
-    actions: [
-      { type: 'interaction.start', kind: 'head-touch' },
-      { type: 'controller.playSquash' },
-      // 点击头部顺带随机播一个一次性动作（动作池为空时 controller 内部走程序化回退）
-      { type: 'controller.tap' },
-      { type: 'controller.flashExpression', tag: 'joy', durationMs: 2600 },
-    ],
-    priority: 'normal',
-    cooldownMs: 500,
-  }),
-  'head-longpress': () => ({
-    actions: [
-      { type: 'interaction.start', kind: 'head-touch' },
-      { type: 'controller.playSquash', scaleX: 1.06, scaleY: 0.96, durationMs: 400 },
-      { type: 'controller.flashExpression', tag: 'surprise', durationMs: 4200 },
-    ],
-    priority: 'high',
-    cooldownMs: 1000,
-  }),
-  // body 区域：微弹 + smirk + 俏皮短句（幅度减半，因为身体比头部「钝」）
-  'body-tap': () => ({
-    actions: [
-      { type: 'interaction.start', kind: 'body-touch' },
-      { type: 'controller.playSquash', scaleX: 1.02, scaleY: 0.98, durationMs: 160 },
-      { type: 'controller.tap' },
-      { type: 'controller.flashExpression', tag: 'smirk', durationMs: 1800 },
-    ],
-    priority: 'normal',
-    cooldownMs: 800,
-  }),
-  'body-longpress': () => ({
-    actions: [
-      { type: 'interaction.start', kind: 'body-touch' },
-      { type: 'controller.playSquash', scaleX: 1.03, scaleY: 0.97, durationMs: 200 },
-      { type: 'controller.flashExpression', tag: 'joy', durationMs: 2400 },
-    ],
-    priority: 'normal',
-    cooldownMs: 1600,
-  }),
-  // body 双击：角色动作（与头部盒双击「回主窗」的窗口行为分开）
-  // 双击必经单击，squash 包络若在此再触发会「重置回弹起点」造成抖动，故这里只加深反馈，不重复 squash
-  'body-double': () => ({
-    actions: [
-      { type: 'interaction.start', kind: 'body-touch' },
-      { type: 'controller.setExpression', tag: 'smirk' },
-      { type: 'controller.tap' },
-      { type: 'controller.flashExpression', tag: 'joy', durationMs: 1400 },
-    ],
-    priority: 'normal',
-    cooldownMs: 1600,
-  }),
-  // raised：提起小区域触发「被提起」动作（需要搭档以上）
-  'raised-tap': () => ({
-    actions: [
-      { type: 'interaction.start', kind: 'raised' },
-      { type: 'controller.playSquash', scaleX: 0.94, scaleY: 1.08, durationMs: 300 },
-      { type: 'controller.flashExpression', tag: 'surprise', durationMs: 2000 },
-    ],
-    priority: 'high',
-    cooldownMs: 1500,
-  }),
-};
-
-/** 条目 → 动作链（条目引用目录内 id） */
-export function chainOf(entry: InteractionGraphEntry): ActionChain {
-  return ACTION_CHAINS[entry.chainId]();
-}
-
-/** 合法触发键集合（区域 × 手势全组合）——配置校验用 */
-const VALID_TRIGGER_KEYS: ReadonlySet<string> = new Set(
-  TOUCH_REGIONS.flatMap((region) => TOUCH_GESTURES.map((gesture) => touchTriggerKey(region, gesture))),
+/** 合法触发键集合（区域 × 手势 + 感知 / 系统信号 / 关系方向）——配置校验用 */
+const TOUCH_TRIGGER_KEYS = TOUCH_REGIONS.flatMap((region) =>
+  TOUCH_GESTURES.map((gesture) => touchTriggerKey(region, gesture)),
 );
+const CONTEXT_TRIGGER_KEYS = CONTEXT_TRIGGERS.map((trigger) => `context::${trigger}`);
+const SYSTEM_TRIGGER_KEYS = SYSTEM_SIGNALS.map((signal) => `system::${signal}`);
+const RELATIONSHIP_TRIGGER_KEYS = RELATIONSHIP_DIRECTIONS.map((direction) => `relationship::${direction}`);
 
-/** 触发键是否合法（`touch::<region>::<gesture>` 且区域/手势都在枚举内） */
+const VALID_TRIGGER_KEYS: ReadonlySet<string> = new Set([
+  ...TOUCH_TRIGGER_KEYS,
+  ...CONTEXT_TRIGGER_KEYS,
+  ...SYSTEM_TRIGGER_KEYS,
+  ...RELATIONSHIP_TRIGGER_KEYS,
+]);
+
+/** 触发键是否合法 */
 export function isValidTriggerKey(key: string): boolean {
   return VALID_TRIGGER_KEYS.has(key);
 }
 
-/** 冷却 per region（ms）：门控用 */
-export const DEFAULT_COOLDOWN = {
-  head: 500,
-  body: 800,
-  raised: 1500,
-  pinch: 2000,
-  unknown: 800,
-} as const satisfies Record<TouchRegion, number>;
+/** 触发键分组（UI 下拉用；分组标签走 i18n，键本身保持技术值） */
+export const TRIGGER_KEY_GROUPS: ReadonlyArray<{ id: string; keys: readonly string[] }> = [
+  { id: 'touch', keys: TOUCH_TRIGGER_KEYS },
+  { id: 'context', keys: CONTEXT_TRIGGER_KEYS },
+  { id: 'system', keys: SYSTEM_TRIGGER_KEYS },
+  { id: 'relationship', keys: RELATIONSHIP_TRIGGER_KEYS },
+];
 
 /** 内置默认动画图（与 v2.2 的硬编码表逐条等价；id 供停用配置引用） */
 export const DEFAULT_INTERACTION_GRAPH: readonly InteractionGraphEntry[] = [

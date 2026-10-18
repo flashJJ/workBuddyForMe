@@ -2,7 +2,7 @@
 export const zhSettingsGraph = {
   title: '交互动画图',
   description: '自定义「区域 / 手势 / 状态 → 动作条目」的映射，覆盖条目优先于内置条目生效。',
-  hint: '内置条目始终兜底，任何状态下都不会没有动作。留空的条件表示该维度不限制。',
+  hint: '内置条目始终兜底，任何状态下都不会没有动作。留空的条件表示该维度不限制。感知 / 系统 / 关系三类触发键缺省没有内置条目——要它们真的表演，需要自己加覆盖条目。',
   empty: '还没有自定义条目，点「添加条目」开始。',
   add: '添加条目',
   remove: '删除',
@@ -26,13 +26,17 @@ export const zhSettingsGraph = {
   enabledLabel: '启用',
   overrideAction: '覆盖',
   overriddenBadge: '已覆盖',
+  groupTouch: '触摸（区域 × 手势）',
+  groupContext: '感知（主动关怀）',
+  groupSystem: '系统信号',
+  groupRelationship: '关系变化',
 };
 
 export const enSettingsGraph = {
   title: 'Interaction animation graph',
   description:
     'Customize the region / gesture / state → action-entry mapping. Your entries take priority over the built-in ones.',
-  hint: 'Built-in entries always remain as a fallback, so a state never ends up with no action. An empty condition leaves that dimension unrestricted.',
+  hint: 'Built-in entries always remain as a fallback, so a state never ends up with no action. An empty condition leaves that dimension unrestricted. Context / system / relationship triggers have no built-in entries by default — add an override entry to make them perform.',
   empty: 'No custom entries yet. Click "Add entry" to start.',
   add: 'Add entry',
   remove: 'Remove',
@@ -56,4 +60,8 @@ export const enSettingsGraph = {
   enabledLabel: 'Enabled',
   overrideAction: 'Override',
   overriddenBadge: 'Overridden',
+  groupTouch: 'Touch (region × gesture)',
+  groupContext: 'Context (proactive care)',
+  groupSystem: 'System signals',
+  groupRelationship: 'Relationship change',
 };

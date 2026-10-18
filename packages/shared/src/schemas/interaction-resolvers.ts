@@ -1,8 +1,10 @@
 /**
  * 桌宠交互 Resolver——纯函数查表，把 InteractionEvent 映射成 ActionChain。
  *
- * v2.3 M1：查表升级为「动画图条目 + 条件」（见 interaction-graph.ts）。
- * 本文件只保留事件分流与门控（勿扰 / 冷却），条目匹配交给动画图纯函数。
+ * v2.3 M1：查表升级为「动画图条目 + 条件」（见 interaction-graph）。
+ * v2.3 P2-2：不再只 cover 触摸——context / system / relationship 三类事件同样走触发键
+ * 匹配（键口径见 eventTriggerKey），因此主动关怀与感知层也能驱动表演（有无动作由配置决定）。
+ * 本文件只保留事件分流与门控（勿扰 / 冷却）。
  *
  * 设计原则：
  * - 纯函数，无副作用，可完整单测
@@ -11,15 +13,14 @@
  * - shared 包严格 ≤240 行
  */
 
-import type { InteractionEvent, TouchEvent } from './interaction-events';
-import { touchTriggerKey } from './interaction-events';
+import type { InteractionEvent } from './interaction-events';
 import type { ActionChain } from './interaction-actions';
 import type { MotionMood } from './motion-asset';
 import type { RelationshipLevel } from './relationship-level';
+import { chainOf, DEFAULT_COOLDOWN } from './interaction-chains';
 import {
-  chainOf,
-  DEFAULT_COOLDOWN,
   DEFAULT_INTERACTION_GRAPH,
+  eventTriggerKey,
   isHourInWindow,
   resolveInteractionEntry,
   type InteractionGraphEntry,
@@ -53,12 +54,20 @@ export function isDoNotDisturbHour(hour: number, config: DoNotDisturbConfig): bo
   return config.enabled && isHourInWindow(hour, config.startHour, config.endHour);
 }
 
+/** 非触摸事件的默认冷却（ms）：防同一信号连发（如 voice-end 反复触发同一动作） */
+export const DEFAULT_NON_TOUCH_COOLDOWN_MS = 2000;
+
+/** 触发键冷却（ms）：触摸走按区域口径，其余事件统一默认值 */
+export function cooldownForEvent(event: InteractionEvent): number {
+  return event.kind === 'touch' ? DEFAULT_COOLDOWN[event.region] : DEFAULT_NON_TOUCH_COOLDOWN_MS;
+}
+
 export interface ResolverContext {
   /** 当前小时 0..23，用于勿扰时段 */
   hour: number;
   /** 模型能力标记 */
   capabilities: { hasTapClip: boolean; hasSpringBone: boolean };
-  /** 上次触发时间戳 per 触发键（region::gesture，见 touchTriggerKey） */
+  /** 上次触发时间戳 per 触发键（见 eventTriggerKey） */
   lastTriggerAt?: Partial<Record<string, number>>;
   /** 当前关系等级（v2.0 relationship kernel 读） */
   relationshipLevel: RelationshipLevel;
@@ -72,7 +81,8 @@ export interface ResolverContext {
 
 /**
  * Resolver 纯函数。
- * graph 可注入（缺省用内置动画图），供后续「配置覆盖」接缝复用；语义不变：查不到返回 null。
+ * graph 可注入（缺省用内置动画图），供「配置覆盖 / 停用」接缝复用；
+ * 语义不变：查不到返回 null（含对话事件——本版不建触发键）。
  */
 export function resolveInteraction(
   event: InteractionEvent,
@@ -86,23 +96,12 @@ export function resolveInteraction(
     }
   }
 
-  if (event.kind === 'touch') {
-    return resolveTouch(event, ctx, graph);
-  }
-  // M1 仍只 cover touch，context/system/relationship 事件 M2 接
-  return null;
-}
+  const key = eventTriggerKey(event);
+  if (!key) return null;
 
-function resolveTouch(
-  e: TouchEvent,
-  ctx: ResolverContext,
-  graph: readonly InteractionGraphEntry[],
-): ActionChain | null {
-  const key = touchTriggerKey(e.region, e.gesture);
-
-  // 冷却闸门（按 region::gesture 计时，不同手势互不吃冷却）
+  // 冷却闸门（按触发键计时，不同手势/事件互不吃冷却）
   const last = ctx.lastTriggerAt?.[key] ?? 0;
-  if (Date.now() - last < DEFAULT_COOLDOWN[e.region]) {
+  if (Date.now() - last < cooldownForEvent(event)) {
     return null;
   }
 

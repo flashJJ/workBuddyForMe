@@ -88,4 +88,45 @@ describe('sanitizePetEvent IPC 载荷净化', () => {
     expect(sanitizePetEvent({ kind: 'relationship', level: 1 })).toBeNull();
     expect(sanitizePetEvent({ kind: 'relationship', level: NaN, mood: 'good' })).toBeNull();
   });
+
+  it('v2.3 interaction：四类事件放行（仅保留枚举内字段）', () => {
+    // durationMs 不在契约内 → 净化后丢弃
+    expect(
+      sanitizePetEvent({
+        kind: 'interaction',
+        event: { kind: 'touch', region: 'head', gesture: 'tap', durationMs: 300 },
+      }),
+    ).toEqual({ kind: 'interaction', event: { kind: 'touch', region: 'head', gesture: 'tap' } });
+    expect(
+      sanitizePetEvent({ kind: 'interaction', event: { kind: 'context', trigger: 'lateNight' } }),
+    ).toEqual({ kind: 'interaction', event: { kind: 'context', trigger: 'lateNight' } });
+    expect(
+      sanitizePetEvent({ kind: 'interaction', event: { kind: 'system', signal: 'voice-end' } }),
+    ).toEqual({ kind: 'interaction', event: { kind: 'system', signal: 'voice-end' } });
+    expect(
+      sanitizePetEvent({
+        kind: 'interaction',
+        event: { kind: 'relationship', level: 'partner', delta: 1 },
+      }),
+    ).toEqual({ kind: 'interaction', event: { kind: 'relationship', level: 'partner', delta: 1 } });
+  });
+
+  it('v2.3 interaction：枚举外取值 / 对话事件 / 缺 event 一律丢弃', () => {
+    expect(
+      sanitizePetEvent({ kind: 'interaction', event: { kind: 'touch', region: 'tail', gesture: 'tap' } }),
+    ).toBeNull();
+    expect(
+      sanitizePetEvent({ kind: 'interaction', event: { kind: 'system', signal: 'reboot' } }),
+    ).toBeNull();
+    expect(
+      sanitizePetEvent({
+        kind: 'interaction',
+        event: { kind: 'relationship', level: 'boss', delta: 1 },
+      }),
+    ).toBeNull();
+    expect(
+      sanitizePetEvent({ kind: 'interaction', event: { kind: 'chat', subtype: 'mention' } }),
+    ).toBeNull();
+    expect(sanitizePetEvent({ kind: 'interaction' })).toBeNull();
+  });
 });

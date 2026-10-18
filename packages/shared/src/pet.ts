@@ -11,6 +11,18 @@
 import { DEFAULT_AVATAR_MODEL_ID, SUPPORTED_AVATAR_MODEL_IDS } from './schemas/voice';
 import { EXPRESSION_TAGS, type ExpressionTag } from './schemas/expression';
 import { MOTION_MOODS, type MotionMood } from './schemas/motion-asset';
+import {
+  CONTEXT_TRIGGERS,
+  SYSTEM_SIGNALS,
+  TOUCH_GESTURES,
+  TOUCH_REGIONS,
+  type ContextTrigger,
+  type InteractionEvent,
+  type SystemSignal,
+  type TouchGesture,
+  type TouchRegion,
+} from './schemas/interaction-events';
+import { RELATIONSHIP_LEVEL_NAMES, type RelationshipLevel } from './schemas/relationship-level';
 import { RELATIONSHIP_LEVEL_MAX } from './constants/relationship';
 
 /** 桌宠表现状态机（与语音状态机取值对齐） */
@@ -22,6 +34,8 @@ export type PetVoiceState = 'idle' | 'listening' | 'thinking' | 'speaking';
  * - subtitle：当前朗读句（已剥表情标签、调用方限长）；
  * - expression：8 个规范表情标签之一；
  * - relationship：v2.2 状态快照（展示关系等级 0–3 + 情绪档位），驱动桌宠交互门控与待机动作挑选；
+ * - interaction：v2.3 P2-2 归一化交互事件（感知/系统信号/关系变化）中继，由桌宠侧 Resolver
+ *   按动画图配置决定是否表演（缺省无内置条目 → 不表演）；
  * - conversation：切换会话/重置，桌宠清空字幕与表情。
  */
 export type PetPerformanceEvent =
@@ -30,6 +44,7 @@ export type PetPerformanceEvent =
   | { kind: 'subtitle'; text: string }
   | { kind: 'expression'; tag: string }
   | { kind: 'relationship'; level: number; mood: MotionMood }
+  | { kind: 'interaction'; event: InteractionEvent }
   | { kind: 'conversation' };
 
 /**
@@ -81,6 +96,49 @@ const PET_VOICE_STATES = ['idle', 'listening', 'thinking', 'speaking'] as const;
 export const PET_SUBTITLE_MAX = 120;
 const TAG_SET = new Set<string>(EXPRESSION_TAGS);
 const MOOD_SET = new Set<string>(MOTION_MOODS);
+const REGION_SET = new Set<string>(TOUCH_REGIONS);
+const GESTURE_SET = new Set<string>(TOUCH_GESTURES);
+const CONTEXT_SET = new Set<string>(CONTEXT_TRIGGERS);
+const SIGNAL_SET = new Set<string>(SYSTEM_SIGNALS);
+const LEVEL_SET = new Set<string>(RELATIONSHIP_LEVEL_NAMES);
+
+/**
+ * 中继载荷里的 InteractionEvent 净化（IPC 是不可信边界，只放行枚举内的取值）。
+ * 对话事件本版不接，一律丢弃。
+ */
+function sanitizeInteractionEvent(input: unknown): InteractionEvent | null {
+  if (typeof input !== 'object' || input === null) return null;
+  const record = input as Record<string, unknown>;
+  switch (record.kind) {
+    case 'touch':
+      return typeof record.region === 'string' &&
+        REGION_SET.has(record.region) &&
+        typeof record.gesture === 'string' &&
+        GESTURE_SET.has(record.gesture)
+        ? {
+            kind: 'touch',
+            region: record.region as TouchRegion,
+            gesture: record.gesture as TouchGesture,
+          }
+        : null;
+    case 'context':
+      return typeof record.trigger === 'string' && CONTEXT_SET.has(record.trigger)
+        ? { kind: 'context', trigger: record.trigger as ContextTrigger }
+        : null;
+    case 'system':
+      return typeof record.signal === 'string' && SIGNAL_SET.has(record.signal)
+        ? { kind: 'system', signal: record.signal as SystemSignal }
+        : null;
+    case 'relationship': {
+      if (typeof record.level !== 'string' || !LEVEL_SET.has(record.level)) return null;
+      const delta = Number(record.delta);
+      if (!Number.isFinite(delta)) return null;
+      return { kind: 'relationship', level: record.level as RelationshipLevel, delta };
+    }
+    default:
+      return null;
+  }
+}
 
 /**
  * 净化渲染进程中继上来的表现事件（主进程安全边界：不信任 IPC 载荷）。
@@ -113,6 +171,10 @@ export function sanitizePetEvent(input: unknown): PetPerformanceEvent | null {
     }
     case 'conversation':
       return { kind: 'conversation' };
+    case 'interaction': {
+      const event = sanitizeInteractionEvent(record.event);
+      return event ? { kind: 'interaction', event } : null;
+    }
     case 'relationship': {
       const level = Number(record.level);
       if (!Number.isFinite(level)) return null;

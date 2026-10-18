@@ -141,3 +141,53 @@ describe('动画图可注入（v2.3 M1 配置接缝）', () => {
     ).toBeNull();
   });
 });
+
+describe('非触摸事件（v2.3 P2-2 事件链接线）', () => {
+  const graph: InteractionGraphEntry[] = [
+    { key: 'context::lateNight', chainId: 'head-tap' },
+    { key: 'system::voice-end', chainId: 'body-tap' },
+    { key: 'relationship::up', chainId: 'raised-tap' },
+  ];
+
+  it('感知 / 系统 / 关系事件按触发键命中动画图', () => {
+    expect(
+      resolveInteraction({ kind: 'context', trigger: 'lateNight' }, baseContext(), graph),
+    ).not.toBeNull();
+    expect(
+      resolveInteraction({ kind: 'system', signal: 'voice-end' }, baseContext(), graph),
+    ).not.toBeNull();
+    expect(
+      resolveInteraction({ kind: 'relationship', level: 'partner', delta: 1 }, baseContext(), graph),
+    ).not.toBeNull();
+  });
+
+  it('内置图没有这些触发键 → 缺省不表演（返回空）', () => {
+    expect(resolveInteraction({ kind: 'context', trigger: 'lateNight' }, baseContext())).toBeNull();
+    expect(
+      resolveInteraction({ kind: 'relationship', level: 'partner', delta: -1 }, baseContext()),
+    ).toBeNull();
+  });
+
+  it('勿扰时段拦非触摸事件，但 system.voice-end 放行', () => {
+    const dnd = baseContext({ hour: 2 });
+    expect(resolveInteraction({ kind: 'context', trigger: 'lateNight' }, dnd, graph)).toBeNull();
+    expect(
+      resolveInteraction({ kind: 'relationship', level: 'partner', delta: 1 }, dnd, graph),
+    ).toBeNull();
+    expect(resolveInteraction({ kind: 'system', signal: 'voice-end' }, dnd, graph)).not.toBeNull();
+  });
+
+  it('非触摸事件按触发键共用冷却（连发被挡）', () => {
+    const ctx = baseContext({ lastTriggerAt: { 'context::lateNight': Date.now() } });
+    expect(resolveInteraction({ kind: 'context', trigger: 'lateNight' }, ctx, graph)).toBeNull();
+    // 其它键不受影响
+    expect(resolveInteraction({ kind: 'system', signal: 'voice-end' }, ctx, graph)).not.toBeNull();
+  });
+
+  it('关系 delta 为 0 与对话事件不建键，恒为空', () => {
+    expect(
+      resolveInteraction({ kind: 'relationship', level: 'partner', delta: 0 }, baseContext(), graph),
+    ).toBeNull();
+    expect(resolveInteraction({ kind: 'chat', subtype: 'mention' }, baseContext(), graph)).toBeNull();
+  });
+});

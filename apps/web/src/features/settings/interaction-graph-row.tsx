@@ -5,34 +5,30 @@ import {
   ACTION_CHAIN_IDS,
   MOTION_MOODS,
   RELATIONSHIP_LEVEL_NAMES,
-  TOUCH_GESTURES,
-  TOUCH_REGIONS,
-  touchTriggerKey,
+  TRIGGER_KEY_GROUPS,
   type ActionChainId,
   type InteractionGraphCondition,
   type InteractionGraphEntry,
   type MotionMood,
   type RelationshipLevel,
-  type TouchGesture,
-  type TouchRegion,
 } from '@wbfm/shared/schemas';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 const SELECT = 'h-8 rounded-md border bg-background px-2 text-sm';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-/** `touch::<region>::<gesture>` → 拆分（条目键经 schema 校验，拆分安全） */
-function splitTriggerKey(key: string): { region: TouchRegion; gesture: TouchGesture } {
-  const [, region, gesture] = key.split('::');
-  return {
-    region: (region ?? 'head') as TouchRegion,
-    gesture: (gesture ?? 'tap') as TouchGesture,
-  };
-}
-
 /** 时段下拉的选项文案：`7:00` */
 const hourLabel = (hour: number) => `${hour}:00`;
+
+/** 触发键分组标签（技术键保持原值，只有分组名本地化） */
+const GROUP_LABEL_KEYS: Partial<Record<string, MessageKey>> = {
+  touch: 'settingsGraph.groupTouch',
+  context: 'settingsGraph.groupContext',
+  system: 'settingsGraph.groupSystem',
+  relationship: 'settingsGraph.groupRelationship',
+};
 
 interface Props {
   entry: InteractionGraphEntry;
@@ -42,12 +38,11 @@ interface Props {
 }
 
 /**
- * 动画图覆盖条目的可视化编辑器：触发键（区域 + 手势）+ 条件（等级 / 档位 / 时段）+ 动作条目。
- * 纯受控组件，不持有状态——所有改动经 onChange 交回面板（面板持有草稿、显式保存）。
+ * 动画图覆盖条目的可视化编辑器：触发键（全事件类型分组下拉）+ 条件（等级 / 档位 / 时段）
+ * + 动作条目。纯受控组件，不持有状态——所有改动经 onChange 交回面板（面板持有草稿、显式保存）。
  */
 export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props) {
   const { t } = useI18n();
-  const { region, gesture } = splitTriggerKey(entry.key);
   const condition = entry.condition ?? {};
   const hours = condition.hours;
 
@@ -61,26 +56,21 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
         <span className="text-xs font-medium text-muted-foreground">{t('settingsGraph.triggerKey')}</span>
         <select
           className={SELECT}
-          data-testid={`graph-region-${index}`}
-          value={region}
-          onChange={(e) => patch({ key: touchTriggerKey(e.target.value as TouchRegion, gesture) })}
+          data-testid={`graph-key-${index}`}
+          value={entry.key}
+          onChange={(e) => patch({ key: e.target.value })}
         >
-          {TOUCH_REGIONS.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-        <select
-          className={SELECT}
-          data-testid={`graph-gesture-${index}`}
-          value={gesture}
-          onChange={(e) => patch({ key: touchTriggerKey(region, e.target.value as TouchGesture) })}
-        >
-          {TOUCH_GESTURES.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
+          {TRIGGER_KEY_GROUPS.map((group) => (
+            <optgroup
+              key={group.id}
+              label={t(GROUP_LABEL_KEYS[group.id] ?? 'settingsGraph.triggerKey')}
+            >
+              {group.keys.map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <button

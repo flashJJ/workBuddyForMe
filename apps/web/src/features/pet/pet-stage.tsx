@@ -142,6 +142,18 @@ export function PetStage({
     ],
   );
 
+  // P2-2：接收主窗中继来的非触摸交互事件（感知 / 系统信号 / 关系变化），走同一条 Resolver 管道。
+  // 用 ref 持有最新 dispatch，订阅只建立一次（避免依赖变化反复解绑/重绑 IPC 监听）。
+  const resolveAndDispatchRef = React.useRef(resolveAndDispatch);
+  resolveAndDispatchRef.current = resolveAndDispatch;
+  React.useEffect(() => {
+    const b = getPetBridge();
+    if (!b) return;
+    return b.onPerformance((event) => {
+      if (event.kind === 'interaction') resolveAndDispatchRef.current(event.event);
+    });
+  }, []);
+
   // 摸头短句：本地文案气泡（零模型调用、零 IPC），受短句开关门控
   const onHeadTouch = useHeadTouch(
     controllerRef as React.MutableRefObject<TouchControllerLike | null>,

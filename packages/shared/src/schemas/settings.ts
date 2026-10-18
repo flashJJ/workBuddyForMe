@@ -7,7 +7,8 @@ import {
   CONTEXT_MESSAGES_MAX,
   GLOBAL_APPEND_PROMPT_MAX,
 } from '../constants';
-import { ACTION_CHAIN_IDS, isValidTriggerKey } from './interaction-graph';
+import { ACTION_CHAIN_IDS } from './interaction-chains';
+import { isValidTriggerKey } from './interaction-graph';
 import { motionMoodSchema } from './motion-asset';
 import { RELATIONSHIP_LEVEL_NAMES } from './relationship-level';
 

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { ACTION_CHAINS, chainOf } from './interaction-chains';
 import {
-  ACTION_CHAINS,
   buildInteractionGraph,
-  chainOf,
   DEFAULT_INTERACTION_GRAPH,
+  eventTriggerKey,
   isBuiltinEntryId,
   isHourInWindow,
   isValidTriggerKey,
   resolveInteractionEntry,
+  TRIGGER_KEY_GROUPS,
   type InteractionGraphContext,
   type InteractionGraphEntry,
 } from './interaction-graph';
@@ -49,6 +50,50 @@ describe('isValidTriggerKey（配置校验用触发键集合）', () => {
     expect(isValidTriggerKey('touch::head::swipe-up')).toBe(false);
     expect(isValidTriggerKey('touch::tail::tap')).toBe(false);
     expect(isValidTriggerKey('head::tap')).toBe(false);
+  });
+
+  it('v2.3 P2-2：感知 / 系统信号 / 关系方向键合法；对话键非法', () => {
+    expect(isValidTriggerKey('context::lateNight')).toBe(true);
+    expect(isValidTriggerKey('context::unknown')).toBe(false);
+    expect(isValidTriggerKey('system::voice-end')).toBe(true);
+    expect(isValidTriggerKey('system::reboot')).toBe(false);
+    expect(isValidTriggerKey('relationship::up')).toBe(true);
+    expect(isValidTriggerKey('relationship::steady')).toBe(false);
+    expect(isValidTriggerKey('chat::mention')).toBe(false);
+  });
+});
+
+describe('eventTriggerKey（全事件类型触发键）', () => {
+  it('四类事件各自成键', () => {
+    expect(eventTriggerKey({ kind: 'touch', region: 'head', gesture: 'tap' })).toBe('touch::head::tap');
+    expect(eventTriggerKey({ kind: 'context', trigger: 'lateNight' })).toBe('context::lateNight');
+    expect(eventTriggerKey({ kind: 'system', signal: 'voice-end' })).toBe('system::voice-end');
+    expect(eventTriggerKey({ kind: 'relationship', level: 'partner', delta: 1 })).toBe('relationship::up');
+    expect(eventTriggerKey({ kind: 'relationship', level: 'partner', delta: -1 })).toBe(
+      'relationship::down',
+    );
+  });
+
+  it('关系 delta 为 0 与对话事件不建键（返回 null）', () => {
+    expect(eventTriggerKey({ kind: 'relationship', level: 'partner', delta: 0 })).toBeNull();
+    expect(eventTriggerKey({ kind: 'chat', subtype: 'mention' })).toBeNull();
+  });
+
+  it('TRIGGER_KEY_GROUPS 四组齐全且覆盖全部事件类型', () => {
+    expect(TRIGGER_KEY_GROUPS.map((group) => group.id)).toEqual([
+      'touch',
+      'context',
+      'system',
+      'relationship',
+    ]);
+    expect(TRIGGER_KEY_GROUPS[0]!.keys).toHaveLength(5 * 5);
+    expect(TRIGGER_KEY_GROUPS[0]!.keys).toContain('touch::head::tap');
+    expect(TRIGGER_KEY_GROUPS[1]!.keys).toEqual([
+      'context::lateNight',
+      'context::longNoChat',
+      'context::workStreak',
+    ]);
+    expect(TRIGGER_KEY_GROUPS[3]!.keys).toEqual(['relationship::up', 'relationship::down']);
   });
 });
 
