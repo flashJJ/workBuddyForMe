@@ -13,6 +13,11 @@ export const zhSettingsMcp = {
     loadFailed: 'MCP 服务器加载失败，',
     empty: '还没有 MCP 服务器。添加后可在助手编辑里勾选其工具。',
     toolCount: '{count} 个工具',
+    /** v2.3：测试连接结果提示 */
+    testOk: '连接成功：{count} 个工具可用',
+    testDisabled: '该服务器未启用，请先启用后再测试',
+    testFailed: '连接失败：{detail}',
+    testFailedShort: '测试连接失败',
     deleted: '已删除',
     enabledConnecting: '已启用，正在连接',
     disabledDisconnected: '已停用并断开',
@@ -104,6 +109,10 @@ export const enSettingsMcp = {
     empty:
       'No MCP servers yet. Add one and enable its tools when editing an assistant.',
     toolCount: '{count} tools',
+    testOk: 'Connected: {count} tool(s) available',
+    testDisabled: 'This server is disabled; enable it before testing',
+    testFailed: 'Connection failed: {detail}',
+    testFailedShort: 'Test connection failed',
     deleted: 'Deleted',
     enabledConnecting: 'Enabled; connecting',
     disabledDisconnected: 'Disabled and disconnected',

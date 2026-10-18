@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -54,30 +55,25 @@ export function FlowFormDialog({ open, initial, title, onSubmit, onClose }: Flow
           <DialogDescription>{t('flows.form.description')}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('common.words.name')}
-            </label>
+          <FormField label={t('common.words.name')} htmlFor="flow-name" error={error}>
             <Input
+              id="flow-name"
               value={name}
               autoFocus
               onChange={(e) => setName(e.target.value)}
               placeholder={t('flows.form.namePlaceholder')}
               className="h-9"
             />
-            {error && <p className="text-[11px] text-destructive">{error}</p>}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('flows.form.descLabel')}
-            </label>
+          </FormField>
+          <FormField label={t('flows.form.descLabel')} htmlFor="flow-desc">
             <Textarea
+              id="flow-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder={t('flows.form.descPlaceholder')}
             />
-          </div>
+          </FormField>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

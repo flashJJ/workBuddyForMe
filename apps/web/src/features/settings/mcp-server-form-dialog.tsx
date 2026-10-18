@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FormField } from '@/components/ui/form-field';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
@@ -148,8 +148,7 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
           <DialogDescription>{t('settingsMcp.mcp.form.description')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="mcp-name">{t('settingsMcp.mcp.form.nameLabel')}</Label>
+          <FormField label={t('settingsMcp.mcp.form.nameLabel')} htmlFor="mcp-name">
             <Input
               id="mcp-name"
               value={form.name}
@@ -160,9 +159,8 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
               pattern="[a-zA-Z0-9][a-zA-Z0-9_-]*"
               title={t('settingsMcp.mcp.form.namePatternTitle')}
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="mcp-command">{t('settingsMcp.mcp.form.commandLabel')}</Label>
+          </FormField>
+          <FormField label={t('settingsMcp.mcp.form.commandLabel')} htmlFor="mcp-command">
             <Input
               id="mcp-command"
               value={form.command}
@@ -171,9 +169,8 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
               required
               maxLength={500}
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="mcp-args">{t('settingsMcp.mcp.form.argsLabel')}</Label>
+          </FormField>
+          <FormField label={t('settingsMcp.mcp.form.argsLabel')} htmlFor="mcp-args">
             <Textarea
               id="mcp-args"
               value={form.argsText}
@@ -181,9 +178,8 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
               rows={3}
               placeholder={'-y\n@modelcontextprotocol/server-filesystem\nD:/docs'}
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="mcp-env">{t('settingsMcp.mcp.form.envLabel')}</Label>
+          </FormField>
+          <FormField label={t('settingsMcp.mcp.form.envLabel')} htmlFor="mcp-env">
             <Textarea
               id="mcp-env"
               value={form.envText}
@@ -191,7 +187,7 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
               rows={2}
               placeholder="API_KEY=xxx"
             />
-          </div>
+          </FormField>
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"

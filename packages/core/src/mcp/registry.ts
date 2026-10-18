@@ -27,6 +27,11 @@ export interface McpRegistry {
   createServer(fields: McpServerCreateFields): McpServerInfo;
   /** 部分更新并按需重连（改名冲突抛 ApiError.conflict） */
   updateServer(id: string, fields: McpServerUpdateFields): McpServerInfo;
+  /**
+   * 手动测试连接：断开后重连并**等待**结果（reconcile 的连接是异步不阻塞的，测试需拿到终态）。
+   * 服务器未启用时不建立连接，直接返回现状供前端提示「请先启用」。不存在抛 ApiError.notFound。
+   */
+  testServer(id: string): Promise<McpServerInfo>;
   /** 删除服务器并断开连接；不存在抛 ApiError.notFound */
   removeServer(id: string): void;
   /** 全部服务器视图（配置 + 连接状态 + 工具数），设置页使用 */
@@ -218,6 +223,26 @@ export function createMcpRegistry(
     removeServer(id) {
       if (!repo.remove(id)) throw ApiError.notFound('MCP 服务器', id);
       reconcileAll();
+    },
+
+    async testServer(id) {
+      const config = repo.get(id);
+      if (!config) throw ApiError.notFound('MCP 服务器', id);
+      // 未启用：不建立连接（与 reconcile 的启停语义保持一致），返回现状
+      if (!config.enabled) return buildServerInfo(config, entries.get(id));
+
+      let entry = entries.get(id);
+      if (!entry) {
+        entry = createRegistryEntry(config);
+        entries.set(id, entry);
+      } else {
+        entry.config = config;
+        // 等待可能进行中的连接收敛后再重连，避免并发双连
+        if (entry.refreshing) await entry.refreshing.catch(() => undefined);
+        await disconnect(entry);
+      }
+      await connect(entry);
+      return buildServerInfo(config, entry);
     },
 
     getServerInfos() {

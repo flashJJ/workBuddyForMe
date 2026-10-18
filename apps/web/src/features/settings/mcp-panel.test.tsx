@@ -123,6 +123,30 @@ describe('MCP 服务器面板（v0.6 M1）', () => {
     );
   });
 
+  it('测试连接：POST /api/mcp/servers/1/test 并按结果提示（v2.3）', async () => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return Promise.resolve(
+          ok(makeServer({ id: '1', name: 'filesystem', status: 'connected', toolCount: 3 })),
+        );
+      }
+      return Promise.resolve(ok([makeServer({ id: '1', name: 'filesystem' })]));
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<McpPanel />);
+
+    const item = (await screen.findAllByTestId('mcp-server-item'))[0]!;
+    await user.click(within(item).getByRole('button', { name: '测试连接' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/mcp/servers/1/test',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+    expect(await screen.findByText(/连接成功/)).toBeInTheDocument();
+  });
+
   it('停用：勾选取消后 PATCH enabled=false', async () => {
     fetchMock.mockResolvedValue(ok([makeServer({ id: '1', name: 'filesystem' })]));
     const user = userEvent.setup();

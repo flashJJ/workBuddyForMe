@@ -52,6 +52,8 @@ export const API = {
   memoryClear: '/api/memories/clear',
   mcpServers: '/api/mcp/servers',
   mcpServer: (id: string) => `/api/mcp/servers/${id}`,
+  /** v2.3：手动测试连接（重连并等待终态） */
+  mcpServerTest: (id: string) => `/api/mcp/servers/${id}/test`,
   mcpTools: '/api/mcp/tools',
   skills: '/api/skills',
   skill: (id: string) => `/api/skills/${id}`,

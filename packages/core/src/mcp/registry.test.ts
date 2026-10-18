@@ -120,4 +120,33 @@ describe('MCP 注册表（注入客户端）', () => {
     expect(client.close).toHaveBeenCalledTimes(2);
     expect(registry.getServerInfos().every((info) => info.status === 'disconnected')).toBe(true);
   });
+
+  it('testServer：已启用时重连并等待终态，回报工具数', async () => {
+    const client = makeFakeClient();
+    const { registry } = await setupRegistry([createStdioServer('fs')], client);
+    const info = await registry.testServer('id-fs');
+    expect(info.status).toBe('connected');
+    expect(info.toolCount).toBe(1);
+  });
+
+  it('testServer：未启用时不建立连接，返回现状（前端提示先启用）', async () => {
+    const client = makeFakeClient();
+    const { registry } = await setupRegistry([createStdioServer('fs', false)], client);
+    const info = await registry.testServer('id-fs');
+    expect(info.status).toBe('disconnected');
+    expect(client.initialize).not.toHaveBeenCalled();
+  });
+
+  it('testServer：握手失败回报 error 与原因；不存在抛 notFound', async () => {
+    const client = makeFakeClient({
+      initialize: vi.fn(async () => {
+        throw new Error('boom：命令不存在');
+      }),
+    });
+    const { registry } = await setupRegistry([createStdioServer('bad')], client);
+    const info = await registry.testServer('id-bad');
+    expect(info.status).toBe('error');
+    expect(info.statusDetail).toContain('boom');
+    await expect(registry.testServer('missing')).rejects.toThrow();
+  });
 });

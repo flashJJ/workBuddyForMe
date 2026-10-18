@@ -81,6 +81,27 @@ export function McpPanel() {
     );
   };
 
+  /** v2.3：测试连接——后端重连并等待终态，按结果回报成功/未启用/失败 */
+  const testConnection = (server: McpServerInfo) => {
+    mutations.test.mutate(server.id, {
+      onSuccess: (info) => {
+        if (info.status === 'connected') {
+          toast.success(t('settingsMcp.mcp.testOk', { count: info.toolCount }));
+        } else if (info.status === 'disconnected') {
+          toast.error(t('settingsMcp.mcp.testDisabled'));
+        } else {
+          toast.error(
+            t('settingsMcp.mcp.testFailed', {
+              detail: info.statusDetail ?? t(STATUS_KEYS[info.status]!),
+            }),
+          );
+        }
+      },
+      onError: (error) =>
+        toast.error(errorText(error, t, { fallback: 'settingsMcp.mcp.testFailedShort' })),
+    });
+  };
+
   const remove = async (server: McpServerInfo) => {
     if (
       !(await confirm({
@@ -186,6 +207,16 @@ export function McpPanel() {
                   />
                   {t('common.actions.enable')}
                 </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  data-testid={`mcp-test-${server.id}`}
+                  disabled={mutations.test.isPending}
+                  onClick={() => testConnection(server)}
+                >
+                  {t('common.actions.testConnection')}
+                </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(server)}>
                   {t('common.actions.edit')}
                 </Button>

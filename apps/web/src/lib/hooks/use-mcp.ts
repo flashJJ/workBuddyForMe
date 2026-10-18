@@ -62,5 +62,10 @@ export function useMcpMutations() {
       mutationFn: (id: string) => apiDelete<{ id: string }>(API.mcpServer(id)),
       onSuccess: invalidate,
     }),
+    /** v2.3：测试连接（后端重连并等待终态，返回最新状态与工具数） */
+    test: useMutation({
+      mutationFn: (id: string) => apiPost<McpServerInfo>(API.mcpServerTest(id)),
+      onSuccess: invalidate,
+    }),
   };
 }
