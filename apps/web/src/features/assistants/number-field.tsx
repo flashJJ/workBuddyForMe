@@ -25,7 +25,6 @@ export function NumberField({ id, label, value, step, min, max, onChange }: Prop
       <Label htmlFor={id}>{label}</Label>
       <NumberInput
         id={id}
-        className="w-full"
         value={Number(value)}
         step={Number(step)}
         min={Number(min)}

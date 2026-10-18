@@ -91,7 +91,7 @@ export function StageBackgroundEditor({ payload, onChange }: Props) {
         <div className="grid grid-cols-3 items-center gap-2 text-xs">
           <input type="color" aria-label={t('stage.bg.from')} className="h-7" value={bg.from ?? '#1b2748'} onChange={(e) => patch({ from: e.target.value })} />
           <input type="color" aria-label={t('stage.bg.to')} className="h-7" value={bg.to ?? '#0a0d16'} onChange={(e) => patch({ to: e.target.value })} />
-          <NumberInput min={0} max={360} className="w-full rounded border bg-background px-1 py-0.5" value={bg.angle ?? 180} onValueChange={(v) => patch({ angle: v })} />
+          <NumberInput min={0} max={360} value={bg.angle ?? 180} onValueChange={(v) => patch({ angle: v })} />
         </div>
       )}
 

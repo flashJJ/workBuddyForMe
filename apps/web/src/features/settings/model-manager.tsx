@@ -247,7 +247,7 @@ export function ModelManager({ provider }: { provider: Provider }) {
           </Label>
           <NumberInput
             id={`model-ctx-${provider.id}`}
-            className="h-8 w-28"
+            className="h-8"
             min={1}
             allowEmpty
             value={form.contextWindow === '' ? null : Number(form.contextWindow)}

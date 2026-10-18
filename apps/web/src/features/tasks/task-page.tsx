@@ -119,7 +119,7 @@ export function TaskPage() {
                 onValueChange={setMaxSteps}
                 min={1}
                 max={50}
-                className="w-20 shrink-0"
+                className="shrink-0"
               />
               <Button className="shrink-0" onClick={submit} disabled={mutations.create.isPending}>
                 <Send className="h-4 w-4" />

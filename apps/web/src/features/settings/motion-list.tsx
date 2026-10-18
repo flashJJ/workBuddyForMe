@@ -103,7 +103,6 @@ export function MotionList() {
               <NumberInput
                 min={MOTION_ROTATION_SECONDS_MIN}
                 max={MOTION_ROTATION_SECONDS_MAX}
-                className="w-28"
                 data-testid="motion-rotation-seconds"
                 value={Number(secondsDraft)}
                 disabled={patchMutation.isPending || !rotationEnabled}

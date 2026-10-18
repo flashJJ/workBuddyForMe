@@ -222,7 +222,6 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
                 max={50}
                 value={form.maxPerDay}
                 onValueChange={(v) => update({ maxPerDay: v })}
-                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
               />
             </label>
             <label className="space-y-1 text-sm">
@@ -234,7 +233,6 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
                   value={form.startHour}
                   aria-label={t('customTriggers.windowStart')}
                   onValueChange={(v) => update({ startHour: v })}
-                  className="w-16 rounded-md border bg-background px-2 py-1.5 text-sm"
                 />
                 <span>-</span>
                 <NumberInput
@@ -243,7 +241,6 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
                   value={form.endHour}
                   aria-label={t('customTriggers.windowEnd')}
                   onValueChange={(v) => update({ endHour: v })}
-                  className="w-16 rounded-md border bg-background px-2 py-1.5 text-sm"
                 />
                 <span className="text-xs text-muted-foreground">{t('customTriggers.windowHour')}</span>
               </span>

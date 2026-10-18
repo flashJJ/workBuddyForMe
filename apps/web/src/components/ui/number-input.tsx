@@ -19,8 +19,6 @@ export interface NumberInputProps {
   id?: string;
   className?: string;
   disabled?: boolean;
-  /** 输入框宽度类（按钮固定 32px，其余给输入框），默认自适应 */
-  inputClassName?: string;
   'aria-label'?: string;
   'data-testid'?: string;
 }
@@ -50,7 +48,6 @@ export function NumberInput({
   id,
   className,
   disabled,
-  inputClassName,
   'aria-label': ariaLabel,
   'data-testid': testId,
 }: NumberInputProps) {
@@ -91,13 +88,16 @@ export function NumberInput({
   const atMin = min !== undefined && value !== null && value <= min;
   const atMax = max !== undefined && value !== null && value >= max;
 
+  // 按钮定宽 + 输入框定宽：整体尺寸自持（w-fit），调用方无需再传宽度。
+  // 早期版本把宽度交给调用方（如 w-20），两侧按钮吃掉全部空间后数字被裁成看不见，
+  // 表现为「点加减没反应」——故此处把输入框宽度固定下来，保证数字始终可读。
   const buttonClass =
-    'flex w-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40';
+    'flex w-7 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40';
 
   return (
     <div
       className={cn(
-        'flex h-9 items-stretch rounded-md border border-input bg-background shadow-sm',
+        'inline-flex h-9 w-fit items-stretch rounded-md border border-input bg-background shadow-sm',
         'focus-within:ring-2 focus-within:ring-ring',
         disabled && 'cursor-not-allowed opacity-50',
         className,
@@ -132,9 +132,8 @@ export function NumberInput({
           }
         }}
         className={cn(
-          'min-w-0 border-x border-input bg-transparent px-2 text-center text-sm',
+          'w-14 shrink-0 border-x border-input bg-transparent px-1 text-center text-sm',
           'focus-visible:outline-none',
-          inputClassName ?? 'w-full',
         )}
       />
       <button
