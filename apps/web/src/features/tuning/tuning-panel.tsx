@@ -29,6 +29,13 @@ export function TuningPanel() {
   const mutations = useAssistantMutations();
   const [selectedId, setSelectedId] = React.useState('');
   const [showAdvanced, setShowAdvanced] = React.useState(false);
+  /**
+   * 水合门控：查询态（loading / 数据是否到达）在 SSR 与客户端首帧可能不一致，
+   * 若直接据此切换结构，会在水合窗口内发生结构交换（React #418/#422）。
+   * 首帧恒与 SSR 一致（仅标题），挂载后再按数据展开。与 EmotionPanel 等面板同口径。
+   */
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   React.useEffect(() => {
     if (!selectedId && assistants && assistants.length > 0) setSelectedId(assistants[0]!.id);
@@ -78,12 +85,12 @@ export function TuningPanel() {
         <p className="mt-1 text-xs text-muted-foreground">{t('tuning.description')}</p>
       </div>
 
-      {isLoading && <Spinner />}
-      {assistants && assistants.length === 0 && !isLoading && (
+      {mounted && isLoading && <Spinner />}
+      {mounted && !isLoading && assistants && assistants.length === 0 && (
         <p className="text-xs text-muted-foreground">{t('tuning.assistantAllHint')}</p>
       )}
 
-      {assistant && (
+      {mounted && assistant && (
         <>
           <div className="space-y-1.5">
             <Label htmlFor="tuning-assistant">{t('tuning.assistantLabel')}</Label>

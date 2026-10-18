@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { VRMAnimationLoaderPlugin } from '@pixiv/three-vrm-animation';
-import { parseVrmAvatarId } from '@wbfm/shared/schemas';
+import { parseVrmAvatarId, DEFAULT_MOTION_MOOD, type MotionMood } from '@wbfm/shared/schemas';
 import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from './expression-parser';
@@ -25,6 +25,9 @@ export interface VrmCanvasProps {
   controllerRef?: React.MutableRefObject<VrmControllerLike | null>;
   /** 是否需要接收鼠标事件（默认 false → 穿透不挡点击；桌宠交互场景显式传 true） */
   interactive?: boolean;
+  /** v2.2：情绪档位 / 关系等级（待机动作按档位挑选；缺省 normal / 0） */
+  mood?: MotionMood;
+  relationshipLevel?: number;
   className?: string;
   style?: React.CSSProperties;
   'data-testid'?: string;
@@ -48,6 +51,8 @@ export function VrmCanvas({
   expression = null,
   controllerRef,
   interactive = false,
+  mood = DEFAULT_MOTION_MOOD,
+  relationshipLevel = 0,
   className,
   style,
   'data-testid': testId,
@@ -58,12 +63,16 @@ export function VrmCanvas({
   const speakingRef = React.useRef(speaking);
   const getLevelRef = React.useRef(getLevel);
   const expressionRef = React.useRef(expression);
+  const moodRef = React.useRef(mood);
+  const relationshipLevelRef = React.useRef(relationshipLevel);
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => { speakingRef.current = speaking; }, [speaking]);
   React.useEffect(() => { getLevelRef.current = getLevel; }, [getLevel]);
   React.useEffect(() => { expressionRef.current = expression; }, [expression]);
+  React.useEffect(() => { moodRef.current = mood; }, [mood]);
+  React.useEffect(() => { relationshipLevelRef.current = relationshipLevel; }, [relationshipLevel]);
 
   const fileRef = parseVrmAvatarId(modelId);
   React.useEffect(() => {
@@ -118,13 +127,21 @@ export function VrmCanvas({
 
         // 模型自身不含 AnimationClip（静止姿态就是 T-pose），
         // 加载动作池（内置 daiji + 全部已导入 VRMA）与轮播配置
-        const [pool, rotation] = await Promise.all([
+        const [poolEntries, rotation] = await Promise.all([
           loadMotionPool(loader, vrm),
           loadRotationConfig(),
         ]);
         if (disposed) return;
 
-        controller = new VrmController(vrm, gltf.animations, renderer, scene, camera, pool, rotation);
+        controller = new VrmController(
+          vrm,
+          gltf.animations,
+          renderer,
+          scene,
+          camera,
+          poolEntries,
+          rotation,
+        );
         controllerRefInternal.current = controller;
         if (controllerRef) controllerRef.current = controller;
 
@@ -135,7 +152,7 @@ export function VrmCanvas({
             vrm,
             camera,
             controller,
-            pool,
+            pool: poolEntries.map((entry) => entry.clip),
             fit: null,
             state: () => ({
               scale: vrm!.scene.scale.toArray(),
@@ -146,6 +163,8 @@ export function VrmCanvas({
               idle: (controller as any)?.mixer?.idleClipName ?? null,
               poolSize: (controller as any)?.mixer?.poolSize ?? 0,
               gesture: Boolean((controller as any)?.mixer?.hasGesture),
+              holding: Boolean((controller as any)?.mixer?.isHolding),
+              clip: (controller as any)?.mixer?.currentClipName ?? null,
             }),
           };
           (window as unknown as Record<string, unknown>).__vrmDebug = debug;
@@ -164,6 +183,10 @@ export function VrmCanvas({
           if (disposed || !controller) return;
           raf = requestAnimationFrame(animate);
           if (expressionRef.current) controller.setExpression(expressionRef.current);
+          controller.setMotionPreference({
+            mood: moodRef.current,
+            relationshipLevel: relationshipLevelRef.current,
+          });
           controller.update(speakingRef.current, () => getLevelRef.current?.() ?? 0);
         };
         animate();

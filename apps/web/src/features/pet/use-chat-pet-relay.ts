@@ -3,12 +3,22 @@
 import * as React from 'react';
 import type { Message } from '@wbfm/shared/types';
 import type { PetVoiceState } from '@wbfm/shared/pet';
-import type { VoiceSettings } from '@wbfm/shared/schemas';
+import {
+  DEFAULT_MOTION_MOOD,
+  motionMoodOf,
+  type MotionMood,
+  type VoiceSettings,
+} from '@wbfm/shared/schemas';
+import { defaultRelationshipBlock, displayLevelOf } from '@wbfm/core/relationship-client';
 import type { VoiceAudioFrame } from '@/features/voice/audio-playback-queue';
+import { useEmotionState } from '@/features/avatar/use-emotion-expression';
 import { getPetBridge } from './pet-bridge';
 import { usePetOpenState, usePetVoiceRelay } from './use-pet-voice-relay';
+import { usePetSignalRelay } from './use-pet-signal-relay';
 
 interface UseChatPetRelayArgs {
+  /** v2.2：当前助手（用于读取真实情绪/关系快照并中继给桌宠） */
+  assistantId: string;
   voiceSettings: VoiceSettings | null | undefined;
   voiceState: PetVoiceState;
   messages: Message[];
@@ -31,6 +41,7 @@ interface UseChatPetRelayResult {
  * - 桌宠打开期间语音表现经 IPC 中继，主窗 rail 是否让位由 petOpen 决定。
  */
 export function useChatPetRelay({
+  assistantId,
   voiceSettings,
   voiceState,
   messages,
@@ -40,6 +51,22 @@ export function useChatPetRelay({
 }: UseChatPetRelayArgs): UseChatPetRelayResult {
   const petBridge = React.useMemo(() => getPetBridge(), []);
   const petOpen = usePetOpenState();
+
+  // v2.2：真实状态快照——展示关系等级 = displayLevelOf(relationship, relation)，档位由情绪派生。
+  // 拉取失败/无助手时回落 0 / normal（保守口径：不熟不做亲昵动作）。
+  const { state: emotionState } = useEmotionState(assistantId, messages, proactiveContent);
+  const relationshipLevel = React.useMemo(
+    () =>
+      emotionState
+        ? displayLevelOf(emotionState.relationship ?? defaultRelationshipBlock(), emotionState.relation)
+        : 0,
+    [emotionState],
+  );
+  const mood: MotionMood = React.useMemo(
+    () => (emotionState ? motionMoodOf(emotionState.mood) : DEFAULT_MOTION_MOOD),
+    [emotionState],
+  );
+
   const onAudioFrame = usePetVoiceRelay({
     active: petOpen,
     voiceState,
@@ -47,7 +74,12 @@ export function useChatPetRelay({
     conversationId,
     subscribeLevel,
     proactiveContent,
+    relationshipLevel,
+    mood,
   });
+
+  // v2.3 P2-2：系统信号中继（语音起点/结束 + 授权后的锁屏/唤醒/空闲越阈）
+  usePetSignalRelay({ active: petOpen, voiceState });
 
   const autoOpenTried = React.useRef(false);
   React.useEffect(() => {

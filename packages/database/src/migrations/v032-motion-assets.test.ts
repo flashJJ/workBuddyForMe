@@ -29,6 +29,11 @@ describe('v032 motion_assets', () => {
       'source',
       'note',
       'created_at',
+      // v033（v2.2 M0）纯加法补的四列
+      'entry_key',
+      'segment',
+      'mood',
+      'min_relationship_level',
     ]);
     db.close();
   });

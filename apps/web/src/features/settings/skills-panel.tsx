@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import type { PermissionLevel, SkillInfo } from '@wbfm/shared/types';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
@@ -139,6 +140,9 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
 export function SkillsPanel() {
   const { t } = useI18n();
   const { data: skills, isLoading, isError, refetch } = useSkills();
+  // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="skills-panel">
@@ -149,8 +153,8 @@ export function SkillsPanel() {
         </p>
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
-      {isError && (
+      {mounted && isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
+      {mounted && isError && (
         <p className="text-sm text-destructive">
           {t('settingsMcp.skills.loadFailed')}
           <button className="underline" onClick={() => void refetch()}>
@@ -158,10 +162,10 @@ export function SkillsPanel() {
           </button>
         </p>
       )}
-      {skills && skills.length === 0 && (
+      {mounted && skills && skills.length === 0 && (
         <p className="text-sm text-muted-foreground">{t('settingsMcp.skills.empty')}</p>
       )}
-      {skills && skills.length > 0 && (
+      {mounted && skills && skills.length > 0 && (
         <ul className="space-y-2" data-testid="skill-list">
           {skills.map((skill) => (
             <SkillRow key={skill.id} skill={skill} />

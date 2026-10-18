@@ -9,6 +9,7 @@ import {
   createKnowledgeRepository,
   createModelRepository,
   createProviderRepository,
+  createSettingsRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
@@ -66,6 +67,9 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       contextMessageCount: 20,
       globalAppendPrompt: '',
       globalAppendPromptEnabled: false,
+      // v2.3：动画图覆盖条目与停用列表缺省为空（服务端钳制产出，保证字段恒存在）
+      interactionGraphOverrides: [],
+      interactionGraphDisabledEntryIds: [],
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');
@@ -73,6 +77,35 @@ describe('settings / assistants 服务（TR-13.1）', () => {
     // v1.8 命名主题持久化
     const themed = settings.update({ themeId: 'sakura' });
     expect(themed.themeId).toBe('sakura');
+  });
+
+  it('v2.3：动画图覆盖条目非法时服务端丢弃（合法保留）', () => {
+    const settings = createSettingsService({ db, cipher });
+    createSettingsRepository(db).setJson('app-settings', {
+      interactionGraphOverrides: [
+        { key: 'touch::head::tap', chainId: 'head-tap' },
+        // 非法触发键（区域不在枚举内）
+        { key: 'touch::tail::tap', chainId: 'head-tap' },
+        // 未知动作条目 id
+        { key: 'touch::body::tap', chainId: 'nope' },
+      ],
+    });
+    expect(settings.get().interactionGraphOverrides).toEqual([
+      { key: 'touch::head::tap', chainId: 'head-tap' },
+    ]);
+  });
+
+  it('v2.3：停用列表的未知 id 被丢弃并去重', () => {
+    const settings = createSettingsService({ db, cipher });
+    createSettingsRepository(db).setJson('app-settings', {
+      interactionGraphDisabledEntryIds: [
+        'builtin:head-tap',
+        'builtin:head-tap',
+        'builtin:nope',
+        42,
+      ],
+    });
+    expect(settings.get().interactionGraphDisabledEntryIds).toEqual(['builtin:head-tap']);
   });
 
   it('设置绑定不存在的模型被拒', () => {

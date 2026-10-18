@@ -14,6 +14,7 @@ import type {
 } from '../constants';
 import type { ContentPart } from './content-part';
 import type { EventSettingsFields } from '../events/event-settings';
+import type { InteractionGraphEntry } from '../schemas/interaction-graph';
 import type { ToolTraceEntry } from './tool';
 
 export interface Timestamped {
@@ -240,6 +241,22 @@ export interface AppSettings extends EventSettingsFields {
    * 关闭后摸头/久别迎接不再说话（零文案气泡）；摸头表情与弹性等无音效动作反馈保留。
    */
   interactionLinesEnabled?: boolean;
+  /** v2.2：勿扰时段开关（缺省视为 true，即 23:00–06:00 内不响应桌宠交互） */
+  doNotDisturbEnabled?: boolean;
+  /** v2.2：勿扰起始小时 0–23（含），缺省 23 */
+  doNotDisturbStartHour?: number;
+  /** v2.2：勿扰结束小时 0–23（不含），缺省 6 */
+  doNotDisturbEndHour?: number;
+  /**
+   * v2.3：交互动画图的用户覆盖条目（缺省空 = 只用内置图）。
+   * 覆盖条目排在内置图之前生效，内置图仍兜底，保证任何状态下都有可播动作。
+   */
+  interactionGraphOverrides?: InteractionGraphEntry[];
+  /**
+   * v2.3：被停用的内置动画图条目 id（缺省空 = 内置条目全部生效）。
+   * 停用某触发键的全部条目后该交互不再有动作（「查不到返回空」）。
+   */
+  interactionGraphDisabledEntryIds?: string[];
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;

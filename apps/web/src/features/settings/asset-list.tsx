@@ -42,21 +42,28 @@ export function AssetList({
   beforeList,
 }: AssetListProps) {
   const { t } = useI18n();
+  /**
+   * 水合门控：本组件的数据（rows / headerExtra / beforeList）与 loading 态全部由调用方
+   * 从查询结果派生，SSR 与客户端首帧可能不一致（如 headerExtra 里的「当前待机」名）。
+   * 故内容区统一延到挂载后再渲染，首帧恒与 SSR 一致（只留标题行）。React #418/#422 同款口径。
+   */
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   return (
     <section className="space-y-3 rounded-lg border bg-card p-4" data-testid={testId}>
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-medium">{t(sectionTitleKey)}</h4>
-        {headerExtra}
+        {mounted && headerExtra}
       </div>
 
-      {beforeList}
+      {mounted && beforeList}
 
-      {isLoading && <p className="text-xs text-muted-foreground">Loading...</p>}
-      {!isLoading && rows.length === 0 && (
+      {mounted && isLoading && <p className="text-xs text-muted-foreground">Loading...</p>}
+      {mounted && !isLoading && rows.length === 0 && (
         <p className="text-xs text-muted-foreground">{t(emptyKey)}</p>
       )}
-      {rows.length > 0 && (
+      {mounted && rows.length > 0 && (
         <ul className="space-y-2">
           {rows.map((row) => (
             <li

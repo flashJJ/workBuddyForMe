@@ -23,6 +23,7 @@ import { HelpCenterPanel } from '../help-center/help-center-panel';
 import { VoicePreferencePanel } from '../voice/settings/voice-preference-panel';
 import { KnowledgeRetrievalPanel } from './knowledge-retrieval-panel';
 import { EmotionPanel } from './emotion-panel';
+import { InteractionGraphPanel } from './interaction-graph-panel';
 import { RelationshipPanel } from './relationship-panel';
 import { EventPanel } from './event-panel';
 import { ReminderPanel } from '../reminders/reminder-panel';
@@ -53,6 +54,9 @@ export function SettingsPage() {
   const { data: providers, isLoading, isError, refetch } = useProviders();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Provider | null>(null);
+  // 水合门控：供应商查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const openCreate = () => {
     setEditing(null);
@@ -82,6 +86,7 @@ export function SettingsPage() {
       panels: [
         <VoicePreferencePanel key="voice" />,
         <EmotionPanel key="emotion" />,
+        <InteractionGraphPanel key="interaction-graph" />,
         <RelationshipPanel key="relationship" />,
         <EventPanel key="events" />,
         <RelationshipReportPanel key="report" />,
@@ -130,11 +135,11 @@ export function SettingsPage() {
         />
 
         {/* 基础设置：供应商 + 默认偏好（不进分组，始终置顶） */}
-        {isLoading && <Spinner />}
-        {isError && (
+        {mounted && isLoading && <Spinner />}
+        {mounted && isError && (
           <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />
         )}
-        {!isLoading && !isError && providers && (
+        {mounted && !isLoading && !isError && providers && (
           <div className="space-y-4" data-testid="provider-list">
             {providers.length === 0 && (
               <EmptyState

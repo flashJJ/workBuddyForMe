@@ -7,6 +7,10 @@ import {
   CONTEXT_MESSAGES_MAX,
   GLOBAL_APPEND_PROMPT_MAX,
 } from '../constants';
+import { ACTION_CHAIN_IDS } from './interaction-chains';
+import { isValidTriggerKey } from './interaction-graph';
+import { motionMoodSchema } from './motion-asset';
+import { RELATIONSHIP_LEVEL_NAMES } from './relationship-level';
 
 /** v1.8 M4 音色收藏形状（M3 冻结数据契约；M4 才出 UI） */
 export const voiceFavoriteSchema = z.object({
@@ -17,6 +21,31 @@ export const voiceFavoriteSchema = z.object({
   voice: z.string().trim().min(1).max(80),
 });
 export type VoiceFavoriteInput = z.infer<typeof voiceFavoriteSchema>;
+
+/**
+ * v2.3：交互动画图的用户覆盖条目（settings JSON 持久化）。
+ * chainId 必须在内置动作条目目录内；条件维度为关系等级门槛 / 情绪档位 / 时段。
+ */
+export const interactionGraphEntrySchema = z.object({
+  key: z.string().trim().refine(isValidTriggerKey, { message: 'invalid touch trigger key' }),
+  chainId: z.enum(ACTION_CHAIN_IDS),
+  condition: z
+    .object({
+      minLevel: z.enum(RELATIONSHIP_LEVEL_NAMES).optional(),
+      mood: motionMoodSchema.optional(),
+      hours: z
+        .object({
+          startHour: z.number().int().min(0).max(23),
+          endHour: z.number().int().min(0).max(23),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+export type InteractionGraphOverride = z.infer<typeof interactionGraphEntrySchema>;
+
+/** 覆盖条目上限（防配置膨胀失控） */
+export const INTERACTION_GRAPH_OVERRIDES_MAX = 50;
 
 export const settingsUpdateSchema = z.object({
   defaultChatModelId: z.string().trim().min(1).nullable().optional(),
@@ -43,6 +72,20 @@ export const settingsUpdateSchema = z.object({
   relationshipEnabled: z.boolean().optional(),
   // v1.6 M5 互动本地短句（摸头/久别迎接；缺省视为 true，关闭只留无声音的表情动作）
   interactionLinesEnabled: z.boolean().optional(),
+  // v2.2 勿扰时段（缺省开启 23:00–06:00；关闭后任何时段都可交互）
+  doNotDisturbEnabled: z.boolean().optional(),
+  doNotDisturbStartHour: z.number().int().min(0).max(23).optional(),
+  doNotDisturbEndHour: z.number().int().min(0).max(23).optional(),
+  // v2.3 交互动画图覆盖条目（≤50；非法条目服务端丢弃）
+  interactionGraphOverrides: z
+    .array(interactionGraphEntrySchema)
+    .max(INTERACTION_GRAPH_OVERRIDES_MAX)
+    .optional(),
+  // v2.3 内置动画图条目的停用列表（≤50；未知 id 服务端丢弃，见 isBuiltinEntryId）
+  interactionGraphDisabledEntryIds: z
+    .array(z.string().trim().min(1).max(80))
+    .max(INTERACTION_GRAPH_OVERRIDES_MAX)
+    .optional(),
   // v1.7 剧情事件总开关（缺省视为 true；出口/勿扰/对话锁仍由导演层兜底）
   eventsEnabled: z.boolean().optional(),
   // v1.7 主动频率档（冷却系数 1.5/1/0.6；缺省 standard）

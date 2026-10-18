@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { PET_SUBTITLE_MAX, type PetVoiceState } from '@wbfm/shared/pet';
-import { stripExpressionDirectives } from '@wbfm/shared/schemas';
+import { DEFAULT_MOTION_MOOD, stripExpressionDirectives, type MotionMood } from '@wbfm/shared/schemas';
 import { type Message } from '@wbfm/shared/types';
 import { type SsePayloadMap } from '@wbfm/shared/api';
 import { DEFAULT_EXPRESSION, latestExpression, type ExpressionTag } from '@/features/avatar/expression-parser';
@@ -35,6 +35,10 @@ interface UsePetVoiceRelayArgs {
   subscribeLevel: (sink: (level: number) => void) => () => void;
   /** F8：主动轮气泡文本（存在时表情优先跟随它） */
   proactiveContent?: string | null;
+  /** v2.2：展示关系等级 0–3（交互门控真源；缺省 0 = 陌生） */
+  relationshipLevel?: number;
+  /** v2.2：情绪档位（待机动作挑选；缺省 normal） */
+  mood?: MotionMood;
 }
 
 /**
@@ -49,6 +53,8 @@ export function usePetVoiceRelay({
   conversationId,
   subscribeLevel,
   proactiveContent = null,
+  relationshipLevel = 0,
+  mood = DEFAULT_MOTION_MOOD,
 }: UsePetVoiceRelayArgs): (frame: SsePayloadMap['voice_audio']) => void {
   const bridge = React.useMemo(() => getPetBridge(), []);
   const activeNow = Boolean(bridge && active);
@@ -74,6 +80,13 @@ export function usePetVoiceRelay({
   React.useEffect(() => {
     if (activeNow && bridge) bridge.relayPerformance({ kind: 'expression', tag: expression });
   }, [activeNow, bridge, expression]);
+
+  // v2.2：关系等级 + 情绪档位快照（桌宠交互门控与待机动作挑选的真源）
+  React.useEffect(() => {
+    if (activeNow && bridge) {
+      bridge.relayPerformance({ kind: 'relationship', level: relationshipLevel, mood });
+    }
+  }, [activeNow, bridge, relationshipLevel, mood]);
 
   // 激活或切换会话：通知桌宠清空字幕/表情，避免上一轮残留
   React.useEffect(() => {

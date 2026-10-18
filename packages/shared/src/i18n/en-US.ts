@@ -41,6 +41,7 @@ import { enMeeting } from './messages/meeting-en';
 import { enRelationship } from './messages/relationship';
 import { enModPack } from './messages/mod-pack';
 import { enRelationshipReport } from './messages/relationship-report';
+import { enSettingsGraph } from './messages/settings-graph';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -55,6 +56,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   settingsProviders: enSettingsProviders,
   settingsMcp: enSettingsMcp,
   settingsBackup: enSettingsBackup,
+  settingsGraph: enSettingsGraph,
   about: enAbout,
   chat: enChat,
   chatMessages: enChatMessages,

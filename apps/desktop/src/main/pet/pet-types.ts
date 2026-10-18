@@ -3,7 +3,7 @@
  * Electron API 全部经这些结构化接口注入，核心逻辑可纯单测。
  */
 import type { WindowBootInfo } from '../window';
-import type { PetState } from './pet-state';
+import type { PetState, Rect } from './pet-state';
 import type { CursorPoint } from './pet-window';
 import type { PetDragWindow } from './pet-drag-controller';
 import type { PetHoverWindow } from './pet-hover-poller';
@@ -60,6 +60,8 @@ export interface PetManagerDeps {
   showContextMenu?: ShowPetContextMenu;
   /** 测试注入：当前全局光标（DIP），默认 Electron screen.getCursorScreenPoint */
   getCursor?: () => CursorPoint;
+  /** 测试注入：窗口所在工作区，默认 Electron screen.getDisplayMatching(bounds).workArea */
+  getWorkArea?: (bounds: Rect) => Rect | null;
   /** 测试注入：轮询定时器（默认 setInterval/clearInterval） */
   setInterval?: typeof setInterval;
   clearInterval?: typeof clearInterval;

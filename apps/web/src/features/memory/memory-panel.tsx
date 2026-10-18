@@ -98,6 +98,10 @@ export function MemoryPanel() {
   const mutations = useMemoryMutations();
   const toast = useToast();
   const confirm = useConfirm();
+  // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
+  // 筛选栏是本地状态派生（两帧一致），无需门控。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const openCreate = () => {
     setEditing(null);
@@ -221,9 +225,11 @@ export function MemoryPanel() {
         />
       </div>
 
-      {isLoading && <Spinner />}
-      {isError && <ErrorState message={t('memory.loadError')} onRetry={() => void refetch()} />}
-      {!isLoading && !isError && memories && (
+      {mounted && isLoading && <Spinner />}
+      {mounted && isError && (
+        <ErrorState message={t('memory.loadError')} onRetry={() => void refetch()} />
+      )}
+      {mounted && !isLoading && !isError && memories && (
         <div className="space-y-2" data-testid="memory-list">
           {memories.length === 0 ? (
             <EmptyState

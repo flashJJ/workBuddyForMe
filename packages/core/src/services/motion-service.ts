@@ -4,7 +4,17 @@ import { randomUUID } from 'node:crypto';
 import { getDataDir } from '@wbfm/config';
 import { MOTION_MAX_BYTES } from '@wbfm/shared/constants';
 import { ApiError } from '@wbfm/shared/errors';
-import type { MotionAsset } from '@wbfm/shared/schemas';
+import {
+  DEFAULT_MOTION_MOOD,
+  DEFAULT_MOTION_SEGMENT,
+  MOTION_ENTRY_KEY_MAX,
+  motionMoodSchema,
+  motionSegmentSchema,
+  relationshipLevelSchema,
+  type MotionAsset,
+  type MotionMood,
+  type MotionSegment,
+} from '@wbfm/shared/schemas';
 import type { Database } from 'better-sqlite3';
 import { sniffVrma } from './motion-sniff';
 
@@ -16,10 +26,22 @@ interface MotionAssetRow {
   byte_length: number;
   source: string | null;
   note: string | null;
+  /** v033（v2.2）新增四列 */
+  entry_key: string | null;
+  segment: string;
+  mood: string;
+  min_relationship_level: number | null;
   created_at: string;
 }
 
+/**
+ * 行 → 契约。段与档位**读兼容**：库里出现词表外的值（老库被外部改坏、
+ * 未来枚举收缩）一律回落缺省，绝不因一个坏列值让整条动作读不出来。
+ */
 function rowToMotion(row: MotionAssetRow): MotionAsset {
+  const segment = motionSegmentSchema.safeParse(row.segment);
+  const mood = motionMoodSchema.safeParse(row.mood);
+  const level = relationshipLevelSchema.safeParse(row.min_relationship_level);
   return {
     id: row.id,
     name: row.name,
@@ -27,17 +49,24 @@ function rowToMotion(row: MotionAssetRow): MotionAsset {
     byteLength: row.byte_length,
     source: row.source ?? undefined,
     note: row.note ?? undefined,
+    entryKey: row.entry_key ?? undefined,
+    segment: segment.success ? segment.data : DEFAULT_MOTION_SEGMENT,
+    mood: mood.success ? mood.data : DEFAULT_MOTION_MOOD,
+    minRelationshipLevel: level.success ? level.data : undefined,
     createdAt: row.created_at,
   };
 }
+
 
 export function createMotionService(db: Database) {
   const dir = getDataDir('motions');
   mkdirSync(dir, { recursive: true });
 
   const insertStmt = db.prepare(`
-    INSERT INTO motion_assets (id, name, file_ref, byte_length, source, note)
-    VALUES (@id, @name, @file_ref, @byte_length, @source, @note)
+    INSERT INTO motion_assets
+      (id, name, file_ref, byte_length, source, note, entry_key, segment, mood, min_relationship_level)
+    VALUES
+      (@id, @name, @file_ref, @byte_length, @source, @note, @entry_key, @segment, @mood, @min_relationship_level)
   `);
   const listStmt = db.prepare('SELECT * FROM motion_assets ORDER BY created_at DESC');
   const getStmt = db.prepare('SELECT * FROM motion_assets WHERE id = ?');
@@ -52,6 +81,14 @@ export function createMotionService(db: Database) {
       name?: string;
       source?: string;
       note?: string;
+      /** v2.2：段标记（缺省 single = 整段即循环段） */
+      segment?: MotionSegment;
+      /** v2.2：情绪档位（缺省 normal = 任何档位都可播） */
+      mood?: MotionMood;
+      /** v2.2：动作条目键（缺省自成条目） */
+      entryKey?: string;
+      /** v2.2：最低关系等级门槛 0-3（缺省无门槛） */
+      minRelationshipLevel?: number | null;
     }): MotionAsset {
       if (!input.filename.toLowerCase().endsWith('.vrma')) {
         throw ApiError.validation('仅支持 .vrma 文件');
@@ -75,6 +112,13 @@ export function createMotionService(db: Database) {
       const source = input.source?.trim() ? input.source.trim().slice(0, 200) : null;
       const note = input.note?.trim() ? input.note.trim().slice(0, 200) : null;
       const id = randomUUID();
+      const entryKey = input.entryKey?.trim()
+        ? input.entryKey.trim().slice(0, MOTION_ENTRY_KEY_MAX)
+        : null;
+      const segment = input.segment ?? DEFAULT_MOTION_SEGMENT;
+      const mood = input.mood ?? DEFAULT_MOTION_MOOD;
+      const minLevel =
+        typeof input.minRelationshipLevel === 'number' ? input.minRelationshipLevel : null;
       insertStmt.run({
         id,
         name: name.slice(0, 80),
@@ -82,6 +126,10 @@ export function createMotionService(db: Database) {
         byte_length: input.buffer.byteLength,
         source,
         note,
+        entry_key: entryKey,
+        segment,
+        mood,
+        min_relationship_level: minLevel,
       });
       return {
         id,
@@ -90,6 +138,10 @@ export function createMotionService(db: Database) {
         byteLength: input.buffer.byteLength,
         source: source ?? undefined,
         note: note ?? undefined,
+        entryKey: entryKey ?? undefined,
+        segment,
+        mood,
+        minRelationshipLevel: minLevel ?? undefined,
         createdAt: new Date().toISOString(),
       };
     },

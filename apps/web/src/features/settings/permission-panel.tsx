@@ -17,6 +17,9 @@ export function PermissionPanel() {
   const { data: permissions, isLoading } = useToolPermissions();
   const mutations = useToolPermissionMutations();
   const toast = useToast();
+  // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const formatScope = (scope: string): string => {
     if (scope === 'all') return t('settingsMcp.permission.scopeGlobal');
@@ -48,17 +51,17 @@ export function PermissionPanel() {
         </div>
       </div>
 
-      {isLoading && (
+      {mounted && isLoading && (
         <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>
       )}
 
-      {!isLoading && (!permissions || permissions.length === 0) && (
+      {mounted && !isLoading && (!permissions || permissions.length === 0) && (
         <p className="text-sm text-muted-foreground">
           {t('settingsMcp.permission.empty')}
         </p>
       )}
 
-      {!isLoading && permissions && permissions.length > 0 && (
+      {mounted && !isLoading && permissions && permissions.length > 0 && (
         <div className="space-y-2">
           {(permissions as ToolPermission[]).map((p) => (
             <div

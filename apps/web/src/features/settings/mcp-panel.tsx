@@ -40,6 +40,10 @@ export function McpPanel() {
   const confirm = useConfirm();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<McpServerInfo | null>(null);
+  // 水合门控：查询在途/到达的时机在 SSR 与客户端首帧不一致，直接据此切结构会水合失配
+  // （React #418/#422）。首帧恒与 SSR 一致（仅标题栏），挂载后再按数据展开。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
   const openCreate = () => {
     setEditing(null);
@@ -98,8 +102,8 @@ export function McpPanel() {
         </Button>
       </div>
 
-      {isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
-      {isError && (
+      {mounted && isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
+      {mounted && isError && (
         <p className="text-sm text-destructive">
           {t('settingsMcp.mcp.loadFailed')}
           <button className="underline" onClick={() => void refetch()}>
@@ -107,10 +111,10 @@ export function McpPanel() {
           </button>
         </p>
       )}
-      {servers && servers.length === 0 && (
+      {mounted && servers && servers.length === 0 && (
         <p className="text-sm text-muted-foreground">{t('settingsMcp.mcp.empty')}</p>
       )}
-      {servers && servers.length > 0 && (
+      {mounted && servers && servers.length > 0 && (
         <ul className="space-y-2" data-testid="mcp-server-list">
           {servers.map((server) => (
             <li

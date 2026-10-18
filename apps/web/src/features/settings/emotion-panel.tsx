@@ -7,6 +7,9 @@ import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
 import { EmotionDetailView } from './emotion-detail-view';
 
+/** 勿扰时段可选小时（0–23） */
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
 /**
  * v1.6 情绪与互动设置面板：
  * 总开关（即时保存）+ 互动短句开关 + 助手选择；
@@ -62,6 +65,39 @@ export function EmotionPanel() {
     }
   };
 
+  // v2.2 勿扰时段：开关 + 起止小时（缺省 23:00–06:00），同样乐观覆盖即时保存
+  const [dndOverride, setDndOverride] = React.useState<boolean | null>(null);
+  const [dndStartOverride, setDndStartOverride] = React.useState<number | null>(null);
+  const [dndEndOverride, setDndEndOverride] = React.useState<number | null>(null);
+  React.useEffect(() => setDndOverride(null), [settings?.doNotDisturbEnabled]);
+  React.useEffect(() => setDndStartOverride(null), [settings?.doNotDisturbStartHour]);
+  React.useEffect(() => setDndEndOverride(null), [settings?.doNotDisturbEndHour]);
+
+  const dndEnabled = dndOverride ?? settings?.doNotDisturbEnabled !== false;
+  const dndStart = dndStartOverride ?? settings?.doNotDisturbStartHour ?? 23;
+  const dndEnd = dndEndOverride ?? settings?.doNotDisturbEndHour ?? 6;
+
+  const toggleDnd = async (next: boolean) => {
+    setDndOverride(next);
+    try {
+      await updateSettings.mutateAsync({ doNotDisturbEnabled: next });
+    } catch {
+      setDndOverride(null);
+    }
+  };
+
+  const changeDndHour = async (which: 'start' | 'end', value: number) => {
+    const setOverride = which === 'start' ? setDndStartOverride : setDndEndOverride;
+    setOverride(value);
+    try {
+      await updateSettings.mutateAsync(
+        which === 'start' ? { doNotDisturbStartHour: value } : { doNotDisturbEndHour: value },
+      );
+    } catch {
+      setOverride(null);
+    }
+  };
+
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="emotion-panel">
       <div>
@@ -98,6 +134,57 @@ export function EmotionPanel() {
           </span>
         </label>
       )}
+
+      {/* v2.2 勿扰时段：开关 + 起止小时（缺省 23:00–06:00） */}
+      <label className="flex cursor-pointer items-start gap-2.5 border-t pt-3">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 rounded border-input"
+          data-testid="dnd-enabled-toggle"
+          checked={dndEnabled}
+          onChange={(e) => void toggleDnd(e.target.checked)}
+        />
+        <span className="space-y-0.5">
+          <span className="block text-sm font-medium">{t('settings.emotion.doNotDisturbTitle')}</span>
+          <span className="block text-xs text-muted-foreground">
+            {t('settings.emotion.doNotDisturbEnable')}
+          </span>
+        </span>
+      </label>
+
+      {dndEnabled && (
+        <div className="flex flex-wrap items-center gap-3 pl-[26px] text-xs text-muted-foreground">
+          <label className="flex items-center gap-1.5">
+            {t('settings.emotion.doNotDisturbStart')}
+            <select
+              className="h-8 rounded-md border bg-background px-2 text-sm"
+              data-testid="dnd-start-hour"
+              value={dndStart}
+              onChange={(e) => void changeDndHour('start', Number(e.target.value))}
+            >
+              {HOURS.map((h) => (
+                <option key={h} value={h}>{`${h}:00`}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-1.5">
+            {t('settings.emotion.doNotDisturbEnd')}
+            <select
+              className="h-8 rounded-md border bg-background px-2 text-sm"
+              data-testid="dnd-end-hour"
+              value={dndEnd}
+              onChange={(e) => void changeDndHour('end', Number(e.target.value))}
+            >
+              {HOURS.map((h) => (
+                <option key={h} value={h}>{`${h}:00`}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+      <p className="pl-[26px] text-xs text-muted-foreground">
+        {t('settings.emotion.doNotDisturbHint')}
+      </p>
 
       {enabled && (
         <div className="space-y-3 border-t pt-3">

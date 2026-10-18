@@ -48,7 +48,13 @@ export {
   type CompileRequest,
   type ClipRequest,
 } from './knowledge';
-export { settingsUpdateSchema, type SettingsUpdateInput } from './settings';
+export {
+  settingsUpdateSchema,
+  interactionGraphEntrySchema,
+  INTERACTION_GRAPH_OVERRIDES_MAX,
+  type InteractionGraphOverride,
+  type SettingsUpdateInput,
+} from './settings';
 
 // v1.0 语音/形象契约
 export {
@@ -296,9 +302,24 @@ export * from './vrm-avatar';
 // v2.0 交互触发管道契约
 export * from './interaction-events';
 export * from './interaction-actions';
-export { resolveInteraction } from './interaction-resolvers';
+export {
+  resolveInteraction,
+  relationshipLevelName,
+  RELATIONSHIP_LEVEL_NAMES,
+  touchTriggerKey,
+  isDoNotDisturbHour,
+  DEFAULT_DO_NOT_DISTURB,
+  type DoNotDisturbConfig,
+} from './interaction-resolvers';
 export * from './interaction-hitbox';
+// v2.3 交互动画图（数据配置层：条目条件 = 关系等级/情绪档位/时段；触发键覆盖全事件类型）
+export * from './interaction-graph';
+// v2.3 动画图动作条目目录（id → 动作链；与条目/匹配分离，各守 240 行）
+export * from './interaction-chains';
+export * from './relationship-level';
 // v2.0 M5 .wbfm-pack mod 包契约
 export * from './wbfm-pack';
 // v2.0 待机动作（VRMA）契约
 export * from './motion-asset';
+// v2.2 M2 待机动作状态驱动挑选（策略层纯函数，两后端共用）
+export * from './motion-selection';

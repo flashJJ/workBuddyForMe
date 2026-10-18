@@ -1,7 +1,8 @@
 'use client';
 
 import { TriggerBus } from './trigger-bus';
-import type { InteractionEvent, TouchEvent } from '@wbfm/shared/schemas';
+import { getPetBridge } from '@/features/pet/pet-bridge';
+import type { InteractionEvent } from '@wbfm/shared/schemas';
 
 /**
  * M2 事件剧本 ↔ InteractionEvent 映射表。
@@ -37,14 +38,18 @@ export function mapSceneToEvent(eventId: string): InteractionEvent | null {
 /**
  * 事件剧本触发桥——在 EventDirector.triggerEvent 入口调用。
  *
- * 职责：emit 到 TriggerBus（让交互管道观测到）
- * Resolver 路由决策在 web 端 resolveAndDispatch 里（由调用方自行决定）。
+ * 职责：
+ * 1. emit 到 TriggerBus（主窗统一观测）；
+ * 2. v2.3 P2-2：**非触摸**事件（感知 / 系统信号 / 关系变化）中继到桌宠窗，
+ *    由桌宠侧 Resolver 按动画图配置决定是否表演（内置图没有这些触发键的条目 → 缺省不表演）。
+ *    触摸类剧本不中继（意图是「真实触摸」语义，避免与用户真实触摸双播）。
  */
 export function bridgeEventFire(eventId: string): void {
   const event = mapSceneToEvent(eventId);
-  if (event) {
-    TriggerBus.emit(event);
-  }
+  if (!event) return;
+  TriggerBus.emit(event);
+  if (event.kind === 'touch') return;
+  getPetBridge()?.relayPerformance({ kind: 'interaction', event });
 }
 
 /** 感知触发器 → InteractionEvent 映射（context-triggers.ts 用） */

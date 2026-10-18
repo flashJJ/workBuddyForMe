@@ -20,8 +20,8 @@ describe('v020 迁移：助手三角色模型列 + task_steps 引用列', () => 
   it('全新空库：user_version=20，四个新列就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(32);
-    expect(LATEST_SCHEMA_VERSION).toBe(32);
+    expect(getSchemaVersion(db)).toBe(33);
+    expect(LATEST_SCHEMA_VERSION).toBe(33);
     const assistantCols = columnNames(db, 'assistants');
     expect(assistantCols.has('planner_model_id')).toBe(true);
     expect(assistantCols.has('executor_model_id')).toBe(true);
@@ -48,7 +48,7 @@ describe('v020 迁移：助手三角色模型列 + task_steps 引用列', () => 
     ).run();
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(32);
+    expect(getSchemaVersion(db)).toBe(33);
 
     const assistant = db
       .prepare(

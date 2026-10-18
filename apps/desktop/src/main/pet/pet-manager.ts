@@ -11,9 +11,15 @@ import {
   type PetPerformanceEvent,
 } from '@wbfm/shared/pet';
 import { PetClickThroughController } from './pet-penetration';
-import { loadPetState, savePetState, type PetState } from './pet-state';
-import { createPetWindow, type CursorPoint } from './pet-window';
+import { loadPetState, savePetState, type PetState, type Rect } from './pet-state';
+import {
+  createPetWindow,
+  PET_WINDOW_HEIGHT,
+  PET_WINDOW_WIDTH,
+  type CursorPoint,
+} from './pet-window';
 import { PetDragController, type PetDragWindow } from './pet-drag-controller';
+import { PetThrowController } from './pet-throw-controller';
 import { PetHoverPoller } from './pet-hover-poller';
 import { showDefaultPetContextMenu } from './pet-menu';
 import { registerPetIpc, type IpcMainLike } from './pet-ipc';
@@ -31,6 +37,7 @@ export class PetManager {
   private currentModelId = DEFAULT_MODEL;
   private readonly hoverPoller: PetHoverPoller;
   private readonly drag: PetDragController;
+  private readonly thrower: PetThrowController;
 
   constructor(private readonly deps: PetManagerDeps) {
     this.state = loadPetState(deps.userDataDir);
@@ -40,10 +47,32 @@ export class PetManager {
       onHover: (h) => this.controller?.update(h),
       onForceInteractive: () => this.controller?.force(false),
     });
+    // 桌宠窗固定尺寸（不可缩放）：拖拽/滑行一律回写规范尺寸，避免棘轮式变大
+    const fixedSize = () => ({ width: PET_WINDOW_WIDTH, height: PET_WINDOW_HEIGHT });
+    this.thrower = new PetThrowController({
+      setInterval: deps.setInterval, clearInterval: deps.clearInterval,
+      getWorkArea: (bounds) => this.readWorkArea(bounds),
+      getFixedSize: fixedSize,
+      onSettle: (win) => this.persistBounds(win),
+      // 真机排查用（滑行/贴边的调用与坐标轨迹）
+      log: (message) => process.stdout.write(`[pet-throw] ${message}\n`),
+    });
     this.drag = new PetDragController({
       getCursor: () => this.readCursor(),
-      onDragStart: () => this.controller?.force(false),
-      onDragEnd: (win) => this.persistBounds(win),
+      getFixedSize: fixedSize,
+      onDragStart: () => {
+        // 新一轮拖拽开始：先停掉可能在跑的滑行，否则抛掷与拖拽会互相抢窗口位置（卡顿/乱跳）
+        this.thrower.stop();
+        process.stdout.write('[pet-drag] begin\n');
+        this.controller?.force(false);
+      },
+      // 松手带释放速度 + 本次拖拽累计位移 → 抛掷控制器做惯性滑行 + 贴边回正（位移过小视为误触，不动作）
+      onDragEnd: (win, velocity, distance) => {
+        process.stdout.write(
+          `[pet-drag] end dist=${Math.round(distance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)}\n`,
+        );
+        this.thrower.start(win, velocity, distance);
+      },
     });
   }
 
@@ -71,6 +100,7 @@ export class PetManager {
     if (!old || old.isDestroyed()) return this.open(target);
     this.swapping = true;
     this.hoverPoller.stop();
+    this.thrower.stop();
     this.controller?.dispose();
     this.controller = null;
     this.persistBounds(old); // state 变为当前 bounds，新窗据此定位
@@ -121,6 +151,7 @@ export class PetManager {
       this.resetAfterClose();
       return;
     }
+    this.thrower.stop();
     this.persistBounds(win);
     win.close();
   }
@@ -169,6 +200,7 @@ export class PetManager {
   /** 应用退出前调用：置位（后续不再唤主窗）+ 持久化 + 立即销毁桌宠 */
   prepareQuit(): void {
     this.quitting = true;
+    this.thrower.stop();
     const win = this.win;
     if (win && !win.isDestroyed()) {
       this.persistBounds(win);
@@ -205,6 +237,16 @@ export class PetManager {
     return (this.deps.getCursor ?? (() => screen.getCursorScreenPoint()))();
   }
 
+  /** 窗口所在工作区（DIP）：默认按窗口矩形匹配显示器；取不到（测试/无 screen API）返回 null */
+  private readWorkArea(bounds: Rect): Rect | null {
+    if (this.deps.getWorkArea) return this.deps.getWorkArea(bounds);
+    try {
+      return screen.getDisplayMatching(bounds).workArea;
+    } catch {
+      return null;
+    }
+  }
+
   private showMenu(win: PetWindowLike): void {
     const show = this.deps.showContextMenu ?? showDefaultPetContextMenu;
     show(win, {
@@ -230,6 +272,7 @@ export class PetManager {
 
   private resetAfterClose(): void {
     this.hoverPoller.stop();
+    this.thrower.stop();
     this.controller?.dispose();
     this.controller = null;
     this.win = null;
