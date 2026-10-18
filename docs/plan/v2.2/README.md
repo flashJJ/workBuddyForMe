@@ -106,7 +106,7 @@ v2.1 把交互管道收口成「归一化 → 纯函数门控 → ActionExecutor
 | M1 段调度（VRM） | `MotionMixer` 支持 A/B/C，按住进循环段、松手走退场段 | 长按有「抬手 → 维持 → 放下」三段；单击行为不回归 | ✅ `fadf573` |
 | M2 状态驱动（策略通用 / 候选集 VRM） | shared 增加分组与向下兼容查找纯函数；VRM 动作池按档位分组 | 情绪/等级切换见效；任何状态下都有可播动作 | ✅ `5ced854` |
 | M3 拖拽物理与手势（通用） | 速度采样、惯性滑行、贴边回正、滑动/双击手势 | 甩出去有惯性、边缘能回正；手势表补齐；**2D 与 3D 形象下同款生效** | ✅ `b324b23` |
-| M4 收口 | 配置化、过渡段（P2 视时间）、真机验收与门禁 | 行数门禁/E2E/真机三尺寸全部通过；**2D 形象回归无差异** | ⏳ 见第 8 节 |
+| M4 收口 | 配置化（P1-1）、事件链接线（P2-2）、过渡段（P2 视时间）、真机验收与门禁 | 行数门禁通过、`pnpm check` / `pnpm test` 全绿；**P1-1 与 P2-2 已随 v2.2.0 交付**；真机三尺寸与 E2E 仍待办 | ✅ 见第 8 节 |
 
 ## 6. 风险与取舍
 
@@ -136,20 +136,36 @@ v2.1 把交互管道收口成「归一化 → 纯函数门控 → ActionExecutor
 |---|---|
 | M0 | `packages/shared/src/schemas/motion-asset.ts`、`packages/database/src/migrations/v033-motion-segments.ts`、`packages/core/src/services/motion-service.ts`、`docs/plan/v2.2/02-动作段与动画图契约.md` |
 | M1 | `apps/web/src/features/avatar/motion-segments.ts`（条目聚合 + 段位退化）、`motion-hold.ts`（A→B→C 调度）、`motion-clips.ts`、`motion-fit-sampler.ts`、`vrm-motion-mixer.ts`、`vrm-controller.ts` |
-| M2 | `packages/shared/src/schemas/motion-selection.ts`（档位分组 + 兼容挑选 + `motionMoodOf`）、`interaction-resolvers.ts#relationshipLevelName`、`packages/shared/src/pet.ts`（`relationship` 表现事件）、`use-chat-pet-relay.ts` / `use-pet-bridge.ts` / `pet-stage.tsx`（真源接线）、`vrm-motion-mixer.ts#setPreference` |
-| M3 | `apps/desktop/src/main/pet/pet-throw-physics.ts`、`pet-throw-controller.ts`、`pet-drag-controller.ts`（速度采样）、`pet-manager.ts`（接线）、`interaction-resolvers.ts#touchTriggerKey` + `touch:body:double`、`pet-hit-regions.tsx`（身体盒双击） |
+| M2 | `packages/shared/src/schemas/motion-selection.ts`（档位分组 + 兼容挑选 + `motionMoodOf`）、`relationship-level.ts#relationshipLevelName`（P1-1 重构时从 `interaction-resolvers.ts` 迁出）、`packages/shared/src/pet.ts`（`relationship` 表现事件）、`use-chat-pet-relay.ts` / `use-pet-bridge.ts` / `pet-stage.tsx`（真源接线）、`vrm-motion-mixer.ts#setPreference` |
+| M3 | `apps/desktop/src/main/pet/pet-throw-physics.ts`、`pet-throw-controller.ts`、`pet-drag-controller.ts`（速度采样）、`pet-manager.ts`（接线）、`interaction-events.ts#touchTriggerKey`（P1-1 重构时从 `interaction-resolvers.ts` 迁出）+ `interaction-graph.ts#DEFAULT_INTERACTION_GRAPH`（`touch::body::double`）、`pet-hit-regions.tsx`（身体盒双击） |
+
+### 8.1b v2.2.0 封版前补齐（原 P1 / P2 顺延项）
+
+| 条目 | 代码锚点 |
+|---|---|
+| P1-1a 动画图数据层 | `packages/shared/src/schemas/interaction-graph.ts`（`eventTriggerKey` / `resolveInteractionEntry` / `buildInteractionGraph`）、`interaction-chains.ts`（动作条目目录） |
+| P1-1b settings JSON + 可视化编辑 | `packages/shared/src/schemas/settings.ts`（`interactionGraphOverrides` / `interactionGraphDisabledEntryIds`）、`packages/core/src/services/settings-service.ts`（服务端钳制）、`apps/web/src/features/settings/interaction-graph-panel.tsx` / `interaction-graph-row.tsx` |
+| P1-1c 内置条目可覆盖 / 停用 | `interaction-graph.ts#isBuiltinEntryId` + 面板内置条目区；内置图 10 条（6 触摸 + 4 非触摸） |
+| P2-2a 事件链接线 | `interaction-resolvers.ts`（四类事件走同一触发键、按事件冷却）、`packages/shared/src/pet.ts`（`interaction` 中继载荷 + IPC 净化） |
+| P2-2b 中继与消费 | `apps/web/src/features/interaction/event-bridge.ts`（非触摸事件中继到桌宠窗）、`apps/web/src/features/pet/pet-stage.tsx`（桌宠窗订阅派发） |
+| P2-2c 系统信号源 | `apps/web/src/features/pet/use-pet-signal-relay.ts`（语音边沿 + 授权后的锁屏 / 唤醒 / 空闲越阈）+ 非触摸内置条目（`notice` / `cheer`） |
+| 水合修复 | `apps/web/src/features/tuning/tuning-panel.tsx` + 10 个数据驱动面板统一补水合门控 |
+| 顺带（同分支） | `9236a43` 勿扰时段可配置：`DoNotDisturbConfig` + 开关与起止小时设置项（缺省仍 23:00–06:00） |
 
 ### 8.2 门禁结果（本机）
 
-- `pnpm check`（typecheck 全包 + lint + 行数门禁）：8/8 任务通过；行数门禁 0 error（36 个 260–300 行预警文件均为历史项，其中本版新增/改动者：`pet-manager.ts` 278、`vrm-canvas.tsx` 284、`vrm-motion-mixer.ts` 290、`pet-hit-regions.tsx` 261）；
-- `pnpm test`（全包单测/集成）：8/8 任务通过（web 92 文件 / 488 例；shared、database、core、desktop、ai、voice、config 全绿）；
-- 本版新增单测：`motion-segments`(7)、`vrm-motion-mixer`(3)、`motion-selection`(12)、`interaction-resolvers`(6)、`pet` 表现事件净化(1)、`pet-throw-physics`(6)、`pet-throw-controller`(6)、`pet-drag-controller`(+2)。
+- `pnpm check`（typecheck 全包 + lint + 行数门禁）：typecheck 14/14、lint 8/8（0 error）、行数门禁通过（所有手写 `.ts`/`.tsx` ≤300 行；260–300 行预警 37 个，均为历史或本版改动项）；
+- `pnpm test`（全包单测/集成）：8/8 任务通过（web 94 文件 / 496 例、shared 29 / 314、core 160 / 1082、desktop 24 / 164、database 52 / 213、ai 12 / 62、voice 7 / 71、config 4 / 14）；
+- 本版新增单测：`motion-segments`、`vrm-motion-mixer`、`motion-selection`、`interaction-resolvers`（段调度与门控）、`pet` 表现事件净化、`pet-throw-physics`、`pet-throw-controller`、`pet-drag-controller`；P1-1 / P2-2 补齐段新增 `interaction-graph`（触发键 / 条件 / 覆盖与停用 / 分组）、覆盖条目 schema、settings 服务端钳制、`pet` 中继载荷净化、`use-pet-signal-relay`；
+- 浏览器实测（真机流程）：交互动画图面板 10 条内置条目（键 → 动作条目对应正确）、触发键四分组共 35 键、动作条目 8 项；覆盖条目与停用开关跨刷新持久化；`/settings` 与 `/chat` 全程无水合相关消息。
 
-### 8.3 待办与顺延（需真机，本机无法执行）
+### 8.3 待办与顺延（需真机 / 需资源）
 
 - **真机三尺寸验收**（需 Windows + 真实多显示器）：长按三段式手感的视觉确认；甩出去惯性与贴边回正；双击身体的角色动作；2D（Live2D）形象下拖拽惯性同款、其余行为回归无差异；
 - **E2E**（`pnpm test:e2e` / `test:e2e:desktop`，需 Playwright 浏览器与 Electron 打包产物）：本机未执行，留待 CI/真机；
-- **P1-1 交互动画图配置化**：属 P1「争取」项。体量与风险（引入数据驱动的动作选择 + 配置界面 + 持久化，且需保持「查不到返回空」语义）足以独立成一个里程碑，**本版暂缓**；
-- **P2-1 情绪档位过渡动画**（仅 VRM）：需为内置动作补 `Switch_Up/Switch_Down` 过渡段素材，属资源成本，按计划顺延；
-- **P2-2 事件链接线**（context/system/relationship 事件的 Resolver 解析）：v2.1 遗留，本版未接。
+- **系统信号的真机验证**：锁屏 / 唤醒 / 空闲越阈需要 Electron 桌宠窗 + 真实系统事件，本机浏览器环境覆盖不到；建议与三尺寸验收合并进行；
+- **非触摸键多数仍无内置条目**：本版只给 4 条「可感知且不吵」的默认表现（`context::longNoChat` / `context::workStreak` → `notice`，`system::wake` / `relationship::up` → `cheer`），其余刻意留空；`relationship::down` 是否给「安慰」类表现需产品口径确认；
+- **P2-1 情绪档位过渡动画**（仅 VRM）：需为内置动作补 `Switch_Up` / `Switch_Down` 过渡段素材，属资源成本，按计划顺延；
+- **对话（`chat`）事件未接**：`eventTriggerKey` 对 `chat` 有意返回 null（接入需先定「@助手 / 新消息要不要驱动表演」）；
+- **已交付（原顺延项）**：P1-1 交互动画图配置化三阶段、P2-2 事件链接线（含系统信号源），代码锚点见 8.1b。
 
