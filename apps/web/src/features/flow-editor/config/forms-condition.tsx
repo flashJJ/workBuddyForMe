@@ -5,7 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { MessageKey } from '@wbfm/shared/i18n';
-import { Input, Select, str, type NodeConfigFormProps } from './form-primitives';
+import { Input, SimpleSelect, str, type NodeConfigFormProps } from './form-primitives';
 import { buildRefOptions } from './ref-options';
 
 type ConditionOp =
@@ -71,10 +71,10 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">{t('flowEditor.form.condition.matchLabel')}</label>
-        <Select value={match} onChange={(e) => patch({ match: e.target.value as ConditionMatch })}>
+        <SimpleSelect value={match} onValueChange={(v) => patch({ match: v as ConditionMatch })}>
           <option value="all">{t('flowEditor.form.condition.matchAll')}</option>
           <option value="any">{t('flowEditor.form.condition.matchAny')}</option>
-        </Select>
+        </SimpleSelect>
       </div>
       <div className="flex flex-col gap-2">
         {rules.map((rule, i) => {
@@ -102,18 +102,18 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
                 className="mt-1.5 h-8 font-mono text-xs"
               />
               {refs.length > 0 && (
-                <Select value="" onChange={(e) => update(i, { left: `${rule.left}${e.target.value}` })}>
+                <SimpleSelect value="" onValueChange={(v) => update(i, { left: `${rule.left}${v}` })}>
                   <option value="">{t('flowEditor.ref.insertVariable')}</option>
                   {refs.map((opt) => (
                     <option key={opt.token} value={opt.token}>
                       {opt.group} · {opt.label}
                     </option>
                   ))}
-                </Select>
+                </SimpleSelect>
               )}
-              <Select
+              <SimpleSelect
                 value={rule.op}
-                onChange={(e) => update(i, { op: e.target.value as ConditionOp })}
+                onValueChange={(v) => update(i, { op: v as ConditionOp })}
                 className="mt-2 h-8 text-xs"
               >
                 {OPS.map((o) => (
@@ -121,7 +121,7 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
                     {t(o.label)}
                   </option>
                 ))}
-              </Select>
+              </SimpleSelect>
               {!noRight && (
                 <Input
                   value={str(rule.right)}

@@ -1,6 +1,6 @@
 /** common 命名空间：跨模块复用的按钮/通用词/空态/语言（硬边界，禁止随业务漂移） */
 export const zhCommon = {
-  appName: 'WorkBuddy For Me',
+  appName: 'WorkBuddyForMe',
   brandTagline: '私人 AI 平台',
   actions: {
     save: '保存',
@@ -65,6 +65,12 @@ export const zhCommon = {
     noData: '暂无数据',
     noResults: '没有匹配结果',
   },
+  /** 通用控件文案（v2.3 统一选择器 / 数值输入） */
+  controls: {
+    selectPlaceholder: '请选择',
+    decreaseNumber: '减少',
+    increaseNumber: '增加',
+  },
   /** 跳转链接/路由级加载与错误兜底（公共外壳） */
   skipToContent: '跳到主内容',
   pageLoading: '页面加载中…',
@@ -81,7 +87,7 @@ export const zhCommon = {
 };
 
 export const enCommon = {
-  appName: 'WorkBuddy For Me',
+  appName: 'WorkBuddyForMe',
   brandTagline: 'Private AI workspace',
   actions: {
     save: 'Save',
@@ -145,6 +151,11 @@ export const enCommon = {
   empty: {
     noData: 'No data',
     noResults: 'No matching results',
+  },
+  controls: {
+    selectPlaceholder: 'Select…',
+    decreaseNumber: 'Decrease',
+    increaseNumber: 'Increase',
   },
   skipToContent: 'Skip to main content',
   pageLoading: 'Loading page…',

@@ -167,8 +167,122 @@ const webSummary: StarterFlowDef = {
   },
 };
 
+/** ④会议纪要整理：散乱笔记 → 结构化纪要（议题/结论/行动项/遗留）→ 人工确认 */
+const meetingNotes: StarterFlowDef = {
+  id: 'b0000004-0000-4000-8000-000000000004',
+  name: '会议纪要整理',
+  description:
+    '会议纪要整理：把逐字稿或散乱笔记整理为结构化纪要（议题 / 结论 / 行动项 / 遗留问题），并经人工确认。参数：notes（会议记录原文）。',
+  icon: 'clipboard-list',
+  color: 'emerald',
+  graph: {
+    nodes: [
+      node('start', 'start', 0, 200, {
+        label: '开始',
+        inputs: [
+          { name: 'notes', type: 'string', required: true, description: '会议逐字稿或散乱笔记' },
+        ],
+      }),
+      node('draft', 'llm', 300, 200, {
+        label: '整理纪要',
+        modelId: '',
+        system:
+          '你是资深会议记录员，忠于原始内容，不臆造结论；口语表达改写为书面语，行动项必须可追溯到原文。',
+        user:
+          '会议记录：\n{{$nodes.start.params.notes}}\n\n请整理成结构化纪要，包含四节：## 会议议题、## 结论与共识、## 行动项（Markdown 表格：事项 / 负责人 / 截止时间，未明确的标「待定」）、## 遗留问题。',
+      }),
+      node('review', 'human', 620, 200, {
+        label: '人工确认',
+        prompt: '纪要草稿已生成，请确认结论与行动项是否准确。',
+      }),
+      node('end', 'end', 900, 200, {
+        label: '输出纪要',
+        output: '{{$nodes.draft.outputs.text}}',
+      }),
+    ],
+    edges: [
+      edge('e_start_draft', 'start', 'draft'),
+      edge('e_draft_review', 'draft', 'review'),
+      edge('e_review_end', 'review', 'end'),
+    ],
+  },
+};
+
+/** ⑤竞品对比：给定对比主题与竞品清单 → 结构化对比结论 */
+const competitorCompare: StarterFlowDef = {
+  id: 'b0000005-0000-4000-8000-000000000005',
+  name: '竞品对比',
+  description:
+    '竞品对比：输入对比主题与竞品清单，输出横向对比表与差异结论。参数：topic（对比主题）、competitors（竞品，逗号或换行分隔）。',
+  icon: 'scale',
+  color: 'rose',
+  graph: {
+    nodes: [
+      node('start', 'start', 0, 200, {
+        label: '开始',
+        inputs: [
+          { name: 'topic', type: 'string', required: true, description: '对比主题（如「定价策略」）' },
+          { name: 'competitors', type: 'string', required: true, description: '竞品清单（逗号或换行分隔）' },
+        ],
+      }),
+      node('compare', 'llm', 300, 200, {
+        label: '生成对比结论',
+        modelId: '',
+        system: '你是产品分析助手，只依据给定信息对比，不确定处明确标注「需核实」，不编造数据。',
+        user:
+          '对比主题：{{$nodes.start.params.topic}}\n竞品清单：{{$nodes.start.params.competitors}}\n\n请输出：① 一张 Markdown 对比表（每个竞品一行，列出该主题下的关键差异维度）；② 3 条以内的差异结论与我的机会点。',
+      }),
+      node('end', 'end', 620, 200, {
+        label: '输出对比结论',
+        output: '{{$nodes.compare.outputs.text}}',
+      }),
+    ],
+    edges: [edge('e_start_compare', 'start', 'compare'), edge('e_compare_end', 'compare', 'end')],
+  },
+};
+
+/** ⑥知识库问答：指定知识库检索 → 基于资料作答（无资料则明确说明） */
+const kbQuestion: StarterFlowDef = {
+  id: 'b0000006-0000-4000-8000-000000000006',
+  name: '知识库问答',
+  description:
+    '知识库问答：先在指定知识库检索问题相关资料，再严格依据资料作答；未命中时明确说明，不编造。参数：question（要问的问题）。',
+  icon: 'book-open',
+  color: 'indigo',
+  graph: {
+    nodes: [
+      node('start', 'start', 0, 200, {
+        label: '开始',
+        inputs: [{ name: 'question', type: 'string', required: true, description: '要问的问题' }],
+      }),
+      node('search', 'knowledgeSearch', 280, 200, {
+        label: '资料检索',
+        knowledgeBaseId: '',
+        query: '{{$nodes.start.params.question}}',
+        topK: 4,
+      }),
+      node('answer', 'llm', 600, 200, {
+        label: '基于资料作答',
+        modelId: '',
+        system:
+          '你是严谨的知识库问答助手，只能依据给定参考资料作答；资料不足时明确说明「资料中未找到」，不得编造。',
+        user:
+          '问题：{{$nodes.start.params.question}}\n\n参考资料：\n{{$nodes.search.outputs.context}}\n\n请依据资料回答该问题，并在结尾用一句话标注结论是否完全来自资料。',
+      }),
+      node('end', 'end', 920, 200, {
+        label: '输出回答',
+        output: '{{$nodes.answer.outputs.text}}',
+      }),
+    ],
+    edges: [edge('e_start_search', 'start', 'search'), edge('e_search_answer', 'search', 'answer'), edge('e_answer_end', 'answer', 'end')],
+  },
+};
+
 export const STARTER_FLOWS: readonly StarterFlowDef[] = [
   researchAssistant,
   weeklyReport,
   webSummary,
+  meetingNotes,
+  competitorCompare,
+  kbQuestion,
 ];

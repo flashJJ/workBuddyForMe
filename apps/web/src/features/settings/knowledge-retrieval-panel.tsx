@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { NumberInput } from '@/components/ui/number-input';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useSettings, useUpdateSettings, useAllModels } from '@/lib/hooks/use-settings';
@@ -92,28 +94,26 @@ export function KnowledgeRetrievalPanel() {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="retrieval-min-sim">{t('settings.retrieval.minSimilarity')}</Label>
-          <input
+          <NumberInput
             id="retrieval-min-sim"
-            type="number"
             min={0}
             max={1}
             step={0.05}
-            value={minSim}
-            onChange={(e) => setMinSim(e.target.value)}
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+            value={Number(minSim)}
+            onValueChange={(v) => setMinSim(String(v))}
+            className="w-full"
           />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="retrieval-max-chunks">{t('settings.retrieval.maxChunks')}</Label>
-          <input
+          <NumberInput
             id="retrieval-max-chunks"
-            type="number"
             min={1}
             max={20}
             step={1}
-            value={maxChunks}
-            onChange={(e) => setMaxChunks(e.target.value)}
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+            value={Number(maxChunks)}
+            onValueChange={(v) => setMaxChunks(String(v))}
+            className="w-full"
           />
         </div>
       </div>
@@ -151,13 +151,13 @@ export function KnowledgeRetrievalPanel() {
         </label>
         <div className="max-w-xs space-y-1.5">
           <Label htmlFor="retrieval-compile-model">{t('settings.retrieval.compileModel')}</Label>
-          <select
+          <SimpleSelect
             id="retrieval-compile-model"
             value={compileModelId}
             disabled={!compileLlm}
-            onChange={(e) => setCompileModelId(e.target.value)}
+            onValueChange={(v) => setCompileModelId(v)}
             data-testid="retrieval-compile-model"
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm disabled:opacity-50"
+            className="h-9 w-full rounded-md border bg-background text-sm disabled:opacity-50"
           >
             <option value="">{t('settings.retrieval.compileModelDefault')}</option>
             {chatModels.map((model) => (
@@ -165,7 +165,7 @@ export function KnowledgeRetrievalPanel() {
                 {model.displayName || model.modelId}
               </option>
             ))}
-          </select>
+          </SimpleSelect>
         </div>
       </div>
 

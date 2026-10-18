@@ -3,6 +3,8 @@ import type { KnowledgeBase } from '@wbfm/shared/types';
 import { newId, nowIso, mapKnowledgeBase, type KnowledgeBaseRow } from './mappers';
 
 export interface KnowledgeBaseCreateFields {
+  /** 固定 id（内置模板播种用；缺省由仓储生成） */
+  id?: string;
   name: string;
   description?: string;
   chunkSize: number;
@@ -21,7 +23,7 @@ const SELECT_WITH_COUNT = `
 export function createKnowledgeRepository(db: DatabaseInstance) {
   return {
     create(fields: KnowledgeBaseCreateFields): KnowledgeBase {
-      const id = newId();
+      const id = fields.id ?? newId();
       const ts = nowIso();
       db.prepare(
         `INSERT INTO knowledge_bases

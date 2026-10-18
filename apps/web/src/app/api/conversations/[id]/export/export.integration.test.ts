@@ -94,7 +94,7 @@ describe('M2 对话分享导出 API 集成', () => {
     expect(body).toContain('# 分享验证');
     expect(body).toContain('### 🧑 用户');
     expect(body).toContain('回答内容');
-    expect(body).toMatch(/由 WorkBuddy For Me v\d+\.\d+\.\d+ 生成/);
+    expect(body).toMatch(/由 WorkBuddyForMe v\d+\.\d+\.\d+ 生成/);
   });
 
   it('format=html：200 + text/html 单文件（内联 style，无 link）', async () => {

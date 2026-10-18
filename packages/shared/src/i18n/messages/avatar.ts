@@ -30,7 +30,7 @@ export const zhAvatar = {
     metaVersion: 'VRM 版本',
     disclaimerTitle: '使用声明',
     disclaimerText:
-      '你可以导入自己拥有或已获得合法授权的 VRM 模型。WorkBuddy For Me 仅提供本地渲染能力，不提供模型下载，也不主张任何第三方模型的权利。模型的著作权、人格演绎许可与商用许可归模型作者所有，具体许可以模型文件内声明及作者给出的条款为准。请仅在授权范围内使用；因导入模型引发的版权或授权争议，由你自行承担责任。',
+      '你可以导入自己拥有或已获得合法授权的 VRM 模型。WorkBuddyForMe 仅提供本地渲染能力，不提供模型下载，也不主张任何第三方模型的权利。模型的著作权、人格演绎许可与商用许可归模型作者所有，具体许可以模型文件内声明及作者给出的条款为准。请仅在授权范围内使用；因导入模型引发的版权或授权争议，由你自行承担责任。',
     disclaimerConfirm: '我已阅读并同意上述声明',
     importSuccess: '导入成功：{name}',
     importFailed: '导入失败：{message}',
@@ -51,7 +51,7 @@ export const zhAvatar = {
     metaGenerator: '生成器',
     disclaimerTitle: '使用声明',
     disclaimerText:
-      '你可以导入自己拥有或已获得合法授权的待机动作（VRMA）文件。WorkBuddy For Me 仅提供本地渲染能力，不提供动作下载，也不主张任何第三方动作素材的权利。动作素材的著作权与商用许可归原作者所有，具体许可以你从素材提供方获得的条款为准。请仅在授权范围内使用；因导入动作引发的版权或授权争议，由你自行承担责任。',
+      '你可以导入自己拥有或已获得合法授权的待机动作（VRMA）文件。WorkBuddyForMe 仅提供本地渲染能力，不提供动作下载，也不主张任何第三方动作素材的权利。动作素材的著作权与商用许可归原作者所有，具体许可以你从素材提供方获得的条款为准。请仅在授权范围内使用；因导入动作引发的版权或授权争议，由你自行承担责任。',
     disclaimerConfirm: '我已阅读并同意上述声明',
     importSuccess: '导入成功：{name}',
     importFailed: '导入失败：{message}',
@@ -115,7 +115,7 @@ export const enAvatar = {
     metaVersion: 'VRM Version',
     disclaimerTitle: 'Disclaimer',
     disclaimerText:
-      'You may import VRM models that you own or have legally authorized. WorkBuddy For Me only provides local rendering capabilities, does not provide model downloads, and does not claim any rights to third-party models. Copyright, character usage, and commercial licenses belong to the model author, subject to the terms declared in the model file and provided by the author. Please use only within the scope of authorization; any copyright or licensing disputes arising from imported models are your sole responsibility.',
+      'You may import VRM models that you own or have legally authorized. WorkBuddyForMe only provides local rendering capabilities, does not provide model downloads, and does not claim any rights to third-party models. Copyright, character usage, and commercial licenses belong to the model author, subject to the terms declared in the model file and provided by the author. Please use only within the scope of authorization; any copyright or licensing disputes arising from imported models are your sole responsibility.',
     disclaimerConfirm: 'I have read and agree to the above terms',
     importSuccess: 'Imported: {name}',
     importFailed: 'Import failed: {message}',
@@ -136,7 +136,7 @@ export const enAvatar = {
     metaGenerator: 'Generator',
     disclaimerTitle: 'Disclaimer',
     disclaimerText:
-      'You may import idle motion (VRMA) files that you own or have legally authorized. WorkBuddy For Me only provides local rendering capabilities, does not provide motion downloads, and does not claim any rights to third-party motion assets. Copyright and commercial licenses belong to the original author, subject to the terms you obtained from the asset provider. Please use only within the scope of authorization; any copyright or licensing disputes arising from imported motions are your sole responsibility.',
+      'You may import idle motion (VRMA) files that you own or have legally authorized. WorkBuddyForMe only provides local rendering capabilities, does not provide motion downloads, and does not claim any rights to third-party motion assets. Copyright and commercial licenses belong to the original author, subject to the terms you obtained from the asset provider. Please use only within the scope of authorization; any copyright or licensing disputes arising from imported motions are your sole responsibility.',
     disclaimerConfirm: 'I have read and agree to the above terms',
     importSuccess: 'Imported: {name}',
     importFailed: 'Import failed: {message}',

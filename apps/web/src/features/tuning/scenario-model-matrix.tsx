@@ -1,7 +1,7 @@
 'use client';
 
 import type { Assistant, ProviderModel } from '@wbfm/shared/types';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /** 上下文窗口不超过该值视为小模型（含 Ollama 默认 4096 档），给出弱模型手感提示 */
@@ -23,7 +23,7 @@ interface RowProps {
 function MatrixRow(props: RowProps) {
   const { t } = useI18n();
   return (
-    <div className="grid grid-cols-[10rem_1fr] items-center gap-3 py-1.5">
+    <div className="grid grid-cols-1 items-center gap-1 py-1.5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
       <span className="text-sm">{props.label}</span>
       {props.readOnly ? (
         <span className="text-xs text-muted-foreground" data-testid={props.testid}>
@@ -31,11 +31,11 @@ function MatrixRow(props: RowProps) {
           <span className="ml-2">{t('tuning.matrix.memoryReadonlyHint')}</span>
         </span>
       ) : (
-        <Select
+        <SimpleSelect
           aria-label={props.label}
           data-testid={props.testid}
           value={props.value}
-          onChange={(e) => props.onChange?.(e.target.value || null)}
+          onValueChange={(v) => props.onChange?.(v || null)}
         >
           <option value="">{props.nullLabel}</option>
           {props.chatModels.map((model) => (
@@ -46,7 +46,7 @@ function MatrixRow(props: RowProps) {
               })}
             </option>
           ))}
-        </Select>
+        </SimpleSelect>
       )}
     </div>
   );

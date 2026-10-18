@@ -8,6 +8,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NumberInput } from '@/components/ui/number-input';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
@@ -244,14 +245,14 @@ export function ModelManager({ provider }: { provider: Provider }) {
           <Label htmlFor={`model-ctx-${provider.id}`} className="text-xs">
             {t('settingsProviders.models.contextWindow')}
           </Label>
-          <Input
+          <NumberInput
             id={`model-ctx-${provider.id}`}
-            className="h-8 w-28"
-            type="number"
+            className="h-8"
             min={1}
-            value={form.contextWindow}
-            onChange={(e) => setForm((p) => ({ ...p, contextWindow: e.target.value }))}
-            placeholder={t('settingsProviders.models.contextPlaceholder')}
+            allowEmpty
+            value={form.contextWindow === '' ? null : Number(form.contextWindow)}
+            onValueChange={(v) => setForm((p) => ({ ...p, contextWindow: String(v) }))}
+            onClear={() => setForm((p) => ({ ...p, contextWindow: '' }))}
           />
         </div>
         <Button type="submit" size="sm" disabled={modelMutations.add.isPending}>

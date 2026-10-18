@@ -5,7 +5,7 @@ import type { AppSettings, ProviderModel } from '@wbfm/shared/types';
 import type { Language } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { apiGet } from '@/lib/api/client';
@@ -90,10 +90,10 @@ export function DefaultsPanel() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="default-chat-model">{t('settings.defaults.chatModel')}</Label>
-          <Select
+          <SimpleSelect
             id="default-chat-model"
             value={draft.defaultChatModelId ?? ''}
-            onChange={(e) => void save({ defaultChatModelId: e.target.value || null })}
+            onValueChange={(v) => void save({ defaultChatModelId: v || null })}
           >
             <option value="">{t('settings.defaults.notSelected')}</option>
             {chatModels.map((model) => (
@@ -101,14 +101,14 @@ export function DefaultsPanel() {
                 {modelLabel(model)}
               </option>
             ))}
-          </Select>
+          </SimpleSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="default-embedding-model">{t('settings.defaults.embeddingModel')}</Label>
-          <Select
+          <SimpleSelect
             id="default-embedding-model"
             value={draft.defaultEmbeddingModelId ?? ''}
-            onChange={(e) => void save({ defaultEmbeddingModelId: e.target.value || null })}
+            onValueChange={(v) => void save({ defaultEmbeddingModelId: v || null })}
           >
             <option value="">{t('settings.defaults.notSelected')}</option>
             {embeddingModels.map((model) => (
@@ -116,18 +116,18 @@ export function DefaultsPanel() {
                 {modelLabel(model)}
               </option>
             ))}
-          </Select>
+          </SimpleSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="language-preference">{t('common.language.label')}</Label>
-          <Select
+          <SimpleSelect
             id="language-preference"
             value={locale}
-            onChange={(e) => setLocale(e.target.value as Language)}
+            onValueChange={(v) => setLocale(v as Language)}
           >
             <option value="zh-CN">{t('common.language.zhCN')}</option>
             <option value="en-US">{t('common.language.enUS')}</option>
-          </Select>
+          </SimpleSelect>
         </div>
       </div>
       <DataDirField />

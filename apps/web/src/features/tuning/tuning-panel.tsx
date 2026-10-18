@@ -5,7 +5,7 @@ import type { Assistant } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { Spinner } from '@/components/common/state';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useToast } from '@/components/common/toast';
@@ -94,11 +94,11 @@ export function TuningPanel() {
         <>
           <div className="space-y-1.5">
             <Label htmlFor="tuning-assistant">{t('tuning.assistantLabel')}</Label>
-            <Select
+            <SimpleSelect
               id="tuning-assistant"
               aria-label={t('tuning.assistantLabel')}
               value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
+              onValueChange={setSelectedId}
             >
               {assistants!.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -106,7 +106,7 @@ export function TuningPanel() {
                   {a.name}
                 </option>
               ))}
-            </Select>
+            </SimpleSelect>
             <p className="text-[11px] text-muted-foreground">{t('tuning.assistantAllHint')}</p>
           </div>
 

@@ -11,8 +11,8 @@ describe('starter flows 播种（v0.8 P0-7）', () => {
     repo = createWorkflowRepository(createDatabase(':memory:'));
   });
 
-  it('内置 3 个模板图均可编译通过（唯一 start、双分支齐全、可达 end）', () => {
-    expect(STARTER_FLOWS).toHaveLength(3);
+  it('内置模板图均可编译通过（唯一 start、双分支齐全、可达 end）', () => {
+    expect(STARTER_FLOWS.length).toBeGreaterThanOrEqual(6);
     for (const starter of STARTER_FLOWS) {
       const result = compileFlow(starter.graph);
       expect(result.ok, `${starter.name}: ${result.diagnostics.map((d) => d.message).join('；')}`).toBe(
@@ -30,18 +30,18 @@ describe('starter flows 播种（v0.8 P0-7）', () => {
     expect(research.graph.nodes.filter((n) => n.type === 'end').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('首次播种：3 个模板以 published + v1 落库；再次播种幂等不重复', () => {
-    expect(ensureStarterFlows(repo)).toBe(3);
+  it('首次播种：全部模板以 published + v1 落库；再次播种幂等不重复', () => {
+    expect(ensureStarterFlows(repo)).toBe(STARTER_FLOWS.length);
     for (const starter of STARTER_FLOWS) {
       const wf = repo.getWorkflow(starter.id);
       expect(wf?.status).toBe('published');
       expect(wf?.currentVersion).toBe(1);
     }
-    expect(repo.listWorkflows()).toHaveLength(3);
+    expect(repo.listWorkflows()).toHaveLength(STARTER_FLOWS.length);
 
     // 第二次：无新增
     expect(ensureStarterFlows(repo)).toBe(0);
-    expect(repo.listWorkflows()).toHaveLength(3);
+    expect(repo.listWorkflows()).toHaveLength(STARTER_FLOWS.length);
   });
 
   it('用户删除模板后重新播种会恢复；改名后不覆盖现有行', () => {

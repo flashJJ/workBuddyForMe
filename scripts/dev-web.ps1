@@ -1,4 +1,4 @@
-# WorkBuddy For Me 一键开发脚本：环境检查 + 启动 Web 开发服务器
+# WorkBuddyForMe 一键开发脚本：环境检查 + 启动 Web 开发服务器
 # 用法：powershell -File scripts/dev-web.ps1 [-Port 3000]
 param(
     [int]$Port = 3000

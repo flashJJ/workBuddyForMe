@@ -78,6 +78,29 @@ describe('技能包面板（v0.6 M3）', () => {
     expect(badSwitch).toBeDisabled();
   });
 
+  it('重新扫描：POST /api/skills 后刷新列表（v2.3）', async () => {
+    let list = [makeSkill({ id: '1', name: 'my-skill' })];
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        list = [...list, makeSkill({ id: '2', name: 'new-skill' })];
+      }
+      return Promise.resolve(ok(list));
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SkillsPanel />);
+
+    await screen.findByTestId('skill-list');
+    expect(screen.getAllByTestId('skill-item')).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: '重新扫描' }));
+
+    await waitFor(() => expect(screen.getAllByTestId('skill-item')).toHaveLength(2));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/skills',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
   it('停用/启用切换 PATCH 后重刷列表', async () => {
     // Response body 只能消费一次：每次调用构造新实例；用闭包状态模拟服务端启停流转
     let enabled = true;

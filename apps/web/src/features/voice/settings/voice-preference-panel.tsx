@@ -11,7 +11,7 @@ import { ProactiveSection } from './proactive-section';
 import { MicSelfTest } from './mic-self-test';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { ApiClientError } from '@/lib/api/client';
@@ -132,10 +132,10 @@ function StorageSection() {
       <p className="text-sm font-medium">{t('voice.storage.title')}</p>
       <div className="space-y-1.5">
         <Label htmlFor="voice-mirror">{t('voice.storage.mirrorLabel')}</Label>
-        <Select id="voice-mirror" value={mirror} onChange={(e) => setMirror(e.target.value)}>
+        <SimpleSelect id="voice-mirror" value={mirror} onValueChange={(v) => setMirror(v)}>
           <option value={HF_MIRROR}>{t('voice.storage.mirrorCn')}</option>
           <option value={HF_OFFICIAL}>{t('voice.storage.mirrorOfficial')}</option>
-        </Select>
+        </SimpleSelect>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="voice-models-dir">{t('voice.storage.dirLabel')}</Label>

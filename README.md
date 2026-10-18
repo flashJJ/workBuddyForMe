@@ -1,4 +1,4 @@
-# WorkBuddy For Me
+# WorkBuddyForMe
 
 类 WorkBuddy 的**私人 AI 平台**：本地优先的多模型 AI 工作台，基于 Next.js 全栈 + Electron，提供多会话流式对话、知识库 RAG 问答、可视化工作流编排 Flow Studio、桌面 Agent 任务、智能体助手预设与统一的供应商管理。数据完全保留在本机 SQLite 中。
 

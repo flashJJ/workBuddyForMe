@@ -6,8 +6,8 @@ import type { TaskRunView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/common/state';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
+import { NumberInput } from '@/components/ui/number-input';
 import { useToast } from '@/components/common/toast';
 import { useConversations } from '@/lib/hooks/use-conversations';
 import { useAssistants } from '@/lib/hooks/use-assistants';
@@ -87,12 +87,12 @@ export function TaskPage() {
       </header>
 
       <section className="border-b bg-card/50 px-6 py-4">
-        <div className="grid gap-3 md:grid-cols-[260px_1fr_auto]">
+        <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)_auto]">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">{t('tasks.conversationLabel')}</label>
-            <Select
+            <SimpleSelect
               value={conversationId}
-              onChange={(e) => setConversationId(e.target.value)}
+              onValueChange={setConversationId}
               aria-label={t('tasks.conversationAria')}
             >
               {(conversationsQuery.data ?? []).map((c) => (
@@ -100,7 +100,7 @@ export function TaskPage() {
                   {c.title || t('tasks.unnamedConversation')}
                 </option>
               ))}
-            </Select>
+            </SimpleSelect>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">{t('tasks.goalLabel')}</label>
@@ -113,16 +113,15 @@ export function TaskPage() {
           </div>
           <div className="flex flex-col items-stretch gap-1">
             <label className="text-xs text-muted-foreground">{t('tasks.maxStepsLabel')}</label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
+            <div className="flex flex-wrap gap-2">
+              <NumberInput
+                value={maxSteps}
+                onValueChange={setMaxSteps}
                 min={1}
                 max={50}
-                value={maxSteps}
-                onChange={(e) => setMaxSteps(Number(e.target.value) || 20)}
-                className="w-20"
+                className="shrink-0"
               />
-              <Button onClick={submit} disabled={mutations.create.isPending}>
+              <Button className="shrink-0" onClick={submit} disabled={mutations.create.isPending}>
                 <Send className="h-4 w-4" />
                 {t('tasks.start')}
               </Button>

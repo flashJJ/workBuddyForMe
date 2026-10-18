@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useStageScenes, useStageSceneMutations } from './use-stage-scenes';
@@ -105,16 +106,16 @@ export function StageToolbar(props: Props) {
 
       <section className="space-y-1 rounded border border-white/10 p-2">
         <p className="text-xs font-medium text-white/70">{t('stage.panel.power')}</p>
-        <select
+        <SimpleSelect
           aria-label={t('stage.panel.power')}
           className="w-full rounded border bg-transparent px-1 py-0.5 text-xs text-white [&>option]:text-black"
           data-testid="stage-power-mode"
           value={props.powerMode}
-          onChange={(e) => props.onPowerModeChange(e.target.value as StagePowerMode)}
+          onValueChange={(v) => props.onPowerModeChange(v as StagePowerMode)}
         >
           <option value="live">{t('stage.power.live')}</option>
           <option value="portrait">{t('stage.power.portrait')}</option>
-        </select>
+        </SimpleSelect>
       </section>
 
       <section className="space-y-1 rounded border border-white/10 p-2">
@@ -137,11 +138,11 @@ export function StageToolbar(props: Props) {
           </button>
         </div>
         <div className="flex gap-1">
-          <select
+          <SimpleSelect
             aria-label={t('stage.scene.load')}
             className="min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-xs text-white [&>option]:text-black"
             value={loadedId}
-            onChange={(e) => load(e.target.value)}
+            onValueChange={(v) => load(v)}
           >
             <option value="">{t('stage.scene.empty')}</option>
             {scenesQuery.data?.map((s) => (
@@ -149,7 +150,7 @@ export function StageToolbar(props: Props) {
                 {s.name}
               </option>
             ))}
-          </select>
+          </SimpleSelect>
           <button type="button" className="rounded border px-2 py-0.5 text-xs" disabled={!loadedId} onClick={() => void remove()}>
             {t('stage.scene.delete')}
           </button>

@@ -1,4 +1,4 @@
-# WorkBuddy For Me 一键开发脚本：环境检查 + 启动桌面端（自动拉起 Next dev 与 Electron）
+# WorkBuddyForMe 一键开发脚本：环境检查 + 启动桌面端（自动拉起 Next dev 与 Electron）
 # 用法：powershell -File scripts/dev-desktop.ps1
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot

@@ -43,7 +43,7 @@ export function buildStageWindowOptions(
     fullscreen,
     backgroundColor: '#000000',
     autoHideMenuBar: true,
-    title: 'WorkBuddy Stage',
+    title: 'WorkBuddyForMe Stage',
     webPreferences: {
       preload: resolvePreloadPath(),
       contextIsolation: true,

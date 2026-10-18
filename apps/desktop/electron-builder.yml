@@ -1,6 +1,6 @@
 appId: com.wbfm.desktop
 productName: WorkBuddyForMe
-copyright: Copyright © 2025 WorkBuddy For Me
+copyright: Copyright © 2025 WorkBuddyForMe
 
 # 历史产物命名惯例（v0.9.0 即连字符），勿改回带空格的默认模板
 artifactName: ${productName}-Setup-${version}.${ext}

@@ -48,9 +48,9 @@ describe('工具调试台面板（v0.6 M4）', () => {
     const user = userEvent.setup();
     renderWithProviders(<ToolDebugPanel />);
 
-    // 列表加载完成后默认选 current_time
+    // 列表加载完成后默认选 current_time（Radix 触发器展示当前项文案，不再有原生 value）
     await waitFor(() => {
-      expect(screen.getByTestId('tool-debug-select')).toHaveValue('current_time');
+      expect(screen.getByTestId('tool-debug-select')).toHaveTextContent('current_time');
     });
 
     // 工具元数据展示：source=builtin 徽章
@@ -78,7 +78,7 @@ describe('工具调试台面板（v0.6 M4）', () => {
     renderWithProviders(<ToolDebugPanel />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('tool-debug-select')).toHaveValue('current_time');
+      expect(screen.getByTestId('tool-debug-select')).toHaveTextContent('current_time');
     });
 
     const argsTextarea = screen.getByTestId('tool-debug-args') as HTMLTextAreaElement;

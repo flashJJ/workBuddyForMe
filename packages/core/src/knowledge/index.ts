@@ -97,3 +97,8 @@ export {
   type CompileDocumentOptions,
   type CompileDocumentResult,
 } from './knowledge-compiler';
+export {
+  ensureStarterKnowledgeBases,
+  type KnowledgeSeeder,
+  type KnowledgeSeedFields,
+} from './seed-starter-knowledge-bases';

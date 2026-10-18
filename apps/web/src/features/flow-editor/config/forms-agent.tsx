@@ -7,11 +7,12 @@ import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
+import { NumberInput } from '@/components/ui/number-input';
 import {
   Field,
-  Input,
   RefTextarea,
-  Select,
+  SimpleSelect,
+  num,
   str,
   type NodeConfigFormProps,
 } from './form-primitives';
@@ -46,14 +47,11 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
     bound: { min: number; max: number },
   ) => (
     <Field label={label} hint={`${bound.min}–${bound.max}`}>
-      <Input
-        type="number"
+      <NumberInput
+        value={num(config[key], bound.min)}
+        onValueChange={(v) => patch({ [key]: v })}
         min={bound.min}
         max={bound.max}
-        value={config[key] === undefined ? '' : String(config[key])}
-        onChange={(e) =>
-          patch({ [key]: e.target.value === '' ? undefined : Number(e.target.value) })
-        }
         className="h-8 text-xs"
       />
     </Field>
@@ -61,14 +59,14 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
 
   const roleSelect = (key: 'plannerModelId' | 'executorModelId' | 'reviewerModelId', label: string) => (
     <Field label={label} hint={t('flowEditor.form.agent.roleModelHint')}>
-      <Select value={str(config[key])} onChange={(e) => patch({ [key]: e.target.value || undefined })}>
+      <SimpleSelect value={str(config[key])} onValueChange={(v) => patch({ [key]: v || undefined })}>
         <option value="">{t('flowEditor.form.agent.roleModelDefault')}</option>
         {modelOptions.map((m) => (
           <option key={m.modelId} value={m.modelId}>
             {m.label}
           </option>
         ))}
-      </Select>
+      </SimpleSelect>
     </Field>
   );
 
@@ -86,9 +84,9 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
       </Field>
 
       <Field label={t('flowEditor.form.agent.assistantLabel')} hint={t('flowEditor.form.agent.assistantHint')}>
-        <Select
+        <SimpleSelect
           value={str(config.assistantId)}
-          onChange={(e) => patch({ assistantId: e.target.value || null })}
+          onValueChange={(v) => patch({ assistantId: v || null })}
         >
           <option value="">{t('flowEditor.form.agent.assistantDefault')}</option>
           {(assistants.data ?? []).map((a) => (
@@ -96,7 +94,7 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
               {a.name}
             </option>
           ))}
-        </Select>
+        </SimpleSelect>
       </Field>
 
       <Field label={t('flowEditor.form.agent.kbLabel')}>

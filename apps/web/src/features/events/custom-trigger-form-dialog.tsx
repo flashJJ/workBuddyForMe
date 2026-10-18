@@ -15,6 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { NumberInput } from '@/components/ui/number-input';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -149,12 +151,12 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
         <form onSubmit={submit} className="space-y-3" data-testid="custom-trigger-form">
           <label className="block space-y-1">
             <span className="text-sm font-medium">{t('customTriggers.assistantLabel')}</span>
-            <select
+            <SimpleSelect
               className={`w-full ${selectCls} disabled:opacity-60`}
               value={form.assistantId}
               disabled={Boolean(trigger)}
               data-testid="custom-trigger-assistant"
-              onChange={(e) => update({ assistantId: e.target.value })}
+              onValueChange={(v) => update({ assistantId: v })}
             >
               <option value="" disabled>
                 {t('customTriggers.assistantPlaceholder')}
@@ -165,23 +167,23 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
                   {assistant.name}
                 </option>
               ))}
-            </select>
+            </SimpleSelect>
           </label>
 
           <label className="block space-y-1">
             <span className="text-sm font-medium">{t('customTriggers.eventLabel')}</span>
-            <select
+            <SimpleSelect
               className={`w-full ${selectCls}`}
               value={form.eventId}
               data-testid="custom-trigger-event"
-              onChange={(e) => update({ eventId: e.target.value })}
+              onValueChange={(v) => update({ eventId: v })}
             >
               {BUILT_IN_EVENTS.map((def) => (
                 <option key={def.id} value={def.id}>
                   {t(def.titleKey as MessageKey)}
                 </option>
               ))}
-            </select>
+            </SimpleSelect>
           </label>
 
           <label className="block space-y-1">
@@ -201,50 +203,44 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
           <div className="grid grid-cols-2 gap-3">
             <label className="space-y-1 text-sm">
               <span className="font-medium">{t('customTriggers.cooldownLabel')}</span>
-              <select
+              <SimpleSelect
                 className={`w-full ${selectCls}`}
-                value={form.cooldownMinutes}
-                onChange={(e) => update({ cooldownMinutes: Number(e.target.value) })}
+                value={String(form.cooldownMinutes)}
+                onValueChange={(v) => update({ cooldownMinutes: Number(v) })}
               >
                 {COOLDOWN_OPTIONS.map((minutes) => (
                   <option key={minutes} value={minutes}>
                     {minutes < 60 ? `${minutes} ${t('customTriggers.unitMinute')}` : `${minutes / 60} ${t('customTriggers.unitHour')}`}
                   </option>
                 ))}
-              </select>
+              </SimpleSelect>
             </label>
             <label className="space-y-1 text-sm">
               <span className="font-medium">{t('customTriggers.maxPerDayLabel')}</span>
-              <input
-                type="number"
+              <NumberInput
                 min={1}
                 max={50}
                 value={form.maxPerDay}
-                onChange={(e) => update({ maxPerDay: Number(e.target.value) })}
-                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                onValueChange={(v) => update({ maxPerDay: v })}
               />
             </label>
             <label className="space-y-1 text-sm">
               <span className="font-medium">{t('customTriggers.windowLabel')}</span>
               <span className="flex items-center gap-1">
-                <input
-                  type="number"
+                <NumberInput
                   min={0}
                   max={23}
                   value={form.startHour}
                   aria-label={t('customTriggers.windowStart')}
-                  onChange={(e) => update({ startHour: Number(e.target.value) })}
-                  className="w-16 rounded-md border bg-background px-2 py-1.5 text-sm"
+                  onValueChange={(v) => update({ startHour: v })}
                 />
                 <span>-</span>
-                <input
-                  type="number"
+                <NumberInput
                   min={0}
                   max={23}
                   value={form.endHour}
                   aria-label={t('customTriggers.windowEnd')}
-                  onChange={(e) => update({ endHour: Number(e.target.value) })}
-                  className="w-16 rounded-md border bg-background px-2 py-1.5 text-sm"
+                  onValueChange={(v) => update({ endHour: v })}
                 />
                 <span className="text-xs text-muted-foreground">{t('customTriggers.windowHour')}</span>
               </span>

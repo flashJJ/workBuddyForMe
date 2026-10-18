@@ -69,7 +69,7 @@ test.afterAll(async () => {
 });
 
 test('窗口标题与首页渲染（重定向到 /chat）', async () => {
-  await expect(page).toHaveTitle('WorkBuddy For Me', { timeout: 90_000 });
+  await expect(page).toHaveTitle('WorkBuddyForMe', { timeout: 90_000 });
   await expect(page.getByTestId('chat-page')).toBeVisible({ timeout: 90_000 });
 });
 

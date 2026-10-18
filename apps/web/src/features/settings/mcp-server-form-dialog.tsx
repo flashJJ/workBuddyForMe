@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { McpServerInfo } from '@wbfm/shared/types';
+import type { McpPresetServer } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,6 +24,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   server?: McpServerInfo | null;
+  /** v2.3：从预置目录一键填入（仅新增时生效；仍可继续编辑） */
+  preset?: McpPresetServer | null;
 }
 
 interface FormState {
@@ -33,7 +36,19 @@ interface FormState {
   enabled: boolean;
 }
 
-function toForm(server: McpServerInfo | null | undefined): FormState {
+function toForm(
+  server: McpServerInfo | null | undefined,
+  preset?: McpPresetServer | null,
+): FormState {
+  if (!server && preset) {
+    return {
+      name: preset.name,
+      command: preset.command,
+      argsText: preset.args.join('\n'),
+      envText: '',
+      enabled: true,
+    };
+  }
   if (!server) return { name: '', command: '', argsText: '', envText: '', enabled: true };
   return {
     name: server.name,
@@ -70,17 +85,17 @@ function parseEnv(text: string): Record<string, string> {
 }
 
 /** MCP stdio 服务器新增/编辑弹窗（http 传输为 M2 预留，本期不提供入口） */
-export function McpServerFormDialog({ open, onOpenChange, server }: Props) {
+export function McpServerFormDialog({ open, onOpenChange, server, preset }: Props) {
   const { t } = useI18n();
   const isEdit = Boolean(server);
   const mutations = useMcpMutations();
   const toast = useToast();
-  const [form, setForm] = React.useState<FormState>(() => toForm(server));
+  const [form, setForm] = React.useState<FormState>(() => toForm(server, preset));
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (open) setForm(toForm(server));
-  }, [open, server]);
+    if (open) setForm(toForm(server, preset));
+  }, [open, server, preset]);
 
   const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
 

@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { FullUpdaterStatus, UpdateChannel, UpdateStatus } from '@wbfm/shared/updater';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { openShortcutsOverlay } from '@/features/shortcuts/use-shortcuts-host';
 import { reopenOnboarding } from '@/features/onboarding/use-onboarding-host';
@@ -199,16 +199,16 @@ export function AboutPanel() {
 
       <div className="space-y-2">
         <Label htmlFor="updater-channel">{t('about.channelLabel')}</Label>
-        <Select
+        <SimpleSelect
           id="updater-channel"
           data-testid="updater-channel"
           value={status.channel}
-          onChange={(e) => void handleChannel(e.target.value as UpdateChannel)}
+          onValueChange={(v) => void handleChannel(v as UpdateChannel)}
           disabled={!status.enabled}
         >
           <option value="stable">{t('about.channelStableOption')}</option>
           <option value="beta">{t('about.channelBetaOption')}</option>
-        </Select>
+        </SimpleSelect>
         {!status.enabled && (
           <p className="text-xs text-muted-foreground">{t('about.devModeHint')}</p>
         )}

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 
 interface Props {
@@ -17,21 +17,19 @@ interface Props {
 /** 助手表单中的数值采样参数字段 */
 export function NumberField({ id, label, value, step, min, max, onChange }: Props) {
   const handleChange = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => onChange(event.target.value),
+    (next: number) => onChange(String(next)),
     [onChange],
   );
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input
+      <NumberInput
         id={id}
-        type="number"
-        inputMode="decimal"
-        value={value}
-        step={step}
-        min={min}
-        max={max}
-        onChange={handleChange}
+        value={Number(value)}
+        step={Number(step)}
+        min={Number(min)}
+        max={max !== undefined ? Number(max) : undefined}
+        onValueChange={handleChange}
       />
     </div>
   );

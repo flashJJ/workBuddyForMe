@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -141,12 +142,12 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
         <form onSubmit={submit} className="space-y-3" data-testid="reminder-form">
           <label className="block space-y-1">
             <span className="text-sm font-medium">{t('reminders.assistantLabel')}</span>
-            <select
+            <SimpleSelect
               className="w-full rounded-md border bg-background px-2 py-1.5 text-sm disabled:opacity-60"
               value={form.assistantId}
               disabled={Boolean(reminder)}
               data-testid="reminder-assistant"
-              onChange={(e) => update({ assistantId: e.target.value })}
+              onValueChange={(v) => update({ assistantId: v })}
             >
               <option value="" disabled>
                 {t('reminders.assistantPlaceholder')}
@@ -157,7 +158,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
                   {assistant.name}
                 </option>
               ))}
-            </select>
+            </SimpleSelect>
           </label>
 
           <div className="space-y-1">
@@ -198,10 +199,10 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
             {form.kind === 'weekly' && (
               <label className="space-y-1">
                 <span className="text-sm font-medium">{t('reminders.weekdayLabel')}</span>
-                <select
-                  value={form.weekday}
+                <SimpleSelect
+                  value={String(form.weekday)}
                   data-testid="reminder-weekday"
-                  onChange={(e) => update({ weekday: Number(e.target.value) })}
+                  onValueChange={(v) => update({ weekday: Number(v) })}
                   className="block rounded-md border bg-background px-2 py-1.5 text-sm"
                 >
                   {WEEKDAY_ORDER.map((day) => (
@@ -209,7 +210,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
                       {t(`reminders.weekdayShort${day}` as MessageKey)}
                     </option>
                   ))}
-                </select>
+                </SimpleSelect>
               </label>
             )}
             {form.kind === 'once' && (

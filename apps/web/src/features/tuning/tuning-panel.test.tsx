@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AppSettings, Assistant, Provider, ProviderModel } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
@@ -99,7 +99,6 @@ describe('v1.8 M3 调优中心', () => {
   });
 
   it('Planner 改绑落 assistant PATCH；默认模型为小模型时出现弱模型提示', async () => {
-    const user = userEvent.setup();
     fetchMock.mockImplementation((input: string) => {
       if (input.includes('/api/providers/') && input.includes('/models')) return Promise.resolve(ok(MODELS));
       if (input === '/api/providers') return Promise.resolve(ok([PROVIDER]));
@@ -111,7 +110,9 @@ describe('v1.8 M3 调优中心', () => {
     await screen.findByTestId('tuning-model-matrix');
     expect(screen.getByTestId('tuning-weak-hint').textContent).toContain('小模型');
 
-    await user.selectOptions(screen.getByTestId('tuning-model-planner'), 'm-chat');
+    // Radix Select 在 jsdom 下无法由 user-event 驱动，改用键盘打开 + 点击选项
+    fireEvent.keyDown(screen.getByTestId('tuning-model-planner'), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByRole('option', { name: /Mock Chat/ }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/assistants/a1',

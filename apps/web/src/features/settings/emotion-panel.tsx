@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Label } from '@/components/ui/label';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
@@ -156,29 +157,29 @@ export function EmotionPanel() {
         <div className="flex flex-wrap items-center gap-3 pl-[26px] text-xs text-muted-foreground">
           <label className="flex items-center gap-1.5">
             {t('settings.emotion.doNotDisturbStart')}
-            <select
-              className="h-8 rounded-md border bg-background px-2 text-sm"
+            <SimpleSelect
+              className="h-8 rounded-md border bg-background text-sm"
               data-testid="dnd-start-hour"
-              value={dndStart}
-              onChange={(e) => void changeDndHour('start', Number(e.target.value))}
+              value={String(dndStart)}
+              onValueChange={(v) => void changeDndHour('start', Number(v))}
             >
               {HOURS.map((h) => (
                 <option key={h} value={h}>{`${h}:00`}</option>
               ))}
-            </select>
+            </SimpleSelect>
           </label>
           <label className="flex items-center gap-1.5">
             {t('settings.emotion.doNotDisturbEnd')}
-            <select
-              className="h-8 rounded-md border bg-background px-2 text-sm"
+            <SimpleSelect
+              className="h-8 rounded-md border bg-background text-sm"
               data-testid="dnd-end-hour"
-              value={dndEnd}
-              onChange={(e) => void changeDndHour('end', Number(e.target.value))}
+              value={String(dndEnd)}
+              onValueChange={(v) => void changeDndHour('end', Number(v))}
             >
               {HOURS.map((h) => (
                 <option key={h} value={h}>{`${h}:00`}</option>
               ))}
-            </select>
+            </SimpleSelect>
           </label>
         </div>
       )}
@@ -191,11 +192,11 @@ export function EmotionPanel() {
           <div className="space-y-1.5">
             <Label htmlFor="emotion-assistant-select">{t('settings.emotion.assistant')}</Label>
             {hydrated && assistants && assistants.length > 0 ? (
-              <select
+              <SimpleSelect
                 id="emotion-assistant-select"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                className="h-9 w-full rounded-md border bg-background text-sm"
                 value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
+                onValueChange={(v) => setSelectedId(v)}
               >
                 {assistants.map((assistant) => (
                   <option key={assistant.id} value={assistant.id}>
@@ -203,7 +204,7 @@ export function EmotionPanel() {
                     {assistant.name}
                   </option>
                 ))}
-              </select>
+              </SimpleSelect>
             ) : (
               <p className="text-xs text-muted-foreground">{t('settings.emotion.noAssistant')}</p>
             )}

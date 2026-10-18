@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Label } from '@/components/ui/label';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
@@ -77,11 +78,11 @@ export function RelationshipPanel() {
               {t('settings.emotion.assistant')}
             </Label>
             {hydrated && assistants && assistants.length > 0 ? (
-              <select
+              <SimpleSelect
                 id="relationship-assistant-select"
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                className="h-9 w-full rounded-md border bg-background text-sm"
                 value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
+                onValueChange={(v) => setSelectedId(v)}
               >
                 {assistants.map((assistant) => (
                   <option key={assistant.id} value={assistant.id}>
@@ -89,7 +90,7 @@ export function RelationshipPanel() {
                     {assistant.name}
                   </option>
                 ))}
-              </select>
+              </SimpleSelect>
             ) : (
               <p className="text-xs text-muted-foreground">{t('settings.emotion.noAssistant')}</p>
             )}

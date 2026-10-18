@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
 import { useProviderMutations, type ProviderCreateBody } from '@/lib/hooks/use-providers';
@@ -145,17 +145,17 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="provider-protocol">{t('settingsProviders.form.protocol')}</Label>
-            <Select
+            <SimpleSelect
               id="provider-protocol"
               value={form.protocol}
               disabled={isEdit}
-              onChange={(e) => changeProtocol(e.target.value as ProviderProtocol)}
+              onValueChange={(v) => changeProtocol(v as ProviderProtocol)}
             >
               <option value="openai-compatible">
                 {t('settingsProviders.form.protocolOpenai')}
               </option>
               <option value="ollama">{t('settingsProviders.form.protocolOllama')}</option>
-            </Select>
+            </SimpleSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="provider-baseurl">Base URL</Label>

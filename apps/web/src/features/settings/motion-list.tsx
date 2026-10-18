@@ -18,6 +18,7 @@ import {
   MOTION_ROTATION_SECONDS_MIN,
 } from '@wbfm/shared/constants';
 import { AssetList } from './asset-list';
+import { NumberInput } from '@/components/ui/number-input';
 
 /** 已导入待机动作列表管理：轮播设置 / 设为待机 / 恢复内置 / 删除 */
 export function MotionList() {
@@ -60,17 +61,6 @@ export function MotionList() {
     if (settings) setSecondsDraft(String(settings.motionRotationSeconds));
   }, [settings?.motionRotationSeconds]);
 
-  const commitSeconds = () => {
-    const parsed = Number.parseInt(secondsDraft, 10);
-    const seconds = Number.isInteger(parsed)
-      ? Math.min(MOTION_ROTATION_SECONDS_MAX, Math.max(MOTION_ROTATION_SECONDS_MIN, parsed))
-      : MOTION_ROTATION_SECONDS_DEFAULT;
-    setSecondsDraft(String(seconds));
-    if (seconds !== settings?.motionRotationSeconds) {
-      patchMutation.mutate({ motionRotationSeconds: seconds });
-    }
-  };
-
   const motions = data?.motions ?? [];
   const selectedRef = parseMotionId(data?.selectedId ?? null);
   const currentName = selectedRef
@@ -110,18 +100,17 @@ export function MotionList() {
             <p className="text-muted-foreground">{t('avatar.motion.rotationHint')}</p>
             <label className="flex items-center gap-2">
               <span className="text-muted-foreground">{t('avatar.motion.rotationSeconds')}</span>
-              <input
-                type="number"
+              <NumberInput
                 min={MOTION_ROTATION_SECONDS_MIN}
                 max={MOTION_ROTATION_SECONDS_MAX}
-                className="w-16 rounded-md border px-2 py-1 text-xs"
                 data-testid="motion-rotation-seconds"
-                value={secondsDraft}
+                value={Number(secondsDraft)}
                 disabled={patchMutation.isPending || !rotationEnabled}
-                onChange={(e) => setSecondsDraft(e.target.value)}
-                onBlur={commitSeconds}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitSeconds();
+                onValueChange={(v) => {
+                  setSecondsDraft(String(v));
+                  if (v !== settings?.motionRotationSeconds) {
+                    patchMutation.mutate({ motionRotationSeconds: v });
+                  }
                 }}
               />
             </label>

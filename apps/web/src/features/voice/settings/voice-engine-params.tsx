@@ -8,7 +8,7 @@ import {
   type VoiceTtsModel,
 } from '@wbfm/shared/schemas';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { TtsPreview } from './tts-preview';
 
@@ -142,31 +142,31 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="tts-speed">{t('voice.engine.speedLabel')}</Label>
-            <Select
+            <SimpleSelect
               id="tts-speed"
-              value={settings.ttsSpeed}
-              onChange={(e) => void onPatch({ ttsSpeed: Number(e.target.value) })}
+              value={String(settings.ttsSpeed)}
+              onValueChange={(v) => void onPatch({ ttsSpeed: Number(v) })}
             >
               {SPEED_OPTIONS.map((v) => (
                 <option key={v} value={v}>
                   {v}x
                 </option>
               ))}
-            </Select>
+            </SimpleSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="tts-threads">{t('voice.engine.threadsLabel')}</Label>
-            <Select
+            <SimpleSelect
               id="tts-threads"
-              value={settings.ttsNumThreads}
-              onChange={(e) => void onPatch({ ttsNumThreads: Number(e.target.value) })}
+              value={String(settings.ttsNumThreads)}
+              onValueChange={(v) => void onPatch({ ttsNumThreads: Number(v) })}
             >
               {THREAD_OPTIONS.map((v) => (
                 <option key={v} value={v}>
                   {t('voice.engine.threadsOption', { count: v })}
                 </option>
               ))}
-            </Select>
+            </SimpleSelect>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -195,23 +195,23 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="asr-threads">{t('voice.engine.threadsLabel')}</Label>
-            <Select
+            <SimpleSelect
               id="asr-threads"
-              value={settings.asrNumThreads}
-              onChange={(e) => void onPatch({ asrNumThreads: Number(e.target.value) })}
+              value={String(settings.asrNumThreads)}
+              onValueChange={(v) => void onPatch({ asrNumThreads: Number(v) })}
             >
               {THREAD_OPTIONS.map((v) => (
                 <option key={v} value={v}>
                   {t('voice.engine.threadsOption', { count: v })}
                 </option>
               ))}
-            </Select>
+            </SimpleSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="input-mode">{t('voice.engine.inputModeLabel')}</Label>
-            <Select id="input-mode" value={settings.inputMode} disabled>
+            <SimpleSelect id="input-mode" value={settings.inputMode} disabled onValueChange={() => undefined}>
               <option value="ptt">{t('voice.engine.inputModePttOption')}</option>
-            </Select>
+            </SimpleSelect>
           </div>
         </div>
       </div>

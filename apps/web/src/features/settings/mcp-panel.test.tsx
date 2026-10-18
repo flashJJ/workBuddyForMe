@@ -109,6 +109,20 @@ describe('MCP 服务器面板（v0.6 M1）', () => {
     });
   });
 
+  it('预置目录：点 filesystem 预置后表单预填命令与参数', async () => {
+    fetchMock.mockResolvedValue(ok([]));
+    const user = userEvent.setup();
+    renderWithProviders(<McpPanel />);
+
+    await user.click(await screen.findByTestId('mcp-preset-filesystem'));
+    expect(await screen.findByText('添加 MCP 服务器')).toBeInTheDocument();
+    expect(screen.getByLabelText(/名称/)).toHaveValue('filesystem');
+    expect(screen.getByLabelText('启动命令')).toHaveValue('npx');
+    expect((screen.getByLabelText(/启动参数/) as HTMLTextAreaElement).value).toContain(
+      'server-filesystem',
+    );
+  });
+
   it('停用：勾选取消后 PATCH enabled=false', async () => {
     fetchMock.mockResolvedValue(ok([makeServer({ id: '1', name: 'filesystem' })]));
     const user = userEvent.setup();

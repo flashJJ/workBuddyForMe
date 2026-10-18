@@ -7,6 +7,28 @@ if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = function scrollIntoView() {};
 }
 
+// v2.3：Radix Select/Popper 依赖指针捕获与尺寸观察，jsdom 均未实现。
+// 缺失会让下拉在测试中无法展开（pointerdown 触发 setPointerCapture 抛错）。
+if (typeof Element !== 'undefined') {
+  if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = () => false;
+  }
+  if (!Element.prototype.setPointerCapture) {
+    Element.prototype.setPointerCapture = () => undefined;
+  }
+  if (!Element.prototype.releasePointerCapture) {
+    Element.prototype.releasePointerCapture = () => undefined;
+  }
+}
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+}
+
 // jsdom 未实现 blob 对象 URL（图片附件预览/回流依赖；原生实现存在但会抛 Not implemented）
 if (typeof URL !== 'undefined') {
   URL.createObjectURL = () => `blob:mock-${Math.random().toString(36).slice(2)}`;
