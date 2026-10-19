@@ -6,6 +6,8 @@ export const API = {
   providerModels: (id: string) => `/api/providers/${id}/models`,
   model: (id: string) => `/api/models/${id}`,
   settings: '/api/settings',
+  /** v2.4 M1：本机 Ollama 提前探测（向导来源置顶） */
+  systemOllama: '/api/system/ollama',
   assistants: '/api/assistants',
   assistant: (id: string) => `/api/assistants/${id}`,
   assistantReorder: '/api/assistants/reorder',
@@ -113,6 +115,7 @@ export const QUERY_KEYS = {
   models: (providerId: string) => ['models', providerId] as const,
   modelsAll: ['models', 'all'] as const,
   settings: ['settings'] as const,
+  ollamaProbe: ['ollama-probe'] as const,
   assistants: ['assistants'] as const,
   characterCards: ['character-cards'] as const,
   stageScenes: ['stage-scenes'] as const,

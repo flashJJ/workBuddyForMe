@@ -33,6 +33,11 @@ export {
   type DemoModeArtifacts,
 } from './demo-provider';
 export {
+  probeLocalOllama,
+  LOCAL_OLLAMA_URL,
+  OLLAMA_PROBE_TIMEOUT_MS,
+} from './ollama-probe';
+export {
   createAssistantsService,
   type AssistantsService,
 } from './assistant-service';
