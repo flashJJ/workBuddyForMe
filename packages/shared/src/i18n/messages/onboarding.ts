@@ -53,6 +53,17 @@ export const zhOnboarding = {
     demoEnabling: '正在开启…',
     demoReady: '演示模式已就绪，可以直接开始对话。',
     demoFailed: '开启失败：{message}',
+    // v2.4 P0-1（T3）：厂商预设与推荐模型
+    presets: {
+      title: '常用厂商（点选自动填名称与地址）',
+      lead: '也可以自己填任意 OpenAI 兼容地址。',
+      keyLink: '去申请 API Key',
+      footer: '预设只含地址与模型名建议，模型与价格以厂商官网为准。',
+    },
+    recommended: {
+      title: '推荐模型（一键添加，可跳过）',
+      addFailed: '模型添加失败：{message}',
+    },
   },
   // v2.4 M1 T5 首字延迟自检（M0 §6 冻结分档）
   latency: {
@@ -150,6 +161,17 @@ export const enOnboarding = {
     demoEnabling: 'Enabling…',
     demoReady: 'Demo mode is ready — you can start chatting.',
     demoFailed: 'Failed to enable: {message}',
+    // v2.4 P0-1 (T3) vendor presets and recommended models
+    presets: {
+      title: 'Common vendors (pick one to fill name and URL)',
+      lead: 'You can also enter any OpenAI-compatible base URL yourself.',
+      keyLink: 'Get an API key',
+      footer: 'Presets only carry the base URL and model-name suggestions; models and pricing follow the vendor’s site.',
+    },
+    recommended: {
+      title: 'Recommended models (one click to add, or skip)',
+      addFailed: 'Failed to add model: {message}',
+    },
   },
   // v2.4 M1 T5 time-to-first-token check (M0 §6 frozen tiers)
   latency: {

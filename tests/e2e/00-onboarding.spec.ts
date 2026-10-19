@@ -24,6 +24,8 @@ test.describe('M5 首启体验', () => {
     await expect(page.getByTestId('ob-ollama-detect')).toBeVisible();
     await page.getByTestId('ob-tab-cloud').click();
     await expect(page.getByTestId('onboarding-cloud')).toBeVisible();
+    // T3：厂商预设卡片可选（点选自动填名称/Base URL）
+    await expect(page.getByTestId('ob-preset-deepseek')).toBeVisible();
 
     // 语音步 → 第一句话步 → 完成步 → 进入应用
     await page.getByTestId('ob-next').click();

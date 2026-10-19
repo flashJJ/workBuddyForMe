@@ -18,3 +18,4 @@ export * from './motion';
 export * from './knowledge-starters';
 export * from './mcp-presets';
 export * from './demo-mode';
+export * from './provider-presets';

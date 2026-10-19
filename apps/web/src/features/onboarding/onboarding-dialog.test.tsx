@@ -127,6 +127,28 @@ describe('首启向导 OnboardingDialog（v1.2 M5）', () => {
     expect(createCall).toBeTruthy();
   });
 
+  it('云端面板：选厂商预设自动填名称与 Base URL，并给 Key 申请直达（T3）', async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url === '/api/providers' ? ok([]) : ok(null),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<OnboardingDialog open onComplete={() => undefined} />);
+    await user.click(screen.getByTestId('ob-next'));
+    await user.click(screen.getByTestId('ob-tab-cloud'));
+
+    const cloud = screen.getByTestId('onboarding-cloud');
+    await user.click(within(cloud).getByTestId('ob-preset-deepseek'));
+
+    expect((within(cloud).getByLabelText('名称') as HTMLInputElement).value).toBe('DeepSeek');
+    expect((within(cloud).getByLabelText('Base URL') as HTMLInputElement).value).toBe(
+      'https://api.deepseek.com/v1',
+    );
+    expect(within(cloud).getByTestId('ob-preset-key-link')).toHaveAttribute(
+      'href',
+      'https://platform.deepseek.com/api_keys',
+    );
+  });
+
   it('Ollama 面板：首次检测失败给安装指引，再次成功后可添加发现的模型', async () => {
     mockVoiceEndpoints(fetchMock);
     let testAttempt = 0;
