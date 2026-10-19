@@ -10,16 +10,25 @@ import {
 } from './onboarding-state';
 
 describe('onboarding 步骤状态机', () => {
-  it('固定 4 步且顺序为 welcome→provider→voice→finish', () => {
-    expect([...ONBOARDING_STEPS]).toEqual(['welcome', 'provider', 'voice', 'finish']);
+  it('固定 5 步且顺序为 welcome→provider→voice→firstAsk→finish（v2.4 起含 firstAsk）', () => {
+    expect([...ONBOARDING_STEPS]).toEqual([
+      'welcome',
+      'provider',
+      'voice',
+      'firstAsk',
+      'finish',
+    ]);
   });
 
   it('nextStep/prevStep 线性推进且端点钳位', () => {
     expect(nextStep('welcome')).toBe('provider');
     expect(nextStep('provider')).toBe('voice');
-    expect(nextStep('voice')).toBe('finish');
+    expect(nextStep('voice')).toBe('firstAsk');
+    expect(nextStep('firstAsk')).toBe('finish');
     expect(nextStep('finish')).toBe('finish');
-    expect(prevStep('finish')).toBe('voice');
+    expect(prevStep('finish')).toBe('firstAsk');
+    expect(prevStep('firstAsk')).toBe('voice');
+    expect(prevStep('voice')).toBe('provider');
     expect(prevStep('provider')).toBe('welcome');
     expect(prevStep('welcome')).toBe('welcome');
   });

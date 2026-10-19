@@ -25,9 +25,11 @@ test.describe('M5 首启体验', () => {
     await page.getByTestId('ob-tab-cloud').click();
     await expect(page.getByTestId('onboarding-cloud')).toBeVisible();
 
-    // 语音步 → 完成步 → 进入应用
+    // 语音步 → 第一句话步 → 完成步 → 进入应用
     await page.getByTestId('ob-next').click();
     await expect(page.getByTestId('onboarding-voice')).toBeVisible();
+    await page.getByTestId('ob-next').click();
+    await expect(page.getByTestId('onboarding-firstask')).toBeVisible();
     await page.getByTestId('ob-next').click();
     await expect(page.getByTestId('onboarding-finish')).toBeVisible();
     await page.getByTestId('ob-enter').click();
@@ -72,18 +74,15 @@ test.describe('M5 首启体验', () => {
     await expect(page.getByTestId('ob-latency-conclusion')).toContainText('预计首字约');
     await expect(page.getByTestId('ob-latency-switch')).toBeVisible();
 
-    // 走完向导进入应用
+    // 语音步 → firstAsk 步：点示例即发问并落到 /chat（T6）
     await page.getByTestId('ob-next').click();
     await expect(page.getByTestId('onboarding-voice')).toBeVisible();
     await page.getByTestId('ob-next').click();
-    await expect(page.getByTestId('onboarding-finish')).toBeVisible();
-    await page.getByTestId('ob-enter').click();
+    await expect(page.getByTestId('onboarding-firstask')).toBeVisible();
+    await page.getByTestId('ob-firstask-general').click();
     await expect(dialog).toBeHidden();
 
-    // 首答成功：mock 回显，演示模式无外网依赖，TTFV 远低于 60s 阈值
-    await page.goto('/chat');
-    await page.getByLabel('消息输入框').fill('你好，做个自我介绍');
-    await page.getByLabel('消息输入框').press('Enter');
+    // 首答成功：向导示例问题已自动发出，mock 回显（演示模式无外网依赖）
     await expect(page.getByText(/mock 模型/).first()).toBeVisible({ timeout: 30_000 });
 
     // 全局徽标常显

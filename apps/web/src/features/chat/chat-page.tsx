@@ -26,6 +26,7 @@ import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
 import { ProactiveBubbleBar } from './proactive-bubble';
 import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
 import { useChatEvents } from './use-chat-events';
+import { useFirstAsk } from './use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
 
 export function ChatPage() {
@@ -107,6 +108,9 @@ export function ChatPage() {
         ),
     );
   }, [currentAssistant, settings, models]);
+
+  // v2.4 M1 T6：向导 firstAsk 步选中的示例问题，模型就绪后自动发出一次
+  useFirstAsk(session.send, hasChatModel);
 
   const switchAssistant = (id: string) => {
     session.reset();

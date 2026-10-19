@@ -6,6 +6,7 @@ export const zhOnboarding = {
     welcome: '欢迎',
     provider: '连接模型',
     voice: '语音能力',
+    firstAsk: '第一句话',
     finish: '完成',
   },
   welcome: {
@@ -75,6 +76,14 @@ export const zhOnboarding = {
     ttsReady: '语音合成模型已就绪',
     backgroundHint: '下载在后台进行，关闭向导不影响。',
   },
+  // v2.4 M1 T6：firstAsk 步（预置示例问题，按已就绪能力显隐）
+  firstAsk: {
+    heading: '发出第一句话',
+    lead: '点一个示例直接开始对话；也可以直接「继续」，之后自己输入。',
+    general: '帮我写一条把这件事说清楚的周报',
+    knowledge: '用「产品需求」模板总结一段需求',
+    voice: '用语音和我聊两句',
+  },
   finish: {
     heading: '一切就绪',
     lead: '现在可以发出第一句话了。',
@@ -94,6 +103,7 @@ export const enOnboarding = {
     welcome: 'Welcome',
     provider: 'Connect a model',
     voice: 'Voice',
+    firstAsk: 'First message',
     finish: 'Done',
   },
   welcome: {
@@ -162,6 +172,14 @@ export const enOnboarding = {
     asrReady: 'Speech recognition model is ready',
     ttsReady: 'Speech synthesis model is ready',
     backgroundHint: 'Downloads continue in the background even if you close this wizard.',
+  },
+  // v2.4 M1 T6 firstAsk step (preset example questions, shown by ready capability)
+  firstAsk: {
+    heading: 'Send your first message',
+    lead: 'Tap an example to start chatting right away — or hit Continue and type your own later.',
+    general: 'Write a short weekly report that explains this clearly',
+    knowledge: 'Summarize a requirement using the “Product requirements” template',
+    voice: 'Let’s have a quick chat with voice',
   },
   finish: {
     heading: 'You are all set',

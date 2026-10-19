@@ -6,6 +6,12 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/render';
 import { OnboardingDialog } from './onboarding-dialog';
 
+// v2.4 M1 T6：firstAsk 步内部用 useRouter 跳转 /chat
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => '/chat',
+}));
+
 function ok(data: unknown, status = 200) {
   return new Response(JSON.stringify({ success: true, data }), {
     status,
@@ -70,11 +76,13 @@ describe('首启向导 OnboardingDialog（v1.2 M5）', () => {
 
     // 上一步/下一步
     await user.click(screen.getByTestId('ob-next'));
-    expect(screen.getByTestId('onboarding-voice')).toBeInTheDocument();
+    await expect(screen.getByTestId('onboarding-voice')).toBeInTheDocument();
     await user.click(screen.getByTestId('ob-back'));
     expect(screen.getByTestId('onboarding-provider')).toBeInTheDocument();
 
     await user.click(screen.getByTestId('ob-next'));
+    await user.click(screen.getByTestId('ob-next'));
+    expect(screen.getByTestId('onboarding-firstask')).toBeInTheDocument();
     await user.click(screen.getByTestId('ob-next'));
     expect(screen.getByTestId('onboarding-finish')).toBeInTheDocument();
     expect(screen.queryByTestId('ob-skip')).not.toBeInTheDocument();
