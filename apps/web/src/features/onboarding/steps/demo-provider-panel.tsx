@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { DEMO_PROVIDER_ID } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useUpdateSettings } from '@/lib/hooks/use-settings';
@@ -13,7 +14,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
  * 一键开启演示模式（内置 demo 供应商 + mock 模型），不填任何 Key 即可对话。
  * 复用正式设置链路；开启后 demo 供应商/模型需刷新 providers 与 models 查询。
  */
-export function DemoProviderPanel({ onReady }: { onReady: () => void }) {
+export function DemoProviderPanel({ onReady }: { onReady: (providerId: string) => void }) {
   const { t } = useI18n();
   const update = useUpdateSettings();
   const qc = useQueryClient();
@@ -29,7 +30,7 @@ export function DemoProviderPanel({ onReady }: { onReady: () => void }) {
         qc.invalidateQueries({ queryKey: QUERY_KEYS.modelsAll }),
       ]);
       setReady(true);
-      onReady();
+      onReady(DEMO_PROVIDER_ID);
     } catch (error) {
       setErrorMsg(errorText(error, t, { fallback: 'toast.saveFailed', withDetail: true }));
     }

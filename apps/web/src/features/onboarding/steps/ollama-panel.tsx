@@ -22,7 +22,7 @@ type DetectState = 'idle' | 'detecting' | 'online' | 'offline';
  * 检测 = 复用正式链路（创建/复用 Ollama 供应商 → testConnection → 拉远程模型），
  * 未运行时给安装指引；发现的模型可点选快速添加。
  */
-export function OllamaPanel({ onReady }: { onReady: () => void }) {
+export function OllamaPanel({ onReady }: { onReady: (providerId: string) => void }) {
   const { t } = useI18n();
   const { data: providers } = useProviders();
   const mutations = useProviderMutations();
@@ -52,7 +52,7 @@ export function OllamaPanel({ onReady }: { onReady: () => void }) {
       await mutations.testConnection.mutateAsync(target.id);
       setProvider(target);
       setState('online');
-      onReady();
+      onReady(target.id);
       try {
         setRemote(await remoteMutation.mutateAsync());
       } catch {

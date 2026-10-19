@@ -68,6 +68,10 @@ test.describe('M5 首启体验', () => {
     await page.getByTestId('ob-demo-enable').click();
     await expect(page.getByTestId('ob-demo-ready')).toBeVisible();
 
+    // T5 首字延迟自检：演示模式（mock，无外网）应给出人话结论 + 「换一个来源」出口
+    await expect(page.getByTestId('ob-latency-conclusion')).toContainText('预计首字约');
+    await expect(page.getByTestId('ob-latency-switch')).toBeVisible();
+
     // 走完向导进入应用
     await page.getByTestId('ob-next').click();
     await expect(page.getByTestId('onboarding-voice')).toBeVisible();

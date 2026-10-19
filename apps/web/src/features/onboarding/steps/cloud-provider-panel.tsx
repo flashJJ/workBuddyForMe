@@ -19,7 +19,7 @@ type Status =
  * 向导第 2 步 · 云端 API 面板：名称/Base URL/API Key → 创建并测试。
  * 创建成功即视为供应商已配置（测试失败也保留供应商，可稍后修复）。
  */
-export function CloudProviderPanel({ onReady }: { onReady: () => void }) {
+export function CloudProviderPanel({ onReady }: { onReady: (providerId: string) => void }) {
   const { t } = useI18n();
   const mutations = useProviderMutations();
   const [name, setName] = React.useState('');
@@ -39,7 +39,7 @@ export function CloudProviderPanel({ onReady }: { onReady: () => void }) {
     };
     try {
       const provider = await mutations.create.mutateAsync(body);
-      onReady();
+      onReady(provider.id);
       try {
         await mutations.testConnection.mutateAsync(provider.id);
         setStatus({ kind: 'ready' });

@@ -3,6 +3,8 @@ export const API = {
   providers: '/api/providers',
   provider: (id: string) => `/api/providers/${id}`,
   providerTest: (id: string) => `/api/providers/${id}/test`,
+  /** v2.4 M1 T5：首字延迟自检 */
+  providerFirstToken: (id: string) => `/api/providers/${id}/first-token-probe`,
   providerModels: (id: string) => `/api/providers/${id}/models`,
   model: (id: string) => `/api/models/${id}`,
   settings: '/api/settings',

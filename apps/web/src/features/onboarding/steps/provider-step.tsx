@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { CloudProviderPanel } from './cloud-provider-panel';
 import { OllamaPanel } from './ollama-panel';
 import { DemoProviderPanel } from './demo-provider-panel';
+import { LatencyProbe } from './latency-probe';
 
 type Tab = 'demo' | 'cloud' | 'ollama';
 
@@ -21,8 +22,8 @@ const TAB_TEST_IDS: Record<Tab, string> = {
 /**
  * 向导第 2 步：三选一来源（演示模式 / 本地 Ollama / 云端 API）。
  * v2.4 M1：保留步骤 id `provider`；默认顺序 演示模式 → 本地 → 云端；
- * 进入本步即提前探测本机 Ollama，命中则本地来源置顶并默认选中。
- * 复用正式供应商链路；已存在启用供应商时给提示但仍允许继续添加。
+ * 进入本步即提前探测本机 Ollama，命中则本地来源置顶并默认选中；
+ * 任一来源就绪后跑一次首字延迟自检（T5）并给出结论与「换一个来源」出口。
  */
 export function ProviderStep() {
   const { t } = useI18n();
@@ -31,13 +32,21 @@ export function ProviderStep() {
   const ollamaDetected = probe?.available === true;
   const [tab, setTab] = React.useState<Tab>('demo');
   const [configured, setConfigured] = React.useState(false);
+  const [readyProviderId, setReadyProviderId] = React.useState<string | null>(null);
   // 用户手动切过页签后，迟到的探测结果不再抢占焦点
   const touched = React.useRef(false);
 
-  // 重放向导时，已有启用供应商直接视为配置完成
+  const markReady = React.useCallback((providerId: string) => {
+    setConfigured(true);
+    setReadyProviderId(providerId);
+  }, []);
+
+  // 重放向导时，已有启用供应商直接视为配置完成（并作为延迟自检目标）
   React.useEffect(() => {
-    if (providers?.some((p) => p.enabled)) setConfigured(true);
-  }, [providers]);
+    if (readyProviderId) return;
+    const enabled = providers?.find((provider) => provider.enabled);
+    if (enabled) markReady(enabled.id);
+  }, [providers, readyProviderId, markReady]);
 
   // 提前探测命中：本地置顶且默认选中（未命中则维持演示模式）
   React.useEffect(() => {
@@ -95,9 +104,11 @@ export function ProviderStep() {
         {order.map(tabButton)}
       </div>
 
-      {tab === 'demo' && <DemoProviderPanel onReady={() => setConfigured(true)} />}
-      {tab === 'ollama' && <OllamaPanel onReady={() => setConfigured(true)} />}
-      {tab === 'cloud' && <CloudProviderPanel onReady={() => setConfigured(true)} />}
+      {tab === 'demo' && <DemoProviderPanel onReady={markReady} />}
+      {tab === 'ollama' && <OllamaPanel onReady={markReady} />}
+      {tab === 'cloud' && <CloudProviderPanel onReady={markReady} />}
+
+      {readyProviderId && <LatencyProbe providerId={readyProviderId} />}
     </div>
   );
 }

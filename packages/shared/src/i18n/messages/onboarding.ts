@@ -53,6 +53,14 @@ export const zhOnboarding = {
     demoReady: '演示模式已就绪，可以直接开始对话。',
     demoFailed: '开启失败：{message}',
   },
+  // v2.4 M1 T5 首字延迟自检（M0 §6 冻结分档）
+  latency: {
+    probing: '正在自检首字延迟…',
+    smooth: '预计首字约 {seconds} 秒，体感流畅。',
+    slow: '预计首字约 {seconds} 秒，偏慢但可用。',
+    timeout: '自检超时，建议换一个来源。',
+    switchSource: '换一个来源',
+  },
   voice: {
     heading: '语音对话（可选）',
     lead: '启用后可按住说话并听到语音回复。语音模型在首次使用时下载到本机。',
@@ -132,6 +140,14 @@ export const enOnboarding = {
     demoEnabling: 'Enabling…',
     demoReady: 'Demo mode is ready — you can start chatting.',
     demoFailed: 'Failed to enable: {message}',
+  },
+  // v2.4 M1 T5 time-to-first-token check (M0 §6 frozen tiers)
+  latency: {
+    probing: 'Checking time to first token…',
+    smooth: 'First token in about {seconds}s — feels smooth.',
+    slow: 'First token in about {seconds}s — usable but slow.',
+    timeout: 'The check timed out — consider another source.',
+    switchSource: 'Switch source',
   },
   voice: {
     heading: 'Voice conversation (optional)',

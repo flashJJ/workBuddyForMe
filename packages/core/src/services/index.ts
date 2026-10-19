@@ -38,6 +38,12 @@ export {
   OLLAMA_PROBE_TIMEOUT_MS,
 } from './ollama-probe';
 export {
+  probeFirstToken,
+  FIRST_TOKEN_PROBE_PROMPT,
+  FIRST_TOKEN_PROBE_TIMEOUT_MS,
+  type FirstTokenProbeOutcome,
+} from './first-token-probe';
+export {
   createAssistantsService,
   type AssistantsService,
 } from './assistant-service';
