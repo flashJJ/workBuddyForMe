@@ -43,6 +43,7 @@ export {
   FIRST_TOKEN_PROBE_TIMEOUT_MS,
   type FirstTokenProbeOutcome,
 } from './first-token-probe';
+export { recordMilestone, type TtfvMilestone } from './milestones';
 export {
   createAssistantsService,
   type AssistantsService,

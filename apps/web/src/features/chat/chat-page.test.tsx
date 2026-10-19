@@ -83,7 +83,7 @@ describe('对话页（TR-27.1）', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
   afterEach(() => vi.unstubAllGlobals());
 
-  it('未配置对话模型时展示设置引导', async () => {
+  it('未配置对话模型时展示配置向导引导', async () => {
     vi.mocked(fetch).mockImplementation(async (input) => {
       const url = String(input);
       const data =
@@ -98,7 +98,7 @@ describe('对话页（TR-27.1）', () => {
     });
     renderWithProviders(<ChatPage />);
 
-    expect(await screen.findByRole('link', { name: '前往设置' })).toHaveAttribute('href', '/settings');
+    expect(await screen.findByRole('button', { name: '打开配置向导' })).toBeInTheDocument();
   });
 
   it('端到端：发送消息后渲染用户气泡与流式回复，并自动归入新会话', async () => {

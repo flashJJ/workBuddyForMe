@@ -13,8 +13,9 @@ export const zhChat = {
   compactedBadge: '已压缩 {count} 条早期消息',
   setup: {
     title: '还没有可用的对话模型',
-    description: '请先在设置中新增供应商、添加对话模型，并将其设为默认模型（或给助手绑定模型）。',
-    goToSettings: '前往设置',
+    description: '还没连上模型。用向导最快：演示模式、本地模型、云端 API，三种搞法任选。',
+    openWizard: '打开配置向导',
+    hint: '三种搞法，最快 30 秒。',
   },
   sidebar: {
     emptyTitle: '暂无对话',
@@ -90,8 +91,9 @@ export const enChat = {
   setup: {
     title: 'No chat model available yet',
     description:
-      'Add a provider and a chat model in Settings, then set it as the default (or bind a model to the assistant).',
-    goToSettings: 'Go to Settings',
+      'No model is connected yet. The wizard is the fastest way: demo mode, a local model, or a cloud API — pick any.',
+    openWizard: 'Open setup wizard',
+    hint: 'Three paths, as fast as 30 seconds.',
   },
   sidebar: {
     emptyTitle: 'No conversations yet',

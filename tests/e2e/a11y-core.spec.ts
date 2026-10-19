@@ -15,6 +15,9 @@ async function scan(page: Page, name: string): Promise<AxeResults> {
   await page.waitForLoadState('networkidle');
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    // Next dev 的报错浮层（nextjs-portal）是开发态专用 UI，生产构建（CI 用 next start）不产出；
+    // dev 冷编译抖动时它的红底徽标会被计入 color-contrast，造成 dev 假红，故排除该宿主。
+    .exclude('nextjs-portal')
     .analyze();
 
   const blockers = results.violations.filter((v) =>

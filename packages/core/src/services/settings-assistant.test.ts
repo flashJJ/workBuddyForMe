@@ -69,6 +69,11 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       globalAppendPromptEnabled: false,
       // v2.4 M1：演示模式缺省关
       demoModeEnabled: false,
+      // v2.4 M1 T7：TTFV 里程碑缺省为空
+      firstLaunchAt: null,
+      firstModelReadyAt: null,
+      firstAnswerAt: null,
+      ttfvMs: null,
       // v2.3：动画图覆盖条目与停用列表缺省为空（服务端钳制产出，保证字段恒存在）
       interactionGraphOverrides: [],
       interactionGraphDisabledEntryIds: [],

@@ -14,6 +14,7 @@ import type {
 } from '../constants';
 import type { ContentPart } from './content-part';
 import type { EventSettingsFields } from '../events/event-settings';
+import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction-graph';
 import type { ToolTraceEntry } from './tool';
 
@@ -206,7 +207,7 @@ export interface DocumentRecord {
   compileGeneration?: number;
 }
 
-export interface AppSettings extends EventSettingsFields {
+export interface AppSettings extends EventSettingsFields, LocalModeSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;
@@ -257,11 +258,8 @@ export interface AppSettings extends EventSettingsFields {
    * 停用某触发键的全部条目后该交互不再有动作（「查不到返回空」）。
    */
   interactionGraphDisabledEntryIds?: string[];
-  /**
-   * v2.4 M1：演示模式开关（缺省 false）。
-   * 开启后内置 `demo` 供应商与 mock 模型，不填 Key 即可对话；关闭时清理该供应商与模型。
-   */
-  demoModeEnabled?: boolean;
+  // v2.4 M1 演示模式开关与 T7 TTFV 里程碑经 LocalModeSettingsFields 交叉引入
+  // （定义见 ./local-mode-settings）
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;

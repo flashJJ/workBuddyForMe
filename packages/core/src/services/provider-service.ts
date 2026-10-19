@@ -10,6 +10,7 @@ import { maskSecret } from '../secrets/cipher';
 import type { ServiceDeps } from './deps';
 import { buildProvider, toApiError } from './provider-adapter';
 import { probeFirstToken } from './first-token-probe';
+import { recordMilestone } from './milestones';
 
 /** 首字延迟自检结果：measurable=false 表示该供应商尚无可用对话模型，无法自检 */
 export interface FirstTokenProbeReport {
@@ -66,6 +67,8 @@ export function createProviderService({ db, cipher }: ServiceDeps) {
         enabled: input.enabled ?? true,
         sortOrder,
       });
+      // v2.4 M1 T7：有供应商（模型来源）即视为「模型就绪」里程碑
+      recordMilestone(db, 'firstModelReadyAt');
       return toView(record, input.apiKey ? maskSecret(input.apiKey) : null);
     },
 

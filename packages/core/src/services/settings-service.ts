@@ -13,6 +13,7 @@ import {
 } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
 import { disableDemoMode, enableDemoMode } from './demo-provider';
+import { recordMilestone } from './milestones';
 import {
   CONTEXT_MESSAGES_MAX,
   CONTEXT_MESSAGES_MIN,
@@ -40,6 +41,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   globalAppendPromptEnabled: false,
   // v2.4 M1：演示模式默认关（用户可一键开启；开启即内置 demo 供应商与 mock 模型）
   demoModeEnabled: false,
+  // v2.4 M1 T7：TTFV 里程碑缺省为空（首次启动/模型就绪/首答时由 recordMilestone 首写）
+  firstLaunchAt: null,
+  firstModelReadyAt: null,
+  firstAnswerAt: null,
+  ttfvMs: null,
 };
 
 /** 服务端钳制上下文条数：settings_kv 可被手改/旧值污染，越界一律回落默认 */
@@ -112,13 +118,20 @@ export function createSettingsService({ db }: ServiceDeps) {
       return merged;
     },
 
+    /** v2.4 M1 T7：进入应用即记录首次启动时间（首写优先；供 TTFV 计算） */
+    markFirstLaunch(): void {
+      recordMilestone(db, 'firstLaunchAt');
+    },
+
     update(patch: SettingsUpdateInput): AppSettings {
       const current = this.get();
       const effective: SettingsUpdateInput = { ...patch };
+      let demoJustEnabled = false;
 
       // v2.4 M1：演示模式开关与内置 demo 供应商/模型联动
       if (patch.demoModeEnabled === true && current.demoModeEnabled !== true) {
         const demo = enableDemoMode(db);
+        demoJustEnabled = true;
         if (effective.defaultChatModelId === undefined) effective.defaultChatModelId = demo.chatModelId;
         if (effective.defaultEmbeddingModelId === undefined) {
           effective.defaultEmbeddingModelId = demo.embedModelId;
@@ -142,6 +155,11 @@ export function createSettingsService({ db }: ServiceDeps) {
       ensureModelExists(effective.compileModelId ?? null, '编译增强模型');
       const next = { ...current, ...effective };
       settings.setJson(SETTINGS_KEY, next);
+      // v2.4 M1 T7：里程碑必须在本次 setJson 之后记录，否则会被上面这行覆盖
+      if (demoJustEnabled) {
+        recordMilestone(db, 'firstModelReadyAt');
+        return this.get();
+      }
       return next;
     },
   };

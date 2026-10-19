@@ -92,6 +92,9 @@ test.describe('M5 首启体验', () => {
     // 一键关闭：清理 demo 供应商与模型、清空默认模型，徽标消失
     await page.goto('/settings');
     await waitForHydrated(page);
+    // T7：首答已发生，关于页应可读到 TTFV 里程碑（安装 → 模型就绪 → 首答）
+    await expect(page.getByTestId('about-ttfv-value')).toContainText('首答用时');
+    await expect(page.getByTestId('about-ttfv-model-ready')).not.toHaveText('—');
     await page.getByTestId('demo-mode-toggle').click();
     await expect(page.getByTestId('demo-mode-on')).toBeHidden();
     await expect(page.getByTestId('demo-mode-badge')).toBeHidden();
@@ -113,6 +116,15 @@ test.describe('M5 首启体验', () => {
         return body.data.demoModeEnabled === false && body.data.defaultChatModelId === null;
       })
       .toBe(true);
+
+    // T7 空态统一：无可用模型时对话页空态可直接调起配置向导
+    await page.goto('/chat');
+    const openWizard = page.getByTestId('chat-open-wizard');
+    await expect(openWizard).toBeVisible();
+    await openWizard.click();
+    await expect(page.getByTestId('onboarding-dialog')).toBeVisible();
+    await page.getByTestId('ob-skip').click();
+    await expect(page.getByTestId('onboarding-dialog')).toBeHidden();
   });
 
   test('关于面板可重放向导；Ctrl+/ 唤起快捷键浮层；帮助锚点可达', async ({ page }) => {

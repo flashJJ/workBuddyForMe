@@ -6,6 +6,8 @@ import { parseBody, readJsonBody } from '@/lib/server/validation';
 export const dynamic = 'force-dynamic';
 
 export const GET = defineRoute(({ services }) => {
+  // v2.4 M1 T7：进入应用即记首次启动里程碑（首写优先；仅时间戳，不含对话内容）
+  services.settings.markFirstLaunch();
   return jsonOk(services.settings.get());
 });
 
