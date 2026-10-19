@@ -103,6 +103,8 @@ describe('首启向导 OnboardingDialog（v1.2 M5）', () => {
     renderWithProviders(<OnboardingDialog open onComplete={() => undefined} />);
     await user.click(screen.getByTestId('ob-next'));
 
+    // v2.4 M1：第 2 步默认聚焦演示模式，云端面板需显式切换页签
+    await user.click(screen.getByTestId('ob-tab-cloud'));
     const cloud = screen.getByTestId('onboarding-cloud');
     await user.type(within(cloud).getByLabelText('名称'), 'Mine');
     await user.type(within(cloud).getByLabelText('Base URL'), 'https://api.example.com/v1');

@@ -45,6 +45,13 @@ export const zhOnboarding = {
     modelAdded: '已添加模型 {modelId}',
     addFailed: '模型添加失败：{message}',
     configuredBadge: '供应商已就绪',
+    // v2.4 M1：第三个来源「演示模式」
+    tabDemo: '演示模式',
+    demoLead: '不填任何 Key 也能先聊起来：使用本地模拟回复，不联网、不下载，可随时在「设置」中关闭。',
+    demoEnable: '开启演示模式',
+    demoEnabling: '正在开启…',
+    demoReady: '演示模式已就绪，可以直接开始对话。',
+    demoFailed: '开启失败：{message}',
   },
   voice: {
     heading: '语音对话（可选）',
@@ -118,6 +125,13 @@ export const enOnboarding = {
     modelAdded: 'Model added: {modelId}',
     addFailed: 'Failed to add model: {message}',
     configuredBadge: 'Provider ready',
+    tabDemo: 'Demo mode',
+    demoLead:
+      'Start chatting without any API key: replies are simulated locally, with no network access and no downloads. Turn it off anytime in Settings.',
+    demoEnable: 'Enable demo mode',
+    demoEnabling: 'Enabling…',
+    demoReady: 'Demo mode is ready — you can start chatting.',
+    demoFailed: 'Failed to enable: {message}',
   },
   voice: {
     heading: 'Voice conversation (optional)',

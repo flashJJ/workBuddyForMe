@@ -257,6 +257,11 @@ export interface AppSettings extends EventSettingsFields {
    * 停用某触发键的全部条目后该交互不再有动作（「查不到返回空」）。
    */
   interactionGraphDisabledEntryIds?: string[];
+  /**
+   * v2.4 M1：演示模式开关（缺省 false）。
+   * 开启后内置 `demo` 供应商与 mock 模型，不填 Key 即可对话；关闭时清理该供应商与模型。
+   */
+  demoModeEnabled?: boolean;
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;

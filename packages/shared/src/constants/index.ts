@@ -17,3 +17,4 @@ export * from './vrm';
 export * from './motion';
 export * from './knowledge-starters';
 export * from './mcp-presets';
+export * from './demo-mode';

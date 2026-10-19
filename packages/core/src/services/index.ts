@@ -28,6 +28,11 @@ export {
   type SettingsService,
 } from './settings-service';
 export {
+  enableDemoMode,
+  disableDemoMode,
+  type DemoModeArtifacts,
+} from './demo-provider';
+export {
   createAssistantsService,
   type AssistantsService,
 } from './assistant-service';

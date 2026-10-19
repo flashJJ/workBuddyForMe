@@ -5,17 +5,19 @@ import { useProviders } from '@/lib/hooks/use-providers';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { CloudProviderPanel } from './cloud-provider-panel';
 import { OllamaPanel } from './ollama-panel';
+import { DemoProviderPanel } from './demo-provider-panel';
 
-type Tab = 'cloud' | 'ollama';
+type Tab = 'demo' | 'cloud' | 'ollama';
 
 /**
- * 向导第 2 步：二选一卡片（云端 API / 本地 Ollama）。
+ * 向导第 2 步：三选一来源（演示模式 / 本地 Ollama / 云端 API）。
+ * v2.4 M1 默认聚焦「演示模式」（不填 Key 最短路径），保留步骤 id `provider` 不变。
  * 复用正式供应商链路；已存在启用供应商时给提示但仍允许继续添加。
  */
 export function ProviderStep() {
   const { t } = useI18n();
   const { data: providers } = useProviders();
-  const [tab, setTab] = React.useState<Tab>('cloud');
+  const [tab, setTab] = React.useState<Tab>('demo');
   const [configured, setConfigured] = React.useState(false);
 
   // 重放向导时，已有启用供应商直接视为配置完成
@@ -58,15 +60,14 @@ export function ProviderStep() {
       )}
 
       <div className="flex gap-2" role="tablist" aria-label={t('onboarding.provider.heading')}>
-        {tabButton('cloud', t('onboarding.provider.tabCloud'), 'ob-tab-cloud')}
+        {tabButton('demo', t('onboarding.provider.tabDemo'), 'ob-tab-demo')}
         {tabButton('ollama', t('onboarding.provider.tabOllama'), 'ob-tab-ollama')}
+        {tabButton('cloud', t('onboarding.provider.tabCloud'), 'ob-tab-cloud')}
       </div>
 
-      {tab === 'cloud' ? (
-        <CloudProviderPanel onReady={() => setConfigured(true)} />
-      ) : (
-        <OllamaPanel onReady={() => setConfigured(true)} />
-      )}
+      {tab === 'demo' && <DemoProviderPanel onReady={() => setConfigured(true)} />}
+      {tab === 'ollama' && <OllamaPanel onReady={() => setConfigured(true)} />}
+      {tab === 'cloud' && <CloudProviderPanel onReady={() => setConfigured(true)} />}
     </div>
   );
 }

@@ -3,6 +3,8 @@ import type { ProviderProtocol } from '@wbfm/shared/constants';
 import { newId, nowIso, mapProvider, type ProviderRecord, type ProviderRow } from './mappers';
 
 export interface ProviderCreateFields {
+  /** 缺省自动生成；显式传入用于内置（固定 id 幂等）供应商，如 v2.4 的 demo 供应商 */
+  id?: string;
   name: string;
   protocol: ProviderProtocol;
   baseUrl: string;
@@ -35,7 +37,7 @@ export function createProviderRepository(db: DatabaseInstance) {
 
   return {
     create(fields: ProviderCreateFields): ProviderRecord {
-      const id = newId();
+      const id = fields.id ?? newId();
       const ts = nowIso();
       db.prepare(
         `INSERT INTO providers
