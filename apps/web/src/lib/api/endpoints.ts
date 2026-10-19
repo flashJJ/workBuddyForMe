@@ -10,6 +10,8 @@ export const API = {
   settings: '/api/settings',
   /** v2.4 M1：本机 Ollama 提前探测（向导来源置顶） */
   systemOllama: '/api/system/ollama',
+  /** v2.4 T4：本机 Ollama 推荐模型一键拉取（SSE 进度） */
+  systemOllamaPull: '/api/system/ollama/pull',
   assistants: '/api/assistants',
   assistant: (id: string) => `/api/assistants/${id}`,
   assistantReorder: '/api/assistants/reorder',

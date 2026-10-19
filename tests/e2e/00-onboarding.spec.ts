@@ -37,7 +37,9 @@ test.describe('M5 首启体验', () => {
     await page.getByTestId('ob-enter').click();
     await expect(dialog).toBeHidden();
 
-    // 设置已落盘（弹窗隐藏是乐观更新，落盘 PUT 在冷编译下可能稍晚，轮询读不抢跑）
+    // 设置已落盘（弹窗隐藏是乐观更新，落盘 PUT 在冷编译下可能稍晚，轮询读不抢跑）。
+    // 向导在 v2.4 变长（新增演示/延迟自检/firstAsk/本地拉取），首个用例的冷编译明显更久，
+    // 轮询窗口放宽到 30s——断言的是「最终落盘」，不是编译速度。
     await expect
       .poll(
         async () => {
@@ -45,7 +47,7 @@ test.describe('M5 首启体验', () => {
           const body = (await settings.json()) as { data: { hasOnboarded: boolean } };
           return body.data.hasOnboarded;
         },
-        { timeout: 10_000 },
+        { timeout: 30_000 },
       )
       .toBe(true);
 

@@ -38,6 +38,11 @@ export {
   OLLAMA_PROBE_TIMEOUT_MS,
 } from './ollama-probe';
 export {
+  streamOllamaPull,
+  type OllamaPullProgress,
+  type OllamaPullOptions,
+} from './ollama-pull';
+export {
   probeFirstToken,
   FIRST_TOKEN_PROBE_PROMPT,
   FIRST_TOKEN_PROBE_TIMEOUT_MS,

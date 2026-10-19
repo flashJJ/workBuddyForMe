@@ -64,6 +64,19 @@ export const zhOnboarding = {
       title: '推荐模型（一键添加，可跳过）',
       addFailed: '模型添加失败：{message}',
     },
+    // v2.4 P0-1（T4）：可执行安装指引 + 推荐模型一键拉取（体积/耗时明示）
+    installWingetLead: 'Windows 也可用命令行安装（需 winget）：',
+    installWinget: 'winget install --id Ollama.Ollama',
+    recommendedTitle: '推荐模型（一键拉取到本机，明示体积与耗时）',
+    sizeLabel: '约 {gb} GB',
+    etaFast: '预计几分钟（视网速）',
+    etaMedium: '预计数分钟到十几分钟（视网速）',
+    pull: '一键拉取',
+    pulling: '拉取中（总量未知）…',
+    pullPercent: '已下载 {percent}%',
+    pulled: '已拉取完成',
+    pullFailed: '拉取失败：{message}',
+    pullCancel: '取消',
   },
   // v2.4 M1 T5 首字延迟自检（M0 §6 冻结分档）
   latency: {
@@ -172,6 +185,19 @@ export const enOnboarding = {
       title: 'Recommended models (one click to add, or skip)',
       addFailed: 'Failed to add model: {message}',
     },
+    // v2.4 P0-1 (T4) executable install guide + one-click model pull (size/ETA shown)
+    installWingetLead: 'On Windows you can also install via the command line (winget):',
+    installWinget: 'winget install --id Ollama.Ollama',
+    recommendedTitle: 'Recommended models (one click to pull, size and ETA shown)',
+    sizeLabel: 'about {gb} GB',
+    etaFast: 'A few minutes (depends on your connection)',
+    etaMedium: 'Several to a dozen minutes (depends on your connection)',
+    pull: 'Pull now',
+    pulling: 'Pulling (total unknown)…',
+    pullPercent: 'Downloaded {percent}%',
+    pulled: 'Pulled',
+    pullFailed: 'Pull failed: {message}',
+    pullCancel: 'Cancel',
   },
   // v2.4 M1 T5 time-to-first-token check (M0 §6 frozen tiers)
   latency: {
