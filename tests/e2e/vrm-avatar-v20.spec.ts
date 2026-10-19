@@ -3,7 +3,7 @@ import { waitForHydrated } from './utils';
 
 /**
  * v2.0 M4 VRM 导入 e2e。
- * 导入向导 UI + 服务端魔数/VRM 扩展双校验 + 已导入列表 + 形象选择器 VRM optgroup。
+ * 导入向导 UI + 服务端魔数/VRM 扩展双校验 + 已导入列表 + 形象选择器 VRM 分组。
  * 真实可渲染 VRM 模型的 three.js 舞台混排由 spike 页与单测覆盖，本规格只锁导入链路。
  */
 
@@ -150,7 +150,7 @@ test.describe.serial('v2.0 M4 VRM 形象导入', () => {
     await expect(page.getByTestId('vrm-avatar-list')).toContainText('合法VRM', { timeout: 15_000 });
   });
 
-  test('已导入 VRM 出现在形象选择器 optgroup 中，选中后持久化', async ({ page, request }) => {
+  test('已导入 VRM 出现在形象选择器的 VRM 分组中，选中后持久化', async ({ page, request }) => {
     // 先确保有一条 VRM 记录
     const listRes = await request.get('/api/vrm-avatars');
     const listData = (await listRes.json()) as { data?: { avatars?: Array<{ id: string; fileRef: string }> } };
@@ -165,6 +165,15 @@ test.describe.serial('v2.0 M4 VRM 形象导入', () => {
         },
       );
     }
+    // 读出（或种下后重新读出）VRM 记录：选项文案为记录名，value 形如 `vrm:<fileRef>`
+    const refreshed = (await request.get('/api/vrm-avatars').then((r) => r.json())) as {
+      data?: { avatars?: Array<{ name: string; fileRef: string }> };
+    };
+    const vrmAvatar = refreshed.data?.avatars?.[0];
+    expect(vrmAvatar).toBeTruthy();
+    const vrmName = vrmAvatar!.name;
+    const value = `vrm:${vrmAvatar!.fileRef}`;
+    expect(value).toMatch(/^vrm:/);
 
     await gotoSettings(page);
     // 默认 avatarEnabled=false，形象选择器被条件渲染挡掉——先勾选开启
@@ -174,13 +183,12 @@ test.describe.serial('v2.0 M4 VRM 形象导入', () => {
     }
     const modelSelect = page.getByTestId('avatar-model');
     await expect(modelSelect).toBeVisible();
-    // VRM optgroup 出现（option 在 select 收起时视为 hidden，只断言存在性）
-    const vrmOption = modelSelect.locator('optgroup').nth(1).locator('option').first();
-    await expect(vrmOption).toBeAttached();
-    const value = await vrmOption.getAttribute('value');
-    expect(value).toMatch(/^vrm:/);
+    // v2.3 起下拉为 Radix listbox，不再渲染 optgroup/option：打开后按可访问名定位该 VRM 选项
+    await modelSelect.click();
+    const vrmOption = page.getByRole('option', { name: vrmName });
+    await expect(vrmOption).toBeVisible();
+    await vrmOption.click();
     // 选中后轮询 settings 直到 avatarModelId 落库（不依赖响应捕获，避免冷编译时序）
-    await modelSelect.selectOption(value!);
     await expect
       .poll(
         async () => {

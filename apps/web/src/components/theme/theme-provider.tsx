@@ -65,6 +65,12 @@ export function ThemeProvider({
   themeIdRef.current = themeId;
   const resolvedThemeRef = React.useRef(resolvedTheme);
   resolvedThemeRef.current = resolvedTheme;
+  /**
+   * 用户在初始水合响应返回前就改过主题：以用户意图为准。
+   * 慢响应（弱机/CI 高负载）可能在点击之后才回来，若照单校正会把刚切好的主题
+   * 回滚成旧值（表现为「点了没反应」）。
+   */
+  const userOverriddenRef = React.useRef(false);
 
   // 首屏：先按 localStorage 缓存应用（与内联脚本一致），避免水合前空窗
   React.useEffect(() => {
@@ -81,7 +87,8 @@ export function ThemeProvider({
     let cancelled = false;
     void apiGet<AppSettings>(API.settings)
       .then((settings) => {
-        if (cancelled) return;
+        // 用户已抢先改过主题：不回灌服务端旧值，避免覆盖用户选择
+        if (cancelled || userOverriddenRef.current) return;
         const nextId = settings.themeId ?? DEFAULT_THEME_ID;
         setThemeState(settings.theme);
         setThemeIdState(nextId);
@@ -121,6 +128,7 @@ export function ThemeProvider({
   }, []);
 
   const setTheme = React.useCallback((next: ThemePreference) => {
+    userOverriddenRef.current = true;
     const previous = localStorage.getItem(THEME_STORAGE_KEY) as ThemePreference | null;
     setThemeState(next);
     localStorage.setItem(THEME_STORAGE_KEY, next);
@@ -136,6 +144,7 @@ export function ThemeProvider({
   }, []);
 
   const setThemeId = React.useCallback((nextId: ThemeId) => {
+    userOverriddenRef.current = true;
     const previous = localStorage.getItem(THEME_ID_STORAGE_KEY) as ThemeId | null;
     setThemeIdState(nextId);
     localStorage.setItem(THEME_ID_STORAGE_KEY, nextId);

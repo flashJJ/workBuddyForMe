@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 
 /**
  * M2 语音输入全链路 E2E（mock 语音引擎，真 mic 采集链路）：
@@ -114,7 +114,7 @@ test.describe.serial('M2 语音输入（ASR）', () => {
     await card.getByRole('button', { name: '添加', exact: true }).click();
     await expect(page.getByText('已添加模型 voice-chat')).toBeVisible();
 
-    await page.getByLabel('默认对话模型').selectOption({ label: 'voice-chat（voice-chat）' });
+    await chooseOption(page, page.getByLabel('默认对话模型'), 'voice-chat（voice-chat）');
     await expect(page.getByText('设置已保存').first()).toBeVisible();
   });
 

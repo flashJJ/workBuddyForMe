@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 
 /**
  * M4 免手持续聆听（VAD）E2E：
@@ -173,7 +173,7 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
     await card.locator('[id^="model-id-"]').fill('vad-chat');
     await card.getByRole('button', { name: '添加', exact: true }).click();
     await expect(page.getByText('已添加模型 vad-chat')).toBeVisible();
-    await page.getByLabel('默认对话模型').selectOption({ label: 'vad-chat（vad-chat）' });
+    await chooseOption(page, page.getByLabel('默认对话模型'), 'vad-chat（vad-chat）');
     await expect(page.getByText('设置已保存').first()).toBeVisible();
   });
 
@@ -189,7 +189,8 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
     // 选中态 + 高级参数展开
     await expect(vadButton).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('voice-vad-params')).toBeVisible();
-    await expect(page.getByTestId('voice-vad-sensitivity')).toHaveValue('balanced');
+    // v2.3：原生 select 已换 Radix，断言选中项文案而非表单值
+    await expect(page.getByTestId('voice-vad-sensitivity')).toHaveText('均衡（大多数环境）');
   });
 
   test('③ 免手武装后自动聆听：VAD 段→ASR→消息自动发送并收到回复', async ({ page }) => {

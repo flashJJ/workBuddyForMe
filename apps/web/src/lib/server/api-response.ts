@@ -28,9 +28,28 @@ export function fromZodError(error: ZodError): ApiError {
   );
 }
 
+/**
+ * `ApiError` 可能来自另一份打包副本（workspace 包经 ESM/CJS 双条件解析，
+ * 跨 chunk 时 `instanceof` 会失效），故先用结构判定兜底再走领域错误分支。
+ */
+function asApiError(error: unknown): ApiError | null {
+  if (error instanceof ApiError) return error;
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    typeof (error as ApiError).toBody === 'function' &&
+    typeof (error as ApiError).code === 'string' &&
+    typeof (error as ApiError).status === 'number'
+  ) {
+    return error as ApiError;
+  }
+  return null;
+}
+
 /** 未知错误兜底：业务错误透传，供应商错误按领域码归一，Zod 转 422，其余 500 并记录服务端日志 */
 export function toErrorResponse(error: unknown): Response {
-  if (error instanceof ApiError) return jsonError(error);
+  const apiError = asApiError(error);
+  if (apiError) return jsonError(apiError);
   if (error instanceof ProviderError) {
     return jsonError(new ApiError(error.code, error.message));
   }

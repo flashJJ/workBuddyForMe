@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 
 /**
  * v2.0 M3 主动感知 2.0 e2e：
@@ -142,7 +142,12 @@ test.describe.serial('v2.0 M3 主动感知：系统事件授权与上下文剧�
   test('原始信号不落盘：tick 仅写边沿去重状态（无 unlock/lock/idle 流水）', async ({ page }) => {
     await page.goto('/chat');
     await waitForHydrated(page);
-    await page.getByLabel('切换助手').selectOption({ label: ASSISTANT_NAME });
+    await chooseOption(page, page.getByLabel('切换助手'), ASSISTANT_NAME);
+
+    // 上面的下拉是 Radix 组合件，点击会触发 pointerdown 并被记为一次离散活动，
+    // 使 tick 判定「当下活跃」而起工作段；本用例前提是「全新库无持续工作段」，
+    // 故清除活动标记还原空闲口径（纯浏览器无系统空闲样本，回落应用内活动）。
+    await page.evaluate(() => window.localStorage.removeItem('wbfm.event.lastActivityAt.v1'));
 
     // 首个 60s tick 后落边沿状态（evaluate 与开关无关，始终归约）
     await expect

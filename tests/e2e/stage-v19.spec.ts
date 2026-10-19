@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 
 /**
  * v1.9 M1 舞台骨架 e2e（mock cast 可演）：
@@ -74,14 +74,15 @@ test.describe.serial('v1.9 M1 舞台骨架（mock cast）', () => {
       await expect(page.getByTestId(`stage-actor-${slot}`)).toHaveAttribute('data-live', 'true');
     }
 
-    await page.getByTestId('stage-power-mode').selectOption('portrait');
+    // 省电档（stage.power.portrait）：点触发器 → 按文案选
+    await chooseOption(page, page.getByTestId('stage-power-mode'), '省电档（仅发言者 Live2D）');
     await expect(page.getByTestId('stage-actor-center')).toHaveAttribute('data-live', 'true');
     await expect(page.getByTestId('stage-actor-left')).toHaveAttribute('data-live', 'false');
     await expect(page.getByTestId('stage-actor-right')).toHaveAttribute('data-live', 'false');
     await expect(page.getByTestId('stage-portrait-left')).toBeVisible();
     await expect(page.getByTestId('stage-portrait-right')).toBeVisible();
-    // 切回全 live 恢复
-    await page.getByTestId('stage-power-mode').selectOption('live');
+    // 切回全 live（stage.power.live）恢复
+    await chooseOption(page, page.getByTestId('stage-power-mode'), '全 Live2D（高性能）');
     await expect(page.getByTestId('stage-actor-left')).toHaveAttribute('data-live', 'true');
   });
 
@@ -103,8 +104,8 @@ test.describe.serial('v1.9 M1 舞台骨架（mock cast）', () => {
 
   test('场景保存/读取/删除走真实 API', async ({ page, request }) => {
     await openStage(page);
-    // 改背景为纯蓝，保存命名场景
-    await page.getByLabel('背景类型').selectOption('solid');
+    // 改背景为纯蓝（stage.bg.solid），保存命名场景
+    await chooseOption(page, page.getByLabel('背景类型'), '纯色');
     await page.locator('input[type="color"]').first().fill('#123abc');
     await page.getByLabel('场景名称').fill('e2e 舞台场景');
     await page.getByTestId('stage-scene-save').click();
@@ -117,10 +118,14 @@ test.describe.serial('v1.9 M1 舞台骨架（mock cast）', () => {
     const saved = body.data.find((s) => s.name === 'e2e 舞台场景');
     expect(saved?.payload.background.color?.toLowerCase()).toBe('#123abc');
 
-    // 改回默认背景后从下拉读取，颜色被还原
-    await page.getByLabel('背景类型').selectOption('builtin');
+    // 改回默认背景（stage.bg.builtinLabel）后从下拉读取，颜色被还原
+    await chooseOption(page, page.getByLabel('背景类型'), '内置预设');
     await page.getByLabel('场景名称').fill('');
-    await page.getByLabel('读取场景').selectOption(saved!.id);
+    // Radix 对「重选已选中项」不触发 onValueChange（useControllableState 同值短路），
+    // 保存后该场景已在读档下拉中选中，先切回空项再选场景，确保 load 被调用
+    await chooseOption(page, page.getByLabel('读取场景'), '（未保存场景）');
+    // 选项文案即场景名（option value 为 saved.id）
+    await chooseOption(page, page.getByLabel('读取场景'), 'e2e 舞台场景');
     await expect(page.locator('input[type="color"]').first()).toHaveValue('#123abc');
   });
 

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, selectedText, waitForHydrated } from './utils';
 
 /**
  * v1.8 M3 调优中心 e2e（依赖同数据根先执行的 critical-path/persona-cards：
@@ -32,8 +32,8 @@ async function ensureCardAssistant(page: Page): Promise<void> {
   await page.getByRole('button', { name: '编辑' }).last().click();
   const select = page.getByTestId('assistant-card-select');
   await expect(select).toBeVisible();
-  if ((await select.inputValue()) === '') {
-    await select.selectOption({ label: 'E2E口令卡' });
+  if ((await selectedText(select)) === '默认卡（不使用角色卡）') {
+    await chooseOption(page, select, 'E2E口令卡');
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByText('助手已更新')).toBeVisible();
   } else {
@@ -70,21 +70,26 @@ test.describe.serial('v1.8 调优中心', () => {
     await page.getByTestId('tuning-context-range').blur();
 
     const enabled = page.getByTestId('tuning-append-enabled');
-    const enablePut = page.waitForRequest(
+    // 等响应而非仅等请求发出：后续会跳转页面，在途 PUT 会被导航中止（服务端未落库）
+    const enablePut = page.waitForResponse(
       (r) =>
-        r.url().includes('/api/settings') && r.method() === 'PUT' && r.postDataJSON().globalAppendPromptEnabled === true,
+        r.url().includes('/api/settings') &&
+        r.request().method() === 'PUT' &&
+        r.request().postDataJSON().globalAppendPromptEnabled === true &&
+        r.ok(),
     );
     await enabled.check();
     await enablePut;
 
     const text = page.getByTestId('tuning-append-text');
     await text.fill('追加口令 E2E_APPEND_MARKER_Y8，回答保持简洁。');
-    const textPut = page.waitForRequest(
+    const textPut = page.waitForResponse(
       (r) =>
         r.url().includes('/api/settings') &&
-        r.method() === 'PUT' &&
-        typeof r.postDataJSON().globalAppendPrompt === 'string' &&
-        r.postDataJSON().globalAppendPrompt.includes('E2E_APPEND_MARKER_Y8'),
+        r.request().method() === 'PUT' &&
+        typeof r.request().postDataJSON().globalAppendPrompt === 'string' &&
+        r.request().postDataJSON().globalAppendPrompt.includes('E2E_APPEND_MARKER_Y8') &&
+        r.ok(),
     );
     await text.blur();
     await textPut;
@@ -95,7 +100,7 @@ test.describe.serial('v1.8 调优中心', () => {
     // 下一轮对话：身份卡（marker）+ 全局追加（append）同时入模
     await page.goto('/chat');
     await waitForHydrated(page);
-    await page.getByLabel('切换助手').selectOption({ label: '🤖 卡面助手' });
+    await chooseOption(page, page.getByLabel('切换助手'), '🤖 卡面助手');
     await page.getByLabel('消息输入框').fill('[eval-persona]');
     await page.getByLabel('消息输入框').press('Enter');
     await expect(page.getByText('persona=card|marker=hit|append=hit').first()).toBeVisible();
@@ -103,16 +108,19 @@ test.describe.serial('v1.8 调优中心', () => {
     // 关闭后下一轮立即消失
     await page.goto('/settings');
     await waitForHydrated(page);
-    const disablePut = page.waitForRequest(
+    const disablePut = page.waitForResponse(
       (r) =>
-        r.url().includes('/api/settings') && r.method() === 'PUT' && r.postDataJSON().globalAppendPromptEnabled === false,
+        r.url().includes('/api/settings') &&
+        r.request().method() === 'PUT' &&
+        r.request().postDataJSON().globalAppendPromptEnabled === false &&
+        r.ok(),
     );
     await page.getByTestId('tuning-append-enabled').uncheck();
     await disablePut;
 
     await page.goto('/chat');
     await waitForHydrated(page);
-    await page.getByLabel('切换助手').selectOption({ label: '🤖 卡面助手' });
+    await chooseOption(page, page.getByLabel('切换助手'), '🤖 卡面助手');
     await page.getByLabel('消息输入框').fill('[eval-persona]');
     await page.getByLabel('消息输入框').press('Enter');
     await expect(page.getByText('persona=card|marker=hit|append=miss').first()).toBeVisible();

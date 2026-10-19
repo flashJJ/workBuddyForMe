@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 
 /**
  * v2.0 M5 收口 e2e：
@@ -218,7 +218,8 @@ test.describe.serial('v2.0 M5 .wbfm-pack 与关系报告', () => {
 
   test('双语：英文下面板与报告均为英文，切回中文恢复', async ({ page }) => {
     await gotoSettings(page);
-    await page.locator('#language-preference').selectOption('en-US');
+    // v2.3 Radix SimpleSelect：点触发器 → 按可访问名选选项（zhCN/enUS 文案两语言一致）
+    await chooseOption(page, page.locator('#language-preference'), 'English');
     await expect(page.getByText('Personalization packs')).toBeVisible();
 
     await page.getByRole('button', { name: 'Generate relationship report' }).click();
@@ -232,7 +233,7 @@ test.describe.serial('v2.0 M5 .wbfm-pack 与关系报告', () => {
     expect(html).toContain('<html lang="en-US"');
     expect(html).toContain('Relationship Report');
 
-    await page.locator('#language-preference').selectOption('zh-CN');
+    await chooseOption(page, page.locator('#language-preference'), '简体中文');
     await expect(page.getByText('个性化内容包')).toBeVisible();
   });
 });

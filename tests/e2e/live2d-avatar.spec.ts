@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, optionTexts, waitForHydrated } from './utils';
 
 /**
  * M3 Live2D 形象 e2e：
@@ -39,7 +39,7 @@ test.describe.serial('M3 Live2D 形象', () => {
     await card.getByRole('button', { name: '添加', exact: true }).click();
     await expect(page.getByText('已添加模型 l2d-chat')).toBeVisible();
 
-    await page.getByLabel('默认对话模型').selectOption({ label: 'l2d-chat（l2d-chat）' });
+    await chooseOption(page, page.getByLabel('默认对话模型'), 'l2d-chat（l2d-chat）');
     await expect(page.getByText('设置已保存').first()).toBeVisible();
   });
 
@@ -124,12 +124,13 @@ test.describe.serial('M3 Live2D 形象', () => {
 
     const select = page.getByTestId('avatar-model');
     await expect(select).toBeVisible();
-    const options = await select.locator('option').allInnerTexts();
+    const options = await optionTexts(page, select);
     expect(options).toHaveLength(5);
     expect(options.join('|')).toContain('Hiyori');
     expect(options.join('|')).toContain('Mark');
 
-    // 切换到 Hiyori：用请求体精确匹配切模型 PUT（开关 PUT 已在前面消费）
+    // 切换到 Hiyori（选项文案来自 avatar-models.ts 的 avatar.models.hiyori，经 t() 渲染）：
+    // 用请求体精确匹配切模型 PUT（开关 PUT 已在前面消费）
     const putPromise = page
       .waitForResponse((r) => {
         if (!r.url().includes('/api/voice/settings') || r.request().method() !== 'PUT') {
@@ -138,7 +139,7 @@ test.describe.serial('M3 Live2D 形象', () => {
         return r.request().postDataJSON()?.avatarModelId === 'hiyori';
       })
       .then((r) => r.json());
-    await select.selectOption('hiyori');
+    await chooseOption(page, select, 'Hiyori · 百濑日和（休闲少女）');
     const payload = await putPromise;
     expect(payload.success).toBe(true);
     expect(payload.data.avatarModelId).toBe('hiyori');

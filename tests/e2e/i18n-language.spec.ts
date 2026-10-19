@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { chooseOption } from './utils';
 
 test.describe('i18n 语言切换（v1.2 M4）', () => {
   // 前序 spec 异常可能留下 en-US（如本用例中途失败），入口先复位为中文保证可重入
@@ -13,8 +14,8 @@ test.describe('i18n 语言切换（v1.2 M4）', () => {
     // 中文默认：导航与跳过链接为中文
     await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible();
 
-    // 切换 English（原生 select）
-    await page.locator('#language-preference').selectOption('en-US');
+    // 切换 English（v2.3 Radix SimpleSelect：点触发器 → 按可访问名选选项）
+    await chooseOption(page, page.locator('#language-preference'), 'English');
 
     // 即时生效，无需刷新（FAQ 锚点 chip 文案可能含 Chat 等词，导航断言用 exact）
     await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
@@ -50,7 +51,7 @@ test.describe('i18n 语言切换（v1.2 M4）', () => {
     await expect(page.getByRole('link', { name: 'Chat', exact: true })).toBeVisible();
 
     // 切回中文
-    await page.locator('#language-preference').selectOption('zh-CN');
+    await chooseOption(page, page.locator('#language-preference'), '简体中文');
     await expect(page.getByRole('link', { name: '对话', exact: true })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   });

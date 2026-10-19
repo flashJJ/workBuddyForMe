@@ -1,5 +1,5 @@
 import { expect, test, type Page, type APIRequestContext, type APIResponse } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, chooseOptionByIndex, waitForHydrated } from './utils';
 
 /**
  * v1.8 M2 角色卡库 e2e：
@@ -117,7 +117,7 @@ test.describe.serial('v1.8 角色卡库', () => {
     await page.getByRole('button', { name: '新建助手' }).click();
     await page.getByLabel('名称').fill('卡面助手');
     const select = page.getByTestId('assistant-card-select');
-    await select.selectOption({ label: 'E2E口令卡' });
+    await chooseOption(page, select, 'E2E口令卡');
     const promptBox = page.locator('#assistant-prompt');
     await expect(promptBox).toBeDisabled();
     await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -125,7 +125,7 @@ test.describe.serial('v1.8 角色卡库', () => {
 
     // 重开编辑：选卡状态持久
     await page.getByRole('button', { name: '编辑' }).last().click();
-    await expect(page.getByTestId('assistant-card-select')).toHaveValue(/./);
+    await expect(page.getByTestId('assistant-card-select')).toHaveText('E2E口令卡');
     await expect(promptBox).toBeDisabled();
     await page.getByRole('button', { name: '取消' }).click();
   });
@@ -133,7 +133,7 @@ test.describe.serial('v1.8 角色卡库', () => {
   test('换卡立即对话：选卡轮次口令入模；切回默认卡下一轮立即生效', async ({ page, request }) => {
     test.skip((await ensureChatModel(request)) === false, '缺少对话模型（需先运行 critical-path ①）');
     await gotoPage(page, '/chat');
-    await page.getByLabel('切换助手').selectOption({ label: '🤖 卡面助手' });
+    await chooseOption(page, page.getByLabel('切换助手'), '🤖 卡面助手');
 
     await page.getByLabel('消息输入框').fill('[eval-persona]');
     await page.getByLabel('消息输入框').press('Enter');
@@ -142,7 +142,7 @@ test.describe.serial('v1.8 角色卡库', () => {
     // 切回默认卡（需要二次确认）
     await gotoPage(page, '/assistants');
     await page.getByRole('button', { name: '编辑' }).last().click();
-    await page.getByTestId('assistant-card-select').selectOption({ index: 0 });
+    await chooseOptionByIndex(page, page.getByTestId('assistant-card-select'), 0);
     await page.getByRole('button', { name: '确认' }).click();
     await expect(page.locator('#assistant-prompt')).toBeEnabled();
     await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -150,7 +150,7 @@ test.describe.serial('v1.8 角色卡库', () => {
 
     // 下一轮对话立即按默认（原文）模式组装（重载后选择器回到首位，需重新选中该助手）
     await gotoPage(page, '/chat');
-    await page.getByLabel('切换助手').selectOption({ label: '🤖 卡面助手' });
+    await chooseOption(page, page.getByLabel('切换助手'), '🤖 卡面助手');
     await page.getByLabel('消息输入框').fill('[eval-persona]');
     await page.getByLabel('消息输入框').press('Enter');
     await expect(page.getByText('persona=raw|marker=miss').first()).toBeVisible();

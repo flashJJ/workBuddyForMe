@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { mkdtempSync, readFileSync } from 'node:fs';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -51,8 +51,8 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     await expect(page.getByText('连接成功')).toBeVisible();
 
     // 设为默认对话/向量模型
-    await page.getByLabel('默认对话模型').selectOption({ label: 'mock-chat（mock-chat）' });
-    await page.getByLabel('默认向量模型（知识库）').selectOption({ label: 'mock-embed（mock-embed）' });
+    await chooseOption(page, page.getByLabel('默认对话模型'), 'mock-chat（mock-chat）');
+    await chooseOption(page, page.getByLabel('默认向量模型（知识库）'), 'mock-embed（mock-embed）');
     await expect(page.getByText('设置已保存').first()).toBeVisible();
   });
 
@@ -92,6 +92,11 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByText('知识库已创建')).toBeVisible();
 
+    // v2.3 起内置知识库模板（产品需求/会议纪要/研究资料）会先播种，侧栏默认选中的是
+    // 首个库而非新建库；上传前显式选中「产品资料库」，否则文档会落进模板库
+    await page.getByRole('button', { name: '产品资料库' }).first().click();
+    await expect(page.getByRole('heading', { name: '产品资料库' })).toBeVisible();
+
     await page
       .getByLabel('选择文档上传')
       .setInputFiles({
@@ -115,7 +120,7 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     await expect(page.getByText('助手已更新')).toBeVisible();
 
     await page.goto('/chat');
-    await page.getByLabel('切换助手').selectOption({ label: '🤖 知识助手' });
+    await chooseOption(page, page.getByLabel('切换助手'), '🤖 知识助手');
     await page.getByLabel('消息输入框').fill('量子咖啡机的保修期是多久？');
     await page.getByLabel('消息输入框').press('Enter');
 
@@ -144,9 +149,7 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     await page.getByRole('button', { name: '添加', exact: true }).last().click();
     await expect(page.getByText('已添加模型 mock-vision')).toBeVisible();
 
-    await page
-      .getByLabel('默认对话模型')
-      .selectOption({ label: 'mock-vision（mock-vision）' });
+    await chooseOption(page, page.getByLabel('默认对话模型'), 'mock-vision（mock-vision）');
     await expect(page.getByText('设置已保存').first()).toBeVisible();
 
     await page.goto('/chat');

@@ -1,5 +1,5 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 
 /**
  * v2.0 M1/M2 关系等级与共同里程碑 e2e（WBFM_MOCK_AI 数据根）。
@@ -61,12 +61,13 @@ async function seedAssistant(
   return ((await res.json()) as { data: { id: string } }).data.id;
 }
 
-async function gotoSettings(page: Page, assistantId: string): Promise<void> {
+async function gotoSettings(page: Page): Promise<void> {
   await page.goto('/settings');
   await waitForHydrated(page);
   await skipOnboardingIfShown(page);
   await expect(page.getByTestId('relationship-panel')).toBeVisible();
-  await page.locator('#relationship-assistant-select').selectOption(assistantId);
+  // v2.3：Radix 下拉无原生 value 可选，按助手名选择（API 建的助手无 emoji，选项文案即助手名）
+  await chooseOption(page, page.locator('#relationship-assistant-select'), ASSISTANT_NAME);
   await expect(page.getByTestId('relationship-level-view')).toBeVisible();
 }
 
@@ -89,7 +90,7 @@ test.describe.serial('v2.0 关系等级与共同里程碑', () => {
   });
 
   test('默认态：开关开；全新助手=陌生、三档未解锁；六个里程碑全部未达成', async ({ page }) => {
-    await gotoSettings(page, assistantId);
+    await gotoSettings(page);
     await expect(page.getByTestId('relationship-enabled-toggle')).toBeChecked();
     await expect(page.getByTestId('relationship-current-level')).toContainText('陌生');
     await expect(page.locator('[data-testid^="relationship-level-row-"]')).toHaveCount(3);
@@ -102,7 +103,7 @@ test.describe.serial('v2.0 关系等级与共同里程碑', () => {
   });
 
   test('关闭：等级区隐藏；重载持久化；重开恢复', async ({ page }) => {
-    await gotoSettings(page, assistantId);
+    await gotoSettings(page);
     await page.getByTestId('relationship-enabled-toggle').uncheck();
     await expect(page.getByTestId('relationship-level-view')).toHaveCount(0);
     await page.reload();
@@ -116,7 +117,7 @@ test.describe.serial('v2.0 关系等级与共同里程碑', () => {
     // 驱动一轮真实 mock 对话（emotion record → emotion_events 最早正向事件 → 懒评估）
     await page.goto('/chat');
     await waitForHydrated(page);
-    await page.getByLabel('切换助手').selectOption({ label: ASSISTANT_NAME });
+    await chooseOption(page, page.getByLabel('切换助手'), ASSISTANT_NAME);
     await page.getByLabel('消息输入框').fill('今天辛苦啦，谢谢你帮我');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect(page.getByText(/mock 模型/).first()).toBeVisible({ timeout: 30_000 });
@@ -135,7 +136,7 @@ test.describe.serial('v2.0 关系等级与共同里程碑', () => {
       )
       .toBeTruthy();
 
-    await gotoSettings(page, assistantId);
+    await gotoSettings(page);
     const row = page.getByTestId('relationship-milestone-row-day1');
     await expect(row).not.toContainText('尚未达成', { timeout: 20_000 });
     await expect(row).toContainText('达成');

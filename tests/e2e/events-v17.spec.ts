@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOptionByIndex, waitForHydrated } from './utils';
 
 /**
  * v1.7 M5 剧情演出设置抽测：
@@ -57,8 +57,8 @@ test.describe.serial('v1.7 剧情演出与自定义短语（M5）', () => {
     const form = page.getByTestId('custom-trigger-form');
     await expect(form).toBeVisible();
 
-    // 归属助手（首个真实选项）+ 两条短语；剧本保持默认
-    await page.getByTestId('custom-trigger-assistant').selectOption({ index: 1 });
+    // 归属助手（首个真实选项，index 0 为禁用的占位项）+ 两条短语；剧本保持默认
+    await chooseOptionByIndex(page, page.getByTestId('custom-trigger-assistant'), 1);
     await page.getByTestId('custom-trigger-phrases').fill('夸夸我\n辛苦了');
     await page.getByRole('button', { name: '保存' }).click();
 
@@ -76,7 +76,13 @@ test.describe.serial('v1.7 剧情演出与自定义短语（M5）', () => {
     await expect(page.getByTestId(/^custom-trigger-row-/)).toContainText('「夸夸我」');
 
     // 启停：取消勾选后持久化为停用
+    // 乐观 UI 会立即回弹为未选中，必须等 PATCH 落库后再 reload，
+    // 否则 reload 会中止在途请求，服务端仍为启用态
+    const disablePatch = page.waitForResponse(
+      (r) => r.url().includes('/api/event-triggers/') && r.request().method() === 'PATCH' && r.ok(),
+    );
     await page.getByRole('checkbox', { name: '启用该规则' }).uncheck();
+    await disablePatch;
     await page.reload();
     await waitForHydrated(page);
     await expect(page.getByRole('checkbox', { name: '启用该规则' })).not.toBeChecked();
@@ -92,7 +98,8 @@ test.describe.serial('v1.7 剧情演出与自定义短语（M5）', () => {
 
   test('打扰率统计：选择助手后展示三指标与无数据文案', async ({ page }) => {
     await gotoSettings(page);
-    await page.getByTestId('event-usage-assistant').selectOption({ index: 1 });
+    // 首个真实助手（index 0 为禁用的占位项）
+    await chooseOptionByIndex(page, page.getByTestId('event-usage-assistant'), 1);
     await expect(page.getByText('这段时间还没有演出记录。')).toBeVisible();
     // 空库下完整演出为 0，比率无数据显示 —
     await expect(page.getByTestId('event-usage-stats')).toContainText('0');

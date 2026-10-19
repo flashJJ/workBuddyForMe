@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { chooseOption, waitForHydrated } from './utils';
 
 /**
  * v1.3 知识链路 E2E（TR-5.3）：WBFM_MOCK_AI=1，编译/静态引用/同名替换/治理全链路。
@@ -106,8 +106,8 @@ test.describe.serial('v1.3 知识链路', () => {
     await providerCard.getByRole('button', { name: '添加', exact: true }).click();
     await expect(page.getByText('已添加模型 mock-embed')).toBeVisible();
 
-    await page.getByLabel('默认对话模型').selectOption({ label: 'mock-chat（mock-chat）' });
-    await page.getByLabel('默认向量模型（知识库）').selectOption({ label: 'mock-embed（mock-embed）' });
+    await chooseOption(page, page.getByLabel('默认对话模型'), 'mock-chat（mock-chat）');
+    await chooseOption(page, page.getByLabel('默认向量模型（知识库）'), 'mock-embed（mock-embed）');
     await expect(page.getByText('设置已保存').first()).toBeVisible();
 
     // 助手
@@ -152,7 +152,7 @@ test.describe.serial('v1.3 知识链路', () => {
 
     // 提问：mock 回显检索第一命中（编译层实体条目置顶）
     await page.goto('/chat');
-    await page.getByLabel('切换助手').selectOption({ label: `🤖 ${ASSISTANT_NAME}` });
+    await chooseOption(page, page.getByLabel('切换助手'), `🤖 ${ASSISTANT_NAME}`);
     await page.getByLabel('消息输入框').fill(QUESTION);
     await page.getByLabel('消息输入框').press('Enter');
 
@@ -187,7 +187,7 @@ test.describe.serial('v1.3 知识链路', () => {
 
     // 提问验证新内容生效、旧内容零残留
     await page.goto('/chat');
-    await page.getByLabel('切换助手').selectOption({ label: `🤖 ${ASSISTANT_NAME}` });
+    await chooseOption(page, page.getByLabel('切换助手'), `🤖 ${ASSISTANT_NAME}`);
     await page.getByLabel('消息输入框').fill(QUESTION);
     await page.getByLabel('消息输入框').press('Enter');
 

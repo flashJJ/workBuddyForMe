@@ -1,4 +1,5 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
+import { chooseOption } from './utils';
 
 /**
  * 服务端系统文案以 system-message 线格式（SOH + {k,vars} + STX）语言中立持久化。
@@ -160,11 +161,11 @@ async function skipOnboarding(page: Page): Promise<void> {
   }
 }
 
-async function openChatWithAssistant(page: Page, assistantId: string): Promise<void> {
+async function openChatWithAssistant(page: Page): Promise<void> {
   await page.goto('/chat');
   await skipOnboarding(page);
-  // 按 value（assistantId）选择，避免依赖 emoji 前缀（API 建的助手无 emoji）
-  await page.getByLabel('切换助手').selectOption(assistantId);
+  // v2.3 起切换助手为 Radix 下拉，无原生 value 可选；按助手名选择（API 建的助手无 emoji，选项文案即助手名）
+  await chooseOption(page, page.getByLabel('切换助手'), ASSISTANT_NAME);
   await expect(page.getByTestId('task-mode-toggle')).toBeVisible();
 }
 
@@ -211,7 +212,7 @@ test.describe.serial('v1.4 多智能体协作', () => {
   });
 
   test('⓪ 任务模式关闭时普通对话路径零变化（走常规对话流，无协作卡）', async ({ page }) => {
-    await openChatWithAssistant(page, seeded.assistantId);
+    await openChatWithAssistant(page);
     await page.getByLabel('消息输入框').fill('你好呀');
     await page.getByLabel('消息输入框').press('Enter');
 
@@ -224,7 +225,7 @@ test.describe.serial('v1.4 多智能体协作', () => {
   });
 
   test('① 一次通过：泳道卡一轮完成并交付结论', async ({ page }) => {
-    await openChatWithAssistant(page, seeded.assistantId);
+    await openChatWithAssistant(page);
     await page.getByTestId('task-mode-toggle').click();
     await page.getByLabel('消息输入框').fill('查证年假有多少天 [conclusion:年假15天]');
     await page.getByLabel('消息输入框').press('Enter');
@@ -239,7 +240,7 @@ test.describe.serial('v1.4 多智能体协作', () => {
   });
 
   test('② 返工一次：revise 后出现第二轮泳道组', async ({ page }) => {
-    await openChatWithAssistant(page, seeded.assistantId);
+    await openChatWithAssistant(page);
     await page.getByTestId('task-mode-toggle').click();
     await page.getByLabel('消息输入框').fill('查证年假天数 [review:revise-once] [conclusion:年假15天]');
     await page.getByLabel('消息输入框').press('Enter');
@@ -254,7 +255,7 @@ test.describe.serial('v1.4 多智能体协作', () => {
   });
 
   test('③ 急停：协作进行中停止后收敛 cancelled', async ({ page }) => {
-    await openChatWithAssistant(page, seeded.assistantId);
+    await openChatWithAssistant(page);
     await page.getByTestId('task-mode-toggle').click();
     await page.getByLabel('消息输入框').fill('慢慢查证年假制度 [slow:3000] [conclusion:年假15天]');
     await page.getByLabel('消息输入框').press('Enter');
