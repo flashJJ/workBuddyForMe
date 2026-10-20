@@ -66,6 +66,12 @@ export function useFlowMutations() {
       mutationFn: (body: WorkflowCreateInput) => apiPost<WorkflowView>(API.flows, body),
       onSuccess: invalidateList,
     }),
+    /** v2.4 P0-2：以内置工作流为模板复制可编辑草稿（服务端带播种定义回落） */
+    clone: useMutation({
+      mutationFn: ({ id, name }: { id: string; name: string }) =>
+        apiPost<WorkflowView>(API.flowClone(id), { name }),
+      onSuccess: invalidateList,
+    }),
     update: useMutation({
       mutationFn: ({ id, body }: { id: string; body: WorkflowUpdateInput }) =>
         apiPatch<WorkflowView>(API.flow(id), body),

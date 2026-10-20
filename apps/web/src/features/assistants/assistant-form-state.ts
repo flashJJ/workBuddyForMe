@@ -49,3 +49,24 @@ export function toForm(assistant: Assistant | null | undefined): AssistantFormSh
     personalityTolerance: assistant.personalityTolerance,
   };
 }
+
+/** v2.4 P0-2：模板卡「以此开始」的预填值（角色卡 + 可选知识库） */
+export interface AssistantPreset {
+  name: string;
+  cardId: string | null;
+  knowledgeBaseIds: string[];
+}
+
+/** 预填 → 新建表单默认值：预置名称与角色卡；有关联知识库时一并勾上检索工具 */
+export function presetToForm(preset: AssistantPreset): AssistantFormShape {
+  const base = emptyAssistantForm();
+  const knowledgeBaseIds = [...preset.knowledgeBaseIds];
+  return {
+    ...base,
+    name: preset.name,
+    cardId: preset.cardId ?? '',
+    knowledgeBaseIds,
+    enabledTools:
+      knowledgeBaseIds.length > 0 ? [...base.enabledTools, 'knowledge_search'] : base.enabledTools,
+  };
+}

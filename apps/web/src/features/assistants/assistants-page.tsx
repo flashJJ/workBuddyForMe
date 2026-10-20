@@ -14,6 +14,10 @@ import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantCard } from './assistant-card';
 import { AssistantFormDialog } from './assistant-form-dialog';
+import { AssistantsTemplateEmptyGallery, AssistantsTemplateSection } from './assistant-templates';
+import type { AssistantPreset } from './assistant-form-state';
+import { ASSISTANT_PRESET_BINDINGS } from '@/lib/templates/starter-templates';
+import type { TemplateGalleryItem } from '@/components/common/template-gallery';
 
 export function AssistantsPage() {
   const { t } = useI18n();
@@ -25,14 +29,29 @@ export function AssistantsPage() {
   const confirm = useConfirm();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Assistant | null>(null);
+  const [preset, setPreset] = React.useState<AssistantPreset | null>(null);
 
   const openCreate = () => {
     setEditing(null);
+    setPreset(null);
     setDialogOpen(true);
   };
 
   const openEdit = (assistant: Assistant) => {
     setEditing(assistant);
+    setPreset(null);
+    setDialogOpen(true);
+  };
+
+  /** 模板「以此开始」= 预填新建表单（M0 D5） */
+  const openPreset = (item: TemplateGalleryItem) => {
+    const binding = ASSISTANT_PRESET_BINDINGS[item.id];
+    setEditing(null);
+    setPreset({
+      name: item.name,
+      cardId: binding?.cardId ?? null,
+      knowledgeBaseIds: binding?.knowledgeBaseId ? [binding.knowledgeBaseId] : [],
+    });
     setDialogOpen(true);
   };
 
@@ -84,32 +103,49 @@ export function AssistantsPage() {
         {isLoading && <Spinner />}
         {isError && <ErrorState message={t('assistants.loadError')} onRetry={() => void refetch()} />}
         {!isLoading && !isError && assistants && (
-          <div className="grid gap-4 pb-8 sm:grid-cols-2 xl:grid-cols-3" data-testid="assistant-grid">
-            {assistants.length === 0 && (
-              <EmptyState
-                title={t('assistants.empty.title')}
-                description={t('assistants.empty.description')}
-                action={<Button onClick={openCreate}>{t('assistants.empty.action')}</Button>}
-              />
+          <div className="pb-8">
+            {assistants.length > 0 && (
+              <div className="mb-4">
+                <AssistantsTemplateSection onPick={openPreset} />
+              </div>
             )}
-            {assistants.map((assistant, index) => (
-              <AssistantCard
-                key={assistant.id}
-                assistant={assistant}
-                models={models ?? []}
-                knowledgeBases={knowledgeBases ?? []}
-                canMoveUp={index > 0}
-                canMoveDown={index < assistants.length - 1}
-                onEdit={openEdit}
-                onDelete={(item) => void remove(item)}
-                onMove={(item, direction) => void move(item, direction)}
-              />
-            ))}
+            {assistants.length === 0 && (
+              <div className="flex flex-col items-center">
+                <EmptyState
+                  title={t('assistants.empty.title')}
+                  description={t('assistants.empty.description')}
+                  action={<Button onClick={openCreate}>{t('assistants.empty.action')}</Button>}
+                />
+                <div className="mt-4 w-full max-w-3xl">
+                  <AssistantsTemplateEmptyGallery onPick={openPreset} />
+                </div>
+              </div>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" data-testid="assistant-grid">
+              {assistants.map((assistant, index) => (
+                <AssistantCard
+                  key={assistant.id}
+                  assistant={assistant}
+                  models={models ?? []}
+                  knowledgeBases={knowledgeBases ?? []}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < assistants.length - 1}
+                  onEdit={openEdit}
+                  onDelete={(item) => void remove(item)}
+                  onMove={(item, direction) => void move(item, direction)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      <AssistantFormDialog open={dialogOpen} onOpenChange={setDialogOpen} assistant={editing} />
+      <AssistantFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        assistant={editing}
+        preset={preset}
+      />
     </div>
   );
 }

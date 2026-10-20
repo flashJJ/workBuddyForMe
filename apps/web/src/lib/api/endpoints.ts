@@ -91,6 +91,8 @@ export const API = {
   // v0.8 Flow Studio
   flows: '/api/flows',
   flow: (id: string) => `/api/flows/${id}`,
+  /** v2.4 P0-2：以内置工作流为模板复制草稿 */
+  flowClone: (id: string) => `/api/flows/${id}/clone`,
   flowVersions: (id: string) => `/api/flows/${id}/versions`,
   flowValidate: (id: string) => `/api/flows/${id}/validate`,
   flowPublish: (id: string) => `/api/flows/${id}/publish`,

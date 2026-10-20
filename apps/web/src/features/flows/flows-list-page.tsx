@@ -18,6 +18,8 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { FlowFormDialog } from './flow-form-dialog';
+import { FlowsTemplateEmptyGallery, FlowsTemplateLauncher } from './flow-templates';
+import { isStarterTemplateId } from '@/lib/templates/starter-templates';
 
 const STATUS_META: Record<FlowStatus, { labelKey: MessageKey; variant: 'outline' | 'success' | 'default' }> = {
   draft: { labelKey: 'flows.status.draft', variant: 'outline' },
@@ -104,23 +106,29 @@ export function FlowsListPage() {
         ) : flowsQuery.isError ? (
           <ErrorState message={t('flows.loadError')} onRetry={() => flowsQuery.refetch()} />
         ) : flows.length === 0 ? (
-          <EmptyState
-            icon={<Workflow className="h-8 w-8" />}
-            title={t('flows.empty.title')}
-            description={t('flows.empty.description')}
-            action={
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                {t('flows.create')}
-              </Button>
-            }
-          />
+          <div className="flex flex-col items-center">
+            <EmptyState
+              icon={<Workflow className="h-8 w-8" />}
+              title={t('flows.empty.title')}
+              description={t('flows.empty.description')}
+              action={
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  {t('flows.create')}
+                </Button>
+              }
+            />
+            <FlowsTemplateEmptyGallery />
+          </div>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {flows.map((wf) => (
-              <FlowCard key={wf.id} wf={wf} onEdit={() => setEditing(wf)} onDelete={() => remove(wf)} />
-            ))}
-          </ul>
+          <>
+            <FlowsTemplateLauncher />
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {flows.map((wf) => (
+                <FlowCard key={wf.id} wf={wf} onEdit={() => setEditing(wf)} onDelete={() => remove(wf)} />
+              ))}
+            </ul>
+          </>
         )}
       </div>
 
@@ -162,7 +170,14 @@ function FlowCard({
           </div>
           <div className="min-w-0 flex-1">
             <Link href={`/flows/${wf.id}`} className="block">
-              <p className="truncate text-sm font-medium hover:text-primary">{wf.name}</p>
+              <span className="flex items-center gap-1.5">
+                <span className="truncate text-sm font-medium hover:text-primary">{wf.name}</span>
+                {isStarterTemplateId('flow', wf.id) ? (
+                  <Badge variant="outline" className="shrink-0">
+                    {t('templates.badge')}
+                  </Badge>
+                ) : null}
+              </span>
             </Link>
             <p className="mt-0.5 line-clamp-2 h-8 text-xs leading-4 text-muted-foreground">
               {wf.description || t('flows.noDescription')}

@@ -34,6 +34,7 @@ import { zhEvent } from './messages/event';
 import { zhReminders } from './messages/reminder';
 import { zhEventM5 } from './messages/event-m5';
 import { zhCharacterCards } from './messages/character-cards';
+import { zhTemplates } from './messages/templates';
 import { zhTuning } from './messages/tuning';
 import { zhStage } from './messages/stage';
 import { zhMeeting } from './messages/meeting';
@@ -64,6 +65,7 @@ export const zhCN = {
   errors: zhErrors,
   assistants: zhAssistants,
   characterCards: zhCharacterCards,
+  templates: zhTemplates,
   tuning: zhTuning,
   stage: zhStage,
   meeting: zhMeeting,
