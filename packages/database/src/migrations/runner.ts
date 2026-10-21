@@ -32,6 +32,7 @@ import { migrateV030 } from './v030-vrm-avatars';
 import { migrateV031 } from './v031-mod-installs';
 import { migrateV032 } from './v032-motion-assets';
 import { migrateV033 } from './v033-motion-segments';
+import { migrateV034 } from './v034-assistant-skills';
 
 interface Migration {
   version: number;
@@ -199,6 +200,11 @@ const MIGRATIONS: Migration[] = [
     version: 33,
     description: 'v2.2 M0: motion_assets 动作段与情绪档位四列（纯加法）',
     up: migrateV033,
+  },
+  {
+    version: 34,
+    description: 'v2.4 M4: assistants.skill_names 助手级技能勾选（纯加法，空=跟随全局）',
+    up: migrateV034,
   },
 ];
 

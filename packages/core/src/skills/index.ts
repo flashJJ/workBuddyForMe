@@ -13,4 +13,4 @@ export {
   type SkillService,
   type SkillServiceOptions,
 } from './skill-service';
-export { buildSkillPromptBlock, mergeSkillAllowedTools } from './skill-assembly';
+export { buildSkillPromptBlock, mergeSkillAllowedTools, pickAssistantSkills } from './skill-assembly';

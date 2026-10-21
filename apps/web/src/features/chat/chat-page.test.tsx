@@ -30,6 +30,7 @@ const ASSISTANT: Assistant = {
   reviewerModelId: null,
   knowledgeBaseIds: [],
   enabledTools: [],
+  skillNames: [],
   retrieveAlways: false,
   memoryEnabled: true,
   expressionEnabled: true,

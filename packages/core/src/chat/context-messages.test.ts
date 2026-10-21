@@ -20,6 +20,7 @@ function makeAssistant() {
     reviewerModelId: null,
     knowledgeBaseIds: [],
     enabledTools: [],
+    skillNames: [],
     retrieveAlways: true,
     memoryEnabled: true,
     expressionEnabled: false,

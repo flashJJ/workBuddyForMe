@@ -15,6 +15,7 @@ export function emptyAssistantForm(): AssistantFormShape {
     modelId: '',
     knowledgeBaseIds: [],
     enabledTools: ['current_time'],
+    skillNames: [],
     retrieveAlways: true,
     memoryEnabled: true,
     expressionEnabled: true,
@@ -40,6 +41,7 @@ export function toForm(assistant: Assistant | null | undefined): AssistantFormSh
     modelId: assistant.modelId ?? '',
     knowledgeBaseIds: [...assistant.knowledgeBaseIds],
     enabledTools: [...assistant.enabledTools],
+    skillNames: [...assistant.skillNames],
     retrieveAlways: assistant.retrieveAlways,
     memoryEnabled: assistant.memoryEnabled,
     expressionEnabled: assistant.expressionEnabled,
@@ -50,14 +52,16 @@ export function toForm(assistant: Assistant | null | undefined): AssistantFormSh
   };
 }
 
-/** v2.4 P0-2：模板卡「以此开始」的预填值（角色卡 + 可选知识库） */
+/** v2.4 P0-2：模板卡「以此开始」的预填值（角色卡 + 可选知识库 + 可选技能） */
 export interface AssistantPreset {
   name: string;
   cardId: string | null;
   knowledgeBaseIds: string[];
+  /** v2.4 M4：预设绑定的技能（P1-2 接线后生效） */
+  skillNames?: string[];
 }
 
-/** 预填 → 新建表单默认值：预置名称与角色卡；有关联知识库时一并勾上检索工具 */
+/** 预填 → 新建表单默认值：预置名称、角色卡、关联知识库与技能 */
 export function presetToForm(preset: AssistantPreset): AssistantFormShape {
   const base = emptyAssistantForm();
   const knowledgeBaseIds = [...preset.knowledgeBaseIds];
@@ -66,6 +70,7 @@ export function presetToForm(preset: AssistantPreset): AssistantFormShape {
     name: preset.name,
     cardId: preset.cardId ?? '',
     knowledgeBaseIds,
+    skillNames: [...(preset.skillNames ?? [])],
     enabledTools:
       knowledgeBaseIds.length > 0 ? [...base.enabledTools, 'knowledge_search'] : base.enabledTools,
   };

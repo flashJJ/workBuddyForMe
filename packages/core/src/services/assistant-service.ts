@@ -98,6 +98,7 @@ export function createAssistantsService({ db }: ServiceDeps) {
         modelId: input.modelId,
         knowledgeBaseIds: input.knowledgeBaseIds,
         enabledTools: input.enabledTools,
+        skillNames: input.skillNames,
         retrieveAlways: input.retrieveAlways,
         memoryEnabled: input.memoryEnabled,
         expressionEnabled: input.expressionEnabled,

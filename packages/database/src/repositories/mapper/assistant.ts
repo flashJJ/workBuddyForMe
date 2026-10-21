@@ -17,6 +17,8 @@ export interface AssistantRow {
   reviewer_model_id: string | null;
   knowledge_base_ids?: string;
   enabled_tools: string;
+  /** v2.4 M4：助手级技能勾选（v034；老库结果集缺列时回落 []） */
+  skill_names?: string;
   retrieve_always: number;
   /** v0.5：长期记忆开关（0/1） */
   memory_enabled: number;
@@ -51,6 +53,7 @@ export function mapAssistant(row: AssistantRow): Assistant {
     reviewerModelId: row.reviewer_model_id,
     knowledgeBaseIds: parseJsonArray<string>(row.knowledge_base_ids ?? '[]'),
     enabledTools: parseJsonArray<string>(row.enabled_tools),
+    skillNames: parseJsonArray<string>(row.skill_names ?? '[]'),
     retrieveAlways: row.retrieve_always === 1,
     memoryEnabled: row.memory_enabled !== 0,
     expressionEnabled: row.expression_enabled !== 0,

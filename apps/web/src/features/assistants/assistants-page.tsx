@@ -11,6 +11,7 @@ import { errorText } from '@/lib/i18n/resolve-error';
 import { useAssistants, useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useAllModels } from '@/lib/hooks/use-settings';
 import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
+import { useSkills } from '@/lib/hooks/use-skills';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantCard } from './assistant-card';
 import { AssistantFormDialog } from './assistant-form-dialog';
@@ -24,6 +25,7 @@ export function AssistantsPage() {
   const { data: assistants, isLoading, isError, refetch } = useAssistants();
   const { data: models } = useAllModels();
   const { data: knowledgeBases } = useKnowledgeBases();
+  const { data: skills } = useSkills();
   const mutations = useAssistantMutations();
   const toast = useToast();
   const confirm = useConfirm();
@@ -51,6 +53,8 @@ export function AssistantsPage() {
       name: item.name,
       cardId: binding?.cardId ?? null,
       knowledgeBaseIds: binding?.knowledgeBaseId ? [binding.knowledgeBaseId] : [],
+      // v2.4 M4（P1-2）：预设绑定的技能随表单预勾选（空=跟随全局）
+      skillNames: binding?.skillNames ?? [],
     });
     setDialogOpen(true);
   };
@@ -128,6 +132,7 @@ export function AssistantsPage() {
                   assistant={assistant}
                   models={models ?? []}
                   knowledgeBases={knowledgeBases ?? []}
+                  skills={skills ?? []}
                   canMoveUp={index > 0}
                   canMoveDown={index < assistants.length - 1}
                   onEdit={openEdit}

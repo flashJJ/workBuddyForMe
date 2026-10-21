@@ -25,6 +25,17 @@ export function buildSkillPromptBlock(skills: EnabledSkill[]): string | null {
 }
 
 /**
+ * 助手级技能筛选（v2.4 M4 / P1-2）：
+ * - 助手未勾选任何技能（空数组）→ 跟随全局，返回全部已启用技能（v2.3 行为不变）；
+ * - 助手勾选了技能 → 只保留这些；未在全局启用的技能自然被排除（停用即回收）。
+ */
+export function pickAssistantSkills(skills: EnabledSkill[], wanted: string[]): EnabledSkill[] {
+  if (wanted.length === 0) return skills;
+  const wantedSet = new Set(wanted);
+  return skills.filter((skill) => wantedSet.has(skill.name));
+}
+
+/**
  * 技能预绑定工具并入助手可用工具集（② 工具组合技能生效点）。
  * 取并集而非交集：技能是用户显式启用的能力包，其声明的工具应立即可用；
  * 与助手白名单相互独立，停用技能即回收对应工具，不产生交叉心智负担。

@@ -25,6 +25,7 @@ function makeAssistant(overrides: Partial<Assistant> = {}): Assistant {
     reviewerModelId: null,
     knowledgeBaseIds: [],
     enabledTools: [],
+    skillNames: [],
     retrieveAlways: true,
     memoryEnabled: true,
     expressionEnabled: true,

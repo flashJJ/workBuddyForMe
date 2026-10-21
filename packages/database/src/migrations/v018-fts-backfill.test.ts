@@ -1,6 +1,6 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
-import { applyMigrations, getSchemaVersion } from './runner';
+import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
 /** 停在 v17 的库：全量迁移后手动降版本（结构已最新，模拟只差 v018 回填的存量库） */
 function createV17DatabaseWithChunks(): Database.Database {
@@ -30,7 +30,7 @@ describe('v018 迁移：chunks_fts 存量回填', () => {
     ).toBe(0);
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(33);
+    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
 
     expect(
       (db.prepare(`SELECT COUNT(*) AS n FROM chunks_fts`).get() as { n: number }).n,
@@ -70,7 +70,7 @@ describe('v018 迁移：chunks_fts 存量回填', () => {
   it('全新空库：回填零行，版本直达 18', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(33);
+    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     expect(
       (db.prepare(`SELECT COUNT(*) AS n FROM chunks_fts`).get() as { n: number }).n,
     ).toBe(0);

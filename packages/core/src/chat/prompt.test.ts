@@ -23,6 +23,7 @@ function makeAssistant(partial: Partial<Assistant> = {}): Assistant {
     reviewerModelId: null,
     knowledgeBaseIds: [],
     enabledTools: [],
+    skillNames: [],
     retrieveAlways: true,
     memoryEnabled: true,
     expressionEnabled: true,

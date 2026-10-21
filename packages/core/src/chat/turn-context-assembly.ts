@@ -18,7 +18,7 @@ import type { OrchestratorEvent, RagContext } from './types';
 import type { ResolvedChatTarget } from './model-resolver';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import { toToolDefinitions, type ToolContext, type ToolMap } from '../tools/types';
-import { buildSkillPromptBlock, mergeSkillAllowedTools } from '../skills/skill-assembly';
+import { buildSkillPromptBlock, mergeSkillAllowedTools, pickAssistantSkills } from '../skills/skill-assembly';
 import { createSettingsService, resolveGlobalAppendPrompt } from '../services/settings-service';
 import {
   buildEmotionStateBlock,
@@ -127,7 +127,11 @@ export async function* prepareTurnContext(
   const memoryBlock = formatMemoryBlock(recalledMemories);
 
   // v0.6 M3：启用技能——提示词模板注入 system；预绑定工具与助手白名单取并集
-  const enabledSkills = deps.skills?.getEnabledSkills() ?? [];
+  // v2.4 M4：助手级勾选优先（空数组=跟随全局全部启用技能）
+  const enabledSkills = pickAssistantSkills(
+    deps.skills?.getEnabledSkills() ?? [],
+    assistant.skillNames,
+  );
   const skillBlock = buildSkillPromptBlock(enabledSkills);
   const effectiveAssistant = mergeSkillAllowedTools(assistant, enabledSkills);
 

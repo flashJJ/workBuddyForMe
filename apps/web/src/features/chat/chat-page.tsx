@@ -224,6 +224,7 @@ export function ChatPage() {
         <ChatHeader
           assistants={assistants ?? []}
           assistantId={assistantId}
+          currentAssistant={currentAssistant}
           currentConversation={currentConversation}
           onAssistantChange={switchAssistant}
           onShowSummary={() => setSummaryOpen(true)}

@@ -22,6 +22,7 @@ import { useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useMcpTools } from '@/lib/hooks/use-mcp';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantToolsField } from './assistant-tools-field';
+import { AssistantSkillsField } from './assistant-skills-field';
 import { AssistantMemoryField } from './assistant-memory-field';
 import { AssistantExpressionField } from './assistant-expression-field';
 import { AssistantPersonalityField } from './assistant-personality-field';
@@ -226,6 +227,11 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
             mcpTools={mcpTools ?? []}
             onToggleTool={toggleTool}
             onRetrieveAlwaysChange={(value) => update({ retrieveAlways: value })}
+          />
+
+          <AssistantSkillsField
+            value={form.skillNames}
+            onChange={(skillNames) => update({ skillNames })}
           />
 
           <AssistantMemoryField

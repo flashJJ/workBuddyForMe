@@ -35,8 +35,8 @@ describe('v012 迁移：Flow Studio（workflows 四表）', () => {
   it('v11 老库升级：四表可写，默认值与级联删除生效', () => {
     const db = createV11Database();
     const result = applyMigrations(db);
-            expect(result.applied).toEqual([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]);
-    expect(LATEST_SCHEMA_VERSION).toBe(33);
+            expect(result.applied).toEqual([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34]);
+    expect(LATEST_SCHEMA_VERSION).toBe(34);
 
     const ts = '2026-10-05T01:00:00.000Z';
     db.prepare(
