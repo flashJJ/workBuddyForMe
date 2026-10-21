@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Ban, CheckCircle2, Loader2, MonitorPlay, ShieldQuestion, TriangleAlert, Users, XCircle } from 'lucide-react';
-import type { MessageKey } from '@wbfm/shared/i18n';
-import { Badge } from '@/components/ui/badge';
+import { Ban, CheckCircle2, MonitorPlay, ShieldQuestion, TriangleAlert, Users, XCircle } from 'lucide-react';
+import { FailureHint } from '@/components/common/failure-hint';
+import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
+import { toOutcome } from '@/lib/runs/run-outcome';
 import { getStageBridge } from '@/features/stage/stage-bridge';
 import { cn } from '@/lib/utils';
 import { AgentRounds } from './agent-rounds';
@@ -45,27 +46,34 @@ export function AgentRunCard({
   const { t } = useI18n();
   const sys = useSystemText();
   const terminal = state.status !== 'connecting' && state.status !== 'running';
+  const outcome = toOutcome('agent', state.status);
   return (
     <div
       className="min-w-0 overflow-hidden rounded-lg border bg-card text-xs shadow-sm"
       data-testid="agent-run-card"
       data-status={state.status}
     >
-      <header className="flex items-center gap-2 border-b px-3 py-2">
-        <Users className="h-4 w-4 shrink-0 text-teal-500" />
-        <span className="text-xs font-semibold">{t('agents.entry.label')}</span>
-        <StatusBadge status={state.status} />
-        <button
-          type="button"
-          className="ml-auto flex items-center gap-1 rounded border border-teal-500/40 px-1.5 py-0.5 text-[10px] text-teal-600 transition-colors hover:bg-teal-500/10 dark:text-teal-400"
-          data-testid="watch-on-stage"
-          title={t('stage.run.watch')}
-          onClick={() => openRunStage(runId)}
-        >
-          <MonitorPlay className="h-3 w-3" />
-          {t('stage.run.watch')}
-        </button>
-        <span className="font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
+      <header className="border-b px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 shrink-0 text-teal-500" />
+          <span className="text-xs font-semibold">{t('agents.entry.label')}</span>
+          <RunStatusBadge kind="agent" status={state.status} />
+          <button
+            type="button"
+            className="ml-auto flex items-center gap-1 rounded border border-teal-500/40 px-1.5 py-0.5 text-[10px] text-teal-600 transition-colors hover:bg-teal-500/10 dark:text-teal-400"
+            data-testid="watch-on-stage"
+            title={t('stage.run.watchReadonlyHint')}
+            onClick={() => openRunStage(runId)}
+          >
+            <MonitorPlay className="h-3 w-3" />
+            {t('stage.run.watch')}
+          </button>
+          <span className="font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
+        </div>
+        <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+          <MonitorPlay className="h-3 w-3 shrink-0" />
+          {t('stage.run.watchReadonlyHint')}
+        </p>
       </header>
 
       <div className={cn('space-y-2 px-3', compact ? 'py-2' : 'py-2.5')}>
@@ -80,32 +88,10 @@ export function AgentRunCard({
         {showSummary && state.summary && (
           <p className="min-w-0 whitespace-pre-wrap break-words rounded-md bg-muted/50 p-2 text-[11px] leading-relaxed">{sys(state.summary)}</p>
         )}
-        {state.errorMessage && state.status === 'failed' && (
-          <p className="min-w-0 break-words text-[11px] text-destructive">{sys(state.errorMessage)}</p>
-        )}
         {terminal && <TerminalBanner status={state.status} exceeded={state.status === 'budget_exceeded'} />}
+        <FailureHint outcome={outcome} rawError={state.errorMessage} />
       </div>
     </div>
-  );
-}
-
-const STATUS_STYLE: Record<AgentCardStatus, { variant: 'default' | 'success' | 'danger' | 'warning' | 'outline'; key: MessageKey; icon?: React.ReactNode }> = {
-  connecting: { variant: 'outline', key: 'agents.status.connecting' },
-  running: { variant: 'default', key: 'agents.status.running', icon: <Loader2 className="h-3 w-3 animate-spin" /> },
-  done: { variant: 'success', key: 'agents.status.done' },
-  failed: { variant: 'danger', key: 'agents.status.failed' },
-  cancelled: { variant: 'outline', key: 'agents.status.cancelled' },
-  budget_exceeded: { variant: 'warning', key: 'agents.status.budget_exceeded' },
-};
-
-export function StatusBadge({ status }: { status: AgentCardStatus }) {
-  const { t } = useI18n();
-  const style = STATUS_STYLE[status];
-  return (
-    <Badge variant={style.variant} className="gap-1 px-1.5 py-0 text-[10px]">
-      {style.icon}
-      {t(style.key)}
-    </Badge>
   );
 }
 

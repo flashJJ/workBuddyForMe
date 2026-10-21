@@ -4,6 +4,8 @@ import * as React from 'react';
 import { AlertTriangle, ChevronRight, Send } from 'lucide-react';
 import type { TaskRunView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
+import { FailureHint } from '@/components/common/failure-hint';
+import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { Spinner } from '@/components/common/state';
 import { Textarea } from '@/components/ui/textarea';
 import { SimpleSelect } from '@/components/ui/simple-select';
@@ -17,9 +19,13 @@ import {
   useTasks,
 } from '@/lib/hooks/use-tasks';
 import { errorText } from '@/lib/i18n/resolve-error';
+import {
+  formatDurationMs,
+  runElapsedMs,
+  taskOutcome,
+} from '@/lib/runs/run-outcome';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
-import { TaskRunStatusBadge } from './task-status-badge';
 import { TaskTimeline } from './task-timeline';
 import { TaskControlBar } from './task-control-bar';
 import { AgentTasksSection } from './agent-tasks-section';
@@ -178,6 +184,10 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
   const displayRun = live.run ?? task;
   const steps = live.steps.length > 0 ? live.steps : [];
   const isActive = displayRun.status === 'running' || displayRun.status === 'paused';
+  const outcome = taskOutcome(displayRun.status, displayRun.stopReason);
+  const duration = formatDurationMs(
+    runElapsedMs(displayRun.createdAt, displayRun.finishedAt, Date.now()),
+  );
 
   return (
     <li className="min-w-0 overflow-hidden rounded-md border bg-card">
@@ -189,8 +199,19 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
         <ChevronRight
           className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
         />
-        <TaskRunStatusBadge status={displayRun.status} />
-        <span className="flex-1 truncate text-sm font-medium">{sys(displayRun.goal)}</span>
+        <RunStatusBadge kind="task" status={displayRun.status} stopReason={displayRun.stopReason} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">{sys(displayRun.goal)}</span>
+          <FailureHint
+            compact
+            className="mt-0.5"
+            outcome={outcome}
+            stopReason={displayRun.stopReason}
+          />
+        </span>
+        <span className="text-xs text-muted-foreground" title={t('runs.durationHint')}>
+          {duration ?? t('runs.durationUnavailable')}
+        </span>
         <span className="text-xs text-muted-foreground">
           {t('tasks.steps', { done: displayRun.stepCount, max: displayRun.maxSteps })}
         </span>

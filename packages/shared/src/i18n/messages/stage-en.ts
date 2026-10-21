@@ -39,6 +39,7 @@ export const enStage = {
       reject: 'Review rejected; collaboration stopped.',
     },
     watch: 'Watch on stage',
+    watchReadonlyHint: 'Read-only viewing; it does not affect the run. Write actions still require explicit approval.',
     reconnecting: 'Reconnecting to the live session…',
   },
   expression: {

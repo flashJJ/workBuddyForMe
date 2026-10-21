@@ -16,14 +16,6 @@ export const zhTasks = {
   empty: '还没有任务运行，先在上方创建一个。',
   steps: '{done}/{max} 步',
   eventStreamFailed: '任务事件流连接失败，部分步骤可能缺失。',
-  runStatus: {
-    queued: '排队',
-    running: '运行中',
-    paused: '已暂停',
-    stopped: '已终止',
-    completed: '已完成',
-    failed: '已失败',
-  },
   stepKind: {
     observe: '观察',
     action: '执行',
@@ -47,7 +39,6 @@ export const zhTasks = {
     reason: '理由：{text}',
     args: '参数',
     result: '结果',
-    error: '错误：{error}',
     duration: '耗时 {ms}ms',
   },
 };
@@ -71,14 +62,6 @@ export const enTasks = {
   empty: 'No task runs yet. Create one above.',
   steps: '{done}/{max} steps',
   eventStreamFailed: 'Failed to connect to the task event stream; some steps may be missing.',
-  runStatus: {
-    queued: 'Queued',
-    running: 'Running',
-    paused: 'Paused',
-    stopped: 'Stopped',
-    completed: 'Completed',
-    failed: 'Failed',
-  },
   stepKind: {
     observe: 'Observe',
     action: 'Act',
@@ -102,7 +85,6 @@ export const enTasks = {
     reason: 'Reason: {text}',
     args: 'Arguments',
     result: 'Result',
-    error: 'Error: {error}',
     duration: 'Duration {ms}ms',
   },
 };

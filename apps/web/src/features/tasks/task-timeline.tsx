@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { TaskStepView } from '@wbfm/shared/schemas';
 import { AttachmentImage } from '@/features/chat/attachment-image';
+import { FailureHint } from '@/components/common/failure-hint';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
 import { useIntl } from '@/lib/i18n/use-intl';
@@ -58,11 +59,7 @@ export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
               <pre className="mt-1 max-h-40 max-w-full overflow-auto whitespace-pre-wrap break-all rounded bg-muted/50 p-2 text-xs">{step.resultJson}</pre>
             </details>
           )}
-          {step.error && (
-            <p className="mt-2 min-w-0 break-words rounded bg-destructive/10 p-2 text-xs text-destructive">
-              {t('tasks.timeline.error', { error: sys(step.error) })}
-            </p>
-          )}
+          {step.error && <FailureHint outcome="failed" rawError={step.error} className="mt-2" />}
           {step.screenshotPath && (
             <div className="mt-2">
               <AttachmentImage attachmentId={step.screenshotPath} />

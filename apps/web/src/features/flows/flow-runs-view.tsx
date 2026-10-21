@@ -6,11 +6,20 @@ import { useRouter } from 'next/navigation';
 import { History, RefreshCw, RotateCcw } from 'lucide-react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { SimpleSelect } from '@/components/ui/simple-select';
+import { FailureHint } from '@/components/common/failure-hint';
+import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
+import {
+  formatDurationMs,
+  isLiveOutcome,
+  RUN_OUTCOME_LABEL_KEYS,
+  runDurationMs,
+  runElapsedMs,
+  toOutcome,
+} from '@/lib/runs/run-outcome';
 import { useFlowRuns, useReplayRun, type FlowRunSummary } from '@/lib/hooks/use-flow-runs-center';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
@@ -22,25 +31,15 @@ const TRIGGER_KEYS: Record<string, MessageKey> = {
   mcp: 'flows.runs.trigger.mcp',
 };
 
-const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'outline' | 'default'> = {
-  succeeded: 'success',
-  failed: 'danger',
-  cancelled: 'outline',
-  interrupted: 'danger',
-  queued: 'default',
-  running: 'default',
-  waiting_human: 'warning',
-};
-
-const STATUS_KEYS: Record<string, MessageKey> = {
-  succeeded: 'flows.runs.status.succeeded',
-  failed: 'flows.runs.status.failed',
-  cancelled: 'flows.runs.status.cancelled',
-  interrupted: 'flows.runs.status.interrupted',
-  queued: 'flows.runs.status.queued',
-  running: 'flows.runs.status.running',
-  waiting_human: 'flows.runs.status.waitingHuman',
-};
+const STATUS_OPTIONS = [
+  'queued',
+  'running',
+  'waiting_human',
+  'succeeded',
+  'failed',
+  'cancelled',
+  'interrupted',
+] as const;
 
 export function FlowRunsView() {
   const { t } = useI18n();
@@ -53,6 +52,7 @@ export function FlowRunsView() {
   const router = useRouter();
 
   const runs = runsQuery.data?.runs ?? [];
+  const nowMs = Date.now();
 
   const doReplay = async (run: FlowRunSummary, nodeId?: string) => {
     try {
@@ -102,13 +102,11 @@ export function FlowRunsView() {
           onValueChange={(v) => setStatus(v)}
         >
           <option value="">{t('common.words.all')}</option>
-          <option value="queued">{t(STATUS_KEYS.queued!)}</option>
-          <option value="running">{t(STATUS_KEYS.running!)}</option>
-          <option value="waiting_human">{t(STATUS_KEYS.waiting_human!)}</option>
-          <option value="succeeded">{t(STATUS_KEYS.succeeded!)}</option>
-          <option value="failed">{t(STATUS_KEYS.failed!)}</option>
-          <option value="cancelled">{t(STATUS_KEYS.cancelled!)}</option>
-          <option value="interrupted">{t(STATUS_KEYS.interrupted!)}</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {t(RUN_OUTCOME_LABEL_KEYS[toOutcome('flow', s)])}
+            </option>
+          ))}
         </SimpleSelect>
       </div>
 
@@ -126,27 +124,36 @@ export function FlowRunsView() {
                 <th className="px-2 py-2 font-medium">{t('flows.runs.source')}</th>
                 <th className="px-2 py-2 font-medium">{t('flows.runs.versionColumn')}</th>
                 <th className="px-2 py-2 font-medium">{t('flows.runs.timeColumn')}</th>
+                <th className="px-2 py-2 font-medium">{t('runs.duration')}</th>
                 <th className="px-2 py-2 font-medium">{t('flows.runs.noteColumn')}</th>
                 <th className="px-2 py-2 text-right font-medium">{t('common.words.actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {runs.map((run) => (
+              {runs.map((run) => {
+                const outcome = toOutcome('flow', run.status);
+                const start = run.startedAt ?? run.createdAt;
+                const duration = formatDurationMs(
+                  isLiveOutcome(outcome)
+                    ? runElapsedMs(start, run.finishedAt, nowMs)
+                    : runDurationMs(start, run.finishedAt),
+                );
+                return (
                 <tr key={run.runId} className="border-b last:border-0 hover:bg-muted/40">
                   <td className="px-2 py-2">
-                    <Badge variant={STATUS_VARIANT[run.status] ?? 'outline'}>
-                      {STATUS_KEYS[run.status] ? t(STATUS_KEYS[run.status]!) : run.status}
-                    </Badge>
+                    <RunStatusBadge kind="flow" status={run.status} />
                   </td>
                   <td className="px-2 py-2">
                     <Link href={`/flows/${run.workflowId}?run=${run.runId}`} className="hover:text-primary">
                       {run.workflowName}
                     </Link>
-                    {run.error?.message && (
-                      <p className="mt-0.5 max-w-[260px] truncate text-[10px] text-destructive" title={run.error.message}>
-                        {run.error.message}
-                      </p>
-                    )}
+                    <FailureHint
+                      compact
+                      className="mt-0.5 max-w-[360px]"
+                      outcome={outcome}
+                      rawError={run.error?.message}
+                      code={run.error?.code}
+                    />
                   </td>
                   <td className="px-2 py-2">
                     {TRIGGER_KEYS[run.trigger] ? t(TRIGGER_KEYS[run.trigger]!) : run.trigger}
@@ -162,6 +169,9 @@ export function FlowRunsView() {
                           second: '2-digit',
                         })
                       : ''}
+                  </td>
+                  <td className="px-2 py-2 text-muted-foreground" title={t('runs.durationHint')}>
+                    {duration ?? t('runs.durationUnavailable')}
                   </td>
                   <td className="px-2 py-2 text-[10px] text-muted-foreground">
                     {run.resumedFromNode ? (
@@ -203,7 +213,8 @@ export function FlowRunsView() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}

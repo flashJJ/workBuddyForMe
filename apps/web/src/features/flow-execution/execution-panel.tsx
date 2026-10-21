@@ -2,14 +2,14 @@
 
 import * as React from 'react';
 import { AlertTriangle, Ban, CheckCircle2, RotateCcw, X, XCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FailureHint } from '@/components/common/failure-hint';
+import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { MessageKey } from '@wbfm/shared/i18n';
 import { ApiClientError, apiPost } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import { useFlowRunAction, type FlowLiveState, type FlowRunPhase } from '@/lib/hooks/use-flows';
+import { useFlowRunAction, type FlowLiveState } from '@/lib/hooks/use-flows';
 import type { SsePayloadMap } from '@wbfm/shared/api';
 import { ToolConfirmDialog } from '../chat/tool-confirm-dialog';
 import type { FlowCanvasNode } from '../flow-editor/graph-utils';
@@ -24,21 +24,12 @@ interface ExecutionPanelProps {
   onRerun: () => void;
 }
 
-const PHASE_BADGE: Record<FlowRunPhase, { label: MessageKey; variant: 'default' | 'success' | 'danger' | 'warning' | 'outline' }> = {
-  connecting: { label: 'flowExecution.phase.connecting', variant: 'warning' },
-  running: { label: 'flowExecution.phase.running', variant: 'default' },
-  succeeded: { label: 'flowExecution.phase.succeeded', variant: 'success' },
-  failed: { label: 'flowExecution.phase.failed', variant: 'danger' },
-  cancelled: { label: 'flowExecution.phase.cancelled', variant: 'outline' },
-};
-
 export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: ExecutionPanelProps) {
   const { t } = useI18n();
   const actions = useFlowRunAction(runId);
   const toast = useToast();
   const terminal = live.phase === 'succeeded' || live.phase === 'failed' || live.phase === 'cancelled';
   const waitingNode = live.waitingNodeId ? nodes.find((n) => n.id === live.waitingNodeId) : null;
-  const badge = PHASE_BADGE[live.phase];
 
   // v1.4：agent 节点内 Executor 的桌面工具门控帧（最新一条未决策且运行未结束时弹窗）
   const [resolvedGates, setResolvedGates] = React.useState<ReadonlySet<string>>(new Set());
@@ -107,7 +98,7 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
     <section className="flex h-80 shrink-0 flex-col border-t bg-card">
       <header className="flex items-center gap-2 border-b px-4 py-2">
         <p className="text-sm font-semibold">{t('flowExecution.title')}</p>
-        <Badge variant={badge.variant}>{t(badge.label)}</Badge>
+        <RunStatusBadge kind="flow" status={live.phase} />
         <span className="font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
         {live.connection === 'error' && !terminal && (
           <span className="flex items-center gap-1 text-[11px] text-warning">
@@ -161,7 +152,7 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
               <XCircle className="h-3.5 w-3.5" />
               {t('flowExecution.runFailed')}
             </p>
-            <p className="mt-1 text-[11px]">{live.errorMessage ?? t('flowExecution.unknownError')}</p>
+            <FailureHint className="mt-1" outcome="failed" rawError={live.errorMessage} />
           </div>
         )}
       </div>

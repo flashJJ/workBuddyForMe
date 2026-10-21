@@ -1,4 +1,4 @@
-export { AgentRunCard, StatusBadge } from './agent-run-card';
+export { AgentRunCard } from './agent-run-card';
 export { AgentRounds, EvidenceList } from './agent-rounds';
 export {
   cardFromRun,

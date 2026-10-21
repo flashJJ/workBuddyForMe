@@ -26,6 +26,7 @@ import { enVoice } from './messages/voice-en';
 import { enPet } from './messages/pet';
 import { enAvatar } from './messages/avatar';
 import { enFlowExecution } from './messages/flow-execution';
+import { enRuns } from './messages/runs';
 import { enToolDebug } from './messages/tool-debug';
 import { enToolTrace } from './messages/tool-trace';
 import { enAgents } from './messages/agents-en';
@@ -82,6 +83,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   pet: enPet,
   avatar: enAvatar,
   flowExecution: enFlowExecution,
+  runs: enRuns,
   toolDebug: enToolDebug,
   toolTrace: enToolTrace,
   agents: enAgents,

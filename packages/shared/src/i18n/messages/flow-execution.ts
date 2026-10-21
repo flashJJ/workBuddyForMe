@@ -1,13 +1,6 @@
 /** flowExecution 命名空间：工作流试运行面板/逐节点时间线/挂起节点内联操作 */
 export const zhFlowExecution = {
   title: '试运行',
-  phase: {
-    connecting: '连接中',
-    running: '运行中',
-    succeeded: '成功',
-    failed: '失败',
-    cancelled: '已取消',
-  },
   connectionError: '事件流连接异常',
   cancelRun: '取消运行',
   rerun: '重跑',
@@ -15,7 +8,6 @@ export const zhFlowExecution = {
   finalOutput: '最终输出',
   emptyOutput: '(空)',
   runFailed: '运行失败',
-  unknownError: '未知错误',
   waitingEvents: '等待节点事件…',
   inputs: '输入',
   outputs: '输出',
@@ -40,13 +32,6 @@ export const zhFlowExecution = {
 
 export const enFlowExecution = {
   title: 'Test run',
-  phase: {
-    connecting: 'Connecting',
-    running: 'Running',
-    succeeded: 'Succeeded',
-    failed: 'Failed',
-    cancelled: 'Cancelled',
-  },
   connectionError: 'Event stream connection error',
   cancelRun: 'Cancel run',
   rerun: 'Rerun',
@@ -54,7 +39,6 @@ export const enFlowExecution = {
   finalOutput: 'Final output',
   emptyOutput: '(empty)',
   runFailed: 'Run failed',
-  unknownError: 'Unknown error',
   waitingEvents: 'Waiting for node events...',
   inputs: 'Inputs',
   outputs: 'Outputs',

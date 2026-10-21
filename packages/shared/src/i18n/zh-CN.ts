@@ -25,6 +25,7 @@ import { zhVoice } from './messages/voice';
 import { zhPet } from './messages/pet';
 import { zhAvatar } from './messages/avatar';
 import { zhFlowExecution } from './messages/flow-execution';
+import { zhRuns } from './messages/runs';
 import { zhToolDebug } from './messages/tool-debug';
 import { zhToolTrace } from './messages/tool-trace';
 import { zhAgents } from './messages/agents';
@@ -82,6 +83,7 @@ export const zhCN = {
   pet: zhPet,
   avatar: zhAvatar,
   flowExecution: zhFlowExecution,
+  runs: zhRuns,
   toolDebug: zhToolDebug,
   toolTrace: zhToolTrace,
   agents: zhAgents,

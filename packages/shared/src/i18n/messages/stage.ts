@@ -39,6 +39,7 @@ export const zhStage = {
       reject: '审查驳回，协作终止。',
     },
     watch: '在舞台观看',
+    watchReadonlyHint: '只读观看，不影响运行；写操作仍需在授权弹窗中显式允许。',
     reconnecting: '正在重新接入协作现场…',
   },
   expression: {
