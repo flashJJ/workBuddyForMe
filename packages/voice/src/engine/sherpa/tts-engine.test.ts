@@ -47,6 +47,24 @@ describe('SherpaTtsEngine（MeloTTS VITS 单说话人）', () => {
     expect(cfg.ruleFsts).toContain('new_heteronym.fst');
   });
 
+  it('纯标点/表情文本不调用原生层（避免 MeloTTS 硬失败终止进程）', async () => {
+    const native = makeNative();
+    const engine = await SherpaTtsEngine.create({
+      config: { modelDir: '/models/tts' },
+      spec: MELO_SPEC,
+      loader: async () => makeModule(native),
+      exists: existsAll,
+    });
+
+    const punctuated = await engine.synthesize('：）');
+    expect(punctuated.samples.length).toBe(0);
+    expect(native.generate).not.toHaveBeenCalled();
+
+    // 含可读字符时正常走原生层
+    await engine.synthesize('好的：）');
+    expect(native.generate).toHaveBeenCalledTimes(1);
+  });
+
   it('模型文件缺失抛 VoiceEngineError 且带下载引导 hint', async () => {
     await expect(
       SherpaTtsEngine.create({

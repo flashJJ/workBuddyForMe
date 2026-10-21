@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   chunkForTts,
+  isSpeakableText,
   StreamingSentenceSplitter,
   splitSentences,
   stripForTts,
@@ -122,5 +123,30 @@ describe('chunkForTts 超长句切块', () => {
     const chunks = chunkForTts(text, 20);
     expect(chunks.every((c) => !c.startsWith(' '))).toBe(true);
     expect(chunks.join(' ')).toBe(text);
+  });
+
+  it('纯标点块被丢弃（MeloTTS 遇「：）」会硬失败并终止进程）', () => {
+    expect(chunkForTts('：）')).toEqual([]);
+    expect(chunkForTts('—— …… ！？')).toEqual([]);
+    // 含汉字的口语标注仍可朗读（有 \p{L} 字符，不算纯标点）
+    expect(chunkForTts('（笑）')).toEqual(['（笑）']);
+    // 混在可读文本里的标点不影响正常切块
+    expect(chunkForTts('好的：）')).toEqual(['好的：）']);
+  });
+});
+
+describe('isSpeakableText 可朗读判定（引擎入口护栏）', () => {
+  it('含字母 / 数字 / CJK 即可朗读', () => {
+    expect(isSpeakableText('你好')).toBe(true);
+    expect(isSpeakableText('hello')).toBe(true);
+    expect(isSpeakableText('2026 年')).toBe(true);
+    expect(isSpeakableText('：你好')).toBe(true);
+  });
+
+  it('纯标点 / 表情 / 空白不可朗读', () => {
+    expect(isSpeakableText('：）')).toBe(false);
+    expect(isSpeakableText('——')).toBe(false);
+    expect(isSpeakableText('😀')).toBe(false);
+    expect(isSpeakableText('   ')).toBe(false);
   });
 });

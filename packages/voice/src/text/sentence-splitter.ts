@@ -55,10 +55,22 @@ export function stripForTts(text: string): string {
 }
 
 /**
- * 超长可朗读文本二次切块（stripForTts 之后调用）：
+ * 是否含可朗读内容（至少一个字母 / 数字 / CJK 字符）。
+ *
+ * 纯标点或表情片段（如 `：）`、`——`）不可送 TTS：MeloTTS 的 lexicon 会把它们
+ * 全部判为 OOV，sherpa-onnx 随后在 `Generate` 里报
+ * 「Failed to convert … to token IDs」并中断进程（实测 Next dev 直接退出）。
+ * 因此这一判定是「引擎崩溃」的入口护栏，不只是音质优化。
+ */
+export function isSpeakableText(text: string): boolean {
+  return /[\p{L}\p{N}]/u.test(text);
+}
+
+/** 超长可朗读文本二次切块（stripForTts 之后调用）：
  * - 优先在软标点（，、；：）边界贪心打包到 maxLen；
  * - 无标点的长段在空格（英文词边界）处断，仍超长则按字硬切（中文无害）；
- * - 拼接结果恒等于入参（除首尾空白），顺序稳定，供逐块合成后顺序播放。
+ * - 拼接结果恒等于入参（除首尾空白），顺序稳定，供逐块合成后顺序播放；
+ * - 纯标点块（见 isSpeakableText）直接丢弃，避免送进会硬失败的引擎。
  */
 export function chunkForTts(text: string, maxLen: number = MAX_TTS_CHUNK): string[] {
   const input = text.trim();
@@ -93,7 +105,7 @@ export function chunkForTts(text: string, maxLen: number = MAX_TTS_CHUNK): strin
     }
   }
   if (buffer) chunks.push(buffer);
-  return chunks.filter(Boolean);
+  return chunks.filter((chunk) => Boolean(chunk) && isSpeakableText(chunk));
 }
 
 function visibleLength(text: string): number {
