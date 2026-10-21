@@ -12,6 +12,8 @@ import {
   createSettingsRepository,
 } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
+import { disableDemoMode, enableDemoMode } from './demo-provider';
+import { recordMilestone } from './milestones';
 import {
   CONTEXT_MESSAGES_MAX,
   CONTEXT_MESSAGES_MIN,
@@ -37,6 +39,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   contextMessageCount: DEFAULT_CONTEXT_MESSAGES,
   globalAppendPrompt: '',
   globalAppendPromptEnabled: false,
+  // v2.4 M1：演示模式默认关（用户可一键开启；开启即内置 demo 供应商与 mock 模型）
+  demoModeEnabled: false,
+  // v2.4 M1 T7：TTFV 里程碑缺省为空（首次启动/模型就绪/首答时由 recordMilestone 首写）
+  firstLaunchAt: null,
+  firstModelReadyAt: null,
+  firstAnswerAt: null,
+  ttfvMs: null,
 };
 
 /** 服务端钳制上下文条数：settings_kv 可被手改/旧值污染，越界一律回落默认 */
@@ -109,12 +118,48 @@ export function createSettingsService({ db }: ServiceDeps) {
       return merged;
     },
 
+    /** v2.4 M1 T7：进入应用即记录首次启动时间（首写优先；供 TTFV 计算） */
+    markFirstLaunch(): void {
+      recordMilestone(db, 'firstLaunchAt');
+    },
+
     update(patch: SettingsUpdateInput): AppSettings {
-      ensureModelExists(patch.defaultChatModelId ?? null, '默认对话模型');
-      ensureModelExists(patch.defaultEmbeddingModelId ?? null, '默认嵌入模型');
-      ensureModelExists(patch.compileModelId ?? null, '编译增强模型');
-      const next = { ...this.get(), ...patch };
+      const current = this.get();
+      const effective: SettingsUpdateInput = { ...patch };
+      let demoJustEnabled = false;
+
+      // v2.4 M1：演示模式开关与内置 demo 供应商/模型联动
+      if (patch.demoModeEnabled === true && current.demoModeEnabled !== true) {
+        const demo = enableDemoMode(db);
+        demoJustEnabled = true;
+        if (effective.defaultChatModelId === undefined) effective.defaultChatModelId = demo.chatModelId;
+        if (effective.defaultEmbeddingModelId === undefined) {
+          effective.defaultEmbeddingModelId = demo.embedModelId;
+        }
+      } else if (patch.demoModeEnabled === false && current.demoModeEnabled === true) {
+        const removed = disableDemoMode(db);
+        // 默认模型指向被删的 demo 模型时清空，避免悬空引用（关闭即无残留）
+        if (effective.defaultChatModelId === undefined && current.defaultChatModelId === removed.chatModelId) {
+          effective.defaultChatModelId = null;
+        }
+        if (
+          effective.defaultEmbeddingModelId === undefined &&
+          current.defaultEmbeddingModelId === removed.embedModelId
+        ) {
+          effective.defaultEmbeddingModelId = null;
+        }
+      }
+
+      ensureModelExists(effective.defaultChatModelId ?? null, '默认对话模型');
+      ensureModelExists(effective.defaultEmbeddingModelId ?? null, '默认嵌入模型');
+      ensureModelExists(effective.compileModelId ?? null, '编译增强模型');
+      const next = { ...current, ...effective };
       settings.setJson(SETTINGS_KEY, next);
+      // v2.4 M1 T7：里程碑必须在本次 setJson 之后记录，否则会被上面这行覆盖
+      if (demoJustEnabled) {
+        recordMilestone(db, 'firstModelReadyAt');
+        return this.get();
+      }
       return next;
     },
   };

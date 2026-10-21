@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import type { ProviderPreset } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +9,8 @@ import { errorText } from '@/lib/i18n/resolve-error';
 import { useProviderMutations } from '@/lib/hooks/use-providers';
 import type { ProviderCreateBody } from '@/lib/hooks/use-providers';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { CloudPresetPicker } from './cloud-preset-picker';
+import { RecommendedModels } from './recommended-models';
 
 type Status =
   | { kind: 'idle' }
@@ -16,16 +19,25 @@ type Status =
   | { kind: 'error'; message: string };
 
 /**
- * 向导第 2 步 · 云端 API 面板：名称/Base URL/API Key → 创建并测试。
- * 创建成功即视为供应商已配置（测试失败也保留供应商，可稍后修复）。
+ * 向导第 2 步 · 云端 API 面板：厂商预设（T3）或手填 → 名称/Base URL/API Key → 创建并测试。
+ * 创建成功即视为供应商已配置（测试失败也保留供应商，可稍后修复）；随后可一键添加推荐模型。
  */
-export function CloudProviderPanel({ onReady }: { onReady: () => void }) {
+export function CloudProviderPanel({ onReady }: { onReady: (providerId: string) => void }) {
   const { t } = useI18n();
   const mutations = useProviderMutations();
+  const [preset, setPreset] = React.useState<ProviderPreset | null>(null);
   const [name, setName] = React.useState('');
   const [baseUrl, setBaseUrl] = React.useState('');
   const [apiKey, setApiKey] = React.useState('');
   const [status, setStatus] = React.useState<Status>({ kind: 'idle' });
+  const [createdId, setCreatedId] = React.useState<string | null>(null);
+
+  /** 选厂商预设：只把名称与 Base URL 填好，Key 仍需用户自备 */
+  const pickPreset = (next: ProviderPreset) => {
+    setPreset(next);
+    setName(next.name);
+    setBaseUrl(next.baseUrl);
+  };
 
   const submit = async () => {
     if (!name.trim() || !baseUrl.trim()) return;
@@ -39,7 +51,8 @@ export function CloudProviderPanel({ onReady }: { onReady: () => void }) {
     };
     try {
       const provider = await mutations.create.mutateAsync(body);
-      onReady();
+      setCreatedId(provider.id);
+      onReady(provider.id);
       try {
         await mutations.testConnection.mutateAsync(provider.id);
         setStatus({ kind: 'ready' });
@@ -60,6 +73,8 @@ export function CloudProviderPanel({ onReady }: { onReady: () => void }) {
 
   return (
     <div className="space-y-3" data-testid="onboarding-cloud">
+      <CloudPresetPicker onPick={pickPreset} />
+
       <div className="space-y-1">
         <Label htmlFor="ob-cloud-name">{t('onboarding.provider.nameLabel')}</Label>
         <Input
@@ -95,7 +110,21 @@ export function CloudProviderPanel({ onReady }: { onReady: () => void }) {
           placeholder={t('onboarding.provider.apiKeyPlaceholder')}
           dir="ltr"
         />
+        {preset && (
+          <p className="text-xs text-muted-foreground">
+            <a
+              href={preset.keyUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+              data-testid="ob-preset-key-link"
+            >
+              {t('onboarding.provider.presets.keyLink')}
+            </a>
+          </p>
+        )}
       </div>
+
       <Button
         type="button"
         onClick={() => void submit()}
@@ -116,6 +145,12 @@ export function CloudProviderPanel({ onReady }: { onReady: () => void }) {
           {t('onboarding.provider.failed', { message: status.message })}
         </p>
       )}
+
+      {createdId && preset && (
+        <RecommendedModels providerId={createdId} models={preset.models} />
+      )}
+
+      <p className="text-xs text-muted-foreground">{t('onboarding.provider.presets.footer')}</p>
     </div>
   );
 }

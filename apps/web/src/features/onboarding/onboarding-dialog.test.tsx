@@ -6,6 +6,12 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/render';
 import { OnboardingDialog } from './onboarding-dialog';
 
+// v2.4 M1 T6：firstAsk 步内部用 useRouter 跳转 /chat
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => '/chat',
+}));
+
 function ok(data: unknown, status = 200) {
   return new Response(JSON.stringify({ success: true, data }), {
     status,
@@ -70,11 +76,13 @@ describe('首启向导 OnboardingDialog（v1.2 M5）', () => {
 
     // 上一步/下一步
     await user.click(screen.getByTestId('ob-next'));
-    expect(screen.getByTestId('onboarding-voice')).toBeInTheDocument();
+    await expect(screen.getByTestId('onboarding-voice')).toBeInTheDocument();
     await user.click(screen.getByTestId('ob-back'));
     expect(screen.getByTestId('onboarding-provider')).toBeInTheDocument();
 
     await user.click(screen.getByTestId('ob-next'));
+    await user.click(screen.getByTestId('ob-next'));
+    expect(screen.getByTestId('onboarding-firstask')).toBeInTheDocument();
     await user.click(screen.getByTestId('ob-next'));
     expect(screen.getByTestId('onboarding-finish')).toBeInTheDocument();
     expect(screen.queryByTestId('ob-skip')).not.toBeInTheDocument();
@@ -103,6 +111,8 @@ describe('首启向导 OnboardingDialog（v1.2 M5）', () => {
     renderWithProviders(<OnboardingDialog open onComplete={() => undefined} />);
     await user.click(screen.getByTestId('ob-next'));
 
+    // v2.4 M1：第 2 步默认聚焦演示模式，云端面板需显式切换页签
+    await user.click(screen.getByTestId('ob-tab-cloud'));
     const cloud = screen.getByTestId('onboarding-cloud');
     await user.type(within(cloud).getByLabelText('名称'), 'Mine');
     await user.type(within(cloud).getByLabelText('Base URL'), 'https://api.example.com/v1');
@@ -115,6 +125,28 @@ describe('首启向导 OnboardingDialog（v1.2 M5）', () => {
       ([url, init]) => url === '/api/providers' && init?.method === 'POST',
     );
     expect(createCall).toBeTruthy();
+  });
+
+  it('云端面板：选厂商预设自动填名称与 Base URL，并给 Key 申请直达（T3）', async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url === '/api/providers' ? ok([]) : ok(null),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<OnboardingDialog open onComplete={() => undefined} />);
+    await user.click(screen.getByTestId('ob-next'));
+    await user.click(screen.getByTestId('ob-tab-cloud'));
+
+    const cloud = screen.getByTestId('onboarding-cloud');
+    await user.click(within(cloud).getByTestId('ob-preset-deepseek'));
+
+    expect((within(cloud).getByLabelText('名称') as HTMLInputElement).value).toBe('DeepSeek');
+    expect((within(cloud).getByLabelText('Base URL') as HTMLInputElement).value).toBe(
+      'https://api.deepseek.com/v1',
+    );
+    expect(within(cloud).getByTestId('ob-preset-key-link')).toHaveAttribute(
+      'href',
+      'https://platform.deepseek.com/api_keys',
+    );
   });
 
   it('Ollama 面板：首次检测失败给安装指引，再次成功后可添加发现的模型', async () => {

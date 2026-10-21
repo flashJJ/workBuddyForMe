@@ -74,6 +74,8 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     await page.getByLabel('消息输入框').fill('你好，介绍一下你自己');
     await page.getByLabel('消息输入框').press('Enter');
     await expect(page.getByText(/mock 模型/).first()).toBeVisible();
+    // v2.4 M5：首字延迟本地指标可见（本地计时，分档与首启自检同口径）
+    await expect(page.getByTestId('first-token-metric').last()).toContainText(/首字/);
 
     // 长回复期间点击停止，助手消息出现「已停止」标记
     await page.getByLabel('消息输入框').fill('请长回答：详细说说工作台规划');

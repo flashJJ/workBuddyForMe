@@ -20,6 +20,7 @@ function makeAssistant(partial: Partial<Assistant> & { id: string; name: string 
     reviewerModelId: null,
     knowledgeBaseIds: [],
     enabledTools: [],
+    skillNames: [],
     retrieveAlways: false,
     memoryEnabled: true,
     expressionEnabled: true,
@@ -148,5 +149,71 @@ describe('助手管理（TR-26.1）', () => {
       (call) => call[0] === '/api/assistants' && (call[1] as RequestInit).method === 'POST',
     );
     expect(JSON.parse((postCall![1] as RequestInit).body as string).memoryEnabled).toBe(false);
+  });
+
+  it('v2.4 M4：助手级技能勾选随表单提交 skillNames', async () => {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/skills') {
+        return ok([
+          {
+            id: 's1',
+            name: 'weekly-report',
+            enabled: true,
+            sourcePath: '/data/skills/weekly-report',
+            manifest: {
+              name: 'weekly-report',
+              description: '周报生成',
+              version: '1.0.0',
+              permissions: ['read'],
+              promptTemplates: [],
+              allowedTools: [],
+              examples: [],
+            },
+            error: null,
+            exists: true,
+          },
+        ]);
+      }
+      if (url === '/api/assistants' && init?.method === 'POST') return ok({ id: 'a9' });
+      return ok([]);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<AssistantsPage />);
+
+    await user.click(await screen.findByRole('button', { name: '新建助手' }));
+    await user.clear(screen.getByLabelText('名称'));
+    await user.type(screen.getByLabelText('名称'), '周报助手');
+    // 勾选技能（未勾选时为空数组 = 跟随全局）
+    await user.click(await screen.findByTestId('assistant-skill-option-weekly-report'));
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/assistants', expect.anything()),
+    );
+    const postCall = fetchMock.mock.calls.find(
+      (call) => call[0] === '/api/assistants' && (call[1] as RequestInit).method === 'POST',
+    );
+    expect(JSON.parse((postCall![1] as RequestInit).body as string).skillNames).toEqual([
+      'weekly-report',
+    ]);
+  });
+
+  it('v2.4 M4：助手卡片展示技能徽标；未勾选时显示「跟随全局」', async () => {
+    const withSkill = makeAssistant({ id: 'a1', name: '带技能', skillNames: ['weekly-report'] });
+    const globalOnly = makeAssistant({ id: 'a2', name: '跟随全局' });
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === '/api/assistants') return ok([withSkill, globalOnly]);
+      return ok([]);
+    });
+    renderWithProviders(<AssistantsPage />);
+
+    const skillCard = await screen.findByTestId('assistant-card-a1');
+    expect(within(skillCard).getByTestId('assistant-skill-badge')).toHaveTextContent(
+      '技能：weekly-report',
+    );
+    const globalCard = screen.getByTestId('assistant-card-a2');
+    expect(within(globalCard).getByTestId('assistant-capabilities')).toHaveTextContent(
+      '技能：跟随全局',
+    );
   });
 });

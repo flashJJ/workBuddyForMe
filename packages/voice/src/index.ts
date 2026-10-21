@@ -34,6 +34,7 @@ export {
   splitSentences,
   stripForTts,
   chunkForTts,
+  isSpeakableText,
   MIN_FIRST_CLAUSE,
   MAX_TTS_CHUNK,
   type SplitterOptions,

@@ -2,13 +2,16 @@
 
 import * as React from 'react';
 import type { Provider } from '@wbfm/shared/types';
+import { DEMO_PROVIDER_ID } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useProviders } from '@/lib/hooks/use-providers';
+import { useSettings } from '@/lib/hooks/use-settings';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { ProviderCard } from './provider-card';
 import { ProviderFormDialog } from './provider-form-dialog';
+import { DemoModePanel } from './demo-mode-panel';
 import { DefaultsPanel } from './defaults-panel';
 import { AppearancePanel } from './appearance-panel';
 import { McpPanel } from './mcp-panel';
@@ -49,14 +52,19 @@ interface SettingsSection {
   panels: React.ReactNode[];
 }
 
-export function SettingsPage() {
+export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: boolean }) {
   const { t } = useI18n();
   const { data: providers, isLoading, isError, refetch } = useProviders();
+  const { data: settings } = useSettings();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Provider | null>(null);
   // 水合门控：供应商查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
+
+  // v2.4 M1：内置 demo 供应商由「演示模式」开关管理，不在通用供应商列表中出现
+  const visibleProviders = providers?.filter((provider) => provider.id !== DEMO_PROVIDER_ID);
+  const demoEnabled = settings?.demoModeEnabled === true;
 
   const openCreate = () => {
     setEditing(null);
@@ -109,7 +117,7 @@ export function SettingsPage() {
       id: 'data',
       labelKey: 'settings.sections.data',
       panels: [
-        <CharacterCardsPanel key="cards" />,
+        <CharacterCardsPanel key="cards" autoCreate={autoCreateCard} />,
         <KnowledgeRetrievalPanel key="knowledge" />,
         <ModPackPanel key="modpack" />,
         <MemoryPanel key="memory" />,
@@ -134,14 +142,16 @@ export function SettingsPage() {
           }
         />
 
-        {/* 基础设置：供应商 + 默认偏好（不进分组，始终置顶） */}
+        {/* 基础设置：演示模式开关 + 供应商 + 默认偏好（不进分组，始终置顶） */}
+        <DemoModePanel />
+
         {mounted && isLoading && <Spinner />}
         {mounted && isError && (
           <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />
         )}
-        {mounted && !isLoading && !isError && providers && (
+        {mounted && !isLoading && !isError && visibleProviders && (
           <div className="space-y-4" data-testid="provider-list">
-            {providers.length === 0 && (
+            {visibleProviders.length === 0 && !demoEnabled && (
               <EmptyState
                 title={t('settings.empty.title')}
                 description={t('settings.empty.description')}
@@ -152,7 +162,7 @@ export function SettingsPage() {
                 }
               />
             )}
-            {providers.map((provider) => (
+            {visibleProviders.map((provider) => (
               <ProviderCard key={provider.id} provider={provider} onEdit={openEdit} />
             ))}
           </div>

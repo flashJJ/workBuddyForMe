@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { DemoModeBadge } from './demo-mode-badge';
 import { NAV_ITEMS } from './nav-config';
 
 /** 应用侧边栏：品牌区 + 模块导航 + 主题切换 */
@@ -43,6 +44,7 @@ export function AppSidebar() {
       </nav>
       <div className="flex flex-col items-center gap-2 px-2 py-4 text-xs text-muted-foreground md:flex-row md:justify-between md:px-5">
         <span className="hidden md:inline">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
+        <DemoModeBadge />
         <ThemeToggle />
       </div>
     </aside>

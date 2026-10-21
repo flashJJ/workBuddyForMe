@@ -3,9 +3,15 @@ export const API = {
   providers: '/api/providers',
   provider: (id: string) => `/api/providers/${id}`,
   providerTest: (id: string) => `/api/providers/${id}/test`,
+  /** v2.4 M1 T5：首字延迟自检 */
+  providerFirstToken: (id: string) => `/api/providers/${id}/first-token-probe`,
   providerModels: (id: string) => `/api/providers/${id}/models`,
   model: (id: string) => `/api/models/${id}`,
   settings: '/api/settings',
+  /** v2.4 M1：本机 Ollama 提前探测（向导来源置顶） */
+  systemOllama: '/api/system/ollama',
+  /** v2.4 T4：本机 Ollama 推荐模型一键拉取（SSE 进度） */
+  systemOllamaPull: '/api/system/ollama/pull',
   assistants: '/api/assistants',
   assistant: (id: string) => `/api/assistants/${id}`,
   assistantReorder: '/api/assistants/reorder',
@@ -85,6 +91,8 @@ export const API = {
   // v0.8 Flow Studio
   flows: '/api/flows',
   flow: (id: string) => `/api/flows/${id}`,
+  /** v2.4 P0-2：以内置工作流为模板复制草稿 */
+  flowClone: (id: string) => `/api/flows/${id}/clone`,
   flowVersions: (id: string) => `/api/flows/${id}/versions`,
   flowValidate: (id: string) => `/api/flows/${id}/validate`,
   flowPublish: (id: string) => `/api/flows/${id}/publish`,
@@ -113,6 +121,7 @@ export const QUERY_KEYS = {
   models: (providerId: string) => ['models', providerId] as const,
   modelsAll: ['models', 'all'] as const,
   settings: ['settings'] as const,
+  ollamaProbe: ['ollama-probe'] as const,
   assistants: ['assistants'] as const,
   characterCards: ['character-cards'] as const,
   stageScenes: ['stage-scenes'] as const,

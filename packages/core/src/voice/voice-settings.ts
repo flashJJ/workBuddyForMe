@@ -30,8 +30,10 @@ export function readVoiceSettings(settings: SettingsRepository): VoiceSettings {
   ) {
     merged.avatarModelId = DEFAULT_AVATAR_MODEL_ID;
   }
-  // v1.1：旧库无 ttsModel 字段时默认 Kokoro（与历史默认一致）
-  if (!merged.ttsModel || !VOICE_TTS_MODELS.includes(merged.ttsModel)) merged.ttsModel = 'kokoro';
+  // v2.4 D9：ttsModel 缺省/非法时跟随 DEFAULT_VOICE_SETTINGS（现为 melo），不再硬编码历史默认
+  if (!merged.ttsModel || !VOICE_TTS_MODELS.includes(merged.ttsModel)) {
+    merged.ttsModel = DEFAULT_VOICE_SETTINGS.ttsModel;
+  }
   // v2.0：待机动作 id 仅允许 motion:<fileRef> 或内置默认（null/builtin:daiji）；未知 id 回落 null
   if (
     merged.idleMotionId &&

@@ -25,6 +25,8 @@ interface AssistantEntry {
   maxTokens?: unknown;
   knowledgeBaseIds?: unknown;
   enabledTools?: unknown;
+  /** v2.4 M4：助手级技能勾选（旧档缺失回落空数组） */
+  skillNames?: unknown;
   retrieveAlways?: unknown;
   memoryEnabled?: unknown;
   expressionEnabled?: unknown;
@@ -110,13 +112,13 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
     `INSERT OR IGNORE INTO assistants(
        id, name, emoji, color, system_prompt, temperature, top_p, max_tokens,
        model_id, planner_model_id, executor_model_id, reviewer_model_id,
-       knowledge_base_ids, enabled_tools, retrieve_always, memory_enabled, expression_enabled,
+       knowledge_base_ids, enabled_tools, skill_names, retrieve_always, memory_enabled, expression_enabled,
        personality_frankness, personality_tsundere, personality_shy, personality_tolerance,
        card_id, is_builtin, sort_order, created_at, updated_at)
      VALUES (
        @id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
        NULL, NULL, NULL, NULL,
-       @knowledgeBaseIds, @enabledTools, @retrieveAlways, @memoryEnabled, @expressionEnabled,
+       @knowledgeBaseIds, @enabledTools, @skillNames, @retrieveAlways, @memoryEnabled, @expressionEnabled,
        @pFrank, @pTsun, @pShy, @pTol,
        @cardId, 0, @sortOrder, @createdAt, @updatedAt)`,
   );
@@ -168,6 +170,9 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
         ),
         enabledTools: JSON.stringify(
           Array.isArray(entry.enabledTools) ? entry.enabledTools : ['current_time'],
+        ),
+        skillNames: JSON.stringify(
+          Array.isArray(entry.skillNames) ? entry.skillNames : [],
         ),
         retrieveAlways: entry.retrieveAlways === false ? 0 : 1,
         memoryEnabled: entry.memoryEnabled === false ? 0 : 1,

@@ -102,9 +102,19 @@ test.describe.serial('M3 Live2D 形象', () => {
   });
 
   test('⑥ 复位：关闭形象后形象栏消失', async ({ page }) => {
+    const putPromise = page
+      .waitForResponse(
+        (r) => r.url().includes('/api/voice/settings') && r.request().method() === 'PUT',
+        { timeout: 15_000 },
+      )
+      .then((r) => r.json());
     await page.goto('/settings');
     await page.getByTestId('avatar-enabled').uncheck();
     await expect(page.getByTestId('avatar-enabled')).not.toBeChecked();
+    // 等待关闭落库后再导航，避免 PUT 被路由切换中断（与 ④/⑦ 同一等待口径）
+    const payload = (await putPromise) as { success: boolean; data?: { avatarEnabled?: boolean } };
+    expect(payload.success).toBe(true);
+    expect(payload.data?.avatarEnabled).toBe(false);
 
     await page.goto('/chat');
     await expect(page.getByTestId('avatar-rail')).toHaveCount(0);
@@ -145,6 +155,10 @@ test.describe.serial('M3 Live2D 形象', () => {
     expect(payload.data.avatarModelId).toBe('hiyori');
 
     // M4.5：角色绑定 Kokoro 声线（Hiyori → zf_026 / sid 18）；
+    // v2.4 D9 起默认朗读引擎为 MeloTTS（单声线，不显示角色声线绑定），
+    // 本段断言的是 Kokoro 绑定契约，故先显式切回 Kokoro 再校验。
+    await page.request.put('/api/voice/settings', { data: { ttsModel: 'kokoro' } });
+    await page.reload();
     // e2e 临时数据根无 TTS 模型，试听按钮渲染但禁用
     const voiceRow = page.getByTestId('avatar-voice-row');
     await expect(voiceRow).toContainText('zf_026');

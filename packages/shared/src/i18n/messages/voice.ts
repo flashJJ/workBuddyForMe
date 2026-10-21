@@ -141,6 +141,30 @@ export const zhVoice = {
     silenceSeconds: '{seconds} 秒',
     silenceRecommended: '（推荐，跟手）',
     halfDuplexHint: '半双工模式：助手朗读时麦克风自动抑制回声，需要明显更大的声音才能打断；建议使用耳机。',
+    // v2.4 M3：默认路径只暴露两档；灵敏度/尾静音退到「高级」（M0 §4）
+    profileLabel: '预设档位',
+    profileFast: '反应快',
+    profileFastHint: '小停顿即认为说完；耳机 / 安静环境',
+    profileTolerant: '更宽容',
+    profileTolerantHint: '外放 / 嘈杂环境，减少误触发',
+    profileCustom: '自定义（见高级）',
+    advanced: '高级（灵敏度 / 尾静音）',
+    silenceNow: '当前：约 {seconds} 秒未说话即认为说完',
+  },
+  // v2.4 M3（P0-3）：一键开启语音对话（双入口）+ 下载引导 + 半双工边界声明
+  quickStart: {
+    actionReady: '开启语音对话',
+    actionDownload: '开启语音对话（需先下载约 {size}）',
+    enabled: '语音对话已开启：免手聆听 + 自动朗读',
+    boundary:
+      '当前为「说完再答」模式：助手朗读时你开口即可打断；同时说话与聆听（全双工）不在本版。',
+    download: {
+      title: '需要先下载离线语音模型',
+      costLine: '共需约 {size} · 视网速而定',
+      diskLine: '模型保存在 {path}（不进安装包，下载后完全离线可用）',
+      action: '一键下载',
+      done: '模型已就绪，回到上方按钮即可开启',
+    },
   },
   selfTest: {
     start: '麦克风自检',

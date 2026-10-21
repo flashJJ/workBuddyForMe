@@ -65,6 +65,27 @@ describe('KEYBOARD_SHORTCUTS 快捷键单一真源', () => {
           ],
           "titleKey": "shortcuts.groups.commandPalette",
         },
+        {
+          "items": [
+            {
+              "keys": "H",
+              "labelKey": "shortcuts.items.toggleUi",
+            },
+            {
+              "keys": "F11",
+              "labelKey": "shortcuts.items.fullscreen",
+            },
+            {
+              "keys": "Esc",
+              "labelKey": "shortcuts.items.stageEsc",
+            },
+            {
+              "keys": "Ctrl + 滚轮",
+              "labelKey": "shortcuts.items.zoomScene",
+            },
+          ],
+          "titleKey": "shortcuts.groups.stage",
+        },
       ]
     `);
   });

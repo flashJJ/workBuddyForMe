@@ -2,7 +2,6 @@
 import * as React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { ThemeProvider } from '@/components/theme/theme-provider';
 import { I18nProvider } from '@/lib/i18n/i18n-context';
 import { AppSidebar } from './app-sidebar';
 import { ErrorBoundary } from '@/components/common/error-boundary';
@@ -41,13 +40,8 @@ describe('应用外壳（TR-23.1）', () => {
   });
 
   it('侧边栏：七个模块导航，当前路由高亮，切换路径更新高亮', () => {
-    const { rerender } = render(
-      <ThemeProvider skipHydration>
-        <I18nProvider skipHydration>
-          <AppSidebar />
-        </I18nProvider>
-      </ThemeProvider>,
-    );
+    // v2.4 M1：侧栏含演示模式徽标（读 settings），需 QueryClient 上下文
+    const { rerender } = renderWithProviders(<AppSidebar />);
     expect(screen.getAllByRole('link')).toHaveLength(7);
     expect(screen.getByRole('link', { name: /对话/ })).toHaveAttribute(
       'aria-current',
@@ -55,13 +49,7 @@ describe('应用外壳（TR-23.1）', () => {
     );
 
     usePathname.mockReturnValue('/knowledge');
-    rerender(
-      <ThemeProvider skipHydration>
-        <I18nProvider skipHydration>
-          <AppSidebar />
-        </I18nProvider>
-      </ThemeProvider>,
-    );
+    rerender(<AppSidebar />);
     expect(screen.getByRole('link', { name: /知识库/ })).toHaveAttribute(
       'aria-current',
       'page',
@@ -74,13 +62,7 @@ describe('应用外壳（TR-23.1）', () => {
       'fetch',
       vi.fn(async () => new Response(JSON.stringify({ success: true, data: {} }), { status: 200 })),
     );
-    render(
-      <ThemeProvider skipHydration>
-        <I18nProvider skipHydration>
-          <AppSidebar />
-        </I18nProvider>
-      </ThemeProvider>,
-    );
+    renderWithProviders(<AppSidebar />);
     const toggle = screen.getByRole('button', { name: /切换到深色模式/ });
     fireEvent.click(toggle);
     expect(document.documentElement).toHaveClass('dark');

@@ -28,6 +28,28 @@ export {
   type SettingsService,
 } from './settings-service';
 export {
+  enableDemoMode,
+  disableDemoMode,
+  type DemoModeArtifacts,
+} from './demo-provider';
+export {
+  probeLocalOllama,
+  LOCAL_OLLAMA_URL,
+  OLLAMA_PROBE_TIMEOUT_MS,
+} from './ollama-probe';
+export {
+  streamOllamaPull,
+  type OllamaPullProgress,
+  type OllamaPullOptions,
+} from './ollama-pull';
+export {
+  probeFirstToken,
+  FIRST_TOKEN_PROBE_PROMPT,
+  FIRST_TOKEN_PROBE_TIMEOUT_MS,
+  type FirstTokenProbeOutcome,
+} from './first-token-probe';
+export { recordMilestone, type TtfvMilestone } from './milestones';
+export {
   createAssistantsService,
   type AssistantsService,
 } from './assistant-service';

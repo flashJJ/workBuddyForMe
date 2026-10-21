@@ -6,6 +6,7 @@ export const zhShortcuts = {
     global: '全局',
     chat: '对话',
     commandPalette: '命令面板',
+    stage: '舞台',
   },
   items: {
     commandPalette: '打开命令面板',
@@ -18,6 +19,10 @@ export const zhShortcuts = {
     moveSelection: '移动选择',
     runCommand: '执行命令',
     closePalette: '关闭命令面板',
+    toggleUi: '隐藏 / 显示界面',
+    fullscreen: '切换全屏',
+    stageEsc: '散焦 / 退出舞台',
+    zoomScene: '缩放舞台场景',
   },
 };
 
@@ -28,6 +33,7 @@ export const enShortcuts = {
     global: 'General',
     chat: 'Chat',
     commandPalette: 'Command palette',
+    stage: 'Stage',
   },
   items: {
     commandPalette: 'Open command palette',
@@ -40,5 +46,9 @@ export const enShortcuts = {
     moveSelection: 'Move selection',
     runCommand: 'Run command',
     closePalette: 'Close command palette',
+    toggleUi: 'Hide / show interface',
+    fullscreen: 'Toggle fullscreen',
+    stageEsc: 'Unfocus / exit stage',
+    zoomScene: 'Zoom stage scene',
   },
 };

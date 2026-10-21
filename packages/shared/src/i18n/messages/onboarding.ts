@@ -6,6 +6,7 @@ export const zhOnboarding = {
     welcome: '欢迎',
     provider: '连接模型',
     voice: '语音能力',
+    firstAsk: '第一句话',
     finish: '完成',
   },
   welcome: {
@@ -45,6 +46,45 @@ export const zhOnboarding = {
     modelAdded: '已添加模型 {modelId}',
     addFailed: '模型添加失败：{message}',
     configuredBadge: '供应商已就绪',
+    // v2.4 M1：第三个来源「演示模式」
+    tabDemo: '演示模式',
+    demoLead: '不填任何 Key 也能先聊起来：使用本地模拟回复，不联网、不下载，可随时在「设置」中关闭。',
+    demoEnable: '开启演示模式',
+    demoEnabling: '正在开启…',
+    demoReady: '演示模式已就绪，可以直接开始对话。',
+    demoFailed: '开启失败：{message}',
+    // v2.4 P0-1（T3）：厂商预设与推荐模型
+    presets: {
+      title: '常用厂商（点选自动填名称与地址）',
+      lead: '也可以自己填任意 OpenAI 兼容地址。',
+      keyLink: '去申请 API Key',
+      footer: '预设只含地址与模型名建议，模型与价格以厂商官网为准。',
+    },
+    recommended: {
+      title: '推荐模型（一键添加，可跳过）',
+      addFailed: '模型添加失败：{message}',
+    },
+    // v2.4 P0-1（T4）：可执行安装指引 + 推荐模型一键拉取（体积/耗时明示）
+    installWingetLead: 'Windows 也可用命令行安装（需 winget）：',
+    installWinget: 'winget install --id Ollama.Ollama',
+    recommendedTitle: '推荐模型（一键拉取到本机，明示体积与耗时）',
+    sizeLabel: '约 {gb} GB',
+    etaFast: '预计几分钟（视网速）',
+    etaMedium: '预计数分钟到十几分钟（视网速）',
+    pull: '一键拉取',
+    pulling: '拉取中（总量未知）…',
+    pullPercent: '已下载 {percent}%',
+    pulled: '已拉取完成',
+    pullFailed: '拉取失败：{message}',
+    pullCancel: '取消',
+  },
+  // v2.4 M1 T5 首字延迟自检（M0 §6 冻结分档）
+  latency: {
+    probing: '正在自检首字延迟…',
+    smooth: '预计首字约 {seconds} 秒，体感流畅。',
+    slow: '预计首字约 {seconds} 秒，偏慢但可用。',
+    timeout: '自检超时，建议换一个来源。',
+    switchSource: '换一个来源',
   },
   voice: {
     heading: '语音对话（可选）',
@@ -59,6 +99,14 @@ export const zhOnboarding = {
     asrReady: '语音识别模型已就绪',
     ttsReady: '语音合成模型已就绪',
     backgroundHint: '下载在后台进行，关闭向导不影响。',
+  },
+  // v2.4 M1 T6：firstAsk 步（预置示例问题，按已就绪能力显隐）
+  firstAsk: {
+    heading: '发出第一句话',
+    lead: '点一个示例直接开始对话；也可以直接「继续」，之后自己输入。',
+    general: '帮我写一条把这件事说清楚的周报',
+    knowledge: '用「产品需求」模板总结一段需求',
+    voice: '用语音和我聊两句',
   },
   finish: {
     heading: '一切就绪',
@@ -79,6 +127,7 @@ export const enOnboarding = {
     welcome: 'Welcome',
     provider: 'Connect a model',
     voice: 'Voice',
+    firstAsk: 'First message',
     finish: 'Done',
   },
   welcome: {
@@ -118,6 +167,45 @@ export const enOnboarding = {
     modelAdded: 'Model added: {modelId}',
     addFailed: 'Failed to add model: {message}',
     configuredBadge: 'Provider ready',
+    tabDemo: 'Demo mode',
+    demoLead:
+      'Start chatting without any API key: replies are simulated locally, with no network access and no downloads. Turn it off anytime in Settings.',
+    demoEnable: 'Enable demo mode',
+    demoEnabling: 'Enabling…',
+    demoReady: 'Demo mode is ready — you can start chatting.',
+    demoFailed: 'Failed to enable: {message}',
+    // v2.4 P0-1 (T3) vendor presets and recommended models
+    presets: {
+      title: 'Common vendors (pick one to fill name and URL)',
+      lead: 'You can also enter any OpenAI-compatible base URL yourself.',
+      keyLink: 'Get an API key',
+      footer: 'Presets only carry the base URL and model-name suggestions; models and pricing follow the vendor’s site.',
+    },
+    recommended: {
+      title: 'Recommended models (one click to add, or skip)',
+      addFailed: 'Failed to add model: {message}',
+    },
+    // v2.4 P0-1 (T4) executable install guide + one-click model pull (size/ETA shown)
+    installWingetLead: 'On Windows you can also install via the command line (winget):',
+    installWinget: 'winget install --id Ollama.Ollama',
+    recommendedTitle: 'Recommended models (one click to pull, size and ETA shown)',
+    sizeLabel: 'about {gb} GB',
+    etaFast: 'A few minutes (depends on your connection)',
+    etaMedium: 'Several to a dozen minutes (depends on your connection)',
+    pull: 'Pull now',
+    pulling: 'Pulling (total unknown)…',
+    pullPercent: 'Downloaded {percent}%',
+    pulled: 'Pulled',
+    pullFailed: 'Pull failed: {message}',
+    pullCancel: 'Cancel',
+  },
+  // v2.4 M1 T5 time-to-first-token check (M0 §6 frozen tiers)
+  latency: {
+    probing: 'Checking time to first token…',
+    smooth: 'First token in about {seconds}s — feels smooth.',
+    slow: 'First token in about {seconds}s — usable but slow.',
+    timeout: 'The check timed out — consider another source.',
+    switchSource: 'Switch source',
   },
   voice: {
     heading: 'Voice conversation (optional)',
@@ -132,6 +220,14 @@ export const enOnboarding = {
     asrReady: 'Speech recognition model is ready',
     ttsReady: 'Speech synthesis model is ready',
     backgroundHint: 'Downloads continue in the background even if you close this wizard.',
+  },
+  // v2.4 M1 T6 firstAsk step (preset example questions, shown by ready capability)
+  firstAsk: {
+    heading: 'Send your first message',
+    lead: 'Tap an example to start chatting right away — or hit Continue and type your own later.',
+    general: 'Write a short weekly report that explains this clearly',
+    knowledge: 'Summarize a requirement using the “Product requirements” template',
+    voice: 'Let’s have a quick chat with voice',
   },
   finish: {
     heading: 'You are all set',

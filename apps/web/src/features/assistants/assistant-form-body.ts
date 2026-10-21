@@ -15,6 +15,8 @@ export interface AssistantFormShape {
   /** v1.5：多选知识库 id */
   knowledgeBaseIds: string[];
   enabledTools: string[];
+  /** v2.4 M4：助手级技能 name（空数组=跟随全局已启用技能） */
+  skillNames: string[];
   retrieveAlways: boolean;
   memoryEnabled: boolean;
   expressionEnabled: boolean;
@@ -46,6 +48,7 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
     modelId: form.modelId || null,
     knowledgeBaseIds,
     enabledTools,
+    skillNames: form.skillNames,
     retrieveAlways: form.retrieveAlways,
     memoryEnabled: form.memoryEnabled,
     expressionEnabled: form.expressionEnabled,

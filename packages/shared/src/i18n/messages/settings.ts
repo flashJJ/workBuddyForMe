@@ -126,6 +126,18 @@ export const zhSettings = {
     fixedLight: '亮色主题',
     modeHint: '星际蓝可在浅色、深色与跟随系统间切换；其他主题自带明暗。',
   },
+  // v2.4 M1 演示模式开关
+  demoMode: {
+    title: '演示模式',
+    description: '内置本地模拟回复，不填 Key 即可体验对话与知识库；不联网、不下载，数据不出机。',
+    enable: '开启演示模式',
+    disable: '关闭演示模式',
+    enabled: '演示模式已开启',
+    disabled: '演示模式已关闭，临时供应商与模型已清理',
+    onHint: '当前对话与检索均由本地模拟生成，并非真实模型；侧栏会常显「演示模式」徽标。',
+    badgeLabel: '演示模式',
+    badgeHint: '当前使用演示模式（本地模拟回复，非真实模型）。可在设置中关闭。',
+  },
 };
 
 export const enSettings = {
@@ -265,5 +277,20 @@ export const enSettings = {
     fixedLight: 'Light theme',
     modeHint:
       'Stellar Blue supports light, dark and match-system. The other themes carry their own mode.',
+  },
+  // v2.4 M1 demo mode switch
+  demoMode: {
+    title: 'Demo mode',
+    description:
+      'Built-in locally simulated replies so you can try chat and the knowledge base without any API key. No network access, no downloads, nothing leaves your machine.',
+    enable: 'Enable demo mode',
+    disable: 'Disable demo mode',
+    enabled: 'Demo mode enabled',
+    disabled: 'Demo mode disabled; the temporary provider and models were removed',
+    onHint:
+      'Replies and retrieval are locally simulated right now — not a real model. A “Demo mode” badge stays visible in the sidebar.',
+    badgeLabel: 'Demo mode',
+    badgeHint:
+      'Demo mode is on (locally simulated replies, not a real model). Turn it off in Settings.',
   },
 };

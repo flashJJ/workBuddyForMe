@@ -1,8 +1,8 @@
 /**
  * 首启向导步骤状态机（v1.2 M5）：纯函数，无 React 依赖，便于单测。
- * 顺序：欢迎 → 配供应商 → 语音（可选）→ 完成。
+ * 顺序：欢迎 → 配供应商 → 语音（可选）→ 第一句话 → 完成（v2.4 M1 新增 firstAsk）。
  */
-export const ONBOARDING_STEPS = ['welcome', 'provider', 'voice', 'finish'] as const;
+export const ONBOARDING_STEPS = ['welcome', 'provider', 'voice', 'firstAsk', 'finish'] as const;
 
 export type OnboardingStepId = (typeof ONBOARDING_STEPS)[number];
 

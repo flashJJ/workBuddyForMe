@@ -1,8 +1,8 @@
 import type { MessageKey } from '../i18n';
 
 /**
- * 快捷键浮层（v1.2 M5）唯一真源：
- * 全局/对话/语音/Flow 四组操作的「i18n 键 + 键位串」。
+ * 快捷键浮层（v1.2 M5，v2.4 补舞台组）唯一真源：
+ * 全局/对话/命令面板/舞台四组操作的「i18n 键 + 键位串」。
  * 浮层渲染与实际绑定必须以本表为准（快照测试防漂移）。
  * 键位串用人类可读写法（Ctrl / Shift / Enter…），非机器加速器格式。
  */
@@ -44,6 +44,15 @@ export const KEYBOARD_SHORTCUTS: readonly ShortcutGroup[] = [
       { labelKey: 'shortcuts.items.moveSelection', keys: '↑ / ↓' },
       { labelKey: 'shortcuts.items.runCommand', keys: 'Enter' },
       { labelKey: 'shortcuts.items.closePalette', keys: 'Esc' },
+    ],
+  },
+  {
+    titleKey: 'shortcuts.groups.stage',
+    items: [
+      { labelKey: 'shortcuts.items.toggleUi', keys: 'H' },
+      { labelKey: 'shortcuts.items.fullscreen', keys: 'F11' },
+      { labelKey: 'shortcuts.items.stageEsc', keys: 'Esc' },
+      { labelKey: 'shortcuts.items.zoomScene', keys: 'Ctrl + 滚轮' },
     ],
   },
 ];

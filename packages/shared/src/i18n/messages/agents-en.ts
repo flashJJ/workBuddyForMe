@@ -7,14 +7,6 @@ export const enAgents = {
     off: 'Task mode: off',
     hint: 'When on, Planner/Executor/Reviewer split the work. Applies to this conversation only and is not persisted.',
   },
-  status: {
-    connecting: 'Connecting',
-    running: 'Running',
-    done: 'Done',
-    failed: 'Failed',
-    cancelled: 'Cancelled',
-    budget_exceeded: 'Budget exceeded',
-  },
   role: {
     planner: 'Planner',
     executor: 'Executor',

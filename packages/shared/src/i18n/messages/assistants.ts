@@ -19,10 +19,32 @@ export const zhAssistants = {
     noPrompt: '未设置系统提示词',
     defaultModel: '默认模型',
     knowledgeBase: '知识库：{name}',
+    /** v2.4 M4（P1-2）：能力可见性 */
+    skill: '技能：{name}',
+    skillsFollowGlobal: '技能：跟随全局',
+    mcpTools: 'MCP 工具 {count}',
     moveUp: '↑ 上移',
     moveDown: '↓ 下移',
     moveUpAria: '{name} 上移',
     moveDownAria: '{name} 下移',
+  },
+  /** v2.4 M4：助手级技能勾选（与工具级区分） */
+  skills: {
+    legend: '技能（能力包）',
+    hint: '勾选后只对这个助手生效；技能自带提示词流程与工具，与上面的单工具白名单相互独立。不勾选=跟随设置页全局启用的技能。',
+    empty: '设置页还没有已启用的技能',
+    followGlobal: '当前：跟随全局（使用设置页全部已启用技能）',
+    selected: '当前：已勾选 {count} 个技能',
+  },
+  /** v2.4 M4：对话页头部能力摘要 */
+  capability: {
+    modelBound: '模型：已绑定',
+    modelDefault: '模型：跟随默认',
+    kb: '知识库 {count}',
+    skills: '技能 {count}',
+    skillsGlobal: '技能 {count}（全局）',
+    tools: '工具 {count}',
+    toolsMcp: '工具 {count}（MCP {mcp}）',
   },
   form: {
     createTitle: '新建助手',
@@ -112,10 +134,32 @@ export const enAssistants = {
     noPrompt: 'No system prompt set',
     defaultModel: 'Default model',
     knowledgeBase: 'Knowledge base: {name}',
+    /** v2.4 M4 (P1-2): capability visibility */
+    skill: 'Skill: {name}',
+    skillsFollowGlobal: 'Skills: follow global',
+    mcpTools: 'MCP tools {count}',
     moveUp: '↑ Move up',
     moveDown: '↓ Move down',
     moveUpAria: 'Move {name} up',
     moveDownAria: 'Move {name} down',
+  },
+  /** v2.4 M4: assistant-level skill selection (distinct from tool whitelist) */
+  skills: {
+    legend: 'Skills (capability packs)',
+    hint: 'Selected skills apply to this assistant only; a skill ships its own prompt flow and tools, independent of the single-tool whitelist above. Leave all unchecked to follow the globally enabled skills in Settings.',
+    empty: 'No skills are enabled in Settings yet',
+    followGlobal: 'Now: following global (all skills enabled in Settings)',
+    selected: 'Now: {count} skill(s) selected',
+  },
+  /** v2.4 M4: capability summary in the chat header */
+  capability: {
+    modelBound: 'Model: bound',
+    modelDefault: 'Model: default',
+    kb: 'KB {count}',
+    skills: 'Skills {count}',
+    skillsGlobal: 'Skills {count} (global)',
+    tools: 'Tools {count}',
+    toolsMcp: 'Tools {count} (MCP {mcp})',
   },
   form: {
     createTitle: 'New assistant',

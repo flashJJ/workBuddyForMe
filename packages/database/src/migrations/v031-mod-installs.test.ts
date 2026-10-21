@@ -19,7 +19,7 @@ describe('v031 mod_installs', () => {
     const db = new Database(':memory:');
     db.pragma('user_version = 30');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(33);
+    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const cols = db.prepare('PRAGMA table_info(mod_installs)').all() as Array<{ name: string }>;
     expect(cols.map((c) => c.name)).toEqual([
       'id',
@@ -37,7 +37,7 @@ describe('v031 mod_installs', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(33);
+    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     db.close();
   });
 });

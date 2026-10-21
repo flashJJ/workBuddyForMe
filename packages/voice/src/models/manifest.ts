@@ -99,14 +99,14 @@ function withTotals(spec: VoiceModelSpec): VoiceModelSpec {
   return { ...spec, totalBytes: spec.files.reduce((sum, f) => sum + f.size, 0) };
 }
 
-/** 按 kind+engine 取模型规格（tts 缺省回落 Kokoro，与 shared 默认 ttsEngine 对齐） */
+/** 按 kind+engine 取模型规格（tts 缺省回落 MeloTTS，与 shared 的 D9 默认一致） */
 export function getVoiceModelSpec(
   kind: VoiceModelKind,
   engine?: TtsEngineId,
 ): VoiceModelSpec {
   const entry = VOICE_MODELS[kind];
   if (Array.isArray(entry)) {
-    const wanted = engine ?? 'kokoro';
+    const wanted = engine ?? 'melo';
     return entry.find((m) => m.engine === wanted) ?? entry[entry.length - 1]!;
   }
   return entry;

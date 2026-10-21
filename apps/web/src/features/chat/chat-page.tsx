@@ -20,12 +20,11 @@ import { MessageList } from './message-list';
 import { Composer } from './composer';
 import { ToolConfirmDialog } from './tool-confirm-dialog';
 import { useChatVoiceCompanion } from './use-chat-voice-companion';
-import { VoiceToggle } from '../voice/voice-toggle';
-import { MicButton } from '../voice/mic-button';
-import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
+import { ChatVoiceControls } from './chat-voice-controls';
 import { ProactiveBubbleBar } from './proactive-bubble';
 import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
 import { useChatEvents } from './use-chat-events';
+import { useFirstAsk } from './use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
 
 export function ChatPage() {
@@ -107,6 +106,9 @@ export function ChatPage() {
         ),
     );
   }, [currentAssistant, settings, models]);
+
+  // v2.4 M1 T6：向导 firstAsk 步选中的示例问题，模型就绪后自动发出一次
+  useFirstAsk(session.send, hasChatModel);
 
   const switchAssistant = (id: string) => {
     session.reset();
@@ -222,6 +224,7 @@ export function ChatPage() {
         <ChatHeader
           assistants={assistants ?? []}
           assistantId={assistantId}
+          currentAssistant={currentAssistant}
           currentConversation={currentConversation}
           onAssistantChange={switchAssistant}
           onShowSummary={() => setSummaryOpen(true)}
@@ -248,6 +251,7 @@ export function ChatPage() {
               onRetry={session.retry}
               onResend={session.send}
               onFeedback={session.applyFeedback}
+              streamTiming={session.streamTiming}
             />
             {companion.proactiveBubble && (
               <ProactiveBubbleBar
@@ -262,15 +266,15 @@ export function ChatPage() {
               taskMode={taskMode}
               onTaskModeChange={setTaskMode}
               leading={
-                <>
-                  <VoiceToggle enabled={ttsEnabled} onEnabledChange={handleTtsToggle} />
-                  {voiceSettings?.asrEnabled &&
-                    (voiceSettings.inputMode === 'vad' ? (
-                      <HandsfreeMicButton handsfree={handsfree} />
-                    ) : (
-                      <MicButton onRecognizedSend={(text) => session.send(text)} disabled={session.streaming} />
-                    ))}
-                </>
+                <ChatVoiceControls
+                  ttsEnabled={ttsEnabled}
+                  onTtsToggle={handleTtsToggle}
+                  asrEnabled={Boolean(voiceSettings?.asrEnabled)}
+                  inputMode={voiceSettings?.inputMode}
+                  handsfree={handsfree}
+                  streaming={session.streaming}
+                  onRecognizedSend={session.send}
+                />
               }
               onSend={(content, attachmentIds) =>
                 taskMode ? void session.sendTask(content) : session.send(content, attachmentIds)

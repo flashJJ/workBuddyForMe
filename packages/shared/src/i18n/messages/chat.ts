@@ -13,8 +13,9 @@ export const zhChat = {
   compactedBadge: '已压缩 {count} 条早期消息',
   setup: {
     title: '还没有可用的对话模型',
-    description: '请先在设置中新增供应商、添加对话模型，并将其设为默认模型（或给助手绑定模型）。',
-    goToSettings: '前往设置',
+    description: '还没连上模型。用向导最快：演示模式、本地模型、云端 API，三种搞法任选。',
+    openWizard: '打开配置向导',
+    hint: '三种搞法，最快 30 秒。',
   },
   sidebar: {
     emptyTitle: '暂无对话',
@@ -36,6 +37,15 @@ export const zhChat = {
     sendMessageAria: '发送消息',
     placeholder: '输入消息，Enter 发送，Shift+Enter 换行',
     placeholderVision: '输入消息或粘贴/拖入图片，Enter 发送',
+  },
+  /** v2.4 M5：流式进度与首字延迟（阈值复用 P0-1 自检口径） */
+  stream: {
+    thinking: '模型思考中…',
+    waiting: '仍在等待首字（{seconds}s）',
+    slowAdvice: '本轮明显偏慢：可停止后换更小的模型，或缩短上下文再试。',
+    firstToken: '首字 {seconds}s',
+    firstTokenTitle: '首字延迟（本地计时，分档与首启自检一致）',
+    generating: '正在生成…',
   },
   rename: {
     title: '重命名对话',
@@ -90,8 +100,9 @@ export const enChat = {
   setup: {
     title: 'No chat model available yet',
     description:
-      'Add a provider and a chat model in Settings, then set it as the default (or bind a model to the assistant).',
-    goToSettings: 'Go to Settings',
+      'No model is connected yet. The wizard is the fastest way: demo mode, a local model, or a cloud API — pick any.',
+    openWizard: 'Open setup wizard',
+    hint: 'Three paths, as fast as 30 seconds.',
   },
   sidebar: {
     emptyTitle: 'No conversations yet',
@@ -113,6 +124,15 @@ export const enChat = {
     sendMessageAria: 'Send message',
     placeholder: 'Type a message, Enter to send, Shift+Enter for a new line',
     placeholderVision: 'Type a message or paste/drop images, Enter to send',
+  },
+  /** v2.4 M5: streaming progress and first-token latency (same tiers as the P0-1 self-check) */
+  stream: {
+    thinking: 'The model is thinking…',
+    waiting: 'Still waiting for the first token ({seconds}s)',
+    slowAdvice: 'This turn is slow: stop it and switch to a smaller model, or shorten the context and retry.',
+    firstToken: 'First token {seconds}s',
+    firstTokenTitle: 'First-token latency (local timing, same tiers as the onboarding self-check)',
+    generating: 'Generating…',
   },
   rename: {
     title: 'Rename conversation',

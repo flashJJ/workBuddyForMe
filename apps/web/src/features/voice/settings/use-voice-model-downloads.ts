@@ -69,7 +69,7 @@ export function useVoiceModelDownloads() {
           error: dl?.error ?? null,
         };
       }
-      const model = ttsModel ?? modelStatus?.activeTtsModel ?? 'kokoro';
+      const model = ttsModel ?? modelStatus?.activeTtsModel ?? 'melo';
       const dl =
         modelStatus?.downloads.ttsByModel?.[model] ??
         // 旧服务端无 ttsByModel 时回落当前选中模型的兼容字段

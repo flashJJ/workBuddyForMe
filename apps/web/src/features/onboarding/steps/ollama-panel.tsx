@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { DiscoveredModel, Provider } from '@wbfm/shared/types';
-import { inferModelCapabilities } from '@wbfm/shared/constants';
+import { OLLAMA_RECOMMENDED_MODELS, inferModelCapabilities } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { errorText } from '@/lib/i18n/resolve-error';
 import {
@@ -12,6 +12,8 @@ import {
   useRemoteModels,
 } from '@/lib/hooks/use-providers';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { OllamaInstallGuide } from './ollama-install-guide';
+import { OllamaPullCard } from './ollama-pull-card';
 
 const OLLAMA_URL = 'http://127.0.0.1:11434';
 
@@ -19,10 +21,11 @@ type DetectState = 'idle' | 'detecting' | 'online' | 'offline';
 
 /**
  * 向导第 2 步 · 本地 Ollama 面板：
- * 检测 = 复用正式链路（创建/复用 Ollama 供应商 → testConnection → 拉远程模型），
- * 未运行时给安装指引；发现的模型可点选快速添加。
+ * - 检测 = 复用正式链路（创建/复用 Ollama 供应商 → testConnection → 拉远程模型）；
+ * - 未运行 → 可执行安装指引（T4：winget/下载 + 拉取示例 + 重新检测）；
+ * - 运行中 → 推荐模型一键拉取（体积/耗时明示、可取消），拉完可一键把模型加进供应商。
  */
-export function OllamaPanel({ onReady }: { onReady: () => void }) {
+export function OllamaPanel({ onReady }: { onReady: (providerId: string) => void }) {
   const { t } = useI18n();
   const { data: providers } = useProviders();
   const mutations = useProviderMutations();
@@ -35,6 +38,16 @@ export function OllamaPanel({ onReady }: { onReady: () => void }) {
 
   // useRemoteModels 是 mutation hook，须顶层无条件调用；provider 未定时不会执行
   const remoteMutation = useRemoteModels(provider?.id ?? null);
+
+  /** 一键拉取完成后刷新远端模型列表（失败不阻断，用户可稍后再点检测） */
+  const refreshRemote = React.useCallback(async () => {
+    if (!provider) return;
+    try {
+      setRemote(await remoteMutation.mutateAsync());
+    } catch {
+      /* 刷新失败不阻断 */
+    }
+  }, [provider, remoteMutation]);
 
   const detect = async () => {
     setState('detecting');
@@ -52,7 +65,7 @@ export function OllamaPanel({ onReady }: { onReady: () => void }) {
       await mutations.testConnection.mutateAsync(target.id);
       setProvider(target);
       setState('online');
-      onReady();
+      onReady(target.id);
       try {
         setRemote(await remoteMutation.mutateAsync());
       } catch {
@@ -100,21 +113,19 @@ export function OllamaPanel({ onReady }: { onReady: () => void }) {
           {t('onboarding.provider.online')}
         </p>
       )}
-      {state === 'offline' && (
-        <div className="space-y-2 rounded-md border bg-muted/40 p-3 text-xs" role="alert">
-          <p className="font-medium text-foreground">{t('onboarding.provider.offline')}</p>
-          <p className="text-muted-foreground">
-            {t('onboarding.provider.installLead')}{' '}
-            <a href="https://ollama.com/download" target="_blank" rel="noreferrer" className="underline">
-              {t('onboarding.provider.installLink')}
-            </a>
-            {t('onboarding.provider.installMid')}
-          </p>
-          <pre className="overflow-x-auto rounded bg-background p-2 font-mono">
-            {t('onboarding.provider.pullCommand')}
-          </pre>
-          <p className="text-muted-foreground">{t('onboarding.provider.installTail')}</p>
-          {errorMsg && <p className="text-destructive">{errorMsg}</p>}
+
+      {state === 'offline' && <OllamaInstallGuide errorMsg={errorMsg} />}
+
+      {state === 'online' && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium">{t('onboarding.provider.recommendedTitle')}</p>
+          {OLLAMA_RECOMMENDED_MODELS.map((model) => (
+            <OllamaPullCard
+              key={model.modelId}
+              model={model}
+              onPulled={() => void refreshRemote()}
+            />
+          ))}
         </div>
       )}
 

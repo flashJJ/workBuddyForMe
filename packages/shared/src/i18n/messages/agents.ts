@@ -7,14 +7,6 @@ export const zhAgents = {
     off: '任务模式：关',
     hint: '开启后由 Planner/Executor/Reviewer 三角色分工完成；仅当前会话有效，不跨会话保留',
   },
-  status: {
-    connecting: '连接中',
-    running: '协作中',
-    done: '已完成',
-    failed: '失败',
-    cancelled: '已取消',
-    budget_exceeded: '预算触顶',
-  },
   role: {
     planner: '规划',
     executor: '执行',

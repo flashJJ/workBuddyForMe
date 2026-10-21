@@ -1,6 +1,6 @@
 'use client';
 
-import type { Assistant, KnowledgeBase, ProviderModel } from '@wbfm/shared/types';
+import type { Assistant, KnowledgeBase, ProviderModel, SkillInfo } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -9,6 +9,8 @@ interface Props {
   assistant: Assistant;
   models: ProviderModel[];
   knowledgeBases: KnowledgeBase[];
+  /** v2.4 M4：技能目录（把 skillNames 显示为可读名称） */
+  skills: SkillInfo[];
   canMoveUp: boolean;
   canMoveDown: boolean;
   onEdit: (assistant: Assistant) => void;
@@ -20,6 +22,7 @@ export function AssistantCard({
   assistant,
   models,
   knowledgeBases,
+  skills,
   canMoveUp,
   canMoveDown,
   onEdit,
@@ -31,6 +34,11 @@ export function AssistantCard({
   const boundKbs = assistant.knowledgeBaseIds
     .map((id) => knowledgeBases.find((kb) => kb.id === id))
     .filter((kb): kb is KnowledgeBase => Boolean(kb));
+  // v2.4 M4：能力可见性——技能（助手级勾选）与 MCP 工具
+  const boundSkills = assistant.skillNames.map(
+    (name) => skills.find((skill) => skill.name === name)?.name ?? name,
+  );
+  const mcpToolCount = assistant.enabledTools.filter((tool) => tool.startsWith('mcp:')).length;
 
   return (
     <article
@@ -87,6 +95,22 @@ export function AssistantCard({
           T={assistant.temperature} · P={assistant.topP}
           {assistant.maxTokens ? ` · ≤${assistant.maxTokens}` : ''}
         </span>
+      </div>
+
+      {/* v2.4 M4（P1-2）：技能与 MCP 工具可见（此前只有模型/知识库） */}
+      <div className="flex flex-wrap items-center gap-1.5 text-xs" data-testid="assistant-capabilities">
+        {boundSkills.length > 0 ? (
+          boundSkills.map((name) => (
+            <Badge key={name} variant="outline" data-testid="assistant-skill-badge">
+              {t('assistants.card.skill', { name })}
+            </Badge>
+          ))
+        ) : (
+          <span className="text-muted-foreground">{t('assistants.card.skillsFollowGlobal')}</span>
+        )}
+        {mcpToolCount > 0 && (
+          <Badge variant="info">{t('assistants.card.mcpTools', { count: mcpToolCount })}</Badge>
+        )}
       </div>
 
       <div className="flex justify-end gap-1 border-t pt-2">

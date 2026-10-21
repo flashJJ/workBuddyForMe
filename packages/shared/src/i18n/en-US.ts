@@ -26,6 +26,7 @@ import { enVoice } from './messages/voice-en';
 import { enPet } from './messages/pet';
 import { enAvatar } from './messages/avatar';
 import { enFlowExecution } from './messages/flow-execution';
+import { enRuns } from './messages/runs';
 import { enToolDebug } from './messages/tool-debug';
 import { enToolTrace } from './messages/tool-trace';
 import { enAgents } from './messages/agents-en';
@@ -35,6 +36,7 @@ import { enEvent } from './messages/event-en';
 import { enReminders } from './messages/reminder-en';
 import { enEventM5 } from './messages/event-m5-en';
 import { enCharacterCards } from './messages/character-cards';
+import { enTemplates } from './messages/templates';
 import { enTuning } from './messages/tuning';
 import { enStage } from './messages/stage-en';
 import { enMeeting } from './messages/meeting-en';
@@ -64,6 +66,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   errors: enErrors,
   assistants: enAssistants,
   characterCards: enCharacterCards,
+  templates: enTemplates,
   tuning: enTuning,
   stage: enStage,
   meeting: enMeeting,
@@ -80,6 +83,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   pet: enPet,
   avatar: enAvatar,
   flowExecution: enFlowExecution,
+  runs: enRuns,
   toolDebug: enToolDebug,
   toolTrace: enToolTrace,
   agents: enAgents,

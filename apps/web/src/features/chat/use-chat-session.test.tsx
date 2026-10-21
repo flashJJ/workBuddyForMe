@@ -73,6 +73,14 @@ describe('useChatSession（TR-27.1）', () => {
       totalTokens: 5,
     });
     expect(messages[1]!.citations[0]).toMatchObject({ documentName: 'a.txt', ordinal: 1 });
+    // v2.4 M5：首字/落定计时随流式生命周期落定（本地时钟）
+    expect(result.current.streamTiming).toMatchObject({
+      firstTokenAt: expect.any(Number),
+      settledAt: expect.any(Number),
+    });
+    expect(result.current.streamTiming!.firstTokenAt!).toBeGreaterThanOrEqual(
+      result.current.streamTiming!.startedAt,
+    );
 
     const [url, init] = (vi.mocked(fetch).mock.calls[0] ?? []) as unknown as [string, RequestInit];
     expect(url).toBe('/api/chat/stream');

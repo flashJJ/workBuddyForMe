@@ -85,8 +85,14 @@ export async function* withVoice(
       ready.push(silentFragmentEvent(fragment));
       return;
     }
+    // 纯标点/表情块（如「：）」）chunkForTts 会全部丢弃：只出字幕，不进引擎
+    const chunks = chunkForTts(spoken);
+    if (chunks.length === 0) {
+      ready.push(silentFragmentEvent(fragment));
+      return;
+    }
     let first = true;
-    for (const chunk of chunkForTts(spoken)) {
+    for (const chunk of chunks) {
       if (deps.signal?.aborted) return;
       try {
         const { samples, sampleRate } = await deps.tts.synthesize(chunk);

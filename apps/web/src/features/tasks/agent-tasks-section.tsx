@@ -5,14 +5,22 @@ import { Ban, ChevronRight, Loader2, Users } from 'lucide-react';
 import type { AgentRunStatus, AgentRunView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
-import { Spinner } from '@/components/common/state';
+import { FailureHint } from '@/components/common/failure-hint';
+import { RunStatusBadge } from '@/components/common/run-status-badge';
+import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { MessageKey } from '@wbfm/shared/i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
 import {
+  RUN_OUTCOME_LABEL_KEYS,
+  formatDurationMs,
+  isLiveOutcome,
+  runDurationMs,
+  runElapsedMs,
+  toOutcome,
+} from '@/lib/runs/run-outcome';
+import {
   AgentRunCard,
-  StatusBadge,
   cardFromRun,
   useAgentRun,
   useAgentRunMutations,
@@ -29,14 +37,6 @@ const STATUS_OPTIONS: Array<AgentRunStatus | 'all'> = [
   'failed',
   'cancelled',
 ];
-
-const STATUS_KEY: Record<AgentRunStatus, MessageKey> = {
-  running: 'agents.status.running',
-  done: 'agents.status.done',
-  failed: 'agents.status.failed',
-  cancelled: 'agents.status.cancelled',
-  budget_exceeded: 'agents.status.budget_exceeded',
-};
 
 export function AgentTasksSection() {
   const { t } = useI18n();
@@ -60,7 +60,7 @@ export function AgentTasksSection() {
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>
-              {s === 'all' ? t('agents.tasks.filterAll') : t(STATUS_KEY[s])}
+              {s === 'all' ? t('agents.tasks.filterAll') : t(RUN_OUTCOME_LABEL_KEYS[toOutcome('agent', s)])}
             </option>
           ))}
         </SimpleSelect>
@@ -68,8 +68,13 @@ export function AgentTasksSection() {
 
       {runsQuery.isLoading ? (
         <Spinner label={t('agents.tasks.loading')} />
+      ) : runsQuery.isError ? (
+        <ErrorState
+          message={t('agents.tasks.loadFailed')}
+          onRetry={() => void runsQuery.refetch()}
+        />
       ) : runs.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('agents.tasks.empty')}</p>
+        <EmptyState title={t('agents.tasks.empty')} />
       ) : (
         <ul className="space-y-2">
           {runs.map((run) => (
@@ -100,6 +105,13 @@ function AgentRunRow({
   const mutations = useAgentRunMutations();
   const toast = useToast();
   const active = run.status === 'running';
+  const outcome = toOutcome('agent', run.status);
+  // agent 视图无 finishedAt：终态用 updatedAt 作为结束时间，与 task/flow 的“结束时间”口径对齐
+  const duration = formatDurationMs(
+    isLiveOutcome(outcome)
+      ? runElapsedMs(run.createdAt, run.updatedAt, Date.now())
+      : runDurationMs(run.createdAt, run.updatedAt),
+  );
 
   const cancel = async () => {
     try {
@@ -116,8 +128,20 @@ function AgentRunRow({
           <ChevronRight
             className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
           />
-          <StatusBadge status={run.status} />
-          <span className="flex-1 truncate text-sm font-medium">{run.goal}</span>
+          <RunStatusBadge kind="agent" status={run.status} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">{run.goal}</span>
+            <FailureHint
+              compact
+              className="mt-0.5"
+              outcome={outcome}
+              rawError={run.errorMessage}
+              code={run.errorCode}
+            />
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground" title={t('runs.durationHint')}>
+            {duration ?? t('runs.durationUnavailable')}
+          </span>
           <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{run.id.slice(0, 8)}</span>
         </button>
         {active && (

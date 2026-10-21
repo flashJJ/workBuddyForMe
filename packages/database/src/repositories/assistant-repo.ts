@@ -21,6 +21,8 @@ export interface AssistantCreateFields {
   knowledgeBaseIds: string[];
   /** v0.6：内置工具名或 mcp:<server>:<tool> */
   enabledTools: string[];
+  /** v2.4 M4：助手级技能勾选（空数组=跟随全局启用技能） */
+  skillNames?: string[];
   retrieveAlways: boolean;
   /** v0.5：长期记忆开关；建库老数据走列默认 1 */
   memoryEnabled?: boolean;
@@ -53,6 +55,7 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   reviewerModelId: 'reviewer_model_id',
   knowledgeBaseIds: 'knowledge_base_ids',
   enabledTools: 'enabled_tools',
+  skillNames: 'skill_names',
   retrieveAlways: 'retrieve_always',
   memoryEnabled: 'memory_enabled',
   expressionEnabled: 'expression_enabled',
@@ -68,6 +71,7 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
 function toRowValues(fields: Partial<AssistantCreateFields>): Record<string, unknown> {
   const values: Record<string, unknown> = { ...fields };
   if (fields.enabledTools !== undefined) values.enabledTools = JSON.stringify(fields.enabledTools);
+  if (fields.skillNames !== undefined) values.skillNames = JSON.stringify(fields.skillNames);
   if (fields.knowledgeBaseIds !== undefined) {
     values.knowledgeBaseIds = JSON.stringify(fields.knowledgeBaseIds);
   }
@@ -91,19 +95,21 @@ export function createAssistantRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO assistants
            (id, name, emoji, color, system_prompt, temperature, top_p, max_tokens,
-            model_id, knowledge_base_ids, enabled_tools, retrieve_always, memory_enabled,
+            model_id, knowledge_base_ids, enabled_tools, skill_names, retrieve_always, memory_enabled,
             expression_enabled,
             personality_frankness, personality_tsundere, personality_shy, personality_tolerance,
             card_id, is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
-            @modelId, @knowledgeBaseIds, @enabledTools, @retrieveAlways, @memoryEnabled,
+            @modelId, @knowledgeBaseIds, @enabledTools, @skillNames, @retrieveAlways, @memoryEnabled,
             @expressionEnabled,
             @personalityFrankness, @personalityTsundere, @personalityShy, @personalityTolerance,
             @cardId, @isBuiltin, @sortOrder, @ts, @ts)`,
       ).run({
         ...toRowValues(fields),
         id,
+        // 显式缺省（种子路径）时落默认值，避免 NOT NULL 绑定问题
+        skillNames: JSON.stringify(fields.skillNames ?? []),
         // 显式缺省（种子路径）时落 1，避免 NOT NULL 绑定问题
         memoryEnabled: fields.memoryEnabled === false ? 0 : 1,
         expressionEnabled: fields.expressionEnabled === false ? 0 : 1,

@@ -1,15 +1,19 @@
 import { ApiError } from '@wbfm/shared/errors';
+import { DEMO_PROVIDER_ID } from '@wbfm/shared/constants';
 import { createMockProvider, createProvider, ProviderError, type ChatProvider } from '@wbfm/ai';
 import type { DatabaseInstance, ProviderRecord } from '@wbfm/database';
 import type { SecretCipher } from '../secrets/cipher';
 
-/** 取出供应商记录并解密 Key 到内存，构造可用适配器（WBFM_MOCK_AI=1 时注入进程内 mock） */
+/**
+ * 取出供应商记录并解密 Key 到内存，构造可用适配器。
+ * WBFM_MOCK_AI=1 或内置演示模式供应商（id=demo）时注入进程内 mock，不发起真实请求。
+ */
 export function buildProvider(
   db: DatabaseInstance,
   cipher: SecretCipher,
   provider: ProviderRecord,
 ): ChatProvider {
-  if (process.env.WBFM_MOCK_AI === '1') {
+  if (process.env.WBFM_MOCK_AI === '1' || provider.id === DEMO_PROVIDER_ID) {
     return createMockProvider();
   }
   const row = db

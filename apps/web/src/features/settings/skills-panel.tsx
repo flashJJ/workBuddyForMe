@@ -10,6 +10,8 @@ import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
 import { useSkillMutations, useSkills } from '@/lib/hooks/use-skills';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { SkillsTemplateEmptyGallery, SkillsTemplateSection } from './skill-templates';
+import { isStarterTemplateId } from '@/lib/templates/starter-templates';
 
 const PERMISSION_LABEL_KEYS: Record<PermissionLevel, MessageKey> = {
   read: 'settingsMcp.skills.permissionRead',
@@ -88,6 +90,9 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">{skill.manifest?.description || skill.name}</span>
           <code className="rounded bg-muted px-1 text-xs text-muted-foreground">{skill.name}</code>
+          {isStarterTemplateId('skill', skill.name) && (
+            <Badge variant="outline">{t('templates.badge')}</Badge>
+          )}
           {skill.manifest && (
             <span className="text-xs text-muted-foreground">v{skill.manifest.version}</span>
           )}
@@ -182,6 +187,8 @@ export function SkillsPanel() {
         </Button>
       </div>
 
+      {mounted && skills && skills.length > 0 && <SkillsTemplateSection skills={skills} />}
+
       {mounted && isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
       {mounted && isError && (
         <p className="text-sm text-destructive">
@@ -192,7 +199,10 @@ export function SkillsPanel() {
         </p>
       )}
       {mounted && skills && skills.length === 0 && (
-        <p className="text-sm text-muted-foreground">{t('settingsMcp.skills.empty')}</p>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">{t('settingsMcp.skills.empty')}</p>
+          <SkillsTemplateEmptyGallery skills={skills} />
+        </div>
       )}
       {mounted && skills && skills.length > 0 && (
         <ul className="space-y-2" data-testid="skill-list">

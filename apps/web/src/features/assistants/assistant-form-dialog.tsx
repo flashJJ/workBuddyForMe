@@ -22,11 +22,12 @@ import { useAssistantMutations } from '@/lib/hooks/use-assistants';
 import { useMcpTools } from '@/lib/hooks/use-mcp';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantToolsField } from './assistant-tools-field';
+import { AssistantSkillsField } from './assistant-skills-field';
 import { AssistantMemoryField } from './assistant-memory-field';
 import { AssistantExpressionField } from './assistant-expression-field';
 import { AssistantPersonalityField } from './assistant-personality-field';
 import { buildAssistantBody, type AssistantFormShape } from './assistant-form-body';
-import { toForm } from './assistant-form-state';
+import { toForm, presetToForm, type AssistantPreset } from './assistant-form-state';
 import { AssistantIdentityFields } from './assistant-identity-fields';
 import { AssistantCardField } from './assistant-card-field';
 import { NumberField } from './number-field';
@@ -35,11 +36,13 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   assistant?: Assistant | null;
+  /** v2.4 P0-2：模板预填（仅新建，编辑时忽略） */
+  preset?: AssistantPreset | null;
 }
 
 type FormState = AssistantFormShape;
 
-export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
+export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: Props) {
   const { t } = useI18n();
   const isEdit = Boolean(assistant);
   const mutations = useAssistantMutations();
@@ -51,8 +54,9 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (open) setForm(toForm(assistant));
-  }, [open, assistant]);
+    if (!open) return;
+    setForm(preset && !assistant ? presetToForm(preset) : toForm(assistant));
+  }, [open, assistant, preset]);
 
   const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
   const chatModels = (models ?? []).filter((model) => model.capabilities.includes('chat'));
@@ -223,6 +227,11 @@ export function AssistantFormDialog({ open, onOpenChange, assistant }: Props) {
             mcpTools={mcpTools ?? []}
             onToggleTool={toggleTool}
             onRetrieveAlwaysChange={(value) => update({ retrieveAlways: value })}
+          />
+
+          <AssistantSkillsField
+            value={form.skillNames}
+            onChange={(skillNames) => update({ skillNames })}
           />
 
           <AssistantMemoryField

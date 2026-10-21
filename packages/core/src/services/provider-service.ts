@@ -1,6 +1,7 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { type Provider } from '@wbfm/shared/types';
 import {
+  createModelRepository,
   createProviderRepository,
   type ProviderRecord,
 } from '@wbfm/database';
@@ -8,6 +9,16 @@ import type { ProviderCreateInput, ProviderUpdateInput } from '@wbfm/shared/sche
 import { maskSecret } from '../secrets/cipher';
 import type { ServiceDeps } from './deps';
 import { buildProvider, toApiError } from './provider-adapter';
+import { probeFirstToken } from './first-token-probe';
+import { recordMilestone } from './milestones';
+
+/** 首字延迟自检结果：measurable=false 表示该供应商尚无可用对话模型，无法自检 */
+export interface FirstTokenProbeReport {
+  measurable: boolean;
+  ok: boolean;
+  firstTokenMs: number | null;
+  totalMs: number | null;
+}
 
 function toView(record: ProviderRecord, apiKeyMasked: string | null): Provider {
   return { ...record, apiKeyMasked };
@@ -56,6 +67,8 @@ export function createProviderService({ db, cipher }: ServiceDeps) {
         enabled: input.enabled ?? true,
         sortOrder,
       });
+      // v2.4 M1 T7：有供应商（模型来源）即视为「模型就绪」里程碑
+      recordMilestone(db, 'firstModelReadyAt');
       return toView(record, input.apiKey ? maskSecret(input.apiKey) : null);
     },
 
@@ -89,6 +102,18 @@ export function createProviderService({ db, cipher }: ServiceDeps) {
       } catch (error) {
         toApiError(error);
       }
+    },
+
+    /** v2.4 M1 T5：首字延迟自检（只测该供应商；无对话模型时 measurable=false） */
+    async firstTokenProbe(id: string): Promise<FirstTokenProbeReport> {
+      const record = repo.get(id);
+      if (!record) throw ApiError.notFound('供应商', id);
+      const model = createModelRepository(db)
+        .listByProvider(id)
+        .find((item) => item.capabilities.includes('chat'));
+      if (!model) return { measurable: false, ok: false, firstTokenMs: null, totalMs: null };
+      const outcome = await probeFirstToken(db, cipher, record, model.modelId);
+      return { measurable: true, ...outcome };
     },
   };
 }

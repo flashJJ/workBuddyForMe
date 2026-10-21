@@ -22,6 +22,18 @@ export const zhAbout = {
   checkFailed: '更新检查失败：{message}',
   replayWizard: '重新打开使用向导',
   helpCenter: '帮助与常见问题',
+  // v2.4 M1 T7：TTFV 里程碑（本地、可清除）
+  ttfv: {
+    title: '首次可用用时（TTFV）',
+    launch: '首次启动',
+    modelReady: '模型就绪',
+    firstAnswer: '首次回答',
+    value: '首答用时',
+    seconds: '{seconds} 秒',
+    empty: '暂无记录：完成一次对话后会自动记录（仅时间戳，不含对话内容）。',
+    clear: '清除记录',
+    cleared: 'TTFV 记录已清除',
+  },
   status: {
     idle: '未检查',
     checking: '检查中…',
@@ -56,6 +68,19 @@ export const enAbout = {
   checkFailed: 'Update check failed: {message}',
   replayWizard: 'Replay setup wizard',
   helpCenter: 'Help & FAQ',
+  // v2.4 M1 T7 time-to-first-value milestones (local, clearable)
+  ttfv: {
+    title: 'Time to first value (TTFV)',
+    launch: 'First launch',
+    modelReady: 'Model ready',
+    firstAnswer: 'First answer',
+    value: 'First answer took',
+    seconds: '{seconds}s',
+    empty:
+      'No record yet: it is captured automatically after your first reply (timestamps only, no conversation content).',
+    clear: 'Clear record',
+    cleared: 'TTFV record cleared',
+  },
   status: {
     idle: 'Not checked',
     checking: 'Checking…',

@@ -2,6 +2,7 @@ import path from 'node:path';
 import type { TtsEngine, TtsEngineConfig, TtsResult, TtsSynthOptions } from '../types';
 import { VoiceEngineError } from '../types';
 import type { VoiceModelSpec } from '../../models/manifest';
+import { isSpeakableText } from '../../text/sentence-splitter';
 
 const RULE_FSTS = ['number.fst', 'phone.fst', 'date.fst', 'new_heteronym.fst'] as const;
 const KOKORO_ZH_FSTS = ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst'] as const;
@@ -170,7 +171,11 @@ export class SherpaTtsEngine implements TtsEngine {
 
   async synthesize(text: string, opts?: TtsSynthOptions): Promise<TtsResult> {
     const trimmed = text.trim();
-    if (!trimmed) return { samples: new Float32Array(0), sampleRate: this.native.sampleRate };
+    // 空串或纯标点/表情：直接返回空音频，绝不交给原生层。
+    // 实测 MeloTTS 对「：）」这类片段会报 Failed to convert … to token IDs 并终止进程。
+    if (!trimmed || !isSpeakableText(trimmed)) {
+      return { samples: new Float32Array(0), sampleRate: this.native.sampleRate };
+    }
     // 逐句 sid：多说话人模型按角色配音；未指定则用引擎默认
     const requested = opts?.speakerId ?? this.speakerId;
     const sid = requested < this.speakerCount ? requested : this.speakerId;

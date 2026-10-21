@@ -14,6 +14,7 @@ import type {
 } from '../constants';
 import type { ContentPart } from './content-part';
 import type { EventSettingsFields } from '../events/event-settings';
+import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction-graph';
 import type { ToolTraceEntry } from './tool';
 
@@ -72,6 +73,11 @@ export interface Assistant extends Timestamped {
    * v0.6：元素为内置工具名或 mcp:<server>:<tool> 命名空间名。
    */
   enabledTools: string[];
+  /**
+   * v2.4 M4（P1-2）：助手级技能勾选（技能 name）。
+   * 空数组 = 跟随全局（设置页全部已启用技能）；非空 = 只注入这些（仍需全局启用）。
+   */
+  skillNames: string[];
   /** v0.2：绑定知识库时是否每轮强制检索（兼容开关；关闭后由模型经 knowledge_search 自主决策） */
   retrieveAlways: boolean;
   /** v0.5：该助手是否启用长期记忆提取/召回（默认开） */
@@ -206,7 +212,7 @@ export interface DocumentRecord {
   compileGeneration?: number;
 }
 
-export interface AppSettings extends EventSettingsFields {
+export interface AppSettings extends EventSettingsFields, LocalModeSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;
@@ -257,6 +263,8 @@ export interface AppSettings extends EventSettingsFields {
    * 停用某触发键的全部条目后该交互不再有动作（「查不到返回空」）。
    */
   interactionGraphDisabledEntryIds?: string[];
+  // v2.4 M1 演示模式开关与 T7 TTFV 里程碑经 LocalModeSettingsFields 交叉引入
+  // （定义见 ./local-mode-settings）
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;

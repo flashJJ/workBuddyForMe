@@ -5,6 +5,7 @@ import type { Message } from '@wbfm/shared/types';
 import { EmptyState } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { AgentCardEntry } from '../agent-collab';
+import type { StreamTiming } from './chat-session.types';
 import { MessageItem } from './message-item';
 
 interface Props {
@@ -19,9 +20,11 @@ interface Props {
   onResend: (content: string) => void;
   /** v0.5 P1-2：消息反馈同步本地视图 */
   onFeedback?: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
+  /** v2.4 M5：当前轮首字/落定计时（仅末条助手消息展示） */
+  streamTiming?: StreamTiming | null;
 }
 
-export function MessageList({ messages, assistantName, streaming, agentCards, onRetry, onResend, onFeedback }: Props) {
+export function MessageList({ messages, assistantName, streaming, agentCards, onRetry, onResend, onFeedback, streamTiming }: Props) {
   const { t } = useI18n();
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
@@ -65,6 +68,7 @@ export function MessageList({ messages, assistantName, streaming, agentCards, on
           onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
           onResend={message.role === 'user' && !streaming ? onResend : undefined}
           onFeedback={onFeedback}
+          streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
         />
       ))}
       <div ref={bottomRef} />

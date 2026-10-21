@@ -70,7 +70,7 @@ export const BUILTIN_MEETING_NOTES: SkillManifest = {
 
 export const BUILTIN_FILE_SEARCH: SkillManifest = {
   name: 'file-search',
-  description: '在本地指定目录中查找与读取文件。需先在「设置 → MCP」中添加 filesystem MCP 服务器并指向目标根目录，再让助手启用本技能。',
+  description: '在本地指定目录中查找与读取文件。需先在「设置 → MCP」中添加 filesystem MCP 服务器并指向目标根目录，再在助手表单的「技能」里勾选本技能（不勾选=跟随全局启用）。',
   version: '1.0.0',
   permissions: ['read'],
   promptTemplates: [

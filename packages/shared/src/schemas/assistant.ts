@@ -9,6 +9,11 @@ const enabledToolsSchema = z
   .max(20, '工具数量超限')
   .default(['current_time']);
 const retrieveAlwaysSchema = z.boolean().default(true);
+/** v2.4 M4（P1-2）：助手级技能勾选（技能 name；空数组=跟随全局启用技能） */
+const skillNamesSchema = z
+  .array(z.string().trim().min(1).max(64))
+  .max(20, '技能数量超限')
+  .default([]);
 /** v0.5：长期记忆开关默认开启 */
 const memoryEnabledSchema = z.boolean().default(true);
 /** v1.0 M3：表情指令标签开关默认开启（形象关闭时标签也不上屏/不出声） */
@@ -35,6 +40,7 @@ const samplingFields = {
   reviewerModelId: z.string().trim().min(1).nullable().default(null),
   knowledgeBaseIds: z.array(z.string().trim().min(1)).max(10).default([]),
   enabledTools: enabledToolsSchema,
+  skillNames: skillNamesSchema,
   retrieveAlways: retrieveAlwaysSchema,
   memoryEnabled: memoryEnabledSchema,
   expressionEnabled: expressionEnabledSchema,
@@ -70,6 +76,7 @@ export const assistantUpdateSchema = z
     reviewerModelId: samplingFields.reviewerModelId.optional(),
     knowledgeBaseIds: samplingFields.knowledgeBaseIds.optional(),
     enabledTools: samplingFields.enabledTools.optional(),
+    skillNames: samplingFields.skillNames.optional(),
     retrieveAlways: samplingFields.retrieveAlways.optional(),
     memoryEnabled: samplingFields.memoryEnabled.optional(),
     expressionEnabled: samplingFields.expressionEnabled.optional(),

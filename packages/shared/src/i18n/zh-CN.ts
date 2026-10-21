@@ -25,6 +25,7 @@ import { zhVoice } from './messages/voice';
 import { zhPet } from './messages/pet';
 import { zhAvatar } from './messages/avatar';
 import { zhFlowExecution } from './messages/flow-execution';
+import { zhRuns } from './messages/runs';
 import { zhToolDebug } from './messages/tool-debug';
 import { zhToolTrace } from './messages/tool-trace';
 import { zhAgents } from './messages/agents';
@@ -34,6 +35,7 @@ import { zhEvent } from './messages/event';
 import { zhReminders } from './messages/reminder';
 import { zhEventM5 } from './messages/event-m5';
 import { zhCharacterCards } from './messages/character-cards';
+import { zhTemplates } from './messages/templates';
 import { zhTuning } from './messages/tuning';
 import { zhStage } from './messages/stage';
 import { zhMeeting } from './messages/meeting';
@@ -64,6 +66,7 @@ export const zhCN = {
   errors: zhErrors,
   assistants: zhAssistants,
   characterCards: zhCharacterCards,
+  templates: zhTemplates,
   tuning: zhTuning,
   stage: zhStage,
   meeting: zhMeeting,
@@ -80,6 +83,7 @@ export const zhCN = {
   pet: zhPet,
   avatar: zhAvatar,
   flowExecution: zhFlowExecution,
+  runs: zhRuns,
   toolDebug: zhToolDebug,
   toolTrace: zhToolTrace,
   agents: zhAgents,

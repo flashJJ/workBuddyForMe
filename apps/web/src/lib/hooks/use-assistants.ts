@@ -22,6 +22,8 @@ export interface AssistantBody {
   knowledgeBaseIds?: string[];
   /** v0.6：内置工具名或 mcp:<server>:<tool> */
   enabledTools?: string[];
+  /** v2.4 M4：助手级技能 name（空=跟随全局已启用技能） */
+  skillNames?: string[];
   retrieveAlways?: boolean;
   memoryEnabled?: boolean;
   /** v1.0 M3：表情指令标签开关 */

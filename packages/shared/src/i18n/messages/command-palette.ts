@@ -7,6 +7,7 @@ export const zhCommandPalette = {
   empty: '没有匹配「{query}」的命令',
   groups: {
     navigation: '导航',
+    create: '新建',
     conversation: '会话',
     assistant: '助手',
     settings: '设置',
@@ -14,9 +15,15 @@ export const zhCommandPalette = {
   },
   commands: {
     navChat: { label: '前往对话', description: '进入对话页面' },
+    navTasks: { label: '前往任务', description: '桌面任务与协作运行记录' },
+    navFlows: { label: '前往工作流', description: '编排与试运行工作流' },
     navKnowledge: { label: '前往知识库', description: '管理文档与 RAG' },
     navAssistants: { label: '前往助手', description: '智能体与提示词预设' },
     navSettings: { label: '前往设置', description: '供应商、模型与偏好' },
+    kbNew: { label: '新建知识库', description: '创建知识库并导入文档' },
+    flowNew: { label: '新建工作流', description: '打开工作流创建表单' },
+    assistantNew: { label: '新建助手', description: '创建智能体与提示词' },
+    cardNew: { label: '新建角色卡', description: '创建自定义角色卡' },
     convNew: {
       label: '新建会话',
       description: '在当前助手下创建新对话',
@@ -40,6 +47,7 @@ export const enCommandPalette = {
   empty: 'No commands match “{query}”',
   groups: {
     navigation: 'Navigation',
+    create: 'Create',
     conversation: 'Conversation',
     assistant: 'Assistant',
     settings: 'Settings',
@@ -47,9 +55,15 @@ export const enCommandPalette = {
   },
   commands: {
     navChat: { label: 'Go to Chat', description: 'Open the chat page' },
+    navTasks: { label: 'Go to Tasks', description: 'Desktop tasks and collaboration runs' },
+    navFlows: { label: 'Go to Flows', description: 'Build and test workflows' },
     navKnowledge: { label: 'Go to Knowledge', description: 'Manage documents and RAG' },
     navAssistants: { label: 'Go to Assistants', description: 'Agents and prompt presets' },
     navSettings: { label: 'Go to Settings', description: 'Providers, models and preferences' },
+    kbNew: { label: 'New knowledge base', description: 'Create a knowledge base and import documents' },
+    flowNew: { label: 'New workflow', description: 'Open the workflow create form' },
+    assistantNew: { label: 'New assistant', description: 'Create an agent and prompt' },
+    cardNew: { label: 'New character card', description: 'Create a custom character card' },
     convNew: {
       label: 'New conversation',
       description: 'Start a new conversation with the current assistant',

@@ -12,6 +12,8 @@ import { AgentRunCard, type AgentCardEntry } from '../agent-collab';
 import { AttachmentImage } from './attachment-image';
 import { CitationsList } from './citations-list';
 import { MarkdownContent } from './markdown';
+import { FirstTokenMetric, StreamingProgress } from './streaming-progress';
+import type { StreamTiming } from './chat-session.types';
 import { ToolTrace } from './tool-trace';
 import { MessageFeedbackButtons } from './message-feedback';
 
@@ -28,15 +30,25 @@ interface Props {
   onFeedback?: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
   /** 流式进行中，禁用操作按钮 */
   disabled?: boolean;
+  /** v2.4 M5：当前轮首字/落定计时（仅最后一条助手消息携带） */
+  streamTiming?: StreamTiming | null;
 }
 
 function CopyButton({ content }: { content: string }) {
   const { t } = useI18n();
   const [copied, setCopied] = React.useState(false);
+  const resetTimerRef = React.useRef<number | null>(null);
+  React.useEffect(
+    () => () => {
+      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+    },
+    [],
+  );
   const copy = async () => {
     await copyText(content);
     setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = window.setTimeout(() => setCopied(false), 1500);
   };
   return (
     <button
@@ -119,7 +131,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
   );
 }
 
-export function MessageItem({ message, assistantName, agentCard, onRetry, onResend, onFeedback, disabled }: Props) {
+export function MessageItem({ message, assistantName, agentCard, onRetry, onResend, onFeedback, disabled, streamTiming }: Props) {
   const { t } = useI18n();
   const sys = useSystemText();
   const isUser = message.role === 'user';
@@ -152,9 +164,12 @@ export function MessageItem({ message, assistantName, agentCard, onRetry, onRese
       </div>
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
-            {isUser ? t('chatMessages.you') : assistantName}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {isUser ? t('chatMessages.you') : assistantName}
+            </span>
+            {!isUser && streamTiming && <FirstTokenMetric timing={streamTiming} />}
+          </div>
           {message.status === 'stopped' && <Badge variant="warning">{t('chatMessages.stopped')}</Badge>}
         </div>
 
@@ -166,6 +181,10 @@ export function MessageItem({ message, assistantName, agentCard, onRetry, onRese
           <UserBody message={message} onResend={onResend} disabled={disabled} />
         ) : (
           <MarkdownContent content={displayContent} />
+        )}
+
+        {!isUser && message.status === 'streaming' && streamTiming && (
+          <StreamingProgress timing={streamTiming} />
         )}
 
         {message.status === 'streaming' && (

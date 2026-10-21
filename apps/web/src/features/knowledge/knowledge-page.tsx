@@ -12,6 +12,8 @@ import { ApiClientError } from '@/lib/api/client';
 import { useDocuments, useKnowledgeBases, useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { KnowledgeBaseFormDialog } from './kb-form-dialog';
+import { KnowledgeTemplateEmptyGallery, KnowledgeTemplateLauncher } from './knowledge-templates';
+import { isStarterTemplateId } from '@/lib/templates/starter-templates';
 import { UploadDropzone } from './upload-dropzone';
 import { ClipDialog } from './clip-dialog';
 import { DocumentList } from './document-list';
@@ -36,10 +38,11 @@ function KnowledgeBaseNav({
   const { t } = useI18n();
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r bg-muted/30" data-testid="kb-sidebar">
-      <div className="p-3">
+      <div className="space-y-2 p-3">
         <Button type="button" className="w-full" size="sm" onClick={onCreate}>
           {t('knowledge.createKb')}
         </Button>
+        <KnowledgeTemplateLauncher />
       </div>
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
         {knowledgeBases.map((kb) => (
@@ -57,6 +60,11 @@ function KnowledgeBaseNav({
               title={kb.description || kb.name}
             >
               {kb.name}
+              {isStarterTemplateId('knowledge', kb.id) ? (
+                <Badge variant="outline" className="ml-2">
+                  {t('templates.badge')}
+                </Badge>
+              ) : null}
               <Badge variant="outline" className="ml-2">
                 {kb.documentCount}
               </Badge>
@@ -86,7 +94,7 @@ function KnowledgeBaseNav({
   );
 }
 
-export function KnowledgePage() {
+export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) {
   const { t } = useI18n();
   const { data: knowledgeBases, isLoading, isError, refetch } = useKnowledgeBases();
   const mutations = useKnowledgeMutations();
@@ -96,6 +104,13 @@ export function KnowledgePage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [clipOpen, setClipOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<KnowledgeBase | null>(null);
+
+  // v2.4 M5：命令面板「新建知识库」深链接（/knowledge?new=1）自动打开创建表单
+  React.useEffect(() => {
+    if (!autoCreate) return;
+    setEditing(null);
+    setDialogOpen(true);
+  }, [autoCreate]);
 
   React.useEffect(() => {
     if (!knowledgeBases) return;
@@ -154,12 +169,13 @@ export function KnowledgePage() {
         {isError ? (
           <ErrorState message={t('knowledge.loadError')} onRetry={() => void refetch()} />
         ) : !activeKb ? (
-          <div className="flex h-full items-center justify-center p-6">
+          <div className="flex h-full flex-col items-center justify-center p-6">
             <EmptyState
               title={t('knowledge.empty.title')}
               description={t('knowledge.empty.description')}
               action={<Button onClick={openCreate}>{t('knowledge.empty.action')}</Button>}
             />
+            <KnowledgeTemplateEmptyGallery />
           </div>
         ) : (
           <div className="space-y-5 p-6">

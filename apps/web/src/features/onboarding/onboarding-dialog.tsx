@@ -23,6 +23,7 @@ import {
 import { WelcomeStep } from './steps/welcome-step';
 import { ProviderStep } from './steps/provider-step';
 import { VoiceStep } from './steps/voice-step';
+import { FirstAskStep } from './steps/first-ask-step';
 import { FinishStep } from './steps/finish-step';
 
 /** 步骤名 i18n 键映射（动态 t() 需要编译期合法键） */
@@ -30,6 +31,7 @@ const STEP_NAME_KEYS: Record<OnboardingStepId, MessageKey> = {
   welcome: 'onboarding.stepNames.welcome',
   provider: 'onboarding.stepNames.provider',
   voice: 'onboarding.stepNames.voice',
+  firstAsk: 'onboarding.stepNames.firstAsk',
   finish: 'onboarding.stepNames.finish',
 };
 
@@ -74,6 +76,7 @@ export function OnboardingDialog({ open, onComplete }: Props) {
         {step === 'welcome' && <WelcomeStep />}
         {step === 'provider' && <ProviderStep />}
         {step === 'voice' && <VoiceStep />}
+        {step === 'firstAsk' && <FirstAskStep onPick={onComplete} />}
         {step === 'finish' && <FinishStep />}
 
         <div className="mt-2 flex items-center justify-between gap-2">

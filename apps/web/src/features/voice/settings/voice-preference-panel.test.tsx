@@ -88,7 +88,7 @@ describe('VoicePreferencePanel', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('未下载态：ASR/双 TTS 三个下载入口，引擎开关与试听均禁用；默认选中 Kokoro', async () => {
+  it('未下载态：ASR/双 TTS 三个下载入口，引擎开关与试听均禁用；默认选中 MeloTTS', async () => {
     renderWithProviders(<VoicePreferencePanel />);
 
     expect(await screen.findByTestId('voice-model-start-asr')).toBeEnabled();
@@ -103,8 +103,8 @@ describe('VoicePreferencePanel', () => {
 
     const kokoroRadio = within(screen.getByTestId('tts-model-option-kokoro')).getByRole('radio');
     const meloRadio = within(screen.getByTestId('tts-model-option-melo')).getByRole('radio');
-    expect(kokoroRadio).toBeChecked();
-    expect(meloRadio).not.toBeChecked();
+    expect(meloRadio).toBeChecked();
+    expect(kokoroRadio).not.toBeChecked();
   });
 
   it('点击下载/取消：ASR POST 正确 kind 与 action', async () => {
@@ -165,7 +165,7 @@ describe('VoicePreferencePanel', () => {
     });
   });
 
-  it('切换朗读引擎为 MeloTTS：PUT ttsModel=melo，选项卡即时选中', async () => {
+  it('切换朗读引擎为 Kokoro：PUT ttsModel=kokoro，选项卡即时选中', async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       if (url.endsWith('/api/voice/models/status')) {
@@ -182,17 +182,17 @@ describe('VoicePreferencePanel', () => {
     });
 
     renderWithProviders(<VoicePreferencePanel />);
-    const meloRadio = within(await screen.findByTestId('tts-model-option-melo')).getByRole('radio');
-    await user.click(meloRadio);
+    const kokoroRadio = within(await screen.findByTestId('tts-model-option-kokoro')).getByRole('radio');
+    await user.click(kokoroRadio);
     await waitFor(() => {
       const put = fetchMock.mock.calls.find(
         ([u, init]) => String(u).endsWith('/voice/settings') && init?.method === 'PUT',
       );
-      expect(JSON.parse(String(put![1].body))).toEqual({ ttsModel: 'melo' });
+      expect(JSON.parse(String(put![1].body))).toEqual({ ttsModel: 'kokoro' });
     });
-    expect(meloRadio).toBeChecked();
+    expect(kokoroRadio).toBeChecked();
     expect(
-      within(screen.getByTestId('tts-model-option-kokoro')).getByRole('radio'),
+      within(screen.getByTestId('tts-model-option-melo')).getByRole('radio'),
     ).not.toBeChecked();
   });
 
