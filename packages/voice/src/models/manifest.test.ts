@@ -78,8 +78,8 @@ describe('VOICE_MODELS 清单', () => {
 });
 
 describe('getVoiceModelSpec', () => {
-  it('缺省与未知引擎回落 Kokoro；显式 melo 返回 VITS 规格', () => {
-    expect(getVoiceModelSpec('tts').id).toBe('kokoro-multi-lang-v1_1');
+  it('缺省回落 MeloTTS（D9 默认）；显式 kokoro/melo 各返回对应规格', () => {
+    expect(getVoiceModelSpec('tts').id).toBe('vits-melo-tts-zh_en');
     expect(getVoiceModelSpec('tts', 'kokoro').id).toBe('kokoro-multi-lang-v1_1');
     expect(getVoiceModelSpec('tts', 'melo').id).toBe('vits-melo-tts-zh_en');
   });

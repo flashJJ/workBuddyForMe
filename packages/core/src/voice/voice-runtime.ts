@@ -86,7 +86,7 @@ export class VoiceRuntime {
         .filter((p) => p.startsWith(prefix))
         .map((p) => p.slice(prefix.length));
       return {
-        model: spec.engine ?? 'kokoro',
+        model: spec.engine ?? 'melo',
         label: spec.label,
         totalBytes: spec.totalBytes,
         ready: ownMissing.length === 0,
@@ -108,7 +108,7 @@ export class VoiceRuntime {
         ready,
         missing,
       })),
-      activeTtsModel: activeSpec.engine ?? 'kokoro',
+      activeTtsModel: activeSpec.engine ?? 'melo',
     };
   }
 

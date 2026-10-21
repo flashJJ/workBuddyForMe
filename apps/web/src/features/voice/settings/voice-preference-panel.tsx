@@ -21,7 +21,8 @@ import { apiGet } from '@/lib/api/client';
 const HF_MIRROR = 'https://hf-mirror.com';
 const HF_OFFICIAL = 'https://huggingface.co';
 
-const TTS_DISPLAY_ORDER = ['kokoro', 'melo'] as const;
+/** 展示顺序：默认引擎（MeloTTS，D9）在前 */
+const TTS_DISPLAY_ORDER = ['melo', 'kokoro'] as const;
 
 /** 模型下载管理（ASR 一张 + TTS 每引擎一张） */
 function ModelDownloadSection() {

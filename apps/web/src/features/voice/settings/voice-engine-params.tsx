@@ -28,21 +28,21 @@ function TtsModelSelector(props: {
   onPatch: (patch: VoiceSettingsUpdateInput) => Promise<void>;
 }) {
   const { t } = useI18n();
-  /** v1.1 朗读引擎选项（模型下载状态见「离线模型」区两张 TTS 卡） */
+  /** v2.4 D9：默认引擎（MeloTTS）排在首位；Kokoro 作为「更多音色」备选 */
   const TTS_MODEL_OPTIONS: ReadonlyArray<{
     value: VoiceTtsModel;
     name: string;
     hint: string;
   }> = [
     {
-      value: 'kokoro',
-      name: t('voice.engine.kokoroName'),
-      hint: t('voice.engine.kokoroHint'),
-    },
-    {
       value: 'melo',
       name: t('voice.engine.meloName'),
       hint: t('voice.engine.meloHint'),
+    },
+    {
+      value: 'kokoro',
+      name: t('voice.engine.kokoroName'),
+      hint: t('voice.engine.kokoroHint'),
     },
   ];
 

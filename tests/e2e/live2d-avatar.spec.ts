@@ -145,6 +145,10 @@ test.describe.serial('M3 Live2D 形象', () => {
     expect(payload.data.avatarModelId).toBe('hiyori');
 
     // M4.5：角色绑定 Kokoro 声线（Hiyori → zf_026 / sid 18）；
+    // v2.4 D9 起默认朗读引擎为 MeloTTS（单声线，不显示角色声线绑定），
+    // 本段断言的是 Kokoro 绑定契约，故先显式切回 Kokoro 再校验。
+    await page.request.put('/api/voice/settings', { data: { ttsModel: 'kokoro' } });
+    await page.reload();
     // e2e 临时数据根无 TTS 模型，试听按钮渲染但禁用
     const voiceRow = page.getByTestId('avatar-voice-row');
     await expect(voiceRow).toContainText('zf_026');

@@ -180,8 +180,9 @@ export function getAvatarSpeakerId(
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   ttsEnabled: false,
   ttsEngine: 'sherpa_onnx',
-  // v1.1 默认沿用 Kokoro 多角色声线；melo 为单声低延迟备选（设置页可切）
-  ttsModel: 'kokoro',
+  // v2.4 D9：默认 MeloTTS（191MB，单声低延迟，首启成本与首字延迟优先）；
+  // Kokoro（394MB / 103 音色）作为「更多音色」可选，设置页可切。
+  ttsModel: 'melo',
   // 兜底 sid：Haru 绑定的 zf_001（对话合成默认走角色绑定，见 AVATAR_TTS_VOICES）
   ttsSpeakerId: 3,
   ttsSpeed: 1,
