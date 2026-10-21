@@ -24,7 +24,8 @@ const DEFAULT_SETTINGS = {
   asrNumThreads: 4,
   inputMode: 'ptt',
   vadSensitivity: 'balanced',
-  vadSilenceMs: 900,
+  // v2.4 M3：对齐真实默认（= 「反应快」档 balanced + 600ms，M0 §4）
+  vadSilenceMs: 600,
   modelMirrorBase: 'https://hf-mirror.com',
   modelsDir: null,
   avatarEnabled: false,
@@ -186,9 +187,13 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
     await expect(vadButton).toBeVisible();
     await vadButton.click();
     expect(voiceSettings.inputMode).toBe('vad');
-    // 选中态 + 高级参数展开
+    // 选中态 + 默认「反应快」档；v2.4 M3：灵敏度/尾静音已退到「高级」（默认收起）
     await expect(vadButton).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('voice-vad-params')).toBeVisible();
+    await expect(page.getByTestId('voice-profile-fast')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('voice-input-advanced')).toHaveCount(0);
+
+    await page.getByTestId('voice-input-advanced-toggle').click();
     // v2.3：原生 select 已换 Radix，断言选中项文案而非表单值
     await expect(page.getByTestId('voice-vad-sensitivity')).toHaveText('均衡（大多数环境）');
   });

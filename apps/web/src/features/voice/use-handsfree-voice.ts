@@ -29,6 +29,10 @@ export interface HandsfreeVoice {
   /** 用户是否显式开启免手（实际采集还要满足 canArm/asrReady） */
   armed: boolean;
   toggle: () => void;
+  /** 显式武装（v2.4 M3：「一键开启语音对话」等外部入口直接武装，无需模拟点击） */
+  arm: () => void;
+  /** 显式解除武装（关闭即彻底停止采集与在途识别） */
+  disarm: () => void;
   /** 合并后的四态：播放态以队列为准，其余取本地监听/思考 */
   voiceState: VoiceState;
   /** 麦克风采集实时电平（0~1，armed 时约 10Hz 刷新；未武装恒 0） */
@@ -50,7 +54,9 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
     options;
   const { t } = useI18n();
 
-  const [armed, setArmed] = React.useState(false);
+  const [armed, setArmedState] = React.useState(false);
+  // armed 的权威副本：setArmed/toggle 都经它判重，避免把副作用写进 setState 更新函数
+  const armedRef = React.useRef(false);
   const [local, setLocal] = React.useState<LocalState>('idle');
   const [asrError, setAsrError] = React.useState<string | null>(null);
   // 实时麦克风电平（0~1，约 10Hz 刷新，仅供免手监听调试/电平指示）
@@ -68,6 +74,26 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
   cbRef.current = { onRecognizedSend, onAbortTurn, playback };
 
   const monitorEnabled = armed && canArm && asrReady;
+
+  /** 关闭武装的清理：作废轮次与在途识别（关闭即彻底停采集） */
+  const teardown = React.useCallback(() => {
+    trackerRef.current?.cancel();
+    abortRef.current?.abort();
+    abortRef.current = null;
+    queuedRef.current = null;
+    setLocal('idle');
+  }, []);
+
+  /** 显式设置武装态（外部入口一键武装与按钮 toggle 共用同一条路径） */
+  const setArmed = React.useCallback(
+    (next: boolean) => {
+      if (armedRef.current === next) return;
+      armedRef.current = next;
+      setArmedState(next);
+      if (!next) teardown();
+    },
+    [teardown],
+  );
 
   const recognize = React.useCallback(async (samples: Float32Array) => {
     if (busyRef.current) {
@@ -159,34 +185,24 @@ export function useHandsfreeVoice(options: HandsfreeVoiceOptions): HandsfreeVoic
 
   // 关闭武装/失去条件：作废轮次与在途识别，复位本地态
   React.useEffect(() => {
-    if (!monitorEnabled) {
-      trackerRef.current?.cancel();
-      abortRef.current?.abort();
-      abortRef.current = null;
-      queuedRef.current = null;
-      setLocal('idle');
-      setMicLevel(0);
-    }
-  }, [monitorEnabled]);
+    if (monitorEnabled) return;
+    teardown();
+    setMicLevel(0);
+    // 失去武装条件（设置里关掉 ASR / 切回 PTT）时同步取消武装，避免残留 armed 假态
+    if (!canArm || !asrReady) setArmed(false);
+  }, [monitorEnabled, canArm, asrReady, teardown, setArmed]);
 
-  const toggle = React.useCallback(() => {
-    setArmed((prev) => {
-      if (prev) {
-        // 关闭即彻底停止采集与任何在途识别
-        trackerRef.current?.cancel();
-        abortRef.current?.abort();
-        queuedRef.current = null;
-        setLocal('idle');
-      }
-      return !prev;
-    });
-  }, []);
+  const toggle = React.useCallback(() => setArmed(!armedRef.current), [setArmed]);
+  const arm = React.useCallback(() => setArmed(true), [setArmed]);
+  const disarm = React.useCallback(() => setArmed(false), [setArmed]);
 
   const voiceState: VoiceState = playback.speaking ? 'speaking' : local;
 
   return {
     armed,
     toggle,
+    arm,
+    disarm,
     voiceState,
     /** 麦克风采集实时电平（0~1，armed 时约 10Hz 刷新；未武装恒 0） */
     micLevel,

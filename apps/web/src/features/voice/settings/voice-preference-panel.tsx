@@ -6,6 +6,7 @@ import { useVoiceModelDownloads } from './use-voice-model-downloads';
 import { VoiceModelCard } from './voice-model-card';
 import { VoiceEngineParams } from './voice-engine-params';
 import { VoiceInputSection } from './voice-input-section';
+import { VoiceQuickStart } from '../voice-quick-start';
 import { AvatarSection } from './avatar-section';
 import { ProactiveSection } from './proactive-section';
 import { MicSelfTest } from './mic-self-test';
@@ -187,6 +188,9 @@ export function VoicePreferencePanel() {
           {t('voice.section.description')}
         </p>
       </div>
+
+      {/* v2.4 M3（D7 入口①）：一键开启语音对话——未就绪展开下载引导，就绪一次点击开启 */}
+      {mounted && <VoiceQuickStart />}
 
       {mounted && <ModelDownloadSection />}
 

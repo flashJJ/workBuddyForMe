@@ -141,6 +141,30 @@ export const enVoice = {
     silenceSeconds: '{seconds} s',
     silenceRecommended: ' (recommended, responsive)',
     halfDuplexHint: 'Half-duplex: while the assistant reads aloud the microphone suppresses echo, so a clearly louder voice is needed to interrupt; headphones recommended.',
+    // v2.4 M3: the default path exposes only two presets; sensitivity/tail silence move to Advanced (M0 §4)
+    profileLabel: 'Preset',
+    profileFast: 'Responsive',
+    profileFastHint: 'Short pauses count as done; headphones or quiet rooms',
+    profileTolerant: 'More tolerant',
+    profileTolerantHint: 'Speakers/noisy environments; fewer false triggers',
+    profileCustom: 'Custom (see Advanced)',
+    advanced: 'Advanced (sensitivity / tail silence)',
+    silenceNow: 'Now: auto-sends after about {seconds} s of silence',
+  },
+  // v2.4 M3 (P0-3): one-click voice chat (dual entry) + download guide + half-duplex notice
+  quickStart: {
+    actionReady: 'Start voice chat',
+    actionDownload: 'Start voice chat (downloads about {size})',
+    enabled: 'Voice chat on: hands-free listening + auto read-aloud',
+    boundary:
+      'This is a “speak, then answer” mode: speaking interrupts ongoing playback. Simultaneous listen-and-speak (full duplex) is not in this version.',
+    download: {
+      title: 'Download the offline voice models first',
+      costLine: 'About {size} in total · depends on your network speed',
+      diskLine: 'Models are stored in {path} (not bundled; fully offline once downloaded)',
+      action: 'Download all',
+      done: 'Models ready — use the button above to start',
+    },
   },
   selfTest: {
     start: 'Microphone self-test',

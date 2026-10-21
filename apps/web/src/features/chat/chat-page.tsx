@@ -20,9 +20,7 @@ import { MessageList } from './message-list';
 import { Composer } from './composer';
 import { ToolConfirmDialog } from './tool-confirm-dialog';
 import { useChatVoiceCompanion } from './use-chat-voice-companion';
-import { VoiceToggle } from '../voice/voice-toggle';
-import { MicButton } from '../voice/mic-button';
-import { HandsfreeMicButton } from '../voice/handsfree-mic-button';
+import { ChatVoiceControls } from './chat-voice-controls';
 import { ProactiveBubbleBar } from './proactive-bubble';
 import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
 import { useChatEvents } from './use-chat-events';
@@ -266,15 +264,15 @@ export function ChatPage() {
               taskMode={taskMode}
               onTaskModeChange={setTaskMode}
               leading={
-                <>
-                  <VoiceToggle enabled={ttsEnabled} onEnabledChange={handleTtsToggle} />
-                  {voiceSettings?.asrEnabled &&
-                    (voiceSettings.inputMode === 'vad' ? (
-                      <HandsfreeMicButton handsfree={handsfree} />
-                    ) : (
-                      <MicButton onRecognizedSend={(text) => session.send(text)} disabled={session.streaming} />
-                    ))}
-                </>
+                <ChatVoiceControls
+                  ttsEnabled={ttsEnabled}
+                  onTtsToggle={handleTtsToggle}
+                  asrEnabled={Boolean(voiceSettings?.asrEnabled)}
+                  inputMode={voiceSettings?.inputMode}
+                  handsfree={handsfree}
+                  streaming={session.streaming}
+                  onRecognizedSend={session.send}
+                />
               }
               onSend={(content, attachmentIds) =>
                 taskMode ? void session.sendTask(content) : session.send(content, attachmentIds)

@@ -127,4 +127,36 @@ describe('useHandsfreeVoice', () => {
     expect(h.onRecognizedSend.mock.calls.map((c) => c[0])).toEqual(['第一句', '第二句']);
     expect(apiUpload).toHaveBeenCalledTimes(2);
   });
+
+  it('arm() 直接武装、disarm() 解除（供「一键开启语音对话」外部入口使用）', () => {
+    const h = renderHand();
+    expect(h.result.current.armed).toBe(false);
+
+    act(() => h.result.current.arm());
+    expect(h.result.current.armed).toBe(true);
+
+    act(() => h.result.current.disarm());
+    expect(h.result.current.armed).toBe(false);
+  });
+
+  it('失去武装条件（canArm=false）时自动取消武装，不留假态', () => {
+    const utils = renderHook(
+      (props: { canArm: boolean }) =>
+        useHandsfreeVoice({
+          asrReady: true,
+          canArm: props.canArm,
+          sensitivity: 'balanced',
+          silenceMs: 600,
+          playback: makePlayback(false),
+          onRecognizedSend: vi.fn(),
+          onAbortTurn: vi.fn(),
+        }),
+      { initialProps: { canArm: true } },
+    );
+    act(() => utils.result.current.arm());
+    expect(utils.result.current.armed).toBe(true);
+
+    act(() => utils.rerender({ canArm: false }));
+    expect(utils.result.current.armed).toBe(false);
+  });
 });
