@@ -38,6 +38,15 @@ export const zhChat = {
     placeholder: '输入消息，Enter 发送，Shift+Enter 换行',
     placeholderVision: '输入消息或粘贴/拖入图片，Enter 发送',
   },
+  /** v2.4 M5：流式进度与首字延迟（阈值复用 P0-1 自检口径） */
+  stream: {
+    thinking: '模型思考中…',
+    waiting: '仍在等待首字（{seconds}s）',
+    slowAdvice: '本轮明显偏慢：可停止后换更小的模型，或缩短上下文再试。',
+    firstToken: '首字 {seconds}s',
+    firstTokenTitle: '首字延迟（本地计时，分档与首启自检一致）',
+    generating: '正在生成…',
+  },
   rename: {
     title: '重命名对话',
     description: '给这个对话起一个更容易识别的标题。',
@@ -115,6 +124,15 @@ export const enChat = {
     sendMessageAria: 'Send message',
     placeholder: 'Type a message, Enter to send, Shift+Enter for a new line',
     placeholderVision: 'Type a message or paste/drop images, Enter to send',
+  },
+  /** v2.4 M5: streaming progress and first-token latency (same tiers as the P0-1 self-check) */
+  stream: {
+    thinking: 'The model is thinking…',
+    waiting: 'Still waiting for the first token ({seconds}s)',
+    slowAdvice: 'This turn is slow: stop it and switch to a smaller model, or shorten the context and retry.',
+    firstToken: 'First token {seconds}s',
+    firstTokenTitle: 'First-token latency (local timing, same tiers as the onboarding self-check)',
+    generating: 'Generating…',
   },
   rename: {
     title: 'Rename conversation',

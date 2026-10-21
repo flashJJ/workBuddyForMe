@@ -251,6 +251,7 @@ export function ChatPage() {
               onRetry={session.retry}
               onResend={session.send}
               onFeedback={session.applyFeedback}
+              streamTiming={session.streamTiming}
             />
             {companion.proactiveBubble && (
               <ProactiveBubbleBar
