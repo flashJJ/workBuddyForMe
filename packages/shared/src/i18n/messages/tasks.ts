@@ -13,7 +13,9 @@ export const zhTasks = {
   goalRequired: '请填写任务目标',
   createFailed: '任务创建失败',
   loading: '加载任务...',
-  empty: '还没有任务运行，先在上方创建一个。',
+  loadError: '加载任务失败',
+  emptyTitle: '还没有任务运行',
+  emptyDescription: '在上方选择会话并填写目标，即可创建第一个任务。',
   steps: '{done}/{max} 步',
   eventStreamFailed: '任务事件流连接失败，部分步骤可能缺失。',
   stepKind: {
@@ -59,7 +61,9 @@ export const enTasks = {
   goalRequired: 'Please enter a task goal',
   createFailed: 'Failed to create task',
   loading: 'Loading tasks...',
-  empty: 'No task runs yet. Create one above.',
+  loadError: 'Failed to load tasks',
+  emptyTitle: 'No task runs yet',
+  emptyDescription: 'Pick a conversation and describe a goal above to start your first task.',
   steps: '{done}/{max} steps',
   eventStreamFailed: 'Failed to connect to the task event stream; some steps may be missing.',
   stepKind: {

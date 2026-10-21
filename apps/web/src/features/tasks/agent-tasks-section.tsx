@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { FailureHint } from '@/components/common/failure-hint';
 import { RunStatusBadge } from '@/components/common/run-status-badge';
-import { Spinner } from '@/components/common/state';
+import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
@@ -68,8 +68,13 @@ export function AgentTasksSection() {
 
       {runsQuery.isLoading ? (
         <Spinner label={t('agents.tasks.loading')} />
+      ) : runsQuery.isError ? (
+        <ErrorState
+          message={t('agents.tasks.loadFailed')}
+          onRetry={() => void runsQuery.refetch()}
+        />
       ) : runs.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('agents.tasks.empty')}</p>
+        <EmptyState title={t('agents.tasks.empty')} />
       ) : (
         <ul className="space-y-2">
           {runs.map((run) => (

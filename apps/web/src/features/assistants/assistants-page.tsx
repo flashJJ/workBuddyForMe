@@ -20,7 +20,7 @@ import type { AssistantPreset } from './assistant-form-state';
 import { ASSISTANT_PRESET_BINDINGS } from '@/lib/templates/starter-templates';
 import type { TemplateGalleryItem } from '@/components/common/template-gallery';
 
-export function AssistantsPage() {
+export function AssistantsPage({ autoCreate = false }: { autoCreate?: boolean }) {
   const { t } = useI18n();
   const { data: assistants, isLoading, isError, refetch } = useAssistants();
   const { data: models } = useAllModels();
@@ -32,6 +32,14 @@ export function AssistantsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Assistant | null>(null);
   const [preset, setPreset] = React.useState<AssistantPreset | null>(null);
+
+  // v2.4 M5：命令面板「新建助手」深链接（/assistants?new=1）自动打开创建表单
+  React.useEffect(() => {
+    if (!autoCreate) return;
+    setEditing(null);
+    setPreset(null);
+    setDialogOpen(true);
+  }, [autoCreate]);
 
   const openCreate = () => {
     setEditing(null);

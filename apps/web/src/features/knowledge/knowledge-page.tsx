@@ -94,7 +94,7 @@ function KnowledgeBaseNav({
   );
 }
 
-export function KnowledgePage() {
+export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) {
   const { t } = useI18n();
   const { data: knowledgeBases, isLoading, isError, refetch } = useKnowledgeBases();
   const mutations = useKnowledgeMutations();
@@ -104,6 +104,13 @@ export function KnowledgePage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [clipOpen, setClipOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<KnowledgeBase | null>(null);
+
+  // v2.4 M5：命令面板「新建知识库」深链接（/knowledge?new=1）自动打开创建表单
+  React.useEffect(() => {
+    if (!autoCreate) return;
+    setEditing(null);
+    setDialogOpen(true);
+  }, [autoCreate]);
 
   React.useEffect(() => {
     if (!knowledgeBases) return;

@@ -17,6 +17,16 @@ const SIZES = [
   { name: 'narrow', width: 720, height: 520, collapsed: true },
 ] as const;
 
+/** v2.4 M5 / P1-3：五个列表与三个运行页（任务页含协作运行区） */
+const LIST_AND_RUN_PAGES = [
+  { path: '/knowledge', label: '知识库列表' },
+  { path: '/flows', label: '工作流列表' },
+  { path: '/assistants', label: '助手列表' },
+  { path: '/tasks', label: '任务与协作运行页' },
+  { path: '/flows/runs', label: '工作流运行记录' },
+  { path: '/chat', label: '对话页' },
+] as const;
+
 /** 文档级横向溢出像素（>0 即出现横向滚动条） */
 async function horizontalOverflow(page: import('@playwright/test').Page): Promise<number> {
   return page.evaluate(() => {
@@ -80,4 +90,22 @@ test.describe('v2.3 响应式三尺寸', () => {
 
     await page.screenshot({ path: 'test-results/responsive/narrow-tasks.png' });
   });
+
+  // v2.4 M5 / P1-3：列表与运行页在三尺寸下统一无横向溢出（长文本用 truncate 收口）
+  for (const size of SIZES) {
+    test(`${size.name} ${size.width}×${size.height}：五个列表与运行页无横向溢出`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: size.width, height: size.height });
+      for (const target of LIST_AND_RUN_PAGES) {
+        await page.goto(target.path);
+        await waitForHydrated(page);
+        await page.waitForLoadState('networkidle');
+        expect(
+          await horizontalOverflow(page),
+          `${target.label}（${size.name}）不应出现横向滚动`,
+        ).toBeLessThanOrEqual(1);
+      }
+    });
+  }
 });

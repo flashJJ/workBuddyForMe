@@ -6,7 +6,13 @@
  */
 
 /** 命令分组，用于面板内分组展示与快捷键提示 */
-export type CommandGroup = 'navigation' | 'conversation' | 'assistant' | 'settings' | 'update';
+export type CommandGroup =
+  | 'navigation'
+  | 'create'
+  | 'conversation'
+  | 'assistant'
+  | 'settings'
+  | 'update';
 
 export interface CommandContext {
   /** 当前选中的会话 ID（无则 null） */

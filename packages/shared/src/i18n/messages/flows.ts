@@ -37,6 +37,7 @@ export const zhFlows = {
     title: '运行记录',
     description: '全部工作流运行：支持按来源/状态筛选，失败与中断可整体重跑或从失败节点重放。',
     loading: '加载运行记录...',
+    loadError: '加载运行记录失败',
     empty: '没有符合条件的运行记录。',
     source: '来源',
     workflowColumn: '工作流',
@@ -103,6 +104,7 @@ export const enFlows = {
     description:
       'All workflow runs: filter by source or status. Failed and interrupted runs can be replayed whole or from the failed node.',
     loading: 'Loading run history...',
+    loadError: 'Failed to load run history',
     empty: 'No run records match the filters.',
     source: 'Source',
     workflowColumn: 'Workflow',

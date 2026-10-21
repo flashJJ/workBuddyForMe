@@ -10,13 +10,14 @@ import { useCommands, COMMAND_ICONS } from './use-commands';
 
 const GROUP_LABEL_KEYS: Record<CommandGroup, MessageKey> = {
   navigation: 'commandPalette.groups.navigation',
+  create: 'commandPalette.groups.create',
   conversation: 'commandPalette.groups.conversation',
   assistant: 'commandPalette.groups.assistant',
   settings: 'commandPalette.groups.settings',
   update: 'commandPalette.groups.update',
 };
 
-const GROUP_ORDER: CommandGroup[] = ['navigation', 'conversation', 'assistant', 'settings', 'update'];
+const GROUP_ORDER: CommandGroup[] = ['navigation', 'create', 'conversation', 'assistant', 'settings', 'update'];
 
 interface CommandPaletteProps {
   open: boolean;

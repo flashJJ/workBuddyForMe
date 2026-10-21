@@ -9,6 +9,9 @@ import {
   Download,
   RefreshCw,
   Search,
+  ClipboardList,
+  Workflow,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 import type { Command } from '@wbfm/shared/command';
@@ -56,6 +59,22 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         action: () => navigate('/knowledge'),
       },
       {
+        id: 'nav:tasks',
+        label: t(`${ck}.navTasks.label`),
+        description: t(`${ck}.navTasks.description`),
+        group: 'navigation',
+        keywords: ['task', '任务', '桌面', '协作', 'agent'],
+        action: () => navigate('/tasks'),
+      },
+      {
+        id: 'nav:flows',
+        label: t(`${ck}.navFlows.label`),
+        description: t(`${ck}.navFlows.description`),
+        group: 'navigation',
+        keywords: ['flow', 'workflow', '工作流', '编排'],
+        action: () => navigate('/flows'),
+      },
+      {
         id: 'nav:assistants',
         label: t(`${ck}.navAssistants.label`),
         description: t(`${ck}.navAssistants.description`),
@@ -70,6 +89,40 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         group: 'navigation',
         keywords: ['settings', '设置', '配置'],
         action: () => navigate('/settings'),
+      },
+
+      // ── 新建（深链接 ?new= 由页面自动打开创建表单） ──
+      {
+        id: 'kb:new',
+        label: t(`${ck}.kbNew.label`),
+        description: t(`${ck}.kbNew.description`),
+        group: 'create',
+        keywords: ['new', 'create', '新建', '知识库', 'kb'],
+        action: () => navigate('/knowledge?new=1'),
+      },
+      {
+        id: 'flow:new',
+        label: t(`${ck}.flowNew.label`),
+        description: t(`${ck}.flowNew.description`),
+        group: 'create',
+        keywords: ['new', 'create', '新建', '工作流', 'flow', 'workflow'],
+        action: () => navigate('/flows?new=1'),
+      },
+      {
+        id: 'assistant:new',
+        label: t(`${ck}.assistantNew.label`),
+        description: t(`${ck}.assistantNew.description`),
+        group: 'create',
+        keywords: ['new', 'create', '新建', '助手', 'assistant', 'agent'],
+        action: () => navigate('/assistants?new=1'),
+      },
+      {
+        id: 'card:new',
+        label: t(`${ck}.cardNew.label`),
+        description: t(`${ck}.cardNew.description`),
+        group: 'create',
+        keywords: ['new', 'create', '新建', '角色卡', 'card', 'persona'],
+        action: () => navigate('/settings?new=card#setting-data'),
       },
 
       // ── 会话 ──
@@ -162,9 +215,15 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
 /** 命令图标映射（按 id 取，用于面板渲染） */
 export const COMMAND_ICONS: Record<string, LucideIcon> = {
   'nav:chat': MessageSquarePlus,
+  'nav:tasks': ClipboardList,
+  'nav:flows': Workflow,
   'nav:knowledge': Library,
   'nav:assistants': Bot,
   'nav:settings': Settings,
+  'kb:new': Library,
+  'flow:new': Workflow,
+  'assistant:new': Bot,
+  'card:new': FileText,
   'conv:new': MessageSquarePlus,
   'conv:search': Search,
   'conv:export': Download,

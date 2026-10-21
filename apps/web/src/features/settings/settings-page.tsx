@@ -52,7 +52,7 @@ interface SettingsSection {
   panels: React.ReactNode[];
 }
 
-export function SettingsPage() {
+export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: boolean }) {
   const { t } = useI18n();
   const { data: providers, isLoading, isError, refetch } = useProviders();
   const { data: settings } = useSettings();
@@ -117,7 +117,7 @@ export function SettingsPage() {
       id: 'data',
       labelKey: 'settings.sections.data',
       panels: [
-        <CharacterCardsPanel key="cards" />,
+        <CharacterCardsPanel key="cards" autoCreate={autoCreateCard} />,
         <KnowledgeRetrievalPanel key="knowledge" />,
         <ModPackPanel key="modpack" />,
         <MemoryPanel key="memory" />,

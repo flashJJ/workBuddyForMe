@@ -27,7 +27,7 @@ const STATUS_META: Record<FlowStatus, { labelKey: MessageKey; variant: 'outline'
   disabled: { labelKey: 'flows.status.disabled', variant: 'outline' },
 };
 
-export function FlowsListPage() {
+export function FlowsListPage({ autoCreate = false }: { autoCreate?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const flowsQuery = useFlows();
@@ -36,6 +36,11 @@ export function FlowsListPage() {
   const confirm = useConfirm();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<WorkflowView | null>(null);
+
+  // v2.4 M5：命令面板「新建工作流」深链接（/flows?new=1）自动打开创建表单
+  React.useEffect(() => {
+    if (autoCreate) setCreateOpen(true);
+  }, [autoCreate]);
 
   const errToast = (e: unknown, fallback: MessageKey) =>
     toast.error(errorText(e, t, { fallback }));

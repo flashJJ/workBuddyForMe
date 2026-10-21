@@ -1,5 +1,10 @@
 import { AssistantsPage } from '@/features/assistants/assistants-page';
 
-export default function Page() {
-  return <AssistantsPage />;
+export default function Page({
+  searchParams,
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
+  const autoCreate = searchParams?.new === '1';
+  return <AssistantsPage autoCreate={autoCreate} />;
 }

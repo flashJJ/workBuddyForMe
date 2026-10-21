@@ -83,7 +83,7 @@ function CardRow({
  * v1.8 设置-角色卡库：内置只读区 + 自建区；新建/导入打开 Markdown 编辑器，
  * 导出走原文下载，删除经二次确认（引用助手回落默认卡由服务端处理）。
  */
-export function CharacterCardsPanel() {
+export function CharacterCardsPanel({ autoCreate = false }: { autoCreate?: boolean }) {
   const { t } = useI18n();
   const toast = useToast();
   const confirm = useConfirm();
@@ -94,6 +94,11 @@ export function CharacterCardsPanel() {
   // 水合门控：查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
+
+  // v2.4 M5：命令面板「新建角色卡」深链接（/settings?new=card#setting-data）自动打开编辑器
+  React.useEffect(() => {
+    if (autoCreate) setEditor({ card: null });
+  }, [autoCreate]);
 
   const builtins = (cards ?? []).filter((card) => card.source === 'builtin');
   const customs = (cards ?? []).filter((card) => card.source === 'custom');

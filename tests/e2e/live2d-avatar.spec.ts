@@ -102,9 +102,19 @@ test.describe.serial('M3 Live2D 形象', () => {
   });
 
   test('⑥ 复位：关闭形象后形象栏消失', async ({ page }) => {
+    const putPromise = page
+      .waitForResponse(
+        (r) => r.url().includes('/api/voice/settings') && r.request().method() === 'PUT',
+        { timeout: 15_000 },
+      )
+      .then((r) => r.json());
     await page.goto('/settings');
     await page.getByTestId('avatar-enabled').uncheck();
     await expect(page.getByTestId('avatar-enabled')).not.toBeChecked();
+    // 等待关闭落库后再导航，避免 PUT 被路由切换中断（与 ④/⑦ 同一等待口径）
+    const payload = (await putPromise) as { success: boolean; data?: { avatarEnabled?: boolean } };
+    expect(payload.success).toBe(true);
+    expect(payload.data?.avatarEnabled).toBe(false);
 
     await page.goto('/chat');
     await expect(page.getByTestId('avatar-rail')).toHaveCount(0);

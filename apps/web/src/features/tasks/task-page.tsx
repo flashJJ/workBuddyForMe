@@ -6,7 +6,7 @@ import type { TaskRunView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { FailureHint } from '@/components/common/failure-hint';
 import { RunStatusBadge } from '@/components/common/run-status-badge';
-import { Spinner } from '@/components/common/state';
+import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { Textarea } from '@/components/ui/textarea';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { NumberInput } from '@/components/ui/number-input';
@@ -139,8 +139,13 @@ export function TaskPage() {
       <div className="flex-1 overflow-auto px-6 py-4">
         {tasksQuery.isLoading ? (
           <Spinner label={t('tasks.loading')} />
+        ) : tasksQuery.isError ? (
+          <ErrorState message={t('tasks.loadError')} onRetry={() => void tasksQuery.refetch()} />
         ) : tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('tasks.empty')}</p>
+          <EmptyState
+            title={t('tasks.emptyTitle')}
+            description={t('tasks.emptyDescription')}
+          />
         ) : (
           <ul className="space-y-2">
             {tasks.map((task) => (

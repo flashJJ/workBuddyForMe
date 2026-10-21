@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { FailureHint } from '@/components/common/failure-hint';
 import { RunStatusBadge } from '@/components/common/run-status-badge';
-import { Spinner } from '@/components/common/state';
+import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import {
@@ -113,8 +113,16 @@ export function FlowRunsView() {
       <div className="flex-1 overflow-auto p-4">
         {runsQuery.isLoading ? (
           <Spinner label={t('flows.runs.loading')} />
+        ) : runsQuery.isError ? (
+          <ErrorState
+            message={t('flows.runs.loadError')}
+            onRetry={() => void runsQuery.refetch()}
+          />
         ) : runs.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">{t('flows.runs.empty')}</p>
+          <EmptyState
+            icon={<History className="h-8 w-8" />}
+            title={t('flows.runs.empty')}
+          />
         ) : (
           <table className="w-full border-collapse text-xs">
             <thead>
