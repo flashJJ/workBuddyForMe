@@ -11,6 +11,7 @@ import {
   mapUsage,
   type ChatCompletionChunk,
 } from './payloads';
+import { createWireToolNameCodec } from './tool-name-codec';
 
 /**
  * OpenAI 兼容 /chat/completions SSE 增量流。
@@ -22,12 +23,14 @@ export async function* openAiChatStream(
   connection: ProviderConnection,
   params: ChatParams,
 ): AsyncIterable<ChatChunk> {
+  // 限定名转义为上游接受的字符集；回包工具调用再还原为内部名
+  const codec = createWireToolNameCodec(params);
   const { response, dispose } = await openSseChannel(
     joinEndpoint(connection.baseUrl, OPENAI_ENDPOINTS.chatCompletions),
     {
       apiKey: connection.apiKey,
       signal: params.signal,
-      body: buildChatBody(params),
+      body: buildChatBody(params, codec),
       // 本地模型冷加载首字节慢，连接超时放宽到 180s（仅覆盖响应头到达前）
       timeoutMs: CHAT_CONNECT_TIMEOUT_MS,
     },
@@ -64,7 +67,11 @@ export async function* openAiChatStream(
       toolCalls.absorb(choice?.delta?.tool_calls);
       if (choice?.finish_reason) {
         if (choice.finish_reason === 'tool_calls') {
-          yield { delta: '', toolCalls: toolCalls.assemble(), finishReason: 'tool_calls' };
+          const restored = toolCalls.assemble().map((call) => ({
+            ...call,
+            function: { ...call.function, name: codec.toOriginal(call.function.name) },
+          }));
+          yield { delta: '', toolCalls: restored, finishReason: 'tool_calls' };
         } else if (choice.finish_reason !== 'stop') {
           yield { delta: '', finishReason: choice.finish_reason };
         }

@@ -88,6 +88,9 @@ test.describe('M5 首启体验', () => {
 
     // 首答成功：向导示例问题已自动发出，mock 回显（演示模式无外网依赖）
     await expect(page.getByText(/mock 模型/).first()).toBeVisible({ timeout: 30_000 });
+    // 等本轮真正完成再离开对话页：流式中途跳转会走停止分支，
+    // 该分支不记 firstAnswerAt 里程碑，后续 TTFV 断言会因取不到元素而失败（CI 慢机必现）
+    await expect(page.getByTestId('regenerate-button').first()).toBeVisible({ timeout: 30_000 });
 
     // 全局徽标常显
     await expect(page.getByTestId('demo-mode-badge')).toBeVisible();

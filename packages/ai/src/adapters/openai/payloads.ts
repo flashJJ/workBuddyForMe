@@ -1,4 +1,5 @@
 import type { ChatMessage, ChatParams, TokenUsage, ToolCall, ToolDefinition } from '../../types';
+import { createWireToolNameCodec, mapMessageToolNames, type WireToolNameCodec } from './tool-name-codec';
 
 /** 上游 SSE chunk 中工具调用增量（按 index 分片到达） */
 export interface IncomingToolCallDelta {
@@ -46,26 +47,46 @@ export type WireChatMessage = {
 };
 
 /** 内部 ChatMessage（camelCase）→ OpenAI wire（snake_case） */
-export function toWireMessage(message: ChatMessage): WireChatMessage {
+export function toWireMessage(
+  message: ChatMessage,
+  codec?: WireToolNameCodec,
+): WireChatMessage {
+  const mapped = codec ? mapMessageToolNames(message, codec) : message;
   return {
-    role: message.role,
-    content: message.content,
-    ...(message.toolCalls ? { tool_calls: message.toolCalls } : {}),
-    ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
-    ...(message.name ? { name: message.name } : {}),
+    role: mapped.role,
+    content: mapped.content,
+    ...(mapped.toolCalls ? { tool_calls: mapped.toolCalls } : {}),
+    ...(mapped.toolCallId ? { tool_call_id: mapped.toolCallId } : {}),
+    ...(mapped.name ? { name: mapped.name } : {}),
   };
 }
 
-export function buildChatBody(params: ChatParams): ChatCompletionRequestBody {
+/** 下发前把限定名转义为上游接受的字符集（见 tool-name-codec） */
+export function toWireTools(
+  tools: ToolDefinition[] | undefined,
+  codec: WireToolNameCodec,
+): ToolDefinition[] | undefined {
+  return tools?.map((tool) => ({
+    ...tool,
+    function: { ...tool.function, name: codec.toWire(tool.function.name) },
+  }));
+}
+
+export function buildChatBody(
+  params: ChatParams,
+  codec: WireToolNameCodec = createWireToolNameCodec(params),
+): ChatCompletionRequestBody {
   return {
     model: params.model,
-    messages: params.messages.map(toWireMessage),
+    messages: params.messages.map((message) => toWireMessage(message, codec)),
     stream: true,
     stream_options: { include_usage: true },
     ...(params.temperature !== undefined ? { temperature: params.temperature } : {}),
     ...(params.topP !== undefined ? { top_p: params.topP } : {}),
     ...(params.maxTokens !== undefined ? { max_tokens: params.maxTokens } : {}),
-    ...(params.tools && params.tools.length > 0 ? { tools: params.tools } : {}),
+    ...(params.tools && params.tools.length > 0
+      ? { tools: toWireTools(params.tools, codec) }
+      : {}),
   };
 }
 
