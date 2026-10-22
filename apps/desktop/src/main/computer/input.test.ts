@@ -74,16 +74,31 @@ describe('nut-js 键鼠封装', () => {
   });
 
   it('ASCII 文本走 keyboard.type', async () => {
-    const b = backend({ setClipboard: () => calls.push('clipboard') });
+    const b = backend({ setClipboard: async () => void calls.push('clipboard') });
     await b.typeText('hello world');
     expect(calls).toEqual(['type:hello world']);
   });
 
   it('非 ASCII 文本走剪贴板 + Ctrl+V 粘贴', async () => {
     const clip: string[] = [];
-    const b = backend({ setClipboard: (t) => clip.push(t) });
+    const b = backend({ setClipboard: async (t) => void clip.push(t) });
     await b.typeText('你好，世界');
     expect(clip).toEqual(['你好，世界']);
+    expect(calls).toEqual(['press:LeftControl+V', 'release:V+LeftControl']);
+  });
+
+  it('等待剪贴板写入完成后再按 Ctrl+V（Electron 44 异步写）', async () => {
+    let finishWrite: () => void = () => {};
+    const written = new Promise<void>((resolve) => {
+      finishWrite = resolve;
+    });
+    const b = backend({ setClipboard: () => written });
+    const typing = b.typeText('中文');
+    await Promise.resolve();
+    // 写入未完成：不得提前按键，否则会粘贴剪贴板旧内容
+    expect(calls).toEqual([]);
+    finishWrite();
+    await typing;
     expect(calls).toEqual(['press:LeftControl+V', 'release:V+LeftControl']);
   });
 

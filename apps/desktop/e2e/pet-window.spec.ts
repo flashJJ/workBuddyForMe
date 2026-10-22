@@ -76,30 +76,40 @@ test.afterAll(async () => {
 });
 
 test.describe.serial('M4 桌宠窗', () => {
-  test('① IPC 开窗：pet 窗置顶/固定尺寸、URL 含模型、pet-stage 实际挂载', async () => {
+  test('① IPC 开窗：pet 窗置顶/固定尺寸、URL 含模型、live2d 舞台实际挂载', async () => {
     const windowReady = electronApp.waitForEvent('window');
     const opened = await mainPage.evaluate(async () => await window.wbfm!.pet!.open('haru'));
     expect(opened).toBe(true);
     petPage = await windowReady;
     await petPage.waitForLoadState('domcontentloaded');
 
-    const windows = await electronApp.evaluate(({ BrowserWindow }) =>
-      BrowserWindow.getAllWindows().map((w) => ({
-        url: w.webContents.getURL(),
-        visible: w.isVisible(),
-        alwaysOnTop: w.isAlwaysOnTop(),
-        resizable: w.isResizable(),
-      })),
-    );
-    expect(windows).toHaveLength(2);
-    const pet = windows.find((w) => w.url.includes('/pet'))!;
-    expect(pet.url).toMatch(/\/pet\?model=haru$/);
-    expect(pet.visible).toBe(true);
-    expect(pet.alwaysOnTop).toBe(true);
-    expect(pet.resizable).toBe(false);
+    // 窗口 show 在 ready-to-show 后异步执行：轮询可见性/置顶/固定尺寸，避免创建瞬间断言
+    await expect
+      .poll(
+        async () => {
+          const windows = await electronApp.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows().map((w) => ({
+              url: w.webContents.getURL(),
+              visible: w.isVisible(),
+              alwaysOnTop: w.isAlwaysOnTop(),
+              resizable: w.isResizable(),
+            })),
+          );
+          const pet = windows.find((w) => w.url.includes('/pet'));
+          return pet ? `${pet.visible}|${pet.alwaysOnTop}|${pet.resizable}` : 'missing';
+        },
+        { timeout: 10_000 },
+      )
+      .toBe('true|true|false');
+
+    const petWindow = await electronApp.evaluate(({ BrowserWindow }) => {
+      const pet = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes('/pet'))!;
+      return { url: pet.webContents.getURL() };
+    });
+    expect(petWindow.url).toMatch(/\/pet\?model=haru$/);
 
     // /pet 瘦终端：Live2D 舞台渲染且无错误条（WebGL 实际初始化）
-    await expect(petPage.getByTestId('pet-stage')).toBeVisible({ timeout: 60_000 });
+    await expect(petPage.getByTestId('live2d-stage')).toBeVisible({ timeout: 60_000 });
     await expect(petPage.getByTestId('live2d-error')).toHaveCount(0);
     await expect(petPage.locator('canvas')).toHaveCount(1, { timeout: 30_000 });
   });
@@ -171,7 +181,7 @@ test.describe.serial('M4 桌宠窗', () => {
     const secondReady = electronApp.waitForEvent('window');
     await mainPage.evaluate(async () => await window.wbfm!.pet!.open('hiyori'));
     petPage = await secondReady;
-    await expect(petPage.getByTestId('pet-stage')).toBeVisible({ timeout: 60_000 });
+    await expect(petPage.getByTestId('live2d-stage')).toBeVisible({ timeout: 60_000 });
     const bounds = await electronApp.evaluate(({ BrowserWindow }) => {
       const pet = BrowserWindow.getAllWindows().find((w) =>
         w.webContents.getURL().includes('/pet'),

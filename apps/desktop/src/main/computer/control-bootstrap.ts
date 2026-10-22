@@ -47,7 +47,9 @@ export async function startComputerControl(deps: {
 
   try {
     const input = createNutInputBackend({
-      setClipboard: (text) => clipboard.writeText(text),
+      setClipboard: async (text) => {
+        await clipboard.writeText(text);
+      },
     });
     overlay = createClickOverlay();
     const handlers: ComputerChannelHandlers = {

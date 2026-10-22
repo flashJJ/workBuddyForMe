@@ -102,11 +102,21 @@ function assertLoopbackHost(request: Request): void {
   }
 }
 
+/**
+ * Next 15 的生成类型要求第二参数为 `{ params: Promise<...> }`（必填）；
+ * 单测常只传 request，因此用重载兼容两种调用。`Parameters<>` 取最后一个重载，
+ * 带 context 的签名必须放在最后。
+ */
+export interface PublicEndpoint<P extends Record<string, string> = Record<string, string>> {
+  (request: Request): Promise<Response>;
+  (request: Request, context: { params: Promise<P> }): Promise<Response>;
+}
+
 export function definePublicRoute<P extends Record<string, string> = Record<string, string>>(
   transport: EndpointTransport,
   handler: PublicRouteHandler<P>,
-) {
-  return async (
+): PublicEndpoint<P> {
+  const endpoint = async (
     request: Request,
     context: { params?: P | Promise<P> } = {},
   ): Promise<Response> => {
@@ -140,4 +150,5 @@ export function definePublicRoute<P extends Record<string, string> = Record<stri
       return publicJsonError('internal_error', 500, '服务器内部错误');
     }
   };
+  return endpoint as PublicEndpoint<P>;
 }

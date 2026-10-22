@@ -1,10 +1,11 @@
 import { SettingsPage as SettingsPageFeature } from '@/features/settings/settings-page';
 
-export default function SettingsPage({
+export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const autoCreateCard = searchParams?.new === 'card';
+  const params = await searchParams;
+  const autoCreateCard = params?.new === 'card';
   return <SettingsPageFeature autoCreateCard={autoCreateCard} />;
 }

@@ -1,10 +1,11 @@
 import { AssistantsPage } from '@/features/assistants/assistants-page';
 
-export default function Page({
+export default async function Page({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const autoCreate = searchParams?.new === '1';
+  const params = await searchParams;
+  const autoCreate = params?.new === '1';
   return <AssistantsPage autoCreate={autoCreate} />;
 }

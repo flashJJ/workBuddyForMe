@@ -51,8 +51,8 @@ const KEY_MAP: Record<KeyName, Key> = {
   5: Key.Num5, 6: Key.Num6, 7: Key.Num7, 8: Key.Num8, 9: Key.Num9,
 };
 
-/** 设置剪贴板文本（Electron 主进程 clipboard）；测试可注入 */
-export type ClipboardSetter = (text: string) => void;
+/** 设置剪贴板文本（Electron 44 起 clipboard.writeText 为异步）；测试可注入 */
+export type ClipboardSetter = (text: string) => Promise<void>;
 
 export interface NutInputOptions {
   /** 非 ASCII 文本输入走「剪贴板 + Ctrl+V」粘贴（libnut 逐键敲中文不可靠） */
@@ -108,7 +108,8 @@ export function createNutInputBackend(options: NutInputOptions = {}): InputBacke
         return;
       }
       // 非 ASCII（中文等）：libnut 逐键输入不可靠，改走剪贴板粘贴
-      setClipboard(text);
+      // Electron 44 起 writeText 异步，必须等写入完成再按 Ctrl+V，否则粘贴到旧内容
+      await setClipboard(text);
       await keyboard.pressKey(Key.LeftControl, Key.V);
       await keyboard.releaseKey(Key.V, Key.LeftControl);
     },

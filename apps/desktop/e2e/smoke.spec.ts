@@ -62,6 +62,11 @@ test.beforeAll(async () => {
   });
   page = await electronApp.firstWindow();
   await page.waitForLoadState('domcontentloaded');
+  // 全新数据根会异步弹出首次使用向导，遮罩会拦截侧栏导航点击；等它出现后跳过
+  const onboardingSkip = page.getByRole('button', { name: /跳过|Skip/ });
+  await expect(onboardingSkip).toBeVisible({ timeout: 30_000 });
+  await onboardingSkip.click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test.afterAll(async () => {
@@ -74,6 +79,7 @@ test('窗口标题与首页渲染（重定向到 /chat）', async () => {
 });
 
 test('导航覆盖对话/知识库/助手/设置四模块', async () => {
+  const appVersion = await electronApp.evaluate(({ app }) => app.getVersion());
   await page.getByRole('link', { name: /知识库/ }).click();
   await expect(page.getByTestId('kb-sidebar')).toBeVisible();
 
@@ -84,9 +90,10 @@ test('导航覆盖对话/知识库/助手/设置四模块', async () => {
   await expect(page.getByTestId('defaults-panel')).toBeVisible();
   // M3：关于面板渲染版本号与更新通道（updater 桥经 preload 注入）
   await expect(page.getByTestId('about-panel')).toBeVisible();
-  await expect(page.getByTestId('about-version')).toContainText('v1.1.0');
+  // 版本号随 package 版本走（M4 bump 到 2.5.0 时无需再改断言）
+  await expect(page.getByTestId('about-version')).toHaveText(`v${appVersion}`);
 
-  await page.getByRole('link', { name: /^对话/ }).click();
+  await page.getByRole('link', { name: '对话', exact: true }).click();
   await expect(page.getByTestId('chat-page')).toBeVisible();
 });
 

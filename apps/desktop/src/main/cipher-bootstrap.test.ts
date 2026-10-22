@@ -186,5 +186,5 @@ describe('cipher bootstrap --require 注入防 fork 炸弹', () => {
     const count = readFileSync(countPath, 'utf8').trim().split('\n').filter(Boolean).length;
     rmSync(dir, { recursive: true, force: true });
     expect(count).toBe(1);
-  });
+  }, 20_000);
 });

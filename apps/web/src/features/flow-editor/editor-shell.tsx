@@ -52,7 +52,7 @@ export interface EditorShellProps {
   selectedNode: FlowCanvasNode | null;
   status: FlowStatusContextValue;
   diagnostics: FlowDiagnostic[] | null;
-  centerRef: React.RefObject<HTMLDivElement>;
+  centerRef: React.RefObject<HTMLDivElement | null>;
   runId: string | null;
   live: FlowLiveState;
   runDialogOpen: boolean;

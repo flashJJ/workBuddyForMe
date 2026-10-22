@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/desktop",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "private": true,
   "description": "WorkBuddyForMe Electron 桌面壳",
   "author": "WorkBuddyForMe",
@@ -20,11 +20,11 @@
     "@playwright/test": "^1.63.0",
     "@wbfm/config": "workspace:*",
     "@wbfm/shared": "workspace:*",
-    "electron": "31.7.7",
-    "electron-builder": "^25.1.8"
+    "electron": "44.9.3",
+    "electron-builder": "^26.18.0"
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "4.2.6",
-    "electron-updater": "^6.8.9"
+    "electron-updater": "^6.8.11"
   }
 }

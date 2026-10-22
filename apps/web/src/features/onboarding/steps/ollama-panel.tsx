@@ -43,7 +43,8 @@ export function OllamaPanel({ onReady }: { onReady: (providerId: string) => void
   const refreshRemote = React.useCallback(async () => {
     if (!provider) return;
     try {
-      setRemote(await remoteMutation.mutateAsync());
+      const models = await remoteMutation.mutateAsync(provider.id);
+      setRemote(Array.isArray(models) ? models : []);
     } catch {
       /* 刷新失败不阻断 */
     }
@@ -67,7 +68,8 @@ export function OllamaPanel({ onReady }: { onReady: (providerId: string) => void
       setState('online');
       onReady(target.id);
       try {
-        setRemote(await remoteMutation.mutateAsync());
+        const models = await remoteMutation.mutateAsync(target.id);
+        setRemote(Array.isArray(models) ? models : []);
       } catch {
         // 连接已验证，模型发现失败不阻断
         setRemote([]);
