@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
@@ -38,11 +39,15 @@ export function TtfvPanel() {
   const toast = useToast();
   const { data } = useSettings();
   const update = useUpdateSettings();
+  // 水合门控：设置查询可能在慢机的水合过程中就返回，直接按 data 渲染会让
+  // 首帧文本与服务端 HTML（全部占位）不一致（React #425/#422）。挂载后再切真实值。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
 
-  const launch = data?.firstLaunchAt ?? null;
-  const modelReady = data?.firstModelReadyAt ?? null;
-  const firstAnswer = data?.firstAnswerAt ?? null;
-  const ttfvMs = data?.ttfvMs ?? null;
+  const launch = mounted ? (data?.firstLaunchAt ?? null) : null;
+  const modelReady = mounted ? (data?.firstModelReadyAt ?? null) : null;
+  const firstAnswer = mounted ? (data?.firstAnswerAt ?? null) : null;
+  const ttfvMs = mounted ? (data?.ttfvMs ?? null) : null;
 
   const clear = () => {
     update.mutate(

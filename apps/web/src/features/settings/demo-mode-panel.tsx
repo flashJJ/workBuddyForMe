@@ -19,7 +19,11 @@ export function DemoModePanel() {
   const update = useUpdateSettings();
   const toast = useToast();
   const qc = useQueryClient();
-  const enabled = data?.demoModeEnabled === true;
+  // 水合门控：按钮文案/状态色随查询结果变化，慢机下水合期间取到数据会与服务端
+  // 首帧（默认未开启）不一致（React #425/#422）；挂载后再切真实状态。
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const enabled = mounted && data?.demoModeEnabled === true;
 
   const toggle = async () => {
     try {
