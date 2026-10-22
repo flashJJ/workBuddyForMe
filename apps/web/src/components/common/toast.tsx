@@ -84,7 +84,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-80 flex-col gap-2"
+        className="pointer-events-none fixed bottom-4 right-4 z-[80] flex w-80 flex-col gap-2"
       >
         {toasts.map((toast) => {
           const Icon = VARIANT_ICON[toast.variant];

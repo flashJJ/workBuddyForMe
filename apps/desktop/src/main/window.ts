@@ -3,7 +3,12 @@ import path from 'node:path';
 import { app, BrowserWindow, shell } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { resolvePreloadPath } from './config';
-import { loadWindowState, type WindowState } from './window-state';
+import {
+  loadWindowState,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
+  type WindowState,
+} from './window-state';
 
 export interface WindowBootInfo {
   /** 生产态托管服务地址；开发态传 null 加载 localhost:3000 */
@@ -25,8 +30,8 @@ export function buildWindowOptions(
   }
   return {
     ...state,
-    minWidth: 900,
-    minHeight: 600,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     show: false,
     backgroundColor: '#0f1115',
     autoHideMenuBar: true,

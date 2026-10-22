@@ -70,7 +70,8 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
       {children}
       <Dialog open={pending !== null} onOpenChange={(open) => !open && settle(false)}>
         <DialogContent
-          className="max-w-md"
+          className="max-w-md z-[56]"
+          overlayClassName="z-[55]"
           // 危险动作默认焦点给取消钮，防止 Enter 误确认；普通动作跟随 Radix 默认
           onOpenAutoFocus={(e) => {
             if (pending?.danger) {

@@ -40,6 +40,14 @@ describe('buildWindowOptions 安全配置', () => {
     expect(options.show).toBe(false);
   });
 
+  it('最小与默认尺寸足以容纳聊天四栏，避免内容挤压', () => {
+    const options = buildWindowOptions('/tmp/userdata', null);
+    expect(options.minWidth).toBeGreaterThanOrEqual(1200);
+    expect(options.minHeight).toBeGreaterThanOrEqual(720);
+    expect(options.width ?? 0).toBeGreaterThanOrEqual(options.minWidth!);
+    expect(options.height ?? 0).toBeGreaterThanOrEqual(options.minHeight!);
+  });
+
   it('生产态通过 additionalArguments 注入 token 与 baseUrl', () => {
     const options = buildWindowOptions('/tmp/userdata', {
       url: 'http://127.0.0.1:51234',
