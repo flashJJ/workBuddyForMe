@@ -16,7 +16,7 @@
 安全与平台底座版，**零新功能、零数据模型变更**。**首要技术项：Next 14.2.35 → 15.5.28**，直接处理安全扫描中的两个 critical RCE（`GHSA-p293-qw3h-jr36` Windows 托管未认证 RCE、`GHSA-2xp9-vwfh-vxw4` Image Optimization AVIF RCE，修复阈值均为 ≥15.5.24），并顺带清掉 Next 全部 23 条公告；同步 React 18.3.1 → 19.3.1。**第二技术项：Electron 31.7.7 → 44.9.3、electron-builder 25.1.8 → 26.18.0、electron-updater 6.8.9 → 6.8.11**，清除 38 条 Electron 公告与构建链 tar / builder-util-runtime 风险；已知硬破坏点为 Electron 44 剪贴板 API 异步化（中文输入走剪贴板粘贴需 await）。打包链路重点验证 Next 15 standalone 的 trace 排除（`outputFileTracingIgnores` 在 15 已移除）与 Windows 安装包/覆盖升级。分支 `feature/v2.5-platform-upgrade`。
 
 - 方案：[v2.5 稳固底座](../plan/v2.5/README.md) · [安全基线与升级矩阵](../plan/v2.5/01-安全基线与升级矩阵.md)
-- 状态：🚧 M1–M4 本地部分已完成（Next 15.5.28 + React 19；Electron 44.9.3 / builder 26.18.0 / updater 6.8.11；公告 0；2.5.0 安装包、2.4.0 → 2.5.0 覆盖升级与安装态 smoke 通过；Web e2e 109/109、桌面 e2e 11/11、eval-agent 矩阵全绿）；Git 提交 / tag / Release 待执行
+- 状态：✅ 已正式发布（2026-10-22，tag `v2.5.0`，Release 已转正并置为 Latest；Next/Electron 公告 0；Web e2e 109/109、桌面 e2e 11/11、eval-agent 矩阵全绿；2.4.0 → 2.5.0 自动更新检测通过）
 
 ## 已正式发布：v2.4 🚀 装完即用——零配置首启、模板可触达、语音开箱与运行可信（2026-10-22，tag `v2.4.0`）
 
@@ -180,7 +180,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.1 | 会动：待机动作导入与动作池轮播、点击触发动作、动作池取景采样、桌宠交互门控管道 | ✅ 已正式发布（2026-10-17，Release 已转正并置为 Latest） | — | [总结](v2.1-release-summary.md) | [EN](v2.1-release-notes-en.md) · [blog/v2.1](../../blog/v2.1/) 4 篇 | `v2.1.0` |
 | v2.2 | 有手感：动作段调度（A/B/C）、状态驱动待机、拖拽物理与手势、交互动画图配置化三阶段、事件链接线、水合门控统一 | ✅ 已正式发布（2026-10-18，Release 已转正并置为 Latest） | [方案](../plan/v2.2/README.md) | [总结](v2.2-release-summary.md) | [EN](v2.2-release-notes-en.md) | `v2.2.0` |
 | v2.4 | 装完即用：零配置首启、模板可触达、语音开箱、能力可见、运行可信与首字体感 | ✅ 已正式发布（2026-10-22，Release 已转正并置为 Latest） | [方案](../plan/v2.4-product-comparison/README.md) | [总结](v2.4-release-summary.md) | [EN](v2.4-release-notes-en.md) · [blog/v2.4](../../blog/v2.4/) 5 篇 | `v2.4.0` |
-| v2.5 | 稳固底座：Next 15.5.28 + React 19 安全升级、Electron 44.9.3/electron-builder 26.18.0 平台换代 | 🚧 M1–M4 本地完成（公告 0；2.5.0 出包 + 覆盖升级 + e2e 109/109 + 桌面 11/11）；待提交/发版 | [方案](../plan/v2.5/README.md) · [基线](../plan/v2.5/01-安全基线与升级矩阵.md) | — | — | 待打 |
+| v2.5 | 稳固底座：Next 15.5.28 + React 19 安全升级、Electron 44.9.3/electron-builder 26.18.0 平台换代 | ✅ 已正式发布（2026-10-22，Release 已转正并置为 Latest） | [方案](../plan/v2.5/README.md) · [基线](../plan/v2.5/01-安全基线与升级矩阵.md) | — | — | `v2.5.0` |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 

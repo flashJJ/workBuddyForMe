@@ -226,22 +226,24 @@
 - `eval:memory`：需要真实对话/嵌入模型（Ollama 或云端供应商）且会写记忆库；当前环境仅有 `WBFM_MOCK_AI=1`，记忆提取在 mock 下无有效 JSON，故不纳入本机门禁，留发布前真机确认。
 - 2.4.0 → 2.5.0 自动更新检查：需要先完成 M4 的版本 bump、tag 与 GitHub Release（draft → Latest），M4 发布后验证。
 
-## 11. M4 版本 bump 与 2.5.0 出包（2026-10-22，已完成；发布未执行）
+## 11. M4 版本 bump 与 2.5.0 发布（2026-10-22，已完成）
 
 | 项 | 结果 |
 |---|---|
 | 版本同步 | root / web / desktop / `APP_VERSION` 全部 **2.5.0**；`sync-version:check` 通过 |
-| `pnpm check` | **通过**（2.5.0，全量非缓存 typecheck 14/14） |
-| 安装包 | `WorkBuddyForMe-Setup-2.5.0.exe` **198,257,692 B**；`latest.yml` version 2.5.0、sha512/size 正确 |
-| 桌面 e2e（2.5.0 产物） | **11/11 通过**（27.5s） |
-| 覆盖升级 | 已装机 2.4.0 → 静默安装 2.5.0 成功；文件/产品版本 **2.5.0**，卸载项 **WorkBuddyForMe 2.5.0** |
-| 安装版 smoke | 主窗存活、托管服务 `/api/health` 无 token **401**、日志 `托管服务就绪` / `控制通道就绪`；版本标记清理 **2.4.0 → 2.5.0** 已触发 |
+| 本地门禁 | `pnpm check` 通过；8 包单测（串行覆盖门禁）全绿；Web e2e **109/109**；桌面 e2e **11/11**；集成测试 **12/12**；eval-agent 正向 15/15 + 反向矩阵全绿 |
+| Git | 提交 `2344de1`、`--no-ff` 合并 `b432748`、tag **v2.5.0**；main / feature 分支 / tag 均已推送 |
+| GitHub Actions | CI（`39779643799`）**success**；Release（`39779682009`）**success** |
+| Release | [v2.5.0](https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.5.0) 已转正式并置为 **Latest** |
+| 发布资产 | `WorkBuddyForMe-Setup-2.5.0.exe` **199,146,832 B**，sha256 `167559c8fd9ca5c14917380cd865ca2d4568c3f60ad4e21b7e70bb24dace8ddc`；`latest.yml` 357 B，sha256 `a0e450f93a3c7227ba0c1c00f4818c3948d6f8636543282900a84d34de52ba3e` |
+| 自动更新验证 | 临时安装 2.4.0 启动后，更新器检测到 **2.5.0** 并开始下载；因本版未发布 blockmap，日志出现 `Cannot download differentially, fallback to full download` 后回退整包下载（缓存 198 MB 已清理）；随后恢复安装 2.5.0 |
+| 本地归档 | 未生成：`gh release download` 拉取 199 MB 资产时网络停滞；**GitHub Release 即权威归档**，SHA256 使用资产 digest |
 
-**未执行（需单独授权）**：git commit、合并 `main`、tag `v2.5.0`、push、GitHub Release（draft → Latest）及发布后的 2.4.0 → 2.5.0 自动更新检查。当前改动全部停留在工作区，未提交。
+**发布说明中的已知限制**：本 tag 未附带 `.blockmap`（electron-builder 上传日志显示已尝试，但 Release 资产未出现），差量更新回退整包；`eval:memory` 与真机中文连续粘贴仍留发布后真机确认。
 
 ## 附：交付状态
 
-- 状态：**🚧 M1–M4 的本地部分已完成（2.5.0 版本号、check/build、安装包、覆盖升级与安装态 smoke 全部通过）；Git 提交 / tag / Release 未执行**。
-- 分支：`feature/v2.5-platform-upgrade`（从 `main` `1145fd3` 拉出）。
+- 状态：**✅ v2.5.0 已正式发布（2026-10-22，tag `v2.5.0`，Release 已转正并置为 Latest）**。
+- 分支：`feature/v2.5-platform-upgrade`（已合并并推送）；`main` `b432748`。
 - 基线取证：[01-安全基线与升级矩阵](01-安全基线与升级矩阵.md)（2026-10-22，`pnpm audit --json`）。
 - 路线图登记：[docs/roadmap/README.md](../../roadmap/README.md)。
