@@ -71,11 +71,15 @@ export function useProviderModels(providerId: string | null) {
 export function useRemoteModels(providerId: string | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
+    // v2.5：允许显式传入 providerId，避免「刚 setProvider 后同一渲染帧内 mutateAsync」
+    // 仍拿到旧闭包 null 而请求 /providers/null；同时把空响应归一化为 []。
+    mutationFn: async (overrideId?: string) => {
+      const id = overrideId ?? providerId;
+      if (!id) return [] as DiscoveredModel[];
       // v0.5：返回模型发现项（含自动探测的上下文长度）
-      const models = await apiGet<DiscoveredModel[]>(`${API.providerModels(providerId!)}?remote=1`);
+      const models = await apiGet<DiscoveredModel[]>(`${API.providerModels(id)}?remote=1`);
       await qc.invalidateQueries({ queryKey: QUERY_KEYS.modelsAll });
-      return models;
+      return models ?? [];
     },
   });
 }

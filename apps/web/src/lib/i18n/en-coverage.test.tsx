@@ -9,10 +9,11 @@ import { ConfirmProvider } from '@/components/common/confirm-dialog';
 import { I18nProvider } from './i18n-context';
 import { P1_ALLOWED_MISSING_PREFIXES } from './p1-domains';
 import ChatPage from '@/app/(main)/chat/page';
-import KnowledgePage from '@/app/(main)/knowledge/page';
-import AssistantsPage from '@/app/(main)/assistants/page';
-import SettingsPage from '@/app/(main)/settings/page';
 import TasksPage from '@/app/(main)/tasks/page';
+// v2.5：Next 15 路由页为 async Server Component，客户端严格模式测试改用 feature 组件。
+import { KnowledgePage } from '@/features/knowledge/knowledge-page';
+import { AssistantsPage } from '@/features/assistants/assistants-page';
+import { SettingsPage } from '@/features/settings/settings-page';
 import { FlowsListPage } from '@/features/flows/flows-list-page';
 import { ConfigPanel } from '@/features/flow-editor/config-panel';
 import type { FlowCanvasNode } from '@/features/flow-editor/graph-utils';

@@ -31,6 +31,12 @@ extraResources:
     to: server
     filter:
       - "**/*"
+  # electron-builder 对 extraResources 根级 node_modules 有硬编码排除（util/filter.js：
+  # relative === "node_modules" 直接返回 false），不单独挂载会导致安装包内 standalone
+  # 缺 next 等运行时依赖（启动即 Cannot find module 'next'）。server/node_modules
+  # 同时供托管服务与 MCP stdio bin 解析依赖，不能移到 apps/web 下。
+  - from: resources/server/node_modules
+    to: server/node_modules
   # 窗口运行时图标（BrowserWindow icon，打包态 resources/icon.ico）
   - from: build/icon.ico
     to: icon.ico

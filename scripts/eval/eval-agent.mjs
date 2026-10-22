@@ -199,11 +199,11 @@ async function main() {
     body: JSON.stringify(
       knowledgeOn
         ? {
-            knowledgeBaseId: kb.id,
+            knowledgeBaseIds: [kb.id],
             enabledTools: ['current_time', 'knowledge_search'],
             retrieveAlways: false,
           }
-        : { knowledgeBaseId: null, enabledTools: ['current_time'], retrieveAlways: false },
+        : { knowledgeBaseIds: [], enabledTools: ['current_time'], retrieveAlways: false },
     ),
   });
   if (!knowledgeOn) console.log('反向验证：已解绑知识库并移除 knowledge_search');

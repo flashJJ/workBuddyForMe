@@ -219,7 +219,6 @@ function clearSessionIfVersionChanged(): void {
     void session.defaultSession
       .clearStorageData({
         storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage', 'filesystem', 'shadercache'],
-        quotas: ['temporary', 'syncable'],
       })
       .catch((err) => console.error('[wbfm] clearStorageData 失败:', err));
   }
