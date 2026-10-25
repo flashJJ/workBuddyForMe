@@ -1,30 +1,102 @@
 # WorkBuddyForMe
 
-类 WorkBuddy 的**私人 AI 平台**：本地优先的多模型 AI 工作台，基于 Next.js 全栈 + Electron，提供多会话流式对话、知识库 RAG 问答、可视化工作流编排 Flow Studio、桌面 Agent 任务、智能体助手预设与统一的供应商管理。数据完全保留在本机 SQLite 中。
+本地优先的**私人 AI 工作台**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 状态：v1.1.0｜平台：Windows（Web 模式跨平台）
+> 当前版本：**v2.5.0**（2026-10-22）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+
+## v2.5.0 重点
+
+- **平台底座**：Next.js **15.5.28** + React **19.3.1**；Electron **44.9.3** / electron-builder **26.18.0** / electron-updater **6.8.11**。
+- **安全清账**：Next 安全公告 **23 → 0**、Electron **38 → 0**；全仓 critical **6 → 3**（剩余仅开发链）。
+- **工程规模**：**124** 个 API Route Handlers；**6** 个内部包 + **2** 个应用；Web e2e **109/109**、桌面 e2e **11/11**。
+- **打包可靠性**：内置真实 Node 24 运行时解决 Electron ABI 错配；构建期 trace 门禁阻止用户数据打进安装包。
 
 ## 功能
 
-- **多会话 AI 对话**：SSE 流式输出、Markdown/代码高亮、中途停止、错误友好提示；工具调用（HITL 授权/熔断/超时门控）全程可观测。
-- **Flow Studio 工作流（v0.8）**：在 `/flows` 画布上把知识检索、条件分支、大模型、工具、人工确认画成确定的 DAG；逐节点试运行调试，发布后以 `flow:<id>` 工具回到普通对话中被助手调用，对话卡片展示节点级子步骤。
-- **Flow Serving 本地 API/MCP（v0.9）**：已发布流程可在编辑器「对外服务」中一键暴露——独立端点密钥（sha256 存储、可轮换/吊销）、本机 HTTP API（同步/异步 invoke、轮询、只读 SSE）、每密钥限流与环回 Host 防护；同时提供 **MCP Server**（streamable HTTP 与 stdio 双承载），任何 MCP 客户端（含应用自身「设置 → MCP 服务器」）都能发现并调用流程。无人值守触发按端点策略门控（默认拒绝写入/高危操作，桌面控制类永久禁止），运行与连接解耦（杀进程重启自动恢复），并提供运行记录中心与失败节点重放。
-- **桌面 Agent 任务**：给助手一个桌面目标，观察屏幕 → 决策 → 执行的任务循环，逐步授权与急停。
-- **知识库 RAG**：txt/md/pdf/docx 文档上传、自动分片向量化（sqlite-vec）、带引用来源的问答。
-- **技能与 MCP**：文件夹式技能包（提示词 + 工具白名单），MCP stdio 服务器工具接入。
-- **助手预设**：系统提示词、温度/topP/maxTokens、模型与知识库绑定，内置默认助手。
-- **设置中心**：OpenAI 兼容供应商（DeepSeek/通义/Kimi/GPT/本地网关）配置、连接测试、模型管理；API Key 加密落盘、脱敏显示。
-- **双端形态**：浏览器 Web 与 Electron Windows 桌面端同一套代码。
+### 对话与助手
+
+- 多供应商、多模型接入；SSE 流式输出、Markdown / 代码高亮、中途停止与友好错误提示。
+- 工具调用全程可观测，支持 HITL 授权、熔断与超时门控；工具循环 ≤ 5 轮。
+- 助手预设：系统提示、角色卡、温度 / topP / maxTokens、模型与知识库绑定、工具 / 技能白名单。
+- 对话中断或连接断开时，已生成内容保留并落库，不丢失部分结果。
+
+### 知识库 RAG
+
+- 支持 txt / md / pdf / docx 上传、网页剪藏与扫描件 OCR（vision / tesseract）。
+- 自动分片与向量化（sqlite-vec），并结合 FTS 混合检索、RRF 融合与规则重排。
+- 回答携带页 / 段 / 字符级引用，可回到原文；无 Embedding 模型时明确返回 422。
+- 文档状态：`pending → processing → indexed / partial / failed`；失败可重试。
+
+### Flow Studio
+
+- 在画布上把知识检索、条件分支、LLM、工具、人工确认编排成确定的 DAG。
+- 节点级试运行、发布 / 版本管理、运行记录与失败节点重放。
+- 已发布流程可作为 `flow:<id>` 工具回到普通对话中，由助手调用并展示节点级子步骤。
+
+### Flow Serving 与 MCP
+
+- 一键把已发布流程暴露为本地 HTTP API：同步 / 异步 invoke、轮询与 SSE。
+- 独立端点密钥（sha256 存储、可轮换 / 吊销）、按 Key 限流、仅回环 Host 防护。
+- MCP Server 支持 streamable HTTP 与 stdio 双承载，可被外部 MCP 客户端或应用自身发现调用。
+- 无人值守触发按端点策略门控；默认拒绝写入 / 高危操作，鼠标 / 键盘 / 窗口类桌面工具永久禁止 API / MCP 调用。
+
+### 桌面 Agent 与多智能体会议
+
+- 桌面 Agent：目标 → 观察屏幕 → 决策 → 执行，支持逐步授权、急停与运行事件观测。
+- 多智能体会议：manual / all / auto 三种调度，≤ 8 轮，串行语音 / 表情；首版不直连工具 / MCP / 知识库。
+
+### 陪伴与形象
+
+- 角色卡、情绪三变量、亲密 / 信任关系、关系里程碑与长期记忆。
+- 提醒与事件触发、Live2D / VRM 桌宠、舞台场景与 `.wbfm-pack` 导入导出。
+- 本地语音输入与朗读（sherpa-onnx，离线）；语音模型按需下载。
+
+### 设置、数据与安全
+
+- 设置中心：供应商、模型、语音、MCP / 技能与更新检查。
+- API Key 加密落盘、脱敏显示；数据导出不包含密钥明文。
+- 仅监听 `127.0.0.1`；Electron 托管模式校验 `X-WBFM-Token`。
+- `contextIsolation` + `sandbox` + 无 `nodeIntegration`；出站请求带 SSRF 防护。
+- 单机单用户，无云账号、无多租户。
 
 ## 技术栈
 
-Next.js 14（App Router + Route Handlers）· React 18 · TypeScript 5（strict）· Electron · better-sqlite3 + sqlite-vec · Tailwind CSS + Radix · pnpm + Turborepo · Vitest · Playwright
+| 层 | 选型 |
+|---|---|
+| 运行时 | Node.js 24（`.nvmrc`；root engines ≥ 22.13）· pnpm 11.24 · Turborepo |
+| Web | Next.js 15.5.28（App Router + Route Handlers）· React 19.3.1 · TypeScript 5.9（strict）· Tailwind CSS 3.4 · Radix UI |
+| 桌面 | Electron 44.9.3 · electron-builder 26.18.0 · electron-updater 6.8.11 · `@nut-tree-fork/nut-js` 4.2.6 |
+| 数据 | better-sqlite3 · sqlite-vec（vec0）· SQLite WAL · 本地文件存储 |
+| AI / 语音 | OpenAI-compatible · Ollama · sherpa-onnx-node |
+| 质量 | Vitest · Playwright · ESLint 分层边界 · 单文件 ≤ 300 行门禁 |
+
+## 架构
+
+pnpm + Turborepo monorepo：
+
+```text
+apps/
+  web/        Next.js 全栈应用（页面 + 124 个 API Route Handlers）
+  desktop/    Electron 主进程、preload、打包
+packages/
+  shared/     领域类型 / Zod schema / 错误码
+  config/     数据根与环境变量（唯一事实源）
+  database/   SQLite 连接、迁移、仓储
+  ai/         Provider 适配、HTTP / SSE 底座
+  core/       业务编排（chat / RAG / flow / agent / memory / serving / tools / voice）
+  voice/      sherpa-onnx 语音运行时
+scripts/      工程脚本（行数门禁、发布归档等）
+docs/         架构、开发、模块与版本方案
+```
+
+依赖方向：`apps/web → packages/core → 基础设施`；`apps/desktop → shared / config`。跨包只走公开面，`internal/**` 禁止跨层引用，由 ESLint `import/no-restricted-paths` 机械强制。
 
 ## 环境要求
 
-- Node.js ≥ 20（当前开发机 Node 24 验证通过）
-- pnpm ≥ 9（当前仓库随附 pnpm 11 配置）
-- Windows 10/11（桌面打包）；Web 模式可在任意桌面平台运行
+- Node.js 24（推荐；`.nvmrc`），root `engines` 要求 ≥ 22.13。
+- pnpm 11.24（`packageManager`；可用 `corepack enable`）。
+- Windows 10/11 x64（桌面打包）；Web 模式可在任意桌面平台运行。
+- 可选：本地 Ollama 或 OpenAI-compatible 供应商；没有真实模型时可用 `WBFM_MOCK_AI=1` 跑通对话与 RAG。
 
 ## 快速开始
 
@@ -35,7 +107,7 @@ pnpm install
 # Web 开发模式（仅监听 127.0.0.1:3000）
 pnpm dev:web
 
-# 桌面开发模式（自动拉起 Next dev，就绪后启动 Electron）
+# 桌面开发模式（自动等待 Next 就绪后启动 Electron）
 pnpm dev:desktop
 
 # 或使用带环境自检的一键脚本（Windows PowerShell）
@@ -43,79 +115,73 @@ pnpm dev:desktop
 ./scripts/dev-desktop.ps1
 ```
 
-首次使用：打开「设置 → 供应商」添加 OpenAI 兼容供应商（baseURL / API Key）与模型，再回到「对话」开始使用。没有真实模型服务时，可给 Web 进程设置 `WBFM_MOCK_AI=1` 启用内置 Mock 供应商（模型 `mock-chat` / `mock-embed`，支持伪语义检索），完整体验对话与 RAG 流程。
+首次启动向导支持演示模式、厂商预设与本机 Ollama 探测；也可以在「设置 → 供应商」添加 OpenAI-compatible 供应商（baseURL / API Key）与模型，再回到「对话」开始使用。
 
-### 把流程暴露给外部程序（v0.9）
+## 对外服务示例
 
-在已发布流程的编辑器中点「对外服务」开启本地 API/MCP，密钥仅在创建/重置时展示一次：
+已发布流程可在编辑器中开启「对外服务」，密钥仅在创建 / 重置时展示一次：
 
 ```powershell
-# 同步调用（超时自动返回 202 转异步，响应头 X-WBFM-Async=1）
-curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<密钥>/invoke" `
-  -H "Authorization: Bearer <密钥>" -H "Content-Type: application/json" -d '{}'
+# 同步调用（超时自动转异步，响应头 X-WBFM-Async=1）
+curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<key>/invoke" `
+  -H "Authorization: Bearer <key>" -H "Content-Type: application/json" -d '{}'
 
-# 异步 + 轮询
-curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<密钥>/invoke?mode=async" `
-  -H "Authorization: Bearer <密钥>" -H "Content-Type: application/json" -d '{}'
-curl.exe "http://127.0.0.1:3000/api/public/flows/<密钥>/runs/<runId>" `
-  -H "Authorization: Bearer <密钥>"
+# 异步调用 + 轮询
+curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<key>/invoke?mode=async" `
+  -H "Authorization: Bearer <key>" -H "Content-Type: application/json" -d '{}'
+curl.exe "http://127.0.0.1:3000/api/public/flows/<key>/runs/<runId>" `
+  -H "Authorization: Bearer <key>"
 ```
 
-MCP 接入（Claude Desktop 等支持 MCP 的客户端，或本应用「设置 → MCP 服务器」自举）：
+MCP 接入（支持 MCP 的客户端，或本应用「设置 → MCP 服务器」自举）：
 
 ```json
 {
   "url": "http://127.0.0.1:3000/api/public/mcp",
-  "headers": { "Authorization": "Bearer <端点密钥>" }
+  "headers": { "Authorization": "Bearer <key>" }
 }
 ```
 
-stdio 承载在桌面安装版中可用（端点对话框生成含内置 node 路径与 `WBFM_MCP_TOKEN` 的 spawn 配置）。公开 API 仅绑定 127.0.0.1、不接受 Cookie、无 CORS 放行；写入/高危工具默认拒绝，需在端点策略中逐项加入白名单（鼠标/键盘/窗口类桌面工具在任何策略下都禁止 API/MCP 调用）。
+公开 API 仅绑定 `127.0.0.1`、不接受 Cookie、无 CORS 放行；写入 / 高危操作默认拒绝，需在端点策略中逐项加入白名单。stdio 承载在桌面安装版中可用。
 
 ## 构建与发布
 
 ```powershell
-pnpm build          # 构建所有包与 web（产物 apps/web/.next/standalone）
-pnpm dist:win       # electron-builder 产出 Windows NSIS 安装包（Task 31）
+pnpm build          # 构建所有包与 Web（产物 apps/web/.next/standalone）
+pnpm dist:win       # 归集 standalone 并产出 Windows NSIS 安装包
+pnpm release:win    # 出包并归档产物
 ```
 
 ## 测试与质量
 
 ```powershell
-pnpm check:lines    # 单文件 ≤300 行硬门禁（含 --self-test）
-pnpm typecheck      # 全仓 TS strict 类型检查
-pnpm lint           # ESLint
-pnpm test:unit      # 单元测试（覆盖率 ≥70%）
-pnpm test:integration
-pnpm test:e2e             # Web 关键路径 E2E（Playwright，内置 Mock 供应商）
-pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 standalone → pack:dir → 启动断言
+pnpm check                # typecheck + lint + 300 行门禁
+pnpm check:lines          # 仅行数门禁（含 --self-test）
+pnpm test:unit            # 单元测试（覆盖率阈值阻断）
+pnpm test:integration     # Web API 集成测试
+pnpm test:e2e             # Web 关键路径 E2E
+pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
+
+v2.5.0 封版结果：Web e2e **109/109**、桌面 e2e **11/11**；`pnpm check` 与 8 包单测全绿。
 
 ## 数据与隐私
 
-- 数据根目录默认 `%USERPROFILE%\.workbuddy-for-me`（Electron 下为 userData 注入路径），内含数据库、上传文件、向量缓存、密钥文件。
-- API Key 永不明文出参、不明文落盘（详见 [架构文档 §7](docs/architecture.md#7-安全与隐私)）。
-- 设置页支持数据导出（JSON，不含密钥明文）。
+- 数据根目录默认 `%USERPROFILE%\.workbuddy-for-me`；Electron 通过 `WBFM_DATA_ROOT` 注入 userData 路径。
+- 数据根内含 SQLite 数据库、上传文件、语音模型与密钥密文；向量以 `sqlite-vec` 虚表保存在同一数据库。
+- API Key 使用 safeStorage / AES-256-GCM 加密落盘，UI 只显示脱敏值，永不明文出参。
+- 备份建议：退出应用后整目录复制；密钥密文与系统账户绑定，跨机恢复需重新录入供应商密钥。
+- 服务仅监听回环地址；托管模式启用 `X-WBFM-Token`；桌面端启用 `contextIsolation`、`sandbox` 并禁用 `nodeIntegration`。
 
 ## 文档
 
 - [架构设计](docs/architecture.md)
 - [接口文档](docs/api.md)
 - [开发与测试指南](docs/development.md)
-- 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md) ｜ [Electron 外壳](docs/modules/electron-shell.md)
+- [Electron 桌面外壳](docs/modules/electron-shell.md)
+- 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
+- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v2.5 方案](docs/plan/v2.5/README.md)
 
-## 目录结构
+## 许可
 
-```text
-apps/
-  web/        Next.js 全栈应用（页面 + API）
-  desktop/    Electron 主进程、preload、打包
-packages/
-  shared/     领域类型 / Zod schema / 错误码
-  config/     集中式数据根与环境（唯一事实源）
-  database/   SQLite 连接、迁移、仓储
-  ai/         HTTP 底座与模型供应商适配器
-  core/       业务服务编排
-scripts/      工程脚本（行数门禁等）
-docs/         设计与说明文档
-```
+GPL-3.0-only（见根 `package.json`）。
