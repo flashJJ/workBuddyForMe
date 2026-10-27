@@ -281,8 +281,8 @@ test.describe.serial('v1.9 M3 多助手会议（manual/all/auto + 打断 + 舞�
     await expect
       .poll(async () => (await getDetail(request, meeting.id)).meeting.status, { timeout: 10_000 })
       .toBe('aborted');
-    await expect(page.getByTestId('meeting-input')).toBeDisabled();
-    await expect(page.getByTestId('meeting-send')).toBeDisabled();
+    await expect(page.getByTestId('meeting-input')).toHaveCount(0);
+    await expect(page.getByTestId('meeting-send')).toHaveCount(0);
     await expect(page.getByTestId('meeting-abort')).toBeDisabled();
   });
 });
