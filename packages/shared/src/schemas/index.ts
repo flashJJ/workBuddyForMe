@@ -3,6 +3,7 @@
  * 公开面与历史根 barrel 完全一致；根 barrel 聚合本面，新代码从 @wbfm/shared/schemas 导入。
  */
 export * from './common';
+export * from './report';
 export {
   providerProtocolSchema,
   providerCreateSchema,

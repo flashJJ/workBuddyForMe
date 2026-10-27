@@ -43,7 +43,7 @@ describe('v034 迁移：助手级技能（assistants.skill_names）', () => {
     db.pragma('user_version = 33');
 
     const again = applyMigrations(db);
-    expect(again.applied).toEqual([34]);
+    expect(again.applied).toEqual([34, 35, 36]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     db.close();
   });

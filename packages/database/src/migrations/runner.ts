@@ -33,6 +33,8 @@ import { migrateV031 } from './v031-mod-installs';
 import { migrateV032 } from './v032-motion-assets';
 import { migrateV033 } from './v033-motion-segments';
 import { migrateV034 } from './v034-assistant-skills';
+import { migrateV035 } from './v035-meeting-conclusions';
+import { migrateV036 } from './v036-memory-provenance';
 
 interface Migration {
   version: number;
@@ -205,6 +207,16 @@ const MIGRATIONS: Migration[] = [
     version: 34,
     description: 'v2.4 M4: assistants.skill_names 助手级技能勾选（纯加法，空=跟随全局）',
     up: migrateV034,
+  },
+  {
+    version: 35,
+    description: 'v2.6: meeting_conclusions + meeting_action_items 会议结论与行动项（纯加法）',
+    up: migrateV035,
+  },
+  {
+    version: 36,
+    description: 'v2.6 M4: memories.source_message_id + recall_count 记忆溯源与召回计数（纯加法）',
+    up: migrateV036,
   },
 ];
 

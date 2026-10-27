@@ -28,7 +28,7 @@ describe('v019 迁移：agent_runs/agent_handoffs 与归属列', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(34);
+    expect(LATEST_SCHEMA_VERSION).toBe(36);
     expect(tableExists(db, 'agent_runs')).toBe(true);
     expect(tableExists(db, 'agent_handoffs')).toBe(true);
     expect(columnNames(db, 'task_runs').has('agent_run_id')).toBe(true);

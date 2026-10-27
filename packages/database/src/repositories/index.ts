@@ -196,6 +196,12 @@ export {
   type MeetingMessageInsert,
 } from './meeting-repo';
 export {
+  createMeetingConclusionRepository,
+  type MeetingRepositoryForConclusion,
+  type MeetingConclusionUpsertFields,
+  type MeetingConclusionPatch,
+} from './meeting-conclusion-repo';
+export {
   createRelationshipMilestoneRepository,
   type RelationshipMilestoneRepository,
   type RelationshipMilestoneRow,
