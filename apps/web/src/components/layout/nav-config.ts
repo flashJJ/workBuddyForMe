@@ -6,6 +6,7 @@ import {
   MonitorCog,
   Users,
   Workflow,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 import type { MessageKey } from '@wbfm/shared/i18n';
@@ -30,6 +31,12 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.tasks.label',
     descriptionKey: 'nav.tasks.description',
     icon: MonitorCog,
+  },
+  {
+    href: '/reports',
+    labelKey: 'nav.reports.label',
+    descriptionKey: 'nav.reports.description',
+    icon: ClipboardList,
   },
   {
     href: '/meetings',

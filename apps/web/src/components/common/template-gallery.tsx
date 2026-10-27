@@ -60,7 +60,7 @@ export function TemplateGallery({ groups, onStart, compact, testId }: Props) {
                 <p className="line-clamp-2 text-xs text-muted-foreground">{item.description}</p>
                 <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
                   {item.recommended ? (
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+                    <span className="rounded bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary">
                       {t('templates.recommended')}
                     </span>
                   ) : (

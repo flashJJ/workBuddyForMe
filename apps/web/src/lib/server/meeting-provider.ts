@@ -1,6 +1,6 @@
 import { createCharacterCardRepository } from '@wbfm/database';
 import { parseCharacterCard } from '@wbfm/shared/character-card';
-import { createMeetingSpeaker, type MeetingServiceDeps } from '@wbfm/core/meeting';
+import { createMeetingSpeaker, completeMeetingText, type MeetingServiceDeps } from '@wbfm/core/meeting';
 import { buildPersonaBlock, resolveChatTargetForModelId } from '@wbfm/core/chat';
 import type { ServiceDeps } from '@wbfm/core/services';
 import type { AssistantsService } from '@wbfm/core/services';
@@ -21,6 +21,7 @@ export function createMeetingDeps(
     db: deps.db,
     resolveTarget: (modelId) => resolveChatTargetForModelId(deps, modelId),
     createSpeaker: (target) => createMeetingSpeaker(target),
+    complete: (target, params) => completeMeetingText(target, params),
     getMemberName: (id) => getAssistant(id)?.name ?? null,
     getPersonaBlock: (id) => {
       const assistant = getAssistant(id);

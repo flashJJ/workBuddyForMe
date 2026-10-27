@@ -66,6 +66,55 @@ describe('输入区 Composer（TR-27.1）', () => {
     expect(screen.getByRole('button', { name: '附加图片' })).toBeInTheDocument();
   });
 
+  it('v2.6 粘贴截图：无视觉模型给出切换提示且不上传', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <Composer streaming={false} onSend={() => undefined} onStop={() => undefined} />,
+    );
+
+    const file = new File(['binary'], 'shot.png', { type: 'image/png' });
+    fireEvent.paste(screen.getByLabelText('消息输入框'), {
+      clipboardData: { files: [file] },
+    });
+
+    expect(
+      await screen.findByText('当前模型不支持图片理解，请切换到视觉模型后再粘贴截图'),
+    ).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('v2.6 粘贴截图：视觉模型直接进入待发预览', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            id: 'att-paste',
+            filename: 'shot.jpg',
+            mimeType: 'image/jpeg',
+            byteSize: 1,
+            contentHash: 'h',
+            createdAt: '2025-01-01T00:00:00.000Z',
+          },
+        }),
+        { status: 201, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <Composer streaming={false} visionEnabled onSend={() => undefined} onStop={() => undefined} />,
+    );
+
+    const file = new File(['binary'], 'shot.png', { type: 'image/png' });
+    fireEvent.paste(screen.getByLabelText('消息输入框'), {
+      clipboardData: { files: [file] },
+    });
+
+    expect(await screen.findByTestId('attachment-previews')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('选图后压缩上传，发送时携带附件 ID 并清空待发区', async () => {
     const fetchMock = vi.fn(async () =>
       new Response(

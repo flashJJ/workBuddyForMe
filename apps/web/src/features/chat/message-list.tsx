@@ -22,15 +22,48 @@ interface Props {
   onFeedback?: (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => void;
   /** v2.4 M5：当前轮首字/落定计时（仅末条助手消息展示） */
   streamTiming?: StreamTiming | null;
+  /** v2.6 M4：从记忆来源深链跳入时定位并高亮的消息 id */
+  highlightMessageId?: string | null;
+  /** 深链消息已不存在时的可读降级回调 */
+  onHighlightMissing?: () => void;
 }
 
-export function MessageList({ messages, assistantName, streaming, agentCards, onRetry, onResend, onFeedback, streamTiming }: Props) {
+export function MessageList({
+  messages,
+  assistantName,
+  streaming,
+  agentCards,
+  onRetry,
+  onResend,
+  onFeedback,
+  streamTiming,
+  highlightMessageId,
+  onHighlightMissing,
+}: Props) {
   const { t } = useI18n();
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
+  const warnedRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
+    const target = highlightMessageId
+      ? containerRef.current?.querySelector(`[data-message-id="${highlightMessageId}"]`)
+      : null;
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (
+      highlightMessageId &&
+      messages.length > 0 &&
+      warnedRef.current !== highlightMessageId &&
+      !messages.some((message) => message.id === highlightMessageId)
+    ) {
+      warnedRef.current = highlightMessageId;
+      onHighlightMissing?.();
+    }
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages]);
+  }, [messages, highlightMessageId, onHighlightMissing]);
 
   if (messages.length === 0) {
     return (
@@ -57,11 +90,12 @@ export function MessageList({ messages, assistantName, streaming, agentCards, on
   }
 
   return (
-    <div className="flex-1 overflow-y-auto" data-testid="message-list">
+    <div ref={containerRef} className="flex-1 overflow-y-auto" data-testid="message-list">
       {messages.map((message, index) => (
         <MessageItem
           key={message.id || `pending-${index}`}
           message={message}
+          highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
           assistantName={assistantName}
           disabled={streaming}
           agentCard={agentCards?.[message.id]}
