@@ -135,7 +135,7 @@ async function start(): Promise<void> {
 /** 打包态启动密码桥与托管 Next 服务；开发态直连 Next dev，不托管 token */
 async function startManagedStack(): Promise<WindowBootInfo | null> {
   if (isDev) return null;
-  if (!safeStorage.isEncryptionAvailable()) {
+  if (!(await safeStorage.isAsyncEncryptionAvailable())) {
     throw new Error('系统密钥链不可用，无法启动（safeStorage unavailable）');
   }
   try {
