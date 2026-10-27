@@ -269,6 +269,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             memory,
             userContent,
             assistantContent: full,
+            sourceMessageId: assistantMessage.id,
           },
         });
       } finally {

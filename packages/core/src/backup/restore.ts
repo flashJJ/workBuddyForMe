@@ -14,6 +14,11 @@ import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
 import { readV19TrackPayloads, restoreV19TrackData, v19TrackTotal } from './restore-meetings';
 import {
+  readProvenancePayloads,
+  restoreProvenance,
+  provenanceTotal,
+} from './restore-provenance';
+import {
   readRelationshipMilestonesPayload,
   restoreRelationshipMilestones,
 } from './restore-milestones';
@@ -93,6 +98,8 @@ export async function restoreBackup(
   const v19Payloads = tracksToRestore.includes('events')
     ? readV19TrackPayloads(files)
     : null;
+  // v2.6：记忆/会议结论/行动项（同 events 轨；旧档缺文件为空数组）
+  const provenancePayloads = tracksToRestore.includes('events') ? readProvenancePayloads(files) : null;
 
   // v2.0 M2：共同里程碑（同 events 轨；v5 及更早归档缺文件视为空数组）
   const milestoneEntries =
@@ -192,6 +199,10 @@ export async function restoreBackup(
       nullifyDanglingCardRefs(deps.db);
       // v1.9：舞台场景/会议/转录（助手行已落库，悬空成员在恢复函数内剔除）
       const v19Counts = v19Payloads ? restoreV19TrackData(deps.db, v19Payloads) : null;
+      // v2.6：结论/行动项依赖会议已入库；记忆无外键，来源悬空由 UI 降级
+      const provenanceCounts = provenancePayloads
+        ? restoreProvenance(deps.db, provenancePayloads)
+        : null;
       // v2.0 M2：共同里程碑最后恢复（外键依赖助手；在会议之后）
       const milestoneCounts = restoreRelationshipMilestones(deps.db, milestoneEntries);
       // v2.0 M5：mod 安装登记（无外键）与 VRM 形象引用（悬空由调用方提示）
@@ -205,6 +216,7 @@ export async function restoreBackup(
         counts.triggers.imported + counts.triggers.skipped +
         result.imported.cards + result.skipped.cards +
         (v19Counts ? v19TrackTotal(v19Counts) : 0) +
+        (provenanceCounts ? provenanceTotal(provenanceCounts) : 0) +
         milestoneCounts.imported + milestoneCounts.skipped +
         modInstallCounts.imported + modInstallCounts.skipped +
         vrmCounts.imported + vrmCounts.skipped;
@@ -222,7 +234,10 @@ export async function restoreBackup(
           (manifest.tracks.events?.meetingMessageCount ?? 0) +
           (manifest.tracks.events?.relationshipMilestoneCount ?? 0) +
           (manifest.tracks.events?.modInstallCount ?? 0) +
-          (manifest.tracks.events?.vrmAvatarCount ?? 0),
+          (manifest.tracks.events?.vrmAvatarCount ?? 0) +
+          (manifest.tracks.events?.memoryCount ?? 0) +
+          (manifest.tracks.events?.meetingConclusionCount ?? 0) +
+          (manifest.tracks.events?.meetingActionItemCount ?? 0),
       });
     }
 

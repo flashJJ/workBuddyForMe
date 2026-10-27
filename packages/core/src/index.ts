@@ -23,6 +23,7 @@ export * from './mcp';
 export * from './serving';
 export * from './skills';
 export * from './backup';
+export * from './reports';
 export * from './share';
 export * from './flow';
 export * from './event';

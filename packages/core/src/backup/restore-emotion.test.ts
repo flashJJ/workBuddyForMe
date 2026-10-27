@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+﻿import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -61,7 +61,7 @@ describe('备份恢复 · emotion 轨（v1.6）', () => {
       { db: srcDb, cipher: createWebCipher() },
       { tracks: ['emotion'] },
     );
-    expect(manifest.backupSchemaVersion).toBe(6);
+    expect(manifest.backupSchemaVersion).toBe(7);
     expect(manifest.tracks.emotion?.entryCount).toBe(2);
 
     const pre = await precheckBackup(archive);

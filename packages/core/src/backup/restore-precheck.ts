@@ -59,6 +59,9 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       relationshipMilestones: m.tracks.events?.relationshipMilestoneCount ?? 0,
       modInstalls: m.tracks.events?.modInstallCount ?? 0,
       vrmAvatars: m.tracks.events?.vrmAvatarCount ?? 0,
+      memories: m.tracks.events?.memoryCount ?? 0,
+      meetingConclusions: m.tracks.events?.meetingConclusionCount ?? 0,
+      meetingActionItems: m.tracks.events?.meetingActionItemCount ?? 0,
     },
     warnings,
   });

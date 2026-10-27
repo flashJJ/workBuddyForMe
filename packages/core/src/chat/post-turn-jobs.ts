@@ -22,6 +22,8 @@ export interface PostTurnJobsParams {
   memory: MemoryService;
   userContent: string;
   assistantContent: string;
+  /** v2.6：本轮助手消息 id（记忆来源） */
+  sourceMessageId: string;
   signal?: AbortSignal;
   traceParent: TraceHandle | null;
 }
@@ -40,6 +42,8 @@ async function rememberSummaryEvent(params: PostTurnJobsParams, summary: string)
         content: `早期对话摘要：${summary}`,
         importance: MEMORY_SUMMARY_IMPORTANCE,
         sourceConversationId: params.conversation.id,
+        // 摘要来自更早消息，无法定位单一来源消息；不伪造
+        sourceMessageId: null,
       },
       params.signal,
     );
@@ -76,6 +80,7 @@ export async function runPostTurnJobs(params: PostTurnJobsParams): Promise<void>
     userContent: params.userContent,
     assistantContent: params.assistantContent,
     conversationId: params.conversation.id,
+    sourceMessageId: params.sourceMessageId,
     signal: params.signal,
     traceParent: params.traceParent,
   });

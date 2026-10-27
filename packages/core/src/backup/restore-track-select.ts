@@ -27,7 +27,10 @@ export function determineTracks(manifest: BackupManifest, files: ReadonlyMap<str
       (manifest.tracks.events?.meetingMessageCount ?? 0) > 0 ||
       (manifest.tracks.events?.relationshipMilestoneCount ?? 0) > 0 ||
       (manifest.tracks.events?.modInstallCount ?? 0) > 0 ||
-      (manifest.tracks.events?.vrmAvatarCount ?? 0) > 0)
+      (manifest.tracks.events?.vrmAvatarCount ?? 0) > 0 ||
+      (manifest.tracks.events?.memoryCount ?? 0) > 0 ||
+      (manifest.tracks.events?.meetingConclusionCount ?? 0) > 0 ||
+      (manifest.tracks.events?.meetingActionItemCount ?? 0) > 0)
   ) {
     tracks.push('events');
   }

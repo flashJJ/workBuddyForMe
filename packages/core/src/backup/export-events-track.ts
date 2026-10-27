@@ -1,7 +1,8 @@
 /**
- * 备份 events 轨序列化（v1.7 起；v2.0 加法负载）：
+ * 备份 events 轨序列化（v1.7 起；v2.0/v2.6 加法负载）：
  * assistants / schedules / usage / triggers / characterCards / stageScenes /
- * meetings / meetingMessages / relationshipMilestones / modInstalls / vrmAvatars。
+ * meetings / meetingMessages / relationshipMilestones / modInstalls / vrmAvatars /
+ * memories / meetingConclusions / meetingActionItems（v2.6）。
  *
  * v2.0 M5 红线：vrmAvatars.json 只含元数据引用（id/name/fileRef/byteLength/meta/
  * createdAt），绝不打包 .vrm 二进制——恢复后引用可能悬空，由 restore 端给 warning
@@ -12,7 +13,9 @@ import {
   createCharacterCardRepository,
   createEventTriggerRepository,
   createEventUsageRepository,
+  createMeetingConclusionRepository,
   createMeetingRepository,
+  createMemoryRepository,
   createModInstallRepository,
   createRelationshipMilestoneRepository,
   createScheduledTaskRepository,
@@ -84,6 +87,8 @@ export function serializeEventsTrack(db: DatabaseInstance): EventsTrackPayload {
   const cardsRepo = createCharacterCardRepository(db);
   const stageScenesRepo = createStageSceneRepository(db);
   const meetingRepo = createMeetingRepository(db);
+  const conclusionRepo = createMeetingConclusionRepository(db);
+  const memoryRepo = createMemoryRepository(db);
   const milestoneRepo = createRelationshipMilestoneRepository(db);
   const modInstallRepo = createModInstallRepository(db);
 
@@ -95,6 +100,15 @@ export function serializeEventsTrack(db: DatabaseInstance): EventsTrackPayload {
   const stageScenes = stageScenesRepo.list();
   const meetings = meetingRepo.list();
   const meetingMessages = meetings.flatMap((meeting) => meetingRepo.listMessages(meeting.id));
+  // v2.6：会议结论/行动项随会议归档；行动项保留回链 id（目标库缺提醒/Flow run 时不阻断）
+  const meetingConclusions = meetings
+    .map((meeting) => conclusionRepo.getConclusion(meeting.id))
+    .filter((item) => item !== null);
+  const meetingActionItems = meetings.flatMap((meeting) =>
+    conclusionRepo.listActionItems(meeting.id),
+  );
+  // v2.6：长期记忆含来源消息与召回次数；向量不入档（恢复后按需重新嵌入）
+  const memories = memoryRepo.list({ limit: 100_000 });
   const milestones = milestoneRepo.listAll();
   const modInstalls = modInstallRepo.listAll();
   const vrmAvatars = readVrmAvatarRefs(db);
@@ -112,6 +126,9 @@ export function serializeEventsTrack(db: DatabaseInstance): EventsTrackPayload {
     'relationshipMilestones.json': JSON.stringify(milestones, null, 2),
     'modInstalls.json': JSON.stringify(modInstalls, null, 2),
     'vrmAvatars.json': JSON.stringify(vrmAvatars, null, 2),
+    'memories.json': JSON.stringify(memories, null, 2),
+    'meetingConclusions.json': JSON.stringify(meetingConclusions, null, 2),
+    'meetingActionItems.json': JSON.stringify(meetingActionItems, null, 2),
   };
 
   const manifest: EventsTrackManifest = {
@@ -127,6 +144,9 @@ export function serializeEventsTrack(db: DatabaseInstance): EventsTrackPayload {
     relationshipMilestoneCount: milestones.length,
     modInstallCount: modInstalls.length,
     vrmAvatarCount: vrmAvatars.length,
+    memoryCount: memories.length,
+    meetingConclusionCount: meetingConclusions.length,
+    meetingActionItemCount: meetingActionItems.length,
   };
 
   const total =
@@ -140,7 +160,10 @@ export function serializeEventsTrack(db: DatabaseInstance): EventsTrackPayload {
     meetingMessages.length +
     milestones.length +
     modInstalls.length +
-    vrmAvatars.length;
+    vrmAvatars.length +
+    memories.length +
+    meetingConclusions.length +
+    meetingActionItems.length;
 
   return { files, manifest, total };
 }

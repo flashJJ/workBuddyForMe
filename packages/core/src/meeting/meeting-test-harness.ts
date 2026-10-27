@@ -43,8 +43,11 @@ export interface MeetingHarness {
   service: MeetingService;
   cleanup: () => void;
   setScript: (memberId: string, content: string | ((call: number) => string)) => void;
+  /** v2.6：设置结论生成返回（默认合法 JSON） */
+  setConclusionResponse: (content: string | ((call: number) => string)) => void;
   hang: (memberId: string) => void;
   calls: Record<string, number>;
+  completeCalls: Array<{ system: string; user: string }>;
   lastRequest: LastRequest | null;
 }
 
@@ -56,11 +59,22 @@ export function createMeetingHarness(): MeetingHarness {
   const scripts = new Map<string, (call: number) => string>();
   const hangers = new Set<string>();
   const calls: Record<string, number> = {};
+  const completeCalls: Array<{ system: string; user: string }> = [];
   const state: { lastRequest: LastRequest | null } = { lastRequest: null };
+  const defaultConclusion = JSON.stringify({
+    summary: '达成评审结论',
+    decisions: ['采用方案 A'],
+    openQuestions: [],
+    actionItems: [
+      { content: '补充测试', ownerLabel: '阿策', ownerMemberId: 'a', dueAt: null },
+    ],
+  });
+  let conclusionResponse: (call: number) => string = () => defaultConclusion;
 
   const deps: MeetingServiceDeps = {
     db,
-    resolveTarget: () => ({ provider: {}, model: { modelId: 'mock' } }) as never,
+    resolveTarget: () =>
+      ({ provider: {}, model: { id: 'mock-model', modelId: 'mock' } }) as never,
     createSpeaker: (_target, memberId): MeetingSpeaker => ({
       async speak(params) {
         calls[memberId] = (calls[memberId] ?? 0) + 1;
@@ -78,6 +92,13 @@ export function createMeetingHarness(): MeetingHarness {
         return { content };
       },
     }),
+    complete: async (_target, params) => {
+      completeCalls.push({ system: params.system, user: params.user });
+      if (params.system.includes('会议转录压缩助手')) {
+        return `压缩片段 ${completeCalls.length}`;
+      }
+      return conclusionResponse(completeCalls.length);
+    },
     getMemberName: (id) => TEST_MEMBERS.find((m) => m.id === id)?.name ?? null,
     getPersonaBlock: (id) => (id === 'a' ? '【角色卡】\n你是策略担当' : null),
   };
@@ -92,8 +113,12 @@ export function createMeetingHarness(): MeetingHarness {
     setScript: (memberId, content) => {
       scripts.set(memberId, typeof content === 'function' ? content : () => content);
     },
+    setConclusionResponse: (content) => {
+      conclusionResponse = typeof content === 'function' ? content : () => content;
+    },
     hang: (memberId) => hangers.add(memberId),
     calls,
+    completeCalls,
     get lastRequest() {
       return state.lastRequest;
     },
