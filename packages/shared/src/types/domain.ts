@@ -122,27 +122,9 @@ export interface Citation {
   staticKind?: 'chunk' | 'entity' | 'summary';
 }
 
-/** v0.5 长期记忆类别：事实 / 偏好 / 事件；v2.0 新增 relationship（共同经历） */
-export const MEMORY_KINDS = ['fact', 'preference', 'event', 'relationship'] as const;
-export type MemoryKind = (typeof MEMORY_KINDS)[number];
-
-/** active=参与召回；archived=软遗忘（P1，暂不自动产生，UI 可见） */
-export const MEMORY_STATUSES = ['active', 'archived'] as const;
-export type MemoryStatus = (typeof MEMORY_STATUSES)[number];
-
-/** v0.5 长期记忆条目 */
-export interface Memory extends Timestamped {
-  /** 整型主键（同时作为 sqlite-vec rowid），对外以字符串传递 */
-  id: string;
-  kind: MemoryKind;
-  content: string;
-  /** 模型打分 0~1，越高越值得长期保留 */
-  importance: number;
-  /** 提取来源会话（可空：手工创建无来源） */
-  sourceConversationId: string | null;
-  status: MemoryStatus;
-  lastAccessedAt: string | null;
-}
+// v2.6：长期记忆类型迁至 ./memory（domain 重新导出保持公开面不变）
+export { MEMORY_KINDS, MEMORY_STATUSES, MEMORY_RECALL_REASONS } from './memory';
+export type { Memory, MemoryKind, MemoryStatus, MemoryRecallReason } from './memory';
 
 export interface Message {
   id: string;

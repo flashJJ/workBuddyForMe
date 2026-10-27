@@ -21,10 +21,12 @@ import {
   filterRecallHits,
   mergeImportance,
   pickDuplicateTarget,
+  recallScore,
   toExtractedMemory,
 } from './memory-match';
 import type {
   ManualMemoryInput,
+  RecalledMemory,
   RecallOptions,
   RememberOneInput,
   RememberOptions,
@@ -33,6 +35,7 @@ import type {
 
 export type {
   ManualMemoryInput,
+  RecalledMemory,
   RecallOptions,
   RememberOneInput,
   RememberOptions,
@@ -56,6 +59,7 @@ export function createMemoryService(deps: ServiceDeps) {
     candidate: ExtractedMemory,
     vector: number[] | null,
     sourceConversationId: string | null,
+    sourceMessageId: string | null,
   ): { memory: Memory; merged: boolean } {
     let nearestId: number | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
@@ -85,6 +89,7 @@ export function createMemoryService(deps: ServiceDeps) {
       content: candidate.content,
       importance: candidate.importance,
       sourceConversationId,
+      sourceMessageId,
     });
     if (vector) upsertMemoryVector(db, { id: Number(memory.id), vector });
     // nearestDistance 仅用于调试可读性，避免未使用告警
@@ -111,6 +116,7 @@ export function createMemoryService(deps: ServiceDeps) {
         candidate,
         vector,
         options.sourceConversationId ?? null,
+        options.sourceMessageId ?? null,
       );
       result.memories.push(memory);
       if (merged) result.updated += 1;
@@ -126,12 +132,18 @@ export function createMemoryService(deps: ServiceDeps) {
     const embedded = await embedTexts(deps, [candidate.content], signal);
     const vector = embedded?.vectors[0] ?? null;
     const tx = deps.db.transaction(() =>
-      persistOne(deps.db, candidate, vector, input.sourceConversationId ?? null),
+      persistOne(
+        deps.db,
+        candidate,
+        vector,
+        input.sourceConversationId ?? null,
+        input.sourceMessageId ?? null,
+      ),
     );
     return tx().memory;
   }
 
-  async function recall(query: string, options: RecallOptions = {}): Promise<Memory[]> {
+  async function recall(query: string, options: RecallOptions = {}): Promise<RecalledMemory[]> {
     const trimmed = query.trim();
     if (!trimmed) return [];
     return traceAsync(
@@ -148,9 +160,12 @@ export function createMemoryService(deps: ServiceDeps) {
         const hits = filterRecallHits(
           searchMemoryVectors(deps.db, { vector: embedded.vectors[0]!, k: MEMORY_TOP_K }),
         );
-        const memories = hits
-          .map((hit) => repo.findById(String(hit.memoryId)))
-          .filter((m): m is Memory => m !== null);
+        const memories: RecalledMemory[] = [];
+        for (const hit of hits) {
+          const memory = repo.findById(String(hit.memoryId));
+          if (!memory) continue;
+          memories.push({ ...memory, score: recallScore(hit.distance), reason: 'semantic' });
+        }
         repo.touchAccessed(memories.map((m) => m.id));
         return memories;
       },

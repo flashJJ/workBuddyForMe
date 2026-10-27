@@ -12,21 +12,16 @@ export interface CipherEndpoint {
  * safeStorage 本地回环桥：
  * 加解密只能在 Electron 主进程执行，fork 出的 standalone Node 服务
  * 通过一次性 bearer token 访问 /encrypt、/decrypt（bootstrap worker 同步调用）。
+ *
+ * Electron 45 起同步 encryptString / decryptString 已弃用，这里统一走
+ * encryptStringAsync / decryptStringAsync；Node 侧仍由 Atomics.wait 维持同步语义。
  */
 export function startCipherServer(token: string): Promise<CipherEndpoint> {
   const server = http.createServer((req, res) => {
-    if (!authorized(req, token)) return sendJson(res, 401, { error: 'unauthorized' });
-    if (req.method !== 'POST' || (req.url !== '/encrypt' && req.url !== '/decrypt')) {
-      return sendJson(res, 404, { error: 'not_found' });
-    }
-    readJson<{ value?: string }>(req)
-      .then((body) => {
-        if (typeof body.value !== 'string') return sendJson(res, 422, { error: 'invalid_body' });
-        const result = req.url === '/encrypt' ? safeStorage.encryptString(body.value) : safeStorage.decryptString(Buffer.from(body.value, 'base64'));
-        const encoded = req.url === '/encrypt' ? result.toString('base64') : result;
-        sendJson(res, 200, { value: encoded });
-      })
-      .catch(() => sendJson(res, 500, { error: 'cipher_failed' }));
+    void handleRequest(req, res, token).catch((error) => {
+      console.error('[wbfm] cipher 请求失败:', error);
+      if (!res.headersSent) sendJson(res, 500, { error: 'cipher_failed' });
+    });
   });
 
   return new Promise((resolve, reject) => {
@@ -47,6 +42,26 @@ export function startCipherServer(token: string): Promise<CipherEndpoint> {
       });
     });
   });
+}
+
+async function handleRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  token: string,
+): Promise<void> {
+  if (!authorized(req, token)) return sendJson(res, 401, { error: 'unauthorized' });
+  if (req.method !== 'POST' || (req.url !== '/encrypt' && req.url !== '/decrypt')) {
+    return sendJson(res, 404, { error: 'not_found' });
+  }
+  const body = await readJson<{ value?: string }>(req);
+  if (typeof body.value !== 'string') return sendJson(res, 422, { error: 'invalid_body' });
+  if (req.url === '/encrypt') {
+    const encrypted = await safeStorage.encryptStringAsync(body.value);
+    return sendJson(res, 200, { value: encrypted.toString('base64') });
+  }
+  // shouldReEncrypt 只提示系统密钥轮换；桥只返回明文，持久化由服务层下次保存时重加密。
+  const decrypted = await safeStorage.decryptStringAsync(Buffer.from(body.value, 'base64'));
+  return sendJson(res, 200, { value: decrypted.result });
 }
 
 function authorized(req: http.IncomingMessage, token: string): boolean {

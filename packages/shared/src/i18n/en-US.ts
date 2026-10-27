@@ -44,6 +44,7 @@ import { enRelationship } from './messages/relationship';
 import { enModPack } from './messages/mod-pack';
 import { enRelationshipReport } from './messages/relationship-report';
 import { enSettingsGraph } from './messages/settings-graph';
+import { enReports } from './messages/reports';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -96,6 +97,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   relationship: enRelationship,
   modPack: enModPack,
   relationshipReport: enRelationshipReport,
+  reports: enReports,
 };
 
 export type EnDictionary = typeof enUS;

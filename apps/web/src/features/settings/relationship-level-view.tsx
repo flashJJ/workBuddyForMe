@@ -110,7 +110,7 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
                 <span
                   className={
                     unlocked
-                      ? 'shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary'
+                      ? 'shrink-0 rounded bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary'
                       : 'shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground'
                   }
                 >
@@ -157,7 +157,7 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
                   {t(`relationship.milestones.${milestoneI18nKey(def.key)}` as MessageKey)}
                 </span>
                 {achieved ? (
-                  <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+                  <span className="shrink-0 rounded bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary">
                     {t('relationship.milestones.achievedAt', {
                       date: timeFmt.format(new Date(achieved.achievedAt)),
                     })}

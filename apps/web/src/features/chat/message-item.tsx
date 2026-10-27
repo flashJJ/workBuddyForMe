@@ -32,6 +32,8 @@ interface Props {
   disabled?: boolean;
   /** v2.4 M5：当前轮首字/落定计时（仅最后一条助手消息携带） */
   streamTiming?: StreamTiming | null;
+  /** v2.6 M4：记忆来源深链定位高亮 */
+  highlighted?: boolean;
 }
 
 function CopyButton({ content }: { content: string }) {
@@ -131,7 +133,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
   );
 }
 
-export function MessageItem({ message, assistantName, agentCard, onRetry, onResend, onFeedback, disabled, streamTiming }: Props) {
+export function MessageItem({ message, assistantName, agentCard, onRetry, onResend, onFeedback, disabled, streamTiming, highlighted }: Props) {
   const { t } = useI18n();
   const sys = useSystemText();
   const isUser = message.role === 'user';
@@ -150,8 +152,12 @@ export function MessageItem({ message, assistantName, agentCard, onRetry, onRese
 
   return (
     <div
-      className="flex gap-3 px-4 py-4"
+      className={`flex gap-3 px-4 py-4 ${
+        highlighted ? 'rounded-md ring-2 ring-teal-500/50' : ''
+      }`}
       data-testid={`message-${message.id || 'pending'}`}
+      data-message-id={message.id || undefined}
+      data-highlighted={highlighted ? 'true' : undefined}
       data-role={message.role}
     >
       <div

@@ -10,6 +10,8 @@ export interface MemoryRow {
   content: string;
   importance: number;
   source_conversation_id: string | null;
+  source_message_id: string | null;
+  recall_count: number;
   status: MemoryStatus;
   created_at: string;
   updated_at: string;
@@ -23,6 +25,8 @@ export function mapMemory(row: MemoryRow): Memory {
     content: row.content,
     importance: row.importance,
     sourceConversationId: row.source_conversation_id,
+    sourceMessageId: row.source_message_id,
+    recallCount: row.recall_count,
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

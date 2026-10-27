@@ -21,6 +21,15 @@ export function filterRecallHits(hits: MemorySearchResult[]): MemorySearchResult
   return hits.filter((hit) => hit.distance <= MEMORY_RECALL_MAX_DISTANCE);
 }
 
+/**
+ * v2.6：L2 距离 → 余弦相似度分（归一化向量 d² = 2 - 2cos）。
+ * 仅用于内部排序与 UI 高/中/低分档，不展示伪精确百分比。
+ */
+export function recallScore(distance: number): number {
+  const score = 1 - (distance * distance) / 2;
+  return Math.min(1, Math.max(0, Number(score.toFixed(3))));
+}
+
 /** 合并到已有记忆时，重要性取新旧两者的大值 */
 export function mergeImportance(current: number, incoming: number): number {
   return Math.max(current, incoming);

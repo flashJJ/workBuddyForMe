@@ -9,6 +9,7 @@ import { getStageBridge } from '@/features/stage/stage-bridge';
 import type { MeetingMode } from '@wbfm/shared/schemas';
 import { useMeetingRoom } from './use-meeting-room';
 import { MODE_LABEL_KEY, STATUS_KEY } from './meeting-keys';
+import { MeetingConclusionPanel } from './meeting-conclusion-panel';
 
 /** 在舞台观看（Electron 舞台窗；裸浏览器新标签） */
 function watchOnStage(meetingId: string): void {
@@ -205,8 +206,13 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
         </div>
       </div>
 
+      {meeting.status === 'finished' && (
+        <MeetingConclusionPanel meetingId={meetingId} members={members} />
+      )}
+
       {/* 输入区：manual @ 点名；all/auto 一键触发整轮 */}
-      <div className="flex items-center gap-2 rounded-lg border bg-card p-2">
+      {active && (
+        <div className="flex items-center gap-2 rounded-lg border bg-card p-2">
         <input
           className="min-w-0 flex-1 rounded border bg-background px-3 py-2 text-sm"
           aria-label="meeting-input"
@@ -231,7 +237,8 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
         >
           {meeting.mode === 'all' ? t('meeting.room.everyoneOnce') : meeting.mode === 'auto' ? t('meeting.room.chain') : t('meeting.room.send')}
         </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

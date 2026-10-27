@@ -1,4 +1,4 @@
-import { mkdtempSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+﻿import { mkdtempSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import zlib from 'node:zlib';
@@ -64,7 +64,7 @@ describe('备份导出（M1）', () => {
     });
 
     expect(size).toBeGreaterThan(0);
-    expect(manifest.backupSchemaVersion).toBe(6);
+    expect(manifest.backupSchemaVersion).toBe(7);
     expect(manifest.tracks.conversations.entryCount).toBe(0);
     expect(manifest.tracks.knowledge.knowledgeBaseCount).toBe(0);
     // v1.6：manifest 携带 emotion 轨元数据（未选轨时计数 0）

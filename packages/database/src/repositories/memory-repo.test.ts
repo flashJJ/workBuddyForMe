@@ -38,6 +38,8 @@ describe('memory 仓储与 memories_vec 向量管线', () => {
     expect(m1.id).toBe('1');
     expect(m2.id).toBe('2');
     expect(m1.sourceConversationId).toBeNull();
+    expect(m1.sourceMessageId).toBeNull();
+    expect(m1.recallCount).toBe(0);
     expect(m2.status).toBe('active');
 
     // 重要性高的排前面
@@ -46,8 +48,10 @@ describe('memory 仓储与 memories_vec 向量管线', () => {
     expect(repo.list({ search: 'pmp' })).toHaveLength(1);
     expect(repo.list({ kind: 'preference' })[0]!.content).toBe('偏好中文回复');
 
-    repo.touchAccessed(['2']);
+    repo.touchAccessed(['2', '2']);
     expect(repo.findById('2')!.lastAccessedAt).toBeTruthy();
+    expect(repo.findById('2')!.recallCount).toBe(2);
+    expect(repo.findById('1')!.recallCount).toBe(0);
 
     const updated = repo.update('1', { content: '已通过 PMP 考试', status: 'archived' })!;
     expect(updated.content).toBe('已通过 PMP 考试');
@@ -56,6 +60,31 @@ describe('memory 仓储与 memories_vec 向量管线', () => {
     expect(repo.count()).toBe(2);
     expect(repo.delete('1')).toBe(true);
     expect(repo.findById('1')).toBeNull();
+  });
+
+  it('v2.6 溯源：记录来源消息，召回计数只随 touchAccessed 递增', () => {
+    const repo = createMemoryRepository(db);
+    const memory = repo.add({
+      kind: 'fact',
+      content: '用户偏好中文回复',
+      importance: 0.8,
+      sourceConversationId: 'c1',
+      sourceMessageId: 'm9',
+    });
+    expect(memory).toMatchObject({
+      sourceConversationId: 'c1',
+      sourceMessageId: 'm9',
+      recallCount: 0,
+      lastAccessedAt: null,
+    });
+
+    repo.touchAccessed([memory.id]);
+    const recalled = repo.findById(memory.id)!;
+    expect(recalled.recallCount).toBe(1);
+    expect(recalled.lastAccessedAt).toBeTruthy();
+
+    repo.update(memory.id, { content: '用户希望中文回复' });
+    expect(repo.findById(memory.id)!.recallCount).toBe(1);
   });
 
   it('向量写入与检索：同向记忆距离 0 命中，正交记忆被阈值过滤，归档不参与召回', () => {

@@ -1,5 +1,5 @@
 /** @域 barrel 领域类型（v1.1 M2 域子路径化） */
-export { MEMORY_KINDS, MEMORY_STATUSES } from './domain';
+export { MEMORY_KINDS, MEMORY_STATUSES, MEMORY_RECALL_REASONS } from './domain';
 export type {
   Provider,
   ProviderModel,
@@ -11,6 +11,7 @@ export type {
   Memory,
   MemoryKind,
   MemoryStatus,
+  MemoryRecallReason,
   KnowledgeBase,
   DocumentRecord,
   Attachment,
@@ -70,4 +71,7 @@ export type {
   MeetingRecord,
   MeetingMessageRecord,
   MeetingDetailView,
+  MeetingConclusionRecord,
+  MeetingActionItemRecord,
+  MeetingConclusionView,
 } from './meeting';

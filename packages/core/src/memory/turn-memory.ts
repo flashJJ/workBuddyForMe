@@ -4,7 +4,7 @@ import type { TraceHandle } from '@wbfm/ai';
 import type { ResolvedChatTarget } from '../chat/model-resolver';
 import type { OrchestratorEvent } from '../chat/types';
 import { extractTurnMemories } from './extractor';
-import type { MemoryService } from './memory-service';
+import type { MemoryService, RecalledMemory } from './memory-service';
 
 /** v0.5 M3：对话回合与记忆服务之间的胶水，编排器只负责调用与吞错边界。 */
 
@@ -39,8 +39,16 @@ export function buildRelationshipMemoryBlock(memories: Memory[]): string | null 
 }
 
 /** SSE memories 事件负载（只下发展示必需字段，不暴露内部 id 之外的管理字段） */
-export function toRecalledPayload(memories: Memory[]): RecalledMemoryPayload[] {
-  return memories.map((m) => ({ id: m.id, kind: m.kind, content: m.content }));
+export function toRecalledPayload(memories: RecalledMemory[]): RecalledMemoryPayload[] {
+  return memories.map((m) => ({
+    id: m.id,
+    kind: m.kind,
+    content: m.content,
+    sourceConversationId: m.sourceConversationId,
+    sourceMessageId: m.sourceMessageId,
+    score: m.score,
+    reason: m.reason,
+  }));
 }
 
 export interface RecallTurnParams {
@@ -51,7 +59,7 @@ export interface RecallTurnParams {
 }
 
 /** 回合前召回；服务内部已对未配置嵌入模型等场景返回空数组 */
-export async function recallTurnMemories(params: RecallTurnParams): Promise<Memory[]> {
+export async function recallTurnMemories(params: RecallTurnParams): Promise<RecalledMemory[]> {
   return params.memory.recall(params.query, {
     signal: params.signal,
     traceParent: params.traceParent,
@@ -64,7 +72,7 @@ export async function recallTurnMemories(params: RecallTurnParams): Promise<Memo
  */
 export async function* safeRecallEvent(
   params: RecallTurnParams,
-): AsyncGenerator<OrchestratorEvent, Memory[]> {
+): AsyncGenerator<OrchestratorEvent, RecalledMemory[]> {
   try {
     const memories = await recallTurnMemories(params);
     if (memories.length > 0) {
@@ -88,6 +96,8 @@ export interface PostTurnMemoryParams {
   userContent: string;
   assistantContent: string;
   conversationId: string;
+  /** v2.6：本轮助手消息 id（记忆来源消息） */
+  sourceMessageId: string;
   signal?: AbortSignal;
   traceParent?: TraceHandle | null;
 }
@@ -108,6 +118,7 @@ export async function runPostTurnMemory(params: PostTurnMemoryParams): Promise<v
     if (candidates.length === 0) return;
     await params.memory.rememberCandidates(candidates, {
       sourceConversationId: params.conversationId,
+      sourceMessageId: params.sourceMessageId,
       signal: params.signal,
       traceParent: params.traceParent,
     });

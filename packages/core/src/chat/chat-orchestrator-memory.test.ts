@@ -129,7 +129,11 @@ describe('M3 对话编排 × 长期记忆（端到端）', () => {
     expect(memories[0]!).toMatchObject({ kind: 'preference', content: '用户偏好中文回复' });
     expect(memories[0]!.sourceConversationId).toBeTruthy();
 
-    const conversationId = (first[0]!.data as { conversationId: string }).conversationId;
+    const meta = first[0]!.data as { conversationId: string; messageId: string };
+    const conversationId = meta.conversationId;
+    // v2.6：来源消息 = 首轮助手回复消息 id（非用户消息，非会话 id）
+    expect(memories[0]!.sourceMessageId).toBe(meta.messageId);
+    expect(memories[0]!.recallCount).toBe(0);
     const second = await drain(
       orchestrator.streamChat({
         assistantId: assistant.id,
@@ -141,8 +145,20 @@ describe('M3 对话编排 × 长期记忆（端到端）', () => {
     await orchestrator.waitForBackgroundJobs();
     const memoryEvent = second[1]!;
     expect(memoryEvent.data).toMatchObject({
-      memories: [{ kind: 'preference', content: '用户偏好中文回复' }],
+      memories: [
+        {
+          kind: 'preference',
+          content: '用户偏好中文回复',
+          sourceConversationId: conversationId,
+          sourceMessageId: meta.messageId,
+          reason: 'semantic',
+        },
+      ],
     });
+    expect(
+      (memoryEvent.data as { memories: Array<{ score: number }> }).memories[0]!.score,
+    ).toBeGreaterThan(0.9);
+    expect(createMemoryService({ db, cipher }).get(memories[0]!.id)!.recallCount).toBe(1);
 
     // 次轮主回答请求的 system 已注入记忆块（提取请求不算主回答）
     const chatBodies = fetchMock.mock.calls

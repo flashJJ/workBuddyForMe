@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,11 +7,21 @@ import type { Memory } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { MemoryPanel } from './memory-panel';
 
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 function makeMemory(partial: Partial<Memory> & { id: string; content: string }): Memory {
   return {
     kind: 'fact',
     importance: 0.5,
     sourceConversationId: null,
+    sourceMessageId: null,
+    recallCount: 0,
     status: 'active',
     createdAt: '2025-01-01T00:00:00.000Z',
     updatedAt: '2025-01-02T00:00:00.000Z',
@@ -149,5 +160,31 @@ describe('长期记忆管理面板（M4）', () => {
     );
     const call = fetchMock.mock.calls.find((c) => c[0] === '/api/memories/clear');
     expect((call![1] as RequestInit).method).toBe('POST');
+  });
+
+  it('v2.6 溯源：来源消息链接、召回次数与来源未知降级', async () => {
+    fetchMock.mockResolvedValue(
+      ok([
+        makeMemory({
+          id: '1',
+          content: '偏好中文',
+          sourceConversationId: 'c1',
+          sourceMessageId: 'm9',
+          recallCount: 3,
+          lastAccessedAt: '2026-10-01T00:00:00.000Z',
+        }),
+        makeMemory({ id: '2', content: '旧记忆' }),
+      ]),
+    );
+    renderWithProviders(<MemoryPanel />);
+
+    const items = within(await screen.findByTestId('memory-list')).getAllByTestId('memory-item');
+    expect(items[0]!).toHaveTextContent('已召回 3 次');
+    expect(items[0]!).toHaveTextContent('最近召回');
+    const link = within(items[0]!).getByTestId('memory-source-link');
+    expect(link).toHaveAttribute('href', '/chat?conversation=c1&message=m9');
+    expect(link).toHaveTextContent('来源消息');
+    expect(within(items[1]!).getByTestId('memory-source-unknown')).toHaveTextContent('来源未知');
+    expect(items[1]!).toHaveTextContent('尚未召回');
   });
 });

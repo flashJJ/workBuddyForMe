@@ -37,7 +37,7 @@ import {
 import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
 import { createMilestoneService, type MilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService, type AgentRunService } from '@wbfm/core/agents';
-import { createMeetingService, type MeetingService } from '@wbfm/core/meeting';
+import { createMeetingClosureService, createMeetingService, type MeetingClosureService, type MeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
 import {
@@ -124,6 +124,7 @@ export interface ServiceContainer {
   relationshipMilestones: MilestoneService;
   /** v1.9 M3 多助手会议 */
   meetings: MeetingService;
+  meetingClosure: MeetingClosureService;
   /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
   runtime: ToolRuntime;
   /** v0.8 M1：工作流运行服务（试运行/落库；已发布流程经 runtime 第三来源解析） */
@@ -139,7 +140,6 @@ export interface ServiceContainer {
   /** v2.0 M5：.wbfm-pack 打包/预检/导入 */
   modPacks: ModPackService;
 }
-
 let container: ServiceContainer | null = null;
 
 /**
@@ -231,6 +231,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const rateLimiter = createRateLimiter();
   const stageScenes = createStageSceneService(deps);
   const modPacks = createModPackService({ db, stageScenes });
+  const schedules = createSchedulesService(deps);
+  const meetingClosure = createMeetingClosureService({ db, workflows, flowRunner, schedules });
   return {
     endpoints,
     rateLimiter,
@@ -246,6 +248,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     agentRuns,
     relationshipMilestones: createMilestoneService(deps),
     meetings,
+    meetingClosure,
     runtime,
     flowRunner,
     providers: createProviderService(deps),
@@ -263,7 +266,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     documents: createDocumentService(deps),
     attachments: createAttachmentService(deps),
     memories: createMemoryService(deps),
-    schedules: createSchedulesService(deps),
+    schedules,
     eventUsage: createEventUsageService(deps),
     eventTriggers: createEventTriggersService(deps),
     vrmAvatars: createVrmAvatarService(db),
@@ -271,7 +274,6 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     modPacks,
   };
 }
-
 /** 获取服务单例：首次访问时初始化文件数据库与全部业务服务 */
 export function getServices(): ServiceContainer {
   const existing = readContainer();
@@ -285,12 +287,10 @@ export function getServices(): ServiceContainer {
   created.skills.reconcile();
   return created;
 }
-
 /** 仅供测试：替换/清空容器 */
 export function __setContainerForTest(value: ServiceContainer | null): void {
   writeContainer(value);
 }
-
 /** 仅供测试：基于内存/临时库快速装配 */
 export function __buildContainerForTest(db: DatabaseInstance, cipher: SecretCipher) {
   const created = build(db, cipher);

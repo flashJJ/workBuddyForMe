@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { Brain } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared/types';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
@@ -26,8 +25,16 @@ import { ChatAvatarRail } from '../avatar/chat-avatar-rail';
 import { useChatEvents } from './use-chat-events';
 import { useFirstAsk } from './use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
+import { RecalledMemoriesBar } from './recalled-memories-bar';
+import { useChatDeepLink } from './use-chat-deep-link';
 
-export function ChatPage() {
+export function ChatPage({
+  deepLinkConversationId = null,
+  deepLinkMessageId = null,
+}: {
+  deepLinkConversationId?: string | null;
+  deepLinkMessageId?: string | null;
+} = {}) {
   const { data: assistants, isLoading: assistantsLoading } = useAssistants();
   const { data: settings } = useSettings();
   const { data: models } = useAllModels();
@@ -110,24 +117,22 @@ export function ChatPage() {
   // v2.4 M1 T6：向导 firstAsk 步选中的示例问题，模型就绪后自动发出一次
   useFirstAsk(session.send, hasChatModel);
 
-  const switchAssistant = (id: string) => {
-    session.reset();
-    setTaskMode(false);
-    setAssistantId(id);
-    setConversationId(null);
-  };
+  const switchAssistant = (id: string) => { session.reset(); setTaskMode(false); setAssistantId(id); setConversationId(null); };
+  const newChat = () => { session.reset(); setTaskMode(false); setConversationId(null); };
+  const selectConversation = (id: string) => { session.reset(); setTaskMode(false); setConversationId(id); };
 
-  const newChat = () => {
-    session.reset();
-    setTaskMode(false);
-    setConversationId(null);
-  };
-
-  const selectConversation = (id: string) => {
-    session.reset();
-    setTaskMode(false);
-    setConversationId(id);
-  };
+  // v2.6 M4：记忆来源深链（/chat?conversation=&message=）
+  useChatDeepLink({
+    conversationId: deepLinkConversationId,
+    onConversation: (conversation) => {
+      setAssistantId(conversation.assistantId);
+      selectConversation(conversation.id);
+    },
+  });
+  const warnMissingMessage = React.useCallback(
+    () => toast.error(t('memory.sourceMessageMissing')),
+    [toast, t],
+  );
 
   // Electron 渲染进程不支持 window.prompt，统一使用应用内弹窗
   const submitRename = async (id: string, title: string) => {
@@ -233,16 +238,7 @@ export function ChatPage() {
 
         {hasChatModel ? (
           <>
-            {session.recalledMemories.length > 0 && (
-              <div
-                data-testid="recalled-memories-hint"
-                title={session.recalledMemories.map((m) => m.content).join('\n')}
-                className="mx-auto mt-2 flex w-full max-w-3xl items-center gap-1.5 rounded-full border bg-muted/40 px-3 py-1 text-xs text-muted-foreground"
-              >
-                <Brain className="h-3 w-3" />
-                {t('chat.recalledMemoriesHint', { count: session.recalledMemories.length })}
-              </div>
-            )}
+            <RecalledMemoriesBar memories={session.recalledMemories} />
             <MessageList
               messages={session.messages}
               assistantName={currentAssistant?.name ?? t('chat.defaultAssistantName')}
@@ -252,6 +248,8 @@ export function ChatPage() {
               onResend={session.send}
               onFeedback={session.applyFeedback}
               streamTiming={session.streamTiming}
+              highlightMessageId={deepLinkMessageId}
+              onHighlightMissing={warnMissingMessage}
             />
             {companion.proactiveBubble && (
               <ProactiveBubbleBar

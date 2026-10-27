@@ -3,7 +3,7 @@ import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Assistant, Conversation, Provider, ProviderModel } from '@wbfm/shared/types';
+import type { Assistant, Conversation, Message, Provider, ProviderModel } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { ChatPage } from './chat-page';
 
@@ -65,6 +65,25 @@ const MODEL: ProviderModel = {
   capabilities: ['chat'],
   contextWindow: null,
   createdAt: '2025-01-01T00:00:00.000Z',
+};
+
+const SOURCE_MESSAGE: Message = {
+  id: 'm9',
+  conversationId: 'c1',
+  role: 'assistant',
+  content: '这条回答来自记忆溯源深链',
+  status: 'completed',
+  promptTokens: null,
+  completionTokens: null,
+  totalTokens: null,
+  citations: [],
+  toolTrace: [],
+  contentParts: [],
+  feedback: null,
+  feedbackAt: null,
+  errorCode: null,
+  errorMessage: null,
+  createdAt: '2025-01-02T00:00:00.000Z',
 };
 
 const encoder = new TextEncoder();
@@ -189,5 +208,87 @@ describe('对话页（TR-27.1）', () => {
     expect(await screen.findByTestId('conversation-summary-text')).toHaveTextContent(
       '用户偏好中文回复；正在筹备周末露营。',
     );
+  });
+
+  it('v2.6 深链：解析来源会话并高亮来源消息', async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      let data: unknown = [];
+      if (url === '/api/assistants') data = [ASSISTANT];
+      else if (url === '/api/settings')
+        data = { defaultChatModelId: 'm1', defaultEmbeddingModelId: null, theme: 'light', language: 'zh-CN' };
+      else if (url === '/api/providers') data = [PROVIDER];
+      else if (url === '/api/providers/p1/models') data = [MODEL];
+      else if (url === '/api/conversations/c1') data = COMPACTED_CONVERSATION;
+      else if (url === '/api/conversations/c1/messages') data = [SOURCE_MESSAGE];
+      else if (url.startsWith('/api/conversations?')) data = [COMPACTED_CONVERSATION];
+      return new Response(JSON.stringify({ success: true, data }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    renderWithProviders(
+      <ChatPage deepLinkConversationId="c1" deepLinkMessageId="m9" />,
+    );
+
+    expect(await screen.findByText('这条回答来自记忆溯源深链')).toBeInTheDocument();
+    expect(screen.getByTestId('message-m9')).toHaveAttribute('data-highlighted', 'true');
+  });
+
+  it('v2.6 深链：来源会话已删除时给出可读提示', async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url === '/api/conversations/gone') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'NOT_FOUND', message: '会话不存在' },
+          }),
+          { status: 404, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      const data =
+        url === '/api/assistants'
+          ? [ASSISTANT]
+          : url === '/api/settings'
+            ? { defaultChatModelId: 'm1', defaultEmbeddingModelId: null, theme: 'light', language: 'zh-CN' }
+            : url === '/api/providers'
+              ? [PROVIDER]
+              : url === '/api/providers/p1/models'
+                ? [MODEL]
+                : [];
+      return new Response(JSON.stringify({ success: true, data }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    renderWithProviders(<ChatPage deepLinkConversationId="gone" />);
+
+    expect(await screen.findByText('来源会话已删除')).toBeInTheDocument();
+  });
+
+  it('v2.6 深链：来源消息已删除时提示且不误高亮', async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      let data: unknown = [];
+      if (url === '/api/assistants') data = [ASSISTANT];
+      else if (url === '/api/settings')
+        data = { defaultChatModelId: 'm1', defaultEmbeddingModelId: null, theme: 'light', language: 'zh-CN' };
+      else if (url === '/api/providers') data = [PROVIDER];
+      else if (url === '/api/providers/p1/models') data = [MODEL];
+      else if (url === '/api/conversations/c1') data = COMPACTED_CONVERSATION;
+      else if (url === '/api/conversations/c1/messages') data = [SOURCE_MESSAGE];
+      else if (url.startsWith('/api/conversations?')) data = [COMPACTED_CONVERSATION];
+      return new Response(JSON.stringify({ success: true, data }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    renderWithProviders(
+      <ChatPage deepLinkConversationId="c1" deepLinkMessageId="missing" />,
+    );
+
+    expect(await screen.findByText('来源消息已删除')).toBeInTheDocument();
+    expect(screen.getByTestId('message-m9')).not.toHaveAttribute('data-highlighted');
   });
 });

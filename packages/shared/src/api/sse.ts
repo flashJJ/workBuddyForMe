@@ -1,4 +1,4 @@
-import type { Citation, MemoryKind } from '../types/domain';
+import type { Citation, MemoryKind, MemoryRecallReason } from '../types/domain';
 import type { PermissionLevel } from '../types/permission';
 import type { FlowEventPayload } from '../types/flow';
 import type { TaskEventPayload } from '../schemas/task';
@@ -13,11 +13,21 @@ import type {
   ReviewVerdictPayload,
 } from '../schemas/agent';
 
-/** v0.5：命中的长期记忆轻提示载荷（回答上方「参考了 X 条记忆」） */
+/**
+ * v0.5：命中的长期记忆轻提示载荷（回答上方「参考了 X 条记忆」）。
+ * v2.6：补来源会话/消息、召回分数与理由，供对话内溯源；旧客户端忽略新增字段。
+ */
 export interface RecalledMemoryPayload {
   id: string;
   kind: MemoryKind;
   content: string;
+  /** 来源会话（可空：手工记忆/旧数据） */
+  sourceConversationId: string | null;
+  /** 来源助手消息（可空：旧数据/摘要记忆） */
+  sourceMessageId: string | null;
+  /** 语义相似度 0~1（内部排序用；UI 只展示高/中/低档） */
+  score: number;
+  reason: MemoryRecallReason;
 }
 
 /** SSE 事件类型（POST /api/chat/stream） */

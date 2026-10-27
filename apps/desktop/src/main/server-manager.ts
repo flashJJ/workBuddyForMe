@@ -37,7 +37,7 @@ export interface ManagedServer {
  * fork Next standalone server.js：
  * - 随机端口 + 随机 bearer token，仅绑定 127.0.0.1
  * - WBFM_SERVER_MANAGED=1 启用 token 守卫
- * - --require 注入 safeStorage 同步桥引导
+ * - --require 注入 safeStorage 回环桥引导
  */
 export async function startManagedServer(options: StartServerOptions): Promise<ManagedServer> {
   const { userDataDir, serverPath, cipher } = options;

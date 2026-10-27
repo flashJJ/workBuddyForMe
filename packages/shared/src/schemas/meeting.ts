@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_SCHEDULE_TIMEZONE } from './scheduled-task';
 
 /**
  * v1.9 M3 会议模式契约（docs/plan/v1.9/03-会议防串角协议.md）。
@@ -64,3 +65,113 @@ export const meetingModeUpdateSchema = z.object({
   mode: z.enum(MEETING_MODES),
 });
 export type MeetingModeUpdateInput = z.infer<typeof meetingModeUpdateSchema>;
+
+// ---------------------------------------------------------------------------
+// v2.6 会议结论 / 行动项
+// ---------------------------------------------------------------------------
+
+export const MEETING_ACTION_ITEM_STATUSES = ['open', 'done', 'cancelled'] as const;
+export type MeetingActionItemStatus = (typeof MEETING_ACTION_ITEM_STATUSES)[number];
+
+export const MEETING_ACTION_ITEM_SOURCES = ['generated', 'manual'] as const;
+export type MeetingActionItemSource = (typeof MEETING_ACTION_ITEM_SOURCES)[number];
+
+export const MEETING_CONCLUSION_LIMITS = {
+  SUMMARY_MAX: 2000,
+  DECISIONS_MAX: 20,
+  OPEN_QUESTIONS_MAX: 20,
+  ACTION_ITEMS_MAX: 30,
+  ACTION_ITEM_CONTENT_MAX: 500,
+  OWNER_LABEL_MAX: 80,
+} as const;
+
+const conclusionTextSchema = z.string().trim().min(1).max(MEETING_CONCLUSION_LIMITS.SUMMARY_MAX);
+const conclusionItemSchema = z.string().trim().min(1).max(MEETING_CONCLUSION_LIMITS.SUMMARY_MAX);
+const conclusionListSchema = z
+  .array(conclusionItemSchema)
+  .max(MEETING_CONCLUSION_LIMITS.DECISIONS_MAX)
+  .default([]);
+const conclusionUpdateListSchema = z
+  .array(conclusionItemSchema)
+  .max(MEETING_CONCLUSION_LIMITS.DECISIONS_MAX);
+
+/** 模型结构化输出（必须通过此 schema 才落库；失败不伪造结论） */
+export const meetingConclusionDraftSchema = z.object({
+  summary: conclusionTextSchema,
+  decisions: conclusionListSchema,
+  openQuestions: z
+    .array(z.string().trim().min(1).max(MEETING_CONCLUSION_LIMITS.SUMMARY_MAX))
+    .max(MEETING_CONCLUSION_LIMITS.OPEN_QUESTIONS_MAX)
+    .default([]),
+  actionItems: z
+    .array(
+      z.object({
+        content: z
+          .string()
+          .trim()
+          .min(1)
+          .max(MEETING_CONCLUSION_LIMITS.ACTION_ITEM_CONTENT_MAX),
+        ownerLabel: z.string().trim().max(MEETING_CONCLUSION_LIMITS.OWNER_LABEL_MAX).default(''),
+        ownerMemberId: z.string().trim().min(1).max(80).nullable().default(null),
+        dueAt: z.string().datetime({ offset: true }).nullable().default(null),
+      }),
+    )
+    .max(MEETING_CONCLUSION_LIMITS.ACTION_ITEMS_MAX)
+    .default([]),
+});
+export type MeetingConclusionDraft = z.infer<typeof meetingConclusionDraftSchema>;
+
+/** PATCH /api/meetings/:id/conclusion（只编辑结论正文，行动项走独立接口） */
+export const meetingConclusionUpdateSchema = z
+  .object({
+    summary: conclusionTextSchema.optional(),
+    decisions: conclusionUpdateListSchema.optional(),
+    openQuestions: z
+      .array(z.string().trim().min(1).max(MEETING_CONCLUSION_LIMITS.SUMMARY_MAX))
+      .max(MEETING_CONCLUSION_LIMITS.OPEN_QUESTIONS_MAX)
+      .optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, '至少修改一项结论内容');
+export type MeetingConclusionUpdateInput = z.infer<typeof meetingConclusionUpdateSchema>;
+
+/** POST /api/meetings/:id/action-items */
+export const meetingActionItemCreateSchema = z.object({
+  content: z.string().trim().min(1).max(MEETING_CONCLUSION_LIMITS.ACTION_ITEM_CONTENT_MAX),
+  ownerLabel: z.string().trim().max(MEETING_CONCLUSION_LIMITS.OWNER_LABEL_MAX).default(''),
+  ownerMemberId: z.string().trim().min(1).max(80).nullable().default(null),
+  dueAt: z.string().datetime({ offset: true }).nullable().default(null),
+});
+export type MeetingActionItemCreateInput = z.infer<typeof meetingActionItemCreateSchema>;
+
+/** PATCH /api/meetings/:id/action-items/:itemId（状态走同一接口） */
+export const meetingActionItemUpdateSchema = z
+  .object({
+    content: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MEETING_CONCLUSION_LIMITS.ACTION_ITEM_CONTENT_MAX)
+      .optional(),
+    ownerLabel: z.string().trim().max(MEETING_CONCLUSION_LIMITS.OWNER_LABEL_MAX).optional(),
+    ownerMemberId: z.string().trim().min(1).max(80).nullable().optional(),
+    dueAt: z.string().datetime({ offset: true }).nullable().optional(),
+    status: z.enum(MEETING_ACTION_ITEM_STATUSES).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, '至少修改一项行动项内容');
+export type MeetingActionItemUpdateInput = z.infer<typeof meetingActionItemUpdateSchema>;
+
+/** POST /api/meetings/:id/action-items/:itemId/to-reminder */
+export const meetingActionItemReminderSchema = z.object({
+  /** 由会议成员角色出声；必须是本会议成员 */
+  assistantId: z.string().trim().min(1).max(80),
+  timezone: z.string().min(1).max(64).default(DEFAULT_SCHEDULE_TIMEZONE),
+});
+export type MeetingActionItemReminderInput = z.infer<typeof meetingActionItemReminderSchema>;
+
+/** POST /api/meetings/:id/action-items/:itemId/run-flow */
+export const meetingActionItemRunFlowSchema = z.object({
+  workflowId: z.string().trim().min(1).max(80),
+  /** 不传则把行动项同时映射到 query/topic/question/actionItem */
+  input: z.record(z.string(), z.unknown()).optional(),
+});
+export type MeetingActionItemRunFlowInput = z.infer<typeof meetingActionItemRunFlowSchema>;

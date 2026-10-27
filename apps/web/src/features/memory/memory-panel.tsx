@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import {
   MEMORY_KIND_OPTIONS,
   MEMORY_STATUS_LABELS,
   formatMemoryDate,
+  memorySourceHref,
 } from './memory-labels';
 import { MemoryFormDialog } from './memory-form-dialog';
 
@@ -34,6 +36,7 @@ function MemoryRow({
   deleting: boolean;
 }) {
   const { t, locale } = useI18n();
+  const sourceHref = memorySourceHref(memory);
   return (
     <div
       data-testid="memory-item"
@@ -55,6 +58,33 @@ function MemoryRow({
           </span>
         </div>
         <p className="break-words text-sm">{memory.content}</p>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>
+            {memory.recallCount > 0
+              ? t('memory.recallCount', { count: memory.recallCount })
+              : t('memory.neverRecalled')}
+          </span>
+          {memory.lastAccessedAt && (
+            <span>
+              {t('memory.lastRecalledAt', {
+                date: formatMemoryDate(memory.lastAccessedAt, locale),
+              })}
+            </span>
+          )}
+          {sourceHref ? (
+            <Link
+              href={sourceHref}
+              className="text-teal-600 hover:underline dark:text-teal-400"
+              data-testid="memory-source-link"
+            >
+              {memory.sourceMessageId
+                ? t('memory.openSourceMessage')
+                : t('memory.openSourceConversation')}
+            </Link>
+          ) : (
+            <span data-testid="memory-source-unknown">{t('memory.sourceUnknown')}</span>
+          )}
+        </div>
       </div>
       <div className="flex shrink-0 gap-1">
         <Button type="button" variant="ghost" size="sm" onClick={onEdit}>

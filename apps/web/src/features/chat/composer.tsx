@@ -94,21 +94,31 @@ export function Composer({
     }
   };
 
+  const rejectImages = () => {
+    toast.info(t(taskMode ? 'chat.composer.pasteBlockedTaskMode' : 'chat.composer.pasteNeedsVision'));
+  };
+
   const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    if (!visionEnabled || taskMode) return;
     const files = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
-    if (files.length > 0) {
-      event.preventDefault();
-      void attachments.addFiles(files);
+    if (files.length === 0) return;
+    event.preventDefault();
+    if (!visionEnabled || taskMode) {
+      rejectImages();
+      return;
     }
+    void attachments.addFiles(files);
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragging(false);
-    if (!visionEnabled || taskMode) return;
     const files = Array.from(event.dataTransfer.files).filter((file) => file.type.startsWith('image/'));
-    if (files.length > 0) void attachments.addFiles(files);
+    if (files.length === 0) return;
+    if (!visionEnabled || taskMode) {
+      rejectImages();
+      return;
+    }
+    void attachments.addFiles(files);
   };
 
   if (streaming) {

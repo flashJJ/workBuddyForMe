@@ -1,4 +1,6 @@
 import type {
+  MeetingActionItemSource,
+  MeetingActionItemStatus,
   MeetingMode,
   MeetingSpeakerKind,
   MeetingStatus,
@@ -44,4 +46,39 @@ export interface MeetingDetailView {
   messages: MeetingMessageRecord[];
   /** 成员实时档案（恢复后悬空成员会缺失，UI 标注） */
   members: Array<{ id: string; name: string; missing?: boolean }>;
+}
+
+/** v2.6：会议结论（一场会议至多一条当前结论） */
+export interface MeetingConclusionRecord {
+  meetingId: string;
+  summary: string;
+  decisions: string[];
+  openQuestions: string[];
+  /** 生成时实际使用的 models.id；null=当时系统默认 */
+  modelId: string | null;
+  generatedAt: string;
+  editedAt: string | null;
+}
+
+/** v2.6：行动项（source=generated 随结论重生成替换；manual 保留） */
+export interface MeetingActionItemRecord {
+  id: string;
+  meetingId: string;
+  content: string;
+  ownerLabel: string;
+  ownerMemberId: string | null;
+  dueAt: string | null;
+  status: MeetingActionItemStatus;
+  source: MeetingActionItemSource;
+  sourceTurnId: string | null;
+  linkedReminderId: string | null;
+  linkedFlowRunId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** GET /api/meetings/:id/conclusion */
+export interface MeetingConclusionView {
+  conclusion: MeetingConclusionRecord | null;
+  actionItems: MeetingActionItemRecord[];
 }

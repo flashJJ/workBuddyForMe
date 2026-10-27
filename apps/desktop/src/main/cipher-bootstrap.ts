@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 生成注入 standalone Node 服务的 --require 引导脚本。
  *
  * SecretCipher 是同步接口（core 服务层直接调用），而 safeStorage 只能在
@@ -41,7 +41,7 @@ export function renderCipherBootstrap(params: CipherBootstrapParams): string {
   const url = JSON.stringify(params.url);
   const token = JSON.stringify(params.token);
   return `'use strict';
-/* 由 @wbfm/desktop 自动生成：safeStorage 同步桥，请勿手改 */
+/* 由 @wbfm/desktop 自动生成：safeStorage 回环桥（Node 侧同步语义），请勿手改 */
 (function () {
   if (globalThis.__WBFM_CIPHER__) return;
   var worker_threads = require('node:worker_threads');

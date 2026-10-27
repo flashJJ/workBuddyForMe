@@ -1,6 +1,18 @@
 import type { SseEvent } from '@wbfm/shared/api';
-import type { MeetingCreateInput, MeetingMode } from '@wbfm/shared/schemas';
-import type { MeetingDetailView, MeetingMessageRecord, MeetingRecord } from '@wbfm/shared/types';
+import type {
+  MeetingActionItemCreateInput,
+  MeetingActionItemUpdateInput,
+  MeetingConclusionUpdateInput,
+  MeetingCreateInput,
+  MeetingMode,
+} from '@wbfm/shared/schemas';
+import type {
+  MeetingActionItemRecord,
+  MeetingConclusionView,
+  MeetingDetailView,
+  MeetingMessageRecord,
+  MeetingRecord,
+} from '@wbfm/shared/types';
 import type { DatabaseInstance } from '@wbfm/database';
 import type { ResolvedChatTarget } from '../chat/model-resolver';
 
@@ -34,6 +46,11 @@ export interface MeetingServiceDeps {
   resolveTarget: (modelId: string | null) => ResolvedChatTarget;
   /** 发言客户端工厂（测试注入脚本化 speaker；memberId 供人格/脚本路由，模型会议共用） */
   createSpeaker: (target: ResolvedChatTarget, memberId: string) => MeetingSpeaker;
+  /** v2.6：一次性文本补全（结论生成/长转录分段压缩），无工具 */
+  complete: (
+    target: ResolvedChatTarget,
+    params: { system: string; user: string; signal?: AbortSignal },
+  ) => Promise<string>;
   /** 成员实时姓名；成员已删除返回 null（创建时校验，执行期兜底） */
   getMemberName: (assistantId: string) => string | null;
   /** 成员角色卡正文（buildPersonaBlock 结果；无卡/缺失返回 null） */
@@ -55,6 +72,27 @@ export interface MeetingService {
   isActive(meetingId: string): boolean;
   /** 只读观察（会场页/舞台）；非活跃返回 null，调用方回落落库回放 */
   observe(meetingId: string): AsyncIterableIterator<MeetingEvent> | null;
+  /** v2.6：读取结论 + 行动项（无结论时 conclusion=null） */
+  getConclusion(meetingId: string): MeetingConclusionView;
+  /** v2.6：对 finished 会议生成结构化结论；失败不落伪结论 */
+  generateConclusion(meetingId: string): Promise<MeetingConclusionView>;
+  /** v2.6：编辑结论正文（summary/decisions/openQuestions） */
+  updateConclusion(meetingId: string, input: MeetingConclusionUpdateInput): MeetingConclusionView;
+  /** v2.6：行动项列表/新增/更新（取消=status=cancelled，不物理删除） */
+  listActionItems(meetingId: string): MeetingActionItemRecord[];
+  createActionItem(meetingId: string, input: MeetingActionItemCreateInput): MeetingActionItemRecord;
+  updateActionItem(
+    meetingId: string,
+    itemId: string,
+    input: MeetingActionItemUpdateInput,
+  ): MeetingActionItemRecord;
 }
 
-export type { MeetingCreateInput, MeetingDetailView, MeetingMessageRecord, MeetingRecord };
+export type {
+  MeetingActionItemRecord,
+  MeetingConclusionView,
+  MeetingCreateInput,
+  MeetingDetailView,
+  MeetingMessageRecord,
+  MeetingRecord,
+};

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+﻿import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -76,7 +76,7 @@ describe('v2.0 M2 备份恢复（events 轨：relationshipMilestones）', () => 
       { db: srcDb, cipher: createWebCipher() },
       { tracks: ['events'] },
     );
-    expect(manifest.backupSchemaVersion).toBe(6);
+    expect(manifest.backupSchemaVersion).toBe(7);
     expect(manifest.tracks.events?.relationshipMilestoneCount).toBe(2);
 
     const pre = await precheckBackup(archive);

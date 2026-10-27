@@ -38,6 +38,7 @@ export const API = {
   messages: (id: string) => `/api/conversations/${id}/messages`,
   messageFeedback: (conversationId: string, messageId: string) =>
     `/api/conversations/${conversationId}/messages/${messageId}`,
+  runEvidence: '/api/reports/runs',
   chatStream: '/api/chat/stream',
   chatProactive: '/api/chat/proactive',
   knowledgeBases: '/api/knowledge-bases',
@@ -88,6 +89,15 @@ export const API = {
   meetingFinish: (id: string) => `/api/meetings/${id}/finish`,
   meetingAbort: (id: string) => `/api/meetings/${id}/abort`,
   meetingEvents: (id: string) => `/api/meetings/${id}/events`,
+  meetingConclusion: (id: string) => `/api/meetings/${id}/conclusion`,
+  meetingActionItems: (id: string) => `/api/meetings/${id}/action-items`,
+  meetingActionItem: (id: string, itemId: string) =>
+    `/api/meetings/${id}/action-items/${itemId}`,
+  meetingActionItemReminder: (id: string, itemId: string) =>
+    `/api/meetings/${id}/action-items/${itemId}/to-reminder`,
+  meetingActionItemRunFlow: (id: string, itemId: string) =>
+    `/api/meetings/${id}/action-items/${itemId}/run-flow`,
+  meetingExport: (id: string) => `/api/meetings/${id}/export`,
   // v0.8 Flow Studio
   flows: '/api/flows',
   flow: (id: string) => `/api/flows/${id}`,

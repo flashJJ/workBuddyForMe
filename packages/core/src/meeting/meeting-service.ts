@@ -6,7 +6,11 @@
  * - 执行不绑 SSE 生命周期：POST /turns 触发后异步跑，事件进会议总线，
  *   会场页/舞台都是只读观察者，断线/关窗不杀会议。
  */
-import { createMeetingRepository, type MeetingRepository } from '@wbfm/database';
+import {
+  createMeetingConclusionRepository,
+  createMeetingRepository,
+  type MeetingRepository,
+} from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
 import type { MeetingCreateInput, MeetingMode } from '@wbfm/shared/schemas';
 import { MEETING_LIMITS } from '@wbfm/shared/schemas';
@@ -14,6 +18,7 @@ import type { MeetingDetailView, MeetingRecord } from '@wbfm/shared/types';
 import { createRunEventBus, type RunEventBus } from '../agents/run-event-bus';
 import { parseMentionNames, mapMentionsToIds } from './meeting-protocol';
 import { runMeetingTurn } from './meeting-runner';
+import { createMeetingConclusionService } from './meeting-conclusion-service';
 import type { MeetingEvent, MeetingService, MeetingServiceDeps, SubmitTurnResult } from './meeting-types';
 
 interface ActiveTurn {
@@ -42,6 +47,15 @@ export function createMeetingService(deps: MeetingServiceDeps): MeetingService {
     if (!meeting) throw ApiError.notFound('会议', id);
     return meeting;
   }
+
+  const conclusions = createMeetingConclusionService({
+    repo: createMeetingConclusionRepository(deps.db),
+    requireMeeting,
+    listMessages: (meetingId) => repo.listMessages(meetingId),
+    resolveTarget: deps.resolveTarget,
+    complete: deps.complete,
+    getMemberName: deps.getMemberName,
+  });
 
   function assertMembers(input: MeetingCreateInput): void {
     const seen = new Set<string>();
@@ -226,6 +240,14 @@ export function createMeetingService(deps: MeetingServiceDeps): MeetingService {
       if (!repo.findById(meetingId)) return null;
       return busFor(meetingId).subscribeLive();
     },
+
+    getConclusion: (meetingId) => conclusions.getConclusion(meetingId),
+    generateConclusion: (meetingId) => conclusions.generateConclusion(meetingId),
+    updateConclusion: (meetingId, input) => conclusions.updateConclusion(meetingId, input),
+    listActionItems: (meetingId) => conclusions.listActionItems(meetingId),
+    createActionItem: (meetingId, input) => conclusions.createActionItem(meetingId, input),
+    updateActionItem: (meetingId, itemId, input) =>
+      conclusions.updateActionItem(meetingId, itemId, input),
   };
 }
 

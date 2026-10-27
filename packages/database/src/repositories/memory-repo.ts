@@ -7,6 +7,8 @@ export interface MemoryAddFields {
   content: string;
   importance: number;
   sourceConversationId?: string | null;
+  /** v2.6：提取来源助手消息 id（旧数据/手工为 null） */
+  sourceMessageId?: string | null;
   status?: MemoryStatus;
 }
 
@@ -46,16 +48,18 @@ export function createMemoryRepository(db: DatabaseInstance) {
       const result = db
         .prepare(
           `INSERT INTO memories
-             (kind, content, importance, source_conversation_id, status,
-              created_at, updated_at, last_accessed_at)
+             (kind, content, importance, source_conversation_id, source_message_id,
+              status, created_at, updated_at, last_accessed_at, recall_count)
            VALUES
-             (@kind, @content, @importance, @sourceConversationId, @status, @ts, @ts, NULL)`,
+             (@kind, @content, @importance, @sourceConversationId, @sourceMessageId,
+              @status, @ts, @ts, NULL, 0)`,
         )
         .run({
           kind: fields.kind,
           content: fields.content,
           importance: fields.importance,
           sourceConversationId: fields.sourceConversationId ?? null,
+          sourceMessageId: fields.sourceMessageId ?? null,
           status: fields.status ?? 'active',
           ts,
         });
@@ -115,12 +119,12 @@ export function createMemoryRepository(db: DatabaseInstance) {
       return this.findById(id);
     },
 
-    /** 召回命中后刷新访问时间（LRU/P1 衰减使用） */
+    /** 召回命中后刷新访问时间并累加召回次数（LRU/P1 衰减与溯源使用） */
     touchAccessed(ids: string[]): void {
       if (ids.length === 0) return;
       const ts = nowIso();
       const stmt = db.prepare(
-        `UPDATE memories SET last_accessed_at = ? WHERE id = ?`,
+        `UPDATE memories SET last_accessed_at = ?, recall_count = recall_count + 1 WHERE id = ?`,
       );
       const apply = db.transaction((items: string[]) => {
         for (const id of items) stmt.run(ts, Number(id));

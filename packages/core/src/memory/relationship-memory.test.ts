@@ -10,6 +10,8 @@ function makeMemory(over: Partial<Memory>): Memory {
     importance: 0.5,
     status: 'active',
     sourceConversationId: null,
+    sourceMessageId: null,
+    recallCount: 0,
     lastAccessedAt: null,
     createdAt: '2026-10-15T00:00:00.000Z',
     updatedAt: '2026-10-15T00:00:00.000Z',

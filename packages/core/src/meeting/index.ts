@@ -4,6 +4,13 @@
  */
 export { createMeetingService } from './meeting-service';
 export { createMeetingSpeaker } from './meeting-speaker';
+export { completeMeetingText } from './meeting-completion';
+export {
+  createMeetingClosureService,
+  type MeetingClosureService,
+  type MeetingClosureDeps,
+  type MeetingExportLocale,
+} from './meeting-closure-service';
 export {
   buildMeetingMessages,
   buildMeetingSystem,

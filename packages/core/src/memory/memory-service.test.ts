@@ -92,10 +92,33 @@ describe('M3 长期记忆服务', () => {
     const hit = await memory.recall('该用什么语言');
     expect(hit).toHaveLength(1);
     expect(hit[0]!.content).toBe('用户偏好中文回复');
+    expect(hit[0]!.reason).toBe('semantic');
+    expect(hit[0]!.score).toBeGreaterThan(0.9);
     expect(memory.get(hit[0]!.id)!.lastAccessedAt).toBeTruthy();
+    expect(memory.get(hit[0]!.id)!.recallCount).toBe(1);
 
     const miss = await memory.recall('完全无关的问题');
     expect(miss).toEqual([]);
+  });
+
+  it('v2.6 溯源：记录来源会话语义与消息，召回计数随命中递增', async () => {
+    mockEmbeddingByCall([[A], [NEAR_A], [NEAR_A]]);
+    const memory = createMemoryService({ db, cipher });
+    await memory.rememberCandidates([fact('用户偏好中文回复', 0.8)], {
+      sourceConversationId: 'c1',
+      sourceMessageId: 'msg-9',
+    });
+    const stored = memory.list()[0]!;
+    expect(stored).toMatchObject({
+      sourceConversationId: 'c1',
+      sourceMessageId: 'msg-9',
+      recallCount: 0,
+    });
+
+    await memory.recall('该用什么语言');
+    await memory.recall('中文怎么回复');
+    expect(memory.get(stored.id)!.recallCount).toBe(2);
+    expect(memory.get(stored.id)!.sourceMessageId).toBe('msg-9');
   });
 
   it('手工新建后可召回；删除时同步清理向量', async () => {
@@ -107,6 +130,8 @@ describe('M3 长期记忆服务', () => {
       importance: 0.6,
     });
     expect(created.sourceConversationId).toBeNull();
+    expect(created.sourceMessageId).toBeNull();
+    expect(created.recallCount).toBe(0);
     expect((await memory.recall('住在哪里'))[0]!.id).toBe(created.id);
 
     expect(memory.remove(created.id)).toBe(true);
