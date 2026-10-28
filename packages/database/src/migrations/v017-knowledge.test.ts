@@ -20,7 +20,7 @@ describe('v017 迁移：chunk 坐标/FTS/知识编译三表/编译状态', () =>
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(36);
+    expect(LATEST_SCHEMA_VERSION).toBe(37);
 
     const chunkCols = tableColumns(db, 'document_chunks');
     expect(chunkCols.has('page_no')).toBe(true);

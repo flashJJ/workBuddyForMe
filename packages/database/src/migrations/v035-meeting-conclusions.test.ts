@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -7,7 +7,7 @@ describe('v035 迁移：meeting_conclusions + meeting_action_items', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(36);
+    expect(LATEST_SCHEMA_VERSION).toBe(37);
     for (const table of ['meeting_conclusions', 'meeting_action_items']) {
       const rows = db
         .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)

@@ -8,6 +8,7 @@ import {
   Workflow,
   ClipboardList,
   ShieldAlert,
+  ListTodo,
   type LucideIcon,
 } from 'lucide-react';
 import type { MessageKey } from '@wbfm/shared/i18n';
@@ -44,6 +45,12 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.approvals.label',
     descriptionKey: 'nav.approvals.description',
     icon: ShieldAlert,
+  },
+  {
+    href: '/plans',
+    labelKey: 'nav.plans.label',
+    descriptionKey: 'nav.plans.description',
+    icon: ListTodo,
   },
   {
     href: '/meetings',

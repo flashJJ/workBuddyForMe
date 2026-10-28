@@ -35,6 +35,12 @@ export function createSchedulesService(deps: ServiceDeps) {
       return repo.list(assistantId);
     },
 
+    get(id: string): ScheduledTaskView {
+      const task = repo.findById(id);
+      if (!task) throw ApiError.notFound('提醒', id);
+      return task;
+    },
+
     create(input: ScheduledTaskCreateInput): ScheduledTaskView {
       requireAssistant(input.assistantId);
       if (!isSupportedTimezone(input.timezone)) {

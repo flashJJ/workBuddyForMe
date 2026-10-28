@@ -15,7 +15,7 @@ describe('v021 迁移：助手多知识库 knowledge_base_ids', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(36);
+    expect(LATEST_SCHEMA_VERSION).toBe(37);
     const cols = db.prepare(`PRAGMA table_info(assistants)`).all() as Array<{ name: string }>;
     expect(cols.some((c) => c.name === 'knowledge_base_ids')).toBe(true);
   });

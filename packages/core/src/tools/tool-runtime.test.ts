@@ -60,7 +60,7 @@ describe('工具运行时白名单', () => {
     expect(typeof ctx.retrieve).toBe('function');
   });
 
-  it('listDebugTools 返回 13 个内置工具，每个含 source/permission/description/parameters', () => {
+  it('listDebugTools 返回 14 个内置工具，每个含 source/permission/description/parameters', () => {
     const list = runtime.listDebugTools();
     expect(list.map((t) => t.name).sort()).toEqual([
       'app_launch',
@@ -73,6 +73,7 @@ describe('工具运行时白名单', () => {
       'mouse_move',
       'mouse_scroll',
       'screen_snapshot',
+      'todo_write',
       'uia_list',
       'window_focus',
       'window_list',

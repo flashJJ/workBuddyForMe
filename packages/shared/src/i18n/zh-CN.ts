@@ -45,6 +45,7 @@ import { zhRelationshipReport } from './messages/relationship-report';
 import { zhSettingsGraph } from './messages/settings-graph';
 import { zhReports } from './messages/reports';
 import { zhApprovals } from './messages/approvals';
+import { zhPlans } from './messages/plans';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -100,6 +101,7 @@ export const zhCN = {
   relationshipReport: zhRelationshipReport,
   reports: zhReports,
   approvals: zhApprovals,
+  plans: zhPlans,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

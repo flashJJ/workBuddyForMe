@@ -116,6 +116,28 @@ export function createAgentRunRepository(db: DatabaseInstance) {
       return rows.map(mapAgentRun);
     },
 
+    /** v2.8：列出 running 运行（重启恢复扫描用） */
+    listRunning(): AgentRunView[] {
+      const rows = db
+        .prepare(`SELECT * FROM agent_runs WHERE status='running' ORDER BY created_at ASC`)
+        .all() as AgentRunRow[];
+      return rows.map(mapAgentRun);
+    },
+
+    /** v2.8：写作业租约 */
+    setLease(id: string, owner: string, expiresAt: string): void {
+      db.prepare(
+        'UPDATE agent_runs SET lease_owner=?, lease_expires_at=?, updated_at=? WHERE id=?',
+      ).run(owner, expiresAt, nowIso(), id);
+    },
+
+    /** v2.8：终态/异常释放租约 */
+    clearLease(id: string): void {
+      db.prepare(
+        'UPDATE agent_runs SET lease_owner=NULL, lease_expires_at=NULL WHERE id=?',
+      ).run(id);
+    },
+
     /** 轮次推进（返工进入下一轮） */
     setRound(id: string, roundNo: number): void {
       requireRunning(id);

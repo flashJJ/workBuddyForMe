@@ -4,6 +4,7 @@ import type {
   TaskEventPayload,
   TaskRunView,
   WorkflowRunView,
+  WorkPlanView,
   WorkSignal,
   WorkSignalSnapshot,
 } from '@wbfm/shared';
@@ -14,12 +15,15 @@ import type { ApprovalRegistry } from './approval-registry';
 import { applyAgentEvent } from './map-agent';
 import { applyFlowEvent } from './map-flow';
 import { applyTaskEvent } from './map-task';
+import { applyPlanSignal } from './map-plan';
 
 export interface WorkSignalHub {
   /** taskRunner 事件回调（非 task 事件自动忽略） */
   ingestTask(run: TaskRunView, event: { event: string; data: unknown }): void;
   ingestFlow(run: WorkflowRunView, event: FlowEventPayload, title: string): void;
   ingestAgent(run: AgentRunView, event: AgentRunEvent): void;
+  /** v2.8：计划进度（source=chat；draft/pending_review 忽略） */
+  ingestPlan(plan: WorkPlanView): void;
   snapshot(): WorkSignalSnapshot;
   /** 订阅后续快照；调用方先发送 snapshot() 作为首帧 */
   subscribe(): AsyncIterable<WorkSignalSnapshot>;
@@ -83,6 +87,11 @@ export function createWorkSignalHub({ approvals }: WorkSignalHubDeps): WorkSigna
 
     ingestAgent(run, event) {
       upsert(applyAgentEvent(signals.get(`agent:${run.id}`), run, event));
+    },
+
+    ingestPlan(plan) {
+      const signal = applyPlanSignal(plan, new Date().toISOString());
+      if (signal) upsert(signal);
     },
 
     snapshot: buildSnapshot,

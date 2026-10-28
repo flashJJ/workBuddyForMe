@@ -7,7 +7,7 @@ describe('v036 迁移：memories 溯源字段与召回计数', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(36);
+    expect(LATEST_SCHEMA_VERSION).toBe(37);
 
     const columns = db.prepare(`PRAGMA table_info(memories)`).all() as Array<{ name: string }>;
     expect(columns.map((c) => c.name)).toEqual(

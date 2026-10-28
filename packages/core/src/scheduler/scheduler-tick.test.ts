@@ -15,6 +15,7 @@ function makeTask(over: Partial<ScheduledTaskView> & { id: string }): ScheduledT
     enabled: true,
     nextRunAt: '2026-10-14T01:00:00.000Z',
     lastFiredAt: null,
+    payload: null,
     createdAt: '2026-10-13T00:00:00.000Z',
     updatedAt: '2026-10-13T00:00:00.000Z',
     ...over,

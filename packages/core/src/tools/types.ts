@@ -1,4 +1,5 @@
 import type { Citation, PermissionLevel, ToolSubstep } from '@wbfm/shared/types';
+import type { WorkStepStatus } from '@wbfm/shared/schemas';
 import type { ToolDefinition } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 
@@ -20,6 +21,14 @@ export interface ToolContext {
    * 同一子步骤 id 会先 running 后 ok/error/skipped。
    */
   onSubstep?: (substep: ToolSubstep) => void;
+  /** v2.8：当前会话 id（todo_write 等会话级工具使用） */
+  conversationId?: string;
+  /** v2.8：写入会话待办清单（未提供时 todo_write 直接拒绝） */
+  writeTodos?: (todos: Array<{ title: string; status?: WorkStepStatus }>) => {
+    planId: string;
+    done: number;
+    total: number;
+  };
 }
 
 /** 工具结果携带的图片（如屏幕截图），由编排器落盘为附件并注入视觉消息 */

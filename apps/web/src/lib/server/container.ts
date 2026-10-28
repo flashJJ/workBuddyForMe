@@ -22,6 +22,7 @@ import {
   createSettingsService,
   createTaskGrantRegistry,
   createTaskRunnerService,
+  recoverInterruptedRunJobs,
   type ServiceDeps,
 } from '@wbfm/core/services';
 import { createChatOrchestrator } from '@wbfm/core/chat';
@@ -58,6 +59,7 @@ import { registerExitCleanup } from './container-exit';
 import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
+import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
 
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
@@ -89,6 +91,14 @@ function resolveCipher(): SecretCipher {
 }
 
 function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
+  // v2.8：进程启动即收敛上次残留的非终态运行，避免幽灵 running/queued
+  const recovered = recoverInterruptedRunJobs(db);
+  if (recovered.tasks > 0 || recovered.agents > 0) {
+    console.info(
+      `[recovery] 已收敛中断运行：任务 ${recovered.tasks} 个，协作 ${recovered.agents} 个`,
+    );
+  }
+  const ownerId = `web-${process.pid}-${Date.now()}`;
   const mcp = createMcpRegistry(db);
   const permissions = createPermissionService({ db, cipher });
   const confirmations = createPendingConfirmations();
@@ -109,8 +119,16 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   };
   const runtime = createToolRuntime(deps);
   const workSignals = createWorkSignalHub({ approvals });
-  const taskRunner = createTaskRunnerService(deps, runtime, (run, event) =>
-    workSignals.ingestTask(run, event),
+  const workPlans = createWorkPlanService(deps, {
+    onChange: (plan) => workSignals.ingestPlan(plan),
+  });
+  deps.workPlans = workPlans;
+  const completions = createRunCompletionService(deps);
+  const taskRunner = createTaskRunnerService(
+    deps,
+    runtime,
+    (run, event) => workSignals.ingestTask(run, event),
+    { ownerId, onComplete: (run) => completions.completeTask(run) },
   );
   // v1.4：协作角色生产通道（三级模型回落 + executor task-loop 适配器）。
   // 必须在 flowRunner 前构造——agent 节点执行经 startFlowNode 发起协作。
@@ -122,6 +140,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     clientsProvider: createAgentClientsProvider(agentClientsFactory),
     resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
     onEvent: (run, event) => workSignals.ingestAgent(run, event),
+    onComplete: (run) => completions.completeAgent(run),
+    ownerId,
   });
   // v1.9 M3：多助手会议（新表新调度，共用模型/角色卡人格；与协作分账）
   const meetings = createMeetingService(createMeetingDeps(deps, assistants));
@@ -172,6 +192,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     confirmations,
     approvals,
     workSignals,
+    workPlans,
+    completions,
     skills,
     breakers,
     taskGrants,

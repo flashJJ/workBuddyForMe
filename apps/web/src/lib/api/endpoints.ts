@@ -43,6 +43,18 @@ export const API = {
   workSignals: '/api/work-signals',
   approvals: '/api/approvals',
   approvalResolve: (id: string) => `/api/approvals/${encodeURIComponent(id)}/resolve`,
+  // v2.8 目标 / 计划 / 待办
+  goals: '/api/goals',
+  goalsByConversation: (conversationId: string) =>
+    `/api/goals?conversationId=${encodeURIComponent(conversationId)}`,
+  goal: (id: string) => `/api/goals/${encodeURIComponent(id)}`,
+  workPlans: '/api/work-plans',
+  workPlansByConversation: (conversationId: string) =>
+    `/api/work-plans?conversationId=${encodeURIComponent(conversationId)}`,
+  workPlan: (id: string) => `/api/work-plans/${encodeURIComponent(id)}`,
+  workPlanReview: (id: string) => `/api/work-plans/${encodeURIComponent(id)}/review`,
+  workPlanStep: (id: string, stepId: string) =>
+    `/api/work-plans/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`,
   chatStream: '/api/chat/stream',
   chatProactive: '/api/chat/proactive',
   knowledgeBases: '/api/knowledge-bases',
@@ -154,6 +166,9 @@ export const QUERY_KEYS = {
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
   approvals: ['approvals'] as const,
+  goals: (conversationId: string) => ['goals', conversationId] as const,
+  workPlans: (conversationId?: string) =>
+    ['work-plans', conversationId ?? 'all'] as const,
   tasks: ['tasks'] as const,
   tasksByConversation: (conversationId: string) =>
     ['tasks', { conversationId }] as const,

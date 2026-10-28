@@ -1,17 +1,17 @@
-import { createAgentRunRepository, type DatabaseInstance } from '@wbfm/database';
+import { createAgentRunRepository } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
-import {
-  AGENT_BUDGET_DEFAULTS,
-  type AgentBudget,
-  type AgentRunView,
-} from '@wbfm/shared/schemas';
-import type { AgentNodeInnerEvent } from '@wbfm/shared/types';
+import { AGENT_BUDGET_DEFAULTS, type AgentRunView } from '@wbfm/shared/schemas';
 import { createAgentRunner } from './agent-runner';
 import { createRunEventBus, tapRunEvents, type RunEventBus } from './run-event-bus';
 import { createSignalTapBus } from './signal-tap';
 import { PendingObserverRegistry } from './observer-registry';
 import type { AgentClients, AgentRunEvent } from './index';
-import type { AgentRoleKey } from './role-models';
+import type {
+  AgentClientOverrides,
+  AgentRunService,
+  AgentRunServiceDeps,
+  AgentRunStartParams,
+} from './agent-run-service-types';
 
 /**
  * v1.4 协作运行管理服务：
@@ -29,91 +29,16 @@ interface ActiveEntry {
   bus: RunEventBus<AgentRunEvent>;
 }
 
-/** Flow/节点级覆盖：角色模型与知识库优先于助手配置 */
-export interface AgentClientOverrides {
-  roleModelIds?: Partial<Record<AgentRoleKey, string | null>>;
-  knowledgeBaseIds?: string[] | null;
-}
-
-/** 角色客户端解析端口（按运行配置 + 可选节点覆盖解析三级模型回落与 executor 通道） */
-export type AgentClientsProvider = (context: {
-  run: AgentRunView;
-  overrides?: AgentClientOverrides;
-}) => Promise<AgentClients> | AgentClients;
-
-/** 规划上下文端口（web 对话任务模式：由助手启用工具推导工具域、绑定知识库名提示） */
-export type AgentPlanContextResolver = (run: AgentRunView) => {
-  availableToolScopes: string[];
-  knowledgeBaseHints: Array<{ id: string; name: string }>;
-};
-
-export interface AgentRunStartParams {
-  /** 已由 POST /api/agent/runs 预建（status=running）的运行记录 */
-  run: AgentRunView;
-  /** 客户端请求信号（SSE 断线联动）；缺省仅服务自身 abort 控制 */
-  clientSignal?: AbortSignal;
-}
-
-/** Flow agent 节点发起协作的入参（core 侧，与 flow/types 的 AgentCollabStartInput 同构） */
-export interface FlowNodeStartParams {
-  goal: string;
-  assistantId: string | null;
-  toolScopes: string[];
-  budget: Partial<AgentBudget>;
-  roleModelIds: {
-    planner: string | null;
-    executor: string | null;
-    reviewer: string | null;
-  };
-  flowRunId: string;
-  nodeExecutionId: string;
-  /** 节点显式绑定的知识库（多库）；空数组=回落助手绑定 */
-  knowledgeBaseIds: string[];
-  signal?: AbortSignal;
-}
-
-export interface AgentRunService {
-  /** 启动协作：解析客户端可能拒绝（ApiError→HTTP 响应）；成功返回事件生成器，重复/终态 409，无通道 501 */
-  start(params: AgentRunStartParams): Promise<AsyncGenerator<AgentRunEvent>>;
-  /**
-   * v1.4 M3：Flow agent 节点入口——建行（回填 flow_run_id/node_execution_id）
-   * 并按节点覆盖解析客户端。重跑节点即重新协作（不复制旧 run）。
-   * 生成器返回值为终态 agent_run（引擎取 summary/status/rounds 输出引用）。
-   */
-  startFlowNode(
-    params: FlowNodeStartParams,
-  ): Promise<{ runId: string; events: AsyncGenerator<AgentNodeInnerEvent, AgentRunView> }>;
-  /** 急停：活跃→abort；running 未订阅→直接收敛 cancelled；均返回 true；不存在 404；终态 409 */
-  cancel(runId: string): boolean;
-  /** 急停全部活跃协作（急停热键复用）；返回中断数量 */
-  stopAll(): number;
-  isActive(runId: string): boolean;
-  activeRunIds(): string[];
-  /**
-   * v1.9 M2：只读观察订阅（舞台第二客户端）。活跃 run 返回事件迭代器
-   * （自动回放本场已广播帧 + 后续帧），退订不影响 run；非活跃返回 null，
-   * 调用方回落终态回放（已落库 handoffs + done）。
-   */
-  observe(runId: string): AsyncIterableIterator<AgentRunEvent> | null;
-  /**
-   * v1.9 M2：舞台先于 owner 开窗时的有界等待观察——run 已建行但 owner SSE
-   * 未建连期间挂起，owner 一启动即原子挂到总线（不丢第一帧）；超时/取消回 null。
-   */
-  observeWhenReady(
-    runId: string,
-    waitMs: number,
-  ): Promise<AsyncIterableIterator<AgentRunEvent> | null>;
-  /** 是否已接通角色客户端通道 */
-  hasClientsChannel(): boolean;
-}
-
-export interface AgentRunServiceDeps {
-  db: DatabaseInstance;
-  clientsProvider?: AgentClientsProvider;
-  resolvePlanContext?: AgentPlanContextResolver;
-  /** v2.7：工作信号回调（每帧广播前；不影响 owner/observer 语义） */
-  onEvent?: (run: AgentRunView, event: AgentRunEvent) => void;
-}
+export type {
+  AgentClientOverrides,
+  AgentClientsProvider,
+  AgentPlanContextResolver,
+  AgentRunOwnedParams,
+  AgentRunService,
+  AgentRunServiceDeps,
+  AgentRunStartParams,
+  FlowNodeStartParams,
+} from './agent-run-service-types';
 
 /** 包装生成器：消费结束（正常/abort/throw）即注销活跃注册 */
 function withCleanup<T, R>(
@@ -209,6 +134,48 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       return launch(run, prepared, deps.resolvePlanContext?.(run) ?? {});
     },
 
+    async startOwned(params) {
+      const existing = active.get(params.run.id);
+      if (existing) return existing.bus.subscribe();
+      const run = repo.getById(params.run.id);
+      if (!run) throw ApiError.notFound('协作运行', params.run.id);
+      if (run.status !== 'running') {
+        throw ApiError.conflict(`协作已终态（${run.status}），不能再次启动`);
+      }
+      const prepared = await prepare({ run });
+      repo.setLease(
+        run.id,
+        deps.ownerId ?? 'process',
+        new Date(Date.now() + 90_000).toISOString(),
+      );
+      const gen = launch(run, prepared, deps.resolvePlanContext?.(run) ?? {});
+      void (async () => {
+        try {
+          for await (const _event of gen) {
+            /* 服务端持有消费；观察者经总线接收 */
+          }
+        } catch {
+          const latest = repo.getById(run.id);
+          if (latest && latest.status === 'running') {
+            try {
+              repo.finalize(run.id, {
+                status: 'failed',
+                errorCode: 'AGENT_FAILED',
+                errorMessage: '协作运行异常终止',
+              });
+            } catch {
+              /* 已被取消/终态，忽略 */
+            }
+          }
+        } finally {
+          repo.clearLease(run.id);
+          const latest = repo.getById(run.id);
+          if (latest) deps.onComplete?.(latest);
+        }
+      })();
+      return prepared.bus.subscribe();
+    },
+
     async startFlowNode(params) {
       if (!deps.clientsProvider) {
         throw ApiError.notImplemented('多智能体协作通道未接通（agent 节点不可用）');
@@ -272,8 +239,10 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       return [...active.keys()];
     },
 
-    observe(runId) {
-      return active.get(runId)?.bus.subscribe() ?? null;
+    observe(runId, sinceSeq) {
+      const entry = active.get(runId);
+      if (!entry) return null;
+      return sinceSeq && sinceSeq > 1 ? entry.bus.subscribeFrom(sinceSeq) : entry.bus.subscribe();
     },
 
     async observeWhenReady(runId, waitMs) {

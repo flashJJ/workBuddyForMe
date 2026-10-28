@@ -11,14 +11,27 @@ import { defineRoute } from '@/lib/server/with-api-handler';
 import { sseResponse } from '@/lib/server/sse-stream';
 import { parseParams } from '@/lib/server/validation';
 import { resolveTaskLaunchArtifacts } from '@/lib/server/task-launcher';
+import { convergeOrphanTaskRun } from '@wbfm/core/services';
 
 export const dynamic = 'force-dynamic';
 
+const TERMINAL_STATUSES = new Set(['completed', 'failed', 'stopped']);
+
+/** 解析 ?since=<seq>（非法/缺省为 undefined，等价整场回放） */
+function parseSince(request: Request): number | undefined {
+  const raw = new URL(request.url).searchParams.get('since');
+  if (!raw) return undefined;
+  const value = Number(raw);
+  return Number.isInteger(value) && value > 1 ? value : undefined;
+}
+
 /**
- * GET /api/tasks/:id/events：SSE 任务事件流。
- * - queued：解析 launch 依赖后启动循环（循环生命周期 = 本请求生命周期；断线联动 abort）
- * - running/paused：409（已有订阅；前端应只开一个 EventSource）
- * - 终态（completed/failed/stopped）：回放已落库步骤 + run_finished 后关闭
+ * GET /api/tasks/:id/events：SSE 任务事件流（v2.8 观察者语义）。
+ * - 活跃 job：返回总线观察器（含本场回放；`?since=` 续传），断开不 abort；
+ * - queued 且无 job：解析 launch 依赖后启动服务端后台作业，再返回观察器；
+ * - running/paused 但无 job（容器重载竞态）：收敛为 interrupted 后回放；
+ * - 终态：回放已落库步骤 + run_finished 后关闭。
+ * 同一运行可被多个观察者订阅；不再返回 409。
  */
 export const GET = defineRoute(({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
@@ -26,13 +39,19 @@ export const GET = defineRoute(({ request, params, services }) => {
   const run = repo.getRun(id);
   if (!run) throw ApiError.notFound('任务', id);
 
-  if (services.taskRunner.isActive(id)) {
-    throw ApiError.conflict('任务事件流已被订阅，请勿重复打开');
+  const since = parseSince(request);
+  const observer = services.taskRunner.observe(id, since);
+  if (observer) return sseResponse(observer);
+
+  if (TERMINAL_STATUSES.has(run.status)) {
+    return replayTerminalRun(run, repo.listSteps(id));
   }
 
-  // 终态：回放历史步骤后关闭（前端刷新页面用）
   if (run.status !== 'queued') {
-    return replayTerminalRun(run, repo.listSteps(id));
+    // 非活跃但仍 running/paused：服务重启或容器重载遗留，明确收敛而非继续假装运行
+    convergeOrphanTaskRun(services.db, id);
+    const latest = repo.getRun(id) ?? run;
+    return replayTerminalRun(latest, repo.listSteps(id));
   }
 
   // queued：解析 launch 依赖（assistant/model/vision），失败抛 422
@@ -42,7 +61,6 @@ export const GET = defineRoute(({ request, params, services }) => {
     planner,
     allowedTools,
     visionCapable,
-    clientSignal: request.signal,
   });
   return sseResponse(events);
 });

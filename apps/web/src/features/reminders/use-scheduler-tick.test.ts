@@ -18,6 +18,7 @@ function task(overrides: Partial<ScheduledTaskView> = {}): ScheduledTaskView {
     enabled: true,
     nextRunAt: '2026-10-13T01:00:00.000Z',
     lastFiredAt: null,
+    payload: null,
     createdAt: '2026-10-01T00:00:00.000Z',
     updatedAt: '2026-10-01T00:00:00.000Z',
     ...overrides,

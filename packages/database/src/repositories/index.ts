@@ -89,6 +89,15 @@ export {
 } from './task-run-repo';
 export { type TaskStepRow } from './task-run-types';
 export {
+  createWorkPlanRepository,
+  type WorkPlanRepository,
+  type GoalRow,
+  type PlanRow,
+  type PlanStepRow,
+  type PlanCreateFields,
+  type StepInput,
+} from './work-plan-repo';
+export {
   createWorkflowRepository,
   type WorkflowRepository,
   type WorkflowRow,

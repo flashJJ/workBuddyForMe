@@ -97,6 +97,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./work-plan": {
+            "types": "./src/work-plan/index.ts",
+            "development": "./src/work-plan/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./ingestion": {
             "types": "./src/ingestion/index.ts",
             "development": "./src/ingestion/index.ts",

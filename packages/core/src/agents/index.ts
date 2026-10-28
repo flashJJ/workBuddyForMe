@@ -69,6 +69,7 @@ export {
   type AgentRunService,
   type AgentRunServiceDeps,
   type AgentRunStartParams,
+  type AgentRunOwnedParams,
   type AgentClientsProvider,
   type AgentClientOverrides,
   type AgentPlanContextResolver,

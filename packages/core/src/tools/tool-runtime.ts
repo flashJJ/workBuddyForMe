@@ -5,6 +5,7 @@ import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/re
 import { createMcpTool } from '../mcp/mcp-tool';
 import type { Tool, ToolContext, ToolMap } from './types';
 import { currentTimeTool } from './current-time-tool';
+import { todoWriteTool } from './todo-write-tool';
 import { knowledgeSearchTool } from './knowledge-search-tool';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 import { screenSnapshotTool } from './computer/screen-snapshot-tool';
@@ -18,6 +19,7 @@ const ALL_TOOLS: Record<string, Tool> = {
   knowledge_search: knowledgeSearchTool,
   fetch_webpage: fetchWebpageTool,
   screen_snapshot: screenSnapshotTool,
+  todo_write: todoWriteTool,
 };
 
 // v0.7 M2：键鼠 / 窗口 / UIA 工具组（共用一个控制通道客户端）
@@ -47,7 +49,11 @@ export interface ToolRuntime {
   /** 按助手白名单构造可用工具映射；模型不支持工具时返回空映射 */
   buildTools(assistant: Assistant, supportsTools: boolean): ToolMap;
   /** 构造工具执行上下文（绑定库与检索回调） */
-  createContext(assistant: Assistant, signal?: AbortSignal, opts?: { visionCapable?: boolean }): ToolContext;
+  createContext(
+    assistant: Assistant,
+    signal?: AbortSignal,
+    opts?: { visionCapable?: boolean; conversationId?: string },
+  ): ToolContext;
   /** v0.6 M4：解析工具名 → { tool, source }；内置查表，MCP 走注册表 */
   resolveTool(name: string): ResolvedTool | null;
   /** v0.6 M4：聚合全部可调试工具（内置 + 已连接 MCP），调试台用 */
@@ -137,10 +143,24 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
     },
 
     createContext(assistant, signal, opts) {
+      const conversationId = opts?.conversationId;
       return {
         signal,
         knowledgeBaseIds: assistant.knowledgeBaseIds,
         visionCapable: opts?.visionCapable ?? false,
+        ...(conversationId ? { conversationId } : {}),
+        ...(conversationId && deps.workPlans
+          ? {
+              writeTodos: (todos: Parameters<NonNullable<ToolContext['writeTodos']>>[0]) => {
+                const plan = deps.workPlans!.writeTodos(conversationId, todos);
+                return {
+                  planId: plan.id,
+                  done: plan.completedSteps,
+                  total: plan.totalSteps,
+                };
+              },
+            }
+          : {}),
         retrieve: (query, topK, retrieveSignal) =>
           retrieval.retrieveMany({
             knowledgeBaseIds: assistant.knowledgeBaseIds,

@@ -27,6 +27,7 @@ import {
   type EmotionService,
 } from '../emotion';
 import { resolveUnlockedNickname } from './persona-prompt';
+import { buildPlanPromptBlock } from '../work-plan/plan-prompt';
 
 export interface PrepareTurnContextParams {
   deps: ServiceDeps;
@@ -133,6 +134,11 @@ export async function* prepareTurnContext(
     assistant.skillNames,
   );
   const skillBlock = buildSkillPromptBlock(enabledSkills);
+  // v2.8：当前目标 / 计划 / 待办折叠进 system（未批准计划标注待评审）
+  const planBlock = deps.workPlans ? buildPlanPromptBlock(deps.workPlans.activeContext(conversationId)) : '';
+  const combinedBlock =
+    [planBlock, skillBlock].filter((item): item is string => Boolean(item?.trim())).join('\n\n') ||
+    null;
   const effectiveAssistant = mergeSkillAllowedTools(assistant, enabledSkills);
 
   // v1.8：解析助手当前角色卡；悬挂引用（卡已删/旧档残缺）静默回落默认卡，不阻断对话
@@ -164,7 +170,7 @@ export async function* prepareTurnContext(
       conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
     summary: conversation.summary,
     memoryBlock,
-    skillBlock,
+    skillBlock: combinedBlock,
     emotionBlock,
     card,
     globalAppendPrompt,
@@ -174,6 +180,7 @@ export async function* prepareTurnContext(
   // v0.7 M1：向工具上下文透传视觉能力（screen_snapshot 据此决定是否携带截图图片）
   const toolCtx = runtime.createContext(assistant, signal, {
     visionCapable: target.model.capabilities.includes('vision'),
+    conversationId,
   });
   // v1.1：工具结果入模预算按本轮模型窗口装配下发（压缩器不读全局状态）
   const toolMessageBudgetTokens = resolveToolMessageBudget(
