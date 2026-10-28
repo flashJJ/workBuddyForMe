@@ -19,6 +19,13 @@
 - 分支：`feature/v2.6-conclusion-memory`
 - 状态：✅ 已正式发布并置 Latest（Release workflow `40659351830`；真机 2.5.0→2.6.0 覆盖升级、卸载保留数据 + 重装、旧密文解密通过；Web e2e 112/112、桌面 e2e 11/11；自动更新真实检测留待发布后手动触发）
 
+## 未来规划：v2.7–v2.10 🧭 会汇报、会计划、可复盘、可扩展（候选，2026-10-29）
+
+基于 DeepSeek Harness 与 DSH 大肥鱼的对比分析，下一阶段按「工作状态可见 → 长任务可续 → 全程可复盘 → 能力可扩展」推进：**v2.7 会汇报**（统一 WorkSignal、桌宠工作态、审批注意力中心）；**v2.8 会计划，也会接着干**（服务端持久后台任务、目标/计划/待办、定时跟进）；**v2.9 可复盘**（追加式事件日志、全局检索、导出与上下文治理）；**v2.10 可扩展**（能力包与外部代理，候选）。
+
+- 方案：[v2.7–v2.10 路线](../plan/v2.7-v2.10/README.md)
+- 状态：🧭 候选路线（待评审；v2.7 尚未开工）
+
 ## 已正式发布：v2.5 🛡 稳固底座——Next 15.5.28 安全升级与 Electron 44 平台换代（2026-10-22，tag `v2.5.0`）
 
 安全与平台底座版，**零新功能、零数据模型变更**。**首要技术项：Next 14.2.35 → 15.5.28**，直接处理安全扫描中的两个 critical RCE（`GHSA-p293-qw3h-jr36` Windows 托管未认证 RCE、`GHSA-2xp9-vwfh-vxw4` Image Optimization AVIF RCE，修复阈值均为 ≥15.5.24），并顺带清掉 Next 全部 23 条公告；同步 React 18.3.1 → 19.3.1。**第二技术项：Electron 31.7.7 → 44.9.3、electron-builder 25.1.8 → 26.18.0、electron-updater 6.8.9 → 6.8.11**，清除 38 条 Electron 公告与构建链 tar / builder-util-runtime 风险；已知硬破坏点为 Electron 44 剪贴板 API 异步化（中文输入走剪贴板粘贴需 await）。打包链路重点验证 Next 15 standalone 的 trace 排除（`outputFileTracingIgnores` 在 15 已移除）与 Windows 安装包/覆盖升级。分支 `feature/v2.5-platform-upgrade`。
