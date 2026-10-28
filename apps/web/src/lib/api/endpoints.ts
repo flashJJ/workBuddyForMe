@@ -55,6 +55,14 @@ export const API = {
   workPlanReview: (id: string) => `/api/work-plans/${encodeURIComponent(id)}/review`,
   workPlanStep: (id: string, stepId: string) =>
     `/api/work-plans/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`,
+  // v2.9 事件日志 / 检索 / 导出
+  events: (scope: string, scopeId: string, after?: number) =>
+    `/api/events?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}${after ? `&after=${after}` : ''}`,
+  search: (q: string, scope?: string) =>
+    `/api/search?q=${encodeURIComponent(q)}${scope ? `&scope=${encodeURIComponent(scope)}` : ''}`,
+  exportSession: (scope: string, scopeId: string, redact = true) =>
+    `/api/export/session?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}&redact=${redact ? '1' : '0'}`,
+  spill: (hash: string) => `/api/spills/${encodeURIComponent(hash)}`,
   chatStream: '/api/chat/stream',
   chatProactive: '/api/chat/proactive',
   knowledgeBases: '/api/knowledge-bases',
@@ -166,6 +174,8 @@ export const QUERY_KEYS = {
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
   approvals: ['approvals'] as const,
+  events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
+  eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,
   goals: (conversationId: string) => ['goals', conversationId] as const,
   workPlans: (conversationId?: string) =>
     ['work-plans', conversationId ?? 'all'] as const,

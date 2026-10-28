@@ -36,6 +36,7 @@ import { migrateV034 } from './v034-assistant-skills';
 import { migrateV035 } from './v035-meeting-conclusions';
 import { migrateV036 } from './v036-memory-provenance';
 import { migrateV037 } from './v037-work-companion';
+import { migrateV038 } from './v038-session-events';
 
 interface Migration {
   version: number;
@@ -224,6 +225,11 @@ const MIGRATIONS: Migration[] = [
     description:
       'v2.8: 运行租约 + 完成回投幂等键 + 目标/计划/待办表 + 定时跟进 payload（纯加法）',
     up: migrateV037,
+  },
+  {
+    version: 38,
+    description: 'v2.9: session_events 追加式事件日志 + CJK 全文索引（纯加法）',
+    up: migrateV038,
   },
 ];
 

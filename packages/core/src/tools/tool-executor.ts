@@ -1,6 +1,7 @@
 import { TOOL_TIMEOUT_MS } from '@wbfm/shared/constants';
 import type { Tool, ToolContext, ToolResult } from './types';
 import { ToolArgError } from './types';
+import { maybeSpillOutput } from './spill';
 
 const SUMMARY_MAX_LENGTH = 120;
 
@@ -29,9 +30,11 @@ export async function executeToolCall(
       ? AbortSignal.any([ctx.signal, timeoutSignal])
       : timeoutSignal;
     const result = await tool.run(rawArgs, { ...ctx, signal });
+    // v2.9：超大输出溢出为预览 + spill:// 引用
+    const spilled = maybeSpillOutput(result.output);
     return {
       ok: result.ok,
-      output: result.output,
+      output: spilled.output,
       summary: clipSummary(result.summary || result.output),
       ...(result.citations ? { citations: result.citations } : {}),
       ...(result.images?.length ? { images: result.images } : {}),

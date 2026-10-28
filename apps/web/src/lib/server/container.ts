@@ -60,6 +60,7 @@ import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
+import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
 
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
@@ -117,6 +118,9 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     breakers,
     taskGrants,
   };
+  const sessionLog = createSessionLogService(deps);
+  deps.events = sessionLog;
+  const sessionExport = createSessionExportService(deps, sessionLog);
   const runtime = createToolRuntime(deps);
   const workSignals = createWorkSignalHub({ approvals });
   const workPlans = createWorkPlanService(deps, {
@@ -127,7 +131,16 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const taskRunner = createTaskRunnerService(
     deps,
     runtime,
-    (run, event) => workSignals.ingestTask(run, event),
+    (run, event) => {
+      workSignals.ingestTask(run, event);
+      const data = event.data as { type?: unknown };
+      sessionLog.record({
+        scope: 'task',
+        scopeId: run.id,
+        type: typeof data?.type === 'string' ? data.type : event.event,
+        payload: event.data,
+      });
+    },
     { ownerId, onComplete: (run) => completions.completeTask(run) },
   );
   // v1.4：协作角色生产通道（三级模型回落 + executor task-loop 适配器）。
@@ -139,7 +152,15 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     db,
     clientsProvider: createAgentClientsProvider(agentClientsFactory),
     resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
-    onEvent: (run, event) => workSignals.ingestAgent(run, event),
+    onEvent: (run, event) => {
+      workSignals.ingestAgent(run, event);
+      sessionLog.record({
+        scope: 'agent',
+        scopeId: run.id,
+        type: event.event,
+        payload: event.data,
+      });
+    },
     onComplete: (run) => completions.completeAgent(run),
     ownerId,
   });
@@ -157,7 +178,15 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     runs: createWorkflowRunRepository(db),
     endpoints: endpointRepo,
     agentRuns,
-    onEvent: (run, event, title) => workSignals.ingestFlow(run, event, title),
+    onEvent: (run, event, title) => {
+      workSignals.ingestFlow(run, event, title);
+      sessionLog.record({
+        scope: 'flow',
+        scopeId: run.id,
+        type: event.type,
+        payload: event,
+      });
+    },
   });
   // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
   const starterCount = ensureStarterFlows(workflows);
@@ -194,6 +223,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     workSignals,
     workPlans,
     completions,
+    sessionLog,
+    sessionExport,
     skills,
     breakers,
     taskGrants,

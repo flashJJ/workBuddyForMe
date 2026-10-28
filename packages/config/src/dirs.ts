@@ -25,6 +25,8 @@ export const DATA_SUBDIRS = {
   vrmAvatars: 'vrm-avatars',
   /** v2.0 用户导入的待机动作（VRMA）文件 */
   motions: 'motions',
+  /** v2.9 大工具输出溢出的内容寻址文件（sha256.txt） */
+  spills: 'spills',
 } as const;
 
 export type DataSubdirKey = keyof typeof DATA_SUBDIRS;

@@ -7,7 +7,7 @@ describe('v025 迁移：event_triggers 自定义短语触发器', () => {
     const db = createDatabase(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(37);
+    expect(LATEST_SCHEMA_VERSION).toBe(38);
 
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='event_triggers'`)

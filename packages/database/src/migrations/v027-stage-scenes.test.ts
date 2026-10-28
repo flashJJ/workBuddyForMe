@@ -7,7 +7,7 @@ describe('v027 迁移：stage_scenes', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(37);
+    expect(LATEST_SCHEMA_VERSION).toBe(38);
     const rows = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='stage_scenes'`)
       .all() as Array<{ name: string }>;

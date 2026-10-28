@@ -15,7 +15,7 @@ describe('v026 迁移：character_cards + assistants.card_id', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(37);
+    expect(LATEST_SCHEMA_VERSION).toBe(38);
     const rows = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='character_cards'`)
       .all() as Array<{ name: string }>;

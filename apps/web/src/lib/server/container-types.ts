@@ -38,6 +38,10 @@ import type { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import type { createSkillService } from '@wbfm/core/skills';
 import type { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import type { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
+import type {
+  createSessionExportService,
+  createSessionLogService,
+} from '@wbfm/core/session-log';
 
 /**
  * v2.7：服务容器契约外迁（拆分守行数门禁）。
@@ -71,6 +75,8 @@ export interface ServiceContainer {
   workSignals: ReturnType<typeof createWorkSignalHub>;
   workPlans: ReturnType<typeof createWorkPlanService>;
   completions: ReturnType<typeof createRunCompletionService>;
+  sessionLog: ReturnType<typeof createSessionLogService>;
+  sessionExport: ReturnType<typeof createSessionExportService>;
   skills: ReturnType<typeof createSkillService>;
   breakers: ReturnType<typeof createToolBreaker>;
   taskGrants: ReturnType<typeof createTaskGrantRegistry>;

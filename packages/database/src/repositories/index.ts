@@ -89,6 +89,15 @@ export {
 } from './task-run-repo';
 export { type TaskStepRow } from './task-run-types';
 export {
+  createSessionEventRepository,
+  SESSION_EVENT_SCOPES,
+  type SessionEventRepository,
+  type SessionEventRow,
+  type SessionEventView,
+  type SessionEventScope,
+  type SessionEventAppendInput,
+} from './session-event-repo';
+export {
   createWorkPlanRepository,
   type WorkPlanRepository,
   type GoalRow,

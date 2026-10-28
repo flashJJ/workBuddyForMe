@@ -240,6 +240,13 @@ function TaskRow({ task, expanded, onToggle, assistantName, conversationTitle, o
             />
           )}
           <TaskTimeline steps={steps} />
+          <a
+            href={`/timeline?scope=task&id=${encodeURIComponent(task.id)}`}
+            className="inline-flex text-xs text-primary underline-offset-2 hover:underline"
+            data-testid={`task-timeline-link-${task.id}`}
+          >
+            {t('timeline.open')}
+          </a>
         </div>
       )}
     </li>

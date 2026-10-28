@@ -13,6 +13,7 @@ import {
 } from '@wbfm/database';
 import type { MessageUsage } from '@wbfm/database';
 import type { ServiceDeps } from './deps';
+import type { ToolTraceEntry as SharedToolTraceEntry } from '@wbfm/shared';
 
 const DEFAULT_TITLE = '新会话';
 const TITLE_MAX_LENGTH = 30;
@@ -28,10 +29,17 @@ export function deriveTitle(content: string, contentParts?: ContentPart[]): stri
   return contentParts?.some((part) => part.type === 'image') ? '图片对话' : DEFAULT_TITLE;
 }
 
-export function createConversationService({ db }: ServiceDeps) {
+export function createConversationService(deps: ServiceDeps) {
+  const { db, events } = deps;
   const assistants = createAssistantRepository(db);
   const conversations = createConversationRepository(db);
   const messages = createMessageRepository(db);
+  /** v2.9：按消息反查会话后写事件；日志失败不影响对话主链路 */
+  const recordForMessage = (id: string, type: string, payload: Record<string, unknown>): void => {
+    const message = messages.findById(id);
+    if (!message) return;
+    events?.recordChat(message.conversationId, type, { messageId: id, ...payload });
+  };
 
   const requireConversation = (id: string): Conversation => {
     const conversation = conversations.findById(id);
@@ -110,6 +118,13 @@ export function createConversationService({ db }: ServiceDeps) {
         conversations.rename(conversation.id, deriveTitle(input.content, input.contentParts));
       }
       conversations.touch(conversation.id, saved.createdAt);
+      events?.recordChat(input.conversationId, 'message_started', {
+        messageId: saved.id,
+        role: saved.role,
+        content: saved.content,
+        status: saved.status,
+        ...(saved.citations.length > 0 ? { citations: saved.citations } : {}),
+      }, saved.createdAt);
       return saved;
     },
 
@@ -120,19 +135,27 @@ export function createConversationService({ db }: ServiceDeps) {
       citations?: Citation[],
     ): void {
       messages.complete(id, content, usage, citations);
+      recordForMessage(id, 'message_completed', {
+        content,
+        ...(usage ? { usage } : {}),
+        ...(citations?.length ? { citations } : {}),
+      });
     },
 
     markMessageError(id: string, code: string, message: string): void {
       messages.markError(id, code, message);
+      recordForMessage(id, 'message_error', { code, message });
     },
 
     stopMessage(id: string, content: string): void {
       messages.markStopped(id, content);
+      recordForMessage(id, 'message_stopped', { content });
     },
 
     /** 写回工具调用轨迹 */
-    saveMessageToolTrace(id: string, trace: import('@wbfm/shared').ToolTraceEntry[]): void {
+    saveMessageToolTrace(id: string, trace: SharedToolTraceEntry[]): void {
       messages.saveToolTrace(id, trace);
+      recordForMessage(id, 'tool_trace', { trace });
     },
 
     /**

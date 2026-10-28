@@ -1,0 +1,56 @@
+/** timeline 命名空间：事件时间线、检索与导出（v2.9） */
+export const zhTimeline = {
+  title: '复盘时间线',
+  description: '从追加式事件重建聊天、任务、工作流与协作的时间线；支持中文检索与 ZIP 导出。',
+  scope: '范围',
+  scopes: {
+    all: '全部',
+    chat: '对话',
+    task: '任务',
+    flow: '工作流',
+    agent: '协作',
+  },
+  searchPlaceholder: '搜索消息、工具、节点…（中文 2 字可查）',
+  search: '搜索',
+  searchEmpty: '没有匹配的事件。',
+  searchHint: '输入关键词检索事件；点击结果打开对应时间线。',
+  empty: '当前范围还没有事件记录。',
+  loadFailed: '时间线加载失败',
+  searchFailed: '检索失败',
+  export: '导出 ZIP',
+  exportHint: '默认脱敏：移除密钥、掩码令牌、省略工具参数原文。',
+  detail: '事件详情',
+  open: '打开时间线',
+  back: '返回检索',
+  events: '条事件',
+  source: '来源',
+};
+
+export const enTimeline = {
+  title: 'Review timeline',
+  description:
+    'Rebuild chat, task, flow and agent timelines from append-only events; CJK search and ZIP export included.',
+  scope: 'Scope',
+  scopes: {
+    all: 'All',
+    chat: 'Chat',
+    task: 'Task',
+    flow: 'Flow',
+    agent: 'Agent',
+  },
+  searchPlaceholder: 'Search messages, tools, nodes… (2-char CJK works)',
+  search: 'Search',
+  searchEmpty: 'No matching events.',
+  searchHint: 'Type a keyword to search events; click a result to open its timeline.',
+  empty: 'No events in this scope yet.',
+  loadFailed: 'Failed to load timeline',
+  searchFailed: 'Search failed',
+  export: 'Export ZIP',
+  exportHint:
+    'Redacted by default: secrets removed, tokens masked, tool arguments omitted.',
+  detail: 'Event detail',
+  open: 'Open timeline',
+  back: 'Back to search',
+  events: 'events',
+  source: 'Source',
+};
