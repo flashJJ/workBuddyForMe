@@ -39,6 +39,10 @@ export const API = {
   messageFeedback: (conversationId: string, messageId: string) =>
     `/api/conversations/${conversationId}/messages/${messageId}`,
   runEvidence: '/api/reports/runs',
+  // v2.7 工作信号 / 审批中心
+  workSignals: '/api/work-signals',
+  approvals: '/api/approvals',
+  approvalResolve: (id: string) => `/api/approvals/${encodeURIComponent(id)}/resolve`,
   chatStream: '/api/chat/stream',
   chatProactive: '/api/chat/proactive',
   knowledgeBases: '/api/knowledge-bases',
@@ -149,6 +153,7 @@ export const QUERY_KEYS = {
   toolPermissions: ['tool-permissions'] as const,
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
+  approvals: ['approvals'] as const,
   tasks: ['tasks'] as const,
   tasksByConversation: (conversationId: string) =>
     ['tasks', { conversationId }] as const,

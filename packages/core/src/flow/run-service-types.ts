@@ -25,6 +25,8 @@ export interface FlowRunServiceDeps {
   endpoints?: WorkflowEndpointRepository;
   /** v1.4：agent 节点发起协作（M3 起注入；缺省时 agent 节点运行报错） */
   agentRuns?: AgentRunService;
+  /** v2.7：工作信号回调（每条 Flow 事件；不影响执行生命周期） */
+  onEvent?: (run: WorkflowRunView, event: FlowEventPayload, title: string) => void;
 }
 
 export interface CreateRunParams {

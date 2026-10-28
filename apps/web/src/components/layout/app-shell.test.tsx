@@ -41,10 +41,10 @@ describe('应用外壳（TR-23.1）', () => {
     vi.unstubAllGlobals();
   });
 
-  it('侧边栏：八个模块导航，当前路由高亮，切换路径更新高亮', () => {
+  it('侧边栏：九个模块导航，当前路由高亮，切换路径更新高亮', () => {
     // v2.4 M1：侧栏含演示模式徽标（读 settings），需 QueryClient 上下文
     const { rerender } = renderWithProviders(<AppSidebar />);
-    expect(screen.getAllByRole('link')).toHaveLength(8);
+    expect(screen.getAllByRole('link')).toHaveLength(9);
     expect(screen.getByRole('link', { name: /对话/ })).toHaveAttribute(
       'aria-current',
       'page',

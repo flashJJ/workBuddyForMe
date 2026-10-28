@@ -33,7 +33,24 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
   const waiters = serviceDeps.waiters ?? createFlowWaitRegistry();
   const retrieval = createRetrievalService(deps);
   const active = new Map<string, ActiveEntry>();
-  const bus: FlowEventBus = createFlowEventBus();
+  const rawBus: FlowEventBus = createFlowEventBus();
+  // v2.7：所有写入总线的帧（队列执行 + chat 触发）都同步给工作信号 hub；
+  // 观察者与执行生命周期不受影响。
+  const bus: FlowEventBus = {
+    ...rawBus,
+    publish(runId, event) {
+      rawBus.publish(runId, event);
+      if (!serviceDeps.onEvent) return;
+      try {
+        const run = runs.getRun(runId);
+        if (!run) return;
+        const title = workflows.getWorkflow(run.workflowId)?.name ?? '工作流';
+        serviceDeps.onEvent(run, event, title);
+      } catch (error) {
+        console.warn('[flow] 工作信号摄取失败：', error);
+      }
+    },
+  };
   /** 运行期附加参数（策略快照/重放闭包，见 run-options.ts），执行结束即删除 */
   const runOverrides = new Map<string, RunRuntimeOverrides>();
 

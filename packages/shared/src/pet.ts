@@ -61,8 +61,8 @@ export interface WbfmPetBridge {
   isOpen(): Promise<boolean>;
   /** 桌宠窗：命中盒悬停结果（穿透滞回输入；高频，主进程节流） */
   reportHover(hovering: boolean): void;
-  /** 桌宠窗：双击回主窗（主窗显示并聚焦） */
-  focusMain(): void;
+  /** 桌宠窗：双击回主窗（主窗显示并聚焦）；可选站内路径用于工作/审批深链 */
+  focusMain(path?: string): void;
   /**
    * 桌宠窗：手动拖拽（替代 -webkit-app-region:drag，避免系统拖拽层吞右键/双击）。
    * 位置完全由主进程读全局 DIP 光标决定，渲染端不发坐标（避免缩放像素错位）。

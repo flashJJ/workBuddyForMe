@@ -188,6 +188,12 @@ export {
   type TaskEventPayload,
 } from './task';
 
+// v2.7 工作信号 / 审批中心
+export {
+  approvalDecisionSchema,
+  type ApprovalDecisionInput,
+} from './work-signal';
+
 // v0.8 Flow Studio 可视化工作流
 export {
   FLOW_NODE_TYPES,

@@ -28,3 +28,4 @@ export * from './share';
 export * from './flow';
 export * from './event';
 export * from './scheduler';
+export * from './work-signal';

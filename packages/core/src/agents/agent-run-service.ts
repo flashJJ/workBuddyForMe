@@ -8,6 +8,7 @@ import {
 import type { AgentNodeInnerEvent } from '@wbfm/shared/types';
 import { createAgentRunner } from './agent-runner';
 import { createRunEventBus, tapRunEvents, type RunEventBus } from './run-event-bus';
+import { createSignalTapBus } from './signal-tap';
 import { PendingObserverRegistry } from './observer-registry';
 import type { AgentClients, AgentRunEvent } from './index';
 import type { AgentRoleKey } from './role-models';
@@ -110,6 +111,8 @@ export interface AgentRunServiceDeps {
   db: DatabaseInstance;
   clientsProvider?: AgentClientsProvider;
   resolvePlanContext?: AgentPlanContextResolver;
+  /** v2.7：工作信号回调（每帧广播前；不影响 owner/observer 语义） */
+  onEvent?: (run: AgentRunView, event: AgentRunEvent) => void;
 }
 
 /** 包装生成器：消费结束（正常/abort/throw）即注销活跃注册 */
@@ -164,8 +167,13 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
   }
 
   /** 事件先广播给观察者再交 owner；终态关总线并注销活跃注册 */
-  function own(runId: string, bus: RunEventBus<AgentRunEvent>, gen: AsyncGenerator<AgentRunEvent>) {
-    return withCleanup(runId, active, tapRunEvents(bus, gen));
+  function own(
+    run: AgentRunView,
+    bus: RunEventBus<AgentRunEvent>,
+    gen: AsyncGenerator<AgentRunEvent>,
+  ) {
+    const onEvent = deps.onEvent ? (event: AgentRunEvent) => deps.onEvent?.(run, event) : undefined;
+    return withCleanup(run.id, active, tapRunEvents(createSignalTapBus(bus, onEvent), gen));
   }
 
   /** 组装 runner 并接上观察总线 + 注销清理 */
@@ -186,7 +194,7 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       ...(extra.availableToolScopes ? { availableToolScopes: extra.availableToolScopes } : {}),
       ...(extra.knowledgeBaseHints ? { knowledgeBaseHints: extra.knowledgeBaseHints } : {}),
     });
-    return own(run.id, prepared.bus, gen);
+    return own(run, prepared.bus, gen);
   }
 
   return {

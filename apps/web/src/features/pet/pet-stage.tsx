@@ -21,7 +21,11 @@ import { getPetBridge } from './pet-bridge';
 import { TriggerBus } from '@/features/interaction/trigger-bus';
 import { ActionExecutor } from '@/features/interaction/action-executor';
 import { resolveInteraction } from '@wbfm/shared/schemas';
+import { aggregateWorkSignals, type PetWorkView } from '@wbfm/shared';
 import { PetHitBody, PetHitHead } from './pet-hit-regions';
+import { PetWorkBubble, isWorkBubbleVisible, type WorkBubbleMode } from './pet-work-bubble';
+import { useWorkSignals } from './use-work-signals';
+import { useWorkAlerts } from './use-work-alerts';
 
 interface Props {
   modelId: string;
@@ -97,6 +101,24 @@ export function PetStage({
     () => buildInteractionGraph(graphOverrides, graphDisabled),
     [graphOverrides, graphDisabled],
   );
+
+  // v2.7：工作汇报（独立于主窗页面的 SSE）
+  const workEnabled = settings?.workSignalEnabled !== false;
+  const workMode = (settings?.workBubbleMode ?? 'auto') as WorkBubbleMode;
+  const work = useWorkSignals(workEnabled);
+  const workConnected = work.snapshot ? work.connected : true;
+  const workView = React.useMemo<PetWorkView>(() => {
+    const baseView = aggregateWorkSignals(
+      work.snapshot?.signals ?? [],
+      work.snapshot?.approvals ?? [],
+    );
+    if (workEnabled && work.snapshot && !work.connected) {
+      return { ...baseView, base: 'disconnected', pulse: null };
+    }
+    return baseView;
+  }, [work.snapshot, work.connected, workEnabled]);
+  useWorkAlerts(work.snapshot, settings);
+  const workVisible = isWorkBubbleVisible(workView, workMode, workEnabled, workConnected);
 
   // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底（键为 region::gesture）
   const lastTriggerAtRef = React.useRef<Record<string, number>>({});
@@ -228,18 +250,39 @@ export function PetStage({
         bridge={bridge}
         controllerRef={controllerRef}
         resolveAndDispatch={resolveAndDispatch}
+        focusPath={workView.primary?.deepLink}
+      />
+
+      <PetWorkBubble
+        view={workView}
+        mode={workMode}
+        enabled={workEnabled}
+        connected={workConnected}
+        reduceMotion={settings?.workReduceMotion === true}
       />
 
       {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}
-      <PetSubtitle text={line || subtitle} voiceState={voiceState} />
+      <PetSubtitle text={line || subtitle} voiceState={voiceState} shifted={workVisible} />
     </div>
   );
 }
 
-function PetSubtitle({ text, voiceState }: { text: string; voiceState: PetVoiceState }) {
+function PetSubtitle({
+  text,
+  voiceState,
+  shifted,
+}: {
+  text: string;
+  voiceState: PetVoiceState;
+  shifted: boolean;
+}) {
   if (!text) return null;
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-[4%] flex justify-center px-4">
+    <div
+      className={`pointer-events-none absolute inset-x-0 flex justify-center px-4 ${
+        shifted ? 'top-[18%]' : 'top-[4%]'
+      }`}
+    >
       <div
         className="max-w-[85%] rounded-xl border border-border/50 bg-background/85 px-3 py-1.5 text-center text-sm leading-relaxed text-foreground shadow-sm backdrop-blur-sm"
         data-testid="pet-subtitle"

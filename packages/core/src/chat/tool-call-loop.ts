@@ -61,6 +61,7 @@ export async function* runToolCallLoop(
       signal,
       source,
       permission,
+      ...(params.approvalContext ? { approvalContext: params.approvalContext } : {}),
     });
     if (gate.denied) {
       trace.push(gate.traceEntry!);

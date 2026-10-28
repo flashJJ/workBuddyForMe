@@ -1,4 +1,6 @@
 /** settings 命名空间：设置中心页面 / 默认偏好 / 通用进行态；供应商见 settingsProviders，其余面板见 settingsMcp */
+import { enSettingsWork, zhSettingsWork } from './settings-work';
+
 export const zhSettings = {
   title: '设置',
   description: '管理模型供应商、默认模型与本地偏好，所有数据仅保存在本机。',
@@ -138,6 +140,7 @@ export const zhSettings = {
     badgeLabel: '演示模式',
     badgeHint: '当前使用演示模式（本地模拟回复，非真实模型）。可在设置中关闭。',
   },
+  work: zhSettingsWork,
 };
 
 export const enSettings = {
@@ -293,4 +296,5 @@ export const enSettings = {
     badgeHint:
       'Demo mode is on (locally simulated replies, not a real model). Turn it off in Settings.',
   },
+  work: enSettingsWork,
 };

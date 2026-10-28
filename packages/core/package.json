@@ -91,6 +91,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./work-signal": {
+            "types": "./src/work-signal/index.ts",
+            "development": "./src/work-signal/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./ingestion": {
             "types": "./src/ingestion/index.ts",
             "development": "./src/ingestion/index.ts",

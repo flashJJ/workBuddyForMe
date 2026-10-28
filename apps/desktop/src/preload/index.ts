@@ -72,7 +72,7 @@ const pet: WbfmPetBridge = {
   close: () => ipcRenderer.invoke('pet:close'),
   isOpen: () => ipcRenderer.invoke('pet:is-open') as Promise<boolean>,
   reportHover: (hovering) => ipcRenderer.send('pet:hover', hovering),
-  focusMain: () => ipcRenderer.send('pet:focus-main'),
+  focusMain: (path) => ipcRenderer.send('pet:focus-main', path),
   dragBegin: () => ipcRenderer.send('pet:drag-begin'),
   dragTo: () => ipcRenderer.send('pet:drag-to'),
   dragEnd: () => ipcRenderer.send('pet:drag-end'),
@@ -115,6 +115,14 @@ const awareness: WbfmAwarenessBridge = {
     subscribe('awareness:event', (payload) => cb(payload as Parameters<typeof cb>[0])),
 };
 
+/**
+ * v2.7 站内深链桥：主进程中继桌宠/通知的站内路径，主窗 App Router 接收后跳转。
+ */
+const appLinks = {
+  onOpen: (cb: (path: string) => void): (() => void) =>
+    subscribe('app:deep-link', (payload) => cb(String(payload))),
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
@@ -126,4 +134,5 @@ contextBridge.exposeInMainWorld('wbfm', {
   stage,
   notify,
   awareness,
+  appLinks,
 });

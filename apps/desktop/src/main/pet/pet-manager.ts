@@ -169,15 +169,15 @@ export class PetManager {
     this.showMenu(win);
   }
 
-  /** 双击角色 / 关宠：唤回并聚焦主窗（最小化先还原） */
-  focusMain(): void {
+  /** 双击角色 / 关宠：唤回并聚焦主窗（最小化先还原）；可携带站内深链 */
+  focusMain(path?: string): void {
     const main = this.deps.getMainWindow();
     if (!main || main.isDestroyed?.()) return;
     if (main.isMinimized()) main.restore();
     main.show();
     main.focus();
+    if (path && path.startsWith('/') && !main.isDestroyed?.()) main.webContents.send('app:deep-link', path);
   }
-
   /** 主窗中继的语音表现事件：净化后单窗转发；桌宠未开直接丢弃 */
   relayPerformance(raw: unknown): void {
     const win = this.win;
@@ -218,7 +218,7 @@ export class PetManager {
         open: (modelId) => this.open(modelId),
         close: () => this.close(),
         reportHover: (h) => this.reportHover(h),
-        focusMain: () => this.focusMain(),
+        focusMain: (path) => this.focusMain(path),
         beginDrag: () => this.drag.begin(this.win),
         dragTo: () => this.drag.dragTo(this.win),
         endDrag: () => this.drag.end(this.win),

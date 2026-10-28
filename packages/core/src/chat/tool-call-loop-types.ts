@@ -3,6 +3,7 @@ import type { Citation, ToolTraceEntry } from '@wbfm/shared/types';
 import type { ServiceDeps } from '../services/deps';
 import type { ToolContext, ToolMap } from '../tools/types';
 import type { ToolRuntime } from '../tools/tool-runtime';
+import type { ApprovalContext } from './tool-permission-gate';
 
 export interface ToolCallLoopParams {
   calls: ToolCall[];
@@ -14,6 +15,8 @@ export interface ToolCallLoopParams {
   assistantId: string;
   /** v0.7 M2：任务作用域（对话 id / 任务运行 id），用于 remember='task' 批量授权 */
   taskScope?: string;
+  /** v2.7：审批中心深链与运行归属 */
+  approvalContext?: ApprovalContext;
   turnTrace: TraceHandle | null;
   /** 工具调用追踪（本函数会 push 条目） */
   trace: ToolTraceEntry[];

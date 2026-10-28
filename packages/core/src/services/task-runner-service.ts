@@ -53,7 +53,11 @@ export interface TaskRunnerService {
   activeRunIds(): string[];
 }
 
-export function createTaskRunnerService(deps: ServiceDeps, runtime: ToolRuntime): TaskRunnerService {
+export function createTaskRunnerService(
+  deps: ServiceDeps,
+  runtime: ToolRuntime,
+  onEvent?: (run: TaskRunView, event: TaskLoopEvent) => void,
+): TaskRunnerService {
   const active = new Map<string, ActiveRun>();
 
   return {
@@ -83,10 +87,15 @@ export function createTaskRunnerService(deps: ServiceDeps, runtime: ToolRuntime)
         ...(params.retrieve ? { retrieve: params.retrieve } : {}),
         ...(params.observeMode ? { observeMode: params.observeMode } : {}),
       });
-      // 包装：消费完（return/throw/break）从注册表移除
+      // 包装：逐帧回调工作信号；消费完（return/throw/break）从注册表移除
       return (async function* () {
         try {
-          return yield* gen;
+          while (true) {
+            const step = await gen.next();
+            if (step.done) return step.value;
+            onEvent?.(params.run, step.value);
+            yield step.value;
+          }
         } finally {
           active.delete(params.run.id);
         }
