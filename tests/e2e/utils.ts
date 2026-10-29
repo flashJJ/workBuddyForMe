@@ -9,6 +9,18 @@ import type { Locator, Page } from '@playwright/test';
  */
 export async function waitForHydrated(page: Page): Promise<void> {
   await page.waitForSelector('html[data-hydrated="1"]', { timeout: 15_000 });
+  // Next 15 流式渲染：路由级 loading 边界的段内容可能晚于根水合到达。
+  // 切换窗口内隐藏段（div[hidden][id^="S:"]）与已挂载副本会同时存在，
+  // strict mode 的 getByTestId 会命中两个节点（如 run-report-page）。
+  // 等所有段容器清空，确保页面只剩一份已挂载的 DOM。
+  await page.waitForFunction(
+    () =>
+      Array.from(document.querySelectorAll('div[hidden][id^="S:"]')).every(
+        (segment) => segment.childElementCount === 0,
+      ),
+    undefined,
+    { timeout: 15_000 },
+  );
 }
 
 /**
