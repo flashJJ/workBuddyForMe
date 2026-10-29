@@ -101,6 +101,13 @@ export function RunReportPage() {
           <option value="flow">{t('reports.chain.flow')}</option>
           <option value="agent">{t('reports.chain.agent')}</option>
         </SimpleSelect>
+        <a
+          href="/timeline"
+          className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-muted"
+          data-testid="run-report-timeline-link"
+        >
+          {t('timeline.title')}
+        </a>
         <Button variant="outline" size="sm" disabled={isFetching} onClick={() => void refetch()}>
           <RefreshCw className={`mr-1 h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
           {t('reports.refresh')}

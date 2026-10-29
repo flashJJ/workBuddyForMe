@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSkills } from '@/lib/hooks/use-skills';
 import { AssistantSwitcher } from './assistant-switcher';
+import { PlanChip } from '../plans/plan-chip';
 
 interface Props {
   assistants: Assistant[];
@@ -82,6 +83,7 @@ export function ChatHeader({
         {currentAssistant && <CapabilitySummary assistant={currentAssistant} />}
       </div>
       <div className="flex items-center gap-3">
+        <PlanChip conversationId={currentConversation?.id ?? null} />
         {currentConversation?.summaryTurns ? (
           <button
             type="button"

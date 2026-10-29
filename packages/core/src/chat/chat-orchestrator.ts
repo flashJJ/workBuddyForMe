@@ -177,6 +177,10 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               runtime,
               assistantId: assistant.id,
               taskScope: conversationId,
+              approvalContext: {
+                conversationId,
+                deepLink: `/chat?conversation=${conversationId}`,
+              },
               turnTrace,
               trace,
               outgoing,

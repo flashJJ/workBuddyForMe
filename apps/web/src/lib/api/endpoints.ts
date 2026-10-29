@@ -39,6 +39,37 @@ export const API = {
   messageFeedback: (conversationId: string, messageId: string) =>
     `/api/conversations/${conversationId}/messages/${messageId}`,
   runEvidence: '/api/reports/runs',
+  // v2.7 工作信号 / 审批中心
+  workSignals: '/api/work-signals',
+  approvals: '/api/approvals',
+  approvalResolve: (id: string) => `/api/approvals/${encodeURIComponent(id)}/resolve`,
+  // v2.8 目标 / 计划 / 待办
+  goals: '/api/goals',
+  goalsByConversation: (conversationId: string) =>
+    `/api/goals?conversationId=${encodeURIComponent(conversationId)}`,
+  goal: (id: string) => `/api/goals/${encodeURIComponent(id)}`,
+  workPlans: '/api/work-plans',
+  workPlansByConversation: (conversationId: string) =>
+    `/api/work-plans?conversationId=${encodeURIComponent(conversationId)}`,
+  workPlan: (id: string) => `/api/work-plans/${encodeURIComponent(id)}`,
+  workPlanReview: (id: string) => `/api/work-plans/${encodeURIComponent(id)}/review`,
+  workPlanStep: (id: string, stepId: string) =>
+    `/api/work-plans/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`,
+  // v2.10 能力包
+  capabilities: '/api/capabilities',
+  capabilityInstall: '/api/capabilities/install',
+  capabilityEnable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/enable`,
+  capabilityDisable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/disable`,
+  capability: (id: string) => `/api/capabilities/${encodeURIComponent(id)}`,
+  capabilitySample: '/api/capabilities/sample',
+  // v2.9 事件日志 / 检索 / 导出
+  events: (scope: string, scopeId: string, after?: number) =>
+    `/api/events?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}${after ? `&after=${after}` : ''}`,
+  search: (q: string, scope?: string) =>
+    `/api/search?q=${encodeURIComponent(q)}${scope ? `&scope=${encodeURIComponent(scope)}` : ''}`,
+  exportSession: (scope: string, scopeId: string, redact = true) =>
+    `/api/export/session?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}&redact=${redact ? '1' : '0'}`,
+  spill: (hash: string) => `/api/spills/${encodeURIComponent(hash)}`,
   chatStream: '/api/chat/stream',
   chatProactive: '/api/chat/proactive',
   knowledgeBases: '/api/knowledge-bases',
@@ -149,6 +180,13 @@ export const QUERY_KEYS = {
   toolPermissions: ['tool-permissions'] as const,
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
+  approvals: ['approvals'] as const,
+  capabilities: ['capabilities'] as const,
+  events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
+  eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,
+  goals: (conversationId: string) => ['goals', conversationId] as const,
+  workPlans: (conversationId?: string) =>
+    ['work-plans', conversationId ?? 'all'] as const,
   tasks: ['tasks'] as const,
   tasksByConversation: (conversationId: string) =>
     ['tasks', { conversationId }] as const,

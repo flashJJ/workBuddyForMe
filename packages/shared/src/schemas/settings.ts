@@ -103,6 +103,14 @@ export const settingsUpdateSchema = z.object({
   globalAppendPromptEnabled: z.boolean().optional(),
   // v1.8 M4：音色收藏（M3 仅冻结契约，≤20 条）
   voiceFavorites: z.array(voiceFavoriteSchema).max(20).optional(),
+  // v2.7：桌宠工作汇报（工作信号订阅、气泡、提示音、减少动态、待机节奏）
+  workSignalEnabled: z.boolean().optional(),
+  workBubbleMode: z.enum(['auto', 'always', 'hidden']).optional(),
+  workSoundDone: z.boolean().optional(),
+  workSoundError: z.boolean().optional(),
+  workSoundApproval: z.boolean().optional(),
+  workReduceMotion: z.boolean().optional(),
+  workIdlePacing: z.enum(['quiet', 'standard', 'lively']).optional(),
   // v2.4 M1：演示模式开关（开启时建内置 demo 供应商与 mock 模型；关闭时清理）
   demoModeEnabled: z.boolean().optional(),
   // v2.4 M1 T7：TTFV 里程碑（显式传 null 即清除；仅时间戳，不含对话内容）

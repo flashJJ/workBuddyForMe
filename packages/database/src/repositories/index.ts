@@ -89,6 +89,32 @@ export {
 } from './task-run-repo';
 export { type TaskStepRow } from './task-run-types';
 export {
+  createCapabilityRepository,
+  mapCapability,
+  type CapabilityRepository,
+  type CapabilityRow,
+  type CapabilityCreateFields,
+  type CapabilityUpdateFields,
+} from './capability-repo';
+export {
+  createSessionEventRepository,
+  SESSION_EVENT_SCOPES,
+  type SessionEventRepository,
+  type SessionEventRow,
+  type SessionEventView,
+  type SessionEventScope,
+  type SessionEventAppendInput,
+} from './session-event-repo';
+export {
+  createWorkPlanRepository,
+  type WorkPlanRepository,
+  type GoalRow,
+  type PlanRow,
+  type PlanStepRow,
+  type PlanCreateFields,
+  type StepInput,
+} from './work-plan-repo';
+export {
   createWorkflowRepository,
   type WorkflowRepository,
   type WorkflowRow,

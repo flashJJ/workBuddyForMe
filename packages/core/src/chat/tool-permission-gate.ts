@@ -4,6 +4,12 @@ import type { ServiceDeps } from '../services/deps';
 import type { Tool } from '../tools/types';
 import type { OrchestratorEvent } from './types';
 
+export interface ApprovalContext {
+  runId?: string | null;
+  conversationId?: string | null;
+  deepLink: string;
+}
+
 export interface ToolGateParams {
   deps: ServiceDeps;
   tool: Tool | undefined;
@@ -18,6 +24,8 @@ export interface ToolGateParams {
   permission: PermissionLevel;
   /** v0.7 M2：任务作用域（对话 id / 任务运行 id），用于 remember='task' 批量授权 */
   taskScope?: string;
+  /** v2.7：审批中心深链与运行归属 */
+  approvalContext?: ApprovalContext;
 }
 
 export interface ToolGateResult {
@@ -38,7 +46,7 @@ export interface ToolGateResult {
 export async function* gateToolPermission(
   params: ToolGateParams,
 ): AsyncGenerator<OrchestratorEvent, ToolGateResult> {
-  const { deps, tool, toolName, callId, argsSummary, assistantId, signal, source, permission, taskScope } = params;
+  const { deps, tool, toolName, callId, argsSummary, assistantId, signal, source, permission, taskScope, approvalContext } = params;
   const granted =
     !tool ||
     !deps.permissions ||
@@ -47,6 +55,30 @@ export async function* gateToolPermission(
   if (granted) return { denied: false };
 
   const decisionPromise = deps.confirmations ? deps.confirmations.request(callId, signal) : null;
+  // v2.7：把工具确认登记到统一审批中心（一次性允许/拒绝；remember 仍走原弹窗）
+  const approval =
+    deps.confirmations && deps.approvals
+      ? deps.approvals.register(
+          {
+            id: `tool:${callId}`,
+            source: 'tool',
+            title: `工具授权：${toolName}`,
+            tool: toolName,
+            permission,
+            argsSummary,
+            runId: approvalContext?.runId ?? null,
+            conversationId: approvalContext?.conversationId ?? null,
+            deepLink: approvalContext?.deepLink ?? '/approvals',
+          },
+          (decision) => {
+            deps.confirmations?.resolve(callId, decision.action);
+          },
+        )
+      : null;
+  if (decisionPromise && approval) {
+    // 超时/断线/任务结束同样要摘除审批项，避免僵尸审批
+    void decisionPromise.finally(() => approval.remove());
+  }
   yield {
     event: 'tool_confirmation_required',
     data: { callId, tool: toolName, permission, argsSummary },

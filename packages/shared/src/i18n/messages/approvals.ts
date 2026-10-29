@@ -1,0 +1,36 @@
+/** approvals 命名空间：统一审批中心 */
+export const zhApprovals = {
+  title: '审批中心',
+  description: '等待你允许或拒绝的工具调用与流程人工节点。审批只生效一次。',
+  empty: '没有待处理的审批。',
+  allow: '允许',
+  deny: '拒绝',
+  open: '打开来源',
+  processing: '处理中…',
+  error: '处理失败，审批可能已结束',
+  sourceTool: '工具授权',
+  sourceFlow: '流程审批',
+  sourceDesktop: '桌面授权',
+  run: '运行',
+  conversation: '对话',
+  noContext: '无关联运行',
+  refresh: '刷新',
+};
+
+export const enApprovals = {
+  title: 'Approvals',
+  description: 'Tool calls and flow human steps waiting for your decision. Each decision applies once.',
+  empty: 'No pending approvals.',
+  allow: 'Allow',
+  deny: 'Deny',
+  open: 'Open source',
+  processing: 'Processing…',
+  error: 'Failed to resolve; the approval may have ended',
+  sourceTool: 'Tool permission',
+  sourceFlow: 'Flow approval',
+  sourceDesktop: 'Desktop permission',
+  run: 'Run',
+  conversation: 'Conversation',
+  noContext: 'No linked run',
+  refresh: 'Refresh',
+};

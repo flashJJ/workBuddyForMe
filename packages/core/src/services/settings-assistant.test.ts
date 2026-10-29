@@ -77,6 +77,14 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       // v2.3：动画图覆盖条目与停用列表缺省为空（服务端钳制产出，保证字段恒存在）
       interactionGraphOverrides: [],
       interactionGraphDisabledEntryIds: [],
+      // v2.7：桌宠工作汇报缺省（全开、自动气泡、标准节奏）
+      workSignalEnabled: true,
+      workBubbleMode: 'auto',
+      workSoundDone: true,
+      workSoundError: true,
+      workSoundApproval: true,
+      workReduceMotion: false,
+      workIdlePacing: 'standard',
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

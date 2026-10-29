@@ -22,124 +22,51 @@ import {
   createSettingsService,
   createTaskGrantRegistry,
   createTaskRunnerService,
-  type AssistantsService,
-  type AttachmentService,
-  type CharacterCardService,
-  type ConversationService,
-  type DocumentService,
-  type KnowledgeService,
-  type PendingConfirmations,
-  type PermissionService,
+  recoverInterruptedRunJobs,
   type ServiceDeps,
-  type TaskGrantRegistry,
-  type TaskRunnerService,
 } from '@wbfm/core/services';
-import { createChatOrchestrator, type ChatOrchestrator } from '@wbfm/core/chat';
-import { createMilestoneService, type MilestoneService } from '@wbfm/core/emotion';
-import { createAgentRunService, type AgentRunService } from '@wbfm/core/agents';
-import { createMeetingClosureService, createMeetingService, type MeetingClosureService, type MeetingService } from '@wbfm/core/meeting';
+import { createChatOrchestrator } from '@wbfm/core/chat';
+import { createMilestoneService } from '@wbfm/core/emotion';
+import { createAgentRunService } from '@wbfm/core/agents';
+import {
+  createMeetingClosureService,
+  createMeetingService,
+} from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
-import {
-  createEndpointService,
-  createRateLimiter,
-  type EndpointService,
-  type RateLimiter,
-} from '@wbfm/core/serving';
-import { createFlowRunService, ensureStarterFlows, type FlowRunService } from '@wbfm/core/flow';
-import { createIngestionPipeline, type IngestionPipeline } from '@wbfm/core/ingestion';
+import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
+import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
+import { createIngestionPipeline } from '@wbfm/core/ingestion';
 import {
   createCompileRunnerService,
   createKnowledgeGovernanceService,
   ensureStarterKnowledgeBases,
-  type CompileRunnerService,
-  type KnowledgeGovernanceService,
 } from '@wbfm/core/knowledge';
-import { createMcpRegistry, type McpRegistry } from '@wbfm/core/mcp';
-import { createMemoryService, type MemoryService } from '@wbfm/core/memory';
-import { createSchedulesService, type SchedulesService } from '@wbfm/core/scheduler';
-import { createEventUsageService, type EventUsageService, createEventTriggersService, type EventTriggersService } from '@wbfm/core/event';
+import { createMcpRegistry } from '@wbfm/core/mcp';
+import { createMemoryService } from '@wbfm/core/memory';
+import { createSchedulesService } from '@wbfm/core/scheduler';
+import {
+  createEventUsageService,
+  createEventTriggersService,
+} from '@wbfm/core/event';
 import {
   createVrmAvatarService,
-  type VrmAvatarService,
   createMotionService,
-  type MotionService,
   createModPackService,
-  type ModPackService,
 } from '@wbfm/core/services';
-import { createSkillService, type SkillService } from '@wbfm/core/skills';
+import { createSkillService } from '@wbfm/core/skills';
 import { registerExitCleanup } from './container-exit';
-import {
-  createToolBreaker,
-  createToolRuntime,
-  type ToolBreaker,
-  type ToolRuntime,
-} from '@wbfm/core/tools';
+import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
+import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
+import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
+import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
+import { createCapabilityService } from '@wbfm/core/capabilities';
+import { createSubagentProviderRegistry } from '@wbfm/core/agents';
 
-export interface ServiceContainer {
-  db: DatabaseInstance;
-  cipher: SecretCipher;
-  providers: ReturnType<typeof createProviderService>;
-  models: ReturnType<typeof createModelService>;
-  settings: ReturnType<typeof createSettingsService>;
-  assistants: AssistantsService;
-  /** v1.8：角色卡库（内置只读卡 + 自建卡 CRUD/导入导出/助手选卡） */
-  characterCards: CharacterCardService;
-  /** v1.9：舞台场景 CRUD + 自定义背景落盘 */
-  stageScenes: ReturnType<typeof createStageSceneService>;
-  conversations: ConversationService;
-  orchestrator: ChatOrchestrator;
-  ingestion: IngestionPipeline;
-  knowledgeBases: KnowledgeService;
-  /** v1.3：知识治理只读服务（冲突待裁决 + 疑似重复文档建议） */
-  knowledgeGovernance: KnowledgeGovernanceService;
-  /** v1.3：知识编译触发（M3 即时顺序编译；M4 替换为队列） */
-  knowledgeCompile: CompileRunnerService;
-  documents: DocumentService;
-  attachments: AttachmentService;
-  memories: MemoryService;
-  /** v1.7：角色化提醒调度与演出用量 */
-  schedules: SchedulesService;
-  eventUsage: EventUsageService;
-  /** v1.7 M5：自定义短语触发器 */
-  eventTriggers: EventTriggersService;
-  /** v0.6：MCP 注册表（设置页与工具运行时共享同一连接池） */
-  mcp: McpRegistry;
-  /** v0.6 M2：工具权限服务（HITL 授权记忆） */
-  permissions: PermissionService;
-  /** v0.6 M2：HITL 挂起确认注册表（orchestrator 挂起点 ↔ /api/tools/confirm） */
-  confirmations: PendingConfirmations;
-  /** v0.6 M3：技能包服务（启动时 reconcile 扫盘对齐） */
-  skills: SkillService;
-  /** v0.6 M4：工具熔断器（连续失败降级；面板路由共享同一实例） */
-  breakers: ToolBreaker;
-  /** v0.7 M2：任务级批量授权（remember='task'，仅内存） */
-  taskGrants: TaskGrantRegistry;
-  /** v0.7 M3：任务运行管理服务（包装 runTaskLoop 为可外部控制） */
-  taskRunner: TaskRunnerService;
-  /** v1.4 多智能体协作 */
-  agentRuns: AgentRunService;
-  /** v2.0 M2：共同里程碑达成评估与查询 */
-  relationshipMilestones: MilestoneService;
-  /** v1.9 M3 多助手会议 */
-  meetings: MeetingService;
-  meetingClosure: MeetingClosureService;
-  /** v0.6 M4：工具运行时（调试台路由用 listDebugTools + debugExecuteTool） */
-  runtime: ToolRuntime;
-  /** v0.8 M1：工作流运行服务（试运行/落库；已发布流程经 runtime 第三来源解析） */
-  flowRunner: FlowRunService;
-  /** v0.9：对外端点服务（密钥/开关/策略配置 + 公开调用鉴权） */
-  endpoints: EndpointService;
-  /** v0.9：公开 API 每端点速率限制器（进程内单例） */
-  rateLimiter: RateLimiter;
-  /** v2.0 M4：VRM 形象导入/存储/删除 */
-  vrmAvatars: VrmAvatarService;
-  /** v2.0：待机动作（VRMA）导入/存储/删除 */
-  motions: MotionService;
-  /** v2.0 M5：.wbfm-pack 打包/预检/导入 */
-  modPacks: ModPackService;
-}
+import type { ServiceContainer } from './container-types';
+export type { ServiceContainer };
+
 let container: ServiceContainer | null = null;
 
 /**
@@ -167,9 +94,18 @@ function resolveCipher(): SecretCipher {
 }
 
 function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
+  // v2.8：进程启动即收敛上次残留的非终态运行，避免幽灵 running/queued
+  const recovered = recoverInterruptedRunJobs(db);
+  if (recovered.tasks > 0 || recovered.agents > 0) {
+    console.info(
+      `[recovery] 已收敛中断运行：任务 ${recovered.tasks} 个，协作 ${recovered.agents} 个`,
+    );
+  }
+  const ownerId = `web-${process.pid}-${Date.now()}`;
   const mcp = createMcpRegistry(db);
   const permissions = createPermissionService({ db, cipher });
   const confirmations = createPendingConfirmations();
+  const approvals = createApprovalRegistry();
   const skills = createSkillService({ db });
   const breakers = createToolBreaker();
   const taskGrants = createTaskGrantRegistry();
@@ -179,12 +115,38 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     mcp,
     permissions,
     confirmations,
+    approvals,
     skills,
     breakers,
     taskGrants,
   };
+  const sessionLog = createSessionLogService(deps);
+  deps.events = sessionLog;
+  const sessionExport = createSessionExportService(deps, sessionLog);
+  const capabilities = createCapabilityService({ db, skills, mcp });
+  const subagentProviders = createSubagentProviderRegistry();
   const runtime = createToolRuntime(deps);
-  const taskRunner = createTaskRunnerService(deps, runtime);
+  const workSignals = createWorkSignalHub({ approvals });
+  const workPlans = createWorkPlanService(deps, {
+    onChange: (plan) => workSignals.ingestPlan(plan),
+  });
+  deps.workPlans = workPlans;
+  const completions = createRunCompletionService(deps);
+  const taskRunner = createTaskRunnerService(
+    deps,
+    runtime,
+    (run, event) => {
+      workSignals.ingestTask(run, event);
+      const data = event.data as { type?: unknown };
+      sessionLog.record({
+        scope: 'task',
+        scopeId: run.id,
+        type: typeof data?.type === 'string' ? data.type : event.event,
+        payload: event.data,
+      });
+    },
+    { ownerId, onComplete: (run) => completions.completeTask(run) },
+  );
   // v1.4：协作角色生产通道（三级模型回落 + executor task-loop 适配器）。
   // 必须在 flowRunner 前构造——agent 节点执行经 startFlowNode 发起协作。
   const assistants = createAssistantsService(deps);
@@ -194,6 +156,17 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     db,
     clientsProvider: createAgentClientsProvider(agentClientsFactory),
     resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
+    onEvent: (run, event) => {
+      workSignals.ingestAgent(run, event);
+      sessionLog.record({
+        scope: 'agent',
+        scopeId: run.id,
+        type: event.event,
+        payload: event.data,
+      });
+    },
+    onComplete: (run) => completions.completeAgent(run),
+    ownerId,
   });
   // v1.9 M3：多助手会议（新表新调度，共用模型/角色卡人格；与协作分账）
   const meetings = createMeetingService(createMeetingDeps(deps, assistants));
@@ -209,6 +182,15 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     runs: createWorkflowRunRepository(db),
     endpoints: endpointRepo,
     agentRuns,
+    onEvent: (run, event, title) => {
+      workSignals.ingestFlow(run, event, title);
+      sessionLog.record({
+        scope: 'flow',
+        scopeId: run.id,
+        type: event.type,
+        payload: event,
+      });
+    },
   });
   // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
   const starterCount = ensureStarterFlows(workflows);
@@ -241,6 +223,14 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     mcp,
     permissions,
     confirmations,
+    approvals,
+    workSignals,
+    workPlans,
+    completions,
+    sessionLog,
+    sessionExport,
+    capabilities,
+    subagentProviders,
     skills,
     breakers,
     taskGrants,

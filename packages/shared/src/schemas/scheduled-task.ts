@@ -13,6 +13,15 @@ export const SCHEDULE_TEXT_MAX = 200;
 const hourSchema = z.number().int().min(0).max(23);
 const minuteSchema = z.number().int().min(0).max(59);
 
+/** v2.8 定时跟进附带上下文；普通提醒为 null */
+export const scheduledTaskPayloadSchema = z.object({
+  kind: z.literal('follow_up'),
+  conversationId: z.string().min(1).optional(),
+  planId: z.string().min(1).optional(),
+  runId: z.string().min(1).optional(),
+});
+export type ScheduledTaskPayload = z.infer<typeof scheduledTaskPayloadSchema>;
+
 export const scheduledTaskCreateSchema = z
   .object({
     assistantId: z.string().trim().min(1),
@@ -26,6 +35,8 @@ export const scheduledTaskCreateSchema = z
     /** 本版固化 Asia/Shanghai（默认即此值，不提供 UI 修改） */
     timezone: z.string().min(1).max(64).default(DEFAULT_SCHEDULE_TIMEZONE),
     text: z.string().trim().min(1, '提醒内容不能为空').max(SCHEDULE_TEXT_MAX),
+    /** v2.8：定时跟进上下文（普通提醒省略） */
+    payload: scheduledTaskPayloadSchema.optional(),
   })
   .superRefine((value, ctx) => {
     if (value.kind === 'weekly' && (value.weekday === undefined || value.weekday === null)) {
@@ -55,6 +66,7 @@ export const scheduledTaskUpdateSchema = z
       .optional(),
     text: z.string().trim().min(1).max(SCHEDULE_TEXT_MAX).optional(),
     enabled: z.boolean().optional(),
+    payload: scheduledTaskPayloadSchema.nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');
 export type ScheduledTaskUpdateInput = z.infer<typeof scheduledTaskUpdateSchema>;
@@ -73,6 +85,7 @@ export const scheduledTaskViewSchema = z.object({
   enabled: z.boolean(),
   nextRunAt: z.string().datetime(),
   lastFiredAt: z.string().datetime().nullable(),
+  payload: scheduledTaskPayloadSchema.nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

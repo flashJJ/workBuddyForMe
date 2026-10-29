@@ -32,8 +32,9 @@ export const GET = defineRoute(async ({ request, params, services }) => {
   const run = repo.getById(id);
   if (!run) throw ApiError.notFound('协作运行', id);
 
+  const since = parseSince(request);
   if (observe) {
-    const activeObserver = services.agentRuns.observe(id);
+    const activeObserver = services.agentRuns.observe(id, since);
     if (activeObserver) return sseResponse(activeObserver);
     if (TERMINAL_STATUSES.has(run.status)) {
       return replayTerminalRun(run, repo.listHandoffs(id));
@@ -58,15 +59,24 @@ export const GET = defineRoute(async ({ request, params, services }) => {
     return sseResponse(observer);
   }
 
-  if (services.agentRuns.isActive(id)) {
-    throw ApiError.conflict('协作事件流已被订阅，请勿重复打开');
-  }
+  // v2.8：已活跃则直接观察（多客户端可同时订阅，不再 409）
+  const activeObserver = services.agentRuns.observe(id, since);
+  if (activeObserver) return sseResponse(activeObserver);
   if (TERMINAL_STATUSES.has(run.status)) {
     return replayTerminalRun(run, repo.listHandoffs(id));
   }
-  const events = await services.agentRuns.start({ run, clientSignal: request.signal });
+  // 服务端持有启动：客户端断开不影响运行；已活跃时 startOwned 幂等返回观察器
+  const events = await services.agentRuns.startOwned({ run });
   return sseResponse(events);
 });
+
+/** 解析 ?since=<seq>（非法/缺省为 undefined，等价整场回放） */
+function parseSince(request: Request): number | undefined {
+  const raw = new URL(request.url).searchParams.get('since');
+  if (!raw) return undefined;
+  const value = Number(raw);
+  return Number.isInteger(value) && value > 1 ? value : undefined;
+}
 
 /** 终态运行回放：每条 handoff 一帧 agent_handoff，末尾 done（携带最终用量） */
 function replayTerminalRun(run: AgentRunView, handoffs: AgentHandoffView[]): Response {

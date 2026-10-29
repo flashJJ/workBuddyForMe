@@ -153,7 +153,8 @@ describe('任务 API（v0.7 M3-4b）', () => {
     expect(response.status).toBe(404);
   });
 
-  it('GET /api/tasks/:id/events 已活跃返回 409', async () => {
+  it('GET /api/tasks/:id/events 已活跃返回观察流（v2.8 不再 409）', async () => {
+    const services = __buildContainerForTest(db, createWebCipher());
     const repo = createTaskRunRepository(db);
     const run = repo.createRun({
       conversationId,
@@ -161,20 +162,26 @@ describe('任务 API（v0.7 M3-4b）', () => {
       goal: '占位',
       maxSteps: 3,
     });
-    // 直接在 taskRunner 注册表里挂一个空活跃项（绕过 start 避免真实循环）
-    const services = __buildContainerForTest(db, createWebCipher());
-    // 通过 start 注入一个永挂的 planner，让 isActive 返回 true
-    const forever = new Promise(() => {});
+    // 注入一个挂起的 planner：启动后台作业后由观察者接管 SSE
     services.taskRunner.start({
       run,
-      planner: { decide: async () => forever as never },
+      planner: {
+        decide: (_input, signal) =>
+          new Promise((_resolve, reject) => {
+            signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+          }),
+      },
       allowedTools: [],
       visionCapable: false,
     });
     const response = await streamEvents(new Request('http://127.0.0.1/x'), {
       params: Promise.resolve({ id: run.id }),
     });
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/event-stream');
     services.taskRunner.stop(run.id);
+    const events = parseSseChunks(await readAll(response));
+    expect((events[0]!.data as { type: string }).type).toBe('run_started');
+    expect((events.at(-1)!.data as { type: string }).type).toBe('run_finished');
   });
 });

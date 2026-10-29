@@ -7,6 +7,9 @@ import type { PendingConfirmations } from './pending-confirmations';
 import type { TaskGrantRegistry } from './task-grants';
 import type { ToolBreaker } from '../tools/tool-breaker';
 import type { Tool } from '../tools/types';
+import type { ApprovalRegistry } from '../work-signal/approval-registry';
+import type { WorkPlanService } from '../work-plan/work-plan-service';
+import type { SessionLogService } from '../session-log/session-log-service';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
@@ -24,6 +27,12 @@ export interface ServiceDeps {
   breakers?: ToolBreaker;
   /** v0.7 M2：任务级批量授权（remember='task'，仅内存） */
   taskGrants?: TaskGrantRegistry;
+  /** v2.7：审批统一收件箱（未提供时工具确认仍走原弹窗，不进入审批中心） */
+  approvals?: ApprovalRegistry;
+  /** v2.8：目标/计划/待办服务（未提供时 todo_write 与计划提示词不生效） */
+  workPlans?: WorkPlanService;
+  /** v2.9：追加式事件日志（未提供时对话事件不落日志） */
+  events?: SessionLogService;
   /**
    * v0.8 M1：flow 工具第三来源解析器（已发布工作流 → Tool）。
    * 懒解析：仅在 resolveTool 遇到 flow:<id> 时调用，避免与 FlowRunService 的构造环。

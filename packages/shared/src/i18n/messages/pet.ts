@@ -8,6 +8,24 @@ export const zhPet = {
     listening: '聆听中…',
     thinking: '思考中…',
   },
+  work: {
+    idle: '空闲',
+    thinking: '思考中…',
+    working: '工作中',
+    waiting: '等待处理',
+    disconnected: '工作信号连接中断',
+    headlineError: '出错：{title}',
+    headlineSuccess: '完成：{title}',
+    headlineApproval: '等待审批：{title}',
+    running: '{count} 个进行中',
+    approvals: '{count} 项待审批',
+    approvalOnly: '有 {count} 项待审批',
+    sourceTask: '任务',
+    sourceFlow: '工作流',
+    sourceAgent: '协作',
+    notifyApprovalTitle: '等待审批',
+    notifyFailureTitle: '运行失败',
+  },
 };
 
 export const enPet = {
@@ -18,5 +36,23 @@ export const enPet = {
   subtitle: {
     listening: 'Listening…',
     thinking: 'Thinking…',
+  },
+  work: {
+    idle: 'Idle',
+    thinking: 'Thinking…',
+    working: 'Working',
+    waiting: 'Waiting',
+    disconnected: 'Work signal disconnected',
+    headlineError: 'Failed: {title}',
+    headlineSuccess: 'Done: {title}',
+    headlineApproval: 'Waiting for approval: {title}',
+    running: '{count} running',
+    approvals: '{count} awaiting approval',
+    approvalOnly: '{count} awaiting approval',
+    sourceTask: 'Task',
+    sourceFlow: 'Flow',
+    sourceAgent: 'Agent',
+    notifyApprovalTitle: 'Waiting for approval',
+    notifyFailureTitle: 'Run failed',
   },
 };

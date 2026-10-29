@@ -91,6 +91,30 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./work-signal": {
+            "types": "./src/work-signal/index.ts",
+            "development": "./src/work-signal/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./capabilities": {
+            "types": "./src/capabilities/index.ts",
+            "development": "./src/capabilities/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./session-log": {
+            "types": "./src/session-log/index.ts",
+            "development": "./src/session-log/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./work-plan": {
+            "types": "./src/work-plan/index.ts",
+            "development": "./src/work-plan/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./ingestion": {
             "types": "./src/ingestion/index.ts",
             "development": "./src/ingestion/index.ts",

@@ -4,6 +4,7 @@ import { CommandPaletteHost } from '@/features/command-palette/use-command-palet
 import { ShortcutsHost } from '@/features/shortcuts/use-shortcuts-host';
 import { OnboardingHost } from '@/features/onboarding/use-onboarding-host';
 import { ReunionSignalHost } from '@/features/avatar/use-reunion-foreground-signal';
+import { DeepLinkHost } from '@/features/navigation/deep-link-host';
 
 /** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K）+ 快捷键浮层（Ctrl+/）+ 首启向导 */
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <ShortcutsHost />
       <OnboardingHost />
       <ReunionSignalHost />
+      <DeepLinkHost />
     </div>
   );
 }

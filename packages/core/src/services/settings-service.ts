@@ -46,6 +46,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   firstModelReadyAt: null,
   firstAnswerAt: null,
   ttfvMs: null,
+  // v2.7：桌宠工作汇报默认全开、气泡自动、标准节奏
+  workSignalEnabled: true,
+  workBubbleMode: 'auto',
+  workSoundDone: true,
+  workSoundError: true,
+  workSoundApproval: true,
+  workReduceMotion: false,
+  workIdlePacing: 'standard',
 };
 
 /** 服务端钳制上下文条数：settings_kv 可被手改/旧值污染，越界一律回落默认 */

@@ -2,17 +2,16 @@
 
 本地优先的**私人 AI 工作台**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v2.6.0**（2026-10-28）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 当前版本：**v2.10.0**（2026-10-29）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
 
-## v2.6.0 重点
+## v2.10.0 重点
 
-- **会沉淀**：会议结束后生成结构化结论（摘要 / 决策 / 未决问题 / 行动项），行动项可转角色提醒或运行已发布 Flow，并支持 Markdown 导出。
-- **记忆有来路**：对话内记忆 chips 可展开查看内容、来源会话/消息与召回理由；记忆面板展示召回次数、最近召回与来源跳转。
-- **平台续航**：Electron **45.0.0**，`safeStorage` 迁移到异步 API；沙箱 preload 与桌面 smoke 通过。
-- **数据与备份**：迁移 **36**（会议结论/行动项 + 记忆溯源列）；备份 schema **7** 纳入新表与新列，旧归档仍可读。
-- **运行可信**：新增 `/reports` 运行报告（跨任务/工作流/协作运行的成功率、耗时中位数、失败 Top，Markdown/CSV 导出）。
-- **顺手指尖**：Composer 支持剪贴板截图；无视觉模型/任务模式给出明确切换提示。
-- **工程规模**：**131** 个 API Route Handlers；**6** 个内部包 + **2** 个应用；`pnpm check` 与 8 包单测全绿。
+- **会汇报（v2.7）**：任务/工作流/协作统一 WorkSignal；桌宠实时工作态、气泡、提示音与深链；全局审批中心 fail-closed。
+- **会计划（v2.8）**：Task/Agent 改为服务端持久作业，关页不中断；目标/计划/待办评审；完成回投幂等；定时跟进。
+- **可复盘（v2.9）**：追加式 `session_events` + CJK 检索；`/timeline` 时间线/检索/导出 ZIP；大工具输出 `spill://` 溢出。
+- **可扩展（v2.10）**：`wbfm-capability.json` 能力包安装/启停/卸载与回滚；示例技能包；`/capabilities` 管理页；外部代理接口缝。
+- **数据与迁移**：迁移 **37–39** 纯加法（运行租约/完成回投/目标计划/事件日志/能力包）；版本 **2.10.0** 统一同步。
+- **工程门禁**：`pnpm check` 与 8 包单测全绿；Web e2e 覆盖 v2.7–v2.10 新增链路。
 
 ## 功能
 
@@ -166,7 +165,7 @@ pnpm test:e2e             # Web 关键路径 E2E
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v2.6.0 发布准备：`pnpm check` 与 8 包单测全绿（database 226 / core 1130 / web 581）；桌面 smoke **11/11**；Web e2e 全量 104/109，失败项已按依赖链定向复跑通过，详见 [M5 执行记录](docs/plan/v2.6/05-M5-收口与发布.md)。
+v2.10.0 发布准备：`pnpm check` 与 8 包单测全绿；全量 Web e2e **120/120**（CI 模式 `next start` 生产产物）；v2.7–v2.10 新增链路（工作信号/审批、计划、时间线、能力包）全部通过，详见 [v2.10 版本总结](docs/roadmap/v2.10-release-summary.md)。
 
 ## 数据与隐私
 
@@ -183,7 +182,7 @@ v2.6.0 发布准备：`pnpm check` 与 8 包单测全绿（database 226 / core 1
 - [开发与测试指南](docs/development.md)
 - [Electron 桌面外壳](docs/modules/electron-shell.md)
 - 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
-- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v2.6 方案](docs/plan/v2.6/README.md)
+- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v2.7–v2.10 路线](docs/plan/v2.7-v2.10/README.md)
 
 ## 许可
 

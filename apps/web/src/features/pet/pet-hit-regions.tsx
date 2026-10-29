@@ -23,6 +23,8 @@ export interface PetHitRegionProps {
   controllerRef: React.MutableRefObject<Live2dController | null>;
   /** 交给 Resolver 门控 + ActionExecutor 执行，并 emit 到 TriggerBus */
   resolveAndDispatch: (event: InteractionEvent) => void;
+  /** v2.7：双击头部回主窗时携带的站内深链 */
+  focusPath?: string;
 }
 
 /** 身体互动盒（底部 62%）：no-drag + 手动拖拽 + 纯点击动作 */
@@ -158,7 +160,7 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
 }
 
 /** 头部互动盒（上部 27%）：单击摸头 / 长按持续 loop / 拖拽移动 / 双击回主窗 / 右键菜单 */
-export function PetHitHead({ bridge, controllerRef, resolveAndDispatch }: PetHitRegionProps) {
+export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPath }: PetHitRegionProps) {
   const { t } = useI18n();
   const pressStartPosRef = React.useRef<{ x: number; y: number; at: number }>({
     x: 0,
@@ -279,7 +281,7 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch }: PetHit
           longPressTimerRef.current = null;
         }
       }}
-      onDoubleClick={() => bridge?.focusMain()}
+      onDoubleClick={() => bridge?.focusMain(focusPath)}
       onContextMenu={(event) => {
         event.preventDefault();
         bridge?.showMenu();

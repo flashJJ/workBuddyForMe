@@ -210,6 +210,7 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'mouse_move',
       'mouse_scroll',
       'screen_snapshot',
+      'todo_write',
       'uia_list',
       'window_focus',
       'window_list',

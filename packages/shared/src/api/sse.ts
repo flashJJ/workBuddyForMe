@@ -5,6 +5,7 @@ import type { TaskEventPayload } from '../schemas/task';
 import type { ToolEventPayload } from '../types/tool';
 import type { VoiceState } from '../schemas/voice';
 import type { EmotionSignal } from '../schemas/emotion';
+import type { WorkSignalSnapshot } from '../work-signal';
 import type {
   AgentBudgetUsage,
   AgentHandoffView,
@@ -62,6 +63,8 @@ export const SSE_EVENT = {
   MEETING_DELTA: 'meeting_delta',
   MEETING_MESSAGE: 'meeting_message',
   MEETING_STATUS: 'meeting_status',
+  /** v2.7：工作信号快照（桌宠/审批页独立订阅） */
+  WORK_SIGNAL: 'work_signal',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -193,6 +196,8 @@ export type SsePayloadMap = {
     usage: TokenUsage | null;
     emotion?: EmotionSignal;
   };
+  /** v2.7：工作信号快照（桌宠/审批页独立订阅） */
+  work_signal: WorkSignalSnapshot;
   error: { code: string; message: string };
 };
 

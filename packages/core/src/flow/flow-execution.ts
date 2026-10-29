@@ -106,18 +106,52 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
         checkToolAllowed: (toolName, permission) =>
           Boolean(deps.permissions?.isAllowed(toolName, permission, 'all')) ||
           Boolean(deps.taskGrants?.isGranted(toolName, runId)),
-        requestToolConfirmation: (req) =>
-          waiters
-            .request(toolKey(runId, req.nodeId), signal)
-            .then((payload) => {
-              const allowed = payload === true;
-              if (allowed) deps.taskGrants?.grant(req.toolName, runId);
-              return allowed;
-            }),
-        requestHuman: (nodeId) =>
-          waiters.request(humanKey(runId, nodeId), signal).then((payload) =>
-            coerceHumanDecision(payload),
-          ),
+        requestToolConfirmation: (req) => {
+          const key = toolKey(runId, req.nodeId);
+          const pending = waiters.request(key, signal);
+          const approval = deps.approvals?.register(
+            {
+              id: `flow:${runId}:tool:${req.nodeId}`,
+              source: 'flow',
+              title: `工具节点授权：${req.toolName}`,
+              tool: req.toolName,
+              permission: req.permission,
+              argsSummary: req.argsSummary,
+              runId,
+              deepLink: `/flows/${params.workflowId}?run=${runId}`,
+            },
+            (decision) => {
+              waiters.resolve(key, decision.action === 'allow');
+            },
+          );
+          if (approval) void pending.finally(() => approval.remove());
+          return pending.then((payload) => {
+            const allowed = payload === true;
+            if (allowed) deps.taskGrants?.grant(req.toolName, runId);
+            return allowed;
+          });
+        },
+        requestHuman: (nodeId) => {
+          const key = humanKey(runId, nodeId);
+          const pending = waiters.request(key, signal);
+          const approval = deps.approvals?.register(
+            {
+              id: `flow:${runId}:human:${nodeId}`,
+              source: 'flow',
+              title: `人工审核：${nodeId}`,
+              runId,
+              deepLink: `/flows/${params.workflowId}?run=${runId}`,
+            },
+            (decision) => {
+              waiters.resolve(key, {
+                approved: decision.action === 'allow',
+                values: decision.values ?? {},
+              });
+            },
+          );
+          if (approval) void pending.finally(() => approval.remove());
+          return pending.then((payload) => coerceHumanDecision(payload));
+        },
         // v1.4 agent 节点：协作随流程信号取消；节点 id 即 node_execution 关联键
         ...(agentRuns
           ? {

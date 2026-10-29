@@ -113,6 +113,31 @@ export function createTaskRunRepository(db: DatabaseInstance) {
       return rows.map(mapRun);
     },
 
+    /** v2.8：列出非终态运行（重启恢复扫描用） */
+    listNonTerminalRuns(): TaskRunView[] {
+      const rows = db
+        .prepare(
+          `SELECT * FROM task_runs WHERE status IN ('queued','running','paused')
+           ORDER BY created_at ASC`,
+        )
+        .all() as TaskRunRow[];
+      return rows.map(mapRun);
+    },
+
+    /** v2.8：写作业租约（owner + 到期时刻） */
+    setLease(id: string, owner: string, expiresAt: string): void {
+      db.prepare(
+        'UPDATE task_runs SET lease_owner = ?, lease_expires_at = ?, updated_at = ? WHERE id = ?',
+      ).run(owner, expiresAt, nowIso(), id);
+    },
+
+    /** v2.8：终态/异常释放租约 */
+    clearLease(id: string): void {
+      db.prepare(
+        'UPDATE task_runs SET lease_owner = NULL, lease_expires_at = NULL WHERE id = ?',
+      ).run(id);
+    },
+
     /** 状态机推进；终态（completed/failed/stopped）自动写 finished_at 与 stop_reason */
     updateRunStatus(id: string, status: TaskRunStatus, stopReason?: TaskStopReason): TaskRunView | null {
       const row = this.getRunRow(id);

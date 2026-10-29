@@ -34,6 +34,8 @@ export interface RunEventBus<T> {
   subscribe(): AsyncIterableIterator<T>;
   /** 观察者侧：只收订阅后的新帧（历史调用方自行从落库回放，避免重复） */
   subscribeLive(): AsyncIterableIterator<T>;
+  /** v2.8：按 1-based seq 续传（seq<=1 等价整场回放；超出末尾则只收新帧） */
+  subscribeFrom(seq: number): AsyncIterableIterator<T>;
   /** 当前已缓冲帧数（观测/测试用） */
   size(): number;
 }
@@ -68,6 +70,10 @@ export function createRunEventBus<T>(options: RunEventBusOptions = {}): RunEvent
     },
     subscribeLive() {
       return makeIterator(buffer.length);
+    },
+    subscribeFrom(seq) {
+      const start = Math.max(0, Math.min(buffer.length, Math.trunc(seq) - 1));
+      return makeIterator(start);
     },
   };
 

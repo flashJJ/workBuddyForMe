@@ -37,6 +37,14 @@ export {
   type DebugExecuteParams,
 } from './debug-executor';
 export {
+  maybeSpillOutput,
+  readSpill,
+  spillHash,
+  SPILL_THRESHOLD_CHARS,
+  SPILL_PREVIEW_CHARS,
+  type SpillResult,
+} from './spill';
+export {
   isBlockedIp,
   assertSafeUrlLiteral,
   resolveAndAssertHost,

@@ -31,6 +31,8 @@ declare global {
       notify?: WbfmNotifyBridge;
       /** v2.0 M3 系统事件感知桥（解锁/锁屏/空闲；默认未武装，仅桌面端存在） */
       awareness?: WbfmAwarenessBridge;
+      /** v2.7 站内深链桥（桌宠/通知 → 主窗 App Router） */
+      appLinks?: { onOpen: (cb: (path: string) => void) => () => void };
     };
   }
 }

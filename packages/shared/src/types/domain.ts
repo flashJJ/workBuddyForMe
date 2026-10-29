@@ -256,6 +256,20 @@ export interface AppSettings extends EventSettingsFields, LocalModeSettingsField
   globalAppendPromptEnabled?: boolean;
   /** v1.8 M4：音色收藏（M3 冻结契约，M4 才有 UI） */
   voiceFavorites?: VoiceFavorite[];
+  /** v2.7：桌宠工作汇报总开关（缺省 true；关闭后不订阅 task/flow/agent 工作信号） */
+  workSignalEnabled?: boolean;
+  /** v2.7：工作气泡模式（缺省 auto；always 常驻，hidden 不显示） */
+  workBubbleMode?: 'auto' | 'always' | 'hidden';
+  /** v2.7：完成提示音（缺省 true） */
+  workSoundDone?: boolean;
+  /** v2.7：错误提示音（缺省 true） */
+  workSoundError?: boolean;
+  /** v2.7：待审批提示音（缺省 true） */
+  workSoundApproval?: boolean;
+  /** v2.7：减少动态（关闭气泡脉冲/完成抖动；缺省 false） */
+  workReduceMotion?: boolean;
+  /** v2.7：待机节奏（缺省 standard；quiet/lively 调整桌宠休息间隔） */
+  workIdlePacing?: 'quiet' | 'standard' | 'lively';
 }
 
 /** v1.8 M4：音色收藏条目（形状随 settings 持久化） */

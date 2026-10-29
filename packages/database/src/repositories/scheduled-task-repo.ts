@@ -50,10 +50,10 @@ export function createScheduledTaskRepository(
       db.prepare(
         `INSERT INTO scheduled_tasks(
            id, assistant_id, kind, hour, minute, weekday, at_date, timezone, text,
-           enabled, next_run_at, last_fired_at, created_at, updated_at)
+           enabled, next_run_at, last_fired_at, payload_json, created_at, updated_at)
          VALUES (
            @id, @assistantId, @kind, @hour, @minute, @weekday, @atDate, @timezone, @text,
-           1, @nextRunAt, NULL, @ts, @ts)`,
+           1, @nextRunAt, NULL, @payloadJson, @ts, @ts)`,
       ).run({
         id,
         assistantId: input.assistantId,
@@ -65,6 +65,7 @@ export function createScheduledTaskRepository(
         timezone: input.timezone,
         text: input.text,
         nextRunAt,
+        payloadJson: input.payload ? JSON.stringify(input.payload) : null,
         ts,
       });
       return this.findById(id)!;
@@ -134,7 +135,8 @@ export function createScheduledTaskRepository(
       db.prepare(
         `UPDATE scheduled_tasks
             SET hour=@hour, minute=@minute, weekday=@weekday, at_date=@atDate, text=@text,
-                enabled=@enabled, next_run_at=@nextRunAt, updated_at=@updatedAt
+                enabled=@enabled, next_run_at=@nextRunAt, payload_json=@payloadJson,
+                updated_at=@updatedAt
           WHERE id=@id`,
       ).run({
         id,
@@ -145,6 +147,14 @@ export function createScheduledTaskRepository(
         text: next.text,
         enabled: next.enabled ? 1 : 0,
         nextRunAt,
+        payloadJson:
+          patch.payload !== undefined
+            ? patch.payload
+              ? JSON.stringify(patch.payload)
+              : null
+            : existing.payload
+              ? JSON.stringify(existing.payload)
+              : null,
         updatedAt: nowIso(),
       });
       return this.findById(id);
@@ -245,10 +255,10 @@ export function createScheduledTaskRepository(
         .prepare(
           `INSERT OR IGNORE INTO scheduled_tasks(
              id, assistant_id, kind, hour, minute, weekday, at_date, timezone, text,
-             enabled, next_run_at, last_fired_at, created_at, updated_at)
+             enabled, next_run_at, last_fired_at, payload_json, created_at, updated_at)
            VALUES (
              @id, @assistantId, @kind, @hour, @minute, @weekday, @atDate, @timezone, @text,
-             @enabled, @nextRunAt, @lastFiredAt, @createdAt, @updatedAt)`,
+             @enabled, @nextRunAt, @lastFiredAt, @payloadJson, @createdAt, @updatedAt)`,
         )
         .run({
           id: view.id,
@@ -263,6 +273,7 @@ export function createScheduledTaskRepository(
           enabled: view.enabled ? 1 : 0,
           nextRunAt: view.nextRunAt,
           lastFiredAt: view.lastFiredAt,
+          payloadJson: view.payload ? JSON.stringify(view.payload) : null,
           createdAt: view.createdAt,
           updatedAt: view.updatedAt,
         });

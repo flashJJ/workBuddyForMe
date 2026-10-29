@@ -15,7 +15,7 @@ describe('v024 迁移：人格列 + scheduled_tasks + event_usage', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(36);
+    expect(LATEST_SCHEMA_VERSION).toBe(39);
     for (const table of ['scheduled_tasks', 'event_usage']) {
       const rows = db
         .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)

@@ -35,6 +35,9 @@ import { migrateV033 } from './v033-motion-segments';
 import { migrateV034 } from './v034-assistant-skills';
 import { migrateV035 } from './v035-meeting-conclusions';
 import { migrateV036 } from './v036-memory-provenance';
+import { migrateV037 } from './v037-work-companion';
+import { migrateV038 } from './v038-session-events';
+import { migrateV039 } from './v039-capability-packs';
 
 interface Migration {
   version: number;
@@ -217,6 +220,22 @@ const MIGRATIONS: Migration[] = [
     version: 36,
     description: 'v2.6 M4: memories.source_message_id + recall_count 记忆溯源与召回计数（纯加法）',
     up: migrateV036,
+  },
+  {
+    version: 37,
+    description:
+      'v2.8: 运行租约 + 完成回投幂等键 + 目标/计划/待办表 + 定时跟进 payload（纯加法）',
+    up: migrateV037,
+  },
+  {
+    version: 38,
+    description: 'v2.9: session_events 追加式事件日志 + CJK 全文索引（纯加法）',
+    up: migrateV038,
+  },
+  {
+    version: 39,
+    description: 'v2.10: capability_packs 能力包登记表（纯加法）',
+    up: migrateV039,
   },
 ];
 

@@ -188,6 +188,60 @@ export {
   type TaskEventPayload,
 } from './task';
 
+// v2.7 工作信号 / 审批中心
+export {
+  approvalDecisionSchema,
+  type ApprovalDecisionInput,
+} from './work-signal';
+
+// v2.10 能力包
+export {
+  CAPABILITY_KINDS,
+  CAPABILITY_PERMISSIONS,
+  CAPABILITY_STATUSES,
+  CAPABILITY_REQUIRED_PERMISSION,
+  CAPABILITY_SUPPORTED_KINDS,
+  capabilityDependencySchema,
+  capabilityManifestSchema,
+  type CapabilityKind,
+  type CapabilityPermission,
+  type CapabilityStatus,
+  type CapabilityDependency,
+  type CapabilityManifest,
+  type CapabilityView,
+} from './capability';
+
+// v2.8 目标 / 计划 / 待办
+export {
+  GOAL_STATUSES,
+  WORK_PLAN_KINDS,
+  WORK_PLAN_STATUSES,
+  WORK_PLAN_ORIGINS,
+  WORK_STEP_STATUSES,
+  goalCreateSchema,
+  goalUpdateSchema,
+  workPlanCreateSchema,
+  workPlanUpdateSchema,
+  workPlanReviewSchema,
+  workPlanStepUpdateSchema,
+  isPlanReviewable,
+  isPlanExecutable,
+  type GoalStatus,
+  type WorkPlanKind,
+  type WorkPlanStatus,
+  type WorkPlanOrigin,
+  type WorkStepStatus,
+  type ConversationGoalView,
+  type WorkPlanStepView,
+  type WorkPlanView,
+  type GoalCreateInput,
+  type GoalUpdateInput,
+  type WorkPlanCreateInput,
+  type WorkPlanUpdateInput,
+  type WorkPlanReviewInput,
+  type WorkPlanStepUpdateInput,
+} from './work-plan';
+
 // v0.8 Flow Studio 可视化工作流
 export {
   FLOW_NODE_TYPES,

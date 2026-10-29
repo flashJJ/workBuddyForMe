@@ -1,0 +1,38 @@
+/** v2.7 settings.work 子命名空间（拆分守行数门禁） */
+export const zhSettingsWork = {
+  title: '工作汇报',
+  description: '桌宠显示任务、工作流与协作的实时进度，并在等待审批时提醒。',
+  enabled: '启用工作汇报',
+  bubbleMode: '气泡显示',
+  modeAuto: '有工作时显示',
+  modeAlways: '始终显示',
+  modeHidden: '隐藏',
+  sound: '提示音',
+  soundDone: '完成',
+  soundError: '出错',
+  soundApproval: '等待审批',
+  reduceMotion: '减少动态（关闭气泡脉冲）',
+  idlePacing: '待机节奏',
+  pacingQuiet: '安静',
+  pacingStandard: '标准',
+  pacingLively: '活泼',
+};
+
+export const enSettingsWork = {
+  title: 'Work reporting',
+  description: 'Show live task, flow and agent progress on the desktop pet, with approval alerts.',
+  enabled: 'Enable work reporting',
+  bubbleMode: 'Bubble',
+  modeAuto: 'While working',
+  modeAlways: 'Always',
+  modeHidden: 'Hidden',
+  sound: 'Sounds',
+  soundDone: 'Done',
+  soundError: 'Error',
+  soundApproval: 'Waiting approval',
+  reduceMotion: 'Reduce motion (no bubble pulse)',
+  idlePacing: 'Idle pacing',
+  pacingQuiet: 'Quiet',
+  pacingStandard: 'Standard',
+  pacingLively: 'Lively',
+};

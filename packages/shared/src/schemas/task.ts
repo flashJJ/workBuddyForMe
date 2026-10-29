@@ -25,6 +25,8 @@ export const TASK_STOP_REASONS = [
   'user_stop',
   'breaker',
   'error',
+  /** v2.8：应用重启/进程退出，非终态运行被收敛 */
+  'interrupted',
 ] as const;
 export type TaskStopReason = (typeof TASK_STOP_REASONS)[number];
 

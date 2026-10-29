@@ -24,7 +24,7 @@ export interface PetIpcActions {
   open(modelId?: string): Promise<boolean> | boolean;
   close(): Promise<unknown> | unknown;
   reportHover(hovering: boolean): void;
-  focusMain(): void;
+  focusMain(path?: string): void;
   beginDrag(): void;
   dragTo(): void;
   endDrag(): void;
@@ -57,8 +57,10 @@ export function registerPetIpc(
   ipc.on('pet:hover', (event, hovering) => {
     if (guards.fromPet(event.sender)) actions.reportHover(Boolean(hovering));
   });
-  ipc.on('pet:focus-main', (event) => {
-    if (guards.fromPet(event.sender)) actions.focusMain();
+  ipc.on('pet:focus-main', (event, path) => {
+    if (guards.fromPet(event.sender)) {
+      actions.focusMain(typeof path === 'string' ? path : undefined);
+    }
   });
   // 手动拖拽（替代被 app-region 吞事件的系统拖拽）：仅桌宠窗可驱动
   ipc.on('pet:drag-begin', (event) => {

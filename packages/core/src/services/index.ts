@@ -21,7 +21,12 @@ export {
   createTaskRunnerService,
   type TaskRunnerService,
   type TaskStartParams,
+  type TaskRunnerDeps,
 } from './task-runner-service';
+export {
+  recoverInterruptedRunJobs,
+  convergeOrphanTaskRun,
+} from './run-recovery';
 export {
   createSettingsService,
   DEFAULT_SETTINGS,

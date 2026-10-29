@@ -255,6 +255,7 @@ export async function* runTaskLoop(
       signal,
       source: resolved.source,
       permission: resolved.tool.permission ?? 'read',
+      approvalContext: { runId: state.run.id, conversationId: state.run.conversationId, deepLink: `/tasks?run=${state.run.id}` },
     });
     if (gate.denied) {
       if (signal?.aborted) {
