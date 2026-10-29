@@ -44,6 +44,39 @@ const idSchema = z
 
 const versionSchema = z.string().trim().regex(/\d+(\.\d+){0,2}/, '版本格式应为 1 / 1.0 / 1.0.0');
 
+/** v2.12：签名策略（默认 warn；off 显式跳过验签） */
+export const CAPABILITY_SIGNATURE_POLICIES = ['off', 'warn', 'require'] as const;
+export type CapabilitySignaturePolicy = (typeof CAPABILITY_SIGNATURE_POLICIES)[number];
+
+/** v2.12：验签结果五态（unchecked 仅用于 UI 展示，不在验签结果中出现） */
+export const CAPABILITY_SIGNATURE_STATUSES = [
+  'none',
+  'valid',
+  'untrusted',
+  'invalid',
+  'malformed',
+] as const;
+export type CapabilitySignatureStatus = (typeof CAPABILITY_SIGNATURE_STATUSES)[number];
+export type CapabilitySignatureViewStatus = CapabilitySignatureStatus | 'unchecked';
+
+export const CAPABILITY_TRUSTED_KEYS_MAX = 20;
+
+const trustedKeyIdSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(32)
+  .regex(/^[a-z0-9][a-z0-9._-]*$/, 'keyId 仅允许小写字母/数字/点/下划线/中划线');
+
+/** v2.12：本地信任公钥（PEM SPKI；可导入性由 core 校验） */
+export const capabilityTrustedKeySchema = z.object({
+  id: trustedKeyIdSchema,
+  label: z.string().trim().min(1).max(40),
+  publicKey: z.string().trim().min(1).max(1024),
+  createdAt: z.string().trim().min(1).max(40),
+});
+export type CapabilityTrustedKey = z.infer<typeof capabilityTrustedKeySchema>;
+
 export const capabilityDependencySchema = z.object({
   id: idSchema,
   version: versionSchema.optional(),
@@ -65,8 +98,10 @@ export const capabilityManifestSchema = z.object({
   dependencies: z.array(capabilityDependencySchema).max(20).default([]),
   /** 相对路径 → sha256（覆盖 payload/ 下全部文件） */
   checksums: z.record(z.string(), z.string().regex(/^[a-f0-9]{64}$/)).default({}),
-  /** 可选签名（本期只记录不验证） */
+  /** 可选签名（v2.12 起按策略验签） */
   signature: z.string().max(4096).optional(),
+  /** v2.12：签名密钥 id（必须在本地信任库中；缺省时尝试全部公钥） */
+  signatureKeyId: trustedKeyIdSchema.optional(),
 });
 export type CapabilityManifest = z.infer<typeof capabilityManifestSchema>;
 
@@ -82,6 +117,8 @@ export interface CapabilityView {
   lastError: string | null;
   installedAt: string;
   updatedAt: string;
+  /** v2.12：服务层按策略计算的验签徽章；off 时为 unchecked */
+  signatureStatus?: CapabilitySignatureViewStatus;
 }
 
 /** 每种 kind 必需权限（安装侧校验 permissions 覆盖） */

@@ -12,9 +12,15 @@ import {
   SUBAGENT_CLI_TIMEOUT_DEFAULT_MS,
   SUBAGENT_CLI_TIMEOUT_MAX_MS,
   SUBAGENT_CLI_TIMEOUT_MIN_MS,
+  CAPABILITY_SIGNATURE_POLICIES,
+  CAPABILITY_TRUSTED_KEYS_MAX,
+  capabilityTrustedKeySchema,
+  type CapabilitySignaturePolicy,
+  type CapabilityTrustedKey,
   type InteractionGraphOverride,
   type SettingsUpdateInput,
 } from '@wbfm/shared/schemas';
+import { assertTrustedKeysImportable } from '../capabilities/signature';
 import {
   createModelRepository,
   createSettingsRepository,
@@ -68,7 +74,33 @@ export const DEFAULT_SETTINGS: AppSettings = {
   subagentCliArgs: [],
   subagentCliTimeoutMs: SUBAGENT_CLI_TIMEOUT_DEFAULT_MS,
   subagentCliMaxOutputBytes: SUBAGENT_CLI_OUTPUT_DEFAULT_BYTES,
+  // v2.12：默认只提醒不阻断；信任库初始为空（全部包显示「未签名/未知密钥」）
+  capabilitySignaturePolicy: 'warn',
+  capabilityTrustedKeys: [],
 };
+
+/** 服务端钳制签名策略：手改 settings_kv 的非法值一律回落 warn */
+export function resolveCapabilitySignaturePolicy(value: unknown): CapabilitySignaturePolicy {
+  return typeof value === 'string' &&
+    (CAPABILITY_SIGNATURE_POLICIES as readonly string[]).includes(value)
+    ? (value as CapabilitySignaturePolicy)
+    : 'warn';
+}
+
+/** 服务端钳制信任库：丢弃形状非法与重复 id，最多 20 条（PEM 可用性在写入时校验） */
+export function resolveCapabilityTrustedKeys(value: unknown): CapabilityTrustedKey[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const keys: CapabilityTrustedKey[] = [];
+  for (const item of value) {
+    const parsed = capabilityTrustedKeySchema.safeParse(item);
+    if (!parsed.success || seen.has(parsed.data.id)) continue;
+    seen.add(parsed.data.id);
+    keys.push(parsed.data);
+    if (keys.length >= CAPABILITY_TRUSTED_KEYS_MAX) break;
+  }
+  return keys;
+}
 
 /** 服务端钳制上下文条数：settings_kv 可被手改/旧值污染，越界一律回落默认 */
 export function resolveContextMessageCount(value: number | undefined | null): number {
@@ -176,6 +208,10 @@ export function createSettingsService({ db }: ServiceDeps) {
       merged.subagentCliMaxOutputBytes = resolveSubagentCliMaxOutputBytes(
         merged.subagentCliMaxOutputBytes,
       );
+      merged.capabilitySignaturePolicy = resolveCapabilitySignaturePolicy(
+        merged.capabilitySignaturePolicy,
+      );
+      merged.capabilityTrustedKeys = resolveCapabilityTrustedKeys(merged.capabilityTrustedKeys);
       return merged;
     },
 
@@ -214,6 +250,9 @@ export function createSettingsService({ db }: ServiceDeps) {
       ensureModelExists(effective.defaultChatModelId ?? null, '默认对话模型');
       ensureModelExists(effective.defaultEmbeddingModelId ?? null, '默认嵌入模型');
       ensureModelExists(effective.compileModelId ?? null, '编译增强模型');
+      if (patch.capabilityTrustedKeys !== undefined) {
+        assertTrustedKeysImportable(patch.capabilityTrustedKeys);
+      }
       const next = { ...current, ...effective };
       settings.setJson(SETTINGS_KEY, next);
       // v2.4 M1 T7：里程碑必须在本次 setJson 之后记录，否则会被上面这行覆盖

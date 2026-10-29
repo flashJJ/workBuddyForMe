@@ -2,6 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CapabilityTrustedKey } from '@wbfm/shared/schemas';
 import {
   createDatabase,
   createInstalledEventScriptRepository,
@@ -33,8 +34,13 @@ describe('v2.10 能力包服务', () => {
   let eventScripts: ReturnType<typeof createInstalledEventScriptRepository>;
   let reportWidgets: ReturnType<typeof createReportWidgetRepository>;
   let service: ReturnType<typeof createCapabilityService>;
+  let signatureSettings: {
+    capabilitySignaturePolicy: 'off' | 'warn' | 'require';
+    capabilityTrustedKeys: CapabilityTrustedKey[];
+  };
 
   beforeEach(() => {
+    signatureSettings = { capabilitySignaturePolicy: 'warn', capabilityTrustedKeys: [] };
     root = mkdtempSync(join(tmpdir(), 'wbfm-cap-'));
     setDataRootForTest(root);
     db = createDatabase();
@@ -55,6 +61,7 @@ describe('v2.10 能力包服务', () => {
       motions,
       eventScripts,
       reportWidgets,
+      settings: { get: () => signatureSettings },
       rootDir: join(root, 'capabilities'),
       skillsDir,
       sampleMotionAsset: () => buildFakeVrma(),
@@ -128,7 +135,7 @@ describe('v2.10 能力包服务', () => {
       entry: 'payload/skill.json',
       dependencies: [{ id: 'com.base' }],
       checksums: { 'payload/skill.json': hashOf('{}') },
-    }, { 'payload/skill.json': '{}' }))).toThrow(/缺少依赖/);
+    }, { 'payload/skill.json': '{}' }))).toThrow(/依赖未安装/);
 
     const sample = buildSampleSkillPack();
     service.install(sample);

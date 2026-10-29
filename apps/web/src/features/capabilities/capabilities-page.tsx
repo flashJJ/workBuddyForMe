@@ -171,6 +171,21 @@ export function CapabilitiesPage() {
                     : t('capabilities.statusDisabled')}
                 </Badge>
                 <Badge variant="info">{t(`capabilities.kind.${capability.kind}`)}</Badge>
+                <Badge
+                  variant={
+                    capability.signatureStatus === 'valid'
+                      ? 'success'
+                      : capability.signatureStatus === 'invalid' ||
+                          capability.signatureStatus === 'malformed'
+                        ? 'danger'
+                        : capability.signatureStatus === 'untrusted'
+                          ? 'warning'
+                          : 'outline'
+                  }
+                  data-testid={`capability-signature-${capability.id}`}
+                >
+                  {t(`capabilities.signatureStatus.${capability.signatureStatus ?? 'none'}`)}
+                </Badge>
                 <span className="text-sm font-medium">{capability.name}</span>
                 <span className="text-xs text-muted-foreground">
                   {capability.id} · v{capability.version}

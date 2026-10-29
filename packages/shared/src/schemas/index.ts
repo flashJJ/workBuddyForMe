@@ -205,6 +205,10 @@ export {
   CAPABILITY_ENTRY_BY_KIND,
   capabilityDependencySchema,
   capabilityManifestSchema,
+  CAPABILITY_SIGNATURE_POLICIES,
+  CAPABILITY_SIGNATURE_STATUSES,
+  CAPABILITY_TRUSTED_KEYS_MAX,
+  capabilityTrustedKeySchema,
   workflowCapabilityPayloadSchema,
   petActionCapabilityPayloadSchema,
   eventScriptCapabilityPayloadSchema,
@@ -216,12 +220,23 @@ export {
   type CapabilityDependency,
   type CapabilityManifest,
   type CapabilityView,
+  type CapabilitySignaturePolicy,
+  type CapabilitySignatureStatus,
+  type CapabilitySignatureViewStatus,
+  type CapabilityTrustedKey,
   type WorkflowCapabilityPayload,
   type PetActionCapabilityPayload,
   type EventScriptCapabilityPayload,
   type ReportWidgetCapabilityPayload,
   type ReportWidgetMetric,
 } from './capability';
+
+// v2.12 能力包签名规范化（纯函数）
+export {
+  CAPABILITY_SIGNATURE_DOMAIN,
+  canonicalizeCapabilityManifest,
+  capabilitySignaturePayload,
+} from './capability-signature';
 
 // v2.8 目标 / 计划 / 待办
 export {

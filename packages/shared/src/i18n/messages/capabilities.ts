@@ -14,6 +14,14 @@ export const zhCapabilities = {
   noPermission: '未声明权限',
   statusEnabled: '已启用',
   statusDisabled: '已停用',
+  signatureStatus: {
+    valid: '已验签',
+    none: '未签名',
+    untrusted: '未知密钥',
+    invalid: '签名无效',
+    malformed: '签名损坏',
+    unchecked: '未校验',
+  },
   effect: '生效句柄',
   effectKind: {
     skill: '技能名',
@@ -58,6 +66,14 @@ export const enCapabilities = {
   noPermission: 'No permissions declared',
   statusEnabled: 'Enabled',
   statusDisabled: 'Disabled',
+  signatureStatus: {
+    valid: 'Signed',
+    none: 'Unsigned',
+    untrusted: 'Unknown key',
+    invalid: 'Invalid signature',
+    malformed: 'Malformed signature',
+    unchecked: 'Unchecked',
+  },
   effect: 'Effect handle',
   effectKind: {
     skill: 'Skill name',

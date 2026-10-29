@@ -174,4 +174,34 @@ describe('v2.10 能力包 API', () => {
       createReportWidgetRepository(db).get('com.example.sample.report-widget')?.title,
     ).toBe('近 30 天任务成功率');
   });
+
+  it('签名徽章与策略：默认 warn 未签名可装，切 require 后拒绝', async () => {
+    const form = new FormData();
+    form.append(
+      'file',
+      new File([buildSampleSkillPack() as unknown as BlobPart], 'demo.zip', {
+        type: 'application/zip',
+      }),
+    );
+    const installed = await installCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: form }),
+    );
+    expect(installed.status).toBe(201);
+    expect((await installed.json()).data.signatureStatus).toBe('none');
+
+    const services = __buildContainerForTest(db, createWebCipher());
+    services.settings.update({ capabilitySignaturePolicy: 'require' });
+
+    const rejectedForm = new FormData();
+    rejectedForm.append(
+      'file',
+      new File([buildSampleSkillPack() as unknown as BlobPart], 'demo.zip', {
+        type: 'application/zip',
+      }),
+    );
+    const rejected = await installCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: rejectedForm }),
+    );
+    expect(rejected.status).toBe(422);
+  });
 });

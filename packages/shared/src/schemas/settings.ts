@@ -10,6 +10,11 @@ import {
 import { ACTION_CHAIN_IDS } from './interaction-chains';
 import { isValidTriggerKey } from './interaction-graph';
 import { motionMoodSchema } from './motion-asset';
+import {
+  CAPABILITY_SIGNATURE_POLICIES,
+  CAPABILITY_TRUSTED_KEYS_MAX,
+  capabilityTrustedKeySchema,
+} from './capability';
 import { RELATIONSHIP_LEVEL_NAMES } from './relationship-level';
 import {
   SUBAGENT_CLI_ARG_MAX,
@@ -137,6 +142,16 @@ export const settingsUpdateSchema = z.object({
     .int()
     .min(SUBAGENT_CLI_OUTPUT_MIN_BYTES)
     .max(SUBAGENT_CLI_OUTPUT_MAX_BYTES)
+    .optional(),
+  // v2.12 能力包签名（默认 warn；信任库 ≤20，id 唯一）
+  capabilitySignaturePolicy: z.enum(CAPABILITY_SIGNATURE_POLICIES).optional(),
+  capabilityTrustedKeys: z
+    .array(capabilityTrustedKeySchema)
+    .max(CAPABILITY_TRUSTED_KEYS_MAX)
+    .refine(
+      (keys) => new Set(keys.map((key) => key.id)).size === keys.length,
+      '信任公钥 id 不能重复',
+    )
     .optional(),
   // v2.4 M1：演示模式开关（开启时建内置 demo 供应商与 mock 模型；关闭时清理）
   demoModeEnabled: z.boolean().optional(),
