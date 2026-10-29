@@ -7,7 +7,7 @@ describe('v029 迁移：relationship_milestones 共同里程碑表', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(38);
+    expect(LATEST_SCHEMA_VERSION).toBe(39);
     const tables = db
       .prepare(
         `SELECT name FROM sqlite_master WHERE type='table' AND name='relationship_milestones'`,

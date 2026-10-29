@@ -89,6 +89,14 @@ export {
 } from './task-run-repo';
 export { type TaskStepRow } from './task-run-types';
 export {
+  createCapabilityRepository,
+  mapCapability,
+  type CapabilityRepository,
+  type CapabilityRow,
+  type CapabilityCreateFields,
+  type CapabilityUpdateFields,
+} from './capability-repo';
+export {
   createSessionEventRepository,
   SESSION_EVENT_SCOPES,
   type SessionEventRepository,

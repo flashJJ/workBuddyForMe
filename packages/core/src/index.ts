@@ -29,3 +29,8 @@ export * from './flow';
 export * from './event';
 export * from './scheduler';
 export * from './work-signal';
+// v2.8–v2.10 新增域：子路径导出在生产条件下指向根产物 dist/index.*，
+// 必须同步聚合进根 barrel，否则 next start / standalone 会出现 symbol 缺失。
+export * from './work-plan';
+export * from './session-log';
+export * from './capabilities';

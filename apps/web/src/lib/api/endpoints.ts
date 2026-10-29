@@ -55,6 +55,13 @@ export const API = {
   workPlanReview: (id: string) => `/api/work-plans/${encodeURIComponent(id)}/review`,
   workPlanStep: (id: string, stepId: string) =>
     `/api/work-plans/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`,
+  // v2.10 能力包
+  capabilities: '/api/capabilities',
+  capabilityInstall: '/api/capabilities/install',
+  capabilityEnable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/enable`,
+  capabilityDisable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/disable`,
+  capability: (id: string) => `/api/capabilities/${encodeURIComponent(id)}`,
+  capabilitySample: '/api/capabilities/sample',
   // v2.9 事件日志 / 检索 / 导出
   events: (scope: string, scopeId: string, after?: number) =>
     `/api/events?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}${after ? `&after=${after}` : ''}`,
@@ -174,6 +181,7 @@ export const QUERY_KEYS = {
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
   approvals: ['approvals'] as const,
+  capabilities: ['capabilities'] as const,
   events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
   eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,
   goals: (conversationId: string) => ['goals', conversationId] as const,

@@ -75,6 +75,13 @@ export {
   type AgentPlanContextResolver,
   type FlowNodeStartParams,
 } from './agent-run-service';
+export {
+  createSubagentProviderRegistry,
+  type SubagentProvider,
+  type SubagentProviderRegistry,
+  type SubagentProviderInput,
+  type SubagentProviderResult,
+} from './subagent-provider';
 export type {
   AgentClients,
   AgentRunnerDeps,

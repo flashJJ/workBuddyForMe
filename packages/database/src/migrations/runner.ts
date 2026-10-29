@@ -37,6 +37,7 @@ import { migrateV035 } from './v035-meeting-conclusions';
 import { migrateV036 } from './v036-memory-provenance';
 import { migrateV037 } from './v037-work-companion';
 import { migrateV038 } from './v038-session-events';
+import { migrateV039 } from './v039-capability-packs';
 
 interface Migration {
   version: number;
@@ -230,6 +231,11 @@ const MIGRATIONS: Migration[] = [
     version: 38,
     description: 'v2.9: session_events 追加式事件日志 + CJK 全文索引（纯加法）',
     up: migrateV038,
+  },
+  {
+    version: 39,
+    description: 'v2.10: capability_packs 能力包登记表（纯加法）',
+    up: migrateV039,
   },
 ];
 

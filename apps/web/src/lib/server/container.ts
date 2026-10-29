@@ -61,6 +61,8 @@ import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
 import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
+import { createCapabilityService } from '@wbfm/core/capabilities';
+import { createSubagentProviderRegistry } from '@wbfm/core/agents';
 
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
@@ -121,6 +123,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const sessionLog = createSessionLogService(deps);
   deps.events = sessionLog;
   const sessionExport = createSessionExportService(deps, sessionLog);
+  const capabilities = createCapabilityService({ db, skills, mcp });
+  const subagentProviders = createSubagentProviderRegistry();
   const runtime = createToolRuntime(deps);
   const workSignals = createWorkSignalHub({ approvals });
   const workPlans = createWorkPlanService(deps, {
@@ -225,6 +229,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     completions,
     sessionLog,
     sessionExport,
+    capabilities,
+    subagentProviders,
     skills,
     breakers,
     taskGrants,

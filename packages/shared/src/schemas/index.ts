@@ -194,6 +194,23 @@ export {
   type ApprovalDecisionInput,
 } from './work-signal';
 
+// v2.10 能力包
+export {
+  CAPABILITY_KINDS,
+  CAPABILITY_PERMISSIONS,
+  CAPABILITY_STATUSES,
+  CAPABILITY_REQUIRED_PERMISSION,
+  CAPABILITY_SUPPORTED_KINDS,
+  capabilityDependencySchema,
+  capabilityManifestSchema,
+  type CapabilityKind,
+  type CapabilityPermission,
+  type CapabilityStatus,
+  type CapabilityDependency,
+  type CapabilityManifest,
+  type CapabilityView,
+} from './capability';
+
 // v2.8 目标 / 计划 / 待办
 export {
   GOAL_STATUSES,

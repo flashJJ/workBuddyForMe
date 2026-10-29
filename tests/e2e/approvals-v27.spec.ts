@@ -19,7 +19,9 @@ test.describe('v2.7 工作信号与审批中心', () => {
     const body = (await res.json()) as {
       data?: { signals?: unknown[]; approvals?: unknown[] };
     };
-    expect(body.data?.signals).toEqual([]);
+    // 全量套件共享数据根：前序 spec 刚完成的运行会以 idle/succeeded 进入最近信号，
+    // 因此只断言「无待审批」与 signals 为数组，不再要求空数组（CI 模式跑得更快时必然非空）。
+    expect(Array.isArray(body.data?.signals)).toBe(true);
     expect(body.data?.approvals).toEqual([]);
 
     await page.goto('/approvals');

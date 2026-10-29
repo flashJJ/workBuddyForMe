@@ -27,6 +27,8 @@ export const DATA_SUBDIRS = {
   motions: 'motions',
   /** v2.9 大工具输出溢出的内容寻址文件（sha256.txt） */
   spills: 'spills',
+  /** v2.10 能力包解包目录（capabilities/<id>/） */
+  capabilities: 'capabilities',
 } as const;
 
 export type DataSubdirKey = keyof typeof DATA_SUBDIRS;

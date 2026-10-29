@@ -7,7 +7,7 @@ describe('v037 迁移：运行租约 / 完成回投 / 计划 / 定时跟进', ()
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(38);
+    expect(LATEST_SCHEMA_VERSION).toBe(39);
 
     const tables = db
       .prepare(
