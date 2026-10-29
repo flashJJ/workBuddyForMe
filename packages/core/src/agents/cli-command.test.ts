@@ -18,7 +18,7 @@ describe('v2.11 CLI 命令与工作目录校验', () => {
     const found = resolveCommandPath('tool', {
       platform: 'win32',
       pathEnv: dir,
-      pathExt: '.EXE',
+      pathExt: '.exe',
     });
     expect(found?.toLowerCase().endsWith('tool.exe')).toBe(true);
     expect(
