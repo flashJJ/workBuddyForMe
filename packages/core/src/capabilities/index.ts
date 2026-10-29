@@ -5,7 +5,10 @@ export {
   type CapabilityServiceDeps,
 } from './capability-service';
 export {
+  buildSamplePack,
   buildSampleSkillPack,
+} from './samples';
+export {
   parseCapabilityZip,
   CAPABILITY_MANIFEST_FILE,
   type ParsedCapability,
@@ -13,5 +16,6 @@ export {
 export {
   enableCapabilityEffect,
   disableCapabilityEffect,
+  uninstallCapabilityEffect,
   type CapabilityEffectDeps,
-} from './capability-effects';
+} from './effects';

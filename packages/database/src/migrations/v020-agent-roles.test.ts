@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -21,7 +21,7 @@ describe('v020 迁移：助手三角色模型列 + task_steps 引用列', () => 
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(39);
+    expect(LATEST_SCHEMA_VERSION).toBe(40);
     const assistantCols = columnNames(db, 'assistants');
     expect(assistantCols.has('planner_model_id')).toBe(true);
     expect(assistantCols.has('executor_model_id')).toBe(true);

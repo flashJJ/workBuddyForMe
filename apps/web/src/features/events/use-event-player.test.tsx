@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 import * as React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
@@ -87,7 +87,7 @@ describe('useEventPlayer', () => {
     const { result, playback } = setup();
 
     await act(async () => {
-      await result.current.playerRef.current!.speech('ev.greet', true, new AbortController().signal);
+      await result.current.playerRef.current!.speech({ key: 'ev.greet' }, true, new AbortController().signal);
     });
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(playback.enqueue).toHaveBeenCalledOnce();
@@ -110,7 +110,7 @@ describe('useEventPlayer', () => {
     const { result } = setup({ ttsEnabled: false, ttsReady: true });
 
     await act(async () => {
-      await result.current.playerRef.current!.speech('ev.greet', true, new AbortController().signal);
+      await result.current.playerRef.current!.speech({ key: 'ev.greet' }, true, new AbortController().signal);
     });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.current.view.subtitle).toBe('L:ev.greet');
@@ -124,7 +124,7 @@ describe('useEventPlayer', () => {
     const { result, playback } = setup();
     const ac = new AbortController();
     const pending = act(async () => {
-      await result.current.playerRef.current!.speech('ev.greet', true, ac.signal);
+      await result.current.playerRef.current!.speech({ key: 'ev.greet' }, true, ac.signal);
     });
     ac.abort();
     await pending;

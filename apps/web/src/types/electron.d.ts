@@ -3,6 +3,7 @@ import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 import type { WbfmAwarenessBridge } from '@wbfm/shared/awareness';
+import type { WbfmDialogBridge } from '@wbfm/shared/dialog';
 
 /**
  * Electron preload 通过 contextBridge 注入的桥（window.wbfm）。
@@ -33,6 +34,8 @@ declare global {
       awareness?: WbfmAwarenessBridge;
       /** v2.7 站内深链桥（桌宠/通知 → 主窗 App Router） */
       appLinks?: { onOpen: (cb: (path: string) => void) => () => void };
+      /** v2.11 桌面目录选择桥（外部代理 cwd） */
+      dialog?: WbfmDialogBridge;
     };
   }
 }

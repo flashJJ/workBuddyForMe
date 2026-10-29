@@ -48,6 +48,20 @@ export interface RunEvidenceReport {
   filter: RunEvidenceFilter;
   totals: RunEvidenceSummary;
   chains: RunEvidenceChainSummary[];
+  /** v2.11：能力包声明式卡片计算结果（仅 json 响应携带） */
+  widgets?: ReportWidgetValue[];
+}
+
+export interface ReportWidgetValue {
+  id: string;
+  title: string;
+  chain: RunEvidenceChain;
+  metric: string;
+  windowDays: number;
+  /** 指标值；无样本为 null */
+  value: number | null;
+  /** failure_top 的失败码；其它指标为 null */
+  failureCode?: string | null;
 }
 
 export interface RunEvidenceExport {

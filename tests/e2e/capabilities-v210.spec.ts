@@ -60,6 +60,57 @@ test.describe('v2.10 能力包', () => {
     expect(list).toEqual([]);
   });
 
+  test('kind 筛选、effect 详情与六类示例下载', async ({ page }) => {
+    await page.request.put('/api/settings', { data: { hasOnboarded: true } });
+
+    const sample = await page.request.get('/api/capabilities/sample?kind=workflow');
+    expect(sample.ok()).toBeTruthy();
+    const installed = await page.request.post('/api/capabilities/install', {
+      multipart: {
+        file: {
+          name: 'workflow.zip',
+          mimeType: 'application/zip',
+          buffer: Buffer.from(await sample.body()),
+        },
+      },
+    });
+    expect(installed.status()).toBe(201);
+    const capability = ((await installed.json()) as Envelope<{
+      id: string;
+      effectRef: string;
+    }>).data!;
+
+    await page.goto('/capabilities');
+    await skipOnboardingIfShown(page);
+    await expect(page.getByTestId(`capability-${capability.id}`)).toBeVisible();
+
+    await page.getByTestId('capability-kind-filter-skill').click();
+    await expect(page.getByTestId('capability-filter-empty')).toBeVisible();
+    await page.getByTestId('capability-kind-filter-workflow').click();
+    await expect(page.getByTestId(`capability-${capability.id}`)).toBeVisible();
+    await expect(page.getByTestId('capability-effect')).toContainText(capability.effectRef);
+
+    for (const kind of [
+      'skill',
+      'mcp',
+      'workflow',
+      'pet-action',
+      'event-script',
+      'report-widget',
+    ]) {
+      const res = await page.request.get(`/api/capabilities/sample?kind=${kind}`);
+      expect(res.ok(), kind).toBeTruthy();
+    }
+
+    await page.getByTestId('capability-sample-kind').selectOption('report-widget');
+    await expect(page.getByTestId('capability-sample-link')).toHaveAttribute(
+      'href',
+      /kind=report-widget/,
+    );
+
+    await page.request.delete(`/api/capabilities/${capability.id}`);
+  });
+
   test('非法包返回 422', async ({ page }) => {
     const res = await page.request.post('/api/capabilities/install', {
       multipart: {

@@ -49,6 +49,7 @@ import { enApprovals } from './messages/approvals';
 import { enPlans } from './messages/plans';
 import { enTimeline } from './messages/timeline';
 import { enCapabilities } from './messages/capabilities';
+import { enSubagent } from './messages/subagent';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -106,6 +107,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   plans: enPlans,
   timeline: enTimeline,
   capabilities: enCapabilities,
+  subagent: enSubagent,
 };
 
 export type EnDictionary = typeof enUS;

@@ -3,10 +3,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { ApiError } from '@wbfm/shared/errors';
 import { skillManifestSchema, type CapabilityManifest } from '@wbfm/shared/schemas';
-import type { McpRegistry } from '../mcp/registry';
-import type { SkillService } from '../skills/skill-service';
-
-/** v2.10 能力包 effect：本期只接入 skill / mcp；enable / disable 必须成对 */
+import type { SkillService } from '../../skills/skill-service';
 
 const mcpEntrySchema = z
   .object({
@@ -28,17 +25,23 @@ const mcpEntrySchema = z
     }
   });
 
-export interface CapabilityEffectDeps {
+export interface SkillEffectDeps {
   skills: SkillService;
-  mcp: McpRegistry;
   skillsDir: string;
+}
+
+export interface McpEffectDeps {
+  mcp: {
+    createServer: (input: z.infer<typeof mcpEntrySchema>) => { id: string };
+    removeServer: (id: string) => void;
+  };
 }
 
 function readEntry(packDir: string, entry: string): string {
   return readFileSync(join(packDir, entry), 'utf8');
 }
 
-function enableSkill(packDir: string, deps: CapabilityEffectDeps): string {
+export function enableSkill(packDir: string, deps: SkillEffectDeps): string {
   const parsed = skillManifestSchema.safeParse(
     JSON.parse(readEntry(packDir, 'payload/skill.json')),
   );
@@ -55,7 +58,7 @@ function enableSkill(packDir: string, deps: CapabilityEffectDeps): string {
   return name;
 }
 
-function disableSkill(effectRef: string, deps: CapabilityEffectDeps): void {
+export function disableSkill(effectRef: string, deps: SkillEffectDeps): void {
   const target = join(deps.skillsDir, effectRef);
   if (existsSync(target)) rmSync(target, { recursive: true, force: true });
   deps.skills.reconcile();
@@ -63,7 +66,11 @@ function disableSkill(effectRef: string, deps: CapabilityEffectDeps): void {
   if (state) deps.skills.remove(state.id);
 }
 
-function enableMcp(packDir: string, manifest: CapabilityManifest, deps: CapabilityEffectDeps): string {
+export function enableMcp(
+  packDir: string,
+  manifest: CapabilityManifest,
+  deps: McpEffectDeps,
+): string {
   const parsed = mcpEntrySchema.safeParse(JSON.parse(readEntry(packDir, manifest.entry)));
   if (!parsed.success) {
     throw ApiError.validation(
@@ -74,29 +81,10 @@ function enableMcp(packDir: string, manifest: CapabilityManifest, deps: Capabili
   return server.id;
 }
 
-function disableMcp(effectRef: string, deps: CapabilityEffectDeps): void {
+export function disableMcp(effectRef: string, deps: McpEffectDeps): void {
   try {
     deps.mcp.removeServer(effectRef);
   } catch {
     /* 已不存在视为已撤销 */
   }
-}
-
-export function enableCapabilityEffect(
-  manifest: CapabilityManifest,
-  packDir: string,
-  deps: CapabilityEffectDeps,
-): string {
-  if (manifest.kind === 'skill') return enableSkill(packDir, deps);
-  if (manifest.kind === 'mcp') return enableMcp(packDir, manifest, deps);
-  throw ApiError.validation(`该能力类型尚未接入：${manifest.kind}`);
-}
-
-export function disableCapabilityEffect(
-  manifest: CapabilityManifest,
-  effectRef: string,
-  deps: CapabilityEffectDeps,
-): void {
-  if (manifest.kind === 'skill') return disableSkill(effectRef, deps);
-  if (manifest.kind === 'mcp') return disableMcp(effectRef, deps);
 }

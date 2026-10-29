@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { RefreshCw } from 'lucide-react';
-import type { RunEvidenceChain, RunEvidenceQuery } from '@wbfm/shared/schemas';
+import type { ReportWidgetValue, RunEvidenceChain, RunEvidenceQuery } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/simple-select';
@@ -145,6 +145,18 @@ export function RunReportPage() {
             <SummaryCard label={t('reports.summary.failed')} value={String(totals?.failed ?? 0)} />
           </div>
 
+          {data.widgets && data.widgets.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="report-widget-cards">
+              {data.widgets.map((widget) => (
+                <SummaryCard
+                  key={widget.id}
+                  label={`${widget.title} · ${widget.windowDays}d`}
+                  value={widgetValueText(widget, t)}
+                />
+              ))}
+            </div>
+          ) : null}
+
           {data.totals.total === 0 ? (
             <EmptyState title={t('reports.empty')} description="" />
           ) : (
@@ -216,4 +228,16 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-xl font-semibold">{value}</p>
     </div>
   );
+}
+
+function widgetValueText(widget: ReportWidgetValue, t: (key: 'reports.noSamples') => string): string {
+  if (widget.value == null) return t('reports.noSamples');
+  if (widget.metric === 'success_rate') return `${widget.value}%`;
+  if (widget.metric === 'median_duration') {
+    return formatDurationMs(widget.value) ?? t('reports.noSamples');
+  }
+  if (widget.metric === 'failure_top') {
+    return `${widget.failureCode ?? '—'} × ${widget.value}`;
+  }
+  return String(widget.value);
 }

@@ -24,6 +24,24 @@ fs.mkdirSync(path.dirname(target), { recursive: true });
 console.log(`复制 standalone → ${path.relative(repoRoot, target)}`);
 fs.cpSync(standaloneDir, target, { recursive: true });
 
+// v2.11 M5：Next 15 standalone 在特定构建序列下会把 .next/cache（webpack 缓存，
+// 可达 1.6GB）与本地测试产物一并复制进产物目录，导致安装包膨胀 6 倍。
+// 运行时不需要这些文件（server.js 只依赖 .next/server 与 required-server-files.json）。
+const PRUNE_DIRS = [
+  'apps/web/.next/cache',
+  'apps/web/coverage',
+  'apps/web/playwright-report',
+  'apps/web/test-results',
+  'apps/web/.turbo',
+];
+for (const rel of PRUNE_DIRS) {
+  const dir = path.join(target, rel);
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`已裁撤构建缓存/测试产物 → ${rel}`);
+  }
+}
+
 // v0.9：MCP stdio bin（由 apps/web scripts/build-mcp-server.mjs 产出；
 // 外部 MCP 客户端 spawn 内置 node 运行它，复用同一份归集 node_modules 解决原生 ABI）
 const mcpBinFrom = path.join(webDir, '.next', 'mcp-server');

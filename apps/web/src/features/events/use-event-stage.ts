@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type {
   EmotionState,
+  EventDefinition,
   EventFrequencyTier,
   ExpressionTag,
 } from '@wbfm/shared/schemas';
@@ -43,6 +44,10 @@ export interface EventStage {
   subtitle: string | null;
   fx: EventPlayerView['fx'];
   triggerEvent: (eventId: string, extraCounters?: Record<string, number>) => boolean;
+  /** v2.11：能力包剧本按定义直接准入（绕过内置 id 白名单） */
+  triggerDefinition: (def: EventDefinition) => boolean;
+  /** v2.11：能力包剧本手动试演（绕过冷却/勿扰，CONV 锁硬拦截） */
+  previewDefinition: (def: EventDefinition) => PreviewResult;
   previewBuiltIn: (eventId: string) => PreviewResult | 'missing';
   skip: () => void;
   onHeadTouchStreak: () => void;
@@ -127,6 +132,36 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
     [preview],
   );
 
+  const triggerDefinition = React.useCallback(
+    (def: EventDefinition): boolean => {
+      bridgeEventFire(def.id);
+      const now = Date.now();
+      const ctx = buildConditionContext({
+        emotion: argsRef.current.emotionState,
+        now,
+        lastInteractionMin: readLastInteractionMinutes(now),
+        relationshipEnabled: argsRef.current.relationshipEnabled,
+      });
+      const decision = admit(def, ctx);
+      return decision.kind === 'admitted' || decision.kind === 'queued';
+    },
+    [admit],
+  );
+
+  const previewDefinition = React.useCallback(
+    (def: EventDefinition): PreviewResult => {
+      const now = Date.now();
+      const ctx = buildConditionContext({
+        emotion: argsRef.current.emotionState,
+        now,
+        lastInteractionMin: readLastInteractionMinutes(now),
+        relationshipEnabled: argsRef.current.relationshipEnabled,
+      });
+      return preview(def, ctx);
+    },
+    [preview],
+  );
+
   const onHeadTouchStreak = React.useCallback(() => {
     triggerEvent('ev.touch.shy', { touchStreak: 3 });
   }, [triggerEvent]);
@@ -189,6 +224,8 @@ export function useEventStage(args: UseEventStageArgs): EventStage {
     subtitle: view.subtitle,
     fx: view.fx,
     triggerEvent,
+    triggerDefinition,
+    previewDefinition,
     previewBuiltIn,
     skip,
     onHeadTouchStreak,

@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto';
-import { unzipSync, strFromU8, strToU8, zipSync } from 'fflate';
+import { unzipSync, strFromU8 } from 'fflate';
 import { ApiError } from '@wbfm/shared/errors';
 import {
+  CAPABILITY_ENTRY_BY_KIND,
   CAPABILITY_REQUIRED_PERMISSION,
   CAPABILITY_SUPPORTED_KINDS,
   capabilityManifestSchema,
+  type CapabilityKind,
   type CapabilityManifest,
 } from '@wbfm/shared/schemas';
 
@@ -65,8 +67,10 @@ export function parseCapabilityZip(buffer: Uint8Array): ParsedCapability {
   if (!manifest.permissions.includes(required)) {
     throw ApiError.validation(`缺少必需权限：${required}`);
   }
-  if (manifest.kind === 'skill' && manifest.entry !== 'payload/skill.json') {
-    throw ApiError.validation('skill 能力包的 entry 必须为 payload/skill.json');
+  if (manifest.entry !== CAPABILITY_ENTRY_BY_KIND[manifest.kind]) {
+    throw ApiError.validation(
+      `${manifest.kind} 能力包的 entry 必须为 ${CAPABILITY_ENTRY_BY_KIND[manifest.kind]}`,
+    );
   }
 
   for (const key of Object.keys(files)) {
@@ -93,42 +97,25 @@ export function parseCapabilityZip(buffer: Uint8Array): ParsedCapability {
   const extra = Object.keys(manifest.checksums).filter((file) => !payloadFiles.includes(file));
   if (extra.length > 0) throw ApiError.validation(`checksums 声明了不存在的文件：${extra.join(', ')}`);
 
+  const entryLimit = ENTRY_SIZE_LIMITS[manifest.kind];
+  if (entryLimit && files[manifest.entry]!.byteLength > entryLimit) {
+    throw ApiError.validation(`entry 文件超过大小上限：${manifest.entry}`);
+  }
+  if (manifest.kind === 'pet-action') {
+    for (const file of payloadFiles) {
+      if (file.toLowerCase().endsWith('.vrma') && files[file]!.byteLength > MOTION_MAX_BYTES) {
+        throw ApiError.validation(`动作文件超过 10MB 上限：${file}`);
+      }
+    }
+  }
+
   return { manifest, files };
 }
 
-/** 生成示例技能包（测试/下载示例共用） */
-export function buildSampleSkillPack(): Uint8Array {
-  const skill = {
-    name: 'capability-demo',
-    description: '能力包示例技能：需要当前时间时先查本机时钟',
-    version: '1.0.0',
-    permissions: ['read'],
-    promptTemplates: [
-      {
-        name: 'demo',
-        order: 0,
-        content: '当用户询问当前时间或日期时，先调用 current_time，再给出本地时间。',
-      },
-    ],
-    allowedTools: ['current_time'],
-    examples: [
-      { title: '现在几点', userQuery: '现在几点？', expectedBehavior: '调用 current_time 后回答' },
-    ],
-  };
-  const skillBytes = strToU8(JSON.stringify(skill, null, 2));
-  const manifest = {
-    id: 'com.wbfm.sample.capability-demo',
-    version: '1.0.0',
-    kind: 'skill',
-    name: '能力包示例技能',
-    description: '安装后出现一个可用 current_time 的示例技能；停用即移除。',
-    permissions: ['skill:install'],
-    entry: 'payload/skill.json',
-    dependencies: [],
-    checksums: { 'payload/skill.json': sha256(skillBytes) },
-  };
-  return zipSync({
-    [CAPABILITY_MANIFEST_FILE]: strToU8(JSON.stringify(manifest, null, 2)),
-    'payload/skill.json': skillBytes,
-  });
-}
+/** 每类 payload 主文件的体积上限（VRMA 单独按动作文件上限） */
+const ENTRY_SIZE_LIMITS: Partial<Record<CapabilityKind, number>> = {
+  workflow: 256 * 1024,
+  'pet-action': 32 * 1024,
+};
+
+const MOTION_MAX_BYTES = 10 * 1024 * 1024;

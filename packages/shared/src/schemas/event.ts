@@ -53,8 +53,10 @@ const gazeStepSchema = z.object({
 
 const speechStepSchema = z.object({
   kind: z.literal('speech'),
-  /** i18n 键（event.* 命名）；无变量插值 */
-  lineKey: z.string().min(1).max(120),
+  /** 内置剧本用 i18n 键（event.* 命名）；与 text 恰有其一 */
+  lineKey: z.string().min(1).max(120).optional(),
+  /** v2.11：能力包安装剧本用字面量；与 lineKey 恰有其一 */
+  text: z.string().min(1).max(32).optional(),
   /** 缺省 true；false=仅气泡字幕不出声（高频互动防腻） */
   tts: z.boolean().optional(),
 });
@@ -124,7 +126,9 @@ export const eventDefinitionSchema = z
       .min(3)
       .max(80)
       .regex(/^(ev|usr)\.[a-z0-9]+(?:\.[a-z0-9]+)*$/),
-    titleKey: z.string().min(1).max(120),
+    titleKey: z.string().min(1).max(120).optional(),
+    /** v2.11：能力包安装剧本用字面量标题；与 titleKey 恰有其一 */
+    title: z.string().min(1).max(40).optional(),
     priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     interruptPolicy: z.enum(['ignore', 'replaceLowerPriority', 'replace']),
     /** 同 id 两次 played 的最小间隔（毫秒） */
@@ -156,8 +160,34 @@ export const eventDefinitionSchema = z
    * 不通过即拒绝整个剧本（非法剧本不入注册表，而非运行期容错）。
    */
   .superRefine((def, ctx) => {
+    if (!def.titleKey && !def.title) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['titleKey'], message: 'titleKey 与 title 必须提供一个' });
+    }
+    if (def.titleKey && def.title) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['title'],
+        message: 'titleKey 与 title 只能提供一个',
+      });
+    }
     let branches = 0;
     def.steps.forEach((step, index) => {
+      if (step.kind === 'speech') {
+        if (!step.lineKey && !step.text) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['steps', index, 'lineKey'],
+            message: 'speech 必须提供 lineKey 或 text',
+          });
+        }
+        if (step.lineKey && step.text) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['steps', index, 'text'],
+            message: 'speech 的 lineKey 与 text 只能提供一个',
+          });
+        }
+      }
       if (step.kind !== 'branch') return;
       branches += 1;
       if (step.goto <= index) {
@@ -184,6 +214,15 @@ export const eventDefinitionSchema = z
     }
   });
 export type EventDefinition = z.infer<typeof eventDefinitionSchema>;
+
+/** v2.11：台词运行时判别对象（内置走 i18n key，安装剧本走字面量） */
+export type EventSpeechLine = { key: string } | { text: string };
+
+export function speechLineOf(step: Extract<EventStep, { kind: 'speech' }>): EventSpeechLine {
+  if (step.text) return { text: step.text };
+  if (step.lineKey) return { key: step.lineKey };
+  throw new Error('speech step 缺少 lineKey/text');
+}
 
 // ── 演出结果与抑制原因（event_usage 落库口径，M4 接仓储） ──
 export const EVENT_RUN_OUTCOMES = ['played', 'skipped', 'interrupted', 'suppressed'] as const;

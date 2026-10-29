@@ -44,8 +44,8 @@ function delegatingSink(
     gaze: (x, y) => playerRef.current?.gaze(x, y),
     fx: (id) => playerRef.current?.fx(id),
     spatial: (action) => playerRef.current?.spatial(action),
-    speech: (key, speak, signal) =>
-      playerRef.current?.speech(key, speak, signal) ?? Promise.resolve(),
+    speech: (line, speak, signal) =>
+      playerRef.current?.speech(line, speak, signal) ?? Promise.resolve(),
     release: () => playerRef.current?.release(),
   };
 }

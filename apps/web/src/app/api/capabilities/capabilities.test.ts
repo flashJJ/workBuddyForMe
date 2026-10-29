@@ -2,7 +2,12 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDatabase, type DatabaseInstance } from '@wbfm/database';
+import {
+  createDatabase,
+  createInstalledEventScriptRepository,
+  createReportWidgetRepository,
+  type DatabaseInstance,
+} from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '@wbfm/core/secrets';
 import { buildSampleSkillPack } from '@wbfm/core/capabilities';
@@ -86,5 +91,87 @@ describe('v2.10 能力包 API', () => {
       new Request('http://127.0.0.1/x', { method: 'POST', body: notZip }),
     );
     expect(badZip.status).toBe(422);
+  });
+
+  it('示例包按 kind：workflow 发布、pet-action 进动作池、非法 kind 422', async () => {
+    const invalid = await sampleCapability(new Request('http://127.0.0.1/x?kind=nope'));
+    expect(invalid.status).toBe(422);
+
+    const workflowSample = await sampleCapability(
+      new Request('http://127.0.0.1/x?kind=workflow'),
+    );
+    const workflowForm = new FormData();
+    workflowForm.append(
+      'file',
+      new File(
+        [new Uint8Array(await workflowSample.arrayBuffer()) as unknown as BlobPart],
+        'workflow.zip',
+        { type: 'application/zip' },
+      ),
+    );
+    const installedWorkflow = await installCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: workflowForm }),
+    );
+    expect(installedWorkflow.status).toBe(201);
+    const workflowCap = (await installedWorkflow.json()).data;
+    const services = __buildContainerForTest(db, createWebCipher());
+    expect(
+      services.workflows.listWorkflows().some((item) => item.id === workflowCap.effectRef),
+    ).toBe(true);
+
+    const petSample = await sampleCapability(new Request('http://127.0.0.1/x?kind=pet-action'));
+    const petForm = new FormData();
+    petForm.append(
+      'file',
+      new File(
+        [new Uint8Array(await petSample.arrayBuffer()) as unknown as BlobPart],
+        'pet.zip',
+        { type: 'application/zip' },
+      ),
+    );
+    const installedPet = await installCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: petForm }),
+    );
+    expect(installedPet.status).toBe(201);
+    const petCap = (await installedPet.json()).data;
+    expect(services.motions.list().some((item) => item.id === petCap.effectRef)).toBe(true);
+  });
+
+  it('示例包：event-script 落库启停、report-widget 卡片生效', async () => {
+    const installSample = async (kind: string) => {
+      const sample = await sampleCapability(new Request(`http://127.0.0.1/x?kind=${kind}`));
+      const form = new FormData();
+      form.append(
+        'file',
+        new File(
+          [new Uint8Array(await sample.arrayBuffer()) as unknown as BlobPart],
+          `${kind}.zip`,
+          { type: 'application/zip' },
+        ),
+      );
+      return installCapability(
+        new Request('http://127.0.0.1/x', { method: 'POST', body: form }),
+      );
+    };
+
+    const scriptInstall = await installSample('event-script');
+    expect(scriptInstall.status).toBe(201);
+    const scriptCap = (await scriptInstall.json()).data;
+    expect(scriptCap.effectRef).toBe('usr.goodnight');
+    const scripts = createInstalledEventScriptRepository(db);
+    expect(scripts.get('usr.goodnight')?.enabled).toBe(true);
+
+    await disableCapability(new Request('http://127.0.0.1/x', { method: 'POST' }), {
+      params: Promise.resolve({ id: scriptCap.id }),
+    });
+    expect(scripts.get('usr.goodnight')?.enabled).toBe(false);
+
+    const widgetInstall = await installSample('report-widget');
+    expect(widgetInstall.status).toBe(201);
+    const widgetCap = (await widgetInstall.json()).data;
+    expect(widgetCap.effectRef).toBe('com.example.sample.report-widget');
+    expect(
+      createReportWidgetRepository(db).get('com.example.sample.report-widget')?.title,
+    ).toBe('近 30 天任务成功率');
   });
 });

@@ -4,6 +4,7 @@ import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 import type { WbfmAwarenessBridge } from '@wbfm/shared/awareness';
+import type { WbfmDialogBridge } from '@wbfm/shared/dialog';
 
 /**
  * 最小 preload：
@@ -123,6 +124,13 @@ const appLinks = {
     subscribe('app:deep-link', (payload) => cb(String(payload))),
 };
 
+/**
+ * v2.11 桌面目录选择桥：外部代理 cwd 选择（单通道，无其他壳能力）。
+ */
+const dialog: WbfmDialogBridge = {
+  pickDirectory: () => ipcRenderer.invoke('dialog:pick-directory') as Promise<string | null>,
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
@@ -135,4 +143,5 @@ contextBridge.exposeInMainWorld('wbfm', {
   notify,
   awareness,
   appLinks,
+  dialog,
 });

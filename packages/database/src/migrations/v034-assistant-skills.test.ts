@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -43,7 +43,7 @@ describe('v034 迁移：助手级技能（assistants.skill_names）', () => {
     db.pragma('user_version = 33');
 
     const again = applyMigrations(db);
-    expect(again.applied).toEqual([34, 35, 36, 37, 38, 39]);
+    expect(again.applied).toEqual([34, 35, 36, 37, 38, 39, 40]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     db.close();
   });

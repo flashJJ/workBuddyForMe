@@ -62,6 +62,8 @@ export interface WorkflowView {
   updatedAt: string;
   /** 详情接口附带：最近一次成功运行时间（列表卡片用，无运行记录为 null） */
   lastRunAt?: string | null;
+  /** v2.11：来源能力包 id（用户自建为 null；包卸载后保留禁用行时用于标注） */
+  originCapabilityId?: string | null;
 }
 
 /** 工作流版本视图（图快照） */

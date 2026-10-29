@@ -16,6 +16,8 @@ export * from './pet';
 export * from './notify';
 // v2.7 工作信号与审批信封（task/flow/agent → 桌宠聚合）
 export * from './work-signal';
+// v2.11 桌面目录选择桥（外部代理 cwd）
+export * from './dialog';
 // v2.0 M3 系统事件感知桥（powerMonitor ↔ renderer）
 export * from './awareness';
 export * from './command';

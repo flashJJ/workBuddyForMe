@@ -88,8 +88,30 @@ describe('event schema（v1.7 M1）', () => {
     ).toBe(false);
   });
 
-  it('speech tts 可缺省、lineKey 必填', () => {
+  it('speech 台词：lineKey 与 text 恰有其一', () => {
     expect(eventStepSchema.parse({ kind: 'speech', lineKey: 'a' })).not.toHaveProperty('tts');
     expect(eventStepSchema.safeParse({ kind: 'speech', lineKey: '' }).success).toBe(false);
+    const textStep = eventStepSchema.parse({ kind: 'speech', text: '晚安' });
+    expect('text' in textStep ? textStep.text : null).toBe('晚安');
+    expect(
+      eventDefinitionSchema.safeParse(makeDef([{ kind: 'speech', lineKey: 'a', text: 'b' }])).success,
+    ).toBe(false);
+    expect(eventDefinitionSchema.safeParse(makeDef([{ kind: 'speech' } as EventStep])).success).toBe(
+      false,
+    );
+  });
+
+  it('标题：titleKey 与 title 恰有其一', () => {
+    expect(
+      eventDefinitionSchema.safeParse(makeDef([expr()], { titleKey: undefined, title: '晚安小仪式' }))
+        .success,
+    ).toBe(true);
+    expect(eventDefinitionSchema.safeParse(makeDef([expr()], { title: '重复标题' })).success).toBe(
+      false,
+    );
+    expect(
+      eventDefinitionSchema.safeParse(makeDef([expr()], { titleKey: undefined, title: undefined }))
+        .success,
+    ).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { createRunEvidenceService } from '@wbfm/core/reports';
+import { createRunEvidenceService, listReportWidgetValues } from '@wbfm/core/reports';
 import { runEvidenceQuerySchema } from '@wbfm/shared/schemas';
 import { jsonOk } from '@/lib/server/api-response';
 import { defineRoute } from '@/lib/server/with-api-handler';
@@ -13,7 +13,12 @@ export const dynamic = 'force-dynamic';
 export const GET = defineRoute(({ request, services }) => {
   const query = parseSearch(runEvidenceQuerySchema, new URL(request.url));
   const service = createRunEvidenceService({ db: services.db });
-  if (query.format === 'json') return jsonOk(service.report(query));
+  if (query.format === 'json') {
+    return jsonOk({
+      ...service.report(query),
+      widgets: listReportWidgetValues(services.db),
+    });
+  }
   const exported = service.exportReport(query, query.format);
   return new Response(exported.content, {
     headers: {

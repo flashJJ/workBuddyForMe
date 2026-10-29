@@ -48,6 +48,7 @@ import { zhApprovals } from './messages/approvals';
 import { zhPlans } from './messages/plans';
 import { zhTimeline } from './messages/timeline';
 import { zhCapabilities } from './messages/capabilities';
+import { zhSubagent } from './messages/subagent';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -106,6 +107,7 @@ export const zhCN = {
   plans: zhPlans,
   timeline: zhTimeline,
   capabilities: zhCapabilities,
+  subagent: zhSubagent,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

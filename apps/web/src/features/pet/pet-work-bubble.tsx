@@ -51,7 +51,9 @@ export function PetWorkBubble({ view, mode, enabled, connected, reduceMotion }: 
       ? t('pet.work.sourceTask')
       : primary.source === 'flow'
         ? t('pet.work.sourceFlow')
-        : t('pet.work.sourceAgent')
+        : primary.source === 'subagent'
+          ? t('pet.work.sourceSubagent')
+          : t('pet.work.sourceAgent')
     : null;
 
   let headline: string;

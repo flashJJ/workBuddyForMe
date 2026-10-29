@@ -4,6 +4,7 @@
  */
 export * from './common';
 export * from './report';
+export * from './subagent';
 export {
   providerProtocolSchema,
   providerCreateSchema,
@@ -201,14 +202,25 @@ export {
   CAPABILITY_STATUSES,
   CAPABILITY_REQUIRED_PERMISSION,
   CAPABILITY_SUPPORTED_KINDS,
+  CAPABILITY_ENTRY_BY_KIND,
   capabilityDependencySchema,
   capabilityManifestSchema,
+  workflowCapabilityPayloadSchema,
+  petActionCapabilityPayloadSchema,
+  eventScriptCapabilityPayloadSchema,
+  reportWidgetCapabilityPayloadSchema,
+  REPORT_WIDGET_METRICS,
   type CapabilityKind,
   type CapabilityPermission,
   type CapabilityStatus,
   type CapabilityDependency,
   type CapabilityManifest,
   type CapabilityView,
+  type WorkflowCapabilityPayload,
+  type PetActionCapabilityPayload,
+  type EventScriptCapabilityPayload,
+  type ReportWidgetCapabilityPayload,
+  type ReportWidgetMetric,
 } from './capability';
 
 // v2.8 目标 / 计划 / 待办

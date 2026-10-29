@@ -36,6 +36,7 @@ import { StageManager } from './stage/stage-manager';
 import { installUpdater } from './updater-bootstrap';
 import { registerGlobalShortcuts } from './global-shortcuts';
 import { registerNotifyIpc } from './notify-ipc';
+import { registerDialogIpc } from './dialog-ipc';
 import { registerAwarenessIpc } from './awareness/awareness-ipc';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
@@ -98,6 +99,8 @@ async function start(): Promise<void> {
   await createWindow(boot);
   // v1.7：系统通知兜底（角色化提醒到点但无演出出口时）
   registerNotifyIpc(ipcMain);
+  // v2.11：外部代理工作目录选择（单通道）
+  registerDialogIpc(ipcMain);
   // v2.0 M3：系统事件感知（默认关闭，渲染端按授权设置显式武装；广播给所有窗口）
   registerAwarenessIpc({
     ipc: ipcMain,

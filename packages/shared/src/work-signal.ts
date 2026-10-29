@@ -8,7 +8,7 @@
  * - 本文件只放类型与纯函数，不依赖 React / DB / Node。
  */
 
-export const WORK_SOURCES = ['task', 'flow', 'agent', 'chat', 'meeting'] as const;
+export const WORK_SOURCES = ['task', 'flow', 'agent', 'chat', 'meeting', 'subagent'] as const;
 export type WorkSource = (typeof WORK_SOURCES)[number];
 
 export const WORK_OUTCOMES = [
@@ -39,7 +39,7 @@ export const WORK_ACTIVITIES = [
 ] as const;
 export type WorkActivity = (typeof WORK_ACTIVITIES)[number];
 
-export const APPROVAL_SOURCES = ['tool', 'flow', 'desktop'] as const;
+export const APPROVAL_SOURCES = ['tool', 'flow', 'desktop', 'subagent'] as const;
 export type ApprovalSource = (typeof APPROVAL_SOURCES)[number];
 
 export interface WorkSignal {

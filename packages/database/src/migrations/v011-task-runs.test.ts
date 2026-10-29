@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { migrateV001 } from './v001-initial-schema';
 import { migrateV002 } from './v002-tools';
@@ -38,8 +38,8 @@ describe('v011 迁移：任务 Agent 循环（task_runs + task_steps）', () => 
   it('v10 老库升级：两表可写，级联删除生效', () => {
     const db = createV10Database();
     const result = applyMigrations(db);
-            expect(result.applied).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]);
-    expect(LATEST_SCHEMA_VERSION).toBe(39);
+            expect(result.applied).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]);
+    expect(LATEST_SCHEMA_VERSION).toBe(40);
 
     const ts = '2026-09-30T01:00:00.000Z';
     db.prepare(

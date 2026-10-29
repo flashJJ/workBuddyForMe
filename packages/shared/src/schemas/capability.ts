@@ -1,11 +1,15 @@
 import { z } from 'zod';
+import { eventDefinitionSchema } from './event';
+import { flowGraphSchema } from './flow';
+import { MOTION_MOODS, MOTION_SEGMENTS } from './motion-asset';
+import { RUN_EVIDENCE_CHAINS } from './report';
 
 /**
- * v2.10 能力包清单与视图。
+ * v2.10 能力包清单与视图；v2.11 扩展 workflow / pet-action 两类 payload。
  *
  * 口径：ZIP 根目录固定 `wbfm-capability.json` + `payload/**`；
  * 清单声明 kind/permissions/entry/checksums，安装侧 fail-closed 校验；
- * 本期只把 skill / mcp 两类登记为可执行 effect，其余 kind 保留但安装拒绝。
+ * v2.11 M1 起 skill / mcp / workflow / pet-action 四类可执行，其余两类仍拒绝安装。
  */
 
 export const CAPABILITY_KINDS = [
@@ -90,5 +94,104 @@ export const CAPABILITY_REQUIRED_PERMISSION: Record<CapabilityKind, CapabilityPe
   'report-widget': 'report:widget',
 };
 
-/** 本期已接入 effect 的 kind（其余安装时明确拒绝） */
-export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = ['skill', 'mcp'];
+/** 当前已接入 effect 的 kind（其余安装时明确拒绝） */
+export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = [
+  'skill',
+  'mcp',
+  'workflow',
+  'pet-action',
+  'event-script',
+  'report-widget',
+];
+
+/** 每种 kind 的 entry 固定路径（安装侧强校验） */
+export const CAPABILITY_ENTRY_BY_KIND: Record<CapabilityKind, string> = {
+  skill: 'payload/skill.json',
+  mcp: 'payload/server.json',
+  workflow: 'payload/workflow.json',
+  'pet-action': 'payload/action.json',
+  'event-script': 'payload/script.json',
+  'report-widget': 'payload/widget.json',
+};
+
+/** v2.11：workflow 能力包 payload */
+export const workflowCapabilityPayloadSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  description: z.string().trim().max(200).default(''),
+  icon: z.string().trim().max(32).optional(),
+  color: z.string().trim().max(32).optional(),
+  graph: flowGraphSchema,
+});
+export type WorkflowCapabilityPayload = z.infer<typeof workflowCapabilityPayloadSchema>;
+
+/** v2.11：pet-action 能力包 payload */
+export const petActionCapabilityPayloadSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  file: z
+    .string()
+    .trim()
+    .regex(/^payload\/[a-zA-Z0-9._/-]+\.vrma$/i, 'file 必须是 payload/ 下的 .vrma'),
+  entryKey: z.string().trim().min(1).max(32).optional(),
+  segment: z.enum(MOTION_SEGMENTS).optional(),
+  mood: z.enum(MOTION_MOODS).optional(),
+  minRelationshipLevel: z.number().int().min(0).max(3).optional(),
+});
+export type PetActionCapabilityPayload = z.infer<typeof petActionCapabilityPayloadSchema>;
+
+/** v2.11：event-script 能力包 payload（仅短语触发） */
+export const eventScriptCapabilityPayloadSchema = z
+  .object({
+    definition: eventDefinitionSchema,
+    trigger: z.object({
+      kind: z.literal('phrase'),
+      phrases: z.array(z.string().trim().min(2).max(24)).min(1).max(5),
+    }),
+  })
+  .superRefine((value, ctx) => {
+    const def = value.definition;
+    if (!def.id.startsWith('usr.')) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['definition', 'id'], message: '安装剧本 id 必须为 usr.*' });
+    }
+    const slug = def.id.slice(4);
+    if (!/^[a-z0-9]{3,40}$/.test(slug)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['definition', 'id'],
+        message: '安装剧本 id 必须形如 usr.<3-40 位小写字母/数字>',
+      });
+    }
+    if (!def.title) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['definition', 'title'],
+        message: '安装剧本必须使用 title 字面量',
+      });
+    }
+    def.steps.forEach((step, index) => {
+      if (step.kind === 'speech' && !step.text) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['definition', 'steps', index, 'text'],
+          message: '安装剧本台词必须使用 text 字面量',
+        });
+      }
+    });
+  });
+export type EventScriptCapabilityPayload = z.infer<typeof eventScriptCapabilityPayloadSchema>;
+
+/** v2.11：report-widget 能力包 payload（仅声明式指标） */
+export const REPORT_WIDGET_METRICS = [
+  'success_rate',
+  'run_count',
+  'median_duration',
+  'failure_top',
+] as const;
+export type ReportWidgetMetric = (typeof REPORT_WIDGET_METRICS)[number];
+
+export const reportWidgetCapabilityPayloadSchema = z.object({
+  title: z.string().trim().min(1).max(40),
+  chain: z.enum(RUN_EVIDENCE_CHAINS),
+  metric: z.enum(REPORT_WIDGET_METRICS),
+  windowDays: z.union([z.literal(7), z.literal(30), z.literal(90)]),
+});
+export type ReportWidgetCapabilityPayload = z.infer<typeof reportWidgetCapabilityPayloadSchema>;

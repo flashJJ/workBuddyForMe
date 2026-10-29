@@ -13,5 +13,8 @@ export const GET = defineRoute(({ services }) => {
 
 export const PUT = defineRoute(async ({ request, services }) => {
   const input = parseBody(settingsUpdateSchema, await readJsonBody(request));
-  return jsonOk(services.settings.update(input));
+  const updated = services.settings.update(input);
+  // v2.11：外部代理配置变更立即同步注册表（关闭即注销并取消在途运行）
+  services.subagentRuns.refresh();
+  return jsonOk(updated);
 });

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -20,7 +20,7 @@ describe('v017 迁移：chunk 坐标/FTS/知识编译三表/编译状态', () =>
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(39);
+    expect(LATEST_SCHEMA_VERSION).toBe(40);
 
     const chunkCols = tableColumns(db, 'document_chunks');
     expect(chunkCols.has('page_no')).toBe(true);

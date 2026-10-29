@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -28,7 +28,7 @@ describe('v019 迁移：agent_runs/agent_handoffs 与归属列', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(39);
+    expect(LATEST_SCHEMA_VERSION).toBe(40);
     expect(tableExists(db, 'agent_runs')).toBe(true);
     expect(tableExists(db, 'agent_handoffs')).toBe(true);
     expect(columnNames(db, 'task_runs').has('agent_run_id')).toBe(true);

@@ -13,6 +13,7 @@ export interface WorkflowRow {
   current_version: number;
   created_at: string;
   updated_at: string;
+  origin_capability_id: string | null;
 }
 
 export interface WorkflowVersionRow {
@@ -30,6 +31,8 @@ export interface WorkflowCreateFields {
   description?: string;
   icon?: string;
   color?: string;
+  /** v2.11：来源能力包 id（用户自建不传） */
+  originCapabilityId?: string | null;
 }
 
 export interface WorkflowUpdateFields {
@@ -50,6 +53,7 @@ function mapWorkflow(row: WorkflowRow): WorkflowView {
     currentVersion: row.current_version,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    originCapabilityId: row.origin_capability_id ?? null,
   };
 }
 
@@ -78,9 +82,10 @@ export function createWorkflowRepository(db: DatabaseInstance) {
       const ts = nowIso();
       db.prepare(
         `INSERT INTO workflows
-           (id, name, description, icon, color, status, current_version, created_at, updated_at)
+           (id, name, description, icon, color, status, current_version, created_at, updated_at,
+            origin_capability_id)
          VALUES
-           (@id, @name, @description, @icon, @color, 'draft', 0, @ts, @ts)`,
+           (@id, @name, @description, @icon, @color, 'draft', 0, @ts, @ts, @origin)`,
       ).run({
         id,
         name: fields.name,
@@ -88,6 +93,7 @@ export function createWorkflowRepository(db: DatabaseInstance) {
         icon: fields.icon ?? 'workflow',
         color: fields.color ?? 'default',
         ts,
+        origin: fields.originCapabilityId ?? null,
       });
       return mapWorkflow(this.getWorkflowRow(id)!);
     },
@@ -207,6 +213,32 @@ export function createWorkflowRepository(db: DatabaseInstance) {
       });
       publish();
       return this.getWorkflow(workflowId);
+    },
+
+    /** v2.11：按来源能力包查找（停用后再次启用时复用同一工作流） */
+    findByOriginCapabilityId(capabilityId: string): WorkflowView | null {
+      const row = db
+        .prepare(
+          'SELECT * FROM workflows WHERE origin_capability_id = ? ORDER BY created_at DESC LIMIT 1',
+        )
+        .get(capabilityId) as WorkflowRow | undefined;
+      return row ? mapWorkflow(row) : null;
+    },
+
+    /** v2.11：是否存在运行记录（卸载清理判定） */
+    hasRuns(workflowId: string): boolean {
+      const row = db
+        .prepare('SELECT 1 AS hit FROM workflow_runs WHERE workflow_id = ? LIMIT 1')
+        .get(workflowId) as { hit: number } | undefined;
+      return Boolean(row);
+    },
+
+    /** v2.11：是否被对外端点引用（卸载清理判定） */
+    hasEndpoint(workflowId: string): boolean {
+      const row = db
+        .prepare('SELECT 1 AS hit FROM workflow_endpoints WHERE workflow_id = ? LIMIT 1')
+        .get(workflowId) as { hit: number } | undefined;
+      return Boolean(row);
     },
 
     deleteWorkflow(id: string): void {
