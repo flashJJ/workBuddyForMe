@@ -11,13 +11,14 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 已验收待发布：v2.11 🧩 可扩展 II——四类 effect 装满，外部代理从缝到实现
+## 已正式发布：v2.11 🧩 可扩展 II——四类 effect 装满，外部代理从缝到实现（2026-10-30，tag `v2.11.0`）
 
 v2.10 只接通了 `skill` / `mcp` 两类 effect，其余 `workflow` / `pet-action` / `event-script` / `report-widget` 在清单层保留但安装拒绝；外部代理只有接口与空注册表。v2.11 把六类 effect 全部接通，并落地第一个外部代理实现（本地 CLI 适配器，默认关、逐次审批、证据可查），守住「不做远程市场、不执行任意代码、不共享宿主密钥」边界。
 
 - 方案：[v2.11 方案](../plan/v2.11/README.md) · [M0 契约冻结](../plan/v2.11/00-M0-契约冻结.md) · [M5 验收](../plan/v2.11/06-M5-验收.md)
-- 状态：✅ M1–M5 完成（本地全量门禁通过），待合并 main 与 tag `v2.11.0`
-- 分支：`feature/v2.11-capabilities-external-agent`（规划稿在 `docs/v2.11-roadmap`）
+- 总结：[v2.11-release-summary.md](v2.11-release-summary.md) · 发行说明：[v2.11-release-notes.md](v2.11-release-notes.md)
+- 状态：✅ 已正式发布并置 Latest（Release workflow `40924090724`，Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.11.0>；生产模式 Web e2e 122/122、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 192.49 MB）
+- 分支：`feature/v2.11-capabilities-external-agent`（`--no-ff` 合入 main `3c3155d`；跨平台单测修复 `4801b44` + `79c30ff`）
 
 ## 已正式发布：v2.6 🧠 会沉淀——结论可执行，记忆有来路（2026-10-28，tag `v2.6.0`，2026-10-29 转正）
 
@@ -214,7 +215,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.8 | 会计划：服务端持久作业 + 目标/计划/待办 + 定时跟进 | ✅ 已交付（并入 v2.10.0 统一发布） | [M0](../plan/v2.8/00-M0-契约冻结.md) · [M5](../plan/v2.8/05-M5-验收.md) | 同上 | 同上 | `v2.10.0` |
 | v2.9 | 可复盘：事件日志 + 检索导出 + 大输出溢出 | ✅ 已交付（并入 v2.10.0 统一发布） | [M0](../plan/v2.9/00-M0-契约冻结.md) · [M5](../plan/v2.9/05-M5-验收.md) | 同上 | 同上 | `v2.10.0` |
 | v2.10 | 可扩展：能力包 + 外部代理接口缝 | ✅ 已交付（统一发布） | [M0](../plan/v2.10/00-M0-契约冻结.md) · [M5](../plan/v2.10/05-M5-验收.md) | 同上 | 同上 | `v2.10.0` |
-| v2.11 | 可扩展 II：六类 effect 全接通 + 外部代理（本地 CLI） | ✅ 已验收待发布（M1–M5 完成） | [M0](../plan/v2.11/00-M0-契约冻结.md) · [M5](../plan/v2.11/06-M5-验收.md) | — | — | 待 tag |
+| v2.11 | 可扩展 II：六类 effect 全接通 + 外部代理（本地 CLI） | ✅ 已正式发布（2026-10-30，Release 已转正并置 Latest） | [M0](../plan/v2.11/00-M0-契约冻结.md) · [M5](../plan/v2.11/06-M5-验收.md) | [总结](v2.11-release-summary.md) | [发行说明](v2.11-release-notes.md) | `v2.11.0` |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
