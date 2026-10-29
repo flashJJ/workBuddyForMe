@@ -1,6 +1,6 @@
 # v2.12 方案：可扩展 III——能力包收口，签名可验证、升级可回滚、健康可自检
 
-> 状态：📐 规划中（M0 契约冻结待评审）
+> 状态：📐 规划中（M0 技术评审通过，3 项产品口径待确认）
 > 上一正式版：v2.11.0（六类 effect 全接通 + 本地 CLI 外部代理）
 > 主题一句话：**v2.11 证明了「六类能力都能装、外部代理真能跑」，v2.12 要证明「装进来的包可信、升级不丢状态、坏了能自检」。**
 
@@ -53,24 +53,27 @@ v2.11 把六类 effect 全部接通，能力包从「两类可装卸」变成「
 
 **P0-1 清单签名：canonical 序列化 + Ed25519 验签**
 
-- 新增 shared `canonicalizeCapabilityManifest(manifest)`：对对象键递归排序、数组保序、去掉 `signature` 字段，输出稳定 JSON；前缀域串 `capability-manifest-v1\n` 防跨协议复用。
+- 新增 shared `canonicalizeCapabilityManifest(manifest)`：对对象键递归排序、数组保序、去掉 `signature` 字段，输出稳定 JSON；前缀域串 `capability-manifest-v1\n` 防跨协议复用。输入必须是 `capabilityManifestSchema.parse` 后的规范化清单（默认值已应用），不能直接 canonical 作者手写 JSON。
 - 签名 = base64(Ed25519(privateKey, UTF-8(域串 + canonical JSON)))，放入 `manifest.signature`；新增可选 `signatureKeyId`（3–32 位小写字母/数字/._-），参与签名。
 - 验签结果五态：`none`（无签名字段）/ `valid` / `invalid`（格式或密码学失败）/ `untrusted`（签名可解析但密钥不在信任库）/ `malformed`。
-- **无效签名在 `warn` / `require` 下拒绝安装/升级（422）**；策略只决定「无签名」与「未知密钥」是否放行；`off` 是显式跳过验签的逃生门。
+- **无效签名在 `warn` / `require` 下拒绝安装/升级/启用（422）**；策略只决定「无签名」与「未知密钥」是否放行；`off` 是显式跳过验签的逃生门。
 - 信任库放 settings JSON：`capabilityTrustedKeys: Array<{ id, label, publicKey, createdAt }>`（≤20 条，PEM SPKI，导入时用 `crypto.createPublicKey` 校验）；策略 `capabilitySignaturePolicy: 'off' | 'warn' | 'require'`，默认 `warn`。
-- 新增签名工具 `scripts/sign-capability.mjs`：读清单文件 → 规范化 → 签名 → 打印 base64 与 keyId（`--write` 才回写文件），供包作者本地使用。
+- canonicalize 留 shared（纯函数）；验签与公钥导入放 core `capabilities/signature.ts`（服务端），避免 `node:crypto` 进入客户端 bundle。
+- 新增签名工具 `scripts/sign-capability.mjs`：读清单 → schema parse → 规范化 → 签名 → 打印 base64 与 keyId（`--write` 才回写文件）；从 `packages/shared/dist` 导入 canonicalize，不复制第二份实现。
 - 验收：改任一清单字段后验签失败；键顺序不同的等价清单验签一致；ZIP 重打包不影响验签。
 
 **P0-2 同 id 原地升级与回滚**
 
 - 新端点 `POST /api/capabilities/:id/upgrade`（multipart，字段名 `file`）。
-- 前置：清单 id 必须等于路径 id；kind 必须与已安装一致；版本必须**严格大于**当前版本（`1` / `1.0` / `1.0.0` 归一化比较）。
-- 校验复用安装链路（ZIP 结构、checksums、权限、entry、payload schema、依赖已启用）；新增依赖前置：所有**启用中**从属包声明的依赖版本必须与新版本完全相等，否则 409 并列出从属包。
+- 前置：清单 id 必须等于路径 id；kind 必须与已安装一致；版本必须**严格大于**当前版本（`1` / `1.0` / `1.0.0` 归一化比较，非法段 422）。
+- 校验复用安装链路（ZIP 结构、checksums、权限、entry、payload schema、依赖已启用、签名策略）；新增依赖前置：所有**启用中**从属包声明的依赖版本必须与新版本完全相等，否则 409 并列出从属包。
 - 状态机：
   - 旧包 `disabled`：写入新包与新清单，保持 `disabled`，不尝试启用；
   - 旧包 `enabled`：先 disable 旧 effect（失败则中止，磁盘与状态不变）→ 暂存目录写入 → 目录原子换位（live → backup，staging → live）→ 仓储替换清单与版本 → enable 新 effect；
   - enable 失败：恢复 backup 目录、恢复旧清单，并按 kind 适配回滚（工作流重新发布旧版本、剧本恢复旧定义、其余重新 enable 旧 effect）；旧 effect 恢复成功则返回 422（本次升级未发生），失败则落 `disabled + lastError` 并明确提示「请重新安装旧版本」。
-- 成功后删除 backup 与 staging；同一 id 升级进行中再次请求返回 409。
+- 按 kind 适配：`workflow` 升级加新版本并发布、`disabled` 旧包升级后显式置回 `disabled`；`event-script` 替换定义且 id 不可变；`skill` / `mcp` / `pet-action` 的 `effectRef` 可能变化，预检须排除旧句柄自身。
+- 升级响应附带 `affectedDisabledDependents`；成功后才删除 backup 与 staging。`.staging` / `.backup` 超过 24 小时且无进行中升级时清理。
+- 同一 id 升级进行中再次请求返回 409。
 - `capability_repo` 新增 `replaceManifest(id, manifest)`（更新 kind/version/name/description/permissions/manifest_json，重置 effect/状态由服务层显式写）。
 - 验收：启用态升级后新版本可用且历史数据保留；禁用态升级保持禁用；升级坏包 422 不动旧包；从属版本冲突 409；降级/同版本 422。
 
@@ -92,12 +95,13 @@ v2.11 把六类 effect 全部接通，能力包从「两类可装卸」变成「
   | `signature_invalid` / `signature_untrusted` | 验签失败 / 未知密钥（前者 error，后者 warn） |
 - 六类 `effect_missing` 判定：技能目录、MCP 注册表 id、工作流行、动作资产 + 文件、剧本行、卡片行。
 - `POST /api/capabilities/health/cleanup`：只删除「执行时仍无数据库行」的孤儿目录；返回删除清单；绝不删除有行的目录或进行中升级的 backup。
-- `enable()` 增加依赖复核：依赖缺失/停用/版本不符 → 422，状态保持 `disabled` 并写 `lastError`。
+- `enable()` 增加签名与依赖复核：`require` 下非 `valid` → 422；依赖缺失/停用/版本不符 → 422（文案区分三种），状态保持 `disabled` 并写 `lastError`。
+- 健康检查始终验签（即使安装策略为 `off`），签名问题只进报告与徽章，不阻断安装。
 - 验收：六类各构造一个 broken 场景能被报告；孤儿目录可列出并清理；依赖卸载后从属包无法启用。
 
 **P0-4 管理页与设置页收口**
 
-- `/capabilities`：每行签名徽章（已验签 / 未签名 / 未知密钥 / 签名无效）、健康徽章、"升级"入口、"检查全部"按钮；顶部显示孤儿目录提示与清理按钮（二次确认）。
+- `/capabilities`：先拆 `capability-row.tsx` / `capability-upgrade-dialog.tsx` / `capability-health-banner.tsx`（页面当前 245 行），再挂签名徽章、健康徽章、"升级"入口、"检查全部"与孤儿清理。
 - `/settings`：信任公钥列表（label + PEM 添加、删除）、签名策略三档；切换为「强制」前显示将受影响的未签名/未知密钥包数量。
 - i18n 中英双语；错误信息复用领域错误码。
 
@@ -120,12 +124,12 @@ v2.11 把六类 effect 全部接通，能力包从「两类可装卸」变成「
 
 | 层 | 改动 |
 |---|---|
-| `packages/shared` | 清单 schema 增 `signatureKeyId`；`canonicalizeCapabilityManifest`、`verifyCapabilitySignature` 纯函数；settings 增信任库与策略字段及 Zod 校验 |
-| `packages/database` | `capability_repo.replaceManifest`；无迁移（复用 `manifest_json` / `updated_at`） |
-| `packages/core` | 新增 `capabilities/signature.ts`、`upgrade.ts`、`health.ts`；`capability-service` 接入 upgrade/health/enable 依赖复核；单文件 ≤300 行，按职责拆分 |
-| `apps/web` | 新增 upgrade / health / cleanup 路由；设置页信任库与策略；能力包页徽章与升级入口；i18n |
+| `packages/shared` | 清单 schema 增 `signatureKeyId`；`canonicalizeCapabilityManifest`（纯函数）；settings 增信任库与策略字段及 Zod 形状校验（PEM 可导入性由 core 校验） |
+| `packages/database` | `capability_repo.replaceManifest`、`installed_event_script_repo.replaceDefinition`；无迁移（复用 `manifest_json` / `updated_at`） |
+| `packages/core` | 新增 `capabilities/signature.ts`（验签 + 公钥导入）、`upgrade.ts`、`health.ts`；`CapabilityServiceDeps` 注入 settings；`capability-service` 接入 upgrade/health/签名与依赖复核；单文件 ≤300 行，按职责拆分 |
+| `apps/web` | 新增 upgrade / health / cleanup 路由；设置页新增独立信任库组件；能力包页拆行/升级对话框/健康提示三个组件；i18n |
 | `apps/desktop` | 无改动（如需目录选择复用 v2.11 的 dialog 桥） |
-| `scripts` | 新增 `sign-capability.mjs`（作者侧工具，不参与运行时） |
+| `scripts` | 新增 `sign-capability.mjs`（作者侧工具，从 shared 构建产物导入 canonicalize，不复制实现） |
 
 数据模型：**零迁移**。签名状态按需计算；信任库与策略存 settings JSON；升级只改 `capability_packs` 行内字段。
 
@@ -134,17 +138,17 @@ v2.11 把六类 effect 全部接通，能力包从「两类可装卸」变成「
 | 里程碑 | 内容 | 出口 |
 |---|---|---|
 | M0 契约冻结 | canonical 序列化、签名格式与策略矩阵、升级状态机、健康 issue 码、API/UI 口径 | 方案评审通过，[00-M0-契约冻结](00-M0-契约冻结.md) 落盘 |
-| M1 签名与信任库 | shared 规范化/验签、core 接入安装链路、settings 字段、签名工具、管理页徽章 | 策略矩阵全绿；无效签名拒绝；键序无关键 |
-| M2 升级与回滚 | `replaceManifest`、upgrade 端点、原子换目录、从属预检、回滚状态机 | 启用/禁用两态升级；失败回滚可验证 |
-| M3 健康与残留 | health 端点、六类 effect 检查、孤儿扫描/清理、enable 依赖复核 | 六类 broken 均可诊断；清理不误删 |
-| M4 收口与端到端 | 管理页/设置页、i18n、e2e ≥3 例、文档 | Web 全量 e2e 不降级 |
+| M1 签名与信任库 | shared 规范化、core 验签、settings 字段与 wiring 注入、安装/启用接入、签名工具、管理页徽章 | 策略矩阵全绿；无效签名拒绝；键序无关键 |
+| M2 升级与回滚 | `replaceManifest` / `replaceDefinition`、upgrade 端点、按 kind 适配、原子换目录、从属预检、回滚状态机 | 启用/禁用两态升级；失败回滚可验证 |
+| M3 健康与残留 | health 端点、六类 effect 检查、孤儿与过期目录清理、enable 签名与依赖复核 | 六类 broken 均可诊断；清理不误删 |
+| M4 收口与端到端 | 管理页拆组件、设置页信任库、i18n、e2e ≥3 例、文档 | Web 全量 e2e 不降级 |
 | M5 验收与发布 | 全量门禁、版本 2.12.0、迁移回归（确认零迁移）、发布归档 | check / 单测 / 生产 e2e / 桌面冒烟不降级 |
 
 ## 6. 风险与取舍
 
-- **canonical 序列化漂移**：签名端与验签端必须共用同一实现。只允许一份 `canonicalizeCapabilityManifest`，并加黄金向量测试（键序、转义、Unicode、数字格式）。
+- **canonical 序列化漂移**：签名端与验签端必须共用同一实现，且输入都必须是 schema 解析后的规范化清单（默认值已应用）。只允许一份 `canonicalizeCapabilityManifest`，并加黄金向量测试（键序、转义、Unicode、数字格式、缺省字段）。
 - **默认策略选「提醒」**：既不让既有未签名包突然不可用，也不把验签做成摆设。切到「强制」前先做影响面预览，避免用户把自己锁死。
-- **无效签名无条件拒绝**：策略只放行「没有」与「不认识」，不放行「对不上」。否则签名反而变成降级攻击面。
+- **`warn`/`require` 下无效签名无条件拒绝**：策略只放行「没有」与「不认识」，不放行「对不上」。否则签名反而变成降级攻击面；`off` 是用户显式选择跳过验签。
 - **升级回滚可能二次失败**：例如旧 effect 依赖的资源已被删。此时不假装成功，落 `disabled + lastError`，提示重新安装旧包；绝不停在「半升级」。
 - **健康检查成本**：重算 sha256 是 O(包体积)，只在用户点「检查」时执行，不在列表加载时执行；单包上限 20MB，可接受。
 - **零迁移**：不新增表/列，回退旧版本仍可打开同一数据库；代价是没有持久化的「上次检查时间」，健康结果每次实时计算。
@@ -162,9 +166,9 @@ v2.11 把六类 effect 全部接通，能力包从「两类可装卸」变成「
 
 ## 8. 验收口径
 
-1. 签名：五态判定正确；策略矩阵（off/warn/require × none/untrusted/valid/invalid）逐格通过；无效签名始终 422；键序不同的等价清单验签一致。
-2. 升级：启用态升级成功、禁用态保持禁用、同版本/降级 422、kind 不符 422、从属版本冲突 409、坏包不动旧包、enable 失败回滚旧包可继续使用。
-3. 健康：六类各至少一个 broken 场景被报告；孤儿目录列出并可清理；清理后列表与磁盘一致；依赖卸载后从属包 enable 422。
+1. 签名：五态判定正确；策略矩阵（off/warn/require × none/untrusted/valid/invalid）逐格通过；`warn`/`require` 下无效签名 422；键序不同的等价清单验签一致；签名工具与运行时对同一清单 canonical 一致。
+2. 升级：启用态升级成功、禁用态保持禁用、同版本/降级 422、kind 不符 422、从属版本冲突 409、坏包不动旧包、enable 失败回滚旧包可继续使用；`skill`/`mcp`/`pet-action` 句柄变化后行内 `effectRef` 正确。
+3. 健康：六类各至少一个 broken 场景被报告；孤儿目录列出并可清理；清理后列表与磁盘一致；依赖卸载后从属包 enable 422；`require` 下启用未签名包 422。
 4. `pnpm check`（typecheck / lint 0 error / 300 行门禁）；五包单测不降级；Web 全量生产模式 e2e 不降级且新增 ≥3 例；桌面冒烟不降级。
 5. 零迁移：旧库直接可用；不新增表/列；回退 v2.11 不破坏数据。
 
