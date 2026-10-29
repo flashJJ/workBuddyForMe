@@ -23,8 +23,9 @@
 
 基于 DeepSeek Harness 与 DSH 大肥鱼的对比分析，按「工作状态可见 → 长任务可续 → 全程可复盘 → 能力可扩展」连续交付四个阶段，全部验收后统一发布 `2.10.0`：**v2.7 会汇报**（统一 WorkSignal、桌宠工作态、审批注意力中心）；**v2.8 会计划，也会接着干**（服务端持久作业、目标/计划/待办、定时跟进）；**v2.9 可复盘**（追加式事件日志、全局检索、导出与上下文治理）；**v2.10 可扩展**（能力包与外部代理接口缝）。
 
-- 方案：[v2.7–v2.10 路线](../plan/v2.7-v2.10/README.md)
-- 状态：✅ 已交付并统一发布（四阶段全部验收；迁移 v037–v039 纯加法）
+- 方案：[v2.7–v2.10 路线](../plan/v2.7-v2.10/README.md) · 总结：[v2.10-release-summary.md](v2.10-release-summary.md)
+- 分支：`feature/v2.7-v2.10-work-companion`（`--no-ff` 合入 main `b2e7a6b`）
+- 状态：✅ 已正式发布并置 Latest（Release workflow `40812074231`、main CI `40812062412`；全量 Web e2e 120/120（CI 模式 `next start`）、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 `WorkBuddyForMe-Setup-2.10.0.exe` 191.1 MB）
 - 阶段验收：[v2.7 M5](../plan/v2.7/05-M5-验收.md) · [v2.8 M5](../plan/v2.8/05-M5-验收.md) · [v2.9 M5](../plan/v2.9/05-M5-验收.md) · [v2.10 M5](../plan/v2.10/05-M5-验收.md)
 
 ## 已正式发布：v2.5 🛡 稳固底座——Next 15.5.28 安全升级与 Electron 44 平台换代（2026-10-22，tag `v2.5.0`）
