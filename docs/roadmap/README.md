@@ -17,6 +17,7 @@
 
 - 方案：[v2.6 会沉淀](../plan/v2.6/README.md) · [M5 收口](../plan/v2.6/05-M5-收口与发布.md)
 - 分支：`feature/v2.6-conclusion-memory`
+- 博客：[blog/v2.6](../../blog/v2.6/) 7 篇
 - 状态：✅ 已正式发布并置 Latest（Release workflow `40659351830`；真机 2.5.0→2.6.0 覆盖升级、卸载保留数据 + 重装、旧密文解密通过；Web e2e 112/112、桌面 e2e 11/11；自动更新真实检测留待发布后手动触发）
 
 ## 已正式发布：v2.7–v2.10 🧭 会汇报、会计划、可复盘、可扩展（2026-10-29，统一 tag `v2.10.0`）
@@ -27,12 +28,14 @@
 - 分支：`feature/v2.7-v2.10-work-companion`（`--no-ff` 合入 main `b2e7a6b`）
 - 状态：✅ 已正式发布并置 Latest（Release workflow `40812074231`、main CI `40812062412`；全量 Web e2e 120/120（CI 模式 `next start`）、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 `WorkBuddyForMe-Setup-2.10.0.exe` 191.1 MB）
 - 阶段验收：[v2.7 M5](../plan/v2.7/05-M5-验收.md) · [v2.8 M5](../plan/v2.8/05-M5-验收.md) · [v2.9 M5](../plan/v2.9/05-M5-验收.md) · [v2.10 M5](../plan/v2.10/05-M5-验收.md)
+- 博客：[blog/v2.7](../../blog/v2.7/) 7 篇 · [v2.8](../../blog/v2.8/) 8 篇 · [v2.9](../../blog/v2.9/) 7 篇 · [v2.10](../../blog/v2.10/) 7 篇
 
 ## 已正式发布：v2.5 🛡 稳固底座——Next 15.5.28 安全升级与 Electron 44 平台换代（2026-10-22，tag `v2.5.0`）
 
 安全与平台底座版，**零新功能、零数据模型变更**。**首要技术项：Next 14.2.35 → 15.5.28**，直接处理安全扫描中的两个 critical RCE（`GHSA-p293-qw3h-jr36` Windows 托管未认证 RCE、`GHSA-2xp9-vwfh-vxw4` Image Optimization AVIF RCE，修复阈值均为 ≥15.5.24），并顺带清掉 Next 全部 23 条公告；同步 React 18.3.1 → 19.3.1。**第二技术项：Electron 31.7.7 → 44.9.3、electron-builder 25.1.8 → 26.18.0、electron-updater 6.8.9 → 6.8.11**，清除 38 条 Electron 公告与构建链 tar / builder-util-runtime 风险；已知硬破坏点为 Electron 44 剪贴板 API 异步化（中文输入走剪贴板粘贴需 await）。打包链路重点验证 Next 15 standalone 的 trace 排除（`outputFileTracingIgnores` 在 15 已移除）与 Windows 安装包/覆盖升级。分支 `feature/v2.5-platform-upgrade`。
 
 - 方案：[v2.5 稳固底座](../plan/v2.5/README.md) · [安全基线与升级矩阵](../plan/v2.5/01-安全基线与升级矩阵.md)
+- 博客：[blog/v2.5](../../blog/v2.5/) 6 篇
 - 状态：✅ 已正式发布（2026-10-22，tag `v2.5.0`，Release 已转正并置为 Latest；Next/Electron 公告 0；Web e2e 109/109、桌面 e2e 11/11、eval-agent 矩阵全绿；2.4.0 → 2.5.0 自动更新检测通过）
 
 ## 已正式发布：v2.4 🚀 装完即用——零配置首启、模板可触达、语音开箱与运行可信（2026-10-22，tag `v2.4.0`）
