@@ -11,6 +11,14 @@ import { ACTION_CHAIN_IDS } from './interaction-chains';
 import { isValidTriggerKey } from './interaction-graph';
 import { motionMoodSchema } from './motion-asset';
 import { RELATIONSHIP_LEVEL_NAMES } from './relationship-level';
+import {
+  SUBAGENT_CLI_ARG_MAX,
+  SUBAGENT_CLI_ARGS_MAX,
+  SUBAGENT_CLI_OUTPUT_MAX_BYTES,
+  SUBAGENT_CLI_OUTPUT_MIN_BYTES,
+  SUBAGENT_CLI_TIMEOUT_MAX_MS,
+  SUBAGENT_CLI_TIMEOUT_MIN_MS,
+} from './subagent';
 
 /** v1.8 M4 音色收藏形状（M3 冻结数据契约；M4 才出 UI） */
 export const voiceFavoriteSchema = z.object({
@@ -111,6 +119,25 @@ export const settingsUpdateSchema = z.object({
   workSoundApproval: z.boolean().optional(),
   workReduceMotion: z.boolean().optional(),
   workIdlePacing: z.enum(['quiet', 'standard', 'lively']).optional(),
+  // v2.11 外部代理（本地 CLI；默认关，命令为空时不注册提供方）
+  subagentCliEnabled: z.boolean().optional(),
+  subagentCliCommand: z.string().trim().max(500).optional(),
+  subagentCliArgs: z
+    .array(z.string().max(SUBAGENT_CLI_ARG_MAX))
+    .max(SUBAGENT_CLI_ARGS_MAX)
+    .optional(),
+  subagentCliTimeoutMs: z
+    .number()
+    .int()
+    .min(SUBAGENT_CLI_TIMEOUT_MIN_MS)
+    .max(SUBAGENT_CLI_TIMEOUT_MAX_MS)
+    .optional(),
+  subagentCliMaxOutputBytes: z
+    .number()
+    .int()
+    .min(SUBAGENT_CLI_OUTPUT_MIN_BYTES)
+    .max(SUBAGENT_CLI_OUTPUT_MAX_BYTES)
+    .optional(),
   // v2.4 M1：演示模式开关（开启时建内置 demo 供应商与 mock 模型；关闭时清理）
   demoModeEnabled: z.boolean().optional(),
   // v2.4 M1 T7：TTFV 里程碑（显式传 null 即清除；仅时间戳，不含对话内容）

@@ -39,6 +39,7 @@ import { MotionList } from './motion-list';
 import { ModPackPanel } from './mod-pack-panel';
 import { RelationshipReportPanel } from './relationship-report-panel';
 import { WorkSignalPanel } from './work-signal-panel';
+import { SubagentPanel } from './subagent-panel';
 
 /**
  * 设置页 4 大分组（右侧 sticky 锚点导航）：
@@ -112,6 +113,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         <ToolBreakerPanel key="breaker" />,
         <ToolDebugPanel key="tool-debug" />,
         <SkillsPanel key="skills" />,
+        <SubagentPanel key="subagent" />,
         <TuningPanel key="tuning" />,
       ],
     },

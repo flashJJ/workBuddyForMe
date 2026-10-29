@@ -16,6 +16,9 @@ import {
   createDocumentService,
   createKnowledgeService,
   createModelService,
+  createVrmAvatarService,
+  createMotionService,
+  createModPackService,
   createPendingConfirmations,
   createPermissionService,
   createProviderService,
@@ -27,6 +30,7 @@ import {
 } from '@wbfm/core/services';
 import { createChatOrchestrator } from '@wbfm/core/chat';
 import { createCapabilityServiceForApp } from './capability-wiring';
+import { createSubagentRunsForApp } from './subagent-wiring';
 import { createMilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService } from '@wbfm/core/agents';
 import {
@@ -50,11 +54,6 @@ import {
   createEventUsageService,
   createEventTriggersService,
 } from '@wbfm/core/event';
-import {
-  createVrmAvatarService,
-  createMotionService,
-  createModPackService,
-} from '@wbfm/core/services';
 import { createSkillService } from '@wbfm/core/skills';
 import { registerExitCleanup } from './container-exit';
 import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
@@ -240,6 +239,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     sessionExport,
     capabilities,
     subagentProviders,
+    subagentRuns: createSubagentRunsForApp({ deps, providers: subagentProviders, approvals, workSignals, sessionLog, completions }),
     skills,
     breakers,
     taskGrants,

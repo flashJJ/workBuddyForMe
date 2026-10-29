@@ -85,6 +85,12 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       workSoundApproval: true,
       workReduceMotion: false,
       workIdlePacing: 'standard',
+      // v2.11：外部代理缺省关闭、未配置命令
+      subagentCliEnabled: false,
+      subagentCliCommand: '',
+      subagentCliArgs: [],
+      subagentCliTimeoutMs: 600_000,
+      subagentCliMaxOutputBytes: 2_097_152,
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

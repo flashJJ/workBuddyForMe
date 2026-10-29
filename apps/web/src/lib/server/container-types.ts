@@ -43,7 +43,7 @@ import type {
   createSessionLogService,
 } from '@wbfm/core/session-log';
 import type { createCapabilityService } from '@wbfm/core/capabilities';
-import type { createSubagentProviderRegistry } from '@wbfm/core/agents';
+import type { createSubagentProviderRegistry, createSubagentRunService } from '@wbfm/core/agents';
 
 /**
  * v2.7：服务容器契约外迁（拆分守行数门禁）。
@@ -81,6 +81,7 @@ export interface ServiceContainer {
   sessionExport: ReturnType<typeof createSessionExportService>;
   capabilities: ReturnType<typeof createCapabilityService>;
   subagentProviders: ReturnType<typeof createSubagentProviderRegistry>;
+  subagentRuns: ReturnType<typeof createSubagentRunService>;
   skills: ReturnType<typeof createSkillService>;
   breakers: ReturnType<typeof createToolBreaker>;
   taskGrants: ReturnType<typeof createTaskGrantRegistry>;

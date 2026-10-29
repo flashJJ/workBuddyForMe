@@ -4,6 +4,14 @@ import {
   interactionGraphEntrySchema,
   INTERACTION_GRAPH_OVERRIDES_MAX,
   isBuiltinEntryId,
+  SUBAGENT_CLI_ARG_MAX,
+  SUBAGENT_CLI_ARGS_MAX,
+  SUBAGENT_CLI_OUTPUT_DEFAULT_BYTES,
+  SUBAGENT_CLI_OUTPUT_MAX_BYTES,
+  SUBAGENT_CLI_OUTPUT_MIN_BYTES,
+  SUBAGENT_CLI_TIMEOUT_DEFAULT_MS,
+  SUBAGENT_CLI_TIMEOUT_MAX_MS,
+  SUBAGENT_CLI_TIMEOUT_MIN_MS,
   type InteractionGraphOverride,
   type SettingsUpdateInput,
 } from '@wbfm/shared/schemas';
@@ -54,6 +62,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   workSoundApproval: true,
   workReduceMotion: false,
   workIdlePacing: 'standard',
+  // v2.11：外部代理默认关；命令空 = 未配置（注册表保持空）
+  subagentCliEnabled: false,
+  subagentCliCommand: '',
+  subagentCliArgs: [],
+  subagentCliTimeoutMs: SUBAGENT_CLI_TIMEOUT_DEFAULT_MS,
+  subagentCliMaxOutputBytes: SUBAGENT_CLI_OUTPUT_DEFAULT_BYTES,
 };
 
 /** 服务端钳制上下文条数：settings_kv 可被手改/旧值污染，越界一律回落默认 */
@@ -102,6 +116,38 @@ export function resolveInteractionGraphDisabledEntryIds(value: unknown): string[
   return out;
 }
 
+function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+/** v2.11：外部代理参数（手改 settings_kv 时截断越界项，不让脏值进入 spawn） */
+export function resolveSubagentCliArgs(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.slice(0, SUBAGENT_CLI_ARG_MAX))
+    .slice(0, SUBAGENT_CLI_ARGS_MAX);
+}
+
+export function resolveSubagentCliTimeoutMs(value: unknown): number {
+  return clampInt(
+    value,
+    SUBAGENT_CLI_TIMEOUT_MIN_MS,
+    SUBAGENT_CLI_TIMEOUT_MAX_MS,
+    SUBAGENT_CLI_TIMEOUT_DEFAULT_MS,
+  );
+}
+
+export function resolveSubagentCliMaxOutputBytes(value: unknown): number {
+  return clampInt(
+    value,
+    SUBAGENT_CLI_OUTPUT_MIN_BYTES,
+    SUBAGENT_CLI_OUTPUT_MAX_BYTES,
+    SUBAGENT_CLI_OUTPUT_DEFAULT_BYTES,
+  );
+}
+
 export function createSettingsService({ db }: ServiceDeps) {
   const settings = createSettingsRepository(db);
   const models = createModelRepository(db);
@@ -122,6 +168,13 @@ export function createSettingsService({ db }: ServiceDeps) {
       );
       merged.interactionGraphDisabledEntryIds = resolveInteractionGraphDisabledEntryIds(
         merged.interactionGraphDisabledEntryIds,
+      );
+      merged.subagentCliEnabled = merged.subagentCliEnabled === true;
+      merged.subagentCliCommand = (merged.subagentCliCommand ?? '').trim();
+      merged.subagentCliArgs = resolveSubagentCliArgs(merged.subagentCliArgs);
+      merged.subagentCliTimeoutMs = resolveSubagentCliTimeoutMs(merged.subagentCliTimeoutMs);
+      merged.subagentCliMaxOutputBytes = resolveSubagentCliMaxOutputBytes(
+        merged.subagentCliMaxOutputBytes,
       );
       return merged;
     },

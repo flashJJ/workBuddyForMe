@@ -1,5 +1,5 @@
 import { createConversationRepository, createWorkPlanRepository } from '@wbfm/database';
-import type { AgentRunView, TaskRunView } from '@wbfm/shared/schemas';
+import type { AgentRunView, SubagentRunView, TaskRunView } from '@wbfm/shared/schemas';
 import { createSettingsService } from '../services/settings-service';
 import { createConversationService } from '../services/conversation-service';
 import type { ServiceDeps } from '../services/deps';
@@ -50,6 +50,28 @@ function agentText(run: AgentRunView, lang: 'zh-CN' | 'en-US'): string {
   return `协作「${goal}」已结束（${run.status}）。`;
 }
 
+function subagentText(run: SubagentRunView, lang: 'zh-CN' | 'en-US'): string {
+  const goal = shortGoal(run.goal);
+  const summary = run.summary?.trim();
+  const reason = run.errorMessage?.trim() || run.errorCode || null;
+  if (lang === 'en-US') {
+    if (run.status === 'done') {
+      return summary
+        ? `External agent "${goal}" finished: ${summary}`
+        : `External agent "${goal}" finished.`;
+    }
+    if (run.status === 'cancelled') return `External agent "${goal}" was cancelled.`;
+    return reason
+      ? `External agent "${goal}" failed: ${reason}`
+      : `External agent "${goal}" failed.`;
+  }
+  if (run.status === 'done') {
+    return summary ? `外部代理「${goal}」已完成：${summary}` : `外部代理「${goal}」已完成。`;
+  }
+  if (run.status === 'cancelled') return `外部代理「${goal}」已取消。`;
+  return reason ? `外部代理「${goal}」失败：${reason}` : `外部代理「${goal}」失败。`;
+}
+
 export function createRunCompletionService(deps: ServiceDeps) {
   const completions = createWorkPlanRepository(deps.db);
   const conversations = createConversationRepository(deps.db);
@@ -84,6 +106,18 @@ export function createRunCompletionService(deps: ServiceDeps) {
         run.status,
         run.conversationId ?? '',
         agentText(run, lang()),
+      );
+    },
+
+    /** v2.11：外部代理终态回投（幂等键 run_id + kind='subagent'） */
+    completeSubagent(run: SubagentRunView): void {
+      if (run.status === 'queued' || run.status === 'running') return;
+      append(
+        run.id,
+        'subagent',
+        run.status,
+        run.conversationId ?? '',
+        subagentText(run, lang()),
       );
     },
 

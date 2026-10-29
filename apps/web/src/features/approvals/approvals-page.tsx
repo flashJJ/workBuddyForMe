@@ -81,7 +81,9 @@ export function ApprovalsPage() {
                     ? t('approvals.sourceFlow')
                     : approval.source === 'desktop'
                       ? t('approvals.sourceDesktop')
-                      : t('approvals.sourceTool')}
+                      : approval.source === 'subagent'
+                        ? t('approvals.sourceSubagent')
+                        : t('approvals.sourceTool')}
                 </Badge>
                 <span className="text-sm font-medium">{approval.title}</span>
                 {approval.permission && (

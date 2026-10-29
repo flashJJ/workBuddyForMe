@@ -41,6 +41,10 @@ export const API = {
   runEvidence: '/api/reports/runs',
   /** v2.11：启用中的能力包剧本（短语触发匹配） */
   eventScripts: '/api/event-scripts',
+  /** v2.11：外部代理（本地 CLI） */
+  subagentProviders: '/api/subagents/providers',
+  subagentRuns: '/api/subagents/runs',
+  subagentRunCancel: (id: string) => `/api/subagents/runs/${encodeURIComponent(id)}/cancel`,
   // v2.7 工作信号 / 审批中心
   workSignals: '/api/work-signals',
   approvals: '/api/approvals',
@@ -183,6 +187,8 @@ export const QUERY_KEYS = {
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
   approvals: ['approvals'] as const,
+  subagentProviders: ['subagent-providers'] as const,
+  subagentRuns: ['subagent-runs'] as const,
   capabilities: ['capabilities'] as const,
   events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
   eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,

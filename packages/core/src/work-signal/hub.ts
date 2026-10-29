@@ -24,6 +24,8 @@ export interface WorkSignalHub {
   ingestAgent(run: AgentRunView, event: AgentRunEvent): void;
   /** v2.8：计划进度（source=chat；draft/pending_review 忽略） */
   ingestPlan(plan: WorkPlanView): void;
+  /** v2.11：外部代理运行的信号（由运行服务构造） */
+  ingestSubagent(signal: WorkSignal): void;
   snapshot(): WorkSignalSnapshot;
   /** 订阅后续快照；调用方先发送 snapshot() 作为首帧 */
   subscribe(): AsyncIterable<WorkSignalSnapshot>;
@@ -92,6 +94,10 @@ export function createWorkSignalHub({ approvals }: WorkSignalHubDeps): WorkSigna
     ingestPlan(plan) {
       const signal = applyPlanSignal(plan, new Date().toISOString());
       if (signal) upsert(signal);
+    },
+
+    ingestSubagent(signal) {
+      upsert(signal);
     },
 
     snapshot: buildSnapshot,

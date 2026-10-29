@@ -82,6 +82,33 @@ export {
   type SubagentProviderInput,
   type SubagentProviderResult,
 } from './subagent-provider';
+export {
+  createCliSubagentProvider,
+  minimalSubagentEnv,
+  type CliSubagentProviderOptions,
+} from './cli-subagent-provider';
+export {
+  resolveCommandPath,
+  validateSubagentCwd,
+  type ResolveCommandOptions,
+  type ValidateCwdOptions,
+} from './cli-command';
+export {
+  parseCliLine,
+  buildRunLine,
+  buildPermissionResultLine,
+  isFatalParseFailure,
+  CLI_MAX_LINE_BYTES,
+  CLI_MAX_DIAGNOSTICS,
+  CLI_MAX_STDERR_BYTES,
+  type CliFrame,
+  type CliParseResult,
+} from './cli-protocol';
+export {
+  createSubagentRunService,
+  type SubagentRunService,
+  type SubagentRunServiceDeps,
+} from './subagent-run-service';
 export type {
   AgentClients,
   AgentRunnerDeps,

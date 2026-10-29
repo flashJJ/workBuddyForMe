@@ -107,6 +107,10 @@ export {
   type ReportWidgetView,
 } from './report-widget-repo';
 export {
+  createSubagentRunRepository,
+  type SubagentRunRepository,
+} from './subagent-run-repo';
+export {
   createSessionEventRepository,
   SESSION_EVENT_SCOPES,
   type SessionEventRepository,
