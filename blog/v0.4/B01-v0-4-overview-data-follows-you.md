@@ -15,17 +15,17 @@
 
 这一轮工作的主题因此定为「**数据随身**」：数据要能打包带走（备份）、能体面外发（分享）、应用能自己跟上新版本（自动更新），外加补上扫描件 OCR 这块最后的摄入短板。最后顺手做了重度用户催了很久的 **Ctrl+K 命令面板**。
 
-五个模块，22 个提交，83 个文件，+6016 行，一次数据库迁移。这篇是总览，后续 B02~B10 每个点拆到底。
+五个模块，22 个提交，83 个文件，+6016 行，一次数据库迁移。这篇是总览，后续 B02\~B10 每个点拆到底。
 
 ## 五件事一览
 
-| 模块 | 优先级 | 解决的问题 |
-|------|--------|-----------|
-| 备份与恢复 | P0 | 四轨道可选导出 `.my-ai-backup`（tar.gz），合并式恢复、向量按需重建 |
-| 对话分享 | P0 | 单会话导出 Markdown / 单文件 HTML，密钥与本地路径一律脱敏 |
-| 桌面自动更新 | P0 | electron-updater + GitHub Releases，检查/下载/安装/重启全自动 |
-| 图片型 PDF OCR | P1 | 视觉模型优先逐页识别，无视觉模型时 tesseract.js 离线兜底 |
-| 命令面板 | P1 | Ctrl+K 唤起、模糊搜索、键盘流操作，Electron 全局快捷键 |
+| 模块          | 优先级 | 解决的问题                                             |
+| ----------- | --- | ------------------------------------------------- |
+| 备份与恢复       | P0  | 四轨道可选导出 `.my-ai-backup`（tar.gz），合并式恢复、向量按需重建      |
+| 对话分享        | P0  | 单会话导出 Markdown / 单文件 HTML，密钥与本地路径一律脱敏             |
+| 桌面自动更新      | P0  | electron-updater + GitHub Releases，检查/下载/安装/重启全自动 |
+| 图片型 PDF OCR | P1  | 视觉模型优先逐页识别，无视觉模型时 tesseract.js 离线兜底               |
+| 命令面板        | P1  | Ctrl+K 唤起、模糊搜索、键盘流操作，Electron 全局快捷键               |
 
 P0 三件构成「数据随身」的闭环；P1 两件是投入产出比明确的硬补强。P2 里的备份加密、增量备份、PDF 分享、OCR 人工校正全部登记不做——一个人的项目，主题闭环比功能数量重要。
 
@@ -101,7 +101,7 @@ attachments/           # 附件二进制（可选轨道，按 sha256 文件名�
 
 ## 自动更新：开发态 no-op，生产态全自动
 
-`updater.ts` 封装 electron-updater，对接 GitHub Releases。设计上最要紧的是一条边界：**`app.isPackaged` 门控——开发态所有更新检查是 no-op**，否则开发时 electron-updater 会去抢正在跑的 dev 进程。
+`updater.ts` 封装 electron-updater，对接 GitHub Releases。设计上最要紧的是一条边界：**`app.isPackaged`** **门控——开发态所有更新检查是 no-op**，否则开发时 electron-updater 会去抢正在跑的 dev 进程。
 
 状态流是显式的有限状态机，而不是随意的事件转发：
 
@@ -132,7 +132,7 @@ read-document 取文字层
 
 **坑一：pdfjs 会 transfer（detach）你的输入缓冲。** pdfjs 在 Node fake-worker 模式下通过 `structuredClone(obj, { transfer: [data.buffer] })` 传递数据，第一次 `getDocument` 之后输入 ArrayBuffer 的 `byteLength` 直接变 0。原来每页渲染都重新 `getDocument(data)`，于是从第二页起全部 `DataCloneError`——视觉和 tesseract 两条路都没真正跑起来过。修复：所有 getDocument 调用传 `data.slice()` 副本，runner 改成**整份 PDF 只打开一次、批量渲染全部目标页**，再逐页识别。
 
-**坑二：视觉图撞本地模型 4096 上下文。** qwen2.5-vl 按像素桶算 image token（约 784 像素/token）。A4@2x = 870 万像素 → 4106 image token，直接 400。修复是加像素预算：`OCR_VISION_MAX_PIXELS = 200 万`，`resolveRenderScale` 在渲染前按 `sqrt(预算/基准像素)` 等比缩回，A4@2x 基本不受影响，超大画幅页自动降档。另外 OCR 调用固定 `temperature: 0`——真机对比发现默认采样温度会让模型随机性地漏行，转录任务本该是确定性的。
+**坑二：视觉图撞本地模型 4096 上下文。** qwen2.5-vl 按像素桶算 image token（约 784 像素/token）。A4\@2x = 870 万像素 → 4106 image token，直接 400。修复是加像素预算：`OCR_VISION_MAX_PIXELS = 200 万`，`resolveRenderScale` 在渲染前按 `sqrt(预算/基准像素)` 等比缩回，A4\@2x 基本不受影响，超大画幅页自动降档。另外 OCR 调用固定 `temperature: 0`——真机对比发现默认采样温度会让模型随机性地漏行，转录任务本该是确定性的。
 
 这两个坑的共同教训：**涉及原生模块和本地模型的链路，mock 全绿不等于能用，必须留真机端到端验证的时间**。修复后真实扫描件 8 秒识别双页、文本完整入库。
 
@@ -144,22 +144,22 @@ read-document 取文字层
 
 ## 数据：交付规模与门禁
 
-| 指标 | 数值 |
-|---|---|
-| 提交 | 22 个（备份×5、分享×3、更新×4、OCR×6、命令面板×3、杂项×1，含真机修复批） |
-| 改动 | 83 个文件，+6016 / -44 行 |
-| 数据库迁移 | 1 次：documents 加 ocr_status / ocr_engine（纯 ADD COLUMN，老数据 NULL） |
-| 新增运行时依赖 | tesseract.js（可选）、@napi-rs/canvas、electron-updater |
-| 单元测试 | 414 个全绿（shared 16 / database 29 / ai 38 / core 186 / web 96 / desktop 35 / config 14） |
-| 集成测试 | 12 个；Web E2E 7/7；Desktop E2E 4/4 |
-| 打包验证 | web standalone 构建 exit 0，canvas/tesseract 原生件完成归集 |
+| 指标      | 数值                                                                                    |
+| ------- | ------------------------------------------------------------------------------------- |
+| 提交      | 22 个（备份×5、分享×3、更新×4、OCR×6、命令面板×3、杂项×1，含真机修复批）                                         |
+| 改动      | 83 个文件，+6016 / -44 行                                                                  |
+| 数据库迁移   | 1 次：documents 加 ocr\_status / ocr\_engine（纯 ADD COLUMN，老数据 NULL）                      |
+| 新增运行时依赖 | tesseract.js（可选）、@napi-rs/canvas、electron-updater                                     |
+| 单元测试    | 414 个全绿（shared 16 / database 29 / ai 38 / core 186 / web 96 / desktop 35 / config 14） |
+| 集成测试    | 12 个；Web E2E 7/7；Desktop E2E 4/4                                                      |
+| 打包验证    | web standalone 构建 exit 0，canvas/tesseract 原生件完成归集                                     |
 
 ## 留白与 Non-Goals
 
 - **备份加密/增量**：单用户威胁模型下物理安全即足够；全量备份简单可靠，差量链的复杂度不值得
 - **在线分享链接 / 分享为 PDF / 多会话批量分享**：导出文件即终点
 - **自动更新灰度与 delta 包**：小体量应用全量替换可接受
-- **OCR 置信度标注与人工校正 UI、多语言扩展**：中英文（chi_sim+eng）足够，其余语言包可手动放入 cache
+- **OCR 置信度标注与人工校正 UI、多语言扩展**：中英文（chi\_sim+eng）足够，其余语言包可手动放入 cache
 - **命令面板插件体系**：内置命令够用，第三方扩展留给生态成熟后
 
 ## 后续篇目
