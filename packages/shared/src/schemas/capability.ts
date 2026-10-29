@@ -1,11 +1,13 @@
 import { z } from 'zod';
+import { flowGraphSchema } from './flow';
+import { MOTION_MOODS, MOTION_SEGMENTS } from './motion-asset';
 
 /**
- * v2.10 能力包清单与视图。
+ * v2.10 能力包清单与视图；v2.11 扩展 workflow / pet-action 两类 payload。
  *
  * 口径：ZIP 根目录固定 `wbfm-capability.json` + `payload/**`；
  * 清单声明 kind/permissions/entry/checksums，安装侧 fail-closed 校验；
- * 本期只把 skill / mcp 两类登记为可执行 effect，其余 kind 保留但安装拒绝。
+ * v2.11 M1 起 skill / mcp / workflow / pet-action 四类可执行，其余两类仍拒绝安装。
  */
 
 export const CAPABILITY_KINDS = [
@@ -90,5 +92,44 @@ export const CAPABILITY_REQUIRED_PERMISSION: Record<CapabilityKind, CapabilityPe
   'report-widget': 'report:widget',
 };
 
-/** 本期已接入 effect 的 kind（其余安装时明确拒绝） */
-export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = ['skill', 'mcp'];
+/** 当前已接入 effect 的 kind（其余安装时明确拒绝） */
+export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = [
+  'skill',
+  'mcp',
+  'workflow',
+  'pet-action',
+];
+
+/** 每种 kind 的 entry 固定路径（安装侧强校验） */
+export const CAPABILITY_ENTRY_BY_KIND: Record<CapabilityKind, string> = {
+  skill: 'payload/skill.json',
+  mcp: 'payload/server.json',
+  workflow: 'payload/workflow.json',
+  'pet-action': 'payload/action.json',
+  'event-script': 'payload/script.json',
+  'report-widget': 'payload/widget.json',
+};
+
+/** v2.11：workflow 能力包 payload */
+export const workflowCapabilityPayloadSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  description: z.string().trim().max(200).default(''),
+  icon: z.string().trim().max(32).optional(),
+  color: z.string().trim().max(32).optional(),
+  graph: flowGraphSchema,
+});
+export type WorkflowCapabilityPayload = z.infer<typeof workflowCapabilityPayloadSchema>;
+
+/** v2.11：pet-action 能力包 payload */
+export const petActionCapabilityPayloadSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  file: z
+    .string()
+    .trim()
+    .regex(/^payload\/[a-zA-Z0-9._/-]+\.vrma$/i, 'file 必须是 payload/ 下的 .vrma'),
+  entryKey: z.string().trim().min(1).max(32).optional(),
+  segment: z.enum(MOTION_SEGMENTS).optional(),
+  mood: z.enum(MOTION_MOODS).optional(),
+  minRelationshipLevel: z.number().int().min(0).max(3).optional(),
+});
+export type PetActionCapabilityPayload = z.infer<typeof petActionCapabilityPayloadSchema>;

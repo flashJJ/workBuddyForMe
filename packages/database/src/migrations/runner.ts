@@ -38,6 +38,7 @@ import { migrateV036 } from './v036-memory-provenance';
 import { migrateV037 } from './v037-work-companion';
 import { migrateV038 } from './v038-session-events';
 import { migrateV039 } from './v039-capability-packs';
+import { migrateV040 } from './v040-capability-effects';
 
 interface Migration {
   version: number;
@@ -236,6 +237,12 @@ const MIGRATIONS: Migration[] = [
     version: 39,
     description: 'v2.10: capability_packs 能力包登记表（纯加法）',
     up: migrateV039,
+  },
+  {
+    version: 40,
+    description:
+      'v2.11: workflows 来源列 + 剧本/报告卡片/外部代理运行表（纯加法）',
+    up: migrateV040,
   },
 ];
 

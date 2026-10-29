@@ -16,8 +16,8 @@
 v2.10 只接通了 `skill` / `mcp` 两类 effect，其余 `workflow` / `pet-action` / `event-script` / `report-widget` 在清单层保留但安装拒绝；外部代理只有接口与空注册表。v2.11 把六类 effect 全部接通，并落地第一个外部代理实现（本地 CLI 适配器，默认关、逐次审批、证据可查），守住「不做远程市场、不执行任意代码、不共享宿主密钥」边界。
 
 - 方案：[v2.11 方案](../plan/v2.11/README.md) · [M0 契约冻结](../plan/v2.11/00-M0-契约冻结.md)
-- 状态：🚧 M1 进行中（M0 评审通过，2026-10-29）
-- 分支：`docs/v2.11-roadmap`
+- 状态：🚧 M1 已完成（workflow / pet-action effect 与示例包），待 M2
+- 分支：`feature/v2.11-capabilities-external-agent`（规划稿在 `docs/v2.11-roadmap`）
 
 ## 已正式发布：v2.6 🧠 会沉淀——结论可执行，记忆有来路（2026-10-28，tag `v2.6.0`，2026-10-29 转正）
 

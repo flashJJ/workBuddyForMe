@@ -26,6 +26,7 @@ import {
   type ServiceDeps,
 } from '@wbfm/core/services';
 import { createChatOrchestrator } from '@wbfm/core/chat';
+import { readSampleMotionAsset } from './capability-sample-asset';
 import { createMilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService } from '@wbfm/core/agents';
 import {
@@ -123,7 +124,6 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const sessionLog = createSessionLogService(deps);
   deps.events = sessionLog;
   const sessionExport = createSessionExportService(deps, sessionLog);
-  const capabilities = createCapabilityService({ db, skills, mcp });
   const subagentProviders = createSubagentProviderRegistry();
   const runtime = createToolRuntime(deps);
   const workSignals = createWorkSignalHub({ approvals });
@@ -173,6 +173,16 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // v0.8：flow 运行服务（内部复用 runtime；回填 resolver 打破构造环，
   // resolveTool 仅在实际遇到 flow:<id> 时懒调用）
   const workflows = createWorkflowRepository(db);
+  // v2.11：能力包 effect 需要动作服务；同一实例供容器返回
+  const motionsService = createMotionService(db);
+  const capabilities = createCapabilityService({
+    db,
+    skills,
+    mcp,
+    workflows,
+    motions: motionsService,
+    sampleMotionAsset: readSampleMotionAsset,
+  });
   // v0.9：端点仓储同时供 flowRunner（策略快照）与端点服务（管理/鉴权）使用，必须同一实例
   const endpointRepo = createWorkflowEndpointRepository(db);
   const flowRunner = createFlowRunService({
@@ -260,7 +270,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     eventUsage: createEventUsageService(deps),
     eventTriggers: createEventTriggersService(deps),
     vrmAvatars: createVrmAvatarService(db),
-    motions: createMotionService(db),
+    motions: motionsService,
+    workflows,
     modPacks,
   };
 }

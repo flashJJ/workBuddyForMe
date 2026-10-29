@@ -3,15 +3,18 @@ import { dirname, join } from 'node:path';
 import { getDataDir } from '@wbfm/config';
 import { createCapabilityRepository, type DatabaseInstance } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
-import type { CapabilityView } from '@wbfm/shared/schemas';
+import type { CapabilityKind, CapabilityView } from '@wbfm/shared/schemas';
+import type { WorkflowRepository } from '@wbfm/database';
 import type { McpRegistry } from '../mcp/registry';
 import type { SkillService } from '../skills/skill-service';
-import { buildSampleSkillPack, parseCapabilityZip } from './manifest';
+import type { MotionService } from '../services/motion-service';
+import { buildSamplePack, parseCapabilityZip } from './manifest';
 import {
   disableCapabilityEffect,
   enableCapabilityEffect,
+  uninstallCapabilityEffect,
   type CapabilityEffectDeps,
-} from './capability-effects';
+} from './effects';
 
 /**
  * v2.10 能力包服务：安装（校验+落盘）、启停（effect 注册/撤销）、卸载（清理磁盘与记录）。
@@ -22,10 +25,16 @@ export interface CapabilityServiceDeps {
   db: DatabaseInstance;
   skills: SkillService;
   mcp: McpRegistry;
+  /** v2.11：workflow effect 使用 */
+  workflows: WorkflowRepository;
+  /** v2.11：pet-action effect 使用 */
+  motions: MotionService;
   /** 测试注入：能力包根目录（默认 <dataDir>/capabilities） */
   rootDir?: string;
   /** 测试注入：技能目录（默认 <dataDir>/skills） */
   skillsDir?: string;
+  /** v2.11：示例动作素材读取器（缺失时示例包返回 422） */
+  sampleMotionAsset?: () => Uint8Array | null;
 }
 
 function errorMessage(error: unknown): string {
@@ -36,7 +45,13 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
   const repo = createCapabilityRepository(deps.db);
   const rootDir = deps.rootDir ?? getDataDir('capabilities');
   const skillsDir = deps.skillsDir ?? getDataDir('skills');
-  const effects: CapabilityEffectDeps = { skills: deps.skills, mcp: deps.mcp, skillsDir };
+  const effects: CapabilityEffectDeps = {
+    skills: deps.skills,
+    mcp: deps.mcp,
+    skillsDir,
+    workflows: deps.workflows,
+    motions: deps.motions,
+  };
 
   const packDir = (id: string): string => join(rootDir, id);
 
@@ -132,6 +147,8 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
     uninstall(id: string): void {
       const capability = repo.get(id);
       if (!capability) throw ApiError.notFound('能力包', id);
+      const manifest = repo.getManifest(id);
+      const effectRef = capability.effectRef;
       const dependents = repo
         .listEnabled()
         .filter((item) => item.id !== id && item.manifest?.dependencies.some((dep) => dep.id === id));
@@ -141,12 +158,15 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
         );
       }
       if (capability.status === 'enabled') this.disable(id);
+      if (manifest) uninstallCapabilityEffect(manifest, effectRef, effects);
       rmSync(packDir(id), { recursive: true, force: true });
       repo.remove(id);
     },
 
-    sample(): Uint8Array {
-      return buildSampleSkillPack();
+    sample(kind: CapabilityKind = 'skill'): Uint8Array {
+      return buildSamplePack(kind, {
+        motionAsset: deps.sampleMotionAsset?.() ?? undefined,
+      });
     },
   };
 }

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 import { migrateV032 } from './v032-motion-assets';
@@ -23,7 +23,7 @@ describe('v033 motion_assets 动作段与档位', () => {
     db.pragma('user_version = 32');
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([33, 34, 35, 36, 37, 38, 39]);
+    expect(result.applied).toEqual([33, 34, 35, 36, 37, 38, 39, 40]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
 
     const cols = db.prepare('PRAGMA table_info(motion_assets)').all() as Array<{ name: string }>;

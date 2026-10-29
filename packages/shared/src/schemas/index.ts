@@ -201,14 +201,19 @@ export {
   CAPABILITY_STATUSES,
   CAPABILITY_REQUIRED_PERMISSION,
   CAPABILITY_SUPPORTED_KINDS,
+  CAPABILITY_ENTRY_BY_KIND,
   capabilityDependencySchema,
   capabilityManifestSchema,
+  workflowCapabilityPayloadSchema,
+  petActionCapabilityPayloadSchema,
   type CapabilityKind,
   type CapabilityPermission,
   type CapabilityStatus,
   type CapabilityDependency,
   type CapabilityManifest,
   type CapabilityView,
+  type WorkflowCapabilityPayload,
+  type PetActionCapabilityPayload,
 } from './capability';
 
 // v2.8 目标 / 计划 / 待办

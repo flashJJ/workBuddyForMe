@@ -87,4 +87,48 @@ describe('v2.10 能力包 API', () => {
     );
     expect(badZip.status).toBe(422);
   });
+
+  it('示例包按 kind：workflow 发布、pet-action 进动作池、非法 kind 422', async () => {
+    const invalid = await sampleCapability(new Request('http://127.0.0.1/x?kind=nope'));
+    expect(invalid.status).toBe(422);
+
+    const workflowSample = await sampleCapability(
+      new Request('http://127.0.0.1/x?kind=workflow'),
+    );
+    const workflowForm = new FormData();
+    workflowForm.append(
+      'file',
+      new File(
+        [new Uint8Array(await workflowSample.arrayBuffer()) as unknown as BlobPart],
+        'workflow.zip',
+        { type: 'application/zip' },
+      ),
+    );
+    const installedWorkflow = await installCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: workflowForm }),
+    );
+    expect(installedWorkflow.status).toBe(201);
+    const workflowCap = (await installedWorkflow.json()).data;
+    const services = __buildContainerForTest(db, createWebCipher());
+    expect(
+      services.workflows.listWorkflows().some((item) => item.id === workflowCap.effectRef),
+    ).toBe(true);
+
+    const petSample = await sampleCapability(new Request('http://127.0.0.1/x?kind=pet-action'));
+    const petForm = new FormData();
+    petForm.append(
+      'file',
+      new File(
+        [new Uint8Array(await petSample.arrayBuffer()) as unknown as BlobPart],
+        'pet.zip',
+        { type: 'application/zip' },
+      ),
+    );
+    const installedPet = await installCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: petForm }),
+    );
+    expect(installedPet.status).toBe(201);
+    const petCap = (await installedPet.json()).data;
+    expect(services.motions.list().some((item) => item.id === petCap.effectRef)).toBe(true);
+  });
 });

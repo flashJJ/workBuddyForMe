@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 import { migrateV014 } from './v014-voice';
@@ -23,8 +23,8 @@ describe('v014 迁移：voice_models 下载状态表', () => {
     expect(getSchemaVersion(db)).toBe(13);
 
     const result = applyMigrations(db);
-            expect(result.applied).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]);
-    expect(LATEST_SCHEMA_VERSION).toBe(39);
+            expect(result.applied).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]);
+    expect(LATEST_SCHEMA_VERSION).toBe(40);
 
     db.prepare(
       `INSERT INTO voice_models(kind, model_id, status, bytes_total, bytes_done, updated_at)

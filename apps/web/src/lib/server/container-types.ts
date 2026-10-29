@@ -1,4 +1,4 @@
-import type { DatabaseInstance } from '@wbfm/database';
+import type { DatabaseInstance, createWorkflowRepository } from '@wbfm/database';
 import type { SecretCipher } from '@wbfm/core/secrets';
 import type {
   createAssistantsService,
@@ -95,5 +95,6 @@ export interface ServiceContainer {
   rateLimiter: ReturnType<typeof createRateLimiter>;
   vrmAvatars: ReturnType<typeof createVrmAvatarService>;
   motions: ReturnType<typeof createMotionService>;
+  workflows: ReturnType<typeof createWorkflowRepository>;
   modPacks: ReturnType<typeof createModPackService>;
 }
