@@ -1,6 +1,6 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, parse } from 'node:path';
+import { join, parse } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveCommandPath, validateSubagentCwd } from './cli-command';
 
@@ -12,15 +12,18 @@ describe('v2.11 CLI 命令与工作目录校验', () => {
   });
 
   it('PATH 解析（Windows 追加 PATHEXT）', () => {
-    const dir = dirname(process.execPath);
-    const name = process.platform === 'win32' ? 'node' : 'node';
-    const found = resolveCommandPath(name, {
+    // 用临时目录里的伪可执行文件，避免依赖宿主是否恰好存在 node.exe（Linux CI 无 .EXE）
+    const dir = mkdtempSync(join(tmpdir(), 'wbfm-cli-path-'));
+    writeFileSync(join(dir, 'tool.exe'), '');
+    const found = resolveCommandPath('tool', {
       platform: 'win32',
       pathEnv: dir,
       pathExt: '.EXE',
     });
-    expect(found?.toLowerCase().endsWith('node.exe')).toBe(true);
-    expect(resolveCommandPath('wbfm-missing', { platform: 'win32', pathEnv: dir, pathExt: '.EXE' })).toBeNull();
+    expect(found?.toLowerCase().endsWith('tool.exe')).toBe(true);
+    expect(
+      resolveCommandPath('wbfm-missing', { platform: 'win32', pathEnv: dir, pathExt: '.EXE' }),
+    ).toBeNull();
   });
 
   it('工作目录：目录存在才通过，相对路径/根目录/UNC/数据目录拒绝', () => {
