@@ -9,6 +9,7 @@ import { useEventTriggers } from '@/features/events/use-event-triggers';
 import { useMilestoneScenes } from '@/features/events/use-milestone-scenes';
 import { useContextTriggers } from '@/features/events/use-context-triggers';
 import { useSchedulerTick } from '@/features/reminders/use-scheduler-tick';
+import { usePreviewEventFromQuery } from '@/features/events/use-preview-event-from-query';
 
 export interface UseChatEventsArgs {
   assistantId: string;
@@ -81,6 +82,9 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
     triggerEvent: stage.triggerEvent,
     triggerDefinition: stage.triggerDefinition,
   });
+
+  // v2.11：设置页「试演」深链（/chat?previewEvent=<scriptId>）播放一次后清除
+  usePreviewEventFromQuery(stage);
 
   // v2.0 M3：本地上下文触发器（连续工作/深夜/久未对话；系统事件需独立授权）
   useContextTriggers({

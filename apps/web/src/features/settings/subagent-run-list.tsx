@@ -32,7 +32,13 @@ const STATUS_META: Record<SubagentRunStatus, StatusMeta> = {
 const CANCELABLE = new Set<SubagentRunStatus>(['queued', 'running']);
 
 /** v2.11：外部代理运行记录（状态短轮询由父组件查询驱动） */
-export function SubagentRunList({ runs }: { runs: SubagentRunView[] }) {
+export function SubagentRunList({
+  runs,
+  highlightId,
+}: {
+  runs: SubagentRunView[];
+  highlightId?: string;
+}) {
   const { t } = useI18n();
   const toast = useToast();
   const cancel = useCancelSubagentRun();
@@ -58,7 +64,13 @@ export function SubagentRunList({ runs }: { runs: SubagentRunView[] }) {
       {runs.map((run) => {
         const meta = STATUS_META[run.status];
         return (
-          <li key={run.id} className="space-y-1 rounded-md border bg-background/60 p-3">
+          <li
+            key={run.id}
+            data-testid={`subagent-run-${run.id}`}
+            className={`space-y-1 rounded-md border bg-background/60 p-3 ${
+              highlightId === run.id ? 'ring-2 ring-primary' : ''
+            }`}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={meta.variant}>{t(meta.key)}</Badge>
               <span className="min-w-0 flex-1 truncate text-sm">{run.goal}</span>

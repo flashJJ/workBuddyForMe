@@ -7,6 +7,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { eventTitle } from '@/features/events/event-title';
 import { CustomTriggerSection } from '@/features/events/custom-trigger-section';
+import { InstalledScriptsSection } from './installed-scripts-section';
 import { EventUsageStats } from '@/features/events/event-usage-stats';
 import { AwarenessPermissionSection } from './awareness-permission-section';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
@@ -161,6 +162,8 @@ export function EventPanel() {
               })}
             <p className="pt-1 text-xs text-muted-foreground">{t('settings.events.previewHint')}</p>
           </div>
+
+          {hydrated && <InstalledScriptsSection />}
 
           {hydrated && <CustomTriggerSection />}
 

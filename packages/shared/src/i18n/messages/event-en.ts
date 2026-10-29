@@ -104,5 +104,9 @@ export const enEvent: DeepPartialMessages<ZhDictionary>['event'] = {
     skip: 'Skip scene',
     busy: 'A conversation or scene is in progress. Try again later.',
     empty: 'No built-in scenes.',
+    installedTitle: 'Scripts from capability packs',
+    installedHint: 'Installed scripts trigger on phrases. Use Preview to watch one on the chat page.',
+    installedEmpty: 'No enabled capability-pack scripts.',
+    installedPreview: 'Preview',
   },
 };

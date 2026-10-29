@@ -47,7 +47,7 @@ const INPUT = 'h-9 w-full rounded-md border bg-background px-2 text-sm';
 const TEXTAREA = 'w-full rounded-md border bg-background p-2 text-sm';
 
 /** v2.11：外部代理（本地 CLI）配置、提供方、发起运行与记录 */
-export function SubagentPanel() {
+export function SubagentPanel({ highlightRunId }: { highlightRunId?: string }) {
   const { t } = useI18n();
   const toast = useToast();
   const qc = useQueryClient();
@@ -59,10 +59,20 @@ export function SubagentPanel() {
   const [draft, setDraft] = React.useState<Draft | null>(null);
   const [goal, setGoal] = React.useState('');
   const [cwd, setCwd] = React.useState('');
+  const [canPickDirectory, setCanPickDirectory] = React.useState(false);
 
   React.useEffect(() => {
     if (settings) setDraft(draftOf(settings));
   }, [settings]);
+
+  React.useEffect(() => {
+    setCanPickDirectory(Boolean(window.wbfm?.dialog));
+  }, []);
+
+  React.useEffect(() => {
+    if (!highlightRunId) return;
+    document.getElementById('capability-external')?.scrollIntoView({ behavior: 'smooth' });
+  }, [highlightRunId]);
 
   const current = draft ?? EMPTY_DRAFT;
   const set = (patch: Partial<Draft>) => setDraft({ ...current, ...patch });
@@ -215,13 +225,29 @@ export function SubagentPanel() {
           <label className="text-sm" htmlFor="subagent-cwd">
             {t('subagent.cwd')}
           </label>
-          <input
-            id="subagent-cwd"
-            className={INPUT}
-            value={cwd}
-            onChange={(event) => setCwd(event.target.value)}
-            data-testid="subagent-cwd"
-          />
+          <div className="flex gap-2">
+            <input
+              id="subagent-cwd"
+              className={INPUT}
+              value={cwd}
+              onChange={(event) => setCwd(event.target.value)}
+              data-testid="subagent-cwd"
+            />
+            {canPickDirectory && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void window.wbfm?.dialog?.pickDirectory().then((picked) => {
+                    if (picked) setCwd(picked);
+                  });
+                }}
+              >
+                {t('subagent.pickDirectory')}
+              </Button>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button
@@ -248,7 +274,7 @@ export function SubagentPanel() {
             {t('subagent.refresh')}
           </Button>
         </div>
-        <SubagentRunList runs={runs.data ?? []} />
+        <SubagentRunList runs={runs.data ?? []} highlightId={highlightRunId} />
       </div>
     </section>
   );

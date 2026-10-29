@@ -103,5 +103,9 @@ export const zhEvent = {
     skip: '跳过演出',
     busy: '当前有对话或演出进行中，暂时无法试运行。',
     empty: '暂无内置剧本。',
+    installedTitle: '来自能力包的剧本',
+    installedHint: '安装的能力包剧本按短语触发；可点「试演」到对话页观看。',
+    installedEmpty: '没有已启用的能力包剧本。',
+    installedPreview: '试演',
   },
 };

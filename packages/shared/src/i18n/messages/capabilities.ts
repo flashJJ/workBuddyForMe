@@ -15,6 +15,14 @@ export const zhCapabilities = {
   statusEnabled: '已启用',
   statusDisabled: '已停用',
   effect: '生效句柄',
+  effectKind: {
+    skill: '技能名',
+    mcp: '服务器 id',
+    workflow: '工作流 id',
+    'pet-action': '动作 id',
+    'event-script': '剧本 id',
+    'report-widget': '卡片 id',
+  },
   noEffect: '无',
   lastError: '最近错误',
   sample: '下载示例包',
@@ -31,6 +39,8 @@ export const zhCapabilities = {
   external: '外部代理',
   externalHint: '外部代理为可选依赖，默认关闭；未接入实现时核心功能不受影响。',
   externalEmpty: '尚未接入外部代理提供方。',
+  filterAll: '全部',
+  filterEmpty: '该类型下没有已安装的能力包。',
 };
 
 export const enCapabilities = {
@@ -49,6 +59,14 @@ export const enCapabilities = {
   statusEnabled: 'Enabled',
   statusDisabled: 'Disabled',
   effect: 'Effect handle',
+  effectKind: {
+    skill: 'Skill name',
+    mcp: 'Server id',
+    workflow: 'Workflow id',
+    'pet-action': 'Motion id',
+    'event-script': 'Script id',
+    'report-widget': 'Widget id',
+  },
   noEffect: 'None',
   lastError: 'Last error',
   sample: 'Download sample',
@@ -66,4 +84,6 @@ export const enCapabilities = {
   externalHint:
     'External agents are optional and off by default; core features are unaffected when no provider is installed.',
   externalEmpty: 'No external agent provider installed.',
+  filterAll: 'All',
+  filterEmpty: 'No installed packs of this kind.',
 };

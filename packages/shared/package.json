@@ -85,6 +85,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./dialog": {
+      "types": "./src/dialog.ts",
+      "development": "./src/dialog.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./command": {
       "types": "./src/command.ts",
       "development": "./src/command.ts",
