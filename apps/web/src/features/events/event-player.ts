@@ -20,6 +20,7 @@ import type {
   EventFxId,
   EventMotionGroup,
   EventSpatialAction,
+  EventSpeechLine,
   ExpressionTag,
 } from '@wbfm/shared/schemas';
 import type { EventEffectSink } from '@wbfm/core/event-client';
@@ -125,9 +126,9 @@ export class EventPlayer implements EventEffectSink {
     // 主窗 no-op：spatial 仅桌宠形态可演，桌宠 IPC 通道后续版本接入
   }
 
-  async speech(lineKey: string, speak: boolean, signal: AbortSignal): Promise<void> {
-    const text = this.deps.resolveLine(lineKey);
-    await this.present(text, speak, signal, lineKey);
+  async speech(line: EventSpeechLine, speak: boolean, signal: AbortSignal): Promise<void> {
+    const text = 'text' in line ? line.text : this.deps.resolveLine(line.key);
+    await this.present(text, speak, signal, 'text' in line ? line.text : line.key);
   }
 
   /**

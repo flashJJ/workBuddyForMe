@@ -8,6 +8,7 @@ import {
 } from '@wbfm/shared/schemas';
 import { BUILT_IN_EVENTS } from '@wbfm/shared/events';
 import { Button } from '@/components/ui/button';
+import { eventTitle } from './event-title';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,6 @@ import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { MessageKey } from '@wbfm/shared/i18n';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useEventTriggerMutations } from './use-event-triggers-data';
 
@@ -180,7 +180,7 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
             >
               {BUILT_IN_EVENTS.map((def) => (
                 <option key={def.id} value={def.id}>
-                  {t(def.titleKey as MessageKey)}
+                  {eventTitle(def, t)}
                 </option>
               ))}
             </SimpleSelect>

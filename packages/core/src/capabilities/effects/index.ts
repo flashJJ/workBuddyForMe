@@ -1,6 +1,10 @@
 import { ApiError } from '@wbfm/shared/errors';
 import type { CapabilityManifest } from '@wbfm/shared/schemas';
-import type { WorkflowRepository } from '@wbfm/database';
+import type {
+  InstalledEventScriptRepository,
+  ReportWidgetRepository,
+  WorkflowRepository,
+} from '@wbfm/database';
 import type { SkillService } from '../../skills/skill-service';
 import type { MotionService } from '../../services/motion-service';
 import type { McpRegistry } from '../../mcp/registry';
@@ -23,33 +27,37 @@ import {
   enablePetAction,
   type PetActionEffectDeps,
 } from './pet-action';
+import {
+  disableEventScript,
+  enableEventScript,
+  uninstallEventScript,
+  type EventScriptEffectDeps,
+} from './event-script';
+import {
+  disableReportWidget,
+  enableReportWidget,
+  type ReportWidgetEffectDeps,
+} from './report-widget';
 
-/** v2.11：六类 effect 依赖；当前接入 skill / mcp / workflow / pet-action */
+/** v2.11：六类 effect 依赖 */
 export interface CapabilityEffectDeps {
   skills: SkillService;
   mcp: McpRegistry;
   skillsDir: string;
   workflows: WorkflowRepository;
   motions: MotionService;
+  eventScripts: InstalledEventScriptRepository;
+  reportWidgets: ReportWidgetRepository;
 }
 
-export type { SkillEffectDeps, McpEffectDeps, WorkflowEffectDeps, PetActionEffectDeps };
-
-function skillDeps(deps: CapabilityEffectDeps): SkillEffectDeps {
-  return { skills: deps.skills, skillsDir: deps.skillsDir };
-}
-
-function mcpDeps(deps: CapabilityEffectDeps): McpEffectDeps {
-  return { mcp: deps.mcp };
-}
-
-function workflowDeps(deps: CapabilityEffectDeps): WorkflowEffectDeps {
-  return { workflows: deps.workflows };
-}
-
-function petActionDeps(deps: CapabilityEffectDeps): PetActionEffectDeps {
-  return { motions: deps.motions };
-}
+export type {
+  SkillEffectDeps,
+  McpEffectDeps,
+  WorkflowEffectDeps,
+  PetActionEffectDeps,
+  EventScriptEffectDeps,
+  ReportWidgetEffectDeps,
+};
 
 export function enableCapabilityEffect(
   manifest: CapabilityManifest,
@@ -58,13 +66,17 @@ export function enableCapabilityEffect(
 ): string {
   switch (manifest.kind) {
     case 'skill':
-      return enableSkill(packDir, skillDeps(deps));
+      return enableSkill(packDir, { skills: deps.skills, skillsDir: deps.skillsDir });
     case 'mcp':
-      return enableMcp(packDir, manifest, mcpDeps(deps));
+      return enableMcp(packDir, manifest, { mcp: deps.mcp });
     case 'workflow':
-      return enableWorkflow(manifest, packDir, workflowDeps(deps));
+      return enableWorkflow(manifest, packDir, { workflows: deps.workflows });
     case 'pet-action':
-      return enablePetAction(manifest, packDir, petActionDeps(deps));
+      return enablePetAction(manifest, packDir, { motions: deps.motions });
+    case 'event-script':
+      return enableEventScript(manifest, packDir, { eventScripts: deps.eventScripts });
+    case 'report-widget':
+      return enableReportWidget(manifest, packDir, { reportWidgets: deps.reportWidgets });
     default:
       throw ApiError.validation(`该能力类型尚未接入：${manifest.kind}`);
   }
@@ -77,24 +89,34 @@ export function disableCapabilityEffect(
 ): void {
   switch (manifest.kind) {
     case 'skill':
-      return disableSkill(effectRef, skillDeps(deps));
+      return disableSkill(effectRef, { skills: deps.skills, skillsDir: deps.skillsDir });
     case 'mcp':
-      return disableMcp(effectRef, mcpDeps(deps));
+      return disableMcp(effectRef, { mcp: deps.mcp });
     case 'workflow':
-      return disableWorkflow(effectRef, workflowDeps(deps));
+      return disableWorkflow(effectRef, { workflows: deps.workflows });
     case 'pet-action':
-      return disablePetAction(effectRef, petActionDeps(deps));
+      return disablePetAction(effectRef, { motions: deps.motions });
+    case 'event-script':
+      return disableEventScript(effectRef, { eventScripts: deps.eventScripts });
+    case 'report-widget':
+      return disableReportWidget(effectRef, { reportWidgets: deps.reportWidgets });
     default:
       return;
   }
 }
 
-/** 卸载补偿：disable 已执行；只有 workflow 需要判定「删行还是保留禁用行」 */
+/** 卸载补偿：disable 已执行；workflow 判定删行或保留禁用行，剧本/卡片清行 */
 export function uninstallCapabilityEffect(
   manifest: CapabilityManifest,
   effectRef: string | null,
   deps: CapabilityEffectDeps,
 ): void {
-  if (manifest.kind !== 'workflow' || !effectRef) return;
-  uninstallWorkflow(effectRef, workflowDeps(deps));
+  if (!effectRef) return;
+  if (manifest.kind === 'workflow') {
+    uninstallWorkflow(effectRef, { workflows: deps.workflows });
+    return;
+  }
+  if (manifest.kind === 'event-script') {
+    uninstallEventScript(effectRef, { eventScripts: deps.eventScripts });
+  }
 }

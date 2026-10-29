@@ -206,6 +206,9 @@ export {
   capabilityManifestSchema,
   workflowCapabilityPayloadSchema,
   petActionCapabilityPayloadSchema,
+  eventScriptCapabilityPayloadSchema,
+  reportWidgetCapabilityPayloadSchema,
+  REPORT_WIDGET_METRICS,
   type CapabilityKind,
   type CapabilityPermission,
   type CapabilityStatus,
@@ -214,6 +217,9 @@ export {
   type CapabilityView,
   type WorkflowCapabilityPayload,
   type PetActionCapabilityPayload,
+  type EventScriptCapabilityPayload,
+  type ReportWidgetCapabilityPayload,
+  type ReportWidgetMetric,
 } from './capability';
 
 // v2.8 目标 / 计划 / 待办

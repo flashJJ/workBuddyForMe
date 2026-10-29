@@ -26,7 +26,7 @@ import {
   type ServiceDeps,
 } from '@wbfm/core/services';
 import { createChatOrchestrator } from '@wbfm/core/chat';
-import { readSampleMotionAsset } from './capability-sample-asset';
+import { createCapabilityServiceForApp } from './capability-wiring';
 import { createMilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService } from '@wbfm/core/agents';
 import {
@@ -175,13 +175,12 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const workflows = createWorkflowRepository(db);
   // v2.11：能力包 effect 需要动作服务；同一实例供容器返回
   const motionsService = createMotionService(db);
-  const capabilities = createCapabilityService({
+  const capabilities = createCapabilityServiceForApp({
     db,
     skills,
     mcp,
     workflows,
     motions: motionsService,
-    sampleMotionAsset: readSampleMotionAsset,
   });
   // v0.9：端点仓储同时供 flowRunner（策略快照）与端点服务（管理/鉴权）使用，必须同一实例
   const endpointRepo = createWorkflowEndpointRepository(db);

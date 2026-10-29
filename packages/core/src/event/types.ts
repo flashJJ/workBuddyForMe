@@ -11,6 +11,7 @@ import type {
   EventMotionGroup,
   EventRunOutcome,
   EventSpatialAction,
+  EventSpeechLine,
   ExpressionTag,
 } from '@wbfm/shared/schemas';
 
@@ -52,7 +53,7 @@ export interface EventEffectSink {
    * 播报完成（或气泡最短展示）后 resolve；signal abort 时播放器应立即中止并 resolve
    * （引擎另以信号竞赛兜底，sink 不应长时间挂住）。
    */
-  speech(lineKey: string, speak: boolean, signal: AbortSignal): Promise<void>;
+  speech(line: EventSpeechLine, speak: boolean, signal: AbortSignal): Promise<void>;
   /** 终态统一释放：视线回指针跟随、表情交还情绪基线、口型归零、桌宠 idle */
   release(): void;
 }

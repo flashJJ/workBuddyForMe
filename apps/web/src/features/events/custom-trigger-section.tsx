@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import type { MessageKey } from '@wbfm/shared/i18n';
 import type { EventTriggerView } from '@wbfm/shared/schemas';
 import { BUILT_IN_EVENTS } from '@wbfm/shared/events';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssistants } from '@/lib/hooks/use-assistants';
+import { eventTitle as resolveEventTitle } from './event-title';
 import { useEventTriggerMutations, useEventTriggers } from './use-event-triggers-data';
 import { CustomTriggerFormDialog } from './custom-trigger-form-dialog';
 
@@ -30,7 +30,7 @@ export function CustomTriggerSection() {
     assistants?.find((item) => item.id === assistantId)?.name ?? '—';
   const eventTitle = (eventId: string) => {
     const def = BUILT_IN_EVENTS.find((item) => item.id === eventId);
-    return def ? t(def.titleKey as MessageKey) : eventId;
+    return def ? resolveEventTitle(def, t) : eventId;
   };
 
   const openCreate = () => {

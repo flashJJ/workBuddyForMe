@@ -5,6 +5,7 @@ import type { EventFrequencyTier } from '@wbfm/shared/schemas';
 import { BUILT_IN_EVENTS } from '@wbfm/shared/events';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { eventTitle } from '@/features/events/event-title';
 import { CustomTriggerSection } from '@/features/events/custom-trigger-section';
 import { EventUsageStats } from '@/features/events/event-usage-stats';
 import { AwarenessPermissionSection } from './awareness-permission-section';
@@ -154,7 +155,7 @@ export function EventPanel() {
                       checked={sceneEnabled}
                       onChange={(e) => void toggleScene(def.id, e.target.checked)}
                     />
-                    <span className="text-xs">{t(def.titleKey as MessageKey)}</span>
+                    <span className="text-xs">{eventTitle(def, t)}</span>
                   </label>
                 );
               })}

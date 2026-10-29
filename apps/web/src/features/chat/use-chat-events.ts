@@ -79,6 +79,7 @@ export function useChatEvents(args: UseChatEventsArgs): ChatEventState {
     emotionState,
     relationshipEnabled,
     triggerEvent: stage.triggerEvent,
+    triggerDefinition: stage.triggerDefinition,
   });
 
   // v2.0 M3：本地上下文触发器（连续工作/深夜/久未对话；系统事件需独立授权）

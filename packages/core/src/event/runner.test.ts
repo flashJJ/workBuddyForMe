@@ -37,9 +37,10 @@ function makeEnv(): FakeEnv {
     gaze: (x, y) => calls.push(`gaze:${x},${y}`),
     fx: (id) => calls.push(`fx:${id}`),
     spatial: (a) => calls.push(`spatial:${a}`),
-    speech: (lineKey, speak, signal) => {
-      calls.push(`speech:${lineKey}:${speak ? 'tts' : 'bubble'}`);
-      return speechImpl ? speechImpl(lineKey, speak, signal) : Promise.resolve();
+    speech: (line, speak, signal) => {
+      const label = 'key' in line ? line.key : line.text;
+      calls.push(`speech:${label}:${speak ? 'tts' : 'bubble'}`);
+      return speechImpl ? speechImpl(label, speak, signal) : Promise.resolve();
     },
     release: () => calls.push('release'),
   };

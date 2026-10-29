@@ -13,6 +13,7 @@ import {
   type EventDefinition,
   type EventEndReason,
   type EventStep,
+  speechLineOf,
 } from '@wbfm/shared/schemas';
 import { evaluateEventConditions } from './conditions';
 import type { EventClock } from './clock';
@@ -208,7 +209,7 @@ export class EventRunner {
     }
 
     await Promise.race([
-      Promise.resolve(sink.speech(step.lineKey, speak, this.ac.signal)),
+      Promise.resolve(sink.speech(speechLineOf(step), speak, this.ac.signal)),
       abortSignal(this.ac.signal),
     ]);
     this.effectsFired += 1;

@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { eventDefinitionSchema } from './event';
 import { flowGraphSchema } from './flow';
 import { MOTION_MOODS, MOTION_SEGMENTS } from './motion-asset';
+import { RUN_EVIDENCE_CHAINS } from './report';
 
 /**
  * v2.10 能力包清单与视图；v2.11 扩展 workflow / pet-action 两类 payload。
@@ -98,6 +100,8 @@ export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = [
   'mcp',
   'workflow',
   'pet-action',
+  'event-script',
+  'report-widget',
 ];
 
 /** 每种 kind 的 entry 固定路径（安装侧强校验） */
@@ -133,3 +137,61 @@ export const petActionCapabilityPayloadSchema = z.object({
   minRelationshipLevel: z.number().int().min(0).max(3).optional(),
 });
 export type PetActionCapabilityPayload = z.infer<typeof petActionCapabilityPayloadSchema>;
+
+/** v2.11：event-script 能力包 payload（仅短语触发） */
+export const eventScriptCapabilityPayloadSchema = z
+  .object({
+    definition: eventDefinitionSchema,
+    trigger: z.object({
+      kind: z.literal('phrase'),
+      phrases: z.array(z.string().trim().min(2).max(24)).min(1).max(5),
+    }),
+  })
+  .superRefine((value, ctx) => {
+    const def = value.definition;
+    if (!def.id.startsWith('usr.')) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['definition', 'id'], message: '安装剧本 id 必须为 usr.*' });
+    }
+    const slug = def.id.slice(4);
+    if (!/^[a-z0-9]{3,40}$/.test(slug)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['definition', 'id'],
+        message: '安装剧本 id 必须形如 usr.<3-40 位小写字母/数字>',
+      });
+    }
+    if (!def.title) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['definition', 'title'],
+        message: '安装剧本必须使用 title 字面量',
+      });
+    }
+    def.steps.forEach((step, index) => {
+      if (step.kind === 'speech' && !step.text) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['definition', 'steps', index, 'text'],
+          message: '安装剧本台词必须使用 text 字面量',
+        });
+      }
+    });
+  });
+export type EventScriptCapabilityPayload = z.infer<typeof eventScriptCapabilityPayloadSchema>;
+
+/** v2.11：report-widget 能力包 payload（仅声明式指标） */
+export const REPORT_WIDGET_METRICS = [
+  'success_rate',
+  'run_count',
+  'median_duration',
+  'failure_top',
+] as const;
+export type ReportWidgetMetric = (typeof REPORT_WIDGET_METRICS)[number];
+
+export const reportWidgetCapabilityPayloadSchema = z.object({
+  title: z.string().trim().min(1).max(40),
+  chain: z.enum(RUN_EVIDENCE_CHAINS),
+  metric: z.enum(REPORT_WIDGET_METRICS),
+  windowDays: z.union([z.literal(7), z.literal(30), z.literal(90)]),
+});
+export type ReportWidgetCapabilityPayload = z.infer<typeof reportWidgetCapabilityPayloadSchema>;

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+﻿import { describe, expect, it, vi } from 'vitest';
 import type { PetPerformanceEvent } from '@wbfm/shared/pet';
 import { EventPlayer, type EventPlayerControllerLike, type EventPlayerTimers } from './event-player';
 import { EVENT_FX_DURATION_MS } from './fx-registry';
@@ -156,7 +156,7 @@ describe('EventPlayer speech', () => {
     const h = makePlayer('bridge');
     h.speak.mockResolvedValue(undefined);
     const ac = new AbortController();
-    const pending = h.player.speech('event.greet', true, ac.signal);
+    const pending = h.player.speech({ key: 'event.greet' }, true, ac.signal);
     await Promise.resolve(); // 语音桥 mock 落定，最短展示定时器入列
     h.clock.advance(1200);
     await pending;
@@ -168,7 +168,7 @@ describe('EventPlayer speech', () => {
   it('tts=false 不调语音桥；纯气泡也保证最短展示 1200ms', async () => {
     const h = makePlayer(null);
     const ac = new AbortController();
-    const pending = h.player.speech('event.greet', false, ac.signal);
+    const pending = h.player.speech({ key: 'event.greet' }, false, ac.signal);
     let done = false;
     void pending.then(() => {
       done = true;
@@ -186,7 +186,7 @@ describe('EventPlayer speech', () => {
 
   it('缺台词键告警且不出声、不中继空字幕之外的内容', async () => {
     const h = makePlayer(null);
-    const pending = h.player.speech('event.missing', true, new AbortController().signal);
+    const pending = h.player.speech({ key: 'event.missing' }, true, new AbortController().signal);
     h.clock.advance(1200); // 无语音桥：最短展示定时器同步入列
     await pending;
     expect(h.warnings).toContainEqual({ code: 'event.line.missing', detail: 'event.missing' });
@@ -197,7 +197,7 @@ describe('EventPlayer speech', () => {
   it('语音桥抛错时吞掉异常并告警，气泡最短展示照常', async () => {
     const h = makePlayer('bridge');
     h.speak.mockRejectedValue(new Error('boom'));
-    const pending = h.player.speech('event.greet', true, new AbortController().signal);
+    const pending = h.player.speech({ key: 'event.greet' }, true, new AbortController().signal);
     await Promise.resolve(); // rejection 落定后进入最短展示等待
     h.clock.advance(1200);
     await pending;
@@ -213,7 +213,7 @@ describe('EventPlayer speech', () => {
         signal.addEventListener('abort', () => resolve(), { once: true });
       });
     });
-    const pending = h.player.speech('event.greet', true, ac.signal);
+    const pending = h.player.speech({ key: 'event.greet' }, true, ac.signal);
     ac.abort();
     await pending;
     h.clock.advance(5000);

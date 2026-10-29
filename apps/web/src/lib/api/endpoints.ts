@@ -39,6 +39,8 @@ export const API = {
   messageFeedback: (conversationId: string, messageId: string) =>
     `/api/conversations/${conversationId}/messages/${messageId}`,
   runEvidence: '/api/reports/runs',
+  /** v2.11：启用中的能力包剧本（短语触发匹配） */
+  eventScripts: '/api/event-scripts',
   // v2.7 工作信号 / 审批中心
   workSignals: '/api/work-signals',
   approvals: '/api/approvals',

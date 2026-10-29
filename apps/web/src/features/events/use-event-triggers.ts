@@ -6,11 +6,14 @@ import { eventIdForIntent } from '@wbfm/shared/events';
 import type { Message } from '@wbfm/shared/types';
 import { CustomTriggerGate } from '@wbfm/core/event-client';
 import { defaultRelationshipBlock, displayLevelOf } from '@wbfm/core/relationship-client';
+import type { EventDefinition } from '@wbfm/shared/schemas';
 import { useReunionGreeting } from '@/features/avatar/use-reunion-greeting';
 import { bumpInteractionCounter } from './daily-counter';
 import { ACTIVITY_WRITE_THROTTLE_MS, markActivity } from './event-activity';
 import { uiTaskEventBus } from './event-bus';
+import { matchAnyPhrase } from './phrase-match';
 import { shanghaiDateKey } from './remote-usage-store';
+import { useInstalledEventScripts } from './use-installed-event-scripts';
 import { useEventTriggers as useEventTriggersData } from './use-event-triggers-data';
 import {
   REUNION_TIER_TO_NUMBER,
@@ -32,6 +35,8 @@ interface UseEventTriggersArgs {
   /** v2.0：关系等级开关（关闭时不触发等级剧本） */
   relationshipEnabled: boolean;
   triggerEvent: (eventId: string, extraCounters?: Record<string, number>) => boolean;
+  /** v2.11：能力包剧本按定义直接准入（绕过内置 id 白名单） */
+  triggerDefinition?: (def: EventDefinition) => boolean;
 }
 
 /** 展示等级 → 升级纪念演出 id（仅 1/2/3） */
@@ -61,9 +66,12 @@ export function useEventTriggers({
   emotionState,
   relationshipEnabled,
   triggerEvent,
+  triggerDefinition,
 }: UseEventTriggersArgs): void {
   const triggerRef = React.useRef(triggerEvent);
   triggerRef.current = triggerEvent;
+  const triggerDefinitionRef = React.useRef(triggerDefinition);
+  triggerDefinitionRef.current = triggerDefinition;
   const enabledRef = React.useRef(enabled);
   enabledRef.current = enabled;
   const intimacyRef = React.useRef(intimacy);
@@ -87,6 +95,11 @@ export function useEventTriggers({
     gateAssistantRef.current = assistantId;
     customGateRef.current.reset();
   }
+
+  // v2.11：能力包剧本（短语触发；导演侧仍走三道锁）
+  const { data: installedScripts } = useInstalledEventScripts(enabled);
+  const installedRef = React.useRef(installedScripts);
+  installedRef.current = installedScripts;
 
   // v2.0：展示等级跃迁 → 对应等级的纪念演出（仅升级；降档不演出、不通知）。
   // 切助手或首次见到状态时只立基线，避免进页面补演历史等级。
@@ -185,6 +198,12 @@ export function useEventTriggers({
             })
           ) {
             triggerRef.current(rule.eventId);
+          }
+        }
+
+        for (const script of installedRef.current ?? []) {
+          if (matchAnyPhrase(message.content, script.phrases)) {
+            triggerDefinitionRef.current?.(script.definition);
           }
         }
       } else if (message.role === 'assistant' && message.status === 'completed') {

@@ -7,6 +7,8 @@ export {
 export {
   buildSamplePack,
   buildSampleSkillPack,
+} from './samples';
+export {
   parseCapabilityZip,
   CAPABILITY_MANIFEST_FILE,
   type ParsedCapability,

@@ -1,11 +1,11 @@
-import { createHash as hash } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { strToU8, zipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createDatabase,
+  createInstalledEventScriptRepository,
+  createReportWidgetRepository,
   createWorkflowRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
@@ -14,43 +14,13 @@ import type { McpRegistry } from '../mcp/registry';
 import { createMotionService } from '../services/motion-service';
 import { createSkillService } from '../skills/skill-service';
 import { createCapabilityService } from './capability-service';
-import { buildSamplePack, buildSampleSkillPack } from './manifest';
-
-function pack(manifest: Record<string, unknown>, files: Record<string, string>): Uint8Array {
-  const zipFiles: Record<string, Uint8Array> = {
-    'wbfm-capability.json': strToU8(JSON.stringify(manifest, null, 2)),
-  };
-  for (const [path, content] of Object.entries(files)) zipFiles[path] = strToU8(content);
-  return zipSync(zipFiles);
-}
-
-function mcpPack(): Uint8Array {
-  const server = JSON.stringify({
-    name: 'pack-mcp',
-    transport: 'stdio',
-    command: 'node',
-    args: ['server.js'],
-  });
-  const hash = createHash(server);
-  return pack(
-    {
-      id: 'com.test.mcp',
-      version: '1.0.0',
-      kind: 'mcp',
-      name: '测试 MCP',
-      description: '测试用 MCP 服务器',
-      permissions: ['mcp:connect'],
-      entry: 'payload/server.json',
-      dependencies: [],
-      checksums: { 'payload/server.json': hash },
-    },
-    { 'payload/server.json': server },
-  );
-}
-
-function createHash(content: string): string {
-  return hash('sha256').update(content).digest('hex');
-}
+import {
+  buildFakeVrma,
+  buildTestMcpPack,
+  buildTestPack,
+  hashOf,
+} from './capability-test-helpers';
+import { buildSamplePack, buildSampleSkillPack } from './samples';
 
 describe('v2.10 能力包服务', () => {
   let db: DatabaseInstance;
@@ -60,6 +30,8 @@ describe('v2.10 能力包服务', () => {
   let mcp: McpRegistry;
   let workflows: ReturnType<typeof createWorkflowRepository>;
   let motions: ReturnType<typeof createMotionService>;
+  let eventScripts: ReturnType<typeof createInstalledEventScriptRepository>;
+  let reportWidgets: ReturnType<typeof createReportWidgetRepository>;
   let service: ReturnType<typeof createCapabilityService>;
 
   beforeEach(() => {
@@ -73,12 +45,16 @@ describe('v2.10 能力包服务', () => {
     mcp = { createServer, removeServer } as unknown as McpRegistry;
     workflows = createWorkflowRepository(db);
     motions = createMotionService(db);
+    eventScripts = createInstalledEventScriptRepository(db);
+    reportWidgets = createReportWidgetRepository(db);
     service = createCapabilityService({
       db,
       skills,
       mcp,
       workflows,
       motions,
+      eventScripts,
+      reportWidgets,
       rootDir: join(root, 'capabilities'),
       skillsDir,
       sampleMotionAsset: () => buildFakeVrma(),
@@ -111,7 +87,7 @@ describe('v2.10 能力包服务', () => {
   });
 
   it('MCP 包：启用创建服务器，停用移除服务器', () => {
-    const installed = service.install(mcpPack());
+    const installed = service.install(buildTestMcpPack());
     expect(installed.effectRef).toBe('server-1');
     expect(mcp.createServer).toHaveBeenCalledTimes(1);
 
@@ -121,7 +97,7 @@ describe('v2.10 能力包服务', () => {
   });
 
   it('校验和/权限/依赖/重复安装 fail-closed', () => {
-    expect(() => service.install(pack({
+    expect(() => service.install(buildTestPack({
       id: 'com.test.badsum',
       version: '1.0.0',
       kind: 'skill',
@@ -132,7 +108,7 @@ describe('v2.10 能力包服务', () => {
       checksums: { 'payload/skill.json': 'a'.repeat(64) },
     }, { 'payload/skill.json': '{}' }))).toThrow(/校验和不匹配/);
 
-    expect(() => service.install(pack({
+    expect(() => service.install(buildTestPack({
       id: 'com.test.noperm',
       version: '1.0.0',
       kind: 'skill',
@@ -140,10 +116,10 @@ describe('v2.10 能力包服务', () => {
       permissions: [],
       entry: 'payload/skill.json',
       dependencies: [],
-      checksums: { 'payload/skill.json': createHash('{}') },
+      checksums: { 'payload/skill.json': hashOf('{}') },
     }, { 'payload/skill.json': '{}' }))).toThrow(/缺少必需权限/);
 
-    expect(() => service.install(pack({
+    expect(() => service.install(buildTestPack({
       id: 'com.test.dep',
       version: '1.0.0',
       kind: 'skill',
@@ -151,19 +127,8 @@ describe('v2.10 能力包服务', () => {
       permissions: ['skill:install'],
       entry: 'payload/skill.json',
       dependencies: [{ id: 'com.base' }],
-      checksums: { 'payload/skill.json': createHash('{}') },
+      checksums: { 'payload/skill.json': hashOf('{}') },
     }, { 'payload/skill.json': '{}' }))).toThrow(/缺少依赖/);
-
-    expect(() => service.install(pack({
-      id: 'com.test.script',
-      version: '1.0.0',
-      kind: 'event-script',
-      name: '未接入类型',
-      permissions: ['events:write'],
-      entry: 'payload/script.json',
-      dependencies: [],
-      checksums: { 'payload/script.json': 'a'.repeat(64) },
-    }, { 'payload/script.json': '{}' }))).toThrow(/尚未接入/);
 
     const sample = buildSampleSkillPack();
     service.install(sample);
@@ -224,30 +189,79 @@ describe('v2.10 能力包服务', () => {
     expect(motions.list()).toHaveLength(0);
   });
 
-  it('示例包：未接入的类型不伪造可用示例', () => {
-    expect(() => service.sample('event-script')).toThrow(/示例尚未提供/);
-    expect(() => service.sample('report-widget')).toThrow(/示例尚未提供/);
+  it('示例包：mcp 模板安装被拒，其余类型可下载', () => {
+    expect(() => service.sample('mcp')).not.toThrow();
+    expect(() => service.install(service.sample('mcp'))).toThrow(/必须提供 url/);
+    for (const kind of ['skill', 'workflow', 'pet-action', 'event-script', 'report-widget'] as const) {
+      expect(service.sample(kind).byteLength).toBeGreaterThan(0);
+    }
+  });
+
+  it('剧本示例包：安装启用，停用保留行，卸载删除', () => {
+    const installed = service.install(buildSamplePack('event-script'));
+    expect(installed.effectRef).toBe('usr.goodnight');
+    expect(eventScripts.get('usr.goodnight')?.enabled).toBe(true);
+
+    const disabled = service.disable(installed.id);
+    expect(disabled.status).toBe('disabled');
+    expect(eventScripts.get('usr.goodnight')?.enabled).toBe(false);
+
+    service.enable(installed.id);
+    expect(eventScripts.get('usr.goodnight')?.enabled).toBe(true);
+
+    service.uninstall(installed.id);
+    expect(eventScripts.get('usr.goodnight')).toBeNull();
+  });
+
+  it('报告卡片示例包：安装可查，停用/卸载移除', () => {
+    const installed = service.install(buildSamplePack('report-widget'));
+    expect(installed.effectRef).toBe('com.example.sample.report-widget');
+    expect(reportWidgets.listEnabled().map((item) => item.id)).toContain(installed.effectRef);
+
+    service.disable(installed.id);
+    expect(reportWidgets.listEnabled()).toHaveLength(0);
+
+    service.enable(installed.id);
+    expect(reportWidgets.listEnabled()).toHaveLength(1);
+
+    service.uninstall(installed.id);
+    expect(reportWidgets.listEnabled()).toHaveLength(0);
+  });
+
+  it('剧本 id 跨包占用：重复安装 409 且不留新包', () => {
+    service.install(buildSamplePack('event-script'));
+    const script = JSON.stringify({
+      definition: {
+        id: 'usr.goodnight',
+        title: '另一个晚安',
+        priority: 1,
+        interruptPolicy: 'ignore',
+        cooldownMs: 3_600_000,
+        maxPerDay: 2,
+        speechLock: 'queue',
+        steps: [
+          { kind: 'expression', tag: 'joy' },
+          { kind: 'speech', text: '晚安。' },
+        ],
+      },
+      trigger: { kind: 'phrase', phrases: ['晚安'] },
+    });
+    const custom = buildTestPack(
+      {
+        id: 'com.test.script',
+        version: '1.0.0',
+        kind: 'event-script',
+        name: '冲突剧本',
+        description: '与示例剧本同 id',
+        permissions: ['events:write'],
+        entry: 'payload/script.json',
+        dependencies: [],
+        checksums: { 'payload/script.json': hashOf(script) },
+      },
+      { 'payload/script.json': script },
+    );
+    expect(() => service.install(custom)).toThrow(/已被其它能力包占用/);
+    expect(service.list().map((item) => item.id)).toEqual(['com.example.sample.event-script']);
+    expect(eventScripts.get('usr.goodnight')?.packId).toBe('com.example.sample.event-script');
   });
 });
-
-function buildFakeVrma(): Uint8Array {
-  return buildFakeGlb({
-    extensionsUsed: ['VRMC_vrm_animation'],
-    extensions: { VRMC_vrm_animation: { specVersion: '1.0' } },
-  });
-}
-
-function buildFakeGlb(extra: { extensionsUsed?: string[]; extensions?: unknown }): Uint8Array {
-  const json = JSON.stringify({ asset: { version: '2.0' }, ...extra });
-  const jsonBytes = new TextEncoder().encode(json);
-  const total = 20 + jsonBytes.length;
-  const buf = new ArrayBuffer(total);
-  const dv = new DataView(buf);
-  dv.setUint32(0, 0x46546c67, true);
-  dv.setUint32(4, 2, true);
-  dv.setUint32(8, total, true);
-  dv.setUint32(12, jsonBytes.length, true);
-  dv.setUint32(16, 0x4e4f534a, true);
-  new Uint8Array(buf).set(jsonBytes, 20);
-  return new Uint8Array(buf);
-}

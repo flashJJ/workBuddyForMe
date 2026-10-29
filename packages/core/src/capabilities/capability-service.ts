@@ -4,11 +4,16 @@ import { getDataDir } from '@wbfm/config';
 import { createCapabilityRepository, type DatabaseInstance } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
 import type { CapabilityKind, CapabilityView } from '@wbfm/shared/schemas';
-import type { WorkflowRepository } from '@wbfm/database';
+import type {
+  InstalledEventScriptRepository,
+  ReportWidgetRepository,
+  WorkflowRepository,
+} from '@wbfm/database';
 import type { McpRegistry } from '../mcp/registry';
 import type { SkillService } from '../skills/skill-service';
 import type { MotionService } from '../services/motion-service';
-import { buildSamplePack, parseCapabilityZip } from './manifest';
+import { buildSamplePack } from './samples';
+import { parseCapabilityZip } from './manifest';
 import {
   disableCapabilityEffect,
   enableCapabilityEffect,
@@ -29,6 +34,9 @@ export interface CapabilityServiceDeps {
   workflows: WorkflowRepository;
   /** v2.11：pet-action effect 使用 */
   motions: MotionService;
+  /** v2.11：event-script / report-widget effect 使用 */
+  eventScripts: InstalledEventScriptRepository;
+  reportWidgets: ReportWidgetRepository;
   /** 测试注入：能力包根目录（默认 <dataDir>/capabilities） */
   rootDir?: string;
   /** 测试注入：技能目录（默认 <dataDir>/skills） */
@@ -51,6 +59,8 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
     skillsDir,
     workflows: deps.workflows,
     motions: deps.motions,
+    eventScripts: deps.eventScripts,
+    reportWidgets: deps.reportWidgets,
   };
 
   const packDir = (id: string): string => join(rootDir, id);

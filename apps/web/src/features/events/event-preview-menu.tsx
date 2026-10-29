@@ -3,9 +3,9 @@
 import * as React from 'react';
 import { Play } from 'lucide-react';
 import { BUILT_IN_EVENTS } from '@wbfm/shared/events';
-import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
+import { eventTitle } from './event-title';
 import type { PreviewResult } from './use-event-director';
 
 interface EventPreviewMenuProps {
@@ -66,7 +66,7 @@ export function EventPreviewMenu({ busy = false, onPreview }: EventPreviewMenuPr
                 onClick={() => handlePreview(def.id)}
               >
                 <Play className="h-3 w-3 shrink-0 text-muted-foreground" />
-                <span className="truncate">{t(def.titleKey as MessageKey)}</span>
+                <span className="truncate">{eventTitle(def, t)}</span>
               </button>
             ))}
           </div>

@@ -97,6 +97,16 @@ export {
   type CapabilityUpdateFields,
 } from './capability-repo';
 export {
+  createInstalledEventScriptRepository,
+  type InstalledEventScriptRepository,
+  type InstalledEventScriptView,
+} from './installed-event-script-repo';
+export {
+  createReportWidgetRepository,
+  type ReportWidgetRepository,
+  type ReportWidgetView,
+} from './report-widget-repo';
+export {
   createSessionEventRepository,
   SESSION_EVENT_SCOPES,
   type SessionEventRepository,
