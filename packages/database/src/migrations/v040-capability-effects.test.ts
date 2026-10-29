@@ -22,6 +22,39 @@ describe('v040 迁移：能力包 effect 支撑', () => {
     db.close();
   });
 
+  it('v039 旧库升级：既有工作流/能力包数据不丢，新增列与表就位', () => {
+    const db = new Database(':memory:');
+    applyMigrations(db, 39);
+    expect(getSchemaVersion(db)).toBe(39);
+    db.prepare(
+      `INSERT INTO workflows(id, name, created_at, updated_at)
+       VALUES ('wf-old', '旧工作流', 't', 't')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO capability_packs(
+         id, kind, version, name, permissions_json, manifest_json, status, installed_at, updated_at)
+       VALUES ('pack-old', 'skill', '1.0.0', '旧能力包', '[]', '{}', 'enabled', 't', 't')`,
+    ).run();
+
+    const result = applyMigrations(db);
+    expect(result.applied).toEqual([40]);
+    expect(getSchemaVersion(db)).toBe(40);
+
+    const workflow = db
+      .prepare('SELECT id, name, origin_capability_id FROM workflows WHERE id = ?')
+      .get('wf-old') as { id: string; name: string; origin_capability_id: string | null };
+    expect(workflow).toEqual({ id: 'wf-old', name: '旧工作流', origin_capability_id: null });
+    expect(
+      (db.prepare('SELECT count(*) AS n FROM capability_packs').get() as { n: number }).n,
+    ).toBe(1);
+    for (const table of ['installed_event_scripts', 'report_widgets', 'subagent_runs']) {
+      expect(
+        (db.prepare(`SELECT count(*) AS n FROM ${table}`).get() as { n: number }).n,
+      ).toBe(0);
+    }
+    db.close();
+  });
+
   it('行可写、重复迁移幂等', () => {
     const db = new Database(':memory:');
     applyMigrations(db);

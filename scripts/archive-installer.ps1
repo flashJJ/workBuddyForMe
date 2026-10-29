@@ -1,4 +1,4 @@
-# WorkBuddyForMe Windows 安装包自动归档
+﻿# WorkBuddyForMe Windows 安装包自动归档
 #
 # 把 electron-builder 产物中的三件套（安装包 exe / blockmap / latest.yml）归集到
 # <ArchiveRoot>\v<Version>\，并生成 SHA256SUMS.txt；归档后默认**彻底清空** Source 目录
@@ -116,8 +116,9 @@ if (-not $SkipCleanSource) {
 }
 
 # 额外清 Source 同级残留（不在 Source 内，但每次 dist:win 后必然长出来）
+# 注意：apps/desktop/build 是 electron-builder 的图标/许可/nsh 源资源（受版本控制），不可清理。
 $siblingRoot = Split-Path -Parent $Source
-foreach ($name in @('dist', 'build', 'playwright-report', 'test-results')) {
+foreach ($name in @('dist', 'playwright-report', 'test-results')) {
     $p = Join-Path $siblingRoot $name
     if (Test-Path $p) {
         Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue

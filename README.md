@@ -2,16 +2,16 @@
 
 本地优先的**私人 AI 工作台**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v2.10.0**（2026-10-29）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 当前版本：**v2.11.0**（2026-10-30）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
 
-## v2.10.0 重点
+## v2.11.0 重点
 
-- **会汇报（v2.7）**：任务/工作流/协作统一 WorkSignal；桌宠实时工作态、气泡、提示音与深链；全局审批中心 fail-closed。
-- **会计划（v2.8）**：Task/Agent 改为服务端持久作业，关页不中断；目标/计划/待办评审；完成回投幂等；定时跟进。
-- **可复盘（v2.9）**：追加式 `session_events` + CJK 检索；`/timeline` 时间线/检索/导出 ZIP；大工具输出 `spill://` 溢出。
-- **可扩展（v2.10）**：`wbfm-capability.json` 能力包安装/启停/卸载与回滚；示例技能包；`/capabilities` 管理页；外部代理接口缝。
-- **数据与迁移**：迁移 **37–39** 纯加法（运行租约/完成回投/目标计划/事件日志/能力包）；版本 **2.10.0** 统一同步。
-- **工程门禁**：`pnpm check` 与 8 包单测全绿；Web e2e 覆盖 v2.7–v2.10 新增链路。
+- **六类 effect 全接通**：能力包可安装/启停/卸载 `skill`、`mcp`、`workflow`、`pet-action`、`event-script`、`report-widget`；坏包逐类 422，回滚不留半成品。
+- **剧本与卡片**：事件 schema 支持字面量 `title`/`text`；安装剧本按短语触发并受导演三道锁约束；报告 JSON 新增 `widgets`，报告页渲染声明式卡片。
+- **外部代理（本地 CLI）**：默认关、逐次审批、JSON Lines 协议、超时/输出上限/取消杀进程树；运行落 `subagent_runs` + WorkSignal + `session_events`，终态幂等回投。
+- **管理页收口**：`/capabilities` kind 筛选、effect 详情、六类示例下载与外部代理区；设置页「来自能力包的剧本」列表与试演深链；桌面目录选择。
+- **数据与迁移**：迁移 **v040** 纯加法（workflows 来源列 + 剧本/卡片/外部代理运行三表）；版本 **2.11.0** 统一同步。
+- **工程门禁**：`pnpm check` 与 8 包单测全绿；生产模式 Web e2e 122/122、桌面冒烟 10/11（`computer-input` 环境相关）。
 
 ## 功能
 
@@ -165,7 +165,7 @@ pnpm test:e2e             # Web 关键路径 E2E
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v2.10.0 发布准备：`pnpm check` 与 8 包单测全绿；全量 Web e2e **120/120**（CI 模式 `next start` 生产产物）；v2.7–v2.10 新增链路（工作信号/审批、计划、时间线、能力包）全部通过，详见 [v2.10 版本总结](docs/roadmap/v2.10-release-summary.md)。
+v2.11.0 发布准备：`pnpm check` 与 8 包单测全绿；全量 Web e2e **122/122**（CI 模式 `next start` 生产产物）、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 `WorkBuddyForMe-Setup-2.11.0.exe` 192.49 MB。详见 [v2.11 M5 验收](docs/plan/v2.11/06-M5-验收.md)。
 
 ## 数据与隐私
 

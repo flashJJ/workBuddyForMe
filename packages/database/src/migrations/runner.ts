@@ -252,9 +252,14 @@ export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version 
  * 基于 PRAGMA user_version 的顺序迁移（前向、事务化、幂等）。
  * 迁移策略：读兼容、写收敛 —— 后续版本只做加法或兼容映射。
  */
-export function applyMigrations(db: Database): { from: number; to: number; applied: number[] } {
+export function applyMigrations(
+  db: Database,
+  targetVersion = LATEST_SCHEMA_VERSION,
+): { from: number; to: number; applied: number[] } {
   const from = db.pragma('user_version', { simple: true }) as number;
-  const pending = MIGRATIONS.filter((m) => m.version > from).sort((a, b) => a.version - b.version);
+  const pending = MIGRATIONS.filter(
+    (m) => m.version > from && m.version <= targetVersion,
+  ).sort((a, b) => a.version - b.version);
   for (const migration of pending) {
     const apply = db.transaction(() => {
       migration.up(db);
@@ -262,7 +267,7 @@ export function applyMigrations(db: Database): { from: number; to: number; appli
     });
     apply();
   }
-  return { from, to: LATEST_SCHEMA_VERSION, applied: pending.map((m) => m.version) };
+  return { from, to: targetVersion, applied: pending.map((m) => m.version) };
 }
 
 export function getSchemaVersion(db: Database): number {
