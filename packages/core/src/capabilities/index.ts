@@ -11,6 +11,11 @@ export {
   type CapabilityUpgradeResult,
 } from './upgrade';
 export {
+  cleanupCapabilityArtifacts,
+  scanCapabilitiesHealth,
+  type HealthScanInput,
+} from './health';
+export {
   buildSamplePack,
   buildSampleSkillPack,
 } from './samples';

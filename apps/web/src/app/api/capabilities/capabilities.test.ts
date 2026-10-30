@@ -8,7 +8,8 @@ import {
   createReportWidgetRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
-import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
+import { mkdirSync } from 'node:fs';
+import { getDataDir, resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '@wbfm/core/secrets';
 import { buildSampleSkillPack } from '@wbfm/core/capabilities';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
@@ -18,6 +19,8 @@ import { POST as enableCapability } from './[id]/enable/route';
 import { POST as disableCapability } from './[id]/disable/route';
 import { DELETE as uninstallCapability } from './[id]/route';
 import { POST as upgradeCapability } from './[id]/upgrade/route';
+import { GET as healthCapabilities } from './health/route';
+import { POST as cleanupCapabilities } from './health/cleanup/route';
 import { GET as sampleCapability } from './sample/route';
 
 describe('v2.10 能力包 API', () => {
@@ -250,5 +253,34 @@ describe('v2.10 能力包 API', () => {
       { params: Promise.resolve({ id: 'com.example.not-installed' }) },
     );
     expect(missing.status).toBe(404);
+  });
+
+  it('健康路由：报告六类包状态并清理无主目录', async () => {
+    const form = new FormData();
+    form.append(
+      'file',
+      new File([buildSampleSkillPack() as unknown as BlobPart], 'demo.zip', {
+        type: 'application/zip',
+      }),
+    );
+    await installCapability(new Request('http://127.0.0.1/x', { method: 'POST', body: form }));
+
+    const health = await healthCapabilities(new Request('http://127.0.0.1/x'));
+    expect(health.status).toBe(200);
+    const report = (await health.json()).data;
+    expect(report.packs).toHaveLength(1);
+    expect(report.packs[0].status).toBe('ok');
+    expect(report.orphans).toEqual([]);
+
+    mkdirSync(join(getDataDir('capabilities'), 'ghost'), { recursive: true });
+    const withOrphan = (await (await healthCapabilities(new Request('http://127.0.0.1/x'))).json())
+      .data;
+    expect(withOrphan.orphans).toEqual(['ghost']);
+
+    const cleanup = await cleanupCapabilities(
+      new Request('http://127.0.0.1/x', { method: 'POST' }),
+    );
+    expect(cleanup.status).toBe(200);
+    expect((await cleanup.json()).data.removed).toEqual(['ghost']);
   });
 });

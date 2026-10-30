@@ -35,6 +35,7 @@ export interface UpgradeTestContext {
   };
   createdServers: string[];
   failNextCreate(): void;
+  removeMcpServer(id: string): void;
   close(): void;
 }
 
@@ -45,10 +46,11 @@ export function createUpgradeTestContext(): UpgradeTestContext {
   const skillsDir = join(root, 'skills');
   const skills = createSkillService({ db }, { skillsDir, seedBuiltins: false });
   const createdServers: string[] = [];
+  const servers = new Map<string, { id: string; name: string }>();
   let failNextCreate = false;
   let serverSeq = 0;
   const mcp = {
-    createServer: () => {
+    createServer: (config: { name?: string }) => {
       if (failNextCreate) {
         failNextCreate = false;
         throw ApiError.validation('mock create server failed');
@@ -56,10 +58,13 @@ export function createUpgradeTestContext(): UpgradeTestContext {
       serverSeq += 1;
       const id = `server-${serverSeq}`;
       createdServers.push(id);
+      servers.set(id, { id, name: config.name ?? 'mock-mcp' });
       return { id };
     },
-    removeServer: () => undefined,
-    getServerInfos: () => [],
+    removeServer: (id: string) => {
+      servers.delete(id);
+    },
+    getServerInfos: () => Array.from(servers.values()),
   } as unknown as McpRegistry;
   const workflows = createWorkflowRepository(db);
   const motions = createMotionService(db);
@@ -95,6 +100,9 @@ export function createUpgradeTestContext(): UpgradeTestContext {
     createdServers,
     failNextCreate: () => {
       failNextCreate = true;
+    },
+    removeMcpServer: (id: string) => {
+      servers.delete(id);
     },
     close: () => {
       db.close();

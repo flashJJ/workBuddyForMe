@@ -238,6 +238,18 @@ export {
   capabilitySignaturePayload,
 } from './capability-signature';
 
+// v2.12 能力包健康报告契约
+export {
+  CAPABILITY_HEALTH_ISSUE_CODES,
+  type CapabilityHealth,
+  type CapabilityHealthIssue,
+  type CapabilityHealthIssueCode,
+  type CapabilityHealthReport,
+  type CapabilityHealthSeverity,
+  type CapabilityHealthStatus,
+  type CapabilityCleanupResult,
+} from './capability-health';
+
 // v2.8 目标 / 计划 / 待办
 export {
   GOAL_STATUSES,

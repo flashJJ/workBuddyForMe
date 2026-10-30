@@ -9,6 +9,8 @@ import type {
   CapabilitySignaturePolicy,
   CapabilityTrustedKey,
   CapabilityView,
+  CapabilityHealthReport,
+  CapabilityCleanupResult,
 } from '@wbfm/shared/schemas';
 import type { AppSettings } from '@wbfm/shared/types';
 import type {
@@ -35,6 +37,11 @@ import {
   upgradeCapability,
   type CapabilityUpgradeResult,
 } from './upgrade';
+import { assertDependencies } from './upgrade-preflight';
+import {
+  cleanupCapabilityArtifacts,
+  scanCapabilitiesHealth,
+} from './health';
 
 /**
  * v2.10 能力包服务：安装（校验+落盘）、启停（effect 注册/撤销）、卸载（清理磁盘与记录）。
@@ -178,6 +185,7 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
       const dir = packDir(id);
       if (!existsSync(dir)) throw ApiError.validation('能力包文件缺失，请重新安装');
       assertManifestSignature(manifest, context);
+      assertDependencies(repo, manifest);
 
       try {
         const effectRef = enableCapabilityEffect(manifest, dir, effects);
@@ -259,6 +267,21 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
           annotate: (view, manifest) => annotate(view, signatureContext(deps), manifest),
         },
       });
+    },
+
+    /** v2.12 M3：按需健康自检（始终验签，不受安装策略影响） */
+    health(): CapabilityHealthReport {
+      return scanCapabilitiesHealth({
+        repo,
+        effects,
+        rootDir,
+        trustedKeys: signatureContext(deps).keys,
+      });
+    },
+
+    /** v2.12 M3：清理无主目录 + 超过 24h 的升级残留 */
+    cleanupArtifacts(): CapabilityCleanupResult {
+      return cleanupCapabilityArtifacts({ repo, rootDir });
     },
 
     sample(kind: CapabilityKind = 'skill'): Uint8Array {
