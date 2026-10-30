@@ -4,6 +4,8 @@
  * 进程内存实现（单实例本地应用），无需持久化。
  */
 export type ConfirmationDecision = 'allow' | 'deny';
+/** v2.13 M3：结算原因（timeout / abort 与显式拒绝区分，供审计） */
+export type ConfirmationSettlement = 'allow' | 'deny' | 'timeout' | 'abort';
 
 interface PendingEntry {
   resolve: (decision: ConfirmationDecision) => void;
@@ -12,7 +14,11 @@ interface PendingEntry {
 
 export interface PendingConfirmations {
   /** 挂起等待确认；超时/abort 自动 deny（同一时刻同一 callId 仅一条） */
-  request(callId: string, signal?: AbortSignal): Promise<ConfirmationDecision>;
+  request(
+    callId: string,
+    signal?: AbortSignal,
+    onSettled?: (settlement: ConfirmationSettlement) => void,
+  ): Promise<ConfirmationDecision>;
   /** 确认端点调用；返回 false 表示 callId 不存在或已超时 */
   resolve(callId: string, decision: ConfirmationDecision): boolean;
   /** 当前挂起数量（测试/观测用） */
@@ -29,24 +35,32 @@ export function createPendingConfirmations(
   const pending = new Map<string, PendingEntry>();
 
   return {
-    request(callId, signal) {
+    request(callId, signal, onSettled) {
       // 防御：重复 callId 直接拒绝旧条目（正常流程不会触发）
       pending.get(callId)?.resolve('deny');
       return new Promise<ConfirmationDecision>((resolvePromise) => {
         let settled = false;
-        const finish = (decision: ConfirmationDecision) => {
+        const finish = (
+          decision: ConfirmationDecision,
+          settlement: ConfirmationSettlement,
+        ) => {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
           pending.delete(callId);
           signal?.removeEventListener('abort', onAbort);
+          try {
+            onSettled?.(settlement);
+          } catch {
+            // 审计回调失败不阻断确认流程；调用方自行记录
+          }
           resolvePromise(decision);
         };
-        const timer = setTimeout(() => finish('deny'), timeoutMs);
+        const timer = setTimeout(() => finish('deny', 'timeout'), timeoutMs);
         // 不阻止进程退出（测试/桌面进程收尾）
         (timer as { unref?: () => void }).unref?.();
-        const onAbort = () => finish('deny');
-        pending.set(callId, { resolve: finish, timer });
+        const onAbort = () => finish('deny', 'abort');
+        pending.set(callId, { resolve: (decision) => finish(decision, decision), timer });
         signal?.addEventListener('abort', onAbort, { once: true });
       });
     },

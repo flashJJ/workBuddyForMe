@@ -8,6 +8,7 @@ import {
   Workflow,
   ClipboardList,
   ShieldAlert,
+  ScrollText,
   ListTodo,
   Package,
   type LucideIcon,
@@ -46,6 +47,12 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.approvals.label',
     descriptionKey: 'nav.approvals.description',
     icon: ShieldAlert,
+  },
+  {
+    href: '/audit',
+    labelKey: 'nav.audit.label',
+    descriptionKey: 'nav.audit.description',
+    icon: ScrollText,
   },
   {
     href: '/plans',

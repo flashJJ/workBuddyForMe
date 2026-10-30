@@ -49,6 +49,10 @@ export const API = {
   workSignals: '/api/work-signals',
   approvals: '/api/approvals',
   approvalResolve: (id: string) => `/api/approvals/${encodeURIComponent(id)}/resolve`,
+  // v2.13 M3 审计账本
+  auditEvents: '/api/audit/events',
+  auditVerify: '/api/audit/verify',
+  auditExport: (format = 'jsonl') => `/api/audit/export?format=${format}`,
   // v2.8 目标 / 计划 / 待办
   goals: '/api/goals',
   goalsByConversation: (conversationId: string) =>
@@ -190,6 +194,8 @@ export const QUERY_KEYS = {
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,
   approvals: ['approvals'] as const,
+  audit: (filter: Record<string, string | number | undefined>) =>
+    ['audit', filter] as const,
   subagentProviders: ['subagent-providers'] as const,
   subagentRuns: ['subagent-runs'] as const,
   capabilities: ['capabilities'] as const,

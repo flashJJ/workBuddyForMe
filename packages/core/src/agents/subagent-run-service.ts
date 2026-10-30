@@ -10,7 +10,7 @@ import type {
 } from '@wbfm/shared/schemas';
 import { SUBAGENT_CLI_PROVIDER_ID } from '@wbfm/shared/schemas';
 import type { ApprovalRegistry } from '../work-signal/approval-registry';
-import { requestSubagentPermission, waitForRunApproval } from './subagent-approval';
+import { requestSubagentPermission } from './subagent-approval';
 import { isTerminalSubagentRun, subagentWorkSignal } from './subagent-signal';
 import type {
   SubagentProvider,
@@ -19,8 +19,9 @@ import type {
 } from './subagent-provider';
 import { createCliSubagentProvider, type CliSubagentProviderOptions } from './cli-subagent-provider';
 import { validateSubagentCwd } from './cli-command';
-import { summarizeBinding } from '../governance';
-import { buildSubagentGovernance, checkSubagentBinding } from './subagent-governance';
+import type { AuditService } from '../governance/audit';
+import { authorizeSubagentRun } from './subagent-run-approval';
+import { recordSubagentPermission, recordSubagentPermissionRequested } from './subagent-audit';
 
 /**
  * v2.11 外部代理运行服务：
@@ -50,6 +51,8 @@ export interface SubagentRunServiceDeps {
   };
   completions: { completeSubagent(run: SubagentRunView): void };
   settings: { get(): AppSettings };
+  /** v2.13 M3：执行审计账本 */
+  audit?: AuditService;
   /** 应用数据根目录（禁止作为 cwd） */
   dataRoot: string;
   /** 测试注入：替换真实 CLI 提供方 */
@@ -145,12 +148,8 @@ export function createSubagentRunService(deps: SubagentRunServiceDeps) {
     }
   }
 
-  function waitForDecision(run: SubagentRunView, bindingSummary?: string, policyReason?: string) {
-    return waitForRunApproval(deps.approvals, {
-      run,
-      timeoutMs: approvalTimeoutMs,
-      isCancelled: () => pending.get(run.id)?.cancelled === true,
-    }, bindingSummary, policyReason);
+  function finishCancelled(run: SubagentRunView, error: string, errorCode: string): void {
+    finalize(run, { status: 'cancelled', summary: '', error, errorCode, outputBytes: 0 });
   }
 
   async function execute(
@@ -162,42 +161,17 @@ export function createSubagentRunService(deps: SubagentRunServiceDeps) {
     const entry: PendingRun = { controller: new AbortController(), cancelled: false };
     pending.set(run.id, entry);
     deps.workSignals.ingestSubagent(subagentWorkSignal(run, 'waiting', '等待运行审批', null));
-    const settings = deps.settings.get();
-    const governance = buildSubagentGovernance(settings, cwd);
-    if (!governance.ok) {
-      finalize(run, {
-        status: 'cancelled',
-        summary: '',
-        error: governance.error,
-        errorCode: governance.errorCode,
-        outputBytes: 0,
-      });
-      return;
-    }
-
-    const decision = await waitForDecision(run, summarizeBinding(governance.binding, run.goal), 'MODE_ASK');
-    if (decision !== 'allow') {
-      const errorCode =
-        decision === 'timeout' ? 'approval_timeout' : decision === 'deny' ? 'approval_denied' : 'cancelled';
-      finalize(run, {
-        status: 'cancelled',
-        summary: '',
-        error: decision === 'timeout' ? '审批超时' : decision === 'deny' ? '审批被拒绝' : '已取消',
-        errorCode,
-        outputBytes: 0,
-      });
-      return;
-    }
-
-    const bindingError = checkSubagentBinding(governance.binding, deps.settings.get(), cwd);
-    if (bindingError) {
-      finalize(run, {
-        status: 'cancelled',
-        summary: '',
-        error: bindingError,
-        errorCode: 'binding_drift',
-        outputBytes: 0,
-      });
+    const approval = await authorizeSubagentRun({
+      run,
+      cwd,
+      approvals: deps.approvals,
+      settings: deps.settings,
+      audit: deps.audit,
+      timeoutMs: approvalTimeoutMs,
+      isCancelled: () => pending.get(run.id)?.cancelled === true,
+    });
+    if (!approval.ok) {
+      finishCancelled(run, approval.error, approval.errorCode);
       return;
     }
 
@@ -225,7 +199,11 @@ export function createSubagentRunService(deps: SubagentRunServiceDeps) {
           budget: input.budget,
           cwd,
           requestPermission: (frame, signal) =>
-            requestSubagentPermission(deps.approvals, started, frame, signal, approvalTimeoutMs),
+            requestSubagentPermission(deps.approvals, started, frame, signal, approvalTimeoutMs, {
+              onRequested: (frameId) => recordSubagentPermissionRequested(deps.audit, started, frameId),
+              onSettled: (frameId, allowed) =>
+                recordSubagentPermission(deps.audit, started, frameId, allowed),
+            }),
         },
         entry.controller.signal,
       );

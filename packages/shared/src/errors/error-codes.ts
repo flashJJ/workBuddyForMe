@@ -11,6 +11,8 @@ export const ERROR_CODES = {
   NOT_IMPLEMENTED: 501,
   PROVIDER_ERROR: 502,
   PROVIDER_TIMEOUT: 504,
+  /** v2.13：审计账本不可写等治理依赖暂不可用（fail-closed） */
+  SERVICE_UNAVAILABLE: 503,
   INTERNAL_ERROR: 500,
 } as const;
 

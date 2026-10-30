@@ -259,6 +259,27 @@ export {
   type ApprovalBindingSummary,
   type OperationBinding,
 } from './agent-binding';
+// v2.13 执行审计账本
+export {
+  AUDIT_ACTORS,
+  AUDIT_CHAIN_BROKEN,
+  AUDIT_DECISIONS,
+  AUDIT_EVENT_KINDS,
+  AUDIT_GENESIS_HASH,
+  AUDIT_UNAVAILABLE,
+  auditActorSchema,
+  auditDecisionSchema,
+  auditEventKindSchema,
+  auditEventViewSchema,
+  auditQuerySchema,
+  auditVerifyResultSchema,
+  type AuditActor,
+  type AuditDecision,
+  type AuditEventKind,
+  type AuditEventView,
+  type AuditQuery,
+  type AuditVerifyResult,
+} from './audit';
 // v2.12 能力包签名规范化（纯函数）
 export {
   CAPABILITY_SIGNATURE_DOMAIN,

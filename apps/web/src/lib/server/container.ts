@@ -32,18 +32,14 @@ import { createChatOrchestrator } from '@wbfm/core/chat';
 import { createCapabilityServiceForApp } from './capability-wiring';
 import { createSubagentRunsForApp } from './subagent-wiring';
 import { createMilestoneService } from '@wbfm/core/emotion';
-import { createAgentRunService } from '@wbfm/core/agents';
+import { createAgentRunService, createSubagentProviderRegistry } from '@wbfm/core/agents';
 import { createMeetingClosureService, createMeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
-import {
-  createCompileRunnerService,
-  createKnowledgeGovernanceService,
-  ensureStarterKnowledgeBases,
-} from '@wbfm/core/knowledge';
+import { createCompileRunnerService, createKnowledgeGovernanceService, ensureStarterKnowledgeBases } from '@wbfm/core/knowledge';
 import { createMcpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService } from '@wbfm/core/memory';
 import { createSchedulesService } from '@wbfm/core/scheduler';
@@ -59,7 +55,7 @@ import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-sig
 import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
 import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
 import { createCapabilityService } from '@wbfm/core/capabilities';
-import { createSubagentProviderRegistry } from '@wbfm/core/agents';
+import { createAuditService } from '@wbfm/core/governance';
 
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
@@ -117,6 +113,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     breakers,
     taskGrants,
   };
+  const audit = createAuditService(db);
+  deps.audit = audit;
   const settingsService = createSettingsService(deps);
   deps.agentPolicy = () => settingsService.get().agentPolicy!;
   const sessionLog = createSessionLogService(deps);
@@ -252,6 +250,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     providers: createProviderService(deps),
     models: createModelService(deps),
     settings: settingsService,
+    audit,
     assistants,
     characterCards: createCharacterCardService(deps),
     stageScenes,

@@ -12,6 +12,7 @@ export {
   CONFIRMATION_TIMEOUT_MS,
   type PendingConfirmations,
   type ConfirmationDecision,
+  type ConfirmationSettlement,
 } from './pending-confirmations';
 export {
   createTaskGrantRegistry,

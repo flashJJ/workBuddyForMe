@@ -9,6 +9,7 @@ export const zhErrors = {
   UNSUPPORTED_PROVIDER: '当前供应商不支持该操作。',
   PROVIDER_ERROR: '模型服务返回错误，请检查供应商配置或稍后重试。',
   PROVIDER_TIMEOUT: '模型服务响应超时，请稍后重试。',
+  SERVICE_UNAVAILABLE: '治理服务暂不可用，操作已按安全策略拒绝，请检查审计账本后重试。',
   INTERNAL_ERROR: '服务内部错误，请稍后重试。',
   NETWORK_ERROR: '网络连接失败，请检查网络后重试。',
   UNKNOWN_ERROR: '发生未知错误，请稍后重试。',
@@ -27,6 +28,8 @@ export const enErrors = {
   PROVIDER_ERROR:
     'The model service returned an error. Check your provider settings or try again later.',
   PROVIDER_TIMEOUT: 'The model service timed out. Please try again later.',
+  SERVICE_UNAVAILABLE:
+    'The governance service is unavailable. The action was denied by fail-closed policy. Check the audit ledger and retry.',
   INTERNAL_ERROR: 'Internal server error. Please try again later.',
   NETWORK_ERROR: 'Network error. Check your connection and try again.',
   UNKNOWN_ERROR: 'An unknown error occurred. Please try again later.',

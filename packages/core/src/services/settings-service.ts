@@ -23,6 +23,7 @@ import {
   type SettingsUpdateInput,
 } from '@wbfm/shared/schemas';
 import { assertTrustedKeysImportable } from '../capabilities/signature';
+import { agentPolicyHash } from '../governance/policy';
 import {
   createModelRepository,
   createSettingsRepository,
@@ -184,7 +185,7 @@ export function resolveSubagentCliMaxOutputBytes(value: unknown): number {
   );
 }
 
-export function createSettingsService({ db }: ServiceDeps) {
+export function createSettingsService({ db, audit }: ServiceDeps) {
   const settings = createSettingsRepository(db);
   const models = createModelRepository(db);
 
@@ -260,6 +261,20 @@ export function createSettingsService({ db }: ServiceDeps) {
       }
       const next = { ...current, ...effective };
       settings.setJson(SETTINGS_KEY, next);
+      // v2.13 M3：策略变更写审计（旧 / 新哈希；失败不阻断保存，账本是旁路证据）
+      if (effective.agentPolicy !== undefined) {
+        const nextHash = agentPolicyHash(resolveAgentPolicy(next.agentPolicy));
+        const prevHash = current.agentPolicy
+          ? agentPolicyHash(resolveAgentPolicy(current.agentPolicy))
+          : null;
+        audit?.safeAppend({
+          kind: 'policy_updated',
+          actor: 'user',
+          decision: 'allow',
+          policyHash: nextHash,
+          outcome: prevHash ? `${prevHash} -> ${nextHash}` : nextHash,
+        });
+      }
       // v2.4 M1 T7：里程碑必须在本次 setJson 之后记录，否则会被上面这行覆盖
       if (demoJustEnabled) {
         recordMilestone(db, 'firstModelReadyAt');

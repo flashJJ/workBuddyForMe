@@ -23,3 +23,10 @@ export {
   summarizeBinding,
   type ComputeBindingInput,
 } from './binding';
+export {
+  auditCritical,
+  createAuditService,
+  type AuditAppendInput,
+  type AuditEventListPage,
+  type AuditService,
+} from './audit';

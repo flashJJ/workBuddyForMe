@@ -97,7 +97,18 @@ export function createTaskRunnerService(
     active.delete(runId);
     repo.clearLease(runId);
     const latest = repo.getRun(runId);
-    if (latest) extra.onComplete?.(latest);
+    if (latest) {
+      // v2.13 M3：运行生命周期审计（失败只告警，不阻断终态回投）
+      deps.audit?.safeAppend({
+        kind: 'run_finished',
+        actor: 'agent',
+        runId: latest.id,
+        conversationId: latest.conversationId || null,
+        policyHash: latest.policyHash,
+        outcome: latest.stopReason ? `${latest.status}:${latest.stopReason}` : latest.status,
+      });
+      extra.onComplete?.(latest);
+    }
   };
 
   return {
@@ -120,6 +131,14 @@ export function createTaskRunnerService(
         ownerId,
         new Date(Date.now() + 90_000).toISOString(),
       );
+      deps.audit?.safeAppend({
+        kind: 'run_started',
+        actor: 'agent',
+        runId: params.run.id,
+        conversationId: params.run.conversationId || null,
+        policyHash: params.run.policyHash,
+        outcome: `mode:${params.run.permissionMode}`,
+      });
       const gen = runTaskLoop({
         deps,
         runtime,

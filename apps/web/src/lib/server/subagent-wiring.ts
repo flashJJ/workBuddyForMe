@@ -24,6 +24,7 @@ export function createSubagentRunsForApp(input: SubagentWiringInput) {
     sessionLog: input.sessionLog,
     completions: input.completions,
     settings: createSettingsService(input.deps),
+    audit: input.deps.audit,
     dataRoot: getDataRoot(),
   });
 }

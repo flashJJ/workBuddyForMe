@@ -11,6 +11,7 @@ import type { ApprovalRegistry } from '../work-signal/approval-registry';
 import type { WorkPlanService } from '../work-plan/work-plan-service';
 import type { SessionLogService } from '../session-log/session-log-service';
 import type { AgentPolicy } from '@wbfm/shared/schemas';
+import type { AuditService } from '../governance/audit';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
@@ -36,6 +37,8 @@ export interface ServiceDeps {
   events?: SessionLogService;
   /** v2.13：Agent 治理策略读取（返回已钳制策略；未提供时用默认策略） */
   agentPolicy?: () => AgentPolicy;
+  /** v2.13 M3：执行审计账本（未提供时治理事件不落账本） */
+  audit?: AuditService;
   /**
    * v0.8 M1：flow 工具第三来源解析器（已发布工作流 → Tool）。
    * 懒解析：仅在 resolveTool 遇到 flow:<id> 时调用，避免与 FlowRunService 的构造环。
