@@ -16,6 +16,7 @@ import {
   capabilityTrustedKeySchema,
 } from './capability';
 import { RELATIONSHIP_LEVEL_NAMES } from './relationship-level';
+import { agentPolicySchema } from './agent-policy';
 import {
   SUBAGENT_CLI_ARG_MAX,
   SUBAGENT_CLI_ARGS_MAX,
@@ -153,6 +154,8 @@ export const settingsUpdateSchema = z.object({
       '信任公钥 id 不能重复',
     )
     .optional(),
+  // v2.13 Agent 治理策略（deny wins；读取时由 core 钳制）
+  agentPolicy: agentPolicySchema.optional(),
   // v2.4 M1：演示模式开关（开启时建内置 demo 供应商与 mock 模型；关闭时清理）
   demoModeEnabled: z.boolean().optional(),
   // v2.4 M1 T7：TTFV 里程碑（显式传 null 即清除；仅时间戳，不含对话内容）

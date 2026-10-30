@@ -1,9 +1,12 @@
+import { createHash } from 'node:crypto';
 import type {
+  AgentPermissionMode,
   TaskRunStatus,
   TaskRunView,
   TaskStepView,
   TaskStopReason,
 } from '@wbfm/shared/schemas';
+import { canonicalJson, DEFAULT_AGENT_PERMISSION_MODE } from '@wbfm/shared/schemas';
 import type { DatabaseInstance } from '../client';
 import { newId, nowIso } from './mappers';
 import {
@@ -27,6 +30,11 @@ export interface TaskRunRow {
   max_steps: number;
   stop_reason: string | null;
   agent_run_id: string | null;
+  /** v2.13 治理字段（旧库迁移后存在；稀疏测试库可能缺列） */
+  permission_mode?: string | null;
+  workspace_path?: string | null;
+  policy_snapshot_json?: string | null;
+  origin_scheduled_task_id?: string | null;
   created_at: string;
   updated_at: string;
   finished_at: string | null;
@@ -39,6 +47,20 @@ export interface TaskRunCreateFields {
   goal: string;
   maxSteps: number;
   agentRunId?: string | null;
+  /** v2.13 */
+  permissionMode?: AgentPermissionMode;
+  workspacePath?: string | null;
+  policySnapshotJson?: string | null;
+  originScheduledTaskId?: string | null;
+}
+
+function policyHashFromSnapshot(snapshot?: string | null): string | null {
+  if (!snapshot) return null;
+  try {
+    return createHash('sha256').update(canonicalJson(JSON.parse(snapshot))).digest('hex');
+  } catch {
+    return null;
+  }
 }
 
 function mapRun(row: TaskRunRow): TaskRunView {
@@ -52,6 +74,11 @@ function mapRun(row: TaskRunRow): TaskRunView {
     failureCount: row.failure_count,
     maxSteps: row.max_steps,
     stopReason: (row.stop_reason as TaskStopReason | null) ?? null,
+    permissionMode:
+      (row.permission_mode as AgentPermissionMode | null) ?? DEFAULT_AGENT_PERMISSION_MODE,
+    workspacePath: row.workspace_path ?? null,
+    originScheduledTaskId: row.origin_scheduled_task_id ?? null,
+    policyHash: policyHashFromSnapshot(row.policy_snapshot_json),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     finishedAt: row.finished_at,
@@ -68,10 +95,12 @@ export function createTaskRunRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO task_runs
            (id, conversation_id, assistant_id, goal, status, step_count, failure_count,
-            max_steps, stop_reason, agent_run_id, created_at, updated_at, finished_at)
+            max_steps, stop_reason, agent_run_id, permission_mode, workspace_path,
+            policy_snapshot_json, origin_scheduled_task_id, created_at, updated_at, finished_at)
          VALUES
            (@id, @conversationId, @assistantId, @goal, 'queued', 0, 0,
-            @maxSteps, NULL, @agentRunId, @ts, @ts, NULL)`,
+            @maxSteps, NULL, @agentRunId, @permissionMode, @workspacePath,
+            @policySnapshotJson, @originScheduledTaskId, @ts, @ts, NULL)`,
       ).run({
         id,
         conversationId: fields.conversationId,
@@ -79,6 +108,10 @@ export function createTaskRunRepository(db: DatabaseInstance) {
         goal: fields.goal,
         maxSteps: fields.maxSteps,
         agentRunId: fields.agentRunId ?? null,
+        permissionMode: fields.permissionMode ?? DEFAULT_AGENT_PERMISSION_MODE,
+        workspacePath: fields.workspacePath ?? null,
+        policySnapshotJson: fields.policySnapshotJson ?? null,
+        originScheduledTaskId: fields.originScheduledTaskId ?? null,
         ts: nowIso(),
       });
       return mapRun(this.getRunRow(id)!);

@@ -15,6 +15,8 @@ import {
   CAPABILITY_SIGNATURE_POLICIES,
   CAPABILITY_TRUSTED_KEYS_MAX,
   capabilityTrustedKeySchema,
+  DEFAULT_AGENT_POLICY,
+  resolveAgentPolicy,
   type CapabilitySignaturePolicy,
   type CapabilityTrustedKey,
   type InteractionGraphOverride,
@@ -77,6 +79,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // v2.12：默认只提醒不阻断；信任库初始为空（全部包显示「未签名/未知密钥」）
   capabilitySignaturePolicy: 'warn',
   capabilityTrustedKeys: [],
+  // v2.13：默认每次确认；无人值守白名单不含 full_access
+  agentPolicy: DEFAULT_AGENT_POLICY,
 };
 
 /** 服务端钳制签名策略：手改 settings_kv 的非法值一律回落 warn */
@@ -212,6 +216,7 @@ export function createSettingsService({ db }: ServiceDeps) {
         merged.capabilitySignaturePolicy,
       );
       merged.capabilityTrustedKeys = resolveCapabilityTrustedKeys(merged.capabilityTrustedKeys);
+      merged.agentPolicy = resolveAgentPolicy(merged.agentPolicy);
       return merged;
     },
 

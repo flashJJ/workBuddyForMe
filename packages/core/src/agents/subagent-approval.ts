@@ -20,6 +20,8 @@ export interface RunApprovalContext {
 export function waitForRunApproval(
   approvals: ApprovalRegistry,
   context: RunApprovalContext,
+  bindingSummary?: string,
+  policyReason?: string,
 ): Promise<RunApprovalOutcome> {
   const { run, timeoutMs } = context;
   return new Promise((resolve) => {
@@ -40,6 +42,8 @@ export function waitForRunApproval(
         tool: 'subagent',
         permission: 'danger',
         argsSummary: run.goal.slice(0, 200),
+        ...(bindingSummary ? { bindingSummary } : {}),
+        ...(policyReason ? { policyReason } : {}),
         runId: run.id,
         conversationId: run.conversationId,
         expiresAt: new Date(Date.now() + timeoutMs).toISOString(),

@@ -19,6 +19,8 @@ import type {
 } from './subagent-provider';
 import { createCliSubagentProvider, type CliSubagentProviderOptions } from './cli-subagent-provider';
 import { validateSubagentCwd } from './cli-command';
+import { summarizeBinding } from '../governance';
+import { buildSubagentGovernance, checkSubagentBinding } from './subagent-governance';
 
 /**
  * v2.11 外部代理运行服务：
@@ -143,12 +145,12 @@ export function createSubagentRunService(deps: SubagentRunServiceDeps) {
     }
   }
 
-  function waitForDecision(run: SubagentRunView) {
+  function waitForDecision(run: SubagentRunView, bindingSummary?: string, policyReason?: string) {
     return waitForRunApproval(deps.approvals, {
       run,
       timeoutMs: approvalTimeoutMs,
       isCancelled: () => pending.get(run.id)?.cancelled === true,
-    });
+    }, bindingSummary, policyReason);
   }
 
   async function execute(
@@ -160,8 +162,20 @@ export function createSubagentRunService(deps: SubagentRunServiceDeps) {
     const entry: PendingRun = { controller: new AbortController(), cancelled: false };
     pending.set(run.id, entry);
     deps.workSignals.ingestSubagent(subagentWorkSignal(run, 'waiting', '等待运行审批', null));
+    const settings = deps.settings.get();
+    const governance = buildSubagentGovernance(settings, cwd);
+    if (!governance.ok) {
+      finalize(run, {
+        status: 'cancelled',
+        summary: '',
+        error: governance.error,
+        errorCode: governance.errorCode,
+        outputBytes: 0,
+      });
+      return;
+    }
 
-    const decision = await waitForDecision(run);
+    const decision = await waitForDecision(run, summarizeBinding(governance.binding, run.goal), 'MODE_ASK');
     if (decision !== 'allow') {
       const errorCode =
         decision === 'timeout' ? 'approval_timeout' : decision === 'deny' ? 'approval_denied' : 'cancelled';
@@ -170,6 +184,18 @@ export function createSubagentRunService(deps: SubagentRunServiceDeps) {
         summary: '',
         error: decision === 'timeout' ? '审批超时' : decision === 'deny' ? '审批被拒绝' : '已取消',
         errorCode,
+        outputBytes: 0,
+      });
+      return;
+    }
+
+    const bindingError = checkSubagentBinding(governance.binding, deps.settings.get(), cwd);
+    if (bindingError) {
+      finalize(run, {
+        status: 'cancelled',
+        summary: '',
+        error: bindingError,
+        errorCode: 'binding_drift',
         outputBytes: 0,
       });
       return;

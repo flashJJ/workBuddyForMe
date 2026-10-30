@@ -1,7 +1,22 @@
 import type { ChatMessage } from '@wbfm/ai';
 import type { PermissionLevel, ToolTraceEntry } from '@wbfm/shared/types';
+import {
+  DEFAULT_AGENT_POLICY,
+  type AgentPermissionMode,
+  type AgentPolicy,
+  type OperationBinding,
+} from '@wbfm/shared/schemas';
 import type { ServiceDeps } from '../services/deps';
 import type { Tool } from '../tools/types';
+import {
+  agentPolicyHash,
+  assertBindingMatches,
+  computeOperationBinding,
+  evaluateAgentPolicy,
+  extractDomain,
+  extractPathTargets,
+  summarizeBinding,
+} from '../governance';
 import type { OrchestratorEvent } from './types';
 
 export interface ApprovalContext {
@@ -26,6 +41,14 @@ export interface ToolGateParams {
   taskScope?: string;
   /** v2.7：审批中心深链与运行归属 */
   approvalContext?: ApprovalContext;
+  /** v2.13：原始参数（审批绑定需要；缺省时按空对象） */
+  args?: unknown;
+  /** v2.13：本次运行模式（缺省取策略 defaultMode） */
+  mode?: AgentPermissionMode;
+  /** v2.13：工作目录（realpath 归一化后） */
+  workspacePath?: string | null;
+  /** v2.13：调用方已解析的策略（缺省读 deps.agentPolicy） */
+  policy?: AgentPolicy;
 }
 
 export interface ToolGateResult {
@@ -36,26 +59,105 @@ export interface ToolGateResult {
   toolMessage?: ChatMessage;
 }
 
+function explicitDeny(deps: ServiceDeps, toolName: string, assistantId: string): boolean {
+  if (!deps.permissions) return false;
+  const global = deps.permissions.getPermission(toolName, 'all');
+  if (global?.action === 'deny') return true;
+  const scoped = deps.permissions.getPermission(toolName, `assistant:${assistantId}`);
+  return scoped?.action === 'deny';
+}
+
+function deniedResult(
+  params: ToolGateParams,
+  message: string,
+): ToolGateResult {
+  const { toolName, callId, source, permission } = params;
+  const traceEntry: ToolTraceEntry = {
+    callId,
+    tool: toolName,
+    argsSummary: params.argsSummary,
+    status: 'error',
+    durationMs: 0,
+    resultSummary: message,
+    error: message,
+    startedAt: new Date().toISOString(),
+    source,
+    permission,
+  };
+  return {
+    denied: true,
+    traceEntry,
+    toolMessage: { role: 'tool', content: message, toolCallId: callId, name: toolName },
+  };
+}
+
 /**
- * v0.6 M2 权限门控：write/danger 工具未授权时触发 HITL 挂起-恢复。
+ * v0.6 M2 权限门控 + v2.13 策略 / 审批绑定：
+ * 策略 deny → 显式授权 deny → 模式 allow → 持久授权 → HITL。
  * 关键时序：先调 confirmations.request() 注册挂起项，再 yield
- * tool_confirmation_required 事件（Promise executor 同步注册），否则消费者
- * 收到事件立即 resolve 会落空。
- * 无 confirmations（如 desktop 未装配）时直接拒绝，向后兼容。
+ * tool_confirmation_required 事件（Promise executor 同步注册）。
  */
 export async function* gateToolPermission(
   params: ToolGateParams,
 ): AsyncGenerator<OrchestratorEvent, ToolGateResult> {
-  const { deps, tool, toolName, callId, argsSummary, assistantId, signal, source, permission, taskScope, approvalContext } = params;
-  const granted =
+  const { deps, tool, toolName, callId, assistantId, signal, source, permission, taskScope, approvalContext } = params;
+  const policy = params.policy ?? deps.agentPolicy?.() ?? DEFAULT_AGENT_POLICY;
+  const mode = params.mode ?? policy.defaultMode;
+  const args = params.args ?? {};
+
+  const decision = evaluateAgentPolicy({
+    policy,
+    toolName,
+    permission,
+    mode,
+    workspacePath: params.workspacePath ?? null,
+    pathTargets: extractPathTargets(args),
+    domain: extractDomain(args),
+  });
+
+  if (explicitDeny(deps, toolName, assistantId)) {
+    return deniedResult(params, `工具 ${toolName} 已被权限记录拒绝`);
+  }
+
+  if (decision.decision === 'deny') {
+    const reason = decision.matchedRule
+      ? `${decision.reasonCode}（${decision.matchedRule}）`
+      : decision.reasonCode;
+    const result = deniedResult(params, `工具 ${toolName} 被策略拒绝：${reason}`);
+    yield {
+      event: 'tool',
+      data: {
+        phase: 'end',
+        callId,
+        tool: toolName,
+        status: 'error',
+        durationMs: 0,
+        resultSummary: result.traceEntry!.resultSummary,
+        error: result.traceEntry!.error,
+        source,
+        permission,
+      },
+    };
+    return result;
+  }
+
+  const grantedByRecord =
+    decision.decision === 'allow' ||
     !tool ||
     !deps.permissions ||
     deps.permissions.isAllowed(toolName, permission, `assistant:${assistantId}`) ||
     Boolean(taskScope && deps.taskGrants?.isGranted(toolName, taskScope));
-  if (granted) return { denied: false };
+  if (grantedByRecord) return { denied: false };
+
+  const binding: OperationBinding = computeOperationBinding({
+    tool: toolName,
+    args,
+    cwd: params.workspacePath ?? null,
+    policyHash: agentPolicyHash(policy),
+  });
+  const bindingSummary = summarizeBinding(binding, params.argsSummary);
 
   const decisionPromise = deps.confirmations ? deps.confirmations.request(callId, signal) : null;
-  // v2.7：把工具确认登记到统一审批中心（一次性允许/拒绝；remember 仍走原弹窗）
   const approval =
     deps.confirmations && deps.approvals
       ? deps.approvals.register(
@@ -65,42 +167,59 @@ export async function* gateToolPermission(
             title: `工具授权：${toolName}`,
             tool: toolName,
             permission,
-            argsSummary,
+            argsSummary: params.argsSummary,
+            bindingSummary,
+            policyReason: decision.reasonCode,
             runId: approvalContext?.runId ?? null,
             conversationId: approvalContext?.conversationId ?? null,
             deepLink: approvalContext?.deepLink ?? '/approvals',
           },
-          (decision) => {
-            deps.confirmations?.resolve(callId, decision.action);
+          (decisionInput) => {
+            deps.confirmations?.resolve(callId, decisionInput.action);
           },
         )
       : null;
   if (decisionPromise && approval) {
-    // 超时/断线/任务结束同样要摘除审批项，避免僵尸审批
     void decisionPromise.finally(() => approval.remove());
   }
   yield {
     event: 'tool_confirmation_required',
-    data: { callId, tool: toolName, permission, argsSummary },
+    data: { callId, tool: toolName, permission, argsSummary: params.argsSummary },
   };
-  const decision = decisionPromise ? await decisionPromise : 'deny';
-  if (decision === 'allow') return { denied: false };
+  const resolved = decisionPromise ? await decisionPromise : 'deny';
+  if (resolved === 'allow') {
+    try {
+      const actual = computeOperationBinding({
+        tool: toolName,
+        args,
+        cwd: params.workspacePath ?? null,
+        policyHash: agentPolicyHash(policy),
+      });
+      assertBindingMatches(binding, actual);
+      return { denied: false };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '审批绑定已变化';
+      const result = deniedResult(params, message);
+      yield {
+        event: 'tool',
+        data: {
+          phase: 'end',
+          callId,
+          tool: toolName,
+          status: 'error',
+          durationMs: 0,
+          resultSummary: message,
+          error: message,
+          source,
+          permission,
+        },
+      };
+      return result;
+    }
+  }
 
-  // 拒绝：向模型回传结构化「用户拒绝」结果，助手能得体继续而非报错
-  const output = `工具 ${toolName} 未获得用户授权（权限级别：${permission}），用户已拒绝本次调用。请向用户说明情况。`;
-  const summary = `用户拒绝授权（${permission}）`;
-  const traceEntry: ToolTraceEntry = {
-    callId,
-    tool: toolName,
-    argsSummary,
-    status: 'error',
-    durationMs: 0,
-    resultSummary: summary,
-    error: summary,
-    startedAt: new Date().toISOString(),
-    source,
-    permission,
-  };
+  const message = `工具 ${toolName} 未获得用户授权（权限级别：${permission}），用户已拒绝本次调用。请向用户说明情况。`;
+  const result = deniedResult(params, message);
   yield {
     event: 'tool',
     data: {
@@ -109,15 +228,11 @@ export async function* gateToolPermission(
       tool: toolName,
       status: 'error',
       durationMs: 0,
-      resultSummary: summary,
-      error: summary,
+      resultSummary: message,
+      error: message,
       source,
       permission,
     },
   };
-  return {
-    denied: true,
-    traceEntry,
-    toolMessage: { role: 'tool', content: output, toolCallId: callId, name: toolName },
-  };
+  return result;
 }

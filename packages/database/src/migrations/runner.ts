@@ -39,6 +39,7 @@ import { migrateV037 } from './v037-work-companion';
 import { migrateV038 } from './v038-session-events';
 import { migrateV039 } from './v039-capability-packs';
 import { migrateV040 } from './v040-capability-effects';
+import { migrateV041 } from './v041-agent-governance';
 
 interface Migration {
   version: number;
@@ -243,6 +244,12 @@ const MIGRATIONS: Migration[] = [
     description:
       'v2.11: workflows 来源列 + 剧本/报告卡片/外部代理运行表（纯加法）',
     up: migrateV040,
+  },
+  {
+    version: 41,
+    description:
+      'v2.13: task_runs 执行模式/工作目录/策略快照/定时来源 + audit_events 审计账本（纯加法）',
+    up: migrateV041,
   },
 ];
 

@@ -68,6 +68,10 @@ export interface WorkApproval {
   tool: string | null;
   permission: 'read' | 'write' | 'danger' | null;
   argsSummary: string | null;
+  /** v2.13：审批绑定摘要（目录 / 目标窗口 / 策略来源，不含完整参数） */
+  bindingSummary?: string | null;
+  /** v2.13：策略决策来源，如 MODE_ASK / POLICY_DENY */
+  policyReason?: string | null;
   runId: string | null;
   conversationId: string | null;
   createdAt: string;

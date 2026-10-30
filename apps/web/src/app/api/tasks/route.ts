@@ -1,6 +1,8 @@
 import { createTaskRunRepository } from '@wbfm/database';
 import { taskCreateSchema } from '@wbfm/shared/schemas';
 import { TASK_MAX_STEPS } from '@wbfm/shared/constants';
+import { resolveWorkspacePath } from '@wbfm/core/governance';
+import { ApiError } from '@wbfm/shared/errors';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 import { parseBody, parseSearch, readJsonBody } from '@/lib/server/validation';
@@ -29,12 +31,24 @@ export const POST = defineRoute(async ({ request, services }) => {
   // 校验会话 + 助手存在（会话服务 notFound 自动抛 404）
   const conversation = services.conversations.get(input.conversationId);
   services.assistants.get(conversation.assistantId);
+
+  const policy = services.settings.get().agentPolicy!;
+  const permissionMode = input.permissionMode ?? policy.defaultMode;
+  if (permissionMode === 'full_access' && input.acknowledgeFullAccess !== true) {
+    throw ApiError.validation('完全放行需要显式确认', { code: 'FULL_ACCESS_UNCONFIRMED' });
+  }
+  const workspacePath = input.workspacePath ? resolveWorkspacePath(input.workspacePath) : null;
+  const maxSteps = Math.min(input.maxSteps ?? TASK_MAX_STEPS, policy.limits.maxSteps);
+
   const repo = createTaskRunRepository(services.db);
   const run = repo.createRun({
     conversationId: input.conversationId,
     assistantId: conversation.assistantId,
     goal: input.goal,
-    maxSteps: input.maxSteps ?? TASK_MAX_STEPS,
+    maxSteps,
+    permissionMode,
+    workspacePath,
+    policySnapshotJson: JSON.stringify(policy),
   });
   return jsonOk(run, 201);
 });

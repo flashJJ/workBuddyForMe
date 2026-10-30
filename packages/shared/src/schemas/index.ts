@@ -172,6 +172,15 @@ export {
   type InputActionResponse,
 } from './computer';
 export {
+  AGENT_PERMISSION_MODES,
+  AGENT_UNATTENDED_MODES,
+  AGENT_WORKSPACE_PATH_MAX,
+  DEFAULT_AGENT_PERMISSION_MODE,
+  agentPermissionModeSchema,
+  type AgentPermissionMode,
+  type AgentUnattendedMode,
+} from './agent-permission';
+export {
   TASK_RUN_STATUSES,
   TASK_STOP_REASONS,
   TASK_STEP_KINDS,
@@ -231,6 +240,25 @@ export {
   type ReportWidgetMetric,
 } from './capability';
 
+// v2.13 通用 canonical JSON
+export { canonicalJson } from './canonical-json';
+// v2.13 Agent 治理策略 / 审批绑定
+export {
+  AGENT_POLICY_RULE_LENGTH,
+  AGENT_POLICY_RULE_MAX,
+  AGENT_POLICY_VERSION,
+  DEFAULT_AGENT_POLICY,
+  agentPolicySchema,
+  resolveAgentPolicy,
+  type AgentPolicy,
+  type AgentPolicyDecision,
+  type AgentPolicyEvaluationInput,
+} from './agent-policy';
+export {
+  operationBindingSchema,
+  type ApprovalBindingSummary,
+  type OperationBinding,
+} from './agent-binding';
 // v2.12 能力包签名规范化（纯函数）
 export {
   CAPABILITY_SIGNATURE_DOMAIN,

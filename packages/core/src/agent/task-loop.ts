@@ -242,7 +242,6 @@ export async function* runTaskLoop(
       yield fin.event;
       return fin.run;
     }
-
     const callId = `task-${randomUUID()}`;
     const gate = yield* gateToolPermission({
       deps,
@@ -250,6 +249,9 @@ export async function* runTaskLoop(
       toolName,
       callId,
       argsSummary: summarizeArgs(toolName, decision.args ?? {}),
+      args: decision.args ?? {},
+      mode: state.run.permissionMode,
+      workspacePath: state.run.workspacePath,
       assistantId: state.run.assistantId,
       taskScope: state.run.id,
       signal,

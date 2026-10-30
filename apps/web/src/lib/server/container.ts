@@ -33,10 +33,7 @@ import { createCapabilityServiceForApp } from './capability-wiring';
 import { createSubagentRunsForApp } from './subagent-wiring';
 import { createMilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService } from '@wbfm/core/agents';
-import {
-  createMeetingClosureService,
-  createMeetingService,
-} from '@wbfm/core/meeting';
+import { createMeetingClosureService, createMeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
@@ -120,6 +117,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     breakers,
     taskGrants,
   };
+  const settingsService = createSettingsService(deps);
+  deps.agentPolicy = () => settingsService.get().agentPolicy!;
   const sessionLog = createSessionLogService(deps);
   deps.events = sessionLog;
   const sessionExport = createSessionExportService(deps, sessionLog);
@@ -252,7 +251,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     flowRunner,
     providers: createProviderService(deps),
     models: createModelService(deps),
-    settings: createSettingsService(deps),
+    settings: settingsService,
     assistants,
     characterCards: createCharacterCardService(deps),
     stageScenes,

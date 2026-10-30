@@ -94,6 +94,8 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       // v2.12：签名默认 warn、信任库为空
       capabilitySignaturePolicy: 'warn',
       capabilityTrustedKeys: [],
+      // v2.13：治理策略默认每次确认、无人值守白名单不含 full_access
+      agentPolicy: expect.objectContaining({ version: 1, defaultMode: 'confirm_each' }),
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

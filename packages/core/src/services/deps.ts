@@ -10,6 +10,7 @@ import type { Tool } from '../tools/types';
 import type { ApprovalRegistry } from '../work-signal/approval-registry';
 import type { WorkPlanService } from '../work-plan/work-plan-service';
 import type { SessionLogService } from '../session-log/session-log-service';
+import type { AgentPolicy } from '@wbfm/shared/schemas';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
@@ -33,6 +34,8 @@ export interface ServiceDeps {
   workPlans?: WorkPlanService;
   /** v2.9：追加式事件日志（未提供时对话事件不落日志） */
   events?: SessionLogService;
+  /** v2.13：Agent 治理策略读取（返回已钳制策略；未提供时用默认策略） */
+  agentPolicy?: () => AgentPolicy;
   /**
    * v0.8 M1：flow 工具第三来源解析器（已发布工作流 → Tool）。
    * 懒解析：仅在 resolveTool 遇到 flow:<id> 时调用，避免与 FlowRunService 的构造环。
