@@ -193,6 +193,7 @@ export const QUERY_KEYS = {
   subagentProviders: ['subagent-providers'] as const,
   subagentRuns: ['subagent-runs'] as const,
   capabilities: ['capabilities'] as const,
+  capabilityHealth: ['capabilities', 'health'] as const,
   events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
   eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,
   goals: (conversationId: string) => ['goals', conversationId] as const,

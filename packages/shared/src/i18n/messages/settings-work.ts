@@ -36,3 +36,46 @@ export const enSettingsWork = {
   pacingStandard: 'Standard',
   pacingLively: 'Lively',
 };
+
+/** v2.12 能力包签名设置（独立子命名空间，避免 settings.ts 超行数） */
+export const zhCapabilityTrust = {
+  title: '能力包签名',
+  hint: '签名只证明清单由某把本地信任的公钥签发，不证明作者身份；私钥不进入应用。',
+  policy: '签名策略',
+  policyOff: '关闭验签',
+  policyWarn: '仅提醒（默认）',
+  policyRequire: '仅允许有效签名',
+  policyHint: '切到「仅允许有效签名」前，建议先在能力包页做一次健康检查。',
+  empty: '还没有信任公钥。',
+  keyId: 'keyId',
+  label: '名称',
+  pem: '公钥 PEM（SPKI）',
+  add: '添加公钥',
+  save: '保存签名设置',
+  saving: '保存中…',
+  saved: '签名设置已保存',
+  remove: '移除',
+  invalid: '请填写 keyId、名称与 PEM 公钥',
+  limit: '最多 20 把信任公钥',
+};
+
+export const enCapabilityTrust = {
+  title: 'Capability signatures',
+  hint: 'A signature only proves the manifest was signed by a locally trusted key; it does not prove authorship. Private keys never enter the app.',
+  policy: 'Signature policy',
+  policyOff: 'Off',
+  policyWarn: 'Warn only (default)',
+  policyRequire: 'Require valid signatures',
+  policyHint: 'Run a capability health check before switching to “Require valid signatures”.',
+  empty: 'No trusted public keys yet.',
+  keyId: 'keyId',
+  label: 'Label',
+  pem: 'Public key PEM (SPKI)',
+  add: 'Add public key',
+  save: 'Save signature settings',
+  saving: 'Saving…',
+  saved: 'Signature settings saved',
+  remove: 'Remove',
+  invalid: 'Fill in keyId, label and PEM public key',
+  limit: 'At most 20 trusted keys',
+};
