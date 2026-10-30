@@ -53,6 +53,29 @@ export function createInstalledEventScriptRepository(db: DatabaseInstance) {
       return row ? mapRow(row) : null;
     },
 
+    /** v2.12：按来源能力包查找（禁用态 effectRef 为空时用于快照） */
+    getByPackId(packId: string): InstalledEventScriptView | null {
+      const row = db
+        .prepare('SELECT * FROM installed_event_scripts WHERE pack_id = ? ORDER BY created_at ASC LIMIT 1')
+        .get(packId) as InstalledEventScriptRow | undefined;
+      return row ? mapRow(row) : null;
+    },
+
+    /** v2.12：升级替换定义与名称；启用标记由服务层决定（保持原状态） */
+    replaceDefinition(
+      id: string,
+      input: { name: string; definitionJson: string; enabled: boolean },
+    ): InstalledEventScriptView | null {
+      const result = db
+        .prepare(
+          `UPDATE installed_event_scripts
+           SET name = @name, definition_json = @definitionJson, enabled = @enabled
+           WHERE id = @id`,
+        )
+        .run({ id, ...input, enabled: input.enabled ? 1 : 0 });
+      return result.changes > 0 ? this.get(id) : null;
+    },
+
     listAll(): InstalledEventScriptView[] {
       const rows = db
         .prepare('SELECT * FROM installed_event_scripts ORDER BY created_at DESC')

@@ -215,6 +215,15 @@ export function createWorkflowRepository(db: DatabaseInstance) {
       return this.getWorkflow(workflowId);
     },
 
+    /** v2.12：升级回滚时恢复当前版本（不改发布状态，disabled 场景使用） */
+    setCurrentVersion(workflowId: string, version: number): boolean {
+      return (
+        db
+          .prepare('UPDATE workflows SET current_version = ?, updated_at = ? WHERE id = ?')
+          .run(version, nowIso(), workflowId).changes > 0
+      );
+    },
+
     /** v2.11：按来源能力包查找（停用后再次启用时复用同一工作流） */
     findByOriginCapabilityId(capabilityId: string): WorkflowView | null {
       const row = db

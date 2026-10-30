@@ -54,6 +54,33 @@ export function enableEventScript(
   return id;
 }
 
+/** v2.12：升级预检读取剧本 id（必须在 disable/换包前确认 id 不变） */
+export function readEventScriptId(packDir: string): string {
+  return parsePayload(packDir).definition.id;
+}
+
+/** v2.12：升级替换定义；剧本 id 必须保持不变 */
+export function replaceEventScriptDefinition(
+  manifest: CapabilityManifest,
+  packDir: string,
+  scriptId: string,
+  enabled: boolean,
+  deps: EventScriptEffectDeps,
+): string {
+  const payload = parsePayload(packDir);
+  if (payload.definition.id !== scriptId) {
+    throw ApiError.validation(`升级不允许修改剧本 id：${scriptId} → ${payload.definition.id}`);
+  }
+  const name = payload.definition.title ?? payload.definition.titleKey ?? scriptId;
+  const row = deps.eventScripts.replaceDefinition(scriptId, {
+    name,
+    definitionJson: JSON.stringify(payload),
+    enabled,
+  });
+  if (!row) throw ApiError.notFound('剧本', scriptId);
+  return row.id;
+}
+
 export function disableEventScript(effectRef: string, deps: EventScriptEffectDeps): void {
   deps.eventScripts.setEnabled(effectRef, false);
 }

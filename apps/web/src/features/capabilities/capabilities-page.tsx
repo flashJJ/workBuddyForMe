@@ -2,9 +2,13 @@
 
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CapabilityKind, CapabilityView } from '@wbfm/shared/schemas';
+import type {
+  CapabilityCleanupResult,
+  CapabilityHealthReport,
+  CapabilityKind,
+  CapabilityView,
+} from '@wbfm/shared/schemas';
 import { CAPABILITY_SUPPORTED_KINDS } from '@wbfm/shared/schemas';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
@@ -12,8 +16,11 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiDelete, apiGet, apiPost, apiUpload } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { SubagentPanel } from '@/features/settings/subagent-panel';
+import { CapabilityRow } from './capability-row';
+import { CapabilityHealthBanner } from './capability-health-banner';
+import { CapabilityUpgradeDialog } from './capability-upgrade-dialog';
 
-/** v2.10 能力包管理页：安装/启停/卸载 + 权限/effect 可见 */
+/** v2.12 能力包管理页：安装/启停/升级/卸载 + 签名/健康徽章 + 健康自检与清理 */
 export function CapabilitiesPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -21,6 +28,7 @@ export function CapabilitiesPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [kindFilter, setKindFilter] = React.useState<'all' | CapabilityKind>('all');
   const [sampleKind, setSampleKind] = React.useState<CapabilityKind>('skill');
+  const [upgrading, setUpgrading] = React.useState<CapabilityView | null>(null);
   const [highlightRunId, setHighlightRunId] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
@@ -33,7 +41,17 @@ export function CapabilitiesPage() {
     queryFn: () => apiGet<CapabilityView[]>(API.capabilities),
   });
 
-  const invalidate = () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.capabilities });
+  const healthQuery = useQuery({
+    queryKey: QUERY_KEYS.capabilityHealth,
+    queryFn: () => apiGet<CapabilityHealthReport>(API.capabilityHealth),
+    enabled: false,
+    retry: false,
+  });
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.capabilities });
+    if (healthQuery.data) void healthQuery.refetch();
+  };
 
   const install = useMutation({
     mutationFn: (selected: File) => {
@@ -70,9 +88,16 @@ export function CapabilitiesPage() {
     onError: () => setError(t('capabilities.actionFailed')),
   });
 
+  const cleanup = useMutation({
+    mutationFn: () => apiPost<CapabilityCleanupResult>(API.capabilityHealthCleanup),
+    onSuccess: () => invalidate(),
+  });
+
   const capabilities = query.data ?? [];
   const visible =
     kindFilter === 'all' ? capabilities : capabilities.filter((item) => item.kind === kindFilter);
+  const healthById = new Map((healthQuery.data?.packs ?? []).map((item) => [item.id, item]));
+  const busy = toggle.isPending || uninstall.isPending;
 
   return (
     <div className="space-y-4 p-4" data-testid="capabilities-page">
@@ -146,6 +171,16 @@ export function CapabilitiesPage() {
         <span className="text-xs text-muted-foreground">{t('capabilities.uploadHint')}</span>
       </section>
 
+      <CapabilityHealthBanner
+        report={healthQuery.data}
+        checking={healthQuery.isFetching}
+        cleaning={cleanup.isPending}
+        onCheck={() => void healthQuery.refetch()}
+        onCleanup={async () => {
+          await cleanup.mutateAsync();
+        }}
+      />
+
       {query.isLoading ? (
         <Spinner />
       ) : query.isError ? (
@@ -159,72 +194,15 @@ export function CapabilitiesPage() {
       ) : (
         <ul className="space-y-3">
           {visible.map((capability) => (
-            <li
+            <CapabilityRow
               key={capability.id}
-              data-testid={`capability-${capability.id}`}
-              className="space-y-2 rounded-lg border bg-card p-4"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={capability.status === 'enabled' ? 'success' : 'outline'}>
-                  {capability.status === 'enabled'
-                    ? t('capabilities.statusEnabled')
-                    : t('capabilities.statusDisabled')}
-                </Badge>
-                <Badge variant="info">{t(`capabilities.kind.${capability.kind}`)}</Badge>
-                <span className="text-sm font-medium">{capability.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {capability.id} · v{capability.version}
-                </span>
-              </div>
-              {capability.description && (
-                <p className="text-xs text-muted-foreground">{capability.description}</p>
-              )}
-              <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                <span>{t('capabilities.permissions')}:</span>
-                {capability.permissions.length === 0 ? (
-                  <span>{t('capabilities.noPermission')}</span>
-                ) : (
-                  capability.permissions.map((permission) => (
-                    <Badge key={permission} variant="outline" className="px-1.5 py-0">
-                      {permission}
-                    </Badge>
-                  ))
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground" data-testid="capability-effect">
-                {t(`capabilities.effectKind.${capability.kind}`)}: {capability.effectRef ?? t('capabilities.noEffect')}
-              </p>
-              {capability.lastError && (
-                <p className="text-xs text-destructive">
-                  {t('capabilities.lastError')}: {capability.lastError}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant={capability.status === 'enabled' ? 'outline' : 'default'}
-                  disabled={toggle.isPending}
-                  onClick={() =>
-                    toggle.mutate({
-                      id: capability.id,
-                      enabled: capability.status !== 'enabled',
-                    })
-                  }
-                >
-                  {capability.status === 'enabled'
-                    ? t('capabilities.disable')
-                    : t('capabilities.enable')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={uninstall.isPending}
-                  onClick={() => uninstall.mutate(capability.id)}
-                >
-                  {t('capabilities.uninstall')}
-                </Button>
-              </div>
-            </li>
+              capability={capability}
+              health={healthById.get(capability.id)}
+              busy={busy}
+              onToggle={(id, enabled) => toggle.mutate({ id, enabled })}
+              onUninstall={(id) => uninstall.mutate(id)}
+              onUpgrade={setUpgrading}
+            />
           ))}
         </ul>
       )}
@@ -240,6 +218,14 @@ export function CapabilitiesPage() {
         </div>
         <SubagentPanel highlightRunId={highlightRunId} />
       </section>
+
+      <CapabilityUpgradeDialog
+        capability={upgrading}
+        onOpenChange={(open) => {
+          if (!open) setUpgrading(null);
+        }}
+        onUpgraded={invalidate}
+      />
     </div>
   );
 }

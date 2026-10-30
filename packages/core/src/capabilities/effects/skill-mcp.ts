@@ -41,7 +41,7 @@ function readEntry(packDir: string, entry: string): string {
   return readFileSync(join(packDir, entry), 'utf8');
 }
 
-export function enableSkill(packDir: string, deps: SkillEffectDeps): string {
+function parseSkillManifest(packDir: string) {
   const parsed = skillManifestSchema.safeParse(
     JSON.parse(readEntry(packDir, 'payload/skill.json')),
   );
@@ -50,7 +50,31 @@ export function enableSkill(packDir: string, deps: SkillEffectDeps): string {
       `技能清单校验失败：${parsed.error.issues.map((issue) => issue.message).join('；')}`,
     );
   }
-  const name = parsed.data.name;
+  return parsed.data;
+}
+
+/** v2.12：升级预检读取技能名（用于排除旧技能自身的目录冲突） */
+export function readSkillName(packDir: string): string {
+  return parseSkillManifest(packDir).name;
+}
+
+function parseMcpEntry(packDir: string, manifest: CapabilityManifest) {
+  const parsed = mcpEntrySchema.safeParse(JSON.parse(readEntry(packDir, manifest.entry)));
+  if (!parsed.success) {
+    throw ApiError.validation(
+      `MCP 配置校验失败：${parsed.error.issues.map((issue) => issue.message).join('；')}`,
+    );
+  }
+  return parsed.data;
+}
+
+/** v2.12：升级预检读取 MCP 服务器名（名称唯一，冲突需在 disable 前发现） */
+export function readMcpServerName(packDir: string, manifest: CapabilityManifest): string {
+  return parseMcpEntry(packDir, manifest).name;
+}
+
+export function enableSkill(packDir: string, deps: SkillEffectDeps): string {
+  const name = parseSkillManifest(packDir).name;
   const target = join(deps.skillsDir, name);
   if (existsSync(target)) throw ApiError.conflict(`技能目录已存在：${name}`);
   cpSync(join(packDir, 'payload'), target, { recursive: true });
@@ -71,13 +95,7 @@ export function enableMcp(
   manifest: CapabilityManifest,
   deps: McpEffectDeps,
 ): string {
-  const parsed = mcpEntrySchema.safeParse(JSON.parse(readEntry(packDir, manifest.entry)));
-  if (!parsed.success) {
-    throw ApiError.validation(
-      `MCP 配置校验失败：${parsed.error.issues.map((issue) => issue.message).join('；')}`,
-    );
-  }
-  const server = deps.mcp.createServer(parsed.data);
+  const server = deps.mcp.createServer(parseMcpEntry(packDir, manifest));
   return server.id;
 }
 

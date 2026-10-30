@@ -66,6 +66,9 @@ export const API = {
   capabilityInstall: '/api/capabilities/install',
   capabilityEnable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/enable`,
   capabilityDisable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/disable`,
+  capabilityUpgrade: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/upgrade`,
+  capabilityHealth: '/api/capabilities/health',
+  capabilityHealthCleanup: '/api/capabilities/health/cleanup',
   capability: (id: string) => `/api/capabilities/${encodeURIComponent(id)}`,
   capabilitySample: '/api/capabilities/sample',
   // v2.9 事件日志 / 检索 / 导出
@@ -190,6 +193,7 @@ export const QUERY_KEYS = {
   subagentProviders: ['subagent-providers'] as const,
   subagentRuns: ['subagent-runs'] as const,
   capabilities: ['capabilities'] as const,
+  capabilityHealth: ['capabilities', 'health'] as const,
   events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
   eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,
   goals: (conversationId: string) => ['goals', conversationId] as const,

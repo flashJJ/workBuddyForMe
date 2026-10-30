@@ -1,17 +1,16 @@
 import {
   createInstalledEventScriptRepository,
   createReportWidgetRepository,
-  type DatabaseInstance,
   type WorkflowRepository,
 } from '@wbfm/database';
 import { createCapabilityService } from '@wbfm/core/capabilities';
 import type { McpRegistry } from '@wbfm/core/mcp';
 import type { SkillService } from '@wbfm/core/skills';
-import type { MotionService } from '@wbfm/core/services';
+import { createSettingsService, type MotionService, type ServiceDeps } from '@wbfm/core/services';
 import { readSampleMotionAsset } from './capability-sample-asset';
 
 interface CapabilityWiringInput {
-  db: DatabaseInstance;
+  deps: ServiceDeps;
   skills: SkillService;
   mcp: McpRegistry;
   workflows: WorkflowRepository;
@@ -20,10 +19,16 @@ interface CapabilityWiringInput {
 
 /** v2.11：能力包服务装配（剧本/卡片仓储 + 示例素材读取） */
 export function createCapabilityServiceForApp(input: CapabilityWiringInput) {
+  const { db } = input.deps;
   return createCapabilityService({
-    ...input,
-    eventScripts: createInstalledEventScriptRepository(input.db),
-    reportWidgets: createReportWidgetRepository(input.db),
+    db,
+    skills: input.skills,
+    mcp: input.mcp,
+    workflows: input.workflows,
+    motions: input.motions,
+    eventScripts: createInstalledEventScriptRepository(db),
+    reportWidgets: createReportWidgetRepository(db),
+    settings: createSettingsService(input.deps),
     sampleMotionAsset: readSampleMotionAsset,
   });
 }

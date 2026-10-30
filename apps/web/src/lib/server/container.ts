@@ -175,7 +175,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // v2.11：能力包 effect 需要动作服务；同一实例供容器返回
   const motionsService = createMotionService(db);
   const capabilities = createCapabilityServiceForApp({
-    db,
+    deps,
     skills,
     mcp,
     workflows,

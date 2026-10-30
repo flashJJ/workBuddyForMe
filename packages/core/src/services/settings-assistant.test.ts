@@ -91,6 +91,9 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       subagentCliArgs: [],
       subagentCliTimeoutMs: 600_000,
       subagentCliMaxOutputBytes: 2_097_152,
+      // v2.12：签名默认 warn、信任库为空
+      capabilitySignaturePolicy: 'warn',
+      capabilityTrustedKeys: [],
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

@@ -5,6 +5,17 @@ export {
   type CapabilityServiceDeps,
 } from './capability-service';
 export {
+  compareCapabilityVersions,
+  upgradeCapability,
+  type CapabilityUpgradeInput,
+  type CapabilityUpgradeResult,
+} from './upgrade';
+export {
+  cleanupCapabilityArtifacts,
+  scanCapabilitiesHealth,
+  type HealthScanInput,
+} from './health';
+export {
   buildSamplePack,
   buildSampleSkillPack,
 } from './samples';

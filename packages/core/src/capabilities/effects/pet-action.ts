@@ -29,6 +29,11 @@ function parsePayload(packDir: string) {
   return parsed.data;
 }
 
+/** v2.12：升级预检读取入口键（用于排除旧动作自身的冲突判断） */
+export function readPetActionEntryKey(packDir: string): string | null {
+  return parsePayload(packDir).entryKey ?? null;
+}
+
 /** 启用：双校验 + 落盘 + 落库；entryKey 与既有动作冲突时拒绝 */
 export function enablePetAction(
   manifest: CapabilityManifest,

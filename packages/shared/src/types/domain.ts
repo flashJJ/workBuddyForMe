@@ -16,6 +16,7 @@ import type { ContentPart } from './content-part';
 import type { EventSettingsFields } from '../events/event-settings';
 import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { SubagentCliSettingsFields } from './subagent-settings';
+import type { CapabilitySignatureSettingsFields } from './capability-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction-graph';
 import type { ToolTraceEntry } from './tool';
 
@@ -195,7 +196,11 @@ export interface DocumentRecord {
   compileGeneration?: number;
 }
 
-export interface AppSettings extends EventSettingsFields, LocalModeSettingsFields, SubagentCliSettingsFields {
+export interface AppSettings
+  extends EventSettingsFields,
+    LocalModeSettingsFields,
+    SubagentCliSettingsFields,
+    CapabilitySignatureSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;

@@ -136,6 +136,31 @@ export function createCapabilityRepository(db: DatabaseInstance) {
       return this.get(id);
     },
 
+    /** v2.12：升级时替换清单与版本元信息；状态回落 disabled，effect 由服务层重写 */
+    replaceManifest(id: string, manifest: CapabilityManifest): CapabilityView | null {
+      const row = db.prepare(`SELECT id FROM capability_packs WHERE id = ?`).get(id) as
+        | { id: string }
+        | undefined;
+      if (!row) return null;
+      db.prepare(
+        `UPDATE capability_packs
+         SET kind = @kind, version = @version, name = @name, description = @description,
+             permissions_json = @permissions, manifest_json = @manifest,
+             status = 'disabled', effect_ref = NULL, last_error = NULL, updated_at = @ts
+         WHERE id = @id`,
+      ).run({
+        id,
+        kind: manifest.kind,
+        version: manifest.version,
+        name: manifest.name,
+        description: manifest.description,
+        permissions: JSON.stringify(manifest.permissions),
+        manifest: JSON.stringify(manifest),
+        ts: nowIso(),
+      });
+      return this.get(id);
+    },
+
     remove(id: string): boolean {
       return db.prepare(`DELETE FROM capability_packs WHERE id = ?`).run(id).changes > 0;
     },

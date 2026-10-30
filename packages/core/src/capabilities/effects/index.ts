@@ -19,17 +19,22 @@ import {
 import {
   disableWorkflow,
   enableWorkflow,
+  restoreWorkflowVersion,
   uninstallWorkflow,
+  upgradeWorkflow,
+  upgradeWorkflowDisabled,
   type WorkflowEffectDeps,
 } from './workflow';
 import {
   disablePetAction,
   enablePetAction,
+  readPetActionEntryKey,
   type PetActionEffectDeps,
 } from './pet-action';
 import {
   disableEventScript,
   enableEventScript,
+  replaceEventScriptDefinition,
   uninstallEventScript,
   type EventScriptEffectDeps,
 } from './event-script';
@@ -58,6 +63,19 @@ export type {
   EventScriptEffectDeps,
   ReportWidgetEffectDeps,
 };
+
+// v2.12：升级适配与预检读取
+export { readMcpServerName, readSkillName } from './skill-mcp';
+export {
+  restoreWorkflowVersion,
+  upgradeWorkflow,
+  upgradeWorkflowDisabled,
+} from './workflow';
+export { readPetActionEntryKey } from './pet-action';
+export {
+  readEventScriptId,
+  replaceEventScriptDefinition,
+} from './event-script';
 
 export function enableCapabilityEffect(
   manifest: CapabilityManifest,
