@@ -11,13 +11,14 @@
 4. **延续工程宪法**：TS strict、单文件 ≤300 行、外部调用测试 mock、四层测试不降级。
 5. **方案先于编码**：版本开工前方案必须经过取舍评审（Non-Goals 与功能清单同等重要）。
 
-## 🚧 待发布：v2.12 🧩 可扩展 III——能力包收口（签名、升级、健康自检）
+## ✅ 已正式发布：v2.12 🧩 可扩展 III——能力包收口（签名、升级、健康自检）（2026-10-30，tag `v2.12.0`）
 
 v2.11 把六类 effect 与本地 CLI 外部代理接通，但留下三处收口欠账：清单 `signature` 只记录不验证、同 id 无法升级、包坏了不会自报。v2.12 只做收口：Ed25519 清单签名与本地信任库、同 id 原地升级与失败回滚、按需健康自检与孤儿目录清理；不扩 kind、不加新资源类型、不做远程市场/自动更新。
 
 - 方案：[v2.12 方案](../plan/v2.12/README.md) · [M0 契约冻结](../plan/v2.12/00-M0-契约冻结.md) · [M0 评审记录](../plan/v2.12/01-M0-评审记录.md) · [M1 实施记录](../plan/v2.12/02-M1-实施记录.md) · [M2 实施记录](../plan/v2.12/03-M2-实施记录.md) · [M3 实施记录](../plan/v2.12/04-M3-实施记录.md) · [M4 实施记录](../plan/v2.12/05-M4-实施记录.md) · [M5 验收](../plan/v2.12/06-M5-验收.md)
 - 总结：[v2.12-release-summary.md](v2.12-release-summary.md) · 发行说明：[v2.12-release-notes.md](v2.12-release-notes.md)
-- 状态：✅ M5 已完成（2026-10-30，签名、升级回滚、健康自检、管理页/设置页收口；生产模式 Web e2e 125/125、桌面冒烟 10/11），待合并与发布
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41034765172`、main CI `41034745290`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.12.0>；生产模式 Web e2e 125/125、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 192.62 MB）
+- 分支：`feature/v2.12-capability-hardening`（`--no-ff` 合入 main `75e0a7c`；零迁移，schema 仍 v040）
 
 ## 已正式发布：v2.11 🧩 可扩展 II——四类 effect 装满，外部代理从缝到实现（2026-10-30，tag `v2.11.0`）
 
