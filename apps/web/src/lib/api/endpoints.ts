@@ -66,6 +66,7 @@ export const API = {
   capabilityInstall: '/api/capabilities/install',
   capabilityEnable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/enable`,
   capabilityDisable: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/disable`,
+  capabilityUpgrade: (id: string) => `/api/capabilities/${encodeURIComponent(id)}/upgrade`,
   capability: (id: string) => `/api/capabilities/${encodeURIComponent(id)}`,
   capabilitySample: '/api/capabilities/sample',
   // v2.9 事件日志 / 检索 / 导出

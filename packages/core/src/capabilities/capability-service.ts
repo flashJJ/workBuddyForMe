@@ -31,6 +31,10 @@ import {
   uninstallCapabilityEffect,
   type CapabilityEffectDeps,
 } from './effects';
+import {
+  upgradeCapability,
+  type CapabilityUpgradeResult,
+} from './upgrade';
 
 /**
  * v2.10 能力包服务：安装（校验+落盘）、启停（effect 注册/撤销）、卸载（清理磁盘与记录）。
@@ -240,6 +244,21 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
       if (manifest) uninstallCapabilityEffect(manifest, effectRef, effects);
       rmSync(packDir(id), { recursive: true, force: true });
       repo.remove(id);
+    },
+
+    upgrade(id: string, buffer: Uint8Array): CapabilityUpgradeResult {
+      return upgradeCapability({
+        id,
+        buffer,
+        repo,
+        effects,
+        rootDir,
+        hooks: {
+          assertSignature: (manifest) =>
+            assertManifestSignature(manifest, signatureContext(deps)),
+          annotate: (view, manifest) => annotate(view, signatureContext(deps), manifest),
+        },
+      });
     },
 
     sample(kind: CapabilityKind = 'skill'): Uint8Array {

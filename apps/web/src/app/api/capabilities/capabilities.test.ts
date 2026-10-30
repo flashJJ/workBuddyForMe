@@ -17,6 +17,7 @@ import { POST as installCapability } from './install/route';
 import { POST as enableCapability } from './[id]/enable/route';
 import { POST as disableCapability } from './[id]/disable/route';
 import { DELETE as uninstallCapability } from './[id]/route';
+import { POST as upgradeCapability } from './[id]/upgrade/route';
 import { GET as sampleCapability } from './sample/route';
 
 describe('v2.10 能力包 API', () => {
@@ -203,5 +204,51 @@ describe('v2.10 能力包 API', () => {
       new Request('http://127.0.0.1/x', { method: 'POST', body: rejectedForm }),
     );
     expect(rejected.status).toBe(422);
+  });
+
+  it('升级路由：缺文件 422；同版本 422；未安装 404', async () => {
+    const noFile = await upgradeCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: new FormData() }),
+      { params: Promise.resolve({ id: 'com.example.sample.workflow' }) },
+    );
+    expect(noFile.status).toBe(422);
+
+    const form = new FormData();
+    form.append(
+      'file',
+      new File([buildSampleSkillPack() as unknown as BlobPart], 'demo.zip', {
+        type: 'application/zip',
+      }),
+    );
+    const installed = await installCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: form }),
+    );
+    const capability = (await installed.json()).data;
+
+    const sameVersion = new FormData();
+    sameVersion.append(
+      'file',
+      new File([buildSampleSkillPack() as unknown as BlobPart], 'demo.zip', {
+        type: 'application/zip',
+      }),
+    );
+    const same = await upgradeCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: sameVersion }),
+      { params: Promise.resolve({ id: capability.id }) },
+    );
+    expect(same.status).toBe(422);
+
+    const missingForm = new FormData();
+    missingForm.append(
+      'file',
+      new File([buildSampleSkillPack() as unknown as BlobPart], 'demo.zip', {
+        type: 'application/zip',
+      }),
+    );
+    const missing = await upgradeCapability(
+      new Request('http://127.0.0.1/x', { method: 'POST', body: missingForm }),
+      { params: Promise.resolve({ id: 'com.example.not-installed' }) },
+    );
+    expect(missing.status).toBe(404);
   });
 });
