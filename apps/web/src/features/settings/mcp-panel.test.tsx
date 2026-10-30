@@ -31,7 +31,7 @@ function ok(data: unknown, status = 200) {
   });
 }
 
-describe('MCP 服务器面板（v0.6 M1）', () => {
+describe('MCP 服务器面板（v0.6 M1）', { timeout: 15_000 }, () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {

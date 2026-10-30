@@ -2,16 +2,16 @@
 
 本地优先的**私人 AI 工作台**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v2.11.0**（2026-10-30）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 当前版本：**v2.12.0**（2026-10-30）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
 
-## v2.11.0 重点
+## v2.12.0 重点
 
-- **六类 effect 全接通**：能力包可安装/启停/卸载 `skill`、`mcp`、`workflow`、`pet-action`、`event-script`、`report-widget`；坏包逐类 422，回滚不留半成品。
-- **剧本与卡片**：事件 schema 支持字面量 `title`/`text`；安装剧本按短语触发并受导演三道锁约束；报告 JSON 新增 `widgets`，报告页渲染声明式卡片。
-- **外部代理（本地 CLI）**：默认关、逐次审批、JSON Lines 协议、超时/输出上限/取消杀进程树；运行落 `subagent_runs` + WorkSignal + `session_events`，终态幂等回投。
-- **管理页收口**：`/capabilities` kind 筛选、effect 详情、六类示例下载与外部代理区；设置页「来自能力包的剧本」列表与试演深链；桌面目录选择。
-- **数据与迁移**：迁移 **v040** 纯加法（workflows 来源列 + 剧本/卡片/外部代理运行三表）；版本 **2.11.0** 统一同步。
-- **工程门禁**：`pnpm check` 与 8 包单测全绿；生产模式 Web e2e 122/122、桌面冒烟 10/11（`computer-input` 环境相关）。
+- **签名可验证**：能力包清单支持 Ed25519 签名与本地信任库；策略 `off` / `warn`（默认）/ `require` 在安装、升级、启用三个入口生效；无效签名在 `warn`/`require` 下必拒。
+- **升级可回滚**：同 id 原地升级，版本严格递增；暂存 → 原子换目录 → 按六类 effect 适配；启用失败恢复旧包、旧版本与旧 effect，二次失败落 `disabled + lastError`。
+- **坏了能自检**：按需健康检查覆盖目录、清单、checksum、payload 多余文件、依赖三态、六类 effect 与签名；无主目录与超过 24h 的升级残留可清理。
+- **管理页/设置页收口**：行内签名/健康徽章、升级对话框、健康横幅与孤儿清理；设置页新增签名策略与信任公钥管理，中英双语文案。
+- **零迁移**：不新增表与列；v2.11 库可直接打开，回退旧版本不删除数据。
+- **工程门禁**：`pnpm check` 与单测全绿；生产模式 Web e2e 125/125；详见下方发布验证。
 
 ## 功能
 
@@ -165,7 +165,7 @@ pnpm test:e2e             # Web 关键路径 E2E
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v2.11.0 发布准备：`pnpm check` 与 8 包单测全绿；全量 Web e2e **122/122**（CI 模式 `next start` 生产产物）、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 `WorkBuddyForMe-Setup-2.11.0.exe` 192.49 MB。详见 [v2.11 M5 验收](docs/plan/v2.11/06-M5-验收.md)。
+v2.12.0 发布准备：`pnpm check` 与 8 包单测全绿（2739 例）；全量 Web e2e **125/125**（CI 模式 `next start` 生产产物）、桌面冒烟 10/11（`computer-input` 环境相关）；零迁移（schema 仍 v040，旧库直开）；安装包 `WorkBuddyForMe-Setup-2.12.0.exe` 192.62 MB。详见 [v2.12 M5 验收](docs/plan/v2.12/06-M5-验收.md)。
 
 ## 数据与隐私
 
