@@ -49,6 +49,7 @@ import {
 } from '@wbfm/core/event';
 import { createSkillService } from '@wbfm/core/skills';
 import { registerExitCleanup } from './container-exit';
+import { ensureServerScheduler } from './server-scheduler';
 import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
@@ -279,6 +280,8 @@ export function getServices(): ServiceContainer {
   const created = build(initDatabase(), resolveCipher());
   writeContainer(created);
   registerExitCleanup(created.mcp);
+  // v2.13 M4：服务端常驻调度接管定时 Agent（测试环境不启动）
+  if (process.env.NODE_ENV !== 'test') ensureServerScheduler(created);
   // 按仓储现状对齐 MCP 连接（异步，不阻塞首请求）
   created.mcp.reconcile();
   // 技能包启动对齐：播种内置示例 + 扫盘登记（本地文件扫描，同步快速完成）

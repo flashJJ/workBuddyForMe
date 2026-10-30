@@ -6,19 +6,9 @@ import type { ToolContext } from '../tools/types';
 import { executeToolCall, summarizeArgs } from '../tools/tool-executor';
 import { gateToolPermission } from '../chat/tool-permission-gate';
 import type { TaskPlanDecision } from './types';
-import {
-  createTaskLoopControl,
-  type TaskLoopEvent,
-  type TaskLoopParams,
-} from './control';
-import {
-  STEP_RESULT_MAX_CHARS,
-  addFinalStep,
-  createTaskLoopInternals,
-  produceObserveStep,
-  mandatoryRetrievalCorrection,
-  type TaskLoopState,
-} from './task-loop-helpers';
+import { createTaskLoopRuntime, stopForPolicyLimit } from './task-loop-runtime';
+import { createTaskLoopControl, type TaskLoopEvent, type TaskLoopParams } from './control';
+import { STEP_RESULT_MAX_CHARS, addFinalStep, createTaskLoopInternals, produceObserveStep, mandatoryRetrievalCorrection, type TaskLoopState } from './task-loop-helpers';
 import { sys } from '../i18n/system-text';
 
 /**
@@ -48,18 +38,16 @@ export async function* runTaskLoop(
     consecutiveFailures: 0,
     correctionViolations: 0,
   };
-  // 上一轮决策被「零检索收尾」门控驳回时，本轮观察替换为强制纠正文本
   let pendingCorrection: string | undefined;
-  // 白名单工具目录（工具名→用途描述）：工具集全程不变，循环外解析一次供每轮决策注入
-  const toolCatalog = allowedTools
-    .map((name) => {
-      const resolvedCatalog = runtime.resolveTool(name);
-      return resolvedCatalog ? `${name}：${resolvedCatalog.tool.description}` : null;
-    })
-    .filter((x): x is string => Boolean(x));
-  const subtaskContext = params.subtaskBrief
-    ? { brief: params.subtaskBrief, acceptance: params.subtaskAcceptance ?? [] }
-    : undefined;
+  const { toolCatalog, subtaskContext, runtimeLimits } = createTaskLoopRuntime({
+    deps,
+    runtime,
+    allowedTools,
+    run: state.run,
+    ...(params.subtaskBrief
+      ? { subtaskBrief: params.subtaskBrief, subtaskAcceptance: params.subtaskAcceptance }
+      : {}),
+  });
   const { taskEvent, stepStarted, stepFinished, finalize, checkLimits, failStep, afterFail } =
     createTaskLoopInternals({ repo, deps, state });
 
@@ -83,6 +71,9 @@ export async function* runTaskLoop(
       state.run = repo.updateRunStatus(state.run.id, 'running') ?? state.run;
       yield taskEvent('run_resumed');
     }
+
+    /* ---- 运行时长策略限额（v2.13 M4） ---- */
+    if (runtimeLimits.expired()) return yield* stopForPolicyLimit({ repo, finalize });
 
     /* ---- 观察（screen=截图；tool=合成工具观察，不截图；correction=强制纠正文本） ---- */
     state.stepIndex += 1;
@@ -230,6 +221,15 @@ export async function* runTaskLoop(
         return hit.run;
       }
       continue;
+    }
+    const runtimeLimit = runtimeLimits.checkTool(resolved.tool, resolved.source);
+    if (!runtimeLimit.allowed) {
+      return yield* stopForPolicyLimit({
+        repo,
+        finalize,
+        actionStepId: actionStep.id,
+        error: `策略限额：${runtimeLimit.reason}`,
+      });
     }
     if (deps.breakers?.isTripped(toolName)) {
       repo.finishStep(actionStep.id, {

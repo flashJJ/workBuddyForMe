@@ -100,7 +100,7 @@ export function createTaskRunnerService(
     if (latest) {
       // v2.13 M3：运行生命周期审计（失败只告警，不阻断终态回投）
       deps.audit?.safeAppend({
-        kind: 'run_finished',
+        kind: latest.originScheduledTaskId ? 'scheduled_run_finished' : 'run_finished',
         actor: 'agent',
         runId: latest.id,
         conversationId: latest.conversationId || null,

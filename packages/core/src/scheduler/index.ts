@@ -5,7 +5,20 @@ export {
   isSupportedTimezone,
   type ScheduleSpec,
 } from './next-run';
-export { createSchedulerTick, type SchedulerTickDeps, type DueTask } from './scheduler-tick';
+export {
+  createSchedulerTick,
+  runSchedulerTick,
+  type SchedulerTickDeps,
+  type DueTask,
+} from './scheduler-tick';
+export {
+  createScheduledAgentRunner,
+  type ScheduledAgentRunner,
+  type ScheduledAgentRunnerDeps,
+  type ScheduledAgentStartResult,
+  type ScheduledSkipReason,
+  type StartScheduledAgentInput,
+} from './scheduled-agent-runner';
 export { createSchedulesService, type SchedulesService } from './schedules-service';
 export {
   parseReminderRequest,

@@ -1,10 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type {
-  ScheduledTaskCreateInput,
-  ScheduledTaskView,
-} from '@wbfm/shared/schemas';
+import type { ScheduledAgentTaskPayload, ScheduledTaskView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,12 +17,13 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { useAssistants } from '@/lib/hooks/use-assistants';
 import { useReminderMutations } from './use-reminders';
+import { AgentTaskFields } from './agent-task-fields';
+import { parseTimeValue, WEEKDAY_ORDER } from './schedule-format';
 import {
-  WEEKDAY_ORDER,
-  parseTimeValue,
-  toTimeValue,
-  todayDateValue,
-} from './schedule-format';
+  buildReminderForm,
+  type ReminderFormState,
+  type ReminderKind,
+} from './reminder-form-state';
 
 interface Props {
   open: boolean;
@@ -36,7 +34,7 @@ interface Props {
   defaultAssistantId?: string;
 }
 
-type Kind = ScheduledTaskCreateInput['kind'];
+type Kind = ReminderKind;
 
 const KINDS: ReadonlyArray<{ id: Kind; labelKey: MessageKey }> = [
   { id: 'once', labelKey: 'reminders.kindOnce' },
@@ -44,52 +42,21 @@ const KINDS: ReadonlyArray<{ id: Kind; labelKey: MessageKey }> = [
   { id: 'weekly', labelKey: 'reminders.kindWeekly' },
 ];
 
-interface FormState {
-  assistantId: string;
-  kind: Kind;
-  time: string;
-  weekday: number;
-  atDate: string;
-  text: string;
-  enabled: boolean;
-}
-
-function buildForm(reminder: ScheduledTaskView | null, defaultAssistantId: string): FormState {
-  if (reminder) {
-    return {
-      assistantId: reminder.assistantId,
-      kind: reminder.kind,
-      time: toTimeValue(reminder.hour, reminder.minute),
-      weekday: reminder.weekday ?? 1,
-      atDate: reminder.atDate ?? todayDateValue(),
-      text: reminder.text,
-      enabled: reminder.enabled,
-    };
-  }
-  return {
-    assistantId: defaultAssistantId,
-    kind: 'daily',
-    time: '09:00',
-    weekday: 1,
-    atDate: todayDateValue(),
-    text: '',
-    enabled: true,
-  };
-}
-
 export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssistantId = '' }: Props) {
   const { t } = useI18n();
   const toast = useToast();
   const { data: assistants } = useAssistants();
   const mutations = useReminderMutations();
-  const [form, setForm] = React.useState<FormState>(() => buildForm(reminder, defaultAssistantId));
+  const [form, setForm] = React.useState<ReminderFormState>(() =>
+    buildReminderForm(reminder, defaultAssistantId),
+  );
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (open) setForm(buildForm(reminder, defaultAssistantId));
+    if (open) setForm(buildReminderForm(reminder, defaultAssistantId));
   }, [open, reminder, defaultAssistantId]);
 
-  const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
+  const update = (patch: Partial<ReminderFormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -97,6 +64,21 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
     if (!form.assistantId || !parsedTime) return;
     if (form.kind === 'weekly' && form.weekday === undefined) return;
     if (!form.text.trim()) return;
+    if (form.mode === 'agent_task' && (!form.conversationId || !form.goal.trim())) {
+      toast.error(t('reminders.agentFieldsRequired'));
+      return;
+    }
+    const agentPayload: ScheduledAgentTaskPayload | null =
+      form.mode === 'agent_task'
+        ? {
+            kind: 'agent_task',
+            goal: form.goal.trim(),
+            conversationId: form.conversationId,
+            permissionMode: form.permissionMode,
+            notify: form.notify,
+            ...(form.workspacePath.trim() ? { workspacePath: form.workspacePath.trim() } : {}),
+          }
+        : null;
     setSubmitting(true);
     try {
       if (reminder) {
@@ -109,6 +91,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
             atDate: form.kind === 'once' ? form.atDate : null,
             text: form.text.trim(),
             enabled: form.enabled,
+            ...(agentPayload ? { payload: agentPayload } : {}),
           },
         });
       } else {
@@ -121,6 +104,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
           atDate: form.kind === 'once' ? form.atDate : null,
           timezone: 'Asia/Shanghai',
           text: form.text.trim(),
+          ...(agentPayload ? { payload: agentPayload } : {}),
         });
       }
       onOpenChange(false);
@@ -160,6 +144,37 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
               ))}
             </SimpleSelect>
           </label>
+          <div className="space-y-1">
+            <span className="text-sm font-medium">{t('reminders.taskTypeLabel')}</span>
+            <div className="flex gap-1.5" role="radiogroup">
+              {(
+                [
+                  { id: 'reminder', labelKey: 'reminders.taskTypeReminder' },
+                  { id: 'agent_task', labelKey: 'reminders.taskTypeAgent' },
+                ] as const
+              ).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={form.mode === item.id}
+                  disabled={Boolean(reminder)}
+                  data-testid={`reminder-type-${item.id}`}
+                  onClick={() => update({ mode: item.id })}
+                  className={`rounded-md border px-2.5 py-1 text-xs disabled:opacity-60 ${
+                    form.mode === item.id
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {t(item.labelKey)}
+                </button>
+              ))}
+            </div>
+            {reminder && (
+              <p className="text-[11px] text-muted-foreground">{t('reminders.taskTypeLocked')}</p>
+            )}
+          </div>
 
           <div className="space-y-1">
             <span className="text-sm font-medium">{t('reminders.repeatLabel')}</span>
@@ -241,6 +256,20 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
               className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
             />
           </label>
+
+          {form.mode === 'agent_task' && (
+            <AgentTaskFields
+              assistantId={form.assistantId}
+              value={{
+                goal: form.goal,
+                conversationId: form.conversationId,
+                permissionMode: form.permissionMode,
+                workspacePath: form.workspacePath,
+                notify: form.notify,
+              }}
+              onChange={(patch) => update(patch)}
+            />
+          )}
 
           {reminder && (
             <label className="flex cursor-pointer items-center gap-2 text-sm">

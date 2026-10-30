@@ -27,11 +27,7 @@ import { GET as getMessages } from './conversations/[id]/messages/route';
 import { POST as streamChat } from './chat/stream/route';
 
 const jsonRequest = (body: unknown, method = 'POST') =>
-  new Request('http://127.0.0.1/x', {
-    method,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  new Request('http://127.0.0.1/x', { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 const paramCtx = (id: string) => ({ params: Promise.resolve({ id }) });
 
