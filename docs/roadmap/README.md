@@ -17,6 +17,7 @@ v2.11 把六类 effect 与本地 CLI 外部代理接通，但留下三处收口�
 
 - 方案：[v2.12 方案](../plan/v2.12/README.md) · [M0 契约冻结](../plan/v2.12/00-M0-契约冻结.md) · [M0 评审记录](../plan/v2.12/01-M0-评审记录.md) · [M1 实施记录](../plan/v2.12/02-M1-实施记录.md) · [M2 实施记录](../plan/v2.12/03-M2-实施记录.md) · [M3 实施记录](../plan/v2.12/04-M3-实施记录.md) · [M4 实施记录](../plan/v2.12/05-M4-实施记录.md) · [M5 验收](../plan/v2.12/06-M5-验收.md)
 - 总结：[v2.12-release-summary.md](v2.12-release-summary.md) · 发行说明：[v2.12-release-notes.md](v2.12-release-notes.md)
+- 博客：[blog/v2.12](../../blog/v2.12/) 7 篇
 - 状态：✅ 已正式发布并置 Latest（Release workflow `41034765172`、main CI `41034745290`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.12.0>；生产模式 Web e2e 125/125、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 192.62 MB）
 - 分支：`feature/v2.12-capability-hardening`（`--no-ff` 合入 main `75e0a7c`；零迁移，schema 仍 v040）
 
