@@ -14,6 +14,7 @@ export const zhErrors = {
   SKILL_VERSION_ACTIVE: '当前启用版本不可删除，请先回退到其他版本。',
   SKILL_VERSION_LAST: '至少保留一个技能版本，无法删除最后一份快照。',
   SKILL_VERSION_DELETE_FAILED: '技能快照删除失败，请检查数据目录权限后重试。',
+  AUDIT_ARCHIVE_TOO_LARGE: '审计归档超出范围或事件数上限，请缩小时间区间后重试。',
   SKILL_ROLLBACK_FAILED: '技能回退失败，已尝试恢复原目录。',
   FLOW_VERSION_NOT_FOUND: '该工作流版本不存在，无法设为生产。',
   CAPABILITY_DOWNGRADE_CONFIRM_REQUIRED: '目标版本低于当前版本，请确认降级并指定目标版本。',
@@ -48,6 +49,8 @@ export const enErrors = {
     'At least one skill version must remain; the last snapshot cannot be deleted.',
   SKILL_VERSION_DELETE_FAILED:
     'Failed to delete the skill snapshot. Check data directory permissions and retry.',
+  AUDIT_ARCHIVE_TOO_LARGE:
+    'The audit archive exceeds the range or event limit. Narrow the time range and retry.',
   SKILL_ROLLBACK_FAILED: 'Skill rollback failed; the original folder was restored if possible.',
   FLOW_VERSION_NOT_FOUND: 'That workflow version does not exist and cannot be set as production.',
   CAPABILITY_DOWNGRADE_CONFIRM_REQUIRED:

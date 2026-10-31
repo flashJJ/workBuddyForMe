@@ -20,6 +20,7 @@ import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
+import { AuditArchiveActions } from './audit-archive-actions';
 
 /**
  * v2.13 M3 审计页：链状态 + 过滤 + 详情 + JSONL 导出。
@@ -210,6 +211,7 @@ export function AuditPage() {
             <Button size="sm" onClick={exportLedger}>
               {t('audit.export')}
             </Button>
+            <AuditArchiveActions from={filters.from} to={filters.to} />
           </div>
         }
       />

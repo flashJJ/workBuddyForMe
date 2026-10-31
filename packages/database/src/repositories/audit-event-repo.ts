@@ -59,6 +59,14 @@ export interface AuditChainTail {
   hash: string;
 }
 
+export interface AuditRangeFilter {
+  from: string;
+  to: string;
+  /** 仅取 seq > cursor（升序区间翻页） */
+  afterSeq?: number;
+  limit?: number;
+}
+
 export function createAuditEventRepository(db: DatabaseInstance) {
   return {
     append(fields: AuditEventAppendFields): AuditEventRow {
@@ -133,6 +141,39 @@ export function createAuditEventRepository(db: DatabaseInstance) {
       return db
         .prepare('SELECT * FROM audit_events WHERE seq > ? ORDER BY seq ASC LIMIT ?')
         .all(afterSeq, Math.min(Math.max(limit, 1), 1000)) as AuditEventRow[];
+    },
+
+    /** v2.15：按 created_at 闭区间升序取一批（归档用） */
+    listRangeAscending(filter: AuditRangeFilter): AuditEventRow[] {
+      return db
+        .prepare(
+          `SELECT * FROM audit_events
+           WHERE created_at >= @from AND created_at <= @to AND seq > @afterSeq
+           ORDER BY seq ASC LIMIT @limit`,
+        )
+        .all({
+          from: filter.from,
+          to: filter.to,
+          afterSeq: filter.afterSeq ?? 0,
+          limit: Math.min(Math.max(filter.limit ?? 500, 1), 1000),
+        }) as AuditEventRow[];
+    },
+
+    /** v2.15：区间事件计数（锚点重新计数用） */
+    countRange(from: string, to: string): number {
+      const row = db
+        .prepare('SELECT COUNT(*) AS n FROM audit_events WHERE created_at >= ? AND created_at <= ?')
+        .get(from, to) as { n: number };
+      return row.n;
+    },
+
+    /** v2.15：按 seq 取单条（锚点逐点校验用） */
+    getBySeq(seq: number): AuditEventRow | null {
+      return (
+        (db.prepare('SELECT * FROM audit_events WHERE seq = ?').get(seq) as
+          | AuditEventRow
+          | undefined) ?? null
+      );
     },
 
     count(): number {

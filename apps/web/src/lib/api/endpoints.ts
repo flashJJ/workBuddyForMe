@@ -53,6 +53,10 @@ export const API = {
   auditEvents: '/api/audit/events',
   auditVerify: '/api/audit/verify',
   auditExport: (format = 'jsonl') => `/api/audit/export?format=${format}`,
+  /** v2.15：区间归档 ZIP 与外部锚点校验 */
+  auditArchive: (from: string, to: string) =>
+    `/api/audit/archive?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+  auditAnchorVerify: '/api/audit/anchor/verify',
   // v2.8 目标 / 计划 / 待办
   goals: '/api/goals',
   goalsByConversation: (conversationId: string) =>

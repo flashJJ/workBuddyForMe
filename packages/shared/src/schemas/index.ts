@@ -295,6 +295,21 @@ export {
   type AuditQuery,
   type AuditVerifyResult,
 } from './audit';
+// v2.15 审计归档与外部锚点
+export {
+  AUDIT_ARCHIVE_LIMITS,
+  AUDIT_ANCHOR_VERIFY_CODES,
+  auditArchiveQuerySchema,
+  auditAnchorSchema,
+  auditAnchorRangeSchema,
+  auditAnchorVerifyCodeSchema,
+  auditAnchorVerifyResultSchema,
+  type AuditArchiveQuery,
+  type AuditAnchor,
+  type AuditAnchorRange,
+  type AuditAnchorVerifyCode,
+  type AuditAnchorVerifyResult,
+} from './audit-archive';
 // v2.12 能力包签名规范化（纯函数）
 export {
   CAPABILITY_SIGNATURE_DOMAIN,
