@@ -414,6 +414,13 @@ export {
   type FlowRunCreateInput,
   type FlowHumanSubmitInput,
 } from './flow';
+// v2.15 工作流版本对比
+export {
+  flowGraphDiffSchema,
+  flowVersionCompareQuerySchema,
+  type FlowGraphDiff,
+  type FlowVersionCompareQuery,
+} from './flow-diff';
 // v0.9 Flow Serving 契约（端点/无人值守策略）
 export {
   FLOW_ENDPOINT_SYNC_TIMEOUT,

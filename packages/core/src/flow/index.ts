@@ -14,6 +14,7 @@ export {
   reverseReachableTo,
   type Adjacency,
 } from './graph-utils';
+export { diffFlowGraphs } from './version-diff';
 export { buildIncomingIndex, isNodeLive, type IncomingEdge } from './engine-live';
 export {
   createDefaultHandlers,

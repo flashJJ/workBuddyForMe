@@ -163,6 +163,9 @@ export const API = {
   /** v2.4 P0-2：以内置工作流为模板复制草稿 */
   flowClone: (id: string) => `/api/flows/${id}/clone`,
   flowVersions: (id: string) => `/api/flows/${id}/versions`,
+  /** v2.15：版本差异摘要 */
+  flowVersionCompare: (id: string, from: number, to: number) =>
+    `/api/flows/${id}/versions/compare?from=${from}&to=${to}`,
   flowValidate: (id: string) => `/api/flows/${id}/validate`,
   flowPublish: (id: string) => `/api/flows/${id}/publish`,
   /** v2.14：把历史版本设为生产（不改当前草稿） */
@@ -235,6 +238,8 @@ export const QUERY_KEYS = {
   flows: ['flows'] as const,
   flow: (id: string) => ['flows', id] as const,
   flowVersions: (id: string) => ['flows', id, 'versions'] as const,
+  flowVersionCompare: (id: string, from: number, to: number) =>
+    ['flows', id, 'versions', 'compare', from, to] as const,
   flowRun: (id: string) => ['flow-run', id] as const,
   flowEndpoint: (id: string) => ['flow-endpoint', id] as const,
   voiceSettings: ['voice-settings'] as const,

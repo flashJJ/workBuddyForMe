@@ -30,6 +30,21 @@ export const zhFlowEditor = {
     loadFailed: '版本列表加载失败',
     empty: '还没有保存过版本',
     createdAt: '创建于 {date}',
+    compare: '对比',
+    compareFrom: '基准版本',
+    compareTo: '目标版本',
+    compareButton: '开始对比',
+    compareLoading: '对比中…',
+    compareFailed: '版本对比失败',
+    compareEmpty: '没有差异',
+    compareSummary:
+      '节点 +{added} / −{removed} / 类型 {typeChanged} / 配置 {configChanged}；连线 +{edgesAdded} / −{edgesRemoved}',
+    diffNodesAdded: '新增节点',
+    diffNodesRemoved: '删除节点',
+    diffNodesTypeChanged: '类型变化',
+    diffNodesConfigChanged: '配置变化',
+    diffEdgesAdded: '新增连线',
+    diffEdgesRemoved: '删除连线',
   },
   toolbar: {
     status: {

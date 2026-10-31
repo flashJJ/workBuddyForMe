@@ -12,6 +12,7 @@ import type {
 } from '@wbfm/shared/types';
 import type {
   FlowGraph,
+  FlowGraphDiff,
   FlowHumanSubmitInput,
   WorkflowCreateInput,
   WorkflowUpdateInput,
@@ -61,6 +62,21 @@ export function useFlowVersions(id: string, enabled = true) {
     queryKey: QUERY_KEYS.flowVersions(id),
     queryFn: () => apiGet<WorkflowVersionView[]>(API.flowVersions(id)),
     enabled,
+  });
+}
+
+/** v2.15：任意两版差异；params 为 null 时不请求 */
+export function useFlowVersionCompare(
+  id: string,
+  params: { from: number; to: number } | null,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.flowVersionCompare(id, params?.from ?? 0, params?.to ?? 0),
+    queryFn: () =>
+      apiGet<FlowGraphDiff>(
+        API.flowVersionCompare(id, params!.from, params!.to),
+      ),
+    enabled: Boolean(params),
   });
 }
 
