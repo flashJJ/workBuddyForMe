@@ -1,7 +1,7 @@
 /**
  * @v1.8 角色卡域：Markdown 文本 mod 的 schema、零依赖解析器与内置卡。
  */
-export * from '../schemas/character-card';
+export * from '../schemas/capability/character-card';
 export { parseCharacterCard } from './parser';
 export {
   BUILTIN_CARD_SEEDS,

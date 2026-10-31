@@ -10,7 +10,7 @@ import type { RetrievalService } from '../retrieval/retrieval-service';
 import type { WorkflowRunRepository } from '@wbfm/database';
 import { executeToolCall } from '../tools/tool-executor';
 import { resolveChatTargetForModelId } from '../chat/model-resolver';
-import type { AgentRunService } from '../agents';
+import type { AgentRunService } from '../agents/index';
 import type { CompiledFlow, FlowExecutionContext } from './types';
 import { runFlow } from './engine';
 import { createFlowRunStore } from './run-store';

@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { Message } from '@wbfm/shared/types';
 import { EmptyState } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { AgentCardEntry } from '../agent-collab';
+import type { AgentCardEntry } from '../agent-collab/index';
 import type { StreamTiming } from './chat-session.types';
 import { MessageItem } from './message-item';
 

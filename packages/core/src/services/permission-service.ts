@@ -1,7 +1,7 @@
 import type { ToolPermission, PermissionLevel, PermissionAction } from '@wbfm/shared/types';
 import { ApiError } from '@wbfm/shared/errors';
 import { createToolPermissionRepository } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from './deps';
 
 /**
  * 权限服务：按工具×维度管理授权记录。

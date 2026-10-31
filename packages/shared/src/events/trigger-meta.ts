@@ -5,7 +5,7 @@
  * 触发判定纯本地：意图由 web 触发器识别（消息关键词/情绪信号/UI 总线/本地状态机），
  * 不触网、不调工具。when 是与剧本 branch 同文法的 AND 附加条件（如早安时段）。
  */
-import type { EventCondition } from '../schemas/event';
+import type { EventCondition } from '../schemas/work/event';
 
 /** 内置意图白名单（与 02-剧本初稿 trigger.intent 一一对应） */
 export const BUILT_IN_EVENT_INTENTS = [

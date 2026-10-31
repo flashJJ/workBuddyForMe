@@ -9,7 +9,7 @@
  * 不走 RAG/工具/记忆后台任务；助手消息仍正常落库（状态 completed）。
  */
 import type { Database } from 'better-sqlite3';
-import { createSettingsService, createConversationService } from '../services';
+import { createSettingsService, createConversationService } from '../services/index';
 import { createSchedulesService } from '../scheduler/schedules-service';
 import { parseReminderRequest, type ParsedReminder } from '../scheduler/reminder-parse';
 import type { ServiceDeps } from '../services/deps';

@@ -18,7 +18,7 @@ import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
 import { createToolRuntime } from '../tools/tool-runtime';
 import { createMemoryService } from '../memory/memory-service';
 import { recordMilestone } from '../services/milestones';
-import { createEmotionService, recordTurnEmotion } from '../emotion';
+import { createEmotionService, recordTurnEmotion } from '../emotion/index';
 import { stripEmotionSignalBlock, type EmotionSignal } from '@wbfm/shared/schemas';
 import { prepareTurnContext, type PreparedTurnContext } from './turn-context-assembly';
 import { schedulePostTurnJobs } from './post-turn-schedule';

@@ -1,10 +1,10 @@
 import type { Citation, MemoryKind, MemoryRecallReason } from '../types/domain';
 import type { PermissionLevel } from '../types/permission';
 import type { FlowEventPayload } from '../types/flow';
-import type { TaskEventPayload } from '../schemas/task';
+import type { TaskEventPayload } from '../schemas/work/task';
 import type { ToolEventPayload } from '../types/tool';
-import type { VoiceState } from '../schemas/voice';
-import type { EmotionSignal } from '../schemas/emotion';
+import type { VoiceState } from '../schemas/media/voice';
+import type { EmotionSignal } from '../schemas/emotion/emotion';
 import type { WorkSignalSnapshot } from '../work-signal';
 import type {
   AgentBudgetUsage,
@@ -12,7 +12,7 @@ import type {
   AgentPhase,
   AgentRole,
   ReviewVerdictPayload,
-} from '../schemas/agent';
+} from '../schemas/agent/agent';
 
 /**
  * v0.5：命中的长期记忆轻提示载荷（回答上方「参考了 X 条记忆」）。
@@ -161,7 +161,7 @@ export type SsePayloadMap = {
   /** v1.9 M3：一轮发言开始（按服务端校验后的顺序串行，舞台 focus 序列） */
   meeting_turn: {
     meetingId: string;
-    mode: import('../schemas/meeting').MeetingMode;
+    mode: import('../schemas/work/meeting').MeetingMode;
     /** 本轮将依次发言的成员 id（manual=@ 序列；all=全成员；auto=接龙当前位） */
     speakerIds: string[];
     /** 已用 auto 接龙轮次 */
@@ -182,8 +182,8 @@ export type SsePayloadMap = {
   /** v1.9 M3：会议状态机变更（mode 自动收回 manual / finished / aborted） */
   meeting_status: {
     meetingId: string;
-    status: import('../schemas/meeting').MeetingStatus;
-    mode: import('../schemas/meeting').MeetingMode;
+    status: import('../schemas/work/meeting').MeetingStatus;
+    mode: import('../schemas/work/meeting').MeetingMode;
     autoRounds: number;
   };
   /**

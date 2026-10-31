@@ -4,7 +4,7 @@ import type {
   MeetingMode,
   MeetingSpeakerKind,
   MeetingStatus,
-} from '../schemas/meeting';
+} from '../schemas/work/meeting';
 
 /** meetings 表行视图 */
 export interface MeetingRecord {

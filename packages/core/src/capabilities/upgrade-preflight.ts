@@ -9,7 +9,7 @@ import {
   readPetActionEntryKey,
   readSkillName,
   type CapabilityEffectDeps,
-} from './effects';
+} from './effects/index';
 import type { UpgradeSnapshot } from './upgrade-types';
 
 /** v2.12 M2：升级预检（依赖、从属、资源冲突、快照）与暂存目录写入 */

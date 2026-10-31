@@ -1,4 +1,4 @@
-import type { CapabilitySignaturePolicy, CapabilityTrustedKey } from '../schemas/capability';
+import type { CapabilitySignaturePolicy, CapabilityTrustedKey } from '../schemas/capability/capability';
 
 /**
  * v2.12 能力包签名设置字段（单独成文件，避免 domain.ts 超出单文件 300 行上限）。

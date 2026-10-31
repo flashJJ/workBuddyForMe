@@ -7,7 +7,7 @@
  * - 均无 emotionOnPlayed——纪念演出不能反灌情绪造成自激循环；
  * - 等级剧本带 minRelationshipLevel 闸门；里程碑剧本成就记录本身即闸门。
  */
-import type { EventDefinition } from '../schemas/event';
+import type { EventDefinition } from '../schemas/work/event';
 
 export const RAW_V20_EVENTS: EventDefinition[] = [
   // ── 关系等级解锁剧本（仅升级瞬间由客户端等级跃迁触发） ──

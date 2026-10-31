@@ -11,7 +11,7 @@ import type {
 } from '@wbfm/shared/schemas';
 import { capabilityManifestSchema } from '@wbfm/shared/schemas';
 import type { CapabilityRepository } from '@wbfm/database';
-import type { CapabilityEffectDeps } from './effects';
+import type { CapabilityEffectDeps } from './effects/index';
 import { verifyCapabilitySignature } from './signature';
 
 /**

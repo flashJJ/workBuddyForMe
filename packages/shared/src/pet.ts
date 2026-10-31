@@ -8,9 +8,9 @@
  *
  * 仅类型 + 一个纯函数，无运行时依赖（模型白名单为 voice schema 的 const 数组）。
  */
-import { DEFAULT_AVATAR_MODEL_ID, SUPPORTED_AVATAR_MODEL_IDS } from './schemas/voice';
-import { EXPRESSION_TAGS, type ExpressionTag } from './schemas/expression';
-import { MOTION_MOODS, type MotionMood } from './schemas/motion-asset';
+import { DEFAULT_AVATAR_MODEL_ID, SUPPORTED_AVATAR_MODEL_IDS } from './schemas/media/voice';
+import { EXPRESSION_TAGS, type ExpressionTag } from './schemas/emotion/expression';
+import { MOTION_MOODS, type MotionMood } from './schemas/media/motion-asset';
 import {
   CONTEXT_TRIGGERS,
   SYSTEM_SIGNALS,
@@ -21,8 +21,8 @@ import {
   type SystemSignal,
   type TouchGesture,
   type TouchRegion,
-} from './schemas/interaction-events';
-import { RELATIONSHIP_LEVEL_NAMES, type RelationshipLevel } from './schemas/relationship-level';
+} from './schemas/interaction/interaction-events';
+import { RELATIONSHIP_LEVEL_NAMES, type RelationshipLevel } from './schemas/chat/relationship-level';
 import { RELATIONSHIP_LEVEL_MAX } from './constants/relationship';
 
 /** 桌宠表现状态机（与语音状态机取值对齐） */

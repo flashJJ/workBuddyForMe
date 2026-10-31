@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SUPPORTED_AVATAR_MODEL_IDS } from './schemas/voice';
+import { SUPPORTED_AVATAR_MODEL_IDS } from './schemas/media/voice';
 import { PET_SUBTITLE_MAX, normalizeAvatarModelId, sanitizePetEvent } from './pet';
 
 describe('normalizeAvatarModelId', () => {

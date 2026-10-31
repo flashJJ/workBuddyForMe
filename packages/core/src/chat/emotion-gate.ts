@@ -3,7 +3,7 @@
  * - 读路径惰性衰减不落库；重置清除状态与流水；
  * - recordEventEmotion 仅用于剧情演出 played 后的联动（praise/comfort，source=event）。
  */
-import type { EmotionService } from '../emotion';
+import type { EmotionService } from '../emotion/index';
 import type { EmotionState } from '@wbfm/shared/schemas';
 import type { EmotionEventRecord } from '@wbfm/database';
 

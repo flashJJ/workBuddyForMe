@@ -13,7 +13,7 @@ import type { ServiceDeps } from '../services/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { Tool } from '../tools/types';
 import type { FlowWaitRegistry } from './wait-registry';
-import type { AgentRunService } from '../agents';
+import type { AgentRunService } from '../agents/index';
 
 export interface FlowRunServiceDeps {
   deps: ServiceDeps;

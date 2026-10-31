@@ -1,7 +1,7 @@
 /**
  * v1.7 剧情事件的设置字段（挂 AppSettings，持久化于 settings_kv，无 DB 迁移）。
  */
-import type { EventFrequencyTier } from '../schemas/event';
+import type { EventFrequencyTier } from '../schemas/work/event';
 
 export interface EventSettingsFields {
   /** 剧情事件总开关（缺省视为 true；勿扰/对话锁/出口仍由导演层兜底） */

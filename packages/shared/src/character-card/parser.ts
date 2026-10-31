@@ -16,8 +16,8 @@ import {
   type CharacterCardDiagnostic,
   type ParseCharacterCardResult,
   type ParsedCharacterCard,
-} from '../schemas/character-card';
-import { EXPRESSION_TAGS } from '../schemas/expression';
+} from '../schemas/capability/character-card';
+import { EXPRESSION_TAGS } from '../schemas/emotion/expression';
 import { parseFrontmatter, type RawFrontmatter } from './parser-frontmatter';
 
 type SectionKey = 'identity' | 'traits' | 'speakingStyle' | 'boundaries';

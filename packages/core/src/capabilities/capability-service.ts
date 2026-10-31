@@ -32,7 +32,7 @@ import {
   enableCapabilityEffect,
   uninstallCapabilityEffect,
   type CapabilityEffectDeps,
-} from './effects';
+} from './effects/index';
 import {
   upgradeCapability,
   type CapabilityUpgradeResult,

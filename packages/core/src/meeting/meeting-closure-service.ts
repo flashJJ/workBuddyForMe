@@ -18,8 +18,8 @@ import type {
   MeetingMessageRecord,
   MeetingRecord,
 } from '@wbfm/shared/types';
-import type { FlowRunService } from '../flow';
-import type { SchedulesService } from '../scheduler';
+import type { FlowRunService } from '../flow/index';
+import type { SchedulesService } from '../scheduler/index';
 
 export type MeetingExportLocale = 'zh' | 'en';
 

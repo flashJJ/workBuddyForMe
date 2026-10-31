@@ -5,7 +5,7 @@
  * 平行存放——trigger 块是触发器备注，不是引擎 step。
  * 模块加载即过 zod：非法内置剧本在 import 期直接失败，绝不带病上线。
  */
-import { eventDefinitionSchema, type EventDefinition } from '../schemas/event';
+import { eventDefinitionSchema, type EventDefinition } from '../schemas/work/event';
 import { RAW_V20_EVENTS } from './built-in-events-v2';
 import { RAW_V20_M3_EVENTS } from './built-in-events-v3';
 

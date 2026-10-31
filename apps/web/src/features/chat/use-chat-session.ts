@@ -9,7 +9,7 @@ import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiPost } from '@/lib/api/client';
 import { useChatStream } from '@/lib/hooks/use-chat-stream';
 import { useAgentTaskTurn } from './use-agent-task-turn';
-import type { AgentCardEntry } from '../agent-collab';
+import type { AgentCardEntry } from '../agent-collab/index';
 import {
   applyToolSubsteps,
   applyToolTraceEnd,

@@ -40,7 +40,7 @@ export {
   type ConditionRule,
   type ConditionOp,
   type ConditionMatch,
-} from './handlers';
+} from './handlers/index';
 export { createFlowWaitRegistry, type FlowWaitRegistry } from './wait-registry';
 export { createFlowRunStore, type FlowRunStore } from './run-store';
 export { buildFlowTool, type FlowToolInvoker, type FlowChatInvokeResult } from './flow-tool';

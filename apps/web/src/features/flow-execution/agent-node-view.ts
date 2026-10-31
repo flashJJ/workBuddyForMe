@@ -1,6 +1,6 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
 import { AGENT_BUDGET_DEFAULTS, type AgentBudget } from '@wbfm/shared/schemas';
-import { initAgentCard, reduceAgentFrame, type AgentCardState, type AgentCardStatus } from '../agent-collab';
+import { initAgentCard, reduceAgentFrame, type AgentCardState, type AgentCardStatus } from '../agent-collab/index';
 import type { FlowCanvasNode } from '../flow-editor/graph-utils';
 
 /**

@@ -8,7 +8,7 @@ import {
   evaluateCommandPolicy,
   isPathInside,
   isSensitivePath,
-} from '../governance';
+} from '../governance/index';
 
 /** v2.13 M2：外部代理运行前的策略 / 命令 / 审批绑定计算（外迁以守住 300 行门禁） */
 

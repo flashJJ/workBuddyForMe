@@ -9,7 +9,7 @@ import {
   BUILTIN_CARD_STUDY_COACH,
 } from './built-in-cards';
 import { parseCharacterCard } from './parser';
-import { EXPRESSION_TAGS } from '../schemas/expression';
+import { EXPRESSION_TAGS } from '../schemas/emotion/expression';
 
 describe('v1.8 内置角色卡播种契约', () => {
   it('不少于 3 张且 id 唯一', () => {

@@ -1,7 +1,7 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
 import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { resolveFlowRefs } from './refs';
-import { createDefaultHandlers } from './handlers';
+import { createDefaultHandlers } from './handlers/index';
 import { toolNodeHandler, type ToolNodeConfig } from './handlers/tool';
 import { runAgentNode } from './engine-agent';
 import { buildIncomingIndex, isNodeLive } from './engine-live';

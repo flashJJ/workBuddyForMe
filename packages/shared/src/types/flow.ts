@@ -3,7 +3,7 @@
  * 图结构的 zod 校验契约见 schemas/flow.ts。
  */
 
-import type { SseEvent } from '../api';
+import type { SseEvent } from '../api/index';
 
 export const FLOW_STATUSES = ['draft', 'published', 'disabled'] as const;
 export type FlowStatus = (typeof FLOW_STATUSES)[number];
@@ -74,7 +74,7 @@ export interface WorkflowVersionView {
   workflowId: string;
   version: number;
   /** FlowGraph 已反序列化 */
-  graph: import('../schemas/flow').FlowGraph;
+  graph: import('../schemas/flow/flow').FlowGraph;
   publishedAt: string | null;
   createdAt: string;
   /** v2.14：版本列表接口附带，是否为当前生产版本 */

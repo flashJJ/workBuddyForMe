@@ -5,7 +5,7 @@ import {
   CARD_LIST_ITEMS_MAX,
   CARD_LIST_ITEM_MAX_CHARS,
   parsedCharacterCardSchema,
-} from '../schemas/character-card';
+} from '../schemas/capability/character-card';
 import { parseCharacterCard } from './parser';
 
 const FULL_CARD = `---

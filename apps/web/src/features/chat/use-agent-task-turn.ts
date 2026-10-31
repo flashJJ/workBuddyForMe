@@ -14,7 +14,7 @@ import {
   type AgentCardEntry,
   type AgentCardState,
   type AgentRunDetail,
-} from '../agent-collab';
+} from '../agent-collab/index';
 import { uiTaskEventBus } from '@/features/events/event-bus';
 import type { PendingToolConfirmation } from './chat-session.types';
 

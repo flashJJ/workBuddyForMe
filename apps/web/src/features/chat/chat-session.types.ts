@@ -1,6 +1,6 @@
 import type { Message, PermissionLevel } from '@wbfm/shared/types';
 import type { RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared/api';
-import type { AgentCardEntry } from '../agent-collab';
+import type { AgentCardEntry } from '../agent-collab/index';
 
 /** v0.6 M2：待用户确认的工具调用（HITL 弹窗数据源） */
 export interface PendingToolConfirmation {

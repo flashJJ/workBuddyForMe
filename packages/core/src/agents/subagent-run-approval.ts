@@ -1,7 +1,7 @@
 import type { AppSettings } from '@wbfm/shared/types';
 import type { SubagentRunView } from '@wbfm/shared/schemas';
 import type { AuditService } from '../governance/audit';
-import { summarizeBinding } from '../governance';
+import { summarizeBinding } from '../governance/index';
 import type { ApprovalRegistry } from '../work-signal/approval-registry';
 import { waitForRunApproval } from './subagent-approval';
 import { buildSubagentGovernance, checkSubagentBinding } from './subagent-governance';

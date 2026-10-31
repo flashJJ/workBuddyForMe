@@ -1,4 +1,4 @@
-import type { Language } from '../constants';
+import type { Language } from '../constants/index';
 import type { PluralRule } from './types';
 
 /**

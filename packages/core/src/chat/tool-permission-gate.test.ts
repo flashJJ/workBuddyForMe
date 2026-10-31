@@ -4,7 +4,7 @@ import {
   DEFAULT_AGENT_POLICY,
   type AgentPolicy,
 } from '@wbfm/shared/schemas';
-import { createWebCipher } from '../secrets';
+import { createWebCipher } from '../secrets/index';
 import { createApprovalRegistry } from '../work-signal/approval-registry';
 import { createPendingConfirmations } from '../services/pending-confirmations';
 import { createPermissionService } from '../services/permission-service';

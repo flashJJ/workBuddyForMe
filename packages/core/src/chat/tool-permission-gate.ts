@@ -10,7 +10,7 @@ import {
   extractDomain,
   extractPathTargets,
   summarizeBinding,
-} from '../governance';
+} from '../governance/index';
 import type { OrchestratorEvent } from './types';
 import type { ToolGateParams, ToolGateResult } from './tool-gate-types';
 import { deniedWithEvent } from './tool-gate-denial';

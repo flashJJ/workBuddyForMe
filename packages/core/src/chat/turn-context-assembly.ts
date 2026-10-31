@@ -25,7 +25,7 @@ import {
   displayLevelOf,
   EMOTION_DIRECTIVE_BLOCK,
   type EmotionService,
-} from '../emotion';
+} from '../emotion/index';
 import { resolveUnlockedNickname } from './persona-prompt';
 import { buildPlanPromptBlock } from '../work-plan/plan-prompt';
 
