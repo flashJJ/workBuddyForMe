@@ -93,6 +93,23 @@ export function createSkillVersionRepository(db: DatabaseInstance) {
         .all(name) as SkillVersionRow[];
     },
 
+    /** v2.15：同一技能 + 版本的全部行（能力包升级重建状态行后可能有多行） */
+    listByNameVersion(name: string, version: string): SkillVersionRow[] {
+      return db
+        .prepare(
+          'SELECT * FROM skill_versions WHERE name = ? AND version = ? ORDER BY created_at DESC, rowid DESC',
+        )
+        .all(name, version) as SkillVersionRow[];
+    },
+
+    /** v2.15：快照目录仍被多少行引用（删除目录前检查） */
+    countByDirPath(dirPath: string): number {
+      const row = db
+        .prepare('SELECT COUNT(*) AS n FROM skill_versions WHERE dir_path = ?')
+        .get(dirPath) as { n: number };
+      return row.n;
+    },
+
     update(id: string, fields: SkillVersionUpdateFields): SkillVersionRow | null {
       const row = this.get(id);
       if (!row) return null;

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, renameSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ApiError } from '@wbfm/shared/errors';
-import type { SkillVersionsResponse } from '@wbfm/shared/schemas';
+import type { SkillVersionsResponse, SkillVersionDeleteResult } from '@wbfm/shared/schemas';
 import { SKILL_VERSION_KEEP, SKILL_VERSION_MAX_BYTES } from '@wbfm/shared/constants';
 import {
   createSkillStateRepository,
@@ -46,6 +46,8 @@ export interface SkillVersionService {
   list(name: string): SkillVersionsResponse;
   /** 原子回退到指定版本快照；成功后 active_version 指向该版本 */
   rollback(name: string, version: string): SkillVersionsResponse;
+  /** v2.15：删除非启用版本的全部状态行与无引用快照目录 */
+  delete(name: string, version: string): SkillVersionDeleteResult;
 }
 
 function compareIsoDesc(a: string, b: string): number {
@@ -99,15 +101,22 @@ export function createSkillVersionService(
 
   function list(name: string): SkillVersionsResponse {
     const state = stateRepo.getByName(name);
-    const versions = representativeRows(name, state?.id ?? null).map((row) => ({
-      id: row.id,
-      version: row.version,
-      checksum: row.checksum,
-      sizeBytes: directorySize(row.dir_path),
-      createdAt: row.created_at,
-      active: state?.activeVersion === row.version,
-    }));
-    return { versions, versioningAvailable: versions.length > 0 };
+    const versions = representativeRows(name, state?.id ?? null).map((row) => {
+      const sizeBytes = directorySize(row.dir_path);
+      return {
+        id: row.id,
+        version: row.version,
+        checksum: row.checksum,
+        sizeBytes,
+        createdAt: row.created_at,
+        active: state?.activeVersion === row.version,
+      };
+    });
+    return {
+      versions,
+      versioningAvailable: versions.length > 0,
+      totalBytes: versions.reduce((sum, item) => sum + item.sizeBytes, 0),
+    };
   }
 
   return {
@@ -206,6 +215,48 @@ export function createSkillVersionService(
       stateRepo.update(state.id, { activeVersion: version });
       prune(name, version);
       return list(name);
+    },
+
+    delete(name, version) {
+      const state = stateRepo.getByName(name);
+      if (!state) throw ApiError.notFound('技能', name);
+      const rows = repo.listByNameVersion(name, version);
+      if (rows.length === 0) {
+        throw new ApiError('SKILL_VERSION_MISSING', `技能 ${name} 的版本 ${version} 快照不存在`);
+      }
+      if (state.activeVersion === version) {
+        throw new ApiError(
+          'SKILL_VERSION_ACTIVE',
+          `技能 ${name} 的版本 ${version} 是当前启用版本，无法删除`,
+        );
+      }
+      if (representativeRows(name, state.id).length <= 1) {
+        throw new ApiError('SKILL_VERSION_LAST', `技能 ${name} 至少需要保留一个版本`);
+      }
+
+      const dirPaths = new Set(rows.map((row) => row.dir_path));
+      for (const row of rows) repo.remove(row.id);
+
+      let freedBytes = 0;
+      let dirDeleted = false;
+      for (const dirPath of dirPaths) {
+        if (repo.countByDirPath(dirPath) > 0 || !existsSync(dirPath)) continue;
+        const sizeBytes = directorySize(dirPath);
+        try {
+          rmSync(dirPath, { recursive: true, force: true });
+        } catch (error) {
+          throw new ApiError(
+            'SKILL_VERSION_DELETE_FAILED',
+            `技能 ${name} 的版本 ${version} 快照目录删除失败：${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+        freedBytes += sizeBytes;
+        dirDeleted = true;
+      }
+
+      return { version, rowsRemoved: rows.length, freedBytes, dirDeleted };
     },
   };
 }

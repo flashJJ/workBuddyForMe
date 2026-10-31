@@ -12,6 +12,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
 import { TtfvPanel } from './ttfv-panel';
 import { DiagnosticsExportButton } from './diagnostics-export-button';
+import { SecretRotationButton } from './secret-rotation-button';
 
 const RELEASES_URL = 'https://github.com/flashJJ/workBuddyForMe/releases';
 
@@ -136,6 +137,7 @@ export function AboutPanel() {
         <p className="text-xs text-muted-foreground">{t('about.desktopOnly')}</p>
         <AboutQuickLinks />
         <DiagnosticsExportButton />
+        <SecretRotationButton />
         <TtfvPanel />
         <Live2DLicenseNotice />
       </section>
@@ -183,6 +185,8 @@ export function AboutPanel() {
       <AboutQuickLinks />
 
       <DiagnosticsExportButton />
+
+      <SecretRotationButton />
 
       <TtfvPanel />
 

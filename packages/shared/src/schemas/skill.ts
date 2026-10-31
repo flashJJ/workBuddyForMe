@@ -117,5 +117,22 @@ export type SkillVersionView = z.infer<typeof skillVersionViewSchema>;
 export const skillVersionsResponseSchema = z.object({
   versions: z.array(skillVersionViewSchema),
   versioningAvailable: z.boolean(),
+  /** v2.15：所有代表版本的磁盘占用之和（共享目录只计一次） */
+  totalBytes: z.number().int().min(0),
 });
 export type SkillVersionsResponse = z.infer<typeof skillVersionsResponseSchema>;
+
+/** v2.15：删除单个非启用版本后的结果 */
+export const skillVersionDeleteResultSchema = z.object({
+  version: z.string(),
+  rowsRemoved: z.number().int().min(0),
+  freedBytes: z.number().int().min(0),
+  dirDeleted: z.boolean(),
+});
+export type SkillVersionDeleteResult = z.infer<typeof skillVersionDeleteResultSchema>;
+
+export const skillVersionDeleteResponseSchema = z.object({
+  deleted: skillVersionDeleteResultSchema,
+  versions: skillVersionsResponseSchema,
+});
+export type SkillVersionDeleteResponse = z.infer<typeof skillVersionDeleteResponseSchema>;

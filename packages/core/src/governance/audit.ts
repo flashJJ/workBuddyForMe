@@ -95,7 +95,8 @@ function parseBinding(json: string | null): OperationBinding | null {
   }
 }
 
-function mapRow(row: AuditEventRow): AuditEventView {
+/** v2.15：归档导出复用同一事件视图映射，保证 JSONL 与既有导出一致 */
+export function mapRow(row: AuditEventRow): AuditEventView {
   return {
     id: row.id,
     seq: row.seq,

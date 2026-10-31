@@ -30,6 +30,21 @@ export const enFlowEditor = {
     loadFailed: 'Failed to load versions',
     empty: 'No saved versions yet',
     createdAt: 'Created {date}',
+    compare: 'Compare',
+    compareFrom: 'Base version',
+    compareTo: 'Target version',
+    compareButton: 'Compare',
+    compareLoading: 'Comparing…',
+    compareFailed: 'Version comparison failed',
+    compareEmpty: 'No differences',
+    compareSummary:
+      'Nodes +{added} / −{removed} / type {typeChanged} / config {configChanged}; edges +{edgesAdded} / −{edgesRemoved}',
+    diffNodesAdded: 'Added nodes',
+    diffNodesRemoved: 'Removed nodes',
+    diffNodesTypeChanged: 'Type changes',
+    diffNodesConfigChanged: 'Config changes',
+    diffEdgesAdded: 'Added edges',
+    diffEdgesRemoved: 'Removed edges',
   },
   toolbar: {
     status: {

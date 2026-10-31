@@ -133,11 +133,15 @@ export {
   skillVersionParamSchema,
   skillVersionViewSchema,
   skillVersionsResponseSchema,
+  skillVersionDeleteResultSchema,
+  skillVersionDeleteResponseSchema,
   type SkillUpdateInput,
   type SkillNameParam,
   type SkillVersionParam,
   type SkillVersionView,
   type SkillVersionsResponse,
+  type SkillVersionDeleteResult,
+  type SkillVersionDeleteResponse,
 } from './skill';
 export {
   COMPUTER_CHANNEL_FILE,
@@ -291,6 +295,26 @@ export {
   type AuditQuery,
   type AuditVerifyResult,
 } from './audit';
+// v2.15 审计归档与外部锚点
+export {
+  AUDIT_ARCHIVE_LIMITS,
+  AUDIT_ANCHOR_VERIFY_CODES,
+  auditArchiveQuerySchema,
+  auditAnchorSchema,
+  auditAnchorRangeSchema,
+  auditAnchorVerifyCodeSchema,
+  auditAnchorVerifyResultSchema,
+  type AuditArchiveQuery,
+  type AuditAnchor,
+  type AuditAnchorRange,
+  type AuditAnchorVerifyCode,
+  type AuditAnchorVerifyResult,
+} from './audit-archive';
+// v2.15 Provider 凭证轮换
+export {
+  secretRotationResultSchema,
+  type SecretRotationResult,
+} from './secrets';
 // v2.12 能力包签名规范化（纯函数）
 export {
   CAPABILITY_SIGNATURE_DOMAIN,
@@ -390,6 +414,13 @@ export {
   type FlowRunCreateInput,
   type FlowHumanSubmitInput,
 } from './flow';
+// v2.15 工作流版本对比
+export {
+  flowGraphDiffSchema,
+  flowVersionCompareQuerySchema,
+  type FlowGraphDiff,
+  type FlowVersionCompareQuery,
+} from './flow-diff';
 // v0.9 Flow Serving 契约（端点/无人值守策略）
 export {
   FLOW_ENDPOINT_SYNC_TIMEOUT,

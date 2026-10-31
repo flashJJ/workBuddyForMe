@@ -53,6 +53,12 @@ export const API = {
   auditEvents: '/api/audit/events',
   auditVerify: '/api/audit/verify',
   auditExport: (format = 'jsonl') => `/api/audit/export?format=${format}`,
+  /** v2.15：区间归档 ZIP 与外部锚点校验 */
+  auditArchive: (from: string, to: string) =>
+    `/api/audit/archive?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+  auditAnchorVerify: '/api/audit/anchor/verify',
+  // v2.15 凭证轮换
+  secretRotate: '/api/secrets/rotate',
   // v2.8 目标 / 计划 / 待办
   goals: '/api/goals',
   goalsByConversation: (conversationId: string) =>
@@ -112,6 +118,9 @@ export const API = {
   skillVersions: (name: string) => `/api/skills/${encodeURIComponent(name)}/versions`,
   skillVersionRollback: (name: string, version: string) =>
     `/api/skills/${encodeURIComponent(name)}/versions/${encodeURIComponent(version)}/rollback`,
+  /** v2.15：删除非启用版本快照 */
+  skillVersionDelete: (name: string, version: string) =>
+    `/api/skills/${encodeURIComponent(name)}/versions/${encodeURIComponent(version)}`,
   toolConfirm: '/api/tools/confirm',
   toolPermissions: '/api/tools/permissions',
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
@@ -154,6 +163,9 @@ export const API = {
   /** v2.4 P0-2：以内置工作流为模板复制草稿 */
   flowClone: (id: string) => `/api/flows/${id}/clone`,
   flowVersions: (id: string) => `/api/flows/${id}/versions`,
+  /** v2.15：版本差异摘要 */
+  flowVersionCompare: (id: string, from: number, to: number) =>
+    `/api/flows/${id}/versions/compare?from=${from}&to=${to}`,
   flowValidate: (id: string) => `/api/flows/${id}/validate`,
   flowPublish: (id: string) => `/api/flows/${id}/publish`,
   /** v2.14：把历史版本设为生产（不改当前草稿） */
@@ -226,6 +238,8 @@ export const QUERY_KEYS = {
   flows: ['flows'] as const,
   flow: (id: string) => ['flows', id] as const,
   flowVersions: (id: string) => ['flows', id, 'versions'] as const,
+  flowVersionCompare: (id: string, from: number, to: number) =>
+    ['flows', id, 'versions', 'compare', from, to] as const,
   flowRun: (id: string) => ['flow-run', id] as const,
   flowEndpoint: (id: string) => ['flow-endpoint', id] as const,
   voiceSettings: ['voice-settings'] as const,

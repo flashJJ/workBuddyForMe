@@ -28,6 +28,15 @@ export const zhAbout = {
   diagnosticsFailed: '诊断包生成失败',
   diagnosticsHint:
     '脱敏诊断包：仅含版本、迁移、审计校验、能力健康、运行统计与配置摘要；不含密钥、对话、记忆与绝对路径，本地生成不上传。',
+  secretRotation: '轮换凭证',
+  secretRotationPending: '轮换中…',
+  secretRotationTitle: '轮换已存凭证',
+  secretRotationConfirmButton: '确认轮换',
+  secretRotationConfirm:
+    '将为所有可解密的 Provider API Key 重新加密。不可解密项会跳过并保留原密文；轮换失败不影响既有调用。Web 轮换本地主密钥，桌面端重新封装 safeStorage 密文。',
+  secretRotationDone: '已重新加密 {rotated} 个凭证；跳过 {skipped} 个，失败 {failed} 个。',
+  secretRotationFailed: '凭证轮换失败',
+  secretRotationHint: '仅处理 Provider API Key；MCP 环境变量与请求头留待后续版本。',
   // v2.4 M1 T7：TTFV 里程碑（本地、可清除）
   ttfv: {
     title: '首次可用用时（TTFV）',
@@ -80,6 +89,16 @@ export const enAbout = {
   diagnosticsFailed: 'Failed to generate diagnostics',
   diagnosticsHint:
     'Redacted diagnostics: versions, migrations, audit verification, capability health, run stats and settings summary. No keys, conversations, memories or absolute paths; generated locally and never uploaded.',
+  secretRotation: 'Rotate credentials',
+  secretRotationPending: 'Rotating…',
+  secretRotationTitle: 'Rotate stored credentials',
+  secretRotationConfirmButton: 'Rotate now',
+  secretRotationConfirm:
+    'Re-encrypt every decryptable Provider API key. Undecryptable entries are skipped and kept as-is; existing calls are not interrupted. Web rotates the local master key; desktop re-seals safeStorage ciphertext.',
+  secretRotationDone: 'Re-encrypted {rotated} credentials; skipped {skipped}, failed {failed}.',
+  secretRotationFailed: 'Credential rotation failed',
+  secretRotationHint:
+    'Provider API keys only; MCP environment variables and headers are planned for a later version.',
   // v2.4 M1 T7 time-to-first-value milestones (local, clearable)
   ttfv: {
     title: 'Time to first value (TTFV)',

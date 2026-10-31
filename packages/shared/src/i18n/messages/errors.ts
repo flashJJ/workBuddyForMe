@@ -11,6 +11,12 @@ export const zhErrors = {
   PROVIDER_TIMEOUT: '模型服务响应超时，请稍后重试。',
   SERVICE_UNAVAILABLE: '治理服务暂不可用，操作已按安全策略拒绝，请检查审计账本后重试。',
   SKILL_VERSION_MISSING: '该技能版本快照不存在，无法回退。',
+  SKILL_VERSION_ACTIVE: '当前启用版本不可删除，请先回退到其他版本。',
+  SKILL_VERSION_LAST: '至少保留一个技能版本，无法删除最后一份快照。',
+  SKILL_VERSION_DELETE_FAILED: '技能快照删除失败，请检查数据目录权限后重试。',
+  AUDIT_ARCHIVE_TOO_LARGE: '审计归档超出范围或事件数上限，请缩小时间区间后重试。',
+  SECRET_ROTATION_UNAVAILABLE: '凭证加密能力不可用，无法轮换已存密钥。',
+  SECRET_ROTATION_FAILED: '凭证轮换失败，已保留原有密文，请稍后重试。',
   SKILL_ROLLBACK_FAILED: '技能回退失败，已尝试恢复原目录。',
   FLOW_VERSION_NOT_FOUND: '该工作流版本不存在，无法设为生产。',
   CAPABILITY_DOWNGRADE_CONFIRM_REQUIRED: '目标版本低于当前版本，请确认降级并指定目标版本。',
@@ -39,6 +45,18 @@ export const enErrors = {
   SERVICE_UNAVAILABLE:
     'The governance service is unavailable. The action was denied by fail-closed policy. Check the audit ledger and retry.',
   SKILL_VERSION_MISSING: 'That skill version snapshot does not exist, so it cannot be restored.',
+  SKILL_VERSION_ACTIVE:
+    'The active skill version cannot be deleted. Roll back to another version first.',
+  SKILL_VERSION_LAST:
+    'At least one skill version must remain; the last snapshot cannot be deleted.',
+  SKILL_VERSION_DELETE_FAILED:
+    'Failed to delete the skill snapshot. Check data directory permissions and retry.',
+  AUDIT_ARCHIVE_TOO_LARGE:
+    'The audit archive exceeds the range or event limit. Narrow the time range and retry.',
+  SECRET_ROTATION_UNAVAILABLE:
+    'Credential encryption is unavailable, so stored secrets cannot be rotated.',
+  SECRET_ROTATION_FAILED:
+    'Credential rotation failed; existing ciphertext was kept. Try again later.',
   SKILL_ROLLBACK_FAILED: 'Skill rollback failed; the original folder was restored if possible.',
   FLOW_VERSION_NOT_FOUND: 'That workflow version does not exist and cannot be set as production.',
   CAPABILITY_DOWNGRADE_CONFIRM_REQUIRED:

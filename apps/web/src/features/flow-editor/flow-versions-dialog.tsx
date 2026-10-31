@@ -5,6 +5,7 @@ import { History } from 'lucide-react';
 import type { WorkflowView } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useToast } from '@/components/common/toast';
 import {
@@ -16,9 +17,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ApiClientError } from '@/lib/api/client';
-import { useFlowMutations, useFlowVersions } from '@/lib/hooks/use-flows';
+import {
+  useFlowMutations,
+  useFlowVersionCompare,
+  useFlowVersions,
+} from '@/lib/hooks/use-flows';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
+import { FlowVersionDiff } from './flow-version-diff';
 
 /** v2.14：工作流版本抽屉——展示当前/生产徽章，并把任意历史版本设为生产 */
 export function FlowVersionsButton({ workflow }: { workflow: WorkflowView }) {
@@ -26,9 +32,24 @@ export function FlowVersionsButton({ workflow }: { workflow: WorkflowView }) {
   const intl = useIntl();
   const [open, setOpen] = React.useState(false);
   const versions = useFlowVersions(workflow.id, open);
+  const [compareFrom, setCompareFrom] = React.useState(
+    workflow.publishedVersion ?? workflow.currentVersion,
+  );
+  const [compareTo, setCompareTo] = React.useState(workflow.currentVersion);
+  const [compareRange, setCompareRange] = React.useState<{ from: number; to: number } | null>(
+    null,
+  );
+  const comparison = useFlowVersionCompare(workflow.id, compareRange);
   const mutations = useFlowMutations();
   const toast = useToast();
   const confirm = useConfirm();
+
+  React.useEffect(() => {
+    if (!open) return;
+    setCompareFrom(workflow.publishedVersion ?? workflow.currentVersion);
+    setCompareTo(workflow.currentVersion);
+    setCompareRange(null);
+  }, [open, workflow.publishedVersion, workflow.currentVersion]);
 
   const setProduction = async (version: number) => {
     if (
@@ -115,6 +136,69 @@ export function FlowVersionsButton({ workflow }: { workflow: WorkflowView }) {
               </ul>
             )}
           </div>
+          {versions.data && versions.data.length > 0 && (
+            <div className="space-y-2 border-t pt-3" data-testid="flow-version-compare">
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="space-y-1">
+                  <span className="block text-xs text-muted-foreground">
+                    {t('flowEditor.versions.compareFrom')}
+                  </span>
+                  <SimpleSelect
+                    value={String(compareFrom)}
+                    onValueChange={(value) => setCompareFrom(Number(value))}
+                    data-testid="flow-compare-from"
+                  >
+                    {versions.data.map((version) => (
+                      <option key={version.id} value={String(version.version)}>
+                        v{version.version}
+                        {version.production ? ` · ${t('flowEditor.versions.production')}` : ''}
+                      </option>
+                    ))}
+                  </SimpleSelect>
+                </div>
+                <span className="pb-2 text-xs text-muted-foreground">→</span>
+                <div className="space-y-1">
+                  <span className="block text-xs text-muted-foreground">
+                    {t('flowEditor.versions.compareTo')}
+                  </span>
+                  <SimpleSelect
+                    value={String(compareTo)}
+                    onValueChange={(value) => setCompareTo(Number(value))}
+                    data-testid="flow-compare-to"
+                  >
+                    {versions.data.map((version) => (
+                      <option key={version.id} value={String(version.version)}>
+                        v{version.version}
+                        {version.version === workflow.currentVersion
+                          ? ` · ${t('flowEditor.versions.current')}`
+                          : ''}
+                      </option>
+                    ))}
+                  </SimpleSelect>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={comparison.isFetching}
+                  onClick={() => setCompareRange({ from: compareFrom, to: compareTo })}
+                  data-testid="flow-compare-run"
+                >
+                  {comparison.isFetching
+                    ? t('flowEditor.versions.compareLoading')
+                    : t('flowEditor.versions.compareButton')}
+                </Button>
+              </div>
+              {comparison.isError && (
+                <p className="text-xs text-destructive">
+                  {t('flowEditor.versions.compareFailed')}
+                </p>
+              )}
+              {comparison.data && (
+                <FlowVersionDiff diff={comparison.data} />
+              )}
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               {t('common.actions.close')}

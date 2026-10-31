@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   skillNameParamSchema,
+  skillVersionDeleteResponseSchema,
   skillVersionParamSchema,
   skillVersionViewSchema,
   skillVersionsResponseSchema,
@@ -22,8 +23,26 @@ describe('v2.14 技能版本契约', () => {
   });
 
   it('版本列表响应：空快照时 versioningAvailable=false 仍合法', () => {
-    expect(skillVersionsResponseSchema.parse({ versions: [], versioningAvailable: false }))
-      .toEqual({ versions: [], versioningAvailable: false });
+    expect(
+      skillVersionsResponseSchema.parse({ versions: [], versioningAvailable: false, totalBytes: 0 }),
+    ).toEqual({ versions: [], versioningAvailable: false, totalBytes: 0 });
+    expect(() =>
+      skillVersionsResponseSchema.parse({ versions: [], versioningAvailable: false }),
+    ).toThrow();
+  });
+
+  it('删除响应：结果字段与剩余版本列表', () => {
+    const parsed = skillVersionDeleteResponseSchema.parse({
+      deleted: { version: '1.0.0', rowsRemoved: 1, freedBytes: 1024, dirDeleted: true },
+      versions: { versions: [], versioningAvailable: false, totalBytes: 0 },
+    });
+    expect(parsed.deleted.freedBytes).toBe(1024);
+    expect(() =>
+      skillVersionDeleteResponseSchema.parse({
+        deleted: { version: '1.0.0', rowsRemoved: -1, freedBytes: 0, dirDeleted: false },
+        versions: { versions: [], versioningAvailable: false, totalBytes: 0 },
+      }),
+    ).toThrow();
   });
 
   it('路径参数：拒绝路径穿越与非法技能名', () => {

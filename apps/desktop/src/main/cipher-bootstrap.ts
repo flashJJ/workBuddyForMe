@@ -132,6 +132,9 @@ export function renderCipherBootstrap(params: CipherBootstrapParams): string {
   }
 
   globalThis.__WBFM_CIPHER__ = {
+    // v2.15：凭证轮换只做 safeStorage 重封装，不更换系统密钥
+    mode: 'desktop',
+    isAvailable: function () { return true; },
     // 加密失败必须抛（保存密钥要让调用方感知）
     encrypt: function (plaintext) { return call(1, plaintext); },
     // 遵循 SecretCipher 契约：解密失败（桥不可用/密文跨密钥体系/损坏）返回 null，

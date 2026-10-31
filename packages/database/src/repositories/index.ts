@@ -132,6 +132,7 @@ export {
   type AuditEventRow,
   type AuditEventAppendFields,
   type AuditEventListFilter,
+  type AuditRangeFilter,
   type AuditChainTail,
 } from './audit-event-repo';
 export {

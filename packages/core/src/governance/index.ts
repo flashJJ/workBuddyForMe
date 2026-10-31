@@ -30,3 +30,9 @@ export {
   type AuditEventListPage,
   type AuditService,
 } from './audit';
+export {
+  buildAuditArchive,
+  type AuditArchiveBundle,
+  type AuditArchiveDeps,
+} from './audit-archive';
+export { verifyAuditAnchor } from './audit-anchor';
