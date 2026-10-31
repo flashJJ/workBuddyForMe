@@ -23,6 +23,17 @@ export interface ToolContext {
   onSubstep?: (substep: ToolSubstep) => void;
   /** v2.8：当前会话 id（todo_write 等会话级工具使用） */
   conversationId?: string;
+  /** v2.13 M5：任务运行 id（隔离网页会话按运行分区） */
+  runId?: string;
+  /** v2.13 M5：当前策略域名规则（desktop 在重定向时复核） */
+  policyDomains?: { allow: string[]; deny: string[] };
+  /** v2.13 M5：工具侧治理事件（浏览器导航被拒等） */
+  governanceAudit?: (input: {
+    kind: 'policy_denied';
+    tool: string;
+    reasonCode: string;
+    outcome?: string;
+  }) => void;
   /** v2.8：写入会话待办清单（未提供时 todo_write 直接拒绝） */
   writeTodos?: (todos: Array<{ title: string; status?: WorkStepStatus }>) => {
     planId: string;

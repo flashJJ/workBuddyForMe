@@ -14,6 +14,8 @@ export const zhApprovals = {
   sourceSubagent: '外部代理',
   run: '运行',
   conversation: '对话',
+  binding: '审批绑定',
+  policyReason: '策略来源',
   noContext: '无关联运行',
   refresh: '刷新',
 };
@@ -33,6 +35,8 @@ export const enApprovals = {
   sourceSubagent: 'External agent',
   run: 'Run',
   conversation: 'Conversation',
+  binding: 'Approval binding',
+  policyReason: 'Policy source',
   noContext: 'No linked run',
   refresh: 'Refresh',
 };

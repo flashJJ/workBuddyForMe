@@ -17,14 +17,13 @@ import type { EventSettingsFields } from '../events/event-settings';
 import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { SubagentCliSettingsFields } from './subagent-settings';
 import type { CapabilitySignatureSettingsFields } from './capability-settings';
+import type { AgentGovernanceSettingsFields } from './agent-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction-graph';
 import type { ToolTraceEntry } from './tool';
-
 export interface Timestamped {
   createdAt: string;
   updatedAt: string;
 }
-
 export interface Provider extends Timestamped {
   id: string;
   name: string;
@@ -200,7 +199,8 @@ export interface AppSettings
   extends EventSettingsFields,
     LocalModeSettingsFields,
     SubagentCliSettingsFields,
-    CapabilitySignatureSettingsFields {
+    CapabilitySignatureSettingsFields,
+    AgentGovernanceSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;

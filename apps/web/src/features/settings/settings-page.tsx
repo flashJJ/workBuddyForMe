@@ -41,6 +41,7 @@ import { RelationshipReportPanel } from './relationship-report-panel';
 import { WorkSignalPanel } from './work-signal-panel';
 import { SubagentPanel } from './subagent-panel';
 import { CapabilityTrustSection } from './capability-trust-section';
+import { AgentGovernanceSection } from './agent-governance-section';
 
 /**
  * 设置页 4 大分组（右侧 sticky 锚点导航）：
@@ -116,6 +117,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         <SkillsPanel key="skills" />,
         <SubagentPanel key="subagent" />,
         <CapabilityTrustSection key="capability-trust" />,
+        <AgentGovernanceSection key="agent-governance" />,
         <TuningPanel key="tuning" />,
       ],
     },

@@ -13,6 +13,8 @@ export interface RegisterApprovalInput {
   tool?: string | null;
   permission?: WorkApproval['permission'];
   argsSummary?: string | null;
+  bindingSummary?: string | null;
+  policyReason?: string | null;
   runId?: string | null;
   conversationId?: string | null;
   createdAt?: string;
@@ -69,6 +71,8 @@ export function createApprovalRegistry(): ApprovalRegistry {
         tool: input.tool ?? null,
         permission: input.permission ?? null,
         argsSummary: input.argsSummary ?? null,
+        bindingSummary: input.bindingSummary ?? null,
+        policyReason: input.policyReason ?? null,
         runId: input.runId ?? null,
         conversationId: input.conversationId ?? null,
         createdAt: input.createdAt ?? new Date().toISOString(),

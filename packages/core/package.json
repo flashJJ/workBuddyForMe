@@ -103,6 +103,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./governance": {
+            "types": "./src/governance/index.ts",
+            "development": "./src/governance/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./session-log": {
             "types": "./src/session-log/index.ts",
             "development": "./src/session-log/index.ts",

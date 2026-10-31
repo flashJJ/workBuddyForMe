@@ -46,6 +46,7 @@ import { enRelationshipReport } from './messages/relationship-report';
 import { enSettingsGraph } from './messages/settings-graph';
 import { enReports } from './messages/reports';
 import { enApprovals } from './messages/approvals';
+import { enAudit } from './messages/audit';
 import { enPlans } from './messages/plans';
 import { enTimeline } from './messages/timeline';
 import { enCapabilities } from './messages/capabilities';
@@ -104,6 +105,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   relationshipReport: enRelationshipReport,
   reports: enReports,
   approvals: enApprovals,
+  audit: enAudit,
   plans: enPlans,
   timeline: enTimeline,
   capabilities: enCapabilities,

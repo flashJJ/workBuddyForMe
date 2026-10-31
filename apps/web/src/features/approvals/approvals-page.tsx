@@ -95,6 +95,16 @@ export function ApprovalsPage() {
                   {approval.argsSummary}
                 </p>
               )}
+              {approval.bindingSummary && (
+                <p className="line-clamp-2 text-xs text-muted-foreground">
+                  {t('approvals.binding')}：{approval.bindingSummary}
+                </p>
+              )}
+              {approval.policyReason && (
+                <p className="text-xs text-muted-foreground">
+                  {t('approvals.policyReason')}：{approval.policyReason}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 {approval.runId
                   ? `${t('approvals.run')}: ${approval.runId}`

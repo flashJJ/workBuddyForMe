@@ -32,6 +32,11 @@ export function getDataRoot(): string {
   return join(homedir(), DATA_DIR_NAME);
 }
 
+/** 获取用户主目录（供工作目录校验等路径规则使用；仍是唯一 OS 路径决策点） */
+export function getHomeDir(): string {
+  return homedir();
+}
+
 /** 拼接数据根内的相对路径 */
 export function resolveDataPath(...segments: string[]): string {
   return join(getDataRoot(), ...segments);

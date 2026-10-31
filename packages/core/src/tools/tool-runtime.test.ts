@@ -60,10 +60,16 @@ describe('工具运行时白名单', () => {
     expect(typeof ctx.retrieve).toBe('function');
   });
 
-  it('listDebugTools 返回 14 个内置工具，每个含 source/permission/description/parameters', () => {
+  it('listDebugTools 返回 20 个内置工具，每个含 source/permission/description/parameters', () => {
     const list = runtime.listDebugTools();
     expect(list.map((t) => t.name).sort()).toEqual([
       'app_launch',
+      'browser_click',
+      'browser_close',
+      'browser_open',
+      'browser_read',
+      'browser_snapshot',
+      'browser_type',
       'current_time',
       'fetch_webpage',
       'keyboard_press',

@@ -1,3 +1,4 @@
+import { isScheduledAgentTask } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
 
@@ -12,5 +13,6 @@ export const dynamic = 'force-dynamic';
 export const GET = defineRoute(({ services }) => {
   services.orchestrator.runRelationshipCheckpoint();
   services.relationshipMilestones.evaluateAll();
-  return jsonOk(services.schedules.listDue());
+  // v2.13 M4：agent_task 只由服务端常驻调度标记，渲染进程不参与，避免双端抢标记丢运行
+  return jsonOk(services.schedules.listDue().filter((task) => !isScheduledAgentTask(task.payload)));
 });

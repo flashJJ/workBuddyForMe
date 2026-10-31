@@ -44,6 +44,7 @@ import type {
 } from '@wbfm/core/session-log';
 import type { createCapabilityService } from '@wbfm/core/capabilities';
 import type { createSubagentProviderRegistry, createSubagentRunService } from '@wbfm/core/agents';
+import type { createAuditService } from '@wbfm/core/governance';
 
 /**
  * v2.7：服务容器契约外迁（拆分守行数门禁）。
@@ -55,6 +56,7 @@ export interface ServiceContainer {
   providers: ReturnType<typeof createProviderService>;
   models: ReturnType<typeof createModelService>;
   settings: ReturnType<typeof createSettingsService>;
+  audit: ReturnType<typeof createAuditService>;
   assistants: ReturnType<typeof createAssistantsService>;
   characterCards: ReturnType<typeof createCharacterCardService>;
   stageScenes: ReturnType<typeof createStageSceneService>;

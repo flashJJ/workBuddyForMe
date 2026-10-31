@@ -24,6 +24,7 @@ export {
   createScreenSnapshotTool,
   screenSnapshotTool,
 } from './computer/screen-snapshot-tool';
+export { createBrowserTools } from './computer/browser-tools';
 export {
   createToolBreaker,
   type ToolBreaker,

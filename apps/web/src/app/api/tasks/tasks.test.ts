@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -105,6 +105,45 @@ describe('任务 API（v0.7 M3-4b）', () => {
     const stopResp = await stopAll(new Request('http://127.0.0.1/x', { method: 'POST' }));
     const stopData = (await stopResp.json()).data;
     expect(stopData.stopped).toBe(0);
+  });
+
+  it('POST /api/tasks 默认 confirm_each、无工作目录', async () => {
+    const created = await createTask(jsonRequest({ conversationId, goal: '默认模式' }));
+    const run = (await created.json()).data;
+    expect(run.permissionMode).toBe('confirm_each');
+    expect(run.workspacePath).toBeNull();
+    expect(run.originScheduledTaskId).toBeNull();
+  });
+
+  it('POST /api/tasks 校验工作目录与 full_access 确认', async () => {
+    const workspace = mkdtempSync(join(tmpdir(), 'wbfm-task-ws-'));
+    try {
+      const ok = await createTask(
+        jsonRequest({
+          conversationId,
+          goal: '带目录',
+          permissionMode: 'plan_only',
+          workspacePath: workspace,
+        }),
+      );
+      expect(ok.status).toBe(201);
+      const run = (await ok.json()).data;
+      expect(run.permissionMode).toBe('plan_only');
+      expect(run.workspacePath).toBe(workspace);
+
+      const missingAck = await createTask(
+        jsonRequest({ conversationId, goal: '全放', permissionMode: 'full_access' }),
+      );
+      expect(missingAck.status).toBe(422);
+      expect((await missingAck.json()).error.code).toBe('VALIDATION_ERROR');
+
+      const invalid = await createTask(
+        jsonRequest({ conversationId, goal: '坏目录', workspacePath: 'relative/path' }),
+      );
+      expect(invalid.status).toBe(422);
+    } finally {
+      rmSync(workspace, { recursive: true, force: true });
+    }
   });
 
   it('POST /api/tasks 对不存在会话返回 404', async () => {

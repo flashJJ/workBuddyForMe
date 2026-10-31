@@ -17,6 +17,7 @@ import { createNutInputBackend } from './input';
 import { listUiaElements } from './uia';
 import { focusWindow, launchApp, listWindows } from './windows';
 import { createClickOverlay, type ClickOverlay } from './overlay';
+import { createBrowserSessionManager } from '../browser/browser-session';
 
 export interface ComputerControl {
   /** 通道服务；启动失败降级时为 null（决定退出期是否需要异步回收） */
@@ -35,8 +36,10 @@ export async function startComputerControl(deps: {
   let overlay: ClickOverlay | null = null;
   let channel: ComputerChannel | null = null;
   let discoveryFile: string | null = null;
+  const browserSessions = createBrowserSessionManager();
 
   const shutdownSync = (): void => {
+    browserSessions.closeAll();
     overlay?.close();
     overlay = null;
     if (discoveryFile) {
@@ -86,6 +89,13 @@ export async function startComputerControl(deps: {
       windowFocus: async (a) => (await focusWindow(a), { ok: true as const }),
       appLaunch: async (a) => (await launchApp(a), { ok: true as const }),
       uiaList: (a) => listUiaElements(a),
+      // v2.13 M5：隔离网页（每个 runId 独立临时 session；closeAll 由 shutdownSync 回收）
+      browserOpen: (a) => browserSessions.open(a),
+      browserRead: (a) => browserSessions.read(a),
+      browserSnapshot: (a) => browserSessions.snapshot(a),
+      browserClick: (a) => browserSessions.click(a),
+      browserType: (a) => browserSessions.type(a),
+      browserClose: (a) => browserSessions.close(a.runId),
     };
     channel = await startComputerChannel({ handlers });
     discoveryFile = resolveComputerChannelFile(deps.userDataDir, deps.isPackaged);

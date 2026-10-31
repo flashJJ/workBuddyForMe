@@ -2,6 +2,7 @@ export {
   DATA_DIR_NAME,
   DATA_ROOT_ENV,
   getDataRoot,
+  getHomeDir,
   resolveDataPath,
   setDataRootForTest,
   resetDataRootForTest,

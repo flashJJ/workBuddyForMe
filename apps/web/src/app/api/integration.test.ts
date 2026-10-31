@@ -27,11 +27,7 @@ import { GET as getMessages } from './conversations/[id]/messages/route';
 import { POST as streamChat } from './chat/stream/route';
 
 const jsonRequest = (body: unknown, method = 'POST') =>
-  new Request('http://127.0.0.1/x', {
-    method,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  new Request('http://127.0.0.1/x', { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 const paramCtx = (id: string) => ({ params: Promise.resolve({ id }) });
 
@@ -194,6 +190,7 @@ describe('API 集成测试全集（TR-33.1）', () => {
       ['CONFLICT', 409],
       ['PROVIDER_ERROR', 502],
       ['PROVIDER_TIMEOUT', 504],
+      ['SERVICE_UNAVAILABLE', 503],
       ['INTERNAL_ERROR', 500],
     ];
     expect(Object.keys(ERROR_CODES)).toHaveLength(expectations.length + 3); // 另含 422/501×2 三个补充码

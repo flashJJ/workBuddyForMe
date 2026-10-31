@@ -120,6 +120,14 @@ export {
   type SessionEventAppendInput,
 } from './session-event-repo';
 export {
+  createAuditEventRepository,
+  type AuditEventRepository,
+  type AuditEventRow,
+  type AuditEventAppendFields,
+  type AuditEventListFilter,
+  type AuditChainTail,
+} from './audit-event-repo';
+export {
   createWorkPlanRepository,
   type WorkPlanRepository,
   type GoalRow,

@@ -95,6 +95,7 @@ export function ReminderPanel() {
                 <div className="text-[11px] text-muted-foreground">
                   {emojiOf(reminder.assistantId) ? `${emojiOf(reminder.assistantId)} ` : ''}
                   {nameOf(reminder.assistantId)} · {scheduleLabel(reminder)}
+                  {reminder.payload?.kind === 'agent_task' && ` · ${t('reminders.agentBadge')}`}
                   {!reminder.enabled && onceFired(reminder) && ` · ${t('reminders.statusDone')}`}
                 </div>
               </div>

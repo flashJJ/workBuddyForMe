@@ -42,7 +42,8 @@ export async function* runToolCallLoop(
 
   for (const call of calls) {
     const name = call.function.name;
-    const argsSummary = summarizeArgs(name, safeParseArgs(call));
+    const parsedArgs = safeParseArgs(call);
+    const argsSummary = summarizeArgs(name, parsedArgs);
     const tool = toolMap.get(name);
     // v0.6 M4：解析来源与权限（toolMap 可能不含该工具——未知工具名走 unknownToolResult）
     const resolved = runtime.resolveTool(name);
@@ -56,6 +57,7 @@ export async function* runToolCallLoop(
       toolName: name,
       callId: call.id,
       argsSummary,
+      args: parsedArgs,
       assistantId,
       taskScope: params.taskScope,
       signal,

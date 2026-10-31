@@ -32,21 +32,14 @@ import { createChatOrchestrator } from '@wbfm/core/chat';
 import { createCapabilityServiceForApp } from './capability-wiring';
 import { createSubagentRunsForApp } from './subagent-wiring';
 import { createMilestoneService } from '@wbfm/core/emotion';
-import { createAgentRunService } from '@wbfm/core/agents';
-import {
-  createMeetingClosureService,
-  createMeetingService,
-} from '@wbfm/core/meeting';
+import { createAgentRunService, createSubagentProviderRegistry } from '@wbfm/core/agents';
+import { createMeetingClosureService, createMeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
-import {
-  createCompileRunnerService,
-  createKnowledgeGovernanceService,
-  ensureStarterKnowledgeBases,
-} from '@wbfm/core/knowledge';
+import { createCompileRunnerService, createKnowledgeGovernanceService, ensureStarterKnowledgeBases } from '@wbfm/core/knowledge';
 import { createMcpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService } from '@wbfm/core/memory';
 import { createSchedulesService } from '@wbfm/core/scheduler';
@@ -56,26 +49,25 @@ import {
 } from '@wbfm/core/event';
 import { createSkillService } from '@wbfm/core/skills';
 import { registerExitCleanup } from './container-exit';
+import { ensureServerScheduler } from './server-scheduler';
+import { closeBrowserSession } from './browser-session-close';
 import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
 import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
 import { createCapabilityService } from '@wbfm/core/capabilities';
-import { createSubagentProviderRegistry } from '@wbfm/core/agents';
-
+import { createAuditService } from '@wbfm/core/governance';
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
 
 let container: ServiceContainer | null = null;
-
 /**
  * dev 模式下 Next 按需编译/HMR 会重新求值本模块，模块级 container 会重置为 null，
  * 导致 SSE 长连接持有旧 flowRunner（含人工等待器）而 POST 路由拿到新实例。
  * 额外在 globalThis 上保留同一单例，使模块重载后仍复用原容器（生产模式无影响）。
  */
 const globalHolder = globalThis as { __WBFM_SERVICE_CONTAINER__?: ServiceContainer };
-
 function readContainer(): ServiceContainer | null {
   return container ?? globalHolder.__WBFM_SERVICE_CONTAINER__ ?? null;
 }
@@ -120,6 +112,11 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     breakers,
     taskGrants,
   };
+  const audit = createAuditService(db);
+  deps.audit = audit;
+  deps.closeBrowserSession = closeBrowserSession;
+  const settingsService = createSettingsService(deps);
+  deps.agentPolicy = () => settingsService.get().agentPolicy!;
   const sessionLog = createSessionLogService(deps);
   deps.events = sessionLog;
   const sessionExport = createSessionExportService(deps, sessionLog);
@@ -252,7 +249,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     flowRunner,
     providers: createProviderService(deps),
     models: createModelService(deps),
-    settings: createSettingsService(deps),
+    settings: settingsService,
+    audit,
     assistants,
     characterCards: createCharacterCardService(deps),
     stageScenes,
@@ -281,6 +279,8 @@ export function getServices(): ServiceContainer {
   const created = build(initDatabase(), resolveCipher());
   writeContainer(created);
   registerExitCleanup(created.mcp);
+  // v2.13 M4：服务端常驻调度接管定时 Agent（测试环境不启动）
+  if (process.env.NODE_ENV !== 'test') ensureServerScheduler(created);
   // 按仓储现状对齐 MCP 连接（异步，不阻塞首请求）
   created.mcp.reconcile();
   // 技能包启动对齐：播种内置示例 + 扫盘登记（本地文件扫描，同步快速完成）

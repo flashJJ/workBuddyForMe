@@ -1,4 +1,8 @@
-import type { ScheduledTaskPayload, ScheduledTaskView } from '@wbfm/shared/schemas';
+import {
+  scheduledTaskPayloadSchema,
+  type ScheduledTaskPayload,
+  type ScheduledTaskView,
+} from '@wbfm/shared/schemas';
 
 /** scheduled_tasks 表行（蛇形列名；见 v024 迁移） */
 export interface ScheduledTaskRow {
@@ -23,8 +27,8 @@ export interface ScheduledTaskRow {
 function parsePayload(raw: string | null): ScheduledTaskPayload | null {
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as ScheduledTaskPayload;
-    return parsed && parsed.kind === 'follow_up' ? parsed : null;
+    const parsed = scheduledTaskPayloadSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }

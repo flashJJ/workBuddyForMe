@@ -15,12 +15,15 @@ import {
   CAPABILITY_SIGNATURE_POLICIES,
   CAPABILITY_TRUSTED_KEYS_MAX,
   capabilityTrustedKeySchema,
+  DEFAULT_AGENT_POLICY,
+  resolveAgentPolicy,
   type CapabilitySignaturePolicy,
   type CapabilityTrustedKey,
   type InteractionGraphOverride,
   type SettingsUpdateInput,
 } from '@wbfm/shared/schemas';
 import { assertTrustedKeysImportable } from '../capabilities/signature';
+import { agentPolicyHash } from '../governance/policy';
 import {
   createModelRepository,
   createSettingsRepository,
@@ -77,6 +80,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // v2.12：默认只提醒不阻断；信任库初始为空（全部包显示「未签名/未知密钥」）
   capabilitySignaturePolicy: 'warn',
   capabilityTrustedKeys: [],
+  // v2.13：默认每次确认；无人值守白名单不含 full_access
+  agentPolicy: DEFAULT_AGENT_POLICY,
 };
 
 /** 服务端钳制签名策略：手改 settings_kv 的非法值一律回落 warn */
@@ -180,7 +185,7 @@ export function resolveSubagentCliMaxOutputBytes(value: unknown): number {
   );
 }
 
-export function createSettingsService({ db }: ServiceDeps) {
+export function createSettingsService({ db, audit }: ServiceDeps) {
   const settings = createSettingsRepository(db);
   const models = createModelRepository(db);
 
@@ -212,6 +217,7 @@ export function createSettingsService({ db }: ServiceDeps) {
         merged.capabilitySignaturePolicy,
       );
       merged.capabilityTrustedKeys = resolveCapabilityTrustedKeys(merged.capabilityTrustedKeys);
+      merged.agentPolicy = resolveAgentPolicy(merged.agentPolicy);
       return merged;
     },
 
@@ -255,6 +261,20 @@ export function createSettingsService({ db }: ServiceDeps) {
       }
       const next = { ...current, ...effective };
       settings.setJson(SETTINGS_KEY, next);
+      // v2.13 M3：策略变更写审计（旧 / 新哈希；失败不阻断保存，账本是旁路证据）
+      if (effective.agentPolicy !== undefined) {
+        const nextHash = agentPolicyHash(resolveAgentPolicy(next.agentPolicy));
+        const prevHash = current.agentPolicy
+          ? agentPolicyHash(resolveAgentPolicy(current.agentPolicy))
+          : null;
+        audit?.safeAppend({
+          kind: 'policy_updated',
+          actor: 'user',
+          decision: 'allow',
+          policyHash: nextHash,
+          outcome: prevHash ? `${prevHash} -> ${nextHash}` : nextHash,
+        });
+      }
       // v2.4 M1 T7：里程碑必须在本次 setJson 之后记录，否则会被上面这行覆盖
       if (demoJustEnabled) {
         recordMilestone(db, 'firstModelReadyAt');

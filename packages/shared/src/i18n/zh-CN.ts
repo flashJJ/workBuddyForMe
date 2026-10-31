@@ -45,6 +45,7 @@ import { zhRelationshipReport } from './messages/relationship-report';
 import { zhSettingsGraph } from './messages/settings-graph';
 import { zhReports } from './messages/reports';
 import { zhApprovals } from './messages/approvals';
+import { zhAudit } from './messages/audit';
 import { zhPlans } from './messages/plans';
 import { zhTimeline } from './messages/timeline';
 import { zhCapabilities } from './messages/capabilities';
@@ -104,6 +105,7 @@ export const zhCN = {
   relationshipReport: zhRelationshipReport,
   reports: zhReports,
   approvals: zhApprovals,
+  audit: zhAudit,
   plans: zhPlans,
   timeline: zhTimeline,
   capabilities: zhCapabilities,

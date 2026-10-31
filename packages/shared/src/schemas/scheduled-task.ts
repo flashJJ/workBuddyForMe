@@ -5,22 +5,51 @@
  * nextRunAt 为服务端按 computeNextRunMs 换算的 UTC ISO，tick 只比较它。
  */
 import { z } from 'zod';
+import { AGENT_WORKSPACE_PATH_MAX, agentPermissionModeSchema } from './agent-permission';
 
 export const SCHEDULE_KINDS = ['once', 'daily', 'weekly'] as const;
 export const DEFAULT_SCHEDULE_TIMEZONE = 'Asia/Shanghai';
 export const SCHEDULE_TEXT_MAX = 200;
+export const SCHEDULE_AGENT_GOAL_MAX = 2000;
+export const SCHEDULE_NOTIFY_CHANNELS = ['work_signal', 'desktop', 'none'] as const;
 
 const hourSchema = z.number().int().min(0).max(23);
 const minuteSchema = z.number().int().min(0).max(59);
 
 /** v2.8 定时跟进附带上下文；普通提醒为 null */
-export const scheduledTaskPayloadSchema = z.object({
+export const scheduledTaskFollowUpPayloadSchema = z.object({
   kind: z.literal('follow_up'),
   conversationId: z.string().min(1).optional(),
   planId: z.string().min(1).optional(),
   runId: z.string().min(1).optional(),
 });
+
+/** v2.13 M4：定时 Agent 任务（无人值守；不进入 full_access） */
+export const scheduledAgentTaskPayloadSchema = z.object({
+  kind: z.literal('agent_task'),
+  goal: z.string().trim().min(1).max(SCHEDULE_AGENT_GOAL_MAX),
+  conversationId: z.string().min(1),
+  assistantId: z.string().min(1).optional(),
+  permissionMode: agentPermissionModeSchema,
+  workspacePath: z.string().trim().min(1).max(AGENT_WORKSPACE_PATH_MAX).optional(),
+  maxSteps: z.number().int().min(1).max(50).optional(),
+  notify: z.enum(SCHEDULE_NOTIFY_CHANNELS).default('work_signal'),
+});
+
+/** 判别联合：普通提醒 follow_up ｜ 定时 Agent agent_task */
+export const scheduledTaskPayloadSchema = z.discriminatedUnion('kind', [
+  scheduledTaskFollowUpPayloadSchema,
+  scheduledAgentTaskPayloadSchema,
+]);
 export type ScheduledTaskPayload = z.infer<typeof scheduledTaskPayloadSchema>;
+export type ScheduledAgentTaskPayload = z.infer<typeof scheduledAgentTaskPayloadSchema>;
+
+/** 类型收窄：仅 agent_task 参与服务端调度 */
+export function isScheduledAgentTask(
+  payload: ScheduledTaskPayload | null | undefined,
+): payload is ScheduledAgentTaskPayload {
+  return payload?.kind === 'agent_task';
+}
 
 export const scheduledTaskCreateSchema = z
   .object({

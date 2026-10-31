@@ -34,6 +34,12 @@ function clientWith(run: ComputerChannelClient['snapshot']): ComputerChannelClie
     windowFocus: unavailable,
     appLaunch: unavailable,
     uiaList: unavailable,
+    browserOpen: unavailable,
+    browserRead: unavailable,
+    browserSnapshot: unavailable,
+    browserClick: unavailable,
+    browserType: unavailable,
+    browserClose: unavailable,
   };
 }
 

@@ -7,7 +7,7 @@ describe('v035 迁移：meeting_conclusions + meeting_action_items', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(40);
+    expect(LATEST_SCHEMA_VERSION).toBe(41);
     for (const table of ['meeting_conclusions', 'meeting_action_items']) {
       const rows = db
         .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)

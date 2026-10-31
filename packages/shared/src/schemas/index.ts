@@ -171,6 +171,18 @@ export {
   type UiaListResponse,
   type InputActionResponse,
 } from './computer';
+// v2.13 M5 隔离网页会话
+export * from './browser';
+export { matchesDomainRule } from './domain-rule';
+export {
+  AGENT_PERMISSION_MODES,
+  AGENT_UNATTENDED_MODES,
+  AGENT_WORKSPACE_PATH_MAX,
+  DEFAULT_AGENT_PERMISSION_MODE,
+  agentPermissionModeSchema,
+  type AgentPermissionMode,
+  type AgentUnattendedMode,
+} from './agent-permission';
 export {
   TASK_RUN_STATUSES,
   TASK_STOP_REASONS,
@@ -231,6 +243,46 @@ export {
   type ReportWidgetMetric,
 } from './capability';
 
+// v2.13 通用 canonical JSON
+export { canonicalJson } from './canonical-json';
+// v2.13 Agent 治理策略 / 审批绑定
+export {
+  AGENT_POLICY_RULE_LENGTH,
+  AGENT_POLICY_RULE_MAX,
+  AGENT_POLICY_VERSION,
+  DEFAULT_AGENT_POLICY,
+  agentPolicySchema,
+  resolveAgentPolicy,
+  type AgentPolicy,
+  type AgentPolicyDecision,
+  type AgentPolicyEvaluationInput,
+} from './agent-policy';
+export {
+  operationBindingSchema,
+  type ApprovalBindingSummary,
+  type OperationBinding,
+} from './agent-binding';
+// v2.13 执行审计账本
+export {
+  AUDIT_ACTORS,
+  AUDIT_CHAIN_BROKEN,
+  AUDIT_DECISIONS,
+  AUDIT_EVENT_KINDS,
+  AUDIT_GENESIS_HASH,
+  AUDIT_UNAVAILABLE,
+  auditActorSchema,
+  auditDecisionSchema,
+  auditEventKindSchema,
+  auditEventViewSchema,
+  auditQuerySchema,
+  auditVerifyResultSchema,
+  type AuditActor,
+  type AuditDecision,
+  type AuditEventKind,
+  type AuditEventView,
+  type AuditQuery,
+  type AuditVerifyResult,
+} from './audit';
 // v2.12 能力包签名规范化（纯函数）
 export {
   CAPABILITY_SIGNATURE_DOMAIN,

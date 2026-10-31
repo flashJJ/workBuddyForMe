@@ -20,6 +20,8 @@ export interface RunApprovalContext {
 export function waitForRunApproval(
   approvals: ApprovalRegistry,
   context: RunApprovalContext,
+  bindingSummary?: string,
+  policyReason?: string,
 ): Promise<RunApprovalOutcome> {
   const { run, timeoutMs } = context;
   return new Promise((resolve) => {
@@ -40,6 +42,8 @@ export function waitForRunApproval(
         tool: 'subagent',
         permission: 'danger',
         argsSummary: run.goal.slice(0, 200),
+        ...(bindingSummary ? { bindingSummary } : {}),
+        ...(policyReason ? { policyReason } : {}),
         runId: run.id,
         conversationId: run.conversationId,
         expiresAt: new Date(Date.now() + timeoutMs).toISOString(),
@@ -58,12 +62,18 @@ export function waitForRunApproval(
   });
 }
 
+export interface PermissionAuditHooks {
+  onRequested?: (frameId: string) => void;
+  onSettled?: (frameId: string, allowed: boolean) => void;
+}
+
 export function requestSubagentPermission(
   approvals: ApprovalRegistry,
   run: SubagentRunView,
   frame: { id: string; title: string; detail?: string },
   signal: AbortSignal,
   timeoutMs: number,
+  hooks?: PermissionAuditHooks,
 ): Promise<boolean> {
   return new Promise((resolve) => {
     const id = `${run.id}:perm:${frame.id}`;
@@ -75,6 +85,7 @@ export function requestSubagentPermission(
       if (timers.current) clearTimeout(timers.current);
       signal.removeEventListener('abort', onAbort);
       handle.remove();
+      hooks?.onSettled?.(frame.id, allow);
       resolve(allow);
     };
     const onAbort = (): void => {
@@ -101,6 +112,7 @@ export function requestSubagentPermission(
       finish(false);
     }, timeoutMs);
     timers.current.unref?.();
+    hooks?.onRequested?.(frame.id);
     if (signal.aborted) onAbort();
     else signal.addEventListener('abort', onAbort, { once: true });
   });
