@@ -1,11 +1,21 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { ApiError } from '@wbfm/shared/errors';
 import { buildTestPack, hashOf } from './capability-test-helpers';
 import { createUpgradeTestContext } from './capability-upgrade-test-helpers';
 import { compareCapabilityVersions } from './upgrade';
 
 type TestContext = ReturnType<typeof createUpgradeTestContext>;
+
+function catchError(fn: () => unknown): ApiError | null {
+  try {
+    fn();
+    return null;
+  } catch (error) {
+    return error as ApiError;
+  }
+}
 
 function skillPack(version: string, description = '技能'): Uint8Array {
   const skill = JSON.stringify({ name: 'guard-skill', description });
@@ -73,10 +83,18 @@ describe('v2.12 能力包升级守卫与回滚', () => {
     expect(compareCapabilityVersions('v2.0', '1.0.0')).toBeNull();
   });
 
-  it('同版本、降级、非法版本、id 不符均 422', () => {
+  it('同版本、降级、非法版本、id 不符均拒绝', () => {
     const installed = ctx.service.install(skillPack('1.0.0'));
-    expect(() => ctx.service.upgrade(installed.id, skillPack('1.0.0'))).toThrow(/严格递增/);
-    expect(() => ctx.service.upgrade(installed.id, skillPack('0.9.0'))).toThrow(/严格递增/);
+    const sameVersion = catchError(() => ctx.service.upgrade(installed.id, skillPack('1.0.0')));
+    expect(sameVersion).toMatchObject({ code: 'CAPABILITY_VERSION_NOT_NEWER', status: 422 });
+    expect((sameVersion?.details as { repairAvailable?: boolean }).repairAvailable).toBe(false);
+
+    const downgrade = catchError(() =>
+      ctx.service.upgrade(installed.id, skillPack('0.9.0', '旧内容')),
+    );
+    expect(downgrade).toMatchObject({ code: 'CAPABILITY_DOWNGRADE_CONFIRM_REQUIRED', status: 422 });
+    expect(downgrade?.details).toMatchObject({ targetVersion: '0.9.0' });
+
     expect(() => ctx.service.upgrade(installed.id, skillPack('v2.0'))).toThrow(/版本格式非法/);
 
     const otherId = buildTestPack(
@@ -95,11 +113,69 @@ describe('v2.12 能力包升级守卫与回滚', () => {
     expect(() => ctx.service.upgrade(installed.id, otherId)).toThrow(/清单 id 与目标不一致/);
   });
 
-  it('启用中的从属包声明旧版本：升级 409', () => {
+  it('降级需确认且目标版本一致；确认后成功并标记 direction', () => {
+    const installed = ctx.service.install(skillPack('2.0.0', 'v2 内容'));
+    expect(installed.version).toBe('2.0.0');
+
+    const mismatch = catchError(() =>
+      ctx.service.upgrade(installed.id, skillPack('1.0.0', '旧内容'), {
+        confirmDowngrade: true,
+        expectedVersion: '2.0.0',
+      }),
+    );
+    expect(mismatch).toMatchObject({ code: 'CAPABILITY_DOWNGRADE_TARGET_MISMATCH', status: 422 });
+
+    const after = ctx.service.upgrade(installed.id, skillPack('1.0.0', '旧内容'), {
+      confirmDowngrade: true,
+      expectedVersion: '1.0.0',
+    });
+    expect(after.upgrade.direction).toBe('downgrade');
+    expect(after.capability.version).toBe('1.0.0');
+  });
+
+  it('同版本内容变化：repair=true 修复安装，内容一致时拒绝', () => {
+    const installed = ctx.service.install(skillPack('1.0.0', '旧内容'));
+    const probe = catchError(() => ctx.service.upgrade(installed.id, skillPack('1.0.0', '新内容')));
+    expect(probe).toMatchObject({ code: 'CAPABILITY_VERSION_NOT_NEWER', status: 422 });
+    expect((probe?.details as { repairAvailable?: boolean }).repairAvailable).toBe(true);
+
+    const repaired = ctx.service.upgrade(installed.id, skillPack('1.0.0', '新内容'), {
+      repair: true,
+    });
+    expect(repaired.upgrade.direction).toBe('repair');
+    expect(ctx.skills.list().find((item) => item.name === 'guard-skill')?.manifest?.description).toBe(
+      '新内容',
+    );
+    const installedManifest = ctx.service.list().find((item) => item.id === installed.id);
+    expect(installedManifest?.version).toBe('1.0.0');
+
+    const identical = catchError(() =>
+      ctx.service.upgrade(installed.id, skillPack('1.0.0', '新内容'), { repair: true }),
+    );
+    expect(identical).toMatchObject({ code: 'CAPABILITY_VERSION_NOT_NEWER' });
+  });
+
+  it('启用中的从属包声明旧版本：升级 409 并返回依赖方 id', () => {
     const installed = ctx.service.install(skillPack('1.0.0'));
-    ctx.service.install(childPack('1.0.0'));
-    expect(() => ctx.service.upgrade(installed.id, skillPack('2.0.0'))).toThrow(/仍声明旧版本/);
+    const child = ctx.service.install(childPack('1.0.0'));
+    const error = catchError(() => ctx.service.upgrade(installed.id, skillPack('2.0.0')));
+    expect(error).toMatchObject({ code: 'CAPABILITY_DEPENDENTS_ACTIVE', status: 409 });
+    expect((error?.details as { dependents?: string[] }).dependents).toEqual([child.id]);
     expect(ctx.service.list().find((item) => item.id === installed.id)?.version).toBe('1.0.0');
+  });
+
+  it('降级遇到启用中的反向依赖：409 拒绝且不自动禁用依赖方', () => {
+    const parent = ctx.service.install(skillPack('2.0.0', 'v2 内容'));
+    const child = ctx.service.install(childPack('2.0.0'));
+    const error = catchError(() =>
+      ctx.service.upgrade(parent.id, skillPack('1.0.0', '旧内容'), {
+        confirmDowngrade: true,
+        expectedVersion: '1.0.0',
+      }),
+    );
+    expect(error).toMatchObject({ code: 'CAPABILITY_DEPENDENTS_ACTIVE', status: 409 });
+    expect((error?.details as { dependents?: string[] }).dependents).toEqual([child.id]);
+    expect(ctx.service.list().find((item) => item.id === child.id)?.status).toBe('enabled');
   });
 
   it('禁用从属包不阻塞升级，但响应列出受影响包', () => {

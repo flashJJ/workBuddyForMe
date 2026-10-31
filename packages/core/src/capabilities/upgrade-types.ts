@@ -20,11 +20,23 @@ export interface CapabilityUpgradeInput {
   effects: CapabilityEffectDeps;
   rootDir: string;
   hooks: CapabilityUpgradeHooks;
+  /** v2.14：降级必须显式确认，且 expectedVersion 必须等于包内版本 */
+  confirmDowngrade?: boolean;
+  expectedVersion?: string;
+  /** v2.14：同版本内容变化时显式修复安装 */
+  repair?: boolean;
 }
+
+export type CapabilityUpgradeDirection = 'upgrade' | 'downgrade' | 'repair';
 
 export interface CapabilityUpgradeResult {
   capability: CapabilityView;
-  upgrade: { from: string; to: string; affectedDisabledDependents: string[] };
+  upgrade: {
+    from: string;
+    to: string;
+    direction: CapabilityUpgradeDirection;
+    affectedDisabledDependents: string[];
+  };
 }
 
 export interface UpgradeSnapshot {

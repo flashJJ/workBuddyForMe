@@ -254,13 +254,18 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
       repo.remove(id);
     },
 
-    upgrade(id: string, buffer: Uint8Array): CapabilityUpgradeResult {
+    upgrade(
+      id: string,
+      buffer: Uint8Array,
+      options: { confirmDowngrade?: boolean; expectedVersion?: string; repair?: boolean } = {},
+    ): CapabilityUpgradeResult {
       return upgradeCapability({
         id,
         buffer,
         repo,
         effects,
         rootDir,
+        ...options,
         hooks: {
           assertSignature: (manifest) =>
             assertManifestSignature(manifest, signatureContext(deps)),

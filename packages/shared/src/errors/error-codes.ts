@@ -19,6 +19,14 @@ export const ERROR_CODES = {
   SKILL_ROLLBACK_FAILED: 500,
   /** v2.14：工作流版本不存在，无法设为生产 */
   FLOW_VERSION_NOT_FOUND: 404,
+  /** v2.14：降级安装缺少二次确认 */
+  CAPABILITY_DOWNGRADE_CONFIRM_REQUIRED: 422,
+  /** v2.14：降级目标版本与确认版本不一致 */
+  CAPABILITY_DOWNGRADE_TARGET_MISMATCH: 422,
+  /** v2.14：启用中的能力包仍依赖当前版本，拒绝降级 */
+  CAPABILITY_DEPENDENTS_ACTIVE: 409,
+  /** v2.14：版本未变化且不满足修复条件 */
+  CAPABILITY_VERSION_NOT_NEWER: 422,
   INTERNAL_ERROR: 500,
 } as const;
 

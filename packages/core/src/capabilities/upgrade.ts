@@ -22,15 +22,17 @@ import {
   cleanupDirs,
   writeStaging,
 } from './upgrade-preflight';
+import { assertUpgradeDirection } from './upgrade-direction';
 import {
-  compareCapabilityVersions,
   upgradeErrorMessage,
+  type CapabilityUpgradeDirection,
   type CapabilityUpgradeInput,
   type CapabilityUpgradeResult,
   type UpgradeSnapshot,
 } from './upgrade-types';
 
 export type {
+  CapabilityUpgradeDirection,
   CapabilityUpgradeHooks,
   CapabilityUpgradeInput,
   CapabilityUpgradeResult,
@@ -170,19 +172,20 @@ export function upgradeCapability(input: CapabilityUpgradeInput): CapabilityUpgr
   if (manifest.kind !== capability.kind) {
     throw ApiError.validation(`升级不允许修改 kind：${capability.kind} → ${manifest.kind}`);
   }
-  const compared = compareCapabilityVersions(manifest.version, capability.version);
-  if (compared === null) throw ApiError.validation(`版本格式非法：${manifest.version}`);
-  if (compared <= 0) {
-    throw ApiError.validation(
-      `升级版本必须严格递增：当前 ${capability.version}，新版本 ${manifest.version}`,
-    );
-  }
+  const direction: CapabilityUpgradeDirection = assertUpgradeDirection(oldManifest, manifest, {
+    currentVersion: capability.version,
+    ...input,
+  });
   hooks.assertSignature(manifest);
   assertDependencies(repo, manifest);
 
   const enabledDependents = affectedDependents(repo, id, manifest.version, 'enabled');
   if (enabledDependents.length > 0) {
-    throw ApiError.conflict(`启用中的能力包仍声明旧版本：${enabledDependents.join(', ')}`);
+    throw new ApiError(
+      'CAPABILITY_DEPENDENTS_ACTIVE',
+      `启用中的能力包仍声明旧版本：${enabledDependents.join(', ')}`,
+      { dependents: enabledDependents },
+    );
   }
   const disabledDependents = affectedDependents(repo, id, manifest.version, 'disabled');
 
@@ -239,6 +242,7 @@ export function upgradeCapability(input: CapabilityUpgradeInput): CapabilityUpgr
         upgrade: {
           from: snapshot.manifest.version,
           to: manifest.version,
+          direction,
           affectedDisabledDependents: disabledDependents,
         },
       };
