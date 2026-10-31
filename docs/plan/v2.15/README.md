@@ -1,6 +1,6 @@
 # v2.15 方案：可运营——历史可清理、证据可锚定、凭证可轮换、版本可对比
 
-> 状态：📐 规划中（2026-10-31，待 M0 评审冻结）
+> 状态：✅ M0 已冻结（2026-10-31，见 [01-M0-契约冻结](01-M0-契约冻结.md) / [02-M0-评审记录](02-M0-评审记录.md)），进入 M1 技能版本清理
 > 上一正式版：v2.14.0（可维护：技能版本化、工作流生产版本、能力包降级修复、运行下钻、诊断包）
 > 主题一句话：**v2.14 把「出事之后能回退、能定位」补齐，v2.15 把「日常运维」补齐：历史能清理、证据能锚定、凭证能轮换、版本能对比。**
 
@@ -75,7 +75,7 @@ v2.15 不加新能力面，只把这四件事收口：**快照可清理、审计
   2. 可解密项用新密钥代 `encrypt` 并写回；
   3. 不可解密项保留旧密文，计入 `skipped`；
   4. 返回 `{ mode: 'web' | 'desktop', rotated, skipped, keyId? }`，不返回任何明文。
-- Web 主密钥：`keys/master.key` 升级为 `keys/master-keyring.json`（`activeKeyId` + 最多 2 把 key）；写入顺序为「先加新 key 并设 active → 重封装 → 旧 key 保留为 fallback」；旧 key 不在同一次轮换中删除。启动时若只存在旧 32 字节 `master.key`，按 `legacy` key 读入；首次轮换写入 keyring 后保留旧文件，直到下一次成功轮换。
+- Web 主密钥：`keys/master.key` 升级为 `keys/master-keyring.json`（`activeKeyId` + 最多 3 把 key：active + 两个 fallback）；写入顺序为「先加新 key 并设 active → 重封装 → 旧 key 保留为 fallback」；旧 key 不在同一次轮换中删除。启动时若只存在旧 32 字节 `master.key`，按 `legacy` key 读入；`failed===0` 时把新 active key 同步写回旧 `master.key`，保证回退到 v2.14 可解密。
 - Desktop：safeStorage 的系统密钥由 OS 管理，桥只负责重新封装；UI 文案使用「重新加密已存凭证」，不宣称更换系统密钥。
 - 失败：单条解密失败只跳过该条；keyring 写入失败则不更新任何 Provider 行；轮换成功写 `secrets_rotated` 审计（仅计数与 mode）。
 - UI：设置 → 关于 / 安全区新增「轮换凭证」按钮，二次确认，展示 rotated / skipped。
