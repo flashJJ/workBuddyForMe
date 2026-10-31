@@ -9,7 +9,12 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDatabase, createSkillStateRepository, type DatabaseInstance } from '@wbfm/database';
+import {
+  createDatabase,
+  createSkillStateRepository,
+  createSkillVersionRepository,
+  type DatabaseInstance,
+} from '@wbfm/database';
 import { createSkillService } from './skill-service';
 
 const skillJson = (name: string, version: string, content: string) =>
@@ -199,5 +204,67 @@ describe('skill-version-service（v2.14）', () => {
       '7.0.0',
     ]);
     expect(versions.find((item) => item.version === '7.0.0')?.active).toBe(true);
+  });
+
+  it('v2.15 删除非启用版本：列表、目录与占用同步减少；active 与最后一份受保护', async () => {
+    const service = createService();
+    writeSkill(skillsDir, 'my-skill', '1.0.0', '旧内容');
+    service.reconcile();
+    writeSkill(skillsDir, 'my-skill', '2.0.0', '新内容');
+    service.reconcile();
+
+    const before = service.listVersions('my-skill');
+    expect(before.totalBytes).toBeGreaterThan(0);
+    expect(before.versions.map((item) => item.version)).toEqual(['2.0.0', '1.0.0']);
+
+    const deleted = service.deleteVersion('my-skill', '1.0.0');
+    expect(deleted.deleted).toMatchObject({
+      version: '1.0.0',
+      rowsRemoved: 1,
+      dirDeleted: true,
+    });
+    expect(deleted.deleted.freedBytes).toBeGreaterThan(0);
+    expect(deleted.versions.versions.map((item) => item.version)).toEqual(['2.0.0']);
+    expect(deleted.versions.totalBytes).toBeLessThan(before.totalBytes);
+
+    await expect(async () =>
+      service.deleteVersion('my-skill', '2.0.0'),
+    ).rejects.toMatchObject({ code: 'SKILL_VERSION_ACTIVE', status: 409 });
+    await expect(async () =>
+      service.deleteVersion('my-skill', '9.9.9'),
+    ).rejects.toMatchObject({ code: 'SKILL_VERSION_MISSING', status: 409 });
+  });
+
+  it('v2.15 状态行重建后同版本多行一次删除；仅剩一个版本时拒绝', async () => {
+    const service = createService();
+    writeSkill(skillsDir, 'my-skill', '1.0.0');
+    service.reconcile();
+    const firstStateId = service.list()[0]!.id;
+    createSkillStateRepository(db).removeByName('my-skill');
+    service.reconcile();
+    writeSkill(skillsDir, 'my-skill', '2.0.0');
+    service.reconcile();
+
+    // 注入历史状态行遗留的同版本行，验证删除会跨状态行清理并复用同一目录
+    const versionRepo = createSkillVersionRepository(db);
+    const v1Row = versionRepo.listByNameVersion('my-skill', '1.0.0')[0]!;
+    versionRepo.create({
+      skillStateId: firstStateId,
+      name: v1Row.name,
+      version: v1Row.version,
+      checksum: v1Row.checksum,
+      manifestJson: v1Row.manifest_json,
+      dirPath: v1Row.dir_path,
+    });
+
+    const deleted = service.deleteVersion('my-skill', '1.0.0');
+    expect(deleted.deleted.rowsRemoved).toBe(2);
+    expect(deleted.deleted.dirDeleted).toBe(true);
+    expect(existsSync(join(versionsDir, firstStateId, '1.0.0'))).toBe(false);
+
+    createSkillStateRepository(db).update(service.list()[0]!.id, { activeVersion: '9.9.9' });
+    await expect(async () =>
+      service.deleteVersion('my-skill', '2.0.0'),
+    ).rejects.toMatchObject({ code: 'SKILL_VERSION_LAST', status: 409 });
   });
 });

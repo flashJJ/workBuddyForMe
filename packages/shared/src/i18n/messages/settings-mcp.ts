@@ -73,6 +73,7 @@ export const zhSettingsMcp = {
       toggle: '版本历史',
       empty: '暂无版本快照（技能目录超过 50 MB 时不会建立快照）。',
       active: '当前',
+      total: '共 {count} 版 · 占用 {size}',
       rollback: '回退',
       rollbackTitle: '回退技能版本',
       rollbackConfirm:
@@ -81,6 +82,15 @@ export const zhSettingsMcp = {
       rolledBack: '已回退「{name}」到 v{version}',
       rollbackFailed: '回退失败',
       loadFailed: '版本列表加载失败',
+      delete: '删除',
+      deleteTitle: '删除技能版本',
+      deleteConfirm:
+        '删除「{name}」的 v{version} 快照？\n\n将释放 {size}，删除后无法恢复；当前启用版本与最后一份版本不可删除。',
+      deleteButton: '确认删除',
+      deleted: '已删除 v{version}，释放 {size}',
+      deleteFailed: '删除失败',
+      protectedActive: '当前版本，不可删除',
+      protectedLast: '仅剩一个版本，不可删除',
     },
   },
   permission: {
@@ -183,6 +193,7 @@ export const enSettingsMcp = {
       toggle: 'Version history',
       empty: 'No version snapshots yet (folders over 50 MB are not snapshotted).',
       active: 'Current',
+      total: '{count} versions · {size} used',
       rollback: 'Roll back',
       rollbackTitle: 'Roll back skill version',
       rollbackConfirm:
@@ -191,6 +202,15 @@ export const enSettingsMcp = {
       rolledBack: 'Rolled “{name}” back to v{version}',
       rollbackFailed: 'Rollback failed',
       loadFailed: 'Failed to load versions',
+      delete: 'Delete',
+      deleteTitle: 'Delete skill version',
+      deleteConfirm:
+        'Delete the v{version} snapshot of “{name}”?\n\n{size} will be freed and the deletion cannot be undone; the active version and the last remaining version are protected.',
+      deleteButton: 'Delete snapshot',
+      deleted: 'Deleted v{version}; freed {size}',
+      deleteFailed: 'Delete failed',
+      protectedActive: 'Active version; cannot delete',
+      protectedLast: 'Only one version remains; cannot delete',
     },
   },
   permission: {

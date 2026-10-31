@@ -8,6 +8,7 @@ import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest, getServices } from '@/lib/server/container';
 import { GET as listSkills } from './route';
 import { GET as listVersions } from './[id]/versions/route';
+import { DELETE as deleteVersion } from './[id]/versions/[version]/route';
 import { POST as rollbackVersion } from './[id]/versions/[version]/rollback/route';
 
 function writeSkill(name: string, version: string, content: string): void {
@@ -57,10 +58,12 @@ describe('技能版本路由（v2.14）', () => {
     const firstData = await readData<{
       versions: Array<{ version: string; active: boolean }>;
       versioningAvailable: boolean;
+      totalBytes: number;
     }>(first);
     expect(firstData.versioningAvailable).toBe(true);
     expect(firstData.versions).toHaveLength(1);
     expect(firstData.versions[0]).toMatchObject({ version: '1.0.0', active: true });
+    expect(firstData.totalBytes).toBeGreaterThan(0);
 
     writeSkill('my-skill', '2.0.0', '新内容');
     getServices().skills.reconcile();
@@ -118,10 +121,54 @@ describe('技能版本路由（v2.14）', () => {
     );
     expect(invalid.status).toBe(422);
 
-    const empty = await readData<{ versions: unknown[]; versioningAvailable: boolean }>(
-      await listVersions(new Request('http://x'), nameParams('missing-skill')),
-    );
+    const empty = await readData<{
+      versions: unknown[];
+      versioningAvailable: boolean;
+      totalBytes: number;
+    }>(await listVersions(new Request('http://x'), nameParams('missing-skill')));
     expect(empty.versions).toEqual([]);
     expect(empty.versioningAvailable).toBe(false);
+    expect(empty.totalBytes).toBe(0);
+  });
+
+  it('v2.15 DELETE：删除非启用版本并写审计；active / 缺失版本拒绝', async () => {
+    writeSkill('my-skill', '1.0.0', '旧内容');
+    getServices().skills.reconcile();
+    writeSkill('my-skill', '2.0.0', '新内容');
+    getServices().skills.reconcile();
+
+    const before = await readData<{ totalBytes: number }>(
+      await listVersions(new Request('http://x'), nameParams('my-skill')),
+    );
+    const response = await deleteVersion(
+      new Request('http://x', { method: 'DELETE' }),
+      versionParams('my-skill', '1.0.0'),
+    );
+    expect(response.status).toBe(200);
+    const data = await readData<{
+      deleted: { version: string; rowsRemoved: number; freedBytes: number; dirDeleted: boolean };
+      versions: { versions: Array<{ version: string }>; totalBytes: number };
+    }>(response);
+    expect(data.deleted).toMatchObject({ version: '1.0.0', rowsRemoved: 1, dirDeleted: true });
+    expect(data.deleted.freedBytes).toBeGreaterThan(0);
+    expect(data.versions.versions.map((item) => item.version)).toEqual(['2.0.0']);
+    expect(data.versions.totalBytes).toBeLessThan(before.totalBytes);
+
+    const audit = getServices().audit.list({ kind: 'skill_version_deleted', limit: 10 });
+    expect(audit.events[0]).toMatchObject({ kind: 'skill_version_deleted', actor: 'user' });
+
+    const active = await deleteVersion(
+      new Request('http://x', { method: 'DELETE' }),
+      versionParams('my-skill', '2.0.0'),
+    );
+    expect(active.status).toBe(409);
+    expect((await active.json()).error.code).toBe('SKILL_VERSION_ACTIVE');
+
+    const missing = await deleteVersion(
+      new Request('http://x', { method: 'DELETE' }),
+      versionParams('my-skill', '9.9.9'),
+    );
+    expect(missing.status).toBe(409);
+    expect((await missing.json()).error.code).toBe('SKILL_VERSION_MISSING');
   });
 });

@@ -15,6 +15,12 @@ export const ERROR_CODES = {
   SERVICE_UNAVAILABLE: 503,
   /** v2.14：技能版本快照不存在，无法回退 */
   SKILL_VERSION_MISSING: 409,
+  /** v2.15：当前启用版本不可删除 */
+  SKILL_VERSION_ACTIVE: 409,
+  /** v2.15：仅剩一个版本，不可删除 */
+  SKILL_VERSION_LAST: 409,
+  /** v2.15：删除技能快照目录失败 */
+  SKILL_VERSION_DELETE_FAILED: 500,
   /** v2.14：技能回退失败（已尝试恢复原目录） */
   SKILL_ROLLBACK_FAILED: 500,
   /** v2.14：工作流版本不存在，无法设为生产 */

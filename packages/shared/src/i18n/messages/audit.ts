@@ -52,6 +52,7 @@ export const zhAudit = {
     scheduled_run_started: '定时触发',
     scheduled_run_finished: '定时结束',
     unattended_blocked: '无人值守拒绝',
+    skill_version_deleted: '技能版本删除',
     audit_verified: '完整性校验',
   },
   actors: {
@@ -119,6 +120,7 @@ export const enAudit = {
     scheduled_run_started: 'Scheduled run started',
     scheduled_run_finished: 'Scheduled run finished',
     unattended_blocked: 'Unattended blocked',
+    skill_version_deleted: 'Skill version deleted',
     audit_verified: 'Integrity verified',
   },
   actors: {

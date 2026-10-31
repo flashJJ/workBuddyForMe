@@ -21,6 +21,7 @@ export const AUDIT_EVENT_KINDS = [
   'scheduled_run_started',
   'scheduled_run_finished',
   'unattended_blocked',
+  'skill_version_deleted',
   'audit_verified',
 ] as const;
 

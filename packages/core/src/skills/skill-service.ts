@@ -1,6 +1,6 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { type SkillDiskEntry, type SkillInfo, type SkillManifest } from '@wbfm/shared/types';
-import type { SkillVersionsResponse } from '@wbfm/shared/schemas';
+import type { SkillVersionsResponse, SkillVersionDeleteResponse } from '@wbfm/shared/schemas';
 import { getDataDir } from '@wbfm/config';
 import { createSkillStateRepository, type SkillStateRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
@@ -45,6 +45,8 @@ export interface SkillService {
   listVersions(name: string): SkillVersionsResponse;
   /** v2.14：原子回退到指定版本快照（启用态不变），返回最新版本列表 */
   rollbackVersion(name: string, version: string): SkillVersionsResponse;
+  /** v2.15：删除非启用版本快照，返回删除结果与最新版本列表 */
+  deleteVersion(name: string, version: string): SkillVersionDeleteResponse;
 }
 
 export function createSkillService(
@@ -156,6 +158,11 @@ export function createSkillService(
       // 回退后重扫，确保 manifest 与状态行、active_version 全部对齐
       reconcile();
       return versions.list(name);
+    },
+
+    deleteVersion(name, version) {
+      const deleted = versions.delete(name, version);
+      return { deleted, versions: versions.list(name) };
     },
   };
 }

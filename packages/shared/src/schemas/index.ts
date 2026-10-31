@@ -133,11 +133,15 @@ export {
   skillVersionParamSchema,
   skillVersionViewSchema,
   skillVersionsResponseSchema,
+  skillVersionDeleteResultSchema,
+  skillVersionDeleteResponseSchema,
   type SkillUpdateInput,
   type SkillNameParam,
   type SkillVersionParam,
   type SkillVersionView,
   type SkillVersionsResponse,
+  type SkillVersionDeleteResult,
+  type SkillVersionDeleteResponse,
 } from './skill';
 export {
   COMPUTER_CHANNEL_FILE,

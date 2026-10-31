@@ -112,6 +112,9 @@ export const API = {
   skillVersions: (name: string) => `/api/skills/${encodeURIComponent(name)}/versions`,
   skillVersionRollback: (name: string, version: string) =>
     `/api/skills/${encodeURIComponent(name)}/versions/${encodeURIComponent(version)}/rollback`,
+  /** v2.15：删除非启用版本快照 */
+  skillVersionDelete: (name: string, version: string) =>
+    `/api/skills/${encodeURIComponent(name)}/versions/${encodeURIComponent(version)}`,
   toolConfirm: '/api/tools/confirm',
   toolPermissions: '/api/tools/permissions',
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
