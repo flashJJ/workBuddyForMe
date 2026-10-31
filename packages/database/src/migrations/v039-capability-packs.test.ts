@@ -7,7 +7,7 @@ describe('v039 迁移：能力包登记表', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(41);
+    expect(LATEST_SCHEMA_VERSION).toBe(42);
     const table = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='capability_packs'`)
       .get() as { name: string } | undefined;

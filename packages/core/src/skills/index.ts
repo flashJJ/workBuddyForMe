@@ -13,4 +13,12 @@ export {
   type SkillService,
   type SkillServiceOptions,
 } from './skill-service';
+export {
+  createSkillVersionService,
+  SKILL_VERSION_SNAPSHOT_TOO_LARGE,
+  type SkillVersionCaptureInput,
+  type SkillVersionCaptureResult,
+  type SkillVersionService,
+  type SkillVersionServiceOptions,
+} from './skill-version-service';
 export { buildSkillPromptBlock, mergeSkillAllowedTools, pickAssistantSkills } from './skill-assembly';

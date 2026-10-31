@@ -11,6 +11,7 @@ import { reopenOnboarding } from '@/features/onboarding/use-onboarding-host';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
 import { TtfvPanel } from './ttfv-panel';
+import { DiagnosticsExportButton } from './diagnostics-export-button';
 
 const RELEASES_URL = 'https://github.com/flashJJ/workBuddyForMe/releases';
 
@@ -134,6 +135,7 @@ export function AboutPanel() {
         <h3 className="font-medium">{t('about.title')}</h3>
         <p className="text-xs text-muted-foreground">{t('about.desktopOnly')}</p>
         <AboutQuickLinks />
+        <DiagnosticsExportButton />
         <TtfvPanel />
         <Live2DLicenseNotice />
       </section>
@@ -179,6 +181,8 @@ export function AboutPanel() {
       </div>
 
       <AboutQuickLinks />
+
+      <DiagnosticsExportButton />
 
       <TtfvPanel />
 

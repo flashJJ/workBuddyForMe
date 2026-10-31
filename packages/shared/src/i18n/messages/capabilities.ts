@@ -74,6 +74,21 @@ export const zhCapabilities = {
     pending: '升级中…',
     failed: '升级失败，已回滚或未变更',
     success: '升级成功',
+    probeDowngradeTitle: '检测到降级安装',
+    probeDowngradeWarning:
+      '目标版本 v{target} 低于当前 v{current}。降级只回退代码、清单与生效资源，不承诺数据回滚。',
+    probeDowngradeAck: '我已知晓降级不会回滚数据',
+    probeDowngradeConfirm: '确认降级安装',
+    probeRepairTitle: '检测到同版本差异',
+    probeRepairWarning:
+      '目标版本 v{version} 与已安装版本相同，但文件校验和不一致，可以修复安装。修复不会重置已禁用的从属能力。',
+    probeRepairConfirm: '修复安装',
+    probeDependents: '仍有启用中的能力包依赖当前版本：{dependents}。请先停用或升级依赖方后再试。',
+    direction: {
+      upgrade: '升级成功',
+      downgrade: '已降级到 v{version}',
+      repair: '已修复安装 v{version}',
+    },
   },
 };
 
@@ -153,5 +168,21 @@ export const enCapabilities = {
     pending: 'Upgrading…',
     failed: 'Upgrade failed; rolled back or left unchanged',
     success: 'Upgraded',
+    probeDowngradeTitle: 'Downgrade detected',
+    probeDowngradeWarning:
+      'Target version v{target} is lower than the installed v{current}. A downgrade only restores code, manifest and active resources; data is not rolled back.',
+    probeDowngradeAck: 'I understand that a downgrade does not roll back data',
+    probeDowngradeConfirm: 'Confirm downgrade',
+    probeRepairTitle: 'Same-version difference detected',
+    probeRepairWarning:
+      'Target version v{version} matches the installed version but file checksums differ. Repair install will not re-enable disabled dependents.',
+    probeRepairConfirm: 'Repair install',
+    probeDependents:
+      'Enabled capability packs still depend on the current version: {dependents}. Disable or upgrade them first.',
+    direction: {
+      upgrade: 'Upgraded',
+      downgrade: 'Downgraded to v{version}',
+      repair: 'Repaired v{version}',
+    },
   },
 };

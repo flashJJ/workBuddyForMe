@@ -35,3 +35,4 @@ export * from './work-plan';
 export * from './session-log';
 export * from './capabilities';
 export * from './governance';
+export * from './diagnostics';

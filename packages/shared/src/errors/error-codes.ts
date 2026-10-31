@@ -13,6 +13,22 @@ export const ERROR_CODES = {
   PROVIDER_TIMEOUT: 504,
   /** v2.13：审计账本不可写等治理依赖暂不可用（fail-closed） */
   SERVICE_UNAVAILABLE: 503,
+  /** v2.14：技能版本快照不存在，无法回退 */
+  SKILL_VERSION_MISSING: 409,
+  /** v2.14：技能回退失败（已尝试恢复原目录） */
+  SKILL_ROLLBACK_FAILED: 500,
+  /** v2.14：工作流版本不存在，无法设为生产 */
+  FLOW_VERSION_NOT_FOUND: 404,
+  /** v2.14：降级安装缺少二次确认 */
+  CAPABILITY_DOWNGRADE_CONFIRM_REQUIRED: 422,
+  /** v2.14：降级目标版本与确认版本不一致 */
+  CAPABILITY_DOWNGRADE_TARGET_MISMATCH: 422,
+  /** v2.14：启用中的能力包仍依赖当前版本，拒绝降级 */
+  CAPABILITY_DEPENDENTS_ACTIVE: 409,
+  /** v2.14：版本未变化且不满足修复条件 */
+  CAPABILITY_VERSION_NOT_NEWER: 422,
+  /** v2.14：诊断包生成超时 */
+  DIAGNOSTICS_TIMEOUT: 503,
   INTERNAL_ERROR: 500,
 } as const;
 

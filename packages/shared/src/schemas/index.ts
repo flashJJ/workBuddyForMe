@@ -129,7 +129,15 @@ export {
 export {
   skillManifestSchema,
   skillUpdateSchema,
+  skillNameParamSchema,
+  skillVersionParamSchema,
+  skillVersionViewSchema,
+  skillVersionsResponseSchema,
   type SkillUpdateInput,
+  type SkillNameParam,
+  type SkillVersionParam,
+  type SkillVersionView,
+  type SkillVersionsResponse,
 } from './skill';
 export {
   COMPUTER_CHANNEL_FILE,
@@ -290,6 +298,15 @@ export {
   capabilitySignaturePayload,
 } from './capability-signature';
 
+// v2.14 诊断包 manifest 契约
+export {
+  DIAGNOSTIC_FORMAT_VERSION,
+  diagnosticEntrySchema,
+  diagnosticManifestSchema,
+  type DiagnosticEntry,
+  type DiagnosticManifest,
+} from './diagnostics';
+
 // v2.12 能力包健康报告契约
 export {
   CAPABILITY_HEALTH_ISSUE_CODES,
@@ -348,6 +365,8 @@ export {
   workflowCreateSchema,
   workflowUpdateSchema,
   workflowVersionCreateSchema,
+  flowPublishSchema,
+  flowProductionSchema,
   flowRunCreateSchema,
   flowHumanSubmitSchema,
   FLOW_TOOL_NAMESPACE,
@@ -366,6 +385,8 @@ export {
   type WorkflowCreateInput,
   type WorkflowUpdateInput,
   type WorkflowVersionCreateInput,
+  type FlowPublishInput,
+  type FlowProductionInput,
   type FlowRunCreateInput,
   type FlowHumanSubmitInput,
 } from './flow';

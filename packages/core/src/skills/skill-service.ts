@@ -1,14 +1,22 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { type SkillDiskEntry, type SkillInfo, type SkillManifest } from '@wbfm/shared/types';
+import type { SkillVersionsResponse } from '@wbfm/shared/schemas';
 import { getDataDir } from '@wbfm/config';
 import { createSkillStateRepository, type SkillStateRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/deps';
 import { loadSkillsFromDisk } from './loader';
 import { ensureBuiltinSkills } from './builtin-skills';
+import { createSkillVersionService } from './skill-version-service';
 
 export interface SkillServiceOptions {
   /** 测试注入：替换技能目录（默认 <dataDir>/skills） */
   skillsDir?: string;
+  /** 测试注入：版本快照根目录（默认与 skillsDir 同级 skill-versions/） */
+  versionsDir?: string;
+  /** 测试注入：快照保留版本数（默认 5） */
+  keepVersions?: number;
+  /** 测试注入：单技能快照体积上限（默认 50 MB） */
+  maxSnapshotBytes?: number;
   /** reconcile 时是否播种内置示例技能（默认 true） */
   seedBuiltins?: boolean;
 }
@@ -33,6 +41,10 @@ export interface SkillService {
   remove(id: string): void;
   /** 已启用且 manifest 有效的技能（prompt 注入与工具预绑定用） */
   getEnabledSkills(): EnabledSkill[];
+  /** v2.14：版本快照列表（按创建时间倒序，标记 active） */
+  listVersions(name: string): SkillVersionsResponse;
+  /** v2.14：原子回退到指定版本快照（启用态不变），返回最新版本列表 */
+  rollbackVersion(name: string, version: string): SkillVersionsResponse;
 }
 
 export function createSkillService(
@@ -42,6 +54,12 @@ export function createSkillService(
   const repo: SkillStateRepository = createSkillStateRepository(deps.db);
   const skillsDir = options.skillsDir ?? getDataDir('skills');
   const seedBuiltins = options.seedBuiltins ?? true;
+  const versions = createSkillVersionService(deps, {
+    skillsDir,
+    versionsDir: options.versionsDir,
+    keep: options.keepVersions,
+    maxSnapshotBytes: options.maxSnapshotBytes,
+  });
 
   function toInfo(
     state: { id: string; name: string; enabled: boolean; sourcePath: string },
@@ -69,20 +87,34 @@ export function createSkillService(
     };
   }
 
-  return {
-    reconcile() {
-      if (seedBuiltins) ensureBuiltinSkills(skillsDir);
-      for (const entry of loadSkillsFromDisk(skillsDir)) {
-        const existing = repo.getByName(entry.name);
-        if (existing) {
-          if (existing.sourcePath !== entry.directoryPath) {
-            repo.update(existing.id, { sourcePath: entry.directoryPath });
-          }
-          continue;
-        }
-        repo.create({ name: entry.name, enabled: true, sourcePath: entry.directoryPath });
+  /** 启动对齐：播种内置 → 扫盘补登状态行 → 校验通过的技能记录版本快照 */
+  function reconcile(): void {
+    if (seedBuiltins) ensureBuiltinSkills(skillsDir);
+    for (const entry of loadSkillsFromDisk(skillsDir)) {
+      let state = repo.getByName(entry.name);
+      if (!state) {
+        state = repo.create({ name: entry.name, enabled: true, sourcePath: entry.directoryPath });
+      } else if (state.sourcePath !== entry.directoryPath) {
+        state = repo.update(state.id, { sourcePath: entry.directoryPath }) ?? state;
       }
-    },
+      if (entry.manifest) {
+        try {
+          versions.capture({
+            stateId: state.id,
+            name: entry.name,
+            directoryPath: entry.directoryPath,
+            manifest: entry.manifest,
+          });
+        } catch (error) {
+          // 快照是旁路能力：磁盘异常不阻断技能加载
+          console.warn(`[skill-version] 快照失败 ${entry.name}：`, error);
+        }
+      }
+    }
+  }
+
+  return {
+    reconcile,
 
     list() {
       const byName = new Map(loadSkillsFromDisk(skillsDir).map((entry) => [entry.name, entry]));
@@ -113,6 +145,17 @@ export function createSkillService(
           const manifest = manifestByName.get(state.name);
           return manifest ? [{ name: state.name, manifest }] : [];
         });
+    },
+
+    listVersions(name) {
+      return versions.list(name);
+    },
+
+    rollbackVersion(name, version) {
+      versions.rollback(name, version);
+      // 回退后重扫，确保 manifest 与状态行、active_version 全部对齐
+      reconcile();
+      return versions.list(name);
     },
   };
 }

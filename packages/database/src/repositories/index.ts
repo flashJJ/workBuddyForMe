@@ -80,6 +80,13 @@ export {
   type SkillStateRow,
 } from './skill-state-repo';
 export {
+  createSkillVersionRepository,
+  type SkillVersionRepository,
+  type SkillVersionCreateFields,
+  type SkillVersionUpdateFields,
+  type SkillVersionRow,
+} from './skill-version-repo';
+export {
   createTaskRunRepository,
   type TaskRunRepository,
   type TaskRunCreateFields,

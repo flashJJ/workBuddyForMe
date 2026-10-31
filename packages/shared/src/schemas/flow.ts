@@ -163,6 +163,18 @@ export const workflowVersionCreateSchema = z.object({
 });
 export type WorkflowVersionCreateInput = z.infer<typeof workflowVersionCreateSchema>;
 
+/** 发布指定版本（缺省=当前保存版本）；发布即设为生产 */
+export const flowPublishSchema = z.object({
+  version: z.number().int().positive().optional(),
+});
+export type FlowPublishInput = z.infer<typeof flowPublishSchema>;
+
+/** v2.14：仅把指定历史版本设为生产，不改变当前草稿 */
+export const flowProductionSchema = z.object({
+  version: z.number().int().positive(),
+});
+export type FlowProductionInput = z.infer<typeof flowProductionSchema>;
+
 /** 创建运行（body 即 start 节点入参） */
 export const flowRunCreateSchema = z.object({
   input: z.record(z.string(), z.unknown()).default({}),

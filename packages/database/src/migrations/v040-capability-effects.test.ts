@@ -7,7 +7,7 @@ describe('v040 迁移：能力包 effect 支撑', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(41);
+    expect(LATEST_SCHEMA_VERSION).toBe(42);
 
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table'`)
@@ -37,8 +37,8 @@ describe('v040 迁移：能力包 effect 支撑', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([40, 41]);
-    expect(getSchemaVersion(db)).toBe(41);
+    expect(result.applied).toEqual([40, 41, 42]);
+    expect(getSchemaVersion(db)).toBe(42);
 
     const workflow = db
       .prepare('SELECT id, name, origin_capability_id FROM workflows WHERE id = ?')

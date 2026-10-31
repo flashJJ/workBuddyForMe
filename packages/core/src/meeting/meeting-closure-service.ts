@@ -228,7 +228,7 @@ export function createMeetingClosureService(deps: MeetingClosureDeps): MeetingCl
       if (item.linkedFlowRunId) throw ApiError.conflict('该行动项已运行过 Flow');
       const workflow = deps.workflows.getWorkflow(input.workflowId);
       if (!workflow) throw ApiError.notFound('工作流', input.workflowId);
-      if (workflow.status !== 'published') {
+      if (workflow.status === 'disabled' || (workflow.publishedVersion === null && workflow.status !== 'published')) {
         throw ApiError.validation('只能运行已发布 Flow');
       }
       const runInput = input.input ?? {

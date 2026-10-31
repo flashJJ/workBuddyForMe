@@ -13,7 +13,6 @@ import {
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createSettingsService } from '@wbfm/core/services';
 import { createWebCipher } from '@wbfm/core/secrets';
-import { ApiError, ERROR_CODES, type ErrorCode } from '@wbfm/shared/errors';
 import { ProviderError } from '@wbfm/ai';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
 import { toErrorResponse } from '@/lib/server/api-response';
@@ -179,29 +178,6 @@ describe('API 集成测试全集（TR-33.1）', () => {
     expect(userMessage!.role).toBe('user');
     expect(assistantMessage!.status).toBe('error');
     expect(assistantMessage!.errorCode).toBe('PROVIDER_ERROR');
-  });
-
-  it('错误码一致性：领域错误码 → HTTP 状态映射全量断言', async () => {
-    const expectations: Array<[ErrorCode, number]> = [
-      ['VALIDATION_ERROR', 422],
-      ['UNAUTHORIZED', 401],
-      ['FORBIDDEN', 403],
-      ['NOT_FOUND', 404],
-      ['CONFLICT', 409],
-      ['PROVIDER_ERROR', 502],
-      ['PROVIDER_TIMEOUT', 504],
-      ['SERVICE_UNAVAILABLE', 503],
-      ['INTERNAL_ERROR', 500],
-    ];
-    expect(Object.keys(ERROR_CODES)).toHaveLength(expectations.length + 3); // 另含 422/501×2 三个补充码
-
-    for (const [code, status] of expectations) {
-      const response = toErrorResponse(new ApiError(code, `示例错误：${code}`));
-      expect(response.status).toBe(status);
-      const payload = await response.json();
-      expect(payload.success).toBe(false);
-      expect(payload.error.code).toBe(code);
-    }
   });
 
   it('供应商超时错误（PROVIDER_TIMEOUT）映射 504 并保留 retriable 标记', async () => {

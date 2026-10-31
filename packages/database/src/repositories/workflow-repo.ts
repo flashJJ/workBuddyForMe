@@ -11,6 +11,8 @@ export interface WorkflowRow {
   color: string;
   status: string;
   current_version: number;
+  /** v2.14：生产运行版本（NULL=未设置，运行时回退 current_version） */
+  published_version: number | null;
   created_at: string;
   updated_at: string;
   origin_capability_id: string | null;
@@ -51,6 +53,7 @@ function mapWorkflow(row: WorkflowRow): WorkflowView {
     color: row.color,
     status: row.status as FlowStatus,
     currentVersion: row.current_version,
+    publishedVersion: row.published_version ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     originCapabilityId: row.origin_capability_id ?? null,
@@ -189,6 +192,23 @@ export function createWorkflowRepository(db: DatabaseInstance) {
       return this.getVersion(workflowId, row.current_version);
     },
 
+    /** v2.14：生产运行版本；未设置时回退当前草稿版本（兼容历史工作流） */
+    getProductionVersion(workflowId: string): WorkflowVersionView | null {
+      const row = this.getWorkflowRow(workflowId);
+      if (!row) return null;
+      const target = row.published_version ?? row.current_version;
+      if (target === 0) return null;
+      return this.getVersion(workflowId, target);
+    },
+
+    /** 版本列表（版本号倒序，供编辑器版本抽屉） */
+    listVersions(workflowId: string): WorkflowVersionView[] {
+      const rows = db
+        .prepare('SELECT * FROM workflow_versions WHERE workflow_id = ? ORDER BY version DESC')
+        .all(workflowId) as WorkflowVersionRow[];
+      return rows.map(mapVersion);
+    },
+
     /** 发布指定版本（默认当前版本）：写 published_at 并置 status=published */
     publishVersion(workflowId: string, version?: number): WorkflowView | null {
       const wf = this.getWorkflowRow(workflowId);
@@ -207,11 +227,29 @@ export function createWorkflowRepository(db: DatabaseInstance) {
           if (!exists) throw new Error(`版本不存在：workflow=${workflowId} version=${targetVersion}`);
         }
         db.prepare(
-          `UPDATE workflows SET status = 'published', current_version = @v, updated_at = @ts
+          `UPDATE workflows
+           SET status = 'published', current_version = @v, published_version = @v, updated_at = @ts
            WHERE id = @id`,
         ).run({ v: targetVersion, ts: nowIso(), id: workflowId });
       });
       publish();
+      return this.getWorkflow(workflowId);
+    },
+
+    /**
+     * v2.14：只把指定历史版本设为生产，不改变 current_version；
+     * 运行 / 端点 / MCP 立即使用该版本，编辑器草稿保持不变。
+     */
+    setProductionVersion(workflowId: string, version: number): WorkflowView | null {
+      const wf = this.getWorkflowRow(workflowId);
+      if (!wf) return null;
+      if (!this.getVersion(workflowId, version)) {
+        throw new Error(`版本不存在：workflow=${workflowId} version=${version}`);
+      }
+      db.prepare(
+        `UPDATE workflows SET published_version = @v, status = 'published', updated_at = @ts
+         WHERE id = @id`,
+      ).run({ v: version, ts: nowIso(), id: workflowId });
       return this.getWorkflow(workflowId);
     },
 

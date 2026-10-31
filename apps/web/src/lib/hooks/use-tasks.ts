@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  AuditEventView,
   TaskCreateInput,
   TaskRunView,
   TaskStepView,
@@ -24,6 +25,18 @@ export function useTasks() {
     queryFn: () => apiGet<TaskRunView[]>(API.tasks),
     // v0.7：任务面板频繁刷新意义不大；SSE 推送时手动 invalidate
     staleTime: 5_000,
+  });
+}
+
+/** v2.14：任务关联的最近审计事件（只读下钻） */
+export function useTaskAudit(runId: string, enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.taskAudit(runId),
+    queryFn: () =>
+      apiGet<{ events: AuditEventView[]; nextCursor: number | null }>(
+        `${API.auditEvents}?runId=${encodeURIComponent(runId)}&limit=10`,
+      ),
+    enabled: Boolean(runId) && enabled,
   });
 }
 

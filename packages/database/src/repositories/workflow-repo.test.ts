@@ -45,10 +45,43 @@ describe('workflow-repo：版本与发布状态机', () => {
     workflows.addVersion(wf.id, graph);
     const published = workflows.publishVersion(wf.id);
     expect(published?.status).toBe('published');
+    expect(published?.publishedVersion).toBe(1);
 
     workflows.addVersion(wf.id, graph);
-    expect(workflows.getWorkflow(wf.id)?.status).toBe('draft');
+    const draft = workflows.getWorkflow(wf.id);
+    expect(draft?.status).toBe('draft');
+    expect(draft?.currentVersion).toBe(2);
+    expect(draft?.publishedVersion).toBe(1);
     expect(() => workflows.publishVersion(wf.id, 99)).toThrow();
+  });
+
+  it('v2.14 生产版本：未设置回退当前版本；设为生产不改当前草稿', () => {
+    const { workflows } = setup();
+    const wf = workflows.createWorkflow({ name: 'w' });
+    const v1 = workflows.addVersion(wf.id, graph);
+    expect(workflows.getProductionVersion(wf.id)?.version).toBe(v1?.version);
+    expect(workflows.getWorkflow(wf.id)?.publishedVersion).toBeNull();
+
+    workflows.publishVersion(wf.id);
+    const v2 = workflows.addVersion(wf.id, {
+      ...graph,
+      viewport: { x: 1, y: 2, zoom: 0.8 },
+    });
+    expect(workflows.getProductionVersion(wf.id)?.version).toBe(1);
+    expect(workflows.getWorkflow(wf.id)?.currentVersion).toBe(2);
+
+    const updated = workflows.setProductionVersion(wf.id, v2!.version);
+    expect(updated?.publishedVersion).toBe(2);
+    expect(updated?.currentVersion).toBe(2);
+    expect(updated?.status).toBe('published');
+    expect(workflows.getProductionVersion(wf.id)?.version).toBe(2);
+
+    // 回退生产版本：当前草稿保持 v2
+    const rolled = workflows.setProductionVersion(wf.id, 1);
+    expect(rolled?.publishedVersion).toBe(1);
+    expect(rolled?.currentVersion).toBe(2);
+    expect(workflows.listVersions(wf.id).map((item) => item.version)).toEqual([2, 1]);
+    expect(() => workflows.setProductionVersion(wf.id, 99)).toThrow();
   });
 
   it('删除工作流（级联清理由 v012 外键保证；run repo 写入受影响）', () => {

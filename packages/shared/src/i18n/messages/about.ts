@@ -22,6 +22,12 @@ export const zhAbout = {
   checkFailed: '更新检查失败：{message}',
   replayWizard: '重新打开使用向导',
   helpCenter: '帮助与常见问题',
+  diagnostics: '导出诊断包',
+  diagnosticsPending: '生成中…',
+  diagnosticsDone: '诊断包已开始下载',
+  diagnosticsFailed: '诊断包生成失败',
+  diagnosticsHint:
+    '脱敏诊断包：仅含版本、迁移、审计校验、能力健康、运行统计与配置摘要；不含密钥、对话、记忆与绝对路径，本地生成不上传。',
   // v2.4 M1 T7：TTFV 里程碑（本地、可清除）
   ttfv: {
     title: '首次可用用时（TTFV）',
@@ -68,6 +74,12 @@ export const enAbout = {
   checkFailed: 'Update check failed: {message}',
   replayWizard: 'Replay setup wizard',
   helpCenter: 'Help & FAQ',
+  diagnostics: 'Export diagnostics',
+  diagnosticsPending: 'Generating…',
+  diagnosticsDone: 'Diagnostics download started',
+  diagnosticsFailed: 'Failed to generate diagnostics',
+  diagnosticsHint:
+    'Redacted diagnostics: versions, migrations, audit verification, capability health, run stats and settings summary. No keys, conversations, memories or absolute paths; generated locally and never uploaded.',
   // v2.4 M1 T7 time-to-first-value milestones (local, clearable)
   ttfv: {
     title: 'Time to first value (TTFV)',

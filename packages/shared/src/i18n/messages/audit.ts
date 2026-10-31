@@ -27,6 +27,8 @@ export const zhAudit = {
   prevHash: '前序哈希',
   outcome: '结果',
   noContext: '无关联运行',
+  emptyRun: '该 runId 无关联审计事件。',
+  viewTask: '查看任务',
   filters: {
     kind: '事件类型',
     allKinds: '全部类型',
@@ -92,6 +94,8 @@ export const enAudit = {
   prevHash: 'Previous hash',
   outcome: 'Outcome',
   noContext: 'No linked run',
+  emptyRun: 'No audit events linked to this runId.',
+  viewTask: 'View task',
   filters: {
     kind: 'Event type',
     allKinds: 'All types',

@@ -181,6 +181,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./diagnostics": {
+            "types": "./src/diagnostics/index.ts",
+            "development": "./src/diagnostics/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./share": {
             "types": "./src/share/index.ts",
             "development": "./src/share/index.ts",

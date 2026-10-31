@@ -69,6 +69,19 @@ export const zhSettingsMcp = {
       '删除技能「{name}」的引用？\n\n源文件夹保留在数据目录 skills/ 下不会被删除；重启后若文件夹仍在会重新登记为启用。',
     deleteRefButton: '删除引用',
     refDeleted: '已删除引用',
+    versions: {
+      toggle: '版本历史',
+      empty: '暂无版本快照（技能目录超过 50 MB 时不会建立快照）。',
+      active: '当前',
+      rollback: '回退',
+      rollbackTitle: '回退技能版本',
+      rollbackConfirm:
+        '把「{name}」回退到 v{version}？\n\n技能文件夹会被该版本快照覆盖，启用状态保持不变。',
+      rollbackButton: '确认回退',
+      rolledBack: '已回退「{name}」到 v{version}',
+      rollbackFailed: '回退失败',
+      loadFailed: '版本列表加载失败',
+    },
   },
   permission: {
     title: '工具权限',
@@ -166,6 +179,19 @@ export const enSettingsMcp = {
       'Delete the reference to skill “{name}”?\n\nThe source folder remains in the skills/ data directory and is not deleted; if it still exists after restart, it is re-registered as enabled.',
     deleteRefButton: 'Delete reference',
     refDeleted: 'Reference deleted',
+    versions: {
+      toggle: 'Version history',
+      empty: 'No version snapshots yet (folders over 50 MB are not snapshotted).',
+      active: 'Current',
+      rollback: 'Roll back',
+      rollbackTitle: 'Roll back skill version',
+      rollbackConfirm:
+        'Roll “{name}” back to v{version}?\n\nThe skill folder will be replaced by this snapshot; its enabled state is unchanged.',
+      rollbackButton: 'Roll back',
+      rolledBack: 'Rolled “{name}” back to v{version}',
+      rollbackFailed: 'Rollback failed',
+      loadFailed: 'Failed to load versions',
+    },
   },
   permission: {
     title: 'Tool permissions',
