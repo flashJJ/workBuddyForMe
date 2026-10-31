@@ -106,9 +106,20 @@ export function ApprovalsPage() {
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                {approval.runId
-                  ? `${t('approvals.run')}: ${approval.runId}`
-                  : t('approvals.noContext')}
+                {approval.runId ? (
+                  <span className="inline-flex items-center gap-1">
+                    {t('approvals.run')}:
+                    <a
+                      href={`/timeline?scope=task&id=${encodeURIComponent(approval.runId)}`}
+                      className="text-primary underline-offset-2 hover:underline"
+                      data-testid={`approval-view-task-${approval.id}`}
+                    >
+                      {approval.runId}
+                    </a>
+                  </span>
+                ) : (
+                  t('approvals.noContext')
+                )}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button

@@ -1,8 +1,7 @@
 'use client';
 
 import { AlertTriangle, ChevronRight } from 'lucide-react';
-import type { AgentPermissionMode, TaskRunView } from '@wbfm/shared/schemas';
-import type { MessageKey } from '@wbfm/shared/i18n';
+import type { TaskRunView } from '@wbfm/shared/schemas';
 import { FailureHint } from '@/components/common/failure-hint';
 import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -10,15 +9,8 @@ import { useSystemText } from '@/lib/i18n/use-system-text';
 import { formatDurationMs, runElapsedMs, taskOutcome } from '@/lib/runs/run-outcome';
 import { useTaskEvents } from '@/lib/hooks/use-tasks';
 import { TaskControlBar } from './task-control-bar';
+import { TaskGovernanceSummary } from './task-governance-summary';
 import { TaskTimeline } from './task-timeline';
-
-const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
-  confirm_each: 'tasks.governance.modes.confirm_each',
-  auto_edits: 'tasks.governance.modes.auto_edits',
-  smart_approve: 'tasks.governance.modes.smart_approve',
-  plan_only: 'tasks.governance.modes.plan_only',
-  full_access: 'tasks.governance.modes.full_access',
-};
 
 interface TaskRowProps {
   task: TaskRunView;
@@ -83,16 +75,7 @@ export function TaskRow({
       </button>
       {expanded && (
         <div className="min-w-0 space-y-3 border-t px-4 py-3">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span>
-              {t('tasks.governance.runMode')}：{t(MODE_KEYS[displayRun.permissionMode])}
-            </span>
-            {displayRun.workspacePath ? (
-              <span className="min-w-0 truncate" title={displayRun.workspacePath}>
-                {t('tasks.governance.runWorkspace')}：{displayRun.workspacePath}
-              </span>
-            ) : null}
-          </div>
+          <TaskGovernanceSummary task={displayRun} />
           {live.status === 'error' && (
             <p className="flex items-center gap-2 text-xs text-warning">
               <AlertTriangle className="h-3 w-3" />

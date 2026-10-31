@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
@@ -68,6 +69,16 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { kind: '', runId: '', from: '', to: '' };
 
+/** v2.14：runId 过滤与地址栏同步（清空即移除参数） */
+function syncRunIdParam(runId: string): void {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  if (runId.trim()) params.set('runId', runId.trim());
+  else params.delete('runId');
+  const query = params.toString();
+  window.history.replaceState(null, '', `/audit${query ? `?${query}` : ''}`);
+}
+
 function buildPath(filters: Filters): string {
   const params = new URLSearchParams({ limit: '100' });
   if (filters.kind) params.set('kind', filters.kind);
@@ -96,7 +107,18 @@ function EventRow({ event }: { event: AuditEventView }) {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span>{new Date(event.createdAt).toLocaleString()}</span>
-        {event.runId && <span>run: {event.runId}</span>}
+        {event.runId ? (
+          <span className="inline-flex items-center gap-1">
+            run: {event.runId}
+            <a
+              href={`/timeline?scope=task&id=${encodeURIComponent(event.runId)}`}
+              className="text-primary underline-offset-2 hover:underline"
+              data-testid={`audit-view-task-${event.seq}`}
+            >
+              {t('audit.viewTask')}
+            </a>
+          </span>
+        ) : null}
         {!event.runId && <span>{t('audit.noContext')}</span>}
         {event.reasonCode && (
           <span>
@@ -134,8 +156,10 @@ function EventRow({ event }: { event: AuditEventView }) {
 
 export function AuditPage() {
   const { t } = useI18n();
-  const [draft, setDraft] = React.useState<Filters>(EMPTY_FILTERS);
-  const [filters, setFilters] = React.useState<Filters>(EMPTY_FILTERS);
+  const searchParams = useSearchParams();
+  const initialRunId = searchParams.get('runId') ?? '';
+  const [draft, setDraft] = React.useState<Filters>({ ...EMPTY_FILTERS, runId: initialRunId });
+  const [filters, setFilters] = React.useState<Filters>({ ...EMPTY_FILTERS, runId: initialRunId });
   const queryKey = QUERY_KEYS.audit({ ...filters });
 
   const events = useQuery({
@@ -149,10 +173,14 @@ export function AuditPage() {
     staleTime: 30_000,
   });
 
-  const apply = () => setFilters(draft);
+  const apply = () => {
+    setFilters(draft);
+    syncRunIdParam(draft.runId);
+  };
   const reset = () => {
     setDraft(EMPTY_FILTERS);
     setFilters(EMPTY_FILTERS);
+    syncRunIdParam('');
   };
   const exportLedger = () => {
     window.location.href = API.auditExport();
@@ -254,7 +282,7 @@ export function AuditPage() {
       ) : events.isError ? (
         <ErrorState message={t('audit.error')} onRetry={() => void events.refetch()} />
       ) : (events.data?.events ?? []).length === 0 ? (
-        <EmptyState title={t('audit.empty')} />
+        <EmptyState title={filters.runId ? t('audit.emptyRun') : t('audit.empty')} />
       ) : (
         <ul className="space-y-3">
           {(events.data?.events ?? []).map((event) => (

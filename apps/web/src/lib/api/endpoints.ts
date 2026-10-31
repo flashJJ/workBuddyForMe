@@ -203,6 +203,7 @@ export const QUERY_KEYS = {
   approvals: ['approvals'] as const,
   audit: (filter: Record<string, string | number | undefined>) =>
     ['audit', filter] as const,
+  taskAudit: (runId: string) => ['audit', 'task', runId] as const,
   subagentProviders: ['subagent-providers'] as const,
   subagentRuns: ['subagent-runs'] as const,
   capabilities: ['capabilities'] as const,
