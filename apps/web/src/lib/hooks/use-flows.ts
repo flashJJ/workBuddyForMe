@@ -55,6 +55,15 @@ export function useFlow(id: string | null) {
   });
 }
 
+/** v2.14：工作流版本列表（编辑器版本抽屉） */
+export function useFlowVersions(id: string, enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.flowVersions(id),
+    queryFn: () => apiGet<WorkflowVersionView[]>(API.flowVersions(id)),
+    enabled,
+  });
+}
+
 export function useFlowMutations() {
   const qc = useQueryClient();
   const invalidateList = () => qc.invalidateQueries({ queryKey: QUERY_KEYS.flows });
@@ -107,6 +116,17 @@ export function useFlowMutations() {
       onSuccess: (wf) => {
         invalidateList();
         invalidateOne(wf.id);
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.flowVersions(wf.id) });
+      },
+    }),
+    /** v2.14：设为生产版本（不改变当前草稿） */
+    setProduction: useMutation({
+      mutationFn: ({ id, version }: { id: string; version: number }) =>
+        apiPost<WorkflowView>(API.flowProduction(id), { version }),
+      onSuccess: (wf) => {
+        invalidateList();
+        invalidateOne(wf.id);
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.flowVersions(wf.id) });
       },
     }),
   };

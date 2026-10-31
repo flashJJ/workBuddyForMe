@@ -160,6 +160,43 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     expect(service.listPublishedTools().map((t) => t.name)).toEqual([`flow:${wf.id}`]);
   });
 
+  it('v2.14 生产版本：保存草稿不影响运行；设为生产后立即切换', () => {
+    const wf = workflows.createWorkflow({ name: '生产流' });
+    const withField = (field: string) => ({
+      nodes: [
+        {
+          id: 'start',
+          type: 'start' as const,
+          position: { x: 0, y: 0 },
+          config: { inputs: [{ name: field, type: 'string' as const, required: true }] },
+        },
+        { id: 'end', type: 'end' as const, position: { x: 200, y: 0 }, config: {} },
+      ],
+      edges: [{ id: 'e1', source: 'start', target: 'end' }],
+    });
+
+    workflows.addVersion(wf.id, withField('topic'));
+    workflows.publishVersion(wf.id);
+    workflows.addVersion(wf.id, withField('question'));
+    expect(workflows.getWorkflow(wf.id)?.status).toBe('draft');
+    expect(workflows.getWorkflow(wf.id)?.publishedVersion).toBe(1);
+
+    const firstRun = service.createRun({ workflowId: wf.id, trigger: 'chat', input: {} });
+    expect(runs.getRun(firstRun)?.version).toBe(1);
+    expect((service.resolveAsTool(wf.id)?.parameters as { required: string[] }).required).toEqual([
+      'topic',
+    ]);
+    expect(service.listPublishedTools().map((tool) => tool.name)).toEqual([`flow:${wf.id}`]);
+
+    workflows.setProductionVersion(wf.id, 2);
+    const secondRun = service.createRun({ workflowId: wf.id, trigger: 'chat', input: {} });
+    expect(runs.getRun(secondRun)?.version).toBe(2);
+    expect((service.resolveAsTool(wf.id)?.parameters as { required: string[] }).required).toEqual([
+      'question',
+    ]);
+    expect(workflows.getWorkflow(wf.id)?.currentVersion).toBe(2);
+  });
+
   it('取消运行：cancel 后事件流收敛为 cancelled', async () => {
     const wf = workflows.createWorkflow({ name: '人工长流' });
     workflows.addVersion(wf.id, graphHuman());

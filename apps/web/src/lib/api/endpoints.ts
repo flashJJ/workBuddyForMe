@@ -154,6 +154,8 @@ export const API = {
   flowVersions: (id: string) => `/api/flows/${id}/versions`,
   flowValidate: (id: string) => `/api/flows/${id}/validate`,
   flowPublish: (id: string) => `/api/flows/${id}/publish`,
+  /** v2.14：把历史版本设为生产（不改当前草稿） */
+  flowProduction: (id: string) => `/api/flows/${id}/production`,
   flowRuns: (id: string) => `/api/flows/${id}/runs`,
   flowRun: (runId: string) => `/api/flows/runs/${runId}`,
   flowRunEvents: (runId: string) => `/api/flows/runs/${runId}/events`,
@@ -220,6 +222,7 @@ export const QUERY_KEYS = {
   agentRun: (id: string) => ['agent-run', id] as const,
   flows: ['flows'] as const,
   flow: (id: string) => ['flows', id] as const,
+  flowVersions: (id: string) => ['flows', id, 'versions'] as const,
   flowRun: (id: string) => ['flow-run', id] as const,
   flowEndpoint: (id: string) => ['flow-endpoint', id] as const,
   voiceSettings: ['voice-settings'] as const,

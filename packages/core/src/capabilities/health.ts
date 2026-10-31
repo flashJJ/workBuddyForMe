@@ -151,7 +151,8 @@ function checkEffect(
   if (manifest.kind === 'workflow') {
     const workflow = effects.workflows.getWorkflow(ref);
     if (!workflow) return [issue('effect_missing', 'error', `工作流不存在：${ref}`, ref)];
-    if (workflow.status !== 'published') {
+    // v2.14：有生产版本时，草稿编辑不视为能力包失效
+    if (workflow.status === 'disabled' || (workflow.publishedVersion === null && workflow.status !== 'published')) {
       return [
         issue(
           'effect_status_mismatch',

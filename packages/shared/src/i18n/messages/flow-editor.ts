@@ -13,6 +13,24 @@ export const zhFlowEditor = {
     publishFailed: '发布失败',
     runStartFailed: '启动运行失败',
   },
+  versions: {
+    button: '版本历史',
+    title: '版本历史',
+    description:
+      '生产版本用于运行、对外端点与 MCP 调用；保存编辑只改变当前草稿，不影响生产运行。',
+    current: '当前',
+    production: '生产',
+    setProduction: '设为生产',
+    setProductionTitle: '设为生产版本',
+    setProductionConfirm:
+      '把 v{version} 设为生产版本？运行、端点与 MCP 调用将立即使用该版本，当前草稿保持不变。',
+    setProductionButton: '设为生产',
+    setProductionDone: '已将 v{version} 设为生产版本',
+    setProductionFailed: '设为生产失败',
+    loadFailed: '版本列表加载失败',
+    empty: '还没有保存过版本',
+    createdAt: '创建于 {date}',
+  },
   toolbar: {
     status: {
       draft: '草稿',
@@ -34,6 +52,9 @@ export const zhFlowEditor = {
     servingTitleLocked: '发布后可开启对外服务',
     serving: '对外服务',
     run: '试运行',
+    noProduction: '尚未设置生产版本，运行将使用当前版本 v{current}',
+    productionCurrent: '生产版本 v{version}',
+    productionDraft: '生产版本 v{production}；当前草稿 v{current}',
   },
   palette: {
     title: '节点',

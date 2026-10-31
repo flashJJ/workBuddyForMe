@@ -32,6 +32,7 @@ const workflow: WorkflowView = {
   color: 'default',
   status: 'published',
   currentVersion: 1,
+  publishedVersion: 1,
   createdAt: '',
   updatedAt: '',
 };

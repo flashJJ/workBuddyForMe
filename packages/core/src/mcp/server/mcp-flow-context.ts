@@ -41,8 +41,10 @@ export function createMcpFlowContext(deps: McpFlowContextDeps): McpServerContext
 
   function loadTool() {
     const wf = workflows.getWorkflow(endpoint.workflowId);
-    const version = workflows.getCurrentVersion(endpoint.workflowId);
-    if (!wf || wf.status !== 'published' || !version) return null;
+    if (!wf || wf.status === 'disabled') return null;
+    if (wf.publishedVersion === null && wf.status !== 'published') return null;
+    const version = workflows.getProductionVersion(endpoint.workflowId);
+    if (!version) return null;
     const fields: FlowInputField[] = readFlowStartFields(version.graph);
     return { wf, graph: version.graph, fields };
   }

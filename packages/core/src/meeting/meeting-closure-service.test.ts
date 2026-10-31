@@ -31,7 +31,11 @@ describe('v2.6 M3 meeting-closure-service', () => {
 
   const workflows = {
     getWorkflow(id: string) {
-      return { id, status: workflowStatus } as ReturnType<WorkflowRepository['getWorkflow']>;
+      return {
+        id,
+        status: workflowStatus,
+        publishedVersion: workflowStatus === 'published' ? 1 : null,
+      } as ReturnType<WorkflowRepository['getWorkflow']>;
     },
   } as unknown as WorkflowRepository;
 

@@ -356,6 +356,8 @@ export {
   workflowCreateSchema,
   workflowUpdateSchema,
   workflowVersionCreateSchema,
+  flowPublishSchema,
+  flowProductionSchema,
   flowRunCreateSchema,
   flowHumanSubmitSchema,
   FLOW_TOOL_NAMESPACE,
@@ -374,6 +376,8 @@ export {
   type WorkflowCreateInput,
   type WorkflowUpdateInput,
   type WorkflowVersionCreateInput,
+  type FlowPublishInput,
+  type FlowProductionInput,
   type FlowRunCreateInput,
   type FlowHumanSubmitInput,
 } from './flow';

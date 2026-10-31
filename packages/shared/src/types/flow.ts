@@ -56,8 +56,10 @@ export interface WorkflowView {
   icon: string;
   color: string;
   status: FlowStatus;
-  /** 当前版本号（0=尚无保存的图） */
+  /** 当前版本号（最近保存的草稿；0=尚无保存的图） */
   currentVersion: number;
+  /** v2.14：生产运行版本（null=尚未设置，运行时回退 currentVersion） */
+  publishedVersion: number | null;
   createdAt: string;
   updatedAt: string;
   /** 详情接口附带：最近一次成功运行时间（列表卡片用，无运行记录为 null） */
@@ -75,6 +77,8 @@ export interface WorkflowVersionView {
   graph: import('../schemas/flow').FlowGraph;
   publishedAt: string | null;
   createdAt: string;
+  /** v2.14：版本列表接口附带，是否为当前生产版本 */
+  production?: boolean;
 }
 
 /** 一次工作流运行 */

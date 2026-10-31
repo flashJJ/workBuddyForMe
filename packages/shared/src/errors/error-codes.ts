@@ -17,6 +17,8 @@ export const ERROR_CODES = {
   SKILL_VERSION_MISSING: 409,
   /** v2.14：技能回退失败（已尝试恢复原目录） */
   SKILL_ROLLBACK_FAILED: 500,
+  /** v2.14：工作流版本不存在，无法设为生产 */
+  FLOW_VERSION_NOT_FOUND: 404,
   INTERNAL_ERROR: 500,
 } as const;
 

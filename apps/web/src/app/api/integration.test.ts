@@ -193,6 +193,7 @@ describe('API 集成测试全集（TR-33.1）', () => {
       ['SERVICE_UNAVAILABLE', 503],
       ['SKILL_VERSION_MISSING', 409],
       ['SKILL_ROLLBACK_FAILED', 500],
+      ['FLOW_VERSION_NOT_FOUND', 404],
       ['INTERNAL_ERROR', 500],
     ];
     expect(Object.keys(ERROR_CODES)).toHaveLength(expectations.length + 3); // 另含 422/501×2 三个补充码

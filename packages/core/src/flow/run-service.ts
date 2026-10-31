@@ -57,10 +57,11 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
   function loadCompiledGraph(workflowId: string, requirePublished: boolean) {
     const wf = workflows.getWorkflow(workflowId);
     if (!wf) throw ApiError.notFound('工作流不存在');
-    if (requirePublished && wf.status !== 'published') {
+    // v2.14：有生产版本时，保存草稿不影响对外运行
+    if (requirePublished && wf.publishedVersion === null && wf.status !== 'published') {
       throw ApiError.validation('工作流尚未发布');
     }
-    const versionView = workflows.getCurrentVersion(workflowId);
+    const versionView = workflows.getProductionVersion(workflowId);
     if (!versionView) throw ApiError.validation('工作流还没有已保存的版本');
     const result = compileFlow(versionView.graph);
     if (!result.compiled) {
@@ -170,8 +171,9 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
 
   function resolveAsTool(workflowId: string): Tool | null {
     const wf = workflows.getWorkflow(workflowId);
-    if (!wf || wf.status !== 'published') return null;
-    const versionView = workflows.getCurrentVersion(workflowId);
+    if (!wf || wf.status === 'disabled') return null;
+    if (wf.publishedVersion === null && wf.status !== 'published') return null;
+    const versionView = workflows.getProductionVersion(workflowId);
     if (!versionView) return null;
     return buildFlowTool(wf, versionView.graph, { invokeFromChat });
   }
@@ -209,7 +211,7 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     listPublishedTools() {
       return workflows
         .listWorkflows()
-        .filter((wf) => wf.status === 'published')
+        .filter((wf) => wf.status !== 'disabled' && (wf.publishedVersion !== null || wf.status === 'published'))
         .map((wf) => resolveAsTool(wf.id))
         .filter((tool): tool is Tool => tool !== null);
     },

@@ -13,6 +13,24 @@ export const enFlowEditor = {
     publishFailed: 'Publish failed',
     runStartFailed: 'Failed to start the run',
   },
+  versions: {
+    button: 'Versions',
+    title: 'Version history',
+    description:
+      'The production version is used by runs, endpoints and MCP calls. Saving edits only changes the current draft.',
+    current: 'Current',
+    production: 'Production',
+    setProduction: 'Set as production',
+    setProductionTitle: 'Set production version',
+    setProductionConfirm:
+      'Set v{version} as the production version? Runs, endpoints and MCP calls switch immediately; the current draft stays unchanged.',
+    setProductionButton: 'Set as production',
+    setProductionDone: 'v{version} is now the production version',
+    setProductionFailed: 'Failed to set the production version',
+    loadFailed: 'Failed to load versions',
+    empty: 'No saved versions yet',
+    createdAt: 'Created {date}',
+  },
   toolbar: {
     status: {
       draft: 'Draft',
@@ -34,6 +52,9 @@ export const enFlowEditor = {
     servingTitleLocked: 'Available after publishing',
     serving: 'Local serving',
     run: 'Test run',
+    noProduction: 'No production version set; runs use the current version v{current}',
+    productionCurrent: 'Production version v{version}',
+    productionDraft: 'Production v{production}; current draft v{current}',
   },
   palette: {
     title: 'Nodes',

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { MessageKey } from '@wbfm/shared/i18n';
+import { FlowVersionsButton } from './flow-versions-dialog';
 
 const STATUS_BADGE: Record<FlowStatus, { label: MessageKey; variant: 'outline' | 'success' | 'default' }> = {
   draft: { label: 'flowEditor.toolbar.status.draft', variant: 'outline' },
@@ -45,6 +46,15 @@ export function FlowToolbar({
 }: FlowToolbarProps) {
   const { t } = useI18n();
   const badge = STATUS_BADGE[workflow.status];
+  const productionText =
+    workflow.publishedVersion === null
+      ? t('flowEditor.toolbar.noProduction', { current: version })
+      : workflow.publishedVersion === version
+        ? t('flowEditor.toolbar.productionCurrent', { version })
+        : t('flowEditor.toolbar.productionDraft', {
+            production: workflow.publishedVersion,
+            current: version,
+          });
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-4">
@@ -60,6 +70,7 @@ export function FlowToolbar({
           <span className="text-[11px] text-muted-foreground">v{version}</span>
           {dirty && <span className="text-[11px] text-warning">{t('flowEditor.toolbar.unsaved')}</span>}
         </div>
+        <span className="text-[11px] text-muted-foreground">{productionText}</span>
       </div>
 
       <div className="ml-auto flex items-center gap-2">
@@ -81,6 +92,7 @@ export function FlowToolbar({
           <Save className="h-3.5 w-3.5" />
           {t('flowEditor.toolbar.save')}
         </Button>
+        <FlowVersionsButton workflow={workflow} />
         <Button
           variant="outline"
           size="sm"

@@ -115,7 +115,8 @@ export function createEndpointService(deps: EndpointServiceDeps): EndpointServic
       throw new PublicEndpointError('endpoint_disabled', 409, '该端点未开启 MCP 暴露');
     }
     const wf = workflows.getWorkflow(endpoint.workflowId);
-    if (!wf || wf.status !== 'published') {
+    // v2.14：已有生产版本时，草稿编辑不影响对外服务
+    if (!wf || wf.status === 'disabled' || (wf.publishedVersion === null && wf.status !== 'published')) {
       throw new PublicEndpointError(
         'workflow_not_published',
         409,
