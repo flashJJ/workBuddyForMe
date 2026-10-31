@@ -27,6 +27,8 @@ export const ERROR_CODES = {
   CAPABILITY_DEPENDENTS_ACTIVE: 409,
   /** v2.14：版本未变化且不满足修复条件 */
   CAPABILITY_VERSION_NOT_NEWER: 422,
+  /** v2.14：诊断包生成超时 */
+  DIAGNOSTICS_TIMEOUT: 503,
   INTERNAL_ERROR: 500,
 } as const;
 

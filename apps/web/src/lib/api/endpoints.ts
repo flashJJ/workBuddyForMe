@@ -117,6 +117,8 @@ export const API = {
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
   toolBreakers: '/api/tools/breakers',
   toolDebug: '/api/tools/debug',
+  /** v2.14：脱敏诊断包下载（本地生成，不上传） */
+  diagnosticsExport: '/api/diagnostics/export',
   tasks: '/api/tasks',
   taskList: (conversationId: string) => `/api/tasks?conversationId=${conversationId}`,
   task: (id: string) => `/api/tasks/${id}`,

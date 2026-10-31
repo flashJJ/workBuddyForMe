@@ -18,6 +18,7 @@ import {
   canonicalJson,
   operationBindingSchema,
 } from '@wbfm/shared/schemas';
+import { verifyAuditChain } from './audit-verify';
 
 /**
  * v2.13 M3：审计账本服务。
@@ -143,7 +144,8 @@ export interface AuditService {
   /** 生命周期事件用：写入失败只告警，不阻断运行 */
   safeAppend(input: AuditAppendInput): AuditEventView | null;
   list(query: AuditQuery): AuditEventListPage;
-  verify(): AuditVerifyResult;
+  /** v2.14：诊断包可只校验最近 maxEvents 条且不写回审计事件 */
+  verify(options?: { record?: boolean; maxEvents?: number }): AuditVerifyResult;
   count(): number;
   /** 导出：按 seq 升序惰性产出 JSONL 行 */
   iterateJsonl(): Generator<string>;
@@ -225,48 +227,24 @@ export function createAuditService(db: DatabaseInstance): AuditService {
       };
     },
 
-    verify() {
-      let expectedSeq = 1;
-      let prevHash = AUDIT_GENESIS_HASH;
-      let checked = 0;
-      let firstBrokenSeq: number | null = null;
-      let afterSeq = 0;
-      for (;;) {
-        const rows = repo.listAscending(afterSeq);
-        if (rows.length === 0) break;
-        for (const row of rows) {
-          if (row.seq !== expectedSeq) {
-            firstBrokenSeq = expectedSeq;
-            break;
-          }
-          if (row.prev_hash !== prevHash || row.hash !== computeHash(prevHash, fieldsFromRow(row))) {
-            firstBrokenSeq = row.seq;
-            break;
-          }
-          prevHash = row.hash;
-          expectedSeq += 1;
-          checked += 1;
+    verify(options = {}) {
+      const result = verifyAuditChain(
+        repo,
+        (prev, row) => computeHash(prev, fieldsFromRow(row)),
+        options,
+      );
+      if (options.record !== false) {
+        try {
+          service.append({
+            kind: 'audit_verified',
+            actor: 'user',
+            decision: result.ok ? 'allow' : 'deny',
+            reasonCode: result.ok ? null : AUDIT_CHAIN_BROKEN,
+            outcome: result.ok ? 'ok' : `broken:${result.firstBrokenSeq}`,
+          });
+        } catch (error) {
+          console.warn('[audit] 校验结果写入失败', error);
         }
-        if (firstBrokenSeq !== null) break;
-        afterSeq = rows[rows.length - 1]!.seq;
-        if (rows.length < 500) break;
-      }
-
-      const result: AuditVerifyResult = {
-        ok: firstBrokenSeq === null,
-        checked,
-        firstBrokenSeq,
-      };
-      try {
-        service.append({
-          kind: 'audit_verified',
-          actor: 'user',
-          decision: result.ok ? 'allow' : 'deny',
-          reasonCode: result.ok ? null : AUDIT_CHAIN_BROKEN,
-          outcome: result.ok ? 'ok' : `broken:${firstBrokenSeq}`,
-        });
-      } catch (error) {
-        console.warn('[audit] 校验结果写入失败', error);
       }
       return result;
     },

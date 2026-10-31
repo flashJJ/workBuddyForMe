@@ -21,6 +21,7 @@ describe('API 错误码一致性（TR-33.1）', () => {
       ['CAPABILITY_DOWNGRADE_TARGET_MISMATCH', 422],
       ['CAPABILITY_DEPENDENTS_ACTIVE', 409],
       ['CAPABILITY_VERSION_NOT_NEWER', 422],
+      ['DIAGNOSTICS_TIMEOUT', 503],
       ['INTERNAL_ERROR', 500],
     ];
     // 另含 422/501×2 三个补充码

@@ -298,6 +298,15 @@ export {
   capabilitySignaturePayload,
 } from './capability-signature';
 
+// v2.14 诊断包 manifest 契约
+export {
+  DIAGNOSTIC_FORMAT_VERSION,
+  diagnosticEntrySchema,
+  diagnosticManifestSchema,
+  type DiagnosticEntry,
+  type DiagnosticManifest,
+} from './diagnostics';
+
 // v2.12 能力包健康报告契约
 export {
   CAPABILITY_HEALTH_ISSUE_CODES,
