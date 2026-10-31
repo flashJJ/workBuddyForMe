@@ -13,6 +13,10 @@ export const ERROR_CODES = {
   PROVIDER_TIMEOUT: 504,
   /** v2.13：审计账本不可写等治理依赖暂不可用（fail-closed） */
   SERVICE_UNAVAILABLE: 503,
+  /** v2.14：技能版本快照不存在，无法回退 */
+  SKILL_VERSION_MISSING: 409,
+  /** v2.14：技能回退失败（已尝试恢复原目录） */
+  SKILL_ROLLBACK_FAILED: 500,
   INTERNAL_ERROR: 500,
 } as const;
 

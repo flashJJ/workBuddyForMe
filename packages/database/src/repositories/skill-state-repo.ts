@@ -6,6 +6,8 @@ export interface SkillStateRow {
   name: string;
   enabled: number;
   source_path: string;
+  /** v2.14：当前磁盘内容对应的快照版本（未建立快照时为 NULL） */
+  active_version: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +23,8 @@ export interface SkillStateCreateFields {
 export interface SkillStateUpdateFields {
   enabled?: boolean;
   sourcePath?: string;
+  /** v2.14：扫描确认或回退成功后写入 */
+  activeVersion?: string;
 }
 
 function mapRow(row: SkillStateRow) {
@@ -29,6 +33,7 @@ function mapRow(row: SkillStateRow) {
     name: row.name,
     enabled: row.enabled === 1,
     sourcePath: row.source_path,
+    activeVersion: row.active_version ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -85,6 +90,10 @@ export function createSkillStateRepository(db: DatabaseInstance) {
       if (fields.sourcePath !== undefined) {
         sets.push('source_path = @sourcePath');
         values.sourcePath = fields.sourcePath;
+      }
+      if (fields.activeVersion !== undefined) {
+        sets.push('active_version = @activeVersion');
+        values.activeVersion = fields.activeVersion;
       }
       if (sets.length === 0) return mapRow(row);
       db.prepare(`UPDATE skills_state SET ${sets.join(', ')}, updated_at = @updated_at WHERE id = @id`).run(values);

@@ -7,7 +7,7 @@ describe('v038 迁移：追加式事件日志 + CJK 全文索引', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(41);
+    expect(LATEST_SCHEMA_VERSION).toBe(42);
 
     const table = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='session_events'`)

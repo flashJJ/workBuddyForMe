@@ -76,3 +76,46 @@ export const skillUpdateSchema = z.object({
   enabled: z.boolean(),
 });
 export type SkillUpdateInput = z.infer<typeof skillUpdateSchema>;
+
+// ── v2.14 技能版本快照与回退 ──
+
+/** 路径参数：技能名（同时作为 skills/ 下的文件夹名，必须标识符安全） */
+export const skillNameParamSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(SKILL_NAME_MAX)
+    .regex(SKILL_NAME_PATTERN, '技能名仅允许字母/数字/下划线/中划线'),
+});
+export type SkillNameParam = z.infer<typeof skillNameParamSchema>;
+
+/** 路径参数：技能名 + 版本号（版本号为 manifest 中的展示字符串） */
+export const skillVersionParamSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(SKILL_NAME_MAX)
+    .regex(SKILL_NAME_PATTERN, '技能名仅允许字母/数字/下划线/中划线'),
+  version: z.string().trim().min(1).max(SKILL_VERSION_MAX),
+});
+export type SkillVersionParam = z.infer<typeof skillVersionParamSchema>;
+
+/** 单个技能版本快照视图（GET /api/skills/:name/versions） */
+export const skillVersionViewSchema = z.object({
+  id: z.string(),
+  version: z.string(),
+  checksum: z.string(),
+  sizeBytes: z.number().int().min(0),
+  createdAt: z.string(),
+  active: z.boolean(),
+});
+export type SkillVersionView = z.infer<typeof skillVersionViewSchema>;
+
+/** 版本列表响应；无可用快照时 versions 为空且 versioningAvailable=false */
+export const skillVersionsResponseSchema = z.object({
+  versions: z.array(skillVersionViewSchema),
+  versioningAvailable: z.boolean(),
+});
+export type SkillVersionsResponse = z.infer<typeof skillVersionsResponseSchema>;

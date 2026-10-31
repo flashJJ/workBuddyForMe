@@ -10,6 +10,8 @@ export const zhErrors = {
   PROVIDER_ERROR: '模型服务返回错误，请检查供应商配置或稍后重试。',
   PROVIDER_TIMEOUT: '模型服务响应超时，请稍后重试。',
   SERVICE_UNAVAILABLE: '治理服务暂不可用，操作已按安全策略拒绝，请检查审计账本后重试。',
+  SKILL_VERSION_MISSING: '该技能版本快照不存在，无法回退。',
+  SKILL_ROLLBACK_FAILED: '技能回退失败，已尝试恢复原目录。',
   INTERNAL_ERROR: '服务内部错误，请稍后重试。',
   NETWORK_ERROR: '网络连接失败，请检查网络后重试。',
   UNKNOWN_ERROR: '发生未知错误，请稍后重试。',
@@ -30,6 +32,8 @@ export const enErrors = {
   PROVIDER_TIMEOUT: 'The model service timed out. Please try again later.',
   SERVICE_UNAVAILABLE:
     'The governance service is unavailable. The action was denied by fail-closed policy. Check the audit ledger and retry.',
+  SKILL_VERSION_MISSING: 'That skill version snapshot does not exist, so it cannot be restored.',
+  SKILL_ROLLBACK_FAILED: 'Skill rollback failed; the original folder was restored if possible.',
   INTERNAL_ERROR: 'Internal server error. Please try again later.',
   NETWORK_ERROR: 'Network error. Check your connection and try again.',
   UNKNOWN_ERROR: 'An unknown error occurred. Please try again later.',

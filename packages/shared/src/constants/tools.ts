@@ -51,6 +51,10 @@ export const SKILL_NAME_MAX = 40;
 export const SKILL_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
 export const SKILL_DESCRIPTION_MAX = 500;
 export const SKILL_VERSION_MAX = 40;
+/** v2.14：技能版本快照自动保留数量（永不删除启用中的版本） */
+export const SKILL_VERSION_KEEP = 5;
+/** v2.14：单个技能目录快照体积上限（50 MB），超限跳过快照并记录健康问题 */
+export const SKILL_VERSION_MAX_BYTES = 50 * 1024 * 1024;
 /** 单段提示词模板长度上限（防失控注入撑爆上下文预算） */
 export const SKILL_PROMPT_TEMPLATE_MAX = 4000;
 export const SKILL_MAX_PROMPT_TEMPLATES = 10;

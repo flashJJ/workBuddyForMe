@@ -108,6 +108,10 @@ export const API = {
   mcpTools: '/api/mcp/tools',
   skills: '/api/skills',
   skill: (id: string) => `/api/skills/${id}`,
+  /** v2.14：技能版本快照列表与回退 */
+  skillVersions: (name: string) => `/api/skills/${encodeURIComponent(name)}/versions`,
+  skillVersionRollback: (name: string, version: string) =>
+    `/api/skills/${encodeURIComponent(name)}/versions/${encodeURIComponent(version)}/rollback`,
   toolConfirm: '/api/tools/confirm',
   toolPermissions: '/api/tools/permissions',
   toolPermission: (id: string) => `/api/tools/permissions/${id}`,
@@ -190,6 +194,7 @@ export const QUERY_KEYS = {
   mcpServers: ['mcp-servers'] as const,
   mcpTools: ['mcp-tools'] as const,
   skills: ['skills'] as const,
+  skillVersions: (name: string) => ['skills', name, 'versions'] as const,
   toolPermissions: ['tool-permissions'] as const,
   toolBreakers: ['tool-breakers'] as const,
   toolDebug: ['tool-debug'] as const,

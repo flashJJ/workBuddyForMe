@@ -129,7 +129,15 @@ export {
 export {
   skillManifestSchema,
   skillUpdateSchema,
+  skillNameParamSchema,
+  skillVersionParamSchema,
+  skillVersionViewSchema,
+  skillVersionsResponseSchema,
   type SkillUpdateInput,
+  type SkillNameParam,
+  type SkillVersionParam,
+  type SkillVersionView,
+  type SkillVersionsResponse,
 } from './skill';
 export {
   COMPUTER_CHANNEL_FILE,

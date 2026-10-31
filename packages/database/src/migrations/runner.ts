@@ -40,6 +40,7 @@ import { migrateV038 } from './v038-session-events';
 import { migrateV039 } from './v039-capability-packs';
 import { migrateV040 } from './v040-capability-effects';
 import { migrateV041 } from './v041-agent-governance';
+import { migrateV042 } from './v042-maintenance';
 
 interface Migration {
   version: number;
@@ -250,6 +251,12 @@ const MIGRATIONS: Migration[] = [
     description:
       'v2.13: task_runs 执行模式/工作目录/策略快照/定时来源 + audit_events 审计账本（纯加法）',
     up: migrateV041,
+  },
+  {
+    version: 42,
+    description:
+      'v2.14: skill_versions 技能版本快照 + skills_state.active_version + workflows.published_version（纯加法）',
+    up: migrateV042,
   },
 ];
 
