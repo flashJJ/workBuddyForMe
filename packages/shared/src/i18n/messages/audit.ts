@@ -65,6 +65,7 @@ export const zhAudit = {
     scheduled_run_finished: '定时结束',
     unattended_blocked: '无人值守拒绝',
     skill_version_deleted: '技能版本删除',
+    secrets_rotated: '凭证轮换',
     audit_verified: '完整性校验',
   },
   actors: {
@@ -145,6 +146,7 @@ export const enAudit = {
     scheduled_run_finished: 'Scheduled run finished',
     unattended_blocked: 'Unattended blocked',
     skill_version_deleted: 'Skill version deleted',
+    secrets_rotated: 'Credentials rotated',
     audit_verified: 'Integrity verified',
   },
   actors: {

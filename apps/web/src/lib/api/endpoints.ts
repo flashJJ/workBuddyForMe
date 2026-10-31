@@ -57,6 +57,8 @@ export const API = {
   auditArchive: (from: string, to: string) =>
     `/api/audit/archive?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
   auditAnchorVerify: '/api/audit/anchor/verify',
+  // v2.15 凭证轮换
+  secretRotate: '/api/secrets/rotate',
   // v2.8 目标 / 计划 / 待办
   goals: '/api/goals',
   goalsByConversation: (conversationId: string) =>

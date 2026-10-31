@@ -310,6 +310,11 @@ export {
   type AuditAnchorVerifyCode,
   type AuditAnchorVerifyResult,
 } from './audit-archive';
+// v2.15 Provider 凭证轮换
+export {
+  secretRotationResultSchema,
+  type SecretRotationResult,
+} from './secrets';
 // v2.12 能力包签名规范化（纯函数）
 export {
   CAPABILITY_SIGNATURE_DOMAIN,

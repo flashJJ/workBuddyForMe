@@ -41,6 +41,7 @@ const KIND_KEYS: Record<AuditEventKind, MessageKey> = {
   scheduled_run_finished: 'audit.kinds.scheduled_run_finished',
   unattended_blocked: 'audit.kinds.unattended_blocked',
   skill_version_deleted: 'audit.kinds.skill_version_deleted',
+  secrets_rotated: 'audit.kinds.secrets_rotated',
   audit_verified: 'audit.kinds.audit_verified',
 };
 

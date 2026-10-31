@@ -8,3 +8,13 @@ export {
 } from './cipher';
 export { sealWithKey, openWithKey } from './crypto-box';
 export { loadOrCreateMasterKey, MASTER_KEY_FILENAME } from './master-key';
+export {
+  MASTER_KEYRING_FILENAME,
+  finalizeKeyring,
+  loadOrCreateKeyring,
+  rotateKeyring,
+  syncLegacyMasterKey,
+  type KeyringEntry,
+  type LoadedKeyring,
+} from './master-keyring';
+export { createSecretRotationService, type SecretRotationService } from './rotate';

@@ -23,6 +23,10 @@ export const ERROR_CODES = {
   SKILL_VERSION_DELETE_FAILED: 500,
   /** v2.15：审计归档区间或事件数超限 */
   AUDIT_ARCHIVE_TOO_LARGE: 422,
+  /** v2.15：凭证加密能力不可用 */
+  SECRET_ROTATION_UNAVAILABLE: 503,
+  /** v2.15：凭证轮换 keyring 写入失败 */
+  SECRET_ROTATION_FAILED: 500,
   /** v2.14：技能回退失败（已尝试恢复原目录） */
   SKILL_ROLLBACK_FAILED: 500,
   /** v2.14：工作流版本不存在，无法设为生产 */
