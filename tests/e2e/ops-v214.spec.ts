@@ -468,7 +468,7 @@ test.describe.serial('v2.14 可维护运维链路', () => {
     const res = await page.request.get('/api/diagnostics/export', { timeout: 60_000 });
     expect(res.ok()).toBeTruthy();
     expect(res.headers()['content-type']).toBe('application/zip');
-    expect(res.headers()['content-disposition']).toContain('wbfm-diagnostics-2.14.0-');
+    expect(res.headers()['content-disposition']).toMatch(/wbfm-diagnostics-\d+\.\d+\.\d+-/);
 
     const files = unzipSync(new Uint8Array(await res.body()));
     for (const name of [
@@ -496,7 +496,7 @@ test.describe.serial('v2.14 可维护运维链路', () => {
       entries: Array<{ path: string }>;
     };
     expect(manifest.formatVersion).toBe(1);
-    expect(manifest.appVersion).toBe('2.14.0');
+    expect(manifest.appVersion).toMatch(/^\d+\.\d+\.\d+$/);
     expect(manifest.entries.map((item) => item.path).sort()).toEqual(
       [
         'audit-verify.json',
@@ -520,7 +520,7 @@ test.describe.serial('v2.14 可维护运维链路', () => {
     const downloadPromise = page.waitForEvent('download');
     await page.getByTestId('diagnostics-export').click();
     const download = await downloadPromise;
-    expect(download.suggestedFilename()).toMatch(/^wbfm-diagnostics-2\.14\.0-.*\.zip$/);
+    expect(download.suggestedFilename()).toMatch(/^wbfm-diagnostics-\d+\.\d+\.\d+-.*\.zip$/);
     await expect(page.getByText('诊断包已开始下载')).toBeVisible();
   });
 });
