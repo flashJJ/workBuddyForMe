@@ -35,6 +35,23 @@ export function buildToolCatalog(
     .filter((entry): entry is string => Boolean(entry));
 }
 
+export function createToolGovernanceContext(
+  deps: Pick<ServiceDeps, 'agentPolicy' | 'audit'>,
+  runId: string,
+) {
+  return {
+    runId,
+    ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
+    ...(deps.audit
+      ? {
+          governanceAudit: (input: { kind: 'policy_denied'; tool: string; reasonCode: string; outcome?: string }) => {
+            deps.audit!.safeAppend({ actor: 'agent', ...input });
+          },
+        }
+      : {}),
+  };
+}
+
 export function createTaskLoopRuntime(input: {
   deps: Pick<ServiceDeps, 'agentPolicy'>;
   runtime: Pick<ToolRuntime, 'resolveTool'>;

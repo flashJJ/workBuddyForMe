@@ -11,6 +11,7 @@ import { fetchWebpageTool } from './fetch-webpage-tool';
 import { screenSnapshotTool } from './computer/screen-snapshot-tool';
 import { createInputTools } from './computer/input-tools';
 import { createWindowTools } from './computer/window-tools';
+import { createBrowserTools } from './computer/browser-tools';
 import { createComputerChannelClient } from '../computer/channel-client';
 
 /** 全部内置工具（默认全部关闭，由助手白名单开启） */
@@ -26,6 +27,7 @@ const ALL_TOOLS: Record<string, Tool> = {
 for (const tool of [
   ...createInputTools(createComputerChannelClient()),
   ...createWindowTools(createComputerChannelClient()),
+  ...createBrowserTools(createComputerChannelClient()),
 ]) {
   ALL_TOOLS[tool.name] = tool;
 }
@@ -149,6 +151,14 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         knowledgeBaseIds: assistant.knowledgeBaseIds,
         visionCapable: opts?.visionCapable ?? false,
         ...(conversationId ? { conversationId } : {}),
+        ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
+        ...(deps.audit
+          ? {
+              governanceAudit: (input: Parameters<NonNullable<ToolContext['governanceAudit']>>[0]) => {
+                deps.audit!.safeAppend({ actor: 'agent', ...input });
+              },
+            }
+          : {}),
         ...(conversationId && deps.workPlans
           ? {
               writeTodos: (todos: Parameters<NonNullable<ToolContext['writeTodos']>>[0]) => {

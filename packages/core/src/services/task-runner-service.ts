@@ -107,6 +107,7 @@ export function createTaskRunnerService(
         policyHash: latest.policyHash,
         outcome: latest.stopReason ? `${latest.status}:${latest.stopReason}` : latest.status,
       });
+      void deps.closeBrowserSession?.(latest.id);
       extra.onComplete?.(latest);
     }
   };

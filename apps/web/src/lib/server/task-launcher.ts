@@ -26,6 +26,13 @@ export const COMPUTER_BUILTIN_TOOLS = [
   'window_focus',
   'app_launch',
   'uia_list',
+  // v2.13 M5：隔离网页会话
+  'browser_open',
+  'browser_read',
+  'browser_snapshot',
+  'browser_click',
+  'browser_type',
+  'browser_close',
 ] as const;
 
 export interface TaskLaunchArtifacts {

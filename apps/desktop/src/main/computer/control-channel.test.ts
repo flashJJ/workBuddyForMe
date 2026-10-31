@@ -45,6 +45,28 @@ async function post(url: string, token: string | null, body: unknown): Promise<{
 }
 
 describe('控制通道（M2 键鼠/窗口/UIA 路由）', () => {
+  it('browser 路由透传 runId 并返回会话结果', async () => {
+    const got: Array<{ url: string }> = [];
+    channel = await startComputerChannel({
+      handlers: {
+        snapshot: async () => FAKE_SNAPSHOT,
+        browserOpen: async (args) => {
+          got.push(args);
+          return { ok: true, sessionId: 's1', domain: 'example.com', urlHash: 'h' };
+        },
+      },
+    });
+    const res = await post(`${channel.url}/browser/open`, channel.token, {
+      runId: 'r1',
+      url: 'https://example.com',
+      allowDomains: [],
+      denyDomains: [],
+    });
+    expect(res.status).toBe(200);
+    expect(got[0]).toMatchObject({ runId: 'r1', url: 'https://example.com' });
+    expect(res.json).toMatchObject({ ok: true, sessionId: 's1' });
+  });
+
   it('输入路由透传参数并返回 ok', async () => {
     const got: unknown[] = [];
     channel = await startComputerChannel({

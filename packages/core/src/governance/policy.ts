@@ -4,8 +4,10 @@ import type {
   AgentPolicy,
   AgentPolicyDecision,
 } from '@wbfm/shared/schemas';
-import { canonicalJson } from '@wbfm/shared/schemas';
+import { canonicalJson, matchesDomainRule } from '@wbfm/shared/schemas';
 import { isPathInside, isSensitivePath } from './workspace';
+
+export { matchesDomainRule };
 
 /** v2.13 M2：策略求值（deny wins；纯函数，不做 IO） */
 
@@ -29,17 +31,6 @@ export function matchesToolRule(rule: string, toolName: string): boolean {
   if (trimmed === '*' || trimmed === 'all') return true;
   if (trimmed.endsWith('*')) return toolName.startsWith(trimmed.slice(0, -1));
   return toolName === trimmed;
-}
-
-export function matchesDomainRule(rule: string, domain: string): boolean {
-  const trimmed = rule.trim().toLowerCase();
-  const target = domain.trim().toLowerCase();
-  if (!trimmed || !target) return false;
-  if (trimmed.startsWith('*.')) {
-    const suffix = trimmed.slice(2);
-    return target === suffix || target.endsWith(`.${suffix}`);
-  }
-  return target === trimmed;
 }
 
 function findMatch(rules: string[], value: string, matcher: (rule: string, value: string) => boolean): string | null {

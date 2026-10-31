@@ -50,6 +50,7 @@ import {
 import { createSkillService } from '@wbfm/core/skills';
 import { registerExitCleanup } from './container-exit';
 import { ensureServerScheduler } from './server-scheduler';
+import { closeBrowserSession } from './browser-session-close';
 import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
@@ -57,19 +58,16 @@ import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/wo
 import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
 import { createCapabilityService } from '@wbfm/core/capabilities';
 import { createAuditService } from '@wbfm/core/governance';
-
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
 
 let container: ServiceContainer | null = null;
-
 /**
  * dev 模式下 Next 按需编译/HMR 会重新求值本模块，模块级 container 会重置为 null，
  * 导致 SSE 长连接持有旧 flowRunner（含人工等待器）而 POST 路由拿到新实例。
  * 额外在 globalThis 上保留同一单例，使模块重载后仍复用原容器（生产模式无影响）。
  */
 const globalHolder = globalThis as { __WBFM_SERVICE_CONTAINER__?: ServiceContainer };
-
 function readContainer(): ServiceContainer | null {
   return container ?? globalHolder.__WBFM_SERVICE_CONTAINER__ ?? null;
 }
@@ -116,6 +114,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   };
   const audit = createAuditService(db);
   deps.audit = audit;
+  deps.closeBrowserSession = closeBrowserSession;
   const settingsService = createSettingsService(deps);
   deps.agentPolicy = () => settingsService.get().agentPolicy!;
   const sessionLog = createSessionLogService(deps);

@@ -4,6 +4,12 @@ import http from 'node:http';
 import path from 'node:path';
 import {
   appLaunchArgsSchema,
+  browserClickRequestSchema,
+  browserCloseRequestSchema,
+  browserOpenRequestSchema,
+  browserReadRequestSchema,
+  browserSnapshotRequestSchema,
+  browserTypeRequestSchema,
   keyboardPressArgsSchema,
   keyboardTypeArgsSchema,
   mouseClickArgsSchema,
@@ -13,6 +19,17 @@ import {
   uiaListArgsSchema,
   windowFocusArgsSchema,
   type AppLaunchArgs,
+  type BrowserActionResponse,
+  type BrowserClickRequest,
+  type BrowserCloseRequest,
+  type BrowserCloseResponse,
+  type BrowserOpenRequest,
+  type BrowserOpenResponse,
+  type BrowserReadRequest,
+  type BrowserReadResponse,
+  type BrowserSnapshotRequest,
+  type BrowserSnapshotResponse,
+  type BrowserTypeRequest,
   type ComputerChannelInfo,
   type InputActionResponse,
   type KeyboardPressArgs,
@@ -46,6 +63,13 @@ export interface ComputerChannelHandlers {
   windowFocus?(args: WindowFocusArgs): Promise<InputActionResponse>;
   appLaunch?(args: AppLaunchArgs): Promise<InputActionResponse>;
   uiaList?(args: UiaListArgs): Promise<UiaListResponse>;
+  /** v2.13 M5：隔离网页会话 */
+  browserOpen?(args: BrowserOpenRequest): Promise<BrowserOpenResponse>;
+  browserRead?(args: BrowserReadRequest): Promise<BrowserReadResponse>;
+  browserSnapshot?(args: BrowserSnapshotRequest): Promise<BrowserSnapshotResponse>;
+  browserClick?(args: BrowserClickRequest): Promise<BrowserActionResponse>;
+  browserType?(args: BrowserTypeRequest): Promise<BrowserActionResponse>;
+  browserClose?(args: BrowserCloseRequest): Promise<BrowserCloseResponse>;
 }
 
 export interface ComputerChannel {
@@ -117,6 +141,36 @@ const ROUTES: Route[] = [
     path: '/uia/list',
     schema: uiaListArgsSchema,
     invoke: (h, a) => h.uiaList?.(a as UiaListArgs),
+  },
+  {
+    path: '/browser/open',
+    schema: browserOpenRequestSchema,
+    invoke: (h, a) => h.browserOpen?.(a as BrowserOpenRequest),
+  },
+  {
+    path: '/browser/read',
+    schema: browserReadRequestSchema,
+    invoke: (h, a) => h.browserRead?.(a as BrowserReadRequest),
+  },
+  {
+    path: '/browser/snapshot',
+    schema: browserSnapshotRequestSchema,
+    invoke: (h, a) => h.browserSnapshot?.(a as BrowserSnapshotRequest),
+  },
+  {
+    path: '/browser/click',
+    schema: browserClickRequestSchema,
+    invoke: (h, a) => h.browserClick?.(a as BrowserClickRequest),
+  },
+  {
+    path: '/browser/type',
+    schema: browserTypeRequestSchema,
+    invoke: (h, a) => h.browserType?.(a as BrowserTypeRequest),
+  },
+  {
+    path: '/browser/close',
+    schema: browserCloseRequestSchema,
+    invoke: (h, a) => h.browserClose?.(a as BrowserCloseRequest),
   },
 ];
 

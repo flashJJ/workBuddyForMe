@@ -6,11 +6,10 @@ import type { ToolContext } from '../tools/types';
 import { executeToolCall, summarizeArgs } from '../tools/tool-executor';
 import { gateToolPermission } from '../chat/tool-permission-gate';
 import type { TaskPlanDecision } from './types';
-import { createTaskLoopRuntime, stopForPolicyLimit } from './task-loop-runtime';
+import { createTaskLoopRuntime, createToolGovernanceContext, stopForPolicyLimit } from './task-loop-runtime';
 import { createTaskLoopControl, type TaskLoopEvent, type TaskLoopParams } from './control';
 import { STEP_RESULT_MAX_CHARS, addFinalStep, createTaskLoopInternals, produceObserveStep, mandatoryRetrievalCorrection, type TaskLoopState } from './task-loop-helpers';
 import { sys } from '../i18n/system-text';
-
 /**
  * 任务 Agent 循环：观察 → 决策 → 门控 → 执行 → 再观察。
  * 护栏：步数上限（maxSteps）+ 连续失败上限（TASK_MAX_FAILURES）+ 熔断联动
@@ -26,6 +25,7 @@ export async function* runTaskLoop(
   const repo = createTaskRunRepository(deps.db);
   const observeToolName = params.observeToolName ?? 'screen_snapshot';
   const toolCtx: ToolContext = {
+    ...createToolGovernanceContext(deps, params.run.id),
     signal,
     knowledgeBaseIds: params.knowledgeBaseIds ?? [],
     visionCapable,

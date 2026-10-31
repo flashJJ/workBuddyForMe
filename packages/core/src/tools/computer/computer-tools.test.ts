@@ -46,6 +46,12 @@ function fakeClient(behavior: 'ok' | 'unavailable' = 'ok'): { client: ComputerCh
         totalNodes: 5,
       };
     }) as never,
+    browserOpen: record('/browser/open') as never,
+    browserRead: record('/browser/read') as never,
+    browserSnapshot: record('/browser/snapshot') as never,
+    browserClick: record('/browser/click') as never,
+    browserType: record('/browser/type') as never,
+    browserClose: record('/browser/close') as never,
   };
   return { client, calls };
 }

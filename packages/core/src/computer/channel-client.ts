@@ -1,6 +1,12 @@
 import fs from 'node:fs';
 import { resolveDataPath } from '@wbfm/config';
 import {
+  browserClickRequestSchema,
+  browserCloseRequestSchema,
+  browserOpenRequestSchema,
+  browserReadRequestSchema,
+  browserSnapshotRequestSchema,
+  browserTypeRequestSchema,
   COMPUTER_CHANNEL_FILE,
   appLaunchArgsSchema,
   computerChannelInfoSchema,
@@ -13,6 +19,17 @@ import {
   uiaListArgsSchema,
   windowFocusArgsSchema,
   type AppLaunchArgs,
+  type BrowserActionResponse,
+  type BrowserClickRequest,
+  type BrowserCloseRequest,
+  type BrowserCloseResponse,
+  type BrowserOpenRequest,
+  type BrowserOpenResponse,
+  type BrowserReadRequest,
+  type BrowserReadResponse,
+  type BrowserSnapshotRequest,
+  type BrowserSnapshotResponse,
+  type BrowserTypeRequest,
   type ComputerChannelInfo,
   type InputActionResponse,
   type KeyboardPressArgs,
@@ -51,6 +68,16 @@ export interface ComputerChannelClient {
   windowFocus(args: WindowFocusArgs, signal?: AbortSignal): Promise<InputActionResponse>;
   appLaunch(args: AppLaunchArgs, signal?: AbortSignal): Promise<InputActionResponse>;
   uiaList(args: UiaListArgs, signal?: AbortSignal): Promise<UiaListResponse>;
+  /** v2.13 M5：隔离网页会话（均绑定 runId） */
+  browserOpen(args: BrowserOpenRequest, signal?: AbortSignal): Promise<BrowserOpenResponse>;
+  browserRead(args: BrowserReadRequest, signal?: AbortSignal): Promise<BrowserReadResponse>;
+  browserSnapshot(
+    args: BrowserSnapshotRequest,
+    signal?: AbortSignal,
+  ): Promise<BrowserSnapshotResponse>;
+  browserClick(args: BrowserClickRequest, signal?: AbortSignal): Promise<BrowserActionResponse>;
+  browserType(args: BrowserTypeRequest, signal?: AbortSignal): Promise<BrowserActionResponse>;
+  browserClose(args: BrowserCloseRequest, signal?: AbortSignal): Promise<BrowserCloseResponse>;
 }
 
 export interface ComputerChannelClientOptions {
@@ -123,5 +150,14 @@ export function createComputerChannelClient(
     windowFocus: (args, signal) => post('/windows/focus', args, signal, windowFocusArgsSchema),
     appLaunch: (args, signal) => post('/app/launch', args, signal, appLaunchArgsSchema),
     uiaList: (args, signal) => post('/uia/list', args, signal, uiaListArgsSchema),
+    browserOpen: (args, signal) => post('/browser/open', args, signal, browserOpenRequestSchema),
+    browserRead: (args, signal) => post('/browser/read', args, signal, browserReadRequestSchema),
+    browserSnapshot: (args, signal) =>
+      post('/browser/snapshot', args, signal, browserSnapshotRequestSchema),
+    browserClick: (args, signal) =>
+      post('/browser/click', args, signal, browserClickRequestSchema),
+    browserType: (args, signal) => post('/browser/type', args, signal, browserTypeRequestSchema),
+    browserClose: (args, signal) =>
+      post('/browser/close', args, signal, browserCloseRequestSchema),
   };
 }

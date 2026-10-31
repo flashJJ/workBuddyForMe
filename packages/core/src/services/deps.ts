@@ -39,6 +39,8 @@ export interface ServiceDeps {
   agentPolicy?: () => AgentPolicy;
   /** v2.13 M3：执行审计账本（未提供时治理事件不落账本） */
   audit?: AuditService;
+  /** v2.13 M5：运行终态关闭隔离网页会话（桌面控制通道不可用时静默） */
+  closeBrowserSession?: (runId: string) => Promise<void>;
   /**
    * v0.8 M1：flow 工具第三来源解析器（已发布工作流 → Tool）。
    * 懒解析：仅在 resolveTool 遇到 flow:<id> 时调用，避免与 FlowRunService 的构造环。

@@ -171,6 +171,9 @@ export {
   type UiaListResponse,
   type InputActionResponse,
 } from './computer';
+// v2.13 M5 隔离网页会话
+export * from './browser';
+export { matchesDomainRule } from './domain-rule';
 export {
   AGENT_PERMISSION_MODES,
   AGENT_UNATTENDED_MODES,
