@@ -1,5 +1,5 @@
 import { ApiError } from '@wbfm/shared/errors';
-import { type Provider } from '@wbfm/shared/types';
+import { type Provider, type ProviderConnectionResult } from '@wbfm/shared/types';
 import {
   createModelRepository,
   createProviderRepository,
@@ -7,7 +7,7 @@ import {
 } from '@wbfm/database';
 import type { ProviderCreateInput, ProviderUpdateInput } from '@wbfm/shared/schemas';
 import { maskSecret } from '../../secrets/cipher';
-import { ProviderError } from '@wbfm/ai';
+import { ProviderError, findVendorByBaseUrl, resolveVendorDiscovery } from '@wbfm/ai';
 import type { ServiceDeps } from '../base/deps';
 import { buildProvider, toApiError } from './provider-adapter';
 import { probeFirstToken } from '../ollama/first-token-probe';
@@ -93,24 +93,68 @@ export function createProviderService({ db, cipher }: ServiceDeps) {
       if (!repo.delete(id)) throw ApiError.notFound('供应商', id);
     },
 
-    /** 连接测试：优先真实调用 /models；不支持列表的厂商改用已有对话模型做一次首字探活 */
-    async testConnection(id: string, signal?: AbortSignal): Promise<{ ok: true }> {
+    /** 连接测试：/models 成功或首字探活成功 → verified；可达但无对话模型 → reachable_unverified */
+    async testConnection(id: string, signal?: AbortSignal): Promise<ProviderConnectionResult> {
       const record = repo.get(id);
       if (!record) throw ApiError.notFound('供应商', id);
       const adapter = buildProvider(db, cipher, record);
+      const vendor = findVendorByBaseUrl(record.baseUrl);
+      const discovery = resolveVendorDiscovery(vendor);
+      const chatModel = createModelRepository(db)
+        .listByProvider(id)
+        .find((item) => item.capabilities.includes('chat'));
+      const manualHint =
+        vendor?.modelIdHint ?? '该供应商不提供模型列表，请先在「模型管理」添加对话模型再测试。';
+
+      // v2.17：厂商明确 manual-only（如方舟套餐）时直接走首字探活，不再把 /models 404 当失败
+      if (discovery === 'manual-only') {
+        if (!chatModel) {
+          return {
+            ok: false,
+            status: 'reachable_unverified',
+            checks: [{ step: 'chat-probe', ok: false, message: manualHint }],
+            message: manualHint,
+          };
+        }
+        const outcome = await probeFirstToken(db, cipher, record, chatModel.modelId);
+        if (outcome.ok) {
+          return {
+            ok: true,
+            status: 'verified',
+            checks: [{ step: 'chat-probe', ok: true }],
+            modelId: chatModel.modelId,
+          };
+        }
+        throw new ApiError(
+          'PROVIDER_ERROR',
+          '连接失败：首字探活未通过，请检查 API Key、Model ID 与套餐权限',
+        );
+      }
+
       try {
         await adapter.testConnection(signal);
-        return { ok: true };
+        return { ok: true, status: 'verified', checks: [{ step: 'models', ok: true }] };
       } catch (error) {
         // 火山方舟 Agent Plan / Coding Plan 等不提供 GET /models：有对话模型时改为流式首字探活
         if (error instanceof ProviderError && error.reason === 'models_unsupported') {
-          const model = createModelRepository(db)
-            .listByProvider(id)
-            .find((item) => item.capabilities.includes('chat'));
-          if (model) {
-            const outcome = await probeFirstToken(db, cipher, record, model.modelId);
-            if (outcome.ok) return { ok: true };
+          const checks = [{ step: 'models' as const, ok: false, message: error.message }];
+          if (chatModel) {
+            const outcome = await probeFirstToken(db, cipher, record, chatModel.modelId);
+            if (outcome.ok) {
+              return {
+                ok: true,
+                status: 'verified',
+                checks: [...checks, { step: 'chat-probe', ok: true }],
+                modelId: chatModel.modelId,
+              };
+            }
           }
+          return {
+            ok: false,
+            status: 'reachable_unverified',
+            checks,
+            message: error.message,
+          };
         }
         toApiError(error);
       }

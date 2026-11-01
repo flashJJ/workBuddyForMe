@@ -3,7 +3,10 @@ export const zhToolTrace = {
   tools: {
     currentTime: '查询当前时间',
     knowledgeSearch: '检索知识库',
+    webSearch: '联网搜索',
     fetchWebpage: '读取网页',
+    capabilitySearch: '搜索能力目录',
+    capabilityInstall: '安装能力包',
     screenSnapshot: '屏幕截图',
     mouseMove: '鼠标移动',
     mouseClick: '鼠标点击',
@@ -40,7 +43,10 @@ export const enToolTrace = {
   tools: {
     currentTime: 'Get current time',
     knowledgeSearch: 'Search knowledge base',
+    webSearch: 'Web search',
     fetchWebpage: 'Fetch webpage',
+    capabilitySearch: 'Search capability catalog',
+    capabilityInstall: 'Install capability pack',
     screenSnapshot: 'Screen snapshot',
     mouseMove: 'Move mouse',
     mouseClick: 'Click mouse',

@@ -1,9 +1,9 @@
 /** settings 命名空间：设置中心页面 / 默认偏好 / 通用进行态；供应商见 settingsProviders，其余面板见 settingsMcp */
 import { enCapabilityTrust, enSettingsWork, zhCapabilityTrust, zhSettingsWork } from './settings-work';
+import { enSettingsSearch, zhSettingsSearch } from './settings-search';
 export const zhSettings = {
   title: '设置',
   description: '管理模型供应商、默认模型与本地偏好，所有数据仅保存在本机。',
-  // v2.0 设置页分组锚点（右侧导航 / 滚动定位）
   sections: {
     appearance: '形象外观',
     dialog: '对话互动',
@@ -48,7 +48,6 @@ export const zhSettings = {
     compileModel: '编译增强模型',
     compileModelDefault: '跟随默认对话模型',
   },
-  // v1.6 M4 情绪与互动
   emotion: {
     title: '情绪与互动',
     description: '角色会在相处中积累心情、亲密度与信任度，数据仅保存在本机。',
@@ -81,7 +80,6 @@ export const zhSettings = {
     loadFailed: '情绪状态加载失败',
     hint: '情绪会随时间自然平复；关系（亲密度/信任度）只增不减，重置才会清零。',
   },
-  // v2.0 关系等级（养成；与情绪内核独立开关）
   relationship: {
     title: '关系等级',
     description: '相处会沉淀为陌生、认识、搭档、挚友四个等级，解锁专属称呼与纪念演出。数据仅保存在本机。',
@@ -127,7 +125,6 @@ export const zhSettings = {
     fixedLight: '亮色主题',
     modeHint: '星际蓝可在浅色、深色与跟随系统间切换；其他主题自带明暗。',
   },
-  // v2.4 M1 演示模式开关
   demoMode: {
     title: '演示模式',
     description: '内置本地模拟回复，不填 Key 即可体验对话与知识库；不联网、不下载，数据不出机。',
@@ -139,6 +136,7 @@ export const zhSettings = {
     badgeLabel: '演示模式',
     badgeHint: '当前使用演示模式（本地模拟回复，非真实模型）。可在设置中关闭。',
   },
+  ...zhSettingsSearch,
   capabilityTrust: zhCapabilityTrust,
   work: zhSettingsWork,
 };
@@ -295,6 +293,7 @@ export const enSettings = {
     badgeHint:
       'Demo mode is on (locally simulated replies, not a real model). Turn it off in Settings.',
   },
+  ...enSettingsSearch,
   capabilityTrust: enCapabilityTrust,
   work: enSettingsWork,
 };

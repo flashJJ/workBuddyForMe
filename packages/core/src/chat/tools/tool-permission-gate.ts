@@ -82,13 +82,17 @@ export async function* gateToolPermission(
     return yield* deniedWithEvent(params, `工具 ${toolName} 被策略拒绝：${reason}`);
   }
 
+  // v2.17：alwaysConfirm 工具跳过一切自动放行（full_access / 策略 allow / 持久授权）
+  const requiresApproval = tool?.alwaysConfirm === true;
   const grantedByRecord =
-    decision.decision === 'allow' ||
-    !tool ||
-    !deps.permissions ||
-    deps.permissions.isAllowed(toolName, permission, `assistant:${assistantId}`) ||
-    Boolean(taskScope && deps.taskGrants?.isGranted(toolName, taskScope));
+    !requiresApproval &&
+    (decision.decision === 'allow' ||
+      !tool ||
+      !deps.permissions ||
+      deps.permissions.isAllowed(toolName, permission, `assistant:${assistantId}`) ||
+      Boolean(taskScope && deps.taskGrants?.isGranted(toolName, taskScope)));
   if (grantedByRecord) return { denied: false };
+  const approvalReason = requiresApproval ? 'HITL_REQUIRED' : decision.reasonCode;
 
   const binding: OperationBinding = computeOperationBinding({
     tool: toolName,
@@ -103,7 +107,7 @@ export async function* gateToolPermission(
       ...auditBase,
       kind: 'approval_requested',
       decision: 'ask',
-      reasonCode: decision.reasonCode,
+      reasonCode: approvalReason,
       binding,
       outcome: decision.matchedRule ?? null,
     })
@@ -156,7 +160,7 @@ export async function* gateToolPermission(
             permission,
             argsSummary: params.argsSummary,
             bindingSummary,
-            policyReason: decision.reasonCode,
+            policyReason: approvalReason,
             runId: approvalContext?.runId ?? null,
             conversationId: approvalContext?.conversationId ?? null,
             deepLink: approvalContext?.deepLink ?? '/approvals',

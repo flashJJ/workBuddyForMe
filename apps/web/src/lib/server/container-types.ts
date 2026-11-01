@@ -14,6 +14,7 @@ import type {
   createPermissionService,
   createProviderService,
   createSettingsService,
+  createSearchService,
   createStageSceneService,
   createTaskGrantRegistry,
   createTaskRunnerService,
@@ -56,6 +57,7 @@ export interface ServiceContainer {
   providers: ReturnType<typeof createProviderService>;
   models: ReturnType<typeof createModelService>;
   settings: ReturnType<typeof createSettingsService>;
+  search: ReturnType<typeof createSearchService>;
   audit: ReturnType<typeof createAuditService>;
   assistants: ReturnType<typeof createAssistantsService>;
   characterCards: ReturnType<typeof createCharacterCardService>;

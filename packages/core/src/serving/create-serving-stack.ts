@@ -14,6 +14,7 @@ import { createPendingConfirmations } from '../services/task/pending-confirmatio
 import { createSkillService } from '../skills/skill-service';
 import { createToolBreaker } from '../tools/tool-breaker';
 import { createTaskGrantRegistry } from '../services/task/task-grants';
+import { createSearchService } from '../services/search/search-service';
 import { createToolRuntime, type ToolRuntime } from '../tools/tool-runtime';
 import type { ServiceDeps } from '../services/base/deps';
 import { createFlowRunService, type FlowRunService } from '../flow/run/run-service';
@@ -51,6 +52,7 @@ export function createFlowServingStack(
   const deps: ServiceDeps = {
     db,
     cipher,
+    search: createSearchService({ db }),
     mcp,
     permissions: createPermissionService({ db, cipher }),
     confirmations: createPendingConfirmations(),

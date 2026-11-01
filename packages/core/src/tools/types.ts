@@ -1,7 +1,12 @@
 import type { Citation, PermissionLevel, ToolSubstep } from '@wbfm/shared/types';
-import type { WorkStepStatus } from '@wbfm/shared/schemas';
+import type { WebSearchInput, WebSearchResponse } from '@wbfm/shared/types';
+import type { CapabilityKind, WorkStepStatus } from '@wbfm/shared/schemas';
 import type { ToolDefinition } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
+import type {
+  CapabilityCatalogInstallResult,
+  CapabilityCatalogSearchItem,
+} from '../capabilities/catalog/types';
 
 /** 工具执行时可使用的能力（由编排器按本轮对话注入） */
 export interface ToolContext {
@@ -34,6 +39,22 @@ export interface ToolContext {
     reasonCode: string;
     outcome?: string;
   }) => void;
+  /** v2.17：联网搜索回调（未配置时 web_search 返回可执行错误） */
+  searchWeb?: (input: WebSearchInput, signal?: AbortSignal) => Promise<WebSearchResponse>;
+  /** v2.17：当前助手 id（能力安装后回写白名单用） */
+  assistantId?: string;
+  /** v2.17：能力目录检索（未提供时 capability_search 明确返回不可用） */
+  searchCapabilities?: (input: {
+    query: string;
+    kind?: CapabilityKind;
+  }) => CapabilityCatalogSearchItem[];
+  /** v2.17：能力安装（权限门已完成 HITL 后才执行） */
+  installCapability?: (input: {
+    catalogId: string;
+    reason?: string;
+  }) => CapabilityCatalogInstallResult;
+  /** v2.17：安装后把只读工具追加到当前助手白名单；非只读工具跳过 */
+  bindTools?: (toolNames: string[]) => { added: string[]; skipped: string[] };
   /** v2.8：写入会话待办清单（未提供时 todo_write 直接拒绝） */
   writeTodos?: (todos: Array<{ title: string; status?: WorkStepStatus }>) => {
     planId: string;
@@ -69,6 +90,8 @@ export interface Tool {
   parameters: Record<string, unknown>;
   /** v0.6 M2：权限分级（read/write/danger）；未标注默认 read */
   permission?: PermissionLevel;
+  /** v2.17：即使策略/模式允许也必须 HITL（能力安装等不可静默操作） */
+  alwaysConfirm?: boolean;
   run(rawArgs: unknown, ctx: ToolContext): Promise<ToolResult>;
 }
 

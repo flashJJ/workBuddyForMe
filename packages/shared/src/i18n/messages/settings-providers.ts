@@ -4,6 +4,8 @@ export const zhSettingsProviders = {
   connectionFailed: '连接失败',
   connectionFailedWith: '连接失败：{message}',
   connectionSuccess: '连接成功',
+  connectionUnverified: '连接可达，但尚无可验证的对话模型；请先添加模型再测试',
+  connectionUnverifiedWith: '可达但无法验证：{message}',
   testing: '测试中…',
   deleteProviderTitle: '删除供应商',
   deleteProviderConfirm: '确定删除供应商「{name}」及其模型配置？',
@@ -58,6 +60,8 @@ export const enSettingsProviders = {
   connectionFailed: 'Connection failed',
   connectionFailedWith: 'Connection failed: {message}',
   connectionSuccess: 'Connection successful',
+  connectionUnverified: 'Reachable, but no chat model can be verified yet. Add a model and test again.',
+  connectionUnverifiedWith: 'Reachable but unverified: {message}',
   testing: 'Testing…',
   deleteProviderTitle: 'Delete provider',
   deleteProviderConfirm:

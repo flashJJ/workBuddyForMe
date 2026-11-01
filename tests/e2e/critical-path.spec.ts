@@ -46,8 +46,11 @@ test.describe.serial('WorkBuddy 关键路径', () => {
     await page.getByRole('button', { name: '添加', exact: true }).click();
     await expect(page.getByText('已添加模型 mock-embed')).toBeVisible();
 
-    // 连接测试（mock testConnection 恒成功）
-    await page.getByRole('button', { name: '测试连接' }).click();
+    // 连接测试（mock testConnection 恒成功）；设置页另有搜索服务的「测试连接」，需限定供应商卡片
+    await page
+      .locator('[data-testid^="provider-card-"]')
+      .getByRole('button', { name: '测试连接' })
+      .click();
     await expect(page.getByText('连接成功')).toBeVisible();
 
     // 设为默认对话/向量模型

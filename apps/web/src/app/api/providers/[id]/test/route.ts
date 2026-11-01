@@ -8,6 +8,6 @@ export const dynamic = 'force-dynamic';
 /** 使用已保存凭据发起连通性测试，失败由统一错误层归一化为 502/504 */
 export const POST = defineRoute(async ({ params, services, request }) => {
   const { id } = parseParams(idParamSchema, params);
-  await services.providers.testConnection(id, request.signal);
-  return jsonOk({ ok: true });
+  const result = await services.providers.testConnection(id, request.signal);
+  return jsonOk(result);
 });

@@ -20,6 +20,7 @@ import type { CapabilitySignatureSettingsFields } from './capability-settings';
 import type { AgentGovernanceSettingsFields } from './agent-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction/interaction-graph';
 import type { ToolTraceEntry } from './tool';
+import type { SearchSettings } from './search';
 export interface Timestamped {
   createdAt: string;
   updatedAt: string;
@@ -276,8 +277,9 @@ export interface AppSettings
   workReduceMotion?: boolean;
   /** v2.7：待机节奏（缺省 standard；quiet/lively 调整桌宠休息间隔） */
   workIdlePacing?: 'quiet' | 'standard' | 'lively';
+  /** v2.17：联网搜索设置（缺省关闭；仅影响 web_search 工具） */
+  searchSettings?: SearchSettings;
 }
-
 /** v1.8 M4：音色收藏条目（形状随 settings 持久化） */
 export interface VoiceFavorite {
   id: string;
@@ -286,10 +288,7 @@ export interface VoiceFavorite {
   modelId: string;
   voice: string;
 }
-
-// ── v0.6 M3 本地技能包 ──
-// 技能类型 v1.7 起拆至 ./skill（domain.ts 重新导出保持公开面不变）；
-// MCP 领域类型（McpServerConfig/McpServerInfo/McpToolInfo）见 ./mcp。
+// v0.6 M3 本地技能包；技能类型 v1.7 起拆至 ./skill，MCP 领域类型见 ./mcp。
 export type {
   SkillPromptTemplate,
   SkillExample,

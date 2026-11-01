@@ -96,6 +96,14 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       capabilityTrustedKeys: [],
       // v2.13：治理策略默认每次确认、无人值守白名单不含 full_access
       agentPolicy: expect.objectContaining({ version: 1, defaultMode: 'confirm_each' }),
+      // v2.17：联网搜索默认关闭
+      searchSettings: {
+        provider: 'none',
+        endpoint: '',
+        maxResults: 5,
+        timeoutMs: 10_000,
+        allowPrivateEndpoint: false,
+      },
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

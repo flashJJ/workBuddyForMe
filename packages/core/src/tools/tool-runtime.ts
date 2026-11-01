@@ -7,6 +7,11 @@ import type { Tool, ToolContext, ToolMap } from './types';
 import { currentTimeTool } from './current-time-tool';
 import { todoWriteTool } from './todo-write-tool';
 import { knowledgeSearchTool } from './knowledge-search-tool';
+import { webSearchTool } from './web/web-search-tool';
+import {
+  capabilityInstallTool,
+  capabilitySearchTool,
+} from './capability/capability-tools';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 import { screenSnapshotTool } from './computer/screen-snapshot-tool';
 import { createInputTools } from './computer/input-tools';
@@ -18,9 +23,13 @@ import { createComputerChannelClient } from '../computer/channel-client';
 const ALL_TOOLS: Record<string, Tool> = {
   current_time: currentTimeTool,
   knowledge_search: knowledgeSearchTool,
+  web_search: webSearchTool,
   fetch_webpage: fetchWebpageTool,
   screen_snapshot: screenSnapshotTool,
   todo_write: todoWriteTool,
+  // v2.17 M4：能力目录检索与安装代理
+  capability_search: capabilitySearchTool,
+  capability_install: capabilityInstallTool,
 };
 
 // v0.7 M2：键鼠 / 窗口 / UIA 工具组（共用一个控制通道客户端）
@@ -146,12 +155,47 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
 
     createContext(assistant, signal, opts) {
       const conversationId = opts?.conversationId;
+      const catalog = deps.capabilityCatalog;
+      // v2.17 M4：安装后只把只读工具追加进白名单；write/danger 与未知工具跳过。
+      // 白名单落库后，下一轮 buildTools 重新构造工具声明即生效。
+      // 同一轮内多次安装共享同一份可变白名单快照，避免后一次覆盖前一次的新增工具
+      const enabledTools = new Set(assistant.enabledTools);
+      const bindReadOnlyTools = deps.bindAssistantTools
+        ? (toolNames: string[]) => {
+            const added: string[] = [];
+            const skipped: string[] = [];
+            for (const name of toolNames) {
+              const resolved = resolveTool(name);
+              if (!resolved || (resolved.tool.permission ?? 'read') !== 'read') {
+                skipped.push(name);
+                continue;
+              }
+              if (!enabledTools.has(name)) {
+                enabledTools.add(name);
+                added.push(name);
+              }
+            }
+            if (added.length > 0) deps.bindAssistantTools!(assistant.id, [...enabledTools]);
+            return { added, skipped };
+          }
+        : undefined;
       return {
         signal,
         knowledgeBaseIds: assistant.knowledgeBaseIds,
         visionCapable: opts?.visionCapable ?? false,
         ...(conversationId ? { conversationId } : {}),
         ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
+        ...(deps.search ? { searchWeb: deps.search.search } : {}),
+        ...(catalog
+          ? {
+              assistantId: assistant.id,
+              searchCapabilities: (input: Parameters<NonNullable<ToolContext['searchCapabilities']>>[0]) =>
+                catalog.search(input),
+              installCapability: (input: Parameters<NonNullable<ToolContext['installCapability']>>[0]) =>
+                catalog.install(input.catalogId),
+              ...(bindReadOnlyTools ? { bindTools: bindReadOnlyTools } : {}),
+            }
+          : {}),
         ...(deps.audit
           ? {
               governanceAudit: (input: Parameters<NonNullable<ToolContext['governanceAudit']>>[0]) => {

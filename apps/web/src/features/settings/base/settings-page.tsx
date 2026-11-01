@@ -18,6 +18,7 @@ import { McpPanel } from '../mcp/mcp-panel';
 import { PermissionPanel } from '../tools/permission-panel';
 import { ToolBreakerPanel } from '../tools/tool-breaker-panel';
 import { ToolDebugPanel } from '../tools/tool-debug-panel';
+import { SearchSettingsPanel } from '../tools/search-settings-panel';
 import { SkillsPanel } from '../skills/skills-panel';
 import { MemoryPanel } from '@/features/memory';
 import { BackupPanel } from '../storage/backup-panel';
@@ -110,6 +111,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
       id: 'tools',
       labelKey: 'settings.sections.tools',
       panels: [
+        <SearchSettingsPanel key="search" />,
         <McpPanel key="mcp" />,
         <PermissionPanel key="perm" />,
         <ToolBreakerPanel key="breaker" />,

@@ -16,6 +16,15 @@ export {
   type HealthScanInput,
 } from './health';
 export {
+  BUNDLED_CAPABILITY_CATALOG,
+  createCapabilityCatalog,
+  type CapabilityCatalog,
+  type CapabilityCatalogDeps,
+  type CapabilityCatalogInstallResult,
+  type CapabilityCatalogSearchInput,
+  type CapabilityCatalogSearchItem,
+} from './catalog/index';
+export {
   buildSamplePack,
   buildSampleSkillPack,
 } from './samples';

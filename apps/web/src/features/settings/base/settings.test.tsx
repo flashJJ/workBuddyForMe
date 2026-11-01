@@ -111,6 +111,28 @@ describe('设置中心（TR-25.1）', () => {
     await waitFor(() => expect(screen.getByText(/鉴权失败 401/)).toBeInTheDocument());
   });
 
+  it('测试连接：可达但无对话模型时展示三态提示', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === '/api/providers/p1/models') return ok([]);
+      if (url === '/api/providers/p1/test') {
+        return ok({
+          ok: false,
+          status: 'reachable_unverified',
+          checks: [{ step: 'chat-probe', ok: false }],
+          message: '请先添加对话模型',
+        });
+      }
+      return ok(null);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<ProviderCard provider={PROVIDER} onEdit={() => undefined} />);
+
+    await user.click(screen.getByRole('button', { name: '测试连接' }));
+    await waitFor(() =>
+      expect(screen.getByText(/可达但无法验证：请先添加对话模型/)).toBeInTheDocument(),
+    );
+  });
+
   it('模型管理：勾选两种能力后添加，删除模型走确认', async () => {
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/providers/p1/models' && init?.method === 'GET') return ok([MODEL]);
