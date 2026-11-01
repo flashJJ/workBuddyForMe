@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import { apiGet, apiPost } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
 
@@ -33,7 +34,7 @@ export function useFlowRuns(filter: FlowRunsFilter) {
   if (filter.status) query.set('status', filter.status);
   if (filter.workflowId) query.set('workflowId', filter.workflowId);
   const qs = query.toString();
-  return useQuery({
+  return useVisibleQuery({
     queryKey: ['flow-runs-center', filter.trigger ?? '', filter.status ?? '', filter.workflowId ?? ''],
     queryFn: () => apiGet<{ runs: FlowRunSummary[] }>(`${API.flowRunsCenter}${qs ? `?${qs}` : ''}`),
     // 运行中心打开期间低频轮询，让 queued/running/interrupted 行自动收敛

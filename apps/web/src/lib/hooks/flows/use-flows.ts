@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type {
   FlowDiagnostic,
   FlowEventPayload,
@@ -41,7 +42,7 @@ export interface FlowDetail {
 }
 
 export function useFlows() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.flows,
     queryFn: () => apiGet<WorkflowView[]>(API.flows),
     staleTime: 3_000,
@@ -49,7 +50,7 @@ export function useFlows() {
 }
 
 export function useFlow(id: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: id ? QUERY_KEYS.flow(id) : ['flows', 'disabled'],
     queryFn: () => apiGet<FlowDetail>(API.flow(id!)),
     enabled: Boolean(id),
@@ -58,7 +59,7 @@ export function useFlow(id: string | null) {
 
 /** v2.14：工作流版本列表（编辑器版本抽屉） */
 export function useFlowVersions(id: string, enabled = true) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.flowVersions(id),
     queryFn: () => apiGet<WorkflowVersionView[]>(API.flowVersions(id)),
     enabled,
@@ -70,7 +71,7 @@ export function useFlowVersionCompare(
   id: string,
   params: { from: number; to: number } | null,
 ) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.flowVersionCompare(id, params?.from ?? 0, params?.to ?? 0),
     queryFn: () =>
       apiGet<FlowGraphDiff>(
@@ -160,7 +161,7 @@ export interface RunDetail {
 }
 
 export function useFlowRunDetail(runId: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: runId ? QUERY_KEYS.flowRun(runId) : ['flow-run', 'disabled'],
     queryFn: () => apiGet<RunDetail>(API.flowRun(runId!)),
     enabled: Boolean(runId),

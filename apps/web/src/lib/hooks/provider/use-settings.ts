@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { AppSettings, ProviderModel } from '@wbfm/shared/types';
 import { useProviders } from './use-providers';
 import { apiGet, apiPut } from '@/lib/api/client';
@@ -9,7 +10,7 @@ import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 export type SettingsUpdateBody = Partial<AppSettings>;
 
 export function useSettings() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.settings,
     queryFn: () => apiGet<AppSettings>(API.settings),
   });
@@ -29,7 +30,7 @@ export function useAllModels() {
   // queryKey 随供应商集合变化：新增/删除供应商后自动重新聚合。
   // （key 恒定则不会重拉——向导里新建 demo 供应商后，列表页拿不到新模型，只能靠整页刷新兜底）
   const providerIds = (providers ?? []).map((provider) => provider.id).join(',');
-  return useQuery({
+  return useVisibleQuery({
     queryKey: [...QUERY_KEYS.modelsAll, providerIds],
     queryFn: async () => {
       if (!providers) return [];

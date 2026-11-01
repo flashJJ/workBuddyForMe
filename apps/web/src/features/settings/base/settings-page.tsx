@@ -6,8 +6,8 @@ import { DEMO_PROVIDER_ID } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
-import { useProviders } from '@/lib/hooks/provider';
-import { useSettings } from '@/lib/hooks/provider';
+import { useProviders, useSettings } from '@/lib/hooks/provider';
+import { PanelVisibilityGate } from '@/lib/ui/panel-visibility';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { ProviderCard } from '../providers/provider-card';
 import { ProviderFormDialog } from '../providers/provider-form-dialog';
@@ -187,7 +187,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
             >
               {t(section.labelKey)}
             </div>
-            <div className="space-y-4 pt-4">{section.panels}</div>
+            <PanelVisibilityGate className="space-y-4 pt-4">{section.panels}</PanelVisibilityGate>
           </div>
         ))}
 

@@ -30,6 +30,18 @@ export async function waitForHydrated(page: Page): Promise<void> {
  */
 
 /**
+ * v2.16：设置页按 4 个分组可见区触发查询（锚点固定存在，面板数据按需到达）。
+ * 断言分组内数据 / 与默认隐藏控件交互前，先把该分组锚点滚入视口；
+ * 仅调整等待方式，不改产品结构与文案。
+ */
+export async function revealSettingsSection(
+  page: Page,
+  section: 'appearance' | 'dialog' | 'tools' | 'data',
+): Promise<void> {
+  await page.locator(`#setting-${section}`).scrollIntoViewIfNeeded();
+}
+
+/**
  * 按可访问名选择选项（等价于旧的 `selectOption({ label })`）。
  *
  * 取 `.first()` 对齐原生 select 语义：不同供应商可能注册同名模型

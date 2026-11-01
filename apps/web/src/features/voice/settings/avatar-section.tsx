@@ -17,9 +17,10 @@ import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import { useQuery } from '@tanstack/react-query';
+
 import { apiGet } from '@/lib/api/client';
 import type { VrmAvatarListResponse } from '@wbfm/shared/schemas';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 
 interface Props {
   settings: VoiceSettings;
@@ -100,7 +101,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
   React.useEffect(() => setEnabled(settings.avatarEnabled), [settings.avatarEnabled]);
   React.useEffect(() => setModelId(settings.avatarModelId), [settings.avatarModelId]);
 
-  const { data: vrmData } = useQuery({
+  const { data: vrmData } = useVisibleQuery({
     queryKey: ['vrm-avatars'],
     queryFn: () => apiGet<VrmAvatarListResponse>('/api/vrm-avatars'),
   });

@@ -1,5 +1,5 @@
 import { expect, test, type Page, type APIRequestContext, type APIResponse } from '@playwright/test';
-import { chooseOption, chooseOptionByIndex, waitForHydrated } from './utils';
+import { chooseOption, chooseOptionByIndex, revealSettingsSection, waitForHydrated } from './utils';
 
 /**
  * v1.8 M2 角色卡库 e2e：
@@ -72,6 +72,7 @@ async function gotoPage(page: Page, path: string): Promise<void> {
 test.describe.serial('v1.8 角色卡库', () => {
   test('卡库面板：6 张内置只读卡，可复制为自建卡', async ({ page }) => {
     await gotoPage(page, '/settings');
+    await revealSettingsSection(page, 'data');
     const panel = page.getByTestId('character-cards-panel');
     await expect(panel).toBeVisible();
     await expect(panel.getByText(/只导入你信任的卡/)).toBeVisible();

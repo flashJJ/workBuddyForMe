@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type {
   EventTriggerCreateInput,
   EventTriggerUpdateInput,
@@ -12,7 +13,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 export const EVENT_TRIGGERS_QUERY_KEY = ['event-triggers'] as const;
 
 export function useEventTriggers(assistantId?: string) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: assistantId
       ? [...EVENT_TRIGGERS_QUERY_KEY, assistantId]
       : EVENT_TRIGGERS_QUERY_KEY,

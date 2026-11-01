@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { McpServerInfo, McpToolInfo } from '@wbfm/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -25,7 +26,7 @@ export interface McpServerUpdateBody {
 
 /** 服务器列表 + 连接状态（连接异步收敛，轮询刷新状态徽章） */
 export function useMcpServers() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.mcpServers,
     queryFn: () => apiGet<McpServerInfo[]>(API.mcpServers),
     refetchInterval: 5000,
@@ -34,7 +35,7 @@ export function useMcpServers() {
 
 /** 已连接服务器的工具清单（助手表单分组使用） */
 export function useMcpTools() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.mcpTools,
     queryFn: () => apiGet<McpToolInfo[]>(API.mcpTools),
     refetchInterval: 15000,

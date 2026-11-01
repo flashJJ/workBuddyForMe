@@ -1,13 +1,14 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { DebugToolInfo, ToolResult } from '@wbfm/core/tools';
 import { apiGet, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
 /** 调试台可用工具列表（内置 + 已连接 MCP） */
 export function useToolDebugList() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.toolDebug,
     queryFn: () => apiGet<DebugToolInfo[]>(API.toolDebug),
   });

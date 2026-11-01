@@ -10,6 +10,7 @@ import { apiGet } from '@/lib/api/client';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
+import { usePanelVisible } from '@/lib/ui/panel-visibility';
 import { useAssistants } from '@/lib/hooks/assistant';
 import { useCharacterCards } from '@/lib/hooks/assistant';
 import {
@@ -33,8 +34,10 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
   const { data: cards } = useCharacterCards();
   // 注意：该 hook 必须在 loading 提前返回之前调用（React hooks 顺序约束）
   const { data: milestones } = useRelationshipMilestones(assistantId, true);
+  const visible = usePanelVisible();
 
   React.useEffect(() => {
+    if (!visible) return;
     let cancelled = false;
     setLoading(true);
     apiGet<EmotionState>(`/api/assistants/${assistantId}/emotion`)
@@ -52,7 +55,7 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
     };
     // toast 取全局稳定实例；locale 切换时重载
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assistantId, locale]);
+  }, [assistantId, locale, visible]);
 
   if (loading || !state) {
     return (

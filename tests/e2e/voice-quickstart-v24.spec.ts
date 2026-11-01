@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOption, waitForHydrated } from './utils';
+import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
 
 /**
  * v2.4 M3（P0-3）·「一键开启语音对话」e2e：覆盖验收 A1（体积/耗时预估 + 一键下载 + 可取消）、
@@ -143,6 +143,7 @@ test.describe.serial('v2.4 一键开启语音对话', () => {
   test('② 未就绪：体积预估 + 下载引导 + 一键下载 + 可取消（A1/A4）', async ({ page }) => {
     await page.goto('/settings');
     await waitForHydrated(page);
+    await revealSettingsSection(page, 'dialog');
 
     const quick = page.getByTestId('voice-quickstart-settings');
     await expect(quick).toBeVisible();
@@ -192,6 +193,7 @@ test.describe.serial('v2.4 一键开启语音对话', () => {
     phase = 'ready';
     await page.goto('/settings');
     await waitForHydrated(page);
+    await revealSettingsSection(page, 'dialog');
 
     // ③ 已把 inputMode 置为 vad：此处直接校验默认档位与折叠态
     await expect(page.getByTestId('voice-input-mode-vad')).toHaveAttribute('aria-pressed', 'true');
@@ -208,6 +210,7 @@ test.describe.serial('v2.4 一键开启语音对话', () => {
     phase = 'ready';
     await page.goto('/settings');
     await waitForHydrated(page);
+    await revealSettingsSection(page, 'dialog');
 
     const start = page.getByTestId('voice-quickstart-settings').getByTestId('voice-quickstart-button');
     await expect(start).toHaveAttribute('data-ready', 'true');

@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared/schemas';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiGet, apiPut } from '@/lib/api/client';
@@ -9,13 +10,13 @@ import { apiGet, apiPut } from '@/lib/api/client';
 export function useVoiceSettings() {
   const queryClient = useQueryClient();
 
-  const settingsQuery = useQuery({
+  const settingsQuery = useVisibleQuery({
     queryKey: QUERY_KEYS.voiceSettings,
     queryFn: () => apiGet<VoiceSettings>(API.voiceSettings),
     staleTime: 30_000,
   });
 
-  const modelStatusQuery = useQuery({
+  const modelStatusQuery = useVisibleQuery({
     queryKey: QUERY_KEYS.voiceModelStatus,
     queryFn: () => apiGet<import('@wbfm/shared').VoiceModelStatus>(API.voiceModelStatus),
     // 任一模型下载中时 1s 轮询；全部空闲后停止（TTS 两套引擎分别看 ttsByModel）

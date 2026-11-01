@@ -15,6 +15,7 @@ import { useConfirm } from '@/components/common/confirm-dialog';
 import { apiDelete, apiGet } from '@/lib/api/client';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { usePanelVisible } from '@/lib/ui/panel-visibility';
 
 interface EmotionDetail {
   state: EmotionState;
@@ -46,6 +47,7 @@ export function EmotionDetailView({ assistantId }: { assistantId: string }) {
   const confirm = useConfirm();
   const [detail, setDetail] = React.useState<EmotionDetail | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const visible = usePanelVisible();
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -61,8 +63,9 @@ export function EmotionDetailView({ assistantId }: { assistantId: string }) {
   }, [assistantId, locale]);
 
   React.useEffect(() => {
+    if (!visible) return;
     void load();
-  }, [load]);
+  }, [load, visible]);
 
   const reset = async () => {
     if (

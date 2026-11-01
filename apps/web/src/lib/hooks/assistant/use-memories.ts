@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 import type { MemoryListQuery } from '@wbfm/shared/schemas';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
@@ -32,7 +33,7 @@ function toQueryString(filter: MemoryListQuery): string {
 }
 
 export function useMemories(filter: MemoryListQuery = { limit: 200 }) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: [...QUERY_KEYS.memories, filter],
     queryFn: () => apiGet<Memory[]>(`${API.memories}${toQueryString(filter)}`),
   });

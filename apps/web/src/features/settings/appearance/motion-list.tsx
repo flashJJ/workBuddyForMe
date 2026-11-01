@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet, apiDelete, apiPut } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -25,13 +26,13 @@ export function MotionList() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useVisibleQuery({
     queryKey: ['motions'],
     queryFn: () => apiGet<MotionAssetListResponse>('/api/motions'),
   });
 
   /** 轮播配置属语音设置域 */
-  const { data: settings } = useQuery({
+  const { data: settings } = useVisibleQuery({
     queryKey: QUERY_KEYS.voiceSettings,
     queryFn: () => apiGet<VoiceSettings>(API.voiceSettings),
     staleTime: 30_000,

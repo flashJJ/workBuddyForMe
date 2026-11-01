@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type {
   ConversationGoalView,
   GoalUpdateInput,
@@ -13,12 +14,12 @@ import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
 /** v2.8：目标 / 计划 / 待办查询与变更 */
 export function useWorkPlans(conversationId: string | null) {
-  const goals = useQuery({
+  const goals = useVisibleQuery({
     queryKey: QUERY_KEYS.goals(conversationId ?? ''),
     queryFn: () => apiGet<ConversationGoalView[]>(API.goalsByConversation(conversationId!)),
     enabled: Boolean(conversationId),
   });
-  const plans = useQuery({
+  const plans = useVisibleQuery({
     queryKey: QUERY_KEYS.workPlans(conversationId ?? undefined),
     queryFn: () =>
       apiGet<WorkPlanView[]>(

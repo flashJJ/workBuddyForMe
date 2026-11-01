@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { revealSettingsSection } from './utils';
 
 /**
  * v1.6 情绪与互动设置（M4 面板 + M5 互动短句开关）。
@@ -21,6 +22,7 @@ test.describe.serial('v1.6 情绪与互动设置', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/settings');
     await skipOnboardingIfShown(page);
+    await revealSettingsSection(page, 'dialog');
     await expect(page.getByTestId('emotion-panel')).toBeVisible();
   });
 
@@ -28,6 +30,7 @@ test.describe.serial('v1.6 情绪与互动设置', () => {
     const page = await browser.newPage();
     await page.goto('/settings');
     await skipOnboardingIfShown(page);
+    await revealSettingsSection(page, 'dialog');
     // 先恢复总开关（子开关仅在总开关开启时挂载），再恢复短句开关
     const master = page.getByTestId('emotion-enabled-toggle');
     await master.check({ force: true }).catch(() => {});
@@ -47,6 +50,7 @@ test.describe.serial('v1.6 情绪与互动设置', () => {
 
     await page.reload();
     await skipOnboardingIfShown(page);
+    await revealSettingsSection(page, 'dialog');
     await expect(page.getByTestId('emotion-panel')).toBeVisible();
     await expect(page.getByTestId('emotion-lines-toggle')).not.toBeChecked();
     // 情绪总开关不受影响，状态区仍在

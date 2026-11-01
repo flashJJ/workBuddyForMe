@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet, apiDelete } from '@/lib/api/client';
 import type { VrmAvatarListResponse } from '@wbfm/shared/schemas';
@@ -11,7 +12,7 @@ export function VrmAvatarList() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useVisibleQuery({
     queryKey: ['vrm-avatars'],
     queryFn: () => apiGet<VrmAvatarListResponse>('/api/vrm-avatars'),
   });

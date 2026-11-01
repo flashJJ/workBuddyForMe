@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { FlowUnattendedPolicy, WorkflowEndpointView } from '@wbfm/shared/types';
 import type { FlowDangerNode } from '@wbfm/core/serving';
 import { apiGet, apiPost, apiPut } from '@/lib/api/client';
@@ -27,7 +28,7 @@ export interface FlowEndpointSaveResult {
 }
 
 export function useFlowEndpoint(workflowId: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: workflowId ? QUERY_KEYS.flowEndpoint(workflowId) : ['flow-endpoint', 'disabled'],
     queryFn: () => apiGet<FlowEndpointDetail>(API.flowEndpoint(workflowId!)),
     enabled: Boolean(workflowId),

@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { Conversation, Message } from '@wbfm/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -9,14 +10,14 @@ export function useConversations(assistantId?: string) {
   const path = assistantId
     ? `${API.conversations}?assistantId=${encodeURIComponent(assistantId)}`
     : API.conversations;
-  return useQuery({
+  return useVisibleQuery({
     queryKey: [...QUERY_KEYS.conversations, assistantId ?? 'all'],
     queryFn: () => apiGet<Conversation[]>(path),
   });
 }
 
 export function useMessages(conversationId: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.messages(conversationId ?? '_'),
     queryFn: () => apiGet<Message[]>(API.messages(conversationId!)),
     enabled: Boolean(conversationId),

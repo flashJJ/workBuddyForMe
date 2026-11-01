@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { Assistant } from '@wbfm/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -38,7 +39,7 @@ export interface AssistantBody {
 }
 
 export function useAssistants() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.assistants,
     queryFn: () => apiGet<Assistant[]>(API.assistants),
   });

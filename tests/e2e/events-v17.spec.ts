@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOptionByIndex, waitForHydrated } from './utils';
+import { chooseOptionByIndex, revealSettingsSection, waitForHydrated } from './utils';
 
 /**
  * v1.7 M5 剧情演出设置抽测：
@@ -25,6 +25,7 @@ async function gotoSettings(page: Page): Promise<void> {
   await page.goto('/settings');
   await waitForHydrated(page);
   await skipOnboardingIfShown(page);
+  await revealSettingsSection(page, 'dialog');
   await expect(page.getByTestId('event-panel')).toBeVisible();
 }
 
@@ -72,6 +73,7 @@ test.describe.serial('v1.7 剧情演出与自定义短语（M5）', () => {
     // 重载后仍在（真实落库验证）
     await page.reload();
     await waitForHydrated(page);
+    await revealSettingsSection(page, 'dialog');
     await expect(page.getByTestId(/^custom-trigger-row-/)).toHaveCount(1);
     await expect(page.getByTestId(/^custom-trigger-row-/)).toContainText('「夸夸我」');
 
@@ -85,6 +87,7 @@ test.describe.serial('v1.7 剧情演出与自定义短语（M5）', () => {
     await disablePatch;
     await page.reload();
     await waitForHydrated(page);
+    await revealSettingsSection(page, 'dialog');
     await expect(page.getByRole('checkbox', { name: '启用该规则' })).not.toBeChecked();
 
     // 删除：回到空态（设置页存在多个「删除」按钮，限定到规则行）

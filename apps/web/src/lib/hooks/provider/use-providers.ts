@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { DiscoveredModel, Provider, ProviderModel } from '@wbfm/shared/types';
 import type { ModelCapability } from '@wbfm/shared/constants';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
@@ -30,7 +31,7 @@ export interface ModelCreateBody {
 }
 
 export function useProviders() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.providers,
     queryFn: () => apiGet<Provider[]>(API.providers),
   });
@@ -61,7 +62,7 @@ export function useProviderMutations() {
 }
 
 export function useProviderModels(providerId: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.models(providerId ?? '_'),
     queryFn: () => apiGet<ProviderModel[]>(API.providerModels(providerId!)),
     enabled: Boolean(providerId),

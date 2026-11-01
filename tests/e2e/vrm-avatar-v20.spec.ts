@@ -1,5 +1,5 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
-import { waitForHydrated } from './utils';
+import { revealSettingsSection, waitForHydrated } from './utils';
 
 /**
  * v2.0 M4 VRM 导入 e2e。
@@ -176,6 +176,7 @@ test.describe.serial('v2.0 M4 VRM 形象导入', () => {
     expect(value).toMatch(/^vrm:/);
 
     await gotoSettings(page);
+    await revealSettingsSection(page, 'dialog');
     // 默认 avatarEnabled=false，形象选择器被条件渲染挡掉——先勾选开启
     const avatarEnabled = page.getByTestId('avatar-enabled');
     if (!(await avatarEnabled.isChecked())) {

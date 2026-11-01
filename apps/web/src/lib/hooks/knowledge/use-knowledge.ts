@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { ConflictItem, DuplicatePair } from '@wbfm/core/knowledge';
 import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost, apiUpload } from '@/lib/api/client';
@@ -15,14 +16,14 @@ export interface KnowledgeBaseBody {
 }
 
 export function useKnowledgeBases() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.knowledgeBases,
     queryFn: () => apiGet<KnowledgeBase[]>(API.knowledgeBases),
   });
 }
 
 export function useDocuments(kbId: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.documents(kbId ?? '_'),
     queryFn: () => apiGet<DocumentRecord[]>(API.documents(kbId!)),
     enabled: Boolean(kbId),
@@ -35,12 +36,12 @@ export function useDocuments(kbId: string | null) {
 
 /** v1.3 M3：知识冲突待裁决 + 疑似重复文档建议（只读，按需启用） */
 export function useKnowledgeGovernance(kbId: string | null) {
-  const conflicts = useQuery({
+  const conflicts = useVisibleQuery({
     queryKey: [...QUERY_KEYS.kbGovernance(kbId ?? '_'), 'conflicts'],
     queryFn: () => apiGet<{ conflicts: ConflictItem[] }>(API.kbConflicts(kbId!)),
     enabled: Boolean(kbId),
   });
-  const duplicates = useQuery({
+  const duplicates = useVisibleQuery({
     queryKey: [...QUERY_KEYS.kbGovernance(kbId ?? '_'), 'duplicates'],
     queryFn: () => apiGet<{ duplicates: DuplicatePair[] }>(API.kbDuplicates(kbId!)),
     enabled: Boolean(kbId),
@@ -69,7 +70,7 @@ export interface CompileStatusSnapshot {
 
 /** 编译状态查询：运行/排队中 2s 轮询兜底（主通道为 SSE） */
 export function useCompileStatus(kbId: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.kbCompileStatus(kbId ?? '_'),
     queryFn: () => apiGet<CompileStatusSnapshot>(API.kbCompileStatus(kbId!)),
     enabled: Boolean(kbId),

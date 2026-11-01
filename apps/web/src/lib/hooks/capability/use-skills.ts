@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { SkillInfo } from '@wbfm/shared/types';
 import type { SkillUpdateInput } from '@wbfm/shared/schemas';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
@@ -8,7 +9,7 @@ import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
 /** 技能列表（设置页技能面板） */
 export function useSkills() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.skills,
     queryFn: () => apiGet<SkillInfo[]>(API.skills),
   });

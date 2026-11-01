@@ -1,12 +1,13 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { CharacterCardRecord } from '@wbfm/shared/character-card';
 import { apiDelete, apiGet, apiPost, apiPut, withManagedHeaders } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
 export function useCharacterCards() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.characterCards,
     queryFn: () => apiGet<CharacterCardRecord[]>(API.characterCards),
   });

@@ -1,8 +1,9 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+
 import type { RelationshipMilestoneRecord } from '@wbfm/shared/schemas';
 import { apiGet } from '@/lib/api/client';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 
 /**
  * v2.0 M2 助手共同里程碑查询：
@@ -10,7 +11,7 @@ import { apiGet } from '@/lib/api/client';
  * 面板与纪念演出在聊天页存活期间近实时刷新；切助手随 queryKey 重新拉取。
  */
 export function useRelationshipMilestones(assistantId: string | null, enabled: boolean) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: ['relationship-milestones', assistantId],
     queryFn: () =>
       apiGet<RelationshipMilestoneRecord[]>(

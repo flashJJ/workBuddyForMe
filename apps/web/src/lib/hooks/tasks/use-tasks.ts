@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type {
   AuditEventView,
   TaskCreateInput,
@@ -20,7 +21,7 @@ export interface TaskDetail {
 
 /** 全部任务列表（跨会话，按创建时间倒序） */
 export function useTasks() {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.tasks,
     queryFn: () => apiGet<TaskRunView[]>(API.tasks),
     // v0.7：任务面板频繁刷新意义不大；SSE 推送时手动 invalidate
@@ -30,7 +31,7 @@ export function useTasks() {
 
 /** v2.14：任务关联的最近审计事件（只读下钻） */
 export function useTaskAudit(runId: string, enabled = true) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: QUERY_KEYS.taskAudit(runId),
     queryFn: () =>
       apiGet<{ events: AuditEventView[]; nextCursor: number | null }>(
@@ -42,7 +43,7 @@ export function useTaskAudit(runId: string, enabled = true) {
 
 /** 单个任务详情：运行 + 步骤（步骤时间线数据源） */
 export function useTask(id: string | null) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: id ? QUERY_KEYS.task(id) : ['task', 'disabled'],
     queryFn: () => apiGet<TaskDetail>(API.task(id!)),
     enabled: !!id,
