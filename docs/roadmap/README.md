@@ -39,7 +39,7 @@ v2.16 把目录与入口成本降下来后，下一层断点集中在「接不�
 - 方案：[v2.17 方案](../plan/v2.17/README.md)
 - 来源方案：[内置联网工具与能力代理](scheduled/v2.17-01-builtin-tools-and-capability-broker.md) · [多厂商兼容](scheduled/v2.17-02-vendor-compat.md)
 - 归档索引：[已排期方案](scheduled/README.md) · [未排期候选](candidates/README.md)
-- 状态：🚧 开发中：M0-M3 已完成（契约冻结、厂商矩阵与三态测试、内置联网搜索）；M4 能力目录与安装代理待开始；分支 `feature/v2.17-planning`
+- 状态：🚧 开发中：M0-M5 已完成（契约冻结、厂商矩阵与三态测试、内置联网搜索、能力目录与安装代理、全量回归）；M6 验收与发布待开始；分支 `feature/v2.17-planning`
 - 范围：零迁移（`LATEST_SCHEMA_VERSION = 42`）；版本 2.17.0 待发布
 
 ## ✅ 已正式发布：v2.15 ⚙️ 可运营——历史可清理、证据可锚定、凭证可轮换、版本可对比（2026-11-01，tag `v2.15.0`）
@@ -290,7 +290,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.11 | 可扩展 II：六类 effect 全接通 + 外部代理（本地 CLI） | ✅ 已正式发布（2026-10-30，Release 已转正并置 Latest） | [M0](../plan/v2.11/00-M0-契约冻结.md) · [M5](../plan/v2.11/06-M5-验收.md) | [总结](v2.11-release-summary.md) | [发行说明](v2.11-release-notes.md) · [blog/v2.11](../../blog/v2.11/) 7 篇 | `v2.11.0` |
 | v2.12 | 可扩展 III：能力包签名 / 升级回滚 / 健康自检 | 📐 M4 已完成，待 M5 | [方案](../plan/v2.12/README.md) · [M0](../plan/v2.12/00-M0-契约冻结.md) · [评审](../plan/v2.12/01-M0-评审记录.md) · [M1](../plan/v2.12/02-M1-实施记录.md) · [M2](../plan/v2.12/03-M2-实施记录.md) · [M3](../plan/v2.12/04-M3-实施记录.md) · [M4](../plan/v2.12/05-M4-实施记录.md) | — | — | 待定 |
 | v2.16 | 可导航：目录预算、公开入口、可见区请求与结构/循环门禁 | ✅ 已正式发布（2026-11-01，Release 已转正并置 Latest） | [方案](../plan/v2.16/README.md) · [M0](../plan/v2.16/01-M0-契约冻结.md) · [M6](../plan/v2.16/08-M6-验收.md) | [总结](v2.16-release-summary.md) | [发行说明](v2.16-release-notes.md) · [blog/v2.16](../../blog/v2.16/) 10 篇 | `v2.16.0` |
-| v2.17 | 可连通：厂商能力矩阵 + 内置联网工具与能力代理 | 🚧 规划中（待 M0 评审冻结） | [方案](../plan/v2.17/README.md) · [内置工具方案](scheduled/v2.17-01-builtin-tools-and-capability-broker.md) · [厂商方案](scheduled/v2.17-02-vendor-compat.md) | — | — | 待定 |
+| v2.17 | 可连通：厂商能力矩阵 + 内置联网工具与能力代理 | 📐 M0-M5 已完成，待 M6 验收与发布 | [方案](../plan/v2.17/README.md) · [M0](../plan/v2.17/01-M0-契约冻结.md) · [M1/M2](../plan/v2.17/02-M1-M2-实施记录.md) · [M3](../plan/v2.17/03-M3-实施记录.md) · [M4](../plan/v2.17/04-M4-实施记录.md) · [M5](../plan/v2.17/05-M5-验收.md) · [内置工具方案](scheduled/v2.17-01-builtin-tools-and-capability-broker.md) · [厂商方案](scheduled/v2.17-02-vendor-compat.md) | — | — | 待定 |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
