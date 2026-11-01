@@ -22,19 +22,14 @@ v2.15 把日常运维动作补齐后，结构成本成为迭代速度的上限�
 - 分支：`feature/v2.16-planning`（`--no-ff` 合入 main `4be4507`；零迁移，`LATEST_SCHEMA_VERSION = 42`）
 - 已知偏差：直接文件 ≥20 的目录 24 → 12（目标 ≤10；剩余为 P1 / 豁免 / desktop 主进程，按契约 §1.2「P1 不阻塞」登记，见 [验收 §3](../plan/v2.16/08-M6-验收.md)）
 
-## 🔎 候选版本：内置联网工具与能力代理（未排期）
+## 🚧 规划中：v2.17 🛰 可连通——厂商能力矩阵与内置联网工具（2026-11-02）
 
-未安装能力包时 Agent 没有搜索工具：内置工具只有时间、知识检索、网页读取、截图与待办，能力包也只能装 skill / mcp / workflow 等类型，不能携带任意工具代码。候选方案分两期：P0 内置 `web_search` + `fetch_webpage`（可插拔搜索后端、助手级开关、来源引用、隐私/审计/限流）；P1 能力目录 + `capability_search` / `capability_install`，经用户审批后安装并在下一轮绑定新工具。不做静默安装、远程市场与任意代码执行。
+v2.16 把目录与入口成本降下来后，下一层断点集中在「接不上、搜不到、装不进」：所有厂商默认假设 `GET /models` 存在；内置工具没有 `web_search`；能力包只能手动上传 ZIP，模型无法自主发现与安装。v2.17 合并两个候选主题：P0 厂商 registry + 多策略模型发现 + 连接测试三态，以及内置 `web_search` + `fetch_webpage`（可插拔搜索后端、来源引用、隐私/审计/限流）；P1 能力目录 + `capability_search` / `capability_install`，经用户审批后安装并在下一轮绑定只读工具。不做远程市场、静默安装、任意代码与协议扩展。
 
-- Backlog：[内置联网工具与能力代理](builtin-tools-backlog.md)
-- 现状：无 `search_web`；能力包安装是手动 ZIP；工具集按助手白名单在每轮出站前构建
-
-## 🧩 候选版本：多厂商兼容（未排期）
-
-v2.15 真机验证暴露出「默认所有 OpenAI 兼容厂商都有 `GET /models`」的假设不成立（火山方舟 Agent Plan 返回 404）。v2.16 已做最小修复（模型列表 404 归一化 + 对话模型首字探活兜底 + 方舟预设）；完整的厂商能力矩阵、模型发现策略、连接测试三态与协议扩展记录在 [vendor-compat-backlog.md](vendor-compat-backlog.md)，作为后续版本候选。
-
-- Backlog：[多厂商兼容模块](vendor-compat-backlog.md)
-- 已修：`/models` 404 → 手动填写 Model ID 提示；有对话模型时改用首字探活；新增火山方舟（Ark）与 Agent Plan 预设
+- 方案：[v2.17 方案](../plan/v2.17/README.md)
+- 来源 backlog：[内置联网工具与能力代理](builtin-tools-backlog.md) · [多厂商兼容](vendor-compat-backlog.md)
+- 状态：🚧 规划中，待 M0 评审冻结；分支 `feature/v2.17-planning`
+- 范围：零迁移（`LATEST_SCHEMA_VERSION = 42`）；版本 2.17.0 待发布
 
 ## ✅ 已正式发布：v2.15 ⚙️ 可运营——历史可清理、证据可锚定、凭证可轮换、版本可对比（2026-11-01，tag `v2.15.0`）
 
@@ -284,6 +279,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.11 | 可扩展 II：六类 effect 全接通 + 外部代理（本地 CLI） | ✅ 已正式发布（2026-10-30，Release 已转正并置 Latest） | [M0](../plan/v2.11/00-M0-契约冻结.md) · [M5](../plan/v2.11/06-M5-验收.md) | [总结](v2.11-release-summary.md) | [发行说明](v2.11-release-notes.md) · [blog/v2.11](../../blog/v2.11/) 7 篇 | `v2.11.0` |
 | v2.12 | 可扩展 III：能力包签名 / 升级回滚 / 健康自检 | 📐 M4 已完成，待 M5 | [方案](../plan/v2.12/README.md) · [M0](../plan/v2.12/00-M0-契约冻结.md) · [评审](../plan/v2.12/01-M0-评审记录.md) · [M1](../plan/v2.12/02-M1-实施记录.md) · [M2](../plan/v2.12/03-M2-实施记录.md) · [M3](../plan/v2.12/04-M3-实施记录.md) · [M4](../plan/v2.12/05-M4-实施记录.md) | — | — | 待定 |
 | v2.16 | 可导航：目录预算、公开入口、可见区请求与结构/循环门禁 | ✅ 已正式发布（2026-11-01，Release 已转正并置 Latest） | [方案](../plan/v2.16/README.md) · [M0](../plan/v2.16/01-M0-契约冻结.md) · [M6](../plan/v2.16/08-M6-验收.md) | [总结](v2.16-release-summary.md) | [发行说明](v2.16-release-notes.md) · [blog/v2.16](../../blog/v2.16/) 10 篇 | `v2.16.0` |
+| v2.17 | 可连通：厂商能力矩阵 + 内置联网工具与能力代理 | 🚧 规划中（待 M0 评审冻结） | [方案](../plan/v2.17/README.md) · [内置工具 backlog](builtin-tools-backlog.md) · [厂商 backlog](vendor-compat-backlog.md) | — | — | 待定 |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
