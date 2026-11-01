@@ -21,6 +21,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { AuditArchiveActions } from './audit-archive-actions';
+import { AuditExportButton } from './audit-export-button';
 
 /**
  * v2.13 M3 审计页：链状态 + 过滤 + 详情 + JSONL 导出。
@@ -185,9 +186,6 @@ export function AuditPage() {
     setFilters(EMPTY_FILTERS);
     syncRunIdParam('');
   };
-  const exportLedger = () => {
-    window.location.href = API.auditExport();
-  };
 
   const patch = (next: Partial<Filters>) => setDraft((current) => ({ ...current, ...next }));
 
@@ -209,9 +207,7 @@ export function AuditPage() {
             >
               {verify.isFetching ? t('audit.verifying') : t('audit.verify')}
             </Button>
-            <Button size="sm" onClick={exportLedger}>
-              {t('audit.export')}
-            </Button>
+            <AuditExportButton />
             <AuditArchiveActions from={filters.from} to={filters.to} />
           </div>
         }

@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { apiDelete, apiGet, apiPost, apiUpload } from '@/lib/api/client';
+import { apiDelete, apiGet, apiPost, apiUpload, ApiClientError } from '@/lib/api/client';
+import { downloadApiFile } from '@/lib/api/download';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { SubagentPanel } from '@/features/settings/subagent';
 import { CapabilityRow } from './capability-row';
@@ -24,6 +25,7 @@ export function CapabilitiesPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [kindFilter, setKindFilter] = React.useState<'all' | CapabilityKind>('all');
   const [sampleKind, setSampleKind] = React.useState<CapabilityKind>('skill');
+  const [downloadingSample, setDownloadingSample] = React.useState(false);
   const [upgrading, setUpgrading] = React.useState<CapabilityView | null>(null);
   const [highlightRunId, setHighlightRunId] = React.useState<string | undefined>(undefined);
 
@@ -89,6 +91,27 @@ export function CapabilitiesPage() {
     onSuccess: () => invalidate(),
   });
 
+  /**
+   * 桌面端直接导航请求不会带启动令牌（X-WBFM-Token），示例包必须走带令牌的 fetch 再落盘，
+   * 否则下载会变成 401 JSON 页面（v2.16 修复）。
+   */
+  const downloadSample = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    if (downloadingSample) return;
+    setDownloadingSample(true);
+    setError(null);
+    try {
+      await downloadApiFile(
+        `${API.capabilitySample}?kind=${sampleKind}`,
+        `capability-sample-${sampleKind}.zip`,
+      );
+    } catch (error) {
+      setError(error instanceof ApiClientError ? error.message : t('capabilities.sampleFailed'));
+    } finally {
+      setDownloadingSample(false);
+    }
+  };
+
   const capabilities = query.data ?? [];
   const visible =
     kindFilter === 'all' ? capabilities : capabilities.filter((item) => item.kind === kindFilter);
@@ -118,7 +141,11 @@ export function CapabilitiesPage() {
             <a
               href={`${API.capabilitySample}?kind=${sampleKind}`}
               data-testid="capability-sample-link"
-              className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-muted"
+              aria-disabled={downloadingSample}
+              onClick={(event) => void downloadSample(event)}
+              className={`inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-muted ${
+                downloadingSample ? 'pointer-events-none opacity-60' : ''
+              }`}
             >
               {t('capabilities.sample')}
             </a>

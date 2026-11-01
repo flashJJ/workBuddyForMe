@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
+import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet } from '@/lib/api/client';
+import { downloadApiFile } from '@/lib/api/download';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
 interface TimelineItem {
@@ -41,6 +43,7 @@ function readLocation(): { scope: string; scopeId: string } {
 /** v2.9：事件时间线 + 全局检索 + 导出 */
 export function TimelinePage() {
   const { t } = useI18n();
+  const toast = useToast();
   const initial = readLocation();
   const [scope, setScope] = React.useState<SessionEventScope | ''>(
     SCOPES.includes(initial.scope as SessionEventScope) ? (initial.scope as SessionEventScope) : '',
@@ -84,7 +87,10 @@ export function TimelinePage() {
             size="sm"
             disabled={!scope || !scopeId}
             onClick={() => {
-              if (scope && scopeId) window.location.href = API.exportSession(scope, scopeId);
+              if (!scope || !scopeId) return;
+              void downloadApiFile(API.exportSession(scope, scopeId), 'session-export.zip').catch(
+                () => toast.error(t('toast.exportFailed')),
+              );
             }}
           >
             {t('timeline.export')}

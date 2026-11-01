@@ -34,6 +34,7 @@ export const zhCapabilities = {
   noEffect: '无',
   lastError: '最近错误',
   sample: '下载示例包',
+  sampleFailed: '下载示例包失败，请稍后重试',
   installFailed: '安装失败：清单/校验和/权限/依赖不满足',
   actionFailed: '操作失败，请重试',
   kind: {
@@ -127,6 +128,7 @@ export const enCapabilities = {
   noEffect: 'None',
   lastError: 'Last error',
   sample: 'Download sample',
+  sampleFailed: 'Failed to download the sample pack, please retry',
   installFailed: 'Install failed: manifest/checksum/permission/dependency check failed',
   actionFailed: 'Action failed, please retry',
   kind: {
