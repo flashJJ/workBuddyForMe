@@ -13,6 +13,7 @@ import type { SessionLogService } from '../../session-log/session-log-service';
 import type { AgentPolicy } from '@wbfm/shared/schemas';
 import type { AuditService } from '../../governance/audit';
 import type { SearchService } from '../search';
+import type { CapabilityCatalog } from '../../capabilities/catalog/types';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
@@ -20,6 +21,10 @@ export interface ServiceDeps {
   cipher: SecretCipher;
   /** v2.17：联网搜索服务（未提供时 web_search 返回未配置错误） */
   search?: SearchService;
+  /** v2.17：能力目录与安装代理（未提供时 capability_* 工具明确拒绝） */
+  capabilityCatalog?: CapabilityCatalog;
+  /** v2.17：安装后回写助手 enabledTools（容器在助手服务创建后注入） */
+  bindAssistantTools?: (assistantId: string, enabledTools: string[]) => void;
   /** v0.6：MCP 注册表（未提供时 enabledTools 中的 MCP 限定名静默跳过） */
   mcp?: McpRegistry;
   /** v0.6 M2：工具权限服务（HITL 授权记忆） */

@@ -7,6 +7,9 @@ export const TOOL_NAMES = [
   'web_search',
   'fetch_webpage',
   'screen_snapshot',
+  // v2.17 M4 能力目录（安装为 write，需 HITL）
+  'capability_search',
+  'capability_install',
   // v0.7 M2 键鼠 / 窗口 / UIA
   'mouse_move',
   'mouse_click',

@@ -57,7 +57,7 @@ import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
 import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
-import { createCapabilityService } from '@wbfm/core/capabilities';
+import { createCapabilityCatalog } from '@wbfm/core/capabilities';
 import { createAuditService } from '@wbfm/core/governance';
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
@@ -138,6 +138,10 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // v1.4：协作角色生产通道（三级模型回落 + executor task-loop 适配器）。
   // 必须在 flowRunner 前构造——agent 节点执行经 startFlowNode 发起协作。
   const assistants = createAssistantsService(deps);
+  // v2.17 M4：能力安装成功后回写助手白名单（下一轮 buildTools 生效）
+  deps.bindAssistantTools = (assistantId, enabledTools) => {
+    assistants.update(assistantId, { enabledTools });
+  };
   const knowledgeBases = createKnowledgeService(deps);
   const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
   const agentRuns = createAgentRunService({
@@ -170,6 +174,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     workflows,
     motions: motionsService,
   });
+  // v2.17 M4：能力目录复用同一能力服务（同一份安装/验签/回滚语义）
+  deps.capabilityCatalog = createCapabilityCatalog({ capabilities });
   // v0.9：端点仓储同时供 flowRunner（策略快照）与端点服务（管理/鉴权）使用，必须同一实例
   const endpointRepo = createWorkflowEndpointRepository(db);
   const flowRunner = createFlowRunService({

@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 3100;
+/** 默认 3100；本机端口被占用时可设 WBFM_E2E_PORT 覆盖（CI 不需要） */
+const PORT = Number(process.env.WBFM_E2E_PORT ?? 3100);
 const baseURL = `http://127.0.0.1:${PORT}`;
 /** 每次全量运行使用独立临时数据根，天然隔离 */
 const dataRoot = mkdtempSync(join(tmpdir(), 'wbfm-e2e-'));

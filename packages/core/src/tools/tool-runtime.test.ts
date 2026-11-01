@@ -60,7 +60,7 @@ describe('工具运行时白名单', () => {
     expect(typeof ctx.retrieve).toBe('function');
   });
 
-  it('listDebugTools 返回 21 个内置工具，每个含 source/permission/description/parameters', () => {
+  it('listDebugTools 返回 23 个内置工具，每个含 source/permission/description/parameters', () => {
     const list = runtime.listDebugTools();
     expect(list.map((t) => t.name).sort()).toEqual([
       'app_launch',
@@ -70,6 +70,8 @@ describe('工具运行时白名单', () => {
       'browser_read',
       'browser_snapshot',
       'browser_type',
+      'capability_install',
+      'capability_search',
       'current_time',
       'fetch_webpage',
       'keyboard_press',
@@ -106,6 +108,66 @@ describe('工具运行时白名单', () => {
     expect(ctx.knowledgeBaseIds).toEqual([]);
     expect(ctx.signal).toBe(controller.signal);
     await expect(ctx.retrieve('q', 5)).resolves.toEqual([]);
+  });
+});
+
+describe('v2.17 能力目录上下文与下一轮绑定', () => {
+  const catalog = {
+    search: () => [],
+    install: () => {
+      throw new Error('本用例不触发安装');
+    },
+  } as unknown as NonNullable<ServiceDeps['capabilityCatalog']>;
+
+  it('装配目录后暴露检索/安装回调与助手 id', () => {
+    const ctx = createToolRuntime({ ...deps, capabilityCatalog: catalog }).createContext(
+      { ...assistantWith([]), id: 'asst-1', name: '助手' } as Assistant,
+    );
+    expect(ctx.assistantId).toBe('asst-1');
+    expect(ctx.searchCapabilities).toBeTypeOf('function');
+    expect(ctx.installCapability).toBeTypeOf('function');
+    expect(ctx.bindTools).toBeUndefined();
+  });
+
+  it('安装后只绑定只读工具，write/danger 跳过并回写白名单', () => {
+    const bound: Array<{ assistantId: string; enabledTools: string[] }> = [];
+    const boundRuntime = createToolRuntime({
+      ...deps,
+      capabilityCatalog: catalog,
+      bindAssistantTools: (assistantId, enabledTools) => {
+        bound.push({ assistantId, enabledTools });
+      },
+    });
+    const assistant = {
+      ...assistantWith(['current_time']),
+      id: 'asst-2',
+      name: '助手',
+    } as Assistant;
+    const ctx = boundRuntime.createContext(assistant);
+    const result = ctx.bindTools!(['current_time', 'mouse_click', 'capability_search']);
+    expect(result).toEqual({ added: ['capability_search'], skipped: ['mouse_click'] });
+    expect(bound).toEqual([
+      { assistantId: 'asst-2', enabledTools: ['current_time', 'capability_search'] },
+    ]);
+    // 同一轮第二次安装不清空前一次新增
+    const second = ctx.bindTools!(['web_search']);
+    expect(second).toEqual({ added: ['web_search'], skipped: [] });
+    expect(bound[1]?.enabledTools).toEqual([
+      'current_time',
+      'capability_search',
+      'web_search',
+    ]);
+  });
+
+  it('回写后的白名单在下一轮 buildTools 生效', () => {
+    const assistant = {
+      ...assistantWith(['current_time']),
+      id: 'asst-3',
+      name: '助手',
+    } as Assistant;
+    const nextTurn = { ...assistant, enabledTools: ['current_time', 'capability_search'] };
+    const map = runtime.buildTools(nextTurn, true);
+    expect([...map.keys()].sort()).toEqual(['capability_search', 'current_time']);
   });
 });
 

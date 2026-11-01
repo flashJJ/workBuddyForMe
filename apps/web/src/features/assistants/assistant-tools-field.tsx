@@ -10,7 +10,10 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 const TOOL_LABEL_KEYS: Record<ToolName, MessageKey> = {
   current_time: 'assistants.tools.currentTime',
   knowledge_search: 'assistants.tools.knowledgeSearch',
+  web_search: 'assistants.tools.webSearch',
   fetch_webpage: 'assistants.tools.fetchWebpage',
+  capability_search: 'assistants.tools.capabilitySearch',
+  capability_install: 'assistants.tools.capabilityInstall',
   screen_snapshot: 'assistants.tools.screenSnapshot',
   mouse_move: 'assistants.tools.mouseMove',
   mouse_click: 'assistants.tools.mouseClick',

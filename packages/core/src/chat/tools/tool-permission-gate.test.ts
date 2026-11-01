@@ -108,6 +108,38 @@ describe('工具门控策略与绑定（v2.13 M2）', () => {
     expect((final.value as { denied: boolean }).denied).toBe(true);
   });
 
+  it('alwaysConfirm 工具即使 full_access + 持久授权也强制审批（HITL_REQUIRED）', async () => {
+    const deps = makeDeps(DEFAULT_AGENT_POLICY);
+    deps.permissions!.grantPermission('capability_install', 'all', 'allow');
+    const installTool: Tool = {
+      ...tool,
+      name: 'capability_install',
+      permission: 'write',
+      alwaysConfirm: true,
+    };
+    const generator = gateToolPermission({
+      deps,
+      tool: installTool,
+      toolName: 'capability_install',
+      callId: 'c3',
+      argsSummary: 'catalogId=x',
+      args: { catalogId: 'x' },
+      assistantId: 'a1',
+      source: 'builtin',
+      permission: 'write',
+      mode: 'full_access',
+    });
+    const first = await generator.next();
+    expect(first.done).toBe(false);
+    expect((first.value as { event: string }).event).toBe('tool_confirmation_required');
+    expect(deps.approvals!.list()[0]?.policyReason).toBe('HITL_REQUIRED');
+    expect(auditKinds(deps).at(-1)).toBe('approval_requested');
+    deps.confirmations!.resolve('c3', 'deny');
+    let next = await generator.next();
+    while (!next.done) next = await generator.next();
+    expect((next.value as { denied: boolean }).denied).toBe(true);
+  });
+
   it('显式权限 deny 记录阻止审批绕过', async () => {
     const deps = makeDeps(DEFAULT_AGENT_POLICY);
     deps.permissions!.grantPermission('keyboard_type', 'all', 'deny');

@@ -20,6 +20,8 @@ import {
   Rocket,
   Workflow,
   Minus,
+  Boxes,
+  PackagePlus,
 } from 'lucide-react';
 import type { ToolName } from '@wbfm/shared/constants';
 import type { ToolSubstep, ToolTraceEntry, PermissionLevel } from '@wbfm/shared/types';
@@ -36,6 +38,8 @@ const TOOL_META: Record<ToolName, { labelKey: MessageKey; icon: typeof Clock }> 
   knowledge_search: { labelKey: 'toolTrace.tools.knowledgeSearch', icon: Search },
   web_search: { labelKey: 'toolTrace.tools.webSearch', icon: Search },
   fetch_webpage: { labelKey: 'toolTrace.tools.fetchWebpage', icon: Globe },
+  capability_search: { labelKey: 'toolTrace.tools.capabilitySearch', icon: Boxes },
+  capability_install: { labelKey: 'toolTrace.tools.capabilityInstall', icon: PackagePlus },
   screen_snapshot: { labelKey: 'toolTrace.tools.screenSnapshot', icon: Monitor },
   mouse_move: { labelKey: 'toolTrace.tools.mouseMove', icon: MousePointer2 },
   mouse_click: { labelKey: 'toolTrace.tools.mouseClick', icon: MousePointerClick },

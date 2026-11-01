@@ -207,6 +207,8 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'browser_read',
       'browser_snapshot',
       'browser_type',
+      'capability_install',
+      'capability_search',
       'current_time',
       'fetch_webpage',
       'keyboard_press',
@@ -218,6 +220,7 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'screen_snapshot',
       'todo_write',
       'uia_list',
+      'web_search',
       'window_focus',
       'window_list',
     ]);

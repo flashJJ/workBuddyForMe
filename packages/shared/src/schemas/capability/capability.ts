@@ -141,6 +141,33 @@ export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = [
   'report-widget',
 ];
 
+/** v2.17：能力目录来源与安装策略（目录只收录内置精选包与 MCP 预置） */
+export const CAPABILITY_CATALOG_SOURCES = ['bundled', 'mcp-preset'] as const;
+export type CapabilityCatalogSource = (typeof CAPABILITY_CATALOG_SOURCES)[number];
+
+export const CAPABILITY_INSTALL_STRATEGIES = ['bundled-pack', 'mcp-preset'] as const;
+export type CapabilityInstallStrategy = (typeof CAPABILITY_INSTALL_STRATEGIES)[number];
+
+/**
+ * v2.17 M4：能力目录条目。
+ * id 与能力包清单 id 一致；toolNames 为安装后预计新增的内置工具名，
+ * 只读工具可由安装代理自动绑定，write / danger 仍需手动勾选。
+ */
+export const capabilityCatalogEntrySchema = z.object({
+  id: idSchema,
+  name: z.string().trim().min(1).max(80),
+  kind: z.enum(CAPABILITY_KINDS),
+  description: z.string().trim().max(500).default(''),
+  tags: z.array(z.string().trim().min(1).max(24)).max(12).default([]),
+  permissions: z.array(z.enum(CAPABILITY_PERMISSIONS)).default([]),
+  effects: z.array(z.string().trim().min(1).max(120)).max(12).default([]),
+  source: z.enum(CAPABILITY_CATALOG_SOURCES),
+  version: versionSchema,
+  toolNames: z.array(z.string().trim().min(1).max(64)).max(20).default([]),
+  installStrategy: z.enum(CAPABILITY_INSTALL_STRATEGIES),
+});
+export type CapabilityCatalogEntry = z.infer<typeof capabilityCatalogEntrySchema>;
+
 /** 每种 kind 的 entry 固定路径（安装侧强校验） */
 export const CAPABILITY_ENTRY_BY_KIND: Record<CapabilityKind, string> = {
   skill: 'payload/skill.json',

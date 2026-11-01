@@ -19,6 +19,10 @@ export {
 export { currentTimeTool } from './current-time-tool';
 export { knowledgeSearchTool } from './knowledge-search-tool';
 export { webSearchTool } from './web/web-search-tool';
+export {
+  capabilitySearchTool,
+  capabilityInstallTool,
+} from './capability/capability-tools';
 export { fetchWebpageTool, htmlToText } from './fetch-webpage-tool';
 export { extractMainContent } from './html-extractor';
 export {
