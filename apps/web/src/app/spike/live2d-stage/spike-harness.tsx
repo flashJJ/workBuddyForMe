@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Live2dCanvas } from '@/features/avatar/live2d-canvas';
-import type { ExpressionTag } from '@/features/avatar/expression-parser';
+import { Live2dCanvas } from '@/features/avatar/live2d';
+import type { ExpressionTag } from '@/features/avatar';
 import { collectEnvironment, FrameMetrics, type ScenarioMetrics } from './spike-metrics';
 
 /**

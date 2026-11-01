@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { AvatarCanvasRouter } from '@/features/avatar/avatar-canvas-router';
-import type { Live2dController } from '@/features/avatar/live2d-controller';
-import type { ExpressionTag } from '@/features/avatar/expression-parser';
+import { AvatarCanvasRouter } from '@/features/avatar';
+import type { Live2dController } from '@/features/avatar';
+import type { ExpressionTag } from '@/features/avatar';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { StageCastMember, StageSlot, StageSlotPlacement } from '@wbfm/shared/schemas';
 import { clampActorScale, clampRatio, type ActorLayout } from './stage-layout';

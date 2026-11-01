@@ -2,8 +2,8 @@
 
 import type { DebugToolInfo } from '@wbfm/core/tools';
 import { Badge } from '@/components/ui/badge';
-import { useToolDebugList } from '@/lib/hooks/use-tool-debug';
-import { useFlows } from '@/lib/hooks/use-flows';
+import { useToolDebugList } from '@/lib/hooks/capability';
+import { useFlows } from '@/lib/hooks/flows';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Field, JsonObjectEditor, SimpleSelect, str, type NodeConfigFormProps } from './form-primitives';

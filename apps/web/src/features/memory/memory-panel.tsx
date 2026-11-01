@@ -10,7 +10,7 @@ import { SimpleSelect } from '@/components/ui/simple-select';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
-import { useMemories, useMemoryMutations } from '@/lib/hooks/use-memories';
+import { useMemories, useMemoryMutations } from '@/lib/hooks/assistant';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   MEMORY_KIND_BADGE,

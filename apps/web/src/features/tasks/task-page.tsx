@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
-import { useConversations } from '@/lib/hooks/use-conversations';
-import { useAssistants } from '@/lib/hooks/use-assistants';
-import { useTaskMutations, useTasks } from '@/lib/hooks/use-tasks';
+import { useConversations } from '@/lib/hooks/chat';
+import { useAssistants } from '@/lib/hooks/assistant';
+import { useTaskMutations, useTasks } from '@/lib/hooks/tasks';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { TaskRow } from './task-row';
 import { TaskStartForm } from './task-start-form';

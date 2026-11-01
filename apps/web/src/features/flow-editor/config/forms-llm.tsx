@@ -1,7 +1,7 @@
 'use client';
 
 import type { KnowledgeBase } from '@wbfm/shared/types';
-import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
+import { useKnowledgeBases } from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { NumberInput } from '@/components/ui/number-input';
 import {

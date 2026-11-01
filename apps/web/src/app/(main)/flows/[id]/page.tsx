@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { FlowEditor } from '@/features/flow-editor/flow-editor';
+import { FlowEditor } from '@/features/flow-editor';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

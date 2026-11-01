@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { useSettings } from '@/lib/hooks/use-settings';
+import { useSettings } from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**

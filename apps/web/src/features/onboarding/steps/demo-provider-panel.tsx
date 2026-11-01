@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { DEMO_PROVIDER_ID } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useUpdateSettings } from '@/lib/hooks/use-settings';
+import { useUpdateSettings } from '@/lib/hooks/provider';
 import { QUERY_KEYS } from '@/lib/api/endpoints';
 import { useI18n } from '@/lib/i18n/use-i18n';
 

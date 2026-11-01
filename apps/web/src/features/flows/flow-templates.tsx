@@ -5,7 +5,7 @@ import { TemplateLauncher } from '@/components/common/template-launcher';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useFlowMutations } from '@/lib/hooks/use-flows';
+import { useFlowMutations } from '@/lib/hooks/flows';
 import { templatesOfKind } from '@/lib/templates/starter-templates';
 
 const FLOW_TEMPLATES = templatesOfKind('flow');

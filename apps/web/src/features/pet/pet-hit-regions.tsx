@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import type { InteractionEvent } from '@wbfm/shared/schemas';
-import type { Live2dController } from '@/features/avatar/live2d-controller';
+import type { Live2dController } from '@/features/avatar';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**

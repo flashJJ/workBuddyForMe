@@ -1,4 +1,4 @@
-import { SettingsPage as SettingsPageFeature } from '@/features/settings/settings-page';
+import { SettingsPage as SettingsPageFeature } from '@/features/settings';
 
 export default async function SettingsPage({
   searchParams,

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { ProviderPresetModel } from '@wbfm/shared/constants';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useModelMutations } from '@/lib/hooks/use-providers';
+import { useModelMutations } from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**

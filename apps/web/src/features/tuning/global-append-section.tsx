@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
+import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /** v1.8 G4/G5：全局追加提示词开关+文本，以及上下文条数 2–50（均为全局设置） */

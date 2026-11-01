@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
-import { useKnowledgeMutations, type KnowledgeBaseBody } from '@/lib/hooks/use-knowledge';
+import { useKnowledgeMutations, type KnowledgeBaseBody } from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {

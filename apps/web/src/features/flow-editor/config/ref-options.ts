@@ -1,7 +1,7 @@
 import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import type { FlowInputField } from '@wbfm/shared/schemas';
-import { NODE_META, nodeTitle, buildRefToken } from '../node-meta';
-import type { FlowCanvasNode } from '../graph-utils';
+import { NODE_META, nodeTitle, buildRefToken } from '../canvas/node-meta';
+import type { FlowCanvasNode } from '../canvas/graph-utils';
 
 export interface RefOption {
   /** 下拉展示 */

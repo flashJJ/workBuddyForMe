@@ -13,10 +13,10 @@ import TasksPage from '@/app/(main)/tasks/page';
 // v2.5：Next 15 路由页为 async Server Component，客户端严格模式测试改用 feature 组件。
 import { KnowledgePage } from '@/features/knowledge/knowledge-page';
 import { AssistantsPage } from '@/features/assistants/assistants-page';
-import { SettingsPage } from '@/features/settings/settings-page';
+import { SettingsPage } from '@/features/settings';
 import { FlowsListPage } from '@/features/flows/flows-list-page';
-import { ConfigPanel } from '@/features/flow-editor/config-panel';
-import type { FlowCanvasNode } from '@/features/flow-editor/graph-utils';
+import { ConfigPanel } from '@/features/flow-editor/panels';
+import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (

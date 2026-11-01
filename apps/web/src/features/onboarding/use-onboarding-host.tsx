@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
+import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 import { OnboardingDialog } from './onboarding-dialog';
 
 /**

@@ -7,7 +7,7 @@ import {
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared/schemas';
-import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar/avatar-models';
+import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar';
 import { getPetBridge } from '@/features/pet/pet-bridge';
 import { usePetOpenState } from '@/features/pet/use-pet-voice-relay';
 import { useI18n } from '@/lib/i18n/use-i18n';

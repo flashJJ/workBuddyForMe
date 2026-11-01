@@ -13,7 +13,7 @@ import MeetingsPage from '@/app/(main)/meetings/page';
 // 直接渲染 async 组件；挂载测试改用其对应的 feature 组件（e2e 覆盖路由壳）。
 import { KnowledgePage } from '@/features/knowledge/knowledge-page';
 import { AssistantsPage } from '@/features/assistants/assistants-page';
-import { SettingsPage } from '@/features/settings/settings-page';
+import { SettingsPage } from '@/features/settings';
 import { FlowsListPage } from '@/features/flows/flows-list-page';
 
 vi.mock('next/link', () => ({

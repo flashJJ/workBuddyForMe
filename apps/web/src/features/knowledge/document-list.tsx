@@ -6,7 +6,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Spinner } from '@/components/common/state';
 import { useConfirm } from '@/components/common/confirm-dialog';
-import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useKnowledgeMutations } from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
 

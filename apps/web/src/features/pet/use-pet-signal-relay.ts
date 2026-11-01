@@ -5,7 +5,7 @@ import type { AwarenessEvent } from '@wbfm/shared/awareness';
 import { WORK_STREAK_IDLE_GAP_MS } from '@wbfm/shared/events';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { SystemSignal } from '@wbfm/shared/schemas';
-import { useSettings } from '@/lib/hooks/use-settings';
+import { useSettings } from '@/lib/hooks/provider';
 import { getPetBridge } from './pet-bridge';
 
 /**

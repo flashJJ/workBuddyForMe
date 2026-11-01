@@ -1,7 +1,7 @@
 'use client';
 
 import { ListTodo } from 'lucide-react';
-import { useWorkPlans } from '@/lib/hooks/use-work-plans';
+import { useWorkPlans } from '@/lib/hooks/tasks';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**

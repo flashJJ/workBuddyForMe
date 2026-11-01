@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { AvatarCanvasRouter } from '@/features/avatar/avatar-canvas-router';
-import type { Live2dController } from '@/features/avatar/live2d-controller';
-import { useHeadTouch, type TouchControllerLike } from '@/features/avatar/use-head-touch';
-import { pulseReunionSignal } from '@/features/avatar/reunion-storage';
+import { AvatarCanvasRouter } from '@/features/avatar';
+import type { Live2dController } from '@/features/avatar';
+import { useHeadTouch, type TouchControllerLike } from '@/features/avatar';
+import { pulseReunionSignal } from '@/features/avatar';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
@@ -16,7 +16,7 @@ import {
   type MotionMood,
 } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useSettings } from '@/lib/hooks/use-settings';
+import { useSettings } from '@/lib/hooks/provider';
 import { getPetBridge } from './pet-bridge';
 import { TriggerBus } from '@/features/interaction/trigger-bus';
 import { ActionExecutor } from '@/features/interaction/action-executor';
@@ -29,7 +29,7 @@ import { useWorkAlerts } from './use-work-alerts';
 
 interface Props {
   modelId: string;
-  expression: import('@/features/avatar/expression-parser').ExpressionTag;
+  expression: import('@/features/avatar').ExpressionTag;
   voiceState: PetVoiceState;
   subtitle: string;
   getLevel: () => number;

@@ -5,7 +5,7 @@ import { PET_SUBTITLE_MAX, type PetVoiceState } from '@wbfm/shared/pet';
 import { DEFAULT_MOTION_MOOD, stripExpressionDirectives, type MotionMood } from '@wbfm/shared/schemas';
 import { type Message } from '@wbfm/shared/types';
 import { type SsePayloadMap } from '@wbfm/shared/api';
-import { DEFAULT_EXPRESSION, latestExpression, type ExpressionTag } from '@/features/avatar/expression-parser';
+import { DEFAULT_EXPRESSION, latestExpression, type ExpressionTag } from '@/features/avatar';
 import { getPetBridge } from './pet-bridge';
 
 /** 桌宠电平中继节流：约 30Hz（口型动画本身不需要更高频率） */

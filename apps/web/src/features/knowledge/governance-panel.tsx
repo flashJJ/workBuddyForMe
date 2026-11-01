@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { ClaimDimension, ConflictItem, DuplicatePair } from '@wbfm/core/knowledge';
 import { Badge } from '@/components/ui/badge';
-import { useKnowledgeGovernance } from '@/lib/hooks/use-knowledge';
+import { useKnowledgeGovernance } from '@/lib/hooks/knowledge';
 import { formatCitationMeta } from '@/lib/citation-meta';
 import { useI18n } from '@/lib/i18n/use-i18n';
 

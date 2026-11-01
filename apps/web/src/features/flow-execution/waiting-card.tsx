@@ -3,8 +3,8 @@
 import { ShieldAlert, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { FlowCanvasNode } from '../flow-editor/graph-utils';
-import { str } from '../flow-editor/config/form-primitives';
+import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
+import { str } from '@/features/flow-editor/config';
 
 interface WaitingCardProps {
   node: FlowCanvasNode;

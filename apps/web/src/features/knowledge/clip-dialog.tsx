@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError } from '@/lib/api/client';
-import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useKnowledgeMutations } from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {

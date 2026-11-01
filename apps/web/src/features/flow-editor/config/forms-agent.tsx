@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { Monitor, LibraryBig } from 'lucide-react';
 import { AGENT_BUDGET_BOUNDS } from '@wbfm/shared/schemas';
-import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
-import { useAssistants } from '@/lib/hooks/use-assistants';
+import { useKnowledgeBases } from '@/lib/hooks/knowledge';
+import { useAssistants } from '@/lib/hooks/assistant';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
 import { NumberInput } from '@/components/ui/number-input';

@@ -9,7 +9,7 @@ import type {
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useTaskAudit } from '@/lib/hooks/use-tasks';
+import { useTaskAudit } from '@/lib/hooks/tasks';
 import { maskWorkspacePath } from '@/lib/utils/path-mask';
 
 const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {

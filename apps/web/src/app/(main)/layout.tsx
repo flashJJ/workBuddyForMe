@@ -3,7 +3,7 @@ import { SkipLink } from '@/components/layout/skip-link';
 import { CommandPaletteHost } from '@/features/command-palette/use-command-palette';
 import { ShortcutsHost } from '@/features/shortcuts/use-shortcuts-host';
 import { OnboardingHost } from '@/features/onboarding/use-onboarding-host';
-import { ReunionSignalHost } from '@/features/avatar/use-reunion-foreground-signal';
+import { ReunionSignalHost } from '@/features/avatar';
 import { DeepLinkHost } from '@/features/navigation/deep-link-host';
 
 /** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K）+ 快捷键浮层（Ctrl+/）+ 首启向导 */

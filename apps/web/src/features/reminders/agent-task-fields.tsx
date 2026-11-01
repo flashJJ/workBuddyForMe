@@ -11,8 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useConversations } from '@/lib/hooks/use-conversations';
-import { useSettings } from '@/lib/hooks/use-settings';
+import { useConversations } from '@/lib/hooks/chat';
+import { useSettings } from '@/lib/hooks/provider';
 
 const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
   confirm_each: 'tasks.governance.modes.confirm_each',

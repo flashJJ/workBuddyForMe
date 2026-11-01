@@ -10,7 +10,7 @@ import {
   useCompileEvents,
   useCompileStatus,
   useKnowledgeMutations,
-} from '@/lib/hooks/use-knowledge';
+} from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /**

@@ -11,7 +11,7 @@ import type {
   StageSlot,
   StageSlotPlacement,
 } from '@wbfm/shared/schemas';
-import type { ExpressionTag } from '@/features/avatar/expression-parser';
+import type { ExpressionTag } from '@/features/avatar';
 import { FrameWatchdog } from './frame-watchdog';
 import { clampSceneZoom } from './stage-layout';
 import { MOCK_CAST, MOCK_EXPRESSIONS, MOCK_SPEECH } from './mock-cast';

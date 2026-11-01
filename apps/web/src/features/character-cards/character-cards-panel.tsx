@@ -13,7 +13,7 @@ import {
   readCardFile,
   useCharacterCardMutations,
   useCharacterCards,
-} from '@/lib/hooks/use-character-cards';
+} from '@/lib/hooks/assistant';
 import { CharacterCardEditorDialog, type CardEditorState } from './character-card-editor-dialog';
 
 function CardRow({

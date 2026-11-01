@@ -6,7 +6,7 @@ import { TemplateLauncher } from '@/components/common/template-launcher';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useKnowledgeMutations } from '@/lib/hooks/knowledge';
 import { templatesOfKind } from '@/lib/templates/starter-templates';
 
 const KB_TEMPLATES = templatesOfKind('knowledge');

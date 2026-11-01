@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import type { PetPerformanceEvent, PetVoiceState } from '@wbfm/shared/pet';
 import { DEFAULT_MOTION_MOOD, type MotionMood } from '@wbfm/shared/schemas';
-import { DEFAULT_EXPRESSION, type ExpressionTag } from '@/features/avatar/expression-parser';
+import { DEFAULT_EXPRESSION, type ExpressionTag } from '@/features/avatar';
 import { getPetBridge, isPetHitPoint } from './pet-bridge';
 
 export interface PetRuntime {

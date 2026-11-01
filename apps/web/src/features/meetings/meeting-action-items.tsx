@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
-import { useFlows } from '@/lib/hooks/use-flows';
+import { useFlows } from '@/lib/hooks/flows';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { MeetingActionItemRow } from './meeting-action-item-row';

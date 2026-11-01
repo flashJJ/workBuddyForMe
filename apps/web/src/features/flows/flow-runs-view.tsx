@@ -20,7 +20,7 @@ import {
   runElapsedMs,
   toOutcome,
 } from '@/lib/runs/run-outcome';
-import { useFlowRuns, useReplayRun, type FlowRunSummary } from '@/lib/hooks/use-flow-runs-center';
+import { useFlowRuns, useReplayRun, type FlowRunSummary } from '@/lib/hooks/flows';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
 

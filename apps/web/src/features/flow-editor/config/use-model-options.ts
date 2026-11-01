@@ -4,7 +4,7 @@ import { useQueries } from '@tanstack/react-query';
 import type { ProviderModel } from '@wbfm/shared/types';
 import { apiGet } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import { useProviders } from '@/lib/hooks/use-providers';
+import { useProviders } from '@/lib/hooks/provider';
 
 /** 跨供应商模型扁平选项（modelId 为全局唯一标识）；llm/agent 表单共用 */
 export interface ModelOption {

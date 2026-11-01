@@ -3,11 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
-  CapabilityCleanupResult,
-  CapabilityHealthReport,
-  CapabilityKind,
-  CapabilityView,
-} from '@wbfm/shared/schemas';
+  CapabilityCleanupResult, CapabilityHealthReport, CapabilityKind, CapabilityView, } from '@wbfm/shared/schemas';
 import { CAPABILITY_SUPPORTED_KINDS } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
@@ -15,7 +11,7 @@ import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiDelete, apiGet, apiPost, apiUpload } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
-import { SubagentPanel } from '@/features/settings/subagent-panel';
+import { SubagentPanel } from '@/features/settings/subagent';
 import { CapabilityRow } from './capability-row';
 import { CapabilityHealthBanner } from './capability-health-banner';
 import { CapabilityUpgradeDialog } from './capability-upgrade-dialog';
