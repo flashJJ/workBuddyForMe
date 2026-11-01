@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * 等待整页水合完成（AppProviders 的 HydrationMarker 在根被动 effect 中置位）。
@@ -38,7 +38,12 @@ export async function revealSettingsSection(
   page: Page,
   section: 'appearance' | 'dialog' | 'tools' | 'data',
 ): Promise<void> {
-  await page.locator(`#setting-${section}`).scrollIntoViewIfNeeded();
+  // 先等整页水合：SSR 的锚点会在水合时被替换，直接 scroll 可能命中已脱离 DOM 的旧节点。
+  await waitForHydrated(page);
+  // 可见区门控会在滚动时触发一次状态更新，锚点可能短暂重挂载；重试到滚动成功。
+  await expect(async () => {
+    await page.locator(`#setting-${section}`).scrollIntoViewIfNeeded({ timeout: 5_000 });
+  }).toPass({ timeout: 15_000 });
 }
 
 /**
