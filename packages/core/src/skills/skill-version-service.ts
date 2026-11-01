@@ -10,7 +10,7 @@ import {
   type SkillVersionRow,
 } from '@wbfm/database';
 import type { SkillManifest } from '@wbfm/shared/types';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { copySnapshot, digestDirectory, directorySize, versionDirName } from './skill-version-digest';
 
 /** 快照体积超限时的健康问题码（不阻断技能加载，仅跳过快照） */

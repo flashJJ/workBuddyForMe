@@ -9,7 +9,7 @@ import type {
   EventTriggerUpdateInput,
   EventTriggerView,
 } from '@wbfm/shared/schemas';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 
 export interface EventTriggersService {
   list(assistantId?: string): EventTriggerView[];

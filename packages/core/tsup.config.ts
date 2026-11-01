@@ -10,7 +10,7 @@ export default defineConfig({
     index: 'src/index.ts',
     voice: 'src/voice/index.ts',
     'event-client': 'src/event/client.ts',
-    'stage-client': 'src/agents/stage-client.ts',
+    'stage-client': 'src/agents/stage/stage-client.ts',
     'relationship-client': 'src/emotion/relationship-client.ts',
   },
   format: ['esm', 'cjs'],

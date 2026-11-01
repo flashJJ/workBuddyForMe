@@ -12,8 +12,8 @@ import { NumberInput } from '@/components/ui/number-input';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useTaskMutations } from '@/lib/hooks/use-tasks';
-import { useSettings } from '@/lib/hooks/use-settings';
+import { useTaskMutations } from '@/lib/hooks/tasks';
+import { useSettings } from '@/lib/hooks/provider';
 
 const MODES: AgentPermissionMode[] = [
   'confirm_each',

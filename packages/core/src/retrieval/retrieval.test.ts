@@ -13,8 +13,8 @@ import {
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
-import { createSettingsService } from '../services/settings-service';
-import { createAssistantsService } from '../services/assistant-service';
+import { createSettingsService } from '../services/settings/settings-service';
+import { createAssistantsService } from '../services/assistant/assistant-service';
 import { createIngestionPipeline } from '../ingestion/ingestion-pipeline';
 import { createRetrievalService } from './retrieval-service';
 import { createRagRetriever } from './rag-retriever';

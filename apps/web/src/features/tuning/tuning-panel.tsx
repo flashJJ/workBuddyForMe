@@ -10,10 +10,10 @@ import { Spinner } from '@/components/common/state';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useAssistants, useAssistantMutations } from '@/lib/hooks/use-assistants';
-import { useAllModels, useSettings } from '@/lib/hooks/use-settings';
+import { useAssistants, useAssistantMutations } from '@/lib/hooks/assistant';
+import { useAllModels, useSettings } from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { NumberField } from '../assistants/number-field';
+import { NumberField } from '@/components/ui/number-field';
 import { ScenarioModelMatrix } from './scenario-model-matrix';
 import { GlobalAppendSection } from './global-append-section';
 

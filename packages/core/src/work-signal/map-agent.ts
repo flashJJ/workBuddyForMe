@@ -1,5 +1,5 @@
 import type { AgentRunView, WorkSignal } from '@wbfm/shared';
-import type { AgentRunEvent } from '../agents/agent-runner';
+import type { AgentRunEvent } from '../agents/runner/agent-runner';
 
 const TITLE_MAX = 120;
 

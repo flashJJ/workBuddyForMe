@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
-import { useFlowMutations, useFlows } from '@/lib/hooks/use-flows';
+import { useFlowMutations, useFlows } from '@/lib/hooks/flows';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
 import { errorText } from '@/lib/i18n/resolve-error';

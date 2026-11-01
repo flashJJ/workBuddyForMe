@@ -9,7 +9,7 @@ import {
   localDayKey,
   type EmotionState,
 } from '@wbfm/shared/schemas';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { createEmotionService } from './emotion-service';
 import { defaultRelationshipBlock } from './relationship-kernel';
 

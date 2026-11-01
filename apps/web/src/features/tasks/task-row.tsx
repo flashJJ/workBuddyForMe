@@ -7,7 +7,7 @@ import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
 import { formatDurationMs, runElapsedMs, taskOutcome } from '@/lib/runs/run-outcome';
-import { useTaskEvents } from '@/lib/hooks/use-tasks';
+import { useTaskEvents } from '@/lib/hooks/tasks';
 import { TaskControlBar } from './task-control-bar';
 import { TaskGovernanceSummary } from './task-governance-summary';
 import { TaskTimeline } from './task-timeline';

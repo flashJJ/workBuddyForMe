@@ -10,8 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useConversations } from '@/lib/hooks/use-conversations';
-import { useWorkPlanMutations, useWorkPlans } from '@/lib/hooks/use-work-plans';
+import { useConversations } from '@/lib/hooks/chat';
+import { useWorkPlanMutations, useWorkPlans } from '@/lib/hooks/tasks';
 import { PlanCard } from './plan-card';
 
 const STATUS_VARIANT: Record<WorkPlanStatus, 'outline' | 'info' | 'success' | 'warning' | 'danger'> = {

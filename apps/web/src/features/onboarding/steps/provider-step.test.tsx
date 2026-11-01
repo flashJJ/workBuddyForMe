@@ -6,7 +6,10 @@ import { renderWithProviders } from '@/test/render';
 import { ProviderStep } from './provider-step';
 
 const { probeMock } = vi.hoisted(() => ({ probeMock: vi.fn() }));
-vi.mock('@/lib/hooks/use-ollama-probe', () => ({ useOllamaProbe: probeMock }));
+vi.mock('@/lib/hooks/provider', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/hooks/provider')>();
+  return { ...actual, useOllamaProbe: probeMock };
+});
 
 /** 供应商查询走真实 hook：stub 空列表响应即可 */
 function stubFetch() {

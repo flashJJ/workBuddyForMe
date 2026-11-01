@@ -1,8 +1,8 @@
 import type { Assistant } from '@wbfm/shared/types';
 import { createSettingsRepository } from '@wbfm/database';
-import type { RagContext, RagChunk, RagRetriever } from '../chat/types';
+import type { RagContext, RagChunk, RagRetriever } from '../chat/base/types';
 import { createStaticKnowledgeService } from '../knowledge/static-knowledge-service';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { formatContextBlock, toCitations } from './context-formatter';
 import {
   createRetrievalService,

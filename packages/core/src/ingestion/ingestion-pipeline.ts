@@ -12,7 +12,7 @@ import {
   insertChunkVectors,
 } from '@wbfm/database';
 import { getCompileQueueService } from '../knowledge/compile-queue-service';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { chunkText } from './chunking';
 import { resolveEmbeddingTarget } from './embedding-target';
 import { extractDocumentText } from './extract-with-ocr';

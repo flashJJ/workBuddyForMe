@@ -1,4 +1,4 @@
-import type { StageScenePayload } from '../schemas/stage';
+import type { StageScenePayload } from '../schemas/media/stage';
 
 /** stage_scenes 表行（v027） */
 export interface StageSceneRecord {

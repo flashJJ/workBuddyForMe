@@ -10,7 +10,7 @@ import type {
 import { renderWithProviders } from '@/test/render';
 import { MeetingConclusionPanel } from './meeting-conclusion-panel';
 
-vi.mock('@/lib/hooks/use-flows', () => ({
+vi.mock('@/lib/hooks/flows', () => ({
   useFlows: () => ({
     data: [
       { id: 'f1', name: '跟进 Flow', status: 'published' },

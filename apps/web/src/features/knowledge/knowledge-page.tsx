@@ -9,7 +9,7 @@ import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { ApiClientError } from '@/lib/api/client';
-import { useDocuments, useKnowledgeBases, useKnowledgeMutations } from '@/lib/hooks/use-knowledge';
+import { useDocuments, useKnowledgeBases, useKnowledgeMutations } from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { KnowledgeBaseFormDialog } from './kb-form-dialog';
 import { KnowledgeTemplateEmptyGallery, KnowledgeTemplateLauncher } from './knowledge-templates';

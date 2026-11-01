@@ -1,6 +1,6 @@
 'use client';
 
-import { StageRoot } from '@/features/stage/stage-root';
+import { StageRoot } from '@/features/stage';
 
 /**
  * /stage：全屏舞台独立路由（不进 (main) 布局，无侧栏）。

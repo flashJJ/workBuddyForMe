@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { ScheduledTaskView } from '@wbfm/shared/schemas';
 import { apiGet, apiPost } from '@/lib/api/client';
-import { useAssistants } from '@/lib/hooks/use-assistants';
+import { useAssistants } from '@/lib/hooks/assistant';
 
 /** 与 proactive 心跳同粒度（M0 冻结：10s） */
 const TICK_INTERVAL_MS = 10_000;

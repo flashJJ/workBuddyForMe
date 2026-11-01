@@ -11,11 +11,11 @@ import {
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
-import { createAssistantsService } from '../services/assistant-service';
-import { createConversationService } from '../services/conversation-service';
-import { createSettingsService } from '../services/settings-service';
-import { createChatOrchestrator } from '../chat/chat-orchestrator';
-import type { OrchestratorEvent } from '../chat/types';
+import { createAssistantsService } from '../services/assistant/assistant-service';
+import { createConversationService } from '../services/assistant/conversation-service';
+import { createSettingsService } from '../services/settings/settings-service';
+import { createChatOrchestrator } from '../chat/orchestrator/chat-orchestrator';
+import type { OrchestratorEvent } from '../chat/base/types';
 
 function sse(delta: string): string {
   return (

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
-import { useFirstTokenProbe, type FirstTokenProbeReport } from '@/lib/hooks/use-first-token-probe';
+import { useFirstTokenProbe, type FirstTokenProbeReport } from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { formatLatencySeconds, latencyTier, type LatencyTier } from '../latency-tier';
 

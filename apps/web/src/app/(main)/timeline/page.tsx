@@ -1,4 +1,4 @@
-import { TimelinePage } from '@/features/timeline/timeline-page';
+import { TimelinePage } from '@/features/timeline';
 
 export default function Page() {
   return <TimelinePage />;

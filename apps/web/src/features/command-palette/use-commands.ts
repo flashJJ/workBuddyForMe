@@ -15,8 +15,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Command } from '@wbfm/shared/command';
-import { useAssistants } from '@/lib/hooks/use-assistants';
-import { useConversationMutations } from '@/lib/hooks/use-conversations';
+import { useAssistants } from '@/lib/hooks/assistant';
+import { useConversationMutations } from '@/lib/hooks/chat';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
 

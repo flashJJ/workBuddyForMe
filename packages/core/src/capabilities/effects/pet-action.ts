@@ -5,7 +5,7 @@ import {
   petActionCapabilityPayloadSchema,
   type CapabilityManifest,
 } from '@wbfm/shared/schemas';
-import type { MotionService } from '../../services/motion-service';
+import type { MotionService } from '../../services/media/motion-service';
 
 export interface PetActionEffectDeps {
   motions: MotionService;

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { FlowCanvasNode } from '../graph-utils';
+import type { FlowCanvasNode } from '../canvas/graph-utils';
 import { buildRefOptions } from './ref-options';
 
 /** 配置表单统一入参 */

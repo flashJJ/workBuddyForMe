@@ -1,7 +1,7 @@
 'use client';
 
 import { TriggerBus } from './trigger-bus';
-import { getPetBridge } from '@/features/pet/pet-bridge';
+import { getPetBridge } from '@/features/pet/bridge';
 import type { InteractionEvent } from '@wbfm/shared/schemas';
 
 /**

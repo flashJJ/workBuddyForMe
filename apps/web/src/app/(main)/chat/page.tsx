@@ -1,4 +1,4 @@
-import { ChatPage } from '@/features/chat/chat-page';
+import { ChatPage } from '@/features/chat';
 
 /** v2.6 M4：支持 /chat?conversation=<id>&message=<id> 记忆来源深链 */
 export default async function Page({

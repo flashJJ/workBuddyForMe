@@ -7,7 +7,7 @@ import {
   createKnowledgeRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { createCompileRunnerService } from './compile-runner-service';
 import {
   createCompileQueueService,

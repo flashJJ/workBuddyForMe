@@ -1,0 +1,234 @@
+'use client';
+
+import * as React from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
+import type {
+  FlowDiagnostic,
+  FlowEventPayload,
+  FlowNodeExecStatus,
+  WorkflowRunView,
+  WorkflowVersionView,
+  WorkflowView,
+} from '@wbfm/shared/types';
+import type {
+  FlowGraph,
+  FlowGraphDiff,
+  FlowHumanSubmitInput,
+  WorkflowCreateInput,
+  WorkflowUpdateInput,
+} from '@wbfm/shared/schemas';
+import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
+import { API, QUERY_KEYS } from '@/lib/api/endpoints';
+import {
+  INITIAL_LIVE,
+  applyFlowEvent,
+  buildFlowRunEventsUrl,
+  flowEventDedupeKey,
+  isTerminalFlowEvent,
+  onFlowConnectionError,
+  onFlowConnectionOpen,
+  readManagedToken,
+} from './use-flows-helpers';
+import type { FlowLiveState } from './use-flows-types';
+
+export type { FlowLiveState, FlowRunPhase } from './use-flows-types';
+
+/** 工作流详情：元信息 + 当前版本图（无版本 graph=null） */
+export interface FlowDetail {
+  workflow: WorkflowView;
+  graph: FlowGraph | null;
+  version: number;
+}
+
+export function useFlows() {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.flows,
+    queryFn: () => apiGet<WorkflowView[]>(API.flows),
+    staleTime: 3_000,
+  });
+}
+
+export function useFlow(id: string | null) {
+  return useVisibleQuery({
+    queryKey: id ? QUERY_KEYS.flow(id) : ['flows', 'disabled'],
+    queryFn: () => apiGet<FlowDetail>(API.flow(id!)),
+    enabled: Boolean(id),
+  });
+}
+
+/** v2.14：工作流版本列表（编辑器版本抽屉） */
+export function useFlowVersions(id: string, enabled = true) {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.flowVersions(id),
+    queryFn: () => apiGet<WorkflowVersionView[]>(API.flowVersions(id)),
+    enabled,
+  });
+}
+
+/** v2.15：任意两版差异；params 为 null 时不请求 */
+export function useFlowVersionCompare(
+  id: string,
+  params: { from: number; to: number } | null,
+) {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.flowVersionCompare(id, params?.from ?? 0, params?.to ?? 0),
+    queryFn: () =>
+      apiGet<FlowGraphDiff>(
+        API.flowVersionCompare(id, params!.from, params!.to),
+      ),
+    enabled: Boolean(params),
+  });
+}
+
+export function useFlowMutations() {
+  const qc = useQueryClient();
+  const invalidateList = () => qc.invalidateQueries({ queryKey: QUERY_KEYS.flows });
+  const invalidateOne = (id: string) =>
+    qc.invalidateQueries({ queryKey: QUERY_KEYS.flow(id) });
+
+  return {
+    create: useMutation({
+      mutationFn: (body: WorkflowCreateInput) => apiPost<WorkflowView>(API.flows, body),
+      onSuccess: invalidateList,
+    }),
+    /** v2.4 P0-2：以内置工作流为模板复制可编辑草稿（服务端带播种定义回落） */
+    clone: useMutation({
+      mutationFn: ({ id, name }: { id: string; name: string }) =>
+        apiPost<WorkflowView>(API.flowClone(id), { name }),
+      onSuccess: invalidateList,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, body }: { id: string; body: WorkflowUpdateInput }) =>
+        apiPatch<WorkflowView>(API.flow(id), body),
+      onSuccess: (wf) => {
+        invalidateList();
+        invalidateOne(wf.id);
+      },
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => apiDelete<{ id: string }>(API.flow(id)),
+      onSuccess: (_data, id) => {
+        invalidateList();
+        qc.removeQueries({ queryKey: QUERY_KEYS.flow(id) });
+      },
+    }),
+    saveVersion: useMutation({
+      mutationFn: ({ id, graph }: { id: string; graph: FlowGraph }) =>
+        apiPost<WorkflowVersionView>(API.flowVersions(id), { graph }),
+      onSuccess: (_data, vars) => {
+        invalidateList();
+        invalidateOne(vars.id);
+      },
+    }),
+    validate: useMutation({
+      mutationFn: ({ id, graph }: { id: string; graph?: FlowGraph }) =>
+        apiPost<{ ok: boolean; diagnostics: FlowDiagnostic[] }>(
+          API.flowValidate(id),
+          graph ? { graph } : {},
+        ),
+    }),
+    publish: useMutation({
+      mutationFn: (id: string) => apiPost<WorkflowView>(API.flowPublish(id)),
+      onSuccess: (wf) => {
+        invalidateList();
+        invalidateOne(wf.id);
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.flowVersions(wf.id) });
+      },
+    }),
+    /** v2.14：设为生产版本（不改变当前草稿） */
+    setProduction: useMutation({
+      mutationFn: ({ id, version }: { id: string; version: number }) =>
+        apiPost<WorkflowView>(API.flowProduction(id), { version }),
+      onSuccess: (wf) => {
+        invalidateList();
+        invalidateOne(wf.id);
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.flowVersions(wf.id) });
+      },
+    }),
+  };
+}
+
+export interface RunDetail {
+  run: WorkflowRunView;
+  nodes: Array<{
+    nodeId: string;
+    status: FlowNodeExecStatus;
+    error: string | null;
+    durationMs: number;
+  }>;
+  active: boolean;
+}
+
+export function useFlowRunDetail(runId: string | null) {
+  return useVisibleQuery({
+    queryKey: runId ? QUERY_KEYS.flowRun(runId) : ['flow-run', 'disabled'],
+    queryFn: () => apiGet<RunDetail>(API.flowRun(runId!)),
+    enabled: Boolean(runId),
+  });
+}
+
+export function useFlowRunAction(runId: string | null) {
+  const create = useMutation({
+    mutationFn: ({ workflowId, input }: { workflowId: string; input: Record<string, unknown> }) =>
+      apiPost<{ runId: string }>(API.flowRuns(workflowId), { input }),
+  });
+  const submitHuman = useMutation({
+    mutationFn: (body: FlowHumanSubmitInput) =>
+      apiPost<{ ok: boolean }>(API.flowRunHuman(runId!), body),
+  });
+  const submitToolConfirm = useMutation({
+    mutationFn: (body: { nodeId: string; allowed: boolean }) =>
+      apiPost<{ ok: boolean }>(API.flowRunToolConfirm(runId!), body),
+  });
+  const cancel = useMutation({
+    mutationFn: () => apiPost<{ ok: boolean }>(API.flowRunControl(runId!), { action: 'cancel' }),
+  });
+  return { create, submitHuman, submitToolConfirm, cancel };
+}
+
+// ── SSE 运行事件流 ──
+
+/**
+ * 订阅工作流运行 SSE：挂载即连、卸载即关。
+ * 终态运行由服务端回放节点记录，同一套事件归一处理。
+ */
+export function useFlowRunEvents(runId: string | null): FlowLiveState {
+  const [state, setState] = React.useState<FlowLiveState>(INITIAL_LIVE);
+
+  React.useEffect(() => {
+    if (!runId) {
+      setState(INITIAL_LIVE);
+      return;
+    }
+    setState(INITIAL_LIVE);
+
+    const url = buildFlowRunEventsUrl(runId, readManagedToken());
+    const es = new EventSource(url);
+    // 同一订阅内去重：终态运行的服务端回放可能因 EventSource 自动重连而重复
+    const seen = new Set<string>();
+
+    es.onopen = () => setState((s) => onFlowConnectionOpen(s));
+    es.onerror = () => setState((s) => onFlowConnectionError(s));
+    es.addEventListener('flow', (ev) => {
+      try {
+        const payload = JSON.parse((ev as MessageEvent).data) as FlowEventPayload;
+        // 同一运行中每类节点事件只出现一次；run 级事件按 type 去重
+        const dedupeKey = flowEventDedupeKey(payload);
+        if (seen.has(dedupeKey)) return;
+        seen.add(dedupeKey);
+        setState((s) => applyFlowEvent(s, payload));
+        // 关键：终态后服务端会关闭流，必须主动 es.close()，否则浏览器自动重连→重放→风暴
+        if (isTerminalFlowEvent(payload)) {
+          es.close();
+        }
+      } catch {
+        /* 忽略异常帧 */
+      }
+    });
+
+    return () => es.close();
+  }, [runId]);
+
+  return state;
+}

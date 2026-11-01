@@ -9,14 +9,14 @@ import {
 } from '@wbfm/database';
 import type { SecretCipher } from '../secrets/cipher';
 import { createMcpRegistry, type McpRegistry } from '../mcp/registry';
-import { createPermissionService } from '../services/permission-service';
-import { createPendingConfirmations } from '../services/pending-confirmations';
+import { createPermissionService } from '../services/permission/permission-service';
+import { createPendingConfirmations } from '../services/task/pending-confirmations';
 import { createSkillService } from '../skills/skill-service';
 import { createToolBreaker } from '../tools/tool-breaker';
-import { createTaskGrantRegistry } from '../services/task-grants';
+import { createTaskGrantRegistry } from '../services/task/task-grants';
 import { createToolRuntime, type ToolRuntime } from '../tools/tool-runtime';
-import type { ServiceDeps } from '../services/deps';
-import { createFlowRunService, type FlowRunService } from '../flow/run-service';
+import type { ServiceDeps } from '../services/base/deps';
+import { createFlowRunService, type FlowRunService } from '../flow/run/run-service';
 import { createEndpointService, type EndpointService } from './endpoint-service';
 
 /**

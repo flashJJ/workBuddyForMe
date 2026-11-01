@@ -1,6 +1,6 @@
 'use client';
 
-import { MeetingsPage } from '@/features/meetings/meetings-page';
+import { MeetingsPage } from '@/features/meetings';
 
 export default function Page() {
   return <MeetingsPage />;

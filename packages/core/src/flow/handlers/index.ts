@@ -1,4 +1,4 @@
-import type { FlowHandlerRegistry, FlowNodeHandler } from '../types';
+import type { FlowHandlerRegistry, FlowNodeHandler } from '../graph/types';
 import { endNodeHandler } from './end';
 import { startNodeHandler } from './start';
 import { llmNodeHandler } from './llm';

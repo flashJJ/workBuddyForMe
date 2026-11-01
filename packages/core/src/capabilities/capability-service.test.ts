@@ -12,7 +12,7 @@ import {
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import type { McpRegistry } from '../mcp/registry';
-import { createMotionService } from '../services/motion-service';
+import { createMotionService } from '../services/media/motion-service';
 import { createSkillService } from '../skills/skill-service';
 import { createCapabilityService } from './capability-service';
 import {

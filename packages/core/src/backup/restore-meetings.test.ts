@@ -18,7 +18,7 @@ import {
   restoreV19TrackData,
 } from './restore-meetings';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 
 const SCENE_PAYLOAD: StageScenePayload = {
   background: { type: 'solid', color: '#101826', brightness: 1, blur: 0 },

@@ -1,4 +1,4 @@
-import { estimateTokens } from '../chat/context-budget';
+import { estimateTokens } from '../chat/context/context-budget';
 
 /**
  * 通用 JSON 结构压缩（v1.1 M1，docs/plan/v1.1/02 §2.2 第 2/3 层）：

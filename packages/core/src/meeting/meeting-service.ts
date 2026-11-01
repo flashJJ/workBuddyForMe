@@ -15,7 +15,7 @@ import { ApiError } from '@wbfm/shared/errors';
 import type { MeetingCreateInput, MeetingMode } from '@wbfm/shared/schemas';
 import { MEETING_LIMITS } from '@wbfm/shared/schemas';
 import type { MeetingDetailView, MeetingRecord } from '@wbfm/shared/types';
-import { createRunEventBus, type RunEventBus } from '../agents/run-event-bus';
+import { createRunEventBus, type RunEventBus } from '../agents/runtime/run-event-bus';
 import { parseMentionNames, mapMentionsToIds } from './meeting-protocol';
 import { runMeetingTurn } from './meeting-runner';
 import { createMeetingConclusionService } from './meeting-conclusion-service';

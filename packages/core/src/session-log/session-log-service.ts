@@ -1,5 +1,5 @@
 import { createSessionEventRepository, type SessionEventView } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { projectTimeline, type TimelineItem } from './timeline';
 
 /**

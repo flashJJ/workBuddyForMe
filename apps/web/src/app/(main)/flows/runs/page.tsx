@@ -1,4 +1,4 @@
-import { FlowRunsView } from '@/features/flows/flow-runs-view';
+import { FlowRunsView } from '@/features/flows/runs';
 
 export default function Page() {
   return <FlowRunsView />;

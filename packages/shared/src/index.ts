@@ -5,11 +5,11 @@
  *   @wbfm/shared/api、@wbfm/shared/constants、@wbfm/shared/pet …
  * 根 barrel 在 v1.1 兼容期保留；各域导出名互斥，冲突在域 barrel 内解决。
  */
-export * from './constants';
-export * from './errors';
-export * from './api';
-export * from './types';
-export * from './schemas';
+export * from './constants/index';
+export * from './errors/index';
+export * from './api/index';
+export * from './types/index';
+export * from './schemas/index';
 export * from './backup';
 export * from './updater';
 export * from './pet';
@@ -22,7 +22,7 @@ export * from './dialog';
 export * from './awareness';
 export * from './command';
 export * from './version';
-export * from './i18n';
-export * from './events';
+export * from './i18n/index';
+export * from './events/index';
 // v1.8 角色卡（Markdown 文本 mod：schema + 零依赖解析器）
-export * from './character-card';
+export * from './character-card/index';

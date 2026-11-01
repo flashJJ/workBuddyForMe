@@ -8,7 +8,7 @@
  */
 
 import { createDocumentRepository, createKnowledgeRepository } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import {
   createCompileQueueService,
   getCompileQueueService,

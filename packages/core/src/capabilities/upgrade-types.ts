@@ -4,7 +4,7 @@ import type {
   CapabilityView,
 } from '@wbfm/shared/schemas';
 import type { CapabilityRepository } from '@wbfm/database';
-import type { CapabilityEffectDeps } from './effects';
+import type { CapabilityEffectDeps } from './effects/index';
 
 /** v2.12 M2：升级编排的公共类型与版本比较（不依赖文件系统，便于单测） */
 

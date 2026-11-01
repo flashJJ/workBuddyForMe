@@ -1,0 +1,72 @@
+'use client';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
+import type { Assistant } from '@wbfm/shared/types';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
+import { API, QUERY_KEYS } from '@/lib/api/endpoints';
+
+export interface AssistantBody {
+  name: string;
+  emoji?: string | null;
+  color?: string | null;
+  systemPrompt: string;
+  temperature?: number;
+  topP?: number;
+  maxTokens?: number | null;
+  modelId?: string | null;
+  /** v1.4：协作三角色模型覆盖（v1.8 M3 调优中心矩阵可改） */
+  plannerModelId?: string | null;
+  executorModelId?: string | null;
+  reviewerModelId?: string | null;
+  /** v1.5：关联多个知识库（空数组=不关联） */
+  knowledgeBaseIds?: string[];
+  /** v0.6：内置工具名或 mcp:<server>:<tool> */
+  enabledTools?: string[];
+  /** v2.4 M4：助手级技能 name（空=跟随全局已启用技能） */
+  skillNames?: string[];
+  retrieveAlways?: boolean;
+  memoryEnabled?: boolean;
+  /** v1.0 M3：表情指令标签开关 */
+  expressionEnabled?: boolean;
+  /** v1.7：人格四权重（0..1，缺省 0.5） */
+  personalityFrankness?: number;
+  personalityTsundere?: number;
+  personalityShy?: number;
+  personalityTolerance?: number;
+  /** v1.8：选用角色卡；null=回到默认卡，undefined=不改该字段 */
+  cardId?: string | null;
+}
+
+export function useAssistants() {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.assistants,
+    queryFn: () => apiGet<Assistant[]>(API.assistants),
+  });
+}
+
+export function useAssistantMutations() {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: QUERY_KEYS.assistants });
+
+  return {
+    create: useMutation({
+      mutationFn: (body: AssistantBody) => apiPost<Assistant>(API.assistants, body),
+      onSuccess: invalidate,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, body }: { id: string; body: Partial<AssistantBody> }) =>
+        apiPatch<Assistant>(API.assistant(id), body),
+      onSuccess: invalidate,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => apiDelete<{ id: string }>(API.assistant(id)),
+      onSuccess: invalidate,
+    }),
+    reorder: useMutation({
+      mutationFn: (orderedIds: string[]) =>
+        apiPost<{ orderedIds: string[] }>(API.assistantReorder, { orderedIds }),
+      onSuccess: invalidate,
+    }),
+  };
+}

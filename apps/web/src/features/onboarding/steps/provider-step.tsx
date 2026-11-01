@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useProviders } from '@/lib/hooks/use-providers';
-import { useOllamaProbe } from '@/lib/hooks/use-ollama-probe';
+import { useProviders } from '@/lib/hooks/provider';
+import { useOllamaProbe } from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { CloudProviderPanel } from './cloud-provider-panel';
 import { OllamaPanel } from './ollama-panel';

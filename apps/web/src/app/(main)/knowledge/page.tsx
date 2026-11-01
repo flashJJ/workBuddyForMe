@@ -1,4 +1,4 @@
-import { KnowledgePage } from '@/features/knowledge/knowledge-page';
+import { KnowledgePage } from '@/features/knowledge';
 
 export default async function Page({
   searchParams,

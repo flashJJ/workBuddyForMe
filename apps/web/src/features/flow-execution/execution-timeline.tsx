@@ -15,10 +15,11 @@ import type { FlowNodeType } from '@wbfm/shared/schemas';
 import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { AgentRunCard } from '../agent-collab';
+import { AgentRunCard } from '@/features/agent-collab';
 import { buildAgentView } from './agent-node-view';
-import { NODE_META, nodeTitle } from '../flow-editor/node-meta';
-import type { FlowCanvasNode } from '../flow-editor/graph-utils';
+import { NODE_META } from '@/features/flow-editor/canvas';
+import { nodeTitle } from '@/features/flow-editor/canvas';
+import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 
 /** useI18n 返回的翻译函数形状（模块级 helper 需经调用方传入） */
 type TFn = (key: MessageKey, vars?: MessageVars) => string;

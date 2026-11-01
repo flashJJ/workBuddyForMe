@@ -4,7 +4,7 @@ import type { TaskRunView } from '@wbfm/shared/schemas';
 import { createTaskRunRepository } from '@wbfm/database';
 import type { ToolContext } from '../tools/types';
 import { executeToolCall, summarizeArgs } from '../tools/tool-executor';
-import { gateToolPermission } from '../chat/tool-permission-gate';
+import { gateToolPermission } from '../chat/tools/tool-permission-gate';
 import type { TaskPlanDecision } from './types';
 import { createTaskLoopRuntime, createToolGovernanceContext, stopForPolicyLimit } from './task-loop-runtime';
 import { createTaskLoopControl, type TaskLoopEvent, type TaskLoopParams } from './control';

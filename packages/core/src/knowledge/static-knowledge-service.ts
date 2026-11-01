@@ -11,7 +11,7 @@ import {
   createCompileQueryRepository,
   type EntityRecord,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { normalizeEntityName } from './entity-extractor';
 import {
   analyzeQuery,

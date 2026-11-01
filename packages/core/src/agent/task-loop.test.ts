@@ -6,9 +6,9 @@ import { createDatabase, createTaskRunRepository, type DatabaseInstance } from '
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import type { TaskRunView, TaskStepView } from '@wbfm/shared/schemas';
 import { createWebCipher } from '../secrets/cipher';
-import { createPermissionService } from '../services/permission-service';
-import { createTaskGrantRegistry } from '../services/task-grants';
-import type { ServiceDeps } from '../services/deps';
+import { createPermissionService } from '../services/permission/permission-service';
+import { createTaskGrantRegistry } from '../services/task/task-grants';
+import type { ServiceDeps } from '../services/base/deps';
 import type { TaskPlanner } from './types';
 import { runTaskLoop } from './task-loop';
 import { createTaskLoopControl } from './control';

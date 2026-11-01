@@ -10,7 +10,7 @@
  */
 
 import { createCompileWriteRepository, createSettingsRepository } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { compileDocument } from './knowledge-compiler';
 import { createLlmKnowledgeEnhancer } from './llm-enhancer';
 

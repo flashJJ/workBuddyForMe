@@ -6,7 +6,7 @@ import type {
   WorkflowRepository,
 } from '@wbfm/database';
 import type { SkillService } from '../../skills/skill-service';
-import type { MotionService } from '../../services/motion-service';
+import type { MotionService } from '../../services/media/motion-service';
 import type { McpRegistry } from '../../mcp/registry';
 import {
   disableMcp,

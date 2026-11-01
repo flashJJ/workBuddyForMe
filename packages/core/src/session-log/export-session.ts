@@ -7,7 +7,7 @@ import {
   type SessionEventScope,
   type SessionEventView,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import type { SessionLogService } from './session-log-service';
 
 /**

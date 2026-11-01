@@ -1,7 +1,7 @@
 /**
  * MCP 相关领域类型（v1.2 从 domain.ts 拆出，公开面不变，仍由 @wbfm/shared/types 聚合 re-export）。
  */
-import type { McpServerStatus, McpTransport } from '../constants';
+import type { McpServerStatus, McpTransport } from '../constants/index';
 import type { Timestamped } from './domain';
 
 /** v0.6 MCP 服务器配置（mcp_servers 表行；stdio/http 字段按 transport 取用） */

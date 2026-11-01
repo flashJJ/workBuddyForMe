@@ -14,7 +14,7 @@ import type {
   MeetingRecord,
 } from '@wbfm/shared/types';
 import type { DatabaseInstance } from '@wbfm/database';
-import type { ResolvedChatTarget } from '../chat/model-resolver';
+import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 
 /** 会议线上事件（机械派生于 SSE 真源，service/总线/舞台共用） */
 export type MeetingEvent = SseEvent<

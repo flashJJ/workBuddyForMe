@@ -11,7 +11,7 @@ import {
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 import { buildConversationSnapshot } from './export-conversation';
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);

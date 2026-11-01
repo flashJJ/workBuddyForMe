@@ -1,8 +1,8 @@
 'use client';
 
 import type { ActionChain, InteractionAction, InteractionKind } from '@wbfm/shared/schemas';
-import type { TouchControllerLike } from '@/features/avatar/use-head-touch';
-import type { VrmControllerLike } from '@/features/avatar/vrm-controller';
+import type { TouchControllerLike } from '@/features/avatar';
+import type { VrmControllerLike } from '@/features/avatar';
 
 /**
  * 动作执行器——把 ActionChain 里每种 action 类型路由到具体执行者。

@@ -2,7 +2,7 @@ import { MEMORY_EXTRACT_MAX_ITEMS } from '@wbfm/shared/constants';
 import { MEMORY_KINDS, type MemoryKind } from '@wbfm/shared/types';
 import { traceAsync, type ChatMessage, type TraceHandle } from '@wbfm/ai';
 import { z } from 'zod';
-import type { ResolvedChatTarget } from '../chat/model-resolver';
+import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 
 /** v0.5 M3：回合后记忆提取。失败一律抛错，由调用方静默吞掉，绝不阻塞主流程。 */
 

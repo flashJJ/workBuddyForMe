@@ -1,7 +1,7 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
 import { AGENT_BUDGET_DEFAULTS, type AgentBudget } from '@wbfm/shared/schemas';
-import { initAgentCard, reduceAgentFrame, type AgentCardState, type AgentCardStatus } from '../agent-collab';
-import type { FlowCanvasNode } from '../flow-editor/graph-utils';
+import { initAgentCard, reduceAgentFrame, type AgentCardState, type AgentCardStatus } from '@/features/agent-collab';
+import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 
 /**
  * v1.4 M4：Flow 试运行事件 → agent 节点子泳道视图（从 execution-timeline 外迁控行数）。

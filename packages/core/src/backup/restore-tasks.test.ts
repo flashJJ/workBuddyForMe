@@ -15,7 +15,7 @@ import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { exportBackup } from './export';
 import { restoreBackup } from './restore';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 
 describe('tasks 轨备份恢复（v0.7 M4）', () => {
   let srcDb: DatabaseInstance;

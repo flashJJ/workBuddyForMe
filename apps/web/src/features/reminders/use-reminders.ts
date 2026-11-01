@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type {
   ScheduledTaskCreateInput,
   ScheduledTaskUpdateInput,
@@ -12,7 +13,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 export const REMINDERS_QUERY_KEY = ['schedules'] as const;
 
 export function useReminders(assistantId?: string) {
-  return useQuery({
+  return useVisibleQuery({
     queryKey: assistantId ? [...REMINDERS_QUERY_KEY, assistantId] : REMINDERS_QUERY_KEY,
     queryFn: () =>
       apiGet<ScheduledTaskView[]>(

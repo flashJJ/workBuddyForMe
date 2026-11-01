@@ -6,7 +6,7 @@ import type { AwarenessEvent, WbfmAwarenessBridge } from '@wbfm/shared/awareness
 import type { WbfmPetBridge } from '@wbfm/shared/pet';
 
 const state = vi.hoisted(() => ({ settings: { systemEventAwarenessEnabled: true } }));
-vi.mock('@/lib/hooks/use-settings', () => ({
+vi.mock('@/lib/hooks/provider', () => ({
   useSettings: () => ({ data: state.settings }),
 }));
 

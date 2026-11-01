@@ -16,10 +16,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useAllModels } from '@/lib/hooks/use-settings';
-import { useKnowledgeBases } from '@/lib/hooks/use-knowledge';
-import { useAssistantMutations } from '@/lib/hooks/use-assistants';
-import { useMcpTools } from '@/lib/hooks/use-mcp';
+import { useAllModels } from '@/lib/hooks/provider';
+import { useKnowledgeBases } from '@/lib/hooks/knowledge';
+import { useAssistantMutations } from '@/lib/hooks/assistant';
+import { useMcpTools } from '@/lib/hooks/capability';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssistantToolsField } from './assistant-tools-field';
 import { AssistantSkillsField } from './assistant-skills-field';
@@ -30,7 +30,7 @@ import { buildAssistantBody, type AssistantFormShape } from './assistant-form-bo
 import { toForm, presetToForm, type AssistantPreset } from './assistant-form-state';
 import { AssistantIdentityFields } from './assistant-identity-fields';
 import { AssistantCardField } from './assistant-card-field';
-import { NumberField } from './number-field';
+import { NumberField } from '@/components/ui/number-field';
 
 interface Props {
   open: boolean;

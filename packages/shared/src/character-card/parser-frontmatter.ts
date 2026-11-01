@@ -9,7 +9,7 @@ import {
   CARD_NICKNAME_MAX_CHARS,
   CARD_VOICE_MAX_CHARS,
   type CharacterCardDiagnostic,
-} from '../schemas/character-card';
+} from '../schemas/capability/character-card';
 
 export interface RawFrontmatter {
   name?: string;

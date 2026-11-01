@@ -1,10 +1,10 @@
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SkipLink } from '@/components/layout/skip-link';
-import { CommandPaletteHost } from '@/features/command-palette/use-command-palette';
-import { ShortcutsHost } from '@/features/shortcuts/use-shortcuts-host';
-import { OnboardingHost } from '@/features/onboarding/use-onboarding-host';
-import { ReunionSignalHost } from '@/features/avatar/use-reunion-foreground-signal';
-import { DeepLinkHost } from '@/features/navigation/deep-link-host';
+import { CommandPaletteHost } from '@/features/command-palette';
+import { ShortcutsHost } from '@/features/shortcuts';
+import { OnboardingHost } from '@/features/onboarding';
+import { ReunionSignalHost } from '@/features/avatar';
+import { DeepLinkHost } from '@/features/navigation';
 
 /** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K）+ 快捷键浮层（Ctrl+/）+ 首启向导 */
 export default function MainLayout({ children }: { children: React.ReactNode }) {

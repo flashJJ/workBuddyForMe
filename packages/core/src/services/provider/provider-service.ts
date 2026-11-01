@@ -1,0 +1,133 @@
+import { ApiError } from '@wbfm/shared/errors';
+import { type Provider } from '@wbfm/shared/types';
+import {
+  createModelRepository,
+  createProviderRepository,
+  type ProviderRecord,
+} from '@wbfm/database';
+import type { ProviderCreateInput, ProviderUpdateInput } from '@wbfm/shared/schemas';
+import { maskSecret } from '../../secrets/cipher';
+import { ProviderError } from '@wbfm/ai';
+import type { ServiceDeps } from '../base/deps';
+import { buildProvider, toApiError } from './provider-adapter';
+import { probeFirstToken } from '../ollama/first-token-probe';
+import { recordMilestone } from '../base/milestones';
+
+/** 首字延迟自检结果：measurable=false 表示该供应商尚无可用对话模型，无法自检 */
+export interface FirstTokenProbeReport {
+  measurable: boolean;
+  ok: boolean;
+  firstTokenMs: number | null;
+  totalMs: number | null;
+}
+
+function toView(record: ProviderRecord, apiKeyMasked: string | null): Provider {
+  return { ...record, apiKeyMasked };
+}
+
+export function createProviderService({ db, cipher }: ServiceDeps) {
+  const repo = createProviderRepository(db);
+
+  const decryptMasked = (record: ProviderRecord): Provider => {
+    if (!record.hasApiKey) return toView(record, null);
+    const row = repo.getRow(record.id);
+    if (!row?.api_key_cipher) return toView(record, null);
+    try {
+      const plain = cipher.decrypt(row.api_key_cipher);
+      return toView(record, plain ? maskSecret(plain) : null);
+    } catch (error) {
+      // 单条密文不可解（dev/打包密钥体系不同、数据根跨机迁移、密文损坏）时
+      // 降级为「未配置密钥」而非拖垮整个列表；用户在设置中重新输入即可恢复。
+      console.warn(
+        `[provider] 供应商 ${record.name}(${record.id}) 的密钥无法解密，已降级显示，请重新输入 API Key：`,
+        error instanceof Error ? error.message : error,
+      );
+      return toView(record, null);
+    }
+  };
+
+  return {
+    list(): Provider[] {
+      return repo.list().map((record) => decryptMasked(record));
+    },
+
+    get(id: string): Provider {
+      const record = repo.get(id);
+      if (!record) throw ApiError.notFound('供应商', id);
+      return decryptMasked(record);
+    },
+
+    create(input: ProviderCreateInput): Provider {
+      const sortOrder =
+        input.sortOrder ?? repo.list().reduce((max, item) => Math.max(max, item.sortOrder), -1) + 1;
+      const record = repo.create({
+        name: input.name,
+        protocol: input.protocol,
+        baseUrl: input.baseUrl,
+        apiKeyCipher: input.apiKey ? cipher.encrypt(input.apiKey) : null,
+        enabled: input.enabled ?? true,
+        sortOrder,
+      });
+      // v2.4 M1 T7：有供应商（模型来源）即视为「模型就绪」里程碑
+      recordMilestone(db, 'firstModelReadyAt');
+      return toView(record, input.apiKey ? maskSecret(input.apiKey) : null);
+    },
+
+    update(id: string, input: ProviderUpdateInput): Provider {
+      const existing = repo.get(id);
+      if (!existing) throw ApiError.notFound('供应商', id);
+      const record = repo.update(id, {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.protocol !== undefined ? { protocol: input.protocol } : {}),
+        ...(input.baseUrl !== undefined ? { baseUrl: input.baseUrl } : {}),
+        ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
+        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+        ...(input.apiKey !== undefined && input.apiKey !== ''
+          ? { apiKeyCipher: cipher.encrypt(input.apiKey) }
+          : {}),
+      })!;
+      return decryptMasked(record);
+    },
+
+    delete(id: string): void {
+      if (!repo.delete(id)) throw ApiError.notFound('供应商', id);
+    },
+
+    /** 连接测试：优先真实调用 /models；不支持列表的厂商改用已有对话模型做一次首字探活 */
+    async testConnection(id: string, signal?: AbortSignal): Promise<{ ok: true }> {
+      const record = repo.get(id);
+      if (!record) throw ApiError.notFound('供应商', id);
+      const adapter = buildProvider(db, cipher, record);
+      try {
+        await adapter.testConnection(signal);
+        return { ok: true };
+      } catch (error) {
+        // 火山方舟 Agent Plan / Coding Plan 等不提供 GET /models：有对话模型时改为流式首字探活
+        if (error instanceof ProviderError && error.reason === 'models_unsupported') {
+          const model = createModelRepository(db)
+            .listByProvider(id)
+            .find((item) => item.capabilities.includes('chat'));
+          if (model) {
+            const outcome = await probeFirstToken(db, cipher, record, model.modelId);
+            if (outcome.ok) return { ok: true };
+          }
+        }
+        toApiError(error);
+      }
+    },
+
+    /** v2.4 M1 T5：首字延迟自检（只测该供应商；无对话模型时 measurable=false） */
+    async firstTokenProbe(id: string): Promise<FirstTokenProbeReport> {
+      const record = repo.get(id);
+      if (!record) throw ApiError.notFound('供应商', id);
+      const model = createModelRepository(db)
+        .listByProvider(id)
+        .find((item) => item.capabilities.includes('chat'));
+      if (!model) return { measurable: false, ok: false, firstTokenMs: null, totalMs: null };
+      const outcome = await probeFirstToken(db, cipher, record, model.modelId);
+      return { measurable: true, ...outcome };
+    },
+  };
+}
+
+export type ProviderService = ReturnType<typeof createProviderService>;

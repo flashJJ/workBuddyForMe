@@ -74,8 +74,8 @@
             "require": "./dist/event-client.cjs"
         },
         "./stage-client": {
-            "types": "./src/agents/stage-client.ts",
-            "development": "./src/agents/stage-client.ts",
+            "types": "./src/agents/stage/stage-client.ts",
+            "development": "./src/agents/stage/stage-client.ts",
             "import": "./dist/stage-client.mjs",
             "require": "./dist/stage-client.cjs"
         },

@@ -9,8 +9,8 @@
  * - 输入/输出有硬预算（字符/ token / 超时），复用本地已配置的对话模型。
  */
 
-import { resolveChatTargetForModelId } from '../chat/model-resolver';
-import type { ServiceDeps } from '../services/deps';
+import { resolveChatTargetForModelId } from '../chat/context/model-resolver';
+import type { ServiceDeps } from '../services/base/deps';
 import { normalizeEntityName } from './entity-extractor';
 import type { CompiledSeed, KnowledgeEnhancer, KnowledgeEntitySeed } from './knowledge-compiler';
 

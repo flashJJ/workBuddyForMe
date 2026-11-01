@@ -1,6 +1,6 @@
 import { createDatabase, createWorkflowRepository } from '@wbfm/database';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { compileFlow } from '../compiler';
+import { compileFlow } from '../compiler/compiler';
 import { STARTER_FLOWS } from './starters';
 import { ensureStarterFlows } from './seed-starter-flows';
 

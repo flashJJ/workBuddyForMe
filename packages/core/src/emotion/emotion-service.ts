@@ -17,8 +17,8 @@ import {
   type EmotionEventRecord,
 } from '@wbfm/database';
 import { EMOTION_EVENT_DELTAS } from '@wbfm/shared/constants';
-import type { ServiceDeps } from '../services/deps';
-import { createSettingsService } from '../services/settings-service';
+import type { ServiceDeps } from '../services/base/deps';
+import { createSettingsService } from '../services/settings/settings-service';
 import {
   applyEmotionEvent,
   createEmotionEvent,

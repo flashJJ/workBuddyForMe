@@ -1,4 +1,4 @@
-import type { FlowNodeHandler } from '../types';
+import type { FlowNodeHandler } from '../graph/types';
 
 /**
  * tool 节点：执行一个内置/MCP/flow 工具。

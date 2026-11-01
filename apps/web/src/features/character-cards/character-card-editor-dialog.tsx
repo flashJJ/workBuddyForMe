@@ -20,7 +20,7 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { ApiClientError } from '@/lib/api/client';
-import { useCharacterCardMutations } from '@/lib/hooks/use-character-cards';
+import { useCharacterCardMutations } from '@/lib/hooks/assistant';
 
 export interface CardEditorState {
   /** null = 新建（含导入）；有值 = 编辑该自建卡 */

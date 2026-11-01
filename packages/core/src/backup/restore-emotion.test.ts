@@ -14,7 +14,7 @@ import { createDefaultEmotionState } from '@wbfm/shared/schemas';
 import { exportBackup } from './export';
 import { restoreBackup, precheckBackup } from './restore';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 
 describe('备份恢复 · emotion 轨（v1.6）', () => {
   let srcDb: DatabaseInstance;

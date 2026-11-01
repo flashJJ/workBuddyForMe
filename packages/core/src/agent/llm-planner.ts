@@ -1,6 +1,6 @@
 import type { ChatMessage, TokenUsage } from '@wbfm/ai';
 import type { TaskStepView } from '@wbfm/shared/schemas';
-import type { ResolvedChatTarget } from '../chat/model-resolver';
+import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 import { toModelText } from '../i18n/system-text';
 import type { TaskObservation, TaskPlanDecision, TaskPlanner, TaskPlannerInput } from './types';
 

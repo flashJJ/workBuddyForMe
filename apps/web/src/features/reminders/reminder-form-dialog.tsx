@@ -15,7 +15,7 @@ import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { MessageKey } from '@wbfm/shared/i18n';
-import { useAssistants } from '@/lib/hooks/use-assistants';
+import { useAssistants } from '@/lib/hooks/assistant';
 import { useReminderMutations } from './use-reminders';
 import { AgentTaskFields } from './agent-task-fields';
 import { parseTimeValue, WEEKDAY_ORDER } from './schedule-format';

@@ -7,9 +7,9 @@ import {
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared/schemas';
-import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar/avatar-models';
-import { getPetBridge } from '@/features/pet/pet-bridge';
-import { usePetOpenState } from '@/features/pet/use-pet-voice-relay';
+import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar';
+import { getPetBridge } from '@/features/pet/bridge';
+import { usePetOpenState } from '@/features/pet/bridge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -17,9 +17,10 @@ import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import { useQuery } from '@tanstack/react-query';
+
 import { apiGet } from '@/lib/api/client';
 import type { VrmAvatarListResponse } from '@wbfm/shared/schemas';
+import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 
 interface Props {
   settings: VoiceSettings;
@@ -100,7 +101,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
   React.useEffect(() => setEnabled(settings.avatarEnabled), [settings.avatarEnabled]);
   React.useEffect(() => setModelId(settings.avatarModelId), [settings.avatarModelId]);
 
-  const { data: vrmData } = useQuery({
+  const { data: vrmData } = useVisibleQuery({
     queryKey: ['vrm-avatars'],
     queryFn: () => apiGet<VrmAvatarListResponse>('/api/vrm-avatars'),
   });

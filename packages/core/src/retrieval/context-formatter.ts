@@ -1,7 +1,7 @@
 import { RAG_CHUNK_MIN_TOKENS } from '@wbfm/shared/constants';
 import { type Citation } from '@wbfm/shared/types';
-import type { RagChunk } from '../chat/types';
-import { estimateTokens, truncateToTokens } from '../chat/context-budget';
+import type { RagChunk } from '../chat/base/types';
+import { estimateTokens, truncateToTokens } from '../chat/context/context-budget';
 import type { RetrievedChunk } from './retrieval-service';
 
 export const CITATION_SNIPPET_LENGTH = 160;

@@ -36,7 +36,7 @@ export {
   type MemoryVectorRow,
   type MemorySearchResult,
 } from './memory-vector';
-export * from './repositories';
+export * from './repositories/index';
 export { getMeta, setMeta } from './meta';
 export { nowIso, timestamps } from './utils/time';
 export {

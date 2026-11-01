@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useCharacterCards } from '@/lib/hooks/use-character-cards';
+import { useCharacterCards } from '@/lib/hooks/assistant';
 
 /**
  * v1.8 助手选卡：默认卡（原文模式）/ 内置卡 / 自建卡。

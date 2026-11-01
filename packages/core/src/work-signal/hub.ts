@@ -9,8 +9,8 @@ import type {
   WorkSignalSnapshot,
 } from '@wbfm/shared';
 import { pruneWorkSignals, sortWorkSignals } from '@wbfm/shared';
-import { createRunEventBus, type RunEventBus } from '../agents/run-event-bus';
-import type { AgentRunEvent } from '../agents/agent-runner';
+import { createRunEventBus, type RunEventBus } from '../agents/runtime/run-event-bus';
+import type { AgentRunEvent } from '../agents/runner/agent-runner';
 import type { ApprovalRegistry } from './approval-registry';
 import { applyAgentEvent } from './map-agent';
 import { applyFlowEvent } from './map-flow';

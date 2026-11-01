@@ -1,0 +1,6 @@
+/** @域 barrel chat：v2.16 子能力集中入口（纯 re-export） */
+export * from './conversation-repo';
+export * from './message-repo';
+export * from './memory-repo';
+export * from './attachment-repo';
+export * from './session-event-repo';

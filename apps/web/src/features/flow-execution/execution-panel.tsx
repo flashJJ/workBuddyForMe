@@ -9,10 +9,10 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { ApiClientError, apiPost } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import { useFlowRunAction, type FlowLiveState } from '@/lib/hooks/use-flows';
+import { useFlowRunAction, type FlowLiveState } from '@/lib/hooks/flows';
 import type { SsePayloadMap } from '@wbfm/shared/api';
-import { ToolConfirmDialog } from '../chat/tool-confirm-dialog';
-import type { FlowCanvasNode } from '../flow-editor/graph-utils';
+import { ToolConfirmDialog } from '@/features/chat/overlay';
+import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 import { ExecutionTimeline } from './execution-timeline';
 import { WaitingCard } from './waiting-card';
 

@@ -1,8 +1,8 @@
 import { createConversationRepository, createWorkPlanRepository } from '@wbfm/database';
 import type { AgentRunView, SubagentRunView, TaskRunView } from '@wbfm/shared/schemas';
-import { createSettingsService } from '../services/settings-service';
-import { createConversationService } from '../services/conversation-service';
-import type { ServiceDeps } from '../services/deps';
+import { createSettingsService } from '../services/settings/settings-service';
+import { createConversationService } from '../services/assistant/conversation-service';
+import type { ServiceDeps } from '../services/base/deps';
 
 /**
  * v2.8 完成回投：后台作业终态后向所属会话追加一条助手消息。

@@ -7,7 +7,7 @@
  * - 均无 emotionOnPlayed——关怀演出不反灌情绪，避免自激循环；
  * - 频率档/勿扰/总开关/出口/对话锁全部走 EventDirector 既有闸门。
  */
-import type { EventDefinition } from '../schemas/event';
+import type { EventDefinition } from '../schemas/work/event';
 
 export const RAW_V20_M3_EVENTS: EventDefinition[] = [
   // ── 深夜仍活跃（23:00–5:00；同一夜晚仅一次） ──

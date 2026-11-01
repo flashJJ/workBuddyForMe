@@ -2,7 +2,7 @@
 
 import type { SkillInfo } from '@wbfm/shared/types';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useSkills } from '@/lib/hooks/use-skills';
+import { useSkills } from '@/lib/hooks/capability';
 
 interface Props {
   /** 已勾选的技能 name（空数组 = 跟随全局全部已启用技能） */

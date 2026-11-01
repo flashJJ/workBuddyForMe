@@ -13,7 +13,7 @@ import {
   upgradeWorkflow,
   upgradeWorkflowDisabled,
   type CapabilityEffectDeps,
-} from './effects';
+} from './effects/index';
 import {
   affectedDependents,
   assertDependencies,

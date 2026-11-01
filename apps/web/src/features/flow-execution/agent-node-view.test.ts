@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { FlowEventPayload } from '@wbfm/shared/types';
-import type { FlowCanvasNode } from '../flow-editor/graph-utils';
+import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 import { buildAgentView } from './agent-node-view';
 
 const base = { runId: 'fr1', workflowId: 'wf1', nodeId: 'ag' };

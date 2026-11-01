@@ -1,4 +1,4 @@
-import type { FlowNodeHandler } from '../types';
+import type { FlowNodeHandler } from '../graph/types';
 
 /**
  * end 节点：config.output 已由引擎在执行前做过引用解析。

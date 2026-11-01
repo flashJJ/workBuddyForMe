@@ -10,11 +10,11 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
-import { createSettingsService } from '../services/settings-service';
+import { createSettingsService } from '../services/settings/settings-service';
 import { createModelRepository } from '@wbfm/database';
 import { createProviderRepository } from '@wbfm/database';
 import { createIngestionPipeline } from '../ingestion/ingestion-pipeline';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { compileDocument } from './knowledge-compiler';
 import { createStaticKnowledgeService } from './static-knowledge-service';
 

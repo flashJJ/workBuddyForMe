@@ -1,5 +1,5 @@
 import type { WorkflowRepository } from '@wbfm/database';
-import { compileFlow } from '../compiler';
+import { compileFlow } from '../compiler/compiler';
 import { STARTER_FLOWS } from './starters';
 
 /**

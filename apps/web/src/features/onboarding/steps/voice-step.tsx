@@ -4,8 +4,8 @@ import * as React from 'react';
 import type { VoiceTtsModel } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useVoiceSettings } from '@/features/voice/use-voice-settings';
-import { useVoiceModelDownloads } from '@/features/voice/settings/use-voice-model-downloads';
+import { useVoiceSettings } from '@/features/voice/runtime';
+import { useVoiceModelDownloads } from '@/features/voice/runtime';
 
 /** 语音模型下载状态条（复用轮询状态，0~1 进度，未知总量时显示不确定态） */
 function ProgressRow({

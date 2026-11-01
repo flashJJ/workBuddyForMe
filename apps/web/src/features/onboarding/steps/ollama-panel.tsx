@@ -10,7 +10,7 @@ import {
   useProviderMutations,
   useProviders,
   useRemoteModels,
-} from '@/lib/hooks/use-providers';
+} from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { OllamaInstallGuide } from './ollama-install-guide';
 import { OllamaPullCard } from './ollama-pull-card';

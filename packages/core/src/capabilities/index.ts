@@ -29,4 +29,4 @@ export {
   disableCapabilityEffect,
   uninstallCapabilityEffect,
   type CapabilityEffectDeps,
-} from './effects';
+} from './effects/index';

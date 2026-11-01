@@ -2,7 +2,7 @@ import type { TaskRunView } from '@wbfm/shared/schemas';
 import { DEFAULT_AGENT_POLICY } from '@wbfm/shared/schemas';
 import type { TaskRunRepository } from '@wbfm/database';
 import type { TaskLoopEvent } from './control';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import { createRuntimeLimits, type RuntimeLimits } from './runtime-limits';
 

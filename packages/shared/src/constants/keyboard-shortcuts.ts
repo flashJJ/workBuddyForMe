@@ -1,4 +1,4 @@
-import type { MessageKey } from '../i18n';
+import type { MessageKey } from '../i18n/index';
 
 /**
  * 快捷键浮层（v1.2 M5，v2.4 补舞台组）唯一真源：

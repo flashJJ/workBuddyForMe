@@ -8,8 +8,8 @@ import {
   type WorkflowRepository,
 } from '@wbfm/database';
 import { assistantCreateSchema, type ScheduledTaskView } from '@wbfm/shared/schemas';
-import type { FlowRunService } from '../flow';
-import type { SchedulesService } from '../scheduler';
+import type { FlowRunService } from '../flow/index';
+import type { SchedulesService } from '../scheduler/index';
 import { createMeetingClosureService } from './meeting-closure-service';
 
 describe('v2.6 M3 meeting-closure-service', () => {

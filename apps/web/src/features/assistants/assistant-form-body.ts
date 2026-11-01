@@ -1,4 +1,4 @@
-import type { AssistantBody } from '@/lib/hooks/use-assistants';
+import type { AssistantBody } from '@/lib/hooks/assistant';
 
 /** 助手表单状态（与 AssistantFormDialog 内部表单结构一致） */
 export interface AssistantFormShape {

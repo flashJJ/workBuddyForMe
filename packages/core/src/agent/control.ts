@@ -1,7 +1,7 @@
 import type { SseEvent } from '@wbfm/shared/api';
 import type { TaskRunView } from '@wbfm/shared/schemas';
-import type { OrchestratorEvent } from '../chat/types';
-import type { ServiceDeps } from '../services/deps';
+import type { OrchestratorEvent } from '../chat/base/types';
+import type { ServiceDeps } from '../services/base/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { ToolContext } from '../tools/types';
 import type { TaskPlanner } from './types';

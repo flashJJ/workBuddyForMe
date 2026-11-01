@@ -6,7 +6,7 @@ import type {
   StageMotionGroup,
   StageSlot,
 } from '@wbfm/shared/schemas';
-import type { ExpressionTag } from '@/features/avatar/expression-parser';
+import type { ExpressionTag } from '@/features/avatar';
 
 /**
  * v1.9 M2：把适配器产出的 StageDirection 落到舞台 runtime 状态。

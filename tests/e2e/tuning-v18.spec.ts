@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOption, selectedText, waitForHydrated } from './utils';
+import { chooseOption, revealSettingsSection, selectedText, waitForHydrated } from './utils';
 
 /**
  * v1.8 M3 调优中心 e2e（依赖同数据根先执行的 critical-path/persona-cards：
@@ -21,6 +21,7 @@ async function gotoSettings(page: Page): Promise<void> {
   await page.goto('/settings');
   await waitForHydrated(page);
   await skipOnboardingIfShown(page);
+  await revealSettingsSection(page, 'tools');
   await expect(page.getByTestId('tuning-panel')).toBeVisible();
 }
 
@@ -108,6 +109,7 @@ test.describe.serial('v1.8 调优中心', () => {
     // 关闭后下一轮立即消失
     await page.goto('/settings');
     await waitForHydrated(page);
+    await revealSettingsSection(page, 'tools');
     const disablePut = page.waitForResponse(
       (r) =>
         r.url().includes('/api/settings') &&

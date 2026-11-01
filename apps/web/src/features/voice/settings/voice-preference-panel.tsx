@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { usePanelVisible } from '@/lib/ui/panel-visibility';
 import { ApiClientError } from '@/lib/api/client';
 import { apiGet } from '@/lib/api/client';
 
@@ -95,6 +96,7 @@ function StorageSection() {
   const [mirror, setMirror] = React.useState(HF_MIRROR);
   const [modelsDir, setModelsDir] = React.useState('');
   const [saving, setSaving] = React.useState(false);
+  const visible = usePanelVisible();
 
   React.useEffect(() => {
     if (settings) {
@@ -103,10 +105,11 @@ function StorageSection() {
     }
   }, [settings]);
   React.useEffect(() => {
+    if (!visible) return;
     void apiGet<{ dataDir: string }>('/api/system/info')
       .then((info) => setDataDir(info.dataDir))
       .catch(() => undefined);
-  }, []);
+  }, [visible]);
 
   if (!settings) return null;
 

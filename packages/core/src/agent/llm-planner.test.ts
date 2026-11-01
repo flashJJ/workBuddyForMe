@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatProvider } from '@wbfm/ai';
 import type { ProviderModel } from '@wbfm/shared/types';
-import type { ResolvedChatTarget } from '../chat/model-resolver';
+import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 import type { TaskStepView } from '@wbfm/shared/schemas';
 import { buildPlannerMessages, createLlmPlanner, parseDecision, PlannerParseError } from './llm-planner';
 

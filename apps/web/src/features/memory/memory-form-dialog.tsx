@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useMemoryMutations, type MemoryCreateBody } from '@/lib/hooks/use-memories';
+import { useMemoryMutations, type MemoryCreateBody } from '@/lib/hooks/assistant';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { MEMORY_KIND_OPTIONS, MEMORY_STATUS_LABELS } from './memory-labels';
 

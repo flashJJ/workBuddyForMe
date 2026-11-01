@@ -11,4 +11,4 @@ export {
   evaluateFloorAtCheckpoint,
   defaultRelationshipBlock,
   type RelationScores,
-} from '../emotion/relationship-kernel';
+} from './relationship-kernel';

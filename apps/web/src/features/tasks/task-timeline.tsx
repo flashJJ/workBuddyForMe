@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { TaskStepView } from '@wbfm/shared/schemas';
-import { AttachmentImage } from '@/features/chat/attachment-image';
+import { AttachmentImage } from '@/features/chat/message';
 import { FailureHint } from '@/components/common/failure-hint';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';

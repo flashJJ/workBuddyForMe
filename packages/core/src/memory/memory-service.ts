@@ -13,7 +13,7 @@ import {
   type MemoryRepository,
 } from '@wbfm/database';
 import { traceAsync } from '@wbfm/ai';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import type { ExtractedMemory } from './extractor';
 import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-decay';
 import { embedTexts } from './memory-embedding';

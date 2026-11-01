@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOption, waitForHydrated } from './utils';
+import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
 
 /**
  * M2 语音输入全链路 E2E（mock 语音引擎，真 mic 采集链路）：
@@ -120,6 +120,7 @@ test.describe.serial('M2 语音输入（ASR）', () => {
 
   test('② 语音面板：模型就绪后可开启语音输入', async ({ page }) => {
     await page.goto('/settings');
+    await revealSettingsSection(page, 'dialog');
     const panel = page.getByTestId('voice-panel');
     await expect(panel).toBeVisible();
     await expect(page.getByTestId('voice-model-card-asr')).toContainText('已就绪');

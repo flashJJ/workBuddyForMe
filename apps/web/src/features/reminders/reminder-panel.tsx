@@ -5,7 +5,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import type { ScheduledTaskView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useAssistants } from '@/lib/hooks/use-assistants';
+import { useAssistants } from '@/lib/hooks/assistant';
 import { useReminderMutations, useReminders } from './use-reminders';
 import { ReminderFormDialog } from './reminder-form-dialog';
 import { toTimeValue } from './schedule-format';

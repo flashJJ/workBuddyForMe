@@ -11,10 +11,10 @@ import TasksPage from '@/app/(main)/tasks/page';
 import MeetingsPage from '@/app/(main)/meetings/page';
 // v2.5：Next 15 的路由页改为 async Server Component，React 19 客户端测试不允许
 // 直接渲染 async 组件；挂载测试改用其对应的 feature 组件（e2e 覆盖路由壳）。
-import { KnowledgePage } from '@/features/knowledge/knowledge-page';
-import { AssistantsPage } from '@/features/assistants/assistants-page';
-import { SettingsPage } from '@/features/settings/settings-page';
-import { FlowsListPage } from '@/features/flows/flows-list-page';
+import { KnowledgePage } from '@/features/knowledge';
+import { AssistantsPage } from '@/features/assistants';
+import { SettingsPage } from '@/features/settings';
+import { FlowsListPage } from '@/features/flows';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
