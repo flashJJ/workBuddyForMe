@@ -3,7 +3,7 @@
 > 状态：🚧 规划中（2026-11-02），待 M0 评审冻结
 > 上一正式版：v2.16.0（可导航：目录按能力收拢、入口统一、页面少拼装）
 > 主题一句话：**模型接得上、网页搜得到、能力装得进——厂商差异可描述，联网工具可开箱，能力安装有审批。**
-> 来源候选：[内置联网工具与能力代理 backlog](../roadmap/builtin-tools-backlog.md) · [多厂商兼容 backlog](../roadmap/vendor-compat-backlog.md)
+> 来源方案：[内置联网工具与能力代理](../roadmap/scheduled/v2.17-01-builtin-tools-and-capability-broker.md) · [多厂商兼容](../roadmap/scheduled/v2.17-02-vendor-compat.md)
 
 ## 1. 版本主题与目标
 
