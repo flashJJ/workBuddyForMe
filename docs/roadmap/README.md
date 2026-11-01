@@ -39,7 +39,7 @@ v2.16 把目录与入口成本降下来后，下一层断点集中在「接不�
 - 方案：[v2.17 方案](../plan/v2.17/README.md)
 - 来源方案：[内置联网工具与能力代理](scheduled/v2.17-01-builtin-tools-and-capability-broker.md) · [多厂商兼容](scheduled/v2.17-02-vendor-compat.md)
 - 归档索引：[已排期方案](scheduled/README.md) · [未排期候选](candidates/README.md)
-- 状态：🚧 规划中，待 M0 评审冻结；分支 `feature/v2.17-planning`
+- 状态：🚧 开发中：M0-M3 已完成（契约冻结、厂商矩阵与三态测试、内置联网搜索）；M4 能力目录与安装代理待开始；分支 `feature/v2.17-planning`
 - 范围：零迁移（`LATEST_SCHEMA_VERSION = 42`）；版本 2.17.0 待发布
 
 ## ✅ 已正式发布：v2.15 ⚙️ 可运营——历史可清理、证据可锚定、凭证可轮换、版本可对比（2026-11-01，tag `v2.15.0`）
