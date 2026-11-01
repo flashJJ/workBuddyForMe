@@ -7,6 +7,7 @@ import {
 } from '@wbfm/database';
 import type { ProviderCreateInput, ProviderUpdateInput } from '@wbfm/shared/schemas';
 import { maskSecret } from '../../secrets/cipher';
+import { ProviderError } from '@wbfm/ai';
 import type { ServiceDeps } from '../base/deps';
 import { buildProvider, toApiError } from './provider-adapter';
 import { probeFirstToken } from '../ollama/first-token-probe';
@@ -92,14 +93,25 @@ export function createProviderService({ db, cipher }: ServiceDeps) {
       if (!repo.delete(id)) throw ApiError.notFound('供应商', id);
     },
 
-    /** 连接测试：真实调用供应商 /models，错误归一化 */
+    /** 连接测试：优先真实调用 /models；不支持列表的厂商改用已有对话模型做一次首字探活 */
     async testConnection(id: string, signal?: AbortSignal): Promise<{ ok: true }> {
       const record = repo.get(id);
       if (!record) throw ApiError.notFound('供应商', id);
+      const adapter = buildProvider(db, cipher, record);
       try {
-        await buildProvider(db, cipher, record).testConnection(signal);
+        await adapter.testConnection(signal);
         return { ok: true };
       } catch (error) {
+        // 火山方舟 Agent Plan / Coding Plan 等不提供 GET /models：有对话模型时改为流式首字探活
+        if (error instanceof ProviderError && error.reason === 'models_unsupported') {
+          const model = createModelRepository(db)
+            .listByProvider(id)
+            .find((item) => item.capabilities.includes('chat'));
+          if (model) {
+            const outcome = await probeFirstToken(db, cipher, record, model.modelId);
+            if (outcome.ok) return { ok: true };
+          }
+        }
         toApiError(error);
       }
     },

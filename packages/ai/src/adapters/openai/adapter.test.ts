@@ -46,4 +46,15 @@ describe('OpenAI 适配器 testConnection / listModels', () => {
       createOpenAiCompatibleAdapter(CONNECTION).testConnection(),
     ).rejects.toMatchObject({ code: 'PROVIDER_ERROR', status: 401 });
   });
+
+  it('GET /models 返回 404：标记为不支持模型列表并给出可执行提示', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('not found', { status: 404 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(createOpenAiCompatibleAdapter(CONNECTION).testConnection()).rejects.toMatchObject({
+      code: 'PROVIDER_ERROR',
+      status: 404,
+      reason: 'models_unsupported',
+      message: expect.stringContaining('未提供模型列表接口'),
+    });
+  });
 });

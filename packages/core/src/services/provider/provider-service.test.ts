@@ -174,4 +174,45 @@ describe('provider/model 服务（TR-12.2）', () => {
       details: { upstreamStatus: 401, providerMessage: 'bad key' },
     });
   });
+
+  it('不提供 /models 的厂商：有对话模型时改用首字探活', async () => {
+    const providers = createProviderService({ db, cipher });
+    const models = createModelService({ db, cipher });
+    const provider = providers.create({
+      name: 'Ark Agent Plan',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3',
+      apiKey: 'sk-ark',
+    });
+    models.add(provider.id, { modelId: 'doubao-seed', capabilities: ['chat'] });
+
+    const sse = 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('not found', { status: 404 }))
+      .mockResolvedValueOnce(
+        new Response(sse, { headers: { 'content-type': 'text/event-stream' } }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(providers.testConnection(provider.id)).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('不提供 /models 且无对话模型：返回可执行的模型列表提示', async () => {
+    const providers = createProviderService({ db, cipher });
+    const provider = providers.create({
+      name: 'Ark',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3',
+      apiKey: 'sk-ark',
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not found', { status: 404 })));
+
+    await expect(providers.testConnection(provider.id)).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'PROVIDER_ERROR',
+      details: { upstreamStatus: 404 },
+    });
+  });
 });

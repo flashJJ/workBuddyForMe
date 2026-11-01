@@ -88,4 +88,20 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
       { modelId: 'text-embedding-3-small', capabilities: ['embedding'] },
     ],
   },
+  {
+    // 数据面：普通方舟 API Key；不提供模型列表时需在模型管理手填 Model ID
+    id: 'volcengine-ark',
+    name: '火山方舟（Ark）',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    keyUrl: 'https://ark.volcengine.com/region:cn-beijing/apikey',
+    models: [],
+  },
+  {
+    // Agent Plan 专属 Base URL 含 /plan，且必须使用套餐专属 Key，不能与普通方舟 Key 混用
+    id: 'volcengine-agent-plan',
+    name: '火山方舟 Agent Plan',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3',
+    keyUrl: 'https://ark.volcengine.com/region:cn-beijing/apikey',
+    models: [],
+  },
 ];
