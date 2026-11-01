@@ -30,6 +30,18 @@ export {
 } from './adapters/openai/url';
 export { createOllamaAdapter } from './adapters/ollama/adapter';
 
+// v2.17：厂商描述查询（数据源在 shared/constants）
+export {
+  listVendors,
+  getVendor,
+  findVendorByBaseUrl,
+  normalizeBaseUrl,
+  resolveVendorDiscovery,
+  type VendorDescriptor,
+  type VendorDiscovery,
+  type VendorKeyScope,
+} from './vendors/registry';
+
 // 可观测性（LangSmith 可选追踪，未配置时零影响）
 export {
   isTracingEnabled,

@@ -1,7 +1,9 @@
 import type { ModelCapability } from './enums';
+import type { ProviderProtocol } from './enums';
 
 /**
  * v2.4 P0-1（T3）：常用 OpenAI 兼容厂商预置目录。
+ * v2.17：扩展为厂商描述（发现策略 / Model ID 提示 / Key 作用域），供 UI 与服务端复用。
  * 只存 `baseUrl` 与模型名建议 + Key 申请直达；**不写价格、不做计费承诺**（页脚免责）。
  * 选厂商只是把表单填好，仍需用户自带 Key，也不引入账号与代管。
  */
@@ -10,6 +12,12 @@ export interface ProviderPresetModel {
   capabilities: ModelCapability[];
 }
 
+/** v2.17：模型发现策略；缺省按 openai-models 处理 */
+export type VendorDiscovery = 'openai-models' | 'ollama-tags' | 'manual-only';
+
+/** v2.17：Key 作用域；套餐 Key 不能与数据面 Key 混用 */
+export type VendorKeyScope = 'data' | 'plan' | 'coding';
+
 export interface ProviderPreset {
   id: string;
   name: string;
@@ -17,6 +25,16 @@ export interface ProviderPreset {
   /** API Key 申请直达页 */
   keyUrl: string;
   models: ProviderPresetModel[];
+  /** v2.17：协议；缺省 openai-compatible */
+  protocol?: ProviderProtocol;
+  /** v2.17：模型发现策略；缺省 openai-models */
+  discovery?: VendorDiscovery;
+  /** v2.17：不提供模型列表时，Model ID 该怎么填 */
+  modelIdHint?: string;
+  /** v2.17：套餐 Key 作用域 */
+  keyScope?: VendorKeyScope;
+  /** v2.17：展示给用户的补充说明 */
+  notes?: string;
 }
 
 export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
@@ -95,6 +113,10 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
     keyUrl: 'https://ark.volcengine.com/region:cn-beijing/apikey',
     models: [],
+    discovery: 'openai-models',
+    keyScope: 'data',
+    modelIdHint: '可填 Model ID，或方舟推理接入点 ep-*',
+    notes: '数据面 Key 不能与 Agent Plan / Coding Plan 套餐 Key 混用。',
   },
   {
     // Agent Plan 专属 Base URL 含 /plan，且必须使用套餐专属 Key，不能与普通方舟 Key 混用
@@ -103,5 +125,20 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3',
     keyUrl: 'https://ark.volcengine.com/region:cn-beijing/apikey',
     models: [],
+    discovery: 'manual-only',
+    keyScope: 'plan',
+    modelIdHint: '请使用 Agent Plan 控制台给出的 Model ID',
+    notes: '必须使用 Agent Plan 套餐专属 Key；Base URL 含 /plan。',
+  },
+  {
+    id: 'volcengine-coding-plan',
+    name: '火山方舟 Coding Plan',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/coding/v3',
+    keyUrl: 'https://ark.volcengine.com/region:cn-beijing/apikey',
+    models: [],
+    discovery: 'manual-only',
+    keyScope: 'coding',
+    modelIdHint: '请使用 Coding Plan 控制台给出的 Model ID',
+    notes: '必须使用 Coding Plan 套餐专属 Key；Base URL 含 /coding。',
   },
 ];

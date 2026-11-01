@@ -25,6 +25,11 @@ export type {
   Timestamped,
 } from './domain';
 export type { McpServerConfig, McpServerInfo, McpToolInfo } from './mcp';
+export type {
+  ProviderConnectionStatus,
+  ProviderConnectionCheck,
+  ProviderConnectionResult,
+} from './provider/connection';
 export type { ContentPart, TextContentPart, ImageContentPart } from './content-part';
 export type {
   ToolTraceEntry,

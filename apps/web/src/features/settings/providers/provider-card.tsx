@@ -20,6 +20,7 @@ type TestState =
   | { status: 'idle' }
   | { status: 'running' }
   | { status: 'success' }
+  | { status: 'unverified'; message: string }
   | { status: 'error'; message: string };
 
 export function ProviderCard({ provider, onEdit }: Props) {
@@ -40,7 +41,14 @@ export function ProviderCard({ provider, onEdit }: Props) {
   const runTest = async () => {
     setTestState({ status: 'running' });
     try {
-      await mutations.testConnection.mutateAsync(provider.id);
+      const result = await mutations.testConnection.mutateAsync(provider.id);
+      if (result.status === 'reachable_unverified') {
+        setTestState({
+          status: 'unverified',
+          message: result.message ?? t('settingsProviders.connectionUnverified'),
+        });
+        return;
+      }
       setTestState({ status: 'success' });
     } catch (error) {
       // 联调场景：错误码主文案后附加上游细节（如鉴权失败 401）
@@ -119,6 +127,11 @@ export function ProviderCard({ provider, onEdit }: Props) {
       <div className="mt-2 min-h-5 text-sm" role="status" data-testid={`test-result-${provider.id}`}>
         {testState.status === 'success' && (
           <span className="text-success">{t('settingsProviders.connectionSuccess')}</span>
+        )}
+        {testState.status === 'unverified' && (
+          <span className="text-amber-600 dark:text-amber-400">
+            {t('settingsProviders.connectionUnverifiedWith', { message: testState.message })}
+          </span>
         )}
         {testState.status === 'error' && (
           <span className="text-destructive">

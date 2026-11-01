@@ -3,6 +3,11 @@ import { type DiscoveredModel, type ProviderModel } from '@wbfm/shared/types';
 import { type ModelCapability } from '@wbfm/shared/constants';
 import { type ModelCreateInput } from '@wbfm/shared/schemas';
 import { createModelRepository, createProviderRepository } from '@wbfm/database';
+import {
+  ProviderError,
+  findVendorByBaseUrl,
+  resolveVendorDiscovery,
+} from '@wbfm/ai';
 import type { ServiceDeps } from '../base/deps';
 import { buildProvider, toApiError } from './provider-adapter';
 
@@ -55,9 +60,24 @@ export function createModelService({ db, cipher }: ServiceDeps) {
       signal?: AbortSignal,
     ): Promise<DiscoveredModel[]> {
       const provider = requireProvider(providerId);
+      const vendor = findVendorByBaseUrl(provider.baseUrl);
+      // v2.17：厂商明确不支持模型列表时，直接返回推荐模型（可能为空），不再把 404 抛给用户
+      if (resolveVendorDiscovery(vendor) === 'manual-only') {
+        return (vendor?.models ?? []).map((model) => ({
+          id: model.modelId,
+          contextLength: null,
+        }));
+      }
       try {
         return await buildProvider(db, cipher, provider).listModels(signal);
       } catch (error) {
+        // 端点不存在时回落到描述文件里的推荐模型；没有推荐模型才报错
+        if (error instanceof ProviderError && error.reason === 'models_unsupported') {
+          const recommended = vendor?.models ?? [];
+          if (recommended.length > 0) {
+            return recommended.map((model) => ({ id: model.modelId, contextLength: null }));
+          }
+        }
         toApiError(error);
       }
     },

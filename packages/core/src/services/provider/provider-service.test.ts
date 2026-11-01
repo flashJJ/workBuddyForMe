@@ -157,7 +157,11 @@ describe('provider/model 服务（TR-12.2）', () => {
       );
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(providers.testConnection(provider.id)).resolves.toEqual({ ok: true });
+    await expect(providers.testConnection(provider.id)).resolves.toMatchObject({
+      ok: true,
+      status: 'verified',
+      checks: [{ step: 'models', ok: true }],
+    });
     // v0.5：远端模型发现返回 DiscoveredModel（OpenAI 兼容协议无上下文长度字段，恒为 null）
     await expect(models.fetchRemoteList(provider.id)).resolves.toEqual([
       { id: 'm1', contextLength: null },
@@ -175,7 +179,71 @@ describe('provider/model 服务（TR-12.2）', () => {
     });
   });
 
-  it('不提供 /models 的厂商：有对话模型时改用首字探活', async () => {
+  it('未知厂商不提供 /models：有对话模型时首字探活兜底', async () => {
+    const providers = createProviderService({ db, cipher });
+    const models = createModelService({ db, cipher });
+    const provider = providers.create({
+      name: 'Unknown',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://unknown.example/v1',
+      apiKey: 'sk-x',
+    });
+    models.add(provider.id, { modelId: 'unknown-chat', capabilities: ['chat'] });
+
+    const sse = 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('not found', { status: 404 }))
+      .mockResolvedValueOnce(
+        new Response(sse, { headers: { 'content-type': 'text/event-stream' } }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(providers.testConnection(provider.id)).resolves.toMatchObject({
+      ok: true,
+      status: 'verified',
+      checks: [
+        { step: 'models', ok: false },
+        { step: 'chat-probe', ok: true },
+      ],
+      modelId: 'unknown-chat',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('manual-only 厂商拉取远端模型：不请求 /models，直接返回推荐列表', async () => {
+    const providers = createProviderService({ db, cipher });
+    const models = createModelService({ db, cipher });
+    const provider = providers.create({
+      name: 'Ark Agent Plan',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3',
+      apiKey: 'sk-ark',
+    });
+    vi.stubGlobal('fetch', vi.fn());
+
+    await expect(models.fetchRemoteList(provider.id)).resolves.toEqual([]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('/models 404 且有推荐模型：回落到预设模型列表', async () => {
+    const providers = createProviderService({ db, cipher });
+    const models = createModelService({ db, cipher });
+    const provider = providers.create({
+      name: 'DeepSeek',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://api.deepseek.com/v1',
+      apiKey: 'sk-ds',
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not found', { status: 404 })));
+
+    await expect(models.fetchRemoteList(provider.id)).resolves.toEqual([
+      { id: 'deepseek-chat', contextLength: null },
+      { id: 'deepseek-reasoner', contextLength: null },
+    ]);
+  });
+
+  it('不提供 /models 的厂商：manual-only 直接走首字探活', async () => {
     const providers = createProviderService({ db, cipher });
     const models = createModelService({ db, cipher });
     const provider = providers.create({
@@ -189,17 +257,19 @@ describe('provider/model 服务（TR-12.2）', () => {
     const sse = 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n';
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(new Response('not found', { status: 404 }))
-      .mockResolvedValueOnce(
-        new Response(sse, { headers: { 'content-type': 'text/event-stream' } }),
-      );
+      .mockResolvedValueOnce(new Response(sse, { headers: { 'content-type': 'text/event-stream' } }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(providers.testConnection(provider.id)).resolves.toEqual({ ok: true });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await expect(providers.testConnection(provider.id)).resolves.toMatchObject({
+      ok: true,
+      status: 'verified',
+      checks: [{ step: 'chat-probe', ok: true }],
+      modelId: 'doubao-seed',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('不提供 /models 且无对话模型：返回可执行的模型列表提示', async () => {
+  it('manual-only 且无对话模型：返回 reachable_unverified，不伪造成功', async () => {
     const providers = createProviderService({ db, cipher });
     const provider = providers.create({
       name: 'Ark',
@@ -207,12 +277,13 @@ describe('provider/model 服务（TR-12.2）', () => {
       baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3',
       apiKey: 'sk-ark',
     });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not found', { status: 404 })));
+    vi.stubGlobal('fetch', vi.fn());
 
-    await expect(providers.testConnection(provider.id)).rejects.toMatchObject({
-      name: 'ApiError',
-      code: 'PROVIDER_ERROR',
-      details: { upstreamStatus: 404 },
+    await expect(providers.testConnection(provider.id)).resolves.toMatchObject({
+      ok: false,
+      status: 'reachable_unverified',
+      checks: [{ step: 'chat-probe', ok: false }],
     });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

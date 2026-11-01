@@ -2,7 +2,12 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
-import type { DiscoveredModel, Provider, ProviderModel } from '@wbfm/shared/types';
+import type {
+  DiscoveredModel,
+  Provider,
+  ProviderConnectionResult,
+  ProviderModel,
+} from '@wbfm/shared/types';
 import type { ModelCapability } from '@wbfm/shared/constants';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -56,7 +61,7 @@ export function useProviderMutations() {
       onSuccess: invalidate,
     }),
     testConnection: useMutation({
-      mutationFn: (id: string) => apiPost<{ ok: true }>(API.providerTest(id)),
+      mutationFn: (id: string) => apiPost<ProviderConnectionResult>(API.providerTest(id)),
     }),
   };
 }
