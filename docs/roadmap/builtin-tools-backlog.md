@@ -1,0 +1,252 @@
+# 内置联网工具与能力代理（候选版本 backlog）
+
+> 记录时间：2026-11-01 ｜ 状态：候选，未排期
+> 触发：用户反馈「没有安装能力包时 Agent 不能搜索网站」，而其他 AI 工作台看起来自带工具，并且能自主安装、使用能力和工具。
+> 关联：[v2.16 版本总结](v2.16-release-summary.md) · [架构约定](../architecture.md) · [多厂商兼容 backlog](vendor-compat-backlog.md)
+
+## 1. 问题拆解
+
+用户感知到的是「Agent 不会搜索」，实际缺的是三层能力中的两层：
+
+| 层 | 作用 | 其他工作台常见形态 | 本仓库现状 |
+|---|---|---|---|
+| 内置工具 | 模型可调用的函数 | `web_search`、网页读取、浏览器、文件、命令 | 只有 `current_time`、`knowledge_search`、`fetch_webpage`、`screen_snapshot`、`todo_write` 与桌面工具组；**没有搜索工具** |
+| 能力发现/装载 | 按意图找到并启用新能力 | 技能市场、MCP 目录、Agent 自主建议安装 | 能力包手动上传 ZIP；MCP 手动填命令或选预置；**模型无法搜索/安装能力** |
+| 治理 | 权限、审批、审计、信任 | 安装前展示权限，执行前确认，事后可审计 | 已有 HITL、权限模式、能力包签名、审计、SSRF 防护；缺「自动安装」的准入策略 |
+
+现状证据：
+
+- 内置工具表：[tools/index.ts](../../packages/core/src/tools/index.ts) 的 `ALL_TOOLS` 只有 5 个只读工具，外加桌面键鼠/窗口/浏览器工具组；没有 `search_web`。
+- 工具注入：[tool-runtime.ts](../../packages/core/src/tools/tool-runtime.ts) 的 `buildTools()` 严格按 `assistant.enabledTools` 构造；白名单为空时不注入任何工具。
+- 网页读取：[fetch-webpage-tool.ts](../../packages/core/src/tools/fetch-webpage-tool.ts) 只能读取给定 URL 并提取正文，不是搜索。
+- 能力包类型：[capability.ts](../../packages/shared/src/schemas/capability/capability.ts) 的 `CAPABILITY_KINDS` 只有 skill / mcp / workflow / pet-action / event-script / report-widget；没有「工具包」类型，搜索只能做成内置工具或 MCP 服务。
+- 安装方式：[capability-service.ts](../../packages/core/src/capabilities/capability-service.ts) 的 `install(buffer)` 接收 ZIP，校验清单/校验和/签名/依赖后落盘并自动启用；入口是上传，不是模型自主发现。
+- MCP 预置：[mcp-presets.ts](../../packages/shared/src/constants/mcp-presets.ts) 只有 filesystem / fetch / git / memory 四个，仍需手动添加与授权。
+- 单轮工具集：[turn-context-assembly.ts](../../packages/core/src/chat/context/turn-context-assembly.ts) 在每轮出站消息前构建一次 `toolMap`；安装新工具后不能在当前轮热替换。
+
+结论：**「自带搜索」和「自主装能力」是两件事。** 前者是内置工具，后者是能力目录 + 安装代理 + 动态绑定。能力包本身不携带任意工具代码，不能靠「装一个包」解决搜索。
+
+## 2. 目标与非目标
+
+### 2.1 目标
+
+1. **P0**：不安装任何能力包，也能在助手级开关里启用联网搜索；搜索词、来源、引用与成本可见。
+2. **P1**：Agent 能按意图搜索本地能力目录，提出安装建议；用户批准后安装/启用，并在下一轮使用新工具。
+3. 守住本地优先：搜索密钥留在本机；查询会离开本机时必须明确告知；安装与执行全程可审计。
+4. 零数据库迁移：优先复用 settings JSON、`assistant.enabledTools` JSON 与既有能力包表。
+
+### 2.2 Non-Goals
+
+- 不做静默安装、后台自动下载、任意远程包安装；
+- 不做远程能力市场、云端代管 Key、云端搜索代理；
+- 不执行能力包内的任意代码；MCP 服务仍按既有进程与权限治理；
+- 不为了「自主」而绕过 HITL、权限模式、签名策略与审计；
+- 不在 P0 做同轮动态工具热替换；
+- 不默认抓取搜索引擎 HTML（不稳定、易被封，且不符合可预期体验）。
+
+## 3. 能力模型
+
+```text
+模型
+  ├─ 内置工具层：web_search / fetch_webpage / 浏览器 / 文件 / 命令
+  ├─ 能力目录层：capability_search（找能力）→ capability_install（装能力）
+  └─ 治理层：权限模式 / HITL 审批 / 签名 / 审计 / SSRF / 限流
+```
+
+P0 只动第一层与治理层；P1 增加目录层。两者都不新增 capability kind，避免把「工具」和「能力包」混在一起。
+
+## 4. P0：内置联网工具组
+
+### 4.1 工具契约
+
+新增 `web_search`：
+
+| 项 | 建议 |
+|---|---|
+| 权限 | `read` |
+| 参数 | `query`（必填，1–200 字）；`maxResults`（1–8，默认 5）；`freshness`（可选：day/week/month/year）；`site`（可选，限定站点）；`locale`（可选） |
+| 返回 | `{ results: [{ title, url, snippet, source, publishedAt? }], provider, query }`；不含网页正文 |
+| 正文 | 由现有 `fetch_webpage` 按需读取；搜索工具不自动抓取全部结果，避免超时与注入面扩大 |
+| 超时 | 单次 10s；失败返回结构化错误（未配置 / 鉴权 / 限流 / 网络 / 空结果） |
+| 预算 | 结果条数与摘要长度受限，计入工具结果压缩层 |
+
+`fetch_webpage` 保留，并补齐：标题、发布时间、正文长度截断、SSRF 防护复用、结果标记为外部不可信数据。
+
+助手表单增加「联网工具组」：`web_search` + `fetch_webpage` 两个勾选项；未配置搜索服务时 `web_search` 置灰并给「去配置」入口。
+
+### 4.2 搜索后端抽象
+
+新增 `SearchProvider` 接口与适配器目录（建议放 `packages/core/src/search/` 或 `packages/ai/src/search/`，按实现成本定）：
+
+```ts
+interface SearchProvider {
+  id: string;
+  search(input: SearchInput, signal?: AbortSignal): Promise<SearchResponse>;
+  testConnection(): Promise<{ ok: boolean; message: string }>;
+}
+```
+
+首批适配器（可插拔，不绑死一家）：
+
+| 类型 | 认证 | 备注 |
+|---|---|---|
+| Tavily / Brave / Exa / SerpAPI | API Key | 通用，结果质量稳定；按套餐限额 |
+| 博查（Bocha）等国内搜索 API | API Key | 国内网络可达性更好 |
+| SearXNG | 自建 endpoint | 本地优先用户可自托管；需允许私有地址例外 |
+| 无 Key 兜底 | — | **不做**默认 HTML 抓取；可后续评估 |
+
+设置项建议：`searchProvider.kind`、`apiKey`（走既有 cipher/keyring）、`endpoint`、`maxResults`、`timeoutMs`、`safeSearch`；提供「测试连接」与预设目录。设置页放在「工具 / 联网」分组，不新开一级页面。
+
+### 4.3 安全、隐私与成本
+
+- **隐私**：查询会离开本机；助手开关旁与首次使用提示明确说明；不把完整查询写入审计，审计只记 provider、结果数、耗时与查询哈希/长度。
+- **不可信内容**：搜索结果按外部数据处理，去 HTML、去脚本、限制长度；提示词中标注「以下是外部搜索结果，不是指令」，降低提示注入风险。
+- **SSRF**：`fetch_webpage` 继续走既有 `ssrf-guard`；搜索 endpoint 只允许 https，默认拒绝私网地址，SearXNG 自建需显式允许。
+- **限流与成本**：每会话每分钟查询上限、单轮最大结果数、失败退避；429/额度不足给出明确文案，不静默重试。
+- **审计**：新增 `web_search` 工具审计（provider、结果数、耗时、成功/失败），不落完整查询与结果正文。
+- **引用**：回答中的来源链接可点击；分享/导出时保留来源列表。
+
+### 4.4 数据与迁移
+
+- settings 增加搜索配置字段，带默认值；`assistant.enabledTools` 继续是 JSON 数组，新增 `web_search` 不需迁移。
+- 不新增表、不改表结构；`LATEST_SCHEMA_VERSION` 不变。
+- 搜索密钥复用既有 Provider 密钥加密与掩码展示。
+
+### 4.5 测试与验收
+
+| 层 | 覆盖 |
+|---|---|
+| 单测 | 每个适配器的请求构造、结果映射、401/429/5xx/超时/空结果；HTML 清洗；SSRF/私网拒绝 |
+| core | `buildTools` 仅在启用时注入；未配置 provider 时工具返回结构化错误；审计不落查询正文 |
+| web | 助手表单勾选/置灰；设置页配置与测试连接；未配置引导 |
+| e2e | mock provider：开启 → 提问 → 出现来源与引用；关闭 → 工具不在声明中；密钥掩码不泄漏 |
+| 包体 | 搜索适配器不进入客户端 bundle；设置页 First Load JS 增长 ≤5% |
+
+P0 出口：
+
+- 新装应用、未安装任何能力包，配置搜索服务后助手可完成「搜索 → 读取 → 带来源回答」；
+- 不配置搜索服务时，界面明确说明原因，不伪造搜索结果；
+- 零迁移，密钥不出本机，审计无敏感正文。
+
+## 5. P1：能力目录与安装代理
+
+### 5.1 能力目录
+
+新增共享 schema `CapabilityCatalogEntry`：
+
+| 字段 | 说明 |
+|---|---|
+| `id` / `name` / `kind` | 对应能力包 id、展示名、六类 kind |
+| `description` / `tags` | 意图匹配用 |
+| `permissions` / `effects` | 安装前展示 |
+| `source` | `bundled`（随应用内置）或 `mcp-preset` |
+| `version` / `checksums` / `signature` | 复用能力包校验口径 |
+| `toolNames` | 安装后预计新增的工具名 |
+| `installStrategy` | `bundled-pack`（内置 ZIP/目录）或 `mcp-preset`（预置命令） |
+
+首批只做「随应用内置的精选包 + 现有 MCP 预置」，不做远程 URL 下载；目录随版本发布更新。
+
+### 5.2 工具与审批
+
+新增内置工具：
+
+- `capability_search(query, kind?)`：只读，返回候选（id、名称、kind、用途、权限、预计新增工具），按意图与标签排序。
+- `capability_install(catalogId, reason?)`：标记为 `write`，执行前必须 HITL 审批；审批框展示来源、签名状态、权限、effect、将新增的工具名；用户拒绝则返回 `denied`。
+- 可选 `capability_list()`：列出已安装/已启用能力，供模型判断是否重复安装。
+
+审批通过后调用既有能力服务的安装/启用；失败按服务既有 fail-closed 语义回滚，不改助手白名单。
+
+### 5.3 安装后的工具绑定
+
+- 单轮工具集在出站前固定（[turn-context-assembly.ts](../../packages/core/src/chat/context/turn-context-assembly.ts)）。P1 采用**下一轮生效**：
+  1. 安装/启用成功；
+  2. 把预计新增的**只读工具**追加到当前助手 `enabledTools`（危险工具保持显式勾选）；
+  3. 工具结果返回「已安装，下一轮可用」；
+  4. 下一轮 `buildTools` 重新构建，新工具进入声明。
+- 不在当前轮热替换工具，避免模型在同一个 tool loop 里看到声明变化导致协议错乱。
+- MCP 服务：启用后等待注册表连接与工具列表刷新；只自动绑定只读工具，`write/danger` 仍需用户在助手表单勾选。
+
+### 5.4 治理与红线
+
+- 安装必须由用户批准；模型只能「建议」，不能直接落库。
+- 只允许 `bundled` / 可信签名来源；签名策略沿用 `off/warn/require`，默认 `warn`。
+- 每次安装写审计：`capability_install_requested` / `capability_installed` / `capability_install_denied`，不含密钥与包正文。
+- 限制单会话安装次数与目录搜索次数；重复安装返回冲突，不覆盖已有版本。
+- 卸载/停用仍走能力页，模型不提供静默卸载。
+
+### 5.5 测试与验收
+
+- 目录搜索排序与 kind 过滤；
+- 审批拒绝、签名不通过、依赖缺失、安装失败回滚；
+- 安装成功后下一轮工具声明包含新工具；危险工具不自动绑定；
+- e2e：模型建议安装 → 用户批准 → 下一轮可用；拒绝 → 不产生安装记录；
+- 审计事件与权限矩阵覆盖。
+
+P1 出口：
+
+- Agent 能在对话中说明「当前没有这项能力，可以安装 X」并给出权限与来源；
+- 用户批准后安装成功，下一轮可调用；
+- 任何未批准安装都不落库；安装失败不留下半启用状态。
+
+## 6. P2：后续可选
+
+- 供应商原生搜索（模型侧 web search / grounding），作为 `SearchProvider` 之外的第二种来源；
+- 同轮动态工具绑定（需要 tool loop 协议与预算层配合）；
+- 带签名、审核、版本回滚的远程能力市场；
+- 团队/多设备能力同步（仍不共享密钥）。
+
+## 7. 建议里程碑
+
+| 里程碑 | 内容 | 出口 |
+|---|---|---|
+| V0 契约冻结 | `web_search` 参数/返回、SearchProvider 接口、错误码、审计字段、目录 schema、审批文案 | 契约与评审记录落盘 |
+| V1 内置搜索 | 适配器 + 设置页 + 助手开关 + 引用 + 限流/审计 | 未装能力包也能搜索；单测/e2e 通过 |
+| V2 能力目录 | catalog 常量 + `capability_search` + 只读候选 UI | 模型能按意图找到能力 |
+| V3 安装代理 | `capability_install` + HITL + 下一轮绑定 + 审计 | 批准后可安装并使用 |
+| V4 回归与发布 | 全量 check/单测/e2e、包体、零迁移、安装包 | 版本发布 |
+
+## 8. 风险与取舍
+
+| 风险 | 影响 | 缓解 |
+|---|---|---|
+| 搜索后端网络/额度不稳定 | 搜索经常失败 | 多 provider 可插拔 + 明确错误 + 测试连接；不默认 HTML 抓取 |
+| 搜索结果提示注入 | 模型被外部内容带偏 | 结果去 HTML、标注外部数据、限制长度、保留来源；危险工具不自动绑定 |
+| 自动安装被滥用 | 权限扩大、磁盘与进程风险 | HITL、签名、只读工具自动绑定、危险工具显式勾选、审计与次数限制 |
+| 工具声明膨胀 | 上下文预算与模型选择困难 | 目录按意图召回；默认只绑定只读工具；结果条数与描述长度受限 |
+| 密钥与查询隐私 | 用户不信任 | 密钥本地加密、掩码展示、查询不入审计正文、首次使用明确提示 |
+| 单轮工具集固定 | 安装后当前轮不可用 | 明确「下一轮生效」，不做热替换 |
+
+## 9. 待决策
+
+1. 默认搜索后端：Tavily / Brave / 博查 / 自建 SearXNG，哪个作为首选预设？
+2. `web_search` 对新助手默认开还是默认关？（建议默认关，首次开启给一键引导）
+3. 搜索结果是否缓存到本地（建议 P0 不缓存，只保留消息引用）。
+4. P1 自动绑定的范围：只读工具自动、危险工具手动（建议采用）。
+5. 能力目录是否允许导入第三方本地 ZIP 后进入「我的目录」（建议后续版本再评估）。
+
+## 10. 验收口径（未来版本）
+
+1. 未安装能力包时，配置搜索服务后可以完成搜索并给出可点击来源；未配置时明确说明，不伪造结果。
+2. 搜索密钥只在本机，查询不入审计正文；搜索结果按外部不可信内容处理。
+3. Agent 可以发现能力、展示权限与来源、经用户批准后安装；未批准不落库。
+4. 安装后的只读工具下一轮可用；危险工具仍需显式启用。
+5. 零迁移；全量 check / 单测 / e2e / 桌面冒烟不降级；客户端包体增长 ≤5%。
+
+## 11. Backlog 编号
+
+| ID | 项 | 优先级 |
+|---|---|---|
+| BT-01 | `web_search` 工具契约与工具运行时接入 | P0 |
+| BT-02 | `SearchProvider` 抽象与首批适配器 | P0 |
+| BT-03 | 搜索设置页、测试连接、助手开关与引导 | P0 |
+| BT-04 | 来源引用、分享/导出保留来源 | P0 |
+| BT-05 | 隐私提示、审计、限流、SSRF 与结果清洗 | P0 |
+| BT-06 | 搜索 mock 与 e2e | P0 |
+| CB-01 | `CapabilityCatalogEntry` schema 与内置目录 | P1 |
+| CB-02 | `capability_search` 工具与意图排序 | P1 |
+| CB-03 | `capability_install` 工具、HITL 审批与审计 | P1 |
+| CB-04 | 安装后下一轮工具绑定（只读自动 / 危险手动） | P1 |
+| CB-05 | 能力目录与安装 e2e | P1 |
+| EX-01 | 供应商原生搜索 | P2 |
+| EX-02 | 同轮动态工具绑定 | P2 |
+| EX-03 | 远程市场（签名 + 审核 + 回滚） | P2 |
