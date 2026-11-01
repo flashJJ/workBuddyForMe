@@ -23,6 +23,7 @@ import {
   createPermissionService,
   createProviderService,
   createSettingsService,
+  createSearchService,
   createTaskGrantRegistry,
   createTaskRunnerService,
   recoverInterruptedRunJobs,
@@ -101,17 +102,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const skills = createSkillService({ db });
   const breakers = createToolBreaker();
   const taskGrants = createTaskGrantRegistry();
-  const deps: ServiceDeps = {
-    db,
-    cipher,
-    mcp,
-    permissions,
-    confirmations,
-    approvals,
-    skills,
-    breakers,
-    taskGrants,
-  };
+  const search = createSearchService({ db });
+  const deps: ServiceDeps = { db, cipher, search, mcp, permissions, confirmations, approvals, skills, breakers, taskGrants };
   const audit = createAuditService(db);
   deps.audit = audit;
   deps.closeBrowserSession = closeBrowserSession;
@@ -251,6 +243,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     models: createModelService(deps),
     settings: settingsService,
     audit,
+    search,
     assistants,
     characterCards: createCharacterCardService(deps),
     stageScenes,

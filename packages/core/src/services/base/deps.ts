@@ -12,11 +12,14 @@ import type { WorkPlanService } from '../../work-plan/work-plan-service';
 import type { SessionLogService } from '../../session-log/session-log-service';
 import type { AgentPolicy } from '@wbfm/shared/schemas';
 import type { AuditService } from '../../governance/audit';
+import type { SearchService } from '../search';
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
   db: DatabaseInstance;
   cipher: SecretCipher;
+  /** v2.17：联网搜索服务（未提供时 web_search 返回未配置错误） */
+  search?: SearchService;
   /** v0.6：MCP 注册表（未提供时 enabledTools 中的 MCP 限定名静默跳过） */
   mcp?: McpRegistry;
   /** v0.6 M2：工具权限服务（HITL 授权记忆） */

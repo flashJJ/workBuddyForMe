@@ -1,4 +1,5 @@
 import type { Citation, PermissionLevel, ToolSubstep } from '@wbfm/shared/types';
+import type { WebSearchInput, WebSearchResponse } from '@wbfm/shared/types';
 import type { WorkStepStatus } from '@wbfm/shared/schemas';
 import type { ToolDefinition } from '@wbfm/ai';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
@@ -34,6 +35,8 @@ export interface ToolContext {
     reasonCode: string;
     outcome?: string;
   }) => void;
+  /** v2.17：联网搜索回调（未配置时 web_search 返回可执行错误） */
+  searchWeb?: (input: WebSearchInput, signal?: AbortSignal) => Promise<WebSearchResponse>;
   /** v2.8：写入会话待办清单（未提供时 todo_write 直接拒绝） */
   writeTodos?: (todos: Array<{ title: string; status?: WorkStepStatus }>) => {
     planId: string;

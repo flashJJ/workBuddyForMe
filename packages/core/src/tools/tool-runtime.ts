@@ -7,6 +7,7 @@ import type { Tool, ToolContext, ToolMap } from './types';
 import { currentTimeTool } from './current-time-tool';
 import { todoWriteTool } from './todo-write-tool';
 import { knowledgeSearchTool } from './knowledge-search-tool';
+import { webSearchTool } from './web/web-search-tool';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 import { screenSnapshotTool } from './computer/screen-snapshot-tool';
 import { createInputTools } from './computer/input-tools';
@@ -18,6 +19,7 @@ import { createComputerChannelClient } from '../computer/channel-client';
 const ALL_TOOLS: Record<string, Tool> = {
   current_time: currentTimeTool,
   knowledge_search: knowledgeSearchTool,
+  web_search: webSearchTool,
   fetch_webpage: fetchWebpageTool,
   screen_snapshot: screenSnapshotTool,
   todo_write: todoWriteTool,
@@ -152,6 +154,7 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         visionCapable: opts?.visionCapable ?? false,
         ...(conversationId ? { conversationId } : {}),
         ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
+        ...(deps.search ? { searchWeb: deps.search.search } : {}),
         ...(deps.audit
           ? {
               governanceAudit: (input: Parameters<NonNullable<ToolContext['governanceAudit']>>[0]) => {

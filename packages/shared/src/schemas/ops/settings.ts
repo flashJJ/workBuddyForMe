@@ -6,6 +6,11 @@ import {
   CONTEXT_MESSAGES_MIN,
   CONTEXT_MESSAGES_MAX,
   GLOBAL_APPEND_PROMPT_MAX,
+  SEARCH_PROVIDER_KINDS,
+  SEARCH_MAX_RESULTS_MIN,
+  SEARCH_MAX_RESULTS_MAX,
+  SEARCH_TIMEOUT_MIN_MS,
+  SEARCH_TIMEOUT_MAX_MS,
 } from '../../constants/index';
 import { ACTION_CHAIN_IDS } from '../interaction/interaction-chains';
 import { isValidTriggerKey } from '../interaction/interaction-graph';
@@ -60,6 +65,26 @@ export type InteractionGraphOverride = z.infer<typeof interactionGraphEntrySchem
 
 /** 覆盖条目上限（防配置膨胀失控） */
 export const INTERACTION_GRAPH_OVERRIDES_MAX = 50;
+
+/** v2.17：联网搜索设置（P0 支持 SearXNG / mock；endpoint 在 core 侧再做 SSRF 校验） */
+export const searchSettingsSchema = z.object({
+  provider: z.enum(SEARCH_PROVIDER_KINDS),
+  endpoint: z.string().trim().max(2000).default(''),
+  maxResults: z
+    .number()
+    .int()
+    .min(SEARCH_MAX_RESULTS_MIN)
+    .max(SEARCH_MAX_RESULTS_MAX)
+    .default(5),
+  timeoutMs: z
+    .number()
+    .int()
+    .min(SEARCH_TIMEOUT_MIN_MS)
+    .max(SEARCH_TIMEOUT_MAX_MS)
+    .default(10_000),
+  allowPrivateEndpoint: z.boolean().default(false),
+});
+export type SearchSettingsInput = z.infer<typeof searchSettingsSchema>;
 
 export const settingsUpdateSchema = z.object({
   defaultChatModelId: z.string().trim().min(1).nullable().optional(),
@@ -156,6 +181,8 @@ export const settingsUpdateSchema = z.object({
     .optional(),
   // v2.13 Agent 治理策略（deny wins；读取时由 core 钳制）
   agentPolicy: agentPolicySchema.optional(),
+  // v2.17 联网搜索（缺省关闭；endpoint 在 core 读取时做 SSRF 校验）
+  searchSettings: searchSettingsSchema.optional(),
   // v2.4 M1：演示模式开关（开启时建内置 demo 供应商与 mock 模型；关闭时清理）
   demoModeEnabled: z.boolean().optional(),
   // v2.4 M1 T7：TTFV 里程碑（显式传 null 即清除；仅时间戳，不含对话内容）

@@ -42,6 +42,14 @@ export {
   type VendorKeyScope,
 } from './vendors/registry';
 
+// v2.17：联网搜索 provider（SearXNG / mock）
+export {
+  createSearchProvider,
+  SearchError,
+  type SearchProvider,
+  type SearchErrorReason,
+} from './search';
+
 // 可观测性（LangSmith 可选追踪，未配置时零影响）
 export {
   isTracingEnabled,

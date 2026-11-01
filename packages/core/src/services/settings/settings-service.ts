@@ -24,6 +24,7 @@ import {
 } from '@wbfm/shared/schemas';
 import { assertTrustedKeysImportable } from '../../capabilities/signature';
 import { agentPolicyHash } from '../../governance/policy';
+import { DEFAULT_SEARCH_SETTINGS, resolveSearchSettings } from '../search';
 import {
   createModelRepository,
   createSettingsRepository,
@@ -82,6 +83,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   capabilityTrustedKeys: [],
   // v2.13：默认每次确认；无人值守白名单不含 full_access
   agentPolicy: DEFAULT_AGENT_POLICY,
+  // v2.17：联网搜索默认关闭（P0 无 Key，用户显式选择 SearXNG 后启用）
+  searchSettings: DEFAULT_SEARCH_SETTINGS,
 };
 
 /** 服务端钳制签名策略：手改 settings_kv 的非法值一律回落 warn */
@@ -218,6 +221,7 @@ export function createSettingsService({ db, audit }: ServiceDeps) {
       );
       merged.capabilityTrustedKeys = resolveCapabilityTrustedKeys(merged.capabilityTrustedKeys);
       merged.agentPolicy = resolveAgentPolicy(merged.agentPolicy);
+      merged.searchSettings = resolveSearchSettings(merged.searchSettings);
       return merged;
     },
 

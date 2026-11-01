@@ -34,6 +34,7 @@ type TFn = (key: MessageKey, vars?: MessageVars) => string;
 const TOOL_META: Record<ToolName, { labelKey: MessageKey; icon: typeof Clock }> = {
   current_time: { labelKey: 'toolTrace.tools.currentTime', icon: Clock },
   knowledge_search: { labelKey: 'toolTrace.tools.knowledgeSearch', icon: Search },
+  web_search: { labelKey: 'toolTrace.tools.webSearch', icon: Search },
   fetch_webpage: { labelKey: 'toolTrace.tools.fetchWebpage', icon: Globe },
   screen_snapshot: { labelKey: 'toolTrace.tools.screenSnapshot', icon: Monitor },
   mouse_move: { labelKey: 'toolTrace.tools.mouseMove', icon: MousePointer2 },

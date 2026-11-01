@@ -30,6 +30,12 @@ export type {
   ProviderConnectionCheck,
   ProviderConnectionResult,
 } from './provider/connection';
+export type {
+  SearchSettings,
+  WebSearchInput,
+  WebSearchResult,
+  WebSearchResponse,
+} from './search';
 export type { ContentPart, TextContentPart, ImageContentPart } from './content-part';
 export type {
   ToolTraceEntry,

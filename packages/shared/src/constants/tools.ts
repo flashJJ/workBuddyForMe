@@ -4,6 +4,7 @@
 export const TOOL_NAMES = [
   'current_time',
   'knowledge_search',
+  'web_search',
   'fetch_webpage',
   'screen_snapshot',
   // v0.7 M2 键鼠 / 窗口 / UIA
@@ -18,6 +19,18 @@ export const TOOL_NAMES = [
   'app_launch',
 ] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
+
+/** v2.17：联网搜索 provider 类型（P0 先实现 SearXNG 与测试用 mock） */
+export const SEARCH_PROVIDER_KINDS = ['none', 'searxng', 'mock'] as const;
+export type SearchProviderKind = (typeof SEARCH_PROVIDER_KINDS)[number];
+
+export const SEARCH_MAX_RESULTS_MIN = 1;
+export const SEARCH_MAX_RESULTS_MAX = 8;
+export const SEARCH_MAX_RESULTS_DEFAULT = 5;
+export const SEARCH_TIMEOUT_MIN_MS = 1_000;
+export const SEARCH_TIMEOUT_MAX_MS = 30_000;
+export const SEARCH_TIMEOUT_DEFAULT_MS = 10_000;
+export const SEARCH_QUERY_MAX_CHARS = 200;
 
 /**
  * v0.6 MCP（Model Context Protocol）：
