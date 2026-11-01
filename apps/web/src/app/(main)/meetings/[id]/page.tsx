@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { MeetingRoom } from '@/features/meetings/meeting-room';
+import { MeetingRoom } from '@/features/meetings/room';
 
 export default function Page() {
   const params = useParams<{ id: string }>();

@@ -1,0 +1,38 @@
+{
+  "version": "v2.16-M5",
+  "budget": 12,
+  "note": "存量超标按现状冻结：新增超标与存量增长均阻断；后续版本按目录逐批下降，到期复核。",
+  "exemptDirs": [
+    { "path": "packages/database/src/migrations", "reason": "append-only 迁移历史，不分区、不重排" },
+    { "path": "packages/shared/src/i18n/messages", "reason": "i18n 词条字典，按语言文件组织" }
+  ],
+  "legacyDirs": [
+    { "path": "packages/core/src/backup", "count": 31, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/core/src/ingestion", "count": 27, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/core/src/knowledge", "count": 27, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "apps/desktop/src/main", "count": 25, "reason": "v2.16 M5 冻结现状；桌面主进程 P1 候补" },
+    { "path": "packages/core/src/emotion", "count": 25, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/core/src/tools", "count": 25, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/shared/src/constants", "count": 23, "reason": "v2.16 M5 冻结现状；常量域 P1 候补" },
+    { "path": "apps/web/src/lib/server", "count": 22, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "apps/desktop/src/main/pet", "count": 22, "reason": "v2.16 M5 冻结现状；桌面桌宠 P1 候补" },
+    { "path": "apps/web/src/features/stage", "count": 21, "reason": "v2.16 M5 冻结现状；舞台域 P1 候补" },
+    { "path": "apps/web/src/features/voice", "count": 21, "reason": "v2.16 M5 冻结现状；能力子入口已建，文件分区延后" },
+    { "path": "packages/core/src/capabilities", "count": 19, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/core/src/event", "count": 19, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "apps/web/src/features/pet", "count": 17, "reason": "v2.16 M5 冻结现状；能力子入口已建，文件分区延后" },
+    { "path": "packages/core/src/meeting", "count": 17, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/core/src/agent", "count": 16, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "apps/web/src/components/ui", "count": 15, "reason": "v2.16 M5 冻结现状；UI 原子组件按需增长" },
+    { "path": "apps/web/src/features/assistants", "count": 15, "reason": "v2.16 M5 冻结现状；表单字段已上移 components/ui" },
+    { "path": "apps/web/src/features/onboarding/steps", "count": 15, "reason": "v2.16 M5 冻结现状；向导步骤按步拆分" },
+    { "path": "packages/shared/src/types", "count": 15, "reason": "v2.16 M5 冻结现状；类型域 P1 候补" },
+    { "path": "apps/desktop/src/main/computer", "count": 14, "reason": "v2.16 M5 冻结现状；桌面控制 P1 候补" },
+    { "path": "packages/core/src/mcp", "count": 14, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "apps/web/src/lib/i18n", "count": 13, "reason": "v2.16 M5 冻结现状；i18n 工具 P1 候补" },
+    { "path": "packages/core/src/governance", "count": 13, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/shared/src", "count": 13, "reason": "v2.16 M5 冻结现状；根入口与工具文件 P1 候补" }
+  ],
+  "legacyEntries": [],
+  "deepImportExemptions": []
+}

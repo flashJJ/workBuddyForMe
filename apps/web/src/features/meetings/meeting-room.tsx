@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, MonitorPlay, OctagonX, Square, Users } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
-import { getStageBridge } from '@/features/stage/stage-bridge';
+import { getStageBridge } from '@/features/stage/bridge';
 import type { MeetingMode } from '@wbfm/shared/schemas';
 import { useMeetingRoom } from './use-meeting-room';
 import { MODE_LABEL_KEY, STATUS_KEY } from './meeting-keys';

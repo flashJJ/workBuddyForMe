@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { reopenOnboarding } from '@/features/onboarding/use-onboarding-host';
+import { reopenOnboarding } from '@/features/onboarding';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /** 无可用对话模型时的空态引导：直接调起配置向导（演示模式 / 本地模型 / 云端 API） */

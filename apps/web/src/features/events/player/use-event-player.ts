@@ -4,8 +4,8 @@ import * as React from 'react';
 import type { ExpressionTag } from '@wbfm/shared/schemas';
 import { withManagedHeaders } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import { getPetBridge } from '@/features/pet/pet-bridge';
-import type { VoiceAudioFrame } from '@/features/voice/audio-playback-queue';
+import { getPetBridge } from '@/features/pet/bridge';
+import type { VoiceAudioFrame } from '@/features/voice/runtime';
 import { EventPlayer, type EventPlayerControllerLike, type EventPlayerView } from './event-player';
 import { wavToVoiceFrame } from '../ui/tts-clip';
 

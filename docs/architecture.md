@@ -202,3 +202,134 @@ settings_kv(key PK, value(json), updated_at)
 - **集成**：独立临时数据根 + 真实 SQLite + mock Provider，驱动 Route Handler 全部分支（含 SSE）。
 - **E2E**：Playwright（Web 关键路径 5 场景，测试开关注入 mock Provider）；Playwright Electron 冒烟 + 安全断言。
 - 测试数据隔离：每个用例独立临时数据根（`setDataRootForTest`），禁止依赖用户真实数据目录。
+
+## 10. 目录、公开入口与依赖约定（v2.16）
+
+> 本节回答三个问题：**新增文件放哪里、能不能跨域引用、入口导出什么**。
+> 门禁实现：`scripts/check-structure.mjs`、`scripts/check-cycles.mjs`、`scripts/check-file-lines.mjs`、`apps/web/.eslintrc.json`。
+
+### 10.1 目录地图
+
+| 位置 | 职责 | 直接文件预算 |
+|---|---|---|
+| `apps/web/src/app` | 路由、布局、Route Handler；只做装配 | ≤12 |
+| `apps/web/src/features/<域>` | 业务域：页面、面板、域内 hook/组件 | ≤12 |
+| `apps/web/src/features/<域>/<子域>` | 能力子域：barrel + 具体实现 | ≤12 |
+| `apps/web/src/components` | 跨域共享 UI（`ui/` 原子组件、`common/` 通用组件、`layout/` 壳层） | ≤12（`ui/` 存量 15，基线冻结） |
+| `apps/web/src/lib` | `hooks/`（按域 barrel）、`api/`、`i18n/`、`ui/`、`server/`（服务端装配） | ≤12 |
+| `packages/shared/src` | `schemas/`、`types/`、`constants/`、`i18n/`、`api/` | ≤12 |
+| `packages/database/src` | `repositories/`（按域子目录）、`migrations/`（append-only，豁免） | ≤12 |
+| `packages/core/src` | `services/`、`agents/`、`chat/`、`flow/` 等域，按子能力分区 | ≤12 |
+| `apps/desktop/src` | `main/`、`preload/`、`renderer/`；不承载业务规则 | ≤12 |
+
+M1-M3 收拢后，P0 目录均为 1 个直接文件（`apps/web/src/lib/hooks` 为 0，只有 7 个域 barrel）。
+
+存量超标目录登记在 `scripts/.structure-baseline.json`（25 个，逐条带原因），只允许下降，不允许增长。豁免目录：
+
+| 目录 | 原因 |
+|---|---|
+| `packages/database/src/migrations` | append-only 迁移历史，不分区、不重排 |
+| `packages/shared/src/i18n/messages` | i18n 词条字典，按语言文件组织 |
+
+### 10.2 跨域依赖矩阵（web feature）
+
+外部只能引用目标域的**公开入口**（根 `index.ts` 或能力子域 barrel），禁止落到具体文件。
+
+| 来源 | 允许目标 | 理由 |
+|---|---|---|
+| `settings` | `events`、`voice`、`memory`、`character-cards`、`tuning`、`help-center`、`reminders`、`onboarding`、`shortcuts` | 设置页聚合各域面板；关于面板触达向导与快捷键浮层 |
+| `chat` | `events`、`onboarding`、`voice`、`memory`、`avatar`、`pet`、`plans`、`reminders`、`agent-collab` | 会话运行时需要触发、语音、形象、计划、提醒与协作卡 |
+| `avatar` | `events` | 表情与剧情事件联动 |
+| `pet` | `avatar`、`voice`、`interaction` | 桌宠复用形象、语音与互动信号 |
+| `stage` | `avatar` | 舞台渲染形象 |
+| `interaction` | `avatar`、`pet` | 互动信号驱动表情与桌宠桥 |
+| `events` | `avatar`、`interaction`、`pet`、`voice` | 剧情演出驱动表情、互动、桌宠与语音 |
+| `onboarding` | `voice` | 首启语音引导 |
+| `voice` | `avatar`、`pet` | 语音设置复用形象与桌宠桥 |
+| `flow-editor` | `flow-execution` | 编辑器内嵌运行观察面板 |
+| `flow-execution` | `flow-editor`、`chat`、`agent-collab` | 运行态复用画布/配置、消息展示与协作卡 |
+| `agent-collab` | `stage` | 协作卡跳转舞台 |
+| `meetings` | `stage` | 会议舞台回放 |
+| `help-center` | `chat` | 帮助内容复用 Markdown 渲染 |
+| `tasks` | `chat`、`agent-collab` | 任务时间线复用消息组件与协作卡 |
+| `capabilities` | `settings/subagent` | **例外**：外部代理面板历史复用，待后续迁移 |
+
+规则：
+
+1. 矩阵外新增依赖必须先在本文登记理由，再提交代码。
+2. 共享能力优先上移到 `components/`、`lib/` 或 core 域，而不是复制一份。
+3. 类型导入同样计入边界检查（禁止用 `import type` 绕过）。
+
+### 10.3 公开入口规则
+
+- 每个多文件 feature 必须有 `features/<域>/index.ts`，只做 `export { ... } from` 纯转发，不写逻辑、不产生副作用。
+- 根入口只导出**页面级组件**；跨域能力按子域 barrel 引用：
+  - `@/features/voice/runtime`、`@/features/voice/ui`、`@/features/voice/settings`
+  - `@/features/pet/bridge`、`@/features/stage/bridge`
+  - `@/features/events/hooks|player|ui|triggers|bus`
+  - `@/features/flow-editor/canvas|panels|config|endpoint|versions`
+  - `@/features/chat/overlay|markdown|message|composer`
+  - `@/features/avatar/ui|live2d|vrm|expression|motion|reunion`
+  - `@/features/settings/<子域>`（appearance/base/storage/dialog/events/mcp/providers/skills/subagent/tools）
+- 域内部直接用相对路径，禁止从自身根入口反向导入（结构脚本 `SELF_BARREL`）。
+- `lib/hooks` 无根 barrel，按 7 个域引用：`assistant`、`capability`、`chat`、`flows`、`knowledge`、`provider`、`tasks`。
+- 同一个入口不要 `export *` 整个目录；只导出跨域真正需要的能力，避免包体回退（M3 教训）。
+
+### 10.4 新增文件决策树
+
+```text
+新增一个文件
+├─ 是页面/路由装配？ → apps/web/src/app/<route>/page.tsx
+├─ 属于某个业务域？
+│  ├─ 页面组件 → features/<域>/<子域>/<name>-page.tsx（根入口按需导出）
+│  ├─ 设置面板 → features/<域>/<子域>/<name>-panel.tsx（经 settings 子域入口被设置页引用）
+│  ├─ 跨域能力（hook/桥/运行时）→ 放入对应能力子域，并加入其 index.ts
+│  └─ 仅域内使用 → 直接放同子域，用相对路径引用
+├─ 是跨域共享 UI？ → components/ui（无业务语义）或 components/common
+├─ 是数据获取？ → lib/hooks/<域>（加入域 barrel，不新增根 barrel）
+├─ 是服务端装配/调度？ → lib/server（客户端 feature 不得引用）
+├─ 是业务规则/服务？ → packages/core/src/<域>
+├─ 是数据库访问？ → packages/database/src/repositories/<域>
+└─ 是类型/Schema？ → packages/shared/src/schemas/<域> 或 types/
+```
+
+落点后再检查四项：目录直接文件 ≤12、目标域有公开入口、跨域引用走入口、测试与实现同目录。
+
+### 10.5 门禁与基线
+
+| 门禁 | 命令 | 基线文件 | 规则 |
+|---|---|---|---|
+| 单文件行数 | `pnpm check:lines` | `scripts/.lines-whitelist.json` | 手写 `.ts/.tsx` ≤300 行；260 行预警 |
+| 目录与引用 | `pnpm check:structure` | `scripts/.structure-baseline.json` | 目录 ≤12；多文件 feature 有入口；跨域仅入口；client 不引 `lib/server` |
+| 循环依赖 | `pnpm check:cycles` | `scripts/.cycles-baseline.json` | SCC 与基线一致放行；新增环阻断 |
+| 包方向 / internal | `pnpm lint` | 根 `.eslintrc.cjs` | 包方向与 internal 目录 |
+| 客户端边界 | `pnpm lint` | `apps/web/.eslintrc.json` | feature 不得引用 `lib/server` |
+
+`pnpm check` 串联以上全部。基线只允许下降；新增超标、存量增长、未登记循环均直接失败。
+
+> 跨域深引用为什么由脚本而不是 ESLint：`import/no-restricted-paths` 的 zone 只能表达「目录 A 不能引用目录 B」，无法只放行 `B/index.ts` 与 `B/*/index.ts`；脚本用真实模块解析（支持别名、相对路径与目录 index），零误报。
+
+### 10.6 循环依赖基线（8 个 SCC）
+
+| # | 规模 | 位置 | 说明 |
+|---|---:|---|---|
+| C1 | 9 | `packages/core` services/tools/retrieval | 类型与依赖注入环 |
+| C2 | 7 | `packages/shared` schemas/types | 领域类型环 |
+| C3 | 4 | `packages/shared` constants/i18n | barrel 入口环 |
+| C4 | 4 | `packages/core` agents runner | barrel 与类型环 |
+| C5 | 4 | `apps/web/lib/server` | 调度器与容器装配环 |
+| C6 | 3 | `packages/shared` api/types | SSE 与 flow 类型环 |
+| C7 | 2 | `packages/database` workflow | 两个仓储互引 |
+| C8 | 2 | `apps/web/features/stage` | 工具栏与控制器回调环 |
+
+M0 基线为 9 个；M1-M4 结构收拢后 voice manifest 环消失，现存量 8 个。新增环一律阻断。
+
+### 10.7 新功能检查清单
+
+- [ ] 落点符合 10.4 决策树，目录直接文件 ≤12（超标必须继续分区）。
+- [ ] 多文件 feature 有 `index.ts`；跨域能力放入对应子域 barrel 并登记导出。
+- [ ] 跨域引用只走公开入口；新增依赖对在 10.2 矩阵登记。
+- [ ] 客户端文件没有引用 `lib/server`、`better-sqlite3` 或 Node 内置模块。
+- [ ] 测试与实现同目录；断言覆盖行为而非实现细节。
+- [ ] `pnpm check`、`pnpm test`、`pnpm build:web` 通过；改动页面时对比 First Load JS。
+- [ ] 若新增存量超标目录或循环，先在基线登记原因与到期版本，再提交。

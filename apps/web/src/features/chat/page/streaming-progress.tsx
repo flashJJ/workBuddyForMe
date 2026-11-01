@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   formatLatencySeconds,
   latencyTier,
-} from '../../onboarding/latency-tier';
+} from '@/features/onboarding';
 import type { StreamTiming } from '../types/chat-session.types';
 
 /**

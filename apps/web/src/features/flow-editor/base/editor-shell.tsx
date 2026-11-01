@@ -19,7 +19,7 @@ import { ConfigPanel } from '../panels/config-panel';
 import { DiagnosticsBar } from '../panels/diagnostics-bar';
 import { RunInputDialog } from '../panels/run-input-dialog';
 import { EndpointDialog } from '../endpoint/endpoint-dialog';
-import { ExecutionPanel } from '../../flow-execution/execution-panel';
+import { ExecutionPanel } from '@/features/flow-execution';
 import type { FlowStatusContextValue } from '../panels/flow-status-context';
 import type { FlowCanvasEdge, FlowCanvasNode } from '../canvas/graph-utils';
 

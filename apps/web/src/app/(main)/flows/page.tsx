@@ -1,4 +1,4 @@
-import { FlowsListPage } from '@/features/flows/flows-list-page';
+import { FlowsListPage } from '@/features/flows';
 
 export default async function Page({
   searchParams,

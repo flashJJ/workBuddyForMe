@@ -7,7 +7,7 @@ import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
 import { toOutcome } from '@/lib/runs/run-outcome';
-import { getStageBridge } from '@/features/stage/stage-bridge';
+import { getStageBridge } from '@/features/stage/bridge';
 import { cn } from '@/lib/utils';
 import { AgentRounds } from './agent-rounds';
 import type { AgentCardState, AgentCardStatus } from './agent-run-reducer';

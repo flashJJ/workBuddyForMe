@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSkills } from '@/lib/hooks/capability';
 import { AssistantSwitcher } from '../sidebar/assistant-switcher';
-import { PlanChip } from '../../plans/plan-chip';
+import { PlanChip } from '@/features/plans/chip';
 
 interface Props {
   assistants: Assistant[];

@@ -12,7 +12,7 @@ import {
   MEMORY_RECALL_REASON_LABELS,
   memorySourceHref,
   recallLevelKey,
-} from '../../memory/memory-labels';
+} from '@/features/memory/labels';
 
 /**
  * v2.6 M4：本轮召回的长期记忆 chips。

@@ -8,7 +8,7 @@ import { useEventStage, type EventStage } from '@/features/events/hooks';
 import { useEventTriggers } from '@/features/events/hooks';
 import { useMilestoneScenes } from '@/features/events/hooks';
 import { useContextTriggers } from '@/features/events/hooks';
-import { useSchedulerTick } from '@/features/reminders/use-scheduler-tick';
+import { useSchedulerTick } from '@/features/reminders/tick';
 import { usePreviewEventFromQuery } from '@/features/events/hooks';
 
 export interface UseChatEventsArgs {

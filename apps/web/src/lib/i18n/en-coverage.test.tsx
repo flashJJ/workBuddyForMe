@@ -11,10 +11,10 @@ import { P1_ALLOWED_MISSING_PREFIXES } from './p1-domains';
 import ChatPage from '@/app/(main)/chat/page';
 import TasksPage from '@/app/(main)/tasks/page';
 // v2.5：Next 15 路由页为 async Server Component，客户端严格模式测试改用 feature 组件。
-import { KnowledgePage } from '@/features/knowledge/knowledge-page';
-import { AssistantsPage } from '@/features/assistants/assistants-page';
+import { KnowledgePage } from '@/features/knowledge';
+import { AssistantsPage } from '@/features/assistants';
 import { SettingsPage } from '@/features/settings';
-import { FlowsListPage } from '@/features/flows/flows-list-page';
+import { FlowsListPage } from '@/features/flows';
 import { ConfigPanel } from '@/features/flow-editor/panels';
 import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 

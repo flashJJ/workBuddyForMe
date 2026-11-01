@@ -10,7 +10,7 @@ import {
   type VoiceSettings,
 } from '@wbfm/shared/schemas';
 import { defaultRelationshipBlock, displayLevelOf } from '@wbfm/core/relationship-client';
-import type { VoiceAudioFrame } from '@/features/voice/audio-playback-queue';
+import type { VoiceAudioFrame } from '@/features/voice/runtime';
 import { useEmotionState } from '@/features/avatar';
 import { getPetBridge } from './pet-bridge';
 import { usePetOpenState, usePetVoiceRelay } from './use-pet-voice-relay';

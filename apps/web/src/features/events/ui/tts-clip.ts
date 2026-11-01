@@ -5,7 +5,7 @@
  * AudioPlaybackQueue（不新开音频通道），需把 WAV 字节转成 voice_audio 帧：
  * base64 载荷 + 从 WAV 头解析采样率 + final=true（单段剪辑即一轮）。
  */
-import type { VoiceAudioFrame } from '@/features/voice/audio-playback-queue';
+import type { VoiceAudioFrame } from '@/features/voice/runtime';
 
 /** WAV（PCM）RIFF 头固定布局：采样率在偏移 24 的小端 uint32 */
 const WAV_SAMPLE_RATE_OFFSET = 24;

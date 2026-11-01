@@ -1,13 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { useVoicePlayback } from '../../voice/use-voice-playback';
-import { useVoiceSettings } from '../../voice/use-voice-settings';
-import { useHandsfreeVoice } from '../../voice/use-handsfree-voice';
+import { useHandsfreeVoice, useVoicePlayback, useVoiceSettings } from '@/features/voice/runtime';
+import type { VoiceAudioFrame } from '@/features/voice/runtime';
 import { useProactiveChat, type ProactiveBubble } from './use-proactive-chat';
 import { useChatSession, type ChatSession } from './use-chat-session';
-import { useChatPetRelay } from '../../pet/use-chat-pet-relay';
-import type { VoiceAudioFrame } from '../../voice/audio-playback-queue';
+import { useChatPetRelay } from '@/features/pet/bridge';
 
 interface CompanionArgs {
   assistantId: string;

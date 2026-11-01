@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { PetStage } from '@/features/pet/pet-stage';
-import { readPetModelId } from '@/features/pet/pet-bridge';
-import { usePetBridge } from '@/features/pet/use-pet-bridge';
+import { PetStage } from '@/features/pet';
+import { readPetModelId } from '@/features/pet/bridge';
+import { usePetBridge } from '@/features/pet/bridge';
 
 /**
  * /pet：桌宠窗独立路由（不进 (main) 布局，无侧栏、透明背景）。

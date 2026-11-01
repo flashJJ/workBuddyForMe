@@ -18,8 +18,8 @@ import {
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings } from '@/lib/hooks/provider';
 import { getPetBridge } from './pet-bridge';
-import { TriggerBus } from '@/features/interaction/trigger-bus';
-import { ActionExecutor } from '@/features/interaction/action-executor';
+import { TriggerBus } from '@/features/interaction';
+import { ActionExecutor } from '@/features/interaction';
 import { resolveInteraction } from '@wbfm/shared/schemas';
 import { aggregateWorkSignals, type PetWorkView } from '@wbfm/shared';
 import { PetHitBody, PetHitHead } from './pet-hit-regions';

@@ -3,7 +3,7 @@
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { helpLink } from '@/features/help-center/help-items';
+import { helpLink } from '@/features/help-center/links';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 /** App Router 模块级错误兜底（reset 由 Next 提供） */

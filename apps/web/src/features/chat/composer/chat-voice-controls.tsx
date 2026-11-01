@@ -1,10 +1,12 @@
 'use client';
 
-import { VoiceQuickStartButton } from '../../voice/voice-quick-start-button';
-import { VoiceToggle } from '../../voice/voice-toggle';
-import { MicButton } from '../../voice/mic-button';
-import { HandsfreeMicButton } from '../../voice/handsfree-mic-button';
-import type { HandsfreeVoice } from '../../voice/use-handsfree-voice';
+import {
+  HandsfreeMicButton,
+  MicButton,
+  VoiceQuickStartButton,
+  VoiceToggle,
+} from '@/features/voice/ui';
+import type { HandsfreeVoice } from '@/features/voice/runtime';
 
 interface Props {
   ttsEnabled: boolean;

@@ -1,4 +1,4 @@
-import { AssistantsPage } from '@/features/assistants/assistants-page';
+import { AssistantsPage } from '@/features/assistants';
 
 export default async function Page({
   searchParams,

@@ -1,4 +1,4 @@
-import { AuditPage } from '@/features/audit/audit-page';
+import { AuditPage } from '@/features/audit';
 
 export default function Page() {
   return <AuditPage />;

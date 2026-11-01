@@ -1,0 +1,89 @@
+{
+  "version": "v2.16-M5",
+  "note": "M0 基线为 9 个 SCC；M1-M4 结构收拢后现存量 8 个（voice manifest 环已消失）。新增环一律阻断；存量到期逐域清零。",
+  "cycles": [
+    {
+      "id": "C1",
+      "reason": "core 服务/工具/检索的类型与依赖注入环（P0，待 M5 后逐域拆分）",
+      "modules": [
+        "packages/core/src/ingestion/embedding-target.ts",
+        "packages/core/src/retrieval/retrieval-service.ts",
+        "packages/core/src/services/base/deps.ts",
+        "packages/core/src/services/permission/permission-service.ts",
+        "packages/core/src/session-log/session-log-service.ts",
+        "packages/core/src/skills/skill-service.ts",
+        "packages/core/src/skills/skill-version-service.ts",
+        "packages/core/src/tools/types.ts",
+        "packages/core/src/work-plan/work-plan-service.ts"
+      ]
+    },
+    {
+      "id": "C2",
+      "reason": "shared schemas/types 领域类型环（类型导入与 barrel 转发）",
+      "modules": [
+        "packages/shared/src/schemas/agent/agent.ts",
+        "packages/shared/src/schemas/capability/capability.ts",
+        "packages/shared/src/schemas/flow/flow.ts",
+        "packages/shared/src/types/capability-settings.ts",
+        "packages/shared/src/types/domain.ts",
+        "packages/shared/src/types/memory.ts",
+        "packages/shared/src/types/skill.ts"
+      ]
+    },
+    {
+      "id": "C3",
+      "reason": "shared 常量/i18n 入口互引（barrel 环）",
+      "modules": [
+        "packages/shared/src/constants/index.ts",
+        "packages/shared/src/constants/keyboard-shortcuts.ts",
+        "packages/shared/src/i18n/index.ts",
+        "packages/shared/src/i18n/plural-rules.ts"
+      ]
+    },
+    {
+      "id": "C4",
+      "reason": "core agents runner barrel 与类型环",
+      "modules": [
+        "packages/core/src/agents/index.ts",
+        "packages/core/src/agents/runner/agent-run-service-types.ts",
+        "packages/core/src/agents/runner/agent-run-service.ts",
+        "packages/core/src/agents/runner/index.ts"
+      ]
+    },
+    {
+      "id": "C5",
+      "reason": "web lib/server 调度器与容器装配环",
+      "modules": [
+        "apps/web/src/lib/server/container.ts",
+        "apps/web/src/lib/server/scheduled-agent.ts",
+        "apps/web/src/lib/server/server-scheduler.ts",
+        "apps/web/src/lib/server/task-launcher.ts"
+      ]
+    },
+    {
+      "id": "C6",
+      "reason": "shared api SSE 与 flow 类型环",
+      "modules": [
+        "packages/shared/src/api/index.ts",
+        "packages/shared/src/api/sse.ts",
+        "packages/shared/src/types/flow.ts"
+      ]
+    },
+    {
+      "id": "C7",
+      "reason": "database workflow 两个仓储互相引用",
+      "modules": [
+        "packages/database/src/repositories/workflow/node-execution-repo.ts",
+        "packages/database/src/repositories/workflow/workflow-run-repo.ts"
+      ]
+    },
+    {
+      "id": "C8",
+      "reason": "stage 工具栏与控制器回调环",
+      "modules": [
+        "apps/web/src/features/stage/stage-toolbar.tsx",
+        "apps/web/src/features/stage/use-stage-controller.ts"
+      ]
+    }
+  ]
+}

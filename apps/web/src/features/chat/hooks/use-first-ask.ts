@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { FIRST_ASK_EVENT, takePendingFirstAsk } from '@/features/onboarding/first-ask';
+import { FIRST_ASK_EVENT, takePendingFirstAsk } from '@/features/onboarding';
 
 /**
  * v2.4 M1 T6：消费向导 firstAsk 步选中的示例问题——模型就绪后自动发出一次。

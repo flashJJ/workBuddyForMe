@@ -30,7 +30,7 @@ import { buildAssistantBody, type AssistantFormShape } from './assistant-form-bo
 import { toForm, presetToForm, type AssistantPreset } from './assistant-form-state';
 import { AssistantIdentityFields } from './assistant-identity-fields';
 import { AssistantCardField } from './assistant-card-field';
-import { NumberField } from './number-field';
+import { NumberField } from '@/components/ui/number-field';
 
 interface Props {
   open: boolean;

@@ -16,7 +16,7 @@ import { buildConditionContext } from '../triggers/condition-context';
 import { readLastInteractionMinutes } from '../ui/event-activity';
 import { useEventDirector, type PreviewResult } from '../player/use-event-director';
 // M2: EventDirector ↔ TriggerBus 桥
-import { bridgeEventFire } from '@/features/interaction/event-bridge';
+import { bridgeEventFire } from '@/features/interaction';
 
 export interface UseEventStageArgs {
   /** 当前助手（用量闸门/事件隔离按此 id；切换即重建导演） */

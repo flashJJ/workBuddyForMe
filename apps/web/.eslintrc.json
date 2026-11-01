@@ -40,6 +40,10 @@
           {
             "target": "./**",
             "from": "../../packages/core/**/internal/**"
+          },
+          {
+            "target": "./src/features",
+            "from": "./src/lib/server"
           }
         ]
       }

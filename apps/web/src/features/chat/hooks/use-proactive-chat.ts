@@ -6,7 +6,7 @@ import type { VoiceSettings } from '@wbfm/shared/schemas';
 import { API } from '@/lib/api/endpoints';
 import { withManagedHeaders } from '@/lib/api/client';
 import { SseReader } from '@/lib/api/sse-reader';
-import type { VoiceAudioFrame } from '@/features/voice/audio-playback-queue';
+import type { VoiceAudioFrame } from '@/features/voice/runtime';
 
 /** 主动气泡：skip-history 轮的临时内容，不进消息列表、不持久化 */
 export interface ProactiveBubble {
