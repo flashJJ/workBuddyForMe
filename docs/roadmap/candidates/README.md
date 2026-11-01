@@ -14,4 +14,4 @@
 
 ## 当前候选
 
-暂无未排期候选。v2.17 的两个来源方案已归档到 [scheduled/](../scheduled/)。
+暂无未排期候选。v2.17 的两个来源方案已归档到 [scheduled/](../scheduled/)。v2.18 的五个开源借鉴项已在 [能力借鉴分析](../../plan/v2.18/00-能力借鉴分析.md) 中逐项定级：Diagram Design / HowToLiveBetter 已纳入方案；REA / Moli 仅借思路；ArtCraft 不移植，暂不单独建候选。
