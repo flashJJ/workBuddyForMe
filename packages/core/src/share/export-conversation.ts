@@ -8,7 +8,7 @@ import {
   createAssistantRepository,
 } from '@wbfm/database';
 import { getDataRoot } from '@wbfm/config';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { getAppVersion } from '../backup/app-version';
 import {
   sanitizeSnapshot,

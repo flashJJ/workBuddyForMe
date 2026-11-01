@@ -17,8 +17,8 @@ import {
   type ScheduledTaskView,
 } from '@wbfm/shared/schemas';
 import { ApiError } from '@wbfm/shared/errors';
-import type { ServiceDeps } from '../services/deps';
-import { resolveChatTargetForModelId } from '../chat/model-resolver';
+import type { ServiceDeps } from '../services/base/deps';
+import { resolveChatTargetForModelId } from '../chat/context/model-resolver';
 import { resolveWorkspacePath } from '../governance/workspace';
 import { computeNextRunMs } from './next-run';
 import { isSupportedTimezone } from './next-run';

@@ -20,7 +20,7 @@ import type {
 } from '@wbfm/database';
 import type { McpRegistry } from '../mcp/registry';
 import type { SkillService } from '../skills/skill-service';
-import type { MotionService } from '../services/motion-service';
+import type { MotionService } from '../services/media/motion-service';
 import { buildSamplePack } from './samples';
 import { parseCapabilityZip } from './manifest';
 import {

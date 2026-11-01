@@ -1,4 +1,4 @@
-import type { FlowNodeHandler } from '../types';
+import type { FlowNodeHandler } from '../graph/types';
 
 /**
  * start 节点：输出 { params }，params 为运行时实际入参。

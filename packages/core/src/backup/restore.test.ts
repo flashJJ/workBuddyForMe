@@ -7,7 +7,7 @@ import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { exportBackup } from './export';
 import { restoreBackup, precheckBackup } from './restore';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 import { seedConversationWithMessages, seedConversation, seedIndexedKnowledge, seedKnowledgeBase, seedDarkThemeSetting, seedMixedSettings, seedAttachment, seedSkillFixture, packManifestArchive } from './restore.helpers';
 
 describe('备份恢复（M1）', () => {

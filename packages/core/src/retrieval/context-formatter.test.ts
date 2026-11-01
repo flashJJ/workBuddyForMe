@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fitContextBlock } from './context-formatter';
-import { estimateTokens } from '../chat/context-budget';
-import type { RagChunk } from '../chat/types';
+import { estimateTokens } from '../chat/context/context-budget';
+import type { RagChunk } from '../chat/base/types';
 
 function chunk(i: number, content: string, name = 'doc.txt'): RagChunk {
   return { documentName: name, ordinal: i, content };

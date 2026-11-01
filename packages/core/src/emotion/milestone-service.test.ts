@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDatabase, createSettingsRepository } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { createMilestoneService } from './milestone-service';
 
 const DAY = 86_400_000;

@@ -5,7 +5,7 @@ import {
   recallVectorCandidates,
   searchChunks,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { resolveEmbeddingTarget } from '../ingestion/embedding-target';
 import { diversify, reciprocalRankFusion, type ChannelHits } from './hybrid-fusion';
 import { ruleRerank } from './rule-rerank';

@@ -1,4 +1,4 @@
-import { estimateTokens, truncateToTokens } from '../chat/context-budget';
+import { estimateTokens, truncateToTokens } from '../chat/context/context-budget';
 import { compactJsonStructure } from './compact-json';
 import type { ToolResult } from './types';
 

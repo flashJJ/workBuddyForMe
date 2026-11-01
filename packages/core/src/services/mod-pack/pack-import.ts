@@ -13,7 +13,7 @@ import {
   type ModInstallSummary,
   type StageScenePayload,
 } from '@wbfm/shared/schemas';
-import type { StageSceneService } from '../stage-scene-service';
+import type { StageSceneService } from '../media/stage-scene-service';
 import { packSceneFileSchema, type PackImportResult, type PackPreview } from './pack-types';
 import { rewriteCardName, uniqueCopyName } from './pack-names';
 

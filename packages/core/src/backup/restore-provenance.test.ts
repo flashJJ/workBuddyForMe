@@ -15,7 +15,7 @@ import { exportBackup } from './export';
 import { precheckBackup, restoreBackup } from './restore';
 import { restoreProvenance } from './restore-provenance';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 
 describe('v2.6 备份恢复（events 轨：记忆 + 会议结论 + 行动项）', () => {
   let srcDb: DatabaseInstance;

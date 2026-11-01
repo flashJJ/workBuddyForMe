@@ -1,4 +1,4 @@
-import type { ResolvedChatTarget } from '../chat/model-resolver';
+import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 
 export interface CompleteTextParams {
   system: string;

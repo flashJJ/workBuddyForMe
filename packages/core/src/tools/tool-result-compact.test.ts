@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateTokens } from '../chat/context-budget';
+import { estimateTokens } from '../chat/context/context-budget';
 import {
   compactToolOutput,
   compactToolResultForModel,

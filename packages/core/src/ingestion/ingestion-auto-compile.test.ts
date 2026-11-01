@@ -12,7 +12,7 @@ import {
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
-import { createSettingsService } from '../services/settings-service';
+import { createSettingsService } from '../services/settings/settings-service';
 import { resetCompileQueueServiceForTest } from '../knowledge/compile-queue-service';
 import { createIngestionPipeline } from './ingestion-pipeline';
 

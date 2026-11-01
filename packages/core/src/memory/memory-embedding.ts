@@ -1,4 +1,4 @@
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { resolveEmbeddingTarget } from '../ingestion/embedding-target';
 
 /** 批量文本嵌入：未配置嵌入模型或空输入返回 null；向量条数与输入不一致直接抛错 */

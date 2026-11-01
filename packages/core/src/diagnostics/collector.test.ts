@@ -7,7 +7,7 @@ import {
   createTaskRunRepository,
 } from '@wbfm/database';
 import { createAuditService } from '../governance/audit';
-import { DEFAULT_SETTINGS } from '../services/settings-service';
+import { DEFAULT_SETTINGS } from '../services/settings/settings-service';
 import { collectDiagnostics } from './collector';
 
 const SENTINEL = 'sk-sentinel-secret-should-not-leak';

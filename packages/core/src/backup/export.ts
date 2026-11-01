@@ -5,7 +5,7 @@ import {
   backupManifestSchema,
   type BackupManifest,
 } from '@wbfm/shared/backup';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import {
   createConversationRepository,
   createMessageRepository,

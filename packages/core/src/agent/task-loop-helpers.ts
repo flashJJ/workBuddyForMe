@@ -8,8 +8,8 @@ import {
   type TaskStopReason,
 } from '@wbfm/shared/schemas';
 import { createTaskRunRepository } from '@wbfm/database';
-import { createAttachmentService } from '../services/attachment-service';
-import type { ServiceDeps } from '../services/deps';
+import { createAttachmentService } from '../services/assistant/attachment-service';
+import type { ServiceDeps } from '../services/base/deps';
 import type { ToolRuntime } from '../tools/tool-runtime';
 import type { ToolContext } from '../tools/types';
 import { executeToolCall } from '../tools/tool-executor';

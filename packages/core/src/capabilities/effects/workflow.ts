@@ -6,7 +6,7 @@ import {
   type CapabilityManifest,
 } from '@wbfm/shared/schemas';
 import type { WorkflowRepository } from '@wbfm/database';
-import { compileFlow } from '../../flow/compiler';
+import { compileFlow } from '../../flow/compiler/compiler';
 
 export interface WorkflowEffectDeps {
   workflows: WorkflowRepository;

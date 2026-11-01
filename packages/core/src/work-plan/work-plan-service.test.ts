@@ -10,7 +10,7 @@ import {
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../secrets/cipher';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { createWorkPlanService } from './work-plan-service';
 import { buildPlanPromptBlock } from './plan-prompt';
 import { createRunCompletionService } from './run-completion';

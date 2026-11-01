@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../secrets/cipher';
-import type { ServiceDeps } from '../services/deps';
-import { createConversationService } from '../services/conversation-service';
+import type { ServiceDeps } from '../services/base/deps';
+import { createConversationService } from '../services/assistant/conversation-service';
 import { createSessionLogService } from './session-log-service';
 import { createSessionExportService } from './export-session';
 

@@ -3,7 +3,7 @@ import type { AgentRunView, FlowEventPayload, TaskEventPayload, TaskRunView, Wor
 import { applyFlowEvent } from './map-flow';
 import { applyTaskEvent } from './map-task';
 import { applyAgentEvent } from './map-agent';
-import type { AgentRunEvent } from '../agents/agent-runner';
+import type { AgentRunEvent } from '../agents/runner/agent-runner';
 
 const taskRun: TaskRunView = {
   id: 't1',

@@ -12,7 +12,7 @@ import {
   listChunkVectorsByKb,
   recallVectorCandidates,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { detectConflicts, type ConflictItem } from './conflict-detector';
 import {
   detectDuplicatePairs,

@@ -1,41 +1,6 @@
-/** @域 barrel 对话编排/预算/压缩（v1.1 M2 域子路径化） */
-export { createChatOrchestrator, type ChatOrchestrator } from './chat-orchestrator';
-export {
-  PROACTIVE_HISTORY_MESSAGES,
-  PROACTIVE_TRIGGER_PROMPT,
-  PROACTIVE_MESSAGE_PREFIX,
-  createProactiveMessageId,
-  createProactiveTurn,
-  type StreamProactiveInput,
-} from './proactive-turn';
-export { resolveChatTarget, resolveChatTargetForModelId, type ResolvedChatTarget } from './model-resolver';
-export { buildChatMessages, buildSystemPrompt, type ChatBudgetOptions, type BuildPromptOptions } from './prompt';
-export { buildPersonaBlock } from './persona-prompt';
-export {
-  estimateTokens,
-  estimateMessageTokens,
-  assembleHistoryWithinBudget,
-  resolveReserveTokens,
-  resolveToolMessageBudget,
-  IMAGE_TOKEN_ESTIMATE,
-  type HistoryBudgetStats,
-} from './context-budget';
-export {
-  planCompaction,
-  buildSummaryMessages,
-  normalizeSummary,
-  summarizeConversation,
-  type CompactionPlan,
-  type CompactionPlanInput,
-} from './summarizer';
-export { compactIfNeeded, type CompactionResult } from './turn-context';
-export { runProviderTurn, type ProviderTurn, type TurnParams } from './tool-runner';
-export { ORCHESTRATOR_EVENT_NAMES, type OrchestratorEventName } from './types';
-export type {
-  OrchestratorEvent,
-  StreamChatInput,
-  RagChunk,
-  RagContext,
-  RagRetriever,
-  StreamResult,
-} from './types';
+/** @域 barrel 对话编排：按子域聚合（纯 re-export） */
+export * from './orchestrator';
+export * from './context';
+export * from './tools';
+export * from './turns';
+export * from './base';

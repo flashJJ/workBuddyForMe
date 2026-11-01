@@ -1,5 +1,5 @@
 import type { OcrEngine } from '@wbfm/shared/constants';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import {
   detectKind,
   isImagePdf,

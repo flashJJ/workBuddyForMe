@@ -1,4 +1,4 @@
-import type { FlowNodeHandler } from '../types';
+import type { FlowNodeHandler } from '../graph/types';
 import {
   evaluateCondition,
   type ConditionMatch,

@@ -8,7 +8,7 @@ import { MEETING_LIMITS } from '@wbfm/shared/schemas';
 import type { MeetingMessageRecord, MeetingRecord } from '@wbfm/shared/types';
 import type { MeetingRepository } from '@wbfm/database';
 import { zhCN } from '@wbfm/shared/i18n';
-import type { RunEventBus } from '../agents/run-event-bus';
+import type { RunEventBus } from '../agents/runtime/run-event-bus';
 import type { MeetingServiceDeps } from './meeting-types';
 import type { MeetingEvent } from './meeting-types';
 import {

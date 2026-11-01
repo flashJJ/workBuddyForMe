@@ -10,7 +10,7 @@ import {
 } from '@wbfm/database';
 import { setDataRootForTest, resetDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 import { exportBackup } from './export';
 import { precheckBackup, restoreBackup } from './restore';
 import {

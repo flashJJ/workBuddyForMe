@@ -5,8 +5,8 @@ import {
   createProviderRepository,
   createSettingsRepository,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
-import { buildProvider } from '../services/provider-adapter';
+import type { ServiceDeps } from '../services/base/deps';
+import { buildProvider } from '../services/provider/provider-adapter';
 
 const SETTINGS_KEY = 'app-settings';
 

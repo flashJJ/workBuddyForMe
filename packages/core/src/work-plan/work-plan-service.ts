@@ -11,7 +11,7 @@ import type {
   WorkPlanUpdateInput,
   WorkPlanView,
 } from '@wbfm/shared/schemas';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 
 /**
  * v2.8 会话目标 / 计划 / 待办服务。

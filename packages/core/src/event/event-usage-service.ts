@@ -8,7 +8,7 @@ import {
   type EventUsageRepository,
   type EventUsageStats,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 
 /** 启动时清理的流水保留期：90 天 */
 export const EVENT_USAGE_RETENTION_MS = 90 * 24 * 3600_000;

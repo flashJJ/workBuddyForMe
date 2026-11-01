@@ -3,7 +3,7 @@ import type { WorkflowEndpointView } from '@wbfm/shared/types';
 import { APP_VERSION } from '@wbfm/shared/version';
 import type { WorkflowRepository } from '@wbfm/database';
 import { readFlowStartFields, validateFlowStartInput } from '../../serving/start-input';
-import type { FlowRunService } from '../../flow/run-service';
+import type { FlowRunService } from '../../flow/run/run-service';
 import { describeFlowAsMcpTool } from './describe-tool';
 import {
   McpInvalidParamsError,

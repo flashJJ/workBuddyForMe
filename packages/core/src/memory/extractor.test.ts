@@ -4,7 +4,7 @@ import {
   extractTurnMemories,
   parseExtractedMemories,
 } from './extractor';
-import type { ResolvedChatTarget } from '../chat/model-resolver';
+import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 
 function targetWithStream(chunks: string[]): ResolvedChatTarget {
   const chatStream = vi.fn(async function* () {

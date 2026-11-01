@@ -14,8 +14,8 @@ import {
   localDayKey,
   type RelationshipMilestoneRecord,
 } from '@wbfm/shared/schemas';
-import type { ServiceDeps } from '../services/deps';
-import { createSettingsService } from '../services/settings-service';
+import type { ServiceDeps } from '../services/base/deps';
+import { createSettingsService } from '../services/settings/settings-service';
 import { evaluateMilestones, type MilestoneStats } from './milestone';
 
 export interface MilestoneService {

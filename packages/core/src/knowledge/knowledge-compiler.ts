@@ -17,7 +17,7 @@ import {
   type CompilationInput,
   type CompileEntityInput,
 } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { extractRuleEntities } from './entity-extractor';
 import { locateContexts } from './locate-mentions';
 import { extractRuleSummary } from './rule-extractor';

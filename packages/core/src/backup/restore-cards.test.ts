@@ -10,13 +10,13 @@ import {
   parseCharacterCard,
 } from '@wbfm/shared/character-card';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 import { exportBackup } from './export';
 import { precheckBackup, restoreBackup } from './restore';
 import { packTarGz } from './export-archive';
 import { backupManifestSchema } from '@wbfm/shared/backup';
 import { ApiError } from '@wbfm/shared/errors';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 
 const CUSTOM_CARD_MD = `---
 name: 备份测试卡

@@ -1,5 +1,5 @@
 import type { TokenUsage } from '@wbfm/ai';
-import type { FlowNodeHandler } from '../types';
+import type { FlowNodeHandler } from '../graph/types';
 
 /**
  * llm 节点：一次性（非逐 token）调用对话模型，累积完整文本。

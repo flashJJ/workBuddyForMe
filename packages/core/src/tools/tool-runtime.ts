@@ -1,6 +1,6 @@
 import type { Assistant, PermissionLevel } from '@wbfm/shared/types';
 import { parseFlowToolName } from '@wbfm/shared/schemas';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/retrieval-service';
 import { createMcpTool } from '../mcp/mcp-tool';
 import type { Tool, ToolContext, ToolMap } from './types';

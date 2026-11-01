@@ -6,7 +6,7 @@ import {
   type BackupTrack,
   type BackupProgressEvent,
 } from '@wbfm/shared/backup';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversations, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
@@ -37,7 +37,7 @@ import { determineTracks } from './restore-track-select';
 import { extractArchiveFull } from './restore-archive';
 import { createScheduledTaskRepository } from '@wbfm/database';
 import { computeNextRunMs } from '../scheduler/next-run';
-import { ensureSeedData, migrateLegacySystemPrompts } from '../services/seed';
+import { ensureSeedData, migrateLegacySystemPrompts } from '../services/base/seed';
 
 export interface BackupRestoreOptions {
   /** 指定恢复轨道；不传则恢复 manifest 中有数据的全部轨道 */

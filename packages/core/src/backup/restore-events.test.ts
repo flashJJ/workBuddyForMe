@@ -8,11 +8,11 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/seed';
+import { ensureSeedData } from '../services/base/seed';
 import { computeNextRunMs } from '../scheduler/next-run';
 import { exportBackup } from './export';
 import { restoreBackup, precheckBackup } from './restore';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 
 /** v1.7 events 轨 roundtrip：自定义助手（含人格）+ 提醒 + 演出流水 */
 describe('备份 events 轨（v1.7）', () => {

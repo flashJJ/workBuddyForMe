@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDatabase } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { createEmotionService } from './emotion-service';
 
 const T0 = Date.UTC(2026, 9, 12, 8, 0, 0);

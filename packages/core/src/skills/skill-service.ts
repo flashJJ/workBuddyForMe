@@ -3,7 +3,7 @@ import { type SkillDiskEntry, type SkillInfo, type SkillManifest } from '@wbfm/s
 import type { SkillVersionsResponse, SkillVersionDeleteResponse } from '@wbfm/shared/schemas';
 import { getDataDir } from '@wbfm/config';
 import { createSkillStateRepository, type SkillStateRepository } from '@wbfm/database';
-import type { ServiceDeps } from '../services/deps';
+import type { ServiceDeps } from '../services/base/deps';
 import { loadSkillsFromDisk } from './loader';
 import { ensureBuiltinSkills } from './builtin-skills';
 import { createSkillVersionService } from './skill-version-service';
