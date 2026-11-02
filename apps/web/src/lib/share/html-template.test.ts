@@ -117,6 +117,35 @@ describe('renderConversationHtml（M2）', () => {
     expect(html).toContain('class="tool error"');
   });
 
+  it('工具证据：来源/覆盖/未覆盖/采集时间渲染并转义', () => {
+    const html = renderConversationHtml(
+      baseSnapshot({
+        messages: [
+          {
+            role: 'assistant', content: '', createdAt: '', parts: [], citations: [],
+            toolTrace: [
+              {
+                callId: 't1', tool: 'fetch_webpage', argsSummary: '', status: 'error',
+                durationMs: 100, error: 'HTTP 404', resultSummary: '', startedAt: '',
+                evidence: {
+                  source: 'https://a.com/<b>x</b>',
+                  coverage: '未获取正文',
+                  limitations: ['抓取失败：HTTP 404'],
+                  capturedAt: '2026-11-02T08:00:00.000Z',
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(html).toContain('class="line evidence"');
+    expect(html).toContain('来源：https://a.com/&lt;b&gt;x&lt;/b&gt;');
+    expect(html).toContain('覆盖：未获取正文');
+    expect(html).toContain('未覆盖：抓取失败：HTTP 404');
+    expect(html).toContain('采集于 2026-11-02 08:00');
+  });
+
   it('引用角标可点击 + 摘要 details 可展开 + 原文链接', () => {
     const html = renderConversationHtml(
       baseSnapshot({

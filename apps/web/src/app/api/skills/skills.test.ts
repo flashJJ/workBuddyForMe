@@ -61,9 +61,11 @@ describe('技能管理路由（v0.6 M3）', () => {
 
     const listed = await listSkills(new Request('http://x'));
     const data = (await listed.json()).data;
-    // 内置 3 个 + 用户投放 1 个
+    // 内置 5 个 + 用户投放 1 个
     expect(data.map((s: { name: string }) => s.name).sort()).toEqual([
+      'diagram-design',
       'file-search',
+      'life-decision-guide',
       'meeting-notes',
       'my-skill',
       'weekly-report',

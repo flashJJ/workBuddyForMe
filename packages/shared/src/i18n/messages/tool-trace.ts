@@ -31,6 +31,14 @@ export const zhToolTrace = {
     write: '写',
     danger: '危险',
   },
+  evidence: {
+    badge: '证据',
+    title: '证据',
+    source: '来源',
+    coverage: '覆盖',
+    limitations: '未覆盖',
+    capturedAt: '采集于 {time}',
+  },
   substepsAria: '{name}子步骤',
   artifact: {
     preview: '预览',
@@ -84,6 +92,14 @@ export const enToolTrace = {
     read: 'Read',
     write: 'Write',
     danger: 'Danger',
+  },
+  evidence: {
+    badge: 'Evidence',
+    title: 'Evidence',
+    source: 'Source',
+    coverage: 'Coverage',
+    limitations: 'Not covered',
+    capturedAt: 'Captured {time}',
   },
   substepsAria: '{name} substeps',
   artifact: {

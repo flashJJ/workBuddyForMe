@@ -3,6 +3,7 @@ import type {
   ArtifactWriteInput,
   Citation,
   PermissionLevel,
+  ToolEvidence,
   ToolSubstep,
 } from '@wbfm/shared/types';
 import type { WebSearchInput, WebSearchResponse } from '@wbfm/shared/types';
@@ -90,6 +91,8 @@ export interface ToolResult {
   substeps?: ToolSubstep[];
   /** v2.18：本次调用产出的文件（对话产物卡片展示） */
   artifacts?: ArtifactRef[];
+  /** v2.18 M5：出处/覆盖/未覆盖（只展示，不入模） */
+  evidence?: ToolEvidence;
 }
 
 /** 工具统一接口（v0.6：内置与 MCP 工具同构；name 为全局限定名） */

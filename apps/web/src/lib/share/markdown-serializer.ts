@@ -85,6 +85,22 @@ export function serializeMarkdown(
       if (t.status === 'error' && t.error) {
         lines.push(`> ${tt('share.errorLine', { text: t.error })}`);
       }
+      if (t.evidence) {
+        lines.push(`> ${tt('share.evidenceSource', { text: t.evidence.source })}`);
+        if (t.evidence.coverage) {
+          lines.push(`> ${tt('share.evidenceCoverage', { text: t.evidence.coverage })}`);
+        }
+        if (t.evidence.limitations?.length) {
+          lines.push(
+            `> ${tt('share.evidenceLimitations', { text: t.evidence.limitations.join('；') })}`,
+          );
+        }
+        if (t.evidence.capturedAt) {
+          lines.push(
+            `> ${tt('share.evidenceCapturedAt', { time: formatTime(t.evidence.capturedAt) })}`,
+          );
+        }
+      }
       lines.push('');
     }
 

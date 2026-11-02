@@ -39,6 +39,8 @@ export async function executeToolCall(
       ...(result.citations ? { citations: result.citations } : {}),
       ...(result.images?.length ? { images: result.images } : {}),
       ...(result.substeps?.length ? { substeps: result.substeps } : {}),
+      ...(result.artifacts?.length ? { artifacts: result.artifacts } : {}),
+      ...(result.evidence ? { evidence: result.evidence } : {}),
     };
   } catch (error) {
     const durationMs = Date.now() - start;
@@ -47,6 +49,12 @@ export async function executeToolCall(
         ok: false,
         output: `工具 ${tool.name} 参数错误：${error.message}。请检查参数后重试，或直接回答用户。`,
         summary: `参数错误：${error.message}`,
+        evidence: {
+          source: tool.name,
+          coverage: '未执行',
+          limitations: [`参数错误：${error.message}`],
+          capturedAt: new Date().toISOString(),
+        },
       };
     }
     const aborted = ctx.signal?.aborted;
@@ -57,6 +65,12 @@ export async function executeToolCall(
       ok: false,
       output: `工具 ${tool.name} ${reason}：${detail}`,
       summary: `${reason}`,
+      evidence: {
+        source: tool.name,
+        coverage: '未完成',
+        limitations: [`${reason}：${detail}`],
+        capturedAt: new Date().toISOString(),
+      },
     };
   }
 }

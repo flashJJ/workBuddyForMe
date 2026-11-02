@@ -31,6 +31,11 @@ describe('knowledge_search 工具', () => {
   it('未绑定知识库：ok:false 提示，不调用检索', async () => {
     const result = await executeToolCall(knowledgeSearchTool, { query: '年假' }, noKb);
     expect(result).toMatchObject({ ok: false, summary: '未绑定知识库' });
+    expect(result.evidence).toMatchObject({
+      source: '未绑定知识库',
+      coverage: '未执行检索',
+      limitations: ['助手未绑定知识库'],
+    });
   });
 
   it('缺少 query：参数错误', async () => {
@@ -57,6 +62,10 @@ describe('knowledge_search 工具', () => {
     expect(result.ok).toBe(true);
     expect(result.output).toContain('年假为 5 天');
     expect(result.summary).toContain('命中 1 个片段');
+    expect(result.evidence).toMatchObject({
+      source: '知识库文档：员工手册.pdf',
+      coverage: '命中 1 个片段（请求 4）',
+    });
     expect(result.citations).toEqual([
       {
         documentId: 'd1',
@@ -78,6 +87,8 @@ describe('knowledge_search 工具', () => {
     expect(result.ok).toBe(true);
     expect(result.output).toContain('未检索到');
     expect(result.citations).toBeUndefined();
+    expect(result.evidence?.coverage).toBe('0 个片段（请求 4）');
+    expect(result.evidence?.limitations).toEqual(['未检索到相关片段']);
   });
 });
 

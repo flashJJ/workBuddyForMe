@@ -6,6 +6,21 @@
 import type { ArtifactFormat } from '../constants/tools';
 import type { PermissionLevel } from './permission';
 
+/**
+ * v2.18 M5：工具结果的出处与覆盖范围。
+ * 只做 UI/导出展示，不进入模型上下文（ToolResult.output 才入模）。
+ */
+export interface ToolEvidence {
+  /** 来源：搜索服务名、最终 URL、知识库文档名等 */
+  source: string;
+  /** 覆盖范围：结果条数/片段数/正文字符数/HTTP 状态等 */
+  coverage?: string;
+  /** 未覆盖或限制：空结果、超时、截断、失败原因等 */
+  limitations?: string[];
+  /** 采集时间（ISO） */
+  capturedAt?: string;
+}
+
 /** v2.18 产物引用：只暴露展示/下载所需元数据，不含磁盘路径 */
 export interface ArtifactRef {
   attachmentId: string;
@@ -101,6 +116,8 @@ export interface ToolTraceEntry {
   modelTokens?: number;
   /** v2.18：本次工具调用产出的可交付文件（产物卡片展示） */
   artifacts?: ArtifactRef[];
+  /** v2.18 M5：出处/覆盖/未覆盖（tool-trace 与分享导出展示） */
+  evidence?: ToolEvidence;
 }
 
 /** SSE tool 事件载荷：start / substep（v0.8 流式子步骤）/ end 三阶段 */
@@ -132,4 +149,6 @@ export type ToolEventPayload =
       substeps?: ToolSubstep[];
       /** v2.18：产物卡片数据 */
       artifacts?: ArtifactRef[];
+      /** v2.18 M5：证据元数据（历史消息与实时流一致） */
+      evidence?: ToolEvidence;
     };

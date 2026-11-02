@@ -105,6 +105,18 @@ export function sanitizeSnapshot(snapshot: ConversationSnapshot, dataRoot?: stri
         argsSummary: scrub(t.argsSummary),
         resultSummary: scrub(t.resultSummary),
         error: t.error ? scrub(t.error) : undefined,
+        ...(t.evidence
+          ? {
+              evidence: {
+                ...t.evidence,
+                source: scrub(t.evidence.source),
+                ...(t.evidence.coverage ? { coverage: scrub(t.evidence.coverage) } : {}),
+                ...(t.evidence.limitations
+                  ? { limitations: t.evidence.limitations.map(scrub) }
+                  : {}),
+              },
+            }
+          : {}),
       })),
       citations: m.citations.map((c) => ({
         ...c,

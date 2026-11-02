@@ -105,6 +105,11 @@ function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+/** v2.18 M5：证据采集时间（ISO → 本地可读，保留到秒） */
+function formatCapturedAt(iso: string): string {
+  return iso.replace('T', ' ').slice(0, 19);
+}
+
 function SubstepRow({ step }: { step: ToolSubstep }) {
   return (
     <li className="flex items-start gap-1.5 pl-5 leading-tight">
@@ -159,6 +164,14 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
         <span className="shrink-0 font-medium">{label}</span>
         {entry.source && <Badge variant={SOURCE_VARIANT[entry.source] ?? 'outline'} className="px-1.5 py-0 text-[10px]">{sourceLabel(entry.source, t)}</Badge>}
         {entry.permission && <Badge variant={PERMISSION_VARIANT[entry.permission]} className="px-1.5 py-0 text-[10px]">{t(PERMISSION_LABEL_KEYS[entry.permission])}</Badge>}
+        {entry.evidence && (
+          <Badge
+            variant={entry.evidence.limitations?.length ? 'warning' : 'outline'}
+            className="shrink-0 px-1.5 py-0 text-[10px]"
+          >
+            {t('toolTrace.evidence.badge')}
+          </Badge>
+        )}
         {entry.argsSummary && (
           <span className="min-w-0 flex-1 truncate text-muted-foreground">{entry.argsSummary}</span>
         )}
@@ -215,6 +228,38 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
             <dt className="w-16 shrink-0">{t('toolTrace.detail.result')}</dt>
             <dd className={cn('break-all', failed && 'text-destructive')}>{entry.resultSummary}</dd>
           </div>
+          {entry.evidence && (
+            <div className="mt-1 space-y-1 border-t pt-1" data-testid="tool-evidence">
+              <div className="flex gap-2">
+                <dt className="w-16 shrink-0">{t('toolTrace.evidence.source')}</dt>
+                <dd className="min-w-0 break-all">{entry.evidence.source}</dd>
+              </div>
+              {entry.evidence.coverage && (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0">{t('toolTrace.evidence.coverage')}</dt>
+                  <dd className="min-w-0 break-words">{entry.evidence.coverage}</dd>
+                </div>
+              )}
+              {entry.evidence.limitations && entry.evidence.limitations.length > 0 && (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0">{t('toolTrace.evidence.limitations')}</dt>
+                  <dd className="min-w-0 break-words text-warning">
+                    {entry.evidence.limitations.join('；')}
+                  </dd>
+                </div>
+              )}
+              {entry.evidence.capturedAt && (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0">{t('toolTrace.evidence.title')}</dt>
+                  <dd className="min-w-0 text-muted-foreground">
+                    {t('toolTrace.evidence.capturedAt', {
+                      time: formatCapturedAt(entry.evidence.capturedAt),
+                    })}
+                  </dd>
+                </div>
+              )}
+            </div>
+          )}
         </dl>
       )}
     </div>

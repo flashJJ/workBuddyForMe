@@ -40,6 +40,7 @@ export type { ContentPart, TextContentPart, ImageContentPart } from './content-p
 export type {
   ArtifactRef,
   ArtifactWriteInput,
+  ToolEvidence,
   ToolTraceEntry,
   ToolEventPayload,
   ToolCallStatus,
