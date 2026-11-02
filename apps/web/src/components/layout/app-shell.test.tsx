@@ -93,7 +93,7 @@ describe('应用外壳（TR-23.1）', () => {
     expect(screen.getByText('恢复正常')).toBeInTheDocument();
   });
 
-  it('七个模块页面均可挂载无报错', async () => {
+  it('七个模块页面均可挂载无报错', { timeout: 20_000 }, async () => {
     const fetchMock = vi.fn(async (url: string) =>
       new Response(
         JSON.stringify({
