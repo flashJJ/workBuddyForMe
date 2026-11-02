@@ -211,6 +211,7 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'capability_install',
       'capability_search',
       'current_time',
+      'diagram_render',
       'fetch_webpage',
       'keyboard_press',
       'keyboard_type',

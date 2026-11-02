@@ -6,12 +6,13 @@ import { BUILTIN_SKILLS, ensureBuiltinSkills } from './builtin-skills';
 import { loadSkillsFromDisk } from './loader';
 
 describe('内置示例技能播种（v0.6 M3）', () => {
-  it('首次播种生成周报/纪要/文件检索三个技能，manifest 可被 loader 校验通过', () => {
+  it('首次播种生成周报/纪要/文件检索/图表四个技能，manifest 可被 loader 校验通过', () => {
     const dir = mkdtempSync(join(tmpdir(), 'wbfm-skills-seed-'));
     ensureBuiltinSkills(dir);
 
     const entries = loadSkillsFromDisk(dir);
     expect(entries.map((e) => e.name).sort()).toEqual([
+      'diagram-design',
       'file-search',
       'meeting-notes',
       'weekly-report',

@@ -12,6 +12,8 @@ export const TOOL_NAMES = [
   'capability_install',
   // v2.18 M1 产物文件（write）
   'artifact_write',
+  // v2.18 M2 结构化图表（write，渲染后落盘）
+  'diagram_render',
   // v0.7 M2 键鼠 / 窗口 / UIA
   'mouse_move',
   'mouse_click',
