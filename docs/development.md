@@ -44,6 +44,7 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 - 错误码：唯一事实源 `packages/shared/src/errors/error-codes.ts`；路由层经 `toErrorResponse` 归一（业务错误 / ProviderError / Zod 422 / 兜底 500）。
 - 数据迁移：「读兼容、写收敛」——读取允许旧字段别名兜底，新写入只落规范字段。
 - 外部请求：统一 ai 包 HTTP 底座（超时/退避/认证注入/错误归一化，5xx 重试耗尽→PROVIDER_ERROR，超时→PROVIDER_TIMEOUT，SSE 不重试），禁止前端直连供应商。
+- 文档 ASCII 图：按终端显示列宽对齐（中文/全角/emoji 双宽，ASCII 单宽），禁止按字符数手数空格；提交前跑 `node scripts/check-ascii-width.mjs`，规范见 `.trae/skills/ascii-diagram-alignment/SKILL.md`。
 
 ## 包发布形态（exports 条件）
 

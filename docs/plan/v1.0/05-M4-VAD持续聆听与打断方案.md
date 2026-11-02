@@ -70,26 +70,26 @@
 ### 3.1 分层
 
 ```
-┌──────────────────────────── 浏览器渲染进程（离线） ───────────────────────────┐
-│                                                                              │
-│  AudioWorklet(vad-capture)          纯 TS 可单测（音频时钟驱动，无 DOM/rAF）  │
-│  16k 单声道 PCM 帧 + 每帧 RMS  ──▶  VadDetector（状态机/底噪/双阈值/门控）    │
-│                                            │ 决策：candidate/start/end/discard│
-│                                            ▼                                 │
-│                              AsrTurnTracker（turnId/超时/单飞/单槽排队）      │
-│                                            │ speech-end 段                    │
-│                                            ▼                                 │
-│              useHandsfreeVoice（编排）：16k WAV → POST /api/voice/asr        │
-│                                            │                                 │
-│        speech-start（且助手在播）─▶ playback.cancel(epoch++) + streamStop()   │
-│                                  ◀── 播放门控输入：isSpeaking / lastStopAt    │
-│                                            │                                 │
+┌──────────────────────────── 浏览器渲染进程（离线） ────────────────────────────┐
+│                                                                                │
+│  AudioWorklet(vad-capture)          纯 TS 可单测（音频时钟驱动，无 DOM/rAF）   │
+│  16k 单声道 PCM 帧 + 每帧 RMS  ──▶  VadDetector（状态机/底噪/双阈值/门控）     │
+│                                            │ 决策：candidate/start/end/discard │
+│                                            ▼                                   │
+│                              AsrTurnTracker（turnId/超时/单飞/单槽排队）       │
+│                                            │ speech-end 段                     │
+│                                            ▼                                   │
+│              useHandsfreeVoice（编排）：16k WAV → POST /api/voice/asr          │
+│                                            │                                   │
+│        speech-start（且助手在播）─▶ playback.cancel(epoch++) + streamStop()    │
+│                                  ◀── 播放门控输入：isSpeaking / lastStopAt     │
+│                                            │                                   │
 │                            识别文本非空 ─▶ session.send(text)（新一轮）        │
-└──────────────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────────────┘
                                             │ HTTP（本机）
-┌──────────────────────────── 服务端（零改动） ────────────────────────────────┐
+┌──────────────────────────── 服务端（零改动） ─────────────────────────────────┐
 │  /api/voice/asr（SenseVoice，已有）  /api/chat/stream（abort 透传，已有）     │
-└──────────────────────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 为什么 VAD 放浏览器端（vad-web）而不是服务端 Silero
