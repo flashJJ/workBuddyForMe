@@ -14,18 +14,15 @@ import {
 } from '@wbfm/database';
 import { getCompileQueueService } from '../knowledge/compile-queue-service';
 import type { ServiceDeps } from '../services/base/deps';
-import { chunkText } from './chunking';
+import { chunkDocument } from './structure';
 import { resolveEmbeddingTarget } from './embedding-target';
 import { extractDocumentText } from './extract-with-ocr';
 import {
   fallbackParsedDocument,
-  mapChunkStructure,
-  toStructuredText,
   type ParsedDocument,
 } from './structure';
 import {
   assemblePlainText,
-  mapChunkCoordinates,
   type StructuredText,
 } from './text-structure';
 import type { IngestInput, IngestResult } from './types';
@@ -81,7 +78,6 @@ export function createIngestionPipeline(deps: ServiceDeps) {
           '结构解析结果缺失，已按纯文本块处理',
         ]);
         text = parsed.text;
-        structure = toStructuredText(parsed);
       } catch (error) {
         const message = error instanceof Error ? error.message : '文档解析失败';
         documents.setStatus(documentId, 'failed', {
@@ -92,7 +88,7 @@ export function createIngestionPipeline(deps: ServiceDeps) {
       }
       if (!text.trim()) return fail(documentId, ERROR_EMPTY);
 
-      const slices = chunkText(text, {
+      const slices = chunkDocument(parsed, {
         chunkSize: knowledgeBase.chunkSize,
         chunkOverlap: knowledgeBase.chunkOverlap,
       });
@@ -127,16 +123,9 @@ export function createIngestionPipeline(deps: ServiceDeps) {
         // 状态置 queued），保证提交后检索不会读到上一版内容的静态事实
         compileWrite.purgeForReingest(documentId);
 
-        const coordinates = mapChunkCoordinates(slices, structure.blocks);
-        const structureHints = mapChunkStructure(slices, parsed);
         const stored = chunks.bulkInsert(
           documentId,
-          slices.map((slice, ordinal) => ({
-            ordinal,
-            ...slice,
-            ...coordinates[ordinal],
-            ...structureHints[ordinal],
-          })),
+          slices.map((slice, ordinal) => ({ ordinal, ...slice })),
         );
         blocks.deleteByDocument(documentId);
         blocks.bulkInsert(documentId, parsed.blocks);

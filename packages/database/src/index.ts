@@ -21,10 +21,10 @@ export {
   normalizeVector,
   VECTOR_DIM_META_KEY,
   type ChunkVectorRow,
-  type ChunkSearchResult,
   type ChunkCandidate,
   type ChunkVectorScanRow,
 } from './vector';
+export { type ChunkSearchResult } from './chunk-detail';
 export {
   ensureMemoryVectorTable,
   getMemoryVectorDimension,

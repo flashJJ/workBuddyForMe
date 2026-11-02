@@ -69,6 +69,11 @@ function chunkToRagChunk(chunk: RetrievedChunk): RagChunk {
     paragraphNo: chunk.paragraphNo ?? null,
     charStart: chunk.charStart,
     charEnd: chunk.charEnd,
+    sectionPath: chunk.sectionPath,
+    ...(chunk.tableNo !== null && chunk.tableNo !== undefined ? { tableNo: chunk.tableNo } : {}),
+    ...(chunk.tableRowStart !== null && chunk.tableRowStart !== undefined
+      ? { tableRow: chunk.tableRowStart }
+      : {}),
   };
 }
 
@@ -122,6 +127,9 @@ export function createRagRetriever(deps: ServiceDeps): RagRetriever {
           charStart: entry.charStart,
           charEnd: entry.charEnd,
           staticKind: entry.staticKind ?? 'chunk',
+          sectionPath: entry.sectionPath,
+          tableNo: entry.tableNo,
+          tableRow: entry.tableRow,
         })),
       ),
       contextBlock: formatContextBlock(entries),

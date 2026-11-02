@@ -113,6 +113,7 @@ export function renderConversationHtml(
     snippet?: string;
     sourceUrl?: string | null;
     kindLabel: string;
+    section: string;
     location: string;
   }> = [];
   const citeNo = (c: Citation): number => {
@@ -127,6 +128,7 @@ export function renderConversationHtml(
       snippet: c.snippet,
       sourceUrl: c.sourceUrl,
       kindLabel: meta.kindLabel,
+      section: meta.section,
       location: meta.location,
     });
     return no;
@@ -181,6 +183,8 @@ export function renderConversationHtml(
           (r, i) => {
             const title = r.kindLabel ? `${r.kindLabel}·${r.name}` : r.name;
             return `<li id="cite-${i + 1}"><strong>${escapeHtml(title)}</strong>${
+              r.section ? ` <span class="loc">${escapeHtml(r.section)}</span>` : ''
+            }${
               r.location ? ` <span class="loc">${escapeHtml(r.location)}</span>` : ''
             }${
               r.snippet

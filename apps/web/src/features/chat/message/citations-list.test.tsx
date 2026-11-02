@@ -78,4 +78,25 @@ describe('CitationsList 引用来源折叠（v1.5）', () => {
     const { container } = renderWithProviders(<CitationsList message={messageWith(0)} />);
     expect(container.querySelector('[data-testid="citations"]')).toBeNull();
   });
+
+  it('v2.19：展示章节路径与表格行定位', () => {
+    const base = messageWith(1);
+    renderWithProviders(
+      <CitationsList
+        message={{
+          ...base,
+          citations: [
+            {
+              ...cite(0, 'contract.pdf'),
+              sectionPath: ['合同', '付款条款'],
+              tableNo: 2,
+              tableRow: 3,
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByTestId('citation-section')).toHaveTextContent('合同 › 付款条款');
+    expect(screen.getByTestId('citation-location')).toHaveTextContent('表 2 · 第 3 行');
+  });
 });

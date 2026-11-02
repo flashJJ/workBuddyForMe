@@ -69,6 +69,11 @@ export function CitationsList({ message }: { message: Message }) {
                 ) : (
                   <span className="font-medium">{citation.documentName}</span>
                 )}
+                {meta.section && (
+                  <span className="ml-1 text-muted-foreground" data-testid="citation-section">
+                    · {meta.section}
+                  </span>
+                )}
                 {meta.location && (
                   <span className="ml-1 text-muted-foreground" data-testid="citation-location">
                     · {meta.location}

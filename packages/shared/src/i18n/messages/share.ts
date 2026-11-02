@@ -28,6 +28,9 @@ export const zhShare = {
   citeLocationPara: '第 {para} 段',
   citeEntityLabel: '实体知识',
   citeSummaryLabel: '文档要点',
+  citeTable: '表 {table}',
+  citeTableRow: '表 {table} · 第 {row} 行',
+  citeTableCell: '表 {table} · 第 {row} 行 · {cell}',
 };
 
 export const enShare = {
@@ -59,4 +62,7 @@ export const enShare = {
   citeLocationPara: 'para. {para}',
   citeEntityLabel: 'Entity fact',
   citeSummaryLabel: 'Doc summary',
+  citeTable: 'Table {table}',
+  citeTableRow: 'Table {table} · row {row}',
+  citeTableCell: 'Table {table} · row {row} · {cell}',
 };

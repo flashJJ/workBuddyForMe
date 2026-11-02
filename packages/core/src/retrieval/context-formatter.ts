@@ -91,6 +91,11 @@ export type CitableEntry = {
   charStart?: number;
   charEnd?: number;
   staticKind?: 'chunk' | 'entity' | 'summary';
+  /** v2.19：章节路径/表格定位（旧引用可缺省） */
+  sectionPath?: string[];
+  tableNo?: number;
+  tableRow?: number;
+  tableCell?: string;
 };
 
 function toSnippet(content: string): string {
@@ -112,6 +117,12 @@ export function toCitations(entries: CitableEntry[]): Citation[] {
     ...(entry.charStart !== undefined ? { charStart: entry.charStart } : {}),
     ...(entry.charEnd !== undefined ? { charEnd: entry.charEnd } : {}),
     staticKind: entry.staticKind ?? 'chunk',
+    ...(entry.sectionPath && entry.sectionPath.length > 0
+      ? { sectionPath: entry.sectionPath }
+      : {}),
+    ...(entry.tableNo !== undefined ? { tableNo: entry.tableNo } : {}),
+    ...(entry.tableRow !== undefined ? { tableRow: entry.tableRow } : {}),
+    ...(entry.tableCell !== undefined ? { tableCell: entry.tableCell } : {}),
   }));
 }
 
@@ -127,5 +138,10 @@ export function toCitableChunks(chunks: RetrievedChunk[]): CitableEntry[] {
     charStart: chunk.charStart,
     charEnd: chunk.charEnd,
     staticKind: 'chunk' as const,
+    sectionPath: chunk.sectionPath,
+    ...(chunk.tableNo !== null && chunk.tableNo !== undefined ? { tableNo: chunk.tableNo } : {}),
+    ...(chunk.tableRowStart !== null && chunk.tableRowStart !== undefined
+      ? { tableRow: chunk.tableRowStart }
+      : {}),
   }));
 }

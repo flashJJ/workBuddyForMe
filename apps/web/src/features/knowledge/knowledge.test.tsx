@@ -170,6 +170,50 @@ describe('知识库页面（TR-28.1）', () => {
     );
   });
 
+  it('v2.19 文档结构：章节/表格/警告可读，重建调用 reparse', async () => {
+    const indexed = doc({
+      id: 'd1',
+      status: 'indexed',
+      filename: 'contract.md',
+      chunkCount: 3,
+      indexedAt: '2025-01-02T00:00:00.000Z',
+    });
+    const structure = {
+      documentId: 'd1',
+      parsedAt: '2025-01-02T00:00:00.000Z',
+      structureAvailable: true,
+      pages: [{ pageNo: 1, blockIds: ['b1', 'b2'] }],
+      sections: [{ path: ['合同', '付款条款'], blockIds: ['b2'] }],
+      blocks: [],
+      tables: [{ tableNo: 1, header: ['阶段', '比例'], rows: [['首付', '30%']] }],
+      warnings: ['未检测到标题结构，章节路径为空'],
+    };
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/knowledge-bases') return ok([KB]);
+      if (url === '/api/knowledge-bases/kb1/documents') return ok([indexed]);
+      if (url === '/api/documents/d1/structure') return ok(structure);
+      if (url === '/api/documents/d1/reparse' && init?.method === 'POST') {
+        return ok({ queued: true }, 202);
+      }
+      return ok(null);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<KnowledgePage />);
+
+    await user.click(await screen.findByTestId('open-document-structure'));
+    const dialog = await screen.findByTestId('document-structure-dialog');
+    expect(await within(dialog).findByTestId('structure-sections')).toHaveTextContent(
+      '合同 › 付款条款',
+    );
+    expect(within(dialog).getByTestId('structure-tables')).toHaveTextContent('阶段 | 比例');
+    expect(within(dialog).getByTestId('structure-warnings')).toHaveTextContent('未检测到标题结构');
+
+    await user.click(within(dialog).getByTestId('reparse-document'));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/documents/d1/reparse', expect.anything()),
+    );
+  });
+
   it('M4 内容包：展示来源/许可/体积，确认后 POST 导入并按 id 调用', async () => {
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/knowledge-bases') return ok([]);

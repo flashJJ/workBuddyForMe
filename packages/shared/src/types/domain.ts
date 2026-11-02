@@ -46,10 +46,7 @@ export interface ProviderModel {
   createdAt: string;
 }
 
-/**
- * 供应商远端模型发现项（v0.5）：
- * contextLength 为自动探测的上下文长度（tokens），无法探测时为 null。
- */
+/** 供应商远端模型发现项（v0.5）：contextLength 为自动探测的上下文长度，无法探测时为 null。 */
 export interface DiscoveredModel {
   id: string;
   contextLength: number | null;
@@ -70,15 +67,9 @@ export interface Assistant extends Timestamped {
   plannerModelId: string | null; executorModelId: string | null; reviewerModelId: string | null;
   /** v1.5：绑定 knowledge_bases.id（支持多库联合检索）；空数组=纯对话 */
   knowledgeBaseIds: string[];
-  /**
-   * v0.2：可用工具白名单（空数组 = 纯对话，与 v0.1 行为一致）。
-   * v0.6：元素为内置工具名或 mcp:<server>:<tool> 命名空间名。
-   */
+  /** v0.2/v0.6：工具白名单（空=纯对话）；元素为内置工具名或 mcp:<server>:<tool> */
   enabledTools: string[];
-  /**
-   * v2.4 M4（P1-2）：助手级技能勾选（技能 name）。
-   * 空数组 = 跟随全局（设置页全部已启用技能）；非空 = 只注入这些（仍需全局启用）。
-   */
+  /** v2.4 M4：助手级技能勾选（空=跟随全局；非空=只注入这些且仍需全局启用） */
   skillNames: string[];
   /** v0.2：绑定知识库时是否每轮强制检索（兼容开关；关闭后由模型经 knowledge_search 自主决策） */
   retrieveAlways: boolean;
@@ -122,6 +113,14 @@ export interface Citation {
   charEnd?: number;
   /** v1.3：引用来源层——普通分片/实体原句/文档要点（缺省视同 chunk） */
   staticKind?: 'chunk' | 'entity' | 'summary';
+  /** v2.19：章节路径（最多 4 层）；旧引用缺省 */
+  sectionPath?: string[];
+  /** v2.19：表格序号（文档内从 1）；非表格引用缺省 */
+  tableNo?: number;
+  /** v2.19：数据行号（从 1，表头不计） */
+  tableRow?: number;
+  /** v2.19：Excel 风格单元格（如 C3） */
+  tableCell?: string;
 }
 
 // v2.6：长期记忆类型迁至 ./memory（domain 重新导出保持公开面不变）

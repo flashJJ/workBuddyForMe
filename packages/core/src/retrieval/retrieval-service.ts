@@ -39,6 +39,12 @@ export interface RetrievedChunk {
   /** v1.3：分片在归一化文档中的字符区间 */
   charStart?: number;
   charEnd?: number;
+  /** v2.19：章节路径/块类型/表格定位（旧分片为空结构） */
+  sectionPath?: string[];
+  blockKind?: string | null;
+  tableNo?: number | null;
+  tableRowStart?: number | null;
+  tableRowEnd?: number | null;
 }
 
 export interface RetrieveInput {
@@ -183,6 +189,11 @@ export function createRetrievalService(deps: ServiceDeps) {
         paragraphNo: detail.paragraphNo,
         charStart: detail.charStart,
         charEnd: detail.charEnd,
+        sectionPath: detail.sectionPath,
+        blockKind: detail.blockKind,
+        tableNo: detail.tableNo,
+        tableRowStart: detail.tableRowStart,
+        tableRowEnd: detail.tableRowEnd,
       }));
   }
 

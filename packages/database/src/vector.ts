@@ -1,4 +1,10 @@
 import type { DatabaseInstance } from './client';
+import {
+  CHUNK_DETAIL_SELECT,
+  mapChunkRows,
+  type ChunkSearchResult,
+  type RawChunkSearchRow,
+} from './chunk-detail';
 
 /**
  * sqlite-vec 向量存储。
@@ -14,23 +20,6 @@ export interface ChunkVectorRow {
   vector: number[];
 }
 
-export interface ChunkSearchResult {
-  chunkId: number;
-  documentId: string;
-  documentName: string;
-  ordinal: number;
-  content: string;
-  charStart: number;
-  charEnd: number;
-  /** v1.3：PDF 页码（无则 null） */
-  pageNo: number | null;
-  /** v1.3：文档内段落序号（无则 null） */
-  paragraphNo: number | null;
-  distance: number;
-  /** v0.3：网页剪藏文档的来源 URL，本地上传文档为 null */
-  sourceUrl: string | null;
-}
-
 /** v1.3：候选召回结果（比 ChunkSearchResult 少 join 字段，融合阶段只需要 id/距离） */
 export interface ChunkCandidate {
   chunkId: number;
@@ -38,13 +27,6 @@ export interface ChunkCandidate {
   /** 单位向量相似度 1 - distance/2（distance∈[0,2]），越大越相似 */
   similarity: number;
 }
-
-const CHUNK_DETAIL_SELECT = `
-  c.id AS chunkId, c.document_id AS documentId, d.filename AS documentName,
-  c.ordinal AS ordinal, c.content AS content,
-  c.char_start AS charStart, c.char_end AS charEnd,
-  c.page_no AS pageNo, c.paragraph_no AS paragraphNo,
-  d.source_url AS sourceUrl`;
 
 export function normalizeVector(values: number[]): number[] {
   if (values.length === 0) throw new Error('向量不能为空');
@@ -122,7 +104,7 @@ export function searchChunks(
   if (normalized.length !== dimension) {
     throw new Error(`查询向量维度 ${normalized.length} 与表维度 ${dimension} 不一致`);
   }
-  return db
+  const rows = db
     .prepare(
       `SELECT
          ${CHUNK_DETAIL_SELECT}, v.distance AS distance
@@ -136,7 +118,8 @@ export function searchChunks(
       kbId: params.knowledgeBaseId,
       vec: JSON.stringify(normalized),
       k: params.k,
-    }) as ChunkSearchResult[];
+    }) as RawChunkSearchRow[];
+  return mapChunkRows(rows);
 }
 
 /**
@@ -253,13 +236,14 @@ export function listChunksByIds(
 ): ChunkSearchResult[] {
   if (params.chunkIds.length === 0) return [];
   const placeholders = params.chunkIds.map(() => '?').join(',');
-  return db
+  const rows = db
     .prepare(
       `SELECT ${CHUNK_DETAIL_SELECT}, 0 AS distance
        FROM document_chunks c JOIN documents d ON d.id = c.document_id
        WHERE d.knowledge_base_id = ? AND c.id IN (${placeholders})`,
     )
-    .all(params.knowledgeBaseId, ...params.chunkIds) as ChunkSearchResult[];
+    .all(params.knowledgeBaseId, ...params.chunkIds) as RawChunkSearchRow[];
+  return mapChunkRows(rows);
 }
 
 /**
@@ -272,11 +256,12 @@ export function listChunksByIdsGlobal(
 ): ChunkSearchResult[] {
   if (params.chunkIds.length === 0) return [];
   const placeholders = params.chunkIds.map(() => '?').join(',');
-  return db
+  const rows = db
     .prepare(
       `SELECT ${CHUNK_DETAIL_SELECT}, 0 AS distance
        FROM document_chunks c JOIN documents d ON d.id = c.document_id
        WHERE c.id IN (${placeholders})`,
     )
-    .all(...params.chunkIds) as ChunkSearchResult[];
+    .all(...params.chunkIds) as RawChunkSearchRow[];
+  return mapChunkRows(rows);
 }

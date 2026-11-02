@@ -22,6 +22,11 @@ export {
 } from './assembler';
 export { buildDocxDocument } from './office-parser';
 export { buildPdfDocument, buildPdfLines } from './pdf-parser';
+export {
+  chunkDocument,
+  sectionPrefix,
+  type StructuredChunk,
+} from './chunk-structured';
 export { parsePagedTextDocument, parseTextDocument } from './text-parser';
 
 /** 文字层 PDF：读取页坐标后构建结构（调用方负责 OCR 分支） */

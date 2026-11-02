@@ -63,6 +63,11 @@ export interface RagChunk {
   paragraphNo?: number | null;
   charStart?: number;
   charEnd?: number;
+  /** v2.19：章节/表格定位（普通分片带出，静态条目缺省） */
+  sectionPath?: string[];
+  tableNo?: number;
+  tableRow?: number;
+  tableCell?: string;
 }
 
 export interface RagContext {

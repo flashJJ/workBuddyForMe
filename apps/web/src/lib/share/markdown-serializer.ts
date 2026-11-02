@@ -31,7 +31,9 @@ interface Footnote {
   sourceUrl?: string | null;
   /** 静态层标签（实体知识/文档要点），普通引用为空 */
   kindLabel: string;
-  /** 页/段定位文本，无坐标为空 */
+  /** 章节路径（v2.19） */
+  section: string;
+  /** 表格/页段定位文本，无坐标为空 */
   location: string;
 }
 
@@ -57,6 +59,7 @@ export function serializeMarkdown(
       snippet: c.snippet,
       sourceUrl: c.sourceUrl,
       kindLabel: meta.kindLabel,
+      section: meta.section,
       location: meta.location,
     });
     return idx;
@@ -119,6 +122,7 @@ export function serializeMarkdown(
     for (const f of footnotes) {
       const title = f.kindLabel ? `${f.kindLabel}·${f.documentName}` : f.documentName;
       const parts: string[] = [`**${title}**`];
+      if (f.section) parts.push(f.section);
       if (f.location) parts.push(f.location);
       if (f.snippet) parts.push(f.snippet);
       if (f.sourceUrl) parts.push(`[${tt('share.sourceLinkMarkdown')}](${f.sourceUrl})`);
