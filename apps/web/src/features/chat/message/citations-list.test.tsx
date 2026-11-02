@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Citation, Message } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
@@ -43,6 +43,8 @@ function messageWith(count: number): Message {
 }
 
 describe('CitationsList 引用来源折叠（v1.5）', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it('3 条以内：平铺展示，无折叠开关', () => {
     renderWithProviders(<CitationsList message={messageWith(3)} />);
     expect(screen.queryByTestId('citations-toggle')).toBeNull();
@@ -98,5 +100,66 @@ describe('CitationsList 引用来源折叠（v1.5）', () => {
     );
     expect(screen.getByTestId('citation-section')).toHaveTextContent('合同 › 付款条款');
     expect(screen.getByTestId('citation-location')).toHaveTextContent('表 2 · 第 3 行');
+  });
+
+  it('v2.19 M4：点击本地引用打开结构查看器并定位章节/表格', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const structure =
+          url === '/api/documents/doc-0/structure'
+            ? {
+                documentId: 'doc-0',
+                parsedAt: '2026-11-02T00:00:00.000Z',
+                structureAvailable: true,
+                pages: [],
+                sections: [{ path: ['合同', '付款条款'], blockIds: ['b1'] }],
+                blocks: [
+                  {
+                    id: 'b1',
+                    kind: 'heading',
+                    pageNo: 1,
+                    sectionPath: ['合同', '付款条款'],
+                    content: '付款条款',
+                    charStart: 0,
+                    charEnd: 4,
+                  },
+                ],
+                tables: [],
+                warnings: [],
+                visionAvailable: false,
+              }
+            : null;
+        return new Response(JSON.stringify({ success: true, data: structure }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    const base = messageWith(1);
+    renderWithProviders(
+      <CitationsList
+        message={{
+          ...base,
+          citations: [
+            {
+              ...cite(0, 'contract.pdf'),
+              sectionPath: ['合同', '付款条款'],
+              tableNo: 2,
+              tableRow: 3,
+              tableCell: 'B3',
+            },
+          ],
+        }}
+      />,
+    );
+
+    await user.click(screen.getByTestId('citation-open'));
+    const dialog = await screen.findByTestId('document-structure-dialog');
+    expect(await within(dialog).findByTestId('citation-focus')).toHaveTextContent(
+      '合同 › 付款条款 · 表 2 · 第 3 行 · B3',
+    );
+    expect(within(dialog).getByTestId('structure-sections')).toHaveTextContent(/付款条款/);
   });
 });

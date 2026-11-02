@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { ConflictItem, DuplicatePair } from '@wbfm/core/knowledge';
-import type { DocumentStructureView } from '@wbfm/core/services';
+import type { DocumentStructureView, FigureSummary } from '@wbfm/core/services';
 import type {
   ContentPackImportResult,
   ContentPackSummary,
@@ -63,6 +63,16 @@ export interface DocumentComparisonInput {
   rightDocumentId: string;
   format: 'md' | 'html';
   locale: 'zh' | 'en';
+}
+
+/** v2.19 M4：按需解读图注/图表（未配置视觉模型时由 API 返回 422） */
+export function useFigureSummary() {
+  return useMutation({
+    mutationFn: (input: { documentId: string; blockId: string }) =>
+      apiPost<FigureSummary>(API.documentFigureSummary(input.documentId), {
+        blockId: input.blockId,
+      }),
+  });
 }
 
 /** v2.19：跨文档对比产物（生成即返回产物引用与统计） */

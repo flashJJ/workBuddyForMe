@@ -109,6 +109,7 @@ export const API = {
   document: (id: string) => `/api/documents/${id}`,
   documentStructure: (id: string) => `/api/documents/${id}/structure`,
   documentReparse: (id: string) => `/api/documents/${id}/reparse`,
+  documentFigureSummary: (id: string) => `/api/documents/${id}/figure-summary`,
   /** v2.19：跨文档章节/表格对比产物 */
   documentCompare: '/api/documents/compare',
   attachments: '/api/attachments',

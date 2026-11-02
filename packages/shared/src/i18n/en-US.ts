@@ -15,6 +15,7 @@ import { enErrors } from './messages/errors';
 import { enAssistants } from './messages/assistants';
 import { enKnowledge } from './messages/knowledge';
 import { enKnowledgeCompare } from './messages/knowledge-compare';
+import { enDocumentViewer } from './messages/document-viewer';
 import { enMemory } from './messages/memory';
 import { enTasks } from './messages/tasks';
 import { enFlows } from './messages/flows';
@@ -80,6 +81,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   meeting: enMeeting,
   knowledge: enKnowledge,
   knowledgeCompare: enKnowledgeCompare,
+  documentViewer: enDocumentViewer,
   memory: enMemory,
   tasks: enTasks,
   flows: enFlows,

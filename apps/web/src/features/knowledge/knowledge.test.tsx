@@ -203,9 +203,9 @@ describe('知识库页面（TR-28.1）', () => {
     await user.click(await screen.findByTestId('open-document-structure'));
     const dialog = await screen.findByTestId('document-structure-dialog');
     expect(await within(dialog).findByTestId('structure-sections')).toHaveTextContent(
-      '合同 › 付款条款',
+      /合同[\s\S]*付款条款/,
     );
-    expect(within(dialog).getByTestId('structure-tables')).toHaveTextContent('阶段 | 比例');
+    expect(within(dialog).getByTestId('structure-tables')).toHaveTextContent(/阶段[\s\S]*比例/);
     expect(within(dialog).getByTestId('structure-warnings')).toHaveTextContent('未检测到标题结构');
 
     await user.click(within(dialog).getByTestId('reparse-document'));

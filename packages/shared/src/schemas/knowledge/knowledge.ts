@@ -57,6 +57,15 @@ export const documentCompareSchema = z
   });
 export type DocumentCompareInput = z.infer<typeof documentCompareSchema>;
 
+/** v2.19 M4：按需解读图注/图表（结构块 id 形如 b3） */
+export const figureSummarySchema = z.object({
+  blockId: z
+    .string()
+    .trim()
+    .regex(/^b[1-9]\d*$/, '结构块 id 必须形如 b3'),
+});
+export type FigureSummaryBody = z.infer<typeof figureSummarySchema>;
+
 /** v0.3 网页剪藏请求 */
 export const clipRequestSchema = z.object({
   url: z

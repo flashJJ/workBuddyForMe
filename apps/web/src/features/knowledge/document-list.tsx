@@ -5,12 +5,15 @@ import type { DocumentRecord } from '@wbfm/shared/types';
 import type { DocumentStatus } from '@wbfm/shared/constants';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { EmptyState, Spinner } from '@/components/common/state';
 import { useConfirm } from '@/components/common/confirm-dialog';
+import { useToast } from '@/components/common/toast';
+import { ApiClientError } from '@/lib/api/client';
 import { useKnowledgeMutations } from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useIntl } from '@/lib/i18n/use-intl';
-import { DocumentStructureDialog } from './document-structure-dialog';
+import { DocumentViewerDialog } from '@/features/document-viewer';
 
 const STATUS_VARIANT: Record<DocumentStatus, 'default' | 'success' | 'warning' | 'danger' | 'outline'> = {
   pending: 'outline',
@@ -59,7 +62,9 @@ export function DocumentList({ kbId, documents, loading }: {
   const intl = useIntl();
   const mutations = useKnowledgeMutations();
   const confirm = useConfirm();
+  const toast = useToast();
   const [structureDoc, setStructureDoc] = React.useState<DocumentRecord | null>(null);
+  const [rebuilding, setRebuilding] = React.useState(false);
 
   /** v0.4：OCR 进行中覆盖处理中文案；partial 给出部分识别提示 */
   const badgeLabel = (document: DocumentRecord): string => {
@@ -91,6 +96,26 @@ export function DocumentList({ kbId, documents, loading }: {
       return;
     }
     void mutations.deleteDocument.mutateAsync({ kbId, documentId: document.id });
+  };
+
+  const reparseStructure = async () => {
+    if (!structureDoc) return;
+    setRebuilding(true);
+    try {
+      await mutations.reparseDocument.mutateAsync({
+        kbId,
+        documentId: structureDoc.id,
+      });
+      toast.success(t('knowledge.structure.reparseStarted'));
+    } catch (error) {
+      toast.error(
+        error instanceof ApiClientError
+          ? error.message
+          : t('knowledge.structure.reparseFailed'),
+      );
+    } finally {
+      setRebuilding(false);
+    }
   };
 
   if (loading) return <Spinner />;
@@ -180,13 +205,25 @@ export function DocumentList({ kbId, documents, loading }: {
         </li>
         ))}
       </ul>
-      <DocumentStructureDialog
-        kbId={kbId}
-        document={structureDoc}
+      <DocumentViewerDialog
+        documentId={structureDoc?.id ?? null}
+        documentName={structureDoc?.filename}
         open={Boolean(structureDoc)}
         onOpenChange={(open) => {
           if (!open) setStructureDoc(null);
         }}
+        actions={
+          <Button
+            type="button"
+            data-testid="reparse-document"
+            disabled={!structureDoc || rebuilding || structureDoc.status === 'processing'}
+            onClick={() => void reparseStructure()}
+          >
+            {rebuilding
+              ? t('knowledge.structure.reparsing')
+              : t('knowledge.structure.reparse')}
+          </Button>
+        }
       />
     </>
   );

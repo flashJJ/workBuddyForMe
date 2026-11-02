@@ -15,7 +15,9 @@ import { detectKind } from '../../ingestion/read-document';
 import { createIngestionPipeline } from '../../ingestion/ingestion-pipeline';
 import type { DocumentBlockKind, DocumentTable } from '../../ingestion/structure';
 import { fetchArticle, normalizeClipUrl, toClipError } from '../../ingestion/fetch-article';
+import { resolveVisionTarget } from '../../ingestion/vision-target';
 import type { IngestResult } from '../../ingestion/types';
+import { summarizeDocumentFigure } from './document-figure-service';
 
 export interface UploadedFile {
   filename: string;
@@ -41,6 +43,8 @@ export interface DocumentStructureView {
   }>;
   tables: DocumentTable[];
   warnings: string[];
+  /** v2.19 M4：是否已配置视觉模型（图表/图片理解按需可用） */
+  visionAvailable: boolean;
 }
 
 export function hashContent(buffer: Uint8Array): string {
@@ -146,6 +150,7 @@ export function createDocumentService(deps: ServiceDeps) {
         blocks: viewBlocks,
         tables,
         warnings,
+        visionAvailable: resolveVisionTarget(deps) !== null,
       };
     },
 
@@ -163,6 +168,19 @@ export function createDocumentService(deps: ServiceDeps) {
         console.error(`[reparse] 文档 ${id} 重建异常：`, error);
       });
       return { queued: true };
+    },
+
+    /** v2.19 M4：按需解读图注所在 PDF 页面（视觉模型可选；未配置时明确拒绝） */
+    summarizeFigure(id: string, blockId: string, signal?: AbortSignal) {
+      const document = requireDocument(id);
+      return summarizeDocumentFigure({
+        deps,
+        document,
+        blocks: blocks.listByDocument(id),
+        blockId,
+        source: readSource(id),
+        ...(signal ? { signal } : {}),
+      });
     },
 
     /** 登记上传文档（校验类型/去重），随后由调用方触发后台摄入 */
