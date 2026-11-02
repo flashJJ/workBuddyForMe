@@ -32,15 +32,15 @@ v2.15 把日常运维动作补齐后，结构成本成为迭代速度的上限�
 - 分支：`feature/v2.16-planning`（`--no-ff` 合入 main `4be4507`；零迁移，`LATEST_SCHEMA_VERSION = 42`）
 - 已知偏差：直接文件 ≥20 的目录 24 → 12（目标 ≤10；剩余为 P1 / 豁免 / desktop 主进程，按契约 §1.2「P1 不阻塞」登记，见 [验收 §3](../plan/v2.16/08-M6-验收.md)）
 
-## 🚧 规划中：v2.19 📚 看得懂文档——深度解析与可信 RAG（2026-11-02）
+## ✅ 验收完成，待发布：v2.19 📚 看得懂文档——深度解析与可信 RAG（2026-11-03）
 
 v2.18 解决了「可交付」；下一层断点在知识输入本身：复杂 PDF 的章节/表格结构丢失、表格被切断、引用只能到页码、RAG 改动缺少质量回归。v2.19 借鉴 RAGFlow（解析/分块）、LightRAG（图检索）、Graphiti（时序关系）、Ragas/Promptfoo（评测）：P0 做结构解析/持久化/结构分块与引用；P1 做表格问答/跨文档对比/结构面板；P2 做实体关系多跳检索、扫描表格增强与评测红队。不引入 Python/Go/Rust 服务，不做会议/屏幕感知。
 
-- 方案：[v2.19 方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md)
-- 决策与契约：[M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M1 实施记录](../plan/v2.19/03-M1-实施记录.md) · [M2 实施记录](../plan/v2.19/04-M2-实施记录.md)
+- 方案：[v2.19 方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md) · [M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M1](../plan/v2.19/03-M1-实施记录.md) · [M2](../plan/v2.19/04-M2-实施记录.md) · [M3](../plan/v2.19/05-M3-实施记录.md) · [M4](../plan/v2.19/06-M4-实施记录.md) · [M5](../plan/v2.19/07-M5-实施记录.md) · [M6 验收](../plan/v2.19/08-M6-验收与发布.md)
+- 总结：[v2.19-release-summary.md](v2.19-release-summary.md) · 发行说明：[v2.19-release-notes.md](v2.19-release-notes.md)
 - 来源方案：[深度文档解析与可信 RAG](scheduled/v2.19-01-deep-document-rag.md)
-- 状态：🚧 实施中：M1 解析结构与 M2 分块/引用完成；M3 表格问答与对比待开始；分支 `feature/v2.19-planning`
-- 范围：P0 + P1 + P2；允许一次迁移 `v043-document-structure`；Promptfoo 纳入 CI
+- 状态：✅ M0–M6 完成；`pnpm check` / 单测 3067 / 集成 11 / Promptfoo 8/8 / Web e2e 139/139；安装包与 Release 待回写
+- 范围：P0 + P1 + P2；一次迁移 `v043-document-structure`（`LATEST_SCHEMA_VERSION = 43`）；Promptfoo 纳入 CI
 
 ## ✅ 已正式发布：v2.18 🎨 可交付——图表、内容包与有出处的产物（2026-11-02，tag `v2.18.0`）
 

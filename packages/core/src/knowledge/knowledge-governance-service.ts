@@ -30,7 +30,9 @@ export function createKnowledgeGovernanceService(deps: ServiceDeps) {
   return {
     /** 列出知识库内跨文档取值冲突（无编译产物时为空数组，不抛错） */
     listConflicts(knowledgeBaseId: string): ConflictItem[] {
-      const entities = createCompileQueryRepository(deps.db).listEntities(knowledgeBaseId);
+      // 冲突检测需要跨文档的取值原句。默认 5 条 mention 会按 generation 截断，
+      // 单文档 mention 较多时可能丢掉另一文档的版本句；治理面板放宽到 20 条。
+      const entities = createCompileQueryRepository(deps.db).listEntities(knowledgeBaseId, 20);
       return detectConflicts(
         entities.map((entity) => ({
           name: entity.name,
