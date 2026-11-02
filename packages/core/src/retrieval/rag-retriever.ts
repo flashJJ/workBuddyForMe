@@ -4,6 +4,7 @@ import type { RagContext, RagChunk, RagRetriever } from '../chat/base/types';
 import { createStaticKnowledgeService } from '../knowledge/static-knowledge-service';
 import type { ServiceDeps } from '../services/base/deps';
 import { formatContextBlock, toCitations } from './context-formatter';
+import { locateTableCellInChunk } from './table';
 import {
   createRetrievalService,
   DEFAULT_MAX_CHUNKS,
@@ -57,7 +58,9 @@ function factToRagChunk(
   };
 }
 
-function chunkToRagChunk(chunk: RetrievedChunk): RagChunk {
+function chunkToRagChunk(chunk: RetrievedChunk, query?: string): RagChunk {
+  const located = query ? locateTableCellInChunk(chunk, query) : null;
+  const tableRow = located?.row ?? chunk.tableRowStart;
   return {
     documentName: chunk.documentName,
     ordinal: chunk.ordinal,
@@ -71,9 +74,8 @@ function chunkToRagChunk(chunk: RetrievedChunk): RagChunk {
     charEnd: chunk.charEnd,
     sectionPath: chunk.sectionPath,
     ...(chunk.tableNo !== null && chunk.tableNo !== undefined ? { tableNo: chunk.tableNo } : {}),
-    ...(chunk.tableRowStart !== null && chunk.tableRowStart !== undefined
-      ? { tableRow: chunk.tableRowStart }
-      : {}),
+    ...(tableRow !== null && tableRow !== undefined ? { tableRow } : {}),
+    ...(located?.cell ? { tableCell: located.cell } : {}),
   };
 }
 
@@ -112,7 +114,7 @@ export function createRagRetriever(deps: ServiceDeps): RagRetriever {
 
     const entries: RagChunk[] = [
       ...facts.map(factToRagChunk),
-      ...chunks.map(chunkToRagChunk),
+      ...chunks.map((chunk) => chunkToRagChunk(chunk, question)),
     ];
 
     return {
@@ -130,6 +132,7 @@ export function createRagRetriever(deps: ServiceDeps): RagRetriever {
           sectionPath: entry.sectionPath,
           tableNo: entry.tableNo,
           tableRow: entry.tableRow,
+          tableCell: entry.tableCell,
         })),
       ),
       contextBlock: formatContextBlock(entries),

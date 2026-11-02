@@ -20,6 +20,8 @@ export interface RerankCandidate {
   channels: FusedHit['channels'];
   /** 该 chunk 的 RRF 融合分（作为基础分，归一化到 [0,1] 后参与） */
   rrf: number;
+  /** v2.19：结构块类型（表格意图加权只作用于 table） */
+  blockKind?: string | null;
 }
 
 export interface RuleRerankWeights {
@@ -31,6 +33,8 @@ export interface RuleRerankWeights {
   consecutivePhrase: number;
   /** 文档名命中任一查询词 */
   docNameHit: number;
+  /** v2.19：表格意图查询命中 table 分片 */
+  tableIntent: number;
 }
 
 export const DEFAULT_RERANK_WEIGHTS: RuleRerankWeights = {
@@ -38,7 +42,13 @@ export const DEFAULT_RERANK_WEIGHTS: RuleRerankWeights = {
   coverage: 0.4,
   consecutivePhrase: 0.2,
   docNameHit: 0.1,
+  tableIntent: 0.2,
 };
+
+export interface RuleRerankOptions {
+  /** 查询被判定为表格意图（detectTableIntent） */
+  tableIntent?: boolean;
+}
 
 export interface ScoredCandidate {
   chunkId: number;
@@ -55,6 +65,7 @@ export function ruleRerank(
   candidates: readonly RerankCandidate[],
   query: string,
   weights: RuleRerankWeights = DEFAULT_RERANK_WEIGHTS,
+  options: RuleRerankOptions = {},
 ): ScoredCandidate[] {
   const terms = [...new Set(tokenizeForFts(query))];
   const maxRrf = candidates.reduce((m, c) => Math.max(m, c.rrf), 0) || 1;
@@ -79,12 +90,15 @@ export function ruleRerank(
       ? weights.docNameHit
       : 0;
 
+    const tableHit =
+      options.tableIntent && candidate.blockKind === 'table' ? weights.tableIntent : 0;
+
     // 基础分：归一化 RRF（保证关闭字面信号时仍严格按融合排名）
     const base = candidate.rrf / maxRrf;
-    // 字面信号总增益有上界（三项相加 ≤0.7），避免完全盖过语义基础分
+    // 字面信号总增益有上界（≤0.9），避免完全盖过语义基础分
     return {
       chunkId: candidate.chunkId,
-      score: base + both + coverage + phraseHit + docHit,
+      score: base + both + coverage + phraseHit + docHit + tableHit,
       matchedTerms: matched,
     };
   });

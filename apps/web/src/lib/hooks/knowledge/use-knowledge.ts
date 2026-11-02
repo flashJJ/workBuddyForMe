@@ -8,6 +8,7 @@ import type { DocumentStructureView } from '@wbfm/core/services';
 import type {
   ContentPackImportResult,
   ContentPackSummary,
+  DocumentComparisonResult,
   DocumentRecord,
   KnowledgeBase,
 } from '@wbfm/shared/types';
@@ -54,6 +55,21 @@ export function useDocumentStructure(documentId: string | null, enabled = true) 
     queryKey: QUERY_KEYS.documentStructure(documentId ?? '_'),
     queryFn: () => apiGet<DocumentStructureView>(API.documentStructure(documentId!)),
     enabled: Boolean(documentId) && enabled,
+  });
+}
+
+export interface DocumentComparisonInput {
+  leftDocumentId: string;
+  rightDocumentId: string;
+  format: 'md' | 'html';
+  locale: 'zh' | 'en';
+}
+
+/** v2.19：跨文档对比产物（生成即返回产物引用与统计） */
+export function useDocumentComparison() {
+  return useMutation({
+    mutationFn: (input: DocumentComparisonInput) =>
+      apiPost<DocumentComparisonResult>(API.documentCompare, input),
   });
 }
 

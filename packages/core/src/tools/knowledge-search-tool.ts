@@ -101,7 +101,7 @@ export const knowledgeSearchTool: Tool = {
         coverage: `命中 ${chunks.length} 个片段（请求 ${topK}）`,
         capturedAt: new Date().toISOString(),
       },
-      citations: toCitations(toCitableChunks(chunks)),
+      citations: toCitations(toCitableChunks(chunks, parsed.data.query)),
     };
   },
 };

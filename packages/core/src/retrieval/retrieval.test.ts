@@ -242,6 +242,10 @@ describe('检索与 RAG 编排（TR-17.1）', () => {
       tableNo: 1,
       tableRow: 1,
     });
+    expect(citation.tableCell).toBeUndefined();
+
+    const located = toCitations(toCitableChunks([tableHit!], '首付比例是多少'))[0]!;
+    expect(located).toMatchObject({ tableNo: 1, tableRow: 1, tableCell: 'B2' });
   });
 
   it('格式化：长 snippet 截断，context 带编号', () => {

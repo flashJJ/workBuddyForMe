@@ -71,6 +71,39 @@ export interface ContentPackImportResult {
   sha256: string;
 }
 
+/** v2.19 M3：跨文档对比产物统计（与产物引用同属可交付领域，并入本文件守目录门禁） */
+export interface DocumentComparisonSectionStats {
+  /** 两侧章节并集数 */
+  total: number;
+  shared: number;
+  leftOnly: number;
+  rightOnly: number;
+}
+
+export interface DocumentComparisonTableStats {
+  left: number;
+  right: number;
+  /** 按表头/标题匹配上的表对数 */
+  matched: number;
+}
+
+export interface DocumentComparisonSummary {
+  leftName: string;
+  rightName: string;
+  sections: DocumentComparisonSectionStats;
+  tables: DocumentComparisonTableStats;
+  warnings: string[];
+}
+
+export interface DocumentComparisonResult {
+  artifact: ArtifactRef;
+  /** 产物正文（Markdown 格式时供界面直接预览） */
+  content: string;
+  filename: string;
+  mimeType: string;
+  summary: DocumentComparisonSummary;
+}
+
 /** 工具调用状态（running 仅用于前端流式过程，落库后只会是 ok/error） */
 export type ToolCallStatus = 'running' | 'ok' | 'error';
 

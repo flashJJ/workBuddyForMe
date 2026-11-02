@@ -48,6 +48,10 @@ export type {
   ToolSubstepStatus,
   ContentPackSummary,
   ContentPackImportResult,
+  DocumentComparisonSectionStats,
+  DocumentComparisonTableStats,
+  DocumentComparisonSummary,
+  DocumentComparisonResult,
 } from './tool';
 export {
   FLOW_STATUSES,

@@ -43,6 +43,20 @@ export const contentPackImportSchema = z.object({
 });
 export type ContentPackImportInput = z.infer<typeof contentPackImportSchema>;
 
+/** v2.19 M3：跨文档对比请求（两份不同文档，产物格式 Markdown/HTML） */
+export const documentCompareSchema = z
+  .object({
+    leftDocumentId: z.string().trim().min(1).max(64),
+    rightDocumentId: z.string().trim().min(1).max(64),
+    format: z.enum(['md', 'html']).default('html'),
+    locale: z.enum(['zh', 'en']).default('zh'),
+  })
+  .refine((value) => value.leftDocumentId !== value.rightDocumentId, {
+    message: '请选择两份不同的文档',
+    path: ['rightDocumentId'],
+  });
+export type DocumentCompareInput = z.infer<typeof documentCompareSchema>;
+
 /** v0.3 网页剪藏请求 */
 export const clipRequestSchema = z.object({
   url: z

@@ -9,6 +9,7 @@ import type { ServiceDeps } from '../services/base/deps';
 import { resolveEmbeddingTarget } from '../ingestion/embedding-target';
 import { diversify, reciprocalRankFusion, type ChannelHits } from './hybrid-fusion';
 import { ruleRerank } from './rule-rerank';
+import { detectTableIntent } from './table';
 
 /** 纯向量回退路径的固定条数（与 v1.2 行为严格一致） */
 export const DEFAULT_RETRIEVAL_TOP_K = 4;
@@ -166,8 +167,11 @@ export function createRetrievalService(deps: ServiceDeps) {
         documentName: detail.documentName,
         channels: rrfById.get(detail.chunkId)?.channels ?? ['vec'],
         rrf: rrfById.get(detail.chunkId)?.rrf ?? 0,
+        blockKind: detail.blockKind,
       })),
       query,
+      undefined,
+      { tableIntent: detectTableIntent(query).isTableIntent },
     );
     const scoreById = new Map(scored.map((s) => [s.chunkId, s.score]));
 
