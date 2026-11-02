@@ -45,6 +45,8 @@ export type {
   ToolCallStatus,
   ToolSubstep,
   ToolSubstepStatus,
+  ContentPackSummary,
+  ContentPackImportResult,
 } from './tool';
 export {
   FLOW_STATUSES,

@@ -153,11 +153,62 @@ export const BUILTIN_DIAGRAM_DESIGN: SkillManifest = {
   author: 'WorkBuddyForMe 内置（基于 Diagram Design, MIT）',
 };
 
+/**
+ * v2.18 M4：生活决策技能（精简自 HowToLiveBetter 的 life-decision-guide，CC BY 4.0）。
+ * 只按内容包知识库检索并引用；急症/法律程序先分流；没查到就不答。
+ */
+export const BUILTIN_LIFE_DECISION_GUIDE: SkillManifest = {
+  name: 'life-decision-guide',
+  description:
+    '按《高性价比人生指南》检索后回答生活决策问题：先分流急症与法律程序，再定位章节/条目，按成本、收益、证据等级比较；未检索到就不凭记忆作答。需绑定内容包知识库并启用 knowledge_search。',
+  version: '1.0.0',
+  permissions: ['read'],
+  promptTemplates: [
+    {
+      name: '高风险先分流',
+      order: 0,
+      content: [
+        '回答前先判断是否存在需要立即处理的风险；命中任一项就先给紧急处置，再谈书里的建议：',
+        '- 急症信号：胸痛、呼吸困难、严重出血、昏迷、中毒、自杀或伤人念头 → 先联系 120 / 110 / 12356（心理援助热线），并说明“先处理眼前风险”。',
+        '- 进行中的法律程序：被拘留、传唤、签约截止、暴力冲突 → 先联系律师 / 当地公安或主管部门，不要只给书里的通用建议。',
+        '分流之后仍可检索书中对应章节补充背景，但不得替代紧急处置。',
+      ].join('\n'),
+    },
+    {
+      name: '按书检索与回答',
+      order: 1,
+      content: [
+        '1. 先用 knowledge_search 检索用户情境（例如“替朋友担保”“租房押金”“被裁之后”）；若助手未绑定《高性价比人生指南》内容包知识库，先提示用户到知识库页导入并绑定，不要假装查过。',
+        '2. 从命中条目中选最相关的 3–5 条，按“成本 / 收益量级 / 证据等级（A/B/C）”比较，给出推荐顺序；不要一次倾倒整节内容。',
+        '3. 每条建议必须标注「第 N 节第 M 条（条目标题）」，数字与法条只能来自检索到的正文；没有出处的数字不要写。',
+        '4. 书里没有查到：明确说“书里没有查到对应条目”，可给常识性安全建议，但必须标注“非书中内容”，不要凭记忆补数字或法条。',
+        '5. 边界：不提供个性化医疗诊断、法律意见或投资建议；政策以当地部门为准，办事/看病/打官司以医生、律师和主管部门的说法为准。',
+        '6. 结尾保留署名：内容来自《高性价比人生指南》（CC BY 4.0，eternity4719/HowToLiveBetter），本应用未修改原文。',
+      ].join('\n'),
+    },
+  ],
+  allowedTools: ['knowledge_search'],
+  examples: [
+    {
+      title: '担保决策',
+      userQuery: '朋友找我担保签字，签不签？',
+      expectedBehavior: '先检索书中担保/法律红线条目，按成本收益与证据等级回答，并引用第 N 节第 M 条',
+    },
+    {
+      title: '急症分流',
+      userQuery: '家里人突然胸痛、出冷汗，怎么办？',
+      expectedBehavior: '先建议立即拨打 120，再补充书中相关章节；不先做长篇检索',
+    },
+  ],
+  author: 'WorkBuddyForMe 内置（基于 HowToLiveBetter, CC BY 4.0）',
+};
+
 export const BUILTIN_SKILLS: SkillManifest[] = [
   BUILTIN_WEEKLY_REPORT,
   BUILTIN_MEETING_NOTES,
   BUILTIN_FILE_SEARCH,
   BUILTIN_DIAGRAM_DESIGN,
+  BUILTIN_LIFE_DECISION_GUIDE,
 ];
 
 /** 幂等播种：内置示例技能写入技能目录（manifest 已存在则跳过，保留用户改动） */

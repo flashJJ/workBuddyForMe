@@ -4,7 +4,12 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { ConflictItem, DuplicatePair } from '@wbfm/core/knowledge';
-import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
+import type {
+  ContentPackImportResult,
+  ContentPackSummary,
+  DocumentRecord,
+  KnowledgeBase,
+} from '@wbfm/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost, apiUpload } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
@@ -19,6 +24,14 @@ export function useKnowledgeBases() {
   return useVisibleQuery({
     queryKey: QUERY_KEYS.knowledgeBases,
     queryFn: () => apiGet<KnowledgeBase[]>(API.knowledgeBases),
+  });
+}
+
+/** v2.18 M4：示例内容包清单（含已导入状态） */
+export function useContentPacks() {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.contentPacks,
+    queryFn: () => apiGet<ContentPackSummary[]>(API.contentPacks),
   });
 }
 
@@ -126,6 +139,15 @@ export function useKnowledgeMutations() {
       },
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.kbId) }),
+    }),
+    /** v2.18 M4：导入内容包（建库 + 注册文档；索引在后台继续） */
+    importContentPack: useMutation({
+      mutationFn: (id: string) =>
+        apiPost<ContentPackImportResult>(API.contentPackImport, { id }),
+      onSuccess: () => {
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.contentPacks });
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.knowledgeBases });
+      },
     }),
     clipDocument: useMutation({
       mutationFn: ({ kbId, url }: { kbId: string; url: string }) =>

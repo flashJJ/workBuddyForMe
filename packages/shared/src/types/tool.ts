@@ -24,6 +24,38 @@ export interface ArtifactWriteInput {
   content: string;
 }
 
+/**
+ * v2.18 M4：可运行时下载导入的示例内容包（正文不随应用分发）。
+ * 与产物同属「可交付」领域，类型并入本文件以守 types 目录行数/文件数门禁。
+ */
+export interface ContentPackSummary {
+  id: string;
+  name: string;
+  description: string;
+  sourceUrl: string;
+  license: string;
+  licenseUrl: string;
+  version: string;
+  publishedAt: string;
+  fileCount: number;
+  totalBytes: number;
+  /** 整包 SHA-256（按文件顺序拼接后计算） */
+  sha256: string;
+  disclaimer: string;
+  /** 目标知识库已存在即视为已导入 */
+  imported: boolean;
+  documentCount: number;
+}
+
+export interface ContentPackImportResult {
+  packId: string;
+  /** 新建知识库的最小引用（避免 types/tool ↔ domain 反向类型环） */
+  knowledgeBase: { id: string; name: string; documentCount: number };
+  /** 含署名页在内的入库文档数 */
+  importedDocuments: number;
+  sha256: string;
+}
+
 /** 工具调用状态（running 仅用于前端流式过程，落库后只会是 ok/error） */
 export type ToolCallStatus = 'running' | 'ok' | 'error';
 

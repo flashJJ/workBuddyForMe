@@ -94,6 +94,9 @@ export const API = {
   chatStream: '/api/chat/stream',
   chatProactive: '/api/chat/proactive',
   knowledgeBases: '/api/knowledge-bases',
+  /** v2.18 M4：示例内容包清单与导入 */
+  contentPacks: '/api/content-packs',
+  contentPackImport: '/api/content-packs/import',
   knowledgeBase: (id: string) => `/api/knowledge-bases/${id}`,
   documents: (kbId: string) => `/api/knowledge-bases/${kbId}/documents`,
   kbConflicts: (kbId: string) => `/api/knowledge-bases/${kbId}/conflicts`,
@@ -204,6 +207,7 @@ export const QUERY_KEYS = {
   conversations: ['conversations'] as const,
   messages: (conversationId: string) => ['messages', conversationId] as const,
   knowledgeBases: ['knowledge-bases'] as const,
+  contentPacks: ['content-packs'] as const,
   documents: (kbId: string) => ['documents', kbId] as const,
   kbGovernance: (kbId: string) => ['kb-governance', kbId] as const,
   kbCompileStatus: (kbId: string) => ['kb-compile-status', kbId] as const,
