@@ -9,14 +9,18 @@
 
 import {
   createCompileQueryRepository,
+  createRelationRepository,
   type EntityRecord,
 } from '@wbfm/database';
 import type { ServiceDeps } from '../services/base/deps';
 import { normalizeEntityName } from './entity-extractor';
+import { collectMultiHopRelations } from './relations';
 import {
   analyzeQuery,
+  isEntityMentioned,
   selectStaticKnowledge,
   type SelectorEntity,
+  type SelectorRelation,
   type SelectorSummary,
   type StaticFact,
 } from './static-selector';
@@ -77,11 +81,46 @@ export function createStaticKnowledgeService(deps: ServiceDeps) {
           keyTerms: s.keyTerms,
         }));
 
+      const records = [...entities.values()];
+      const selectorEntities = records.map(toSelectorEntity);
+      const mentionedIds = records
+        .filter((_record, index) => isEntityMentioned(selectorEntities[index]!, signals))
+        .map((record) => record.id);
+
+      const mentionedSet = new Set(mentionedIds);
+      const relationRepo = createRelationRepository(deps.db);
+      const relationRows =
+        mentionedIds.length > 0
+          ? collectMultiHopRelations(mentionedIds, (ids) =>
+              relationRepo.listForEntities(knowledgeBaseId, ids),
+            )
+          : [];
+      relationRows.sort((a, b) => {
+        const direct = (row: (typeof relationRows)[number]) =>
+          mentionedSet.has(row.fromEntityId) && mentionedSet.has(row.toEntityId) ? 1 : 0;
+        return direct(b) - direct(a) || a.hop - b.hop || b.confidence - a.confidence;
+      });
+      const relations: SelectorRelation[] = relationRows
+        .filter((row) => row.sourceDocumentId && row.sourceDocumentName)
+        .map((row) => ({
+          id: row.id,
+          fromEntityName: row.fromEntityName,
+          toEntityName: row.toEntityName,
+          relation: row.relation,
+          description: row.description,
+          documentId: row.sourceDocumentId!,
+          documentName: row.sourceDocumentName!,
+          chunkId: row.sourceChunkId,
+          pageNo: row.pageNo,
+          paragraphNo: row.paragraphNo,
+          confidence: row.confidence,
+        }));
+
       return selectStaticKnowledge(
         signals,
-        [...entities.values()].map(toSelectorEntity),
+        selectorEntities,
         summaries,
-        options,
+        { ...options, relations },
       );
     },
   };

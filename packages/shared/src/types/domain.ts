@@ -112,7 +112,7 @@ export interface Citation {
   charStart?: number;
   charEnd?: number;
   /** v1.3：引用来源层——普通分片/实体原句/文档要点（缺省视同 chunk） */
-  staticKind?: 'chunk' | 'entity' | 'summary';
+  staticKind?: 'chunk' | 'entity' | 'summary' | 'relation';
   /** v2.19：章节路径（最多 4 层）；旧引用缺省 */
   sectionPath?: string[];
   /** v2.19：表格序号（文档内从 1）；非表格引用缺省 */

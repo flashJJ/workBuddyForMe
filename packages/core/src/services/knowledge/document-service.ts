@@ -125,6 +125,11 @@ export function createDocumentService(deps: ServiceDeps) {
           warnings.push('未检测到标题结构，章节路径为空');
         }
         for (const table of tables) {
+          if (table.confidence !== undefined && table.confidence < 0.75) {
+            warnings.push(
+              `表 ${table.tableNo} 置信度较低（${Math.round(table.confidence * 100)}%），表格结构可能不准确`,
+            );
+          }
           if (table.header.length === 0) {
             warnings.push(`表 ${table.tableNo} 无表头`);
             continue;

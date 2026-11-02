@@ -31,6 +31,27 @@ export function renderMarkdownTable(table: Omit<DocumentTable, 'tableNo'>): stri
   return lines.join('\n');
 }
 
+/** v2.19 M5：按表头/行一致性/稀疏度估算表格结构置信度（启发式，不承诺版面还原） */
+export function tableConfidence(table: Omit<DocumentTable, 'tableNo'>): number {
+  let score = 1;
+  if (table.header.length === 0) score -= 0.35;
+  if (table.rows.length <= 1) score -= 0.2;
+  if (table.header.length > 0) {
+    const mismatches = table.rows.filter((row) => row.length !== table.header.length).length;
+    score -= Math.min(0.4, mismatches * 0.2);
+  }
+  const cells = table.rows.flat();
+  const empty = cells.filter((cell) => !cell.trim()).length;
+  if (cells.length > 0 && empty / cells.length > 0.3) score -= 0.2;
+  const columnCount = Math.max(
+    table.header.length,
+    ...table.rows.map((row) => row.length),
+    0,
+  );
+  if (columnCount < 2) score -= 0.3;
+  return Math.max(0.25, Math.min(1, Math.round(score * 100) / 100));
+}
+
 function tableWarnings(tableNo: number, table: DocumentTable): string[] {
   const warnings: string[] = [];
   const expected = table.header.length;
@@ -83,9 +104,14 @@ export function assembleDocument(
     let table: DocumentTable | undefined;
     if (segment.kind === 'table' && segment.table) {
       tableNo += 1;
-      table = { ...segment.table, tableNo };
+      table = { ...segment.table, tableNo, confidence: tableConfidence(segment.table) };
       tables.push(table);
       warnings.push(...tableWarnings(tableNo, table));
+      if (table.confidence !== undefined && table.confidence < 0.75) {
+        warnings.push(
+          `表 ${tableNo} 置信度较低（${Math.round(table.confidence * 100)}%），表格结构可能不准确`,
+        );
+      }
     }
 
     blocks.push({

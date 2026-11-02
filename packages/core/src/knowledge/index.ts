@@ -46,7 +46,9 @@ export {
   type SelectorEntity,
   type SelectorMention,
   type SelectorSummary,
+  type SelectorRelation,
 } from './static-selector';
+export * from './relations';
 export { createStaticKnowledgeService, type StaticKnowledgeService } from './static-knowledge-service';
 export {
   detectConflicts,

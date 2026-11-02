@@ -5,3 +5,4 @@ export * from './compile-write-repo';
 export * from './document-block-repo';
 export * from './document-repo';
 export * from './knowledge-repo';
+export * from './relation-repo';

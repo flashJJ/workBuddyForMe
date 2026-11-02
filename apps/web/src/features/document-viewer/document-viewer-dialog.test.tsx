@@ -75,6 +75,7 @@ const STRUCTURE = {
       ],
       caption: '付款计划',
       pageNo: 2,
+      confidence: 0.55,
     },
   ],
   warnings: ['未检测到标题结构，章节路径为空'],
@@ -138,6 +139,7 @@ describe('DocumentViewerDialog（v2.19 M4）', () => {
     expect(within(dialog).getByTestId('structure-blocks')).toHaveTextContent('尾款 | 70%');
     expect(within(dialog).getByTestId('structure-blocks')).toHaveTextContent('图 1 付款比例趋势');
 
+    expect(within(dialog).getByTestId('table-confidence')).toHaveTextContent('置信度 55%');
     const targetedRow = within(dialog).getByTestId('table-row-1-2');
     expect(targetedRow).toHaveAttribute('data-targeted', 'true');
     const targetedCell = within(dialog).getByTestId('table-cell-B3');

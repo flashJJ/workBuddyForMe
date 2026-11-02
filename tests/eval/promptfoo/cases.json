@@ -1,0 +1,42 @@
+[
+  {
+    "id": "section-locate",
+    "query": "付款条款在合同的哪一章？",
+    "output": "回答：付款条款位于「合同 › 付款条款」。引用：contract.md 表 1 第 2 行。"
+  },
+  {
+    "id": "table-cell",
+    "query": "去年 Q4 营收是多少？",
+    "output": "回答：Q4 营收 1200 万。引用：finance.xlsx 表 3 · 第 2 行 · C3。"
+  },
+  {
+    "id": "table-empty",
+    "query": "合同里写了海外子公司地址吗？",
+    "output": "未覆盖：知识库中未检索到相关片段；请以原文为准。"
+  },
+  {
+    "id": "cross-doc-compare",
+    "query": "对比采购合同和销售合同的付款条款",
+    "output": "对比完成：采购合同.md vs 销售合同.md；共有章节 2，仅左 1，仅右 1；表格匹配 1。"
+  },
+  {
+    "id": "graph-direct",
+    "query": "Acme 和 Beta 是什么关系？",
+    "output": "关系：Acme —[收购]→ Beta。来源：graph.txt。"
+  },
+  {
+    "id": "graph-multihop",
+    "query": "Acme 和 Gamma 有什么关联？",
+    "output": "关系：Acme —[收购]→ Beta；Beta —[合作]→ Gamma。来源：graph.txt。"
+  },
+  {
+    "id": "scan-table-confidence",
+    "query": "扫描件里的付款比例表准吗？",
+    "output": "表 1 置信度 55%：扫描件表格由 OCR 文本启发式重建，结构可能不准确。"
+  },
+  {
+    "id": "no-structure",
+    "query": "旧文档没有结构时还能对比吗？",
+    "output": "未解析结构（旧文档或解析失败）；未覆盖：无法对比章节与表格。"
+  }
+]

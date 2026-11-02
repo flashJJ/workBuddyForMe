@@ -16,10 +16,12 @@ import {
   createKnowledgeRepository,
   type CompilationInput,
   type CompileEntityInput,
+  type CompileRelationInput,
 } from '@wbfm/database';
 import type { ServiceDeps } from '../services/base/deps';
 import { extractRuleEntities } from './entity-extractor';
 import { locateContexts } from './locate-mentions';
+import { extractRuleRelations } from './relations';
 import { extractRuleSummary } from './rule-extractor';
 import { stitchChunks } from './stitch-chunks';
 
@@ -64,6 +66,7 @@ export interface CompileDocumentResult {
   generation: number;
   entityCount: number;
   mentionCount: number;
+  relationCount: number;
   extractor: 'rule' | 'llm';
   modelId: string | null;
 }
@@ -123,7 +126,34 @@ function toCompilationInput(
       modelId: seed.modelId,
     },
     entities,
+    relations: buildRelations(stitched, seed, entities),
   };
+}
+
+/** 关系 seed → 入库结构：只保留实体已落库且原句可回指的关系 */
+function buildRelations(
+  stitched: ReturnType<typeof stitchChunks>,
+  seed: CompiledSeed,
+  entities: CompileEntityInput[],
+): CompileRelationInput[] {
+  const compiled = new Set(entities.map((entity) => entity.normalizedName));
+  const relations: CompileRelationInput[] = [];
+  for (const relation of extractRuleRelations(stitched.text, seed.entities)) {
+    if (!compiled.has(relation.fromNormalized) || !compiled.has(relation.toNormalized)) continue;
+    const [located] = locateContexts(stitched.text, stitched.runs, [relation.context]);
+    if (!located) continue;
+    relations.push({
+      fromNormalized: relation.fromNormalized,
+      toNormalized: relation.toNormalized,
+      relation: relation.relation,
+      description: located.context.slice(0, 240),
+      chunkId: located.location.chunkId,
+      pageNo: located.location.pageNo,
+      paragraphNo: located.location.paragraphNo,
+      confidence: relation.confidence,
+    });
+  }
+  return relations;
 }
 
 /** 编译单个文档；调用方（M4 队列）负责并发/串行与重试策略 */

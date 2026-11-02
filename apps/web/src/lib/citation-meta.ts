@@ -32,7 +32,9 @@ export function formatCitationMeta(
       ? t('share.citeEntityLabel')
       : citation.staticKind === 'summary'
         ? t('share.citeSummaryLabel')
-        : '';
+        : citation.staticKind === 'relation'
+          ? t('share.citeRelationLabel')
+          : '';
 
   const section = (citation.sectionPath ?? []).filter(Boolean).join(' › ');
   let location = '';

@@ -16,8 +16,28 @@ export function jsonError(error: ApiError): Response {
   });
 }
 
+interface ZodErrorLike {
+  issues: Array<{ path: Array<string | number>; message: string }>;
+}
+
+/**
+ * v2.19 M5：workspace 可能同时存在多份 zod 副本（不同包的依赖树），
+ * `instanceof ZodError` 会跨副本失效；此处按结构兜底识别校验错误。
+ */
+function asZodError(error: unknown): ZodErrorLike | null {
+  if (error instanceof ZodError) return error;
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    Array.isArray((error as ZodErrorLike).issues)
+  ) {
+    return error as ZodErrorLike;
+  }
+  return null;
+}
+
 /** Zod 错误转 422 业务错误（details 携带字段级问题） */
-export function fromZodError(error: ZodError): ApiError {
+export function fromZodError(error: ZodErrorLike): ApiError {
   return new ApiError(
     'VALIDATION_ERROR',
     '请求参数校验失败',
@@ -53,7 +73,8 @@ export function toErrorResponse(error: unknown): Response {
   if (error instanceof ProviderError) {
     return jsonError(new ApiError(error.code, error.message));
   }
-  if (error instanceof ZodError) return jsonError(fromZodError(error));
+  const zodError = asZodError(error);
+  if (zodError) return jsonError(fromZodError(zodError));
   console.error('[api] 未处理错误：', error);
   const detail =
     process.env.NODE_ENV === 'development' && error instanceof Error

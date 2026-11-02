@@ -1,5 +1,6 @@
 import type { DatabaseInstance } from '../../client';
 import { newId, nowIso } from '../ops/mappers';
+import { deleteDocumentRelations, replaceDocumentRelations } from './relation-repo';
 
 /**
  * 知识编译产物写入仓储（v1.3 M2/T2.3）。
@@ -39,17 +40,32 @@ export interface CompileSummaryInput {
   modelId?: string | null;
 }
 
+/** v2.19 M5：关系边（实体按归一化名引用，写入时解析为实体 id） */
+export interface CompileRelationInput {
+  fromNormalized: string;
+  toNormalized: string;
+  relation: string;
+  description: string;
+  chunkId: number | null;
+  pageNo: number | null;
+  paragraphNo: number | null;
+  confidence: number;
+}
+
 export interface CompilationInput {
   knowledgeBaseId: string;
   documentId: string;
   summary: CompileSummaryInput;
   entities: CompileEntityInput[];
+  /** 可选：关系边；缺省为空，旧调用方无需改动 */
+  relations?: CompileRelationInput[];
 }
 
 export interface CompilationResult {
   generation: number;
   entityCount: number;
   mentionCount: number;
+  relationCount: number;
 }
 
 interface EntityRow {
@@ -158,6 +174,7 @@ export function createCompileWriteRepository(db: DatabaseInstance) {
         deleteDocMentions.run(data.documentId);
 
         let mentionCount = 0;
+        const entityIdByNormalized = new Map<string, string>();
         for (const entity of data.entities) {
           const existing = findEntity.get({
             kbId: data.knowledgeBaseId,
@@ -192,6 +209,7 @@ export function createCompileWriteRepository(db: DatabaseInstance) {
             });
           }
 
+          entityIdByNormalized.set(entity.normalizedName, entityId);
           for (const mention of entity.mentions) {
             insertMention.run({
               id: newId(),
@@ -209,11 +227,18 @@ export function createCompileWriteRepository(db: DatabaseInstance) {
           touchedEntities.add(entityId);
         }
 
+        const relationCount = replaceDocumentRelations(db, {
+          knowledgeBaseId: data.knowledgeBaseId,
+          documentId: data.documentId,
+          entityIdByNormalized,
+          relations: data.relations ?? [],
+        });
+
         for (const id of touchedEntities) recountEntity.run({ id });
         gcEntities.run({ kbId: data.knowledgeBaseId });
         touchDocument.run({ documentId: data.documentId, generation, ts });
 
-        return { generation, entityCount: data.entities.length, mentionCount };
+        return { generation, entityCount: data.entities.length, mentionCount, relationCount };
       });
       return doSave(input);
     },
@@ -229,6 +254,7 @@ export function createCompileWriteRepository(db: DatabaseInstance) {
         .all(documentId) as Array<{ id: string }>;
       deleteDocMentions.run(documentId);
       db.prepare(`DELETE FROM document_summaries WHERE document_id = ?`).run(documentId);
+      deleteDocumentRelations(db, documentId);
       for (const { id } of affected) recountEntity.run({ id });
       const kb = db
         .prepare(`SELECT knowledge_base_id AS kbId FROM documents WHERE id = ?`)

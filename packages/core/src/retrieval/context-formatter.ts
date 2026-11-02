@@ -11,7 +11,7 @@ export const CITATION_SNIPPET_LENGTH = 160;
 interface EntryHeadFields {
   documentName: string;
   ordinal: number;
-  staticKind?: 'chunk' | 'entity' | 'summary';
+  staticKind?: 'chunk' | 'entity' | 'summary' | 'relation';
   tableNo?: number | null;
   tableRow?: number | null;
   tableCell?: string | null;
@@ -21,6 +21,7 @@ interface EntryHeadFields {
 function entryHeader(chunk: EntryHeadFields): string {
   if (chunk.staticKind === 'entity') return `实体知识：《${chunk.documentName}》`;
   if (chunk.staticKind === 'summary') return `文档要点：《${chunk.documentName}》`;
+  if (chunk.staticKind === 'relation') return `关系知识：《${chunk.documentName}》`;
   const table =
     chunk.tableNo != null
       ? ` · 表 ${chunk.tableNo}${chunk.tableRow != null ? ` 第 ${chunk.tableRow} 行` : ''}${
@@ -110,7 +111,7 @@ export type CitableEntry = {
   paragraphNo?: number | null;
   charStart?: number;
   charEnd?: number;
-  staticKind?: 'chunk' | 'entity' | 'summary';
+  staticKind?: 'chunk' | 'entity' | 'summary' | 'relation';
   /** v2.19：章节路径/表格定位（旧引用可缺省） */
   sectionPath?: string[];
   tableNo?: number;

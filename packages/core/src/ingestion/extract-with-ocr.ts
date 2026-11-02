@@ -119,6 +119,12 @@ export async function extractDocumentText(
     pageNeedsOcr(text) ? [`第 ${index + 1} 页文字层稀疏，已使用 OCR 文本重建结构`] : [],
   );
   const parsed = parsePagedTextDocument(result.pages, warnings);
+  if (parsed.tables.length > 0) {
+    for (const table of parsed.tables) {
+      table.confidence = Math.min(table.confidence ?? 1, 0.55);
+    }
+    parsed.warnings.push('扫描件表格由 OCR 文本启发式重建，置信度较低');
+  }
   return {
     text: parsed.text,
     structure: toStructuredText(parsed),

@@ -102,6 +102,25 @@ describe('CitationsList 引用来源折叠（v1.5）', () => {
     expect(screen.getByTestId('citation-location')).toHaveTextContent('表 2 · 第 3 行');
   });
 
+  it('v2.19 M5：关系事实引用展示「关系知识」标签', () => {
+    const base = messageWith(1);
+    renderWithProviders(
+      <CitationsList
+        message={{
+          ...base,
+          citations: [
+            {
+              ...cite(0, 'graph.txt'),
+              staticKind: 'relation',
+              snippet: '关系：Acme —[收购]→ Beta。',
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByTestId('citation-static-kind')).toHaveTextContent('关系知识');
+  });
+
   it('v2.19 M4：点击本地引用打开结构查看器并定位章节/表格', async () => {
     vi.stubGlobal(
       'fetch',

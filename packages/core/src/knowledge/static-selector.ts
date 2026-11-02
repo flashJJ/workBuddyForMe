@@ -10,7 +10,7 @@
 import { normalizeEntityName } from './entity-extractor';
 import { extractKeyTerms } from './rule-extractor';
 
-export type StaticFactKind = 'entity' | 'summary';
+export type StaticFactKind = 'entity' | 'summary' | 'relation';
 
 export interface SelectorMention {
   context: string;
@@ -38,9 +38,24 @@ export interface SelectorSummary {
   keyTerms: string[];
 }
 
+/** v2.19 M5：可引用的关系事实（documentId 必须存在，关系才能回指来源） */
+export interface SelectorRelation {
+  id: string;
+  fromEntityName: string;
+  toEntityName: string;
+  relation: string;
+  description: string;
+  documentId: string;
+  documentName: string;
+  chunkId: number | null;
+  pageNo: number | null;
+  paragraphNo: number | null;
+  confidence: number;
+}
+
 export interface StaticFact {
   kind: StaticFactKind;
-  /** 注入文本（实体=最高价值 mention 原句；摘要=tldr+首要点，均为原文） */
+  /** 注入文本（实体=mention 原句；关系=关系句+来源原句；摘要=tldr+首要点） */
   text: string;
   documentId: string;
   documentName: string;
@@ -54,6 +69,9 @@ export interface StaticFact {
 export interface StaticSelectorOptions {
   maxEntities?: number;
   maxSummaries?: number;
+  /** v2.19 M5：多跳关系候选（已按直接命中/置信度排序） */
+  relations?: SelectorRelation[];
+  maxRelations?: number;
 }
 
 /** 名称最小长度：中文 2 字、拉丁 3 字符，避免单字误命中（如「的」「A」） */
@@ -179,6 +197,26 @@ export function selectStaticKnowledge(
       paragraphNo: mention.paragraphNo,
       entityName: entity.name,
     });
+  }
+
+  const maxRelations = options.maxRelations ?? 2;
+  const seenRelations = new Set<string>();
+  let relationCount = 0;
+  for (const relation of options.relations ?? []) {
+    if (relationCount >= maxRelations) break;
+    if (seenRelations.has(relation.id)) continue;
+    if (!relation.description.trim() || !relation.documentId) continue;
+    seenRelations.add(relation.id);
+    facts.push({
+      kind: 'relation',
+      text: `关系：${relation.fromEntityName} —[${relation.relation}]→ ${relation.toEntityName}。原句：${relation.description}`,
+      documentId: relation.documentId,
+      documentName: relation.documentName,
+      chunkId: relation.chunkId,
+      pageNo: relation.pageNo,
+      paragraphNo: relation.paragraphNo,
+    });
+    relationCount += 1;
   }
 
   for (const summary of summaries.filter((s) => isSummaryRelevant(s, signals)).slice(0, maxSummaries)) {

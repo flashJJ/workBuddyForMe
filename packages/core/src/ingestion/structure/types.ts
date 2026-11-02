@@ -11,6 +11,8 @@ export interface DocumentTable {
   rows: string[][];
   caption?: string;
   pageNo?: number | null;
+  /** v2.19 M5：结构置信度（0-1；OCR/错列/缺表头时降低） */
+  confidence?: number;
 }
 
 export interface DocumentBlock {

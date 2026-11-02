@@ -32,6 +32,7 @@
     "sync-version:check": "node scripts/sync-version.mjs --check",
     "eval:memory": "node scripts/eval/eval-memory.mjs",
     "eval:agent": "node scripts/eval/eval-agent.mjs",
+    "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles"
   },
   "devDependencies": {
@@ -44,6 +45,7 @@
     "eslint-import-resolver-typescript": "3.10.1",
     "eslint-plugin-import": "2.32.0",
     "prettier": "^3.4.0",
+    "promptfoo": "^0.125.1",
     "tsup": "^8.5.0",
     "turbo": "^2.5.0",
     "typescript": "^5.9.0",
