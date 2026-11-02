@@ -17,6 +17,10 @@ const MIME_EXTENSION: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
+  // v2.18：Agent 产物复用 attachments 表
+  'text/html': 'html',
+  'image/svg+xml': 'svg',
+  'text/markdown': 'md',
 };
 
 export interface AttachmentCreateFields {
@@ -91,6 +95,11 @@ export function createAttachmentRepository(db: DatabaseInstance) {
         | AttachmentRow
         | undefined;
       return row ?? null;
+    },
+
+    /** v2.18：产物落盘失败时回滚元数据行 */
+    remove(id: string): void {
+      db.prepare(`DELETE FROM attachments WHERE id = ?`).run(id);
     },
 
     /** 备份导出用：列出所有附件行（含 storage_path） */

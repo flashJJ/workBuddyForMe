@@ -7,6 +7,7 @@ export const zhToolTrace = {
     fetchWebpage: '读取网页',
     capabilitySearch: '搜索能力目录',
     capabilityInstall: '安装能力包',
+    artifactWrite: '生成产物文件',
     screenSnapshot: '屏幕截图',
     mouseMove: '鼠标移动',
     mouseClick: '鼠标点击',
@@ -30,6 +31,13 @@ export const zhToolTrace = {
     danger: '危险',
   },
   substepsAria: '{name}子步骤',
+  artifact: {
+    preview: '预览',
+    hidePreview: '收起',
+    download: '下载',
+    loading: '加载中…',
+    failed: '产物加载失败',
+  },
   detail: {
     toolName: '工具名',
     source: '来源',
@@ -47,6 +55,7 @@ export const enToolTrace = {
     fetchWebpage: 'Fetch webpage',
     capabilitySearch: 'Search capability catalog',
     capabilityInstall: 'Install capability pack',
+    artifactWrite: 'Create artifact file',
     screenSnapshot: 'Screen snapshot',
     mouseMove: 'Move mouse',
     mouseClick: 'Click mouse',
@@ -70,6 +79,13 @@ export const enToolTrace = {
     danger: 'Danger',
   },
   substepsAria: '{name} substeps',
+  artifact: {
+    preview: 'Preview',
+    hidePreview: 'Hide',
+    download: 'Download',
+    loading: 'Loading…',
+    failed: 'Failed to load artifact',
+  },
   detail: {
     toolName: 'Tool',
     source: 'Source',

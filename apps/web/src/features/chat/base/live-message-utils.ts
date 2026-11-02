@@ -103,6 +103,10 @@ export function applyToolTraceEnd(prev: Message[] | null, data: ToolEndPayload):
         ...((data.substeps ?? previous?.substeps)
           ? { substeps: data.substeps ?? previous!.substeps }
           : {}),
+        // v2.18：产物卡片数据
+        ...((data.artifacts ?? previous?.artifacts)
+          ? { artifacts: data.artifacts ?? previous!.artifacts }
+          : {}),
       };
       const idx = trace.findIndex((t) => t.callId === data.callId);
       const nextTrace = idx === -1 ? [...trace, entry] : trace.map((t, j) => (j === idx ? entry : t));

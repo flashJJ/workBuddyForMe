@@ -38,6 +38,8 @@ export type {
 } from './search';
 export type { ContentPart, TextContentPart, ImageContentPart } from './content-part';
 export type {
+  ArtifactRef,
+  ArtifactWriteInput,
   ToolTraceEntry,
   ToolEventPayload,
   ToolCallStatus,

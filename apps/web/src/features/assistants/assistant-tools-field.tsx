@@ -14,6 +14,7 @@ const TOOL_LABEL_KEYS: Record<ToolName, MessageKey> = {
   fetch_webpage: 'assistants.tools.fetchWebpage',
   capability_search: 'assistants.tools.capabilitySearch',
   capability_install: 'assistants.tools.capabilityInstall',
+  artifact_write: 'assistants.tools.artifactWrite',
   screen_snapshot: 'assistants.tools.screenSnapshot',
   mouse_move: 'assistants.tools.mouseMove',
   mouse_click: 'assistants.tools.mouseClick',

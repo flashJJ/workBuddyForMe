@@ -104,6 +104,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const taskGrants = createTaskGrantRegistry();
   const search = createSearchService({ db });
   const deps: ServiceDeps = { db, cipher, search, mcp, permissions, confirmations, approvals, skills, breakers, taskGrants };
+  const attachments = createAttachmentService(deps);
+  deps.artifacts = attachments;
   const audit = createAuditService(db);
   deps.audit = audit;
   deps.closeBrowserSession = closeBrowserSession;
@@ -260,7 +262,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     knowledgeGovernance: createKnowledgeGovernanceService(deps),
     knowledgeCompile: createCompileRunnerService(deps),
     documents: createDocumentService(deps),
-    attachments: createAttachmentService(deps),
+    attachments,
     memories: createMemoryService(deps),
     schedules,
     eventUsage: createEventUsageService(deps),

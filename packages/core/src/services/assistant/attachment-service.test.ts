@@ -79,4 +79,71 @@ describe('附件服务（T4）', () => {
     const service = createAttachmentService({ db, cipher: createWebCipher() });
     expect(() => service.read('nope')).toThrowError(/NOT_FOUND|附件/);
   });
+
+  it('saveArtifact：html/svg/md 落盘并返回产物引用，文件名强制扩展名', () => {
+    const service = createAttachmentService({ db, cipher: createWebCipher() });
+    const html = service.saveArtifact({
+      title: '架构图',
+      filename: '架构/图*',
+      format: 'html',
+      content: '<html><body>diagram</body></html>',
+    });
+    expect(html.format).toBe('html');
+    expect(html.mimeType).toBe('text/html');
+    expect(html.filename).toBe('架构-图-.html');
+    expect(existsSync(join(getDataDir('attachments'), `${html.attachmentId}.html`))).toBe(true);
+
+    const svg = service.saveArtifact({
+      title: 'SVG',
+      filename: 'chart.svg',
+      format: 'svg',
+      content: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    });
+    expect(svg.filename).toBe('chart.svg');
+    expect(existsSync(join(getDataDir('attachments'), `${svg.attachmentId}.svg`))).toBe(true);
+
+    const md = service.saveArtifact({
+      title: '说明',
+      filename: 'notes',
+      format: 'md',
+      content: '# 标题',
+    });
+    expect(md.filename).toBe('notes.md');
+    expect(existsSync(join(getDataDir('attachments'), `${md.attachmentId}.md`))).toBe(true);
+  });
+
+  it('saveArtifact：空标题/空内容/超 2MB 拒绝', () => {
+    const service = createAttachmentService({ db, cipher: createWebCipher() });
+    expect(() =>
+      service.saveArtifact({ title: ' ', filename: 'a', format: 'html', content: '<p>x</p>' }),
+    ).toThrowError(/标题/);
+    expect(() =>
+      service.saveArtifact({ title: 'a', filename: 'a', format: 'html', content: '' }),
+    ).toThrowError(/为空/);
+    expect(() =>
+      service.saveArtifact({
+        title: 'big',
+        filename: 'big',
+        format: 'html',
+        content: 'x'.repeat(2 * 1024 * 1024 + 1),
+      }),
+    ).toThrowError(/2MB/);
+  });
+
+  it('readArtifact：返回产物字节；图片附件与未知 ID 拒绝', () => {
+    const service = createAttachmentService({ db, cipher: createWebCipher() });
+    const artifact = service.saveArtifact({
+      title: '图表',
+      filename: 'chart',
+      format: 'svg',
+      content: '<svg></svg>',
+    });
+    const read = service.readArtifact(artifact.attachmentId);
+    expect(read.mimeType).toBe('image/svg+xml');
+    expect(read.buffer.toString('utf8')).toBe('<svg></svg>');
+
+    const image = service.save({ filename: 'a.png', mimeType: 'image/png', buffer: PNG_BYTES });
+    expect(() => service.readArtifact(image.id)).toThrowError(/不是可预览产物/);
+    expect(() => service.readArtifact('missing')).toThrowError(/不存在/);
+  });
 });

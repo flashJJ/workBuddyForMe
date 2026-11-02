@@ -3,7 +3,26 @@
  * TOOL_NAMES 枚举仅供内置工具的 UI 标签映射使用。
  */
 
+import type { ArtifactFormat } from '../constants/tools';
 import type { PermissionLevel } from './permission';
+
+/** v2.18 产物引用：只暴露展示/下载所需元数据，不含磁盘路径 */
+export interface ArtifactRef {
+  attachmentId: string;
+  title: string;
+  filename: string;
+  format: ArtifactFormat;
+  mimeType: string;
+  byteSize: number;
+}
+
+/** 写入产物（工具/服务层共用；content 为 UTF-8 文本） */
+export interface ArtifactWriteInput {
+  title: string;
+  filename: string;
+  format: ArtifactFormat;
+  content: string;
+}
 
 /** 工具调用状态（running 仅用于前端流式过程，落库后只会是 ok/error） */
 export type ToolCallStatus = 'running' | 'ok' | 'error';
@@ -48,6 +67,8 @@ export interface ToolTraceEntry {
   originalTokens?: number;
   /** v1.1：实际入模视图的估算 token */
   modelTokens?: number;
+  /** v2.18：本次工具调用产出的可交付文件（产物卡片展示） */
+  artifacts?: ArtifactRef[];
 }
 
 /** SSE tool 事件载荷：start / substep（v0.8 流式子步骤）/ end 三阶段 */
@@ -77,4 +98,6 @@ export type ToolEventPayload =
       source?: string;
       permission?: PermissionLevel;
       substeps?: ToolSubstep[];
+      /** v2.18：产物卡片数据 */
+      artifacts?: ArtifactRef[];
     };

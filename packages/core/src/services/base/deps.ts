@@ -11,9 +11,15 @@ import type { ApprovalRegistry } from '../../work-signal/approval-registry';
 import type { WorkPlanService } from '../../work-plan/work-plan-service';
 import type { SessionLogService } from '../../session-log/session-log-service';
 import type { AgentPolicy } from '@wbfm/shared/schemas';
+import type { ArtifactRef, ArtifactWriteInput } from '@wbfm/shared/types';
 import type { AuditService } from '../../governance/audit';
 import type { SearchService } from '../search';
 import type { CapabilityCatalog } from '../../capabilities/catalog/types';
+
+/** v2.18：产物写入最小接口（避免 deps 反向依赖附件服务实现） */
+export interface ArtifactWriter {
+  saveArtifact(input: ArtifactWriteInput): ArtifactRef;
+}
 
 /** 所有服务共享的依赖：数据库实例与密钥器 */
 export interface ServiceDeps {
@@ -23,6 +29,8 @@ export interface ServiceDeps {
   search?: SearchService;
   /** v2.17：能力目录与安装代理（未提供时 capability_* 工具明确拒绝） */
   capabilityCatalog?: CapabilityCatalog;
+  /** v2.18：产物写入（未提供时 artifact_write 返回不可用） */
+  artifacts?: ArtifactWriter;
   /** v2.17：安装后回写助手 enabledTools（容器在助手服务创建后注入） */
   bindAssistantTools?: (assistantId: string, enabledTools: string[]) => void;
   /** v0.6：MCP 注册表（未提供时 enabledTools 中的 MCP 限定名静默跳过） */

@@ -63,6 +63,7 @@ export function buildToolTraceEntry(input: ToolTraceBuildInput): ToolTraceEntry 
           modelTokens: compaction.tokens,
         }
       : {}),
+    ...(result.artifacts?.length ? { artifacts: result.artifacts } : {}),
   };
 }
 
@@ -90,6 +91,7 @@ export function buildToolEndData(input: ToolEndBuildInput): ToolEndPayload {
     source,
     permission,
     ...substepSnapshot,
+    ...(result.artifacts?.length ? { artifacts: result.artifacts } : {}),
   };
 }
 

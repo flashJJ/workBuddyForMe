@@ -22,6 +22,7 @@ import {
   Minus,
   Boxes,
   PackagePlus,
+  FileText,
 } from 'lucide-react';
 import type { ToolName } from '@wbfm/shared/constants';
 import type { ToolSubstep, ToolTraceEntry, PermissionLevel } from '@wbfm/shared/types';
@@ -29,6 +30,7 @@ import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
+import { ArtifactCard } from './artifact-card';
 
 /** useI18n 返回的翻译函数形状（模块级 helper 需经调用方传入） */
 type TFn = (key: MessageKey, vars?: MessageVars) => string;
@@ -40,6 +42,7 @@ const TOOL_META: Record<ToolName, { labelKey: MessageKey; icon: typeof Clock }> 
   fetch_webpage: { labelKey: 'toolTrace.tools.fetchWebpage', icon: Globe },
   capability_search: { labelKey: 'toolTrace.tools.capabilitySearch', icon: Boxes },
   capability_install: { labelKey: 'toolTrace.tools.capabilityInstall', icon: PackagePlus },
+  artifact_write: { labelKey: 'toolTrace.tools.artifactWrite', icon: FileText },
   screen_snapshot: { labelKey: 'toolTrace.tools.screenSnapshot', icon: Monitor },
   mouse_move: { labelKey: 'toolTrace.tools.mouseMove', icon: MousePointer2 },
   mouse_click: { labelKey: 'toolTrace.tools.mouseClick', icon: MousePointerClick },
@@ -164,6 +167,13 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
           className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
         />
       </button>
+      {entry.artifacts && entry.artifacts.length > 0 && (
+        <div className="space-y-1 border-t px-2.5 py-1.5">
+          {entry.artifacts.map((artifact) => (
+            <ArtifactCard key={artifact.attachmentId} artifact={artifact} />
+          ))}
+        </div>
+      )}
       {substeps.length > 0 && (
         <ul
           data-testid="tool-substeps"

@@ -10,6 +10,8 @@ export const TOOL_NAMES = [
   // v2.17 M4 能力目录（安装为 write，需 HITL）
   'capability_search',
   'capability_install',
+  // v2.18 M1 产物文件（write）
+  'artifact_write',
   // v0.7 M2 键鼠 / 窗口 / UIA
   'mouse_move',
   'mouse_click',
@@ -88,6 +90,29 @@ export const MCP_CALL_TIMEOUT_MS = 60_000;
 export const MCP_EXIT_GRACE_MS = 3_000;
 /** 单服务器工具数上限（防御异常服务器刷爆工具列表） */
 export const MCP_MAX_TOOLS_PER_SERVER = 50;
+
+/** v2.18：Agent 产物文件（复用 attachments 表，不改 schema） */
+export const ARTIFACT_FORMATS = ['html', 'svg', 'md'] as const;
+export type ArtifactFormat = (typeof ARTIFACT_FORMATS)[number];
+
+/** 单文件上限 2 MB（与产物工具参数校验一致） */
+export const ARTIFACT_MAX_BYTES = 2 * 1024 * 1024;
+/** 单轮产物数量上限（工具侧提示，权限门与熔断仍照常生效） */
+export const ARTIFACT_MAX_PER_TURN = 3;
+export const ARTIFACT_TITLE_MAX = 80;
+export const ARTIFACT_FILENAME_MAX = 120;
+
+export const ARTIFACT_MIME_BY_FORMAT: Record<ArtifactFormat, string> = {
+  html: 'text/html',
+  svg: 'image/svg+xml',
+  md: 'text/markdown',
+};
+
+export const ARTIFACT_EXTENSION_BY_FORMAT: Record<ArtifactFormat, string> = {
+  html: 'html',
+  svg: 'svg',
+  md: 'md',
+};
 
 /** 工具调用安全护栏常量 */
 export const MAX_TOOL_ROUNDS = 5;
