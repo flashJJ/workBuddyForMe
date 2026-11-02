@@ -258,12 +258,13 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
 
     // 新服务构造时执行恢复扫描：stuck 收敛 interrupted，queued 重新入队续跑
     const recovered = createFlowRunService({ deps, runtime, workflows, runs });
-    // 给 setImmediate 队列链一点时间跑完
-    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(runs.getRun(stuckId)?.status).toBe('interrupted');
     expect(runs.getRun(stuckId)?.interruptReason).toBe('process_restart');
-    expect(runs.getRun(queuedId)?.status).toBe('succeeded');
+    // setImmediate 队列链在慢速 CI 上可能超过固定等待；轮询到终态，避免时序抖动
+    await expect
+      .poll(() => runs.getRun(queuedId)?.status, { timeout: 5_000, interval: 25 })
+      .toBe('succeeded');
     expect(recovered.isActive(stuckId)).toBe(false);
   });
 
