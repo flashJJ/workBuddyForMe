@@ -82,21 +82,32 @@ export function mergePdfTextItems(items: readonly unknown[]): string {
  * v0.4：逐页提取 PDF 文字层（保留空页占位）。
  * 扫描件判定与「文字层页 / 待 OCR 页」混排合并都依赖逐页结果。
  */
-export async function readPdfPageTexts(data: Uint8Array): Promise<string[]> {
+export interface PdfPageItems {
+  pageNo: number;
+  items: readonly unknown[];
+}
+
+/** v2.19：保留每页 TextItem 坐标，供结构解析识别行/列/标题与表格 */
+export async function readPdfPageItems(data: Uint8Array): Promise<PdfPageItems[]> {
   // pdfjs 在 Node fake-worker 下会 transfer（detach）输入缓冲，
   // 同一数据随后还要用于 OCR 渲染，这里必须传副本
   const doc = await pdfjs.getDocument({ data: data.slice(), isEvalSupported: false }).promise;
   try {
-    const pages: string[] = [];
+    const pages: PdfPageItems[] = [];
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
       const page = await doc.getPage(pageNumber);
       const content = await page.getTextContent();
-      pages.push(mergePdfTextItems(content.items).trim());
+      pages.push({ pageNo: pageNumber, items: content.items as readonly unknown[] });
     }
     return pages;
   } finally {
     await doc.destroy();
   }
+}
+
+export async function readPdfPageTexts(data: Uint8Array): Promise<string[]> {
+  const pages = await readPdfPageItems(data);
+  return pages.map((page) => mergePdfTextItems(page.items).trim());
 }
 
 async function readPdf(data: Uint8Array): Promise<string> {

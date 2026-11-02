@@ -5,13 +5,17 @@ import { toOfficeReadError } from './office-error';
  * docx → 结构化纯文本：段落保留换行；表格按行输出，单元格用 | 分隔。
  * mammoth 只产出受控的有限 HTML 标签，这里做轻量转换而非引入完整 DOM 依赖。
  */
-export async function readDocx(data: Uint8Array): Promise<string> {
+export async function readDocxHtml(data: Uint8Array): Promise<string> {
   try {
     const { value: html } = await mammoth.convertToHtml({ buffer: Buffer.from(data) });
-    return docxHtmlToText(html);
+    return html;
   } catch (error) {
     throw toOfficeReadError('docx', error);
   }
+}
+
+export async function readDocx(data: Uint8Array): Promise<string> {
+  return docxHtmlToText(await readDocxHtml(data));
 }
 
 function unescapeHtml(value: string): string {

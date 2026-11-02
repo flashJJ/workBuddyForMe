@@ -2,5 +2,6 @@
 export * from './chunk-repo';
 export * from './compile-query-repo';
 export * from './compile-write-repo';
+export * from './document-block-repo';
 export * from './document-repo';
 export * from './knowledge-repo';

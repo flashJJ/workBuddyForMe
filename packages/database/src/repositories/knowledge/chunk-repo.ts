@@ -10,11 +10,26 @@ export interface ChunkContent {
   pageNo?: number | null;
   /** v1.3：文档内段落序号（从 1）；无法映射时为 null/undefined */
   paragraphNo?: number | null;
+  /** v2.19：章节路径/块类型/表格编号（旧文档为空结构） */
+  sectionPath?: string[];
+  blockKind?: string | null;
+  tableNo?: number | null;
+  tableRowStart?: number | null;
+  tableRowEnd?: number | null;
 }
 
 export interface StoredChunk extends ChunkContent {
   id: number;
   documentId: string;
+}
+
+function parseSectionPath(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
 }
 
 export function createChunkRepository(db: DatabaseInstance) {
@@ -24,8 +39,9 @@ export function createChunkRepository(db: DatabaseInstance) {
       const ts = nowIso();
       const stmt = db.prepare(
         `INSERT INTO document_chunks
-           (document_id, ordinal, content, char_start, char_end, page_no, paragraph_no, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           (document_id, ordinal, content, char_start, char_end, page_no, paragraph_no,
+            section_path, block_kind, table_no, table_row_start, table_row_end, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       const insertAll = db.transaction((items: ChunkContent[]): StoredChunk[] =>
         items.map((chunk) => {
@@ -37,6 +53,11 @@ export function createChunkRepository(db: DatabaseInstance) {
             chunk.charEnd,
             chunk.pageNo ?? null,
             chunk.paragraphNo ?? null,
+            JSON.stringify(chunk.sectionPath ?? []),
+            chunk.blockKind ?? null,
+            chunk.tableNo ?? null,
+            chunk.tableRowStart ?? null,
+            chunk.tableRowEnd ?? null,
             ts,
           );
           return {
@@ -50,14 +71,22 @@ export function createChunkRepository(db: DatabaseInstance) {
     },
 
     listByDocument(documentId: string): StoredChunk[] {
-      return db
-        .prepare(
-          `SELECT id, document_id AS documentId, ordinal, content,
-                  char_start AS charStart, char_end AS charEnd,
-                  page_no AS pageNo, paragraph_no AS paragraphNo
-           FROM document_chunks WHERE document_id = ? ORDER BY ordinal ASC`,
-        )
-        .all(documentId) as StoredChunk[];
+      return (
+        db
+          .prepare(
+            `SELECT id, document_id AS documentId, ordinal, content,
+                    char_start AS charStart, char_end AS charEnd,
+                    page_no AS pageNo, paragraph_no AS paragraphNo,
+                    section_path AS sectionPath, block_kind AS blockKind,
+                    table_no AS tableNo, table_row_start AS tableRowStart,
+                    table_row_end AS tableRowEnd
+             FROM document_chunks WHERE document_id = ? ORDER BY ordinal ASC`,
+          )
+          .all(documentId) as Array<StoredChunk & { sectionPath: string | string[] }>
+      ).map((row) => ({
+        ...row,
+        sectionPath: Array.isArray(row.sectionPath) ? row.sectionPath : parseSectionPath(row.sectionPath),
+      }));
     },
 
     countByDocument(documentId: string): number {

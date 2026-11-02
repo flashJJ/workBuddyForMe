@@ -3,6 +3,7 @@ import { ProviderError } from '@wbfm/ai';
 import {
   createChunkRepository,
   createCompileWriteRepository,
+  createDocumentBlockRepository,
   createDocumentRepository,
   createFtsChunkRepository,
   createKnowledgeRepository,
@@ -17,6 +18,12 @@ import { chunkText } from './chunking';
 import { resolveEmbeddingTarget } from './embedding-target';
 import { extractDocumentText } from './extract-with-ocr';
 import {
+  fallbackParsedDocument,
+  mapChunkStructure,
+  toStructuredText,
+  type ParsedDocument,
+} from './structure';
+import {
   assemblePlainText,
   mapChunkCoordinates,
   type StructuredText,
@@ -30,6 +37,7 @@ export function createIngestionPipeline(deps: ServiceDeps) {
   const documents = createDocumentRepository(deps.db);
   const knowledgeBases = createKnowledgeRepository(deps.db);
   const chunks = createChunkRepository(deps.db);
+  const blocks = createDocumentBlockRepository(deps.db);
   const fts = createFtsChunkRepository(deps.db);
   const compileWrite = createCompileWriteRepository(deps.db);
 
@@ -56,6 +64,7 @@ export function createIngestionPipeline(deps: ServiceDeps) {
 
       let text: string;
       let structure: StructuredText;
+      let parsed: ParsedDocument;
       let ocrMeta: { engine: 'vision' | 'tesseract'; partial: boolean } | null = null;
       try {
         const extracted = await extractDocumentText(deps, document.filename, buffer, {
@@ -68,6 +77,11 @@ export function createIngestionPipeline(deps: ServiceDeps) {
         ocrMeta = extracted.ocr;
         // 兜底：提取结果未带结构（旧调用方/测试 mock）时由纯文本重建段落结构
         structure = extracted.structure ?? assemblePlainText(extracted.text);
+        parsed = extracted.parsed ?? fallbackParsedDocument(structure, [
+          '结构解析结果缺失，已按纯文本块处理',
+        ]);
+        text = parsed.text;
+        structure = toStructuredText(parsed);
       } catch (error) {
         const message = error instanceof Error ? error.message : '文档解析失败';
         documents.setStatus(documentId, 'failed', {
@@ -114,10 +128,18 @@ export function createIngestionPipeline(deps: ServiceDeps) {
         compileWrite.purgeForReingest(documentId);
 
         const coordinates = mapChunkCoordinates(slices, structure.blocks);
+        const structureHints = mapChunkStructure(slices, parsed);
         const stored = chunks.bulkInsert(
           documentId,
-          slices.map((slice, ordinal) => ({ ordinal, ...slice, ...coordinates[ordinal] })),
+          slices.map((slice, ordinal) => ({
+            ordinal,
+            ...slice,
+            ...coordinates[ordinal],
+            ...structureHints[ordinal],
+          })),
         );
+        blocks.deleteByDocument(documentId);
+        blocks.bulkInsert(documentId, parsed.blocks);
         insertChunkVectors(
           deps.db,
           stored.map((row, index) => ({ id: row.id, vector: embeddings[index]! })),

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createChunkRepository,
   createDatabase,
+  createDocumentBlockRepository,
   createDocumentRepository,
   createKnowledgeRepository,
   createModelRepository,
@@ -113,6 +114,7 @@ describe('文档摄入管线（TR-16.1）', () => {
     expect(doc.chunkCount).toBe(2);
     expect(doc.indexedAt).toBeTruthy();
     expect(createChunkRepository(db).countByDocument(documentId)).toBe(2);
+    expect(createDocumentBlockRepository(db).countByDocument(documentId)).toBe(2);
 
     const body = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
     expect(body.model).toBe('embed-test');
@@ -123,6 +125,50 @@ describe('文档摄入管线（TR-16.1）', () => {
     expect(hits).toHaveLength(1);
     expect(hits[0]!.content).toContain('苹果');
     expect(hits[0]!.documentName).toBe('notes.txt');
+  });
+
+  it('结构落库：markdown 标题/表格写入 document_blocks，分片带章节路径', async () => {
+    seedEmbeddingModel();
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse((init?.body as string) ?? '{}') as { input: string[] };
+      return new Response(
+        JSON.stringify({ data: body.input.map((_t, i) => ({ index: i, embedding: [1, 0] })) }),
+        { status: 200 },
+      );
+    });
+    const row = createDocumentRepository(db).create({
+      knowledgeBaseId: kbId,
+      filename: 'contract.md',
+      fileType: '.md',
+      byteSize: 10,
+      contentHash: 'hash-md',
+    });
+    const content = `# 合同
+
+## 付款条款
+
+| 阶段 | 比例 |
+| --- | --- |
+| 首付 | 30% |
+`;
+    const result = await createIngestionPipeline({ db, cipher }).ingest({
+      documentId: row.id,
+      buffer: encoder.encode(content),
+    });
+    expect(result.status).toBe('indexed');
+
+    const blocks = createDocumentBlockRepository(db).listByDocument(row.id);
+    expect(blocks.map((block) => block.kind)).toEqual(
+      expect.arrayContaining(['heading', 'table']),
+    );
+    const table = blocks.find((block) => block.kind === 'table')!;
+    expect(table.table?.tableNo).toBe(1);
+    expect(table.sectionPath).toEqual(['合同', '付款条款']);
+
+    const chunks = createChunkRepository(db).listByDocument(row.id);
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(chunks.some((chunk) => (chunk.sectionPath ?? []).length > 0)).toBe(true);
+    expect(chunks.some((chunk) => chunk.blockKind === 'heading')).toBe(true);
   });
 
   it('上游嵌入接口 500：文档 failed 且无分片残留', async () => {

@@ -41,6 +41,7 @@ import { migrateV039 } from './v039-capability-packs';
 import { migrateV040 } from './v040-capability-effects';
 import { migrateV041 } from './v041-agent-governance';
 import { migrateV042 } from './v042-maintenance';
+import { migrateV043 } from './v043-document-structure';
 
 interface Migration {
   version: number;
@@ -257,6 +258,12 @@ const MIGRATIONS: Migration[] = [
     description:
       'v2.14: skill_versions 技能版本快照 + skills_state.active_version + workflows.published_version（纯加法）',
     up: migrateV042,
+  },
+  {
+    version: 43,
+    description:
+      'v2.19: document_blocks 文档结构块 + chunks 章节/表格列 + knowledge_relations（纯加法）',
+    up: migrateV043,
   },
 ];
 
