@@ -38,6 +38,11 @@ export const zhToolTrace = {
     download: '下载',
     loading: '加载中…',
     failed: '产物加载失败',
+    exportSvg: '导出 SVG',
+    exportPng: '导出 PNG',
+    exporting: '导出中…',
+    exportFailed: '导出失败',
+    noSvg: '产物中没有可导出的 SVG',
   },
   detail: {
     toolName: '工具名',
@@ -87,6 +92,11 @@ export const enToolTrace = {
     download: 'Download',
     loading: 'Loading…',
     failed: 'Failed to load artifact',
+    exportSvg: 'Export SVG',
+    exportPng: 'Export PNG',
+    exporting: 'Exporting…',
+    exportFailed: 'Export failed',
+    noSvg: 'No exportable SVG in this artifact',
   },
   detail: {
     toolName: 'Tool',
