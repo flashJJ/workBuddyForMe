@@ -6,6 +6,9 @@ import type { ContentPackSummary, DocumentRecord, KnowledgeBase } from '@wbfm/sh
 import { renderWithProviders } from '@/test/render';
 import { KnowledgePage } from './knowledge-page';
 
+// Windows CI 冷启动下知识库页面首个操作可能超过默认 5s，统一给本文件 20s 预算
+vi.setConfig({ testTimeout: 20_000 });
+
 const KB: KnowledgeBase = {
   id: 'kb1',
   name: '产品资料库',
