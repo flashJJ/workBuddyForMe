@@ -28,12 +28,13 @@
     "check:lines": "node scripts/check-file-lines.mjs",
     "check:structure": "node scripts/check-structure.mjs",
     "check:cycles": "node scripts/check-cycles.mjs",
+    "check:ascii": "node scripts/check-ascii-width.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "sync-version:check": "node scripts/sync-version.mjs --check",
     "eval:memory": "node scripts/eval/eval-memory.mjs",
     "eval:agent": "node scripts/eval/eval-agent.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
-    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles"
+    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:ascii"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

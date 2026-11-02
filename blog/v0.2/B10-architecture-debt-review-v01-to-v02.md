@@ -6,21 +6,23 @@
 
 ## 先看一张总图
 
-```
-                    ┌──────────────────────────────┐
-                    │   工具链相关模块              │
-                    │                              │
-  tool-runtime ────▶│   chat-orchestrator         │◀──── tool-runner (带降级)
-  tool-executor ───▶│      │                       │◀──── LangSmith traceAsync
-  ssrf-guard ──────▶│      │                      │
-                    │      ▼                       │
-                    │   provider (openAI/ollama)  │
-                    │      │                       │
-                    │      ▼                       │
-                    │   SSE stream                │
-                    └──────────────────────────────┘
-                         ▲           ▲           ▲
-                    近期能还的债    下一阶段的债    暂不还的债
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TB
+  subgraph CORE["工具链相关模块"]
+    CO["chat-orchestrator"]
+    P["provider（OpenAI / Ollama）"]
+    S["SSE stream"]
+    CO --> P --> S
+  end
+  TR["tool-runtime"] --> CO
+  TE["tool-executor"] --> CO
+  SG["ssrf-guard"] --> CO
+  RR["tool-runner（带降级）"] --> CO
+  LS["LangSmith traceAsync"] --> CO
+  D1["近期能还的债"] -.-> CO
+  D2["下一阶段的债"] -.-> CO
+  D3["暂不还的债"] -.-> CO
 ```
 
 ## 模块逐个盘点

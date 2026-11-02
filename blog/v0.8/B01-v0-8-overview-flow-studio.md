@@ -33,26 +33,18 @@
 
 ## 架构总图
 
-```text
-┌─────────────────────── 浏览器（Next.js） ──────────────────────────┐
-│  /flows 列表 · @xyflow/react 画布 · 节点配置抽屉 · 试运行面板      │
-│  对话页 tool-trace 卡片（tool start / substep / end 三阶段）       │
-└────────────────────────────┬───────────────────────────────────────┘
-                             │ REST 统一包络 / SSE
-┌────────────────────────────▼───────────────────────────────────────┐
-│  Route Handlers：/api/flows/*（11 个路由）                         │
-│  runs 只登记 queued；events 订阅才启动；终态从落库记录回放         │
-└────────────────────────────┬───────────────────────────────────────┘
-┌────────────────────────────▼──────────── core/flow ───────────────┐
-│  compiler（环/拓扑/可达诊断）→ engine（就绪队列+分支剪枝+取消）   │
-│  refs（插值 / $ref）→ 7 handlers → run-store（逐节点落库）        │
-│  run-service（manual 交互 / chat 非交互）· flow-tool · starters   │
-└────────────────────────────┬──────────────────────────────────────┘
-                             │ 全部复用既有内核
-        retrieval（sqlite-vec）· ChatProvider · tool-runtime（门控/熔断/超时）
-                             │
-              SQLite 流程四表：workflows / workflow_versions
-                           workflow_runs / node_executions
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TB
+  A["浏览器（Next.js）<br/>/flows 列表 · @xyflow/react 画布 · 节点配置抽屉 · 试运行面板<br/>对话页 tool-trace 卡片（tool start / substep / end 三阶段）"]
+  B["Route Handlers：/api/flows/*（11 个路由）<br/>runs 只登记 queued；events 订阅才启动；终态从落库记录回放"]
+  C["core/flow<br/>compiler（环/拓扑/可达诊断）→ engine（就绪队列+分支剪枝+取消）<br/>refs（插值 / $ref）→ 7 handlers → run-store（逐节点落库）<br/>run-service（manual 交互 / chat 非交互）· flow-tool · starters"]
+  D["既有内核<br/>retrieval（sqlite-vec）· ChatProvider · tool-runtime（门控/熔断/超时）"]
+  E["SQLite 流程四表<br/>workflows / workflow_versions / workflow_runs / node_executions"]
+  A -->|"REST 统一包络 / SSE"| B
+  B --> C
+  C -->|"全部复用既有内核"| D
+  D --> E
 ```
 
 三个关键架构事实，后面九篇会逐个展开：

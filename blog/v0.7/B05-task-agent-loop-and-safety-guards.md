@@ -12,44 +12,44 @@
 ## 循环骨架
 
 ```text
-┌───────────────────────────────────────────────────────────┐
-│  TaskRunnerService.start(run)                             │
-│  （run 已在 POST /api/tasks 时创建，status=queued）       │
-└──────────────────────┬────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────
+│  TaskRunnerService.start(run)
+│  （run 已在 POST /api/tasks 时创建，status=queued）
+└──────────────────────┬─────────────────────────────────────
                        ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  run_task_loop (AsyncGenerator<TaskLoopEvent, TaskRunView>)                  │
-│                                                                              │
-│  1. updateRunStatus(running)                                                 │
-│  2. yield run_started                                                        │
-│                                                                              │
-│  loop:                                                                       │
-│    ┌─ 检查急停（signal.aborted / control.state==='stopped'）                 │
-│    │     → finalize('stopped', 'user_stop')                                  │
-│    ├─ 检查暂停（control.state==='paused'）                                   │
-│    │     → yield run_paused → waitIfPaused()                                 │
-│    │                                                                         │
-│    ├─ 观察：screen_snapshot（截图 + UIA 清单）                               │
-│    │     → repo.addStep(observe) + finishStep                                │
-│    │     → 失败则 consecutiveFailures++，检查上限                            │
-│    │                                                                         │
-│    ├─ 决策：planner.decide({ goal, steps, observation })                     │
-│    │     → { action: 'tool'|'done'|'fail', tool, args }                      │
-│    │                                                                         │
-│    ├─ action==='done' → finalize('completed')                                │
-│    ├─ action==='fail' → finalize('failed', 'error')                          │
-│    │                                                                         │
-│    ├─ 工具动作：                                                             │
-│    │   ├─ resolveTool(toolName) + allowedTools 白名单                        │
-│    │   ├─ 熔断器检查（isTripped → 任务终止）                                 │
-│    │   ├─ HITL 权限门控（gateToolPermission）                                │
-│    │   ├─ executeToolCall → result                                           │
-│    │   └─ breakers.recordResult(toolName, result.ok)                         │
-│    │                                                                         │
-│    └─ 检查上限：                                                             │
-│        ├─ run.stepCount >= run.maxSteps → 'stopped','max_steps'              │
-│        └─ consecutiveFailures >= TASK_MAX_FAILURES → 'failed','max_failures' │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────
+│  run_task_loop (AsyncGenerator<TaskLoopEvent, TaskRunView>)
+│
+│  1. updateRunStatus(running)
+│  2. yield run_started
+│
+│  loop:
+│    ┌─ 检查急停（signal.aborted / control.state==='stopped'）
+│    │     → finalize('stopped', 'user_stop')
+│    ├─ 检查暂停（control.state==='paused'）
+│    │     → yield run_paused → waitIfPaused()
+│    │
+│    ├─ 观察：screen_snapshot（截图 + UIA 清单）
+│    │     → repo.addStep(observe) + finishStep
+│    │     → 失败则 consecutiveFailures++，检查上限
+│    │
+│    ├─ 决策：planner.decide({ goal, steps, observation })
+│    │     → { action: 'tool'|'done'|'fail', tool, args }
+│    │
+│    ├─ action==='done' → finalize('completed')
+│    ├─ action==='fail' → finalize('failed', 'error')
+│    │
+│    ├─ 工具动作：
+│    │   ├─ resolveTool(toolName) + allowedTools 白名单
+│    │   ├─ 熔断器检查（isTripped → 任务终止）
+│    │   ├─ HITL 权限门控（gateToolPermission）
+│    │   ├─ executeToolCall → result
+│    │   └─ breakers.recordResult(toolName, result.ok)
+│    │
+│    └─ 检查上限：
+│        ├─ run.stepCount >= run.maxSteps → 'stopped','max_steps'
+│        └─ consecutiveFailures >= TASK_MAX_FAILURES → 'failed','max_failures'
+└──────────────────────────────────────────────────────────────────────────────
 ```
 
 循环是一个 AsyncGenerator，每一步 yield 一个 `TaskLoopEvent`（`run_started` / `step_started` / `step_finished` / `run_paused` / `run_resumed` / `run_finished`），web server 的 SSE /events 路由直接消费这些事件推给前端。

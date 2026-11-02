@@ -10,13 +10,13 @@
 
 ## 状态机：closed → open → half-open
 
-```text
-        连续失败 3 次              冷却 5 分钟到期
-closed ──────────────→ open ──────────────────→ half-open
-  ↑                                                │
-  │            试探成功（1 次）                      │ 放行一次试探
-  └────────────────────────────────────────────────┘
-       试探失败 → 回 open，重新冷却 5 分钟
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart LR
+  C["closed"] -->|"连续失败 3 次"| O["open"]
+  O -->|"冷却 5 分钟到期"| H["half-open"]
+  H -->|"试探成功（1 次）"| C
+  H -->|"试探失败，重新冷却 5 分钟"| O
 ```
 
 三态语义：

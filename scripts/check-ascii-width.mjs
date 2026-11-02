@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 /**
- * ASCII 图宽度审计（CJK 双宽字符）
+ * Markdown 框图渲染对齐检查（中文双宽 + 字体列宽不可假设）
  *
- * Markdown 代码块里的手绘框线默认按字符数补空格；中文/日文/韩文/全角标点
- * 在等宽终端中占 2 列，按 1 列计算会导致右侧竖线与箭头错位。
+ * 代码块按「中文=2 列」补空格只能保证标准宽度一致；实际预览字体里中文
+ * 可能只占 ~1.7 个等宽列，含中文的闭合右边框、横线里的中文标题都会错位。
+ * 因此本脚本不再计算「补几个空格」，而是检查结构本身是否依赖字体列宽：
  *
- * 本脚本扫描 blog/docs 中的 fenced code block：
- * 1. 按 East Asian Width 计算每行显示列宽；
- * 2. 对每个 `┌...┐` 框，检查框内以 `│` 结尾的行与顶边宽度一致；
- * 3. 输出不一致的行号与列差，退出码 1 表示存在错位。
+ * 1. 含中文的代码块禁止闭合框：不出现 `┐` / `┘` / `┤`，不允许 CJK 行尾挂 `│`；
+ * 2. 禁止结构线（`│┌└├┬┴┼`）出现在中文之后（其列位置会随中文字宽漂移）；
+ * 3. 禁止横线中夹中文标题（`┌──── 标题 ────`）；
+ * 4. 同一开放框的上下横线宽度必须一致；
+ * 5. `┬` 交点与下一行 `▼` 的显示列必须一致。
  *
  * 用法：
  *   node scripts/check-ascii-width.mjs
  *   node scripts/check-ascii-width.mjs blog docs README.md
- *   node scripts/check-ascii-width.mjs --fix
+ *
+ * 修复方式：流程图/拓扑图改 Mermaid；UI 草图/分层表改右侧开放框。
  */
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -63,7 +66,7 @@ function isWide(cp) {
   );
 }
 
-/** 终端显示列宽（不含 ANSI；本仓库文档不含转义序列） */
+/** 终端显示列宽（本仓库文档不含 ANSI 转义） */
 export function displayWidth(text) {
   let width = 0;
   for (const char of text) {
@@ -74,181 +77,107 @@ export function displayWidth(text) {
   return width;
 }
 
+const hasWide = (text) => displayWidth(text) !== [...text].length;
+const STRUCTURAL = /[│┌└├┬┴┼]/g;
+const HORIZONTAL = /[─┬┴┼┐┘┤]/g;
+const BOX = /[┌│└┐┘┬┴├┤┼]/;
+
 function isCjkBlock(lines) {
-  return lines.some((line) => displayWidth(line) !== [...line].length);
+  return lines.some((line) => hasWide(line));
 }
 
-function rightBorderWidth(line) {
-  const trimmed = line.trimEnd();
-  if (!/[│┐┘┤]$/.test(trimmed)) return null;
-  return displayWidth(trimmed);
-}
-
-/** 返回代码块内的对齐问题；top 行索引基于块内 0-based */
+/** 返回代码块内的对齐问题；top 为块内 0-based */
 function checkBlock(lines) {
   const issues = [];
+  const push = (line, kind, detail) => issues.push({ line, kind, detail });
+
+  lines.forEach((raw, index) => {
+    const line = raw.trimEnd();
+
+    // 1. 闭合框：右角、右边框
+    if (/[┐┘┤]/.test(line)) {
+      push(index, '闭合右边', line);
+    }
+    if (line.endsWith('│') && hasWide(line.slice(0, -1))) {
+      push(index, '中文行尾右边框', line);
+    }
+
+    // 2. 结构线必须只出现在 ASCII 之后（列位置不随中文字宽漂移）
+    for (const match of line.matchAll(STRUCTURAL)) {
+      if (hasWide(line.slice(0, match.index))) {
+        push(index, '结构线前有中文', line);
+        break;
+      }
+    }
+
+    // 3. 横线里夹中文标题：标题后的 `─` 会随字宽改变横线长度
+    const boxStart = line.indexOf('┌');
+    if (boxStart !== -1) {
+      for (const match of line.matchAll(HORIZONTAL)) {
+        if (match.index > boxStart && hasWide(line.slice(boxStart, match.index))) {
+          push(index, '横线夹中文', line);
+          break;
+        }
+      }
+    }
+  });
+
+  // 4/5. 开放框：上下横线等宽、┬ 与 ▼ 同列
   for (let top = 0; top < lines.length; top += 1) {
     const topLine = lines[top].trimEnd();
-    if (!topLine.startsWith('┌') || !topLine.endsWith('┐')) continue;
-    const expected = displayWidth(topLine);
+    if (!/^\s*┌/.test(topLine)) continue;
     let bottom = -1;
     for (let i = top + 1; i < lines.length; i += 1) {
       const line = lines[i].trimEnd();
-      if (line.startsWith('└') && line.endsWith('┘')) {
-        bottom = i;
-        break;
-      }
-      if (line.startsWith('┌') && line.endsWith('┐')) break;
-    }
-    if (bottom === -1) continue;
-
-    const bottomWidth = displayWidth(lines[bottom].trimEnd());
-    if (bottomWidth !== expected) {
-      issues.push({
-        line: top + 1,
-        expected,
-        actual: bottomWidth,
-        kind: '底边',
-        detail: lines[bottom],
-      });
-    }
-    for (let i = top + 1; i < bottom; i += 1) {
-      const width = rightBorderWidth(lines[i]);
-      if (width === null) continue;
-      if (width !== expected) {
-        issues.push({
-          line: i + 1,
-          expected,
-          actual: width,
-          kind: '右边框',
-          detail: lines[i],
-        });
-      }
-    }
-  }
-  return issues;
-}
-
-/** 提取 markdown fenced code block；返回 {startLine, startIndex, endIndex, lines} */
-function extractBlocks(markdown) {
-  const blocks = [];
-  const lines = markdown.split(/\r?\n/);
-  let current = null;
-  let startLine = 0;
-  let startIndex = 0;
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const fence = /^```/.exec(line);
-    if (!current && fence) {
-      current = [];
-      startLine = index + 2; // 代码块首行在文件中的 1-based 行号
-      startIndex = index + 1;
-      continue;
-    }
-    if (current && fence) {
-      blocks.push({ startLine, startIndex, endIndex: index - 1, lines: current });
-      current = null;
-      continue;
-    }
-    if (current) current.push(line);
-  }
-  return blocks;
-}
-
-const BORDER = /[│┐┘┤]/g;
-
-/** 行内最右侧边框字符的索引（可能后面还有箭头文字） */
-function rightmostBorderIndex(line) {
-  let last = -1;
-  for (const match of line.matchAll(BORDER)) last = match.index;
-  return last;
-}
-
-/** 同一代码块内按顶层框（行首仅空白 + ┌）逐框统一宽度 */
-export function fixBlock(lines) {
-  const fixed = [...lines];
-  for (let top = 0; top < fixed.length; top += 1) {
-    const topMatch = /^(\s*)┌[^\n]*┐\s*$/.exec(fixed[top]);
-    if (!topMatch) continue;
-    const indent = topMatch[1];
-    let bottom = -1;
-    for (let i = top + 1; i < fixed.length; i += 1) {
-      if (new RegExp(`^${indent}└`).test(fixed[i]) && fixed[i].trimEnd().endsWith('┘')) {
+      if (/^\s*┌/.test(line)) break;
+      if (/^\s*└/.test(line)) {
         bottom = i;
         break;
       }
     }
-    if (bottom === -1) continue;
-
-    const rows = [];
-    const openRows = [];
-    for (let i = top; i <= bottom; i += 1) {
-      const line = fixed[i];
-      const edge = rightmostBorderIndex(line);
-      if (edge !== -1 && line.slice(0, edge).trim() !== '') {
-        rows.push({ index: i, edge, width: displayWidth(line.slice(0, edge + 1)) });
-        continue;
-      }
-      if (new RegExp(`^${indent}│`).test(line)) {
-        openRows.push({ index: i, width: displayWidth(line.trimEnd()) });
-      }
+    if (bottom === -1) {
+      push(top, '开放框缺底边', topLine);
+      continue;
     }
-    if (rows.length === 0 && openRows.length === 0) continue;
-    const target = Math.max(
-      ...rows.map((row) => row.width),
-      ...openRows.map((row) => row.width + 2),
-    );
-
-    for (const row of openRows) {
-      const line = fixed[row.index].trimEnd();
-      const pad = target - displayWidth(line) - 1;
-      fixed[row.index] = `${line}${' '.repeat(pad)}│`;
+    if (displayWidth(lines[bottom].trimEnd()) !== displayWidth(topLine)) {
+      push(top, '上下横线不等宽', topLine);
     }
-
-    for (const row of rows) {
-      const line = fixed[row.index];
-      const prefix = line.slice(0, row.edge);
-      const edgeChar = line[row.edge];
-      const suffix = line.slice(row.edge + 1);
-      if (edgeChar === '│') {
-        const bare = prefix.replace(/\s+$/, '');
-        const pad = target - displayWidth(bare) - 1;
-        if (pad >= 0) fixed[row.index] = `${bare}${' '.repeat(pad)}│${suffix}`;
-      } else {
-        const dash = /─*$/.exec(prefix);
-        const head = prefix.slice(0, dash.index);
-        const pad = target - displayWidth(prefix) - 1;
-        if (pad >= 0) {
-          fixed[row.index] = `${head}${'─'.repeat(dash[0].length + pad)}${edgeChar}${suffix}`;
-        }
+    const caret = lines[bottom].indexOf('┬');
+    if (caret !== -1) {
+      const column = displayWidth(lines[bottom].slice(0, caret));
+      const next = (lines[bottom + 1] ?? '').trimEnd();
+      const arrow = next.indexOf('▼');
+      if (arrow === -1 || displayWidth(next.slice(0, arrow)) !== column) {
+        push(bottom, '箭头不在交点列', lines[bottom]);
       }
     }
     top = bottom;
   }
-  return fixed.join('\n') === lines.join('\n') ? lines : fixed;
+
+  return issues;
 }
 
-function fixFile(file) {
-  const markdown = readFileSync(file, 'utf8');
-  const eol = markdown.includes('\r\n') ? '\r\n' : '\n';
+/** 提取 markdown fenced code block；startLine 为代码块首行在文件中的 1-based 行号 */
+function extractBlocks(markdown) {
+  const blocks = [];
   const lines = markdown.split(/\r?\n/);
-  const blocks = extractBlocks(markdown);
-  let changed = 0;
-  for (const block of blocks) {
-    if (!isCjkBlock(block.lines)) continue;
-    if (!block.lines.some((line) => /[┌└│┐┘]/.test(line))) continue;
-    if (checkBlock(block.lines).length === 0) continue;
-    const fixed = fixBlock(block.lines);
-    if (fixed === block.lines) continue;
-    fixed.forEach((line, offset) => {
-      lines[block.startIndex + offset] = line;
-    });
-    changed += 1;
+  let startLine = 0;
+  let current = null;
+  for (let index = 0; index < lines.length; index += 1) {
+    const fence = /^```/.exec(lines[index]);
+    if (!current && fence) {
+      current = [];
+      startLine = index + 2;
+      continue;
+    }
+    if (current && fence) {
+      blocks.push({ startLine, lines: current });
+      current = null;
+      continue;
+    }
+    if (current) current.push(lines[index]);
   }
-  if (changed > 0) {
-    writeFileSync(file, lines.join(eol), 'utf8');
-  }
-  return changed;
+  return blocks;
 }
 
 function collectMarkdown(dir, acc = []) {
@@ -265,9 +194,7 @@ function collectMarkdown(dir, acc = []) {
 
 function main() {
   const args = process.argv.slice(2);
-  const fix = args.includes('--fix');
-  const paths = args.filter((arg) => arg !== '--fix');
-  const targets = paths.length > 0 ? paths : DEFAULT_PATHS;
+  const targets = args.length > 0 ? args : DEFAULT_PATHS;
   const files = [];
   for (const path of targets) {
     const full = resolve(ROOT, path);
@@ -279,40 +206,32 @@ function main() {
     }
   }
 
-  if (fix) {
-    let fixedFiles = 0;
-    for (const file of files) fixedFiles += fixFile(file);
-    console.log(`已修复 ${fixedFiles} 个文件中的 ASCII 图宽度。`);
-    return;
-  }
-
   let badBlocks = 0;
-  let badLines = 0;
+  let badIssues = 0;
   for (const file of files) {
     const markdown = readFileSync(file, 'utf8');
     for (const block of extractBlocks(markdown)) {
       if (!isCjkBlock(block.lines)) continue;
-      if (!block.lines.some((line) => /[┌└│┐┘]/.test(line))) continue;
+      if (!block.lines.some((line) => BOX.test(line))) continue;
       const issues = checkBlock(block.lines);
       if (issues.length === 0) continue;
       badBlocks += 1;
-      badLines += issues.length;
+      badIssues += issues.length;
       console.log(`\n${relative(ROOT, file).split(/\\/g).join('/')}（代码块起始行 ${block.startLine}）`);
       for (const issue of issues) {
-        const delta = issue.actual - issue.expected;
-        console.log(
-          `  L${block.startLine + issue.line - 1} ${issue.kind}：显示宽度 ${issue.actual}，应为 ${issue.expected}（${delta > 0 ? '+' : ''}${delta}）`,
-        );
+        console.log(`  L${block.startLine + issue.line - 1} ${issue.kind}`);
         console.log(`    ${issue.detail}`);
       }
     }
   }
 
   if (badBlocks > 0) {
-    console.error(`\n发现 ${badBlocks} 个代码块、${badLines} 行宽度错位；请按终端显示宽度补空格。`);
+    console.error(
+      `\n发现 ${badBlocks} 个代码块、${badIssues} 处渲染风险：流程图/拓扑图改 Mermaid，UI 草图/分层表改右侧开放框。`,
+    );
     process.exit(1);
   }
-  console.log(`ASCII 图宽度检查通过：${files.length} 个 Markdown 文件。`);
+  console.log(`框图结构检查通过：${files.length} 个 Markdown 文件。`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -20,27 +20,20 @@
 
 在进入每个模块之前，先理解它们的依赖拓扑很重要。因为这轮改造里最容易踩的坑，就是某一个模块的底层设计默认了另外两个模块的存在。
 
-```text
-                        ┌──────────────────────────┐
-                        │  核心类型：ContentPart    │
-                        │  shared 包 content-part   │
-                        └──────────┬───────────────┘
-                                   │
-              ┌────────────────────┼────────────────────┐
-              ▼                    ▼                    ▼
-     ┌─────────────────┐  ┌──────────────────┐  ┌───────────────────┐
-     │ 视觉对话         │  │ 文档解析          │  │ 网页剪藏          │
-     │ attachment-svc  │  │ ingestion        │  │ safe-web-fetch    │
-     │ multimodal      │  │ read-document    │  │ fetch-article     │
-     └────────┬────────┘  └────────┬─────────┘  └────────┬──────────┘
-              │                     │                      │
-              └─────────────────────┼──────────────────────┘
-                                    ▼
-                        ┌──────────────────────────┐
-                        │  Chat Orchestrator       │
-                        │  turn-preparation        │
-                        │  tool-runner + fallback   │
-                        └──────────────────────────┘
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TB
+  CP["核心类型：ContentPart<br/>shared 包 content-part"]
+  V["视觉对话<br/>attachment-svc / multimodal"]
+  D["文档解析<br/>ingestion / read-document"]
+  W["网页剪藏<br/>safe-web-fetch / fetch-article"]
+  CO["Chat Orchestrator<br/>turn-preparation<br/>tool-runner + fallback"]
+  CP --> V
+  CP --> D
+  CP --> W
+  V --> CO
+  D --> CO
+  W --> CO
 ```
 
 最底层的是 **ContentPart 联合类型**（shared 包里的 `content-part.ts`）——它是整个多模态契约的基石，视觉对话直接用；文档解析和网页剪藏虽然不直接产出 ContentPart，但它们喂进知识库的文本最终通过 RAG 检索流入对话，也就间接触达了这个类型。
