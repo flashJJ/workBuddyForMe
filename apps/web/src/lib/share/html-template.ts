@@ -91,6 +91,7 @@ figure { margin:10px 0; } figure img { max-width:100%; border-radius:8px; border
   border-radius:8px; padding:10px 14px; margin:8px 0 12px; font-size:13px; }
 .tool.ok { border-left-color:#10b981; } .tool.error { border-left-color:#ef4444; }
 .tool .head { font-weight:600; } .tool .line { color:#475569; margin-top:2px; word-break:break-all; }
+.tool .line.evidence { color:#64748b; }
 sup.cite a { text-decoration:none; background:#eaf1ff; color:#2563eb; border-radius:4px;
   padding:0 4px; margin:0 2px; font-size:12px; }
 section.refs { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px; margin-top:8px; }
@@ -148,6 +149,18 @@ export function renderConversationHtml(
               : '') +
             (!ok && t.error
               ? `<div class="line">${tt('share.errorLine', { text: escapeHtml(t.error) })}</div>`
+              : '') +
+            (t.evidence
+              ? `<div class="line evidence">${tt('share.evidenceSource', { text: escapeHtml(t.evidence.source) })}</div>` +
+                (t.evidence.coverage
+                  ? `<div class="line evidence">${tt('share.evidenceCoverage', { text: escapeHtml(t.evidence.coverage) })}</div>`
+                  : '') +
+                (t.evidence.limitations?.length
+                  ? `<div class="line evidence">${tt('share.evidenceLimitations', { text: escapeHtml(t.evidence.limitations.join('；')) })}</div>`
+                  : '') +
+                (t.evidence.capturedAt
+                  ? `<div class="line evidence">${tt('share.evidenceCapturedAt', { time: formatTime(t.evidence.capturedAt) })}</div>`
+                  : '')
               : '');
           return `<div class="tool ${ok ? 'ok' : 'error'}"><div class="head">🔧 ${escapeHtml(t.tool)} · ${formatDuration(t.durationMs)} → ${verdict}</div>${detail}</div>`;
         })

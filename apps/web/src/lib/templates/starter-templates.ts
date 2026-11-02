@@ -6,7 +6,7 @@
  *
  * 纪律（M0 §3）：
  * - 内置模板**只增不改、不覆盖用户改动**；
- * - 形状冻结为 `StarterTemplate`（见 M0 §3），条目冻结 15 条：知识库 3 + 工作流 6 + 技能 3 + 助手预设 3；
+ * - 形状冻结为 `StarterTemplate`（见 M0 §3），条目冻结 17 条：知识库 3 + 工作流 6 + 技能 5 + 助手预设 3；
  * - 角色卡 6 张**不进本清单**（沿用既有内置/自建分区与「复制为自建卡」，不重写）。
  *
  * 与播种真源的对应关系（starter-templates.test.ts 做漂移守卫）：
@@ -130,6 +130,20 @@ const SKILL_TEMPLATES: StarterTemplate[] = [
     description: '在本地目录查找与读取文件（需先接入 filesystem MCP）。',
     startAction: 'enable',
   },
+  {
+    kind: 'skill',
+    id: 'diagram-design',
+    name: 'diagram-design 图表设计',
+    description: '按类型选择与设计规范生成架构图、流程图、柱状图等 10 类图表。',
+    startAction: 'enable',
+  },
+  {
+    kind: 'skill',
+    id: 'life-decision-guide',
+    name: 'life-decision-guide 生活决策',
+    description: '按《高性价比人生指南》检索引用，急症/法律程序先分流。',
+    startAction: 'enable',
+  },
 ];
 
 const ASSISTANT_TEMPLATES: StarterTemplate[] = [
@@ -157,7 +171,7 @@ const ASSISTANT_TEMPLATES: StarterTemplate[] = [
   },
 ];
 
-/** 冻结 15 条（顺序即列表内展示顺序，首条为「推荐先用」） */
+/** 冻结 17 条（顺序即列表内展示顺序，首条为「推荐先用」） */
 export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
   ...KNOWLEDGE_TEMPLATES,
   ...FLOW_TEMPLATES,

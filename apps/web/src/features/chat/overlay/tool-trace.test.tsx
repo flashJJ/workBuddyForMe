@@ -51,6 +51,30 @@ describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
     expect(dl.textContent).toContain('权限');
   });
 
+  it('M5 证据：行内标记 + 展开区展示来源/覆盖/未覆盖/采集时间', async () => {
+    const user = userEvent.setup();
+    const entry: ToolTraceEntry = {
+      ...baseEntry,
+      tool: 'web_search',
+      resultSummary: 'mock · 2 条',
+      evidence: {
+        source: 'mock-search',
+        coverage: '2 条结果',
+        limitations: ['部分摘要截断至 300 字符'],
+        capturedAt: '2026-11-02T08:00:00.000Z',
+      },
+    };
+    renderWithI18n(<ToolTrace trace={[entry]} />);
+    expect(screen.getByTestId('tool-trace-row').textContent).toContain('证据');
+
+    await user.click(screen.getByRole('button'));
+    const evidence = screen.getByTestId('tool-evidence');
+    expect(evidence.textContent).toContain('mock-search');
+    expect(evidence.textContent).toContain('2 条结果');
+    expect(evidence.textContent).toContain('部分摘要截断至 300 字符');
+    expect(evidence.textContent).toContain('采集于 2026-11-02 08:00:00');
+  });
+
   it('无 source/permission 时不渲染徽章', () => {
     renderWithI18n(<ToolTrace trace={[{ ...baseEntry, source: undefined, permission: undefined }]} />);
     const row = screen.getByTestId('tool-trace-row');

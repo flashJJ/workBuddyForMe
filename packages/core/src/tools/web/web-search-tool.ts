@@ -46,6 +46,12 @@ export const webSearchTool: Tool = {
         ok: false,
         output: '联网搜索未配置：请到设置 → 工具与权限 → 联网搜索选择搜索服务。',
         summary: '未配置搜索',
+        evidence: {
+          source: '联网搜索',
+          coverage: '0 条结果',
+          limitations: ['未配置搜索服务'],
+          capturedAt: new Date().toISOString(),
+        },
       };
     }
     try {
@@ -62,7 +68,17 @@ export const webSearchTool: Tool = {
         ctx.signal,
       );
       if (response.results.length === 0) {
-        return { ok: false, output: '没有搜索到相关结果', summary: `${response.provider} · 0 条` };
+        return {
+          ok: false,
+          output: '没有搜索到相关结果',
+          summary: `${response.provider} · 0 条`,
+          evidence: {
+            source: response.provider,
+            coverage: '0 条结果',
+            limitations: ['未检索到相关结果'],
+            capturedAt: new Date().toISOString(),
+          },
+        };
       }
       const lines = response.results.map((result, index) => {
         const snippet =
@@ -73,10 +89,22 @@ export const webSearchTool: Tool = {
       });
       const body = `搜索结果（${response.provider}，${response.results.length} 条）：\n\n${lines.join('\n\n')}`;
       const clipped = body.length > OUTPUT_MAX_CHARS ? body.slice(0, OUTPUT_MAX_CHARS) : body;
+      const limitations = [
+        ...(response.results.some((result) => result.snippet.length > SNIPPET_MAX_CHARS)
+          ? [`部分摘要截断至 ${SNIPPET_MAX_CHARS} 字符`]
+          : []),
+        ...(body.length > OUTPUT_MAX_CHARS ? [`输出截断至 ${OUTPUT_MAX_CHARS} 字符`] : []),
+      ];
       return {
         ok: true,
         output: clipped,
         summary: `${response.provider} · ${response.results.length} 条`,
+        evidence: {
+          source: response.provider,
+          coverage: `${response.results.length} 条结果`,
+          ...(limitations.length ? { limitations } : {}),
+          capturedAt: new Date().toISOString(),
+        },
         citations: response.results.map((result, index) => ({
           documentId: result.url,
           documentName: result.title,
@@ -87,10 +115,17 @@ export const webSearchTool: Tool = {
         })),
       };
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       return {
         ok: false,
-        output: `搜索失败：${error instanceof Error ? error.message : String(error)}`,
+        output: `搜索失败：${message}`,
         summary: '搜索失败',
+        evidence: {
+          source: '联网搜索',
+          coverage: '0 条结果',
+          limitations: [`搜索失败：${message}`],
+          capturedAt: new Date().toISOString(),
+        },
       };
     }
   },

@@ -22,6 +22,45 @@ describe('工具执行器', () => {
     expect(result).toMatchObject({ ok: true, output: '结果正文', summary: '摘要' });
   });
 
+  it('透传 artifacts/evidence（只展示，不写入 output）', async () => {
+    const rich: Tool = {
+      name: 'diagram_render',
+      description: '',
+      parameters: {},
+      async run() {
+        return {
+          ok: true,
+          output: '已生成图表',
+          summary: '图表 · 12 KB',
+          artifacts: [
+            {
+              attachmentId: 'att-1',
+              title: '架构图',
+              filename: 'architecture.html',
+              format: 'html',
+              mimeType: 'text/html',
+              byteSize: 12,
+            },
+          ],
+          evidence: {
+            source: 'mock-search',
+            coverage: '3 条结果',
+            limitations: ['摘要截断'],
+            capturedAt: '2026-11-02T00:00:00.000Z',
+          },
+        };
+      },
+    };
+    const result = await executeToolCall(rich, {}, baseCtx);
+    expect(result.output).toBe('已生成图表');
+    expect(result.artifacts?.[0]?.attachmentId).toBe('att-1');
+    expect(result.evidence).toMatchObject({
+      source: 'mock-search',
+      coverage: '3 条结果',
+      limitations: ['摘要截断'],
+    });
+  });
+
   it('ToolArgError 归一为 ok:false 文本，给模型自我纠正机会', async () => {
     const badArgs: Tool = {
       name: 'knowledge_search',
@@ -55,6 +94,8 @@ describe('工具执行器', () => {
     const result = await executeToolCall(slow, {}, baseCtx, 30);
     expect(result.ok).toBe(false);
     expect(result.summary).toContain('超时');
+    expect(result.evidence?.coverage).toBe('未完成');
+    expect(result.evidence?.limitations?.[0]).toContain('超时');
   });
 
   it('用户中断优先提示“用户已中断”', async () => {

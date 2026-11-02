@@ -29,6 +29,10 @@ describe('fetch_webpage 工具', () => {
     expect(result.ok).toBe(true);
     expect(result.summary).toContain('8.8.8.8');
     expect(result.output).toContain('你好世界');
+    expect(result.evidence).toMatchObject({
+      source: 'http://8.8.8.8/news',
+      coverage: expect.stringContaining('HTTP 200'),
+    });
     const [requestUrl, init] = fetchMock.mock.calls[0]!;
     expect(String(requestUrl)).toBe('http://8.8.8.8/news');
     expect((init as RequestInit).redirect).toBe('manual');
@@ -76,6 +80,8 @@ describe('fetch_webpage 工具', () => {
     const result = await executeToolCall(fetchWebpageTool, { url: 'http://8.8.8.8/missing' }, ctx);
     expect(result.ok).toBe(false);
     expect(result.summary).toBe('HTTP 404');
+    expect(result.evidence?.coverage).toBe('未获取正文');
+    expect(result.evidence?.limitations?.[0]).toContain('HTTP 404');
   });
 
   it('缺少 url 参数：参数错误回灌', async () => {

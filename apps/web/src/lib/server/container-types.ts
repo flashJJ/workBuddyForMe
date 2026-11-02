@@ -5,6 +5,7 @@ import type {
   createAttachmentService,
   createCharacterCardService,
   createConversationService,
+  createContentPackService,
   createDocumentService,
   createKnowledgeService,
   createModelService,
@@ -69,6 +70,7 @@ export interface ServiceContainer {
   knowledgeGovernance: ReturnType<typeof createKnowledgeGovernanceService>;
   knowledgeCompile: ReturnType<typeof createCompileRunnerService>;
   documents: ReturnType<typeof createDocumentService>;
+  contentPacks: ReturnType<typeof createContentPackService>;
   attachments: ReturnType<typeof createAttachmentService>;
   memories: ReturnType<typeof createMemoryService>;
   schedules: ReturnType<typeof createSchedulesService>;

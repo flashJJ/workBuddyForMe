@@ -201,6 +201,7 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
     const list = (await res.json()).data;
     expect(list.map((t: DebugToolInfo) => t.name).sort()).toEqual([
       'app_launch',
+      'artifact_write',
       'browser_click',
       'browser_close',
       'browser_open',
@@ -210,6 +211,7 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'capability_install',
       'capability_search',
       'current_time',
+      'diagram_render',
       'fetch_webpage',
       'keyboard_press',
       'keyboard_type',

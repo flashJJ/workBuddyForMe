@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
+import type { ContentPackSummary, DocumentRecord, KnowledgeBase } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
 import { KnowledgePage } from './knowledge-page';
 
@@ -15,6 +15,23 @@ const KB: KnowledgeBase = {
   documentCount: 1,
   createdAt: '2025-01-01T00:00:00.000Z',
   updatedAt: '2025-01-01T00:00:00.000Z',
+};
+
+const CONTENT_PACK: ContentPackSummary = {
+  id: 'how-to-live-better',
+  name: '高性价比人生指南',
+  description: '767 条循证生活建议。',
+  sourceUrl: 'https://github.com/eternity4719/HowToLiveBetter',
+  license: 'CC BY 4.0',
+  licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  version: 'e2605d3',
+  publishedAt: '2026-10-21',
+  fileCount: 34,
+  totalBytes: 2385074,
+  sha256: '7095f7cb286a8ef634750251ef47db7c8de98ce4d5b22a36878ceab619ffff46',
+  disclaimer: '仅按书检索与引用。',
+  imported: false,
+  documentCount: 0,
 };
 
 function doc(partial: Partial<DocumentRecord> & { id: string; status: DocumentRecord['status'] }): DocumentRecord {
@@ -148,6 +165,45 @@ describe('知识库页面（TR-28.1）', () => {
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/documents/d2', expect.anything()),
     );
+  });
+
+  it('M4 内容包：展示来源/许可/体积，确认后 POST 导入并按 id 调用', async () => {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/knowledge-bases') return ok([]);
+      if (url === '/api/content-packs') return ok([CONTENT_PACK]);
+      if (url === '/api/content-packs/import' && init?.method === 'POST') {
+        return ok({
+          packId: CONTENT_PACK.id,
+          knowledgeBase: KB,
+          importedDocuments: 35,
+          sha256: CONTENT_PACK.sha256,
+        }, 201);
+      }
+      return ok(null);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<KnowledgePage />);
+
+    const card = await screen.findByTestId('content-pack-how-to-live-better');
+    expect(card).toHaveTextContent('CC BY 4.0');
+    expect(card).toHaveTextContent('34 篇');
+    expect(card).toHaveTextContent('2.3 MB');
+
+    await user.click(screen.getByTestId('content-pack-import-how-to-live-better'));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('SHA-256');
+    await user.click(within(dialog).getByRole('button', { name: '导入内容包' }));
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(
+        (item) => item[0] === '/api/content-packs/import',
+      );
+      expect(call).toBeDefined();
+      expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({
+        id: 'how-to-live-better',
+      });
+    });
+    expect(await screen.findByText(/正在后台索引/)).toBeInTheDocument();
   });
 
   it('M3 网页剪藏：网页文档带标识与原文链接；弹窗提交 URL 调 /clip', async () => {

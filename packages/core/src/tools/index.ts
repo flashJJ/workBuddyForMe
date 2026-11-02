@@ -23,6 +23,8 @@ export {
   capabilitySearchTool,
   capabilityInstallTool,
 } from './capability/capability-tools';
+export { artifactWriteTool } from './artifact/artifact-write-tool';
+export { diagramRenderTool } from './diagram/diagram-render-tool';
 export { fetchWebpageTool, htmlToText } from './fetch-webpage-tool';
 export { extractMainContent } from './html-extractor';
 export {

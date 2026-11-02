@@ -77,4 +77,27 @@ describe('live-message-utils：v0.8 工具子步骤', () => {
     expect(entry.substeps).toHaveLength(1);
     expect(entry.substeps?.[0]?.id).toBe('start');
   });
+
+  it('end 事件携带 evidence 时合入追踪条目', () => {
+    const next = applyToolTraceEnd(assistantWithTrace('fetch_webpage'), {
+      phase: 'end',
+      callId: 'call-1',
+      tool: 'fetch_webpage',
+      status: 'ok',
+      durationMs: 1200,
+      resultSummary: '8.8.8.8（1200 字符）',
+      source: 'builtin',
+      permission: 'read',
+      evidence: {
+        source: 'https://example.com/',
+        coverage: 'HTTP 200 · 正文 1200 字符',
+        limitations: ['输出截断至 8000 字符'],
+        capturedAt: '2026-11-02T00:00:00.000Z',
+      },
+    });
+    expect(next![0]!.toolTrace![0]!.evidence).toMatchObject({
+      source: 'https://example.com/',
+      coverage: 'HTTP 200 · 正文 1200 字符',
+    });
+  });
 });

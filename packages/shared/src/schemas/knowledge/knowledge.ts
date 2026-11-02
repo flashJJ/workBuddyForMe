@@ -37,6 +37,12 @@ export const compileRequestSchema = z
   });
 export type CompileRequest = z.infer<typeof compileRequestSchema>;
 
+/** v2.18 M4：内容包导入请求（只允许清单内 id） */
+export const contentPackImportSchema = z.object({
+  id: z.string().trim().min(1, '内容包 id 不能为空').max(64),
+});
+export type ContentPackImportInput = z.infer<typeof contentPackImportSchema>;
+
 /** v0.3 网页剪藏请求 */
 export const clipRequestSchema = z.object({
   url: z

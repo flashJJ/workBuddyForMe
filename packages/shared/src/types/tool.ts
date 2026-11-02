@@ -3,7 +3,73 @@
  * TOOL_NAMES 枚举仅供内置工具的 UI 标签映射使用。
  */
 
+import type { ArtifactFormat } from '../constants/tools';
 import type { PermissionLevel } from './permission';
+
+/**
+ * v2.18 M5：工具结果的出处与覆盖范围。
+ * 只做 UI/导出展示，不进入模型上下文（ToolResult.output 才入模）。
+ */
+export interface ToolEvidence {
+  /** 来源：搜索服务名、最终 URL、知识库文档名等 */
+  source: string;
+  /** 覆盖范围：结果条数/片段数/正文字符数/HTTP 状态等 */
+  coverage?: string;
+  /** 未覆盖或限制：空结果、超时、截断、失败原因等 */
+  limitations?: string[];
+  /** 采集时间（ISO） */
+  capturedAt?: string;
+}
+
+/** v2.18 产物引用：只暴露展示/下载所需元数据，不含磁盘路径 */
+export interface ArtifactRef {
+  attachmentId: string;
+  title: string;
+  filename: string;
+  format: ArtifactFormat;
+  mimeType: string;
+  byteSize: number;
+}
+
+/** 写入产物（工具/服务层共用；content 为 UTF-8 文本） */
+export interface ArtifactWriteInput {
+  title: string;
+  filename: string;
+  format: ArtifactFormat;
+  content: string;
+}
+
+/**
+ * v2.18 M4：可运行时下载导入的示例内容包（正文不随应用分发）。
+ * 与产物同属「可交付」领域，类型并入本文件以守 types 目录行数/文件数门禁。
+ */
+export interface ContentPackSummary {
+  id: string;
+  name: string;
+  description: string;
+  sourceUrl: string;
+  license: string;
+  licenseUrl: string;
+  version: string;
+  publishedAt: string;
+  fileCount: number;
+  totalBytes: number;
+  /** 整包 SHA-256（按文件顺序拼接后计算） */
+  sha256: string;
+  disclaimer: string;
+  /** 目标知识库已存在即视为已导入 */
+  imported: boolean;
+  documentCount: number;
+}
+
+export interface ContentPackImportResult {
+  packId: string;
+  /** 新建知识库的最小引用（避免 types/tool ↔ domain 反向类型环） */
+  knowledgeBase: { id: string; name: string; documentCount: number };
+  /** 含署名页在内的入库文档数 */
+  importedDocuments: number;
+  sha256: string;
+}
 
 /** 工具调用状态（running 仅用于前端流式过程，落库后只会是 ok/error） */
 export type ToolCallStatus = 'running' | 'ok' | 'error';
@@ -48,6 +114,10 @@ export interface ToolTraceEntry {
   originalTokens?: number;
   /** v1.1：实际入模视图的估算 token */
   modelTokens?: number;
+  /** v2.18：本次工具调用产出的可交付文件（产物卡片展示） */
+  artifacts?: ArtifactRef[];
+  /** v2.18 M5：出处/覆盖/未覆盖（tool-trace 与分享导出展示） */
+  evidence?: ToolEvidence;
 }
 
 /** SSE tool 事件载荷：start / substep（v0.8 流式子步骤）/ end 三阶段 */
@@ -77,4 +147,8 @@ export type ToolEventPayload =
       source?: string;
       permission?: PermissionLevel;
       substeps?: ToolSubstep[];
+      /** v2.18：产物卡片数据 */
+      artifacts?: ArtifactRef[];
+      /** v2.18 M5：证据元数据（历史消息与实时流一致） */
+      evidence?: ToolEvidence;
     };

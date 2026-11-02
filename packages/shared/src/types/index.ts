@@ -38,11 +38,16 @@ export type {
 } from './search';
 export type { ContentPart, TextContentPart, ImageContentPart } from './content-part';
 export type {
+  ArtifactRef,
+  ArtifactWriteInput,
+  ToolEvidence,
   ToolTraceEntry,
   ToolEventPayload,
   ToolCallStatus,
   ToolSubstep,
   ToolSubstepStatus,
+  ContentPackSummary,
+  ContentPackImportResult,
 } from './tool';
 export {
   FLOW_STATUSES,

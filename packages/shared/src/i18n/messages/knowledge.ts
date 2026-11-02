@@ -41,6 +41,23 @@ export const zhKnowledge = {
     compileReady: '已编译',
     compileFailed: '编译失败',
   },
+  contentPack: {
+    title: '示例内容包',
+    badge: '内容包',
+    source: '查看来源',
+    files: '{count} 篇',
+    version: '版本 {version}',
+    import: '导入内容包',
+    importing: '导入中…',
+    imported: '已导入',
+    importTitle: '导入内容包',
+    importConfirm:
+      '将从 {source} 下载 {count} 篇 Markdown（约 {size}），逐文件与整包校验 SHA-256 后导入为新知识库。许可：{license}；正文不会随应用分发。继续？',
+    importedToast: '已导入「{name}」，{count} 篇文档正在后台索引',
+    importFailed: '内容包导入失败',
+    disclosure:
+      '医疗、法律与财务内容仅按书检索引用，不替代医生、律师或会计；急症、自杀念头或进行中的法律程序请先联系 120 / 110 / 12356 或当地机构。',
+  },
   compile: {
     compileNew: '编译新增',
     rebuildAll: '全部重建',
@@ -151,6 +168,23 @@ export const enKnowledge = {
     compileRunning: 'Compiling',
     compileReady: 'Compiled',
     compileFailed: 'Compile failed',
+  },
+  contentPack: {
+    title: 'Sample content pack',
+    badge: 'Content pack',
+    source: 'View source',
+    files: '{count} files',
+    version: 'Version {version}',
+    import: 'Import content pack',
+    importing: 'Importing…',
+    imported: 'Imported',
+    importTitle: 'Import content pack',
+    importConfirm:
+      'Download {count} Markdown files (about {size}) from {source}, verify per-file and whole-pack SHA-256, then import into a new knowledge base. License: {license}; the text is not bundled with the app. Continue?',
+    importedToast: 'Imported “{name}”; {count} documents are being indexed in the background',
+    importFailed: 'Content pack import failed',
+    disclosure:
+      'Medical, legal and financial content is retrieved and cited from the book only; it does not replace a doctor, lawyer or accountant. For emergencies, suicidal thoughts or ongoing legal proceedings, contact local emergency services first.',
   },
   compile: {
     compileNew: 'Compile new',

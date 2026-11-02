@@ -31,7 +31,7 @@ describe('starter-templates 与播种真源一致', () => {
     );
   });
 
-  it('技能 3 条：id(name) 与 BUILTIN_SKILLS 对齐', () => {
+  it('技能 5 条：id(name) 与 BUILTIN_SKILLS 对齐', () => {
     const items = templatesOfKind('skill');
     expect(items).toHaveLength(BUILTIN_SKILLS.length);
     expect(items.map((t) => t.id)).toEqual(BUILTIN_SKILLS.map((skill) => skill.name));
@@ -52,9 +52,9 @@ describe('starter-templates 与播种真源一致', () => {
     expect(ASSISTANT_PRESET_BINDINGS['assistant-research']!.knowledgeBaseId).toBe(RESEARCH_KB_ID);
   });
 
-  it('冻结 15 条、每类首条为「推荐先用」、startAction 逐类正确', () => {
-    expect(STARTER_TEMPLATES).toHaveLength(15);
-    expect(new Set(STARTER_TEMPLATES.map((t) => t.id)).size).toBe(15);
+  it('冻结 17 条、每类首条为「推荐先用」、startAction 逐类正确', () => {
+    expect(STARTER_TEMPLATES).toHaveLength(17);
+    expect(new Set(STARTER_TEMPLATES.map((t) => t.id)).size).toBe(17);
     const expected: Record<string, 'clone' | 'enable' | 'prefill'> = {
       knowledge: 'clone',
       flow: 'clone',

@@ -1,4 +1,11 @@
-import type { Citation, PermissionLevel, ToolSubstep } from '@wbfm/shared/types';
+import type {
+  ArtifactRef,
+  ArtifactWriteInput,
+  Citation,
+  PermissionLevel,
+  ToolEvidence,
+  ToolSubstep,
+} from '@wbfm/shared/types';
 import type { WebSearchInput, WebSearchResponse } from '@wbfm/shared/types';
 import type { CapabilityKind, WorkStepStatus } from '@wbfm/shared/schemas';
 import type { ToolDefinition } from '@wbfm/ai';
@@ -55,6 +62,8 @@ export interface ToolContext {
   }) => CapabilityCatalogInstallResult;
   /** v2.17：安装后把只读工具追加到当前助手白名单；非只读工具跳过 */
   bindTools?: (toolNames: string[]) => { added: string[]; skipped: string[] };
+  /** v2.18：写入产物文件（未提供时 artifact_write 返回不可用） */
+  writeArtifact?: (input: ArtifactWriteInput) => ArtifactRef;
   /** v2.8：写入会话待办清单（未提供时 todo_write 直接拒绝） */
   writeTodos?: (todos: Array<{ title: string; status?: WorkStepStatus }>) => {
     planId: string;
@@ -80,6 +89,10 @@ export interface ToolResult {
   images?: ToolResultImage[];
   /** v0.8：工具内部子步骤快照（flow 工具逐节点执行结果，落 tool_trace） */
   substeps?: ToolSubstep[];
+  /** v2.18：本次调用产出的文件（对话产物卡片展示） */
+  artifacts?: ArtifactRef[];
+  /** v2.18 M5：出处/覆盖/未覆盖（只展示，不入模） */
+  evidence?: ToolEvidence;
 }
 
 /** 工具统一接口（v0.6：内置与 MCP 工具同构；name 为全局限定名） */

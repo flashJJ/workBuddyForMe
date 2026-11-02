@@ -12,6 +12,8 @@ import {
   capabilityInstallTool,
   capabilitySearchTool,
 } from './capability/capability-tools';
+import { artifactWriteTool } from './artifact/artifact-write-tool';
+import { diagramRenderTool } from './diagram/diagram-render-tool';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 import { screenSnapshotTool } from './computer/screen-snapshot-tool';
 import { createInputTools } from './computer/input-tools';
@@ -30,6 +32,10 @@ const ALL_TOOLS: Record<string, Tool> = {
   // v2.17 M4：能力目录检索与安装代理
   capability_search: capabilitySearchTool,
   capability_install: capabilityInstallTool,
+  // v2.18 M1：产物文件
+  artifact_write: artifactWriteTool,
+  // v2.18 M2：结构化图表
+  diagram_render: diagramRenderTool,
 };
 
 // v0.7 M2：键鼠 / 窗口 / UIA 工具组（共用一个控制通道客户端）
@@ -186,6 +192,12 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         ...(conversationId ? { conversationId } : {}),
         ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
         ...(deps.search ? { searchWeb: deps.search.search } : {}),
+        ...(deps.artifacts
+          ? {
+              writeArtifact: (input: Parameters<NonNullable<ToolContext['writeArtifact']>>[0]) =>
+                deps.artifacts!.saveArtifact(input),
+            }
+          : {}),
         ...(catalog
           ? {
               assistantId: assistant.id,

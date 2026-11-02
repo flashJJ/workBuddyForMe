@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Tool, ToolResult } from './types';
 import { ToolArgError } from './types';
 import { formatContextBlock, toCitations } from '../retrieval/context-formatter';
+import type { RetrievedChunk } from '../retrieval/retrieval-service';
 
 const argsSchema = z.object({
   query: z.string().trim().min(1, '检索词不能为空').max(500),
@@ -46,24 +47,60 @@ export const knowledgeSearchTool: Tool = {
         ok: false,
         output: '当前助手未绑定知识库，无法检索。请直接基于常识回答或告知用户未配置知识库。',
         summary: '未绑定知识库',
+        evidence: {
+          source: '未绑定知识库',
+          coverage: '未执行检索',
+          limitations: ['助手未绑定知识库'],
+          capturedAt: new Date().toISOString(),
+        },
       };
     }
-    const chunks = await ctx.retrieve(
-      parsed.data.query,
-      parsed.data.topK ?? DEFAULT_KNOWLEDGE_TOP_K,
-      ctx.signal,
-    );
+    const topK = parsed.data.topK ?? DEFAULT_KNOWLEDGE_TOP_K;
+    const baseSource = `已绑定知识库（${ctx.knowledgeBaseIds.length} 个）`;
+    let chunks: RetrievedChunk[];
+    try {
+      chunks = await ctx.retrieve(parsed.data.query, topK, ctx.signal);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        output: `知识库检索失败：${message}`,
+        summary: '检索失败',
+        evidence: {
+          source: baseSource,
+          coverage: '0 个片段',
+          limitations: [`检索失败：${message}`],
+          capturedAt: new Date().toISOString(),
+        },
+      };
+    }
     if (chunks.length === 0) {
       return {
         ok: true,
         output: '知识库中未检索到相关片段，请基于常识谨慎回答并说明资料中未找到依据。',
         summary: `未命中（${parsed.data.query}）`,
+        evidence: {
+          source: baseSource,
+          coverage: `0 个片段（请求 ${topK}）`,
+          limitations: ['未检索到相关片段'],
+          capturedAt: new Date().toISOString(),
+        },
       };
     }
+    const documentNames = [...new Set(chunks.map((chunk) => chunk.documentName))];
+    const source =
+      documentNames.length > 0
+        ? `知识库文档：${documentNames.slice(0, 4).join('、')}${documentNames.length > 4 ? ` 等 ${documentNames.length} 份` : ''}`
+        : baseSource;
     return {
       ok: true,
       output: formatContextBlock(chunks),
       summary: `命中 ${chunks.length} 个片段：${parsed.data.query}`,
+      evidence: {
+        source,
+        coverage: `命中 ${chunks.length} 个片段（请求 ${topK}）`,
+        capturedAt: new Date().toISOString(),
+      },
       citations: toCitations(chunks),
     };
   },

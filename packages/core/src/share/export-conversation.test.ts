@@ -143,4 +143,29 @@ describe('buildConversationSnapshot（M2 分享）', () => {
     expect(snap.messages[0]!.content).not.toContain('sk-');
     expect(snap.messages[0]!.content).toContain('[REDACTED]');
   });
+
+  it('工具证据的来源/未覆盖字段同样脱敏', () => {
+    const convRepo = createConversationRepository(db);
+    const msgRepo = createMessageRepository(db);
+    const conv = convRepo.create({ assistantId: 'builtin-general', title: '证据脱敏' });
+    msgRepo.add({
+      conversationId: conv.id, role: 'assistant', content: '完成', status: 'completed',
+      toolTrace: [
+        {
+          callId: 'c1', tool: 'fetch_webpage', argsSummary: '', status: 'ok',
+          durationMs: 10, resultSummary: 'ok', startedAt: '',
+          evidence: {
+            source: 'https://a.com/?key=sk-abcdefghijklmnop1234',
+            limitations: ['token=abcdefghijklmnop'],
+          },
+        },
+      ],
+    });
+
+    const snap = buildConversationSnapshot({ db, cipher: createWebCipher() }, conv.id);
+    const evidence = snap.messages[0]!.toolTrace[0]!.evidence!;
+    expect(evidence.source).not.toContain('sk-');
+    expect(evidence.source).toContain('[REDACTED]');
+    expect(evidence.limitations?.[0]).not.toContain('abcdefghijklmnop');
+  });
 });

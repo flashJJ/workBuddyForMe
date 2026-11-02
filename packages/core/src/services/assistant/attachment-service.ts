@@ -1,8 +1,16 @@
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ALLOWED_IMAGE_MIME, MAX_IMAGE_BYTES } from '@wbfm/shared/constants';
+import {
+  ALLOWED_IMAGE_MIME,
+  MAX_IMAGE_BYTES,
+  ARTIFACT_EXTENSION_BY_FORMAT,
+  ARTIFACT_FILENAME_MAX,
+  ARTIFACT_MAX_BYTES,
+  ARTIFACT_MIME_BY_FORMAT,
+  ARTIFACT_TITLE_MAX,
+} from '@wbfm/shared/constants';
 import { ApiError } from '@wbfm/shared/errors';
-import { type Attachment } from '@wbfm/shared/types';
+import { type ArtifactRef, type ArtifactWriteInput, type Attachment } from '@wbfm/shared/types';
 import { getDataDir } from '@wbfm/config';
 import {
   attachmentStorageName,
@@ -27,6 +35,22 @@ export interface ResolvedImage {
 
 function hashBuffer(buffer: Uint8Array): string {
   return createHash('sha256').update(buffer).digest('hex');
+}
+
+const ARTIFACT_MIME_SET = new Set(Object.values(ARTIFACT_MIME_BY_FORMAT));
+
+/** 产物文件名：去路径/非法字符，强制格式扩展名 */
+function artifactFilename(filename: string, format: ArtifactWriteInput['format']): string {
+  const cleaned = filename
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .replace(/\s+/g, ' ');
+  if (!cleaned) throw ApiError.validation('产物文件名不能为空');
+  const limited = cleaned.slice(0, ARTIFACT_FILENAME_MAX);
+  const extension = ARTIFACT_EXTENSION_BY_FORMAT[format];
+  return limited.toLowerCase().endsWith(`.${extension}`)
+    ? limited
+    : `${limited}.${extension}`;
 }
 
 /**
@@ -84,6 +108,57 @@ export function createAttachmentService(deps: ServiceDeps) {
         mimeType: row.mime_type,
         dataBase64: Buffer.from(readFileSync(join(dir, row.storage_path))).toString('base64'),
       }));
+    },
+
+    /** v2.18：保存 Agent 产物（html/svg/md），复用 attachments 表与目录；不做图片校验 */
+    saveArtifact(input: ArtifactWriteInput): ArtifactRef {
+      const title = input.title.trim();
+      if (!title || title.length > ARTIFACT_TITLE_MAX) {
+        throw ApiError.validation(`产物标题必须为 1–${ARTIFACT_TITLE_MAX} 字`);
+      }
+      const bytes = Buffer.from(input.content, 'utf8');
+      if (bytes.byteLength === 0) throw ApiError.validation('产物内容为空');
+      if (bytes.byteLength > ARTIFACT_MAX_BYTES) {
+        throw ApiError.validation('产物超过 2MB 上限');
+      }
+      const filename = artifactFilename(input.filename, input.format);
+      const mimeType = ARTIFACT_MIME_BY_FORMAT[input.format];
+      const created = repo.create({
+        filename,
+        mimeType,
+        byteSize: bytes.byteLength,
+        contentHash: hashBuffer(bytes),
+      });
+      const filePath = join(dir, attachmentStorageName(created.id, mimeType));
+      try {
+        writeFileSync(filePath, bytes);
+      } catch (error) {
+        repo.remove(created.id);
+        rmSync(filePath, { force: true });
+        throw error;
+      }
+      return {
+        attachmentId: created.id,
+        title,
+        filename,
+        format: input.format,
+        mimeType,
+        byteSize: bytes.byteLength,
+      };
+    },
+
+    /** v2.18：读取产物；只允许产物 MIME，图片仍走 read */
+    readArtifact(id: string): { filename: string; mimeType: string; buffer: Buffer } {
+      const row = repo.findRowById(id);
+      if (!row) throw ApiError.notFound('产物', id);
+      if (!ARTIFACT_MIME_SET.has(row.mime_type)) {
+        throw ApiError.validation(`附件不是可预览产物：${id}`);
+      }
+      return {
+        filename: row.filename,
+        mimeType: row.mime_type,
+        buffer: readFileSync(join(dir, row.storage_path)),
+      };
     },
 
     /** 单张读取（附件回流 API 用）；不存在抛 404 */

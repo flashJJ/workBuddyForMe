@@ -103,6 +103,14 @@ export function applyToolTraceEnd(prev: Message[] | null, data: ToolEndPayload):
         ...((data.substeps ?? previous?.substeps)
           ? { substeps: data.substeps ?? previous!.substeps }
           : {}),
+        // v2.18：产物卡片数据
+        ...((data.artifacts ?? previous?.artifacts)
+          ? { artifacts: data.artifacts ?? previous!.artifacts }
+          : {}),
+        // v2.18 M5：证据元数据（end 未携带时保留流式阶段已有的）
+        ...((data.evidence ?? previous?.evidence)
+          ? { evidence: data.evidence ?? previous!.evidence }
+          : {}),
       };
       const idx = trace.findIndex((t) => t.callId === data.callId);
       const nextTrace = idx === -1 ? [...trace, entry] : trace.map((t, j) => (j === idx ? entry : t));

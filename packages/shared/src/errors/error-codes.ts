@@ -41,6 +41,10 @@ export const ERROR_CODES = {
   CAPABILITY_VERSION_NOT_NEWER: 422,
   /** v2.14：诊断包生成超时 */
   DIAGNOSTICS_TIMEOUT: 503,
+  /** v2.18 M4：内容包文件下载失败 */
+  CONTENT_PACK_FETCH_FAILED: 502,
+  /** v2.18 M4：内容包 SHA-256 与清单不一致（上游内容可能已更新） */
+  CONTENT_PACK_HASH_MISMATCH: 409,
   INTERNAL_ERROR: 500,
 } as const;
 

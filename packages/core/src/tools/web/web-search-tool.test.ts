@@ -13,6 +13,11 @@ describe('web_search tool', () => {
     const result = await webSearchTool.run({ query: '测试' }, CTX);
     expect(result.ok).toBe(false);
     expect(result.output).toContain('联网搜索未配置');
+    expect(result.evidence).toMatchObject({
+      source: '联网搜索',
+      coverage: '0 条结果',
+      limitations: ['未配置搜索服务'],
+    });
   });
 
   it('格式化搜索结果并限制摘要长度', async () => {
@@ -35,6 +40,11 @@ describe('web_search tool', () => {
       expect.objectContaining({ query: '测试', maxResults: 2 }),
       undefined,
     );
+    expect(result.evidence).toMatchObject({
+      source: 'mock',
+      coverage: '2 条结果',
+      limitations: ['部分摘要截断至 300 字符'],
+    });
   });
 
   it('空结果返回 ok:false 但不抛错', async () => {
@@ -47,5 +57,6 @@ describe('web_search tool', () => {
     );
     expect(result.ok).toBe(false);
     expect(result.summary).toBe('mock · 0 条');
+    expect(result.evidence?.limitations).toEqual(['未检索到相关结果']);
   });
 });

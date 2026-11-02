@@ -42,18 +42,42 @@ export const fetchWebpageTool: Tool = {
         ok: false,
         output: `抓取失败：${message}`,
         summary: httpStatus ? `HTTP ${httpStatus}` : '抓取失败',
+        evidence: {
+          source: parsed.data.url,
+          coverage: '未获取正文',
+          limitations: [message],
+          capturedAt: new Date().toISOString(),
+        },
       };
     }
-    const { url, html } = fetched;
+    const { url, html, response } = fetched;
     const text = extractMainContent(html);
     if (!text) {
-      return { ok: false, output: '页面无有效文本内容', summary: '空页面' };
+      return {
+        ok: false,
+        output: '页面无有效文本内容',
+        summary: '空页面',
+        evidence: {
+          source: url.href,
+          coverage: `HTTP ${response.status} · 0 字符`,
+          limitations: ['页面无有效文本内容'],
+          capturedAt: new Date().toISOString(),
+        },
+      };
     }
     const clipped = text.length > OUTPUT_MAX_CHARS ? text.slice(0, OUTPUT_MAX_CHARS) : text;
     return {
       ok: true,
       output: `网页 ${parsed.data.url} 正文（来源 ${url.hostname}，约 ${text.length} 字符）：\n\n${clipped}`,
       summary: `${url.hostname}（${text.length} 字符）`,
+      evidence: {
+        source: url.href,
+        coverage: `HTTP ${response.status} · 正文 ${text.length} 字符`,
+        ...(text.length > OUTPUT_MAX_CHARS
+          ? { limitations: [`输出截断至 ${OUTPUT_MAX_CHARS} 字符`] }
+          : {}),
+        capturedAt: new Date().toISOString(),
+      },
     };
   },
 };

@@ -22,6 +22,8 @@ import {
   Minus,
   Boxes,
   PackagePlus,
+  FileText,
+  BarChart3,
 } from 'lucide-react';
 import type { ToolName } from '@wbfm/shared/constants';
 import type { ToolSubstep, ToolTraceEntry, PermissionLevel } from '@wbfm/shared/types';
@@ -29,6 +31,7 @@ import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
+import { ArtifactCard } from './artifact-card';
 
 /** useI18n 返回的翻译函数形状（模块级 helper 需经调用方传入） */
 type TFn = (key: MessageKey, vars?: MessageVars) => string;
@@ -40,6 +43,8 @@ const TOOL_META: Record<ToolName, { labelKey: MessageKey; icon: typeof Clock }> 
   fetch_webpage: { labelKey: 'toolTrace.tools.fetchWebpage', icon: Globe },
   capability_search: { labelKey: 'toolTrace.tools.capabilitySearch', icon: Boxes },
   capability_install: { labelKey: 'toolTrace.tools.capabilityInstall', icon: PackagePlus },
+  artifact_write: { labelKey: 'toolTrace.tools.artifactWrite', icon: FileText },
+  diagram_render: { labelKey: 'toolTrace.tools.diagramRender', icon: BarChart3 },
   screen_snapshot: { labelKey: 'toolTrace.tools.screenSnapshot', icon: Monitor },
   mouse_move: { labelKey: 'toolTrace.tools.mouseMove', icon: MousePointer2 },
   mouse_click: { labelKey: 'toolTrace.tools.mouseClick', icon: MousePointerClick },
@@ -100,6 +105,11 @@ function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+/** v2.18 M5：证据采集时间（ISO → 本地可读，保留到秒） */
+function formatCapturedAt(iso: string): string {
+  return iso.replace('T', ' ').slice(0, 19);
+}
+
 function SubstepRow({ step }: { step: ToolSubstep }) {
   return (
     <li className="flex items-start gap-1.5 pl-5 leading-tight">
@@ -154,6 +164,14 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
         <span className="shrink-0 font-medium">{label}</span>
         {entry.source && <Badge variant={SOURCE_VARIANT[entry.source] ?? 'outline'} className="px-1.5 py-0 text-[10px]">{sourceLabel(entry.source, t)}</Badge>}
         {entry.permission && <Badge variant={PERMISSION_VARIANT[entry.permission]} className="px-1.5 py-0 text-[10px]">{t(PERMISSION_LABEL_KEYS[entry.permission])}</Badge>}
+        {entry.evidence && (
+          <Badge
+            variant={entry.evidence.limitations?.length ? 'warning' : 'outline'}
+            className="shrink-0 px-1.5 py-0 text-[10px]"
+          >
+            {t('toolTrace.evidence.badge')}
+          </Badge>
+        )}
         {entry.argsSummary && (
           <span className="min-w-0 flex-1 truncate text-muted-foreground">{entry.argsSummary}</span>
         )}
@@ -164,6 +182,13 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
           className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
         />
       </button>
+      {entry.artifacts && entry.artifacts.length > 0 && (
+        <div className="space-y-1 border-t px-2.5 py-1.5">
+          {entry.artifacts.map((artifact) => (
+            <ArtifactCard key={artifact.attachmentId} artifact={artifact} />
+          ))}
+        </div>
+      )}
       {substeps.length > 0 && (
         <ul
           data-testid="tool-substeps"
@@ -203,6 +228,38 @@ function ToolRow({ entry }: { entry: ToolTraceEntry }) {
             <dt className="w-16 shrink-0">{t('toolTrace.detail.result')}</dt>
             <dd className={cn('break-all', failed && 'text-destructive')}>{entry.resultSummary}</dd>
           </div>
+          {entry.evidence && (
+            <div className="mt-1 space-y-1 border-t pt-1" data-testid="tool-evidence">
+              <div className="flex gap-2">
+                <dt className="w-16 shrink-0">{t('toolTrace.evidence.source')}</dt>
+                <dd className="min-w-0 break-all">{entry.evidence.source}</dd>
+              </div>
+              {entry.evidence.coverage && (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0">{t('toolTrace.evidence.coverage')}</dt>
+                  <dd className="min-w-0 break-words">{entry.evidence.coverage}</dd>
+                </div>
+              )}
+              {entry.evidence.limitations && entry.evidence.limitations.length > 0 && (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0">{t('toolTrace.evidence.limitations')}</dt>
+                  <dd className="min-w-0 break-words text-warning">
+                    {entry.evidence.limitations.join('；')}
+                  </dd>
+                </div>
+              )}
+              {entry.evidence.capturedAt && (
+                <div className="flex gap-2">
+                  <dt className="w-16 shrink-0">{t('toolTrace.evidence.title')}</dt>
+                  <dd className="min-w-0 text-muted-foreground">
+                    {t('toolTrace.evidence.capturedAt', {
+                      time: formatCapturedAt(entry.evidence.capturedAt),
+                    })}
+                  </dd>
+                </div>
+              )}
+            </div>
+          )}
         </dl>
       )}
     </div>

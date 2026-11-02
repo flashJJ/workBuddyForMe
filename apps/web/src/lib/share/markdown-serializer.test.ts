@@ -95,6 +95,34 @@ describe('serializeMarkdown（M2）', () => {
     expect(md).toContain('> 结果：抓取 1.2KB');
   });
 
+  it('工具证据：来源/覆盖/未覆盖/采集时间均可追溯', () => {
+    const md = serializeMarkdown(
+      baseSnapshot({
+        messages: [
+          {
+            role: 'assistant', content: '完成', createdAt: '', parts: [], citations: [],
+            toolTrace: [
+              {
+                callId: 't1', tool: 'web_search', argsSummary: 'q', status: 'ok',
+                durationMs: 500, resultSummary: 'mock · 2 条', startedAt: '',
+                evidence: {
+                  source: 'mock-search',
+                  coverage: '2 条结果',
+                  limitations: ['部分摘要截断至 300 字符'],
+                  capturedAt: '2026-11-02T08:00:00.000Z',
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(md).toContain('> 来源：mock-search');
+    expect(md).toContain('> 覆盖：2 条结果');
+    expect(md).toContain('> 未覆盖：部分摘要截断至 300 字符');
+    expect(md).toContain('> 采集于 2026-11-02 08:00');
+  });
+
   it('工具失败块渲染错误信息', () => {
     const md = serializeMarkdown(
       baseSnapshot({

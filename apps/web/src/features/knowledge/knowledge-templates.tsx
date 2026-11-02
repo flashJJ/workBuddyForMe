@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { useKnowledgeMutations } from '@/lib/hooks/knowledge';
 import { templatesOfKind } from '@/lib/templates/starter-templates';
+import { ContentPackSection } from './content-pack-section';
 
 const KB_TEMPLATES = templatesOfKind('knowledge');
 
@@ -49,12 +50,15 @@ export function KnowledgeTemplateLauncher() {
   const onStart = useKnowledgeTemplateStart();
   return (
     <TemplateLauncher count={KB_TEMPLATES.length} testId="kb-template-launcher">
-      <TemplateGallery
-        compact
-        testId="kb-template-side"
-        groups={[{ items: items(t('templates.start')) }]}
-        onStart={onStart}
-      />
+      <div className="space-y-3">
+        <TemplateGallery
+          compact
+          testId="kb-template-side"
+          groups={[{ items: items(t('templates.start')) }]}
+          onStart={onStart}
+        />
+        <ContentPackSection compact />
+      </div>
     </TemplateLauncher>
   );
 }
@@ -64,12 +68,13 @@ export function KnowledgeTemplateEmptyGallery() {
   const { t } = useI18n();
   const onStart = useKnowledgeTemplateStart();
   return (
-    <div className="mt-4 w-full max-w-2xl">
+    <div className="mt-4 w-full max-w-2xl space-y-4">
       <TemplateGallery
         testId="kb-template-empty"
         groups={[{ items: items(t('templates.start')) }]}
         onStart={onStart}
       />
+      <ContentPackSection />
     </div>
   );
 }

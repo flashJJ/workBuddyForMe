@@ -33,6 +33,12 @@ describe('runToolCallLoop：v0.8 flow 工具子步骤', () => {
             { id: 'start', label: '开始', status: 'ok' },
             { id: 'llm', label: '大模型', status: 'ok', detail: '生成完成' },
           ],
+          evidence: {
+            source: 'flow:wf-1',
+            coverage: '2 个子步骤',
+            limitations: ['示例限制'],
+            capturedAt: '2026-11-02T00:00:00.000Z',
+          },
         };
       },
     };
@@ -88,11 +94,16 @@ describe('runToolCallLoop：v0.8 flow 工具子步骤', () => {
     expect(endData.status).toBe('ok');
     expect(endData.source).toBe('flow');
     expect(endData.substeps).toHaveLength(2);
+    expect(endData.evidence?.coverage).toBe('2 个子步骤');
 
     // 落库 trace 同构
     expect(trace).toHaveLength(1);
     expect(trace[0]!.tool).toBe('flow:wf-1');
     expect(trace[0]!.substeps?.map((s) => s.id)).toEqual(['start', 'llm']);
+    expect(trace[0]!.evidence).toMatchObject({
+      source: 'flow:wf-1',
+      limitations: ['示例限制'],
+    });
   });
 
   it('v1.1 大输出双视图：outgoing 入模内容按预算压缩且保首 id，trace 标 compacted，summary 不变', async () => {
