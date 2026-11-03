@@ -157,11 +157,20 @@ test.describe.serial('v1.3 知识链路', () => {
     await page.getByLabel('消息输入框').press('Enter');
 
     await expect(page.getByText(/根据检索到的资料/)).toBeVisible();
-    await expect(page.getByText(/本地 SD 卡/).first()).toBeVisible();
 
     // 引用：静态层「实体知识」徽标 + 段落坐标（md/txt 复用段号）
+    // M5 关系/实体引用可能让来源超过 3 条触发折叠；流式期间引用分批到达 + 重挂载，
+    // 轮询保证最终列表已展开且来源内容可见
     const citations = page.getByTestId('citations');
     await expect(citations).toBeVisible();
+    await expect(async () => {
+      const toggle = citations.getByTestId('citations-toggle');
+      if (await toggle.count()) {
+        const expanded = await toggle.getAttribute('aria-expanded');
+        if (expanded !== 'true') await toggle.click();
+      }
+      await expect(page.getByText(/本地 SD 卡/).first()).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
     await expect(citations.getByTestId('citation-static-kind').first()).toHaveText('实体知识');
     await expect(citations.getByTestId('citation-location').first()).toHaveText(/第 \d+ 段/);
     await expect(citations.getByText(DOC_FILENAME).first()).toBeVisible();
@@ -192,7 +201,16 @@ test.describe.serial('v1.3 知识链路', () => {
     await page.getByLabel('消息输入框').press('Enter');
 
     await expect(page.getByText(/根据检索到的资料/)).toBeVisible();
-    await expect(page.getByText(/云端同步/).first()).toBeVisible();
+    const citations = page.getByTestId('citations');
+    await expect(citations).toBeVisible();
+    await expect(async () => {
+      const toggle = citations.getByTestId('citations-toggle');
+      if (await toggle.count()) {
+        const expanded = await toggle.getAttribute('aria-expanded');
+        if (expanded !== 'true') await toggle.click();
+      }
+      await expect(page.getByText(/云端同步/).first()).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
     const bodyText = await page.locator('body').innerText();
     expect(bodyText).not.toContain('本地 SD 卡');
   });
