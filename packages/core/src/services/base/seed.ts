@@ -47,9 +47,12 @@ export function ensureBuiltinCharacterCards(db: DatabaseInstance): void {
       parsed: result.card,
       defaultEmotion: result.card.defaultEmotion,
       voice: result.card.voice,
+      stagePlan: seed.stagePlan,
       createdAt: ts,
       updatedAt: ts,
     });
+    // 老库已有同 id 内置卡时 INSERT OR IGNORE 会跳过：只在阶段为空时补默认计划
+    cards.setBuiltinStagePlanIfEmpty(seed.id, seed.stagePlan);
   }
 }
 

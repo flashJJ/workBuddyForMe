@@ -43,6 +43,8 @@ export type {
   RunGraphLane,
   RunGraphSnapshot,
 } from './run';
+export { STAGE_PLAN_LIMITS } from './stage-plan';
+export type { StagePlanStep, StagePlan } from './stage-plan';
 export type { McpServerConfig, McpServerInfo, McpToolInfo } from './mcp';
 export type {
   ProviderConnectionStatus,

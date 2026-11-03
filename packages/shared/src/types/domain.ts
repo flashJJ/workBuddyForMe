@@ -20,6 +20,7 @@ import type { CapabilitySignatureSettingsFields } from './capability-settings';
 import type { AgentGovernanceSettingsFields } from './agent-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction/interaction-graph';
 import type { ToolTraceEntry } from './tool';
+import type { StagePlan } from './stage-plan';
 import type { SearchSettings } from './search';
 export interface Timestamped {
   createdAt: string;
@@ -84,10 +85,10 @@ export interface Assistant extends Timestamped {
   personalityTolerance: number;
   /** v1.8：当前选用的角色卡 id（v026 列；null=默认卡） */
   cardId: string | null;
+  stagePlan: StagePlan | null;
   isBuiltin: boolean;
   sortOrder: number;
 }
-
 export interface Conversation extends Timestamped {
   id: string;
   assistantId: string;
@@ -97,6 +98,7 @@ export interface Conversation extends Timestamped {
   summary: string | null;
   /** v0.5：已折叠进摘要的最早消息条数（累计） */
   summaryTurns: number;
+  modelId: string | null;
 }
 
 export interface Citation {

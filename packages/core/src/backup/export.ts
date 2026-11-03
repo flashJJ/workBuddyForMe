@@ -9,6 +9,7 @@ import type { ServiceDeps } from '../services/base/deps';
 import {
   createConversationRepository,
   createMessageRepository,
+  createStagePlanRepository,
   createKnowledgeRepository,
   createDocumentRepository,
   createChunkRepository,
@@ -51,6 +52,7 @@ export async function exportBackup(
   // 用 repository 接口拉取数据（monorepo workspace 可直接 import database）
   const conversationsRepo = createConversationRepository(deps.db);
   const messagesRepo = createMessageRepository(deps.db);
+  const stagePlansRepo = createStagePlanRepository(deps.db);
   const knowledgeRepo = createKnowledgeRepository(deps.db);
   const documentsRepo = createDocumentRepository(deps.db);
   const chunksRepo = createChunkRepository(deps.db);
@@ -76,7 +78,8 @@ export async function exportBackup(
   if (tracks.includes('conversations')) {
     const convs = conversationsRepo.list(undefined, 10_000);
     const serialized = convs.map((conv) => ({
-      conversation: conv,
+      // v2.20：会话级模型随 conversation 走；阶段计划为可选字段（旧版本恢复端忽略）
+      conversation: { ...conv, stagePlan: stagePlansRepo.get(conv.id) },
       messages: messagesRepo.listByConversation(conv.id, 500),
     }));
     files['conversations.json'] = JSON.stringify(serialized, null, 2);

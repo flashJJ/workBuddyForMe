@@ -47,14 +47,18 @@ export function createChatOrchestrator(deps: ServiceDeps) {
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
       const assistant = assistants.get(input.assistantId);
 
-      // 开流前准备：模型解析（含 vision 门控）、附件校验、用户消息落库
+      // 开流前准备：先确定会话（读取会话级模型覆盖），再解析模型与校验附件
       let target: ResolvedChatTarget;
       let conversationId: string;
       let userContent: string;
       try {
-        target = resolveChatTarget(deps, assistant);
-        ({ conversationId, userContent } = prepareUserTurn({
-          assistant,
+        conversationId = input.conversationId
+          ? conversations.get(input.conversationId).id
+          : conversations.create(assistant.id).id;
+        const conversation = conversations.get(conversationId);
+        target = resolveChatTarget(deps, assistant, conversation.modelId);
+        ({ userContent } = prepareUserTurn({
+          conversationId,
           input,
           target,
           conversations,

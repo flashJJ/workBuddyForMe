@@ -24,6 +24,7 @@ function makeCard(partial: Partial<CharacterCardRecord> & { id: string }): Chara
     },
     defaultEmotion: 'neutral',
     voice: null,
+    stagePlan: null,
     createdAt: '2026-10-14T00:00:00.000Z',
     updatedAt: '2026-10-14T00:00:00.000Z',
     ...partial,

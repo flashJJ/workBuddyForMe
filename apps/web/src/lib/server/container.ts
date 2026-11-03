@@ -55,7 +55,7 @@ import { closeBrowserSession } from './browser-session-close';
 import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
-import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
+import { createRunCompletionService, createStagePlanService, createWorkPlanService } from '@wbfm/core/work-plan';
 import { createRunGraphService, createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
 import { createCapabilityCatalog } from '@wbfm/core/capabilities';
 import { createAuditService } from '@wbfm/core/governance';
@@ -229,6 +229,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     approvals,
     workSignals,
     workPlans,
+    stagePlan: createStagePlanService(deps),
     completions,
     sessionLog,
     sessionExport,

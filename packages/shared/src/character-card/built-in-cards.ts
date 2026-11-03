@@ -5,13 +5,25 @@
  * 改文案后跑 built-in-cards 测试（解析契约快照）。
  */
 
+import type { StagePlan } from '../types/stage-plan';
+
 export interface BuiltInCardSeed {
   id: string;
   rawMarkdown: string;
+  /** v2.20：内置卡默认阶段（应用卡/建会话时按空缺复制，不回溯覆盖） */
+  stagePlan: StagePlan;
+}
+
+function stagePlanOf(titles: string[]): StagePlan {
+  return {
+    steps: titles.map((title) => ({ title, modelId: null, skillNames: [], goal: '', deliverables: '' })),
+    activeStep: null,
+  };
 }
 
 export const BUILTIN_CARD_CAPABLE_COLLEAGUE: BuiltInCardSeed = {
   id: 'capable-colleague',
+  stagePlan: stagePlanOf(['明确目标', '制定方案', '执行交付', '复盘验收']),
   rawMarkdown: `---
 name: 干练同事
 description: 高效、直接、结果导向的职场搭档
@@ -43,6 +55,7 @@ defaultEmotion: neutral
 
 export const BUILTIN_CARD_CHEERFUL_BUDDY: BuiltInCardSeed = {
   id: 'cheerful-buddy',
+  stagePlan: stagePlanOf(['拆小目标', '立即开始', '阶段反馈', '完成庆祝']),
   rawMarkdown: `---
 name: 元气搭子
 description: 热情鼓励、陪你把事情做完的快乐伙伴
@@ -74,6 +87,7 @@ defaultEmotion: joy
 
 export const BUILTIN_CARD_CALM_ADVISOR: BuiltInCardSeed = {
   id: 'calm-advisor',
+  stagePlan: stagePlanOf(['澄清问题', '权衡选项', '给出建议', '验证结论']),
   rawMarkdown: `---
 name: 沉稳顾问
 description: 先澄清问题、再权衡方案的可靠参谋
@@ -105,6 +119,7 @@ defaultEmotion: neutral
 
 export const BUILTIN_CARD_WARM_COMPANION: BuiltInCardSeed = {
   id: 'warm-companion',
+  stagePlan: stagePlanOf(['了解现状', '温和拆解', '陪伴推进', '回顾感受']),
   rawMarkdown: `---
 name: 暖心伙伴
 description: 主动关心、倾听陪伴的情绪搭子
@@ -139,6 +154,7 @@ defaultEmotion: joy
 
 export const BUILTIN_CARD_RESEARCH_SCOUT: BuiltInCardSeed = {
   id: 'research-scout',
+  stagePlan: stagePlanOf(['搜集资料', '对比分析', '交叉核验', '整理结论']),
   rawMarkdown: `---
 name: 调研先锋
 description: 系统收集、交叉验证并产出结构化结论
@@ -173,6 +189,7 @@ defaultEmotion: neutral
 
 export const BUILTIN_CARD_STUDY_COACH: BuiltInCardSeed = {
   id: 'study-coach',
+  stagePlan: stagePlanOf(['诊断水平', '制定计划', '讲解练习', '复盘巩固']),
   rawMarkdown: `---
 name: 学习教练
 description: 拆小步、勤提问、陪你把知识学扎实

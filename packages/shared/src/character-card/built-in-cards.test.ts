@@ -34,6 +34,18 @@ describe('v1.8 内置角色卡播种契约', () => {
     },
   );
 
+  it('6 张内置卡各带 4 个默认阶段，不预绑模型/技能', () => {
+    for (const seed of BUILTIN_CARD_SEEDS) {
+      expect(seed.stagePlan.steps).toHaveLength(4);
+      expect(seed.stagePlan.activeStep).toBeNull();
+      for (const step of seed.stagePlan.steps) {
+        expect(step.title.trim().length).toBeGreaterThan(0);
+        expect(step.modelId).toBeNull();
+        expect(step.skillNames).toEqual([]);
+      }
+    }
+  });
+
   it('6 张预设卡覆盖职场/陪伴/顾问/情感/调研/学习场景', () => {
     expect(
       [

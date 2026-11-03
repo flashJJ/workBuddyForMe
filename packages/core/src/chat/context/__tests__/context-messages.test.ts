@@ -29,6 +29,7 @@ function makeAssistant() {
     personalityShy: 0.5,
     personalityTolerance: 0.5,
     cardId: null,
+    stagePlan: null,
     isBuiltin: false,
     sortOrder: 0,
     createdAt: '',
