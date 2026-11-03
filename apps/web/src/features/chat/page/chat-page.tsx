@@ -27,6 +27,7 @@ import { useFirstAsk } from '../hooks/use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
 import { RecalledMemoriesBar } from '../overlay/recalled-memories-bar';
 import { useChatDeepLink } from '../hooks/use-chat-deep-link';
+import { ChatStageBar, useChatModelView } from '../stage';
 
 export function ChatPage({
   deepLinkConversationId = null,
@@ -51,6 +52,8 @@ export function ChatPage({
   const [confirmSubmitting, setConfirmSubmitting] = React.useState(false);
   // v1.4：任务模式会话级开关（默认关，不跨会话/助手持久化；切换即复位）
   const [taskMode, setTaskMode] = React.useState(false);
+  const [draft, setDraft] = React.useState('');
+  const [composerFocus, setComposerFocus] = React.useState(0);
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -63,17 +66,12 @@ export function ChatPage({
   const currentConversation =
     conversationsQuery.data?.find((item) => item.id === conversationId) ?? null;
 
-  // hasChatModel/visionEnabled 依赖下方模型列表；语音伴侣在模型能力算出后接线
-  const hasChatModel = React.useMemo(() => {
-    if (!currentAssistant) return false;
-    if (currentAssistant.modelId) return true;
-    if (settings?.defaultChatModelId) {
-      return (models ?? []).some(
-        (model) => model.id === settings.defaultChatModelId && model.capabilities.includes('chat'),
-      );
-    }
-    return false;
-  }, [currentAssistant, settings, models]);
+  const { hasChatModel, visionEnabled } = useChatModelView({
+    assistant: currentAssistant,
+    conversation: currentConversation,
+    defaultChatModelId: settings?.defaultChatModelId,
+    models,
+  });
 
   // 语音伴侣聚合：TTS 播放/PTT/VAD/桌宠中继/F8 主动说话（主窗唯一音频出口）
   const companion = useChatVoiceCompanion({
@@ -103,23 +101,12 @@ export function ChatPage({
     },
   });
 
-  // v0.3：当前生效模型（助手绑定优先，否则全局默认）是否具备视觉能力
-  const visionEnabled = React.useMemo(() => {
-    const effectiveModelId = currentAssistant?.modelId ?? settings?.defaultChatModelId ?? null;
-    return Boolean(
-      effectiveModelId &&
-        (models ?? []).some(
-          (model) => model.id === effectiveModelId && model.capabilities.includes('vision'),
-        ),
-    );
-  }, [currentAssistant, settings, models]);
-
   // v2.4 M1 T6：向导 firstAsk 步选中的示例问题，模型就绪后自动发出一次
   useFirstAsk(session.send, hasChatModel);
 
-  const switchAssistant = (id: string) => { session.reset(); setTaskMode(false); setAssistantId(id); setConversationId(null); };
-  const newChat = () => { session.reset(); setTaskMode(false); setConversationId(null); };
-  const selectConversation = (id: string) => { session.reset(); setTaskMode(false); setConversationId(id); };
+  const switchAssistant = (id: string) => { session.reset(); setTaskMode(false); setDraft(''); setAssistantId(id); setConversationId(null); };
+  const newChat = () => { session.reset(); setTaskMode(false); setDraft(''); setConversationId(null); };
+  const selectConversation = (id: string) => { session.reset(); setTaskMode(false); setDraft(''); setConversationId(id); };
 
   // v2.6 M4：记忆来源深链（/chat?conversation=&message=）
   useChatDeepLink({
@@ -238,6 +225,17 @@ export function ChatPage({
 
         {hasChatModel ? (
           <>
+            {conversationId && (
+              <ChatStageBar
+                conversationId={conversationId}
+                streaming={session.streaming}
+                draft={draft}
+                conversationModelId={currentConversation?.modelId ?? null}
+                assistantModelId={currentAssistant?.modelId ?? null}
+                defaultModelId={settings?.defaultChatModelId ?? null}
+                onTaskPrepared={(text) => { setDraft(text); setComposerFocus((value) => value + 1); }}
+              />
+            )}
             <RecalledMemoriesBar memories={session.recalledMemories} />
             <MessageList
               messages={session.messages}
@@ -274,6 +272,9 @@ export function ChatPage({
                   onRecognizedSend={session.send}
                 />
               }
+              draftValue={draft}
+              onDraftChange={setDraft}
+              focusToken={composerFocus}
               onSend={(content, attachmentIds) =>
                 taskMode ? void session.sendTask(content) : session.send(content, attachmentIds)
               }

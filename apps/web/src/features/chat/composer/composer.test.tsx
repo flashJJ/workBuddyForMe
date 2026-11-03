@@ -15,6 +15,33 @@ vi.mock('@/lib/utils/image', () => ({
 }));
 
 describe('输入区 Composer（TR-27.1）', () => {
+  it('可选受控草稿：外部载入后回填并聚焦', () => {
+    const onDraftChange = vi.fn();
+    const { rerender } = renderWithProviders(
+      <Composer
+        streaming={false}
+        draftValue="原草稿"
+        onDraftChange={onDraftChange}
+        onSend={() => undefined}
+        onStop={() => undefined}
+      />,
+    );
+    expect(screen.getByLabelText('消息输入框')).toHaveValue('原草稿');
+
+    rerender(
+      <Composer
+        streaming={false}
+        draftValue="任务文本"
+        onDraftChange={onDraftChange}
+        focusToken={1}
+        onSend={() => undefined}
+        onStop={() => undefined}
+      />,
+    );
+    expect(screen.getByLabelText('消息输入框')).toHaveValue('任务文本');
+    expect(screen.getByLabelText('消息输入框')).toHaveFocus();
+  });
+
   it('Enter 发送并清空；空白内容不发送', async () => {
     const onSend = vi.fn();
     const user = userEvent.setup();
