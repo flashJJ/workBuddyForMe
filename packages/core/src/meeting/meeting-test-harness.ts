@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createMeetingService } from './meeting-service';
-import type { MeetingService, MeetingServiceDeps, MeetingSpeaker } from './meeting-types';
+import type { MeetingEvent, MeetingService, MeetingServiceDeps, MeetingSpeaker } from './meeting-types';
 
 export interface TestMember {
   id: string;
@@ -49,6 +49,8 @@ export interface MeetingHarness {
   calls: Record<string, number>;
   completeCalls: Array<{ system: string; user: string }>;
   lastRequest: LastRequest | null;
+  /** v2.20：捕获 onEvent 广播（模拟 session_events 落库回调） */
+  events: MeetingEvent[];
 }
 
 export function createMeetingHarness(): MeetingHarness {
@@ -60,6 +62,7 @@ export function createMeetingHarness(): MeetingHarness {
   const hangers = new Set<string>();
   const calls: Record<string, number> = {};
   const completeCalls: Array<{ system: string; user: string }> = [];
+  const events: MeetingEvent[] = [];
   const state: { lastRequest: LastRequest | null } = { lastRequest: null };
   const defaultConclusion = JSON.stringify({
     summary: '达成评审结论',
@@ -101,6 +104,7 @@ export function createMeetingHarness(): MeetingHarness {
     },
     getMemberName: (id) => TEST_MEMBERS.find((m) => m.id === id)?.name ?? null,
     getPersonaBlock: (id) => (id === 'a' ? '【角色卡】\n你是策略担当' : null),
+    onEvent: (_meetingId, event) => events.push(event),
   };
 
   return {
@@ -119,6 +123,7 @@ export function createMeetingHarness(): MeetingHarness {
     hang: (memberId) => hangers.add(memberId),
     calls,
     completeCalls,
+    events,
     get lastRequest() {
       return state.lastRequest;
     },

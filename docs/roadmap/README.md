@@ -43,6 +43,23 @@ v2.18 解决了「可交付」；下一层断点在知识输入本身：复杂 P
 - 状态：✅ 已正式发布并置 Latest（Release workflow `41496492744`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.19.0>；单测 3067、Web e2e 139/139、桌面冒烟 10/11；安装包 200.32 MB）
 - 分支：`feature/v2.19-planning`（PR [#4](https://github.com/flashJJ/workBuddyForMe/pull/4) 合并到 main，merge commit `5f562d2`；tag `v2.19.0` 打在 `5658537`；一次迁移 `v043-document-structure`，`LATEST_SCHEMA_VERSION = 43`）
 
+## 已排期：v2.20 看得见、分得清——过程图、光线与阶段化会话（M0 已完成，M1 进行中）
+
+v2.19 把知识输入做深后，下一层断点在运行过程：任务/Flow/协作/会议各自有时间线却互不相连，聊天页看不到全过程，普通会话缺少轻量阶段推进。v2.20 借鉴 Lancer（MIT）：P0 做 RunGraph 五域投影、只读 API、聊天右侧 + `/timeline` 图谱、按设计重写的 Light UI、`meeting` scope；P1 做 1–8 阶段计划、角色卡/助手默认阶段复制、会话级模型切换。一次 `v044` 迁移，不改桌面壳。
+
+- 方案：[v2.20 方案](../plan/v2.20/README.md) · [M0 决策](../plan/v2.20/01-M0-决策记录.md) · [M0 契约](../plan/v2.20/02-M0-契约冻结.md)
+- 来源分析：[Lancer 借鉴分析](scheduled/v2.20-01-lancer-borrowing-analysis.md)
+- 状态：已排期，M0/M1/M2 已完成；M3 Light UI 待开始；分支 `feature/v2.20-planning`
+- 范围：P0 + P1；P2 自由分支转 v2.21
+
+## 已排期：v2.21 会并行——自由分支会话与回传（后续版本）
+
+v2.20 之后的下一个版本，做用户自由派生的父子会话、结构化回传、四项上限与分支车道；一次 `v045` 迁移；不搬 Pi 会话树/worktree。
+
+- 方案：[v2.21 方案](../plan/v2.21/README.md)
+- 来源方案：[自由分支会话与回传](scheduled/v2.21-01-free-branch-sessions.md)
+- 状态：已排期（未启动 M0）
+
 ## ✅ 已正式发布：v2.18 🎨 可交付——图表、内容包与有出处的产物（2026-11-02，tag `v2.18.0`）
 
 v2.17 解决「接得上、搜得到、装得进」后，下一层断点在产出物：模型能写 HTML/Markdown，却没有落盘成文件的工具；内置技能缺少图表设计规范；知识库模板只有空壳；工具结果缺少来源/覆盖率。v2.18 借鉴 Diagram Design（MIT）、HowToLiveBetter（CC BY 4.0）、REA（MIT）、Moli（Apache-2.0）与 ArtCraft（Apache-2.0）：P0 做产物文件管道 + 10 类结构化图表 + Web/桌面 SVG/PNG 导出；P1 做内容包与证据元数据；REA/Moli 只借思路，ArtCraft 本版不移植。不做逆向工程产品、不引入 Rust 浏览器 sidecar、不做生成式创作市场。
@@ -316,7 +333,9 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.16 | 可导航：目录预算、公开入口、可见区请求与结构/循环门禁 | ✅ 已正式发布（2026-11-01，Release 已转正并置 Latest） | [方案](../plan/v2.16/README.md) · [M0](../plan/v2.16/01-M0-契约冻结.md) · [M6](../plan/v2.16/08-M6-验收.md) | [总结](v2.16-release-summary.md) | [发行说明](v2.16-release-notes.md) · [blog/v2.16](../../blog/v2.16/) 10 篇 | `v2.16.0` |
 | v2.17 | 可连通：厂商能力矩阵 + 内置联网工具与能力代理 | ✅ 已正式发布（2026-11-02，Release 已转正并置 Latest） | [方案](../plan/v2.17/README.md) · [M0](../plan/v2.17/01-M0-契约冻结.md) · [M1/M2](../plan/v2.17/02-M1-M2-实施记录.md) · [M3](../plan/v2.17/03-M3-实施记录.md) · [M4](../plan/v2.17/04-M4-实施记录.md) · [M5](../plan/v2.17/05-M5-验收.md) · [M6](../plan/v2.17/06-M6-验收.md) | [总结](v2.17-release-summary.md) | [发行说明](v2.17-release-notes.md) | `v2.17.0` |
 | v2.18 | 可交付：图表、内容包与有出处的产物 | ✅ 已正式发布（2026-11-02，Release 已转正并置 Latest） | [方案](../plan/v2.18/README.md) · [M0 决策](../plan/v2.18/01-M0-决策记录.md) · [M0 契约](../plan/v2.18/02-M0-契约冻结.md) · [M1](../plan/v2.18/03-M1-实施记录.md) · [M2](../plan/v2.18/04-M2-实施记录.md) · [M3](../plan/v2.18/05-M3-实施记录.md) · [M4](../plan/v2.18/06-M4-实施记录.md) · [M5](../plan/v2.18/07-M5-实施记录.md) · [M6](../plan/v2.18/08-M6-验收与发布.md) | [总结](v2.18-release-summary.md) | [发行说明](v2.18-release-notes.md) | `v2.18.0` |
-| v2.19 | 看得懂文档：深度文档解析与可信 RAG | 🚧 实施中（M1/M2 完成，M3 待开始） | [方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md) · [M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M1 实施记录](../plan/v2.19/03-M1-实施记录.md) · [M2 实施记录](../plan/v2.19/04-M2-实施记录.md) · [来源方案](scheduled/v2.19-01-deep-document-rag.md) | — | — | 待定 |
+| v2.19 | 看得懂文档：深度文档解析与可信 RAG | ✅ 已正式发布（2026-11-03，Release 已转正并置 Latest） | [方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md) · [M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M6 验收](../plan/v2.19/08-M6-验收与发布.md) · [来源方案](scheduled/v2.19-01-deep-document-rag.md) | [总结](v2.19-release-summary.md) | [发行说明](v2.19-release-notes.md) | `v2.19.0` |
+| v2.20 | 看得见、分得清：过程图、光线与阶段化会话 | 已排期（M0/M1/M2 已完成，M3 待开始） | [方案](../plan/v2.20/README.md) · [M0 决策](../plan/v2.20/01-M0-决策记录.md) · [M0 契约](../plan/v2.20/02-M0-契约冻结.md) · [M1](../plan/v2.20/03-M1-实施记录.md) · [M2](../plan/v2.20/04-M2-实施记录.md) · [来源分析](scheduled/v2.20-01-lancer-borrowing-analysis.md) | — | — | 待定 |
+| v2.21 | 会并行：自由分支会话与回传 | 已排期（后续版本） | [方案](../plan/v2.21/README.md) · [来源方案](scheduled/v2.21-01-free-branch-sessions.md) | — | — | 待定 |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 

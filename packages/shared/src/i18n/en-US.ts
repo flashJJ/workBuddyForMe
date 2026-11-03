@@ -51,6 +51,7 @@ import { enApprovals } from './messages/approvals';
 import { enAudit } from './messages/audit';
 import { enPlans } from './messages/plans';
 import { enTimeline } from './messages/timeline';
+import { enRunGraph } from './messages/run-graph';
 import { enCapabilities } from './messages/capabilities';
 import { enSubagent } from './messages/subagent';
 
@@ -112,6 +113,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   audit: enAudit,
   plans: enPlans,
   timeline: enTimeline,
+  runGraph: enRunGraph,
   capabilities: enCapabilities,
   subagent: enSubagent,
 };

@@ -10,6 +10,7 @@ import type { MeetingMode } from '@wbfm/shared/schemas';
 import { useMeetingRoom } from './use-meeting-room';
 import { MODE_LABEL_KEY, STATUS_KEY } from './meeting-keys';
 import { MeetingConclusionPanel } from './meeting-conclusion-panel';
+import { RunGraphLauncher } from '@/features/run-graph';
 
 /** 在舞台观看（Electron 舞台窗；裸浏览器新标签） */
 function watchOnStage(meetingId: string): void {
@@ -112,6 +113,7 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
               </button>
             ))}
           </div>
+          <RunGraphLauncher kind="meeting" id={meetingId} />
           <button
             type="button"
             onClick={() => watchOnStage(meetingId)}

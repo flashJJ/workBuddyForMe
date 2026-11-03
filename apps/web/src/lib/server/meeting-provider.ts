@@ -32,5 +32,15 @@ export function createMeetingDeps(
       const parsed = parseCharacterCard(card.rawMarkdown);
       return parsed.ok ? buildPersonaBlock(parsed.card) : null;
     },
+    onEvent: (meetingId, event) => {
+      // v2.20：只落图需要的事件；delta 是流式帧，error 不进入图
+      if (event.event === 'meeting_delta' || event.event === 'error') return;
+      deps.events?.record({
+        scope: 'meeting',
+        scopeId: meetingId,
+        type: event.event === 'meeting_turn' ? 'meeting_turn_start' : event.event,
+        payload: event.data,
+      });
+    },
   };
 }

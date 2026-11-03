@@ -187,4 +187,19 @@ describe('v1.9 M3 meeting-service', () => {
     h.service.finish(m.id); // 无活跃执行时直接收敛
     expect(h.service.getDetail(m.id)!.meeting.status).toBe('finished');
   });
+
+  it('v2.20：onEvent 广播 turn/message/status，供 meeting scope 落库', async () => {
+    const m = create('manual');
+    h.setScript('a', '收到');
+    h.service.submitTurn(m.id, '@阿策 你好');
+    await waitTurnDone(h.service, m.id);
+    expect(h.events.some((event) => event.event === 'meeting_turn')).toBe(true);
+    expect(h.events.some((event) => event.event === 'meeting_message')).toBe(true);
+    h.service.finish(m.id);
+    expect(
+      h.events.some(
+        (event) => event.event === 'meeting_status' && event.data.status === 'finished',
+      ),
+    ).toBe(true);
+  });
 });

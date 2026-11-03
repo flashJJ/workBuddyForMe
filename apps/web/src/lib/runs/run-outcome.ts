@@ -1,5 +1,6 @@
 import type { TaskRunStatus, TaskStopReason } from '@wbfm/shared/schemas';
 import type { MessageKey } from '@wbfm/shared/i18n';
+import type { RunOutcome } from '@wbfm/shared/types';
 
 /**
  * v2.4 M4 / P1-1：task / agent-run / flow-run 三套运行状态的统一口径。
@@ -7,19 +8,13 @@ import type { MessageKey } from '@wbfm/shared/i18n';
  * - 失败原因：原始 error / errorCode / task stopReason 归一为 FailureReason
  * - 耗时：统一 startedAt(缺失回退 createdAt) → finishedAt(运行中取当前时间)
  * 纯函数，无 React 依赖，便于单测锁定。
+ *
+ * v2.20：RunOutcome 已上移到 @wbfm/shared/types，本文件保留 re-export 兼容旧导入。
  */
 
 export type RunKind = 'task' | 'agent' | 'flow';
 
-export type RunOutcome =
-  | 'queued'
-  | 'running'
-  | 'waiting'
-  | 'succeeded'
-  | 'failed'
-  | 'cancelled'
-  | 'interrupted'
-  | 'budget_exceeded';
+export type { RunOutcome } from '@wbfm/shared/types';
 
 /** 统一状态标签（徽标/筛选器共用同一套文案） */
 export const RUN_OUTCOME_LABEL_KEYS: Record<RunOutcome, MessageKey> = {

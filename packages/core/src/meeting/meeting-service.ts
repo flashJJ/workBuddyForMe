@@ -36,10 +36,25 @@ export function createMeetingService(deps: MeetingServiceDeps): MeetingService {
   function busFor(meetingId: string): RunEventBus<MeetingEvent> {
     let bus = buses.get(meetingId);
     if (!bus) {
-      bus = createRunEventBus<MeetingEvent>({ maxBuffer: MEETING_BUS_MAX_BUFFER });
+      const raw = createRunEventBus<MeetingEvent>({ maxBuffer: MEETING_BUS_MAX_BUFFER });
+      bus = {
+        ...raw,
+        publish(event) {
+          raw.publish(event);
+          notify(meetingId, event);
+        },
+      };
       buses.set(meetingId, bus);
     }
     return bus;
+  }
+
+  function notify(meetingId: string, event: MeetingEvent): void {
+    try {
+      deps.onEvent?.(meetingId, event);
+    } catch {
+      // 事件日志是旁路，写入失败不影响会议主链路
+    }
   }
 
   function requireMeeting(id: string): MeetingRecord {
@@ -70,7 +85,9 @@ export function createMeetingService(deps: MeetingServiceDeps): MeetingService {
   }
 
   function publish(meetingId: string, event: MeetingEvent): void {
-    buses.get(meetingId)?.publish(event);
+    const bus = buses.get(meetingId);
+    if (bus) bus.publish(event);
+    else notify(meetingId, event);
   }
 
   return {

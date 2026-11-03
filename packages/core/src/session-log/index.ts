@@ -5,6 +5,14 @@ export {
   type RecordEventInput,
 } from './session-log-service';
 export { projectTimeline, type TimelineItem } from './timeline';
+export { projectRunGraph, type RunGraphProjectionInput } from './graph/index';
+export {
+  createRunGraphService,
+  type RunGraphService,
+  type ConversationGraphOptions,
+  type MeetingGraphOptions,
+  type ConversationGraphScope,
+} from './run-graph-service';
 export {
   createSessionExportService,
   redactValue,

@@ -56,7 +56,7 @@ import { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
-import { createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
+import { createRunGraphService, createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
 import { createCapabilityCatalog } from '@wbfm/core/capabilities';
 import { createAuditService } from '@wbfm/core/governance';
 import type { ServiceContainer } from './container-types';
@@ -117,9 +117,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const subagentProviders = createSubagentProviderRegistry();
   const runtime = createToolRuntime(deps);
   const workSignals = createWorkSignalHub({ approvals });
-  const workPlans = createWorkPlanService(deps, {
-    onChange: (plan) => workSignals.ingestPlan(plan),
-  });
+  const workPlans = createWorkPlanService(deps, { onChange: (plan) => workSignals.ingestPlan(plan) });
   deps.workPlans = workPlans;
   const completions = createRunCompletionService(deps);
   const taskRunner = createTaskRunnerService(
@@ -234,6 +232,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     completions,
     sessionLog,
     sessionExport,
+    runGraph: createRunGraphService(deps),
     capabilities,
     subagentProviders,
     subagentRuns: createSubagentRunsForApp({ deps, providers: subagentProviders, approvals, workSignals, sessionLog, completions }),
