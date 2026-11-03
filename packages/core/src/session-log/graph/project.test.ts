@@ -153,6 +153,17 @@ describe('v2.20 RunGraph 投影', () => {
     expect(graph.edges.some((edge) => edge.kind === 'turn_to_message')).toBe(true);
   });
 
+  it('meeting_turn 缺少 turnIndex 时按 scope 内 seq 区分轮次，autoRounds 不参与身份', () => {
+    const events = [
+      ev('meeting', 'm1', 'meeting_turn_start', { meetingId: 'm1', mode: 'manual', speakerIds: ['a1'], autoRounds: 0 }, 1),
+      ev('meeting', 'm1', 'meeting_turn_start', { meetingId: 'm1', mode: 'manual', speakerIds: ['a2'], autoRounds: 0 }, 3),
+    ];
+    const graph = project('meeting', 'm1', events);
+    expect(graph.nodes.map((node) => node.id)).toContain('meeting:m1:turn:1');
+    expect(graph.nodes.map((node) => node.id)).toContain('meeting:m1:turn:3');
+    expect(graph.nodes.filter((node) => node.kind === 'meeting_turn')).toHaveLength(2);
+  });
+
   it('未知/缺失载荷不抛错，且不会为空事件造节点', () => {
     const graph = project('conversation', 'c1', [
       ev('chat', 'c1', 'tool_trace', { messageId: 'a1' }, 1),

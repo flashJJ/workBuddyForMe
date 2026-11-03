@@ -13,7 +13,8 @@ export const zhRunGraph = {
   focusHint: '点击车道聚焦，再次点击取消。',
   nodeCount: '{count} 个节点',
   truncated: '事件过多，仅显示最近节点。',
-  pollHint: '打开期间每 2 秒刷新。',
+  liveHint: '实时跟随运行事件；每 10 秒校准快照。',
+  snapshotHint: '快照视图；点刷新获取最新事件。',
   artifact: '产物',
   openArtifact: '打开产物',
   kind: {
@@ -62,7 +63,8 @@ export const enRunGraph = {
   focusHint: 'Click a lane to focus; click again to clear.',
   nodeCount: '{count} nodes',
   truncated: 'Too many events; only the latest nodes are shown.',
-  pollHint: 'Refreshes every 2 seconds while open.',
+  liveHint: 'Follows run events live; reconciles the snapshot every 10 seconds.',
+  snapshotHint: 'Snapshot view; refresh for the latest events.',
   artifact: 'Artifact',
   openArtifact: 'Open artifact',
   kind: {

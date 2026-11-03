@@ -166,6 +166,8 @@ export type SsePayloadMap = {
     speakerIds: string[];
     /** 已用 auto 接龙轮次 */
     autoRounds: number;
+    /** v2.20：该轮在会议消息序列中的稳定序号（图节点身份） */
+    turnIndex?: number;
   };
   /** v1.9 M3：单成员发言流式增量（口型/字幕驱动；不代表落库） */
   meeting_delta: {

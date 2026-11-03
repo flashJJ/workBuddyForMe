@@ -11,10 +11,12 @@ export interface RunGraphLauncherProps {
   kind: RunGraphRootKind;
   id: string | null;
   className?: string;
+  /** v2.20 M3：默认实时跟随；timeline 类入口显式关闭 */
+  live?: boolean;
 }
 
 /** v2.20 M2：右侧抽屉入口；会话顶栏与会议头部共用。 */
-export function RunGraphLauncher({ kind, id, className }: RunGraphLauncherProps) {
+export function RunGraphLauncher({ kind, id, className, live = true }: RunGraphLauncherProps) {
   const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
   if (!id) return null;
@@ -52,6 +54,7 @@ export function RunGraphLauncher({ kind, id, className }: RunGraphLauncherProps)
               id={id}
               className="h-full rounded-none border-0"
               compact
+              live={live}
               onClose={() => setOpen(false)}
             />
           </div>

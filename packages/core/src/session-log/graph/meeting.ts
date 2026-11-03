@@ -5,7 +5,8 @@ import { type Builder, putEdge, putNode } from './builder';
 export function applyMeeting(b: Builder, event: SessionEventView): void {
   const payload = asRecord(event.payload);
   if (event.type === 'meeting_turn_start') {
-    const index = numberField(payload, 'turnIndex') ?? numberField(payload, 'autoRounds') ?? event.seq;
+    // v2.20 M3：优先服务端稳定 turnIndex；旧事件回落到 scope 内递增 seq（autoRounds 不是轮次身份）
+    const index = numberField(payload, 'turnIndex') ?? event.seq;
     const nodeId = `meeting:${b.rootId}:turn:${index}`;
     putNode(b, {
       id: nodeId,

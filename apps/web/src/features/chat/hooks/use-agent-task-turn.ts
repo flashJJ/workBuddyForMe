@@ -16,6 +16,7 @@ import {
   type AgentRunDetail,
 } from '@/features/agent-collab';
 import { uiTaskEventBus } from '@/features/events/bus';
+import { runGraphLiveBus } from '@/features/run-graph';
 import type { PendingToolConfirmation } from '../types/chat-session.types';
 
 /**
@@ -43,6 +44,7 @@ export interface AgentTaskTurnParams {
 const TERMINAL_STATUS: Message['status'] = 'completed';
 
 const TERMINAL_RUN_STATUSES = new Set(['done', 'failed', 'cancelled', 'budget_exceeded']);
+const GRAPH_FRAME_TYPES = new Set(['agent_phase', 'agent_handoff', 'agent_review', 'done', 'error']);
 
 /** 终态权威对账：急停可能早于 SSE 建连，服务端收敛有短暂延迟，轮询至终态（上限 10s） */
 async function fetchTerminalDetail(runId: string): Promise<AgentRunDetail> {
@@ -92,9 +94,20 @@ export function useAgentTaskTurn(params: AgentTaskTurnParams) {
           ...prev,
           [messageId]: { runId: run.id, state: initAgentCard(run.budget) },
         }));
+        const publishGraph = (type: string, payload: unknown) =>
+          runGraphLiveBus.publish({
+            rootKind: 'conversation',
+            rootId: convId,
+            scope: 'agent',
+            scopeId: run.id,
+            type,
+            payload,
+          });
+        publishGraph('run_started', { runId: run.id });
         await agentStream.start(run.id, {
           onStreamingChange: setStreaming,
           onFrame: (frame) => {
+            if (GRAPH_FRAME_TYPES.has(frame.event)) publishGraph(frame.event, frame.data);
             if (frame.event === 'agent_tool_confirm') {
               params.onGateConfirm({
                 callId: frame.data.callId,

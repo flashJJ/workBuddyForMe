@@ -3,10 +3,11 @@
 import * as React from 'react';
 import { API } from '@/lib/api/endpoints';
 import { apiGet, apiPost, apiSend, withManagedHeaders } from '@/lib/api/client';
-import { SseReader, type RawSseEvent } from '@/lib/api/sse-reader';
+import { SseReader } from '@/lib/api/sse-reader';
 import { useToast } from '@/components/common/toast';
 import type { MeetingMode, MeetingStatus } from '@wbfm/shared/schemas';
 import type { MeetingDetailView, MeetingMessageRecord } from '@wbfm/shared/types';
+import { runGraphLiveBus } from '@/features/run-graph';
 
 /**
  * v1.9 M3 会场数据：详情初始化 + 会议事件 SSE 增量。
@@ -49,6 +50,15 @@ export function useMeetingRoom(meetingId: string | null) {
     if (!meetingId) return;
     let stopped = false;
     const signal = new AbortController();
+    const publishGraph = (type: string, payload: unknown) =>
+      runGraphLiveBus.publish({
+        rootKind: 'meeting',
+        rootId: meetingId,
+        scope: 'meeting',
+        scopeId: meetingId,
+        type,
+        payload,
+      });
 
     void (async () => {
       let detail: MeetingDetailView;
@@ -82,19 +92,24 @@ export function useMeetingRoom(meetingId: string | null) {
           if (!NAMES.has(raw.event)) continue;
           if (raw.event === 'meeting_message') {
             const data = (raw as unknown as { data: { message: MeetingMessageRecord } }).data;
+            publishGraph('meeting_message', data);
             upsertMessage(data.message);
             setState((s) => ({ ...s, speaking: null }));
           } else if (raw.event === 'meeting_delta') {
             const data = (raw as unknown as { data: { speakerId: string; content: string } }).data;
             setState((s) => ({ ...s, speaking: { speakerId: data.speakerId, text: data.content } }));
           } else if (raw.event === 'meeting_turn') {
-            const data = (raw as unknown as { data: { speakerIds: string[] } }).data;
+            const data = (raw as unknown as {
+              data: { speakerIds: string[]; mode: MeetingMode; autoRounds: number; turnIndex?: number };
+            }).data;
+            publishGraph('meeting_turn_start', data);
             const first = data.speakerIds[0];
             if (first) setState((s) => ({ ...s, speaking: { speakerId: first, text: '' } }));
           } else if (raw.event === 'meeting_status') {
             const data = (raw as unknown as {
               data: { status: MeetingStatus; mode: MeetingMode; autoRounds: number };
             }).data;
+            publishGraph('meeting_status', data);
             setState((s) =>
               s.meeting
                 ? {
