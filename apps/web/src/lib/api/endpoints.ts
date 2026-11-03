@@ -38,6 +38,12 @@ export const API = {
   conversations: '/api/conversations',
   conversation: (id: string) => `/api/conversations/${id}`,
   messages: (id: string) => `/api/conversations/${id}/messages`,
+  /** v2.20：会话/会议过程图快照 */
+  conversationRunGraph: (id: string) => `/api/conversations/${id}/run-graph`,
+  meetingRunGraph: (id: string) => `/api/meetings/${id}/run-graph`,
+  /** v2.20：会话阶段计划与载入任务 */
+  stagePlan: (id: string) => `/api/conversations/${id}/stage-plan`,
+  stagePlanPrepare: (id: string) => `/api/conversations/${id}/stage-plan/prepare`,
   messageFeedback: (conversationId: string, messageId: string) =>
     `/api/conversations/${conversationId}/messages/${messageId}`,
   runEvidence: '/api/reports/runs',
@@ -235,6 +241,8 @@ export const QUERY_KEYS = {
   capabilities: ['capabilities'] as const,
   capabilityHealth: ['capabilities', 'health'] as const,
   events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
+  runGraph: (kind: 'conversation' | 'meeting', id: string) => ['run-graph', kind, id] as const,
+  stagePlan: (id: string) => ['stage-plan', id] as const,
   eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,
   goals: (conversationId: string) => ['goals', conversationId] as const,
   workPlans: (conversationId?: string) =>

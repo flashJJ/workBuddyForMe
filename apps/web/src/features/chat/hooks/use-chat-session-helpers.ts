@@ -1,6 +1,9 @@
+import * as React from 'react';
 import type { ContentPart, Message } from '@wbfm/shared/types';
 import type { SsePayloadMap } from '@wbfm/shared/api';
 import type { ChatStreamInput } from '@/lib/hooks/chat';
+import { API } from '@/lib/api/endpoints';
+import { apiPost } from '@/lib/api/client';
 import type { PendingToolConfirmation } from '../types/chat-session.types';
 
 function nowIso(): string {
@@ -119,6 +122,43 @@ export function applyMessageFeedback(
 ): Message[] | null {
   if (!prev) return prev;
   return prev.map((m) => (m.id === messageId ? { ...m, feedback, feedbackAt } : m));
+}
+
+/**
+ * v2.20 M3：HITL 工具授权提交（从 useChatSession 外迁控行数，行为不变）。
+ * 成功清空弹窗；失败（超时已被服务端拒绝 → 404）返回 false，调用方提示并保持弹窗。
+ */
+export function useToolConfirmation(params: {
+  pending: PendingToolConfirmation | null;
+  conversationId: string | null;
+  assistantId: string;
+  clearPending: () => void;
+  clearTaskGate: (callId: string) => void;
+}) {
+  const { pending, conversationId, assistantId, clearPending, clearTaskGate } = params;
+
+  return React.useCallback(
+    async (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task'): Promise<boolean> => {
+      if (!pending) return false;
+      // v1.4：协作链路门控帧自带 task run 作用域（原样回传）；对话链路沿用会话作用域
+      const taskScope = pending.taskScope ?? conversationId ?? '';
+      const extra =
+        remember === 'task'
+          ? { remember, taskScope }
+          : remember
+            ? { remember, assistantId }
+            : {};
+      try {
+        await apiPost(API.toolConfirm, { callId: pending.callId, tool: pending.tool, action, ...extra });
+        clearPending();
+        clearTaskGate(pending.callId);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [pending, conversationId, assistantId, clearPending, clearTaskGate],
+  );
 }
 
 /** 构造对话流请求体（可选字段按条件携带） */

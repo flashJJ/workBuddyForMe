@@ -1,4 +1,5 @@
 import type { Assistant } from '@wbfm/shared/types';
+import { stagePlanSchema } from '@wbfm/shared/schemas';
 import { parseJsonArray } from './common';
 
 export interface AssistantRow {
@@ -31,10 +32,22 @@ export interface AssistantRow {
   personality_tolerance?: number;
   /** v1.8：角色卡 id（v026；老库结果集缺列时回落 null） */
   card_id?: string | null;
+  /** v2.20：助手显式默认阶段（v044；老库结果集缺列时回落 null） */
+  stage_plan_json?: string | null;
   is_builtin: number;
   sort_order: number;
   created_at: string;
   updated_at: string;
+}
+
+function parseStagePlan(value: string | null | undefined): Assistant['stagePlan'] {
+  if (!value) return null;
+  try {
+    const parsed = stagePlanSchema.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 export function mapAssistant(row: AssistantRow): Assistant {
@@ -62,6 +75,7 @@ export function mapAssistant(row: AssistantRow): Assistant {
     personalityShy: row.personality_shy ?? 0.5,
     personalityTolerance: row.personality_tolerance ?? 0.5,
     cardId: row.card_id ?? null,
+    stagePlan: parseStagePlan(row.stage_plan_json),
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,

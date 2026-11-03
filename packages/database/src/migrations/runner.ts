@@ -42,6 +42,7 @@ import { migrateV040 } from './v040-capability-effects';
 import { migrateV041 } from './v041-agent-governance';
 import { migrateV042 } from './v042-maintenance';
 import { migrateV043 } from './v043-document-structure';
+import { migrateV044 } from './v044-stage-plan';
 
 interface Migration {
   version: number;
@@ -265,6 +266,7 @@ const MIGRATIONS: Migration[] = [
       'v2.19: document_blocks 文档结构块 + chunks 章节/表格列 + knowledge_relations（纯加法）',
     up: migrateV043,
   },
+  { version: 44, description: 'v2.20: 阶段计划表 + stage_plan_json/model_id（纯加法）', up: migrateV044 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

@@ -26,8 +26,8 @@ describe('v042 迁移：可维护底座', () => {
   it('全新库：skill_versions / active_version / published_version 就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(43);
-    expect(LATEST_SCHEMA_VERSION).toBe(43);
+    expect(getSchemaVersion(db)).toBe(44);
+    expect(LATEST_SCHEMA_VERSION).toBe(44);
 
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table'`)
@@ -64,8 +64,8 @@ describe('v042 迁移：可维护底座', () => {
     insertVersion(db, 'wf-draft', 1, null);
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([42, 43]);
-    expect(getSchemaVersion(db)).toBe(43);
+    expect(result.applied).toEqual([42, 43, 44]);
+    expect(getSchemaVersion(db)).toBe(44);
 
     const published = db
       .prepare('SELECT published_version FROM workflows WHERE id = ?')
@@ -90,7 +90,7 @@ describe('v042 迁移：可维护底座', () => {
     applyMigrations(db);
     migrateV042(db);
     expect(() => migrateV042(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(43);
+    expect(getSchemaVersion(db)).toBe(44);
     db.close();
   });
 });

@@ -5,6 +5,7 @@ import {
   type CharacterCardSource,
   type ParsedCharacterCard,
 } from '@wbfm/shared/character-card';
+import type { StagePlan } from '@wbfm/shared/types';
 import {
   createAssistantRepository,
   createCharacterCardRepository,
@@ -84,7 +85,11 @@ export function createCharacterCardService({ db }: ServiceDeps) {
       if (cardId !== null && !cards.findById(cardId)) {
         throw ApiError.validation(`角色卡不存在：${cardId}`);
       }
-      return assistants.update(assistantId, { cardId })!;
+      // v2.20：应用角色卡时只按空缺复制默认阶段，不覆盖助手已有计划
+      const card = cardId === null ? null : cards.findById(cardId);
+      const patch: { cardId: string | null; stagePlan?: StagePlan | null } = { cardId };
+      if (card?.stagePlan && assistant.stagePlan === null) patch.stagePlan = card.stagePlan;
+      return assistants.update(assistantId, patch)!;
     },
   };
 }

@@ -17,6 +17,8 @@ export interface ConversationRow {
   summary: string | null;
   /** v0.5：已折叠消息条数（累计） */
   summary_turns: number;
+  /** v2.20：会话级模型覆盖（v044；老库结果集缺列时回落 null） */
+  model_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +50,7 @@ export function mapConversation(row: ConversationRow): Conversation {
     lastMessageAt: row.last_message_at,
     summary: row.summary ?? null,
     summaryTurns: row.summary_turns ?? 0,
+    modelId: row.model_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

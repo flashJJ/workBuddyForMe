@@ -9,9 +9,11 @@ import {
 } from '@wbfm/database';
 import type { ServiceDeps } from '../base/deps';
 import { ensureSeedData } from '../base/seed';
+import { validateStagePlanBindings } from '../../work-plan/stage-plan-service';
 import { buildIdentityCardMarkdown, parseWrappedPrompt } from './persona-card';
 
-export function createAssistantsService({ db }: ServiceDeps) {
+export function createAssistantsService(deps: ServiceDeps) {
+  const { db } = deps;
   ensureSeedData(db);
   const assistants = createAssistantRepository(db);
   const models = createModelRepository(db);
@@ -77,6 +79,7 @@ export function createAssistantsService({ db }: ServiceDeps) {
     create(input: AssistantCreateInput): Assistant {
       validateBindings(input.modelId, input.knowledgeBaseIds);
       validateTools(input.enabledTools, input.knowledgeBaseIds);
+      if (input.stagePlan) validateStagePlanBindings(deps, input.stagePlan);
       const sortOrder =
         input.sortOrder || assistants.list().length;
       // v1.8：显式选卡走卡模式（校验存在）；否则非空原文自动包成 identity 卡
@@ -107,6 +110,7 @@ export function createAssistantsService({ db }: ServiceDeps) {
         personalityShy: input.personalityShy,
         personalityTolerance: input.personalityTolerance,
         cardId,
+        stagePlan: input.stagePlan ?? null,
         isBuiltin: false,
         sortOrder,
       });
@@ -123,6 +127,9 @@ export function createAssistantsService({ db }: ServiceDeps) {
       // v1.8 M3：三角色模型覆盖在调优中心矩阵 PATCH，存在性早校验（null=跟随，跳过）
       for (const roleId of [input.plannerModelId, input.executorModelId, input.reviewerModelId]) {
         if (roleId !== undefined && roleId !== null) requireModelExists(roleId);
+      }
+      if (input.stagePlan !== undefined && input.stagePlan !== null) {
+        validateStagePlanBindings(deps, input.stagePlan);
       }
 
       const patch: AssistantUpdateInput = { ...input };

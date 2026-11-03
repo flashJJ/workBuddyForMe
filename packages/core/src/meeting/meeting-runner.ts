@@ -107,6 +107,8 @@ export async function runMeetingTurn(
         mode,
         speakerIds: [speakerId],
         autoRounds: repo.findById(meeting.id)?.autoRounds ?? 1,
+        // v2.20：落库消息数作为轮次身份，实时与快照图节点一致
+        turnIndex: repo.listMessages(meeting.id).length,
       },
     });
 

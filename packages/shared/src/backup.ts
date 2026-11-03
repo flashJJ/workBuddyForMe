@@ -8,6 +8,8 @@ import { z } from 'zod';
  * 当前版本：7（v2.6 events 轨加法负载：memories.json 长期记忆（含来源消息/召回次数）、
  * meetingConclusions.json 会议结论、meetingActionItems.json 行动项；manifest.events
  * 对应三个 optional 计数；v6 及更早归档缺文件按 0 降级）。
+ * v2.20 阶段计划为 v7 内可选字段（conversations 条目 stagePlan/modelId、助手/卡片 stagePlan），
+ * 不升版；旧归档缺字段按 null 恢复。
  * v6：relationshipMilestones.json、modInstalls.json、vrmAvatars.json（仅元数据）。
  * v5：stageScenes.json + meetings.json/meetingMessages.json。
  * v1–v4 旧归档仍可恢复，缺文件/缺键按 0 处理。

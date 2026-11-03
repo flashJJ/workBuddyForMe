@@ -54,6 +54,16 @@ export function createConversationRepository(db: DatabaseInstance) {
       ).run(when, when, id);
     },
 
+    /** v2.20：写会话级模型覆盖（null=清空，回落助手/系统默认） */
+    setModelId(id: string, modelId: string | null): Conversation | null {
+      db.prepare(`UPDATE conversations SET model_id = ?, updated_at = ? WHERE id = ?`).run(
+        modelId,
+        nowIso(),
+        id,
+      );
+      return this.findById(id);
+    },
+
     /** v0.5：写回递归摘要与累计折叠条数（自动压缩后调用） */
     updateSummary(id: string, summary: string, summaryTurns: number): Conversation | null {
       db.prepare(

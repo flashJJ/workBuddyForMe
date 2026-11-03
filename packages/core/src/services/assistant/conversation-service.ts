@@ -8,8 +8,10 @@ import {
 import { type MessageFeedback, type MessageRole, type MessageStatus } from '@wbfm/shared/constants';
 import {
   createAssistantRepository,
+  createCharacterCardRepository,
   createConversationRepository,
   createMessageRepository,
+  createStagePlanRepository,
 } from '@wbfm/database';
 import type { MessageUsage } from '@wbfm/database';
 import type { ServiceDeps } from '../base/deps';
@@ -32,8 +34,10 @@ export function deriveTitle(content: string, contentParts?: ContentPart[]): stri
 export function createConversationService(deps: ServiceDeps) {
   const { db, events } = deps;
   const assistants = createAssistantRepository(db);
+  const cards = createCharacterCardRepository(db);
   const conversations = createConversationRepository(db);
   const messages = createMessageRepository(db);
+  const stagePlans = createStagePlanRepository(db);
   /** v2.9：按消息反查会话后写事件；日志失败不影响对话主链路 */
   const recordForMessage = (id: string, type: string, payload: Record<string, unknown>): void => {
     const message = messages.findById(id);
@@ -49,10 +53,22 @@ export function createConversationService(deps: ServiceDeps) {
 
   return {
     create(assistantId: string, title?: string): Conversation {
-      if (!assistants.findById(assistantId)) {
-        throw ApiError.validation(`助手不存在：${assistantId}`);
-      }
-      return conversations.create({ assistantId, title });
+      const assistant = assistants.findById(assistantId);
+      if (!assistant) throw ApiError.validation(`助手不存在：${assistantId}`);
+      // v2.20：助手显式阶段优先；否则取当前角色卡默认阶段；只按空缺复制
+      const plan =
+        assistant.stagePlan ??
+        (assistant.cardId ? cards.findById(assistant.cardId)?.stagePlan ?? null : null);
+      return db.transaction(() => {
+        const conversation = conversations.create({ assistantId, title });
+        if (!plan) return conversation;
+        stagePlans.upsert(conversation.id, plan);
+        const active =
+          plan.activeStep === null ? null : plan.steps[plan.activeStep] ?? null;
+        return active?.modelId
+          ? conversations.setModelId(conversation.id, active.modelId) ?? conversation
+          : conversation;
+      })();
     },
 
     list(assistantId?: string, limit?: number): Conversation[] {

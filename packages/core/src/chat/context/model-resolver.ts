@@ -50,10 +50,17 @@ export function resolveChatTargetForModelId(
 /** 仅保留本文件需要的依赖形状（与 ServiceDeps 结构兼容） */
 type ServiceDepsLike = Pick<import('../../services/base/deps').ServiceDeps, 'db' | 'cipher'>;
 
-/** 解析实际对话模型：助手绑定优先，否则跟随全局默认 */
+/**
+ * 解析实际对话模型：会话级覆盖 > 助手绑定 > 系统默认（v2.20）。
+ * conversationModelId 为 null 时行为与 v2.19 完全一致。
+ */
 export function resolveChatTarget(
   deps: ServiceDeps,
   assistant: Assistant,
+  conversationModelId: string | null = null,
 ): ResolvedChatTarget {
-  return resolveChatTargetForModelId(deps, assistant.modelId ?? null);
+  return resolveChatTargetForModelId(
+    deps,
+    conversationModelId ?? assistant.modelId ?? null,
+  );
 }

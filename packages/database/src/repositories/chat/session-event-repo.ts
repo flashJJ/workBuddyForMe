@@ -2,7 +2,7 @@ import type { DatabaseInstance } from '../../client';
 import { newId, nowIso } from '../ops/mappers';
 import { buildFtsQuery, normalizeForFtsIndex } from '../../fts-tokenize';
 
-export const SESSION_EVENT_SCOPES = ['chat', 'task', 'flow', 'agent'] as const;
+export const SESSION_EVENT_SCOPES = ['chat', 'task', 'flow', 'agent', 'meeting'] as const;
 export type SessionEventScope = (typeof SESSION_EVENT_SCOPES)[number];
 
 export interface SessionEventRow {

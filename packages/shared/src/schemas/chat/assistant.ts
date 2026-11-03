@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QUALIFIED_TOOL_NAME_PATTERN } from '../../constants/index';
+import { stagePlanSchema } from '../work/stage-plan';
 
 const nameSchema = z.string().trim().min(1, '助手名称不能为空').max(60);
 
@@ -51,6 +52,8 @@ const samplingFields = {
   personalityTolerance: personalityWeightSchema,
   // v1.8：当前选用的角色卡 id（null=使用默认卡/不启用卡）
   cardId: z.string().trim().min(1).nullable().default(null),
+  // v2.20：助手显式默认阶段（null=无默认；应用角色卡时只按空缺复制）
+  stagePlan: stagePlanSchema.nullable().default(null),
 };
 
 export const assistantCreateSchema = z.object({
@@ -85,6 +88,7 @@ export const assistantUpdateSchema = z
     personalityShy: samplingFields.personalityShy.optional(),
     personalityTolerance: samplingFields.personalityTolerance.optional(),
     cardId: samplingFields.cardId.optional(),
+    stagePlan: samplingFields.stagePlan.optional(),
     sortOrder: z.number().int().min(0).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');

@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '../../client';
-import type { Assistant } from '@wbfm/shared/types';
+import type { Assistant, StagePlan } from '@wbfm/shared/types';
 import { newId, nowIso, mapAssistant, type AssistantRow } from '../ops/mappers';
 
 export interface AssistantCreateFields {
@@ -35,6 +35,8 @@ export interface AssistantCreateFields {
   personalityTolerance?: number;
   /** v1.8：选用的角色卡 id（null=默认卡） */
   cardId?: string | null;
+  /** v2.20：助手显式默认阶段（null=无默认） */
+  stagePlan?: StagePlan | null;
   isBuiltin: boolean;
   sortOrder: number;
 }
@@ -64,6 +66,7 @@ const COLUMN_MAP: Record<keyof AssistantUpdateFields, string> = {
   personalityShy: 'personality_shy',
   personalityTolerance: 'personality_tolerance',
   cardId: 'card_id',
+  stagePlan: 'stage_plan_json',
   sortOrder: 'sort_order',
 };
 
@@ -84,6 +87,9 @@ function toRowValues(fields: Partial<AssistantCreateFields>): Record<string, unk
   if (fields.expressionEnabled !== undefined) {
     values.expressionEnabled = fields.expressionEnabled ? 1 : 0;
   }
+  if (fields.stagePlan !== undefined) {
+    values.stagePlan = fields.stagePlan === null ? null : JSON.stringify(fields.stagePlan);
+  }
   return values;
 }
 
@@ -98,13 +104,13 @@ export function createAssistantRepository(db: DatabaseInstance) {
             model_id, knowledge_base_ids, enabled_tools, skill_names, retrieve_always, memory_enabled,
             expression_enabled,
             personality_frankness, personality_tsundere, personality_shy, personality_tolerance,
-            card_id, is_builtin, sort_order, created_at, updated_at)
+            card_id, stage_plan_json, is_builtin, sort_order, created_at, updated_at)
          VALUES
            (@id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
             @modelId, @knowledgeBaseIds, @enabledTools, @skillNames, @retrieveAlways, @memoryEnabled,
             @expressionEnabled,
             @personalityFrankness, @personalityTsundere, @personalityShy, @personalityTolerance,
-            @cardId, @isBuiltin, @sortOrder, @ts, @ts)`,
+            @cardId, @stagePlan, @isBuiltin, @sortOrder, @ts, @ts)`,
       ).run({
         ...toRowValues(fields),
         id,
@@ -118,6 +124,7 @@ export function createAssistantRepository(db: DatabaseInstance) {
         personalityShy: fields.personalityShy ?? 0.5,
         personalityTolerance: fields.personalityTolerance ?? 0.5,
         cardId: fields.cardId ?? null,
+        stagePlan: fields.stagePlan ? JSON.stringify(fields.stagePlan) : null,
         isBuiltin: fields.isBuiltin ? 1 : 0,
         ts,
       });

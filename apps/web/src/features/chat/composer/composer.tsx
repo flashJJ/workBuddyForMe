@@ -20,6 +20,11 @@ interface Props {
   onTaskModeChange?: (enabled: boolean) => void;
   /** 输入框左侧附加控件（v1.0：语音朗读开关） */
   leading?: React.ReactNode;
+  /** v2.20 M5：受控草稿（载入阶段任务时由页面写入；不传时保持内部状态） */
+  draftValue?: string;
+  onDraftChange?: (value: string) => void;
+  /** 变更时聚焦输入框（载入任务后调用） */
+  focusToken?: number;
   onSend: (content: string, attachmentIds: string[]) => void;
   onStop: () => void;
 }
@@ -61,11 +66,24 @@ export function Composer({
   taskMode = false,
   onTaskModeChange,
   leading,
+  draftValue,
+  onDraftChange,
+  focusToken,
   onSend,
   onStop,
 }: Props) {
   const { t } = useI18n();
-  const [value, setValue] = React.useState('');
+  const [innerValue, setInnerValue] = React.useState('');
+  // v2.20 M5：可选受控；不传 draftValue 时与旧行为一致
+  const value = draftValue ?? innerValue;
+  const setValue = (next: string) => {
+    if (draftValue === undefined) setInnerValue(next);
+    onDraftChange?.(next);
+  };
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  React.useEffect(() => {
+    if (focusToken) textareaRef.current?.focus();
+  }, [focusToken]);
   const [dragging, setDragging] = React.useState(false);
   const toast = useToast();
   const attachments = useAttachmentUpload({ onError: toast.error });
@@ -200,6 +218,7 @@ export function Composer({
           </>
         )}
         <textarea
+          ref={textareaRef}
           aria-label={t('chat.composer.messageInputAria')}
           className="max-h-40 min-h-[44px] flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           rows={2}

@@ -24,6 +24,27 @@ export type {
   SkillInfo,
   Timestamped,
 } from './domain';
+export {
+  RUN_OUTCOMES,
+  RUN_GRAPH_ROOT_KINDS,
+  RUN_GRAPH_SCOPES,
+  RUN_GRAPH_NODE_KINDS,
+  RUN_GRAPH_EDGE_KINDS,
+} from './run';
+export type {
+  RunOutcome,
+  RunGraphRootKind,
+  RunGraphScope,
+  RunGraphNodeKind,
+  RunGraphNodeStatus,
+  RunGraphEdgeKind,
+  RunGraphNode,
+  RunGraphEdge,
+  RunGraphLane,
+  RunGraphSnapshot,
+} from './run';
+export { STAGE_PLAN_LIMITS } from './stage-plan';
+export type { StagePlanStep, StagePlan } from './stage-plan';
 export type { McpServerConfig, McpServerInfo, McpToolInfo } from './mcp';
 export type {
   ProviderConnectionStatus,

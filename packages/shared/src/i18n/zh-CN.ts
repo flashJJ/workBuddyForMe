@@ -50,6 +50,7 @@ import { zhApprovals } from './messages/approvals';
 import { zhAudit } from './messages/audit';
 import { zhPlans } from './messages/plans';
 import { zhTimeline } from './messages/timeline';
+import { zhRunGraph } from './messages/run-graph';
 import { zhCapabilities } from './messages/capabilities';
 import { zhSubagent } from './messages/subagent';
 
@@ -112,6 +113,7 @@ export const zhCN = {
   audit: zhAudit,
   plans: zhPlans,
   timeline: zhTimeline,
+  runGraph: zhRunGraph,
   capabilities: zhCapabilities,
   subagent: zhSubagent,
 } satisfies MessageNode;

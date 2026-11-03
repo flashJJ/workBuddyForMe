@@ -39,8 +39,13 @@ import type { createEventTriggersService, createEventUsageService } from '@wbfm/
 import type { createToolBreaker, createToolRuntime } from '@wbfm/core/tools';
 import type { createSkillService } from '@wbfm/core/skills';
 import type { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
-import type { createRunCompletionService, createWorkPlanService } from '@wbfm/core/work-plan';
 import type {
+  createRunCompletionService,
+  createStagePlanService,
+  createWorkPlanService,
+} from '@wbfm/core/work-plan';
+import type {
+  createRunGraphService,
   createSessionExportService,
   createSessionLogService,
 } from '@wbfm/core/session-log';
@@ -82,9 +87,11 @@ export interface ServiceContainer {
   approvals: ReturnType<typeof createApprovalRegistry>;
   workSignals: ReturnType<typeof createWorkSignalHub>;
   workPlans: ReturnType<typeof createWorkPlanService>;
+  stagePlan: ReturnType<typeof createStagePlanService>;
   completions: ReturnType<typeof createRunCompletionService>;
   sessionLog: ReturnType<typeof createSessionLogService>;
   sessionExport: ReturnType<typeof createSessionExportService>;
+  runGraph: ReturnType<typeof createRunGraphService>;
   capabilities: ReturnType<typeof createCapabilityService>;
   subagentProviders: ReturnType<typeof createSubagentProviderRegistry>;
   subagentRuns: ReturnType<typeof createSubagentRunService>;

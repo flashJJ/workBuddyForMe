@@ -363,6 +363,39 @@
   font-weight: 700;
 }
 
+/* ── v2.20 过程图：活跃节点流动边框（颜色由组件注入语义 token） ── */
+.running-border {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 12%,
+    var(--running-border-color) 50%,
+    transparent 88%
+  );
+  background-size: 220% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: running-border-slide 1.6s linear infinite;
+  will-change: background-position;
+}
+@keyframes running-border-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .running-border {
+    animation: none;
+    background-position: 50% 0;
+    opacity: 0.65;
+  }
+}
+
 /* ── v1.7 事件演出 fx（零三方粒子库；DOM/CSS 实现） ─────────────── */
 .event-fx-instance {
   position: absolute;

@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSkills } from '@/lib/hooks/capability';
 import { AssistantSwitcher } from '../sidebar/assistant-switcher';
 import { PlanChip } from '@/features/plans/chip';
+import { RunGraphLauncher } from '@/features/run-graph';
 
 interface Props {
   assistants: Assistant[];
@@ -84,6 +85,7 @@ export function ChatHeader({
       </div>
       <div className="flex items-center gap-3">
         <PlanChip conversationId={currentConversation?.id ?? null} />
+        <RunGraphLauncher kind="conversation" id={currentConversation?.id ?? null} />
         {currentConversation?.summaryTurns ? (
           <button
             type="button"

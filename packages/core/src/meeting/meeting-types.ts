@@ -55,6 +55,8 @@ export interface MeetingServiceDeps {
   getMemberName: (assistantId: string) => string | null;
   /** 成员角色卡正文（buildPersonaBlock 结果；无卡/缺失返回 null） */
   getPersonaBlock: (assistantId: string) => string | null;
+  /** v2.20：事件写入回调（best-effort；用于 session_events 的 meeting scope） */
+  onEvent?: (meetingId: string, event: MeetingEvent) => void;
 }
 
 export interface MeetingService {

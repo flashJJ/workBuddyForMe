@@ -47,6 +47,7 @@ const ASSISTANT: Assistant = {
   personalityShy: 0.1,
   personalityTolerance: 0.9,
   cardId: null,
+  stagePlan: null,
   isBuiltin: false,
   sortOrder: 0,
   createdAt: '2026-01-01T00:00:00.000Z',

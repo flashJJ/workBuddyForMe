@@ -3,6 +3,8 @@
  * 与 restore.ts 分离以通过 300 行门禁；v1.6 情绪轨另见 restore-emotion.ts。
  */
 
+import { stagePlanSchema } from '@wbfm/shared/schemas';
+
 type DBRunResult = { changes: number; lastInsertRowid: number | bigint };
 
 /** settings：INSERT ON CONFLICT DO UPDATE（upsert 语义） */
@@ -68,7 +70,18 @@ export function restoreKnowledge(db: any, buf: Buffer): { kb: { imported: number
 }
 
 interface ConvEntry {
-  conversation: { id: string; assistantId: string; title: string; lastMessageAt?: string | null; createdAt: string; updatedAt: string };
+  conversation: {
+    id: string;
+    assistantId: string;
+    title: string;
+    lastMessageAt?: string | null;
+    /** v2.20：会话级模型（目标库模型不存在时回落 null） */
+    modelId?: string | null;
+    /** v2.20：阶段计划（可选；非法/缺失按 null 跳过） */
+    stagePlan?: unknown;
+    createdAt: string;
+    updatedAt: string;
+  };
   messages: Array<{
     id: string;
     role: string;
@@ -93,8 +106,12 @@ export function restoreConversations(db: any, buf: Buffer): { convs: { imported:
 
   const assistantExists = db.prepare(`SELECT 1 FROM assistants WHERE id = ?`);
   const convExists = db.prepare(`SELECT 1 FROM conversations WHERE id = ?`);
+  const modelExists = db.prepare(`SELECT 1 FROM models WHERE id = ?`);
   const insertConv = db.prepare(
-    `INSERT INTO conversations(id, assistant_id, title, last_message_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO conversations(id, assistant_id, title, last_message_at, model_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  );
+  const insertStagePlan = db.prepare(
+    `INSERT OR IGNORE INTO conversation_stage_plans(conversation_id, plan_json, created_at, updated_at) VALUES (?, ?, ?, ?)`,
   );
   const insertMsg = db.prepare(
     `INSERT OR IGNORE INTO messages(id, conversation_id, role, content, status, citations, tool_trace, content_parts, feedback, feedback_at, created_at)
@@ -108,8 +125,17 @@ export function restoreConversations(db: any, buf: Buffer): { convs: { imported:
     const hasConv = convExists.get(c.id);
     if (!hasAssistant || hasConv) { convSkipped++; continue; }
 
-    insertConv.run(c.id, c.assistantId, c.title, c.lastMessageAt ?? null, c.createdAt, c.updatedAt);
+    const modelId =
+      typeof c.modelId === 'string' && modelExists.get(c.modelId) ? c.modelId : null;
+    insertConv.run(c.id, c.assistantId, c.title, c.lastMessageAt ?? null, modelId, c.createdAt, c.updatedAt);
     convImported++;
+
+    // v2.20：非法/缺失阶段计划不阻断恢复；activeStep 不单独存储
+    const plan = stagePlanSchema.safeParse(c.stagePlan);
+    if (plan.success) {
+      const ts = new Date().toISOString();
+      insertStagePlan.run(c.id, JSON.stringify(plan.data), ts, ts);
+    }
 
     for (const m of entry.messages) {
       insertMsg.run(m.id, c.id, m.role, m.content, m.status,

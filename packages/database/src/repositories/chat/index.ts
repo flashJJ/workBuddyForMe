@@ -4,3 +4,4 @@ export * from './message-repo';
 export * from './memory-repo';
 export * from './attachment-repo';
 export * from './session-event-repo';
+export * from './stage-plan-repo';

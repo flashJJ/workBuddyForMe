@@ -8,6 +8,7 @@ import {
   EVENT_SUPPRESS_REASONS,
   eventTriggerViewSchema,
   scheduledTaskViewSchema,
+  stagePlanSchema,
   type EventTriggerView,
   type ScheduledTaskView,
 } from '@wbfm/shared/schemas';
@@ -36,6 +37,8 @@ interface AssistantEntry {
   personalityTolerance?: unknown;
   /** v1.8：助手选用的角色卡 id（旧档缺省；无 FK，配合恢复后悬挂清理 */
   cardId?: unknown;
+  /** v2.20：助手显式默认阶段（旧档缺省/null） */
+  stagePlan?: unknown;
   sortOrder?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -79,6 +82,12 @@ function num01(value: unknown): number {
   return typeof value === 'number' && value >= 0 && value <= 1 ? value : 0.5;
 }
 
+/** v2.20：阶段计划为可选字段；非法/缺失不阻断助手恢复 */
+function stagePlanJson(value: unknown): string | null {
+  const parsed = stagePlanSchema.safeParse(value);
+  return parsed.success ? JSON.stringify(parsed.data) : null;
+}
+
 function validUsage(entry: UsageEntry): boolean {
   if (typeof entry.id !== 'string' || typeof entry.eventId !== 'string') return false;
   if (typeof entry.assistantId !== 'string') return false;
@@ -114,13 +123,13 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
        model_id, planner_model_id, executor_model_id, reviewer_model_id,
        knowledge_base_ids, enabled_tools, skill_names, retrieve_always, memory_enabled, expression_enabled,
        personality_frankness, personality_tsundere, personality_shy, personality_tolerance,
-       card_id, is_builtin, sort_order, created_at, updated_at)
+       card_id, stage_plan_json, is_builtin, sort_order, created_at, updated_at)
      VALUES (
        @id, @name, @emoji, @color, @systemPrompt, @temperature, @topP, @maxTokens,
        NULL, NULL, NULL, NULL,
        @knowledgeBaseIds, @enabledTools, @skillNames, @retrieveAlways, @memoryEnabled, @expressionEnabled,
        @pFrank, @pTsun, @pShy, @pTol,
-       @cardId, 0, @sortOrder, @createdAt, @updatedAt)`,
+       @cardId, @stagePlan, 0, @sortOrder, @createdAt, @updatedAt)`,
   );
   const insertSchedule = db.prepare(
     `INSERT OR IGNORE INTO scheduled_tasks(
@@ -182,6 +191,7 @@ export function restoreEventsTrack(db: DatabaseInstance, payload: EventsTrackPay
         pShy: num01(entry.personalityShy),
         pTol: num01(entry.personalityTolerance),
         cardId: typeof entry.cardId === 'string' && entry.cardId ? entry.cardId : null,
+        stagePlan: stagePlanJson(entry.stagePlan),
         sortOrder: typeof entry.sortOrder === 'number' ? Math.trunc(entry.sortOrder) : 0,
         createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : nowIso,
         updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : nowIso,

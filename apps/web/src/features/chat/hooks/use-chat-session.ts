@@ -5,8 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Citation, Message } from '@wbfm/shared/types';
 import type { RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared/api';
 import { useMessages } from '@/lib/hooks/chat';
-import { API, QUERY_KEYS } from '@/lib/api/endpoints';
-import { apiPost } from '@/lib/api/client';
+import { QUERY_KEYS } from '@/lib/api/endpoints';
 import { useChatStream } from '@/lib/hooks/chat';
 import { useAgentTaskTurn } from './use-agent-task-turn';
 import type { AgentCardEntry } from '@/features/agent-collab';
@@ -18,6 +17,8 @@ import {
 } from '../base/live-message-utils';
 import type { ChatSession, ChatSessionVoice, PendingToolConfirmation } from '../types/chat-session.types';
 import { useStreamFrame } from './use-stream-frame';
+import { useChatLiveGraph } from './use-chat-live-graph';
+
 import {
   appendAssistantDelta,
   buildStreamInput,
@@ -27,6 +28,7 @@ import {
   applyMessageFeedback,
   markStreamingAssistantStopped,
   pendingMessage,
+  useToolConfirmation,
 } from './use-chat-session-helpers';
 
 export type { ChatSession, ChatSessionVoice, PendingToolConfirmation } from '../types/chat-session.types';
@@ -50,6 +52,7 @@ export function useChatSession(
   const [live, setLive] = React.useState<Message[] | null>(null);
   const [recalledMemories, setRecalledMemories] = React.useState<RecalledMemoryPayload[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = React.useState<PendingToolConfirmation | null>(null);
+  const liveGraph = useChatLiveGraph(conversationId);
 
   // v2.4 M5 / P1-4：delta 按 rAF 合帧 + 本轮计时（协作者外迁，行为不变）
   const appendDelta = React.useCallback((text: string) => {
@@ -139,6 +142,7 @@ export function useChatSession(
 
       const handlers = {
         onMeta: (data: SsePayloadMap['meta']) => {
+          liveGraph.start(data);
           patchLastAssistant({ id: data.messageId, conversationId: data.conversationId });
           if (!conversationId && !regenerate) onConversationCreated(data.conversationId);
         },
@@ -154,6 +158,7 @@ export function useChatSession(
           setRecalledMemories(data.memories);
         },
         onTool: (data: SsePayloadMap['tool']) => {
+          liveGraph.tool(data);
           if (data.phase === 'start') {
             setLive((prev) => applyToolTraceStart(prev, data));
             return;
@@ -173,6 +178,7 @@ export function useChatSession(
         onVoiceAudio: (data: SsePayloadMap['voice_audio']) => voice?.onAudio?.(data),
         onVoiceState: (data: SsePayloadMap['voice_state']) => voice?.onVoiceState?.(data),
         onDone: (data: SsePayloadMap['done']) => {
+          liveGraph.complete(data);
           flushPendingDelta();
           settleTiming();
           setPendingConfirmation(null);
@@ -181,6 +187,7 @@ export function useChatSession(
           void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
         },
         onError: (data: SsePayloadMap['error']) => {
+          liveGraph.fail(data);
           flushPendingDelta();
           settleTiming();
           setPendingConfirmation(null);
@@ -238,6 +245,7 @@ export function useChatSession(
 
   /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
   const stop = React.useCallback(() => {
+    liveGraph.stop();
     streamStop();
     taskTurn.stop();
     flushPendingDelta();
@@ -255,30 +263,13 @@ export function useChatSession(
     [],
   );
 
-  /** 提交 HITL 决策：成功清空弹窗；失败（超时已被服务端拒绝 → 404）返回 false，调用方提示并保持弹窗 */
-  const confirmTool = React.useCallback(
-    async (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task'): Promise<boolean> => {
-      const pending = pendingConfirmation;
-      if (!pending) return false;
-      // v1.4：协作链路门控帧自带 task run 作用域（原样回传）；对话链路沿用会话作用域
-      const taskScope = pending.taskScope ?? conversationId ?? '';
-      const extra =
-        remember === 'task'
-          ? { remember, taskScope }
-          : remember
-            ? { remember, assistantId }
-            : {};
-      try {
-        await apiPost(API.toolConfirm, { callId: pending.callId, tool: pending.tool, action, ...extra });
-        setPendingConfirmation(null);
-        taskTurn.clearGate(pending.callId);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    [pendingConfirmation, conversationId, taskTurn],
-  );
+  const confirmTool = useToolConfirmation({
+    pending: pendingConfirmation,
+    conversationId,
+    assistantId,
+    clearPending: () => setPendingConfirmation(null),
+    clearTaskGate: taskTurn.clearGate,
+  });
 
   return {
     messages: baseMessages,

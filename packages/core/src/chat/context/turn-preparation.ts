@@ -1,5 +1,5 @@
 import { ApiError } from '@wbfm/shared/errors';
-import { type Assistant, type ContentPart } from '@wbfm/shared/types';
+import { type ContentPart } from '@wbfm/shared/types';
 import type { AttachmentService } from '../../services/assistant/attachment-service';
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import type { ResolvedChatTarget } from './model-resolver';
@@ -33,30 +33,26 @@ function assertVisionCapable(model: ResolvedChatTarget['model'], imageCount: num
  * 并落库本轮用户消息（含多模态片段）。任何失败都在 SSE 打开前抛出。
  */
 export function prepareUserTurn(params: {
-  assistant: Assistant;
+  /** 已由编排器确定/创建的会话 id（模型解析需先读会话覆盖） */
+  conversationId: string;
   input: StreamChatInput;
   target: ResolvedChatTarget;
   conversations: ConversationService;
   attachments: AttachmentService;
 }): PreparedTurn {
-  const { assistant, input, target, conversations, attachments } = params;
+  const { conversationId, input, target, conversations, attachments } = params;
 
-  let conversationId: string;
   let userContent: string;
   let userImageIds: string[];
 
   if (input.regenerate) {
     if (!input.conversationId) throw ApiError.validation('重新生成需要已有会话');
-    conversationId = input.conversationId;
     conversations.get(conversationId);
     const prepared = conversations.prepareRegenerate(conversationId);
     userContent = prepared.content;
     userImageIds = imageIdsOfParts(prepared.contentParts);
   } else {
-    const conversation = input.conversationId
-      ? conversations.get(input.conversationId)
-      : conversations.create(assistant.id);
-    conversationId = conversation.id;
+    conversations.get(conversationId);
     userContent = input.content ?? '';
     userImageIds = input.attachments ?? [];
     conversations.appendMessage({

@@ -14,6 +14,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet } from '@/lib/api/client';
 import { downloadApiFile } from '@/lib/api/download';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
+import { RunGraphPanel } from '@/features/run-graph';
 
 interface TimelineItem {
   id: string;
@@ -32,7 +33,7 @@ interface EventsResponse {
   items: TimelineItem[];
 }
 
-const SCOPES: SessionEventScope[] = ['chat', 'task', 'flow', 'agent'];
+const SCOPES: SessionEventScope[] = ['chat', 'task', 'flow', 'agent', 'meeting'];
 
 function readLocation(): { scope: string; scopeId: string } {
   if (typeof window === 'undefined') return { scope: '', scopeId: '' };
@@ -51,6 +52,7 @@ export function TimelinePage() {
   const [scopeId, setScopeId] = React.useState(initial.scopeId);
   const [query, setQuery] = React.useState('');
   const [term, setTerm] = React.useState('');
+  const [showGraph, setShowGraph] = React.useState(false);
 
   const timeline = useQuery({
     queryKey: QUERY_KEYS.events(scope || 'none', scopeId),
@@ -82,19 +84,26 @@ export function TimelinePage() {
         title={t('timeline.title')}
         description={t('timeline.description')}
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!scope || !scopeId}
-            onClick={() => {
-              if (!scope || !scopeId) return;
-              void downloadApiFile(API.exportSession(scope, scopeId), 'session-export.zip').catch(
-                () => toast.error(t('toast.exportFailed')),
-              );
-            }}
-          >
-            {t('timeline.export')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {scope === 'chat' && scopeId ? (
+              <Button variant={showGraph ? 'default' : 'outline'} size="sm" onClick={() => setShowGraph((v) => !v)}>
+                {t('runGraph.title')}
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!scope || !scopeId}
+              onClick={() => {
+                if (!scope || !scopeId) return;
+                void downloadApiFile(API.exportSession(scope, scopeId), 'session-export.zip').catch(
+                  () => toast.error(t('toast.exportFailed')),
+                );
+              }}
+            >
+              {t('timeline.export')}
+            </Button>
+          </div>
         }
       />
 
@@ -131,6 +140,10 @@ export function TimelinePage() {
           </Button>
         </form>
       </div>
+
+      {showGraph && scope === 'chat' && scopeId ? (
+        <RunGraphPanel kind="conversation" id={scopeId} className="max-h-[70vh]" />
+      ) : null}
 
       {term ? (
         <section className="space-y-2" data-testid="timeline-search-results">

@@ -68,7 +68,15 @@ export function createProactiveTurn(deps: ServiceDeps) {
 
     let target;
     try {
-      target = resolveChatTarget(deps, assistant);
+      let conversationModelId: string | null = null;
+      if (input.conversationId) {
+        try {
+          conversationModelId = conversations.get(input.conversationId).modelId;
+        } catch {
+          // 会话已删除：按助手/系统默认继续，后续历史读取同样降级
+        }
+      }
+      target = resolveChatTarget(deps, assistant, conversationModelId);
     } catch (error) {
       yield { event: 'error', data: normalizeFailure(error) };
       return;

@@ -25,6 +25,7 @@ function makeConversation(lastMessageAt: number): Conversation {
     lastMessageAt: new Date(lastMessageAt).toISOString(),
     summary: null,
     summaryTurns: 0,
+    modelId: null,
     createdAt: '',
     updatedAt: '',
   };

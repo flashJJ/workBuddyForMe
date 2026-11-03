@@ -10,3 +10,9 @@ export {
   createRunCompletionService,
   type RunCompletionService,
 } from './run-completion';
+export {
+  createStagePlanService,
+  validateStagePlanBindings,
+  validateStagePlanInput,
+  type StagePlanService,
+} from './stage-plan-service';

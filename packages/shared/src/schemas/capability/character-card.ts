@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EXPRESSION_TAGS, type ExpressionTag } from '../emotion/expression';
+import { stagePlanSchema } from '../work/stage-plan';
 
 /**
  * v1.8 角色卡契约（Markdown + YAML frontmatter 文本 mod）。
@@ -105,6 +106,8 @@ export const characterCardRecordSchema = z.object({
   parsed: parsedCharacterCardSchema,
   defaultEmotion: z.enum(EXPRESSION_TAGS),
   voice: z.string().nullable(),
+  /** v2.20：内置卡默认阶段；自定义卡/旧档为 null */
+  stagePlan: stagePlanSchema.nullable().default(null),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

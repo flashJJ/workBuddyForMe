@@ -5,6 +5,8 @@ import type {
   CharacterCardSource,
   ParsedCharacterCard,
 } from '@wbfm/shared/schemas';
+import type { StagePlan } from '@wbfm/shared/types';
+import { stagePlanSchema } from '@wbfm/shared/schemas';
 
 interface CharacterCardRow {
   id: string;
@@ -15,8 +17,20 @@ interface CharacterCardRow {
   parsed_json: string;
   default_emotion: string;
   voice: string | null;
+  /** v2.20：内置卡默认阶段（v044；老库结果集缺列时回落 null） */
+  stage_plan_json?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+function parseStagePlan(value: string | null | undefined): StagePlan | null {
+  if (!value) return null;
+  try {
+    const parsed = stagePlanSchema.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 function mapRow(row: CharacterCardRow): CharacterCardRecord {
@@ -37,6 +51,7 @@ function mapRow(row: CharacterCardRow): CharacterCardRecord {
     parsed,
     defaultEmotion: row.default_emotion as ParsedCharacterCard['defaultEmotion'],
     voice: row.voice,
+    stagePlan: parseStagePlan(row.stage_plan_json),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -47,6 +62,8 @@ export interface CharacterCardCreateFields {
   source: CharacterCardSource;
   rawMarkdown: string;
   parsed: ParsedCharacterCard;
+  /** v2.20：内置卡默认阶段；自定义卡缺省 null */
+  stagePlan?: StagePlan | null;
   /** 播种/恢复时显式给时间戳；缺省 now */
   createdAt?: string;
   updatedAt?: string;
@@ -61,17 +78,26 @@ export interface CharacterCardRepository {
   list(source?: CharacterCardSource): CharacterCardRecord[];
   /** 恢复用：INSERT OR IGNORE 幂等 upsert（固定 id 的内置卡冲突跳过） */
   upsertIgnore(record: CharacterCardRecord): void;
+  /** v2.20：内置卡补齐默认阶段（只在为空时写入，不覆盖用户已有阶段） */
+  setBuiltinStagePlanIfEmpty(id: string, plan: StagePlan): void;
 }
 
 export function createCharacterCardRepository(db: DatabaseInstance): CharacterCardRepository {
   const insert = `INSERT INTO character_cards(
       id, source, name, description, raw_markdown, parsed_json,
-      default_emotion, voice, created_at, updated_at)
+      default_emotion, voice, stage_plan_json, created_at, updated_at)
     VALUES (
       @id, @source, @name, @description, @rawMarkdown, @parsedJson,
-      @defaultEmotion, @voice, @createdAt, @updatedAt)`;
+      @defaultEmotion, @voice, @stagePlan, @createdAt, @updatedAt)`;
 
-  const bind = (id: string, source: CharacterCardSource, raw: string, parsed: ParsedCharacterCard, ts: string) => ({
+  const bind = (
+    id: string,
+    source: CharacterCardSource,
+    raw: string,
+    parsed: ParsedCharacterCard,
+    ts: string,
+    stagePlan: StagePlan | null = null,
+  ) => ({
     id,
     source,
     name: parsed.name,
@@ -80,6 +106,7 @@ export function createCharacterCardRepository(db: DatabaseInstance): CharacterCa
     parsedJson: JSON.stringify(parsed),
     defaultEmotion: parsed.defaultEmotion,
     voice: parsed.voice,
+    stagePlan: stagePlan ? JSON.stringify(stagePlan) : null,
     createdAt: ts,
     updatedAt: ts,
   });
@@ -88,7 +115,9 @@ export function createCharacterCardRepository(db: DatabaseInstance): CharacterCa
     create(fields) {
       const id = fields.id ?? newId();
       const ts = fields.createdAt ?? nowIso();
-      db.prepare(insert).run(bind(id, fields.source, fields.rawMarkdown, fields.parsed, ts));
+      db.prepare(insert).run(
+        bind(id, fields.source, fields.rawMarkdown, fields.parsed, ts, fields.stagePlan ?? null),
+      );
       return this.findById(id)!;
     },
 
@@ -134,10 +163,10 @@ export function createCharacterCardRepository(db: DatabaseInstance): CharacterCa
       db.prepare(
         `INSERT OR IGNORE INTO character_cards(
            id, source, name, description, raw_markdown, parsed_json,
-           default_emotion, voice, created_at, updated_at)
+           default_emotion, voice, stage_plan_json, created_at, updated_at)
          VALUES (
            @id, @source, @name, @description, @rawMarkdown, @parsedJson,
-           @defaultEmotion, @voice, @createdAt, @updatedAt)`,
+           @defaultEmotion, @voice, @stagePlan, @createdAt, @updatedAt)`,
       ).run({
         id: record.id,
         source: record.source,
@@ -147,9 +176,17 @@ export function createCharacterCardRepository(db: DatabaseInstance): CharacterCa
         parsedJson: JSON.stringify(record.parsed),
         defaultEmotion: record.defaultEmotion,
         voice: record.voice,
+        stagePlan: record.stagePlan ? JSON.stringify(record.stagePlan) : null,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
       });
+    },
+
+    setBuiltinStagePlanIfEmpty(id, plan) {
+      db.prepare(
+        `UPDATE character_cards SET stage_plan_json = ?, updated_at = ?
+         WHERE id = ? AND source = 'builtin' AND stage_plan_json IS NULL`,
+      ).run(JSON.stringify(plan), nowIso(), id);
     },
   };
 }
