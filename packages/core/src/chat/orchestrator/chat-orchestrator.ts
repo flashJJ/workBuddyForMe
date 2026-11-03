@@ -52,11 +52,11 @@ export function createChatOrchestrator(deps: ServiceDeps) {
       let conversationId: string;
       let userContent: string;
       try {
-        conversationId = input.conversationId
-          ? conversations.get(input.conversationId).id
-          : conversations.create(assistant.id).id;
-        const conversation = conversations.get(conversationId);
-        target = resolveChatTarget(deps, assistant, conversation.modelId);
+        const existing = input.conversationId ? conversations.get(input.conversationId) : null;
+        // 新建会话先按助手/系统默认校验，避免无模型时留下空会话
+        target = resolveChatTarget(deps, assistant, existing?.modelId ?? null);
+        conversationId = existing?.id ?? conversations.create(assistant.id).id;
+        if (!existing) target = resolveChatTarget(deps, assistant, conversations.get(conversationId).modelId);
         ({ userContent } = prepareUserTurn({
           conversationId,
           input,

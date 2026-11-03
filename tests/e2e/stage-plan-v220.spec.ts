@@ -13,6 +13,8 @@ import { chooseOption, waitForHydrated } from './utils';
 
 type Envelope<T> = { data?: T };
 const PROVIDER_NAME = 'v220-stage-mock';
+/** 与全量套件里其他 mock-chat 区分，避免同名模型选中第一条时落到别的供应商 */
+const MODEL_ID = 'v220-stage-chat';
 
 async function seedChatModel(request: APIRequestContext): Promise<string> {
   const providers =
@@ -36,11 +38,11 @@ async function seedChatModel(request: APIRequestContext): Promise<string> {
     ((await (
       await request.get(`/api/providers/${provider.id}/models`)
     ).json()) as Envelope<Array<{ id: string; modelId: string }>>).data ?? [];
-  const existing = models.find((item) => item.modelId === 'mock-chat');
+  const existing = models.find((item) => item.modelId === MODEL_ID);
   if (existing) return existing.id;
 
   const res = await request.post(`/api/providers/${provider.id}/models`, {
-    data: { modelId: 'mock-chat', capabilities: ['chat'] },
+    data: { modelId: MODEL_ID, capabilities: ['chat'] },
   });
   return ((await res.json()) as Envelope<{ id: string }>).data!.id;
 }
@@ -64,8 +66,13 @@ async function readPlan(request: APIRequestContext, conversationId: string) {
 
 test.describe.serial('v2.20 阶段条', () => {
   let modelId = '';
+  let previousDefaultModelId: string | null = null;
 
   test.beforeAll(async ({ request }) => {
+    const settings = ((await (await request.get('/api/settings')).json()) as Envelope<{
+      defaultChatModelId?: string | null;
+    }>).data;
+    previousDefaultModelId = settings?.defaultChatModelId ?? null;
     modelId = await seedChatModel(request);
     await request.put('/api/settings', {
       data: { hasOnboarded: true, defaultChatModelId: modelId },
@@ -73,6 +80,8 @@ test.describe.serial('v2.20 阶段条', () => {
   });
 
   test.afterAll(async ({ request }) => {
+    // 全量套件共用数据根：恢复默认模型，避免后续用例落入无模型引导态
+    await request.put('/api/settings', { data: { defaultChatModelId: previousDefaultModelId } });
     const providers =
       ((await request.get('/api/providers').then((r) => r.json())) as Envelope<
         Array<{ id: string; name: string }>
@@ -128,7 +137,7 @@ test.describe.serial('v2.20 阶段条', () => {
     await expect.poll(async () => (await readPlan(request, conversationId)).activeStep).toBe(1);
 
     // 会话级模型：选中阶段模型 → plan 与会话同时写入
-    await chooseOption(page, page.getByTestId('stage-model-select'), 'mock-chat（mock-chat）');
+    await chooseOption(page, page.getByTestId('stage-model-select'), `${MODEL_ID}（${MODEL_ID}）`);
     await expect(page.getByText('已切换本会话模型')).toBeVisible();
     await expect.poll(async () => (await readPlan(request, conversationId)).steps[1]?.modelId).toBe(modelId);
     const conversation = ((await (
