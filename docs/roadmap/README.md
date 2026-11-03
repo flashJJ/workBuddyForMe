@@ -38,9 +38,10 @@ v2.18 解决了「可交付」；下一层断点在知识输入本身：复杂 P
 
 - 方案：[v2.19 方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md) · [M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M1](../plan/v2.19/03-M1-实施记录.md) · [M2](../plan/v2.19/04-M2-实施记录.md) · [M3](../plan/v2.19/05-M3-实施记录.md) · [M4](../plan/v2.19/06-M4-实施记录.md) · [M5](../plan/v2.19/07-M5-实施记录.md) · [M6 验收](../plan/v2.19/08-M6-验收与发布.md)
 - 总结：[v2.19-release-summary.md](v2.19-release-summary.md) · 发行说明：[v2.19-release-notes.md](v2.19-release-notes.md)
+- 博客：[blog/v2.19](../../blog/v2.19/) 10 篇
 - 来源方案：[深度文档解析与可信 RAG](scheduled/v2.19-01-deep-document-rag.md)
 - 状态：✅ 已正式发布并置 Latest（Release workflow `41496492744`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.19.0>；单测 3067、Web e2e 139/139、桌面冒烟 10/11；安装包 200.32 MB）
-- 分支：`feature/v2.19-planning`（tag 直接打在 `5658537`，本次未先合并 main；一次迁移 `v043-document-structure`，`LATEST_SCHEMA_VERSION = 43`）
+- 分支：`feature/v2.19-planning`（PR [#4](https://github.com/flashJJ/workBuddyForMe/pull/4) 合并到 main，merge commit `5f562d2`；tag `v2.19.0` 打在 `5658537`；一次迁移 `v043-document-structure`，`LATEST_SCHEMA_VERSION = 43`）
 
 ## ✅ 已正式发布：v2.18 🎨 可交付——图表、内容包与有出处的产物（2026-11-02，tag `v2.18.0`）
 
@@ -49,6 +50,7 @@ v2.17 解决「接得上、搜得到、装得进」后，下一层断点在产�
 - 方案：[v2.18 方案](../plan/v2.18/README.md) · [能力借鉴分析](../plan/v2.18/00-能力借鉴分析.md) · [M6 验收与发布](../plan/v2.18/08-M6-验收与发布.md)
 - 来源方案：[可交付产物与内容包](scheduled/v2.18-01-deliverable-artifacts-and-content-packs.md)
 - 总结：[v2.18-release-summary.md](v2.18-release-summary.md) · 发行说明：[v2.18-release-notes.md](v2.18-release-notes.md)
+- 博客：[blog/v2.18](../../blog/v2.18/) 10 篇
 - 状态：✅ 已正式发布并置 Latest（Release workflow `41403197983`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.18.0>；PR [#3](https://github.com/flashJJ/workBuddyForMe/pull/3)；安装包 194.37 MB）
 - 范围：目标零迁移（`LATEST_SCHEMA_VERSION = 42`）；单测 2980、Web e2e 139/139、桌面冒烟 10/11
 
@@ -62,6 +64,7 @@ v2.16 把目录与入口成本降下来后，下一层断点集中在「接不�
 - 状态：✅ 已正式发布并置 Latest（Release workflow `41375661027`；main CI `41374622885` / `41375107131` / `41375645579`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.17.0>；生产 Web e2e 139/139、桌面冒烟 10/11；单测 2922；安装包 193.40 MB）
 - 分支：`feature/v2.17-planning`（PR [#2](https://github.com/flashJJ/workBuddyForMe/pull/2)，merge commit `1d542d2`；零迁移，`LATEST_SCHEMA_VERSION = 42`）
 - 总结：[v2.17-release-summary.md](v2.17-release-summary.md) · 发行说明：[v2.17-release-notes.md](v2.17-release-notes.md) · 验收：[M6](../plan/v2.17/06-M6-验收.md)
+- 博客：[blog/v2.17](../../blog/v2.17/) 10 篇
 
 ## ✅ 已正式发布：v2.15 ⚙️ 可运营——历史可清理、证据可锚定、凭证可轮换、版本可对比（2026-11-01，tag `v2.15.0`）
 
