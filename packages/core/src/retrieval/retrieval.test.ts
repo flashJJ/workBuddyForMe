@@ -18,7 +18,7 @@ import { createAssistantsService } from '../services/assistant/assistant-service
 import { createIngestionPipeline } from '../ingestion/ingestion-pipeline';
 import { createRetrievalService } from './retrieval-service';
 import { createRagRetriever } from './rag-retriever';
-import { formatContextBlock, toCitations } from './context-formatter';
+import { formatContextBlock, toCitableChunks, toCitations } from './context-formatter';
 
 const encoder = new TextEncoder();
 
@@ -201,6 +201,51 @@ describe('检索与 RAG 编排（TR-17.1）', () => {
       ordinal: 0,
     });
     expect(rag!.citations[0]!.snippet).toContain('苹果');
+  });
+
+  it('v2.19 表格分片检索：章节路径与表号/行范围进入检索结果与引用', async () => {
+    const kbId = await seedIndex();
+    const documentId = createDocumentRepository(db).create({
+      knowledgeBaseId: kbId,
+      filename: 'contract.md',
+      fileType: '.md',
+      byteSize: 1,
+      contentHash: 'h-contract',
+    }).id;
+    await createIngestionPipeline({ db, cipher }).ingest({
+      documentId,
+      buffer: encoder.encode(`# 合同
+
+## 付款条款
+
+| 阶段 | 比例 |
+| --- | --- |
+| 首付 | 30% |
+| 尾款 | 70% |
+`),
+    });
+
+    const hits = await createRetrievalService({ db, cipher }).retrieve({
+      knowledgeBaseId: kbId,
+      query: '付款比例',
+    });
+    const tableHit = hits.find((hit) => hit.documentId === documentId && hit.blockKind === 'table');
+    expect(tableHit).toBeDefined();
+    expect(tableHit!.sectionPath).toEqual(['合同', '付款条款']);
+    expect(tableHit!.tableNo).toBe(1);
+    expect(tableHit!.tableRowStart).toBe(1);
+    expect(tableHit!.tableRowEnd).toBe(2);
+
+    const citation = toCitations(toCitableChunks([tableHit!]))[0]!;
+    expect(citation).toMatchObject({
+      sectionPath: ['合同', '付款条款'],
+      tableNo: 1,
+      tableRow: 1,
+    });
+    expect(citation.tableCell).toBeUndefined();
+
+    const located = toCitations(toCitableChunks([tableHit!], '首付比例是多少'))[0]!;
+    expect(located).toMatchObject({ tableNo: 1, tableRow: 1, tableCell: 'B2' });
   });
 
   it('格式化：长 snippet 截断，context 带编号', () => {

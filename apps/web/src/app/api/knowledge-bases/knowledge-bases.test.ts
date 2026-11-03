@@ -20,6 +20,8 @@ import { GET as getKb, PATCH, DELETE } from './[id]/route';
 import { GET as listDocs, POST as uploadDoc } from './[id]/documents/route';
 import { POST as clipDoc } from './[id]/clip/route';
 import { GET as getDoc, DELETE as deleteDoc } from '../documents/[id]/route';
+import { GET as getStructure } from '../documents/[id]/structure/route';
+import { POST as reparseDoc } from '../documents/[id]/reparse/route';
 
 const jsonRequest = (body: unknown, method = 'POST') =>
   new Request('http://127.0.0.1/x', {
@@ -135,6 +137,46 @@ describe('知识库与文档路由（TR-22.1）', () => {
     const legacy = await uploadForm(kbId, 'word.doc', 'x');
     expect(legacy.status).toBe(422);
     expect((await legacy.json()).error.message).toContain('另存为新版 .docx');
+  });
+
+  it('v2.19 结构预览与重建：章节/表格可读，重建后重新索引', async () => {
+    const content = `# 合同
+
+## 付款条款
+
+| 阶段 | 比例 |
+| --- | --- |
+| 首付 | 30% |
+| 尾款 | 70% |
+`;
+    const uploaded = await uploadForm(kbId, 'contract.md', content);
+    const document = (await uploaded.json()).data;
+    expect((await pollDocument(document.id)).status).toBe('indexed');
+
+    const structureResponse = await getStructure(new Request('http://x'), {
+      params: Promise.resolve({ id: document.id }),
+    });
+    const structure = (await structureResponse.json()).data;
+    expect(structure.structureAvailable).toBe(true);
+    expect(structure.sections.map((s: { path: string[] }) => s.path)).toContainEqual([
+      '合同',
+      '付款条款',
+    ]);
+    expect(structure.tables).toHaveLength(1);
+    expect(structure.tables[0].header).toEqual(['阶段', '比例']);
+
+    const reparse = await reparseDoc(
+      new Request('http://x', { method: 'POST' }),
+      { params: Promise.resolve({ id: document.id }) },
+    );
+    expect(reparse.status).toBe(202);
+    expect((await reparse.json()).data.queued).toBe(true);
+    expect((await pollDocument(document.id)).status).toBe('indexed');
+
+    const after = (await (
+      await getStructure(new Request('http://x'), { params: Promise.resolve({ id: document.id }) })
+    ).json()).data;
+    expect(after.blocks.length).toBeGreaterThan(0);
   });
 
   it('删除文档 404；删除知识库后文档/分片计数归零', async () => {

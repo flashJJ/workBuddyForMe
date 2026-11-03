@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { type Message } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
+import { DocumentViewerDialog } from '@/features/document-viewer';
 import { formatCitationMeta } from '@/lib/citation-meta';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
@@ -16,6 +17,7 @@ export function CitationsList({ message }: { message: Message }) {
   const collapsible = message.citations.length > COLLAPSE_THRESHOLD;
   // 超过阈值默认折叠，避免长来源列表把正文挤出视口
   const [expanded, setExpanded] = React.useState(!collapsible);
+  const [viewer, setViewer] = React.useState<Message['citations'][number] | null>(null);
   if (message.citations.length === 0) return null;
 
   return (
@@ -67,7 +69,20 @@ export function CitationsList({ message }: { message: Message }) {
                     {citation.documentName}
                   </a>
                 ) : (
-                  <span className="font-medium">{citation.documentName}</span>
+                  <button
+                    type="button"
+                    className="font-medium hover:text-primary hover:underline"
+                    title={t('documentViewer.title')}
+                    data-testid="citation-open"
+                    onClick={() => setViewer(citation)}
+                  >
+                    {citation.documentName}
+                  </button>
+                )}
+                {meta.section && (
+                  <span className="ml-1 text-muted-foreground" data-testid="citation-section">
+                    · {meta.section}
+                  </span>
                 )}
                 {meta.location && (
                   <span className="ml-1 text-muted-foreground" data-testid="citation-location">
@@ -82,6 +97,24 @@ export function CitationsList({ message }: { message: Message }) {
           })}
         </ol>
       )}
+      <DocumentViewerDialog
+        documentId={viewer?.documentId ?? null}
+        documentName={viewer?.documentName}
+        open={Boolean(viewer)}
+        onOpenChange={(open) => {
+          if (!open) setViewer(null);
+        }}
+        focus={
+          viewer
+            ? {
+                sectionPath: viewer.sectionPath,
+                tableNo: viewer.tableNo,
+                tableRow: viewer.tableRow,
+                tableCell: viewer.tableCell,
+              }
+            : null
+        }
+      />
     </div>
   );
 }

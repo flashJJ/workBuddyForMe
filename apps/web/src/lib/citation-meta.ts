@@ -14,12 +14,17 @@ type Translate = (key: MessageKey, vars?: MessageVars) => string;
 export interface CitationMeta {
   /** 静态知识层标签（实体知识/文档要点）；普通分片为空串 */
   kindLabel: string;
-  /** 页/段定位文本；无坐标为空串 */
+  /** 章节路径（最多 4 层）；无章节为空串 */
+  section: string;
+  /** 表格/页段定位文本；无坐标为空串 */
   location: string;
 }
 
 export function formatCitationMeta(
-  citation: Pick<Citation, 'pageNo' | 'paragraphNo' | 'staticKind'>,
+  citation: Pick<
+    Citation,
+    'pageNo' | 'paragraphNo' | 'staticKind' | 'sectionPath' | 'tableNo' | 'tableRow' | 'tableCell'
+  >,
   t: Translate,
 ): CitationMeta {
   const kindLabel =
@@ -27,11 +32,27 @@ export function formatCitationMeta(
       ? t('share.citeEntityLabel')
       : citation.staticKind === 'summary'
         ? t('share.citeSummaryLabel')
-        : '';
+        : citation.staticKind === 'relation'
+          ? t('share.citeRelationLabel')
+          : '';
+
+  const section = (citation.sectionPath ?? []).filter(Boolean).join(' › ');
+  let location = '';
+  if (citation.tableNo !== undefined && citation.tableNo !== null) {
+    const table = String(citation.tableNo);
+    const row = citation.tableRow !== undefined ? String(citation.tableRow) : null;
+    if (row !== null && citation.tableCell) {
+      location = t('share.citeTableCell', { table, row, cell: citation.tableCell });
+    } else if (row !== null) {
+      location = t('share.citeTableRow', { table, row });
+    } else {
+      location = t('share.citeTable', { table });
+    }
+    return { kindLabel, section, location };
+  }
 
   const page = citation.pageNo ?? null;
   const para = citation.paragraphNo ?? null;
-  let location = '';
   if (page !== null && para !== null) {
     location = t('share.citeLocationPagePara', { page: String(page), para: String(para) });
   } else if (page !== null) {
@@ -39,5 +60,5 @@ export function formatCitationMeta(
   } else if (para !== null) {
     location = t('share.citeLocationPara', { para: String(para) });
   }
-  return { kindLabel, location };
+  return { kindLabel, section, location };
 }

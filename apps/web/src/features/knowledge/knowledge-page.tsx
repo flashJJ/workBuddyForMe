@@ -17,6 +17,7 @@ import { isStarterTemplateId } from '@/lib/templates/starter-templates';
 import { UploadDropzone } from './upload-dropzone';
 import { ClipDialog } from './clip-dialog';
 import { DocumentList } from './document-list';
+import { DocumentCompareDialog } from './document-compare';
 import { GovernancePanel } from './governance-panel';
 import { CompileToolbar } from './compile-toolbar';
 
@@ -103,6 +104,7 @@ export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) 
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [clipOpen, setClipOpen] = React.useState(false);
+  const [compareOpen, setCompareOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<KnowledgeBase | null>(null);
 
   // v2.4 M5：命令面板「新建知识库」深链接（/knowledge?new=1）自动打开创建表单
@@ -181,15 +183,27 @@ export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) 
           <div className="space-y-5 p-6">
             <div className="flex items-center justify-between gap-3">
               <PageHeader title={activeKb.name} description={activeKb.description || undefined} />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                data-testid="open-clip-dialog"
-                onClick={() => setClipOpen(true)}
-              >
-                {t('knowledge.importFromWeb')}
-              </Button>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  data-testid="open-document-compare"
+                  disabled={(docs.data?.length ?? 0) < 2}
+                  onClick={() => setCompareOpen(true)}
+                >
+                  {t('knowledgeCompare.open')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  data-testid="open-clip-dialog"
+                  onClick={() => setClipOpen(true)}
+                >
+                  {t('knowledge.importFromWeb')}
+                </Button>
+              </div>
             </div>
             <UploadDropzone kbId={activeKb.id} />
             <CompileToolbar kbId={activeKb.id} documents={docs.data} />
@@ -206,6 +220,13 @@ export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) 
       />
       {activeKb && (
         <ClipDialog kbId={activeKb.id} open={clipOpen} onOpenChange={setClipOpen} />
+      )}
+      {activeKb && (
+        <DocumentCompareDialog
+          documents={docs.data ?? []}
+          open={compareOpen}
+          onOpenChange={setCompareOpen}
+        />
       )}
     </div>
   );

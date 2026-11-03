@@ -8,21 +8,21 @@
 WBFM 采用 pnpm + Turborepo monorepo，分三层：**应用层 → 业务层 → 基础设施层**。
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│ 应用层                                                        │
-│ apps/web    Next.js 14（App Router 页面 + Route Handlers）    │
-│ apps/desktop Electron 主进程 / preload / 服务托管 / 打包       │
-├──────────────────────────────────────────────────────────────┤
-│ 业务层 packages/core                                          │
-│ providers / assistants / conversations / chat / knowledge /  │
-│ rag / settings / secrets（纯函数式服务，依赖注入数据访问器）    │
-├──────────────────────────────────────────────────────────────┤
-│ 基础设施层                                                    │
-│ packages/ai        Provider 抽象、OpenAI 兼容/Ollama 适配器、HTTP 底座 │
-│ packages/database  better-sqlite3、migration、repositories    │
-│ packages/config    数据根/环境变量/目录解析（唯一事实源）       │
-│ packages/shared    Zod schema、领域类型、错误码、SSE 事件      │
-└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────
+│ 应用层
+│ apps/web    Next.js 14（App Router 页面 + Route Handlers）
+│ apps/desktop Electron 主进程 / preload / 服务托管 / 打包
+├────────────────────────────────────────────────────────────────────────
+│ 业务层 packages/core
+│ providers / assistants / conversations / chat / knowledge /
+│ rag / settings / secrets（纯函数式服务，依赖注入数据访问器）
+├────────────────────────────────────────────────────────────────────────
+│ 基础设施层
+│ packages/ai        Provider 抽象、OpenAI 兼容/Ollama 适配器、HTTP 底座
+│ packages/database  better-sqlite3、migration、repositories
+│ packages/config    数据根/环境变量/目录解析（唯一事实源）
+│ packages/shared    Zod schema、领域类型、错误码、SSE 事件
+└────────────────────────────────────────────────────────────────────────
 ```
 
 **依赖方向（无环）**：

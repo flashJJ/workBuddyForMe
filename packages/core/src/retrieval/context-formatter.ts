@@ -3,23 +3,44 @@ import { type Citation } from '@wbfm/shared/types';
 import type { RagChunk } from '../chat/base/types';
 import { estimateTokens, truncateToTokens } from '../chat/context/context-budget';
 import type { RetrievedChunk } from './retrieval-service';
+import { locateTableCellInChunk } from './table';
 
 export const CITATION_SNIPPET_LENGTH = 160;
 
+/** 资料条目抬头需要的字段（表格分片带出表/行/单元格定位；兼容检索结果的 null） */
+interface EntryHeadFields {
+  documentName: string;
+  ordinal: number;
+  staticKind?: 'chunk' | 'entity' | 'summary' | 'relation';
+  tableNo?: number | null;
+  tableRow?: number | null;
+  tableCell?: string | null;
+}
+
 /** 条目抬头：静态知识层（实体/要点）与普通分片区分标注，编号由调用方统一 */
-function entryHeader(chunk: Pick<RagChunk, 'documentName' | 'ordinal' | 'staticKind'>): string {
+function entryHeader(chunk: EntryHeadFields): string {
   if (chunk.staticKind === 'entity') return `实体知识：《${chunk.documentName}》`;
   if (chunk.staticKind === 'summary') return `文档要点：《${chunk.documentName}》`;
-  return `来源：《${chunk.documentName}》片段 ${chunk.ordinal + 1}`;
+  if (chunk.staticKind === 'relation') return `关系知识：《${chunk.documentName}》`;
+  const table =
+    chunk.tableNo != null
+      ? ` · 表 ${chunk.tableNo}${chunk.tableRow != null ? ` 第 ${chunk.tableRow} 行` : ''}${
+          chunk.tableCell ? ` ${chunk.tableCell}` : ''
+        }`
+      : '';
+  return `来源：《${chunk.documentName}》片段 ${chunk.ordinal + 1}${table}`;
 }
 
 /** 单个资料条目的格式化（与资料块内编号一致，从 1 开始） */
-function formatChunkEntry(chunk: Pick<RagChunk, 'documentName' | 'ordinal' | 'content' | 'staticKind'>, index: number): string {
+function formatChunkEntry(
+  chunk: EntryHeadFields & Pick<RagChunk, 'content'>,
+  index: number,
+): string {
   return `[${index + 1}] ${entryHeader(chunk)}\n${chunk.content}`;
 }
 
 /** 将检索片段格式化为注入系统提示词的参考资料块（带编号，供模型引用） */
-export function formatContextBlock(chunks: Array<Pick<RagChunk, 'documentName' | 'ordinal' | 'content' | 'staticKind'>>): string {
+export function formatContextBlock(chunks: Array<EntryHeadFields & Pick<RagChunk, 'content'>>): string {
   return chunks.map((chunk, index) => formatChunkEntry(chunk, index)).join('\n\n');
 }
 
@@ -90,7 +111,12 @@ export type CitableEntry = {
   paragraphNo?: number | null;
   charStart?: number;
   charEnd?: number;
-  staticKind?: 'chunk' | 'entity' | 'summary';
+  staticKind?: 'chunk' | 'entity' | 'summary' | 'relation';
+  /** v2.19：章节路径/表格定位（旧引用可缺省） */
+  sectionPath?: string[];
+  tableNo?: number;
+  tableRow?: number;
+  tableCell?: string;
 };
 
 function toSnippet(content: string): string {
@@ -112,20 +138,37 @@ export function toCitations(entries: CitableEntry[]): Citation[] {
     ...(entry.charStart !== undefined ? { charStart: entry.charStart } : {}),
     ...(entry.charEnd !== undefined ? { charEnd: entry.charEnd } : {}),
     staticKind: entry.staticKind ?? 'chunk',
+    ...(entry.sectionPath && entry.sectionPath.length > 0
+      ? { sectionPath: entry.sectionPath }
+      : {}),
+    ...(entry.tableNo !== undefined ? { tableNo: entry.tableNo } : {}),
+    ...(entry.tableRow !== undefined ? { tableRow: entry.tableRow } : {}),
+    ...(entry.tableCell !== undefined ? { tableCell: entry.tableCell } : {}),
   }));
 }
 
-/** RetrievedChunk → 统一引用条目（保持既有调用面） */
-export function toCitableChunks(chunks: RetrievedChunk[]): CitableEntry[] {
-  return chunks.map((chunk) => ({
-    documentId: chunk.documentId,
-    documentName: chunk.documentName,
-    content: chunk.content,
-    sourceUrl: chunk.sourceUrl,
-    pageNo: chunk.pageNo ?? null,
-    paragraphNo: chunk.paragraphNo ?? null,
-    charStart: chunk.charStart,
-    charEnd: chunk.charEnd,
-    staticKind: 'chunk' as const,
-  }));
+/**
+ * RetrievedChunk → 统一引用条目（保持既有调用面）。
+ * 传入 query 时对表格分片定位单元格；无法唯一确定则回落到分片起始行。
+ */
+export function toCitableChunks(chunks: RetrievedChunk[], query?: string): CitableEntry[] {
+  return chunks.map((chunk) => {
+    const located = query ? locateTableCellInChunk(chunk, query) : null;
+    const row = located?.row ?? chunk.tableRowStart;
+    return {
+      documentId: chunk.documentId,
+      documentName: chunk.documentName,
+      content: chunk.content,
+      sourceUrl: chunk.sourceUrl,
+      pageNo: chunk.pageNo ?? null,
+      paragraphNo: chunk.paragraphNo ?? null,
+      charStart: chunk.charStart,
+      charEnd: chunk.charEnd,
+      staticKind: 'chunk' as const,
+      sectionPath: chunk.sectionPath,
+      ...(chunk.tableNo !== null && chunk.tableNo !== undefined ? { tableNo: chunk.tableNo } : {}),
+      ...(row !== null && row !== undefined ? { tableRow: row } : {}),
+      ...(located?.cell ? { tableCell: located.cell } : {}),
+    };
+  });
 }

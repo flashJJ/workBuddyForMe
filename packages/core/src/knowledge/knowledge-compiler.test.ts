@@ -90,6 +90,46 @@ describe('compileDocument 编译器服务', () => {
     expect(facts[0]!.documentName).toBe('model.txt');
   });
 
+  it('v2.19 M5：规则编译写入关系边，静态检索可多跳命中并引用来源', async () => {
+    const kb = createKnowledgeRepository(db).create({
+      name: '关系库',
+      chunkSize: 500,
+      chunkOverlap: 10,
+    });
+    const docId = createDocumentRepository(db).create({
+      knowledgeBaseId: kb.id,
+      filename: 'graph.txt',
+      fileType: '.txt',
+      byteSize: 1,
+      contentHash: 'h-graph',
+    }).id;
+    const content = '“Acme” 收购 “Beta”。\n“Beta” 与 “Gamma” 合作。';
+    createChunkRepository(db).bulkInsert(docId, [
+      {
+        ordinal: 0,
+        content,
+        charStart: 0,
+        charEnd: content.length,
+        pageNo: 1,
+        paragraphNo: 1,
+      },
+    ]);
+
+    const result = await compileDocument(depsFor(db), docId);
+    expect(result.relationCount).toBe(2);
+
+    const facts = createStaticKnowledgeService(depsFor(db)).retrieve(
+      kb.id,
+      'Acme 有哪些关联？',
+    );
+    const relations = facts.filter((fact) => fact.kind === 'relation');
+    expect(relations).toHaveLength(2);
+    expect(relations[0]!.text).toContain('收购');
+    expect(relations.some((fact) => fact.text.includes('合作'))).toBe(true);
+    expect(relations.every((fact) => fact.documentName === 'graph.txt')).toBe(true);
+    expect(relations.every((fact) => fact.paragraphNo === 1)).toBe(true);
+  });
+
   it('LLM 增强：采纳落在第 2 页的原句，幻觉句丢弃，extractor=llm', async () => {
     const { docId } = seedDocument(db);
     const enhancer = async ({ rule }: { rule: CompiledSeed }): Promise<CompiledSeed> => ({

@@ -101,6 +101,13 @@ describe('备份恢复（M1）', () => {
     expect(allDocs[0]!.id).toBe(doc.id);
     expect(allDocs[0]!.status).toBe('pending'); // needs_reindex
     expect(dstChunks.listByDocument(doc.id)).toHaveLength(2);
+    // v2.19：恢复后的旧分片结构列保持空值；结构块为可重建派生数据，不随备份导入
+    expect(
+      dstChunks.listByDocument(doc.id).every((chunk) => (chunk.sectionPath ?? []).length === 0),
+    ).toBe(true);
+    expect(
+      (dstDb.prepare(`SELECT COUNT(*) AS n FROM document_blocks`).get() as { n: number }).n,
+    ).toBe(0);
 
     expect((dstSettings.all() as any).theme).toEqual({ mode: 'dark' });
 

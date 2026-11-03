@@ -4,6 +4,7 @@ import { applyMigrations } from '../../migrations/runner';
 import {
   createCompileQueryRepository,
   createCompileWriteRepository,
+  createRelationRepository,
   type CompilationInput,
 } from '../index';
 
@@ -67,7 +68,7 @@ describe('compile-write-repo：世代事务写入', () => {
   it('首编：世代 1、状态 ready、摘要/实体/mention 落库且坐标完整', () => {
     const write = createCompileWriteRepository(db);
     const result = write.saveCompilation(compilation('d1', [entity('Qwen2.5', 'qwen2.5', 'd1')]));
-    expect(result).toEqual({ generation: 1, entityCount: 1, mentionCount: 1 });
+    expect(result).toEqual({ generation: 1, entityCount: 1, mentionCount: 1, relationCount: 0 });
 
     const doc = db
       .prepare(
@@ -190,6 +191,45 @@ describe('compile-write-repo：世代事务写入', () => {
       }
     ).n;
     expect(gen).toBe(1);
+  });
+
+  it('关系边随编译写入、重编译整批替换，并带来源文档/分片坐标', () => {
+    const write = createCompileWriteRepository(db);
+    write.saveCompilation({
+      ...compilation('d1', [entity('实体A', 'a', 'd1'), entity('实体B', 'b', 'd1')]),
+      relations: [
+        {
+          fromNormalized: 'a',
+          toNormalized: 'b',
+          relation: '收购',
+          description: '实体A 收购 实体B。',
+          chunkId: 1,
+          pageNo: 1,
+          paragraphNo: 1,
+          confidence: 0.75,
+        },
+      ],
+    });
+
+    const relations = createRelationRepository(db).listByDocument('d1');
+    expect(relations).toHaveLength(1);
+    expect(relations[0]).toMatchObject({
+      fromEntityName: '实体A',
+      toEntityName: '实体B',
+      relation: '收购',
+      description: '实体A 收购 实体B。',
+      sourceDocumentName: 'd1.txt',
+      sourceChunkId: 1,
+      pageNo: 1,
+      paragraphNo: 1,
+      confidence: 0.75,
+    });
+
+    write.saveCompilation({
+      ...compilation('d1', [entity('实体A', 'a', 'd1'), entity('实体B', 'b', 'd1')]),
+      relations: [],
+    });
+    expect(createRelationRepository(db).listByDocument('d1')).toHaveLength(0);
   });
 
   it('updateCompileStatus：failed 携带错误信息', () => {

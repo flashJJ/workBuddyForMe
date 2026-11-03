@@ -43,6 +43,8 @@ describe('extractDocumentText OCR 入口（v0.4）', () => {
     const result = await extractDocumentText(deps, 'paper.pdf', new Uint8Array([1]));
     expect(result.ocr).toBeNull();
     expect(result.text).toContain('文字层');
+    expect(result.parsed?.blocks.length).toBeGreaterThan(0);
+    expect(result.structure.blocks).toHaveLength(result.parsed!.blocks.length);
     expect(runPdfOcr).not.toHaveBeenCalled();
   });
 
@@ -64,6 +66,8 @@ describe('extractDocumentText OCR 入口（v0.4）', () => {
     });
     expect(result.ocr).toEqual({ engine: 'vision', partial: false });
     expect(result.text).toBe('OCR 全文');
+    expect(result.parsed?.warnings.join('')).toContain('OCR');
+    expect(result.parsed?.blocks.length).toBeGreaterThan(0);
     expect(onOcrStart).toHaveBeenCalledOnce();
     expect(runPdfOcr).toHaveBeenCalledWith(
       expect.objectContaining({

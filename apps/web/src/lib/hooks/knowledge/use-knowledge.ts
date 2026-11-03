@@ -4,9 +4,11 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { ConflictItem, DuplicatePair } from '@wbfm/core/knowledge';
+import type { DocumentStructureView, FigureSummary } from '@wbfm/core/services';
 import type {
   ContentPackImportResult,
   ContentPackSummary,
+  DocumentComparisonResult,
   DocumentRecord,
   KnowledgeBase,
 } from '@wbfm/shared/types';
@@ -44,6 +46,40 @@ export function useDocuments(kbId: string | null) {
       query.state.data?.some((doc) => doc.status === 'pending' || doc.status === 'processing')
         ? 1500
         : false,
+  });
+}
+
+/** v2.19：文档结构预览（页/章节/表格/警告），随文档重建重新拉取 */
+export function useDocumentStructure(documentId: string | null, enabled = true) {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.documentStructure(documentId ?? '_'),
+    queryFn: () => apiGet<DocumentStructureView>(API.documentStructure(documentId!)),
+    enabled: Boolean(documentId) && enabled,
+  });
+}
+
+export interface DocumentComparisonInput {
+  leftDocumentId: string;
+  rightDocumentId: string;
+  format: 'md' | 'html';
+  locale: 'zh' | 'en';
+}
+
+/** v2.19 M4：按需解读图注/图表（未配置视觉模型时由 API 返回 422） */
+export function useFigureSummary() {
+  return useMutation({
+    mutationFn: (input: { documentId: string; blockId: string }) =>
+      apiPost<FigureSummary>(API.documentFigureSummary(input.documentId), {
+        blockId: input.blockId,
+      }),
+  });
+}
+
+/** v2.19：跨文档对比产物（生成即返回产物引用与统计） */
+export function useDocumentComparison() {
+  return useMutation({
+    mutationFn: (input: DocumentComparisonInput) =>
+      apiPost<DocumentComparisonResult>(API.documentCompare, input),
   });
 }
 
@@ -160,6 +196,17 @@ export function useKnowledgeMutations() {
         apiDelete<{ id: string }>(API.document(input.documentId)),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.kbId) }),
+    }),
+    /** v2.19：手动重建结构/分块/索引 */
+    reparseDocument: useMutation({
+      mutationFn: (input: { kbId: string; documentId: string }) =>
+        apiPost<{ queued: true }>(API.documentReparse(input.documentId), {}),
+      onSuccess: (_data, variables) => {
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.kbId) });
+        void qc.invalidateQueries({
+          queryKey: QUERY_KEYS.documentStructure(variables.documentId),
+        });
+      },
     }),
     /** v1.3 M4：触发编译（入队即返回） */
     compile: useMutation({

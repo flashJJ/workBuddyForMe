@@ -53,14 +53,14 @@ const pending = new Map<string, Pending>();       // key: confirmationId
 前端 `tool-confirm-dialog.tsx` 收到 SSE 事件后弹模态：
 
 ```text
-┌─────────────────────────────────────┐
-│ ⚠ 助手请求执行危险操作                │
-│ 工具：mcp:filesystem:write_file      │
-│ 权限：[write]（黄）/ [danger]（红）   │
-│ 参数：{ path: "...", content: ... }  │
-│                                     │
-│ [拒绝]  [本次允许]  [一直允许]        │
-└─────────────────────────────────────┘
+┌────────────────────────────────────────────────────
+│ ⚠ 助手请求执行危险操作
+│ 工具：mcp:filesystem:write_file
+│ 权限：[write]（黄）/ [danger]（红）
+│ 参数：{ path: "...", content: ... }
+│
+│ [拒绝]  [本次允许]  [一直允许]
+└────────────────────────────────────────────────────
 ```
 
 三按钮的语义（对应 remember 字段，见上一篇）：「拒绝」本轮拒绝 + 模型收到 USER_DENIED；「本次允许」只放行这一次；「一直允许」写 tool_permissions 表，今后该工具（按 remember 范围）免确认。

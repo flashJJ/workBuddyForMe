@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/desktop",
-  "version": "2.18.0",
+  "version": "2.19.0",
   "private": true,
   "description": "WorkBuddyForMe Electron 桌面壳",
   "author": "WorkBuddyForMe",
@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "4.2.6",
-    "electron-updater": "^6.8.11"
+    "electron-updater": "^6.8.11",
+    "zod": "^3.25.0"
   }
 }

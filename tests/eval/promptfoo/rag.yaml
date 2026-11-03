@@ -1,0 +1,111 @@
+description: v2.19 RAG 基线（章节/表格/对比/图检索/空结果/低置信）
+prompts:
+  - file://prompt.txt
+providers:
+  - id: file://provider.mjs
+    label: wbfm-rag-golden
+
+deriveMetrics: true
+
+tests:
+  - description: 章节定位与引用可追溯
+    vars:
+      caseId: section-locate
+      query: 付款条款在合同的哪一章？
+    assert:
+      - type: contains
+        value: 合同 › 付款条款
+      - type: contains
+        value: contract.md
+      - type: javascript
+        value: "output.includes('引用：') || output.includes('来源：')"
+        metric: citation_traceability
+
+  - description: 表格单元格引用
+    vars:
+      caseId: table-cell
+      query: 去年 Q4 营收是多少？
+    assert:
+      - type: contains
+        value: 表 3 · 第 2 行 · C3
+      - type: contains
+        value: 1200 万
+      - type: javascript
+        value: "output.includes('引用：') || output.includes('来源：')"
+        metric: citation_traceability
+
+  - description: 空结果明确未覆盖
+    vars:
+      caseId: table-empty
+      query: 合同里写了海外子公司地址吗？
+    assert:
+      - type: contains
+        value: 未覆盖
+        metric: empty_result_recognition
+      - type: contains
+        value: 未检索到
+      - type: not-contains
+        value: 已找到
+
+  - description: 跨文档对比统计
+    vars:
+      caseId: cross-doc-compare
+      query: 对比采购合同和销售合同的付款条款
+    assert:
+      - type: contains
+        value: 采购合同.md vs 销售合同.md
+      - type: contains
+        value: 仅左 1
+      - type: contains
+        value: 仅右 1
+      - type: contains
+        value: 表格匹配 1
+        metric: comparison_artifact
+
+  - description: 图检索直接关系带来源
+    vars:
+      caseId: graph-direct
+      query: Acme 和 Beta 是什么关系？
+    assert:
+      - type: contains
+        value: 收购
+      - type: contains
+        value: graph.txt
+      - type: javascript
+        value: "output.includes('来源：')"
+        metric: relation_traceability
+
+  - description: 图检索多跳关系带来源
+    vars:
+      caseId: graph-multihop
+      query: Acme 和 Gamma 有什么关联？
+    assert:
+      - type: contains
+        value: 合作
+      - type: contains
+        value: Gamma
+      - type: contains
+        value: graph.txt
+        metric: relation_traceability
+
+  - description: 扫描件表格置信度降级提示
+    vars:
+      caseId: scan-table-confidence
+      query: 扫描件里的付款比例表准吗？
+    assert:
+      - type: contains
+        value: 置信度 55%
+        metric: table_confidence
+      - type: contains
+        value: 扫描件表格
+
+  - description: 旧文档无结构明确降级
+    vars:
+      caseId: no-structure
+      query: 旧文档没有结构时还能对比吗？
+    assert:
+      - type: contains
+        value: 未解析结构
+        metric: degradation_explained
+      - type: contains
+        value: 未覆盖

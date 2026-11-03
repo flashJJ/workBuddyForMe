@@ -69,4 +69,24 @@ describe('ruleRerank（无模型规则重排）', () => {
     expect(out.map((s) => s.chunkId)).toEqual([10, 20, 30]);
     expect(out.every((s) => Number.isFinite(s.score))).toBe(true);
   });
+
+  it('v2.19 表格意图：只对 table 分片加权；普通查询不改变排序', () => {
+    const plain = { ...candidate(1, '首付与尾款按比例支付', '合同'), blockKind: 'paragraph' };
+    const table = { ...candidate(2, '首付与尾款按比例支付', '合同'), blockKind: 'table' };
+    const noIntent = ruleRerank([plain, table], '付款安排');
+    expect(noIntent.map((s) => s.chunkId)).toEqual([1, 2]);
+
+    const withIntent = ruleRerank([plain, table], '对比付款比例', undefined, { tableIntent: true });
+    expect(withIntent[0]!.chunkId).toBe(2);
+    expect(withIntent[0]!.score).toBeGreaterThan(withIntent[1]!.score);
+  });
+
+  it('v2.19 表格意图：非表格分片不获得加权', () => {
+    const table = { ...candidate(1, '表格内容', '合同'), blockKind: 'table' };
+    const plain = { ...candidate(2, '表格内容', '合同'), blockKind: 'paragraph' };
+    const out = ruleRerank([table, plain], '对比', undefined, { tableIntent: true });
+    expect(out[0]!.chunkId).toBe(1);
+    const outNoIntent = ruleRerank([table, plain], '对比');
+    expect(outNoIntent[0]!.chunkId).toBe(1);
+  });
 });

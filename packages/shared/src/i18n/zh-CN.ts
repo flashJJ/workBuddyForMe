@@ -13,6 +13,8 @@ import { zhToast } from './messages/toast';
 import { zhErrors } from './messages/errors';
 import { zhAssistants } from './messages/assistants';
 import { zhKnowledge } from './messages/knowledge';
+import { zhKnowledgeCompare } from './messages/knowledge-compare';
+import { zhDocumentViewer } from './messages/document-viewer';
 import { zhMemory } from './messages/memory';
 import { zhTasks } from './messages/tasks';
 import { zhFlows } from './messages/flows';
@@ -78,6 +80,8 @@ export const zhCN = {
   stage: zhStage,
   meeting: zhMeeting,
   knowledge: zhKnowledge,
+  knowledgeCompare: zhKnowledgeCompare,
+  documentViewer: zhDocumentViewer,
   memory: zhMemory,
   tasks: zhTasks,
   flows: zhFlows,

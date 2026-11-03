@@ -161,6 +161,33 @@ describe('serializeMarkdown（M2）', () => {
     expect(md).toContain('[^1]: **架构.md** — 模块分层 — [原文链接](https://a.com/x)');
   });
 
+  it('v2.19 章节路径与表格行引用进脚注，优先于页/段', () => {
+    const md = serializeMarkdown(
+      baseSnapshot({
+        messages: [
+          {
+            role: 'assistant', content: '表格答案', createdAt: '', parts: [], toolTrace: [],
+            citations: [
+              {
+                documentId: 'd1',
+                documentName: 'contract.pdf',
+                ordinal: 0,
+                pageNo: 4,
+                paragraphNo: 2,
+                sectionPath: ['合同', '付款条款'],
+                tableNo: 2,
+                tableRow: 3,
+                snippet: '首付 30%',
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(md).toContain('合同 › 付款条款 — 表 2 · 第 3 行');
+    expect(md).not.toContain('第 4 页 · 第 2 段');
+  });
+
   it('引用页/段坐标与静态层标签进脚注（zh/en）', () => {
     const snap = baseSnapshot({
       messages: [

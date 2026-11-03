@@ -9,6 +9,7 @@ import type { ServiceDeps } from '../services/base/deps';
 import { resolveEmbeddingTarget } from '../ingestion/embedding-target';
 import { diversify, reciprocalRankFusion, type ChannelHits } from './hybrid-fusion';
 import { ruleRerank } from './rule-rerank';
+import { detectTableIntent } from './table';
 
 /** 纯向量回退路径的固定条数（与 v1.2 行为严格一致） */
 export const DEFAULT_RETRIEVAL_TOP_K = 4;
@@ -39,6 +40,12 @@ export interface RetrievedChunk {
   /** v1.3：分片在归一化文档中的字符区间 */
   charStart?: number;
   charEnd?: number;
+  /** v2.19：章节路径/块类型/表格定位（旧分片为空结构） */
+  sectionPath?: string[];
+  blockKind?: string | null;
+  tableNo?: number | null;
+  tableRowStart?: number | null;
+  tableRowEnd?: number | null;
 }
 
 export interface RetrieveInput {
@@ -160,8 +167,11 @@ export function createRetrievalService(deps: ServiceDeps) {
         documentName: detail.documentName,
         channels: rrfById.get(detail.chunkId)?.channels ?? ['vec'],
         rrf: rrfById.get(detail.chunkId)?.rrf ?? 0,
+        blockKind: detail.blockKind,
       })),
       query,
+      undefined,
+      { tableIntent: detectTableIntent(query).isTableIntent },
     );
     const scoreById = new Map(scored.map((s) => [s.chunkId, s.score]));
 
@@ -183,6 +193,11 @@ export function createRetrievalService(deps: ServiceDeps) {
         paragraphNo: detail.paragraphNo,
         charStart: detail.charStart,
         charEnd: detail.charEnd,
+        sectionPath: detail.sectionPath,
+        blockKind: detail.blockKind,
+        tableNo: detail.tableNo,
+        tableRowStart: detail.tableRowStart,
+        tableRowEnd: detail.tableRowEnd,
       }));
   }
 

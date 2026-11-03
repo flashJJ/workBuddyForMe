@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Tool, ToolResult } from './types';
 import { ToolArgError } from './types';
-import { formatContextBlock, toCitations } from '../retrieval/context-formatter';
+import { formatContextBlock, toCitableChunks, toCitations } from '../retrieval/context-formatter';
 import type { RetrievedChunk } from '../retrieval/retrieval-service';
 
 const argsSchema = z.object({
@@ -101,7 +101,7 @@ export const knowledgeSearchTool: Tool = {
         coverage: `命中 ${chunks.length} 个片段（请求 ${topK}）`,
         capturedAt: new Date().toISOString(),
       },
-      citations: toCitations(chunks),
+      citations: toCitations(toCitableChunks(chunks, parsed.data.query)),
     };
   },
 };

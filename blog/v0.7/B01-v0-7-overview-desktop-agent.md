@@ -17,21 +17,14 @@
 
 ## 架构总图
 
-```text
-┌────────────── 浏览器渲染进程（Next.js） ──────────────┐
-│  任务模式 UI（时间线 + 控制条） /api/tasks/* SSE       │
-└────────────────────┬─────────────────────────────────┘
-                     │ 127.0.0.1 + token
-┌────────────────────▼────────────── web server（fork 子进程）─┐
-│  tool-runtime：注册 screen_snapshot / mouse_* / keyboard_*   │
-│  task-loop：观察→决策→门控→执行→再观察                        │
-└────────────────────┬─────────────────────────────────────────┘
-                     │ APP_COMPUTER_CHANNEL（127.0.0.1 + token）
-┌────────────────────▼──────────────── desktop 主进程 ──────────┐
-│  computer/screen.ts（desktopCapturer 抓屏 + UIA 控件清单）      │
-│  computer/input.ts（nut-js 键鼠执行 + 半透明指示圈）            │
-│  globalShortcut：Ctrl+Alt+Esc → POST /api/tasks/stop-all       │
-└───────────────────────────────────────────────────────────────┘
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TB
+  A["浏览器渲染进程（Next.js）<br/>任务模式 UI（时间线 + 控制条） /api/tasks/* SSE"]
+  B["web server（fork 子进程）<br/>tool-runtime：注册 screen_snapshot / mouse_* / keyboard_*<br/>task-loop：观察→决策→门控→执行→再观察"]
+  C["desktop 主进程<br/>computer/screen.ts（desktopCapturer 抓屏 + UIA 控件清单）<br/>computer/input.ts（nut-js 键鼠执行 + 半透明指示圈）<br/>globalShortcut：Ctrl+Alt+Esc → POST /api/tasks/stop-all"]
+  A -->|"127.0.0.1 + token"| B
+  B -->|"APP_COMPUTER_CHANNEL（127.0.0.1 + token）"| C
 ```
 
 三个关键架构事实：

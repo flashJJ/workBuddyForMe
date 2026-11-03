@@ -33,23 +33,21 @@ P0 三件构成「数据随身」的闭环；P1 两件是投入产出比明确�
 
 五个模块几乎是五条平行线，只在两个底座上汇合，这也是它们能各自独立验收的原因：
 
-```
-   ┌──────────────────── packages/shared 契约层 ────────────────────┐
-   │ backup.ts(manifest Zod)  command.ts(Command/fuzzyMatch)         │
-   │ OCR 枚举(partial/ocrStatus/ocrEngine)  updater 状态类型           │
-   └───────┬─────────────────┬──────────────────┬────────────────────┘
-           ▼                 ▼                  ▼
-  ┌────────────────┐ ┌────────────────┐ ┌──────────────────────────┐
-  │ 备份恢复        │ │ 对话分享        │ │ 自动更新                   │
-  │ backup/         │ │ share/          │ │ desktop/main/updater.ts  │
-  │ export/restore  │ │ snapshot 脱敏    │ │ updater-state + IPC 桥    │
-  └───────┬────────┘ └───────┬────────┘ └────────────┬─────────────┘
-          │  纯 core，无 UI 耦合   │  HTML/MD 序列化在 web  │  只活在 Electron 主进程
-          ▼                  ▼                        ▼
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ OCR：read-document → vision/tesseract → 现有摄入管线零旁路         │
-  │ 命令面板：shared 契约 → web 面板 → desktop globalShortcut          │
-  └─────────────────────────────────────────────────────────────────┘
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TB
+  SH["packages/shared 契约层<br/>backup.ts（manifest Zod）· command.ts（Command/fuzzyMatch）<br/>OCR 枚举（partial/ocrStatus/ocrEngine）· updater 状态类型"]
+  B["备份恢复<br/>backup/ · export/restore"]
+  S["对话分享<br/>share/ · snapshot 脱敏"]
+  U["自动更新<br/>desktop/main/updater.ts<br/>updater-state + IPC 桥"]
+  O["OCR：read-document → vision/tesseract<br/>现有摄入管线零旁路"]
+  C["命令面板：shared 契约 → web 面板<br/>desktop globalShortcut"]
+  SH --> B
+  SH --> S
+  SH --> U
+  B -->|"纯 core，无 UI 耦合"| O
+  S -->|"HTML/MD 序列化在 web"| O
+  U -->|"只活在 Electron 主进程"| C
 ```
 
 两个值得注意的拓扑事实：

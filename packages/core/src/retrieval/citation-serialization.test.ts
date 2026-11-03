@@ -57,6 +57,54 @@ describe('toCitations 坐标与静态层透传', () => {
     expect(citations[0]!.staticKind).toBe('chunk');
   });
 
+  it('v2.19 章节/表格字段透传；旧条目缺省时不产生新键', () => {
+    const citations = toCitations([
+      {
+        documentId: 'd1',
+        documentName: 'contract.pdf',
+        content: '| 阶段 | 比例 |',
+        sectionPath: ['合同', '付款条款'],
+        tableNo: 2,
+        tableRow: 3,
+        tableCell: 'C3',
+      },
+      { documentId: 'd2', documentName: 'old.txt', content: '旧分片' },
+    ]);
+    expect(citations[0]).toMatchObject({
+      sectionPath: ['合同', '付款条款'],
+      tableNo: 2,
+      tableRow: 3,
+      tableCell: 'C3',
+    });
+    expect('sectionPath' in citations[1]!).toBe(false);
+    expect('tableNo' in citations[1]!).toBe(false);
+    expect('tableRow' in citations[1]!).toBe(false);
+    expect('tableCell' in citations[1]!).toBe(false);
+  });
+
+  it('v2.19 M5 关系事实：staticKind=relation，抬头标注关系知识', () => {
+    const citations = toCitations([
+      {
+        documentId: 'd1',
+        documentName: 'graph.txt',
+        content: '关系：Acme —[收购]→ Beta。原句：Acme 收购 Beta。',
+        pageNo: 1,
+        paragraphNo: 2,
+        staticKind: 'relation',
+      },
+    ]);
+    expect(citations[0]!.staticKind).toBe('relation');
+    const block = formatContextBlock([
+      {
+        documentName: 'graph.txt',
+        ordinal: 0,
+        content: citations[0]!.snippet!,
+        staticKind: 'relation',
+      },
+    ]);
+    expect(block).toContain('[1] 关系知识：《graph.txt》');
+  });
+
   it('快照：静态置顶 + 普通分片的混合序列化形态稳定', () => {
     const citations = toCitations([
       { documentId: 'd1', documentName: 'a.pdf', content: '实体原句', pageNo: 1, paragraphNo: 1, staticKind: 'entity' },

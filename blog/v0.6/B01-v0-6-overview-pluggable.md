@@ -24,21 +24,27 @@
 
 ## 架构总图
 
-```text
-┌────────────── 工具来源 ──────────────┐
-│ 内置工具（早期就有）                   │
-│ MCP 工具（mcp:<server>:<tool>）       │──→ 统一工具注册表 tool-runtime
-│ 技能包（提示词注入 + 工具白名单）      │         │
-└──────────────────────────────────────┘         ▼
-                              ┌─── tool-call-loop ───────────────┐
-                              │ 1. 权限门控（read 放行 / write+danger → HITL）
-                              │ 2. 熔断检查（trip 则拒绝）          │
-                              │ 3. 执行（内置直调 / MCP 转发）      │
-                              │ 4. 记录结果 → 熔断器               │
-                              └──────────────────────────────────┘
-                                         │ SSE 事件
-                                         ▼
-                     工具卡片（来源/权限/耗时徽章）+ HITL 弹窗
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TD
+  subgraph SRC["工具来源"]
+    A["内置工具（早期就有）"]
+    B["MCP 工具（mcp:&lt;server&gt;:&lt;tool&gt;）"]
+    C["技能包（提示词注入 + 工具白名单）"]
+  end
+  subgraph LOOP["tool-call-loop"]
+    L1["1. 权限门控（read 放行 / write+danger → HITL）"]
+    L2["2. 熔断检查（trip 则拒绝）"]
+    L3["3. 执行（内置直调 / MCP 转发）"]
+    L4["4. 记录结果 → 熔断器"]
+  end
+  REG["统一工具注册表 tool-runtime"]
+  A --> REG
+  B --> REG
+  C --> REG
+  REG --> L1
+  L1 --> L2 --> L3 --> L4
+  L4 -->|"SSE 事件"| UI["工具卡片（来源/权限/耗时徽章）+ HITL 弹窗"]
 ```
 
 三个值得注意的架构事实：

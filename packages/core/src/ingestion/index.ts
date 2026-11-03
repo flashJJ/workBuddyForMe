@@ -4,10 +4,12 @@ export { chunkText } from './chunking';
 export {
   readDocumentText,
   detectKind,
+  readPdfPageItems,
   readPdfPageTexts,
   isImagePdf,
   pageNeedsOcr,
   mergePdfTextItems,
+  type PdfPageItems,
 } from './read-document';
 export {
   resolveEmbeddingTarget,
@@ -18,6 +20,29 @@ export {
   type ExtractDocumentResult,
   type ExtractHooks,
 } from './extract-with-ocr';
+export {
+  parseDocumentStructure,
+  parsePdfDocument,
+  parseTextDocument,
+  parsePagedTextDocument,
+  buildPdfDocument,
+  buildPdfLines,
+  buildDocxDocument,
+  assembleDocument,
+  chunkDocument,
+  sectionPrefix,
+  fallbackParsedDocument,
+  renderMarkdownTable,
+  mapChunkStructure,
+  toStructuredText,
+  type BlockSegment,
+  type ChunkStructure,
+  type StructuredChunk,
+  type DocumentBlock,
+  type DocumentBlockKind,
+  type DocumentTable,
+  type ParsedDocument,
+} from './structure';
 export { runPdfOcr, type OcrRunResult } from './ocr-runner';
 export {
   resolveVisionTarget,

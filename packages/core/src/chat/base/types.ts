@@ -55,7 +55,7 @@ export interface RagChunk {
   ordinal: number;
   content: string;
   /** v1.3：引用来源层（普通分片/实体原句/文档要点）；缺省视同普通分片 */
-  staticKind?: 'chunk' | 'entity' | 'summary';
+  staticKind?: 'chunk' | 'entity' | 'summary' | 'relation';
   /** v1.3：静态条目与统一引用装配所需（分片条目也带上，便于统一编号） */
   documentId?: string;
   sourceUrl?: string | null;
@@ -63,6 +63,11 @@ export interface RagChunk {
   paragraphNo?: number | null;
   charStart?: number;
   charEnd?: number;
+  /** v2.19：章节/表格定位（普通分片带出，静态条目缺省） */
+  sectionPath?: string[];
+  tableNo?: number;
+  tableRow?: number;
+  tableCell?: string;
 }
 
 export interface RagContext {

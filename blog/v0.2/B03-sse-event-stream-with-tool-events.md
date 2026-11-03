@@ -22,27 +22,18 @@ meta → delta → delta → delta → ... → done
 
 加入工具后，SSE 事件序列变成了一棵更丰富的时序：
 
-```
-meta
-  ↓
-[RAG: citations?]
-  ↓
-←── round loop ──→
-│                  ↑
-│  tool(start)     │
-│    ↓             │
-│  (工具执行，耗时) │
-│    ↓             │
-│  tool(end)       │
-│    ↓             │
-│  [citations?]    │
-│    ↓             │
-│  delta...delta   │
-│    ↓             │
-│  (是否还有工具调用?) ── yes → 回到 tool(start)
-│                  ── no  → 跳出 loop
-↓
-done | error
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TD
+  M["meta"] --> R["[RAG: citations?]"]
+  R --> TS["tool(start)"]
+  TS --> TE["（工具执行，耗时）"]
+  TE --> TEND["tool(end)"]
+  TEND --> CI["[citations?]"]
+  CI --> D["delta...delta"]
+  D --> Q{"是否还有工具调用?"}
+  Q -->|"yes"| TS
+  Q -->|"no"| DONE["done | error"]
 ```
 
 ## SSE 事件类型定义

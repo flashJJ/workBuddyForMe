@@ -184,6 +184,30 @@ describe('renderConversationHtml（M2）', () => {
     expect(en).toContain('<span class="loc">p. 2 · para. 5</span>');
   });
 
+  it('v2.19 章节路径与表格行定位渲染', () => {
+    const html = renderConversationHtml(
+      baseSnapshot({
+        messages: [
+          {
+            role: 'assistant', content: '结论', createdAt: '', parts: [], toolTrace: [],
+            citations: [
+              {
+                documentId: 'd1',
+                documentName: 'contract.pdf',
+                ordinal: 0,
+                sectionPath: ['合同', '付款条款'],
+                tableNo: 2,
+                tableRow: 3,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(html).toContain('<span class="loc">合同 › 付款条款</span>');
+    expect(html).toContain('<span class="loc">表 2 · 第 3 行</span>');
+  });
+
   it('单文件零外部样式依赖 + 水印', () => {
     const html = renderConversationHtml(baseSnapshot());
     expect(html).not.toContain('<link');
