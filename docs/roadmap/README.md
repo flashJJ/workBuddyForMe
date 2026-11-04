@@ -21,38 +21,16 @@
 | `roadmap/scheduled/` | 已排期候选归档，`vX.Y-NN-slug.md`；保留来源方案，方便追溯立项原因 |
 | `roadmap/` 根 | 已发布版本总结/发行说明、跨版本专题与索引 |
 
-## ✅ 已正式发布：v2.16 🧭 可导航——目录按能力收拢、入口统一、页面少拼装（2026-11-01，tag `v2.16.0`）
+## ✅ 已正式发布：v2.22 收口——分支会话可靠性与发布闭环（2026-11-04，tag `v2.22.0`）
 
-v2.15 把日常运维动作补齐后，结构成本成为迭代速度的上限：24 个目录直接文件 ≥20 个、web feature 仅 1/31 有公开入口、91 条跨 feature 深引用、设置页一次挂载约 35 个面板。v2.16 不加功能，只做四件结构性收口：目录按能力分区、每个 feature 暴露纯 re-export 入口、页面用可见区触发查询减少首屏请求、用目录预算 / 跨域边界 / 循环检查把规则固化。不做功能与 API 行为变更、不做数据库迁移、不拆分包。
+v2.21.0 发布后审计留下两类缺口：15 行修复只在 main、8 项残余缺口无版本归属。v2.22 不加新主题，只做收口：补丁随 `v2.22.0` 发布、分支事件纳入备份、终态回传补齐、失败重试、运行中预算熔断、实时帧与 `waiting` 语义收口；零迁移，`LATEST_SCHEMA_VERSION` 保持 45。
 
-- 方案：[v2.16 方案](../plan/v2.16/README.md) · [现状取证](../plan/v2.16/00-现状取证.md) · [M0 契约冻结](../plan/v2.16/01-M0-契约冻结.md) · [M0 评审记录](../plan/v2.16/02-M0-评审记录.md) · [M6 验收](../plan/v2.16/08-M6-验收.md)
-- 总结：[v2.16-release-summary.md](v2.16-release-summary.md) · 发行说明：[v2.16-release-notes.md](v2.16-release-notes.md)
-- 博客：[blog/v2.16](../../blog/v2.16/) 10 篇
-- 状态：✅ 已正式发布并置 Latest（Release workflow `41312037393`、main CI `41312019395`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.16.0>；生产模式 Web e2e 139/139、桌面冒烟 10/11（`computer-input` 环境相关）；单测 2882；安装包 193.34 MB）
-- 分支：`feature/v2.16-planning`（`--no-ff` 合入 main `4be4507`；零迁移，`LATEST_SCHEMA_VERSION = 42`）
-- 已知偏差：直接文件 ≥20 的目录 24 → 12（目标 ≤10；剩余为 P1 / 豁免 / desktop 主进程，按契约 §1.2「P1 不阻塞」登记，见 [验收 §3](../plan/v2.16/08-M6-验收.md)）
-
-## ✅ 已正式发布：v2.19 📚 看得懂文档——深度解析与可信 RAG（2026-11-03，tag `v2.19.0`）
-
-v2.18 解决了「可交付」；下一层断点在知识输入本身：复杂 PDF 的章节/表格结构丢失、表格被切断、引用只能到页码、RAG 改动缺少质量回归。v2.19 借鉴 RAGFlow（解析/分块）、LightRAG（图检索）、Graphiti（时序关系）、Ragas/Promptfoo（评测）：P0 做结构解析/持久化/结构分块与引用；P1 做表格问答/跨文档对比/结构面板；P2 做实体关系多跳检索、扫描表格增强与评测红队。不引入 Python/Go/Rust 服务，不做会议/屏幕感知。
-
-- 方案：[v2.19 方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md) · [M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M1](../plan/v2.19/03-M1-实施记录.md) · [M2](../plan/v2.19/04-M2-实施记录.md) · [M3](../plan/v2.19/05-M3-实施记录.md) · [M4](../plan/v2.19/06-M4-实施记录.md) · [M5](../plan/v2.19/07-M5-实施记录.md) · [M6 验收](../plan/v2.19/08-M6-验收与发布.md)
-- 总结：[v2.19-release-summary.md](v2.19-release-summary.md) · 发行说明：[v2.19-release-notes.md](v2.19-release-notes.md)
-- 博客：[blog/v2.19](../../blog/v2.19/) 10 篇
-- 来源方案：[深度文档解析与可信 RAG](scheduled/v2.19-01-deep-document-rag.md)
-- 状态：✅ 已正式发布并置 Latest（Release workflow `41496492744`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.19.0>；单测 3067、Web e2e 139/139、桌面冒烟 10/11；安装包 200.32 MB）
-- 分支：`feature/v2.19-planning`（PR [#4](https://github.com/flashJJ/workBuddyForMe/pull/4) 合并到 main，merge commit `5f562d2`；tag `v2.19.0` 打在 `5658537`；一次迁移 `v043-document-structure`，`LATEST_SCHEMA_VERSION = 43`）
-
-## ✅ 已正式发布：v2.20 看得见、分得清——过程图、光线与阶段化会话（2026-11-04，tag `v2.20.0`）
-
-v2.19 把知识输入做深后，下一层断点在运行过程：任务/Flow/协作/会议各自有时间线却互不相连，聊天页看不到全过程，普通会话缺少轻量阶段推进。v2.20 借鉴 Lancer（MIT）：P0 做 RunGraph 五域投影、只读 API、聊天右侧 + `/timeline` 图谱、按设计重写的 Light UI、`meeting` scope；P1 做 1–8 阶段计划、角色卡/助手默认阶段复制、会话级模型切换。一次 `v044` 迁移，不改桌面壳。
-
-- 方案：[v2.20 方案](../plan/v2.20/README.md) · [M0 决策](../plan/v2.20/01-M0-决策记录.md) · [M0 契约](../plan/v2.20/02-M0-契约冻结.md)
-- 来源分析：[Lancer 借鉴分析](scheduled/v2.20-01-lancer-borrowing-analysis.md)
-- 总结：[v2.20-release-summary.md](v2.20-release-summary.md) · 发行说明：[v2.20-release-notes.md](v2.20-release-notes.md)
-- 状态：✅ 已正式发布并置 Latest（Release workflow `41735043732`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.20.0>；单测 3122、Web e2e 140/140、桌面冒烟 10/11；安装包 200.54 MB）
-- 分支：`feature/v2.20-planning`（PR [#5](https://github.com/flashJJ/workBuddyForMe/pull/5) 合并到 main，merge commit `4c3b4c06`；tag `v2.20.0` 打在 `4c3b4c06`；一次迁移 `v044-stage-plan`，`LATEST_SCHEMA_VERSION = 44`）
-- 范围：P0 + P1；P2 自由分支转 v2.21
+- 方案：[v2.22 方案](../plan/v2.22/README.md) · [M0 决策](../plan/v2.22/01-M0-决策记录.md)
+- 来源方案：[分支会话收口与可靠性加固](scheduled/v2.22-01-branch-hardening.md)
+- 发行说明：[v2.22-release-notes.md](v2.22-release-notes.md)
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41851904951`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.22.0>；CI 质量门禁 / 单测 / API 集成 / Web E2E 全绿；安装包 201.88 MB）
+- 分支：`feature/v2.22-planning`（PR [#7](https://github.com/flashJJ/workBuddyForMe/pull/7) 合并到 main，merge commit `4c6d656f`；tag `v2.22.0` 打在 `4c6d656f`；零迁移，`LATEST_SCHEMA_VERSION = 45`）
+- 里程碑：M0–M4 全部完成（[01-M0 决策](../plan/v2.22/01-M0-决策记录.md) · [02-M0 契约](../plan/v2.22/02-M0-契约冻结.md) · [03-M1](../plan/v2.22/03-M1-实施记录.md) · [04-M2](../plan/v2.22/04-M2-实施记录.md) · [05-M3](../plan/v2.22/05-M3-实施记录.md) · [06-M4](../plan/v2.22/06-M4-实施记录.md)）
 
 ## ✅ 已正式发布：v2.21 会并行——自由分支会话与回传（2026-11-04，tag `v2.21.0`）
 
@@ -65,16 +43,27 @@ v2.20 之后的下一个版本，做用户自由派生的父子会话、结构�
 - 分支：`feature/v2.21-planning`（PR [#6](https://github.com/flashJJ/workBuddyForMe/pull/6) 合并到 main，merge commit `08054bc6`；tag `v2.21.0` 打在 `08054bc6`；一次迁移 `v045-conversation-branches`，`LATEST_SCHEMA_VERSION = 45`）
 - 里程碑：M0–M4 全部完成（[01-M0 决策](../plan/v2.21/01-M0-决策记录.md) · [02-M0 契约](../plan/v2.21/02-M0-契约冻结.md) · [03-M1](../plan/v2.21/03-M1-实施记录.md) · [04-M2](../plan/v2.21/04-M2-实施记录.md) · [05-M3](../plan/v2.21/05-M3-实施记录.md) · [06-M4](../plan/v2.21/06-M4-实施记录.md)）
 
-## ✅ 已正式发布：v2.22 收口——分支会话可靠性与发布闭环（2026-11-04，tag `v2.22.0`）
+## ✅ 已正式发布：v2.20 看得见、分得清——过程图、光线与阶段化会话（2026-11-04，tag `v2.20.0`）
 
-v2.21.0 发布后审计留下两类缺口：15 行修复只在 main、8 项残余缺口无版本归属。v2.22 不加新主题，只做收口：补丁随 `v2.22.0` 发布、分支事件纳入备份、终态回传补齐、失败重试、运行中预算熔断、实时帧与 `waiting` 语义收口；零迁移，`LATEST_SCHEMA_VERSION` 保持 45。
+v2.19 把知识输入做深后，下一层断点在运行过程：任务/Flow/协作/会议各自有时间线却互不相连，聊天页看不到全过程，普通会话缺少轻量阶段推进。v2.20 借鉴 Lancer（MIT）：P0 做 RunGraph 五域投影、只读 API、聊天右侧 + `/timeline` 图谱、按设计重写的 Light UI、`meeting` scope；P1 做 1–8 阶段计划、角色卡/助手默认阶段复制、会话级模型切换。一次 `v044` 迁移，不改桌面壳。
 
-- 方案：[v2.22 方案](../plan/v2.22/README.md) · [M0 决策](../plan/v2.22/01-M0-决策记录.md)
-- 来源方案：[分支会话收口与可靠性加固](scheduled/v2.22-01-branch-hardening.md)
-- 发行说明：[v2.22-release-notes.md](v2.22-release-notes.md)
-- 状态：✅ 已正式发布并置 Latest（Release workflow `41851904951`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.22.0>；CI 质量门禁 / 单测 / API 集成 / Web E2E 全绿；安装包 201.88 MB）
-- 分支：`feature/v2.22-planning`（PR [#7](https://github.com/flashJJ/workBuddyForMe/pull/7) 合并到 main，merge commit `4c6d656f`；tag `v2.22.0` 打在 `4c6d656f`；零迁移，`LATEST_SCHEMA_VERSION = 45`）
-- 里程碑：M0–M4 全部完成（[01-M0 决策](../plan/v2.22/01-M0-决策记录.md) · [02-M0 契约](../plan/v2.22/02-M0-契约冻结.md) · [03-M1](../plan/v2.22/03-M1-实施记录.md) · [04-M2](../plan/v2.22/04-M2-实施记录.md) · [05-M3](../plan/v2.22/05-M3-实施记录.md) · [06-M4](../plan/v2.22/06-M4-实施记录.md)）
+- 方案：[v2.20 方案](../plan/v2.20/README.md) · [M0 决策](../plan/v2.20/01-M0-决策记录.md) · [M0 契约](../plan/v2.20/02-M0-契约冻结.md)
+- 来源分析：[Lancer 借鉴分析](scheduled/v2.20-01-lancer-borrowing-analysis.md)
+- 总结：[v2.20-release-summary.md](v2.20-release-summary.md) · 发行说明：[v2.20-release-notes.md](v2.20-release-notes.md)
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41735043732`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.20.0>；单测 3122、Web e2e 140/140、桌面冒烟 10/11；安装包 200.54 MB）
+- 分支：`feature/v2.20-planning`（PR [#5](https://github.com/flashJJ/workBuddyForMe/pull/5) 合并到 main，merge commit `4c3b4c06`；tag `v2.20.0` 打在 `4c3b4c06`；一次迁移 `v044-stage-plan`，`LATEST_SCHEMA_VERSION = 44`）
+- 范围：P0 + P1；P2 自由分支转 v2.21
+
+## ✅ 已正式发布：v2.19 📚 看得懂文档——深度解析与可信 RAG（2026-11-03，tag `v2.19.0`）
+
+v2.18 解决了「可交付」；下一层断点在知识输入本身：复杂 PDF 的章节/表格结构丢失、表格被切断、引用只能到页码、RAG 改动缺少质量回归。v2.19 借鉴 RAGFlow（解析/分块）、LightRAG（图检索）、Graphiti（时序关系）、Ragas/Promptfoo（评测）：P0 做结构解析/持久化/结构分块与引用；P1 做表格问答/跨文档对比/结构面板；P2 做实体关系多跳检索、扫描表格增强与评测红队。不引入 Python/Go/Rust 服务，不做会议/屏幕感知。
+
+- 方案：[v2.19 方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md) · [M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M1](../plan/v2.19/03-M1-实施记录.md) · [M2](../plan/v2.19/04-M2-实施记录.md) · [M3](../plan/v2.19/05-M3-实施记录.md) · [M4](../plan/v2.19/06-M4-实施记录.md) · [M5](../plan/v2.19/07-M5-实施记录.md) · [M6 验收](../plan/v2.19/08-M6-验收与发布.md)
+- 总结：[v2.19-release-summary.md](v2.19-release-summary.md) · 发行说明：[v2.19-release-notes.md](v2.19-release-notes.md)
+- 博客：[blog/v2.19](../../blog/v2.19/) 10 篇
+- 来源方案：[深度文档解析与可信 RAG](scheduled/v2.19-01-deep-document-rag.md)
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41496492744`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.19.0>；单测 3067、Web e2e 139/139、桌面冒烟 10/11；安装包 200.32 MB）
+- 分支：`feature/v2.19-planning`（PR [#4](https://github.com/flashJJ/workBuddyForMe/pull/4) 合并到 main，merge commit `5f562d2`；tag `v2.19.0` 打在 `5658537`；一次迁移 `v043-document-structure`，`LATEST_SCHEMA_VERSION = 43`）
 
 ## ✅ 已正式发布：v2.18 🎨 可交付——图表、内容包与有出处的产物（2026-11-02，tag `v2.18.0`）
 
@@ -98,6 +87,17 @@ v2.16 把目录与入口成本降下来后，下一层断点集中在「接不�
 - 分支：`feature/v2.17-planning`（PR [#2](https://github.com/flashJJ/workBuddyForMe/pull/2)，merge commit `1d542d2`；零迁移，`LATEST_SCHEMA_VERSION = 42`）
 - 总结：[v2.17-release-summary.md](v2.17-release-summary.md) · 发行说明：[v2.17-release-notes.md](v2.17-release-notes.md) · 验收：[M6](../plan/v2.17/06-M6-验收.md)
 - 博客：[blog/v2.17](../../blog/v2.17/) 10 篇
+
+## ✅ 已正式发布：v2.16 🧭 可导航——目录按能力收拢、入口统一、页面少拼装（2026-11-01，tag `v2.16.0`）
+
+v2.15 把日常运维动作补齐后，结构成本成为迭代速度的上限：24 个目录直接文件 ≥20 个、web feature 仅 1/31 有公开入口、91 条跨 feature 深引用、设置页一次挂载约 35 个面板。v2.16 不加功能，只做四件结构性收口：目录按能力分区、每个 feature 暴露纯 re-export 入口、页面用可见区触发查询减少首屏请求、用目录预算 / 跨域边界 / 循环检查把规则固化。不做功能与 API 行为变更、不做数据库迁移、不拆分包。
+
+- 方案：[v2.16 方案](../plan/v2.16/README.md) · [现状取证](../plan/v2.16/00-现状取证.md) · [M0 契约冻结](../plan/v2.16/01-M0-契约冻结.md) · [M0 评审记录](../plan/v2.16/02-M0-评审记录.md) · [M6 验收](../plan/v2.16/08-M6-验收.md)
+- 总结：[v2.16-release-summary.md](v2.16-release-summary.md) · 发行说明：[v2.16-release-notes.md](v2.16-release-notes.md)
+- 博客：[blog/v2.16](../../blog/v2.16/) 10 篇
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41312037393`、main CI `41312019395`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.16.0>；生产模式 Web e2e 139/139、桌面冒烟 10/11（`computer-input` 环境相关）；单测 2882；安装包 193.34 MB）
+- 分支：`feature/v2.16-planning`（`--no-ff` 合入 main `4be4507`；零迁移，`LATEST_SCHEMA_VERSION = 42`）
+- 已知偏差：直接文件 ≥20 的目录 24 → 12（目标 ≤10；剩余为 P1 / 豁免 / desktop 主进程，按契约 §1.2「P1 不阻塞」登记，见 [验收 §3](../plan/v2.16/08-M6-验收.md)）
 
 ## ✅ 已正式发布：v2.15 ⚙️ 可运营——历史可清理、证据可锚定、凭证可轮换、版本可对比（2026-11-01，tag `v2.15.0`）
 
@@ -149,15 +149,6 @@ v2.10 只接通了 `skill` / `mcp` 两类 effect，其余 `workflow` / `pet-acti
 - 状态：✅ 已正式发布并置 Latest（Release workflow `40924090724`，Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.11.0>；生产模式 Web e2e 122/122、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 192.49 MB）
 - 分支：`feature/v2.11-capabilities-external-agent`（`--no-ff` 合入 main `3c3155d`；跨平台单测修复 `4801b44` + `79c30ff`）
 
-## 已正式发布：v2.6 🧠 会沉淀——结论可执行，记忆有来路（2026-10-28，tag `v2.6.0`，2026-10-29 转正）
-
-体验闭环版：**会议结论与行动项**（结束会议生成结构化结论，行动项可转提醒 / Flow）＋**记忆溯源**（对话可见召回内容、来源与理由，记忆面板可回到来源）＋**Electron 45 平台续航**（safeStorage 异步化、沙箱 preload 全局移除）。P1 同时交付**截图粘贴引导**、**运行报告**与**桌面性能基线脚本**。不做图片 / 视频生成、全双工语音、移动端 / 云协作；会议结论调用不启用工具 / MCP / 知识库。
-
-- 方案：[v2.6 会沉淀](../plan/v2.6/README.md) · [M5 收口](../plan/v2.6/05-M5-收口与发布.md)
-- 分支：`feature/v2.6-conclusion-memory`
-- 博客：[blog/v2.6](../../blog/v2.6/) 7 篇
-- 状态：✅ 已正式发布并置 Latest（Release workflow `40659351830`；真机 2.5.0→2.6.0 覆盖升级、卸载保留数据 + 重装、旧密文解密通过；Web e2e 112/112、桌面 e2e 11/11；自动更新真实检测留待发布后手动触发）
-
 ## 已正式发布：v2.7–v2.10 🧭 会汇报、会计划、可复盘、可扩展（2026-10-29，统一 tag `v2.10.0`）
 
 基于 DeepSeek Harness 与 DSH 大肥鱼的对比分析，按「工作状态可见 → 长任务可续 → 全程可复盘 → 能力可扩展」连续交付四个阶段，全部验收后统一发布 `2.10.0`：**v2.7 会汇报**（统一 WorkSignal、桌宠工作态、审批注意力中心）；**v2.8 会计划，也会接着干**（服务端持久作业、目标/计划/待办、定时跟进）；**v2.9 可复盘**（追加式事件日志、全局检索、导出与上下文治理）；**v2.10 可扩展**（能力包与外部代理接口缝）。
@@ -167,6 +158,15 @@ v2.10 只接通了 `skill` / `mcp` 两类 effect，其余 `workflow` / `pet-acti
 - 状态：✅ 已正式发布并置 Latest（Release workflow `40812074231`、main CI `40812062412`；全量 Web e2e 120/120（CI 模式 `next start`）、桌面冒烟 10/11（`computer-input` 环境相关）；安装包 `WorkBuddyForMe-Setup-2.10.0.exe` 191.1 MB）
 - 阶段验收：[v2.7 M5](../plan/v2.7/05-M5-验收.md) · [v2.8 M5](../plan/v2.8/05-M5-验收.md) · [v2.9 M5](../plan/v2.9/05-M5-验收.md) · [v2.10 M5](../plan/v2.10/05-M5-验收.md)
 - 博客：[blog/v2.7](../../blog/v2.7/) 7 篇 · [v2.8](../../blog/v2.8/) 8 篇 · [v2.9](../../blog/v2.9/) 7 篇 · [v2.10](../../blog/v2.10/) 7 篇
+
+## 已正式发布：v2.6 🧠 会沉淀——结论可执行，记忆有来路（2026-10-28，tag `v2.6.0`，2026-10-29 转正）
+
+体验闭环版：**会议结论与行动项**（结束会议生成结构化结论，行动项可转提醒 / Flow）＋**记忆溯源**（对话可见召回内容、来源与理由，记忆面板可回到来源）＋**Electron 45 平台续航**（safeStorage 异步化、沙箱 preload 全局移除）。P1 同时交付**截图粘贴引导**、**运行报告**与**桌面性能基线脚本**。不做图片 / 视频生成、全双工语音、移动端 / 云协作；会议结论调用不启用工具 / MCP / 知识库。
+
+- 方案：[v2.6 会沉淀](../plan/v2.6/README.md) · [M5 收口](../plan/v2.6/05-M5-收口与发布.md)
+- 分支：`feature/v2.6-conclusion-memory`
+- 博客：[blog/v2.6](../../blog/v2.6/) 7 篇
+- 状态：✅ 已正式发布并置 Latest（Release workflow `40659351830`；真机 2.5.0→2.6.0 覆盖升级、卸载保留数据 + 重装、旧密文解密通过；Web e2e 112/112、桌面 e2e 11/11；自动更新真实检测留待发布后手动触发）
 
 ## 已正式发布：v2.5 🛡 稳固底座——Next 15.5.28 安全升级与 Electron 44 平台换代（2026-10-22，tag `v2.5.0`）
 
@@ -209,14 +209,6 @@ v2.10 只接通了 `skill` / `mcp` 两类 effect，其余 `workflow` / `pet-acti
 
 陪伴化路线收束版，225 文件 +12989/-295（M0–M5）：**关系四档双轴演算**（亲密/信任复合门槛、迟滞与回落地板、kernel 纯函数）驱动**等级事件与解锁闸门**；**六个共同里程碑**（day_1/30/100/365、collab_10/50）只认落库证据，达成走三锁通道播放纪念演出，新增 relationship 长期记忆类别（v029）；**主动感知**仅上报 unlock/lock/idle 边沿、原始信号不落盘，系统事件分组授权默认关；**VRM 第二渲染后端**（three.js 动态 import，与 Live2D 分层）+ 导入向导双校验与免责（v030）；**.wbfm-pack 导入导出**（角色卡/场景/背景图三类白名单、黑名单拒二进制与 eval、VRM 只带引用、builtin 不可覆盖、v031 安装记录）；**关系报告**单文件零外链双语 HTML（五节可选/记忆项可删）；备份 schema v6（events + mod_installs 轨道，五处同步）。typecheck 14/14、单测 14 包全绿、集成 12/12、CI e2e 87/87。总结：[v2.0-release-summary.md](v2.0-release-summary.md)；英文发行说明：[v2.0-release-notes-en.md](v2.0-release-notes-en.md)。
 
-## 已正式发布：v1.7 💗 有仪式感的陪伴——声明式剧情引擎与角色化提醒（2026-10-14，tag v1.7.0）
-
-v1.6 持久情绪的「时刻」版本，196 文件 +12005/-245（M0–M5 + a11y 热修）：**声明式事件引擎**（8 类白名单 step、FIFO 导演三锁：勿扰 23-8/对话中/冷却×频率系数与每日上限、拒绝原因全落流水）；**8 个内置原创剧本**（早安/晚安/欢迎回家/被夸奖/连摸害羞/生气哄好/任务成败），EventPlayer 复用 v1.6 Live2D/TTS/桌宠运行时，played 后经 emotionOnPlayed 回写 praise/comfort；**角色化提醒**（once/daily/weekly 墙钟+时区双存储，10s tick 先标记后投递，主窗不可见回落系统通知；对话内「提醒我…」零模型本地解析建提醒/缺时间追问/失败回落模型回合）；**自定义短语触发器**（本地包含匹配+时段/冷却/上限/亲密度闸门，v025）；**人格权重 4 列**（v024）；**打扰率统计**（近 30 天接受率/打断率，≥20% 只提示降档）；备份 schema v3 events 轨（助手+提醒+90 天流水+触发器，幂等恢复后提醒重排）。红线：剧本仅 UI 会话演，api/mcp 只入队。typecheck 14/14、单测 322 文件 2007 用例、CI e2e 50/50。总结：[v1.7-release-summary.md](v1.7-release-summary.md)；英文发行说明：[v1.7-release-notes-en.md](v1.7-release-notes-en.md)。
-
-## 已正式发布：v1.6 💗 有情绪的陪伴——跨回合心情状态机与桌宠互动（2026-10-13，tag v1.6.0）
-
-陪伴化路线首版，131 文件 +7034/-206（M0–M5 + 三次封版热修）：每助手持久**心情三变量**（开心/生气/难过，指数惰性衰减）+**关系两变量**（亲密/信任，只增不减）；弱模型安全的**尾块情绪协议**（zod 逐字段回落 + 中文关键词规则保底，尾块在落库/气泡/TTS 三通道剥离，永不影响正文）；**融合表情+余韵**、摸头/连摸保护模式、呼吸/视线等 A 档微动作、**久别迎接**（8h/24h/72h 三档五源触发、跨窗去重、每段缺席最多一次、纯本地不调模型）；情绪面板与独立的互动短句开关；备份新增 emotion 轨。热修：CI 水合死点击挂载门控、引用折叠断言、恢复接口统一信封、侧边栏版本号构建期注入。e2e 46/46；真机 qwen2.5vl:7b 协议 3/3 合法零泄漏。总结：[v1.6-release-summary.md](v1.6-release-summary.md)；英文发行说明：[v1.6-release-notes-en.md](v1.6-release-notes-en.md)。
-
 ## 未来规划：v1.8–v2.0 🌱 陪伴化路线后半程（2026-10-12 立项调研）
 
 v1.6/v1.7 已交付「有情绪」「有仪式」；后半程：**v1.8 会打扮**（命名主题皮肤 + Markdown 角色卡（文本 mod）+ 配置式模型调优，进行中）→ **v1.9 有舞台**（v1.4 协作可视化演出 + 用户主持的多助手会议舞台）→ **v2.0 活在桌面**（关系养成 × 记忆联动 × 本地主动感知 × `.wbfm-pack` mod 封版，VRM 3D 仅做 go/no-go spike）。贯穿红线：不放开外部 Live2D 模型导入（Cubism 授权）、本地优先、无人值守 desktop 永久禁、弱模型情绪协议确定性回落。
@@ -225,6 +217,14 @@ v1.6/v1.7 已交付「有情绪」「有仪式」；后半程：**v1.8 会打扮
 - 分析与设计：[Servant 借鉴分析](../plan/v1.6-v2.0/01-Servant借鉴分析.md) · [关键机制深拆](../plan/v1.6-v2.0/02-关键机制深拆.md) · [现状与差距](../plan/v1.6-v2.0/03-现状与差距分析.md) · [版本路线图](../plan/v1.6-v2.0/04-版本路线图.md)
 - 分册：[v1.6](../plan/v1.6-v2.0/v1.6-情绪内核与桌宠交互.md) · [v1.7](../plan/v1.6-v2.0/v1.7-事件演出与主动关怀.md) · [v1.8](../plan/v1.6-v2.0/v1.8-皮肤角色卡与模型调优.md) · [v1.9](../plan/v1.6-v2.0/v1.9-多智能体会议舞台.md) · [v2.0](../plan/v1.6-v2.0/v2.0-情感闭环与mod生态.md)
 - v1.7 实施冻结稿：[01 step 契约与三锁](../plan/v1.7/01-step契约与三锁状态机.md) · [02 剧本初稿](../plan/v1.7/02-剧本初稿.md) · [03 表结构](../plan/v1.7/03-表结构设计.md)
+
+## 已正式发布：v1.7 💗 有仪式感的陪伴——声明式剧情引擎与角色化提醒（2026-10-14，tag v1.7.0）
+
+v1.6 持久情绪的「时刻」版本，196 文件 +12005/-245（M0–M5 + a11y 热修）：**声明式事件引擎**（8 类白名单 step、FIFO 导演三锁：勿扰 23-8/对话中/冷却×频率系数与每日上限、拒绝原因全落流水）；**8 个内置原创剧本**（早安/晚安/欢迎回家/被夸奖/连摸害羞/生气哄好/任务成败），EventPlayer 复用 v1.6 Live2D/TTS/桌宠运行时，played 后经 emotionOnPlayed 回写 praise/comfort；**角色化提醒**（once/daily/weekly 墙钟+时区双存储，10s tick 先标记后投递，主窗不可见回落系统通知；对话内「提醒我…」零模型本地解析建提醒/缺时间追问/失败回落模型回合）；**自定义短语触发器**（本地包含匹配+时段/冷却/上限/亲密度闸门，v025）；**人格权重 4 列**（v024）；**打扰率统计**（近 30 天接受率/打断率，≥20% 只提示降档）；备份 schema v3 events 轨（助手+提醒+90 天流水+触发器，幂等恢复后提醒重排）。红线：剧本仅 UI 会话演，api/mcp 只入队。typecheck 14/14、单测 322 文件 2007 用例、CI e2e 50/50。总结：[v1.7-release-summary.md](v1.7-release-summary.md)；英文发行说明：[v1.7-release-notes-en.md](v1.7-release-notes-en.md)。
+
+## 已正式发布：v1.6 💗 有情绪的陪伴——跨回合心情状态机与桌宠互动（2026-10-13，tag v1.6.0）
+
+陪伴化路线首版，131 文件 +7034/-206（M0–M5 + 三次封版热修）：每助手持久**心情三变量**（开心/生气/难过，指数惰性衰减）+**关系两变量**（亲密/信任，只增不减）；弱模型安全的**尾块情绪协议**（zod 逐字段回落 + 中文关键词规则保底，尾块在落库/气泡/TTS 三通道剥离，永不影响正文）；**融合表情+余韵**、摸头/连摸保护模式、呼吸/视线等 A 档微动作、**久别迎接**（8h/24h/72h 三档五源触发、跨窗去重、每段缺席最多一次、纯本地不调模型）；情绪面板与独立的互动短句开关；备份新增 emotion 轨。热修：CI 水合死点击挂载门控、引用折叠断言、恢复接口统一信封、侧边栏版本号构建期注入。e2e 46/46；真机 qwen2.5vl:7b 协议 3/3 合法零泄漏。总结：[v1.6-release-summary.md](v1.6-release-summary.md)；英文发行说明：[v1.6-release-notes-en.md](v1.6-release-notes-en.md)。
 
 ## 已合 main：v1.4 ✅ 会分工——最小多智能体协作（2026-10-11 封版，tag v1.4.0）
 
