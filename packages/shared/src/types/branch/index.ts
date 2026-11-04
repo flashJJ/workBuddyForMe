@@ -104,3 +104,20 @@ export interface BranchLimits {
   maxChildren: number;
   maxTreeTokens: number;
 }
+
+/** v2.21：四项上限的可选设置字段（app-settings JSON；缺省回 BRANCH_LIMITS） */
+export interface BranchLimitSettings {
+  branchMaxConcurrent?: number;
+  branchMaxDepth?: number;
+  branchMaxChildren?: number;
+  branchTokenBudget?: number;
+}
+
+/** v2.21 M3：预算视图（按会话树聚合；used 来自消息 usage，reserved 来自未结分支预留） */
+export interface BranchBudget {
+  rootConversationId: string;
+  usedTokens: number;
+  reservedTokens: number;
+  limitTokens: number;
+  activeCount: number;
+}

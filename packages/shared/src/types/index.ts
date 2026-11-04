@@ -54,6 +54,8 @@ export type {
   BranchAdmissionInput,
   BranchAdmissionRejection,
   BranchLimits,
+  BranchLimitSettings,
+  BranchBudget,
 } from './branch';
 export type { McpServerConfig, McpServerInfo, McpToolInfo } from './mcp';
 export type {

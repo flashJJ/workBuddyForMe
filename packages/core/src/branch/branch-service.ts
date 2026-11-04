@@ -2,25 +2,26 @@ import { randomUUID } from 'node:crypto';
 import { ApiError } from '@wbfm/shared/errors';
 import type {
   BranchAdmissionRejection,
+  BranchBudget,
   BranchEvidence,
   BranchLimits,
   ConversationBranch,
 } from '@wbfm/shared/types';
-import { BRANCH_LIMITS } from '@wbfm/shared/types';
-import { branchCreateSchema, branchLimitsSchema, type BranchCreateInput } from '@wbfm/shared/schemas';
+import { branchCreateSchema, type BranchCreateInput } from '@wbfm/shared/schemas';
 import {
   createConversationBranchRepository,
   createConversationRepository,
   createMessageRepository,
-  createSettingsRepository,
+  createSessionEventRepository,
 } from '@wbfm/database';
 import type { ServiceDeps } from '../services/base/deps';
 import { createConversationService, deriveTitle } from '../services/assistant/conversation-service';
 import { createChatOrchestrator } from '../chat/orchestrator/chat-orchestrator';
 import { evaluateBranchAdmission, reserveBranchTokens } from './branch-limits';
+import { createBranchEventRecorder } from './branch-events';
+import { readBranchLimits } from './branch-settings';
 import { runBranchChat, type BranchRunResult, type BranchChatRunner } from './branch-runner';
 
-const SETTINGS_KEY = 'app-settings';
 const START_RESERVATION_TOKENS = 1000;
 
 const REJECTION_TEXT: Record<BranchAdmissionRejection, string> = {
@@ -41,22 +42,11 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
   const conversationsRepo = createConversationRepository(deps.db);
   const messagesRepo = createMessageRepository(deps.db);
   const conversations = createConversationService(deps);
+  const events = createBranchEventRecorder(createSessionEventRepository(deps.db));
   const runner = options.runner ?? createChatOrchestrator(deps).streamChat;
   const running = new Map<string, { controller: AbortController; promise: Promise<void> }>();
 
-  const readLimits = (): BranchLimits => {
-    const raw = createSettingsRepository(deps.db).getJson<Record<string, unknown>>(
-      SETTINGS_KEY,
-      {},
-    );
-    const parsed = branchLimitsSchema.safeParse({
-      maxConcurrent: raw.branchMaxConcurrent ?? BRANCH_LIMITS.maxConcurrent,
-      maxDepth: raw.branchMaxDepth ?? BRANCH_LIMITS.maxDepth,
-      maxChildren: raw.branchMaxChildren ?? BRANCH_LIMITS.maxChildren,
-      maxTreeTokens: raw.branchTokenBudget ?? BRANCH_LIMITS.maxTreeTokens,
-    });
-    return parsed.success ? parsed.data : BRANCH_LIMITS;
-  };
+  const readLimits = (): BranchLimits => readBranchLimits(deps.db);
 
   const requireBranch = (id: string): ConversationBranch => {
     const branch = branchRepo.get(id);
@@ -124,13 +114,17 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
         : result.status === 'cancelled'
           ? '分支已取消'
           : null;
-    branchRepo.patch(branchId, {
+    const evidence = evidenceFor(branch, result);
+    const updated = branchRepo.patch(branchId, {
       status: result.status,
       statusReason: reason,
-      evidence: evidenceFor(branch, result),
+      evidence,
       reservedTokens: 0,
       endedAt: new Date().toISOString(),
     });
+    if (!updated) return;
+    events.status(updated, result.status, reason);
+    events.returned(updated, result.status, evidence, reason);
   };
 
   const run = (branch: ConversationBranch): ConversationBranch => {
@@ -153,6 +147,7 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
       reservedTokens: reservation,
       endedAt: null,
     })!;
+    events.started(started);
     const promise = runBranchChat(
       runner,
       {
@@ -174,6 +169,11 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
 
     get(id: string): ConversationBranch {
       return requireBranch(id);
+    },
+
+    /** v2.21 M3：子会话反查来源分支（子会话顶部来源条用） */
+    findByChild(childConversationId: string): ConversationBranch | null {
+      return branchRepo.findByChild(childConversationId);
     },
 
     rename(id: string, title: string): ConversationBranch {
@@ -221,6 +221,7 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
           depth: tree.depth,
         });
       })();
+      events.created(branch);
       if (parsed.autoStart) run(branch);
       return { branch: branchRepo.get(branch.id)!, childConversationId };
     },
@@ -241,12 +242,14 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
         active.controller.abort();
         return branchRepo.get(id) ?? branch;
       }
-      return branchRepo.patch(id, {
+      const cancelled = branchRepo.patch(id, {
         status: 'cancelled',
         statusReason: '分支已取消',
         reservedTokens: 0,
         endedAt: new Date().toISOString(),
       })!;
+      events.status(cancelled, 'cancelled', '分支已取消');
+      return cancelled;
     },
 
     archive(id: string): ConversationBranch {
@@ -272,6 +275,19 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
 
     limits(): BranchLimits {
       return readLimits();
+    },
+
+    /** v2.21 M3：预算视图按会话树聚合（根会话 + 全部分支子会话） */
+    budget(conversationId: string): BranchBudget {
+      const tree = resolveTree(conversationId);
+      const usage = treeUsage(tree.rootConversationId);
+      return {
+        rootConversationId: tree.rootConversationId,
+        usedTokens: usage.usedTokens,
+        reservedTokens: usage.reservedTokens,
+        limitTokens: readLimits().maxTreeTokens,
+        activeCount: usage.activeCount,
+      };
     },
   };
 }

@@ -14,6 +14,8 @@ import { applyTask } from './task';
 import { applyFlow } from './flow';
 import { applyAgentEvent } from './agent';
 import { applyMeeting } from './meeting';
+import { applyBranch } from './branch';
+import { field, text } from './payload';
 
 export interface RunGraphProjectionInput {
   rootKind: RunGraphRootKind;
@@ -27,7 +29,14 @@ export interface RunGraphProjectionInput {
 
 const DEFAULT_LIMIT = 500;
 const MAX_LIMIT = 1000;
-const SCOPE_ORDER: Record<RunGraphScope, number> = { chat: 0, task: 1, flow: 2, agent: 3, meeting: 4 };
+const SCOPE_ORDER: Record<RunGraphScope, number> = {
+  chat: 0,
+  task: 1,
+  flow: 2,
+  agent: 3,
+  meeting: 4,
+  branch: 5,
+};
 
 export function projectRunGraph(input: RunGraphProjectionInput): RunGraphSnapshot {
   const generatedAt = input.generatedAt ?? new Date().toISOString();
@@ -59,6 +68,9 @@ function applyEvent(b: ReturnType<typeof createBuilder>, event: SessionEventView
     case 'meeting':
       applyMeeting(b, event);
       return;
+    case 'branch':
+      applyBranch(b, event);
+      return;
     default:
       return;
   }
@@ -77,6 +89,10 @@ function matchesRoot(event: SessionEventView, kind: RunGraphRootKind, id: string
   if (kind === 'meeting') return event.scope === 'meeting' && event.scopeId === id;
   if (event.scope === 'meeting') return false;
   if (event.scope === 'chat') return event.scopeId === id;
+  if (event.scope === 'branch') {
+    const parent = text(field(event.payload, 'parentConversationId'));
+    return parent ? parent === id : true;
+  }
   return true;
 }
 

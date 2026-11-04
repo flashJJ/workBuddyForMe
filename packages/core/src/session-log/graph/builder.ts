@@ -241,6 +241,7 @@ const SCOPE_ORDER: Record<RunGraphScope, number> = {
   flow: 2,
   agent: 3,
   meeting: 4,
+  branch: 5,
 };
 
 function compareNodes(a: RunGraphNode, b: RunGraphNode): number {

@@ -30,6 +30,7 @@ import {
   SUBAGENT_CLI_TIMEOUT_MAX_MS,
   SUBAGENT_CLI_TIMEOUT_MIN_MS,
 } from '../agent/subagent';
+import { BRANCH_LIMIT_RANGES } from '../../types/branch';
 
 /** v1.8 M4 音色收藏形状（M3 冻结数据契约；M4 才出 UI） */
 export const voiceFavoriteSchema = z.object({
@@ -183,6 +184,31 @@ export const settingsUpdateSchema = z.object({
   agentPolicy: agentPolicySchema.optional(),
   // v2.17 联网搜索（缺省关闭；endpoint 在 core 读取时做 SSRF 校验）
   searchSettings: searchSettingsSchema.optional(),
+  // v2.21 分支四项上限（缺省由 core 读 BRANCH_LIMITS；范围见 BRANCH_LIMIT_RANGES）
+  branchMaxConcurrent: z
+    .number()
+    .int()
+    .min(BRANCH_LIMIT_RANGES.maxConcurrent.min)
+    .max(BRANCH_LIMIT_RANGES.maxConcurrent.max)
+    .optional(),
+  branchMaxDepth: z
+    .number()
+    .int()
+    .min(BRANCH_LIMIT_RANGES.maxDepth.min)
+    .max(BRANCH_LIMIT_RANGES.maxDepth.max)
+    .optional(),
+  branchMaxChildren: z
+    .number()
+    .int()
+    .min(BRANCH_LIMIT_RANGES.maxChildren.min)
+    .max(BRANCH_LIMIT_RANGES.maxChildren.max)
+    .optional(),
+  branchTokenBudget: z
+    .number()
+    .int()
+    .min(BRANCH_LIMIT_RANGES.maxTreeTokens.min)
+    .max(BRANCH_LIMIT_RANGES.maxTreeTokens.max)
+    .optional(),
   // v2.4 M1：演示模式开关（开启时建内置 demo 供应商与 mock 模型；关闭时清理）
   demoModeEnabled: z.boolean().optional(),
   // v2.4 M1 T7：TTFV 里程碑（显式传 null 即清除；仅时间戳，不含对话内容）

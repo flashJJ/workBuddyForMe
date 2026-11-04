@@ -78,6 +78,18 @@ describe('v2.21 分支服务', () => {
       usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
     });
     expect(settled.reservedTokens).toBe(0);
+    // v2.21 M3：分支事件按 created → started → status → returned 落 session_events
+    const eventTypes = (
+      ctx.db
+        .prepare(`SELECT type FROM session_events WHERE scope = 'branch' AND scope_id = ? ORDER BY seq ASC`)
+        .all(branch.id) as Array<{ type: string }>
+    ).map((row) => row.type);
+    expect(eventTypes).toEqual([
+      'branch_created',
+      'branch_started',
+      'branch_status',
+      'branch_returned',
+    ]);
   });
 
   it('失败隔离：只标记当前分支 failed，父/子会话仍可打开', async () => {
