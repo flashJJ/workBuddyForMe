@@ -65,13 +65,16 @@ v2.20 之后的下一个版本，做用户自由派生的父子会话、结构�
 - 分支：`feature/v2.21-planning`（PR [#6](https://github.com/flashJJ/workBuddyForMe/pull/6) 合并到 main，merge commit `08054bc6`；tag `v2.21.0` 打在 `08054bc6`；一次迁移 `v045-conversation-branches`，`LATEST_SCHEMA_VERSION = 45`）
 - 里程碑：M0–M4 全部完成（[01-M0 决策](../plan/v2.21/01-M0-决策记录.md) · [02-M0 契约](../plan/v2.21/02-M0-契约冻结.md) · [03-M1](../plan/v2.21/03-M1-实施记录.md) · [04-M2](../plan/v2.21/04-M2-实施记录.md) · [05-M3](../plan/v2.21/05-M3-实施记录.md) · [06-M4](../plan/v2.21/06-M4-实施记录.md)）
 
-## 🚧 已排期：v2.22 收口——分支会话可靠性与发布闭环（未发布）
+## ✅ 已正式发布：v2.22 收口——分支会话可靠性与发布闭环（2026-11-04，tag `v2.22.0`）
 
 v2.21.0 发布后审计留下两类缺口：15 行修复只在 main、8 项残余缺口无版本归属。v2.22 不加新主题，只做收口：补丁随 `v2.22.0` 发布、分支事件纳入备份、终态回传补齐、失败重试、运行中预算熔断、实时帧与 `waiting` 语义收口；零迁移，`LATEST_SCHEMA_VERSION` 保持 45。
 
-- 方案：[v2.22 方案](../plan/v2.22/README.md) · [M0 决策草案](../plan/v2.22/01-M0-决策记录.md)
+- 方案：[v2.22 方案](../plan/v2.22/README.md) · [M0 决策](../plan/v2.22/01-M0-决策记录.md)
 - 来源方案：[分支会话收口与可靠性加固](scheduled/v2.22-01-branch-hardening.md)
-- 状态：🟡 M0–M4 验收完成，v2.22.0 发布待确认；分支 `feature/v2.22-planning`
+- 发行说明：[v2.22-release-notes.md](v2.22-release-notes.md)
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41851904951`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.22.0>；CI 质量门禁 / 单测 / API 集成 / Web E2E 全绿；安装包 201.88 MB）
+- 分支：`feature/v2.22-planning`（PR [#7](https://github.com/flashJJ/workBuddyForMe/pull/7) 合并到 main，merge commit `4c6d656f`；tag `v2.22.0` 打在 `4c6d656f`；零迁移，`LATEST_SCHEMA_VERSION = 45`）
+- 里程碑：M0–M4 全部完成（[01-M0 决策](../plan/v2.22/01-M0-决策记录.md) · [02-M0 契约](../plan/v2.22/02-M0-契约冻结.md) · [03-M1](../plan/v2.22/03-M1-实施记录.md) · [04-M2](../plan/v2.22/04-M2-实施记录.md) · [05-M3](../plan/v2.22/05-M3-实施记录.md) · [06-M4](../plan/v2.22/06-M4-实施记录.md)）
 
 ## ✅ 已正式发布：v2.18 🎨 可交付——图表、内容包与有出处的产物（2026-11-02，tag `v2.18.0`）
 
@@ -349,6 +352,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.19 | 看得懂文档：深度文档解析与可信 RAG | ✅ 已正式发布（2026-11-03，Release 已转正并置 Latest） | [方案](../plan/v2.19/README.md) · [能力借鉴分析](../plan/v2.19/00-能力借鉴分析.md) · [M0 决策](../plan/v2.19/01-M0-决策记录.md) · [M0 契约](../plan/v2.19/02-M0-契约冻结.md) · [M6 验收](../plan/v2.19/08-M6-验收与发布.md) · [来源方案](scheduled/v2.19-01-deep-document-rag.md) | [总结](v2.19-release-summary.md) | [发行说明](v2.19-release-notes.md) | `v2.19.0` |
 | v2.20 | 看得见、分得清：过程图、光线与阶段化会话 | ✅ 已正式发布（2026-11-04，Release 已转正并置 Latest） | [方案](../plan/v2.20/README.md) · [M0 决策](../plan/v2.20/01-M0-决策记录.md) · [M0 契约](../plan/v2.20/02-M0-契约冻结.md) · [M1](../plan/v2.20/03-M1-实施记录.md) · [M2](../plan/v2.20/04-M2-实施记录.md) · [M3](../plan/v2.20/05-M3-实施记录.md) · [M4](../plan/v2.20/06-M4-实施记录.md) · [来源分析](scheduled/v2.20-01-lancer-borrowing-analysis.md) | [总结](v2.20-release-summary.md) | [发行说明](v2.20-release-notes.md) · [blog/v2.20](../../blog/v2.20/) 10 篇 | `v2.20.0` |
 | v2.21 | 会并行：自由分支会话与回传 | ✅ 已正式发布（2026-11-04，Release 已转正并置 Latest） | [方案](../plan/v2.21/README.md) · [M0 决策](../plan/v2.21/01-M0-决策记录.md) · [M0 契约](../plan/v2.21/02-M0-契约冻结.md) · [M1](../plan/v2.21/03-M1-实施记录.md) · [M2](../plan/v2.21/04-M2-实施记录.md) · [M3](../plan/v2.21/05-M3-实施记录.md) · [M4](../plan/v2.21/06-M4-实施记录.md) · [来源方案](scheduled/v2.21-01-free-branch-sessions.md) | — | [发行说明](v2.21-release-notes.md) · [blog/v2.21](../../blog/v2.21/) 10 篇 | `v2.21.0` |
+| v2.22 | 收口：分支事件备份、终态回传、重试、预算熔断与实时帧 | ✅ 已正式发布（2026-11-04，Release 已转正并置 Latest） | [方案](../plan/v2.22/README.md) · [M0 决策](../plan/v2.22/01-M0-决策记录.md) · [M0 契约](../plan/v2.22/02-M0-契约冻结.md) · [M1](../plan/v2.22/03-M1-实施记录.md) · [M2](../plan/v2.22/04-M2-实施记录.md) · [M3](../plan/v2.22/05-M3-实施记录.md) · [M4](../plan/v2.22/06-M4-实施记录.md) · [来源方案](scheduled/v2.22-01-branch-hardening.md) | — | [发行说明](v2.22-release-notes.md) · [blog/v2.22](../../blog/v2.22/) 7 篇 | `v2.22.0` |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
