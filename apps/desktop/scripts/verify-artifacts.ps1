@@ -30,6 +30,18 @@ if ($RequireSignature) {
   Write-Host "[sign] 未要求签名，当前状态：$($sig.Status)（NotSigned 为预期）"
 }
 
+# asar 生产依赖自检：electron-builder 误判包管理器时会漏掉 pnpm hoisted 依赖，安装后
+# 启动即报 Cannot find module（v2.22.0 事故）。逐项核对 desktop 声明的 dependencies。
+$asar = Join-Path (Split-Path $Exe) 'resources/app.asar'
+if (-not (Test-Path $asar)) { throw "app.asar 不存在：$asar" }
+$asarLib = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\node_modules\@electron\asar')).Path
+$desktopPkg = Get-Content (Join-Path $PSScriptRoot '..\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$entries = & node -e "const a=require(process.argv[1]);for(const p of a.listPackage(process.argv[2]))console.log(p)" $asarLib $asar
+foreach ($name in $desktopPkg.dependencies.PSObject.Properties.Name) {
+  $needle = '\node_modules\' + ($name -replace '/', '\') + '\package.json'
+  if ($entries -notcontains $needle) { $failures += "app.asar 缺少生产依赖：$name" }
+}
+
 if ($failures.Count -gt 0) {
   foreach ($f in $failures) { Write-Error $f }
   exit 1

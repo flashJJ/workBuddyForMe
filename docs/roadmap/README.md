@@ -21,6 +21,14 @@
 | `roadmap/scheduled/` | 已排期候选归档，`vX.Y-NN-slug.md`；保留来源方案，方便追溯立项原因 |
 | `roadmap/` 根 | 已发布版本总结/发行说明、跨版本专题与索引 |
 
+## ✅ 已正式发布：v2.22.1 安装包热修复（2026-11-05，tag `v2.22.1`）
+
+修复 v2.22.0 线上安装包启动即报 `Cannot find module '@nut-tree-fork/nut-js'`：CI 用 `npx electron-builder` 使包管理器被识别为 npm，pnpm hoisted 布局下漏收根级生产依赖。v2.22.1 改用 `pnpm exec electron-builder`，并在发布自检中逐项校验 asar 生产依赖。无功能变更、零迁移。
+
+- 发行说明：[v2.22.1-release-notes.md](v2.22.1-release-notes.md)
+- 状态：🟡 待发布（CI 构建中）
+- 承接版本：[v2.22 方案](../plan/v2.22/README.md)
+
 ## ✅ 已正式发布：v2.22 收口——分支会话可靠性与发布闭环（2026-11-04，tag `v2.22.0`）
 
 v2.21.0 发布后审计留下两类缺口：15 行修复只在 main、8 项残余缺口无版本归属。v2.22 不加新主题，只做收口：补丁随 `v2.22.0` 发布、分支事件纳入备份、终态回传补齐、失败重试、运行中预算熔断、实时帧与 `waiting` 语义收口；零迁移，`LATEST_SCHEMA_VERSION` 保持 45。

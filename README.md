@@ -2,7 +2,12 @@
 
 本地优先的**私人 AI 工作台**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v2.22.0**（2026-11-04）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 当前版本：**v2.22.1**（2026-11-05）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+
+## v2.22.1 修复
+
+- **安装包可启动**：CI 打包改用 `pnpm exec electron-builder`，修复 v2.22.0 线上安装包漏收 pnpm hoisted 生产依赖、启动即报 `Cannot find module '@nut-tree-fork/nut-js'` 的问题。
+- **发布自检**：`verify-artifacts.ps1` 新增 asar 生产依赖校验，缺依赖直接阻断发布。
 
 ## v2.22.0 重点
 
@@ -166,7 +171,7 @@ pnpm test:e2e             # Web 关键路径 E2E
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v2.22.0 发布验证：`pnpm check` 与 8 包全量单测通过；新增 `branch-v222` e2e 2 例（终态回传/重试、备份往返分支事件）；`pnpm build:web` 生产构建通过；CI 安装包 `WorkBuddyForMe-Setup-2.22.0.exe` 201.88 MB；零迁移（schema 仍 v45）。详见 [v2.22 M4 实施记录](docs/plan/v2.22/06-M4-实施记录.md)。
+v2.22.1 发布验证：修复后的 CI 安装包三件套齐全，asar 含全部生产依赖（含 `@nut-tree-fork/nut-js` 与 `electron-updater`）；功能与 v2.22.0 一致，零迁移（schema 仍 v45）。v2.22.0 功能验证详见 [v2.22 M4 实施记录](docs/plan/v2.22/06-M4-实施记录.md)。
 
 ## 数据与隐私
 

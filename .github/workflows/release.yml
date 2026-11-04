@@ -71,7 +71,11 @@ jobs:
           # 未配置时 electron-builder 自动跳过 signtool（cscInfo=null），不影响构建
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: npx electron-builder --win --x64 --publish onTag
+        # 必须用 pnpm exec：npx 会把 npm_config_user_agent 标成 npm，electron-builder 在
+        # 各目录都找不到 lockfile 时回退环境探测，误判为 npm collector；pnpm hoisted 布局的
+        # 生产依赖在根 node_modules，只扫 apps/desktop 会漏收（v2.22.0 即因此缺
+        # @nut-tree-fork/nut-js 启动崩溃）。
+        run: pnpm exec electron-builder --win --x64 --publish onTag
 
       - name: 产物自检（版本资源/图标；配置了证书时同时校验签名链）
         shell: pwsh
