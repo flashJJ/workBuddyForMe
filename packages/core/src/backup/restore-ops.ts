@@ -4,6 +4,7 @@
  */
 
 import { stagePlanSchema } from '@wbfm/shared/schemas';
+import { restoreBranches } from './branches/restore-branches';
 
 type DBRunResult = { changes: number; lastInsertRowid: number | bigint };
 
@@ -272,4 +273,19 @@ export function restoreTasks(db: any, entries: TaskTrackEntry[]): { imported: nu
     }
   }
   return { imported, skipped };
+}
+
+/** v2.21：会话轨先恢复会话，再恢复分支关联（缺 branches.json 时按 0） */
+export function restoreConversationsTrack(
+  db: any,
+  conversationsBuf: Buffer,
+  branchesBuf?: Buffer,
+): {
+  convs: { imported: number; skipped: number };
+  msgs: number;
+  branches: { imported: number; skipped: number };
+} {
+  const conversations = restoreConversations(db, conversationsBuf);
+  const branches = branchesBuf ? restoreBranches(db, branchesBuf) : { imported: 0, skipped: 0 };
+  return { ...conversations, branches };
 }

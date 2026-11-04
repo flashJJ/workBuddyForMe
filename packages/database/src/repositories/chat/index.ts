@@ -5,3 +5,4 @@ export * from './memory-repo';
 export * from './attachment-repo';
 export * from './session-event-repo';
 export * from './stage-plan-repo';
+export * from './conversation-branch-repo';

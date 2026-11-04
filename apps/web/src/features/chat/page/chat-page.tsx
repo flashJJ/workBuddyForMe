@@ -239,6 +239,7 @@ export function ChatPage({
             <RecalledMemoriesBar memories={session.recalledMemories} />
             <MessageList
               messages={session.messages}
+              conversationId={conversationId}
               assistantName={currentAssistant?.name ?? t('chat.defaultAssistantName')}
               streaming={session.streaming}
               agentCards={session.agentCards}

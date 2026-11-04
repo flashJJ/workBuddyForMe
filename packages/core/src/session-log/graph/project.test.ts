@@ -202,4 +202,68 @@ describe('v2.20 RunGraph 投影', () => {
       'chat:c1:message:mine',
     ]);
   });
+
+  it('v2.21 branch：分支车道、子会话与回传节点', () => {
+    const base = {
+      branchId: 'b1',
+      parentConversationId: 'c1',
+      childConversationId: 'c2',
+      rootConversationId: 'c1',
+      title: '竞品调研',
+      goal: '整理竞品',
+      depth: 1,
+    };
+    const events = [
+      ev('branch', 'b1', 'branch_created', { ...base, status: 'queued' }, 1),
+      ev('branch', 'b1', 'branch_started', { ...base, status: 'running' }, 2),
+      ev('branch', 'b1', 'branch_status', { ...base, status: 'succeeded', statusReason: null }, 3),
+      ev(
+        'branch',
+        'b1',
+        'branch_returned',
+        {
+          ...base,
+          status: 'succeeded',
+          statusReason: null,
+          summary: '竞品 A 领先',
+          evidence: {
+            branchId: 'b1',
+            parentConversationId: 'c1',
+            childConversationId: 'c2',
+            rootConversationId: 'c1',
+            status: 'succeeded',
+            summary: '竞品 A 领先',
+            artifacts: [{ id: 'art1', title: '报告', kind: 'markdown' }],
+            usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+            needsReview: true,
+            createdAt: '2026-11-03T00:00:03.000Z',
+          },
+        },
+        4,
+      ),
+    ];
+    const graph = project('conversation', 'c1', events);
+
+    expect(graph.lanes.find((lane) => lane.id === 'lane:branch:b1')?.kind).toBe('branch');
+    expect(graph.nodes.find((node) => node.id === 'branch:b1')).toMatchObject({
+      kind: 'branch',
+      status: 'succeeded',
+      label: '竞品调研',
+    });
+    expect(graph.nodes.some((node) => node.id === 'branch-child:b1')).toBe(true);
+    expect(graph.nodes.find((node) => node.id === 'branch-return:b1')).toMatchObject({
+      kind: 'branch_return',
+      status: 'succeeded',
+    });
+    expect(graph.nodes.find((node) => node.id === 'branch-return:b1')?.summary).toContain('产物 1');
+    expect(graph.edges.map((edge) => edge.kind)).toEqual(
+      expect.arrayContaining(['parent_to_branch', 'branch_to_child', 'branch_to_return']),
+    );
+
+    // 嵌套分支事件挂在子会话名下，不进入父图
+    const nested = project('conversation', 'c1', [
+      ev('branch', 'b2', 'branch_created', { ...base, branchId: 'b2', parentConversationId: 'c2' }, 1),
+    ]);
+    expect(nested.nodes.map((node) => node.id)).toEqual(['root:conversation:c1']);
+  });
 });

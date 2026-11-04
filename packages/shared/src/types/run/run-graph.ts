@@ -12,7 +12,7 @@ import type { RunOutcome } from './run-outcome';
 export const RUN_GRAPH_ROOT_KINDS = ['conversation', 'meeting'] as const;
 export type RunGraphRootKind = (typeof RUN_GRAPH_ROOT_KINDS)[number];
 
-export const RUN_GRAPH_SCOPES = ['chat', 'task', 'flow', 'agent', 'meeting'] as const;
+export const RUN_GRAPH_SCOPES = ['chat', 'task', 'flow', 'agent', 'meeting', 'branch'] as const;
 export type RunGraphScope = (typeof RUN_GRAPH_SCOPES)[number];
 
 export const RUN_GRAPH_NODE_KINDS = [
@@ -28,6 +28,8 @@ export const RUN_GRAPH_NODE_KINDS = [
   'meeting_turn',
   'meeting_message',
   'meeting_status',
+  'branch',
+  'branch_return',
   'artifact',
   'error',
   'retry',
@@ -48,6 +50,9 @@ export const RUN_GRAPH_EDGE_KINDS = [
   'turn_to_message',
   'node_to_artifact',
   'node_to_error',
+  'parent_to_branch',
+  'branch_to_child',
+  'branch_to_return',
 ] as const;
 export type RunGraphEdgeKind = (typeof RUN_GRAPH_EDGE_KINDS)[number];
 
@@ -82,7 +87,7 @@ export interface RunGraphEdge {
 
 export interface RunGraphLane {
   id: string;
-  kind: 'conversation' | 'run' | 'role' | 'meeting';
+  kind: 'conversation' | 'run' | 'role' | 'meeting' | 'branch';
   name: string;
   /** 语义 token 名，如 primary / info / success；不存十六进制 */
   colorToken: string;

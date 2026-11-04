@@ -16,9 +16,12 @@ import { FirstTokenMetric, StreamingProgress } from '../page/streaming-progress'
 import type { StreamTiming } from '../types/chat-session.types';
 import { ToolTrace } from '../overlay/tool-trace';
 import { MessageFeedbackButtons } from './message-feedback';
+import { MessageBranchButton } from '@/features/branch';
 
 interface Props {
   message: Message;
+  /** v2.21：底部「从此分支」入口 */
+  conversationId?: string | null;
   assistantName: string;
   /** v1.4 任务模式：协作泳道卡（存在时渲染于正文上方，结论仍走消息正文） */
   agentCard?: AgentCardEntry;
@@ -133,7 +136,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
   );
 }
 
-export function MessageItem({ message, assistantName, agentCard, onRetry, onResend, onFeedback, disabled, streamTiming, highlighted }: Props) {
+export function MessageItem({ message, conversationId, assistantName, agentCard, onRetry, onResend, onFeedback, disabled, streamTiming, highlighted }: Props) {
   const { t } = useI18n();
   const sys = useSystemText();
   const isUser = message.role === 'user';
@@ -210,8 +213,11 @@ export function MessageItem({ message, assistantName, agentCard, onRetry, onRese
           </div>
         )}
 
-        {(showCopy || canRegenerate || canFeedback) && (
+        {(showCopy || canRegenerate || canFeedback || (conversationId && message.content.trim())) && (
           <div className="flex items-center gap-3 pt-1">
+            {conversationId && message.content.trim() && (
+              <MessageBranchButton conversationId={conversationId} content={message.content} disabled={disabled} />
+            )}
             {showCopy && <CopyButton content={displayContent} />}
             {canRegenerate && (
               <button

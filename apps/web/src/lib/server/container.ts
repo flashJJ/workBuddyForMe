@@ -57,6 +57,7 @@ import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import { createRunCompletionService, createStagePlanService, createWorkPlanService } from '@wbfm/core/work-plan';
 import { createRunGraphService, createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
+import { createRecoveredBranchService } from '@wbfm/core/branch';
 import { createCapabilityCatalog } from '@wbfm/core/capabilities';
 import { createAuditService } from '@wbfm/core/governance';
 import type { ServiceContainer } from './container-types';
@@ -78,7 +79,6 @@ function writeContainer(value: ServiceContainer | null): void {
   if (value) globalHolder.__WBFM_SERVICE_CONTAINER__ = value;
   else delete globalHolder.__WBFM_SERVICE_CONTAINER__;
 }
-
 function resolveCipher(): SecretCipher {
   // Electron 可在启动前通过全局注入 safeStorage 桥接密码器（见 Task 30）
   const bridge = (globalThis as { __WBFM_CIPHER__?: SecretCipher }).__WBFM_CIPHER__;
@@ -218,9 +218,9 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const modPacks = createModPackService({ db, stageScenes });
   const schedules = createSchedulesService(deps);
   const meetingClosure = createMeetingClosureService({ db, workflows, flowRunner, schedules });
+  const branches = createRecoveredBranchService(deps);
   return {
-    endpoints,
-    rateLimiter,
+    endpoints, rateLimiter,
     db,
     cipher,
     mcp,
@@ -229,7 +229,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     approvals,
     workSignals,
     workPlans,
-    stagePlan: createStagePlanService(deps),
+    stagePlan: createStagePlanService(deps), branches,
     completions,
     sessionLog,
     sessionExport,

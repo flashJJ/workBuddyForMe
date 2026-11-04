@@ -34,6 +34,7 @@ export function CompileToolbar({
   const counts = status?.counts;
   const progress = status?.progress ?? null;
   const busy = (counts?.running ?? 0) > 0 || (counts?.queued ?? 0) > 0;
+  const failedCount = documents?.filter((doc) => doc.status === 'failed').length ?? 0;
 
   const currentName = React.useMemo(() => {
     if (!progress?.currentDocumentId) return null;
@@ -59,6 +60,23 @@ export function CompileToolbar({
     } catch (error) {
       reportError(error);
     }
+  };
+
+  /** 索引失败文档走 reparse（重跑解析/分片/向量化），成功后摄入管线自动入队编译 */
+  const retryFailed = async () => {
+    const failed = documents?.filter((doc) => doc.status === 'failed') ?? [];
+    if (failed.length === 0) return;
+    let queued = 0;
+    for (const document of failed) {
+      try {
+        await mutations.reparseDocument.mutateAsync({ kbId, documentId: document.id });
+        queued += 1;
+      } catch {
+        // 单个失败不阻断其余文档重试
+      }
+    }
+    if (queued > 0) toast.success(t('knowledge.compile.queuedToast', { count: queued }));
+    if (queued < failed.length) toast.error(t('knowledge.compile.actionFailed'));
   };
 
   const rebuildAll = async () => {
@@ -117,6 +135,18 @@ export function CompileToolbar({
       >
         {t('knowledge.compile.rebuildAll')}
       </Button>
+      {failedCount > 0 && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          data-testid="compile-retry-failed"
+          onClick={() => void retryFailed()}
+        >
+          {t('knowledge.compile.retryFailed', { count: failedCount })}
+        </Button>
+      )}
       {busy && (
         <Button
           type="button"

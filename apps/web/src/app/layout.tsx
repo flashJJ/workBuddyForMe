@@ -23,6 +23,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "if(typeof location!=='undefined'&&location.pathname.indexOf('/pet')===0){document.documentElement.dataset.pet='1';}",
           }}
         />
+        {/* 透明窗首帧兜底：不依赖 globals.css 加载顺序，避免桌宠窗口先刷出主题底色 */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              'html[data-pet="1"],html[data-pet="1"] body{background:transparent!important;}',
+          }}
+        />
       </head>
       <body className="min-h-screen">
         <AppProviders>{children}</AppProviders>

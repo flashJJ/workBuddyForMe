@@ -142,9 +142,17 @@ export function createPetWindow(
   // 'screen-saver' 层级：高于普通置顶窗，且不触发全屏独占应用的焦点切换
   win.setAlwaysOnTop(true, 'screen-saver');
   win.once('ready-to-show', () => {
-    if (!win.isDestroyed()) {
-      win.showInactive();
-    }
+    if (win.isDestroyed()) return;
+    win.showInactive();
+    // Windows 透明窗首帧偶发保留主题底色：显示后强制一次透明重绘（用户手动
+    // 取消/重勾桌宠等价于重建窗口，可恢复；这里用同一窗口内的重绘兜底）
+    const repaint = () => {
+      if (win.isDestroyed()) return;
+      win.setBackgroundColor('#00000000');
+      win.webContents.invalidate();
+    };
+    repaint();
+    setTimeout(repaint, 120);
     // dev 下自动开 devtools，便于看 VRM 渲染日志
     if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' });
   });

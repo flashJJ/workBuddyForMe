@@ -10,6 +10,8 @@ import { MessageItem } from './message-item';
 
 interface Props {
   messages: Message[];
+  /** v2.21：消息底部「从此分支」入口需要父会话 id */
+  conversationId?: string | null;
   assistantName: string;
   streaming: boolean;
   /** v1.4 任务模式：助手消息 id → 协作泳道卡 */
@@ -30,6 +32,7 @@ interface Props {
 
 export function MessageList({
   messages,
+  conversationId,
   assistantName,
   streaming,
   agentCards,
@@ -95,6 +98,7 @@ export function MessageList({
         <MessageItem
           key={message.id || `pending-${index}`}
           message={message}
+          conversationId={conversationId}
           highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
           assistantName={assistantName}
           disabled={streaming}

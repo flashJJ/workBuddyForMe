@@ -12,7 +12,14 @@ import { applyAgentFrame } from './append-agent';
 import { applyMeetingFrame } from './append-meeting';
 
 const DEFAULT_LIMIT = 500;
-const SCOPE_ORDER: Record<RunGraphScope, number> = { chat: 0, task: 1, flow: 2, agent: 3, meeting: 4 };
+const SCOPE_ORDER: Record<RunGraphScope, number> = {
+  chat: 0,
+  task: 1,
+  flow: 2,
+  agent: 3,
+  meeting: 4,
+  branch: 5,
+};
 
 function compareNodes(a: RunGraphNode, b: RunGraphNode): number {
   return (

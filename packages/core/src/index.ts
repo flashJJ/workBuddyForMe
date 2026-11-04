@@ -33,6 +33,7 @@ export * from './work-signal/index';
 // 必须同步聚合进根 barrel，否则 next start / standalone 会出现 symbol 缺失。
 export * from './work-plan/index';
 export * from './session-log/index';
+export * from './branch/index';
 export * from './capabilities/index';
 export * from './governance/index';
 export * from './diagnostics/index';
