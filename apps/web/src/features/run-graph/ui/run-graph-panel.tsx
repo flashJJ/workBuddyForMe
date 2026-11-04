@@ -127,7 +127,7 @@ export function RunGraphPanel({
       return next;
     });
   };
-  const layoutKey = `${focusLane ?? ''}|${[...collapsed].sort().join(',')}|${snapshot?.nodes.length ?? 0}`;
+  const layoutKey = `${focusLane ?? ''}|${[...collapsed].sort().join(',')}|${snapshot?.nodes.length ?? 0}|${snapshot?.edges.length ?? 0}`;
 
   return (
     <section
@@ -180,6 +180,8 @@ export function RunGraphPanel({
           <div ref={contentRef} className="relative min-h-full space-y-2">
             <RunGraphEdges
               containerRef={contentRef}
+              nodes={snapshot.nodes}
+              lanes={snapshot.lanes}
               edges={snapshot.edges}
               layoutKey={layoutKey}
               selectedId={selected}
@@ -210,7 +212,7 @@ export function RunGraphPanel({
                     </button>
                   </div>
                   {!isCollapsed && (
-                    <div className="space-y-1.5 pl-2">
+                    <div className="space-y-1.5 pl-6">
                       {nodes.map((node) => (
                         <RunGraphNodeCard
                           key={node.id}

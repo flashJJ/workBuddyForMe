@@ -396,6 +396,52 @@
   }
 }
 
+/* ── v2.22 过程图连线：车道色、入场绘制、活跃流动与交接虚线 ── */
+.run-graph-edge {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: run-graph-edge-in 0.55s ease-out both;
+}
+.run-graph-edge-glow,
+.run-graph-edge-active,
+.run-graph-edge-handoff {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.run-graph-edge-active {
+  stroke-dasharray: 7 7;
+  animation: run-graph-edge-flow 1.1s linear infinite;
+}
+.run-graph-edge-handoff {
+  stroke-dasharray: 4 3;
+  animation: run-graph-edge-flow 1.4s linear infinite;
+}
+@keyframes run-graph-edge-in {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes run-graph-edge-flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .run-graph-edge,
+  .run-graph-edge-active,
+  .run-graph-edge-handoff {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
 /* ── v1.7 事件演出 fx（零三方粒子库；DOM/CSS 实现） ─────────────── */
 .event-fx-instance {
   position: absolute;

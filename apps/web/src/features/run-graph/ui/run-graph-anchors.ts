@@ -5,7 +5,7 @@
 import type { RunGraphNode } from '@wbfm/shared/types';
 import type { LightAnchor } from '@/components/ui/light-layer';
 
-const LIGHT_TOKENS = new Set(['primary', 'info', 'success', 'warning', 'destructive']);
+const LIGHT_TOKENS = new Set(['primary', 'info', 'success', 'warning', 'accent', 'destructive']);
 const MESSAGE_MARKER = ':message:';
 
 export function nodeElement(nodeId: string): HTMLElement | null {
