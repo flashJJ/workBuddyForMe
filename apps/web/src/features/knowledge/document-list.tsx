@@ -84,6 +84,13 @@ export function DocumentList({ kbId, documents, loading }: {
     return undefined;
   };
 
+  /** 失败原因直接展示，不依赖 hover tooltip；索引失败优先于编译失败 */
+  const failureReason = (document: DocumentRecord): string | null => {
+    if (document.status === 'failed') return document.errorMessage ?? document.compileError ?? null;
+    if (document.compileStatus === 'failed') return document.compileError ?? null;
+    return null;
+  };
+
   const remove = async (document: DocumentRecord) => {
     if (
       !(await confirm({
@@ -131,7 +138,9 @@ export function DocumentList({ kbId, documents, loading }: {
   return (
     <>
       <ul className="divide-y rounded-lg border" data-testid="document-list">
-        {documents.map((document) => (
+        {documents.map((document) => {
+          const failure = failureReason(document);
+          return (
         <li key={document.id} className="flex items-center gap-3 px-4 py-3 text-sm">
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1.5 truncate font-medium" title={document.filename}>
@@ -159,6 +168,15 @@ export function DocumentList({ kbId, documents, loading }: {
                 {document.indexedAt && document.compiledAt && ' · '}
                 {document.compiledAt &&
                   t('knowledge.documents.compiledAt', { time: intl.formatDate(document.compiledAt) })}
+              </p>
+            )}
+            {failure && (
+              <p
+                className="mt-1 line-clamp-2 text-xs text-destructive"
+                title={failure}
+                data-testid="document-failure-reason"
+              >
+                {t('knowledge.documents.failureReason', { message: failure })}
               </p>
             )}
           </div>
@@ -203,7 +221,8 @@ export function DocumentList({ kbId, documents, loading }: {
             {t('common.actions.delete')}
           </button>
         </li>
-        ))}
+          );
+        })}
       </ul>
       <DocumentViewerDialog
         documentId={structureDoc?.id ?? null}

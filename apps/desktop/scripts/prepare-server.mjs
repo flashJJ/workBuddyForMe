@@ -114,4 +114,18 @@ for (const pkg of FALLBACK_PACKAGES) {
   }
 }
 
+// pdfjs-dist：Next tracing 只收 pdf.mjs，Node fake worker 动态加载的
+// legacy/build/pdf.worker.mjs 会漏掉；缺文件按单文件补（目录已存在不能整包复制）。
+const pdfjsLegacyFrom = path.join(rootModules, 'pdfjs-dist', 'legacy', 'build');
+const pdfjsLegacyTo = path.join(standaloneModules, 'pdfjs-dist', 'legacy', 'build');
+for (const file of ['pdf.worker.mjs', 'pdf.worker.mjs.map']) {
+  const from = path.join(pdfjsLegacyFrom, file);
+  const to = path.join(pdfjsLegacyTo, file);
+  if (fs.existsSync(from) && !fs.existsSync(to)) {
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+    console.log(`已兜底归集 pdfjs-dist/${file}`);
+  }
+}
+
 console.log('服务端资源归集完成');

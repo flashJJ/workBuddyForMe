@@ -1,3 +1,5 @@
+import { enKnowledgeCompile, zhKnowledgeCompile } from './knowledge-compile';
+
 /** knowledge 命名空间：知识库侧栏/文档列表/知识库表单/网页剪藏/拖拽上传 */
 export const zhKnowledge = {
   createKb: '+ 新建知识库',
@@ -40,6 +42,7 @@ export const zhKnowledge = {
     compileRunning: '编译中',
     compileReady: '已编译',
     compileFailed: '编译失败',
+    failureReason: '失败原因：{message}',
   },
   contentPack: {
     title: '示例内容包',
@@ -58,19 +61,7 @@ export const zhKnowledge = {
     disclosure:
       '医疗、法律与财务内容仅按书检索引用，不替代医生、律师或会计；急症、自杀念头或进行中的法律程序请先联系 120 / 110 / 12356 或当地机构。',
   },
-  compile: {
-    compileNew: '编译新增',
-    rebuildAll: '全部重建',
-    cancel: '取消编译',
-    progress: '编译中 {done}/{total}',
-    compilingDoc: '正在编译《{name}》',
-    compileNone: '没有待编译或失败的文档',
-    queuedToast: '已入队 {count} 个文档',
-    cancelledToast: '已取消编译',
-    rebuildTitle: '全部重新编译',
-    rebuildConfirm: '将对 {count} 个文档重建编译产物（源文档不变，世代+1）。继续？',
-    actionFailed: '编译操作失败',
-  },
+  compile: zhKnowledgeCompile,
   form: {
     createTitle: '新建知识库',
     editTitle: '编辑知识库',
@@ -189,6 +180,7 @@ export const enKnowledge = {
     compileRunning: 'Compiling',
     compileReady: 'Compiled',
     compileFailed: 'Compile failed',
+    failureReason: 'Failure reason: {message}',
   },
   contentPack: {
     title: 'Sample content pack',
@@ -207,20 +199,7 @@ export const enKnowledge = {
     disclosure:
       'Medical, legal and financial content is retrieved and cited from the book only; it does not replace a doctor, lawyer or accountant. For emergencies, suicidal thoughts or ongoing legal proceedings, contact local emergency services first.',
   },
-  compile: {
-    compileNew: 'Compile new',
-    rebuildAll: 'Rebuild all',
-    cancel: 'Cancel compile',
-    progress: 'Compiling {done}/{total}',
-    compilingDoc: 'Compiling “{name}”',
-    compileNone: 'Nothing queued or failed to compile',
-    queuedToast: 'Queued {count} document(s)',
-    cancelledToast: 'Compile cancelled',
-    rebuildTitle: 'Rebuild all',
-    rebuildConfirm:
-      'Rebuild compiled knowledge for {count} document(s) (sources untouched, generation +1). Continue?',
-    actionFailed: 'Compile action failed',
-  },
+  compile: enKnowledgeCompile,
   form: {
     createTitle: 'New knowledge base',
     editTitle: 'Edit knowledge base',

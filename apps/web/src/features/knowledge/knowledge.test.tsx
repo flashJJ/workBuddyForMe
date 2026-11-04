@@ -159,6 +159,9 @@ describe('知识库页面（TR-28.1）', () => {
 
     const badge = await screen.findByText('失败');
     expect(badge).toHaveAttribute('title', 'PDF 解析失败');
+    expect(screen.getByTestId('document-failure-reason')).toHaveTextContent(
+      '失败原因：PDF 解析失败',
+    );
 
     await user.click(screen.getByRole('button', { name: '删除文档 bad.pdf' }));
     // v1.2：window.confirm 已替换为应用内 ConfirmDialog
