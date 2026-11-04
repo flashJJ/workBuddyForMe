@@ -1,8 +1,7 @@
 'use client';
 
 import { ArrowLeft, GitFork } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useConversations } from '@/lib/hooks/chat';
 import { useBranchByChild } from '../hooks/use-branches';
@@ -10,7 +9,6 @@ import { useBranchByChild } from '../hooks/use-branches';
 /** v2.21：子会话顶部来源条：父会话标题 + 分支目标 + 返回入口 */
 export function BranchOriginBanner({ conversationId }: { conversationId: string | null }) {
   const { t } = useI18n();
-  const router = useRouter();
   const { branch } = useBranchByChild(conversationId);
   const { data: conversations } = useConversations();
   if (!branch) return null;
@@ -18,6 +16,7 @@ export function BranchOriginBanner({ conversationId }: { conversationId: string 
   const parentTitle =
     conversations?.find((conversation) => conversation.id === branch.parentConversationId)?.title ??
     branch.parentConversationId;
+  const parentHref = `/chat?conversation=${encodeURIComponent(branch.parentConversationId)}`;
 
   return (
     <div
@@ -31,16 +30,14 @@ export function BranchOriginBanner({ conversationId }: { conversationId: string 
       <span className="line-clamp-1">
         {t('branch.origin.goal')}：{branch.goal}
       </span>
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        onClick={() => router.push(`/chat?conversation=${encodeURIComponent(branch.parentConversationId)}`)}
+      <Link
+        href={parentHref}
+        className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-muted hover:text-foreground"
         data-testid="branch-origin-back"
       >
-        <ArrowLeft className="mr-1 h-3.5 w-3.5" />
+        <ArrowLeft className="h-3.5 w-3.5" />
         {t('branch.origin.back')}
-      </Button>
+      </Link>
     </div>
   );
 }

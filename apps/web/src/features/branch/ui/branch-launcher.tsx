@@ -23,7 +23,7 @@ export function BranchLauncher({ conversationId }: { conversationId: string | nu
         data-testid="branch-open"
       >
         <GitFork className="h-3.5 w-3.5" />
-        {t('branch.open')}
+        <span className="hidden md:inline">{t('branch.open')}</span>
       </Button>
       {open && (
         <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={t('branch.title')}>

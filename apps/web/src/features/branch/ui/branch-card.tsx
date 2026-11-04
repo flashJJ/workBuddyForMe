@@ -63,7 +63,10 @@ export function BranchCard({ branch, actions }: { branch: ConversationBranch; ac
         {branch.archivedAt ? (
           <Action onClick={() => actions.onRestore(branch.id)}>{t('branch.list.restore')}</Action>
         ) : (
-          !active && <Action onClick={() => actions.onArchive(branch.id)}>{t('branch.list.archive')}</Action>
+          branch.status !== 'running' &&
+          branch.status !== 'waiting' && (
+            <Action onClick={() => actions.onArchive(branch.id)}>{t('branch.list.archive')}</Action>
+          )
         )}
         <Action onClick={() => actions.onOpenChild(branch.childConversationId)}>
           {t('branch.list.openChild')}
