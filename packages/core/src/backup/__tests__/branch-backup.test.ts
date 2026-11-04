@@ -2,13 +2,14 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDatabase, createConversationBranchRepository, createConversationRepository, type DatabaseInstance } from '@wbfm/database';
+import { createDatabase, createConversationBranchRepository, createConversationRepository, createSessionEventRepository, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../../secrets/cipher';
 import { ensureSeedData } from '../../services/base/seed';
 import { exportBackup } from '../export';
 import { restoreBackup } from '../restore';
 import { restoreBranches } from '../branches/restore-branches';
+import { restoreBranchEvents } from '../branches/restore-branch-events';
 import { packGzipArchive } from '../restore.helpers';
 
 function seedBranches(db: DatabaseInstance) {
@@ -56,6 +57,13 @@ function seedBranches(db: DatabaseInstance) {
   // 模拟进程中断：运行中 + 预留
   branchRepo.patch(b.id, { status: 'running', reservedTokens: 1000 });
   branchRepo.patch(b.id, { archivedAt: '2026-11-04T00:00:00.000Z' });
+  // v2.22：分支事件（恢复后图车道/回传节点依赖这些事件）
+  const eventsRepo = createSessionEventRepository(db);
+  const base = { branchId: 'br-a', parentConversationId: parent.id, childConversationId: childA.id, rootConversationId: parent.id, title: '分支 A', goal: '查竞品', depth: 1 };
+  eventsRepo.append({ scope: 'branch', scopeId: 'br-a', type: 'branch_created', payload: { ...base, status: 'queued' } });
+  eventsRepo.append({ scope: 'branch', scopeId: 'br-a', type: 'branch_started', payload: { ...base, status: 'running' } });
+  eventsRepo.append({ scope: 'branch', scopeId: 'br-a', type: 'branch_status', payload: { ...base, status: 'succeeded', statusReason: null } });
+  eventsRepo.append({ scope: 'branch', scopeId: 'br-b', type: 'branch_created', payload: { ...base, branchId: 'br-b', title: '分支 B', goal: '写摘要', status: 'queued' } });
   return { parent, childA, childB };
 }
 
@@ -80,6 +88,8 @@ describe('v2.21 备份：分支关联', () => {
     const { archive, manifest } = await exportBackup({ db: source, cipher }, { tracks: ['conversations'] });
 
     expect(manifest.tracks.conversations.branchCount).toBe(2);
+    expect(manifest.tracks.conversations.branchEventCount).toBe(4);
+    expect(manifest.tracks.conversations.branchEventsTruncated).toBe(false);
 
     const target = createDatabase(':memory:');
     ensureSeedData(target);
@@ -88,6 +98,12 @@ describe('v2.21 备份：分支关联', () => {
 
     expect(result.imported.branches).toBe(2);
     expect(result.skipped.branches).toBe(0);
+    // v2.22：分支事件恢复后图投影可重建
+    expect(result.imported.branchEvents).toBe(4);
+    expect(result.skipped.branchEvents).toBe(0);
+    const eventsRepo = createSessionEventRepository(target);
+    expect(eventsRepo.count('branch', 'br-a')).toBe(3);
+    expect(eventsRepo.count('branch', 'br-b')).toBe(1);
     expect(repo.get('br-a')).toMatchObject({ status: 'succeeded', archivedAt: null });
     expect(repo.get('br-a')?.evidence?.summary).toBe('竞品 A 领先');
     expect(repo.get('br-b')).toMatchObject({
@@ -123,7 +139,28 @@ describe('v2.21 备份：分支关联', () => {
     const result = await restoreBackup({ db: target, cipher }, legacyArchive, { tracks: ['conversations'] });
     expect(result.imported.branches).toBe(0);
     expect(result.skipped.branches).toBe(0);
+    expect(result.imported.branchEvents).toBe(0);
     target.close();
+  });
+
+  it('分支事件指向不存在的分支：整条跳过并计数', () => {
+    const db = createDatabase(':memory:');
+    ensureSeedData(db);
+    const counts = restoreBranchEvents(
+      db,
+      Buffer.from(
+        JSON.stringify({
+          schemaVersion: 1,
+          truncated: false,
+          events: [
+            { scope: 'branch', scopeId: 'missing-branch', type: 'branch_created', payload: {} },
+            { scope: 'chat', scopeId: 'c1', type: 'message_started', payload: {} },
+          ],
+        }),
+      ),
+    );
+    expect(counts).toEqual({ imported: 0, skipped: 2 });
+    db.close();
   });
 
   it('父/子会话缺失的分支跳过并计数', () => {

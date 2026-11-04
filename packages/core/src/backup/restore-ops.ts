@@ -5,6 +5,7 @@
 
 import { stagePlanSchema } from '@wbfm/shared/schemas';
 import { restoreBranches } from './branches/restore-branches';
+import { restoreBranchEvents } from './branches/restore-branch-events';
 
 type DBRunResult = { changes: number; lastInsertRowid: number | bigint };
 
@@ -280,12 +281,18 @@ export function restoreConversationsTrack(
   db: any,
   conversationsBuf: Buffer,
   branchesBuf?: Buffer,
+  branchEventsBuf?: Buffer,
 ): {
   convs: { imported: number; skipped: number };
   msgs: number;
   branches: { imported: number; skipped: number };
+  branchEvents: { imported: number; skipped: number };
 } {
   const conversations = restoreConversations(db, conversationsBuf);
   const branches = branchesBuf ? restoreBranches(db, branchesBuf) : { imported: 0, skipped: 0 };
-  return { ...conversations, branches };
+  // v2.22：事件依赖分支关联已落库，缺失分支的事件会被跳过
+  const branchEvents = branchEventsBuf
+    ? restoreBranchEvents(db, branchEventsBuf)
+    : { imported: 0, skipped: 0 };
+  return { ...conversations, branches, branchEvents };
 }

@@ -17,3 +17,15 @@ export interface BackupExportResult {
   /** 归档字节数 */
   size: number;
 }
+
+/** v2.22：恢复计数字段（导入/跳过按轨统计；类型放共享模块避免主流程超行数） */
+export type BackupCountKey = 'conversations' | 'messages' | 'branches' | 'branchEvents' | 'knowledgeBases' | 'documents' | 'chunks' | 'settings' | 'attachments' | 'skills' | 'tasks' | 'emotion' | 'events' | 'cards';
+export const emptyCounts = (): Record<BackupCountKey, number> => ({ conversations: 0, messages: 0, branches: 0, branchEvents: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0, cards: 0 });
+
+export interface BackupRestoreResult {
+  manifest: BackupManifest;
+  imported: Record<BackupCountKey, number>;
+  skipped: Record<BackupCountKey, number>;
+  /** 非致命提醒（如 VRM 模型文件需重新导入） */
+  warnings: string[];
+}

@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   CURRENT_BACKUP_SCHEMA_VERSION,
-  type BackupManifest,
   type BackupTrack,
   type BackupProgressEvent,
 } from '@wbfm/shared/backup';
@@ -10,6 +9,7 @@ import type { ServiceDeps } from '../services/base/deps';
 import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
+import { emptyCounts, type BackupRestoreResult } from './export-types';
 import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
 import { readV19TrackPayloads, restoreV19TrackData, v19TrackTotal } from './restore-meetings';
@@ -46,13 +46,7 @@ export interface BackupRestoreOptions {
   onProgress?: (ev: BackupProgressEvent) => void;
 }
 
-export interface BackupRestoreResult {
-  manifest: BackupManifest;
-  imported: { conversations: number; messages: number; branches: number; knowledgeBases: number; documents: number; chunks: number; settings: number; attachments: number; skills: number; tasks: number; emotion: number; events: number; cards: number };
-  skipped: { conversations: number; branches: number; knowledgeBases: number; documents: number; attachments: number; skills: number; tasks: number; emotion: number; events: number; cards: number };
-  /** 非致命提醒（如 VRM 模型文件需重新导入） */
-  warnings: string[];
-}
+export type { BackupRestoreResult } from './export-types';
 
 /** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
 interface SkillsTrackPayload {
@@ -123,10 +117,7 @@ export async function restoreBackup(
 
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
-    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings'> = {
-      imported: { conversations: 0, messages: 0, branches: 0, knowledgeBases: 0, documents: 0, chunks: 0, settings: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0, cards: 0 },
-      skipped: { conversations: 0, branches: 0, knowledgeBases: 0, documents: 0, attachments: 0, skills: 0, tasks: 0, emotion: 0, events: 0, cards: 0 },
-    };
+    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings'> = { imported: emptyCounts(), skipped: emptyCounts() };
 
     // v1.8：卡先于助手机行恢复，使 card_id 引用恢复后即对上
     if (cardRows.length > 0) {
@@ -150,9 +141,15 @@ export async function restoreBackup(
     }
 
     if (tracksToRestore.includes('conversations') && files.has('conversations.json')) {
-      const { convs, msgs, branches } = restoreConversationsTrack(deps.db, files.get('conversations.json')!, files.get('branches.json'));
+      const { convs, msgs, branches, branchEvents } = restoreConversationsTrack(
+        deps.db,
+        files.get('conversations.json')!,
+        files.get('branches.json'),
+        files.get('branch-events.json'),
+      );
       result.imported.conversations = convs.imported; result.skipped.conversations = convs.skipped; result.imported.messages = msgs;
       result.imported.branches = branches.imported; result.skipped.branches = branches.skipped;
+      result.imported.branchEvents = branchEvents.imported; result.skipped.branchEvents = branchEvents.skipped;
       onProgress?.({ track: 'conversations', processed: convs.imported, total: manifest.tracks.conversations.entryCount });
     }
 
