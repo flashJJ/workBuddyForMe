@@ -62,6 +62,7 @@ export interface CreateBranchInput {
 }
 
 export interface PatchBranchInput {
+  title?: string;
   status?: BranchStatus;
   statusReason?: string | null;
   evidence?: BranchEvidence | null;
@@ -103,6 +104,14 @@ export function createConversationBranchRepository(db: DatabaseInstance) {
 
     get,
 
+    /** 某个会话作为子会话所属的分支（祖先链推导用） */
+    findByChild(childConversationId: string): ConversationBranch | null {
+      const row = db
+        .prepare(`SELECT * FROM conversation_branches WHERE child_conversation_id = ?`)
+        .get(childConversationId) as BranchRow | undefined;
+      return row ? toBranch(row) : null;
+    },
+
     listByParent(parentConversationId: string, includeArchived = false): ConversationBranch[] {
       const sql = includeArchived
         ? `SELECT * FROM conversation_branches WHERE parent_conversation_id = ? ORDER BY created_at ASC`
@@ -127,6 +136,7 @@ export function createConversationBranchRepository(db: DatabaseInstance) {
         sets.push(`${column} = ?`);
         values.push(value);
       };
+      if (patch.title !== undefined) set('title', patch.title);
       if (patch.status !== undefined) set('status', patch.status);
       if (patch.statusReason !== undefined) set('status_reason', patch.statusReason);
       if (patch.evidence !== undefined) {

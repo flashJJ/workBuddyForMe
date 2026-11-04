@@ -57,6 +57,7 @@ import { createWebCipher, type SecretCipher } from '@wbfm/core/secrets';
 import { createApprovalRegistry, createWorkSignalHub } from '@wbfm/core/work-signal';
 import { createRunCompletionService, createStagePlanService, createWorkPlanService } from '@wbfm/core/work-plan';
 import { createRunGraphService, createSessionExportService, createSessionLogService } from '@wbfm/core/session-log';
+import { createBranchService } from '@wbfm/core/branch';
 import { createCapabilityCatalog } from '@wbfm/core/capabilities';
 import { createAuditService } from '@wbfm/core/governance';
 import type { ServiceContainer } from './container-types';
@@ -219,8 +220,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const schedules = createSchedulesService(deps);
   const meetingClosure = createMeetingClosureService({ db, workflows, flowRunner, schedules });
   return {
-    endpoints,
-    rateLimiter,
+    endpoints, rateLimiter,
     db,
     cipher,
     mcp,
@@ -229,7 +229,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     approvals,
     workSignals,
     workPlans,
-    stagePlan: createStagePlanService(deps),
+    stagePlan: createStagePlanService(deps), branches: createBranchService(deps),
     completions,
     sessionLog,
     sessionExport,

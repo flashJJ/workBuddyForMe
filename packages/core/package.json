@@ -49,6 +49,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./branch": {
+            "types": "./src/branch/index.ts",
+            "development": "./src/branch/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./memory": {
             "types": "./src/memory/index.ts",
             "development": "./src/memory/index.ts",

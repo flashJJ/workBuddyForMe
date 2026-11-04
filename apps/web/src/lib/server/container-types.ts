@@ -22,6 +22,7 @@ import type {
   createVrmAvatarService,
 } from '@wbfm/core/services';
 import type { createChatOrchestrator } from '@wbfm/core/chat';
+import type { createBranchService } from '@wbfm/core/branch';
 import type { createMilestoneService } from '@wbfm/core/emotion';
 import type { createAgentRunService } from '@wbfm/core/agents';
 import type { createMeetingClosureService, createMeetingService } from '@wbfm/core/meeting';
@@ -88,6 +89,7 @@ export interface ServiceContainer {
   workSignals: ReturnType<typeof createWorkSignalHub>;
   workPlans: ReturnType<typeof createWorkPlanService>;
   stagePlan: ReturnType<typeof createStagePlanService>;
+  branches: ReturnType<typeof createBranchService>;
   completions: ReturnType<typeof createRunCompletionService>;
   sessionLog: ReturnType<typeof createSessionLogService>;
   sessionExport: ReturnType<typeof createSessionExportService>;

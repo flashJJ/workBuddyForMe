@@ -51,6 +51,19 @@ export function createMessageRepository(db: DatabaseInstance) {
       return row ? mapMessage(row) : null;
     },
 
+    /** v2.21：按会话集合汇总 token（会话树预算用；空集合返回 0） */
+    sumTokensForConversations(conversationIds: readonly string[]): number {
+      if (conversationIds.length === 0) return 0;
+      const placeholders = conversationIds.map(() => '?').join(',');
+      const row = db
+        .prepare(
+          `SELECT COALESCE(SUM(total_tokens), 0) AS total FROM messages
+           WHERE conversation_id IN (${placeholders})`,
+        )
+        .get(...conversationIds) as { total: number };
+      return row.total;
+    },
+
     listByConversation(conversationId: string, limit = 200): Message[] {
       return (
         db
