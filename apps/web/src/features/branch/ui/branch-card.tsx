@@ -52,6 +52,15 @@ export function BranchCard({ branch, actions }: { branch: ConversationBranch; ac
             )}
           </div>
           <p className="break-words">{evidence.summary || t('branch.evidence.noSummary')}</p>
+          {evidence.artifacts.length > 0 && (
+            <ul className="space-y-0.5 text-muted-foreground" data-testid={`branch-artifacts-${branch.id}`}>
+              {evidence.artifacts.map((artifact) => (
+                <li key={artifact.id} className="break-words">
+                  {artifact.title} <span className="opacity-70">({artifact.kind})</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

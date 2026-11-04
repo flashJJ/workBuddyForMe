@@ -19,5 +19,10 @@ export const GET = defineRoute(({ request, params, services }) => {
 export const POST = defineRoute(async ({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
   const input = parseBody(branchCreateSchema, await readJsonBody(request));
-  return jsonOk(services.branches.create(id, input), 201);
+  const { branch, childConversationId } = services.branches.create(id, input);
+  // 契约 §3：返回分支与子会话对象；childConversationId 保留给现有客户端
+  return jsonOk(
+    { branch, conversation: services.conversations.get(childConversationId), childConversationId },
+    201,
+  );
 });

@@ -33,10 +33,15 @@ describe('v2.21 分支 API', () => {
   it('派生返回 queued 子会话；列表默认不含归档', async () => {
     const response = await POST(jsonRequest('POST', { goal: '整理竞品', title: '竞品' }), params(parentId));
     const created = (await response.json()) as {
-      data: { branch: { id: string; status: string; depth: number }; childConversationId: string };
+      data: {
+        branch: { id: string; status: string; depth: number };
+        childConversationId: string;
+        conversation: { id: string; title: string };
+      };
     };
     expect(created.data.branch).toMatchObject({ status: 'queued', depth: 1 });
     expect(created.data.childConversationId).toBeTruthy();
+    expect(created.data.conversation.id).toBe(created.data.childConversationId);
 
     const listedResponse = await GET(
       new Request(`http://127.0.0.1/x?includeArchived=false`),
