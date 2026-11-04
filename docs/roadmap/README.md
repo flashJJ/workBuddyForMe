@@ -65,6 +65,14 @@ v2.20 之后的下一个版本，做用户自由派生的父子会话、结构�
 - 分支：`feature/v2.21-planning`（PR [#6](https://github.com/flashJJ/workBuddyForMe/pull/6) 合并到 main，merge commit `08054bc6`；tag `v2.21.0` 打在 `08054bc6`；一次迁移 `v045-conversation-branches`，`LATEST_SCHEMA_VERSION = 45`）
 - 里程碑：M0–M4 全部完成（[01-M0 决策](../plan/v2.21/01-M0-决策记录.md) · [02-M0 契约](../plan/v2.21/02-M0-契约冻结.md) · [03-M1](../plan/v2.21/03-M1-实施记录.md) · [04-M2](../plan/v2.21/04-M2-实施记录.md) · [05-M3](../plan/v2.21/05-M3-实施记录.md) · [06-M4](../plan/v2.21/06-M4-实施记录.md)）
 
+## 🚧 已排期：v2.22 收口——分支会话可靠性与发布闭环（未发布）
+
+v2.21.0 发布后审计留下两类缺口：15 行修复只在 main、8 项残余缺口无版本归属。v2.22 不加新主题，只做收口：补丁随 `v2.22.0` 发布、分支事件纳入备份、终态回传补齐、失败重试、运行中预算熔断、实时帧与 `waiting` 语义收口；零迁移，`LATEST_SCHEMA_VERSION` 保持 45。
+
+- 方案：[v2.22 方案](../plan/v2.22/README.md) · [M0 决策草案](../plan/v2.22/01-M0-决策记录.md)
+- 来源方案：[分支会话收口与可靠性加固](scheduled/v2.22-01-branch-hardening.md)
+- 状态：🚧 已排期，M0 待评审；分支 `feature/v2.22-planning`
+
 ## ✅ 已正式发布：v2.18 🎨 可交付——图表、内容包与有出处的产物（2026-11-02，tag `v2.18.0`）
 
 v2.17 解决「接得上、搜得到、装得进」后，下一层断点在产出物：模型能写 HTML/Markdown，却没有落盘成文件的工具；内置技能缺少图表设计规范；知识库模板只有空壳；工具结果缺少来源/覆盖率。v2.18 借鉴 Diagram Design（MIT）、HowToLiveBetter（CC BY 4.0）、REA（MIT）、Moli（Apache-2.0）与 ArtCraft（Apache-2.0）：P0 做产物文件管道 + 10 类结构化图表 + Web/桌面 SVG/PNG 导出；P1 做内容包与证据元数据；REA/Moli 只借思路，ArtCraft 本版不移植。不做逆向工程产品、不引入 Rust 浏览器 sidecar、不做生成式创作市场。
