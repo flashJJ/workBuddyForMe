@@ -128,4 +128,31 @@ describe('v2.21 分支服务', () => {
     expect(service.get.bind(service, branch.id)).toThrow();
     expect(createConversationRepository(ctx.db).findById(childConversationId)).toBeTruthy();
   });
+
+  it('v2.21 M4：重启收敛把 running/waiting 改为 interrupted 并释放预留', () => {
+    const service = createBranchService(ctx.deps);
+    const running = service.create(ctx.parentId, { goal: '运行中' }).branch;
+    const waiting = service.create(ctx.parentId, { goal: '等待中' }).branch;
+    ctx.db
+      .prepare(`UPDATE conversation_branches SET status = 'running', reserved_tokens = 1000 WHERE id = ?`)
+      .run(running.id);
+    ctx.db
+      .prepare(`UPDATE conversation_branches SET status = 'waiting', reserved_tokens = 500 WHERE id = ?`)
+      .run(waiting.id);
+
+    expect(service.recoverInterrupted()).toBe(2);
+    for (const branch of [running, waiting]) {
+      expect(service.get(branch.id)).toMatchObject({
+        status: 'interrupted',
+        reservedTokens: 0,
+        statusReason: '进程重启，分支已中断',
+      });
+    }
+    const statusEvents = ctx.db
+      .prepare(
+        `SELECT COUNT(*) AS count FROM session_events WHERE scope = 'branch' AND type = 'branch_status'`,
+      )
+      .get() as { count: number };
+    expect(statusEvents.count).toBe(2);
+  });
 });

@@ -32,6 +32,7 @@ const MAX_RUNS = 20;
 const EVENTS_PER_RUN = 200;
 const CHAT_EVENTS_LIMIT = 1000;
 const BRANCH_EVENTS_LIMIT = 200;
+const MAX_BRANCHES = 50;
 
 type RunTable = 'task_runs' | 'workflow_runs' | 'agent_runs';
 
@@ -66,7 +67,8 @@ export function createRunGraphService(deps: ServiceDeps): RunGraphService {
       if (!scope || scope === 'agent') all.push(...collectRunEvents('agent', conversationId));
       if (!scope || scope === 'branch') {
         // v2.21：只收该会话的直接分支；嵌套分支事件留在子会话自己的图里
-        for (const branch of branches.listByParent(conversationId, true)) {
+        const direct = branches.listByParent(conversationId, true).slice(-MAX_BRANCHES);
+        for (const branch of direct) {
           all.push(...events.list('branch', branch.id, 0, BRANCH_EVENTS_LIMIT));
         }
       }

@@ -20,6 +20,7 @@ import { createChatOrchestrator } from '../chat/orchestrator/chat-orchestrator';
 import { evaluateBranchAdmission, reserveBranchTokens } from './branch-limits';
 import { createBranchEventRecorder } from './branch-events';
 import { readBranchLimits } from './branch-settings';
+import { recoverInterruptedBranches } from './branch-recovery';
 import { runBranchChat, type BranchRunResult, type BranchChatRunner } from './branch-runner';
 
 const START_RESERVATION_TOKENS = 1000;
@@ -268,6 +269,10 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
       return { id };
     },
 
+    /** v2.21 M4：启动收敛上次残留的运行中分支；返回收敛条数 */
+    recoverInterrupted(reason = '进程重启，分支已中断'): number {
+      return recoverInterruptedBranches(branchRepo, events, reason);
+    },
     /** 测试/优雅关闭：等待某分支运行结束 */
     async whenSettled(id: string): Promise<void> {
       await running.get(id)?.promise;

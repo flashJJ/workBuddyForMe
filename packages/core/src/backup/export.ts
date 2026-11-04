@@ -8,6 +8,7 @@ import {
 import type { ServiceDeps } from '../services/base/deps';
 import {
   createConversationRepository,
+  createConversationBranchRepository,
   createMessageRepository,
   createStagePlanRepository,
   createKnowledgeRepository,
@@ -83,6 +84,10 @@ export async function exportBackup(
       messages: messagesRepo.listByConversation(conv.id, 500),
     }));
     files['conversations.json'] = JSON.stringify(serialized, null, 2);
+    // v2.21：分支关联随 conversations 轨（可选文件；旧归档缺文件按空数组）
+    const branchRows = createConversationBranchRepository(deps.db).listAll();
+    files['branches.json'] = JSON.stringify(branchRows, null, 2);
+    manifestPartial.conversations.branchCount = branchRows.length;
     manifestPartial.conversations.entryCount = convs.length;
     onProgress?.({ track: 'conversations', processed: convs.length, total: convs.length });
   }

@@ -127,6 +127,26 @@ export function createConversationBranchRepository(db: DatabaseInstance) {
       ).map(toBranch);
     },
 
+    /** v2.21 M4：备份导出用——全量分支关联（按创建时间） */
+    listAll(): ConversationBranch[] {
+      return (
+        db
+          .prepare(`SELECT * FROM conversation_branches ORDER BY created_at ASC`)
+          .all() as BranchRow[]
+      ).map(toBranch);
+    },
+
+    /** v2.21 M4：启动收敛用——只取 running/waiting，避免整表扫描 */
+    listActive(): ConversationBranch[] {
+      return (
+        db
+          .prepare(
+            `SELECT * FROM conversation_branches WHERE status IN ('running','waiting') ORDER BY created_at ASC`,
+          )
+          .all() as BranchRow[]
+      ).map(toBranch);
+    },
+
     patch(id: string, patch: PatchBranchInput): ConversationBranch | null {
       const existing = get(id);
       if (!existing) return null;

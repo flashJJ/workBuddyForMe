@@ -108,6 +108,9 @@ export function BackupPanel() {
       if (r.imported.events) {
         parts.push(t('settingsBackup.imported.events', { count: r.imported.events }));
       }
+      if (r.imported.branches) {
+        parts.push(t('settingsBackup.imported.branches', { count: r.imported.branches }));
+      }
 
       const skippedParts: string[] = [];
       if (r.skipped.conversations) {
@@ -129,6 +132,9 @@ export function BackupPanel() {
       }
       if (r.skipped.events) {
         skippedParts.push(t('settingsBackup.skipped.events', { count: r.skipped.events }));
+      }
+      if (r.skipped.branches) {
+        skippedParts.push(t('settingsBackup.skipped.branches', { count: r.skipped.branches }));
       }
 
       let msg = t('settingsBackup.restoreDone', {
