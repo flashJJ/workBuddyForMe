@@ -176,6 +176,81 @@ describe('v2.21 分支服务', () => {
       )
       .get() as { count: number };
     expect(statusEvents.count).toBe(2);
+    // v2.22：中断终态也写回传，父会话可区分中断与失败
+    const returned = ctx.db
+      .prepare(
+        `SELECT COUNT(*) AS count FROM session_events WHERE scope = 'branch' AND type = 'branch_returned'`,
+      )
+      .get() as { count: number };
+    expect(returned.count).toBe(2);
+    for (const branch of [running, waiting]) {
+      expect(service.get(branch.id)?.evidence).toMatchObject({
+        status: 'interrupted',
+        summary: '',
+        needsReview: true,
+      });
+    }
+  });
+
+  it('v2.22：排队取消写回传（无运行结果），且运行器不产生 waiting', async () => {
+    const service = createBranchService(ctx.deps, {
+      runner: runnerOf([
+        { event: 'done', data: { content: '完成', usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 } } },
+      ]),
+    });
+    const queued = service.create(ctx.parentId, { goal: '排队取消' }).branch;
+    service.cancel(queued.id);
+    const cancelled = service.get(queued.id);
+    expect(cancelled).toMatchObject({ status: 'cancelled', reservedTokens: 0 });
+    expect(cancelled.evidence).toMatchObject({
+      status: 'cancelled',
+      summary: '',
+      usage: null,
+      needsReview: true,
+    });
+    const eventTypes = (
+      ctx.db
+        .prepare(`SELECT type FROM session_events WHERE scope = 'branch' AND scope_id = ? ORDER BY seq ASC`)
+        .all(queued.id) as Array<{ type: string }>
+    ).map((row) => row.type);
+    expect(eventTypes).toEqual(['branch_created', 'branch_status', 'branch_returned']);
+
+    // 守卫：本版没有任何写入路径会把分支置为 waiting
+    const run = service.create(ctx.parentId, { goal: '运行完成' }).branch;
+    service.start(run.id);
+    await service.whenSettled(run.id);
+    expect(service.get(run.id)?.status).toBe('succeeded');
+    expect(service.get(run.id)?.status).not.toBe('waiting');
+  });
+
+  it('v2.22：结算超预算改判 budget_exceeded 并释放预留', async () => {
+    createSettingsRepository(ctx.db).setJson('app-settings', { branchTokenBudget: 10000 });
+    const runner: BranchChatRunner = async function* (input) {
+      // 模拟真实编排器：运行时把用量落到子会话消息，finalize 才能读到已用 Token
+      ctx.db
+        .prepare(
+          `INSERT INTO messages(id, conversation_id, role, content, total_tokens, created_at)
+           VALUES ('m-budget', ?, 'assistant', '', 9500, 't')`,
+        )
+        .run(input.conversationId);
+      yield {
+        event: 'done',
+        data: { content: '内容已达预算', usage: { promptTokens: 9000, completionTokens: 500, totalTokens: 9500 } },
+      } as never;
+    };
+    const service = createBranchService(ctx.deps, { runner });
+    const { branch } = service.create(ctx.parentId, { goal: '触发熔断', autoStart: true });
+    await service.whenSettled(branch.id);
+    const settled = service.get(branch.id);
+    expect(settled).toMatchObject({ status: 'budget_exceeded', reservedTokens: 0 });
+    expect(settled.statusReason).toMatch(/Token 超限/);
+    expect(settled.evidence).toMatchObject({ status: 'budget_exceeded', needsReview: true });
+    const returned = ctx.db
+      .prepare(
+        `SELECT COUNT(*) AS count FROM session_events WHERE scope = 'branch' AND scope_id = ? AND type = 'branch_returned'`,
+      )
+      .get(branch.id) as { count: number };
+    expect(returned.count).toBe(1);
   });
 
   it('终态不可回 running：cancelled 分支不能再次启动', () => {

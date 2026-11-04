@@ -53,6 +53,7 @@ export function BranchPanel({ conversationId, onClose }: Props) {
   const cardActions = {
     onStart: (id: string) => actions.start.mutate(id),
     onRename: rename,
+    onRetry: (branch: ConversationBranch) => actions.retry.mutate(branch.id),
     onCancel: (id: string) => actions.cancel.mutate(id),
     onArchive: (id: string) => actions.archive.mutate(id),
     onRestore: (id: string) => actions.restore.mutate(id),

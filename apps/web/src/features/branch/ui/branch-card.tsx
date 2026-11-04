@@ -1,6 +1,7 @@
 'use client';
 
 import type { ConversationBranch } from '@wbfm/shared/types';
+import { BRANCH_TERMINAL_STATUSES } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import {
@@ -13,6 +14,7 @@ import {
 export interface BranchCardActions {
   onStart: (id: string) => void;
   onRename: (branch: ConversationBranch) => void;
+  onRetry: (branch: ConversationBranch) => void;
   onCancel: (id: string) => void;
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
@@ -24,6 +26,7 @@ export interface BranchCardActions {
 export function BranchCard({ branch, actions }: { branch: ConversationBranch; actions: BranchCardActions }) {
   const { t } = useI18n();
   const active = isActiveBranch(branch);
+  const terminal = (BRANCH_TERMINAL_STATUSES as readonly string[]).includes(branch.status);
   const tokens = branchTotalTokens(branch) ?? (branch.reservedTokens > 0 ? branch.reservedTokens : null);
   const evidence = branch.evidence;
 
@@ -52,7 +55,10 @@ export function BranchCard({ branch, actions }: { branch: ConversationBranch; ac
               </span>
             )}
           </div>
-          <p className="break-words">{evidence.summary || t('branch.evidence.noSummary')}</p>
+          <p className="break-words">
+            {evidence.summary ||
+              (terminal ? t('branch.evidence.noResult') : t('branch.evidence.noSummary'))}
+          </p>
           {evidence.artifacts.length > 0 && (
             <ul className="space-y-0.5 text-muted-foreground" data-testid={`branch-artifacts-${branch.id}`}>
               {evidence.artifacts.map((artifact) => (
@@ -71,6 +77,14 @@ export function BranchCard({ branch, actions }: { branch: ConversationBranch; ac
           <Action onClick={() => actions.onCancel(branch.id)}>{t('branch.list.cancel')}</Action>
         )}
         <Action onClick={() => actions.onRename(branch)}>{t('branch.list.rename')}</Action>
+        {terminal && (
+          <Action
+            onClick={() => actions.onRetry(branch)}
+            title={t('branch.list.retryHint')}
+          >
+            {t('branch.list.retry')}
+          </Action>
+        )}
         {branch.archivedAt ? (
           <Action onClick={() => actions.onRestore(branch.id)}>{t('branch.list.restore')}</Action>
         ) : (
@@ -94,15 +108,18 @@ function Action({
   children,
   onClick,
   danger,
+  title,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   danger?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      title={title}
       className={danger ? 'text-destructive hover:underline' : 'text-muted-foreground hover:text-foreground'}
     >
       {children}

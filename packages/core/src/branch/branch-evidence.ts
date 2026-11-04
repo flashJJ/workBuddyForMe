@@ -5,6 +5,7 @@
 import type {
   BranchArtifactRef,
   BranchEvidence,
+  BranchStatus,
   ConversationBranch,
   Message,
 } from '@wbfm/shared/types';
@@ -41,13 +42,15 @@ export function buildBranchEvidence(
   branch: ConversationBranch,
   result: BranchRunResult,
   artifacts: BranchArtifactRef[],
+  /** v2.22：允许熔断改判（结算超预算时 result.status 仍是 succeeded） */
+  status: BranchStatus = result.status,
 ): BranchEvidence {
   return {
     branchId: branch.id,
     parentConversationId: branch.parentConversationId,
     childConversationId: branch.childConversationId,
     rootConversationId: branch.rootConversationId,
-    status: result.status,
+    status,
     summary: result.content.slice(0, 4000),
     artifacts,
     usage: result.usage

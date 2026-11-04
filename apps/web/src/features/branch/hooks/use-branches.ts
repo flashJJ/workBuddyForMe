@@ -83,10 +83,17 @@ export function useBranchActions(conversationId: string) {
     mutationFn: (branchId: string) => apiPost<{ branch: ConversationBranch }>(API.branchRestore(branchId)),
     onSuccess: invalidate,
   });
+  const retry = useMutation({
+    mutationFn: (branchId: string) =>
+      apiPost<{ branch: ConversationBranch; childConversationId: string }>(
+        API.branchRetry(branchId),
+      ),
+    onSuccess: invalidate,
+  });
   const remove = useMutation({
     mutationFn: (branchId: string) => apiDelete<{ id: string }>(API.branch(branchId)),
     onSuccess: invalidate,
   });
 
-  return { create, start, rename, cancel, archive, restore, remove, invalidate };
+  return { create, start, rename, retry, cancel, archive, restore, remove, invalidate };
 }

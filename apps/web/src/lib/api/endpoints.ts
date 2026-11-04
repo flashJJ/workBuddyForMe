@@ -51,6 +51,8 @@ export const API = {
   branchCancel: (id: string) => `/api/branches/${encodeURIComponent(id)}/cancel`,
   branchArchive: (id: string) => `/api/branches/${encodeURIComponent(id)}/archive`,
   branchRestore: (id: string) => `/api/branches/${encodeURIComponent(id)}/restore`,
+  /** v2.22：以终态分支为来源新建分支 */
+  branchRetry: (id: string) => `/api/branches/${encodeURIComponent(id)}/retry`,
   branchByChild: (childConversationId: string) =>
     `/api/branches?childConversationId=${encodeURIComponent(childConversationId)}`,
   messageFeedback: (conversationId: string, messageId: string) =>
