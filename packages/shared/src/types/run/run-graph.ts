@@ -93,6 +93,8 @@ export interface RunGraphLane {
   colorToken: string;
   parentLaneId: string | null;
   runId: string | null;
+  /** v2.21：分支已归档；UI 默认折叠该车道 */
+  archived?: boolean;
 }
 
 export interface RunGraphSnapshot {

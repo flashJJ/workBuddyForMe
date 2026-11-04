@@ -24,6 +24,7 @@ export const zhCommandPalette = {
     flowNew: { label: '新建工作流', description: '打开工作流创建表单' },
     assistantNew: { label: '新建助手', description: '创建智能体与提示词' },
     cardNew: { label: '新建角色卡', description: '创建自定义角色卡' },
+    branchNew: { label: '派生分支', description: '从当前会话派生一条并行分支会话' },
     convNew: {
       label: '新建会话',
       description: '在当前助手下创建新对话',
@@ -64,6 +65,7 @@ export const enCommandPalette = {
     flowNew: { label: 'New workflow', description: 'Open the workflow create form' },
     assistantNew: { label: 'New assistant', description: 'Create an agent and prompt' },
     cardNew: { label: 'New character card', description: 'Create a custom character card' },
+    branchNew: { label: 'Branch conversation', description: 'Fork the current conversation into a parallel branch' },
     convNew: {
       label: 'New conversation',
       description: 'Start a new conversation with the current assistant',

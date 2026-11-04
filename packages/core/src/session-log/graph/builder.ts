@@ -211,8 +211,9 @@ export function putEdge(b: Builder, from: string, to: string, kind: RunGraphEdge
   if (!b.edges.has(id)) b.edges.set(id, { id, from, to, kind });
 }
 
+/** 后到事件可更新车道（如分支归档态）；同 id 覆盖写入 */
 export function putLane(b: Builder, lane: RunGraphLane): void {
-  if (!b.lanes.has(lane.id)) b.lanes.set(lane.id, lane);
+  b.lanes.set(lane.id, lane);
 }
 
 export function finalizeGraph(b: Builder, limit: number, generatedAt: string): RunGraphSnapshot {

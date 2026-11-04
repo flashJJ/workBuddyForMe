@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Message } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
@@ -191,6 +191,15 @@ describe('消息项 MessageItem（TR-27.1）', () => {
     const second = fetchMock.mock.calls[1]!;
     expect(JSON.parse((second[1] as RequestInit).body as string)).toEqual({ feedback: null });
     expect(onApplied).toHaveBeenLastCalledWith('m1', null, null);
+  });
+
+  it('v2.21：右键消息打开派生对话框，消息正文预填目标', async () => {
+    renderWithProviders(
+      <MessageItem message={makeMessage()} assistantName="通用助手" conversationId="c1" />,
+    );
+    fireEvent.contextMenu(screen.getByTestId('message-m1'));
+    await waitFor(() => expect(screen.getByTestId('message-branch-dialog')).toBeInTheDocument());
+    expect(screen.getByTestId('branch-goal-input')).toHaveValue('**你好**');
   });
 
   it('用户图片消息：经带令牌 fetch 拉取 blob 并渲染缩略图', async () => {

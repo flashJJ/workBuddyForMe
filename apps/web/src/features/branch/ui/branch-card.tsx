@@ -23,7 +23,7 @@ export interface BranchCardActions {
 export function BranchCard({ branch, actions }: { branch: ConversationBranch; actions: BranchCardActions }) {
   const { t } = useI18n();
   const active = isActiveBranch(branch);
-  const tokens = branchTotalTokens(branch);
+  const tokens = branchTotalTokens(branch) ?? (branch.reservedTokens > 0 ? branch.reservedTokens : null);
   const evidence = branch.evidence;
 
   return (
@@ -57,7 +57,7 @@ export function BranchCard({ branch, actions }: { branch: ConversationBranch; ac
 
       <div className="flex flex-wrap items-center gap-2 pt-0.5">
         {branch.status === 'queued' && <Action onClick={() => actions.onStart(branch.id)}>{t('branch.list.start')}</Action>}
-        {active && branch.status !== 'queued' && (
+        {(branch.status === 'queued' || active) && (
           <Action onClick={() => actions.onCancel(branch.id)}>{t('branch.list.cancel')}</Action>
         )}
         {branch.archivedAt ? (

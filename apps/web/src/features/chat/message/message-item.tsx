@@ -16,7 +16,7 @@ import { FirstTokenMetric, StreamingProgress } from '../page/streaming-progress'
 import type { StreamTiming } from '../types/chat-session.types';
 import { ToolTrace } from '../overlay/tool-trace';
 import { MessageFeedbackButtons } from './message-feedback';
-import { MessageBranchButton } from '@/features/branch';
+import { MessageBranchButton, MessageBranchDialog } from '@/features/branch';
 
 interface Props {
   message: Message;
@@ -140,6 +140,12 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
   const { t } = useI18n();
   const sys = useSystemText();
   const isUser = message.role === 'user';
+  const [branchOpen, setBranchOpen] = React.useState(false);
+  const canBranch = Boolean(conversationId && message.content.trim());
+  const openBranch = (): void => {
+    if (disabled || !canBranch) return;
+    setBranchOpen(true);
+  };
   const canRegenerate =
     !isUser &&
     !disabled &&
@@ -162,6 +168,13 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
       data-message-id={message.id || undefined}
       data-highlighted={highlighted ? 'true' : undefined}
       data-role={message.role}
+      onContextMenu={(event) => {
+        const target = event.target as HTMLElement;
+        if (disabled || !canBranch) return;
+        if (target.closest('input, textarea, [contenteditable="true"]')) return;
+        event.preventDefault();
+        setBranchOpen(true);
+      }}
     >
       <div
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm ${
@@ -213,11 +226,9 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
           </div>
         )}
 
-        {(showCopy || canRegenerate || canFeedback || (conversationId && message.content.trim())) && (
+        {(showCopy || canRegenerate || canFeedback || canBranch) && (
           <div className="flex items-center gap-3 pt-1">
-            {conversationId && message.content.trim() && (
-              <MessageBranchButton conversationId={conversationId} content={message.content} disabled={disabled} />
-            )}
+            {canBranch && <MessageBranchButton onOpen={openBranch} disabled={disabled} />}
             {showCopy && <CopyButton content={displayContent} />}
             {canRegenerate && (
               <button
@@ -240,6 +251,14 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
         )}
         <CitationsList message={message} />
       </div>
+      {conversationId && branchOpen && (
+        <MessageBranchDialog
+          conversationId={conversationId}
+          open={branchOpen}
+          onOpenChange={setBranchOpen}
+          defaultGoal={message.content}
+        />
+      )}
     </div>
   );
 }

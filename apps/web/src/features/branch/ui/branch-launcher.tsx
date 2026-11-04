@@ -10,6 +10,18 @@ import { BranchPanel } from './branch-panel';
 export function BranchLauncher({ conversationId }: { conversationId: string | null }) {
   const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    // 等会话就绪后再消费深链接，避免会话异步加载时丢失打开动作
+    if (!conversationId) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('branch') !== 'new') return;
+    setOpen(true);
+    params.delete('branch');
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  }, [conversationId]);
+
   if (!conversationId) return null;
 
   return (

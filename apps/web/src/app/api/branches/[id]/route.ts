@@ -7,7 +7,12 @@ export const dynamic = 'force-dynamic';
 
 export const GET = defineRoute(({ params, services }) => {
   const { id } = parseParams(idParamSchema, params);
-  return jsonOk({ branch: services.branches.get(id) });
+  const branch = services.branches.get(id);
+  return jsonOk({
+    branch,
+    childConversation: services.conversations.get(branch.childConversationId),
+    evidence: branch.evidence,
+  });
 });
 
 export const PATCH = defineRoute(async ({ request, params, services }) => {
@@ -16,8 +21,8 @@ export const PATCH = defineRoute(async ({ request, params, services }) => {
   return jsonOk({ branch: services.branches.rename(id, input.title) });
 });
 
-/** 只删分支关联；子会话保留为普通会话 */
-export const DELETE = defineRoute(({ params, services }) => {
+/** 只删分支关联；子会话保留为普通会话；运行中先停止并等待终态 */
+export const DELETE = defineRoute(async ({ params, services }) => {
   const { id } = parseParams(idParamSchema, params);
-  return jsonOk(services.branches.remove(id));
+  return jsonOk(await services.branches.remove(id));
 });

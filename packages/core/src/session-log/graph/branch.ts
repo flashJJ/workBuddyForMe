@@ -25,6 +25,8 @@ export function applyBranch(b: Builder, event: SessionEventView): void {
     colorToken: 'accent',
     parentLaneId: b.rootLaneId,
     runId: null,
+    // 归档/恢复事件（branch_status + archivedAt）更新车道折叠标记
+    archived: Boolean(field(payload, 'archivedAt')),
   });
 
   if (b.nodes.has(branchNodeId)) {

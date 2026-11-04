@@ -124,6 +124,24 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         keywords: ['new', 'create', '新建', '角色卡', 'card', 'persona'],
         action: () => navigate('/settings?new=card#setting-data'),
       },
+      {
+        id: 'branch:new',
+        label: t(`${ck}.branchNew.label`),
+        description: t(`${ck}.branchNew.description`),
+        group: 'create',
+        keywords: ['new', 'create', '新建', '分支', '派生', 'branch', 'fork'],
+        action: () => {
+          // 保留当前会话，避免从 /chat?conversation=… 跳转时切到默认会话
+          const current =
+            typeof window === 'undefined'
+              ? null
+              : new URLSearchParams(window.location.search).get('conversation');
+          const href = current
+            ? `/chat?branch=new&conversation=${encodeURIComponent(current)}`
+            : '/chat?branch=new';
+          navigate(href);
+        },
+      },
 
       // ── 会话 ──
       {

@@ -6,7 +6,6 @@ import type { ConversationBranch } from '@wbfm/shared/types';
 import { EmptyState, Spinner } from '@/components/common/state';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { isActiveBranch } from '../model/branch-status';
 import { useBranches, useBranchActions, type BranchCreatePayload } from '../hooks/use-branches';
 import { BranchBudgetBar } from './branch-budget';
 import { BranchCard } from './branch-card';
@@ -30,9 +29,10 @@ export function BranchPanel({ conversationId, onClose }: Props) {
   };
 
   const remove = (branch: ConversationBranch): void => {
-    const message = isActiveBranch(branch)
-      ? t('branch.confirm.removeRunningDescription', { title: branch.title })
-      : t('branch.confirm.removeDescription', { title: branch.title });
+    const message =
+      branch.status === 'running' || branch.status === 'waiting'
+        ? t('branch.confirm.removeRunningDescription', { title: branch.title })
+        : t('branch.confirm.removeDescription', { title: branch.title });
     if (window.confirm(`${t('branch.confirm.removeTitle')}\n\n${message}`)) {
       actions.remove.mutate(branch.id);
     }

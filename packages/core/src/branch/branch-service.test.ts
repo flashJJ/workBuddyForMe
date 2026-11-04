@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDatabase, createConversationRepository, createSettingsRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../services/base/deps';
 import { createBranchService } from './branch-service';
+import { collectBranchArtifacts } from './branch-evidence';
 import type { BranchChatRunner } from './branch-runner';
 
 const cipher = {
@@ -154,5 +155,34 @@ describe('v2.21 分支服务', () => {
       )
       .get() as { count: number };
     expect(statusEvents.count).toBe(2);
+  });
+
+  it('终态不可回 running：cancelled 分支不能再次启动', () => {
+    const service = createBranchService(ctx.deps);
+    const branch = service.create(ctx.parentId, { goal: '不再启动' }).branch;
+    service.cancel(branch.id);
+    expect(service.get(branch.id)?.status).toBe('cancelled');
+    expect(() => service.start(branch.id)).toThrow(/不可启动/);
+  });
+
+  it('证据产物：从子会话 toolTrace 提取并按 attachmentId 去重', () => {
+    const artifact = {
+      attachmentId: 'att-1',
+      title: '调研报告',
+      filename: 'report.md',
+      format: 'markdown' as const,
+      mimeType: 'text/markdown',
+      byteSize: 128,
+    };
+    const messages = {
+      listByConversation: () => [
+        { toolTrace: [{ artifacts: [artifact] }, { artifacts: [artifact] }] },
+        { toolTrace: [{ artifacts: [{ ...artifact, attachmentId: 'att-2', title: '附录' }] }] },
+      ],
+    };
+    expect(collectBranchArtifacts(messages as never, 'child')).toEqual([
+      { id: 'att-1', title: '调研报告', kind: 'markdown' },
+      { id: 'att-2', title: '附录', kind: 'markdown' },
+    ]);
   });
 });

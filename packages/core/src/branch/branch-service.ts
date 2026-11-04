@@ -3,7 +3,6 @@ import { ApiError } from '@wbfm/shared/errors';
 import type {
   BranchAdmissionRejection,
   BranchBudget,
-  BranchEvidence,
   BranchLimits,
   ConversationBranch,
 } from '@wbfm/shared/types';
@@ -19,6 +18,7 @@ import { createConversationService, deriveTitle } from '../services/assistant/co
 import { createChatOrchestrator } from '../chat/orchestrator/chat-orchestrator';
 import { evaluateBranchAdmission, reserveBranchTokens } from './branch-limits';
 import { createBranchEventRecorder } from './branch-events';
+import { buildBranchEvidence, collectBranchArtifacts } from './branch-evidence';
 import { readBranchLimits } from './branch-settings';
 import { recoverInterruptedBranches } from './branch-recovery';
 import { runBranchChat, type BranchRunResult, type BranchChatRunner } from './branch-runner';
@@ -84,27 +84,12 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
     };
   };
 
-  const evidenceFor = (
-    branch: ConversationBranch,
-    result: BranchRunResult,
-  ): BranchEvidence => ({
-    branchId: branch.id,
-    parentConversationId: branch.parentConversationId,
-    childConversationId: branch.childConversationId,
-    rootConversationId: branch.rootConversationId,
-    status: result.status,
-    summary: result.content.slice(0, 4000),
-    artifacts: [],
-    usage: result.usage
-      ? {
-          promptTokens: result.usage.promptTokens ?? 0,
-          completionTokens: result.usage.completionTokens ?? 0,
-          totalTokens: result.usage.totalTokens ?? 0,
-        }
-      : null,
-    needsReview: true,
-    createdAt: new Date().toISOString(),
-  });
+  const evidenceFor = (branch: ConversationBranch, result: BranchRunResult) =>
+    buildBranchEvidence(
+      branch,
+      result,
+      collectBranchArtifacts(messagesRepo, branch.childConversationId),
+    );
 
   const finalize = (branchId: string, result: BranchRunResult): void => {
     const branch = branchRepo.get(branchId);
@@ -230,7 +215,8 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
     start(id: string): ConversationBranch {
       const branch = requireBranch(id);
       if (branch.status === 'running' || branch.status === 'waiting') return branch;
-      if (branch.status !== 'queued' && branch.status !== 'failed') {
+      // 契约：终态不可回 running；只有 queued 可启动
+      if (branch.status !== 'queued') {
         throw ApiError.validation(`分支状态不可启动：${branch.status}`);
       }
       return run(branch);
@@ -254,17 +240,28 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
     },
 
     archive(id: string): ConversationBranch {
-      return branchRepo.patch(id, { archivedAt: new Date().toISOString() })!;
+      requireBranch(id);
+      const archived = branchRepo.patch(id, { archivedAt: new Date().toISOString() })!;
+      // 归档态写 branch_status 事件，供图车道默认折叠
+      events.status(archived, archived.status, archived.statusReason);
+      return archived;
     },
 
     restore(id: string): ConversationBranch {
-      return branchRepo.patch(id, { archivedAt: null })!;
+      requireBranch(id);
+      const restored = branchRepo.patch(id, { archivedAt: null })!;
+      events.status(restored, restored.status, restored.statusReason);
+      return restored;
     },
 
-    /** 删除关联；子会话与消息保留为普通会话；运行中先取消 */
-    remove(id: string): { id: string } {
+    /** 删除关联；子会话与消息保留为普通会话；运行中先停止并等待终态 */
+    async remove(id: string): Promise<{ id: string }> {
       const branch = requireBranch(id);
-      running.get(id)?.controller.abort();
+      const active = running.get(id);
+      if (active) {
+        active.controller.abort();
+        await active.promise;
+      }
       branchRepo.delete(branch.id);
       return { id };
     },

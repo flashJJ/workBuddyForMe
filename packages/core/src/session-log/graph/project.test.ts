@@ -241,10 +241,25 @@ describe('v2.20 RunGraph 投影', () => {
         },
         4,
       ),
+      ev(
+        'branch',
+        'b1',
+        'branch_status',
+        {
+          ...base,
+          status: 'succeeded',
+          statusReason: null,
+          archivedAt: '2026-11-03T00:00:05.000Z',
+        },
+        5,
+      ),
     ];
     const graph = project('conversation', 'c1', events);
 
-    expect(graph.lanes.find((lane) => lane.id === 'lane:branch:b1')?.kind).toBe('branch');
+    expect(graph.lanes.find((lane) => lane.id === 'lane:branch:b1')).toMatchObject({
+      kind: 'branch',
+      archived: true,
+    });
     expect(graph.nodes.find((node) => node.id === 'branch:b1')).toMatchObject({
       kind: 'branch',
       status: 'succeeded',
@@ -259,6 +274,19 @@ describe('v2.20 RunGraph 投影', () => {
     expect(graph.edges.map((edge) => edge.kind)).toEqual(
       expect.arrayContaining(['parent_to_branch', 'branch_to_child', 'branch_to_return']),
     );
+
+    // 恢复事件把车道折叠标记还原
+    const restored = project('conversation', 'c1', [
+      ...events,
+      ev(
+        'branch',
+        'b1',
+        'branch_status',
+        { ...base, status: 'succeeded', statusReason: null, archivedAt: null },
+        6,
+      ),
+    ]);
+    expect(restored.lanes.find((lane) => lane.id === 'lane:branch:b1')?.archived).toBe(false);
 
     // 嵌套分支事件挂在子会话名下，不进入父图
     const nested = project('conversation', 'c1', [

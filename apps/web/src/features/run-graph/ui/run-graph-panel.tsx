@@ -48,12 +48,30 @@ export function RunGraphPanel({
   const [selected, setSelected] = React.useState<string | null>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
   const knownNodeIds = React.useRef<Set<string> | null>(null);
+  const archivedLanes = React.useRef<Set<string>>(new Set());
   const emitLight = useRunGraphLight(live && Boolean(id));
 
   const scopeKey = `${kind}:${id ?? ''}`;
   React.useEffect(() => {
     knownNodeIds.current = null;
+    archivedLanes.current.clear();
   }, [scopeKey]);
+
+  // v2.21：归档分支车道首次出现时默认折叠；手动展开后不在轮询中重新折叠
+  React.useEffect(() => {
+    const snapshot = query.data;
+    if (!snapshot) return;
+    const current = new Set<string>();
+    const fresh: string[] = [];
+    for (const lane of snapshot.lanes) {
+      if (lane.kind !== 'branch' || !lane.archived) continue;
+      current.add(lane.id);
+      if (!archivedLanes.current.has(lane.id)) fresh.push(lane.id);
+    }
+    archivedLanes.current = current;
+    if (fresh.length === 0) return;
+    setCollapsed((prev) => new Set([...prev, ...fresh]));
+  }, [query.data]);
 
   React.useEffect(() => {
     const snapshot = query.data;

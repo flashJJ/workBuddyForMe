@@ -48,6 +48,7 @@ export function createBranchEventRecorder(
           title: branch.title,
           goal: branch.goal,
           depth: branch.depth,
+          archivedAt: branch.archivedAt,
           ...extra,
         },
       });
