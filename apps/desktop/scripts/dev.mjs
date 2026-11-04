@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const desktopDir = path.resolve(here, '..');
 const repoRoot = path.resolve(desktopDir, '..', '..');
-const devUrl = 'http://127.0.0.1:3000';
+const devPort = process.env.WBFM_DEV_PORT ?? '3000';
+const devUrl = `http://127.0.0.1:${devPort}`;
 const READY_TIMEOUT_MS = 90_000;
 
 const children = [];
@@ -33,18 +34,18 @@ async function waitForDevServer() {
 }
 
 async function main() {
-  spawnManaged('pnpm --filter @wbfm/web dev', repoRoot);
+  spawnManaged(`pnpm --filter @wbfm/web exec next dev -H 127.0.0.1 -p ${devPort}`, repoRoot);
   await waitForDevServer();
 
   // hoisted（nodeLinker=hoisted）模式下 electron 只提升到仓库根 node_modules/.bin，
   // apps/desktop/node_modules/.bin 下不存在，因此必须从 repoRoot 解析绝对路径。
   const binName = process.platform === 'win32' ? 'electron.cmd' : 'electron';
   const bin = path.join(repoRoot, 'node_modules', '.bin', binName);
-  const electron = spawn(`"${bin}" . --remote-debugging-port=9222`, {
+  const electron = spawn(`"${bin}" . --remote-debugging-port=9222 --no-proxy-server`, {
     cwd: desktopDir,
     shell: true,
     stdio: 'inherit',
-    env: { ...process.env, WBFM_DEV: '1' },
+    env: { ...process.env, WBFM_DEV: '1', WBFM_DEV_SERVER_URL: devUrl },
   });
 
   electron.on('exit', (code) => shutdown(code ?? 0));

@@ -4,8 +4,8 @@ import path from 'node:path';
 import { DATA_DIR_NAME, DATA_ROOT_ENV } from '@wbfm/config';
 import { COMPUTER_CHANNEL_FILE } from '@wbfm/shared/schemas';
 
-/** 桌面端固定开发地址（Next dev server） */
-export const DEV_SERVER_URL = 'http://127.0.0.1:3000';
+/** 桌面端固定开发地址（Next dev server）；端口冲突时可用 WBFM_DEV_SERVER_URL 覆盖 */
+export const DEV_SERVER_URL = process.env.WBFM_DEV_SERVER_URL ?? 'http://127.0.0.1:3000';
 
 /** 托管服务健康检查配置 */
 export const HEALTH_TIMEOUT_MS = 30_000;
