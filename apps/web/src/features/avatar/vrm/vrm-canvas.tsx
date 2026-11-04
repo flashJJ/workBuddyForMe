@@ -179,9 +179,15 @@ export function VrmCanvas({
         };
         host.addEventListener('pointermove', onPointerMove);
 
-        const animate = () => {
+        // v2.22 性能：VRM 侧栏按 60fps 渲染。高刷屏 rAF 可达 240Hz，
+        // 无上限时每帧都做 SpringBone/矩阵/表情，空闲也占满主线程。
+        const FRAME_INTERVAL_MS = 1000 / 60;
+        let lastFrameAt = 0;
+        const animate = (now: number) => {
           if (disposed || !controller) return;
           raf = requestAnimationFrame(animate);
+          if (now - lastFrameAt < FRAME_INTERVAL_MS) return;
+          lastFrameAt = now;
           if (expressionRef.current) controller.setExpression(expressionRef.current);
           controller.setMotionPreference({
             mood: moodRef.current,
@@ -189,7 +195,7 @@ export function VrmCanvas({
           });
           controller.update(speakingRef.current, () => getLevelRef.current?.() ?? 0);
         };
-        animate();
+        raf = requestAnimationFrame(animate);
 
         let fitted = false;
         let lastW = 0, lastH = 0;
