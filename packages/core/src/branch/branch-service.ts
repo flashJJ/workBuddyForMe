@@ -20,7 +20,7 @@ import { createBranchEventRecorder } from './branch-events';
 import { buildBranchEvidence, collectBranchArtifacts } from './branch-evidence';
 import { readBranchLimits } from './branch-settings';
 import { recoverInterruptedBranches } from './branch-recovery';
-import { readTreeUsage, resolveBranchTree } from './branch-tree';
+import { readTreeUsage, resolveBranchTree } from './branch-limits';
 import { runBranchChat, type BranchRunResult, type BranchChatRunner } from './branch-runner';
 
 const START_RESERVATION_TOKENS = 1000;

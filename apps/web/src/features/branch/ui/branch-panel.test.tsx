@@ -80,6 +80,66 @@ describe('v2.21 分支面板', () => {
     );
   });
 
+  it('终态分支可重试；空回传显示无运行结果', async () => {
+    const branch = {
+      id: 'b1',
+      parentConversationId: 'c1',
+      childConversationId: 'c2',
+      rootConversationId: 'c1',
+      title: '已取消分支',
+      goal: '整理竞品',
+      status: 'cancelled',
+      statusReason: '分支已取消',
+      reservedTokens: 0,
+      depth: 1,
+      archivedAt: null,
+      createdAt: '2026-11-04T00:00:00.000Z',
+      updatedAt: '2026-11-04T00:00:00.000Z',
+      endedAt: '2026-11-04T00:01:00.000Z',
+      evidence: {
+        branchId: 'b1',
+        parentConversationId: 'c1',
+        childConversationId: 'c2',
+        rootConversationId: 'c1',
+        status: 'cancelled',
+        summary: '',
+        artifacts: [],
+        usage: null,
+        needsReview: true,
+        createdAt: '2026-11-04T00:01:00.000Z',
+      },
+    };
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('/retry')) {
+        return ok(
+          { branch: { ...branch, id: 'b2' }, childConversationId: 'c3', retriedFrom: 'b1' },
+          201,
+        );
+      }
+      return ok({
+        branches: [branch],
+        budget: {
+          rootConversationId: 'c1',
+          usedTokens: 0,
+          reservedTokens: 0,
+          limitTokens: 200000,
+          activeCount: 0,
+        },
+      });
+    });
+
+    renderWithProviders(<BranchPanel conversationId="c1" />);
+    const card = await screen.findByTestId('branch-card-b1');
+    expect(within(card).getByText(/无运行结果/)).toBeInTheDocument();
+    await userEvent.click(within(card).getByRole('button', { name: '重试' }));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/branches/b1/retry'),
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+  });
+
   it('启动被并发/预算拒绝时展示接口原因，不静默失败', async () => {
     const branch = {
       id: 'b1',

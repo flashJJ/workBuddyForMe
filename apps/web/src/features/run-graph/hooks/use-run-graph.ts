@@ -17,6 +17,8 @@ export interface UseRunGraphOptions {
 export function useRunGraph(kind: RunGraphRootKind, id: string | null, options: UseRunGraphOptions = {}) {
   const live = options.live === true;
   const [frames, setFrames] = React.useState<RunGraphLiveFrame[]>([]);
+  // 分支帧在 query 定义前即可订阅，用 ref 延迟绑定 refetch
+  const refetchRef = React.useRef<(() => void) | null>(null);
 
   React.useEffect(() => {
     setFrames([]);
@@ -24,6 +26,19 @@ export function useRunGraph(kind: RunGraphRootKind, id: string | null, options: 
     return runGraphLiveBus.subscribe((frame) => {
       if (frame.rootKind !== kind || frame.rootId !== id) return;
       setFrames((prev) => (prev.length >= 200 ? [...prev.slice(-199), frame] : [...prev, frame]));
+    });
+  }, [kind, id, live]);
+
+  // v2.22：分支帧到达即拉新快照（服务端投影权威）
+  React.useEffect(() => {
+    if (!id || !live) return;
+    let last = 0;
+    return runGraphLiveBus.subscribe((frame) => {
+      if (frame.rootKind !== kind || frame.rootId !== id || frame.scope !== 'branch') return;
+      const now = Date.now();
+      if (now - last < 1000) return;
+      last = now;
+      void refetchRef.current?.();
     });
   }, [kind, id, live]);
 
@@ -38,6 +53,10 @@ export function useRunGraph(kind: RunGraphRootKind, id: string | null, options: 
     refetchIntervalInBackground: false,
     staleTime: live ? 8000 : 1000,
   });
+
+  React.useEffect(() => {
+    refetchRef.current = () => void query.refetch();
+  }, [query.refetch]);
 
   const data = React.useMemo(
     () => (query.data ? applyRunGraphLiveFrames(query.data, frames) : undefined),

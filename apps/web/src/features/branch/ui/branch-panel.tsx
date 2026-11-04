@@ -7,6 +7,7 @@ import { EmptyState, Spinner } from '@/components/common/state';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useBranches, useBranchActions, type BranchCreatePayload } from '../hooks/use-branches';
+import { useBranchLiveFrames } from '../hooks/use-branch-live-frames';
 import { BranchBudgetBar } from './branch-budget';
 import { BranchCard } from './branch-card';
 import { BranchCreateForm } from './branch-create-form';
@@ -22,6 +23,8 @@ export function BranchPanel({ conversationId, onClose }: Props) {
   const router = useRouter();
   const { branches, budget, isLoading, isError, refetch } = useBranches(conversationId, true);
   const actions = useBranchActions(conversationId);
+  // v2.22：把轮询到的分支变化发布为图帧，打开图时无需等下一轮 10s 快照
+  useBranchLiveFrames(conversationId, branches);
   const [creating, setCreating] = React.useState(false);
 
   const openChild = (childId: string): void => {

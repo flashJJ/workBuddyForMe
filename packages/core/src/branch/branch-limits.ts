@@ -1,6 +1,7 @@
 import type {
   BranchAdmissionRejection,
   BranchLimits,
+  ConversationBranch,
 } from '@wbfm/shared/types';
 import { BRANCH_LIMITS } from '@wbfm/shared/types';
 
@@ -68,4 +69,59 @@ export function reserveBranchTokens(
   const remaining = limits.maxTreeTokens - usedTokens - reservedTokens;
   if (remaining <= 0) return 0;
   return Math.min(Math.max(estimatedTokens, 1), remaining);
+}
+
+/* v2.22：会话树读取（从 branch-service 抽出，控制主服务行数） */
+
+export interface BranchTreeReader {
+  findByChild(childConversationId: string): ConversationBranch | null;
+  listByRoot(rootConversationId: string): ConversationBranch[];
+}
+
+export interface TokenUsageReader {
+  sumTokensForConversations(ids: string[]): number;
+}
+
+export interface BranchTree {
+  rootConversationId: string;
+  depth: number;
+  /** 根→父（含父）的会话 id 链，用于环检测 */
+  ancestorIds: string[];
+}
+
+/** 沿父链回溯根会话与深度；最多 10 层防御环 */
+export function resolveBranchTree(
+  repo: BranchTreeReader,
+  parentConversationId: string,
+): BranchTree {
+  const ancestorIds = [parentConversationId];
+  let cursor = parentConversationId;
+  let rootConversationId = parentConversationId;
+  let parentDepth = 0;
+  for (let guard = 0; guard < 10; guard += 1) {
+    const parentBranch = repo.findByChild(cursor);
+    if (!parentBranch) break;
+    rootConversationId = parentBranch.rootConversationId;
+    parentDepth = parentBranch.depth;
+    ancestorIds.unshift(parentBranch.parentConversationId);
+    cursor = parentBranch.parentConversationId;
+  }
+  return { rootConversationId, depth: parentDepth + 1, ancestorIds };
+}
+
+/** 聚合会话树（根 + 全部子会话）的已用与预留 Token */
+export function readTreeUsage(
+  repo: BranchTreeReader,
+  messagesRepo: TokenUsageReader,
+  rootConversationId: string,
+): { usedTokens: number; reservedTokens: number; activeCount: number } {
+  const branches = repo.listByRoot(rootConversationId);
+  const ids = [rootConversationId, ...branches.map((branch) => branch.childConversationId)];
+  return {
+    usedTokens: messagesRepo.sumTokensForConversations(ids),
+    reservedTokens: branches.reduce((sum, branch) => sum + branch.reservedTokens, 0),
+    activeCount: branches.filter(
+      (branch) => branch.status === 'running' || branch.status === 'waiting',
+    ).length,
+  };
 }
