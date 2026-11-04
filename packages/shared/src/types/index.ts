@@ -45,6 +45,16 @@ export type {
 } from './run';
 export { STAGE_PLAN_LIMITS } from './stage-plan';
 export type { StagePlanStep, StagePlan } from './stage-plan';
+export { BRANCH_STATUSES, BRANCH_TERMINAL_STATUSES, BRANCH_LIMITS, BRANCH_LIMIT_RANGES } from './branch';
+export type {
+  BranchStatus,
+  BranchArtifactRef,
+  BranchEvidence,
+  ConversationBranch,
+  BranchAdmissionInput,
+  BranchAdmissionRejection,
+  BranchLimits,
+} from './branch';
 export type { McpServerConfig, McpServerInfo, McpToolInfo } from './mcp';
 export type {
   ProviderConnectionStatus,

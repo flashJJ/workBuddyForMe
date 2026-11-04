@@ -1,0 +1,62 @@
+import type {
+  BranchAdmissionRejection,
+  BranchLimits,
+} from '@wbfm/shared/types';
+import { BRANCH_LIMITS } from '@wbfm/shared/types';
+
+/** v2.21 M1：派生准入纯函数；顺序固定为 环 → 深度 → 子节点 → 并发 → 预算。 */
+
+export interface BranchAdmissionSnapshot {
+  /** 从根到父的祖先链（含父会话 id） */
+  ancestorIds: readonly string[];
+  /** 新子会话 id；用于防御性环检测 */
+  childConversationId: string;
+  /** 新分支深度（根为 1） */
+  depth: number;
+  /** 会话树内 running + waiting 分支数 */
+  activeCount: number;
+  /** 父会话未归档分支数 */
+  childCount: number;
+  /** 会话树已用 Token */
+  usedTokens: number;
+  /** 会话树已预留 Token */
+  reservedTokens: number;
+}
+
+export type BranchAdmissionResult =
+  | { ok: true }
+  | { ok: false; code: BranchAdmissionRejection };
+
+export function evaluateBranchAdmission(
+  input: BranchAdmissionSnapshot,
+  limits: BranchLimits = BRANCH_LIMITS,
+): BranchAdmissionResult {
+  if (input.ancestorIds.includes(input.childConversationId)) {
+    return { ok: false, code: 'BRANCH_CYCLE' };
+  }
+  if (input.depth > limits.maxDepth) {
+    return { ok: false, code: 'BRANCH_DEPTH_EXCEEDED' };
+  }
+  if (input.childCount >= limits.maxChildren) {
+    return { ok: false, code: 'BRANCH_CHILDREN_EXCEEDED' };
+  }
+  if (input.activeCount >= limits.maxConcurrent) {
+    return { ok: false, code: 'BRANCH_CONCURRENCY_EXCEEDED' };
+  }
+  if (input.usedTokens + input.reservedTokens >= limits.maxTreeTokens) {
+    return { ok: false, code: 'BRANCH_BUDGET_EXCEEDED' };
+  }
+  return { ok: true };
+}
+
+/** 剩余预算按预估预留；至少预留 1，触顶时返回 0 由准入拒绝。 */
+export function reserveBranchTokens(
+  estimatedTokens: number,
+  limits: BranchLimits = BRANCH_LIMITS,
+  usedTokens = 0,
+  reservedTokens = 0,
+): number {
+  const remaining = limits.maxTreeTokens - usedTokens - reservedTokens;
+  if (remaining <= 0) return 0;
+  return Math.min(Math.max(estimatedTokens, 1), remaining);
+}
