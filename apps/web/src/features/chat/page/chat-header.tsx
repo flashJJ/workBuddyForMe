@@ -8,6 +8,7 @@ import { useSkills } from '@/lib/hooks/capability';
 import { AssistantSwitcher } from '../sidebar/assistant-switcher';
 import { PlanChip } from '@/features/plans/chip';
 import { RunGraphLauncher } from '@/features/run-graph';
+import { BranchLauncher, BranchOriginBanner } from '@/features/branch';
 
 interface Props {
   assistants: Assistant[];
@@ -78,39 +79,47 @@ export function ChatHeader({
 }: Props) {
   const { t } = useI18n();
   return (
-    <header className="flex items-center justify-between border-b px-4 py-2.5">
-      <div className="flex min-w-0 flex-col gap-1">
-        <AssistantSwitcher assistants={assistants} value={assistantId} onChange={onAssistantChange} />
-        {currentAssistant && <CapabilitySummary assistant={currentAssistant} />}
-      </div>
-      <div className="flex items-center gap-3">
-        <PlanChip conversationId={currentConversation?.id ?? null} />
-        <RunGraphLauncher kind="conversation" id={currentConversation?.id ?? null} />
-        {currentConversation?.summaryTurns ? (
-          <button
+    <>
+      <header className="flex items-center justify-between border-b px-4 py-2.5">
+        <div className="flex min-w-0 flex-col gap-1">
+          <AssistantSwitcher
+            assistants={assistants}
+            value={assistantId}
+            onChange={onAssistantChange}
+          />
+          {currentAssistant && <CapabilitySummary assistant={currentAssistant} />}
+        </div>
+        <div className="flex items-center gap-3">
+          <PlanChip conversationId={currentConversation?.id ?? null} />
+          <RunGraphLauncher kind="conversation" id={currentConversation?.id ?? null} />
+          <BranchLauncher conversationId={currentConversation?.id ?? null} />
+          {currentConversation?.summaryTurns ? (
+            <button
+              type="button"
+              data-testid="compaction-badge"
+              onClick={onShowSummary}
+              title={t('chat.viewSummaryTitle')}
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <Archive className="h-3 w-3" />
+              {t('chat.compactedBadge', { count: currentConversation.summaryTurns })}
+            </button>
+          ) : null}
+          <Button
             type="button"
-            data-testid="compaction-badge"
-            onClick={onShowSummary}
-            title={t('chat.viewSummaryTitle')}
-            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
+            variant="outline"
+            size="sm"
+            data-testid="share-conversation-button"
+            disabled={!currentConversation}
+            onClick={onShare}
           >
-            <Archive className="h-3 w-3" />
-            {t('chat.compactedBadge', { count: currentConversation.summaryTurns })}
-          </button>
-        ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          data-testid="share-conversation-button"
-          disabled={!currentConversation}
-          onClick={onShare}
-        >
-          <Share2 className="mr-1 h-3.5 w-3.5" />
-          {t('common.actions.share')}
-        </Button>
-        <span className="text-xs text-muted-foreground">{t('chat.localPrivateStreaming')}</span>
-      </div>
-    </header>
+            <Share2 className="mr-1 h-3.5 w-3.5" />
+            {t('common.actions.share')}
+          </Button>
+          <span className="text-xs text-muted-foreground">{t('chat.localPrivateStreaming')}</span>
+        </div>
+      </header>
+      <BranchOriginBanner conversationId={currentConversation?.id ?? null} />
+    </>
   );
 }

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(1000).optional(),
-  scope: z.enum(['chat', 'task', 'flow', 'agent']).optional(),
+  scope: z.enum(['chat', 'task', 'flow', 'agent', 'branch']).optional(),
 });
 
 /** v2.20 M2：会话过程图快照（chat/task/flow/agent；会议走独立入口） */

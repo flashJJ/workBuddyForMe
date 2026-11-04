@@ -8,6 +8,7 @@ import { createWebCipher } from '@wbfm/core/secrets';
 import { BUILTIN_ASSISTANT } from '@wbfm/core/services';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
 import { GET, POST } from './route';
+import { GET as GET_BY_CHILD } from '../../../branches/route';
 
 const jsonRequest = (method: string, body: unknown) =>
   new Request('http://127.0.0.1/x', {
@@ -41,8 +42,20 @@ describe('v2.21 分支 API', () => {
       new Request(`http://127.0.0.1/x?includeArchived=false`),
       params(parentId),
     );
-    const listed = (await listedResponse.json()) as { data: { branches: unknown[] } };
+    const listed = (await listedResponse.json()) as {
+      data: { branches: unknown[]; budget: { usedTokens: number; limitTokens: number } };
+    };
     expect(listed.data.branches).toHaveLength(1);
+    expect(listed.data.budget.limitTokens).toBe(200000);
+
+    // v2.21 M3：子会话反查来源分支
+    const byChild = await GET_BY_CHILD(
+      new Request(
+        `http://127.0.0.1/x?childConversationId=${encodeURIComponent(created.data.childConversationId)}`,
+      ),
+    );
+    const found = (await byChild.json()) as { data: { branch: { id: string } | null } };
+    expect(found.data.branch?.id).toBe(created.data.branch.id);
   });
 
   it('非法 goal：422 校验失败', async () => {

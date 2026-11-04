@@ -43,6 +43,7 @@ import { WorkSignalPanel } from '../dialog/work-signal-panel';
 import { SubagentPanel } from '../subagent/subagent-panel';
 import { CapabilityTrustSection } from '../tools/capability-trust-section';
 import { AgentGovernanceSection } from '../tools/agent-governance-section';
+import { BranchLimitsPanel } from '../branch/limits-panel';
 
 /**
  * 设置页 4 大分组（右侧 sticky 锚点导航）：
@@ -120,6 +121,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         <SubagentPanel key="subagent" />,
         <CapabilityTrustSection key="capability-trust" />,
         <AgentGovernanceSection key="agent-governance" />,
+        <BranchLimitsPanel key="branch-limits" />,
         <TuningPanel key="tuning" />,
       ],
     },

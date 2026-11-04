@@ -44,6 +44,15 @@ export const API = {
   /** v2.20：会话阶段计划与载入任务 */
   stagePlan: (id: string) => `/api/conversations/${id}/stage-plan`,
   stagePlanPrepare: (id: string) => `/api/conversations/${id}/stage-plan/prepare`,
+  /** v2.21：分支会话（列表返回 branches + budget） */
+  conversationBranches: (id: string) => `/api/conversations/${id}/branches`,
+  branch: (id: string) => `/api/branches/${encodeURIComponent(id)}`,
+  branchStart: (id: string) => `/api/branches/${encodeURIComponent(id)}/start`,
+  branchCancel: (id: string) => `/api/branches/${encodeURIComponent(id)}/cancel`,
+  branchArchive: (id: string) => `/api/branches/${encodeURIComponent(id)}/archive`,
+  branchRestore: (id: string) => `/api/branches/${encodeURIComponent(id)}/restore`,
+  branchByChild: (childConversationId: string) =>
+    `/api/branches?childConversationId=${encodeURIComponent(childConversationId)}`,
   messageFeedback: (conversationId: string, messageId: string) =>
     `/api/conversations/${conversationId}/messages/${messageId}`,
   runEvidence: '/api/reports/runs',
@@ -243,6 +252,9 @@ export const QUERY_KEYS = {
   events: (scope: string, scopeId: string) => ['events', scope, scopeId] as const,
   runGraph: (kind: 'conversation' | 'meeting', id: string) => ['run-graph', kind, id] as const,
   stagePlan: (id: string) => ['stage-plan', id] as const,
+  /** v2.21：分支列表（含预算）与子会话来源分支 */
+  branches: (conversationId: string) => ['branches', conversationId] as const,
+  branchByChild: (childConversationId: string) => ['branch-by-child', childConversationId] as const,
   eventSearch: (q: string, scope: string) => ['event-search', q, scope] as const,
   goals: (conversationId: string) => ['goals', conversationId] as const,
   workPlans: (conversationId?: string) =>

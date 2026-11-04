@@ -2,12 +2,12 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
-import type { AppSettings, ProviderModel } from '@wbfm/shared/types';
+import type { AppSettings, BranchLimitSettings, ProviderModel } from '@wbfm/shared/types';
 import { useProviders } from './use-providers';
 import { apiGet, apiPut } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
-export type SettingsUpdateBody = Partial<AppSettings>;
+export type SettingsUpdateBody = Partial<AppSettings> & BranchLimitSettings;
 
 export function useSettings() {
   return useVisibleQuery({
