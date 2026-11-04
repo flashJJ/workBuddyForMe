@@ -26,7 +26,7 @@
 修复 v2.22.0 线上安装包启动即报 `Cannot find module '@nut-tree-fork/nut-js'`：CI 用 `npx electron-builder` 使包管理器被识别为 npm，pnpm hoisted 布局下漏收根级生产依赖。v2.22.1 改用 `pnpm exec electron-builder`，并在发布自检中逐项校验 asar 生产依赖。无功能变更、零迁移。
 
 - 发行说明：[v2.22.1-release-notes.md](v2.22.1-release-notes.md)
-- 状态：🟡 待发布（CI 构建中）
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41894394404`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.22.1>；安装包 205.40 MB）
 - 承接版本：[v2.22 方案](../plan/v2.22/README.md)
 
 ## ✅ 已正式发布：v2.22 收口——分支会话可靠性与发布闭环（2026-11-04，tag `v2.22.0`）
