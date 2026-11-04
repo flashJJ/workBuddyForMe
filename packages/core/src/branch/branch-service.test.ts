@@ -56,6 +56,27 @@ describe('v2.21 分支服务', () => {
     expect(createConversationRepository(ctx.db).findById('p1')?.title).toBe('父会话');
   });
 
+  it('派生继承父会话显式选择的模型', () => {
+    ctx.db
+      .prepare(
+        `INSERT INTO providers(id, name, base_url, created_at, updated_at)
+         VALUES ('prov1', 'P', 'http://mock.local', 't', 't')`,
+      )
+      .run();
+    ctx.db
+      .prepare(
+        `INSERT INTO models(id, provider_id, model_id, display_name, created_at)
+         VALUES ('model-branch', 'prov1', 'model-branch', 'M', 't')`,
+      )
+      .run();
+    createConversationRepository(ctx.db).setModelId('p1', 'model-branch');
+    const service = createBranchService(ctx.deps);
+    const { childConversationId } = service.create(ctx.parentId, { goal: '继承模型' });
+    expect(createConversationRepository(ctx.db).findById(childConversationId)?.modelId).toBe(
+      'model-branch',
+    );
+  });
+
   it('autoStart：终态 succeeded 并生成带 needsReview 的 evidence', async () => {
     const service = createBranchService(ctx.deps, {
       runner: runnerOf([

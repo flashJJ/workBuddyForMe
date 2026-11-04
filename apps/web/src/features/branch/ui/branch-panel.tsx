@@ -28,6 +28,14 @@ export function BranchPanel({ conversationId, onClose }: Props) {
     router.push(`/chat?conversation=${encodeURIComponent(childId)}`);
   };
 
+  const rename = (branch: ConversationBranch): void => {
+    const title = window.prompt(t('branch.list.renamePrompt', { title: branch.title }), branch.title);
+    const trimmed = title?.trim();
+    if (trimmed && trimmed !== branch.title) {
+      actions.rename.mutate({ branchId: branch.id, title: trimmed });
+    }
+  };
+
   const remove = (branch: ConversationBranch): void => {
     const message =
       branch.status === 'running' || branch.status === 'waiting'
@@ -44,6 +52,7 @@ export function BranchPanel({ conversationId, onClose }: Props) {
 
   const cardActions = {
     onStart: (id: string) => actions.start.mutate(id),
+    onRename: rename,
     onCancel: (id: string) => actions.cancel.mutate(id),
     onArchive: (id: string) => actions.archive.mutate(id),
     onRestore: (id: string) => actions.restore.mutate(id),
@@ -53,6 +62,7 @@ export function BranchPanel({ conversationId, onClose }: Props) {
   const active = branches.filter((branch) => !branch.archivedAt);
   const archived = branches.filter((branch) => branch.archivedAt);
   const createError = actions.create.error as { message?: string } | null;
+  const startError = actions.start.error as { message?: string } | null;
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3" data-testid="branch-panel">
@@ -66,6 +76,12 @@ export function BranchPanel({ conversationId, onClose }: Props) {
       </div>
 
       <BranchBudgetBar budget={budget} />
+
+      {startError?.message && (
+        <p className="text-xs text-destructive break-words" data-testid="branch-start-error">
+          {startError.message}
+        </p>
+      )}
 
       {creating ? (
         <BranchCreateForm

@@ -1,11 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError } from '@wbfm/shared/errors';
-import type {
-  BranchAdmissionRejection,
-  BranchBudget,
-  BranchLimits,
-  ConversationBranch,
-} from '@wbfm/shared/types';
+import type { BranchBudget, BranchLimits, ConversationBranch } from '@wbfm/shared/types';
 import { branchCreateSchema, type BranchCreateInput } from '@wbfm/shared/schemas';
 import {
   createConversationBranchRepository,
@@ -16,7 +11,11 @@ import {
 import type { ServiceDeps } from '../services/base/deps';
 import { createConversationService, deriveTitle } from '../services/assistant/conversation-service';
 import { createChatOrchestrator } from '../chat/orchestrator/chat-orchestrator';
-import { evaluateBranchAdmission, reserveBranchTokens } from './branch-limits';
+import {
+  BRANCH_REJECTION_TEXT,
+  evaluateBranchAdmission,
+  reserveBranchTokens,
+} from './branch-limits';
 import { createBranchEventRecorder } from './branch-events';
 import { buildBranchEvidence, collectBranchArtifacts } from './branch-evidence';
 import { readBranchLimits } from './branch-settings';
@@ -24,14 +23,6 @@ import { recoverInterruptedBranches } from './branch-recovery';
 import { runBranchChat, type BranchRunResult, type BranchChatRunner } from './branch-runner';
 
 const START_RESERVATION_TOKENS = 1000;
-
-const REJECTION_TEXT: Record<BranchAdmissionRejection, string> = {
-  BRANCH_CYCLE: '分支祖先链出现环',
-  BRANCH_DEPTH_EXCEEDED: '超过最大分支深度',
-  BRANCH_CHILDREN_EXCEEDED: '父会话分支数已达上限',
-  BRANCH_CONCURRENCY_EXCEEDED: '并发分支数已达上限',
-  BRANCH_BUDGET_EXCEEDED: '会话树 Token 预算已用尽',
-};
 
 export interface BranchServiceOptions {
   /** 测试注入；缺省使用真实聊天编排器 */
@@ -117,6 +108,10 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
     const controller = new AbortController();
     const limits = readLimits();
     const usage = treeUsage(branch.rootConversationId);
+    // 创建时只校验一次并发；排队分支集中启动时必须复检，避免越过 running+waiting 上限
+    if (usage.activeCount >= limits.maxConcurrent) {
+      throw ApiError.validation(`分支准入拒绝：${BRANCH_REJECTION_TEXT.BRANCH_CONCURRENCY_EXCEEDED}`);
+    }
     const reservation = reserveBranchTokens(
       START_RESERVATION_TOKENS,
       limits,
@@ -124,7 +119,7 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
       usage.reservedTokens,
     );
     if (reservation === 0) {
-      throw ApiError.validation(`分支准入拒绝：${REJECTION_TEXT.BRANCH_BUDGET_EXCEEDED}`);
+      throw ApiError.validation(`分支准入拒绝：${BRANCH_REJECTION_TEXT.BRANCH_BUDGET_EXCEEDED}`);
     }
     const started = branchRepo.patch(branch.id, {
       status: 'running',
@@ -164,7 +159,10 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
 
     rename(id: string, title: string): ConversationBranch {
       requireBranch(id);
-      return branchRepo.patch(id, { title })!;
+      const renamed = branchRepo.patch(id, { title })!;
+      // 补事件让 RunGraph 车道/节点标题随重命名收敛
+      events.status(renamed, renamed.status, renamed.statusReason);
+      return renamed;
     },
 
     create(
@@ -190,12 +188,14 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
         limits,
       );
       if (!admission.ok) {
-        throw ApiError.validation(`分支准入拒绝：${REJECTION_TEXT[admission.code]}`);
+        throw ApiError.validation(`分支准入拒绝：${BRANCH_REJECTION_TEXT[admission.code]}`);
       }
       const title = parsed.title ?? deriveTitle(parsed.goal);
       let childConversationId = '';
       const branch = deps.db.transaction(() => {
         const child = conversations.create(parent.assistantId, title);
+        // 继承父会话显式选择的模型；未选择时沿用助手/阶段默认
+        if (parent.modelId) conversationsRepo.setModelId(child.id, parent.modelId);
         childConversationId = child.id;
         return branchRepo.create({
           id: randomUUID(),

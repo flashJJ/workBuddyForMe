@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BranchBudget, ConversationBranch } from '@wbfm/shared/types';
-import { apiDelete, apiGet, apiPost } from '@/lib/api/client';
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
 export interface BranchListResult {
@@ -66,6 +66,11 @@ export function useBranchActions(conversationId: string) {
     mutationFn: (branchId: string) => apiPost<{ branch: ConversationBranch }>(API.branchStart(branchId)),
     onSuccess: invalidate,
   });
+  const rename = useMutation({
+    mutationFn: ({ branchId, title }: { branchId: string; title: string }) =>
+      apiPatch<{ branch: ConversationBranch }>(API.branch(branchId), { title }),
+    onSuccess: invalidate,
+  });
   const cancel = useMutation({
     mutationFn: (branchId: string) => apiPost<{ branch: ConversationBranch }>(API.branchCancel(branchId)),
     onSuccess: invalidate,
@@ -83,5 +88,5 @@ export function useBranchActions(conversationId: string) {
     onSuccess: invalidate,
   });
 
-  return { create, start, cancel, archive, restore, remove, invalidate };
+  return { create, start, rename, cancel, archive, restore, remove, invalidate };
 }

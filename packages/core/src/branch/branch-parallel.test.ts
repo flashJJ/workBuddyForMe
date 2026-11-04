@@ -85,6 +85,20 @@ describe('v2.21 分支并行（M4）', () => {
     expect(createConversationRepository(ctx.db).findById('p1')?.title).toBe('父会话');
   });
 
+  it('并发上限在启动时复检：排队分支不能越过 running 上限', async () => {
+    createSettingsRepository(ctx.db).setJson('app-settings', { branchMaxConcurrent: 1 });
+    const { runner, gates } = gatedRunner();
+    const service = createBranchService(ctx.deps, { runner });
+    const first = service.create('p1', { goal: 'A' }).branch;
+    const second = service.create('p1', { goal: 'B' }).branch;
+    service.start(first.id);
+    expect(service.get(first.id)?.status).toBe('running');
+    expect(() => service.start(second.id)).toThrow(/并发分支数已达上限/);
+    expect(service.get(second.id)?.status).toBe('queued');
+    gates[0]!.release();
+    await service.whenSettled(first.id);
+  });
+
   it('预算触顶：预留耗尽后拒绝新的启动', () => {
     createSettingsRepository(ctx.db).setJson('app-settings', { branchTokenBudget: 10000 });
     const service = createBranchService(ctx.deps, { runner: gatedRunner().runner });

@@ -22,6 +22,8 @@ export const zhBranch = {
     restore: '恢复',
     remove: '删除',
     openChild: '打开子会话',
+    rename: '重命名',
+    renamePrompt: '重命名分支「{title}」',
     archived: '已归档',
   },
   confirm: {
@@ -85,6 +87,8 @@ export const enBranch = {
     restore: 'Restore',
     remove: 'Delete',
     openChild: 'Open child conversation',
+    rename: 'Rename',
+    renamePrompt: 'Rename branch “{title}”',
     archived: 'Archived',
   },
   confirm: {

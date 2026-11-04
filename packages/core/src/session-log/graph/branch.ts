@@ -17,6 +17,7 @@ export function applyBranch(b: Builder, event: SessionEventView): void {
   const status = eventStatus(event.type, event.payload);
   const laneId = `lane:branch:${branchId}`;
   const branchNodeId = `branch:${branchId}`;
+  const childNodeId = `branch-child:${branchId}`;
 
   putLane(b, {
     id: laneId,
@@ -32,8 +33,11 @@ export function applyBranch(b: Builder, event: SessionEventView): void {
   if (b.nodes.has(branchNodeId)) {
     patchNode(b, branchNodeId, {
       status,
+      label: title,
       summary: compact(field(payload, 'statusReason')) || goal,
     });
+    // 子会话节点跟随分支状态收敛，避免成功后仍停在 queued/running
+    if (b.nodes.has(childNodeId)) patchNode(b, childNodeId, { status });
   } else {
     putNode(b, {
       id: branchNodeId,

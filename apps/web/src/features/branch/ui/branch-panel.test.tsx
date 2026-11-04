@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/render';
 import { BranchPanel } from './branch-panel';
@@ -77,6 +77,54 @@ describe('v2.21 分支面板', () => {
         expect.stringContaining('/api/conversations/c1/branches'),
         expect.objectContaining({ method: 'POST' }),
       ),
+    );
+  });
+
+  it('启动被并发/预算拒绝时展示接口原因，不静默失败', async () => {
+    const branch = {
+      id: 'b1',
+      parentConversationId: 'c1',
+      childConversationId: 'c2',
+      rootConversationId: 'c1',
+      title: '排队分支',
+      goal: '整理竞品',
+      status: 'queued',
+      statusReason: null,
+      evidence: null,
+      reservedTokens: 0,
+      depth: 1,
+      archivedAt: null,
+      createdAt: '2026-11-04T00:00:00.000Z',
+      updatedAt: '2026-11-04T00:00:00.000Z',
+      endedAt: null,
+    };
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('/start')) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: '分支准入拒绝：并发分支数已达上限' },
+          }),
+          { status: 422, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return ok({
+        branches: [branch],
+        budget: {
+          rootConversationId: 'c1',
+          usedTokens: 0,
+          reservedTokens: 0,
+          limitTokens: 200000,
+          activeCount: 3,
+        },
+      });
+    });
+
+    renderWithProviders(<BranchPanel conversationId="c1" />);
+    const card = await screen.findByTestId('branch-card-b1');
+    await userEvent.click(within(card).getByRole('button', { name: '开始' }));
+    expect(await screen.findByTestId('branch-start-error')).toHaveTextContent(
+      '并发分支数已达上限',
     );
   });
 });

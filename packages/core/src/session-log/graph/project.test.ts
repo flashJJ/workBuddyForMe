@@ -241,18 +241,7 @@ describe('v2.20 RunGraph 投影', () => {
         },
         4,
       ),
-      ev(
-        'branch',
-        'b1',
-        'branch_status',
-        {
-          ...base,
-          status: 'succeeded',
-          statusReason: null,
-          archivedAt: '2026-11-03T00:00:05.000Z',
-        },
-        5,
-      ),
+      ev('branch', 'b1', 'branch_status', { ...base, status: 'succeeded', statusReason: null, archivedAt: '2026-11-03T00:00:05.000Z' }, 5),
     ];
     const graph = project('conversation', 'c1', events);
 
@@ -265,7 +254,10 @@ describe('v2.20 RunGraph 投影', () => {
       status: 'succeeded',
       label: '竞品调研',
     });
-    expect(graph.nodes.some((node) => node.id === 'branch-child:b1')).toBe(true);
+    expect(graph.nodes.find((node) => node.id === 'branch-child:b1')).toMatchObject({
+      kind: 'run',
+      status: 'succeeded',
+    });
     expect(graph.nodes.find((node) => node.id === 'branch-return:b1')).toMatchObject({
       kind: 'branch_return',
       status: 'succeeded',
@@ -278,15 +270,17 @@ describe('v2.20 RunGraph 投影', () => {
     // 恢复事件把车道折叠标记还原
     const restored = project('conversation', 'c1', [
       ...events,
-      ev(
-        'branch',
-        'b1',
-        'branch_status',
-        { ...base, status: 'succeeded', statusReason: null, archivedAt: null },
-        6,
-      ),
+      ev('branch', 'b1', 'branch_status', { ...base, status: 'succeeded', statusReason: null, archivedAt: null }, 6),
     ]);
     expect(restored.lanes.find((lane) => lane.id === 'lane:branch:b1')?.archived).toBe(false);
+
+    // 重命名（branch_status 携带新标题）同步车道与节点标题
+    const renamed = project('conversation', 'c1', [
+      ...events,
+      ev('branch', 'b1', 'branch_status', { ...base, title: '新标题', status: 'succeeded', statusReason: null }, 7),
+    ]);
+    expect(renamed.lanes.find((lane) => lane.id === 'lane:branch:b1')?.name).toBe('新标题');
+    expect(renamed.nodes.find((node) => node.id === 'branch:b1')?.label).toBe('新标题');
 
     // 嵌套分支事件挂在子会话名下，不进入父图
     const nested = project('conversation', 'c1', [

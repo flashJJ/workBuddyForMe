@@ -12,6 +12,7 @@ import {
 
 export interface BranchCardActions {
   onStart: (id: string) => void;
+  onRename: (branch: ConversationBranch) => void;
   onCancel: (id: string) => void;
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
@@ -69,6 +70,7 @@ export function BranchCard({ branch, actions }: { branch: ConversationBranch; ac
         {(branch.status === 'queued' || active) && (
           <Action onClick={() => actions.onCancel(branch.id)}>{t('branch.list.cancel')}</Action>
         )}
+        <Action onClick={() => actions.onRename(branch)}>{t('branch.list.rename')}</Action>
         {branch.archivedAt ? (
           <Action onClick={() => actions.onRestore(branch.id)}>{t('branch.list.restore')}</Action>
         ) : (

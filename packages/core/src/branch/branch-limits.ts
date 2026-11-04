@@ -6,6 +6,15 @@ import { BRANCH_LIMITS } from '@wbfm/shared/types';
 
 /** v2.21 M1：派生准入纯函数；顺序固定为 环 → 深度 → 子节点 → 并发 → 预算。 */
 
+/** 准入失败原因码到用户文案（API 422 与前端展示共用） */
+export const BRANCH_REJECTION_TEXT: Record<BranchAdmissionRejection, string> = {
+  BRANCH_CYCLE: '分支祖先链出现环',
+  BRANCH_DEPTH_EXCEEDED: '超过最大分支深度',
+  BRANCH_CHILDREN_EXCEEDED: '父会话分支数已达上限',
+  BRANCH_CONCURRENCY_EXCEEDED: '并发分支数已达上限',
+  BRANCH_BUDGET_EXCEEDED: '会话树 Token 预算已用尽',
+};
+
 export interface BranchAdmissionSnapshot {
   /** 从根到父的祖先链（含父会话 id） */
   ancestorIds: readonly string[];
