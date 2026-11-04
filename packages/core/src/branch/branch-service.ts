@@ -20,6 +20,7 @@ import { createBranchEventRecorder } from './branch-events';
 import { buildBranchEvidence, collectBranchArtifacts } from './branch-evidence';
 import { readBranchLimits } from './branch-settings';
 import { recoverInterruptedBranches } from './branch-recovery';
+import { readTreeUsage, resolveBranchTree } from './branch-limits';
 import { runBranchChat, type BranchRunResult, type BranchChatRunner } from './branch-runner';
 
 const START_RESERVATION_TOKENS = 1000;
@@ -46,62 +47,52 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
     return branch;
   };
 
-  /** 从父会话向上回溯：根、深度、祖先链（根→父，含父） */
-  const resolveTree = (parentConversationId: string) => {
-    const ancestorIds = [parentConversationId];
-    let cursor = parentConversationId;
-    let rootConversationId = parentConversationId;
-    let parentDepth = 0;
-    for (let guard = 0; guard < 10; guard += 1) {
-      const parentBranch = branchRepo.findByChild(cursor);
-      if (!parentBranch) break;
-      rootConversationId = parentBranch.rootConversationId;
-      parentDepth = parentBranch.depth;
-      ancestorIds.unshift(parentBranch.parentConversationId);
-      cursor = parentBranch.parentConversationId;
-    }
-    return { rootConversationId, depth: parentDepth + 1, ancestorIds };
-  };
+  const resolveTree = (parentConversationId: string) =>
+    resolveBranchTree(branchRepo, parentConversationId);
 
-  const treeUsage = (rootConversationId: string) => {
-    const branches = branchRepo.listByRoot(rootConversationId);
-    const ids = [rootConversationId, ...branches.map((branch) => branch.childConversationId)];
-    return {
-      usedTokens: messagesRepo.sumTokensForConversations(ids),
-      reservedTokens: branches.reduce((sum, branch) => sum + branch.reservedTokens, 0),
-      activeCount: branches.filter(
-        (branch) => branch.status === 'running' || branch.status === 'waiting',
-      ).length,
-    };
-  };
+  const treeUsage = (rootConversationId: string) =>
+    readTreeUsage(branchRepo, messagesRepo, rootConversationId);
 
-  const evidenceFor = (branch: ConversationBranch, result: BranchRunResult) =>
+  const evidenceFor = (
+    branch: ConversationBranch,
+    result: BranchRunResult,
+    status?: BranchRunResult['status'] | 'budget_exceeded',
+  ) =>
     buildBranchEvidence(
       branch,
       result,
       collectBranchArtifacts(messagesRepo, branch.childConversationId),
+      status,
     );
 
   const finalize = (branchId: string, result: BranchRunResult): void => {
     const branch = branchRepo.get(branchId);
     if (!branch) return;
-    const reason =
-      result.status === 'failed'
+    const limits = readLimits();
+    const usage = treeUsage(branch.rootConversationId);
+    // v2.22：结算时熔断——成功结果若使会话树越过 Token 上限，改判预算超限
+    const breached =
+      result.status === 'succeeded' &&
+      usage.usedTokens + usage.reservedTokens > limits.maxTreeTokens;
+    const status = breached ? 'budget_exceeded' : result.status;
+    const reason = breached
+      ? `会话树 Token 超限：已用 ${usage.usedTokens} / 上限 ${limits.maxTreeTokens}`
+      : result.status === 'failed'
         ? result.errorMessage ?? '分支运行失败'
         : result.status === 'cancelled'
           ? '分支已取消'
           : null;
-    const evidence = evidenceFor(branch, result);
+    const evidence = evidenceFor(branch, result, status);
     const updated = branchRepo.patch(branchId, {
-      status: result.status,
+      status,
       statusReason: reason,
       evidence,
       reservedTokens: 0,
       endedAt: new Date().toISOString(),
     });
     if (!updated) return;
-    events.status(updated, result.status, reason);
-    events.returned(updated, result.status, evidence, reason);
+    events.status(updated, status, reason);
+    events.returned(updated, status, evidence, reason);
   };
 
   const run = (branch: ConversationBranch): ConversationBranch => {
@@ -229,14 +220,26 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
         active.controller.abort();
         return branchRepo.get(id) ?? branch;
       }
+      const reason = '分支已取消';
       const cancelled = branchRepo.patch(id, {
         status: 'cancelled',
-        statusReason: '分支已取消',
+        statusReason: reason,
         reservedTokens: 0,
         endedAt: new Date().toISOString(),
       })!;
-      events.status(cancelled, 'cancelled', '分支已取消');
-      return cancelled;
+      // v2.22：无运行结果的终态也写回传，父会话不再「静默结束」
+      const empty: BranchRunResult = {
+        status: 'cancelled',
+        content: '',
+        usage: null,
+        errorCode: null,
+        errorMessage: null,
+      };
+      const evidence = evidenceFor(cancelled, empty, 'cancelled');
+      const withEvidence = branchRepo.patch(id, { evidence })!;
+      events.status(withEvidence, 'cancelled', reason);
+      events.returned(withEvidence, 'cancelled', evidence, reason);
+      return withEvidence;
     },
 
     archive(id: string): ConversationBranch {

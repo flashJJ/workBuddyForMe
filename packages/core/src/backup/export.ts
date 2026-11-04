@@ -19,6 +19,8 @@ import {
   createSkillStateRepository,
   createEmotionStateRepository,
   createEmotionEventRepository,
+  createSessionEventRepository,
+  type SessionEventView,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { serializeEventsTrack } from './export-events-track';
@@ -33,6 +35,36 @@ import type { BackupExportOptions, BackupExportResult } from './export-types';
 // 既有域 barrel 导出名原位保留（实现已拆至 kebab-case 纯函数模块，exportBackup 主流程不变）
 export { sanitizeSettings };
 export { BACKUP_MAX_ARCHIVE_BYTES, type BackupExportOptions, type BackupExportResult };
+
+/** v2.22：单分支事件上限；超出只带最近记录，避免归档膨胀 */
+const MAX_BRANCH_EVENTS_PER_BRANCH = 200;
+
+/** v2.22：导出 branch 事件（scope='branch'），恢复端按数组顺序 append */
+function serializeBranchEvents(db: ServiceDeps['db']): {
+  json: string;
+  count: number;
+  truncated: boolean;
+} {
+  const eventsRepo = createSessionEventRepository(db);
+  const branches = createConversationBranchRepository(db).listAll();
+  const groups: SessionEventView[][] = [];
+  let truncated = false;
+  for (const branch of branches) {
+    const recent = eventsRepo
+      .listAll({ scope: 'branch', scopeId: branch.id, limit: MAX_BRANCH_EVENTS_PER_BRANCH })
+      .reverse();
+    if (eventsRepo.count('branch', branch.id) > MAX_BRANCH_EVENTS_PER_BRANCH) truncated = true;
+    groups.push(recent);
+  }
+  const events = groups
+    .flat()
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.seq - b.seq);
+  return {
+    json: JSON.stringify({ schemaVersion: 1, truncated, events }, null, 2),
+    count: events.length,
+    truncated,
+  };
+}
 
 /**
  * 备份导出：四轨 JSON 序列化 + tar.gz 归档。
@@ -88,6 +120,11 @@ export async function exportBackup(
     const branchRows = createConversationBranchRepository(deps.db).listAll();
     files['branches.json'] = JSON.stringify(branchRows, null, 2);
     manifestPartial.conversations.branchCount = branchRows.length;
+    // v2.22：分支事件随 conversations 轨（恢复后图车道/回传节点不依赖重新运行）
+    const branchEvents = serializeBranchEvents(deps.db);
+    files['branch-events.json'] = branchEvents.json;
+    manifestPartial.conversations.branchEventCount = branchEvents.count;
+    manifestPartial.conversations.branchEventsTruncated = branchEvents.truncated;
     manifestPartial.conversations.entryCount = convs.length;
     onProgress?.({ track: 'conversations', processed: convs.length, total: convs.length });
   }

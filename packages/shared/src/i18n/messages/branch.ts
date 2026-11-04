@@ -24,6 +24,8 @@ export const zhBranch = {
     openChild: '打开子会话',
     rename: '重命名',
     renamePrompt: '重命名分支「{title}」',
+    retry: '重试',
+    retryHint: '重试将新建分支，原分支保留',
     archived: '已归档',
   },
   confirm: {
@@ -43,6 +45,7 @@ export const zhBranch = {
     title: '回传结果',
     needsReview: '需核对',
     noSummary: '没有摘要。',
+    noResult: '无运行结果（中断或已取消）。',
     artifacts: '产物 {count}',
     reason: '原因',
   },
@@ -89,6 +92,8 @@ export const enBranch = {
     openChild: 'Open child conversation',
     rename: 'Rename',
     renamePrompt: 'Rename branch “{title}”',
+    retry: 'Retry',
+    retryHint: 'Retry creates a new branch; the original is kept',
     archived: 'Archived',
   },
   confirm: {
@@ -110,6 +115,7 @@ export const enBranch = {
     title: 'Returned result',
     needsReview: 'Needs review',
     noSummary: 'No summary.',
+    noResult: 'No run result (interrupted or cancelled).',
     artifacts: 'Artifacts: {count}',
     reason: 'Reason',
   },

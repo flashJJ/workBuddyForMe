@@ -12,6 +12,8 @@ import { z } from 'zod';
  * 不升版；旧归档缺字段按 null 恢复。
  * v2.21 分支为 v7 内可选负载（conversations 轨 branches.json + 可选 branchCount），不升版；
  * 旧归档缺文件按空数组，运行中状态恢复为 interrupted。
+ * v2.22 分支事件为 v7 内可选负载（branch-events.json + 可选 branchEventCount/branchEventsTruncated），
+ * 不升版；旧归档缺文件按 0，恢复后图车道不回填（与 v2.21 行为一致）。
  * v6：relationshipMilestones.json、modInstalls.json、vrmAvatars.json（仅元数据）。
  * v5：stageScenes.json + meetings.json/meetingMessages.json。
  * v1–v4 旧归档仍可恢复，缺文件/缺键按 0 处理。
@@ -51,6 +53,10 @@ export const backupManifestSchema = z.object({
       entryCount: z.number().int().min(0),
       /** v2.21：分支关联条数（branches.json；v2.20 及更早缺省 0） */
       branchCount: z.number().int().min(0).optional(),
+      /** v2.22：分支事件条数（branch-events.json；v2.21 及更早缺省 0） */
+      branchEventCount: z.number().int().min(0).optional(),
+      /** v2.22：分支事件是否因单分支 200 条上限被截断 */
+      branchEventsTruncated: z.boolean().optional(),
     }),
     knowledge: z.object({ files: z.string(), knowledgeBaseCount: z.number().int().min(0), documentCount: z.number().int().min(0) }),
     settings: z.object({ files: z.string() }),
@@ -136,6 +142,8 @@ export const backupPrecheckSchema = z.object({
     meetingActionItems: z.number().int().min(0),
     /** v2.21：分支关联条数（随 conversations 轨；v2.20 及更早为 0） */
     branches: z.number().int().min(0),
+    /** v2.22：分支事件条数（随 conversations 轨；v2.21 及更早为 0） */
+    branchEvents: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

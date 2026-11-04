@@ -47,6 +47,7 @@ export const zhSettingsBackup = {
     emotion: '{count} 情绪状态',
     events: '{count} 条提醒',
     branches: '{count} 分支',
+    branchEvents: '{count} 分支事件',
   },
   skipped: {
     conversations: '{count} 对话（已存在或助手不存在）',
@@ -56,6 +57,7 @@ export const zhSettingsBackup = {
     emotion: '{count} 情绪状态（已存在、助手不存在或数据损坏）',
     events: '{count} 条提醒（已存在或助手不存在）',
     branches: '{count} 分支（父/子会话缺失或已存在）',
+    branchEvents: '{count} 分支事件（分支缺失或数据损坏）',
   },
 };
 
@@ -110,6 +112,7 @@ export const enSettingsBackup = {
     emotion: '{count} emotion states',
     events: '{count} reminders',
     branches: '{count} branches',
+    branchEvents: '{count} branch events',
   },
   skipped: {
     conversations: '{count} conversations (already exist or assistant missing)',
@@ -119,5 +122,6 @@ export const enSettingsBackup = {
     emotion: '{count} emotion states (already exist, assistant missing or corrupted)',
     events: '{count} reminders (already exist or assistant missing)',
     branches: '{count} branches (parent/child conversation missing or already exist)',
+    branchEvents: '{count} branch events (branch missing or corrupted)',
   },
 };

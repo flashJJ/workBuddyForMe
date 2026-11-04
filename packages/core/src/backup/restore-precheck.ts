@@ -63,6 +63,7 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       meetingConclusions: m.tracks.events?.meetingConclusionCount ?? 0,
       meetingActionItems: m.tracks.events?.meetingActionItemCount ?? 0,
       branches: m.tracks.conversations.branchCount ?? 0,
+      branchEvents: m.tracks.conversations.branchEventCount ?? 0,
     },
     warnings,
   });
