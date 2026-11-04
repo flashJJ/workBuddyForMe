@@ -2,16 +2,16 @@
 
 本地优先的**私人 AI 工作台**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v2.12.0**（2026-10-30）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 当前版本：**v2.22.0**（2026-11-04）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
 
-## v2.12.0 重点
+## v2.22.0 重点
 
-- **签名可验证**：能力包清单支持 Ed25519 签名与本地信任库；策略 `off` / `warn`（默认）/ `require` 在安装、升级、启用三个入口生效；无效签名在 `warn`/`require` 下必拒。
-- **升级可回滚**：同 id 原地升级，版本严格递增；暂存 → 原子换目录 → 按六类 effect 适配；启用失败恢复旧包、旧版本与旧 effect，二次失败落 `disabled + lastError`。
-- **坏了能自检**：按需健康检查覆盖目录、清单、checksum、payload 多余文件、依赖三态、六类 effect 与签名；无主目录与超过 24h 的升级残留可清理。
-- **管理页/设置页收口**：行内签名/健康徽章、升级对话框、健康横幅与孤儿清理；设置页新增签名策略与信任公钥管理，中英双语文案。
-- **零迁移**：不新增表与列；v2.11 库可直接打开，回退旧版本不删除数据。
-- **工程门禁**：`pnpm check` 与单测全绿；生产模式 Web e2e 125/125；详见下方发布验证。
+- **分支事件随备份走**：conversations 轨新增 `branch-events.json`，恢复后分支车道、子会话与回传节点无需重新运行；旧备份缺文件按空处理，单分支保留最近 200 条。
+- **终态都有交代**：`interrupted` / `cancelled` / `budget_exceeded` 与成功/失败一样写回传；无运行结果时摘要为空、标记待复核，面板显示「无运行结果」。
+- **失败可重试**：终态分支一键以原目标派生新分支，旧分支保留终态与回传；并发、深度与预算上限继续生效。
+- **预算熔断**：结算时若会话树已用 + 预留超过上限，`succeeded` 改判 `budget_exceeded` 并预留归零。
+- **分支实时帧**：分支变化 1 秒内推入过程图，面板关闭即停止，10 秒快照继续兜底。
+- **零迁移**：不新增表与列，`LATEST_SCHEMA_VERSION` 保持 45，旧库与旧备份直接可用。
 
 ## 功能
 
@@ -20,6 +20,7 @@
 - 多供应商、多模型接入；SSE 流式输出、Markdown / 代码高亮、中途停止与友好错误提示。
 - 工具调用全程可观测，支持 HITL 授权、熔断与超时门控；工具循环 ≤ 5 轮。
 - 助手预设：系统提示、角色卡、温度 / topP / maxTokens、模型与知识库绑定、工具 / 技能白名单。
+- 分支会话：从任意消息派生，八态状态机；并发 / 深度 / 会话树 Token 预算上限、终态回传、失败重试与归档。
 - 对话中断或连接断开时，已生成内容保留并落库，不丢失部分结果。
 
 ### 知识库 RAG
@@ -67,7 +68,7 @@
 |---|---|
 | 运行时 | Node.js 24（`.nvmrc`；root engines ≥ 22.13）· pnpm 11.24 · Turborepo |
 | Web | Next.js 15.5.28（App Router + Route Handlers）· React 19.3.1 · TypeScript 5.9（strict）· Tailwind CSS 3.4 · Radix UI |
-| 桌面 | Electron 44.9.3 · electron-builder 26.18.0 · electron-updater 6.8.11 · `@nut-tree-fork/nut-js` 4.2.6 |
+| 桌面 | Electron 45.0.0 · electron-builder 26.18.0 · electron-updater 6.8.11 · `@nut-tree-fork/nut-js` 4.2.6 |
 | 数据 | better-sqlite3 · sqlite-vec（vec0）· SQLite WAL · 本地文件存储 |
 | AI / 语音 | OpenAI-compatible · Ollama · sherpa-onnx-node |
 | 质量 | Vitest · Playwright · ESLint 分层边界 · 单文件 ≤ 300 行门禁 |
@@ -165,7 +166,7 @@ pnpm test:e2e             # Web 关键路径 E2E
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v2.12.0 发布准备：`pnpm check` 与 8 包单测全绿（2739 例）；全量 Web e2e **125/125**（CI 模式 `next start` 生产产物）、桌面冒烟 10/11（`computer-input` 环境相关）；零迁移（schema 仍 v040，旧库直开）；安装包 `WorkBuddyForMe-Setup-2.12.0.exe` 192.62 MB。详见 [v2.12 M5 验收](docs/plan/v2.12/06-M5-验收.md)。
+v2.22.0 发布验证：`pnpm check` 与 8 包全量单测通过；新增 `branch-v222` e2e 2 例（终态回传/重试、备份往返分支事件）；`pnpm build:web` 生产构建通过；CI 安装包 `WorkBuddyForMe-Setup-2.22.0.exe` 201.88 MB；零迁移（schema 仍 v45）。详见 [v2.22 M4 实施记录](docs/plan/v2.22/06-M4-实施记录.md)。
 
 ## 数据与隐私
 
