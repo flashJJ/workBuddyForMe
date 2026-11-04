@@ -24,6 +24,8 @@ export default function PetPage() {
   const [modelId, setModelId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // 水合后再打一次标，防止首帧/React 调和期间丢失 data-pet 而露出主题底色
+    document.documentElement.dataset.pet = '1';
     setModelId(readPetModelId() ?? '');
     setMounted(true);
   }, []);

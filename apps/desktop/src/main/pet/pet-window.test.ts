@@ -8,7 +8,9 @@ import type { BrowserWindowConstructorOptions } from 'electron';
 const m = vi.hoisted(() => ({
   loadURL: vi.fn(),
   setAlwaysOnTop: vi.fn(),
+  setBackgroundColor: vi.fn(),
   showInactive: vi.fn(),
+  invalidate: vi.fn(),
   isDestroyed: vi.fn(() => false),
   ctor: vi.fn(),
   once: vi.fn((_event: string, cb: () => void) => {
@@ -27,10 +29,15 @@ vi.mock('electron', () => ({
     return {
       loadURL: m.loadURL,
       setAlwaysOnTop: m.setAlwaysOnTop,
+      setBackgroundColor: m.setBackgroundColor,
       showInactive: m.showInactive,
       isDestroyed: m.isDestroyed,
       once: m.once,
-      webContents: { on: m.webContentsOn, openDevTools: m.openDevTools },
+      webContents: {
+        on: m.webContentsOn,
+        openDevTools: m.openDevTools,
+        invalidate: m.invalidate,
+      },
     };
   }),
   screen: {
