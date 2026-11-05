@@ -21,12 +21,12 @@
 | `roadmap/scheduled/` | 已排期候选归档，`vX.Y-NN-slug.md`；保留来源方案，方便追溯立项原因 |
 | `roadmap/` 根 | 已发布版本总结/发行说明、跨版本专题与索引 |
 
-## 已发布：v2.22.2 发布链加固（2026-11-05，tag `v2.22.2`）
+## ✅ 已正式发布：v2.22.2 发布链加固（2026-11-05，tag `v2.22.2`）
 
 把 v2.22.0 事故的同类风险堵在流水线里：desktop 写入 `packageManager` 让包管理器判定不再依赖调用环境；asar 自检递归核对传递依赖与解包原生模块；服务端归集缺件改为硬失败；启动异常弹窗并落盘；Release 流水线补跑 `pnpm check`，失败自动清理草稿。无功能变更、零迁移。
 
 - 发行说明：[v2.22.2-release-notes.md](v2.22.2-release-notes.md)
-- 状态：待发布
+- 状态：✅ 已正式发布并置 Latest（Release workflow `41965821484`；Release <https://github.com/flashJJ/workBuddyForMe/releases/tag/v2.22.2>；安装包 205.57 MB）
 - 承接版本：[v2.22.1 热修复](v2.22.1-release-notes.md) · [v2.22 方案](../plan/v2.22/README.md)
 
 ## ✅ 已正式发布：v2.22.1 安装包热修复（2026-11-05，tag `v2.22.1`）

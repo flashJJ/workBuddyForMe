@@ -178,7 +178,7 @@ pnpm test:e2e             # Web 关键路径 E2E
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v2.22.1 发布验证：修复后的 CI 安装包三件套齐全，asar 含全部生产依赖（含 `@nut-tree-fork/nut-js` 与 `electron-updater`）；功能与 v2.22.0 一致，零迁移（schema 仍 v45）。v2.22.0 功能验证详见 [v2.22 M4 实施记录](docs/plan/v2.22/06-M4-实施记录.md)。
+v2.22.2 发布验证：CI 打包日志确认 `pm=pnpm`（packageManager 字段生效），asar 自检递归核对 138 个包含传递依赖与 3 个原生模块全部通过，安装包三件套齐全（205.57 MB）；无功能变更、零迁移（schema 仍 v45）。v2.22.0 功能验证详见 [v2.22 M4 实施记录](docs/plan/v2.22/06-M4-实施记录.md)。
 
 ## 数据与隐私
 
