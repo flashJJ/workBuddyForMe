@@ -51,6 +51,10 @@ jobs:
       - name: 版本真源同步校验（sync-version --check）
         run: pnpm sync-version:check
 
+      # 标签可能打在未过 CI 的提交上；发布前补齐全量门禁，避免脏提交直接出包
+      - name: 质量门禁（typecheck + lint + 行数/结构/环/ASCII）
+        run: pnpm check
+
       - name: 单元测试（Windows 份，顺带验证原生依赖）
         run: pnpm test:unit
 
@@ -94,3 +98,12 @@ jobs:
             apps/desktop/release/*.exe.blockmap
             apps/desktop/release/latest.yml
           if-no-files-found: error
+
+      # electron-builder 的 --publish onTag 先建草稿再自检：自检或后续步骤失败时，
+      # 起草稿仍会留在 Release 列表里，容易被人直接转正式。失败即清掉草稿（保留 tag）。
+      - name: 失败时清理草稿 Release（避免坏包被误转正式）
+        if: failure() && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete "${GITHUB_REF_NAME}" --yes || true

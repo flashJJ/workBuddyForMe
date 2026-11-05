@@ -116,7 +116,7 @@ SAC 开启时，electron-builder 重打包产生的未签名 exe（hash 每次�
 
 Electron 冒烟需 Windows 环境（better-sqlite3 原生重编译 + electron-builder），质量 CI 未纳入，本机执行 `pnpm test:e2e:desktop`。
 
-`.github/workflows/release.yml`（windows-latest）负责安装包发布：手动触发只产出 artifact；推送 `v*` 标签时构建 NSIS 并发布 **draft** Release（含 latest.yml/blockmap）。流水线会校验标签名与 root package.json 版本一致（`pnpm sync-version:check`），并在打包后运行 `apps/desktop/scripts/verify-artifacts.ps1` 校验版本资源与 asar 生产依赖（配置了签名证书时同时校验签名链）。打包必须使用 `pnpm exec electron-builder`：`npx` 会把进程环境标成 npm，在 pnpm hoisted 布局下漏收根级 `node_modules` 依赖（v2.22.0 事故）。
+`.github/workflows/release.yml`（windows-latest）负责安装包发布：手动触发只产出 artifact；推送 `v*` 标签时构建 NSIS 并发布 **draft** Release（含 latest.yml/blockmap）。流水线会校验标签名与 root package.json 版本一致（`pnpm sync-version:check`），并在打包后运行 `apps/desktop/scripts/verify-artifacts.ps1` 校验版本资源与 asar 依赖（配置了签名证书时同时校验签名链）。asar 依赖校验由 `apps/desktop/scripts/verify-asar-dependencies.mjs` 递归展开传递依赖，并核对每个 `.node` 已落到 `app.asar.unpacked`。打包必须使用 `pnpm exec electron-builder`：`npx` 会把进程环境标成 npm，在 pnpm hoisted 布局下漏收根级 `node_modules` 依赖（v2.22.0 事故）；`apps/desktop/package.json` 已写入 `packageManager`，即使调用方式变化也能判定为 pnpm。发布前置还包含 `pnpm check`，自检或后续步骤失败会自动删除草稿 Release（保留 tag）。
 
 ### Windows 本机构建的 winCodeSign 前置
 

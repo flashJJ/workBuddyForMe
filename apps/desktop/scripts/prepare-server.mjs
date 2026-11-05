@@ -21,6 +21,10 @@ if (!fs.existsSync(serverEntry)) {
 fs.rmSync(target, { recursive: true, force: true });
 fs.mkdirSync(path.dirname(target), { recursive: true });
 
+// 归集缺件汇总：旧版缺包只 warn，安装后功能静默不可用；v2.22.2 起统一在末尾硬失败。
+// 白名单里的包都在 web 的生产依赖树内，本机装不出来说明 lockfile/构建链已异常。
+const missing = [];
+
 console.log(`复制 standalone → ${path.relative(repoRoot, target)}`);
 fs.cpSync(standaloneDir, target, { recursive: true });
 
@@ -46,11 +50,13 @@ for (const rel of PRUNE_DIRS) {
 // 外部 MCP 客户端 spawn 内置 node 运行它，复用同一份归集 node_modules 解决原生 ABI）
 const mcpBinFrom = path.join(webDir, '.next', 'mcp-server');
 const mcpBinTo = path.join(target, 'mcp-server');
-if (fs.existsSync(path.join(mcpBinFrom, 'mcp-server.cjs'))) {
+const mcpBinFile = path.join(mcpBinFrom, 'mcp-server.cjs');
+// 缺件必须硬失败：旧版只 warn，装出来的包 MCP stdio 承载静默不可用（v2.22.2 起拦截）
+if (fs.existsSync(mcpBinFile)) {
   fs.cpSync(mcpBinFrom, mcpBinTo, { recursive: true });
   console.log('已归集 MCP stdio server → resources/server/mcp-server');
 } else {
-  console.warn('未找到 MCP stdio server 产物（.next/mcp-server/mcp-server.cjs），stdio 承载将不可用');
+  missing.push(`MCP stdio server（${path.relative(repoRoot, mcpBinFile)}）`);
 }
 
 // 内置真实 Node 运行时：Electron fork 默认用 Electron 内置 Node（ABI 125），
@@ -108,7 +114,9 @@ const FALLBACK_PACKAGES = [
 for (const pkg of FALLBACK_PACKAGES) {
   const from = path.join(rootModules, pkg);
   const to = path.join(standaloneModules, pkg);
-  if (fs.existsSync(from) && !fs.existsSync(to)) {
+  if (!fs.existsSync(from)) {
+    missing.push(`仓库根 node_modules 缺少 ${pkg}`);
+  } else if (!fs.existsSync(to)) {
     fs.cpSync(from, to, { recursive: true });
     console.log(`已兜底归集 ${pkg}`);
   }
@@ -121,11 +129,20 @@ const pdfjsLegacyTo = path.join(standaloneModules, 'pdfjs-dist', 'legacy', 'buil
 for (const file of ['pdf.worker.mjs', 'pdf.worker.mjs.map']) {
   const from = path.join(pdfjsLegacyFrom, file);
   const to = path.join(pdfjsLegacyTo, file);
-  if (fs.existsSync(from) && !fs.existsSync(to)) {
+  if (!fs.existsSync(from)) {
+    // .map 只是排障辅助，缺 worker 本体才阻塞
+    if (!file.endsWith('.map')) missing.push(`仓库根 node_modules 缺少 pdfjs-dist/legacy/build/${file}`);
+  } else if (!fs.existsSync(to)) {
     fs.mkdirSync(path.dirname(to), { recursive: true });
     fs.copyFileSync(from, to);
     console.log(`已兜底归集 pdfjs-dist/${file}`);
   }
+}
+
+if (missing.length > 0) {
+  console.error('服务端资源归集缺件，安装包会静默缺失功能：');
+  for (const item of missing) console.error(`  - ${item}`);
+  process.exit(1);
 }
 
 console.log('服务端资源归集完成');
