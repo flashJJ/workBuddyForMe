@@ -30,20 +30,22 @@ if ($RequireSignature) {
   Write-Host "[sign] 未要求签名，当前状态：$($sig.Status)（NotSigned 为预期）"
 }
 
-# asar 生产依赖自检：electron-builder 误判包管理器时会漏掉 pnpm hoisted 依赖，安装后
-# 启动即报 Cannot find module（v2.22.0 事故）。逐项核对 desktop 声明的 dependencies。
+# asar 依赖自检：electron-builder 误判包管理器时会漏掉 pnpm hoisted 依赖，安装后
+# 启动即报 Cannot find module（v2.22.0 事故）。脚本递归核对顶层与传递依赖，
+# 并校验 asarUnpack 的原生 .node 是否真的落在 app.asar.unpacked。
 $asar = Join-Path (Split-Path $Exe) 'resources/app.asar'
 if (-not (Test-Path $asar)) { throw "app.asar 不存在：$asar" }
-$asarLib = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\node_modules\@electron\asar')).Path
-$desktopPkg = Get-Content (Join-Path $PSScriptRoot '..\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-$entries = & node -e "const a=require(process.argv[1]);for(const p of a.listPackage(process.argv[2]))console.log(p)" $asarLib $asar
-foreach ($name in $desktopPkg.dependencies.PSObject.Properties.Name) {
-  $needle = '\node_modules\' + ($name -replace '/', '\') + '\package.json'
-  if ($entries -notcontains $needle) { $failures += "app.asar 缺少生产依赖：$name" }
+$asarUnpacked = Join-Path (Split-Path $Exe) 'resources/app.asar.unpacked'
+$asarCheck = & node (Join-Path $PSScriptRoot 'verify-asar-dependencies.mjs') `
+  $asar (Join-Path $PSScriptRoot '..\package.json') $asarUnpacked
+if ($LASTEXITCODE -ne 0) {
+  $failures += @($asarCheck | Where-Object { $_ -and $_.Trim().Length -gt 0 })
+} else {
+  $asarCheck | ForEach-Object { Write-Host $_ }
 }
 
 if ($failures.Count -gt 0) {
-  foreach ($f in $failures) { Write-Error $f }
+  foreach ($f in $failures) { Write-Host $f -ForegroundColor Red }
   exit 1
 }
 
