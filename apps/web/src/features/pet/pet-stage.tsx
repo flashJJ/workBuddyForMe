@@ -16,7 +16,7 @@ import {
   type MotionMood,
 } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useSettings } from '@/lib/hooks/provider';
+import { useSettings, useSettingsSync } from '@/lib/hooks/provider';
 import { getPetBridge } from './pet-bridge';
 import { TriggerBus } from '@/features/interaction';
 import { ActionExecutor } from '@/features/interaction';
@@ -60,6 +60,8 @@ export function PetStage({
 }: Props) {
   const { t } = useI18n();
   const { data: settings } = useSettings();
+  // 主窗保存设置后立即拉取新值：勿扰/互动短句等开关不再需要重开桌宠才生效
+  useSettingsSync();
   const bridge = getPetBridge();
   const controllerRef = React.useRef<Live2dController | null>(null);
   const [line, setLine] = React.useState<string>('');

@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { AppSettings, BranchLimitSettings, ProviderModel } from '@wbfm/shared/types';
@@ -8,6 +9,38 @@ import { apiGet, apiPut } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
 export type SettingsUpdateBody = Partial<AppSettings> & BranchLimitSettings;
+
+/**
+ * v2.23：设置跨窗口同步。
+ * 桌宠/舞台是独立窗口、各自持有 React Query 缓存；主窗保存设置只会失效自己的缓存，
+ * 桌宠侧（勿扰、互动短句、情绪开关等）会一直用旧值，直到重开桌宠才重新拉取。
+ * 用 BroadcastChannel 广播一次「设置已更新」，其余窗口收到后失效查询即可即时生效。
+ */
+const SETTINGS_SYNC_CHANNEL = 'wbfm:settings-changed';
+
+function broadcastSettingsChanged(): void {
+  if (typeof BroadcastChannel === 'undefined') return;
+  const channel = new BroadcastChannel(SETTINGS_SYNC_CHANNEL);
+  channel.postMessage('updated');
+  channel.close();
+}
+
+/** 在需要跟随设置变化的独立窗口里调用（桌宠等）；主窗自身靠 mutation 失效即可 */
+export function useSettingsSync(): void {
+  const qc = useQueryClient();
+  React.useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel(SETTINGS_SYNC_CHANNEL);
+    const onMessage = () => {
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.settings });
+    };
+    channel.addEventListener('message', onMessage);
+    return () => {
+      channel.removeEventListener('message', onMessage);
+      channel.close();
+    };
+  }, [qc]);
+}
 
 export function useSettings() {
   return useVisibleQuery({
@@ -20,7 +53,11 @@ export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: SettingsUpdateBody) => apiPut<AppSettings>(API.settings, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEYS.settings }),
+    onSuccess: () => {
+      // 先通知其余窗口，再刷新本窗缓存
+      broadcastSettingsChanged();
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.settings });
+    },
   });
 }
 
