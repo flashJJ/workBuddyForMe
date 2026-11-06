@@ -3,19 +3,36 @@
 import * as React from 'react';
 import { Loader2, TriangleAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   formatLatencySeconds,
   latencyTier,
 } from '@/features/onboarding';
+import type { StreamPhase } from '../base/tool-trace-state';
 import type { StreamTiming } from '../types/chat-session.types';
+
+const PHASE_KEYS: Record<StreamPhase, MessageKey> = {
+  searching: 'chat.stream.phaseSearching',
+  reading: 'chat.stream.phaseReading',
+  retrieving: 'chat.stream.phaseRetrieving',
+  tool: 'chat.stream.phaseTool',
+  organizing: 'chat.stream.phaseOrganizing',
+};
 
 /**
  * v2.4 M5 / P1-4：慢模型进度提示。
  * 等待首字超过 1.5s 显示已等待秒数，超过 5s 追加「停止 + 换模型/缩短上下文」建议；
  * 分档阈值复用 P0-1 首字自检（M0 §6 冻结），保证本地体感与首启结论同一口径。
+ * v2.23：工具进行中优先显示单行相位（搜索/阅读/检索/整理），比转圈更能说明在干什么。
  */
-export function StreamingProgress({ timing }: { timing: StreamTiming }) {
+export function StreamingProgress({
+  timing,
+  phase = null,
+}: {
+  timing: StreamTiming;
+  phase?: StreamPhase | null;
+}) {
   const { t } = useI18n();
   const waiting = timing.firstTokenAt === null;
   const [now, setNow] = React.useState(() => Date.now());
@@ -25,6 +42,19 @@ export function StreamingProgress({ timing }: { timing: StreamTiming }) {
     const id = window.setInterval(() => setNow(Date.now()), 500);
     return () => window.clearInterval(id);
   }, [waiting]);
+
+  if (phase) {
+    return (
+      <p
+        className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+        data-testid="stream-progress"
+        data-phase={phase}
+      >
+        <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+        {t(PHASE_KEYS[phase])}
+      </p>
+    );
+  }
 
   if (!waiting) {
     const first = timing.firstTokenAt! - timing.startedAt;

@@ -54,6 +54,11 @@ export const zhChat = {
     firstToken: '首字 {seconds}s',
     firstTokenTitle: '首字延迟（本地计时，分档与首启自检一致）',
     generating: '正在生成…',
+    phaseSearching: '正在搜索网页…',
+    phaseReading: '正在阅读网页…',
+    phaseRetrieving: '正在检索知识库…',
+    phaseTool: '正在执行工具…',
+    phaseOrganizing: '正在整理结果…',
   },
   rename: {
     title: '重命名对话',
@@ -186,6 +191,11 @@ export const enChat = {
     firstToken: 'First token {seconds}s',
     firstTokenTitle: 'First-token latency (local timing, same tiers as the onboarding self-check)',
     generating: 'Generating…',
+    phaseSearching: 'Searching the web…',
+    phaseReading: 'Reading the page…',
+    phaseRetrieving: 'Searching the knowledge base…',
+    phaseTool: 'Running a tool…',
+    phaseOrganizing: 'Organizing results…',
   },
   rename: {
     title: 'Rename conversation',

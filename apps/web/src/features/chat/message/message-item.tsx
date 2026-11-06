@@ -17,6 +17,7 @@ import { MessageActions } from './message-actions';
 import { FirstTokenMetric, StreamingProgress } from '../page/streaming-progress';
 import type { StreamTiming } from '../types/chat-session.types';
 import { ToolTrace } from '../overlay/tool-trace';
+import { streamingPhase } from '../base/tool-trace-state';
 
 interface Props {
   message: Message;
@@ -141,6 +142,8 @@ export function MessageItem({
     (message.status === 'error' || message.status === 'completed');
   const showCopy = !isUser && message.status === 'completed' && Boolean(message.content);
   const canFeedback = !isUser && message.status === 'completed' && Boolean(message.id && onFeedback);
+  // v2.23：流式相位（搜索/阅读/检索/整理）由当前运行中的工具推导
+  const streamPhase = React.useMemo(() => streamingPhase(message), [message]);
   // v1.0 M3：助手消息上屏/复制时剥离表情指令标签（标签驱动形象，不属于回复文本）
   // v1.6：同时剥离情绪信号尾块 JSON（流式半截也隐藏，防止协议文本闪入气泡）
   const displayContent = isUser
@@ -188,7 +191,9 @@ export function MessageItem({
           {message.status === 'stopped' && <Badge variant="warning">{t('chatMessages.stopped')}</Badge>}
         </div>
 
-        {!isUser && message.toolTrace.length > 0 && <ToolTrace trace={message.toolTrace} />}
+        {!isUser && message.toolTrace.length > 0 && (
+          <ToolTrace trace={message.toolTrace} live={message.status === 'streaming'} />
+        )}
 
         {!isUser && agentCard && <AgentRunCard state={agentCard.state} runId={agentCard.runId} />}
 
@@ -199,7 +204,7 @@ export function MessageItem({
         )}
 
         {!isUser && message.status === 'streaming' && streamTiming && (
-          <StreamingProgress timing={streamTiming} />
+          <StreamingProgress timing={streamTiming} phase={streamPhase} />
         )}
 
         {message.status === 'streaming' && (

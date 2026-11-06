@@ -90,10 +90,12 @@ describe('消息项 MessageItem（TR-27.1）', () => {
         assistantName="通用助手"
       />,
     );
+    // v2.23：工具时间线在消息完成后默认收起，先展开再看明细
+    await user.click(screen.getByTestId('tool-trace-toggle'));
     const row = screen.getByTestId('tool-trace-row');
     expect(row).toHaveTextContent('查询当前时间');
     expect(row).toHaveTextContent('42ms');
-    await user.click(row.querySelector('button')!);
+    await user.click(screen.getByTestId('tool-trace-row-toggle'));
     expect(screen.getByText('current_time')).toBeInTheDocument();
   });
 

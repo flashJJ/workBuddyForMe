@@ -45,7 +45,7 @@ describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
   it('展开区显示来源与权限行', async () => {
     const user = userEvent.setup();
     renderWithI18n(<ToolTrace trace={[baseEntry]} />);
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByTestId('tool-trace-row-toggle'));
     const dl = screen.getByText('来源').closest('dl')!;
     expect(dl.textContent).toContain('来源');
     expect(dl.textContent).toContain('权限');
@@ -67,7 +67,7 @@ describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
     renderWithI18n(<ToolTrace trace={[entry]} />);
     expect(screen.getByTestId('tool-trace-row').textContent).toContain('证据');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByTestId('tool-trace-row-toggle'));
     const evidence = screen.getByTestId('tool-evidence');
     expect(evidence.textContent).toContain('mock-search');
     expect(evidence.textContent).toContain('2 条结果');
@@ -79,6 +79,50 @@ describe('ToolTrace 可观测性徽章（v0.6 M4）', () => {
     renderWithI18n(<ToolTrace trace={[{ ...baseEntry, source: undefined, permission: undefined }]} />);
     const row = screen.getByTestId('tool-trace-row');
     expect(row.textContent).not.toContain('内置');
+  });
+});
+
+describe('v2.23 工具时间线与失败归因', () => {
+  const failedEntry: ToolTraceEntry = {
+    ...baseEntry,
+    callId: 'c2',
+    tool: 'fetch_webpage',
+    status: 'error',
+    durationMs: 800,
+    error: '页面超过 200K 上限',
+    resultSummary: '抓取失败',
+  };
+
+  it('头部聚合调用次数与成功/失败计数', () => {
+    renderWithI18n(<ToolTrace trace={[baseEntry, failedEntry]} />);
+    const toggle = screen.getByTestId('tool-trace-toggle');
+    expect(toggle.textContent).toContain('工具调用 · 2 次');
+    expect(toggle.textContent).toContain('成功 1');
+    expect(toggle.textContent).toContain('失败 1');
+  });
+
+  it('完成态默认收起，展开后可见明细', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolTrace trace={[baseEntry]} live={false} />);
+    expect(screen.queryByTestId('tool-trace-row')).toBeNull();
+    await user.click(screen.getByTestId('tool-trace-toggle'));
+    expect(screen.getByTestId('tool-trace-row')).toBeInTheDocument();
+  });
+
+  it('熔断单独标记，失败原因归一为可读文案', async () => {
+    const user = userEvent.setup();
+    const breakerEntry: ToolTraceEntry = {
+      ...baseEntry,
+      callId: 'c3',
+      tool: 'web_search',
+      status: 'error',
+      error: '已熔断',
+      resultSummary: '已熔断',
+    };
+    renderWithI18n(<ToolTrace trace={[failedEntry, breakerEntry]} />);
+    expect(screen.getAllByText('已熔断').length).toBeGreaterThan(0);
+    await user.click(screen.getAllByTestId('tool-trace-row-toggle')[0]!);
+    expect(screen.getByTestId('tool-trace-failure')).toHaveTextContent('页面过大');
   });
 });
 

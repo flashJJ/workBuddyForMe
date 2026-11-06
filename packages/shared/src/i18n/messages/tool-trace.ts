@@ -52,6 +52,32 @@ export const zhToolTrace = {
     exportFailed: '导出失败',
     noSvg: '产物中没有可导出的 SVG',
   },
+  /** v2.23：四态标签与失败归因（失败/被拒/熔断不再混为一种） */
+  state: {
+    running: '进行中',
+    ok: '成功',
+    failed: '失败',
+    denied: '被拒绝',
+    breaker: '已熔断',
+  },
+  timeline: {
+    title: '工具调用 · {count} 次',
+    summary: '成功 {ok} · 失败 {failed}',
+  },
+  failure: {
+    denied: '被策略或授权拒绝',
+    breaker: '连续失败已熔断，本轮不再重试该工具',
+    timeout: '执行超时',
+    rate: '被搜索服务限流',
+    auth: '鉴权失败或实例拒绝访问',
+    tooLarge: '页面过大，正文未能解析',
+    network: '网络或抓取失败',
+    unknown: '执行失败',
+  },
+  actions: {
+    openInBrowser: '用浏览器打开',
+    checkSearch: '检查搜索服务',
+  },
   detail: {
     toolName: '工具名',
     source: '来源',
@@ -113,6 +139,32 @@ export const enToolTrace = {
     exporting: 'Exporting…',
     exportFailed: 'Export failed',
     noSvg: 'No exportable SVG in this artifact',
+  },
+  /** v2.23: four-state labels and normalized failure reasons */
+  state: {
+    running: 'Running',
+    ok: 'Done',
+    failed: 'Failed',
+    denied: 'Denied',
+    breaker: 'Breaker open',
+  },
+  timeline: {
+    title: 'Tool calls · {count}',
+    summary: '{ok} ok · {failed} failed',
+  },
+  failure: {
+    denied: 'Denied by policy or approval',
+    breaker: 'Tripped after repeated failures; skipped for this turn',
+    timeout: 'Timed out',
+    rate: 'Rate limited by the search service',
+    auth: 'Authentication failed or instance refused access',
+    tooLarge: 'Page too large to parse',
+    network: 'Network or fetch failed',
+    unknown: 'Execution failed',
+  },
+  actions: {
+    openInBrowser: 'Open in browser',
+    checkSearch: 'Check search service',
   },
   detail: {
     toolName: 'Tool',
