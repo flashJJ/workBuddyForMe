@@ -1,13 +1,8 @@
-import path from 'node:path';
 import type { TtsEngine, TtsEngineConfig, TtsResult, TtsSynthOptions } from '../types';
 import { VoiceEngineError } from '../types';
 import type { VoiceModelSpec } from '../../models/manifest';
 import { isSpeakableText } from '../../text/sentence-splitter';
-
-const RULE_FSTS = ['number.fst', 'phone.fst', 'date.fst', 'new_heteronym.fst'] as const;
-const KOKORO_ZH_FSTS = ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst'] as const;
-const MELO_MODEL_FILE = 'model.onnx';
-const KOKORO_MODEL_FILE = 'model.onnx';
+import { buildNativeTtsConfig, type BuiltNativeTtsConfig } from './tts-native-config';
 
 /**
  * sherpa-onnx 绑定的最小结构面（仅声明用到的成员）。
@@ -46,16 +41,35 @@ export interface SherpaTtsOptions {
 }
 
 /**
- * sherpa-onnx VITS（MeloTTS zh_en）离线 TTS 引擎。
+ * 按配置构造原生 OfflineTts；inline 与 worker 两条路径共用（含文件校验与 sid 回落）。
+ * 返回的实例由调用方决定挂在主线程还是 worker 线程。
+ */
+export function createNativeTts(
+  built: BuiltNativeTtsConfig,
+  mod: SherpaTtsModule,
+): SherpaTtsNative {
+  try {
+    return new mod.OfflineTts(built.nativeConfig);
+  } catch (error) {
+    throw new VoiceEngineError('tts', `引擎初始化失败：${(error as Error).message}`);
+  }
+}
+
+/**
+ * sherpa-onnx VITS（MeloTTS zh_en / Kokoro）离线 TTS 引擎，**在主线程同步跑原生推理**。
  *
  * 构造时即加载模型（耗时操作），调用方应把实例长驻复用；
  * 配置变化（sid/速度除外，速度是每次合成参数）时 dispose 后重建。
+ *
+ * 注意：原生生成是同步调用，运行期间会占住调用线程。对话场景请用
+ * WorkerTtsEngine（见 tts-worker）避免阻塞 SSE 与模型流；本类保留作为
+ * worker 不可用时的回退与单元测试基线。
  */
 export class SherpaTtsEngine implements TtsEngine {
   private readonly native: SherpaTtsNative;
   private readonly speakerId: number;
   private readonly speakerCount: number;
-  private readonly defaultSpeed: number;
+  private readonly speed: number;
 
   private constructor(
     native: SherpaTtsNative,
@@ -65,41 +79,14 @@ export class SherpaTtsEngine implements TtsEngine {
   ) {
     this.native = native;
     this.speakerId = speakerId;
-    this.defaultSpeed = speed;
+    this.speed = speed;
     this.speakerCount = speakerCount;
   }
 
   static async create(options: SherpaTtsOptions): Promise<SherpaTtsEngine> {
     const { config, spec, loader = defaultSherpaTtsLoader, exists } = options;
-    const fsExists =
-      exists ?? ((p: string) => existsSyncSafe(p));
-    const modelDir = config.modelDir;
-    const isKokoro = Boolean(config.kokoro);
-
-    const required = isKokoro
-      ? [
-          KOKORO_MODEL_FILE,
-          'tokens.txt',
-          'voices.bin',
-          path.join('espeak-ng-data', 'phontab'),
-          'lexicon-zh.txt',
-        ]
-      : [MELO_MODEL_FILE, 'tokens.txt', 'lexicon.txt'];
-    for (const rel of required) {
-      if (!fsExists(path.join(modelDir, rel))) {
-        throw new VoiceEngineError(
-          'tts',
-          `模型文件缺失：${rel}`,
-          `请在语音设置中下载「${spec.label}」或检查模型目录`,
-        );
-      }
-    }
-
-    const meloFsts = (options.ruleFsts ?? RULE_FSTS)
-      .map((f) => path.join(modelDir, f))
-      .filter((f) => fsExists(f))
-      .join(',');
-    const dictDir = fsExists(path.join(modelDir, 'dict')) ? path.join(modelDir, 'dict') : '';
+    const fsExists = exists ?? ((p: string) => existsSyncSafe(p));
+    const built = buildNativeTtsConfig({ config, spec, ruleFsts: options.ruleFsts, exists: fsExists });
 
     let mod: SherpaTtsModule;
     try {
@@ -112,51 +99,7 @@ export class SherpaTtsEngine implements TtsEngine {
       );
     }
 
-    // Kokoro：model.kokoro（多说话人，voices.bin + espeak 数据 + 中英词典）；
-    // MeloTTS：model.vits（单说话人，jieba dict 内联配置）。
-    const modelConfig = isKokoro
-      ? {
-          kokoro: {
-            model: path.join(modelDir, KOKORO_MODEL_FILE),
-            voices: config.kokoro!.voices,
-            tokens: path.join(modelDir, 'tokens.txt'),
-            dataDir: config.kokoro!.dataDir,
-            lexicon: config.kokoro!.lexicon,
-          },
-        }
-      : {
-          vits: {
-            model: path.join(modelDir, MELO_MODEL_FILE),
-            lexicon: path.join(modelDir, 'lexicon.txt'),
-            tokens: path.join(modelDir, 'tokens.txt'),
-            dataDir: '',
-            dictDir,
-          },
-        };
-
-    const kokoroFsts = isKokoro
-      ? (config.kokoro?.ruleFsts ??
-          KOKORO_ZH_FSTS.map((f) => path.join(modelDir, f))
-            .filter((f) => fsExists(f))
-            .join(','))
-      : '';
-    const ruleFsts = isKokoro ? kokoroFsts : meloFsts;
-
-    let native: SherpaTtsNative;
-    try {
-      native = new mod.OfflineTts({
-        model: modelConfig,
-        numThreads: config.numThreads ?? 4,
-        debug: false,
-        provider: config.provider ?? 'cpu',
-        // Kokoro 前端强制 max_num_sentences=1（传 2 会被原生层忽略并逐次刷警告）
-        maxNumSentences: isKokoro ? 1 : 2,
-        ...(ruleFsts ? { ruleFsts } : {}),
-      });
-    } catch (error) {
-      throw new VoiceEngineError('tts', `引擎初始化失败：${(error as Error).message}`);
-    }
-
+    const native = createNativeTts(built, mod);
     const speakerCount = native.numSpeakers;
     const requested = config.speakerId ?? 0;
     const speakerId = requested < speakerCount ? requested : 0;
@@ -182,7 +125,7 @@ export class SherpaTtsEngine implements TtsEngine {
     const audio = this.native.generate({
       text: trimmed,
       sid,
-      speed: this.defaultSpeed,
+      speed: this.speed,
     });
     return { samples: audio.samples, sampleRate: audio.sampleRate ?? this.native.sampleRate };
   }

@@ -66,13 +66,20 @@ export {
   type FsLike,
 } from './models/downloader';
 
-export { SherpaTtsEngine, defaultSherpaTtsLoader } from './engine/sherpa/tts-engine';
+export { SherpaTtsEngine, defaultSherpaTtsLoader, createNativeTts } from './engine/sherpa/tts-engine';
 export type {
   SherpaTtsOptions,
   SherpaTtsModule,
   SherpaTtsNative,
   SherpaTtsLoader,
 } from './engine/sherpa/tts-engine';
+export { WorkerTtsEngine } from './engine/sherpa/tts-worker';
+export type { WorkerTtsOptions, TtsWorkerLike } from './engine/sherpa/tts-worker';
+export { TTS_WORKER_SOURCE, resolveSherpaModulePath } from './engine/sherpa/tts-worker-source';
+export { createSherpaTtsEngine } from './engine/sherpa/create-tts-engine';
+export type { CreateTtsEngineOptions, TtsEngineMode } from './engine/sherpa/create-tts-engine';
+export { buildNativeTtsConfig } from './engine/sherpa/tts-native-config';
+export type { BuildNativeTtsConfigOptions, BuiltNativeTtsConfig } from './engine/sherpa/tts-native-config';
 export { SherpaAsrEngine, defaultSherpaAsrLoader } from './engine/sherpa/asr-engine';
 export type {
   SherpaAsrOptions,

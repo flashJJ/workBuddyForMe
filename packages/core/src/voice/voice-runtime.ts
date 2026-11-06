@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import {
   SherpaAsrEngine,
-  SherpaTtsEngine,
+  createSherpaTtsEngine,
   VOICE_MODELS,
   getVoiceModelSpec,
   downloadVoiceModel,
@@ -48,6 +48,7 @@ export class VoiceRuntime {
   private ttsConfigKey = '';
   private asrEngine: AsrEngine | null = null;
   private asrConfigKey = '';
+  private prewarmJob: Promise<boolean> | null = null;
   private readonly jobs = new Map<VoiceModelKind, DownloadJob>();
 
   constructor(
@@ -214,12 +215,39 @@ export class VoiceRuntime {
     const key = ttsConfigKey(spec, modelDir, s);
     if (this.ttsEngine && this.ttsConfigKey === key) return this.ttsEngine;
     await this.ttsEngine?.dispose();
-    this.ttsEngine = await SherpaTtsEngine.create({
+    // 默认 worker 线程合成：原生推理同步执行，留在主线程会阻塞 SSE 与模型流
+    this.ttsEngine = await createSherpaTtsEngine({
       spec,
       config: buildTtsEngineConfig(spec, modelDir, s),
     });
     this.ttsConfigKey = key;
     return this.ttsEngine;
+  }
+
+  /**
+   * 启动预热：在服务就绪时提前拉起 worker 与模型，避免第一句朗读额外背模型加载耗时。
+   * 模型未下载时静默跳过；预热失败不抛出（首次朗读会再试并给出真实错误）。
+   */
+  prewarmTts(): Promise<boolean> {
+    this.prewarmJob ??= this.doPrewarmTts();
+    return this.prewarmJob;
+  }
+
+  private async doPrewarmTts(): Promise<boolean> {
+    try {
+      const status = await this.getModelStatus();
+      if (!status.ttsReady) {
+        console.warn('[voice:tts] 模型未就绪，跳过启动预热');
+        return false;
+      }
+      const started = Date.now();
+      await this.ensureTts();
+      console.warn(`[voice:tts] 启动预热完成（${status.activeTtsModel}，${Date.now() - started}ms）`);
+      return true;
+    } catch (error) {
+      console.warn('[voice:tts] 启动预热失败，首次朗读时重试：', (error as Error).message);
+      return false;
+    }
   }
 
   /** 设置变更后让引擎下次调用时按新配置重建 */

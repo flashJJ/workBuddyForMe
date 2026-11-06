@@ -7,11 +7,19 @@ const h = vi.hoisted(() => ({
   create: vi.fn(),
   synth: vi.fn(),
   dispose: vi.fn(),
+  /** 模型文件缺失清单（空数组=就绪）；只影响 tts */
+  ttsMissing: [] as string[],
+}));
+
+vi.mock('./voice-model-files', () => ({
+  listMissingModelFiles: (_list: unknown, _settings: unknown, kind: string) =>
+    kind === 'tts' ? h.ttsMissing : [],
 }));
 
 vi.mock('@wbfm/voice', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@wbfm/voice')>()),
-  SherpaTtsEngine: { create: h.create },
+  // 运行时经工厂构造引擎（默认 worker 模式）；单测替换工厂避免加载真实模型
+  createSherpaTtsEngine: h.create,
 }));
 
 import { VoiceRuntime } from './voice-runtime';
@@ -81,6 +89,38 @@ describe('VoiceRuntime 角色声线解析', () => {
     expect(opts.config.kokoro.lexicon).toContain('lexicon-zh.txt');
     expect(opts.config.kokoro.ruleFsts).toContain('date-zh.fst');
     expect(opts.config.kokoro.ruleFsts).toContain('phone-zh.fst');
+  });
+});
+
+describe('VoiceRuntime 启动预热', () => {
+  beforeEach(() => {
+    h.create.mockReset();
+    h.synth.mockReset();
+    h.dispose.mockReset();
+    h.ttsMissing = [];
+    h.create.mockResolvedValue({ synthesize: h.synth, dispose: h.dispose });
+    h.synth.mockResolvedValue({ samples: new Float32Array([0.1]), sampleRate: 24000 });
+  });
+
+  it('模型就绪时预热一次并复用引擎（重复预热不再创建）', async () => {
+    const { runtime } = makeRuntime('haru', 'kokoro');
+    await expect(runtime.prewarmTts()).resolves.toBe(true);
+    await expect(runtime.prewarmTts()).resolves.toBe(true);
+    expect(h.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('模型未下载时跳过预热且不创建引擎', async () => {
+    h.ttsMissing = ['kokoro-multi-lang-v1_1/model.onnx'];
+    const { runtime } = makeRuntime('haru', 'kokoro');
+    await expect(runtime.prewarmTts()).resolves.toBe(false);
+    expect(h.create).not.toHaveBeenCalled();
+  });
+
+  it('预热失败不抛出（首次朗读再试）', async () => {
+    h.create.mockRejectedValueOnce(new Error('worker boom'));
+    const { runtime } = makeRuntime('haru', 'kokoro');
+    await expect(runtime.prewarmTts()).resolves.toBe(false);
+    await expect(runtime.synthesize('你好')).resolves.toBeDefined();
   });
 });
 
