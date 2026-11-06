@@ -101,7 +101,6 @@ export function KnowledgeRetrievalPanel() {
             step={0.05}
             value={Number(minSim)}
             onValueChange={(v) => setMinSim(String(v))}
-            className="w-full"
           />
         </div>
         <div className="space-y-1.5">
@@ -113,7 +112,6 @@ export function KnowledgeRetrievalPanel() {
             step={1}
             value={Number(maxChunks)}
             onValueChange={(v) => setMaxChunks(String(v))}
-            className="w-full"
           />
         </div>
       </div>

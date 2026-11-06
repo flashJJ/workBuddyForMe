@@ -14,7 +14,8 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 
 const INPUT = 'h-9 w-full rounded-md border bg-background px-2 text-sm';
-const AREA = 'min-h-20 w-full rounded-md border bg-background p-2 font-mono text-xs';
+const AREA =
+  'min-h-20 w-full rounded-md border bg-background p-2 font-mono text-xs placeholder:text-muted-foreground/70';
 
 const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
   confirm_each: 'tasks.governance.modes.confirm_each',
@@ -47,12 +48,15 @@ function ListField(props: {
   label: string;
   value: string[];
   onChange: (next: string[]) => void;
+  /** 示例占位：告诉用户每行该写什么，避免空白框无从下手 */
+  placeholder?: string;
 }) {
   return (
     <label className="flex flex-col gap-1 text-xs text-muted-foreground">
       {props.label}
       <textarea
         className={AREA}
+        placeholder={props.placeholder}
         value={lines(props.value)}
         onChange={(event) => props.onChange(fromLines(event.target.value))}
       />
@@ -158,16 +162,19 @@ export function AgentGovernanceSection() {
             label={t('tasks.governance.policy.deny')}
             value={policy.tools.deny}
             onChange={(deny) => patchTools({ deny })}
+            placeholder={t('tasks.governance.policy.toolsDenyPlaceholder')}
           />
           <ListField
             label={t('tasks.governance.policy.allow')}
             value={policy.tools.allow}
             onChange={(allow) => patchTools({ allow })}
+            placeholder={t('tasks.governance.policy.toolsAllowPlaceholder')}
           />
           <ListField
             label={t('tasks.governance.policy.dangerAllow')}
             value={policy.tools.dangerAllow}
             onChange={(dangerAllow) => patchTools({ dangerAllow })}
+            placeholder={t('tasks.governance.policy.dangerAllowPlaceholder')}
           />
         </div>
       </div>
@@ -179,11 +186,13 @@ export function AgentGovernanceSection() {
             label={t('tasks.governance.policy.allowedRoots')}
             value={policy.paths.allowedRoots}
             onChange={(allowedRoots) => patchPaths({ allowedRoots })}
+            placeholder={t('tasks.governance.policy.pathsAllowPlaceholder')}
           />
           <ListField
             label={t('tasks.governance.policy.deniedRoots')}
             value={policy.paths.deniedRoots}
             onChange={(deniedRoots) => patchPaths({ deniedRoots })}
+            placeholder={t('tasks.governance.policy.pathsDenyPlaceholder')}
           />
         </div>
       </div>
@@ -195,11 +204,13 @@ export function AgentGovernanceSection() {
             label={t('tasks.governance.policy.allowDomains')}
             value={policy.domains.allow}
             onChange={(allow) => patchDomains({ allow })}
+            placeholder={t('tasks.governance.policy.domainsAllowPlaceholder')}
           />
           <ListField
             label={t('tasks.governance.policy.denyDomains')}
             value={policy.domains.deny}
             onChange={(deny) => patchDomains({ deny })}
+            placeholder={t('tasks.governance.policy.domainsDenyPlaceholder')}
           />
         </div>
       </div>
@@ -211,11 +222,13 @@ export function AgentGovernanceSection() {
             label={t('tasks.governance.policy.allowCommands')}
             value={policy.exec.allowCommands}
             onChange={(allowCommands) => patchExec({ allowCommands })}
+            placeholder={t('tasks.governance.policy.commandsAllowPlaceholder')}
           />
           <ListField
             label={t('tasks.governance.policy.denyCommands')}
             value={policy.exec.denyCommands}
             onChange={(denyCommands) => patchExec({ denyCommands })}
+            placeholder={t('tasks.governance.policy.commandsDenyPlaceholder')}
           />
         </div>
       </div>
