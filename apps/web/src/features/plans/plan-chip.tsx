@@ -35,7 +35,7 @@ export function PlanChip({ conversationId }: { conversationId: string | null }) 
       title={t('plans.description')}
     >
       <ListTodo className="h-3 w-3" />
-      <span className="max-w-[16rem] truncate">{label}</span>
+      <span className="max-w-[10rem] truncate">{label}</span>
       {progress && (
         <span className="tabular-nums">
           {progress.completedSteps}/{progress.totalSteps}

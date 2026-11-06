@@ -11,6 +11,10 @@ export const zhChat = {
   deleteConversationConfirm: '删除对话「{title}」？',
   viewSummaryTitle: '查看模型自动生成的早期对话摘要',
   compactedBadge: '已压缩 {count} 条早期消息',
+  avatarRail: {
+    collapse: '收起形象栏',
+    expand: '展开形象栏',
+  },
   setup: {
     title: '还没有可用的对话模型',
     description: '还没连上模型。用向导最快：演示模式、本地模型、云端 API，三种搞法任选。',
@@ -134,6 +138,10 @@ export const enChat = {
   viewSummaryTitle: 'View the model-generated summary of earlier messages',
   compactedBadge:
     '{count, plural, one {# earlier message compacted} other {# earlier messages compacted}}',
+  avatarRail: {
+    collapse: 'Collapse avatar panel',
+    expand: 'Expand avatar panel',
+  },
   setup: {
     title: 'No chat model available yet',
     description:

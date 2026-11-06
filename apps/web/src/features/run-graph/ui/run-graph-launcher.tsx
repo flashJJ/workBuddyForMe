@@ -13,10 +13,18 @@ export interface RunGraphLauncherProps {
   className?: string;
   /** v2.20 M3：默认实时跟随；timeline 类入口显式关闭 */
   live?: boolean;
+  /** v2.23：以菜单项样式渲染触发器（顶栏「更多」弹层内） */
+  menuItem?: boolean;
 }
 
 /** v2.20 M2：右侧抽屉入口；会话顶栏与会议头部共用。 */
-export function RunGraphLauncher({ kind, id, className, live = true }: RunGraphLauncherProps) {
+export function RunGraphLauncher({
+  kind,
+  id,
+  className,
+  live = true,
+  menuItem = false,
+}: RunGraphLauncherProps) {
   const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
   if (!id) return null;
@@ -26,8 +34,8 @@ export function RunGraphLauncher({ kind, id, className, live = true }: RunGraphL
       <Button
         type="button"
         size="sm"
-        variant="outline"
-        className={className}
+        variant={menuItem ? 'ghost' : 'outline'}
+        className={menuItem ? 'w-full justify-start px-2 font-normal' : className}
         onClick={() => setOpen(true)}
         aria-label={t('runGraph.open')}
         data-testid={`run-graph-open-${kind}`}

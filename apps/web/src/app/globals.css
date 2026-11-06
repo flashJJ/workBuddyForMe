@@ -312,6 +312,41 @@
   color: inherit;
 }
 
+/*
+ * v2.23 GFM 表格：此前没有任何 table 规则，浏览器默认样式会按容器宽度压扁列、
+ * 中文长内容挤成竖排。改为块级 + max-content，窄屏横向滚动而不是压扁。
+ */
+.markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.85em;
+}
+
+.markdown-body thead {
+  background-color: hsl(var(--muted));
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.4rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.markdown-body td code {
+  white-space: nowrap;
+}
+
 .hljs-comment,
 .hljs-quote {
   color: hsl(var(--code-comment));
