@@ -92,8 +92,8 @@
       "require": "./dist/index.cjs"
     },
     "./search": {
-      "types": "./src/search.ts",
-      "development": "./src/search.ts",
+      "types": "./src/bridges/search.ts",
+      "development": "./src/bridges/search.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },

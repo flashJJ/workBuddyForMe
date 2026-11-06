@@ -38,7 +38,7 @@ import { installUpdater } from './updater-bootstrap';
 import { registerGlobalShortcuts } from './global-shortcuts';
 import { registerNotifyIpc } from './notify-ipc';
 import { registerDialogIpc } from './dialog-ipc';
-import { registerSearchIpc } from './search-ipc';
+import { registerSearchIpc } from './search/search-ipc';
 import { registerAwarenessIpc } from './awareness/awareness-ipc';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
