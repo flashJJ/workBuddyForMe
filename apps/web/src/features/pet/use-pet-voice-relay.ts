@@ -97,12 +97,13 @@ export function usePetVoiceRelay({
     (frame: SsePayloadMap['voice_audio']) => {
       if (!activeNow || !bridge) return;
       const text = stripExpressionDirectives(frame.fragment).trim();
-      if (text) {
-        bridge.relayPerformance({
-          kind: 'subtitle',
-          text: text.slice(0, PET_SUBTITLE_MAX),
-        });
-      }
+      // v2.23：TTS 按句切分时会推来只有标点/符号的碎片（如「，」「。」），
+      // 桌宠侧会渲染成一个几乎空白的气泡；没有文字或数字的碎片直接丢弃。
+      if (!text || !/[\p{L}\p{N}]/u.test(text)) return;
+      bridge.relayPerformance({
+        kind: 'subtitle',
+        text: text.slice(0, PET_SUBTITLE_MAX),
+      });
     },
     [activeNow, bridge],
   );

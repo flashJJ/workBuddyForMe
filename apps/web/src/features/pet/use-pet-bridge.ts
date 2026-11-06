@@ -40,6 +40,24 @@ export function usePetBridge(): PetRuntime {
   const [relationshipLevel, setRelationshipLevel] = React.useState(0);
   const [mood, setMood] = React.useState<MotionMood>(DEFAULT_MOTION_MOOD);
   const levelRef = React.useRef(0);
+  /** v2.23：字幕兜底计时——停止事件丢失时也不会让旧句子永久挂在头顶 */
+  const subtitleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const SUBTITLE_TTL_MS = 8_000;
+
+  const clearSubtitle = React.useCallback(() => {
+    if (subtitleTimerRef.current) {
+      clearTimeout(subtitleTimerRef.current);
+      subtitleTimerRef.current = null;
+    }
+    setSubtitle('');
+  }, []);
+
+  React.useEffect(
+    () => () => {
+      if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
+    },
+    [],
+  );
 
   React.useEffect(() => {
     if (!bridge) {
@@ -54,10 +72,16 @@ export function usePetBridge(): PetRuntime {
           break;
         case 'state':
           setVoiceState(event.state);
-          if (event.state === 'idle') levelRef.current = 0;
+          // 朗读结束立即清字幕：否则最后一句/碎片会一直留在气泡里
+          if (event.state === 'idle') {
+            levelRef.current = 0;
+            clearSubtitle();
+          }
           break;
         case 'subtitle':
           setSubtitle(event.text);
+          if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
+          subtitleTimerRef.current = setTimeout(clearSubtitle, SUBTITLE_TTL_MS);
           break;
         case 'expression':
           setExpression(event.tag as ExpressionTag);
@@ -67,7 +91,7 @@ export function usePetBridge(): PetRuntime {
           setMood(event.mood);
           break;
         case 'conversation':
-          setSubtitle('');
+          clearSubtitle();
           setExpression(DEFAULT_EXPRESSION);
           setVoiceState('idle');
           levelRef.current = 0;
@@ -75,7 +99,7 @@ export function usePetBridge(): PetRuntime {
       }
     });
     return off;
-  }, [bridge, router]);
+  }, [bridge, router, clearSubtitle]);
 
   React.useEffect(() => {
     if (!bridge) return;

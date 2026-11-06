@@ -278,7 +278,7 @@ function PetSubtitle({
   voiceState: PetVoiceState;
   shifted: boolean;
 }) {
-  if (!text) return null;
+  if (!text.trim()) return null;
   return (
     <div
       className={`pointer-events-none absolute inset-x-0 flex justify-center px-4 ${
@@ -286,7 +286,7 @@ function PetSubtitle({
       }`}
     >
       <div
-        className="max-w-[85%] rounded-xl border border-border/50 bg-background/85 px-3 py-1.5 text-center text-sm leading-relaxed text-foreground shadow-sm backdrop-blur-sm"
+        className="line-clamp-3 max-w-[85%] break-words rounded-xl border border-border/50 bg-background/85 px-3 py-1.5 text-center text-sm leading-relaxed text-foreground shadow-sm backdrop-blur-sm"
         data-testid="pet-subtitle"
         data-voice-state={voiceState}
       >
