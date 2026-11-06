@@ -32,6 +32,9 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./vitest.setup.ts'],
+    // Windows CI 慢机（含 Turbo 并行）下 userEvent 交互用例偶发超过默认 5s，
+    // 与断言正确性无关；放宽到 20s，避免发布流水线被环境抖动阻断。
+    testTimeout: 20_000,
     coverage,
   },
 });
