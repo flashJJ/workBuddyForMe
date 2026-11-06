@@ -12,6 +12,15 @@ import { waitForHydrated } from './utils';
 
 type Envelope<T> = { data?: T };
 
+/**
+ * v2.23：分支入口从顶栏常驻按钮收进了「更多」弹层，
+ * 不展开时按钮不在 DOM 里，点击前必须先打开弹层。
+ */
+async function openBranchPanel(page: Page): Promise<void> {
+  await page.getByTestId('chat-header-more').click();
+  await page.getByTestId('branch-open').click();
+}
+
 const MOCK_PROVIDER = 'v221-branch-mock';
 const MOCK_ASSISTANT = 'v2.21 分支 Mock 助手';
 
@@ -105,7 +114,7 @@ test.describe.serial('v2.21 分支会话', () => {
     await skipOnboardingIfShown(page);
     await waitForHydrated(page);
 
-    await page.getByTestId('branch-open').click();
+    await openBranchPanel(page);
     const panel = page.getByTestId('branch-panel');
     await expect(panel).toBeVisible();
     const card = page.getByTestId(`branch-card-${created.branch.id}`);
@@ -176,7 +185,7 @@ test.describe.serial('v2.21 分支会话', () => {
     await page.goto(`/chat?conversation=${parent.id}`);
     await skipOnboardingIfShown(page);
     await waitForHydrated(page);
-    await page.getByTestId('branch-open').click();
+    await openBranchPanel(page);
     const card = page.getByTestId(`branch-card-${created.branch.id}`);
     await expect(card).toContainText('排队');
     await card.getByRole('button', { name: '取消' }).click();
@@ -229,7 +238,7 @@ test.describe.serial('v2.21 分支会话', () => {
 
       await page.goto(`/chat?conversation=${parentId}`);
       await waitForHydrated(page);
-      await page.getByTestId('branch-open').click();
+      await openBranchPanel(page);
       const card = page.getByTestId(`branch-card-${branchId}`);
       await expect(card).toContainText('成功');
       await expect(card.getByTestId(`branch-evidence-${branchId}`)).toBeVisible();
