@@ -45,6 +45,18 @@
     /* v1.8 事件 fx 语义变量（亮色基线；暗色在 .dark 覆盖） */
     --fx-heart: 350 85% 65%;
     --fx-sweat: 205 80% 60%;
+    /* v2.23 设计基座：三级表面 / 三档阴影 / 动效时长与缓动（命名主题逐套覆写） */
+    --surface-1: 0 0% 100%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 0 0% 100%;
+    --shadow-color: 222 47% 11%;
+    --shadow-1: 0 1px 2px 0 hsl(var(--shadow-color) / 0.06), 0 1px 3px 0 hsl(var(--shadow-color) / 0.1);
+    --shadow-2: 0 2px 4px -1px hsl(var(--shadow-color) / 0.08), 0 6px 16px -4px hsl(var(--shadow-color) / 0.12);
+    --shadow-3: 0 10px 26px -8px hsl(var(--shadow-color) / 0.18), 0 22px 56px -18px hsl(var(--shadow-color) / 0.22);
+    --motion-fast: 120ms;
+    --motion-base: 180ms;
+    --motion-slow: 240ms;
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
     --radius: 0.625rem;
   }
 
@@ -89,6 +101,14 @@
     /* v1.8 事件 fx：暗色下提亮一档保证可见 */
     --fx-heart: 350 80% 72%;
     --fx-sweat: 205 85% 72%;
+    /* v2.23 表面与阴影：暗底需更重的投影才可分辨层级 */
+    --surface-1: 222 47% 8%;
+    --surface-2: 222 44% 11%;
+    --surface-3: 222 44% 13%;
+    --shadow-color: 0 0% 0%;
+    --shadow-1: 0 1px 2px 0 hsl(var(--shadow-color) / 0.4), 0 1px 3px 0 hsl(var(--shadow-color) / 0.3);
+    --shadow-2: 0 2px 6px -1px hsl(var(--shadow-color) / 0.5), 0 8px 22px -6px hsl(var(--shadow-color) / 0.45);
+    --shadow-3: 0 12px 32px -10px hsl(var(--shadow-color) / 0.6), 0 28px 64px -20px hsl(var(--shadow-color) / 0.55);
   }
 
   /*
@@ -126,6 +146,14 @@
     --warning-bg: 36 40% 15%;
     --info: 42 80% 70%;
     --info-bg: 40 32% 16%;
+    /* v2.23 表面三级 + 近黑投影 */
+    --surface-1: 30 14% 9%;
+    --surface-2: 30 13% 12%;
+    --surface-3: 30 13% 15%;
+    --shadow-color: 30 30% 2%;
+    --shadow-1: 0 1px 2px 0 hsl(var(--shadow-color) / 0.4), 0 1px 3px 0 hsl(var(--shadow-color) / 0.3);
+    --shadow-2: 0 2px 6px -1px hsl(var(--shadow-color) / 0.5), 0 8px 22px -6px hsl(var(--shadow-color) / 0.45);
+    --shadow-3: 0 12px 32px -10px hsl(var(--shadow-color) / 0.6), 0 28px 64px -20px hsl(var(--shadow-color) / 0.55);
   }
 
   /* 月白（亮色·素净冷调） */
@@ -155,6 +183,11 @@
     --warning-bg: 38 80% 94%;
     --info: 212 60% 38%;
     --info-bg: 212 80% 95%;
+    /* v2.23 表面三级（亮色基线，卡片浮层与页底同色靠阴影分层） */
+    --surface-1: 210 20% 98%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 0 0% 100%;
+    --shadow-color: 222 32% 14%;
   }
 
   /* 樱粉（亮色·柔粉暖调） */
@@ -184,6 +217,11 @@
     --warning-bg: 36 84% 94%;
     --info: 332 55% 42%;
     --info-bg: 334 80% 95%;
+    /* v2.23 表面三级（亮色基线，卡片浮层与页底同色靠阴影分层） */
+    --surface-1: 340 30% 97%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 0 0% 100%;
+    --shadow-color: 328 28% 16%;
   }
 
   * {
@@ -191,7 +229,9 @@
   }
 
   body {
+    /* v2.23 数字统一等宽，避免列表/统计跳动 */
     @apply bg-background text-foreground antialiased;
+    font-variant-numeric: tabular-nums;
   }
 
   /*
@@ -548,5 +588,33 @@
   .event-fx-fadein {
     animation: none;
     opacity: 0.75;
+  }
+}
+
+/* ── v2.23 弹层入场（项目未装动画库，改用纯 CSS 关键帧；时长与缓动走令牌） ── */
+@keyframes wbfm-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes wbfm-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+.wbfm-overlay[data-state='open'] {
+  animation: wbfm-overlay-in var(--motion-base) var(--ease-out-quint) both;
+}
+.wbfm-dialog[data-state='open'] {
+  animation: wbfm-dialog-in var(--motion-base) var(--ease-out-quint) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wbfm-overlay[data-state='open'],
+  .wbfm-dialog[data-state='open'] {
+    animation: none;
   }
 }

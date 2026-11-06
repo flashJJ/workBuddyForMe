@@ -27,9 +27,9 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm',
-      'data-[placeholder]:text-muted-foreground',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+      'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-1 transition-[color,background-color,border-color,box-shadow] duration-fast ease-out-quint',
+      'hover:border-muted-foreground/40 data-[placeholder]:text-muted-foreground',
+      'focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className,
     )}
@@ -53,7 +53,7 @@ const SelectContent = React.forwardRef<
       position={position}
       className={cn(
         // 弹框内容为 z-[51]，下拉必须更高，否则 Radix Portal 会被 Dialog 遮住
-        'relative z-[60] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md',
+        'relative z-[60] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-3',
         position === 'popper' && 'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
         className,
       )}

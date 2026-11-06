@@ -24,7 +24,8 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out',
+      // v2.23：遮罩加毛玻璃，入场动画由 globals.css 的 .wbfm-overlay 提供
+      'wbfm-overlay fixed inset-0 z-50 bg-black/60 backdrop-blur-sm',
       className,
     )}
     {...props}
@@ -44,13 +45,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-[50%] top-[50%] z-[51] grid max-h-[calc(100vh-2rem)] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto rounded-lg border bg-background p-6 shadow-lg',
+        'wbfm-dialog fixed left-[50%] top-[50%] z-[51] grid max-h-[calc(100vh-2rem)] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto rounded-lg border border-border bg-surface-3 p-6 shadow-3',
         className,
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus:outline-none">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity duration-fast hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
         <X className="h-4 w-4" />
         <DialogCloseLabel />
       </DialogPrimitive.Close>
