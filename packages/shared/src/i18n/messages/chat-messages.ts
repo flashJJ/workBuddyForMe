@@ -10,6 +10,8 @@ export const zhChatMessages = {
   generateFailed: '生成失败：{reason}',
   copied: '已复制',
   regenerate: '重新生成',
+  /** v2.23：滚离底部时的回到底部浮标 */
+  backToBottom: '回到底部',
   resend: '重新发送',
   editAndResend: '编辑并重发',
   citations: '引用来源',
@@ -25,6 +27,10 @@ export const zhChatMessages = {
     emptyTitle: '开始新对话',
     emptyDescription: '发送第一条消息，助手会在这里回应你。',
     generatingReply: '正在生成回复…',
+    promptsLabel: '试试这样问',
+    promptPlan: '帮我把一个想法拆成三步可执行的计划',
+    promptSummary: '总结这次对话，并列出接下来的待办',
+    promptSources: '检索知识库后给出带引用的回答',
   },
   image: {
     unavailable: '图片不可用',
@@ -43,6 +49,8 @@ export const enChatMessages = {
   generateFailed: 'Generation failed: {reason}',
   copied: 'Copied',
   regenerate: 'Regenerate',
+  /** v2.23: back-to-bottom pill shown when scrolled away from the end */
+  backToBottom: 'Back to bottom',
   resend: 'Send again',
   editAndResend: 'Edit and resend',
   citations: 'Sources',
@@ -57,6 +65,10 @@ export const enChatMessages = {
     emptyTitle: 'Start a new conversation',
     emptyDescription: 'Send your first message and the assistant will reply here.',
     generatingReply: 'Generating a reply…',
+    promptsLabel: 'Try asking',
+    promptPlan: 'Turn an idea into a three-step executable plan',
+    promptSummary: 'Summarize this chat and list the follow-ups',
+    promptSources: 'Answer with citations from my knowledge base',
   },
   image: {
     unavailable: 'Image unavailable',

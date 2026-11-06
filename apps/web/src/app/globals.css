@@ -543,6 +543,34 @@
   max-height: 30rem;
 }
 
+/* ── v2.23 通知入场：与弹层同一套时长与缓动 ── */
+@keyframes wbfm-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wbfm-toast {
+  animation: wbfm-toast-in var(--motion-base) var(--ease-out-quint) both;
+}
+
+/* ── v2.23 动效全局降级：系统开启「减弱动态效果」时，动画与过渡一律即时完成 ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── v2.23 滚动渐隐：上下边缘淡出，替代硬切 ── */
 .scroll-fade-y {
   -webkit-mask-image: linear-gradient(

@@ -94,7 +94,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               role="status"
               data-variant={toast.variant}
               className={cn(
-                'pointer-events-auto flex items-start gap-2 rounded-md border bg-popover p-3 text-sm shadow-md',
+                'wbfm-toast pointer-events-auto flex items-start gap-2 rounded-lg border bg-popover p-3 text-sm shadow-3',
                 VARIANT_STYLE[toast.variant],
               )}
             >

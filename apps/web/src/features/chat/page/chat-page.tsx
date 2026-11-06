@@ -193,11 +193,7 @@ export function ChatPage({
         open={shareOpen}
         onOpenChange={setShareOpen}
       />
-      <ConversationSummaryDialog
-        conversation={currentConversation}
-        open={summaryOpen}
-        onOpenChange={setSummaryOpen}
-      />
+      <ConversationSummaryDialog conversation={currentConversation} open={summaryOpen} onOpenChange={setSummaryOpen} />
       <ToolConfirmDialog
         open={Boolean(session.pendingConfirmation)}
         tool={session.pendingConfirmation?.tool ?? ''}
@@ -249,6 +245,7 @@ export function ChatPage({
               streamTiming={session.streamTiming}
               highlightMessageId={deepLinkMessageId}
               onHighlightMissing={warnMissingMessage}
+              onUsePrompt={(text) => { setDraft(text); setComposerFocus((value) => value + 1); }}
             />
             {companion.proactiveBubble && (
               <ProactiveBubbleBar

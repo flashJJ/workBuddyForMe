@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
+import { ArrowDown, Sparkles } from 'lucide-react';
 import type { Message } from '@wbfm/shared/types';
-import { EmptyState } from '@/components/common/state';
+import { Skeleton } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { AgentCardEntry } from '@/features/agent-collab';
 import type { StreamTiming } from '../types/chat-session.types';
@@ -28,6 +29,8 @@ interface Props {
   highlightMessageId?: string | null;
   /** 深链消息已不存在时的可读降级回调 */
   onHighlightMissing?: () => void;
+  /** v2.23 空态示例 prompt：点击只填入输入框，不自动发送 */
+  onUsePrompt?: (text: string) => void;
 }
 
 export function MessageList({
@@ -42,11 +45,20 @@ export function MessageList({
   streamTiming,
   highlightMessageId,
   onHighlightMissing,
+  onUsePrompt,
 }: Props) {
   const { t } = useI18n();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const warnedRef = React.useRef<string | null>(null);
+  // v2.23：滚离底部超过 200px 时浮出「回到底部」
+  const [atBottom, setAtBottom] = React.useState(true);
+
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 200);
+  };
 
   React.useEffect(() => {
     const target = highlightMessageId
@@ -69,16 +81,49 @@ export function MessageList({
   }, [messages, highlightMessageId, onHighlightMissing]);
 
   if (messages.length === 0) {
+    // v2.23：首轮生成中给骨架屏，避免空态先闪一下；平时是品牌区 + 示例 prompt 卡
+    if (streaming) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-6">
+          <div className="w-full max-w-3xl space-y-3" data-testid="message-skeleton">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </div>
+      );
+    }
     return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <EmptyState
-          title={t('chatMessages.list.emptyTitle')}
-          description={
-            streaming
-              ? t('chatMessages.list.generatingReply')
-              : t('chatMessages.list.emptyDescription')
-          }
-        />
+      <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
+        <div className="w-full max-w-3xl text-center" data-testid="chat-empty-state">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Sparkles className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <p className="mt-3 text-base font-semibold">{t('chatMessages.list.emptyTitle')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t('chatMessages.list.emptyDescription')}
+          </p>
+          <p className="mt-6 text-[11px] font-medium tracking-wide text-muted-foreground">
+            {t('chatMessages.list.promptsLabel')}
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {[
+              t('chatMessages.list.promptPlan'),
+              t('chatMessages.list.promptSummary'),
+              t('chatMessages.list.promptSources'),
+            ].map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => onUsePrompt?.(prompt)}
+                className="rounded-xl border bg-surface-2 px-3 py-3 text-left text-xs leading-relaxed text-muted-foreground shadow-1 transition-[color,background-color,border-color,box-shadow,transform] duration-fast ease-out-quint hover:-translate-y-0.5 hover:border-primary/40 hover:text-foreground hover:shadow-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -93,30 +138,44 @@ export function MessageList({
   }
 
   return (
-    // v2.23：正文列限宽居中（最大 768px），超宽窗口不再贴边拉伸；上下边缘渐隐
-    <div
-      ref={containerRef}
-      className="scroll-fade-y flex-1 overflow-y-auto"
-      data-testid="message-list"
-    >
-      <div className="mx-auto w-full max-w-3xl py-2">
-        {messages.map((message, index) => (
-          <MessageItem
-            key={message.id || `pending-${index}`}
-            message={message}
-            conversationId={conversationId}
-            highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
-            assistantName={assistantName}
-            disabled={streaming}
-            agentCard={agentCards?.[message.id]}
-            onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
-            onResend={message.role === 'user' && !streaming ? onResend : undefined}
-            onFeedback={onFeedback}
-            streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
-          />
-        ))}
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* v2.23：正文列限宽居中（最大 768px），超宽窗口不再贴边拉伸；上下边缘渐隐 */}
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="scroll-fade-y flex-1 overflow-y-auto"
+        data-testid="message-list"
+      >
+        <div className="mx-auto w-full max-w-3xl py-2">
+          {messages.map((message, index) => (
+            <MessageItem
+              key={message.id || `pending-${index}`}
+              message={message}
+              conversationId={conversationId}
+              highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
+              assistantName={assistantName}
+              disabled={streaming}
+              agentCard={agentCards?.[message.id]}
+              onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
+              onResend={message.role === 'user' && !streaming ? onResend : undefined}
+              onFeedback={onFeedback}
+              streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
+            />
+          ))}
+        </div>
+        <div ref={bottomRef} />
       </div>
-      <div ref={bottomRef} />
+      {!atBottom && (
+        <button
+          type="button"
+          onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+          className="absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border bg-surface-3 px-3 py-1.5 text-xs text-muted-foreground shadow-2 transition-colors duration-fast ease-out-quint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          data-testid="scroll-to-bottom"
+        >
+          <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('chatMessages.backToBottom')}
+        </button>
+      )}
     </div>
   );
 }
