@@ -141,10 +141,12 @@ export function Composer({
 
   if (streaming) {
     return (
-      <div className="border-t p-3" data-testid="composer">
-        <Button type="button" variant="outline" className="w-full" onClick={onStop}>
-          ■ {t('chat.composer.stopGenerating')}
-        </Button>
+      <div className="border-t px-3 py-3" data-testid="composer">
+        <div className="mx-auto w-full max-w-3xl">
+          <Button type="button" variant="outline" className="w-full" onClick={onStop}>
+            ■ {t('chat.composer.stopGenerating')}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -161,14 +163,19 @@ export function Composer({
       onDrop={handleDrop}
     >
       {attachments.items.length > 0 && (
-        <AttachmentPreviews items={attachments.items} onRemove={attachments.remove} />
+        <div className="mx-auto w-full max-w-3xl">
+          <AttachmentPreviews items={attachments.items} onRemove={attachments.remove} />
+        </div>
       )}
       {taskMode && (
-        <p className="pb-1 text-[11px] text-teal-600 dark:text-teal-400" data-testid="task-mode-hint">
+        <p
+          className="mx-auto w-full max-w-3xl pb-1 text-[11px] text-teal-600 dark:text-teal-400"
+          data-testid="task-mode-hint"
+        >
           {t('agents.entry.hint')}
         </p>
       )}
-      <div className="flex items-end gap-2">
+      <div className="mx-auto flex w-full max-w-3xl items-end gap-2">
         {onTaskModeChange && (
           <button
             type="button"

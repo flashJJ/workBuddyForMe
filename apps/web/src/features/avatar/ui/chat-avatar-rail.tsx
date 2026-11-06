@@ -4,6 +4,7 @@ import * as React from 'react';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import type { ExpressionTag } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useCollapsiblePanel } from '@/lib/hooks/use-collapsible-panel';
 import type { EventStage } from '@/features/events/hooks';
 import { AvatarHost } from './avatar-host';
 import type { Live2dController } from '../live2d/live2d-controller';
@@ -22,14 +23,6 @@ interface Props {
 /** 形象栏收起状态（用户偏好，localStorage 记忆） */
 const COLLAPSED_KEY = 'wbfm.chat.avatarRail.collapsed';
 
-function readCollapsed(): boolean {
-  try {
-    return window.localStorage.getItem(COLLAPSED_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 /**
  * 对话页右侧形象栏（M3）。
  * 大屏（lg+）才显示；内部 Live2dCanvas 自带动态 import，关闭形象时本组件根本不挂载，
@@ -39,22 +32,12 @@ function readCollapsed(): boolean {
  */
 export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, speaking }: Props) {
   const { t } = useI18n();
-  // 惰性读取偏好：形象栏只在设置加载后才挂载（非 SSR 首屏），不会产生 hydration 不一致
-  const [collapsed, setCollapsed] = React.useState(
-    () => typeof window !== 'undefined' && readCollapsed(),
+  // 惰性读取偏好：形象栏只在设置加载后才挂载（非 SSR 首屏），不会产生 hydration 不一致。
+  // 从未手动操作过时，xl（1280px）以下默认收起
+  const { collapsed, toggle } = useCollapsiblePanel(
+    COLLAPSED_KEY,
+    () => window.innerWidth < 1280,
   );
-
-  const toggle = () => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try {
-        window.localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
-      } catch {
-        // 隐私模式下 localStorage 不可写，仅本会话生效
-      }
-      return next;
-    });
-  };
 
   if (collapsed) {
     return (

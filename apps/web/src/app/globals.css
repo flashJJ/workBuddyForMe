@@ -543,6 +543,24 @@
   max-height: 30rem;
 }
 
+/* ── v2.23 滚动渐隐：上下边缘淡出，替代硬切 ── */
+.scroll-fade-y {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent 100%
+  );
+}
+
 /* ── v2.23 消息入场与流式光标 ── */
 .message-enter {
   animation: wbfm-message-in var(--motion-base) var(--ease-out-quint) both;

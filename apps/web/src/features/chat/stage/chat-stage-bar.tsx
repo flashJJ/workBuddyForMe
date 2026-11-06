@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { ChevronUp } from 'lucide-react';
 import type { StagePlan } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
@@ -11,6 +12,7 @@ import { useAllModels } from '@/lib/hooks/provider';
 import { useSkills } from '@/lib/hooks/capability';
 import { cn } from '@/lib/utils';
 import { StagePlanEditorDialog } from './stage-plan-editor-dialog';
+import { StageBarCompact } from './stage-bar-compact';
 import { useStagePlan } from './use-stage-plan';
 
 export interface ChatStageBarProps {
@@ -41,6 +43,22 @@ export function ChatStageBar({
   const { data: allSkills } = useSkills();
   const [editing, setEditing] = React.useState(false);
   const [editorError, setEditorError] = React.useState<string | null>(null);
+  // v2.23：<1280px 默认折叠成单行，把横向空间让给正文；展开后本次会话内保持
+  const [narrow, setNarrow] = React.useState(
+    () =>
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 1279px)').matches,
+  );
+  const [barExpanded, setBarExpanded] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(max-width: 1279px)');
+    const sync = () => setNarrow(query.matches);
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
 
   if (!plan) return null;
 
@@ -129,6 +147,16 @@ export function ChatStageBar({
 
   const loadDisabled = streaming || busy || !activeStep || !activeStep.goal.trim();
 
+  if (narrow && !barExpanded) {
+    return (
+      <StageBarCompact
+        plan={plan}
+        activeTitle={activeStep?.title ?? null}
+        onExpand={() => setBarExpanded(true)}
+      />
+    );
+  }
+
   return (
     <>
       <div
@@ -211,6 +239,20 @@ export function ChatStageBar({
             ))}
           </SimpleSelect>
           <span className="text-[10px] text-muted-foreground">{t('chat.stagePlan.modelScope')}</span>
+          {narrow && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2"
+              aria-label={t('chat.stagePlan.collapse')}
+              title={t('chat.stagePlan.collapse')}
+              onClick={() => setBarExpanded(false)}
+              data-testid="stage-collapse"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 

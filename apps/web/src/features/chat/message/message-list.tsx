@@ -93,22 +93,29 @@ export function MessageList({
   }
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto" data-testid="message-list">
-      {messages.map((message, index) => (
-        <MessageItem
-          key={message.id || `pending-${index}`}
-          message={message}
-          conversationId={conversationId}
-          highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
-          assistantName={assistantName}
-          disabled={streaming}
-          agentCard={agentCards?.[message.id]}
-          onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
-          onResend={message.role === 'user' && !streaming ? onResend : undefined}
-          onFeedback={onFeedback}
-          streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
-        />
-      ))}
+    // v2.23：正文列限宽居中（最大 768px），超宽窗口不再贴边拉伸；上下边缘渐隐
+    <div
+      ref={containerRef}
+      className="scroll-fade-y flex-1 overflow-y-auto"
+      data-testid="message-list"
+    >
+      <div className="mx-auto w-full max-w-3xl py-2">
+        {messages.map((message, index) => (
+          <MessageItem
+            key={message.id || `pending-${index}`}
+            message={message}
+            conversationId={conversationId}
+            highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
+            assistantName={assistantName}
+            disabled={streaming}
+            agentCard={agentCards?.[message.id]}
+            onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
+            onResend={message.role === 'user' && !streaming ? onResend : undefined}
+            onFeedback={onFeedback}
+            streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
+          />
+        ))}
+      </div>
       <div ref={bottomRef} />
     </div>
   );
