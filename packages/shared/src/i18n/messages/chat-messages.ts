@@ -12,6 +12,9 @@ export const zhChatMessages = {
   regenerate: '重新生成',
   /** v2.23：滚离底部时的回到底部浮标 */
   backToBottom: '回到底部',
+  /** v2.23：助手消息底部展示本轮 token 用量 */
+  turnTokens: '本轮 {count} tokens',
+  turnTokensDetail: '输入 {prompt} · 输出 {completion} · 合计 {total} tokens',
   resend: '重新发送',
   editAndResend: '编辑并重发',
   citations: '引用来源',
@@ -51,6 +54,9 @@ export const enChatMessages = {
   regenerate: 'Regenerate',
   /** v2.23: back-to-bottom pill shown when scrolled away from the end */
   backToBottom: 'Back to bottom',
+  /** v2.23: per-turn token usage under assistant messages */
+  turnTokens: 'This turn: {count} tokens',
+  turnTokensDetail: 'Prompt {prompt} · Completion {completion} · Total {total} tokens',
   resend: 'Send again',
   editAndResend: 'Edit and resend',
   citations: 'Sources',

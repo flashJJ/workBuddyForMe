@@ -233,6 +233,22 @@ export function MessageItem({
           />
         )}
         <CitationsList message={message} />
+        {/* v2.23：本轮 token 用量（悬停看输入/输出拆分） */}
+        {!isUser && message.status === 'completed' && (message.totalTokens ?? 0) > 0 && (
+          <p
+            className="text-[11px] text-muted-foreground/70"
+            data-testid="message-token-usage"
+            title={t('chatMessages.turnTokensDetail', {
+              prompt: message.promptTokens ?? 0,
+              completion: message.completionTokens ?? 0,
+              total: message.totalTokens ?? 0,
+            })}
+          >
+            {t('chatMessages.turnTokens', {
+              count: (message.totalTokens ?? 0).toLocaleString(),
+            })}
+          </p>
+        )}
       </div>
       {conversationId && branchOpen && (
         <MessageBranchDialog

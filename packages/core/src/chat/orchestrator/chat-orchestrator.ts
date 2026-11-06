@@ -14,7 +14,8 @@ import { createProactiveTurn, type StreamProactiveInput } from '../turns/proacti
 import { tryReminderTurn } from '../turns/reminder-turn';
 import { createEmotionGate } from '../turns/emotion-gate';
 import type { OrchestratorEvent, StreamChatInput } from '../base/types';
-import { ROUND_LIMIT_FALLBACK, normalizeFailure } from './orchestrator-helpers';
+import { normalizeFailure } from './orchestrator-helpers';
+import { synthesizeFinalAnswer } from './round-synthesis';
 import { createToolRuntime } from '../../tools/tool-runtime';
 import { createMemoryService } from '../../memory/memory-service';
 import { recordMilestone } from '../../services/base/milestones';
@@ -201,24 +202,22 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             });
             citations = loopOutcome.citations;
             if (loopOutcome.aborted) {
-              const abortedContent = emotionEnabled
-                ? stripEmotionSignalBlock(full)
-                : full;
+              const abortedContent = emotionEnabled ? stripEmotionSignalBlock(full) : full;
               yield { event: 'done', data: { content: abortedContent, usage } };
               return;
             }
           }
 
           if (!full.trim()) {
-            full = ROUND_LIMIT_FALLBACK;
-            yield { event: 'delta', data: { content: full } };
+            // 工具轮耗尽但正文为空：先做一次不带工具的收尾轮，把已有搜索结果转成回答
+            const answer = yield* synthesizeFinalAnswer({ target, assistant, outgoing, signal: input.signal, traceParent: turnTrace });
+            full = answer.content;
+            if (answer.usage) usage = answer.usage;
           }
         } catch (error) {
           if (input.signal?.aborted) {
             // 中止不记录情绪；但持久化前剥离可能已流出的半截尾块
-            const abortedContent = emotionEnabled
-              ? stripEmotionSignalBlock(full)
-              : full;
+            const abortedContent = emotionEnabled ? stripEmotionSignalBlock(full) : full;
             conversations.stopMessage(assistantMessage.id, abortedContent);
             conversations.saveMessageToolTrace(assistantMessage.id, trace);
             yield { event: 'done', data: { content: abortedContent, usage } };
