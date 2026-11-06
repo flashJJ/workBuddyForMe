@@ -5,18 +5,18 @@ import { stripExpressionDirectives, stripEmotionSignalBlock } from '@wbfm/shared
 import { type Message } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { copyText } from '@/lib/utils/clipboard';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
 import { AgentRunCard, type AgentCardEntry } from '@/features/agent-collab';
+import { MessageBranchDialog } from '@/features/branch';
 import { AttachmentImage } from './attachment-image';
 import { CitationsList } from './citations-list';
 import { MarkdownContent } from './markdown';
+import { MessageActions } from './message-actions';
 import { FirstTokenMetric, StreamingProgress } from '../page/streaming-progress';
 import type { StreamTiming } from '../types/chat-session.types';
 import { ToolTrace } from '../overlay/tool-trace';
-import { MessageFeedbackButtons } from './message-feedback';
-import { MessageBranchButton, MessageBranchDialog } from '@/features/branch';
 
 interface Props {
   message: Message;
@@ -39,33 +39,6 @@ interface Props {
   highlighted?: boolean;
 }
 
-function CopyButton({ content }: { content: string }) {
-  const { t } = useI18n();
-  const [copied, setCopied] = React.useState(false);
-  const resetTimerRef = React.useRef<number | null>(null);
-  React.useEffect(
-    () => () => {
-      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
-    },
-    [],
-  );
-  const copy = async () => {
-    await copyText(content);
-    setCopied(true);
-    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
-    resetTimerRef.current = window.setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <button
-      type="button"
-      className="text-xs text-muted-foreground hover:text-foreground"
-      onClick={() => void copy()}
-    >
-      {copied ? t('chatMessages.copied') : t('common.actions.copy')}
-    </button>
-  );
-}
-
 function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onResend' | 'disabled'>) {
   const { t } = useI18n();
   const [editing, setEditing] = React.useState(false);
@@ -79,7 +52,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
       onResend?.(text);
     };
     return (
-      <div className="space-y-2" data-testid="user-edit">
+      <div className="w-full space-y-2" data-testid="user-edit">
         <textarea
           className="w-full resize-y rounded-md border bg-background p-2 text-sm"
           rows={Math.min(8, Math.max(2, draft.split('\n').length))}
@@ -87,7 +60,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
           autoFocus
           onChange={(e) => setDraft(e.target.value)}
         />
-        <div className="flex gap-2">
+        <div className="flex justify-end gap-2">
           <Button size="sm" onClick={submit}>
             {t('chatMessages.resend')}
           </Button>
@@ -111,10 +84,14 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
     .map((part) => part.attachmentId);
 
   return (
-    <div className="group/msg">
-      {message.content && <p className="whitespace-pre-wrap text-sm">{message.content}</p>}
+    <div className="group/user flex max-w-[80%] flex-col items-end gap-1">
+      {message.content && (
+        <div className="rounded-2xl rounded-tr-md bg-muted px-3.5 py-2 text-sm leading-relaxed">
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        </div>
+      )}
       {imageIds.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2" data-testid="message-images">
+        <div className="flex flex-wrap justify-end gap-2" data-testid="message-images">
           {imageIds.map((id) => (
             <AttachmentImage key={id} attachmentId={id} />
           ))}
@@ -123,7 +100,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
       {onResend && !disabled && (
         <button
           type="button"
-          className="mt-1 text-xs text-muted-foreground opacity-0 hover:text-foreground group-hover/msg:opacity-100"
+          className="text-xs text-muted-foreground opacity-0 transition-opacity duration-fast hover:text-foreground focus-visible:opacity-100 group-hover/msg:opacity-100"
           onClick={() => {
             setDraft(message.content);
             setEditing(true);
@@ -136,7 +113,18 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
   );
 }
 
-export function MessageItem({ message, conversationId, assistantName, agentCard, onRetry, onResend, onFeedback, disabled, streamTiming, highlighted }: Props) {
+export function MessageItem({
+  message,
+  conversationId,
+  assistantName,
+  agentCard,
+  onRetry,
+  onResend,
+  onFeedback,
+  disabled,
+  streamTiming,
+  highlighted,
+}: Props) {
   const { t } = useI18n();
   const sys = useSystemText();
   const isUser = message.role === 'user';
@@ -161,9 +149,11 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
 
   return (
     <div
-      className={`flex gap-3 px-4 py-4 ${
-        highlighted ? 'rounded-md ring-2 ring-teal-500/50' : ''
-      }`}
+      className={cn(
+        'message-enter group/msg flex gap-3 px-4 py-4',
+        isUser && 'flex-row-reverse',
+        highlighted && 'rounded-md ring-2 ring-primary/40',
+      )}
       data-testid={`message-${message.id || 'pending'}`}
       data-message-id={message.id || undefined}
       data-highlighted={highlighted ? 'true' : undefined}
@@ -177,21 +167,24 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
       }}
     >
       <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm ${
-          isUser ? 'bg-primary/10 text-primary' : 'bg-muted'
-        }`}
+        className={cn(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-medium',
+          isUser
+            ? 'bg-muted text-muted-foreground'
+            : 'bg-primary/10 text-primary ring-1 ring-primary/15',
+        )}
         aria-hidden
       >
         {isUser ? t('chatMessages.you') : 'AI'}
       </div>
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              {isUser ? t('chatMessages.you') : assistantName}
-            </span>
-            {!isUser && streamTiming && <FirstTokenMetric timing={streamTiming} />}
-          </div>
+      <div
+        className={cn('min-w-0 flex-1 space-y-1.5', isUser && 'flex flex-col items-end')}
+      >
+        <div className={cn('flex items-center gap-2', isUser && 'flex-row-reverse')}>
+          <span className="text-xs font-medium text-muted-foreground">
+            {isUser ? t('chatMessages.you') : assistantName}
+          </span>
+          {!isUser && streamTiming && <FirstTokenMetric timing={streamTiming} />}
           {message.status === 'stopped' && <Badge variant="warning">{t('chatMessages.stopped')}</Badge>}
         </div>
 
@@ -210,7 +203,7 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
         )}
 
         {message.status === 'streaming' && (
-          <span className="inline-block h-3.5 w-1.5 animate-pulse bg-current align-middle" />
+          <span className="stream-caret" aria-hidden="true" data-testid="stream-caret" />
         )}
 
         {message.status === 'error' && (
@@ -227,27 +220,17 @@ export function MessageItem({ message, conversationId, assistantName, agentCard,
         )}
 
         {(showCopy || canRegenerate || canFeedback || canBranch) && (
-          <div className="flex items-center gap-3 pt-1">
-            {canBranch && <MessageBranchButton onOpen={openBranch} disabled={disabled} />}
-            {showCopy && <CopyButton content={displayContent} />}
-            {canRegenerate && (
-              <button
-                type="button"
-                className="text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => onRetry?.()}
-                data-testid="regenerate-button"
-              >
-                {t('chatMessages.regenerate')}
-              </button>
-            )}
-            {canFeedback && onFeedback && (
-              <MessageFeedbackButtons
-                message={message}
-                disabled={disabled}
-                onApplied={onFeedback}
-              />
-            )}
-          </div>
+          <MessageActions
+            message={message}
+            content={displayContent}
+            canBranch={canBranch}
+            canRegenerate={canRegenerate}
+            canFeedback={canFeedback}
+            disabled={disabled}
+            onOpenBranch={openBranch}
+            onRetry={onRetry}
+            onFeedback={onFeedback}
+          />
         )}
         <CitationsList message={message} />
       </div>

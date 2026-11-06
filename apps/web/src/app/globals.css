@@ -353,16 +353,20 @@
 }
 
 /*
- * v2.23 GFM 表格：此前没有任何 table 规则，浏览器默认样式会按容器宽度压扁列、
- * 中文长内容挤成竖排。改为块级 + max-content，窄屏横向滚动而不是压扁。
+ * v2.23 GFM 表格：外层滚动容器 + 首列粘性。
+ * 浏览器默认样式会按容器宽度压扁列、中文长内容挤成竖排，
+ * 这里改为整表 max-content，窄屏由外层容器横向滚动。
  */
-.markdown-body table {
-  display: block;
-  width: max-content;
+.markdown-table-wrap {
   max-width: 100%;
   overflow-x: auto;
-  border-collapse: collapse;
   margin: 0.75rem 0;
+}
+
+.markdown-body table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
   font-size: 0.85em;
 }
 
@@ -373,9 +377,30 @@
 .markdown-body th,
 .markdown-body td {
   border: 1px solid hsl(var(--border));
-  padding: 0.4rem 0.65rem;
+  padding: 0.45rem 0.7rem;
   text-align: left;
   vertical-align: top;
+}
+
+/* 斑马纹：偶数行浅底，长表格横向扫读不串行 */
+.markdown-body tbody tr:nth-child(even) {
+  background-color: hsl(var(--muted));
+}
+
+/* 首列粘性：横向滚动时不丢行锚点 */
+.markdown-body th:first-child,
+.markdown-body td:first-child {
+  position: sticky;
+  left: 0;
+  background-color: hsl(var(--card));
+}
+
+.markdown-body th:first-child {
+  background-color: hsl(var(--muted));
+}
+
+.markdown-body tbody tr:nth-child(even) td:first-child {
+  background-color: hsl(var(--muted));
 }
 
 .markdown-body th {
@@ -385,6 +410,182 @@
 
 .markdown-body td code {
   white-space: nowrap;
+}
+
+/* ── v2.23 富文本排版：标题 / 段落 / 列表 / 引用 / 分割线统一节奏 ── */
+.markdown-body p {
+  margin: 0.55em 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  margin: 1.1em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.markdown-body h1 { font-size: 1.3em; }
+.markdown-body h2 { font-size: 1.15em; }
+.markdown-body h3 { font-size: 1.05em; }
+.markdown-body h4 { font-size: 1em; }
+
+.markdown-body > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.5em 0;
+  padding-left: 1.35em;
+}
+
+.markdown-body ul {
+  list-style: disc;
+}
+
+.markdown-body ol {
+  list-style: decimal;
+}
+
+.markdown-body li {
+  margin: 0.2em 0;
+}
+
+.markdown-body li > p {
+  margin: 0;
+}
+
+/* GFM 任务列表：复选框与文字基线对齐 */
+.markdown-body input[type='checkbox'] {
+  margin-right: 0.4em;
+  vertical-align: middle;
+}
+
+.markdown-body blockquote {
+  margin: 0.75em 0;
+  padding: 0.25em 0.9em;
+  border-left: 3px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+
+.markdown-body hr {
+  margin: 1.1em 0;
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.markdown-body strong {
+  font-weight: 600;
+}
+
+/* ── v2.23 代码块：标题栏（语言 + 复制）取代裸 pre ── */
+.code-block {
+  margin: 0.75rem 0;
+  overflow: hidden;
+  border: 1px solid hsl(var(--code-border));
+  border-radius: calc(var(--radius) - 2px);
+  background-color: hsl(var(--code-bg));
+}
+
+.code-block-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 2rem;
+  padding: 0 0.4rem 0 0.85rem;
+  border-bottom: 1px solid hsl(var(--code-border));
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.code-block-lang {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.code-block-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: calc(var(--radius) - 6px);
+  color: hsl(var(--muted-foreground));
+  transition:
+    color var(--motion-fast) var(--ease-out-quint),
+    background-color var(--motion-fast) var(--ease-out-quint);
+}
+
+.code-block-copy:hover {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--accent));
+}
+
+.code-block-copy:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 1px;
+}
+
+.markdown-body .code-block pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  max-height: 30rem;
+}
+
+/* ── v2.23 消息入场与流式光标 ── */
+.message-enter {
+  animation: wbfm-message-in var(--motion-base) var(--ease-out-quint) both;
+}
+
+@keyframes wbfm-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stream-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  border-radius: 1px;
+  background-color: currentColor;
+  animation: wbfm-caret 1.2s ease-in-out infinite;
+}
+
+@keyframes wbfm-caret {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-enter {
+    animation: none;
+  }
+  .stream-caret {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 .hljs-comment,
