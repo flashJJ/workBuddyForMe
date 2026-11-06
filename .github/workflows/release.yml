@@ -56,7 +56,9 @@ jobs:
         run: pnpm check
 
       - name: 单元测试（Windows 份，顺带验证原生依赖）
-        run: pnpm test:unit
+        # 慢机并行跑 8 个包的 vitest 会互相抢 CPU，导致与断言无关的超时误报；
+        # 并发压到 2，配合各包 testTimeout=20s，优先保证结果可信。
+        run: pnpm test:unit -- --concurrency=2
 
       - name: 构建 Web standalone
         run: pnpm build:web

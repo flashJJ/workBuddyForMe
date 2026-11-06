@@ -17,6 +17,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     // 建库 + 迁移在 Windows CI 慢机上偶发超过默认 5s，放宽到 20s
     testTimeout: 20_000,
+    hookTimeout: 20_000,
     coverage,
   },
 });
