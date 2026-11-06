@@ -38,6 +38,7 @@ import { installUpdater } from './updater-bootstrap';
 import { registerGlobalShortcuts } from './global-shortcuts';
 import { registerNotifyIpc } from './notify-ipc';
 import { registerDialogIpc } from './dialog-ipc';
+import { registerSearchIpc } from './search-ipc';
 import { registerAwarenessIpc } from './awareness/awareness-ipc';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
@@ -104,6 +105,8 @@ async function start(): Promise<void> {
   registerNotifyIpc(ipcMain);
   // v2.11：外部代理工作目录选择（单通道）
   registerDialogIpc(ipcMain);
+  // 联网搜索：一键用本机 Docker 拉起 SearXNG（配置目录落 userData/searxng）
+  registerSearchIpc(ipcMain, { dataDir: join(app.getPath('userData'), 'searxng') });
   // v2.0 M3：系统事件感知（默认关闭，渲染端按授权设置显式武装；广播给所有窗口）
   registerAwarenessIpc({
     ipc: ipcMain,

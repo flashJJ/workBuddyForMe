@@ -5,6 +5,7 @@ import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 import type { WbfmAwarenessBridge } from '@wbfm/shared/awareness';
 import type { WbfmDialogBridge } from '@wbfm/shared/dialog';
+import type { WbfmSearchBridge } from '@wbfm/shared/search';
 
 /**
  * 最小 preload：
@@ -131,6 +132,13 @@ const dialog: WbfmDialogBridge = {
   pickDirectory: () => ipcRenderer.invoke('dialog:pick-directory') as Promise<string | null>,
 };
 
+/**
+ * 联网搜索桥：一键用本机 Docker 拉起 SearXNG（不开放任意命令执行）。
+ */
+const search: WbfmSearchBridge = {
+  deploySearxng: () => ipcRenderer.invoke('search:deploy-searxng'),
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
@@ -144,4 +152,5 @@ contextBridge.exposeInMainWorld('wbfm', {
   awareness,
   appLinks,
   dialog,
+  search,
 });

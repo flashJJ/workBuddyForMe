@@ -40,6 +40,21 @@ export const SEARCH_TIMEOUT_DEFAULT_MS = 10_000;
 export const SEARCH_QUERY_MAX_CHARS = 200;
 
 /**
+ * 公共 SearXNG 实例预设（零配置试用）。
+ *
+ * 是否开放 `format=json` 由实例维护者决定，无法在客户端预判；测试连接失败时
+ * 换一个实例，或改用自建。排序按社区常见度，不代表可用性承诺。
+ */
+export const SEARCH_PUBLIC_INSTANCES = [
+  { label: 'searx.be', endpoint: 'https://searx.be' },
+  { label: 'priv.au', endpoint: 'https://priv.au' },
+  { label: 'searxng.site', endpoint: 'https://searxng.site' },
+  { label: 'baresearch.org', endpoint: 'https://baresearch.org' },
+  { label: 'search.inetol.net', endpoint: 'https://search.inetol.net' },
+] as const;
+export type SearchPublicInstance = (typeof SEARCH_PUBLIC_INSTANCES)[number];
+
+/**
  * v0.6 MCP（Model Context Protocol）：
  * - 助手 enabledTools 从固定枚举放宽为字符串（内置名或 mcp:<server>:<tool>）；
  * - 服务器名即命名空间，必须标识符安全（工具名要回传给模型的 function-calling，

@@ -3,10 +3,14 @@
 import * as React from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { SearchSettings } from '@wbfm/shared/types';
-import { SEARCH_MAX_RESULTS_MAX, SEARCH_MAX_RESULTS_MIN } from '@wbfm/shared/constants';
+import type { SearxngDeployResult } from '@wbfm/shared/search';
+import {
+  SEARCH_MAX_RESULTS_MAX,
+  SEARCH_MAX_RESULTS_MIN,
+  SEARCH_PUBLIC_INSTANCES,
+} from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/ui/number-input';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { Spinner } from '@/components/common/state';
@@ -33,6 +37,12 @@ export function SearchSettingsPanel() {
   const [saved, setSaved] = React.useState(false);
   const [testState, setTestState] = React.useState<
     { kind: 'idle' } | { kind: 'testing' } | { kind: 'ok'; message: string } | { kind: 'fail'; message: string }
+  >({ kind: 'idle' });
+  const [deploy, setDeploy] = React.useState<
+    | { kind: 'idle' }
+    | { kind: 'running' }
+    | { kind: 'ok'; endpoint: string }
+    | { kind: 'fail'; result: Extract<SearxngDeployResult, { ok: false }> }
   >({ kind: 'idle' });
 
   React.useEffect(() => {
@@ -76,6 +86,46 @@ export function SearchSettingsPanel() {
 
   if (isLoading) return <Spinner />;
 
+  // 桌面端才有本机部署桥；Web 模式退回「手动填写 / 公共实例」
+  const deployBridge = typeof window !== 'undefined' ? window.wbfm?.search : undefined;
+
+  /**
+   * 一键部署：拉起本机容器 → 回填地址并勾选允许内网 → 保存 → 立即测试。
+   * 部署本身由主进程完成（Docker 检测、配置写入、端口选择、健康等待）。
+   */
+  const runDeploy = async () => {
+    if (!deployBridge) return;
+    setDeploy({ kind: 'running' });
+    try {
+      const result = await deployBridge.deploySearxng();
+      if (!result.ok) {
+        setDeploy({ kind: 'fail', result });
+        return;
+      }
+      const next: SearchSettings = {
+        ...form,
+        provider: 'searxng',
+        endpoint: result.endpoint,
+        allowPrivateEndpoint: true,
+      };
+      setForm(next);
+      await update.mutateAsync({ searchSettings: next });
+      setSaved(true);
+      setDeploy({ kind: 'ok', endpoint: result.endpoint });
+      const tested = await test.mutateAsync();
+      setTestState({ kind: tested.ok ? 'ok' : 'fail', message: tested.message });
+    } catch (error) {
+      setDeploy({
+        kind: 'fail',
+        result: {
+          ok: false,
+          reason: 'start_failed',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+  };
+
   return (
     <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="search-settings-panel">
       <div>
@@ -114,6 +164,35 @@ export function SearchSettingsPanel() {
       {form.provider === 'searxng' && (
         <>
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            {t('settings.search.publicPreset')}
+            <SimpleSelect
+              value={
+                SEARCH_PUBLIC_INSTANCES.some((item) => item.endpoint === form.endpoint)
+                  ? form.endpoint
+                  : ''
+              }
+              onValueChange={(value) =>
+                setForm((prev) => ({
+                  ...prev,
+                  endpoint: value,
+                  // 公共实例是 https 公网地址，不需要内网放行
+                  allowPrivateEndpoint: value ? false : prev.allowPrivateEndpoint,
+                }))
+              }
+            >
+              <option value="">{t('settings.search.publicPresetCustom')}</option>
+              {SEARCH_PUBLIC_INSTANCES.map((item) => (
+                <option key={item.endpoint} value={item.endpoint}>
+                  {item.label}
+                </option>
+              ))}
+            </SimpleSelect>
+            <span className="text-[11px] text-muted-foreground">
+              {t('settings.search.publicPresetHint')}
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             {t('settings.search.endpoint')}
             <Input
               value={form.endpoint}
@@ -132,6 +211,45 @@ export function SearchSettingsPanel() {
             />
             {t('settings.search.allowPrivate')}
           </label>
+
+          {deployBridge && (
+            <div className="space-y-2 rounded-md border border-dashed p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm">{t('settings.search.deployTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settings.search.deployHint')}</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void runDeploy()}
+                  disabled={deploy.kind === 'running' || update.isPending}
+                >
+                  {deploy.kind === 'running'
+                    ? t('settings.search.deploying')
+                    : t('settings.search.deploy')}
+                </Button>
+              </div>
+              {deploy.kind === 'ok' && (
+                <p className="text-sm text-success" role="status">
+                  {t('settings.search.deployOk', { endpoint: deploy.endpoint })}
+                </p>
+              )}
+              {deploy.kind === 'fail' && (
+                <div className="space-y-1">
+                  <p className="text-sm text-destructive" role="status">
+                    {deploy.result.message}
+                  </p>
+                  {deploy.result.manualCommand && (
+                    <pre className="overflow-x-auto rounded bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+                      {deploy.result.manualCommand}
+                    </pre>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 

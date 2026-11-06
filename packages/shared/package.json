@@ -91,6 +91,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./search": {
+      "types": "./src/search.ts",
+      "development": "./src/search.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./command": {
       "types": "./src/command.ts",
       "development": "./src/command.ts",

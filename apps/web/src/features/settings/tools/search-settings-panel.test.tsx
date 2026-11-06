@@ -37,6 +37,9 @@ describe('SearchSettingsPanel', () => {
 
     renderWithProviders(<SearchSettingsPanel />);
     await screen.findByText('联网搜索');
+    // 公共实例预设：Web 模式也能零配置选一个（一键部署仅在桌面端出现）
+    expect(screen.getByText('公共实例')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '一键部署' })).not.toBeInTheDocument();
 
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: '测试连接' }));
