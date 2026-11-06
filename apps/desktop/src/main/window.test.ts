@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { BrowserWindowConstructorOptions } from 'electron';
 
@@ -60,10 +62,15 @@ describe('buildWindowOptions 安全配置', () => {
 });
 
 describe('resolveWindowIcon', () => {
-  it('开发态回退源码树 build/icon.ico（仓库内已生成时返回路径）', () => {
+  it('开发态回退源码树 build/icon.ico，产物存在时必须返回而不是静默丢失', () => {
+    const repoIcon = path.resolve(process.cwd(), 'build', 'icon.ico');
     const icon = resolveWindowIcon(false);
-    // CI/开发树中 gen-icons.py 产物存在时给出绝对路径；不存在时允许 undefined
-    if (icon) expect(icon).toMatch(/[\\/]build[\\/]icon\.ico$/);
+    if (fs.existsSync(repoIcon)) {
+      expect(icon).toBe(repoIcon);
+    } else {
+      // CI 精简产物无图标时才允许 undefined
+      expect(icon).toBeUndefined();
+    }
   });
 
   it('打包态路径指向 resourcesPath 下的 icon.ico', () => {

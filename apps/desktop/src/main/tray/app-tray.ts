@@ -91,7 +91,14 @@ export class AppTray {
       console.warn('[wbfm] 托盘图标缺失，跳过常驻图标');
       return false;
     }
-    const tray = this.createTray(icon);
+    let tray: TrayLike;
+    try {
+      tray = this.createTray(icon);
+    } catch (error) {
+      // 托盘只是增强能力：无桌面会话等异常环境创建失败时不能拖垮启动
+      console.warn('[wbfm] 托盘创建失败，跳过常驻图标', error);
+      return false;
+    }
     this.tray = tray;
     tray.setToolTip('WorkBuddyForMe');
     // 左键也直接弹菜单：用户第一反应是点图标找「退出」

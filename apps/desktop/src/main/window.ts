@@ -52,12 +52,18 @@ export function buildWindowOptions(
  * - 打包态：extraResources 收 build/icon.ico → resources/icon.ico
  * - 开发态：源码树 apps/desktop/build/icon.ico
  * - 文件缺失（如 CI 精简产物）时返回 undefined，回落 Electron 默认图标，不阻断启动
+ *
+ * 注意 __dirname 在不同运行方式下不同：tsup 产物是 dist/index.js（'..' 即 apps/desktop），
+ * 直接跑源码时是 src/main（'..' 只是 src）。两个候选都试，避免开发态图标静默丢失。
  */
 export function resolveWindowIcon(isPackaged: boolean): string | undefined {
-  const candidate = isPackaged
-    ? path.join(process.resourcesPath, 'icon.ico')
-    : path.resolve(__dirname, '..', '..', 'build', 'icon.ico');
-  return fs.existsSync(candidate) ? candidate : undefined;
+  const candidates = isPackaged
+    ? [path.join(process.resourcesPath, 'icon.ico')]
+    : [
+        path.resolve(__dirname, '..', 'build', 'icon.ico'),
+        path.resolve(__dirname, '..', '..', 'build', 'icon.ico'),
+      ];
+  return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
 /** 创建主窗口并加载目标地址；外链交系统浏览器 */

@@ -9,7 +9,7 @@ vi.mock('electron', () => ({
   Tray: vi.fn(),
 }));
 
-import { buildTrayMenuTemplate, type TrayActions } from './app-tray';
+import { AppTray, buildTrayMenuTemplate, type TrayActions } from './app-tray';
 
 function createActions(): TrayActions {
   return {
@@ -96,5 +96,21 @@ describe('桌面常驻托盘菜单', () => {
     expect(quit?.label).toBe('彻底退出 WorkBuddyForMe');
     if (quit) click(quit);
     expect(actions.quit).toHaveBeenCalledTimes(1);
+  });
+
+  it('托盘创建失败时降级返回 false，不拖垮应用启动', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const tray = new AppTray({
+      getMainWindow: () => null,
+      isPetOpen: () => false,
+      openPet: vi.fn(),
+      closePet: vi.fn(),
+      quit: vi.fn(),
+      createTray: () => {
+        throw new Error('no desktop session');
+      },
+    });
+    expect(tray.start()).toBe(false);
+    warn.mockRestore();
   });
 });
