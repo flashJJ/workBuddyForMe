@@ -47,20 +47,36 @@ function mapItem(item: SearxngItem): WebSearchResult | null {
   return result;
 }
 
-function statusError(status: number, detail: string): SearchError {
+function statusError(status: number, detail: string, htmlPage = false): SearchError {
   const reason: SearchErrorReason =
     status === 401 || status === 403
       ? 'auth_failed'
       : status === 429
         ? 'rate_limited'
         : 'unreachable';
+  // 公共实例常见：返回反爬/挑战网页（200/403 皆有），原始 HTML 塞进错误里没法读
+  const htmlHint = htmlPage ? '，该实例返回了网页（可能未开启 JSON 输出或被反爬拦截），请换实例或自建' : '';
   const message =
     reason === 'auth_failed'
-      ? `搜索服务鉴权失败（HTTP ${status}）`
+      ? `搜索服务拒绝请求（HTTP ${status}）${htmlHint}`
       : reason === 'rate_limited'
         ? `搜索服务限流（HTTP ${status}）`
-        : `搜索服务请求失败（HTTP ${status}）${detail ? `：${detail}` : ''}`;
+        : `搜索服务请求失败（HTTP ${status}）${detail ? `：${detail}` : ''}${htmlHint}`;
   return new SearchError(reason, message, status);
+}
+
+/** 响应体是不是网页（content-type 或首字符判定，兼容错误的 content-type） */
+function looksLikeHtml(response: Response, body: string): boolean {
+  return (response.headers.get('content-type') ?? '').includes('text/html') || body.trimStart().startsWith('<');
+}
+
+/** 200 却拿到网页时的统一可读错误（SearXNG 需在 settings.yml 开启 json 输出） */
+function htmlPageError(status: number): SearchError {
+  return new SearchError(
+    'invalid_response',
+    `搜索服务返回的是网页而不是 JSON（HTTP ${status}）：该实例可能未开启 JSON 输出或被反爬验证页拦截，请换一个实例，或用「一键部署」自建 SearXNG`,
+    status,
+  );
 }
 
 /**
@@ -76,10 +92,20 @@ export function createSearxngProvider(endpoint: string, timeoutMs: number): Sear
         signal: linked.signal,
       });
       if (!response.ok) {
-        const detail = await response.text().catch(() => '');
-        throw statusError(response.status, detail.slice(0, 200));
+        const raw = await response.text().catch(() => '');
+        const htmlPage = looksLikeHtml(response, raw);
+        // 网页错误页不把 HTML 拼进提示，只保留状态码与可执行建议
+        throw statusError(response.status, htmlPage ? '' : raw.slice(0, 200), htmlPage);
       }
-      const payload = (await response.json()) as { results?: unknown };
+      // 不用 response.json()：公共实例常以 200 返回反爬挑战页，
+      // 原生报错是「Unexpected token '<' ... is not valid JSON」，对用户毫无指导意义
+      const raw = await response.text().catch(() => '');
+      let payload: { results?: unknown };
+      try {
+        payload = JSON.parse(raw) as { results?: unknown };
+      } catch {
+        throw htmlPageError(response.status);
+      }
       if (!Array.isArray(payload.results)) {
         throw new SearchError('invalid_response', '搜索服务返回格式不正确：缺少 results 数组');
       }

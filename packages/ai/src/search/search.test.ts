@@ -47,6 +47,39 @@ describe('search providers', () => {
     });
   });
 
+  it('SearXNG 200 返回反爬网页时给出可读错误', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('<!doctype html><title>Making sure you are not a bot!</title>', {
+          status: 200,
+          headers: { 'content-type': 'text/html; charset=utf-8' },
+        }),
+      ),
+    );
+    const provider = createSearchProvider(SETTINGS);
+    await expect(provider.search({ query: 'x' })).rejects.toMatchObject({
+      name: 'SearchError',
+      reason: 'invalid_response',
+    });
+    await expect(provider.search({ query: 'x' })).rejects.toThrow(/不是 JSON/);
+  });
+
+  it('SearXNG 403 网页错误页不把 HTML 塞进提示', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('<!doctype html><h1>Forbidden</h1>', {
+          status: 403,
+          headers: { 'content-type': 'text/html' },
+        }),
+      ),
+    );
+    const provider = createSearchProvider(SETTINGS);
+    await expect(provider.search({ query: 'x' })).rejects.toThrow(/换实例或自建/);
+    await expect(provider.search({ query: 'x' })).rejects.not.toThrow(/doctype/);
+  });
+
   it('mock 结果固定且不发起网络请求', async () => {
     vi.stubGlobal('fetch', vi.fn());
     const provider = createSearchProvider({ ...SETTINGS, provider: 'mock' });
