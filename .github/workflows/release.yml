@@ -93,6 +93,42 @@ jobs:
           $exe = Get-ChildItem apps/desktop/release/win-unpacked/*.exe | Where-Object { $_.Name -notlike 'Uninstall*' } | Select-Object -First 1
           & apps/desktop/scripts/verify-artifacts.ps1 -Exe $exe.FullName -RequireSignature:([bool]$env:CSC_LINK)
 
+      # electron-builder 建的草稿只有版本号标题和空正文。按仓库约定用
+      # docs/roadmap/<tag>-release-notes.md 补标题与正文；标题取说明里
+      # 「> 主题：**…**」破折号前的主句。并发上传可能建出多个同名草稿
+      # （安装包与 blockmap 各一个），优先写带安装包的那条。
+      - name: 写入发行说明（草稿标题 + 正文）
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NOTES="docs/roadmap/${GITHUB_REF_NAME}-release-notes.md"
+          if [ ! -f "$NOTES" ]; then
+            echo "::warning::未找到 ${NOTES}，草稿保持默认标题与空正文"
+            exit 0
+          fi
+
+          THEME=$(sed -n 's/^> 主题：\*\*\([^*]*\)\*\*.*/\1/p' "$NOTES" | head -n 1)
+          TITLE="${GITHUB_REF_NAME}"
+          if [ -n "$THEME" ]; then
+            TITLE="${GITHUB_REF_NAME} ${THEME%%——*}"
+          fi
+
+          VERSION=$(node -p "require('./package.json').version")
+          SETUP_NAME="WorkBuddyForMe-Setup-${VERSION}.exe"
+          RELEASE_ID=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=50" \
+            --jq "[.[] | select(.draft and .tag_name == \"${GITHUB_REF_NAME}\") | select(any(.assets[]; .name == \"${SETUP_NAME}\"))][0].id // empty")
+
+          if [ -z "$RELEASE_ID" ]; then
+            echo "::warning::未找到带 ${SETUP_NAME} 的草稿，回退为按 tag 更新"
+            gh release edit "${GITHUB_REF_NAME}" --title "$TITLE" --notes-file "$NOTES"
+          else
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+              -f name="$TITLE" -F body=@"$NOTES" > /dev/null
+          fi
+          echo "发行说明已写入：${TITLE}"
+
       - name: 上传安装包与更新元数据（artifact）
         uses: actions/upload-artifact@v4
         with:
