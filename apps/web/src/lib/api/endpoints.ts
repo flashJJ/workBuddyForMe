@@ -5,6 +5,8 @@ export const API = {
   providerTest: (id: string) => `/api/providers/${id}/test`,
   /** v2.17：联网搜索连接测试 */
   searchTest: '/api/search/test',
+  /** v2.24：Brave / Tavily 搜索密钥（GET 脱敏状态 / PUT 保存 / DELETE 清除） */
+  searchCredential: '/api/search/credential',
   /** v2.4 M1 T5：首字延迟自检 */
   providerFirstToken: (id: string) => `/api/providers/${id}/first-token-probe`,
   providerModels: (id: string) => `/api/providers/${id}/models`,
@@ -136,6 +138,11 @@ export const API = {
   memoryClear: '/api/memories/clear',
   mcpServers: '/api/mcp/servers',
   mcpServer: (id: string) => `/api/mcp/servers/${id}`,
+  /** v2.24：安装前运行环境探测 */
+  mcpRuntime: '/api/mcp/runtime',
+  /** v2.24：远程 MCP OAuth 状态 / 发起 / 清除 */
+  mcpOAuthStatuses: '/api/mcp/oauth/statuses',
+  mcpServerOAuth: (id: string) => `/api/mcp/servers/${id}/oauth`,
   /** v2.3：手动测试连接（重连并等待终态） */
   mcpServerTest: (id: string) => `/api/mcp/servers/${id}/test`,
   mcpTools: '/api/mcp/tools',
@@ -238,6 +245,9 @@ export const QUERY_KEYS = {
   memories: ['memories'] as const,
   mcpServers: ['mcp-servers'] as const,
   mcpTools: ['mcp-tools'] as const,
+  mcpRuntime: ['mcp-runtime'] as const,
+  mcpOAuthStatuses: ['mcp-oauth-statuses'] as const,
+  searchCredentials: ['search-credentials'] as const,
   skills: ['skills'] as const,
   skillVersions: (name: string) => ['skills', name, 'versions'] as const,
   toolPermissions: ['tool-permissions'] as const,

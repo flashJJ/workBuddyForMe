@@ -232,7 +232,12 @@ export class Live2dController {
    * 用 extract 同步取 canvas，不依赖 preserveDrawingBuffer；失败返回 null。
    */
   captureDataUrl(): string | null {
+    // 模型尚未加载完时 extract 会得到一张全透明图；返回 null 让调用方保持 Live2D，
+    // 避免省电档出现「有 img 但看不见角色」的空白立绘。
+    if (!this.model) return null;
     try {
+      // 先渲染一帧，确保 extract 拿到的是当前表情/动作，而不是上一帧的空舞台
+      this.app.renderer.render(this.app.stage);
       // pixi v7 的 extract 插件挂在 Renderer 实例上，AbstractRenderer 基类类型不含它
       const renderer = this.app.renderer as unknown as {
         extract: { canvas: (target: unknown) => HTMLCanvasElement };

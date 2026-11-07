@@ -9,6 +9,7 @@ import {
 } from '@wbfm/database';
 import type { SecretCipher } from '../secrets/cipher';
 import { createMcpRegistry, type McpRegistry } from '../mcp/registry';
+import { createMcpOAuthService } from '../mcp/oauth/oauth-service';
 import { createPermissionService } from '../services/permission/permission-service';
 import { createPendingConfirmations } from '../services/task/pending-confirmations';
 import { createSkillService } from '../skills/skill-service';
@@ -48,11 +49,11 @@ export function createFlowServingStack(
   cipher: SecretCipher,
   options: FlowServingStackOptions = {},
 ): FlowServingStack {
-  const mcp = createMcpRegistry(db);
+  const mcp = createMcpRegistry(db, { oauth: createMcpOAuthService({ db, cipher }) });
   const deps: ServiceDeps = {
     db,
     cipher,
-    search: createSearchService({ db }),
+    search: createSearchService({ db, cipher }),
     mcp,
     permissions: createPermissionService({ db, cipher }),
     confirmations: createPendingConfirmations(),

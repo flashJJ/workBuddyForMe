@@ -43,3 +43,40 @@ export interface McpToolInfo {
   /** MCP inputSchema（JSON Schema），透传为 function parameters */
   inputSchema: Record<string, unknown>;
 }
+
+/** v2.24：安装 MCP 服务器前的本机运行环境探测结果 */
+export interface McpRuntimeProbe {
+  available: boolean;
+  version: string | null;
+  /** 主版本号（Node 版本比较用；其他工具可能为 null） */
+  major: number | null;
+  path: string | null;
+}
+
+export interface McpRuntimeStatus {
+  platform: string;
+  node: McpRuntimeProbe;
+  npx: McpRuntimeProbe;
+  uvx: McpRuntimeProbe;
+  chrome: McpRuntimeProbe;
+  /** 探测时间（ISO），前端用于展示新鲜度 */
+  checkedAt: string;
+}
+
+/** v2.24：远程 MCP 的 OAuth 授权状态（不暴露令牌） */
+export interface McpOAuthStatus {
+  authorized: boolean;
+  expired: boolean;
+  /** 有刷新令牌，过期后可在下次连接时自动续期 */
+  refreshable: boolean;
+  expiresAt: string | null;
+  scope: string | null;
+  /** 授权账号/工作区标识（Notion 等令牌响应提供时展示） */
+  accountLabel: string | null;
+}
+
+export type McpOAuthStatuses = Record<string, McpOAuthStatus>;
+
+export interface McpOAuthStartResult {
+  authorizationUrl: string;
+}

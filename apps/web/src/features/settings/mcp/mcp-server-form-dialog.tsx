@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { McpServerInfo } from '@wbfm/shared/types';
-import type { McpPresetServer } from '@wbfm/shared/constants';
+import type { McpCatalogEntry } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,40 +24,64 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   server?: McpServerInfo | null;
-  /** v2.3：从预置目录一键填入（仅新增时生效；仍可继续编辑） */
-  preset?: McpPresetServer | null;
+  /** v2.24：从能力目录打开时预填（仅新增） */
+  preset?: McpCatalogEntry | null;
 }
 
 interface FormState {
+  transport: 'stdio' | 'http';
   name: string;
   command: string;
   argsText: string;
   envText: string;
+  url: string;
+  headersText: string;
   enabled: boolean;
+}
+
+function pairsToText(values: Record<string, string> | undefined): string {
+  return Object.entries(values ?? {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
 }
 
 function toForm(
   server: McpServerInfo | null | undefined,
-  preset?: McpPresetServer | null,
+  preset?: McpCatalogEntry | null,
 ): FormState {
-  if (!server && preset) {
+  if (server) {
     return {
+      transport: server.transport,
+      name: server.name,
+      command: server.command ?? '',
+      argsText: (server.args ?? []).join('\n'),
+      envText: pairsToText(server.env),
+      url: server.url ?? '',
+      headersText: pairsToText(server.headers),
+      enabled: server.enabled,
+    };
+  }
+  if (preset) {
+    return {
+      transport: preset.transport,
       name: preset.name,
-      command: preset.command,
-      argsText: preset.args.join('\n'),
-      envText: '',
+      command: preset.command ?? '',
+      argsText: (preset.args ?? []).join('\n'),
+      envText: pairsToText(preset.env),
+      url: preset.url ?? '',
+      headersText: pairsToText(preset.headers),
       enabled: true,
     };
   }
-  if (!server) return { name: '', command: '', argsText: '', envText: '', enabled: true };
   return {
-    name: server.name,
-    command: server.command ?? '',
-    argsText: (server.args ?? []).join('\n'),
-    envText: Object.entries(server.env ?? {})
-      .map(([key, value]) => `${key}=${value}`)
-      .join('\n'),
-    enabled: server.enabled,
+    transport: 'stdio',
+    name: '',
+    command: '',
+    argsText: '',
+    envText: '',
+    url: '',
+    headersText: '',
+    enabled: true,
   };
 }
 
@@ -69,9 +93,9 @@ function parseArgs(text: string): string[] {
     .filter(Boolean);
 }
 
-/** 每行 KEY=VALUE；无等号的行忽略 */
-function parseEnv(text: string): Record<string, string> {
-  const env: Record<string, string> = {};
+/** 每行 KEY=VALUE；无等号的行忽略（env 与 headers 共用） */
+function parsePairs(text: string): Record<string, string> {
+  const pairs: Record<string, string> = {};
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -79,12 +103,12 @@ function parseEnv(text: string): Record<string, string> {
     if (index <= 0) continue;
     const key = trimmed.slice(0, index).trim();
     const value = trimmed.slice(index + 1).trim();
-    if (key) env[key] = value;
+    if (key) pairs[key] = value;
   }
-  return env;
+  return pairs;
 }
 
-/** MCP stdio 服务器新增/编辑弹窗（http 传输为 M2 预留，本期不提供入口） */
+/** MCP 服务器新增/编辑弹窗（stdio / Streamable HTTP） */
 export function McpServerFormDialog({ open, onOpenChange, server, preset }: Props) {
   const { t } = useI18n();
   const isEdit = Boolean(server);
@@ -101,31 +125,50 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.name.trim() || !form.command.trim()) return;
+    if (!form.name.trim()) return;
+    if (form.transport === 'stdio' && !form.command.trim()) return;
+    if (form.transport === 'http' && !form.url.trim()) return;
     setSubmitting(true);
     try {
       if (isEdit && server) {
-        await mutations.update.mutateAsync({
-          id: server.id,
-          body: {
-            transport: 'stdio',
-            name: form.name.trim(),
-            command: form.command.trim(),
-            args: parseArgs(form.argsText),
-            env: parseEnv(form.envText),
-            enabled: form.enabled,
-          },
-        });
+        const body =
+          form.transport === 'stdio'
+            ? {
+                transport: 'stdio' as const,
+                name: form.name.trim(),
+                command: form.command.trim(),
+                args: parseArgs(form.argsText),
+                env: parsePairs(form.envText),
+                enabled: form.enabled,
+              }
+            : {
+                transport: 'http' as const,
+                name: form.name.trim(),
+                url: form.url.trim(),
+                headers: parsePairs(form.headersText),
+                enabled: form.enabled,
+              };
+        await mutations.update.mutateAsync({ id: server.id, body });
         toast.success(t('settingsMcp.mcp.form.updatedReconnecting'));
       } else {
-        await mutations.create.mutateAsync({
-          transport: 'stdio',
-          name: form.name.trim(),
-          command: form.command.trim(),
-          args: parseArgs(form.argsText),
-          env: parseEnv(form.envText),
-          enabled: form.enabled,
-        });
+        const body =
+          form.transport === 'stdio'
+            ? {
+                transport: 'stdio' as const,
+                name: form.name.trim(),
+                command: form.command.trim(),
+                args: parseArgs(form.argsText),
+                env: parsePairs(form.envText),
+                enabled: form.enabled,
+              }
+            : {
+                transport: 'http' as const,
+                name: form.name.trim(),
+                url: form.url.trim(),
+                headers: parsePairs(form.headersText),
+                enabled: form.enabled,
+              };
+        await mutations.create.mutateAsync(body);
         toast.success(t('settingsMcp.mcp.form.addedConnecting'));
       }
       onOpenChange(false);
@@ -141,9 +184,7 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit
-              ? t('settingsMcp.mcp.form.editTitle')
-              : t('settingsMcp.mcp.form.addTitle')}
+            {isEdit ? t('settingsMcp.mcp.form.editTitle') : t('settingsMcp.mcp.form.addTitle')}
           </DialogTitle>
           <DialogDescription>{t('settingsMcp.mcp.form.description')}</DialogDescription>
         </DialogHeader>
@@ -160,34 +201,81 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
               title={t('settingsMcp.mcp.form.namePatternTitle')}
             />
           </FormField>
-          <FormField label={t('settingsMcp.mcp.form.commandLabel')} htmlFor="mcp-command">
-            <Input
-              id="mcp-command"
-              value={form.command}
-              onChange={(e) => update({ command: e.target.value })}
-              placeholder={t('settingsMcp.mcp.form.commandPlaceholder')}
-              required
-              maxLength={500}
-            />
-          </FormField>
-          <FormField label={t('settingsMcp.mcp.form.argsLabel')} htmlFor="mcp-args">
-            <Textarea
-              id="mcp-args"
-              value={form.argsText}
-              onChange={(e) => update({ argsText: e.target.value })}
-              rows={3}
-              placeholder={'-y\n@modelcontextprotocol/server-filesystem\nD:/docs'}
-            />
-          </FormField>
-          <FormField label={t('settingsMcp.mcp.form.envLabel')} htmlFor="mcp-env">
-            <Textarea
-              id="mcp-env"
-              value={form.envText}
-              onChange={(e) => update({ envText: e.target.value })}
-              rows={2}
-              placeholder="API_KEY=xxx"
-            />
-          </FormField>
+
+          <div className="flex gap-2" data-testid="mcp-transport-switch">
+            {(['stdio', 'http'] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-pressed={form.transport === item}
+                onClick={() => update({ transport: item })}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  form.transport === item
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {item === 'stdio'
+                  ? t('settingsMcp.mcp.form.transportStdio')
+                  : t('settingsMcp.mcp.form.transportHttp')}
+              </button>
+            ))}
+          </div>
+
+          {form.transport === 'stdio' ? (
+            <>
+              <FormField label={t('settingsMcp.mcp.form.commandLabel')} htmlFor="mcp-command">
+                <Input
+                  id="mcp-command"
+                  value={form.command}
+                  onChange={(e) => update({ command: e.target.value })}
+                  placeholder={t('settingsMcp.mcp.form.commandPlaceholder')}
+                  required
+                  maxLength={500}
+                />
+              </FormField>
+              <FormField label={t('settingsMcp.mcp.form.argsLabel')} htmlFor="mcp-args">
+                <Textarea
+                  id="mcp-args"
+                  value={form.argsText}
+                  onChange={(e) => update({ argsText: e.target.value })}
+                  rows={3}
+                  placeholder={'-y\n@modelcontextprotocol/server-filesystem\nD:/docs'}
+                />
+              </FormField>
+              <FormField label={t('settingsMcp.mcp.form.envLabel')} htmlFor="mcp-env">
+                <Textarea
+                  id="mcp-env"
+                  value={form.envText}
+                  onChange={(e) => update({ envText: e.target.value })}
+                  rows={2}
+                  placeholder="API_KEY=xxx"
+                />
+              </FormField>
+            </>
+          ) : (
+            <>
+              <FormField label={t('settingsMcp.mcp.form.urlLabel')} htmlFor="mcp-url">
+                <Input
+                  id="mcp-url"
+                  value={form.url}
+                  onChange={(e) => update({ url: e.target.value })}
+                  placeholder="https://example.com/mcp"
+                  required
+                />
+              </FormField>
+              <FormField label={t('settingsMcp.mcp.form.headersLabel')} htmlFor="mcp-headers">
+                <Textarea
+                  id="mcp-headers"
+                  value={form.headersText}
+                  onChange={(e) => update({ headersText: e.target.value })}
+                  rows={2}
+                  placeholder="Authorization=Bearer xxx"
+                />
+              </FormField>
+            </>
+          )}
+
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"

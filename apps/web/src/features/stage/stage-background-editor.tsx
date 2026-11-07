@@ -49,11 +49,11 @@ export function StageBackgroundEditor({ payload, onChange }: Props) {
   };
 
   return (
-    <div className="space-y-2" data-testid="stage-bg-editor">
-      <label className="flex items-center gap-2 text-xs">
+    <div className="space-y-1.5" data-testid="stage-bg-editor">
+      <label className="flex items-center gap-2 text-[11px]">
         <span className="w-10 shrink-0">{t('stage.bg.type')}</span>
         <SimpleSelect
-          className="flex-1 rounded border bg-background px-1 py-0.5 text-xs"
+          className="h-7 flex-1 rounded border bg-background px-1.5 py-0 text-[11px]"
           aria-label={t('stage.bg.type')}
           value={bg.type}
           onValueChange={(v) => {
@@ -91,14 +91,14 @@ export function StageBackgroundEditor({ payload, onChange }: Props) {
         <div className="grid grid-cols-3 items-center gap-2 text-xs">
           <input type="color" aria-label={t('stage.bg.from')} className="h-7" value={bg.from ?? '#1b2748'} onChange={(e) => patch({ from: e.target.value })} />
           <input type="color" aria-label={t('stage.bg.to')} className="h-7" value={bg.to ?? '#0a0d16'} onChange={(e) => patch({ to: e.target.value })} />
-          <NumberInput min={0} max={360} value={bg.angle ?? 180} onValueChange={(v) => patch({ angle: v })} />
+          <NumberInput className="h-7 text-[11px]" min={0} max={360} value={bg.angle ?? 180} onValueChange={(v) => patch({ angle: v })} />
         </div>
       )}
 
       {bg.type === 'builtin' && (
         <SimpleSelect
           aria-label={t('stage.bg.preset')}
-          className="w-full rounded border bg-background px-1 py-0.5 text-xs"
+          className="h-7 w-full rounded border bg-background px-1.5 py-0 text-[11px]"
           value={bg.builtinId ?? BUILTIN_BACKGROUNDS[0]!.id}
           onValueChange={(v) => patch({ builtinId: v })}
         >

@@ -57,7 +57,16 @@ export type {
   BranchLimitSettings,
   BranchBudget,
 } from './branch';
-export type { McpServerConfig, McpServerInfo, McpToolInfo } from './mcp';
+export type {
+  McpServerConfig,
+  McpServerInfo,
+  McpToolInfo,
+  McpRuntimeProbe,
+  McpRuntimeStatus,
+  McpOAuthStatus,
+  McpOAuthStatuses,
+  McpOAuthStartResult,
+} from './mcp';
 export type {
   ProviderConnectionStatus,
   ProviderConnectionCheck,
@@ -68,6 +77,8 @@ export type {
   WebSearchInput,
   WebSearchResult,
   WebSearchResponse,
+  SearchCredentialStatus,
+  SearchCredentialsView,
 } from './search';
 export type { ContentPart, TextContentPart, ImageContentPart } from './content-part';
 export type {

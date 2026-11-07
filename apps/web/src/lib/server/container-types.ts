@@ -33,7 +33,7 @@ import type {
   createCompileRunnerService,
   createKnowledgeGovernanceService,
 } from '@wbfm/core/knowledge';
-import type { createMcpRegistry } from '@wbfm/core/mcp';
+import type { createMcpOAuthService, createMcpRegistry } from '@wbfm/core/mcp';
 import type { createMemoryService } from '@wbfm/core/memory';
 import type { createSchedulesService } from '@wbfm/core/scheduler';
 import type { createEventTriggersService, createEventUsageService } from '@wbfm/core/event';
@@ -83,6 +83,7 @@ export interface ServiceContainer {
   eventUsage: ReturnType<typeof createEventUsageService>;
   eventTriggers: ReturnType<typeof createEventTriggersService>;
   mcp: ReturnType<typeof createMcpRegistry>;
+  mcpOAuth: ReturnType<typeof createMcpOAuthService>;
   permissions: ReturnType<typeof createPermissionService>;
   confirmations: ReturnType<typeof createPendingConfirmations>;
   approvals: ReturnType<typeof createApprovalRegistry>;

@@ -28,12 +28,19 @@ export {
   type McpServerCapabilities,
   type McpToolCallOutcome,
 } from './client';
-export { createMcpHttpClient } from './http-transport';
+export { createMcpHttpClient, parseSseDataFrames } from './http-transport';
+export { checkMcpRuntime, findChromePath } from './runtime/runtime-check';
 export {
   createMcpRegistry,
+  type McpOAuthProvider,
   type McpRegistry,
   type McpRegistryOptions,
 } from './registry';
+export {
+  createMcpOAuthService,
+  type McpOAuthService,
+} from './oauth/oauth-service';
+export { discoverOAuth, type OAuthDiscoveryResult } from './oauth/discovery';
 export { createMcpTool } from './mcp-tool';
 // v0.9 M3：Flow MCP Server（处理器/描述符/调用上下文）
 export {

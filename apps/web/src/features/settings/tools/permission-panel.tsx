@@ -44,7 +44,7 @@ export function PermissionPanel() {
     <section className="space-y-3 rounded-lg border bg-card p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t('settingsMcp.permission.title')}</h2>
+          <h2 className="text-base font-semibold">{t('settingsMcp.permission.title')}</h2>
           <p className="text-sm text-muted-foreground">
             {t('settingsMcp.permission.description')}
           </p>

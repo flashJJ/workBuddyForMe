@@ -94,6 +94,7 @@ const stage: WbfmStageBridge = {
   openMeeting: (meetingId: string) =>
     ipcRenderer.invoke('stage:open', { meetingId }) as Promise<boolean>,
   close: () => ipcRenderer.invoke('stage:close'),
+  toggleFullscreen: () => ipcRenderer.invoke('stage:toggle-fullscreen') as Promise<boolean>,
   isOpen: () => ipcRenderer.invoke('stage:is-open') as Promise<boolean>,
   capture: () =>
     ipcRenderer.invoke('stage:capture') as Promise<{ saved: boolean; canceled?: boolean }>,

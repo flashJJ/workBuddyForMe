@@ -10,6 +10,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { PageBody, PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
@@ -83,29 +84,27 @@ export function FlowsListPage({ autoCreate = false }: { autoCreate?: boolean }) 
   const flows = flowsQuery.data ?? [];
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b bg-card px-6 py-4">
-        <div>
-          <h1 className="text-lg font-semibold">{t('flows.title')}</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t('flows.description')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/flows/runs">
-            <Button variant="outline">
-              <History className="h-4 w-4" />
-              {t('flows.runsLink')}
+    <PageShell>
+      <PageHeader
+        title={t('flows.title')}
+        description={t('flows.description')}
+        actions={
+          <>
+            <Link href="/flows/runs">
+              <Button variant="outline">
+                <History className="h-4 w-4" />
+                {t('flows.runsLink')}
+              </Button>
+            </Link>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              {t('flows.create')}
             </Button>
-          </Link>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" />
-            {t('flows.create')}
-          </Button>
-        </div>
-      </header>
+          </>
+        }
+      />
 
-      <div className="flex-1 overflow-auto p-6">
+      <PageBody>
         {flowsQuery.isLoading ? (
           <Spinner label={t('flows.loading')} />
         ) : flowsQuery.isError ? (
@@ -135,7 +134,7 @@ export function FlowsListPage({ autoCreate = false }: { autoCreate?: boolean }) 
             </ul>
           </>
         )}
-      </div>
+      </PageBody>
 
       <FlowFormDialog
         open={createOpen}
@@ -150,7 +149,7 @@ export function FlowsListPage({ autoCreate = false }: { autoCreate?: boolean }) 
         onSubmit={update}
         onClose={() => setEditing(null)}
       />
-    </div>
+    </PageShell>
   );
 }
 

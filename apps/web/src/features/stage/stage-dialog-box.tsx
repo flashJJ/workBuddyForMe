@@ -12,7 +12,7 @@ export function StageDialogBox(props: {
   if (!props.visible || !props.text) return null;
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-[6%] flex justify-center px-[12%]"
+      className="pointer-events-none absolute inset-x-0 bottom-[6%] z-30 flex justify-center px-[12%]"
       data-testid="stage-dialog"
     >
       <div className="max-w-3xl rounded-lg border border-white/15 bg-black/55 px-5 py-3 text-center shadow-lg backdrop-blur-sm">

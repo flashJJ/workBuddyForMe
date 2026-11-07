@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { PageBody, PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useConversations } from '@/lib/hooks/chat';
 import { useAssistants } from '@/lib/hooks/assistant';
@@ -39,11 +40,8 @@ export function TaskPage() {
   const tasks = tasksQuery.data ?? [];
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="border-b bg-card px-6 py-4">
-        <h1 className="text-lg font-semibold">{t('tasks.title')}</h1>
-        <p className="mt-1 text-xs text-muted-foreground">{t('tasks.description')}</p>
-      </header>
+    <PageShell>
+      <PageHeader title={t('tasks.title')} description={t('tasks.description')} />
 
       <TaskStartForm
         conversations={conversationsQuery.data ?? []}
@@ -52,7 +50,7 @@ export function TaskPage() {
         onCreated={setExpandedId}
       />
 
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <PageBody>
         {tasksQuery.isLoading ? (
           <Spinner label={t('tasks.loading')} />
         ) : tasksQuery.isError ? (
@@ -77,7 +75,7 @@ export function TaskPage() {
           </ul>
         )}
         <AgentTasksSection />
-      </div>
-    </div>
+      </PageBody>
+    </PageShell>
   );
 }

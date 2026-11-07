@@ -1,4 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { rmSync } from 'node:fs';
+import { getDataDir } from '@wbfm/config';
 import { createVrmAvatarService } from './vrm-avatar-service';
 import { createDatabase } from '@wbfm/database';
 
@@ -53,6 +55,12 @@ describe('vrm-avatar-service', () => {
     svc.delete(avatar.id);
     expect(svc.get(avatar.id)).toBeNull();
     expect(() => svc.readFile(avatar.fileRef)).toThrow();
+  });
+
+  it('数据目录被外部清理后仍可导入（备份恢复场景）', () => {
+    rmSync(getDataDir('vrmAvatars'), { recursive: true, force: true });
+    const avatar = svc.importAvatar({ filename: 'restore.vrm', buffer: buildFakeVrm() });
+    expect(svc.readFile(avatar.fileRef).byteLength).toBeGreaterThan(0);
   });
 
   it('fileRef 路径穿越被守卫', () => {

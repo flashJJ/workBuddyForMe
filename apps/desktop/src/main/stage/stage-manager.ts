@@ -67,6 +67,15 @@ export class StageManager {
     win.close();
   }
 
+  /** 舞台窗原生全屏切换（F11 走这里，避免渲染层 Fullscreen API 与原生全屏打架） */
+  toggleFullscreen(): boolean {
+    const win = this.win;
+    if (!win || win.isDestroyed()) return false;
+    const next = !win.isFullScreen();
+    win.setFullScreen(next);
+    return next;
+  }
+
   /** 无 UI 截图：UI 隐藏由渲染层在调用前完成；这里抓帧 + 保存对话框 */
   async capture(): Promise<{ saved: boolean; canceled?: boolean }> {
     const win = this.win;
@@ -97,6 +106,7 @@ export class StageManager {
         isOpen: () => this.isOpen(),
         open: (target?: { runId?: string; meetingId?: string }) => this.open(target),
         close: () => this.close(),
+        toggleFullscreen: () => this.toggleFullscreen(),
         capture: () => this.capture(),
       },
       {

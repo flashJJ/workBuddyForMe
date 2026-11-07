@@ -54,6 +54,15 @@ export interface McpRegistryOptions {
     onToolsChanged: () => void;
     onClose: (detail: { code: number | null; signal: NodeJS.Signals | null }) => void;
   }) => McpClient;
+  /** v2.24：远程 HTTP 的 OAuth 令牌注入与刷新 */
+  oauth?: McpOAuthProvider;
+}
+
+/** 注册表只依赖最小 OAuth 能力，避免与具体服务实现耦合 */
+export interface McpOAuthProvider {
+  authorizationHeaders(serverId: string): Promise<Record<string, string>>;
+  refresh(serverId: string): Promise<Record<string, string> | null>;
+  clear(serverId: string): void;
 }
 
 function defaultClientFactory(
@@ -62,11 +71,18 @@ function defaultClientFactory(
     onToolsChanged: () => void;
     onClose: (detail: { code: number | null; signal: NodeJS.Signals | null }) => void;
   },
+  oauth?: McpOAuthProvider,
 ): McpClient {
   if (config.transport === 'http') {
     return createMcpHttpClient({
       url: config.url,
       headers: config.headers,
+      auth: oauth
+        ? {
+            headers: () => oauth.authorizationHeaders(config.id),
+            refresh: () => oauth.refresh(config.id),
+          }
+        : undefined,
     });
   }
   const transport = spawnStdioTransport({
@@ -86,7 +102,9 @@ export function createMcpRegistry(
 ): McpRegistry {
   const repo: McpServerRepository = createMcpServerRepository(db);
   const entries = new Map<string, RegistryEntry>();
-  const factory = options.clientFactory ?? defaultClientFactory;
+  const factory =
+    options.clientFactory ??
+    ((config, hooks) => defaultClientFactory(config, hooks, options.oauth));
 
   async function refreshTools(entry: RegistryEntry): Promise<void> {
     if (!entry.client) return;
@@ -214,6 +232,13 @@ export function createMcpRegistry(
       const current = repo.get(id);
       if (!current) throw ApiError.notFound('MCP 服务器', id);
       if (fields.name !== undefined) assertNameFree(fields.name, id);
+      // URL / 传输变化后旧令牌不再适用，避免把旧资源令牌发给新端点
+      if (
+        (fields.url !== undefined && fields.url !== current.url) ||
+        (fields.transport !== undefined && fields.transport !== current.transport)
+      ) {
+        options.oauth?.clear(id);
+      }
       const updated = repo.update(id, fields);
       if (!updated) throw ApiError.notFound('MCP 服务器', id);
       reconcileAll();
@@ -222,6 +247,7 @@ export function createMcpRegistry(
 
     removeServer(id) {
       if (!repo.remove(id)) throw ApiError.notFound('MCP 服务器', id);
+      options.oauth?.clear(id);
       reconcileAll();
     },
 

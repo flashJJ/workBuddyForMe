@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
-import { PageHeader } from '@/components/layout/page-header';
+import { PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet, apiPost } from '@/lib/api/client';
@@ -190,34 +190,38 @@ export function AuditPage() {
   const patch = (next: Partial<Filters>) => setDraft((current) => ({ ...current, ...next }));
 
   return (
-    <div className="space-y-4 p-4" data-testid="audit-page">
-      <PageHeader
-        title={t('audit.title')}
-        description={t('audit.description')}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => void events.refetch()}>
-              {t('audit.refresh')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void verify.refetch()}
-              disabled={verify.isFetching}
-            >
-              {verify.isFetching ? t('audit.verifying') : t('audit.verify')}
-            </Button>
-            <AuditExportButton />
-            <AuditArchiveActions from={filters.from} to={filters.to} />
-          </div>
-        }
-      />
-
+    <PageShell
+      data-testid="audit-page"
+      bodyClassName="space-y-4"
+      header={
+        <PageHeader
+          title={t('audit.title')}
+          description={t('audit.description')}
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => void events.refetch()}>
+                {t('audit.refresh')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void verify.refetch()}
+                disabled={verify.isFetching}
+              >
+                {verify.isFetching ? t('audit.verifying') : t('audit.verify')}
+              </Button>
+              <AuditExportButton />
+              <AuditArchiveActions from={filters.from} to={filters.to} />
+            </div>
+          }
+        />
+      }
+    >
       {verify.data && (
         <div
           className={`rounded-lg border p-3 text-sm ${
             verify.data.ok
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+              ? 'border-success/30 bg-success-background text-success'
               : 'border-destructive/40 bg-destructive/10 text-destructive'
           }`}
           data-testid="audit-chain-status"
@@ -290,6 +294,6 @@ export function AuditPage() {
           ))}
         </ul>
       )}
-    </div>
+    </PageShell>
   );
 }

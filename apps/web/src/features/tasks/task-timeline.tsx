@@ -25,7 +25,7 @@ export function TaskTimeline({ steps }: { steps: TaskStepView[] }) {
       {steps.map((step) => (
         <li
           key={step.id}
-          className="min-w-0 overflow-hidden rounded-md border bg-card p-3"
+          className="min-w-0 overflow-hidden rounded-lg border bg-card p-3"
           data-testid={`task-step-${step.stepIndex}`}
         >
           <div className="flex items-center justify-between gap-2">

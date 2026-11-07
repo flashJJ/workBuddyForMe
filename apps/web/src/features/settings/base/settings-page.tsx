@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { Provider } from '@wbfm/shared/types';
 import { DEMO_PROVIDER_ID } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/layout/page-header';
+import { PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useProviders, useSettings } from '@/lib/hooks/provider';
 import { PanelVisibilityGate } from '@/lib/ui/panel-visibility';
@@ -141,9 +141,8 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl gap-8 p-6">
-      {/* 左侧：设置主内容 */}
-      <div className="min-w-0 flex-1 space-y-8">
+    <PageShell
+      header={
         <PageHeader
           title={t('settings.title')}
           description={t('settings.description')}
@@ -153,70 +152,75 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
             </Button>
           }
         />
+      }
+    >
+      <div className="mx-auto flex w-full max-w-6xl gap-8">
+        {/* 左侧：设置主内容 */}
+        <div className="min-w-0 flex-1 space-y-8">
+          {/* 基础设置：演示模式开关 + 供应商 + 默认偏好（不进分组，始终置顶） */}
+          <DemoModePanel />
 
-        {/* 基础设置：演示模式开关 + 供应商 + 默认偏好（不进分组，始终置顶） */}
-        <DemoModePanel />
+          {mounted && isLoading && <Spinner />}
+          {mounted && isError && (
+            <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />
+          )}
+          {mounted && !isLoading && !isError && visibleProviders && (
+            <div className="space-y-4" data-testid="provider-list">
+              {visibleProviders.length === 0 && !demoEnabled && (
+                <EmptyState
+                  title={t('settings.empty.title')}
+                  description={t('settings.empty.description')}
+                  action={
+                    <Button type="button" onClick={openCreate}>
+                      {t('settings.empty.action')}
+                    </Button>
+                  }
+                />
+              )}
+              {visibleProviders.map((provider) => (
+                <ProviderCard key={provider.id} provider={provider} onEdit={openEdit} />
+              ))}
+            </div>
+          )}
 
-        {mounted && isLoading && <Spinner />}
-        {mounted && isError && (
-          <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />
-        )}
-        {mounted && !isLoading && !isError && visibleProviders && (
-          <div className="space-y-4" data-testid="provider-list">
-            {visibleProviders.length === 0 && !demoEnabled && (
-              <EmptyState
-                title={t('settings.empty.title')}
-                description={t('settings.empty.description')}
-                action={
-                  <Button type="button" onClick={openCreate}>
-                    {t('settings.empty.action')}
-                  </Button>
-                }
-              />
-            )}
-            {visibleProviders.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} onEdit={openEdit} />
-            ))}
-          </div>
-        )}
+          <DefaultsPanel />
 
-        <DefaultsPanel />
+          {/* 4 大分组 */}
+          {sections.map((section) => (
+            <div key={section.id} data-testid={`settings-section-${section.id}`}>
+              <div
+                id={`setting-${section.id}`}
+                className="scroll-mt-6 border-b pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              >
+                {t(section.labelKey)}
+              </div>
+              <PanelVisibilityGate className="space-y-4 pt-4">{section.panels}</PanelVisibilityGate>
+            </div>
+          ))}
 
-        {/* 4 大分组 */}
-        {sections.map((section) => (
-          <div key={section.id} data-testid={`settings-section-${section.id}`}>
-            <div
-              id={`setting-${section.id}`}
-              className="scroll-mt-6 border-b pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+          <ProviderFormDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            provider={editing}
+          />
+        </div>
+
+        {/* 右侧：sticky 分组导航（lg+ 可见） */}
+        <nav
+          aria-label={t('settings.title')}
+          className="sticky top-0 hidden h-fit w-48 shrink-0 space-y-1 lg:block"
+        >
+          {sections.map((section) => (
+            <a
+              key={section.id}
+              href={`#setting-${section.id}`}
+              className="block rounded px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
             >
               {t(section.labelKey)}
-            </div>
-            <PanelVisibilityGate className="space-y-4 pt-4">{section.panels}</PanelVisibilityGate>
-          </div>
-        ))}
-
-        <ProviderFormDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          provider={editing}
-        />
+            </a>
+          ))}
+        </nav>
       </div>
-
-      {/* 右侧：sticky 分组导航（lg+ 可见） */}
-      <nav
-        aria-label={t('settings.title')}
-        className="sticky top-6 hidden h-fit w-48 shrink-0 space-y-1 lg:block"
-      >
-        {sections.map((section) => (
-          <a
-            key={section.id}
-            href={`#setting-${section.id}`}
-            className="block rounded px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-          >
-            {t(section.labelKey)}
-          </a>
-        ))}
-      </nav>
-    </div>
+    </PageShell>
   );
 }

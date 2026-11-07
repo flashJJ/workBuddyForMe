@@ -70,7 +70,11 @@ export function buildSpawnCommand(
   if (/\.(exe|com)$/i.test(command)) {
     return { file: command, args, windowsVerbatimArguments: false };
   }
-  const cmdline = [command, ...args].map(escapeWindowsArgument).join(' ');
+  // 裸命令名（npx / uvx）不能加引号：cmd 会把带引号的命令当成当前目录下的文件，
+  // npx.cmd 内的 %~dp0 随之指向项目目录并找不到 npm 自身模块，进程直接退出。
+  // 只有含空格/引号的路径才需要引号。
+  const commandPart = /[\s"]/.test(command) ? escapeWindowsArgument(command) : command;
+  const cmdline = [commandPart, ...args.map(escapeWindowsArgument)].join(' ');
   return {
     file: process.env.comspec ?? 'cmd.exe',
     args: ['/d', '/s', '/c', `"${cmdline}"`],

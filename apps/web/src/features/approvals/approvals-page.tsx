@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { WorkApproval } from '@wbfm/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/layout/page-header';
+import { PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiGet, apiPost } from '@/lib/api/client';
@@ -50,16 +50,21 @@ export function ApprovalsPage() {
   const approvals = query.data?.approvals ?? [];
 
   return (
-    <div className="space-y-4 p-4" data-testid="approvals-page">
-      <PageHeader
-        title={t('approvals.title')}
-        description={t('approvals.description')}
-        actions={
-          <Button variant="outline" size="sm" onClick={() => void query.refetch()}>
-            {t('approvals.refresh')}
-          </Button>
-        }
-      />
+    <PageShell
+      data-testid="approvals-page"
+      bodyClassName="space-y-4"
+      header={
+        <PageHeader
+          title={t('approvals.title')}
+          description={t('approvals.description')}
+          actions={
+            <Button variant="outline" size="sm" onClick={() => void query.refetch()}>
+              {t('approvals.refresh')}
+            </Button>
+          }
+        />
+      }
+    >
       {error && <p className="text-sm text-destructive">{error}</p>}
       {query.isLoading ? (
         <Spinner />
@@ -151,6 +156,6 @@ export function ApprovalsPage() {
           ))}
         </ul>
       )}
-    </div>
+    </PageShell>
   );
 }

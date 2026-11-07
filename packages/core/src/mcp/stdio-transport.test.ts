@@ -31,7 +31,7 @@ describe('buildSpawnCommand Windows 包装', () => {
     });
   });
 
-  it('Windows：exe 直启；其余经 cmd /d /s /c 包装并加引号', () => {
+  it('Windows：exe 直启；.cmd 经 cmd /d /s /c 包装', () => {
     if (process.platform !== 'win32') return;
     const exe = buildSpawnCommand('C:/tools/server.exe', ['--port', '1']);
     expect(exe.file).toBe('C:/tools/server.exe');
@@ -46,5 +46,17 @@ describe('buildSpawnCommand Windows 包装', () => {
     expect(cmdline.endsWith('"')).toBe(true);
     // 含空格的参数在内部仍保有自己的引号
     expect(cmdline).toContain('"D:/my docs"');
+  });
+
+  it('Windows：裸命令名不能加引号（否则 npx 的 %~dp0 指向项目目录）', () => {
+    if (process.platform !== 'win32') return;
+    const wrapped = buildSpawnCommand('npx', ['-y', '@modelcontextprotocol/server-memory']);
+    const cmdline = wrapped.args[3] ?? '';
+    expect(cmdline.startsWith('"npx ')).toBe(true);
+    expect(cmdline).not.toContain('"npx"');
+
+    // 含空格的完整路径仍必须加引号
+    const fullPath = buildSpawnCommand('C:/Program Files/nodejs/npx.cmd', ['--version']);
+    expect(fullPath.args[3] ?? '').toContain('"C:/Program Files/nodejs/npx.cmd"');
   });
 });

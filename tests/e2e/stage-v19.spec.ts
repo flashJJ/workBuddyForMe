@@ -65,6 +65,11 @@ test.describe.serial('v1.9 M1 舞台骨架（mock cast）', () => {
     await page.getByTestId('stage-demo-defocus').click();
     await expect(page.getByTestId('stage-actor-left')).toHaveAttribute('data-focused', 'false');
     await expect(page.getByTestId('stage-dialog')).toBeHidden();
+
+    // 散焦后「说台词」不应静默失效：自动回到中槽并出词
+    await page.getByTestId('stage-demo-say').click();
+    await expect(page.getByTestId('stage-actor-center')).toHaveAttribute('data-focused', 'true');
+    await expect(page.getByTestId('stage-dialog')).toContainText('执行收到');
   });
 
   test('省电档：仅聚焦槽 live，其余立绘槽', async ({ page }) => {
@@ -104,6 +109,8 @@ test.describe.serial('v1.9 M1 舞台骨架（mock cast）', () => {
 
   test('场景保存/读取/删除走真实 API', async ({ page, request }) => {
     await openStage(page);
+    // 高级设置默认折叠，先展开背景/场景区
+    await page.getByTestId('stage-advanced').locator('summary').click();
     // 改背景为纯蓝（stage.bg.solid），保存命名场景
     await chooseOption(page, page.getByLabel('背景类型'), '纯色');
     await page.locator('input[type="color"]').first().fill('#123abc');

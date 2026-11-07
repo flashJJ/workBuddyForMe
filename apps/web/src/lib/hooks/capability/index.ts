@@ -1,5 +1,6 @@
 /** @域 barrel capability：v2.16 子能力集中入口（纯 re-export） */
 export * from './use-mcp';
+export * from './use-mcp-oauth';
 export * from './use-permissions';
 export * from './use-skills';
 export * from './use-skill-versions';

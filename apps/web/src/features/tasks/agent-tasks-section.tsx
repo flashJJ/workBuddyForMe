@@ -122,7 +122,7 @@ function AgentRunRow({
   };
 
   return (
-    <li className="min-w-0 overflow-hidden rounded-md border bg-card">
+    <li className="min-w-0 overflow-hidden rounded-lg border bg-card">
       <div className="flex min-w-0 items-center gap-3 px-4 py-3">
         <button type="button" onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-3 text-left">
           <ChevronRight

@@ -4,11 +4,12 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { translateSystemText } from '@/lib/i18n/system-text-runtime';
-import type { StageCastMember, StageSlot } from '@wbfm/shared/schemas';
+import { isVrmAvatarId } from '@wbfm/shared/schemas';
 import { StageBackgroundLayer } from './stage-background';
 import { StageActor } from './stage-actor';
 import { StageDialogBox } from './stage-dialog-box';
 import { StageToolbar } from './stage-toolbar';
+import { StageLive2dLayer, type StageLive2dActor } from './live2d';
 import { computeActorLayout, meetingPosition } from './stage-layout';
 import { useStageController, type StageMode } from './use-stage-controller';
 import { useStageRun } from './use-stage-run';
@@ -63,7 +64,7 @@ export function StageRoot() {
         c.toggleUi();
       } else if (event.key === 'F11') {
         event.preventDefault();
-        void toggleFullscreen();
+        void toggleStageFullscreen();
       } else if (event.key === 'Escape') {
         const result = c.handleEsc();
         if (result === 'exited') exitStage();
@@ -100,6 +101,31 @@ export function StageRoot() {
     : '';
   const dialogText = activeLine ? (translateSystemText(activeLine.text) || activeLine.text) : '';
   const showChrome = !c.uiHidden && c.controlsVisible;
+
+  // 每个槽位的布局只算一次：共享 Live2D 层与 DOM 命中盒必须使用同一组坐标
+  const actorViews = c.cast.map((member, castIndex) => {
+    const slot = member.slot;
+    const positionOverride =
+      mode === 'meeting'
+        ? meetingPosition(castIndex, Math.max(c.cast.length, 2))
+        : null;
+    return {
+      member,
+      slot,
+      live: c.powerMode === 'live' || slot === c.focus,
+      layout: computeActorLayout(slot, c.payload, c.focus, positionOverride),
+    };
+  });
+  const live2dActors: StageLive2dActor[] = actorViews
+    .filter((view) => !isVrmAvatarId(view.member.avatarModelId))
+    .map((view) => ({
+      slot: view.slot,
+      modelId: view.member.avatarModelId,
+      layout: view.layout,
+      expression: c.expressions[view.slot]!,
+      speaking: view.slot === c.speakingSlot && Boolean(c.speech[view.slot]),
+      getLevel: c.levelReader(view.slot),
+    }));
 
   return (
     <div
@@ -157,40 +183,33 @@ export function StageRoot() {
 
       {/* 角色（cast 驱动：mock/run 三槽，meeting 2–4 席均布） */}
       <div className="absolute inset-0 z-10" data-testid="stage-cast">
-        {c.cast.map((member, castIndex) => {
-          const slot = member.slot;
-          const live = c.powerMode === 'live' || slot === c.focus;
-          const positionOverride =
-            mode === 'meeting'
-              ? meetingPosition(castIndex, Math.max(c.cast.length, 2))
-              : null;
-          return (
-            <StageActor
-              key={slot}
-              slot={slot}
-              member={{ ...member, expression: c.expressions[slot]! }}
-              layout={computeActorLayout(slot, c.payload, c.focus, positionOverride)}
-              live={live}
-              expression={c.expressions[slot]!}
-              actionLabelKey={
-                mode === 'mock' ? member.actionLabelKey : `stage.run.action.${c.motions[slot]}`
-              }
-              speaking={slot === c.speakingSlot && Boolean(c.speech[slot])}
-              showNameplate={c.payload.showNameplates}
-              getLevel={c.levelReader(slot)}
-              onPlacementChange={c.patchPlacement}
-              onActorScale={(s, scale) =>
-                c.patchPlacement(s, {
-                  x: computeActorLayout(s, c.payload, c.focus, positionOverride).leftPct / 100,
-                  y: computeActorLayout(s, c.payload, c.focus, positionOverride).topPct / 100,
-                  scale,
-                })
-              }
-              snapshot={c.snapshots[member.avatarModelId] ?? null}
-              onSnapshot={c.setSnapshot}
-            />
-          );
-        })}
+        <StageLive2dLayer actors={live2dActors} powerMode={c.powerMode} focus={c.focus} />
+        {actorViews.map(({ member, slot, live, layout }) => (
+          <StageActor
+            key={slot}
+            slot={slot}
+            member={{ ...member, expression: c.expressions[slot]! }}
+            layout={layout}
+            live={live}
+            expression={c.expressions[slot]!}
+            actionLabelKey={
+              mode === 'mock' ? member.actionLabelKey : `stage.run.action.${c.motions[slot]}`
+            }
+            speaking={slot === c.speakingSlot && Boolean(c.speech[slot])}
+            showNameplate={c.payload.showNameplates}
+            getLevel={c.levelReader(slot)}
+            onPlacementChange={c.patchPlacement}
+            onActorScale={(s, scale) =>
+              c.patchPlacement(s, {
+                x: layout.leftPct / 100,
+                y: layout.topPct / 100,
+                scale,
+              })
+            }
+            snapshot={c.snapshots[member.avatarModelId] ?? null}
+            onSnapshot={c.setSnapshot}
+          />
+        ))}
       </div>
 
       <StageDialogBox
@@ -209,6 +228,7 @@ export function StageRoot() {
         <StageToolbar
           mode={mode}
           powerMode={c.powerMode}
+          autoDegraded={c.autoDegraded}
           onPowerModeChange={c.setPowerMode}
           payload={c.payload}
           onPayloadChange={c.setPayload}
@@ -223,7 +243,7 @@ export function StageRoot() {
 
       {/* 快捷键提示（与控制栏同隐显；截图不含） */}
       <div
-        className="pointer-events-none absolute bottom-2 left-1/2 z-40 -translate-x-1/2 rounded bg-black/40 px-2 py-0.5 text-[11px] text-white/70 transition-opacity duration-300"
+        className="pointer-events-none absolute left-1/2 top-2 z-40 -translate-x-1/2 rounded bg-black/40 px-2 py-0.5 text-[11px] text-white/70 transition-opacity duration-300"
         style={{ opacity: showChrome ? 1 : 0 }}
       >
         {t('stage.ui.hideHint')}
@@ -232,11 +252,17 @@ export function StageRoot() {
   );
 }
 
-async function toggleFullscreen(): Promise<void> {
+async function toggleStageFullscreen(): Promise<void> {
+  // Electron 舞台窗走主进程原生全屏；浏览器全屏 API 在已全屏的原生窗口里会互相打架。
+  const bridge = getStageBridge();
+  if (bridge) {
+    await bridge.toggleFullscreen().catch(() => false);
+    return;
+  }
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
     else await document.documentElement.requestFullscreen();
   } catch {
-    /* 窗口宿主可能不允许全屏（Electron 用 F11 原生切换，这里静默） */
+    /* 浏览器不允许时静默（多为用户手势/权限限制） */
   }
 }

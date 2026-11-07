@@ -23,7 +23,7 @@ export function TaskControlBar({ status, onPause, onResume, onStop, disabled }: 
   const { t } = useI18n();
   const isActive = status === 'running' || status === 'paused';
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-card p-2">
+    <div className="flex items-center gap-2 rounded-lg border bg-card p-2">
       <Button
         type="button"
         size="sm"

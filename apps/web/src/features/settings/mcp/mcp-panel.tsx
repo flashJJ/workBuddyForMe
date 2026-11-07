@@ -1,16 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import type { McpServerInfo } from '@wbfm/shared/types';
+import type { McpOAuthStatus, McpServerInfo } from '@wbfm/shared/types';
 import type { McpServerStatus } from '@wbfm/shared/constants';
-import { MCP_PRESET_SERVERS, type McpPresetServer } from '@wbfm/shared/constants';
+import type { McpCatalogEntry } from '@wbfm/shared/constants';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { errorText } from '@/lib/i18n/resolve-error';
-import { useMcpMutations, useMcpServers } from '@/lib/hooks/capability';
+import { useMcpMutations, useMcpOAuthMutations, useMcpOAuthStatuses, useMcpServers, openOAuthUrl } from '@/lib/hooks/capability';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { McpCatalog } from './mcp-catalog';
+import { McpOAuthRow } from './mcp-oauth-row';
 import { McpServerFormDialog } from './mcp-server-form-dialog';
 
 const STATUS_KEYS: Record<McpServerStatus, MessageKey> = {
@@ -28,8 +30,20 @@ const STATUS_STYLES: Record<McpServerStatus, string> = {
 };
 
 function commandSummary(server: McpServerInfo): string {
+  if (server.transport === 'http') return server.url || '—';
   const parts = [server.command, ...(server.args ?? [])].filter(Boolean);
   return parts.join(' ');
+}
+
+/** 自带 Authorization（PAT）的服务器不需要也不应展示 OAuth 授权入口 */
+function hasStaticAuthHeader(server: McpServerInfo): boolean {
+  return Object.keys(server.headers ?? {}).some((key) => key.toLowerCase() === 'authorization');
+}
+
+/** 只有已授权或明确因 401 失败的服务器才展示 OAuth 行，避免对普通远程服务器造成误解 */
+function needsOAuth(server: McpServerInfo, status: McpOAuthStatus | undefined): boolean {
+  if (status?.authorized) return true;
+  return server.status === 'error' && /鉴权|401|oauth/i.test(server.statusDetail ?? '');
 }
 
 /** 设置页 MCP 服务器管理面板（v0.6 M1：stdio 传输最小闭环） */
@@ -37,12 +51,14 @@ export function McpPanel() {
   const { t } = useI18n();
   const { data: servers, isLoading, isError, refetch } = useMcpServers();
   const mutations = useMcpMutations();
+  const oauth = useMcpOAuthMutations();
+  const { data: oauthStatuses } = useMcpOAuthStatuses();
   const toast = useToast();
   const confirm = useConfirm();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<McpServerInfo | null>(null);
   // v2.3：从预置目录打开表单时携带的预置项（仅新增）
-  const [preset, setPreset] = React.useState<McpPresetServer | null>(null);
+  const [preset, setPreset] = React.useState<McpCatalogEntry | null>(null);
   // 水合门控：查询在途/到达的时机在 SSR 与客户端首帧不一致，直接据此切结构会水合失配
   // （React #418/#422）。首帧恒与 SSR 一致（仅标题栏），挂载后再按数据展开。
   const [mounted, setMounted] = React.useState(false);
@@ -60,15 +76,19 @@ export function McpPanel() {
     setDialogOpen(true);
   };
 
-  const openPreset = (item: McpPresetServer) => {
+  const openPreset = (item: McpCatalogEntry) => {
     setEditing(null);
     setPreset(item);
     setDialogOpen(true);
   };
 
   const toggleEnabled = (server: McpServerInfo) => {
+    const body =
+      server.transport === 'http'
+        ? { transport: 'http' as const, enabled: !server.enabled }
+        : { transport: 'stdio' as const, enabled: !server.enabled };
     mutations.update.mutate(
-      { id: server.id, body: { transport: 'stdio', enabled: !server.enabled } },
+      { id: server.id, body },
       {
         onSuccess: () =>
           toast.success(
@@ -99,6 +119,29 @@ export function McpPanel() {
       },
       onError: (error) =>
         toast.error(errorText(error, t, { fallback: 'settingsMcp.mcp.testFailedShort' })),
+    });
+  };
+
+  const authorize = async (serverId: string) => {
+    // Web 先同步开空白页，避免异步请求后被浏览器拦截；Electron 直接用外链桥打开系统浏览器
+    const managed = typeof window !== 'undefined' && Boolean(window.wbfm?.isManaged);
+    const popup = !managed && typeof window !== 'undefined' ? window.open('', '_blank') : null;
+    try {
+      const result = await oauth.start.mutateAsync(serverId);
+      if (popup) popup.location.href = result.authorizationUrl;
+      else openOAuthUrl(result.authorizationUrl);
+      toast.success(t('settingsMcp.mcp.oauth.opened'));
+    } catch (error) {
+      popup?.close();
+      toast.error(errorText(error, t, { fallback: 'settingsMcp.mcp.oauth.startFailed' }));
+    }
+  };
+
+  const clearOAuth = (serverId: string) => {
+    oauth.clear.mutate(serverId, {
+      onSuccess: () => toast.success(t('settingsMcp.mcp.oauth.cleared')),
+      onError: (error) =>
+        toast.error(errorText(error, t, { fallback: 'settingsMcp.mcp.oauth.clearFailed' })),
     });
   };
 
@@ -134,26 +177,15 @@ export function McpPanel() {
         </Button>
       </div>
 
-      {/* v2.3：预置服务器目录——一键填入新增表单，仍需按环境改参数 */}
-      <div className="space-y-2" data-testid="mcp-presets">
-        <div className="text-sm font-medium">{t('settingsMcp.mcp.presets.title')}</div>
-        <p className="text-xs text-muted-foreground">{t('settingsMcp.mcp.presets.hint')}</p>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {MCP_PRESET_SERVERS.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                data-testid={`mcp-preset-${item.id}`}
-                onClick={() => openPreset(item)}
-                className="h-full w-full rounded-md border bg-background p-2 text-left hover:bg-accent"
-              >
-                <div className="font-mono text-xs font-medium">{item.name}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{item.description}</div>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* v2.24：能力中心——推荐 / 可选 / 需凭证三档，勾选后批量安装 */}
+      {mounted && (
+        <McpCatalog
+          servers={servers}
+          oauthStatuses={oauthStatuses}
+          onManual={openPreset}
+          onAuthorize={(id) => void authorize(id)}
+        />
+      )}
 
       {mounted && isLoading && <p className="text-sm text-muted-foreground">{t('common.actions.loading')}</p>}
       {mounted && isError && (
@@ -196,6 +228,16 @@ export function McpPanel() {
                 {server.status === 'error' && server.statusDetail && (
                   <p className="text-xs text-destructive">{server.statusDetail}</p>
                 )}
+                {server.transport === 'http' &&
+                  !hasStaticAuthHeader(server) &&
+                  needsOAuth(server, oauthStatuses?.[server.id]) && (
+                    <McpOAuthRow
+                      status={oauthStatuses?.[server.id]}
+                      busy={oauth.start.isPending || oauth.clear.isPending}
+                      onAuthorize={() => void authorize(server.id)}
+                      onClear={() => clearOAuth(server.id)}
+                    />
+                  )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">

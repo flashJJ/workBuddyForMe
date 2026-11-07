@@ -27,9 +27,16 @@ export const TOOL_NAMES = [
 ] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
 
-/** v2.17：联网搜索 provider 类型（P0 先实现 SearXNG 与测试用 mock） */
-export const SEARCH_PROVIDER_KINDS = ['none', 'searxng', 'mock'] as const;
+/**
+ * v2.17：联网搜索 provider 类型；v2.24 增加需 API Key 的 Brave / Tavily。
+ * SearXNG 支持自建或公共实例；Brave / Tavily 走官方 API，稳定性更好。
+ */
+export const SEARCH_PROVIDER_KINDS = ['none', 'searxng', 'brave', 'tavily', 'mock'] as const;
 export type SearchProviderKind = (typeof SEARCH_PROVIDER_KINDS)[number];
+
+/** 需要 API Key 的 provider（设置页据此显示密钥输入与保存入口） */
+export const SEARCH_KEY_PROVIDERS = ['brave', 'tavily'] as const;
+export type SearchKeyProvider = (typeof SEARCH_KEY_PROVIDERS)[number];
 
 export const SEARCH_MAX_RESULTS_MIN = 1;
 export const SEARCH_MAX_RESULTS_MAX = 8;
@@ -97,8 +104,8 @@ export const SKILL_MAX_PROMPT_TEMPLATES = 10;
 export const SKILL_MAX_TOOLS = 20;
 export const SKILL_MAX_EXAMPLES = 10;
 
-/** stdio initialize 握手超时（进程冷启动如 npx 首次下载包可能较慢） */
-export const MCP_CONNECT_TIMEOUT_MS = 30_000;
+/** stdio initialize 握手超时（npx 首次下载包可能需要 30s 以上，放宽到 60s） */
+export const MCP_CONNECT_TIMEOUT_MS = 60_000;
 /** tools/list 超时 */
 export const MCP_LIST_TIMEOUT_MS = 10_000;
 /** MCP 工具调用默认超时（覆盖内置 TOOL_TIMEOUT_MS；文件检索类操作可能较慢） */

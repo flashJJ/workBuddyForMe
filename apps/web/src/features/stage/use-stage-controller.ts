@@ -43,6 +43,8 @@ export interface StageController {
   applyDirection: (d: StageDirection) => void;
   speakingSlot: StageSlot | null;
   powerMode: StagePowerMode;
+  /** 是否由帧率看门狗自动降级（用于操作台提示与一键恢复） */
+  autoDegraded: boolean;
   uiHidden: boolean;
   controlsVisible: boolean;
   snapshots: Record<string, string>;
@@ -158,14 +160,18 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
   }, []);
 
   const sayLine = React.useCallback(() => {
-    const slot = focusRef.current;
-    if (!slot) return;
-    setSpeech((prev) => ({ ...prev, [slot]: MOCK_SPEECH[slot] }));
+    // 散焦后按钮不应静默失效：没有焦点时自动选回中槽再说
+    const slot = focusRef.current ?? 'center';
+    if (!focusRef.current) setFocus(slot);
+    const text = MOCK_SPEECH[slot];
+    if (!text) return;
+    setSpeech((prev) => ({ ...prev, [slot]: text }));
+    setLastLine({ slot, text });
   }, []);
 
   const cycleExpression = React.useCallback(() => {
-    const slot = focusRef.current;
-    if (!slot) return;
+    const slot = focusRef.current ?? 'center';
+    if (!focusRef.current) setFocus(slot);
     setExpressions((prev) => {
       const cur = prev[slot]!;
       const idx = MOCK_EXPRESSIONS.indexOf(cur as (typeof MOCK_EXPRESSIONS)[number]);
@@ -240,6 +246,7 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     applyDirection,
     speakingSlot: focus,
     powerMode,
+    autoDegraded,
     uiHidden,
     controlsVisible,
     snapshots,

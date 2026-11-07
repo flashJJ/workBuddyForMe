@@ -9,6 +9,11 @@ export const WATCHDOG_WINDOW_MS = 5_000;
 export const WATCHDOG_AVG_FRAME_MS = 25;
 /** 窗口内最少帧数才判定（避免切场景瞬间 1-2 帧误报） */
 export const WATCHDOG_MIN_FRAMES = 60;
+/**
+ * 预热期：三个 Live2D 首次下载/解析/首帧渲染会制造一段长帧，
+ * 这段不能算进卡顿均值，否则刚开场就被误判成弱机切省电档。
+ */
+export const WATCHDOG_WARMUP_MS = 6_000;
 
 export interface WatchdogReading {
   avgFrameMs: number;
@@ -35,13 +40,25 @@ export class FrameWatchdog {
   private lastTs = 0;
   private frames: Array<{ ts: number; delta: number }> = [];
   private alreadyFired = false;
+  private startedAt = 0;
 
   start(onSlow: (avgFrameMs: number) => void): void {
     this.stop();
     this.frames = [];
     this.alreadyFired = false;
     this.lastTs = 0;
+    this.startedAt = 0;
     const tick = (ts: number) => {
+      if (this.startedAt === 0) this.startedAt = ts;
+      // 窗口不可见（最小化/被遮挡）时 rAF 节流，不计入卡顿采样
+      const hidden =
+        typeof document !== 'undefined' && document.visibilityState === 'hidden';
+      if (hidden || ts - this.startedAt < WATCHDOG_WARMUP_MS) {
+        this.frames = [];
+        this.lastTs = ts;
+        this.rafId = requestAnimationFrame(tick);
+        return;
+      }
       if (this.lastTs > 0) {
         const delta = ts - this.lastTs;
         if (delta > 0 && delta < 1000) {

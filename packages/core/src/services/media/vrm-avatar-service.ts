@@ -63,6 +63,8 @@ export function createVrmAvatarService(db: Database) {
       }
       const meta = extractVrmMeta(input.buffer.buffer as ArrayBuffer);
       const fileRef = `vrm-${randomUUID()}.vrm`;
+      // 备份恢复等场景可能重建数据根，导入前确保目录存在，避免 ENOENT
+      mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, fileRef), input.buffer);
       const name = input.name?.trim() || meta.name || input.filename.replace(/\.vrm$/i, '');
       const id = randomUUID();

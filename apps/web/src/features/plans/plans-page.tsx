@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { Textarea } from '@/components/ui/textarea';
-import { PageHeader } from '@/components/layout/page-header';
+import { PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useConversations } from '@/lib/hooks/chat';
@@ -91,27 +91,32 @@ export function PlansPage() {
   const pendingReview = plans.filter((plan) => plan.status === 'pending_review').length;
 
   return (
-    <div className="space-y-4 p-4" data-testid="plans-page">
-      <PageHeader
-        title={t('plans.title')}
-        description={t('plans.description')}
-        actions={
-          <div className="w-64">
-            <SimpleSelect
-              value={conversationId}
-              onValueChange={setConversationId}
-              aria-label={t('plans.conversation')}
-            >
-              <option value="">{t('plans.allConversations')}</option>
-              {list.map((conversation) => (
-                <option key={conversation.id} value={conversation.id}>
-                  {conversation.title}
-                </option>
-              ))}
-            </SimpleSelect>
-          </div>
-        }
-      />
+    <PageShell
+      data-testid="plans-page"
+      bodyClassName="space-y-4"
+      header={
+        <PageHeader
+          title={t('plans.title')}
+          description={t('plans.description')}
+          actions={
+            <div className="w-64">
+              <SimpleSelect
+                value={conversationId}
+                onValueChange={setConversationId}
+                aria-label={t('plans.conversation')}
+              >
+                <option value="">{t('plans.allConversations')}</option>
+                {list.map((conversation) => (
+                  <option key={conversation.id} value={conversation.id}>
+                    {conversation.title}
+                  </option>
+                ))}
+              </SimpleSelect>
+            </div>
+          }
+        />
+      }
+    >
       {error && <p className="text-sm text-destructive">{error}</p>}
       {!conversationId ? (
         <EmptyState title={t('plans.empty')} />
@@ -273,6 +278,6 @@ export function PlansPage() {
           </section>
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

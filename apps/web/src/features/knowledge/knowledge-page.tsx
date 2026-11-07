@@ -182,7 +182,11 @@ export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) 
         ) : (
           <div className="space-y-5 p-6">
             <div className="flex items-center justify-between gap-3">
-              <PageHeader title={activeKb.name} description={activeKb.description || undefined} />
+              <PageHeader
+                className="border-0 bg-transparent px-0 py-0"
+                title={activeKb.name}
+                description={activeKb.description || undefined}
+              />
               <div className="flex shrink-0 gap-2">
                 <Button
                   type="button"

@@ -1,9 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useMutation } from '@tanstack/react-query';
-import type { SearchSettings } from '@wbfm/shared/types';
-import type { SearxngDeployResult } from '@wbfm/shared/search';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import type { SearchCredentialsView, SearchSettings } from '@wbfm/shared/types';
 import {
   SEARCH_MAX_RESULTS_MAX,
   SEARCH_MAX_RESULTS_MIN,
@@ -15,9 +14,11 @@ import { NumberInput } from '@/components/ui/number-input';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { Spinner } from '@/components/common/state';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
-import { apiPost } from '@/lib/api/client';
-import { API } from '@/lib/api/endpoints';
+import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api/client';
+import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { SearchCredentialField } from './search-credential-field';
+import { SearxngDeploySection } from './search-deploy-section';
 
 const FALLBACK: SearchSettings = {
   provider: 'none',
@@ -26,6 +27,12 @@ const FALLBACK: SearchSettings = {
   timeoutMs: 10_000,
   allowPrivateEndpoint: false,
 };
+
+type KeyProvider = 'brave' | 'tavily';
+
+function keyProviderOf(provider: SearchSettings['provider']): KeyProvider | null {
+  return provider === 'brave' || provider === 'tavily' ? provider : null;
+}
 
 /** v2.17：联网搜索设置（SearXNG 自建 / 关闭；查询会离开本机） */
 export function SearchSettingsPanel() {
@@ -38,12 +45,21 @@ export function SearchSettingsPanel() {
   const [testState, setTestState] = React.useState<
     { kind: 'idle' } | { kind: 'testing' } | { kind: 'ok'; message: string } | { kind: 'fail'; message: string }
   >({ kind: 'idle' });
-  const [deploy, setDeploy] = React.useState<
-    | { kind: 'idle' }
-    | { kind: 'running' }
-    | { kind: 'ok'; endpoint: string }
-    | { kind: 'fail'; result: Extract<SearxngDeployResult, { ok: false }> }
-  >({ kind: 'idle' });
+
+  const [apiKey, setApiKey] = React.useState('');
+  const keyProvider = keyProviderOf(form.provider);
+  const { data: credentials, refetch: refetchCredentials } = useQuery({
+    queryKey: QUERY_KEYS.searchCredentials,
+    queryFn: () => apiGet<SearchCredentialsView>(API.searchCredential),
+  });
+  const saveCredential = useMutation({
+    mutationFn: (input: { provider: KeyProvider; apiKey: string }) =>
+      apiPut<SearchCredentialsView>(API.searchCredential, input),
+  });
+  const clearCredential = useMutation({
+    mutationFn: (provider: KeyProvider) =>
+      apiDelete<SearchCredentialsView>(`${API.searchCredential}?provider=${provider}`),
+  });
 
   React.useEffect(() => {
     if (!initialized && settings?.searchSettings) {
@@ -52,9 +68,23 @@ export function SearchSettingsPanel() {
     }
   }, [initialized, settings]);
 
+  // 切换搜索服务时清空未保存的新 Key，避免把 Tavily 的 Key 存到 Brave 名下
+  React.useEffect(() => {
+    setApiKey('');
+  }, [form.provider]);
+
   const test = useMutation({
     mutationFn: () => apiPost<{ ok: boolean; message: string }>(API.searchTest),
   });
+
+  /** 输入框里有新 Key 时先加密保存，再继续保存设置或测试 */
+  const persistKey = async (provider: KeyProvider) => {
+    const trimmed = apiKey.trim();
+    if (!trimmed) return;
+    await saveCredential.mutateAsync({ provider, apiKey: trimmed });
+    setApiKey('');
+    await refetchCredentials();
+  };
 
   const save = async () => {
     setSaved(false);
@@ -65,12 +95,14 @@ export function SearchSettingsPanel() {
         allowPrivateEndpoint: form.provider === 'searxng' ? form.allowPrivateEndpoint : false,
       },
     });
+    if (keyProvider) await persistKey(keyProvider);
     setSaved(true);
   };
 
   const runTest = async () => {
     setTestState({ kind: 'testing' });
     try {
+      if (keyProvider) await persistKey(keyProvider);
       const result = await test.mutateAsync();
       setTestState({
         kind: result.ok ? 'ok' : 'fail',
@@ -85,46 +117,6 @@ export function SearchSettingsPanel() {
   };
 
   if (isLoading) return <Spinner />;
-
-  // 桌面端才有本机部署桥；Web 模式退回「手动填写 / 公共实例」
-  const deployBridge = typeof window !== 'undefined' ? window.wbfm?.search : undefined;
-
-  /**
-   * 一键部署：拉起本机容器 → 回填地址并勾选允许内网 → 保存 → 立即测试。
-   * 部署本身由主进程完成（Docker 检测、配置写入、端口选择、健康等待）。
-   */
-  const runDeploy = async () => {
-    if (!deployBridge) return;
-    setDeploy({ kind: 'running' });
-    try {
-      const result = await deployBridge.deploySearxng();
-      if (!result.ok) {
-        setDeploy({ kind: 'fail', result });
-        return;
-      }
-      const next: SearchSettings = {
-        ...form,
-        provider: 'searxng',
-        endpoint: result.endpoint,
-        allowPrivateEndpoint: true,
-      };
-      setForm(next);
-      await update.mutateAsync({ searchSettings: next });
-      setSaved(true);
-      setDeploy({ kind: 'ok', endpoint: result.endpoint });
-      const tested = await test.mutateAsync();
-      setTestState({ kind: tested.ok ? 'ok' : 'fail', message: tested.message });
-    } catch (error) {
-      setDeploy({
-        kind: 'fail',
-        result: {
-          ok: false,
-          reason: 'start_failed',
-          message: error instanceof Error ? error.message : String(error),
-        },
-      });
-    }
-  };
 
   return (
     <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="search-settings-panel">
@@ -144,10 +136,12 @@ export function SearchSettingsPanel() {
           >
             <option value="none">{t('settings.search.providerNone')}</option>
             <option value="searxng">{t('settings.search.providerSearxng')}</option>
+            <option value="brave">{t('settings.search.providerBrave')}</option>
+            <option value="tavily">{t('settings.search.providerTavily')}</option>
           </SimpleSelect>
         </label>
 
-        {form.provider === 'searxng' && (
+        {form.provider !== 'none' && form.provider !== 'mock' && (
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             {t('settings.search.maxResults')}
             <NumberInput
@@ -160,6 +154,20 @@ export function SearchSettingsPanel() {
           </label>
         )}
       </div>
+
+      {keyProvider && (
+        <SearchCredentialField
+          provider={keyProvider}
+          status={credentials?.[keyProvider]}
+          value={apiKey}
+          saving={saveCredential.isPending}
+          clearing={clearCredential.isPending}
+          onChange={setApiKey}
+          onClear={() =>
+            clearCredential.mutate(keyProvider, { onSuccess: () => void refetchCredentials() })
+          }
+        />
+      )}
 
       {form.provider === 'searxng' && (
         <>
@@ -212,44 +220,14 @@ export function SearchSettingsPanel() {
             {t('settings.search.allowPrivate')}
           </label>
 
-          {deployBridge && (
-            <div className="space-y-2 rounded-md border border-dashed p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm">{t('settings.search.deployTitle')}</p>
-                  <p className="text-xs text-muted-foreground">{t('settings.search.deployHint')}</p>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void runDeploy()}
-                  disabled={deploy.kind === 'running' || update.isPending}
-                >
-                  {deploy.kind === 'running'
-                    ? t('settings.search.deploying')
-                    : t('settings.search.deploy')}
-                </Button>
-              </div>
-              {deploy.kind === 'ok' && (
-                <p className="text-sm text-success" role="status">
-                  {t('settings.search.deployOk', { endpoint: deploy.endpoint })}
-                </p>
-              )}
-              {deploy.kind === 'fail' && (
-                <div className="space-y-1">
-                  <p className="text-sm text-destructive" role="status">
-                    {deploy.result.message}
-                  </p>
-                  {deploy.result.manualCommand && (
-                    <pre className="overflow-x-auto rounded bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-                      {deploy.result.manualCommand}
-                    </pre>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          <SearxngDeploySection
+            form={form}
+            onFormChange={setForm}
+            onSettingsSaved={() => setSaved(true)}
+            onTestResult={(result) =>
+              setTestState({ kind: result.ok ? 'ok' : 'fail', message: result.message })
+            }
+          />
         </>
       )}
 

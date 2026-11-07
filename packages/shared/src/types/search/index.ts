@@ -31,3 +31,14 @@ export interface WebSearchResponse {
   provider: string;
   results: WebSearchResult[];
 }
+
+/** v2.24：需密钥搜索服务的脱敏状态（明文仅在服务端） */
+export interface SearchCredentialStatus {
+  hasKey: boolean;
+  masked: string | null;
+}
+
+export interface SearchCredentialsView {
+  brave: SearchCredentialStatus;
+  tavily: SearchCredentialStatus;
+}

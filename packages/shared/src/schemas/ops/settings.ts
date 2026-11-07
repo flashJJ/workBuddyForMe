@@ -7,6 +7,7 @@ import {
   CONTEXT_MESSAGES_MAX,
   GLOBAL_APPEND_PROMPT_MAX,
   SEARCH_PROVIDER_KINDS,
+  SEARCH_KEY_PROVIDERS,
   SEARCH_MAX_RESULTS_MIN,
   SEARCH_MAX_RESULTS_MAX,
   SEARCH_TIMEOUT_MIN_MS,
@@ -86,6 +87,13 @@ export const searchSettingsSchema = z.object({
   allowPrivateEndpoint: z.boolean().default(false),
 });
 export type SearchSettingsInput = z.infer<typeof searchSettingsSchema>;
+
+/** v2.24：需密钥的搜索服务凭证（只写；读取走脱敏状态接口） */
+export const searchCredentialSchema = z.object({
+  provider: z.enum(SEARCH_KEY_PROVIDERS),
+  apiKey: z.string().trim().min(8, 'API Key 至少 8 个字符').max(500),
+});
+export type SearchCredentialInput = z.infer<typeof searchCredentialSchema>;
 
 export const settingsUpdateSchema = z.object({
   defaultChatModelId: z.string().trim().min(1).nullable().optional(),

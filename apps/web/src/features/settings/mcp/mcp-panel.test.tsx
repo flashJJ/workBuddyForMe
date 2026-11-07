@@ -147,6 +147,50 @@ describe('MCP 服务器面板（v0.6 M1）', { timeout: 15_000 }, () => {
     expect(await screen.findByText(/连接成功/)).toBeInTheDocument();
   });
 
+  it('HTTP 401：展示 OAuth 行并 POST 发起授权', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    fetchMock.mockImplementation((input: string, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/api/mcp/oauth/statuses')) return Promise.resolve(ok({}));
+      if (url.endsWith('/api/mcp/servers/1/oauth') && init?.method === 'POST') {
+        return Promise.resolve(ok({ authorizationUrl: 'https://auth.example/authorize' }));
+      }
+      return Promise.resolve(
+        ok([
+          makeServer({
+            id: '1',
+            name: 'notion',
+            transport: 'http',
+            url: 'https://mcp.notion.com/mcp',
+            command: '',
+            args: [],
+            status: 'error',
+            statusDetail: 'MCP 服务器要求鉴权（HTTP 401），请检查 Headers 中的令牌',
+          }),
+        ]),
+      );
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<McpPanel />);
+
+    const row = await screen.findByTestId('mcp-oauth-row');
+    await user.click(within(row).getByRole('button', { name: '授权' }));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).endsWith('/api/mcp/servers/1/oauth') &&
+            (init as RequestInit | undefined)?.method === 'POST',
+        ),
+      ).toBe(true),
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://auth.example/authorize',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
   it('停用：勾选取消后 PATCH enabled=false', async () => {
     fetchMock.mockResolvedValue(ok([makeServer({ id: '1', name: 'filesystem' })]));
     const user = userEvent.setup();

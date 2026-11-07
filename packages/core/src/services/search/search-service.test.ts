@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDatabase, createSettingsRepository } from '@wbfm/database';
-import { SearchError } from '@wbfm/ai';
+import type { SecretCipher } from '../../secrets/cipher';
 import { createSearchService } from './search-service';
 import { resolveSearchSettings } from './search-settings';
+
+const cipher: SecretCipher = {
+  encrypt: (plaintext) => `enc:${plaintext}`,
+  decrypt: (ciphertext) => (ciphertext.startsWith('enc:') ? ciphertext.slice(4) : null),
+};
 
 describe('search service', () => {
   afterEach(() => {
@@ -22,7 +27,7 @@ describe('search service', () => {
       },
     });
     vi.stubGlobal('fetch', vi.fn());
-    const search = createSearchService({ db });
+    const search = createSearchService({ db, cipher });
     const result = await search.search({ query: 'hi', maxResults: 2 });
     expect(result.provider).toBe('mock');
     expect(result.results).toHaveLength(2);
@@ -31,7 +36,7 @@ describe('search service', () => {
 
   it('未启用时返回 not_configured', async () => {
     const db = createDatabase(':memory:');
-    const search = createSearchService({ db });
+    const search = createSearchService({ db, cipher });
     await expect(search.search({ query: 'hi' })).rejects.toMatchObject({
       name: 'SearchError',
       reason: 'not_configured',
@@ -57,7 +62,7 @@ describe('search service', () => {
       }),
     );
     vi.stubGlobal('fetch', fetchMock);
-    const search = createSearchService({ db });
+    const search = createSearchService({ db, cipher });
     const result = await search.search({ query: 'hi' });
     expect(result.results[0]?.title).toBe('A');
     expect(fetchMock.mock.calls[0]?.[0]).toContain('127.0.0.1:8080/search');

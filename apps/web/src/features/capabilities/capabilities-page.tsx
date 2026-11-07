@@ -6,7 +6,7 @@ import type {
   CapabilityCleanupResult, CapabilityHealthReport, CapabilityKind, CapabilityView, } from '@wbfm/shared/schemas';
 import { CAPABILITY_SUPPORTED_KINDS } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/layout/page-header';
+import { PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { apiDelete, apiGet, apiPost, apiUpload, ApiClientError } from '@/lib/api/client';
@@ -119,39 +119,44 @@ export function CapabilitiesPage() {
   const busy = toggle.isPending || uninstall.isPending;
 
   return (
-    <div className="space-y-4 p-4" data-testid="capabilities-page">
-      <PageHeader
-        title={t('capabilities.title')}
-        description={t('capabilities.description')}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              className="h-9 rounded-md border bg-background px-2 text-sm"
-              data-testid="capability-sample-kind"
-              aria-label={t('capabilities.sample')}
-              value={sampleKind}
-              onChange={(event) => setSampleKind(event.target.value as CapabilityKind)}
-            >
-              {CAPABILITY_SUPPORTED_KINDS.map((kind) => (
-                <option key={kind} value={kind}>
-                  {t(`capabilities.kind.${kind}`)}
-                </option>
-              ))}
-            </select>
-            <a
-              href={`${API.capabilitySample}?kind=${sampleKind}`}
-              data-testid="capability-sample-link"
-              aria-disabled={downloadingSample}
-              onClick={(event) => void downloadSample(event)}
-              className={`inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-muted ${
-                downloadingSample ? 'pointer-events-none opacity-60' : ''
-              }`}
-            >
-              {t('capabilities.sample')}
-            </a>
-          </div>
-        }
-      />
+    <PageShell
+      data-testid="capabilities-page"
+      bodyClassName="space-y-4"
+      header={
+        <PageHeader
+          title={t('capabilities.title')}
+          description={t('capabilities.description')}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                className="h-9 rounded-md border bg-background px-2 text-sm"
+                data-testid="capability-sample-kind"
+                aria-label={t('capabilities.sample')}
+                value={sampleKind}
+                onChange={(event) => setSampleKind(event.target.value as CapabilityKind)}
+              >
+                {CAPABILITY_SUPPORTED_KINDS.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {t(`capabilities.kind.${kind}`)}
+                  </option>
+                ))}
+              </select>
+              <a
+                href={`${API.capabilitySample}?kind=${sampleKind}`}
+                data-testid="capability-sample-link"
+                aria-disabled={downloadingSample}
+                onClick={(event) => void downloadSample(event)}
+                className={`inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-muted ${
+                  downloadingSample ? 'pointer-events-none opacity-60' : ''
+                }`}
+              >
+                {t('capabilities.sample')}
+              </a>
+            </div>
+          }
+        />
+      }
+    >
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex flex-wrap gap-1.5" data-testid="capability-kind-filter">
@@ -249,6 +254,6 @@ export function CapabilitiesPage() {
         }}
         onUpgraded={invalidate}
       />
-    </div>
+    </PageShell>
   );
 }

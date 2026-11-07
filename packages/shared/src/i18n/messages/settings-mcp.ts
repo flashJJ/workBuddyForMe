@@ -1,4 +1,6 @@
 /** settingsMcp 命名空间：MCP 服务器 / 技能包 / 工具权限 / 熔断器；数据备份见 settingsBackup */
+import { enMcpCatalog, zhMcpCatalog } from './settings-mcp-catalog';
+
 export const zhSettingsMcp = {
   deleteFailed: '删除失败',
   mcp: {
@@ -6,9 +8,18 @@ export const zhSettingsMcp = {
     description:
       '接入本地 MCP（Model Context Protocol）服务器，为助手扩展文件搜索等外部工具。',
     addServer: '添加服务器',
-    presets: {
-      title: '预置服务器',
-      hint: '常见 MCP 服务器一键填入表单；参数（如目标目录、仓库路径）仍需按你的环境调整。',
+    catalog: zhMcpCatalog,
+    oauth: {
+      authorized: '已授权',
+      expired: '已过期',
+      unauthorized: '未授权',
+      authorize: '授权',
+      reauthorize: '重新授权',
+      clear: '清除授权',
+      opened: '已打开浏览器，完成授权后回到应用',
+      startFailed: '发起授权失败',
+      cleared: '已清除授权',
+      clearFailed: '清除授权失败',
     },
     loadFailed: 'MCP 服务器加载失败，',
     empty: '还没有 MCP 服务器。添加后可在助手编辑里勾选其工具。',
@@ -33,7 +44,11 @@ export const zhSettingsMcp = {
       addTitle: '添加 MCP 服务器',
       editTitle: '编辑 MCP 服务器',
       description:
-        '通过 stdio 启动本地 MCP 服务器，其工具会以 mcp:服务器名:工具名 提供给助手。',
+        '通过 stdio 启动本地 MCP 服务器，或连接远程 Streamable HTTP 端点；工具以 mcp:服务器名:工具名 提供给助手。',
+      transportStdio: '本地 stdio',
+      transportHttp: '远程 HTTP',
+      urlLabel: '服务端点 URL',
+      headersLabel: '请求头（每行 KEY=VALUE，可选）',
       nameLabel: '名称（作为工具命名空间）',
       namePlaceholder: '例如：filesystem',
       namePatternTitle: '仅允许字母/数字/下划线/中划线，且以字母或数字开头',
@@ -124,9 +139,18 @@ export const enSettingsMcp = {
     description:
       'Connect local MCP (Model Context Protocol) servers to give assistants external tools such as file search.',
     addServer: 'Add server',
-    presets: {
-      title: 'Preset servers',
-      hint: 'Fill the form with a common MCP server in one click; adjust parameters (target directory, repo path) for your environment.',
+    catalog: enMcpCatalog,
+    oauth: {
+      authorized: 'Authorized',
+      expired: 'Expired',
+      unauthorized: 'Not authorized',
+      authorize: 'Authorize',
+      reauthorize: 'Re-authorize',
+      clear: 'Clear authorization',
+      opened: 'Browser opened; return to the app after authorizing',
+      startFailed: 'Failed to start authorization',
+      cleared: 'Authorization cleared',
+      clearFailed: 'Failed to clear authorization',
     },
     loadFailed: 'Failed to load MCP servers. ',
     empty:
@@ -151,7 +175,11 @@ export const enSettingsMcp = {
       addTitle: 'Add MCP server',
       editTitle: 'Edit MCP server',
       description:
-        'Launch a local MCP server over stdio. Its tools are exposed to assistants as mcp:server:tool.',
+        'Launch a local MCP server over stdio, or connect a remote Streamable HTTP endpoint. Tools are exposed to assistants as mcp:server:tool.',
+      transportStdio: 'Local stdio',
+      transportHttp: 'Remote HTTP',
+      urlLabel: 'Endpoint URL',
+      headersLabel: 'Headers (KEY=VALUE per line, optional)',
       nameLabel: 'Name (used as the tool namespace)',
       namePlaceholder: 'e.g. filesystem',
       namePatternTitle:

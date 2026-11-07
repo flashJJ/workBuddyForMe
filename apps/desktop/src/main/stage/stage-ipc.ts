@@ -12,6 +12,8 @@ export interface StageIpcActions {
   /** 舞台窗导航到 /stage?run= 或 ?meeting=（v1.9 M2/M3 只读观看） */
   open(target?: { runId?: string; meetingId?: string }): Promise<boolean> | boolean;
   close(): Promise<unknown> | unknown;
+  /** 舞台窗原生全屏切换，返回切换后的全屏状态 */
+  toggleFullscreen(): Promise<boolean> | boolean;
   capture(): Promise<{ saved: boolean; canceled?: boolean }>;
 }
 
@@ -34,6 +36,11 @@ export function registerStageIpc(ipc: IpcMainLike, actions: StageIpcActions, gua
   ipc.handle('stage:close', (event) => {
     if (!guards.fromMain(event.sender) && !guards.fromStage(event.sender)) return undefined;
     return actions.close();
+  });
+  ipc.handle('stage:toggle-fullscreen', (event) => {
+    // 只允许舞台窗自己切全屏；主窗的全屏由窗口菜单/主进程管理
+    if (!guards.fromStage(event.sender)) return false;
+    return actions.toggleFullscreen();
   });
   ipc.handle('stage:is-open', () => actions.isOpen());
   ipc.handle('stage:capture', (event) => {

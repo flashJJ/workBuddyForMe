@@ -26,6 +26,7 @@ describe('v1.9 stage IPC 身份校验', () => {
     isOpen: vi.fn(() => false),
     open: vi.fn(() => true),
     close: vi.fn(() => undefined),
+    toggleFullscreen: vi.fn(() => true),
     capture: vi.fn(async () => ({ saved: true })),
   };
 
@@ -64,6 +65,13 @@ describe('v1.9 stage IPC 身份校验', () => {
     ipc.handlers.get('stage:close')!({ sender: stageSender });
     ipc.handlers.get('stage:close')!({ sender: mainSender });
     expect(actions.close).toHaveBeenCalledTimes(2);
+  });
+
+  it('stage:toggle-fullscreen：仅舞台窗可切，其他发送方拿到 false', () => {
+    expect(ipc.handlers.get('stage:toggle-fullscreen')!({ sender: mainSender })).toBe(false);
+    expect(actions.toggleFullscreen).not.toHaveBeenCalled();
+    expect(ipc.handlers.get('stage:toggle-fullscreen')!({ sender: stageSender })).toBe(true);
+    expect(actions.toggleFullscreen).toHaveBeenCalledTimes(1);
   });
 
   it('stage:capture：仅舞台窗可截；其他发送方拿到 canceled', async () => {

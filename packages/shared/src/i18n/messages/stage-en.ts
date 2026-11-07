@@ -1,6 +1,11 @@
 /** v1.9 stage en-US strings */
 export const enStage = {
   title: 'Stage',
+  modeTitle: {
+    mock: 'Demo stage',
+    run: 'Collaboration stage',
+    meeting: 'Meeting stage',
+  },
   panel: {
     demo: 'Demo',
     scene: 'Scene',
@@ -56,6 +61,8 @@ export const enStage = {
     live: 'Full Live2D (high performance)',
     portrait: 'Power-save (speaker Live2D only)',
     degraded: 'Sustained jank detected — switched to power-save',
+    autoDegraded: 'Low frame rate — switched to power-save',
+    restore: 'Restore full',
   },
   scene: {
     save: 'Save scene',

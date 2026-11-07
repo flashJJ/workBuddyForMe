@@ -70,7 +70,7 @@ export function ToolDebugPanel() {
   return (
     <section className="space-y-3 rounded-lg border bg-card p-4">
       <div>
-        <h2 className="text-lg font-semibold">{t('toolDebug.title')}</h2>
+        <h2 className="text-base font-semibold">{t('toolDebug.title')}</h2>
         <p className="text-sm text-muted-foreground">
           {t('toolDebug.description')}
         </p>

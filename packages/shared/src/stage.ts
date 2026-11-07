@@ -27,6 +27,8 @@ export interface WbfmStageBridge {
   openMeeting(meetingId: string): Promise<boolean>;
   /** 舞台窗：关闭自己（幂等），协作/会议在主会话继续 */
   close(): Promise<void>;
+  /** 舞台窗：切换原生全屏（F11 走主进程，避免与浏览器 Fullscreen API 互相打架） */
+  toggleFullscreen(): Promise<boolean>;
   isOpen(): Promise<boolean>;
   /**
    * 舞台窗：截一张当前无 UI 的全屏图：主进程先隐藏窗口内 UI 层（经事件要求），

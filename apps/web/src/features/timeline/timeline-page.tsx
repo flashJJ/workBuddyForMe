@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/simple-select';
-import { PageHeader } from '@/components/layout/page-header';
+import { PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -79,34 +79,38 @@ export function TimelinePage() {
   const items = timeline.data?.items ?? [];
 
   return (
-    <div className="space-y-4 p-4" data-testid="timeline-page">
-      <PageHeader
-        title={t('timeline.title')}
-        description={t('timeline.description')}
-        actions={
-          <div className="flex items-center gap-2">
-            {scope === 'chat' && scopeId ? (
-              <Button variant={showGraph ? 'default' : 'outline'} size="sm" onClick={() => setShowGraph((v) => !v)}>
-                {t('runGraph.title')}
+    <PageShell
+      data-testid="timeline-page"
+      bodyClassName="space-y-4"
+      header={
+        <PageHeader
+          title={t('timeline.title')}
+          description={t('timeline.description')}
+          actions={
+            <div className="flex items-center gap-2">
+              {scope === 'chat' && scopeId ? (
+                <Button variant={showGraph ? 'default' : 'outline'} size="sm" onClick={() => setShowGraph((v) => !v)}>
+                  {t('runGraph.title')}
+                </Button>
+              ) : null}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!scope || !scopeId}
+                onClick={() => {
+                  if (!scope || !scopeId) return;
+                  void downloadApiFile(API.exportSession(scope, scopeId), 'session-export.zip').catch(
+                    () => toast.error(t('toast.exportFailed')),
+                  );
+                }}
+              >
+                {t('timeline.export')}
               </Button>
-            ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!scope || !scopeId}
-              onClick={() => {
-                if (!scope || !scopeId) return;
-                void downloadApiFile(API.exportSession(scope, scopeId), 'session-export.zip').catch(
-                  () => toast.error(t('toast.exportFailed')),
-                );
-              }}
-            >
-              {t('timeline.export')}
-            </Button>
-          </div>
-        }
-      />
-
+            </div>
+          }
+        />
+      }
+    >
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-36">
           <SimpleSelect
@@ -203,7 +207,7 @@ export function TimelinePage() {
                     <summary className="cursor-pointer text-xs text-muted-foreground">
                       {t('timeline.detail')}
                     </summary>
-                    <pre className="mt-1 max-h-64 overflow-auto rounded bg-muted p-2 text-[10px]">
+                    <pre className="mt-1 max-h-64 overflow-auto rounded-md bg-muted p-2 text-[10px]">
                       {JSON.stringify(item.payload, null, 2)}
                     </pre>
                   </details>
@@ -215,6 +219,6 @@ export function TimelinePage() {
       ) : (
         <EmptyState title={t('timeline.searchHint')} />
       )}
-    </div>
+    </PageShell>
   );
 }

@@ -41,7 +41,7 @@ import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
 import { createCompileRunnerService, createKnowledgeGovernanceService, ensureStarterKnowledgeBases } from '@wbfm/core/knowledge';
-import { createMcpRegistry } from '@wbfm/core/mcp';
+import { createMcpOAuthService, createMcpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService } from '@wbfm/core/memory';
 import { createSchedulesService } from '@wbfm/core/scheduler';
 import {
@@ -90,19 +90,18 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // v2.8：进程启动即收敛上次残留的非终态运行，避免幽灵 running/queued
   const recovered = recoverInterruptedRunJobs(db);
   if (recovered.tasks > 0 || recovered.agents > 0) {
-    console.info(
-      `[recovery] 已收敛中断运行：任务 ${recovered.tasks} 个，协作 ${recovered.agents} 个`,
-    );
+    console.info(`[recovery] 已收敛中断运行：任务 ${recovered.tasks} 个，协作 ${recovered.agents} 个`);
   }
   const ownerId = `web-${process.pid}-${Date.now()}`;
-  const mcp = createMcpRegistry(db);
+  const mcpOAuth = createMcpOAuthService({ db, cipher });
+  const mcp = createMcpRegistry(db, { oauth: mcpOAuth });
   const permissions = createPermissionService({ db, cipher });
   const confirmations = createPendingConfirmations();
   const approvals = createApprovalRegistry();
   const skills = createSkillService({ db });
   const breakers = createToolBreaker();
   const taskGrants = createTaskGrantRegistry();
-  const search = createSearchService({ db });
+  const search = createSearchService({ db, cipher });
   const deps: ServiceDeps = { db, cipher, search, mcp, permissions, confirmations, approvals, skills, breakers, taskGrants };
   const attachments = createAttachmentService(deps);
   deps.artifacts = attachments;
@@ -224,6 +223,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     db,
     cipher,
     mcp,
+    mcpOAuth,
     permissions,
     confirmations,
     approvals,

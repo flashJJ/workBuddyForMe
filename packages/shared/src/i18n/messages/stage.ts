@@ -1,6 +1,11 @@
 /** v1.9 舞台 zh-CN 词条 */
 export const zhStage = {
   title: '会议舞台',
+  modeTitle: {
+    mock: '演示舞台',
+    run: '协作舞台',
+    meeting: '会议舞台',
+  },
   panel: {
     demo: '演示',
     scene: '场景',
@@ -56,6 +61,8 @@ export const zhStage = {
     live: '全 Live2D（高性能）',
     portrait: '省电档（仅发言者 Live2D）',
     degraded: '检测到持续卡顿，已自动切换省电档',
+    autoDegraded: '帧率偏低，已自动切换省电档',
+    restore: '恢复全量',
   },
   scene: {
     save: '保存场景',

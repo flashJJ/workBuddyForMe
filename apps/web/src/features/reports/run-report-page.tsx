@@ -6,6 +6,7 @@ import type { ReportWidgetValue, RunEvidenceChain, RunEvidenceQuery } from '@wbf
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/simple-select';
+import { PageHeader, PageShell } from '@/components/layout/page-header';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { withManagedHeaders } from '@/lib/api/client';
@@ -66,12 +67,13 @@ export function RunReportPage() {
   const median = formatDurationMs(totals?.medianDurationMs) ?? t('reports.noSamples');
 
   return (
-    <div className="h-full overflow-auto px-6 py-4" data-testid="run-report-page">
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold">{t('reports.title')}</h1>
-        <p className="mt-1 text-xs text-muted-foreground">{t('reports.description')}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">{t('reports.timeHint')}</p>
-      </div>
+    <PageShell
+      data-testid="run-report-page"
+      header={
+        <PageHeader title={t('reports.title')} description={t('reports.description')} />
+      }
+    >
+      <p className="mb-4 text-[11px] text-muted-foreground">{t('reports.timeHint')}</p>
 
       <div className="mb-4 flex flex-wrap items-end gap-2">
         <Input
@@ -160,7 +162,7 @@ export function RunReportPage() {
           {data.totals.total === 0 ? (
             <EmptyState title={t('reports.empty')} description="" />
           ) : (
-            <div className="overflow-hidden rounded-md border">
+            <div className="overflow-hidden rounded-lg border">
               <table className="w-full text-sm" data-testid="run-report-table">
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
@@ -217,13 +219,13 @@ export function RunReportPage() {
           </div>
         </div>
       ) : null}
-    </div>
+    </PageShell>
   );
 }
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border bg-card p-3">
+    <div className="rounded-lg border bg-card p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold">{value}</p>
     </div>
