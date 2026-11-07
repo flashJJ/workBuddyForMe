@@ -58,7 +58,9 @@ jobs:
       - name: 单元测试（Windows 份，顺带验证原生依赖）
         # 慢机并行跑 8 个包的 vitest 会互相抢 CPU，导致与断言无关的超时误报；
         # 并发压到 2，配合各包 testTimeout=20s，优先保证结果可信。
-        run: pnpm test:unit -- --concurrency=2
+        # 注意：不能再写成 `-- --concurrency=2`，pnpm 会把 `--` 之后的参数透传给
+        # turbo 的任务命令，vitest 收到自己不识别的 --concurrency 会直接 CACError 退出。
+        run: pnpm test:unit --concurrency=2
 
       - name: 构建 Web standalone
         run: pnpm build:web
