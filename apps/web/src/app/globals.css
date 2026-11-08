@@ -634,6 +634,15 @@
   }
 }
 
+/* ── v2.27 正文角标定位后的来源高亮 ── */
+.citation-flash {
+  background-color: hsl(var(--primary) / 0.08);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.35);
+  transition:
+    background-color var(--motion-base) var(--ease-out-quint),
+    box-shadow var(--motion-base) var(--ease-out-quint);
+}
+
 .hljs-comment,
 .hljs-quote {
   color: hsl(var(--code-comment));

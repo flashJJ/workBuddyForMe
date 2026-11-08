@@ -8,6 +8,8 @@ import { Check, Copy } from 'lucide-react';
 import { copyText } from '@/lib/utils/clipboard';
 import { useI18nOptional } from '@/lib/i18n/i18n-context';
 import { MARKDOWN_BLOCK_THRESHOLD, splitMarkdownBlocks } from './markdown-blocks';
+import { CitationRef } from './citation/citation-ref';
+import { linkifyCitationMarkers } from './citation/citation-markers';
 
 const REMARK_PLUGINS = [remarkGfm];
 const REHYPE_PLUGINS = [rehypeHighlight];
@@ -80,13 +82,38 @@ const MARKDOWN_COMPONENTS: Components = {
   pre: CodeBlock,
 };
 
+/** v2.27：带引用角标的组件表——#citation-n 链接替换为可点击角标 */
+function withCitationComponents(indexes: ReadonlySet<number>): Components {
+  return {
+    ...MARKDOWN_COMPONENTS,
+    a: ({ href, children, ...props }) => {
+      const match = /^#citation-(\d{1,3})$/.exec(href ?? '');
+      if (!match) {
+        return (
+          <a {...props} href={href} target="_blank" rel="noreferrer noopener">
+            {children}
+          </a>
+        );
+      }
+      const index = Number(match[1]);
+      return <CitationRef index={index} available={indexes.has(index)} />;
+    },
+  };
+}
+
 /** 单块渲染：块文本不变时整块跳过重解析（流式期间仅最后一块变化） */
-const MarkdownBlock = React.memo(function MarkdownBlock({ text }: { text: string }) {
+const MarkdownBlock = React.memo(function MarkdownBlock({
+  text,
+  components,
+}: {
+  text: string;
+  components: Components;
+}) {
   return (
     <ReactMarkdown
       remarkPlugins={REMARK_PLUGINS}
       rehypePlugins={REHYPE_PLUGINS}
-      components={MARKDOWN_COMPONENTS}
+      components={components}
     >
       {text}
     </ReactMarkdown>
@@ -96,14 +123,29 @@ const MarkdownBlock = React.memo(function MarkdownBlock({ text }: { text: string
 /**
  * 助手消息 Markdown 渲染：GFM 表格/任务列表 + 代码高亮。
  * v2.4 M5 / P1-4：长回复按标题切块并逐块 memo，流式增量只重解析末尾块。
+ * v2.27：传入 citations 时把正文 `[n]` 渲染为可点击角标（仅在消息完成后启用）。
  */
-export const MarkdownContent = React.memo(function MarkdownContent({ content }: { content: string }) {
+export const MarkdownContent = React.memo(function MarkdownContent({
+  content,
+  citations,
+}: {
+  content: string;
+  citations?: ReadonlySet<number>;
+}) {
+  const prepared = React.useMemo(
+    () => (citations ? linkifyCitationMarkers(content) : content),
+    [content, citations],
+  );
+  const components = React.useMemo(
+    () => (citations ? withCitationComponents(citations) : MARKDOWN_COMPONENTS),
+    [citations],
+  );
   const blocks = React.useMemo(
     () =>
       content.length >= MARKDOWN_BLOCK_THRESHOLD
-        ? splitMarkdownBlocks(content)
-        : [content],
-    [content],
+        ? splitMarkdownBlocks(prepared)
+        : [prepared],
+    [content.length, prepared],
   );
   return (
     <div
@@ -112,7 +154,7 @@ export const MarkdownContent = React.memo(function MarkdownContent({ content }: 
       data-block-count={blocks.length}
     >
       {blocks.map((block, index) => (
-        <MarkdownBlock key={index} text={block} />
+        <MarkdownBlock key={index} text={block} components={components} />
       ))}
     </div>
   );

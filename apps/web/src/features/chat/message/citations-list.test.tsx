@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Citation, Message } from '@wbfm/shared/types';
 import { renderWithProviders } from '@/test/render';
@@ -97,7 +97,54 @@ describe('CitationsList 引用来源折叠（v1.5）', () => {
     expect(screen.getByText('[3]')).toBeInTheDocument();
     // 第二条无 citeIndex：按列表位置兜底为 2（而非 ordinal 0）
     expect(screen.getByText('[2]')).toBeInTheDocument();
-    expect(container.querySelector('#citation-3')).not.toBeNull();
+    expect(container.querySelector('[data-cite-index="3"]')).not.toBeNull();
+  });
+
+  it('v2.27：文档与网页来源分组展示', () => {
+    const base = messageWith(1);
+    renderWithProviders(
+      <CitationsList
+        message={{
+          ...base,
+          citations: [
+            { ...cite(0, '手册.pdf'), citeIndex: 1 },
+            { ...cite(0, 'example.com'), citeIndex: 2, sourceUrl: 'https://example.com/a' },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByTestId('citation-group-document')).toHaveTextContent('文档来源');
+    expect(screen.getByTestId('citation-group-web')).toHaveTextContent('网页来源');
+    expect(screen.getAllByTestId('citations-list')).toHaveLength(2);
+  });
+
+  it('v2.27：角标事件先展开折叠列表，再滚动高亮目标来源', () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: scrollIntoView,
+      configurable: true,
+      writable: true,
+    });
+    const { container } = renderWithProviders(
+      <div data-message-id="m1">
+        <CitationsList message={messageWith(6)} />
+      </div>,
+    );
+    // 默认折叠：目标来源不在 DOM
+    expect(container.querySelector('[data-cite-index="4"]')).toBeNull();
+
+    const root = container.querySelector('[data-message-id="m1"]')!;
+    act(() => {
+      root.dispatchEvent(
+        new CustomEvent('wbfm:citation-focus', { detail: { index: 4 }, bubbles: true }),
+      );
+    });
+
+    const target = container.querySelector('[data-cite-index="4"]')!;
+    expect(target).not.toBeNull();
+    expect(target.className).toContain('citation-flash');
+    expect(scrollIntoView).toHaveBeenCalled();
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
   });
 
   it('v2.19：展示章节路径与表格行定位', () => {

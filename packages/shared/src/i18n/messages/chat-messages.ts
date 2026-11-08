@@ -18,10 +18,16 @@ export const zhChatMessages = {
   resend: '重新发送',
   editAndResend: '编辑并重发',
   citations: '引用来源',
-  /** v1.5：引用超过折叠阈值时标题条（默认折叠，不挤占正文） */
-  citationsCollapsed: '引用来源 · {count} 条',
+  /** v1.5：引用超过折叠阈值时标题条（默认折叠，不挤占正文）；v2.27 追加文档/网页分组计数 */
+  citationsCollapsed: '引用来源 · {count} 条（文档 {doc} / 网页 {web}）',
   citationsExpand: '展开',
   citationsCollapse: '收起',
+  /** v2.27：来源卡按文档/网页分组标题 */
+  citationGroupDocuments: '文档来源 · {count}',
+  citationGroupWeb: '网页来源 · {count}',
+  /** v2.27：正文行内角标与不可用降级提示 */
+  citationRef: '查看来源 {index}',
+  citationUnavailable: '引用不可用',
   feedback: {
     helpful: '有帮助',
     notHelpful: '没帮助',
@@ -60,9 +66,13 @@ export const enChatMessages = {
   resend: 'Send again',
   editAndResend: 'Edit and resend',
   citations: 'Sources',
-  citationsCollapsed: 'Sources · {count}',
+  citationsCollapsed: 'Sources · {count} (docs {doc} / web {web})',
   citationsExpand: 'Show',
   citationsCollapse: 'Hide',
+  citationGroupDocuments: 'Documents · {count}',
+  citationGroupWeb: 'Web · {count}',
+  citationRef: 'View source {index}',
+  citationUnavailable: 'Citation unavailable',
   feedback: {
     helpful: 'Helpful',
     notHelpful: 'Not helpful',

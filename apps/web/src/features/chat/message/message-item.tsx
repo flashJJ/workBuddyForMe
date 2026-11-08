@@ -149,6 +149,12 @@ export function MessageItem({
   const displayContent = isUser
     ? message.content
     : stripEmotionSignalBlock(stripExpressionDirectives(message.content));
+  // v2.27：正文角标只在已完成消息上启用，流式期间保持原文避免半截标记闪烁
+  const citationIndexes = React.useMemo(
+    () => new Set(message.citations.map((citation, index) => citation.citeIndex ?? index + 1)),
+    [message.citations],
+  );
+  const canCite = !isUser && message.status === 'completed';
 
   return (
     <div
@@ -200,7 +206,7 @@ export function MessageItem({
         {isUser ? (
           <UserBody message={message} onResend={onResend} disabled={disabled} />
         ) : (
-          <MarkdownContent content={displayContent} />
+          <MarkdownContent content={displayContent} citations={canCite ? citationIndexes : undefined} />
         )}
 
         {!isUser && message.status === 'streaming' && streamTiming && (
