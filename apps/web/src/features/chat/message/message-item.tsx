@@ -14,6 +14,7 @@ import { AttachmentImage } from './attachment-image';
 import { CitationsList } from './citations-list';
 import { MarkdownContent } from './markdown';
 import { MessageActions } from './message-actions';
+import { TurnSummary } from './turn-summary/turn-summary';
 import { FirstTokenMetric, StreamingProgress } from '../page/streaming-progress';
 import type { StreamTiming } from '../types/chat-session.types';
 import { ToolTrace } from '../overlay/tool-trace';
@@ -149,6 +150,17 @@ export function MessageItem({
   const displayContent = isUser
     ? message.content
     : stripEmotionSignalBlock(stripExpressionDirectives(message.content));
+  // v2.27：正文角标只在已完成消息上启用，流式期间保持原文避免半截标记闪烁
+  const citationIndexes = React.useMemo(
+    () => new Set(message.citations.map((citation, index) => citation.citeIndex ?? index + 1)),
+    [message.citations],
+  );
+  const canCite = !isUser && message.status === 'completed';
+  // v2.27：有工具或引用的回合用运行摘要替代纯 token 行
+  const hasTurnSummary =
+    !isUser &&
+    message.status === 'completed' &&
+    (message.toolTrace.length > 0 || message.citations.length > 0);
 
   return (
     <div
@@ -200,7 +212,7 @@ export function MessageItem({
         {isUser ? (
           <UserBody message={message} onResend={onResend} disabled={disabled} />
         ) : (
-          <MarkdownContent content={displayContent} />
+          <MarkdownContent content={displayContent} citations={canCite ? citationIndexes : undefined} />
         )}
 
         {!isUser && message.status === 'streaming' && streamTiming && (
@@ -238,22 +250,26 @@ export function MessageItem({
           />
         )}
         <CitationsList message={message} />
-        {/* v2.23：本轮 token 用量（悬停看输入/输出拆分） */}
-        {!isUser && message.status === 'completed' && (message.totalTokens ?? 0) > 0 && (
-          <p
-            className="text-[11px] text-muted-foreground/70"
-            data-testid="message-token-usage"
-            title={t('chatMessages.turnTokensDetail', {
-              prompt: message.promptTokens ?? 0,
-              completion: message.completionTokens ?? 0,
-              total: message.totalTokens ?? 0,
-            })}
-          >
-            {t('chatMessages.turnTokens', {
-              count: (message.totalTokens ?? 0).toLocaleString(),
-            })}
-          </p>
-        )}
+        {hasTurnSummary && <TurnSummary message={message} />}
+        {/* v2.23：本轮 token 用量（悬停看输入/输出拆分）；有工具/引用时并入摘要 */}
+        {!hasTurnSummary &&
+          !isUser &&
+          message.status === 'completed' &&
+          (message.totalTokens ?? 0) > 0 && (
+            <p
+              className="text-[11px] text-muted-foreground/70"
+              data-testid="message-token-usage"
+              title={t('chatMessages.turnTokensDetail', {
+                prompt: message.promptTokens ?? 0,
+                completion: message.completionTokens ?? 0,
+                total: message.totalTokens ?? 0,
+              })}
+            >
+              {t('chatMessages.turnTokens', {
+                count: (message.totalTokens ?? 0).toLocaleString(),
+              })}
+            </p>
+          )}
       </div>
       {conversationId && branchOpen && (
         <MessageBranchDialog

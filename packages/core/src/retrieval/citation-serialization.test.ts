@@ -25,12 +25,23 @@ describe('toCitations 坐标与静态层透传', () => {
       documentId: 'd1',
       documentName: 'spec.pdf',
       ordinal: 0,
+      citeIndex: 1,
       pageNo: 2,
       paragraphNo: 5,
       charStart: 100,
       charEnd: 180,
       staticKind: 'chunk',
     });
+  });
+
+  it('v2.27：citeIndex 从 1 连续，ordinal 保留文档内片段序号', () => {
+    const citations = toCitations([
+      { documentId: 'd1', documentName: 'a.pdf', content: 'x', ordinal: 5 },
+      { documentId: 'd2', documentName: 'b.txt', content: 'y' },
+    ]);
+    expect(citations.map((c) => c.citeIndex)).toEqual([1, 2]);
+    // 未提供 ordinal 的旧调用面回落列表位置
+    expect(citations.map((c) => c.ordinal)).toEqual([5, 1]);
   });
 
   it('静态实体条目：staticKind=entity，无字符区间则缺省该两键，页段仍保留', () => {

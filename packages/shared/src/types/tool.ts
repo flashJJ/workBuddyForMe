@@ -151,6 +151,8 @@ export interface ToolTraceEntry {
   artifacts?: ArtifactRef[];
   /** v2.18 M5：出处/覆盖/未覆盖（tool-trace 与分享导出展示） */
   evidence?: ToolEvidence;
+  /** v2.27：同一目标连续失败达上限后已降级（目前仅 fetch_webpage 使用） */
+  degraded?: boolean;
 }
 
 /** SSE tool 事件载荷：start / substep（v0.8 流式子步骤）/ end 三阶段 */
@@ -184,4 +186,6 @@ export type ToolEventPayload =
       artifacts?: ArtifactRef[];
       /** v2.18 M5：证据元数据（历史消息与实时流一致） */
       evidence?: ToolEvidence;
+      /** v2.27：本次结果已降级（同 URL 连续抓取失败后不再重试） */
+      degraded?: boolean;
     };

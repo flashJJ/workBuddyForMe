@@ -123,6 +123,7 @@ export function createRagRetriever(deps: ServiceDeps): RagRetriever {
           documentId: entry.documentId!,
           documentName: entry.documentName,
           content: entry.content,
+          ordinal: entry.ordinal,
           sourceUrl: entry.sourceUrl ?? null,
           pageNo: entry.pageNo ?? null,
           paragraphNo: entry.paragraphNo ?? null,

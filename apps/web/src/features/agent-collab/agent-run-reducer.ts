@@ -9,6 +9,7 @@ import type {
   AgentRunStatus,
   AgentRunView,
   ExecutorOutcome,
+  ReviewVerdict,
   ReviewVerdictPayload,
   SubtaskSpec,
 } from '@wbfm/shared/schemas';
@@ -40,9 +41,25 @@ export interface AgentRoundState {
 
 export type AgentCardStatus = AgentRunStatus | 'connecting';
 
+/** v2.27：一条角色交接（谁交给谁、时间、结论摘要），用于卡片内泳道时间线 */
+export interface AgentHandoffEntry {
+  round: number;
+  seq: number;
+  from: AgentRole;
+  to: AgentRole | 'user';
+  /** 服务端交接时间（ISO）；用于相邻交接计算耗时 */
+  at: string;
+  kind: 'subtask' | 'outcome' | 'verdict';
+  /** 子任务标题 / 交付摘要 / 审查意见 */
+  summary: string;
+  verdict?: ReviewVerdict;
+}
+
 export interface AgentCardState {
   status: AgentCardStatus;
   rounds: AgentRoundState[];
+  /** v2.27：交接时间线（按服务端 seq 追加，重放去重） */
+  handoffs: AgentHandoffEntry[];
   activeRole: AgentRole | null;
   activePhase: AgentPhase | null;
   usage: AgentBudgetUsage | null;
@@ -64,6 +81,7 @@ export function initAgentCard(budget: AgentBudget): AgentCardState {
   return {
     status: 'connecting',
     rounds: [],
+    handoffs: [],
     activeRole: null,
     activePhase: null,
     usage: null,
@@ -95,6 +113,26 @@ function patchRound(
   return next;
 }
 
+/** v2.27：交接视图裁剪为泳道时间线所需字段（结论摘要按载荷类型取） */
+function toHandoffEntry(handoff: AgentHandoffView): AgentHandoffEntry {
+  const p = handoff.payload;
+  const base = {
+    round: handoff.roundNo,
+    seq: handoff.seq,
+    from: handoff.fromRole,
+    to: handoff.toRole,
+    at: handoff.createdAt,
+  };
+  if (p.subtask) return { ...base, kind: 'subtask', summary: p.subtask.title };
+  if (p.outcome) return { ...base, kind: 'outcome', summary: p.outcome.summary };
+  return {
+    ...base,
+    kind: 'verdict',
+    summary: p.reviewNotes ?? '',
+    ...(p.verdict ? { verdict: p.verdict } : {}),
+  };
+}
+
 function applyHandoff(state: AgentCardState, handoff: AgentHandoffView): AgentCardState {
   const r = handoff.roundNo;
   const p = handoff.payload;
@@ -114,7 +152,15 @@ function applyHandoff(state: AgentCardState, handoff: AgentHandoffView): AgentCa
     };
     rounds = patchRound(rounds, r, { review });
   }
-  return { ...state, rounds };
+  const entry = toHandoffEntry(handoff);
+  const duplicated = state.handoffs.some(
+    (item) => item.round === entry.round && item.seq === entry.seq,
+  );
+  return {
+    ...state,
+    rounds,
+    handoffs: duplicated ? state.handoffs : [...state.handoffs, entry],
+  };
 }
 
 /** 终态权威视图合并（done 后 GET /api/agent/runs/:id 对账） */

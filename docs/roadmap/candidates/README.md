@@ -14,6 +14,13 @@
 
 ## 当前候选
 
-暂无未排期候选。Lancer 借鉴分析已排期并归档为 [v2.20-01](../scheduled/v2.20-01-lancer-borrowing-analysis.md)，拆分到 [v2.20 方案](../../plan/v2.20/README.md)（P0+P1）与 [v2.21 方案](../../plan/v2.21/README.md)（P2）；自由分支的来源方案见 [v2.21-01](../scheduled/v2.21-01-free-branch-sessions.md)。
+| 编号 | 主题 | 来源 | 价值 | 成本 |
+|---|---|---|---|---|
+| [01](01-memory-graph-and-consolidation.md) | 记忆图关系边与空闲整理 | v2.26 局限 | 中高 | 高 |
+| [02](02-memory-observability-and-governance.md) | 记忆可观测与治理收口 | v2.26 局限 · v2.15 边界 | 中 | 中 |
+| [03](03-capability-and-content-pack-completion.md) | 能力生态与内容包收口 | v2.17 / v2.18 已知边界 | 中 | 中 |
+| [04](04-document-quality.md) | 文档质量收口（存量重解析 / OCR / 关系抽取） | v2.19 已知边界 | 中高 | 中高 |
+
+v2.27 已立项为「引用角标、来源定位与回合运行摘要」，来源方案见 [v2.27-01](../scheduled/v2.27-01-citation-and-turn-summary.md)。Lancer 借鉴分析已排期并归档为 [v2.20-01](../scheduled/v2.20-01-lancer-borrowing-analysis.md)，拆分到 [v2.20 方案](../../plan/v2.20/README.md)（P0+P1）与 [v2.21 方案](../../plan/v2.21/README.md)（P2）；自由分支的来源方案见 [v2.21-01](../scheduled/v2.21-01-free-branch-sessions.md)。
 
 v2.17 的两个来源方案已归档到 [scheduled/](../scheduled/)。v2.18 的五个开源借鉴项已在 [能力借鉴分析](../../plan/v2.18/00-能力借鉴分析.md) 中逐项定级：Diagram Design / HowToLiveBetter 已纳入方案；REA / Moli 仅借思路；ArtCraft 不移植，暂不单独建候选。

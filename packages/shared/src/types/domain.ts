@@ -104,7 +104,10 @@ export interface Conversation extends Timestamped {
 export interface Citation {
   documentId: string;
   documentName: string;
+  /** 文档内片段序号（从 0，仅定位用；网页结果无分片固定 0） */
   ordinal: number;
+  /** v2.27：展示编号（从 1 连续唯一，与资料块 [n] 对应；旧消息缺省时前端按位置兜底） */
+  citeIndex?: number;
   snippet?: string;
   /** v0.3：网页剪藏来源；存在时引用角标可悬停看 URL、点击新开原文 */
   sourceUrl?: string | null;
@@ -227,10 +230,7 @@ export interface AppSettings
   compileModelId?: string | null;
   /** v1.6：情绪/关系内核总开关（缺省视为 true；与助手 expressionEnabled 同时为真才生效） */
   emotionEnabled?: boolean;
-  /**
-   * v2.0：关系等级养成开关（缺省视为 true）。
-   * 关闭后等级演算/每日检查点/等级展示与解锁全部冻结；不影响 intimacy/trust 原始分。
-   */
+  /** v2.0：关系等级养成开关（缺省 true）；关闭后等级演算/检查点/展示与解锁冻结，不影响 intimacy/trust 原始分 */
   relationshipEnabled?: boolean;
   /**
    * v1.6 M5：互动本地短句开关（缺省视为 true）。

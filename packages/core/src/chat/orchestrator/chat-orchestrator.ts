@@ -14,7 +14,7 @@ import { createProactiveTurn, type StreamProactiveInput } from '../turns/proacti
 import { tryReminderTurn } from '../turns/reminder-turn';
 import { createEmotionGate } from '../turns/emotion-gate';
 import type { OrchestratorEvent, StreamChatInput } from '../base/types';
-import { normalizeFailure } from './orchestrator-helpers';
+import { createFetchDegradeTracker, normalizeFailure } from './orchestrator-helpers';
 import { synthesizeFinalAnswer } from './round-synthesis';
 import { createToolRuntime } from '../../tools/tool-runtime';
 import { createMemoryService } from '../../memory/memory-service';
@@ -143,8 +143,8 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace } =
           prepared;
         let citations = prepared.citations;
+        const fetchDegrade = createFetchDegradeTracker();
         const emotionEnabled = prepared.emotionEnabled;
-
         try {
           for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
             // 手动迭代：delta 直接累积到 full，保证中途 abort 也能保留已产出片段
@@ -191,6 +191,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               outgoing,
               citations,
               toolMessageBudgetTokens,
+              fetchFailures: fetchDegrade.failures,
               signal: input.signal,
               onAbort: () => {
                 conversations.stopMessage(
@@ -201,6 +202,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               },
             });
             citations = loopOutcome.citations;
+            fetchDegrade.record(loopOutcome.degradedFetchUrls, outgoing);
             if (loopOutcome.aborted) {
               const abortedContent = emotionEnabled ? stripEmotionSignalBlock(full) : full;
               yield { event: 'done', data: { content: abortedContent, usage } };
@@ -231,8 +233,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           return;
         }
 
-        // v1.6：成功回合的情绪解析——尾块剥离（落库/气泡/TTS 均不含协议块）、
-        // 弱模型规则保底、写入情绪状态与事件流水。任何异常都不得影响已完成的正文。
+        // v1.6：成功回合的情绪解析（尾块剥离/弱模型保底/写状态与流水），异常不影响正文
         const recordedEmotion = recordTurnEmotion({
           enabled: emotionEnabled,
           rawContent: full,

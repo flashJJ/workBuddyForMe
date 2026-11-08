@@ -123,6 +123,15 @@ export function ToolTraceDetail({ entry, failed }: { entry: ToolTraceEntry; fail
               {t('toolTrace.actions.checkSearch')}
             </a>
           )}
+          {/* v2.27：抓取失败只提供网络/代理排查，不再引导重复请求同一 URL */}
+          {entry.tool === 'fetch_webpage' && (
+            <span className="text-muted-foreground">{t('toolTrace.actions.checkNetwork')}</span>
+          )}
+          {entry.degraded && (
+            <span className="text-warning" data-testid="tool-trace-degraded">
+              {t('toolTrace.degraded')}
+            </span>
+          )}
         </div>
       )}
     </dl>

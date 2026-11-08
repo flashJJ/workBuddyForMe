@@ -11,6 +11,11 @@ export const enAgents = {
     planner: 'Planner',
     executor: 'Executor',
     reviewer: 'Reviewer',
+    user: 'User',
+  },
+  handoff: {
+    title: 'Handoffs',
+    durationTitle: 'Since last handoff: {duration}',
   },
   phase: {
     planning: 'Planning',

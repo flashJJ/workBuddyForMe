@@ -99,6 +99,34 @@ describe('消息项 MessageItem（TR-27.1）', () => {
     expect(screen.getByText('current_time')).toBeInTheDocument();
   });
 
+  it('v2.27：已完成消息正文的 [n] 渲染为可点击角标，缺失来源降级为纯文本', () => {
+    const citation = { documentId: 'd1', documentName: '手册.pdf', ordinal: 0, citeIndex: 1 };
+    renderWithProviders(
+      <MessageItem
+        message={makeMessage({ content: '结论见[1]，另见[9]', citations: [citation] })}
+        assistantName="通用助手"
+      />,
+    );
+    expect(screen.getByTestId('citation-ref')).toHaveTextContent('[1]');
+    // [9] 没有对应来源：保留原文并提示不可用
+    expect(screen.getByTestId('citation-ref-unavailable')).toHaveTextContent('[9]');
+  });
+
+  it('v2.27：流式消息不解析角标，保持原文', () => {
+    renderWithProviders(
+      <MessageItem
+        message={makeMessage({
+          content: '结论见[1]',
+          status: 'streaming',
+          citations: [{ documentId: 'd1', documentName: '手册.pdf', ordinal: 0, citeIndex: 1 }],
+        })}
+        assistantName="通用助手"
+      />,
+    );
+    expect(screen.queryByTestId('citation-ref')).toBeNull();
+    expect(screen.getByTestId('markdown-body')).toHaveTextContent('结论见[1]');
+  });
+
   it('渲染引用来源的序号、文档名与片段', () => {
     renderWithProviders(
       <MessageItem
