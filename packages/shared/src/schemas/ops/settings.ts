@@ -192,6 +192,10 @@ export const settingsUpdateSchema = z.object({
   agentPolicy: agentPolicySchema.optional(),
   // v2.17 联网搜索（缺省关闭；endpoint 在 core 读取时做 SSRF 校验）
   searchSettings: searchSettingsSchema.optional(),
+  // v2.28 记忆审计保留期（30/90/180 天或 0=永久；缺省 90）
+  memoryEventRetentionDays: z
+    .union([z.literal(0), z.literal(30), z.literal(90), z.literal(180)])
+    .optional(),
   // v2.21 分支四项上限（缺省由 core 读 BRANCH_LIMITS；范围见 BRANCH_LIMIT_RANGES）
   branchMaxConcurrent: z
     .number()

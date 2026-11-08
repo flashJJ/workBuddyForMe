@@ -22,3 +22,9 @@ export {
   type RecallCollectInput,
 } from './memory-recall';
 export { createMemoryStats, type MemoryStats } from './memory-stats';
+export {
+  readLastRollupAt,
+  runMemoryEventRollup,
+  type MemoryEventRollupOptions,
+  type MemoryEventRollupResult,
+} from './memory-event-rollup';

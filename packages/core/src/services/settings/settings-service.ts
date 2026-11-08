@@ -33,10 +33,13 @@ import type { ServiceDeps } from '../base/deps';
 import { disableDemoMode, enableDemoMode } from '../provider/demo-provider';
 import { recordMilestone } from '../base/milestones';
 import {
-  CONTEXT_MESSAGES_MAX,
-  CONTEXT_MESSAGES_MIN,
   DEFAULT_CONTEXT_MESSAGES,
+  MEMORY_EVENT_RETENTION_DEFAULT_DAYS,
 } from '@wbfm/shared/constants';
+import {
+  resolveContextMessageCount,
+  resolveMemoryEventRetentionDays,
+} from './settings-resolvers';
 
 const SETTINGS_KEY = 'app-settings';
 
@@ -85,6 +88,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   agentPolicy: DEFAULT_AGENT_POLICY,
   // v2.17：联网搜索默认关闭（P0 无 Key，用户显式选择 SearXNG 后启用）
   searchSettings: DEFAULT_SEARCH_SETTINGS,
+  // v2.28：记忆审计默认保留 90 天（0=永久，需用户显式选择）
+  memoryEventRetentionDays: MEMORY_EVENT_RETENTION_DEFAULT_DAYS,
 };
 
 /** 服务端钳制签名策略：手改 settings_kv 的非法值一律回落 warn */
@@ -111,14 +116,7 @@ export function resolveCapabilityTrustedKeys(value: unknown): CapabilityTrustedK
 }
 
 /** 服务端钳制上下文条数：settings_kv 可被手改/旧值污染，越界一律回落默认 */
-export function resolveContextMessageCount(value: number | undefined | null): number {
-  return typeof value === 'number' &&
-    Number.isInteger(value) &&
-    value >= CONTEXT_MESSAGES_MIN &&
-    value <= CONTEXT_MESSAGES_MAX
-    ? value
-    : DEFAULT_CONTEXT_MESSAGES;
-}
+export { resolveContextMessageCount, resolveMemoryEventRetentionDays } from './settings-resolvers';
 
 /** 全局追加仅在开关开且内容非空白时生效 */
 export function resolveGlobalAppendPrompt(settings: AppSettings): string | null {
@@ -222,6 +220,9 @@ export function createSettingsService({ db, audit }: ServiceDeps) {
       merged.capabilityTrustedKeys = resolveCapabilityTrustedKeys(merged.capabilityTrustedKeys);
       merged.agentPolicy = resolveAgentPolicy(merged.agentPolicy);
       merged.searchSettings = resolveSearchSettings(merged.searchSettings);
+      merged.memoryEventRetentionDays = resolveMemoryEventRetentionDays(
+        merged.memoryEventRetentionDays,
+      );
       return merged;
     },
 

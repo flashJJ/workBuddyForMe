@@ -144,4 +144,6 @@ export interface MemoryLifecycleStats {
   userCorrections: number;
   /** v2.28：最近 5 条审计（可选，旧客户端忽略） */
   recentEvents?: MemoryAuditEntry[];
+  /** v2.28：最近一次审计轮转时间（ISO；尚未轮转为 null） */
+  lastRollupAt?: string | null;
 }

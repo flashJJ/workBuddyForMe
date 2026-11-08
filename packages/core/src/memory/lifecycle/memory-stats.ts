@@ -10,6 +10,7 @@ import {
   type DatabaseInstance,
   type MemoryRepository,
 } from '@wbfm/database';
+import { readLastRollupAt } from './memory-event-rollup';
 
 /**
  * v2.26 P2 线上计数：
@@ -49,6 +50,7 @@ export function createMemoryStats(db: DatabaseInstance, repo: MemoryRepository) 
       zeroRecallRate: ratio(readCounter(MEMORY_RECALL_ZERO_META_KEY), recallTotal),
       userCorrections: repo.countUserCorrections(),
       recentEvents: events.listRecent(5),
+      lastRollupAt: readLastRollupAt(db),
     };
   }
 

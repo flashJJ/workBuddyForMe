@@ -278,8 +278,8 @@ export interface AppSettings
   workReduceMotion?: boolean;
   /** v2.7：待机节奏（缺省 standard；quiet/lively 调整桌宠休息间隔） */
   workIdlePacing?: 'quiet' | 'standard' | 'lively';
-  /** v2.17：联网搜索设置（缺省关闭；仅影响 web_search 工具） */
-  searchSettings?: SearchSettings;
+  /** v2.17：联网搜索（缺省关闭；仅影响 web_search 工具） */ searchSettings?: SearchSettings;
+  /** v2.28：记忆审计保留期（30/90/180；0=永久；缺省 90） */ memoryEventRetentionDays?: number;
 }
 /** v1.8 M4：音色收藏条目（形状随 settings 持久化） */
 export interface VoiceFavorite {

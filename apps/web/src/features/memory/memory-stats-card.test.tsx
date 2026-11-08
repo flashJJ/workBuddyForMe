@@ -33,9 +33,10 @@ const stats: MemoryLifecycleStats = {
     { id: 2, action: 'create', actor: 'user', createdAt: '2026-03-01T08:00:00.000Z' },
     { id: 1, action: 'supersede', actor: 'system', createdAt: '2026-02-28T08:00:00.000Z' },
   ],
+  lastRollupAt: '2026-03-02T08:00:00.000Z',
 };
 
-describe('记忆统计卡（v2.28 P0-M1）', () => {
+describe('记忆统计卡（v2.28 P0/P1）', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -44,8 +45,15 @@ describe('记忆统计卡（v2.28 P0-M1）', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  /** 统计请求走用例桩，设置请求固定返回可用的保留期（避免同一 Response 被重复消费） */
+  function mockStats(handler: () => Response) {
+    fetchMock.mockImplementation(async (url: string) =>
+      url === '/api/settings' ? ok({ memoryEventRetentionDays: 90 }) : handler(),
+    );
+  }
+
   it('展示后端口径：整数与百分比只格式化，最近审计带动作与操作者', async () => {
-    fetchMock.mockResolvedValue(ok(stats));
+    mockStats(() => ok(stats));
     renderWithProviders(<MemoryStatsCard />);
 
     expect(await screen.findByTestId('memory-stat-total')).toHaveTextContent('12');
@@ -62,10 +70,12 @@ describe('记忆统计卡（v2.28 P0-M1）', () => {
     expect(audit[0]).toHaveTextContent('用户');
     expect(audit[1]).toHaveTextContent('取代');
     expect(audit[1]).toHaveTextContent('系统');
+    expect(screen.getByTestId('memory-last-rollup')).toHaveTextContent('最近轮转');
+    expect(screen.getByRole('combobox', { name: '审计保留期' })).toBeInTheDocument();
   });
 
   it('空库显示 0 与 0%，无审计显示空状态', async () => {
-    fetchMock.mockResolvedValue(
+    mockStats(() =>
       ok({
         total: 0,
         active: 0,
@@ -76,6 +86,7 @@ describe('记忆统计卡（v2.28 P0-M1）', () => {
         zeroRecallRate: 0,
         userCorrections: 0,
         recentEvents: [],
+        lastRollupAt: null,
       }),
     );
     renderWithProviders(<MemoryStatsCard />);
@@ -84,10 +95,15 @@ describe('记忆统计卡（v2.28 P0-M1）', () => {
     expect(screen.getByTestId('memory-stat-supersededRatio')).toHaveTextContent('0%');
     expect(screen.getByTestId('memory-stat-zeroRecallRate')).toHaveTextContent('0%');
     expect(screen.getByText('暂无审计记录')).toBeInTheDocument();
+    expect(screen.getByTestId('memory-last-rollup')).toHaveTextContent('尚未轮转');
   });
 
   it('加载失败可重试', async () => {
-    fetchMock.mockResolvedValueOnce(failure()).mockResolvedValueOnce(ok(stats));
+    let attempts = 0;
+    mockStats(() => {
+      attempts += 1;
+      return attempts === 1 ? failure() : ok(stats);
+    });
     const user = userEvent.setup();
     renderWithProviders(<MemoryStatsCard />);
 

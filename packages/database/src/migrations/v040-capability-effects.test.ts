@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -7,7 +7,7 @@ describe('v040 迁移：能力包 effect 支撑', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(47);
+    expect(LATEST_SCHEMA_VERSION).toBe(48);
 
     const tables = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table'`)
@@ -37,8 +37,8 @@ describe('v040 迁移：能力包 effect 支撑', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([40, 41, 42, 43, 44, 45, 46, 47]);
-    expect(getSchemaVersion(db)).toBe(47);
+    expect(result.applied).toEqual([40, 41, 42, 43, 44, 45, 46, 47, 48]);
+    expect(getSchemaVersion(db)).toBe(48);
 
     const workflow = db
       .prepare('SELECT id, name, origin_capability_id FROM workflows WHERE id = ?')
