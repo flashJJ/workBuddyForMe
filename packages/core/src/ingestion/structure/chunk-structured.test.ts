@@ -66,6 +66,18 @@ describe('v2.19 M2 结构感知分块', () => {
     expect(body.content.startsWith('[合同 › 付款条款]')).toBe(true);
   });
 
+  it('低置信表格降级为普通文本：不写表号/行号，内容仍可检索', () => {
+    const parsed = parseTextDocument(tableDoc);
+    parsed.tables[0]!.confidence = 0.55;
+    const chunks = chunkDocument(parsed, { chunkSize: 120, chunkOverlap: 10 });
+    const tableChunk = chunks.find((chunk) => chunk.content.includes('| 首付 | 30% |'))!;
+    expect(tableChunk.blockKind).toBe('paragraph');
+    expect(tableChunk.tableNo).toBeNull();
+    expect(tableChunk.tableRowStart).toBeNull();
+    expect(tableChunk.tableRowEnd).toBeNull();
+    expect(tableChunk.sectionPath).toEqual(['合同', '付款条款']);
+  });
+
   it('普通分片坐标仍可回溯原文，分片拼接不丢段落', () => {
     const parsed = parseTextDocument(`第一段。\n\n第二段。\n\n第三段。`);
     const chunks = chunkDocument(parsed, { chunkSize: 50, chunkOverlap: 0 });

@@ -26,6 +26,8 @@ export const zhDocumentViewer = {
   tableRows: '{count} 行',
   tableNote: '行号按数据行从 1；单元格地址按 Excel 口径，表头占第 1 行',
   tableConfidence: '置信度 {value}%',
+  tableDegraded: '已降级为文本检索',
+  citationStale: '文档在引用生成后已重建，定位可能变化；请以引用片段为准。',
   figures: '图表/图片',
   noFigures: '未识别到图注或图表',
   figureUnavailable: '未配置视觉模型：可查看图注，但无法解读图表/图片；请在设置中选择支持图片理解（vision）的模型。',
@@ -73,6 +75,9 @@ export const enDocumentViewer = {
   tableRows: '{count} rows',
   tableNote: 'Rows start at 1 for data rows; cell addresses use Excel numbering with the header on row 1',
   tableConfidence: 'Confidence {value}%',
+  tableDegraded: 'Text-only fallback',
+  citationStale:
+    'The document was rebuilt after this citation was created, so its location may have shifted. Rely on the citation snippet.',
   figures: 'Figures / images',
   noFigures: 'No figure captions detected',
   figureUnavailable:

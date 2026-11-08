@@ -1,4 +1,5 @@
 import type { DocumentRecord } from '@wbfm/shared/types';
+import { LOW_CONFIDENCE_TABLE_THRESHOLD } from '@wbfm/shared/constants';
 import type { StoredDocumentBlock } from '@wbfm/database';
 import type { DocumentBlockKind, DocumentTable } from '../../../ingestion/structure';
 import { buildDocumentQualityFacts, type DocumentQualityFacts } from '../document-quality';
@@ -72,9 +73,9 @@ export function buildDocumentStructureView(input: {
       warnings.push('未检测到标题结构，章节路径为空');
     }
     for (const table of tables) {
-      if (table.confidence !== undefined && table.confidence < 0.75) {
+      if (table.confidence !== undefined && table.confidence < LOW_CONFIDENCE_TABLE_THRESHOLD) {
         warnings.push(
-          `表 ${table.tableNo} 置信度较低（${Math.round(table.confidence * 100)}%），表格结构可能不准确`,
+          `表 ${table.tableNo} 置信度较低（${Math.round(table.confidence * 100)}%），已降级为文本检索；表格结构可能不准确`,
         );
       }
       if (table.header.length === 0) {

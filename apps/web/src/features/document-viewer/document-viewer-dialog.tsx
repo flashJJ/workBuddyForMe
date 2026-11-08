@@ -78,6 +78,13 @@ export function DocumentViewerDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, documentId]);
 
+  const citationStale = React.useMemo(() => {
+    if (!focus?.citedAt || !data?.parsedAt) return false;
+    const cited = Date.parse(focus.citedAt);
+    const parsed = Date.parse(data.parsedAt);
+    return Number.isFinite(cited) && Number.isFinite(parsed) && parsed > cited;
+  }, [focus?.citedAt, data?.parsedAt]);
+
   const figures = React.useMemo(
     () =>
       (data?.blocks ?? [])
@@ -116,6 +123,15 @@ export function DocumentViewerDialog({
             data-testid="citation-focus"
           >
             {t('documentViewer.citationLocated')}：{citationText}
+          </p>
+        )}
+
+        {citationStale && (
+          <p
+            className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800"
+            data-testid="citation-stale"
+          >
+            {t('documentViewer.citationStale')}
           </p>
         )}
 

@@ -4,6 +4,8 @@ export interface DocumentViewerFocus {
   tableNo?: number;
   tableRow?: number;
   tableCell?: string;
+  /** v2.29：引用所在消息时间；文档在此之后重建则提示定位可能变化 */
+  citedAt?: string;
 }
 
 export interface DocumentViewerFigure {

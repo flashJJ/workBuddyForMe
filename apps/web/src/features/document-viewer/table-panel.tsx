@@ -60,6 +60,8 @@ function TableCard({ table, focus }: { table: Table; focus: DocumentViewerFocus 
             {t('documentViewer.tableConfidence', {
               value: String(Math.round(table.confidence * 100)),
             })}
+            {' · '}
+            {t('documentViewer.tableDegraded')}
           </span>
         )}
         <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">

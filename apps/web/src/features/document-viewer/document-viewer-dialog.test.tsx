@@ -140,11 +140,28 @@ describe('DocumentViewerDialog（v2.19 M4）', () => {
     expect(within(dialog).getByTestId('structure-blocks')).toHaveTextContent('图 1 付款比例趋势');
 
     expect(within(dialog).getByTestId('table-confidence')).toHaveTextContent('置信度 55%');
+    expect(within(dialog).getByTestId('table-confidence')).toHaveTextContent('已降级为文本检索');
     const targetedRow = within(dialog).getByTestId('table-row-1-2');
     expect(targetedRow).toHaveAttribute('data-targeted', 'true');
     const targetedCell = within(dialog).getByTestId('table-cell-B3');
     expect(targetedCell).toHaveTextContent('70%');
     expect(targetedCell).toHaveAttribute('data-cell', 'B3');
+  });
+
+  it('v2.29 引用早于文档重建：提示定位可能变化', async () => {
+    renderWithProviders(
+      <DocumentViewerDialog
+        documentId="d1"
+        open
+        onOpenChange={() => undefined}
+        focus={{
+          sectionPath: ['合同', '付款条款'],
+          tableNo: 1,
+          citedAt: '2026-10-01T00:00:00.000Z',
+        }}
+      />,
+    );
+    expect(await screen.findByTestId('citation-stale')).toHaveTextContent('定位可能变化');
   });
 
   it('未配置视觉模型：图注可见但明确提示不可解读', async () => {

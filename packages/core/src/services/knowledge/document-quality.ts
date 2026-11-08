@@ -1,8 +1,10 @@
-import { DOCUMENT_PARSE_VERSION, type OcrStatus } from '@wbfm/shared/constants';
+import {
+  DOCUMENT_PARSE_VERSION,
+  LOW_CONFIDENCE_TABLE_THRESHOLD,
+  type OcrStatus,
+} from '@wbfm/shared/constants';
 
 /** v2.29 P0：文档质量事实（只陈述可核实状态，不做评分） */
-
-export const LOW_CONFIDENCE_TABLE_THRESHOLD = 0.75;
 
 export type DocumentQualityFlag =
   | 'legacy-parse'

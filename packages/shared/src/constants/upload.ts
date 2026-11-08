@@ -3,6 +3,9 @@
 /** v2.29：文档解析器版本；解析成功写入 documents.parse_version，版本落后即待重建 */
 export const DOCUMENT_PARSE_VERSION = 1;
 
+/** v2.29：表格结构置信度低于此值时降级为普通文本分片，不再给出表号/行号引用 */
+export const LOW_CONFIDENCE_TABLE_THRESHOLD = 0.75;
+
 /** 上传限制 */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const ALLOWED_DOC_EXTENSIONS = [

@@ -212,6 +212,7 @@ export function CitationsList({ message }: { message: Message }) {
                 tableNo: viewer.tableNo,
                 tableRow: viewer.tableRow,
                 tableCell: viewer.tableCell,
+                citedAt: message.createdAt,
               }
             : null
         }

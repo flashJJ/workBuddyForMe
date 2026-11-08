@@ -1,3 +1,4 @@
+import { LOW_CONFIDENCE_TABLE_THRESHOLD } from '@wbfm/shared/constants';
 import { chunkText } from '../chunking';
 import type { ChunkOptions, ChunkSlice } from '../types';
 import { renderMarkdownTable } from './assembler';
@@ -39,14 +40,17 @@ function emitTableChunks(
   output: StructuredChunk[],
 ): void {
   const table = block.table!;
+  // v2.29：低置信表格只保留文本，不写表号/行号，避免回答给出看似精确的单元格引用
+  const degraded =
+    table.confidence !== undefined && table.confidence < LOW_CONFIDENCE_TABLE_THRESHOLD;
   const prefix = sectionPrefix(block.sectionPath);
   const withPrefix = (body: string) => (prefix ? `${prefix}\n\n${body}` : body);
   const base = {
     pageNo: block.pageNo,
     paragraphNo,
     sectionPath: block.sectionPath,
-    blockKind: 'table' as const,
-    tableNo: table.tableNo,
+    blockKind: degraded ? ('paragraph' as const) : ('table' as const),
+    tableNo: degraded ? null : table.tableNo,
     charStart: block.charStart,
     charEnd: block.charEnd,
   };
@@ -55,8 +59,8 @@ function emitTableChunks(
     output.push({
       ...base,
       content: full,
-      tableRowStart: table.rows.length > 0 ? 1 : null,
-      tableRowEnd: table.rows.length > 0 ? table.rows.length : null,
+      tableRowStart: degraded || table.rows.length === 0 ? null : 1,
+      tableRowEnd: degraded || table.rows.length === 0 ? null : table.rows.length,
     });
     return;
   }
@@ -68,8 +72,8 @@ function emitTableChunks(
     output.push({
       ...base,
       content: withPrefix(renderMarkdownTable({ ...table, rows: group })),
-      tableRowStart: groupStart,
-      tableRowEnd: groupStart + group.length - 1,
+      tableRowStart: degraded ? null : groupStart,
+      tableRowEnd: degraded ? null : groupStart + group.length - 1,
     });
   };
 
