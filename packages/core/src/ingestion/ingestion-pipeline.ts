@@ -1,4 +1,5 @@
 import { ApiError } from '@wbfm/shared/errors';
+import { DOCUMENT_PARSE_VERSION } from '@wbfm/shared/constants';
 import { ProviderError } from '@wbfm/ai';
 import {
   createChunkRepository,
@@ -183,6 +184,7 @@ export function createIngestionPipeline(deps: ServiceDeps) {
       documents.setStatus(documentId, finalStatus, {
         chunkCount: slices.length,
         indexedAt: new Date().toISOString(),
+        parseVersion: DOCUMENT_PARSE_VERSION,
         ...(ocrMeta
           ? { ocrStatus: 'done' as const, ocrEngine: ocrMeta.engine }
           : {}),

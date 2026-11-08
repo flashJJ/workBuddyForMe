@@ -8,7 +8,6 @@ import { KnowledgePage } from './knowledge-page';
 
 // Windows CI 冷启动下知识库页面首个操作可能超过默认 5s，统一给本文件 20s 预算
 vi.setConfig({ testTimeout: 20_000 });
-
 const KB: KnowledgeBase = {
   id: 'kb1',
   name: '产品资料库',
@@ -50,6 +49,7 @@ function doc(partial: Partial<DocumentRecord> & { id: string; status: DocumentRe
     ocrEngine: null,
     errorMessage: null,
     chunkCount: 0,
+    parseVersion: 1,
     createdAt: '2025-01-01T00:00:00.000Z',
     indexedAt: null,
     ...partial,

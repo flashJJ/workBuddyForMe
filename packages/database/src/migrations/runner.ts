@@ -47,6 +47,7 @@ import { migrateV045 } from './v045-conversation-branches';
 import { migrateV046 } from './v046-memory-lifecycle';
 import { migrateV047 } from './v047-context-facts';
 import { migrateV048 } from './v048-memory-event-rollup';
+import { migrateV049 } from './v049-document-parse-version';
 
 interface Migration {
   version: number;
@@ -270,6 +271,7 @@ const MIGRATIONS: Migration[] = [
   { version: 46, description: 'v2.26: memories 生命周期列 + memory_events 审计 + memories_fts（纯加法）', up: migrateV046 },
   { version: 47, description: 'v2.26 P1: conversation_facts + task_checkpoints（纯加法）', up: migrateV047 },
   { version: 48, description: 'v2.28 P1: memory_event_rollups + memory_events.created_at 索引（纯加法）', up: migrateV048 },
+  { version: 49, description: 'v2.29 P0: documents.parse_version + 已有结构块元数据回填', up: migrateV049 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

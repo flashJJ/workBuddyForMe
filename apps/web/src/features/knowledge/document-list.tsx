@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { DocumentRecord } from '@wbfm/shared/types';
-import type { DocumentStatus } from '@wbfm/shared/constants';
+import { DOCUMENT_PARSE_VERSION, type DocumentStatus } from '@wbfm/shared/constants';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -135,8 +135,20 @@ export function DocumentList({ kbId, documents, loading }: {
     );
   }
 
+  const pendingCount = documents.filter(
+    (document) =>
+      document.parseVersion < DOCUMENT_PARSE_VERSION &&
+      document.status !== 'pending' &&
+      document.status !== 'processing',
+  ).length;
+
   return (
     <>
+      {pendingCount > 0 && (
+        <p className="mb-2 text-xs text-muted-foreground" data-testid="reparse-summary">
+          {t('knowledge.documents.reparseSummary', { count: pendingCount })}
+        </p>
+      )}
       <ul className="divide-y rounded-lg border" data-testid="document-list">
         {documents.map((document) => {
           const failure = failureReason(document);
@@ -194,6 +206,17 @@ export function DocumentList({ kbId, documents, loading }: {
           <Badge variant={STATUS_VARIANT[document.status]} title={badgeTitle(document)}>
             {badgeLabel(document)}
           </Badge>
+          {document.parseVersion < DOCUMENT_PARSE_VERSION &&
+            document.status !== 'pending' &&
+            document.status !== 'processing' && (
+              <Badge
+                variant="warning"
+                title={t('knowledge.documents.needsReparseTitle')}
+                data-testid="needs-reparse-badge"
+              >
+                {t('knowledge.documents.needsReparse')}
+              </Badge>
+            )}
           {document.compileStatus && document.compileStatus !== 'skipped' && (
             <Badge
               variant={COMPILE_VARIANT[document.compileStatus as CompileStatus]}

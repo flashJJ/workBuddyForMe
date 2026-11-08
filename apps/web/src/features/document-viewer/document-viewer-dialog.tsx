@@ -137,6 +137,22 @@ export function DocumentViewerDialog({
               </div>
             )}
 
+            {data.quality?.unrebuildable ? (
+              <p
+                className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800"
+                data-testid="quality-unrebuildable"
+              >
+                {t('documentViewer.qualityUnrebuildable')}
+              </p>
+            ) : data.quality?.pendingReparse ? (
+              <p
+                className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                data-testid="quality-pending-reparse"
+              >
+                {t('documentViewer.qualityPending')}
+              </p>
+            ) : null}
+
             {!data.structureAvailable ? (
               <p className="rounded-md border bg-muted/40 px-3 py-4 text-muted-foreground">
                 {t('documentViewer.unavailable')}

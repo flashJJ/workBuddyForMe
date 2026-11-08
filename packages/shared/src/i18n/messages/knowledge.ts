@@ -33,6 +33,9 @@ export const zhKnowledge = {
     emptyTitle: '还没有文档',
     emptyDescription: '上传文档后会自动分片、向量化并可用于对话引用。',
     webpageBadge: '网页',
+    needsReparse: '待重建',
+    needsReparseTitle: '解析版本落后，重建后可恢复章节与表格引用',
+    reparseSummary: '{count, plural, other {# 篇文档待重建}}',
     chunks: '{count, plural, one {# 个分片} other {# 个分片}}',
     notChunked: '尚未分片',
     sourceLink: '原文',
@@ -171,6 +174,11 @@ export const enKnowledge = {
     emptyTitle: 'No documents yet',
     emptyDescription: 'Uploaded documents are automatically split, vectorized and made available for chat citations.',
     webpageBadge: 'Webpage',
+    needsReparse: 'Needs rebuild',
+    needsReparseTitle:
+      'Parsed with an older version; rebuild to restore section and table citations.',
+    reparseSummary:
+      '{count, plural, one {# document needs rebuild} other {# documents need rebuild}}',
     chunks: '{count, plural, one {# chunk} other {# chunks}}',
     notChunked: 'Not split yet',
     sourceLink: 'Source',

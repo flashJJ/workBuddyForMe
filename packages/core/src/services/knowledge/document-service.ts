@@ -18,6 +18,7 @@ import { fetchArticle, normalizeClipUrl, toClipError } from '../../ingestion/fet
 import { resolveVisionTarget } from '../../ingestion/vision-target';
 import type { IngestResult } from '../../ingestion/types';
 import { summarizeDocumentFigure } from './document-figure-service';
+import { buildDocumentQualityFacts, type DocumentQualityFacts } from './document-quality';
 
 export interface UploadedFile {
   filename: string;
@@ -43,6 +44,8 @@ export interface DocumentStructureView {
   }>;
   tables: DocumentTable[];
   warnings: string[];
+  /** v2.29：待重建 / 缺原始文件 / OCR / 低置信表格等可核实事实 */
+  quality: DocumentQualityFacts;
   /** v2.19 M4：是否已配置视觉模型（图表/图片理解按需可用） */
   visionAvailable: boolean;
 }
@@ -155,6 +158,15 @@ export function createDocumentService(deps: ServiceDeps) {
         blocks: viewBlocks,
         tables,
         warnings,
+        quality: buildDocumentQualityFacts({
+          parseVersion: document.parseVersion,
+          sourceRetained: existsSync(sourcePath(id)),
+          ocrStatus: document.ocrStatus,
+          blocks: stored.map((block) => ({
+            kind: block.kind,
+            ...(block.table ? { table: block.table } : {}),
+          })),
+        }),
         visionAvailable: resolveVisionTarget(deps) !== null,
       };
     },

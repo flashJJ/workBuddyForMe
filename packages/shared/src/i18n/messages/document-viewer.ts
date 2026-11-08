@@ -6,6 +6,8 @@ export const zhDocumentViewer = {
   loading: '正在读取结构…',
   unavailable: '尚未解析结构（旧文档或解析失败），重新上传后可重建。',
   warnings: '解析警告',
+  qualityPending: '此文档尚未按当前解析器重建，章节与表格引用可能不可用；可点下方「重新解析」。',
+  qualityUnrebuildable: '原始文件未保留，无法重建；请重新上传该文档。',
   sections: '章节树',
   expand: '展开',
   collapse: '收起',
@@ -49,6 +51,10 @@ export const enDocumentViewer = {
   loading: 'Loading structure…',
   unavailable: 'No structure parsed yet (legacy document or parse failure). Re-upload to rebuild.',
   warnings: 'Parse warnings',
+  qualityPending:
+    'This document has not been rebuilt with the current parser; section and table citations may be unavailable. Use Rebuild below.',
+  qualityUnrebuildable:
+    'The original file is no longer retained, so it cannot be rebuilt. Please upload it again.',
   sections: 'Section tree',
   expand: 'Expand',
   collapse: 'Collapse',

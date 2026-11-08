@@ -123,11 +123,9 @@ export interface Citation {
   /** v2.19：Excel 风格单元格（如 C3） */
   tableCell?: string;
 }
-
 // v2.6：长期记忆类型迁至 ./memory（domain 重新导出保持公开面不变）
 export { MEMORY_KINDS, MEMORY_STATUSES, MEMORY_RECALL_REASONS } from './memory';
 export type { Memory, MemoryKind, MemoryStatus, MemoryRecallReason } from './memory';
-
 /** v2.28：done 帧下发的约束写入提示（仅 id 与正文；撤销走归档） */
 export interface MemoryNotice {
   id: string;
@@ -192,6 +190,8 @@ export interface DocumentRecord {
   ocrEngine: OcrEngine | null;
   errorMessage: string | null;
   chunkCount: number;
+  /** v2.29：成功落库时的解析器版本，落后即待重建 */
+  parseVersion: number;
   createdAt: string;
   indexedAt: string | null;
   /** v1.3：知识编译状态机（skipped/queued/running/ready/failed）+ 世代/时间/错误 */
