@@ -10,6 +10,7 @@ export const MEMORY_KIND_OPTIONS: Array<{ value: MemoryKind; labelKey: MessageKe
   { value: 'preference', labelKey: 'memory.kind.preference' },
   { value: 'event', labelKey: 'memory.kind.event' },
   { value: 'relationship', labelKey: 'memory.kind.relationship' },
+  { value: 'constraint', labelKey: 'memory.kind.constraint' },
 ];
 
 export const MEMORY_KIND_LABELS: Record<MemoryKind, MessageKey> = {
@@ -17,11 +18,13 @@ export const MEMORY_KIND_LABELS: Record<MemoryKind, MessageKey> = {
   preference: 'memory.kind.preference',
   event: 'memory.kind.event',
   relationship: 'memory.kind.relationship',
+  constraint: 'memory.kind.constraint',
 };
 
 export const MEMORY_STATUS_LABELS: Record<MemoryStatus, MessageKey> = {
   active: 'memory.status.active',
   archived: 'memory.status.archived',
+  superseded: 'memory.status.superseded',
 };
 
 export const MEMORY_KIND_BADGE: Record<MemoryKind, 'default' | 'success' | 'warning'> = {
@@ -29,10 +32,14 @@ export const MEMORY_KIND_BADGE: Record<MemoryKind, 'default' | 'success' | 'warn
   preference: 'success',
   event: 'warning',
   relationship: 'success',
+  constraint: 'warning',
 };
 
 export const MEMORY_RECALL_REASON_LABELS: Record<MemoryRecallReason, MessageKey> = {
   semantic: 'memory.recallReason.semantic',
+  keyword: 'memory.recallReason.keyword',
+  hybrid: 'memory.recallReason.hybrid',
+  pinned: 'memory.recallReason.pinned',
 };
 
 export function formatMemoryDate(iso: string | null, locale: Language): string {

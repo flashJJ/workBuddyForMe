@@ -121,6 +121,8 @@ export async function* prepareTurnContext(
     ? yield* safeRecallEvent({
         memory,
         query: userContent,
+        assistantId: assistant.id,
+        conversationId,
         signal,
         traceParent,
       })

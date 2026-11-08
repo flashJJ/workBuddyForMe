@@ -51,14 +51,16 @@ describe('M3 长期记忆服务', () => {
     vi.mocked(resolveEmbeddingTarget).mockReturnValue(null);
   }
 
-  it('未配置嵌入模型：记忆正常落库但不建虚表，召回为空', async () => {
+  it('未配置嵌入模型：记忆正常落库；召回退化为关键词通道', async () => {
     mockNoEmbedding();
     const memory = createMemoryService({ db, cipher });
     const result = await memory.rememberCandidates([fact('用户喜欢猫'), fact('用户在上海')]);
     expect(result.created).toBe(2);
     expect(getMemoryVectorDimension(db)).toBeNull();
     expect(memory.list()).toHaveLength(2);
-    expect(await memory.recall('喜欢什么宠物')).toEqual([]);
+    const recalled = await memory.recall('喜欢什么宠物');
+    expect(recalled.map((m) => m.content)).toContain('用户喜欢猫');
+    expect(recalled[0]!.reason).toBe('keyword');
   });
 
   it('近似记忆去重合并：更新内容与重要性取大值，不新增行', async () => {
@@ -92,7 +94,7 @@ describe('M3 长期记忆服务', () => {
     const hit = await memory.recall('该用什么语言');
     expect(hit).toHaveLength(1);
     expect(hit[0]!.content).toBe('用户偏好中文回复');
-    expect(hit[0]!.reason).toBe('semantic');
+    expect(['semantic', 'hybrid']).toContain(hit[0]!.reason);
     expect(hit[0]!.score).toBeGreaterThan(0.9);
     expect(memory.get(hit[0]!.id)!.lastAccessedAt).toBeTruthy();
     expect(memory.get(hit[0]!.id)!.recallCount).toBe(1);
@@ -182,6 +184,67 @@ describe('M3 长期记忆服务', () => {
     });
     expect(merged.id).toBe(saved.id);
     expect(memory.list()).toHaveLength(1);
+  });
+
+  it('v2.26 同主体冲突：旧记忆 superseded，新版本 version=2 并写审计', async () => {
+    mockEmbeddingByCall([[A], [ORTHOGONAL]]);
+    const memory = createMemoryService({ db, cipher });
+    const first = await memory.rememberCandidates([
+      { kind: 'fact', content: '用户住在北京', importance: 0.7, subjectKey: 'residence:city' },
+    ]);
+    const second = await memory.rememberCandidates([
+      { kind: 'fact', content: '用户住在上海', importance: 0.7, subjectKey: 'residence:city' },
+    ]);
+    expect(first.created).toBe(1);
+    expect(second.superseded).toBe(1);
+
+    const active = memory.list({ status: 'active' });
+    expect(active).toHaveLength(1);
+    expect(active[0]!.content).toBe('用户住在上海');
+    expect(active[0]!.version).toBe(2);
+    const old = memory.list({ status: 'superseded' });
+    expect(old).toHaveLength(1);
+    expect(old[0]!.supersededBy).toBe(active[0]!.id);
+    const audit = db.prepare(`SELECT COUNT(*) AS n FROM memory_events`).get() as { n: number };
+    expect(audit.n).toBe(3);
+  });
+
+  it('v2.26 置顶约束：无关问题也会注入，分数不低于 0.9', async () => {
+    mockNoEmbedding();
+    const memory = createMemoryService({ db, cipher });
+    await memory.rememberCandidates(
+      [
+        {
+          kind: 'constraint',
+          content: '用户对花生过敏',
+          importance: 0.95,
+          pinned: true,
+          subjectKey: 'allergy:花生',
+        },
+      ],
+      { scope: 'assistant', assistantId: 'a1', source: 'realtime' },
+    );
+    const hit = await memory.recall('今天天气怎么样', { assistantId: 'a1' });
+    expect(hit.map((m) => m.content)).toContain('用户对花生过敏');
+    expect(hit[0]!.reason).toBe('pinned');
+    expect(hit[0]!.score).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it('v2.26 作用域隔离：助手记忆互不可见，全局记忆仍可见', async () => {
+    mockNoEmbedding();
+    const memory = createMemoryService({ db, cipher });
+    await memory.rememberCandidates([fact('用户喜欢猫')], {
+      scope: 'assistant',
+      assistantId: 'a1',
+    });
+    await memory.createManual({ kind: 'fact', content: '用户叫小林', importance: 0.9 });
+
+    const other = await memory.recall('喜欢猫', { assistantId: 'a2' });
+    expect(other.map((m) => m.content)).not.toContain('用户喜欢猫');
+    const own = await memory.recall('喜欢猫', { assistantId: 'a1' });
+    expect(own.map((m) => m.content)).toContain('用户喜欢猫');
+    const global = await memory.recall('小林', { assistantId: 'a2' });
+    expect(global.map((m) => m.content)).toContain('用户叫小林');
   });
 
   it('P1-1 runDecay：归档陈旧低重要性记忆；7 天间隔保护；force 可绕过', () => {

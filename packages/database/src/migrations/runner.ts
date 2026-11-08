@@ -44,6 +44,7 @@ import { migrateV042 } from './v042-maintenance';
 import { migrateV043 } from './v043-document-structure';
 import { migrateV044 } from './v044-stage-plan';
 import { migrateV045 } from './v045-conversation-branches';
+import { migrateV046 } from './v046-memory-lifecycle';
 
 interface Migration {
   version: number;
@@ -264,6 +265,7 @@ const MIGRATIONS: Migration[] = [
   { version: 43, description: 'v2.19: document_blocks + chunks 章节/表格列 + knowledge_relations（纯加法）', up: migrateV043 },
   { version: 44, description: 'v2.20: 阶段计划表 + stage_plan_json/model_id（纯加法）', up: migrateV044 },
   { version: 45, description: 'v2.21: conversation_branches 分支会话关系/状态/回传（纯加法）', up: migrateV045 },
+  { version: 46, description: 'v2.26: memories 生命周期列 + memory_events 审计 + memories_fts（纯加法）', up: migrateV046 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

@@ -15,6 +15,18 @@ function makeMemory(over: Partial<Memory>): Memory {
     lastAccessedAt: null,
     createdAt: '2026-10-15T00:00:00.000Z',
     updatedAt: '2026-10-15T00:00:00.000Z',
+    scope: 'global',
+    assistantId: null,
+    source: 'legacy',
+    pinned: false,
+    confidence: 1,
+    subjectKey: null,
+    version: 1,
+    supersededBy: null,
+    validFrom: null,
+    validTo: null,
+    ttlAt: null,
+    lastConfirmedAt: null,
     ...over,
   };
 }

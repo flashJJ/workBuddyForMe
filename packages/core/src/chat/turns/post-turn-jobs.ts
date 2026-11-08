@@ -44,6 +44,9 @@ async function rememberSummaryEvent(params: PostTurnJobsParams, summary: string)
         sourceConversationId: params.conversation.id,
         // 摘要来自更早消息，无法定位单一来源消息；不伪造
         sourceMessageId: null,
+        scope: 'assistant',
+        assistantId: params.assistant.id,
+        source: 'summary',
       },
       params.signal,
     );
@@ -80,6 +83,7 @@ export async function runPostTurnJobs(params: PostTurnJobsParams): Promise<void>
     userContent: params.userContent,
     assistantContent: params.assistantContent,
     conversationId: params.conversation.id,
+    assistantId: params.assistant.id,
     sourceMessageId: params.sourceMessageId,
     signal: params.signal,
     traceParent: params.traceParent,

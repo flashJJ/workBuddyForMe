@@ -8,7 +8,7 @@ import {
   searchMemoryVectors,
   getMemoryVectorDimension,
   type DatabaseInstance,
-} from '../../index';
+} from '../../../index';
 
 /**
  * 3 维单位向量：a 与 b 同向（距离 0），a 与 c 正交（距离 ≈√2=1.414）。
