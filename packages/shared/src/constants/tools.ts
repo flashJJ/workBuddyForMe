@@ -123,8 +123,10 @@ export type ArtifactFormat = (typeof ARTIFACT_FORMATS)[number];
 
 /** 单文件上限 2 MB（与产物工具参数校验一致） */
 export const ARTIFACT_MAX_BYTES = 2 * 1024 * 1024;
-/** 单轮产物数量上限（工具侧提示，权限门与熔断仍照常生效） */
-export const ARTIFACT_MAX_PER_TURN = 3;
+/** v2.30：单轮产物数量上限（超出不落盘，按回合重置） */
+export const ARTIFACT_MAX_PER_TURN = 6;
+/** v2.30：单轮产物总大小上限（8 MB，超出不落盘） */
+export const ARTIFACT_TURN_MAX_BYTES = 8 * 1024 * 1024;
 export const ARTIFACT_TITLE_MAX = 80;
 export const ARTIFACT_FILENAME_MAX = 120;
 

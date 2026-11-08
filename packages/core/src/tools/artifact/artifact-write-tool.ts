@@ -3,6 +3,7 @@ import {
   ARTIFACT_FORMATS,
   ARTIFACT_FILENAME_MAX,
   ARTIFACT_MAX_BYTES,
+  ARTIFACT_MAX_PER_TURN,
   ARTIFACT_TITLE_MAX,
 } from '@wbfm/shared/constants';
 import type { Tool, ToolResult } from '../types';
@@ -24,7 +25,7 @@ function formatBytes(bytes: number): string {
 export const artifactWriteTool: Tool = {
   name: 'artifact_write',
   description:
-    '把生成的 HTML/SVG/Markdown 保存为可预览、可下载的产物文件。需要用户授权；单文件最多 2MB，单轮最多 3 个。产物不会进入模型上下文。',
+    `把生成的 HTML/SVG/Markdown 保存为可预览、可下载的产物文件。需要用户授权；单文件最多 2MB，单轮最多 ${ARTIFACT_MAX_PER_TURN} 个。产物不会进入模型上下文。`,
   permission: 'write',
   parameters: {
     type: 'object',
