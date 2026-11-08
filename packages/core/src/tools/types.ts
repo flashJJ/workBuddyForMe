@@ -93,6 +93,11 @@ export interface ToolResult {
   artifacts?: ArtifactRef[];
   /** v2.18 M5：出处/覆盖/未覆盖（只展示，不入模） */
   evidence?: ToolEvidence;
+  /**
+   * v2.27：本轮已对同一目标连续失败达到上限，工具侧已改为降级（不再重试）。
+   * 目前仅 fetch_webpage 的网络/超时/过大类失败使用。
+   */
+  degraded?: boolean;
 }
 
 /** 工具统一接口（v0.6：内置与 MCP 工具同构；name 为全局限定名） */

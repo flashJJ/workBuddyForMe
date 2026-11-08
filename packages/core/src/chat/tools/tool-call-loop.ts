@@ -5,6 +5,12 @@ import type { ToolContext, ToolResult } from '../../tools/types';
 import { executeCall, summarizeArgs } from '../../tools/tool-executor';
 import { compactToolOutput, normalizeToolSource } from '../../tools/tool-result-compact';
 import { gateToolPermission } from './tool-permission-gate';
+import {
+  FETCH_DEGRADE_THRESHOLD,
+  degradedFetchResult,
+  fetchUrlOf,
+  shouldDegradeFetch,
+} from './fetch-degrade';
 import { mergeCitations, safeParseArgs, unknownToolResult } from '../orchestrator/orchestrator-helpers';
 import { createSubstepQueue } from '../turns/substep-queue';
 import type { OrchestratorEvent } from '../base/types';
@@ -39,11 +45,17 @@ export async function* runToolCallLoop(
     onAbort,
   } = params;
   let citations = params.citations;
+  const fetchFailures = params.fetchFailures ?? new Map<string, number>();
+  const degradedFetchUrls: string[] = [];
 
   for (const call of calls) {
     const name = call.function.name;
     const parsedArgs = safeParseArgs(call);
     const argsSummary = summarizeArgs(name, parsedArgs);
+    // v2.27：同一链接连续失败达上限后，本轮后续调用直接跳过，不再发网络请求
+    const fetchUrl = name === 'fetch_webpage' ? fetchUrlOf(parsedArgs) : null;
+    const skipFetch =
+      fetchUrl !== null && (fetchFailures.get(fetchUrl) ?? 0) >= FETCH_DEGRADE_THRESHOLD;
     const tool = toolMap.get(name);
     // v0.6 M4：解析来源与权限（toolMap 可能不含该工具——未知工具名走 unknownToolResult）
     const resolved = runtime.resolveTool(name);
@@ -70,7 +82,7 @@ export async function* runToolCallLoop(
       outgoing.push(gate.toolMessage!);
       if (signal?.aborted) {
         onAbort();
-        return { aborted: true, citations };
+        return { aborted: true, citations, degradedFetchUrls };
       }
       continue; // 跳过本次工具调用，继续下一个 call
     }
@@ -94,7 +106,9 @@ export async function* runToolCallLoop(
     const startedAt = Date.now();
     const substeps: ToolSubstep[] = [];
     let result: ToolResult;
-    if (tool) {
+    if (skipFetch && fetchUrl) {
+      result = degradedFetchResult(fetchUrl);
+    } else if (tool) {
       // v0.8：flow 工具执行中逐节点推进子步骤，经队列转成 tool/substep SSE 事件。
       // 入队的是回调时刻的快照（run 内可能同步连发多条，避免 yield 时数组已被整体推进）。
       const queue = createSubstepQueue<ToolSubstep[]>();
@@ -130,6 +144,20 @@ export async function* runToolCallLoop(
     }
     const durationMs = Date.now() - startedAt;
     const substepSnapshot = snapshotSubsteps(substeps);
+
+    // v2.27：抓取失败计数与降级标记——成功清零；连续失败达上限后本轮不再重试
+    if (fetchUrl) {
+      if (result.ok) {
+        fetchFailures.delete(fetchUrl);
+      } else if (!skipFetch && shouldDegradeFetch(result)) {
+        const failures = (fetchFailures.get(fetchUrl) ?? 0) + 1;
+        fetchFailures.set(fetchUrl, failures);
+        if (failures >= FETCH_DEGRADE_THRESHOLD) result = { ...result, degraded: true };
+      }
+      if (result.degraded && !degradedFetchUrls.includes(fetchUrl)) {
+        degradedFetchUrls.push(fetchUrl);
+      }
+    }
 
     // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过
     breaker?.recordResult(name, result.ok);
@@ -212,9 +240,9 @@ export async function* runToolCallLoop(
 
     if (signal?.aborted) {
       onAbort();
-      return { aborted: true, citations };
+      return { aborted: true, citations, degradedFetchUrls };
     }
   }
 
-  return { aborted: false, citations };
+  return { aborted: false, citations, degradedFetchUrls };
 }

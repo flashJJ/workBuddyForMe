@@ -1,6 +1,6 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { type Citation } from '@wbfm/shared/types';
-import { ProviderError, type ToolCall } from '@wbfm/ai';
+import { ProviderError, type ChatMessage, type ToolCall } from '@wbfm/ai';
 import { parseToolArgs } from '../../tools/tool-executor';
 import type { ToolResult } from '../../tools/types';
 
@@ -68,5 +68,32 @@ export function unknownToolResult(name: string): ToolResult {
     ok: false,
     output: `工具「${name}」未启用或不存在。请仅使用提供的工具，或不使用工具直接回答。`,
     summary: `未知工具：${name}`,
+  };
+}
+
+export interface FetchDegradeTracker {
+  /** 本轮 fetch_webpage 各 URL 连续失败计数（跨工具轮共享） */
+  failures: Map<string, number>;
+  /** 记录降级 URL，并对本轮新降级项向 outgoing 追加一次收尾提示 */
+  record(degradedUrls: string[], outgoing: ChatMessage[]): void;
+}
+
+/**
+ * v2.27：抓取降级追踪——同一 URL 连续失败达上限后不再重试，
+ * 收尾轮提示模型基于已获搜索摘要作答、明确说明未取到全文。
+ */
+export function createFetchDegradeTracker(): FetchDegradeTracker {
+  const seen = new Set<string>();
+  return {
+    failures: new Map<string, number>(),
+    record(degradedUrls, outgoing) {
+      const fresh = degradedUrls.filter((url) => !seen.has(url));
+      if (fresh.length === 0) return;
+      fresh.forEach((url) => seen.add(url));
+      outgoing.push({
+        role: 'system',
+        content: `网页抓取未能取得全文：${fresh.join('、')}。请基于已获得的搜索结果摘要作答，并明确说明未取到原文；不要再请求同一链接。`,
+      });
+    },
   };
 }

@@ -77,7 +77,11 @@ export const zhToolTrace = {
   actions: {
     openInBrowser: '用浏览器打开',
     checkSearch: '检查搜索服务',
+    /** v2.27：抓取失败时只给网络/代理排查与打开原文，不再引导重复重试 */
+    checkNetwork: '检查网络/代理',
   },
+  /** v2.27：同一链接连续失败后已降级，本轮不再重试 */
+  degraded: '已连续失败，本轮不再重试；回答基于已获搜索摘要',
   detail: {
     toolName: '工具名',
     source: '来源',
@@ -165,7 +169,9 @@ export const enToolTrace = {
   actions: {
     openInBrowser: 'Open in browser',
     checkSearch: 'Check search service',
+    checkNetwork: 'Check network / proxy',
   },
+  degraded: 'Repeated failures; skipped this turn. Answer uses available search snippets.',
   detail: {
     toolName: 'Tool',
     source: 'Source',

@@ -26,6 +26,11 @@ export interface ToolCallLoopParams {
   signal?: AbortSignal;
   /** v1.1：每条工具消息的入模 token 预算（context-budget 装配时下发） */
   toolMessageBudgetTokens: number;
+  /**
+   * v2.27：本轮 fetch_webpage 各 URL 的连续失败计数（跨工具轮共享，由编排器创建）。
+   * 缺省时仅在本次循环内计数。
+   */
+  fetchFailures?: Map<string, number>;
   /** 中断收尾：stopMessage + saveMessageToolTrace（由编排器注入） */
   onAbort: () => void;
 }
@@ -34,4 +39,6 @@ export interface ToolCallLoopOutcome {
   /** true=处理中断，调用方应 yield done 并 return */
   aborted: boolean;
   citations: Citation[];
+  /** v2.27：本轮进入降级的抓取 URL（编排器据此提示「基于搜索摘要作答」） */
+  degradedFetchUrls: string[];
 }

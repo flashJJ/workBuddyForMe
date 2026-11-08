@@ -65,6 +65,7 @@ export function buildToolTraceEntry(input: ToolTraceBuildInput): ToolTraceEntry 
       : {}),
     ...(result.artifacts?.length ? { artifacts: result.artifacts } : {}),
     ...(result.evidence ? { evidence: result.evidence } : {}),
+    ...(result.degraded ? { degraded: true } : {}),
   };
 }
 
@@ -94,6 +95,7 @@ export function buildToolEndData(input: ToolEndBuildInput): ToolEndPayload {
     ...substepSnapshot,
     ...(result.artifacts?.length ? { artifacts: result.artifacts } : {}),
     ...(result.evidence ? { evidence: result.evidence } : {}),
+    ...(result.degraded ? { degraded: true } : {}),
   };
 }
 

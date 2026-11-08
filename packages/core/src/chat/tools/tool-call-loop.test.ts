@@ -168,4 +168,60 @@ describe('runToolCallLoop：v0.8 flow 工具子步骤', () => {
     };
     expect(endData.resultSummary).toBe('查询返回 100 行');
   });
+
+  it('v2.27：同一 URL 连续失败 2 次后不再重试，结果标记 degraded 并提示改用摘要', async () => {
+    let runs = 0;
+    const fetchTool: Tool = {
+      name: 'fetch_webpage',
+      description: '抓取网页',
+      parameters: { type: 'object' },
+      permission: 'read',
+      async run(): Promise<ToolResult> {
+        runs += 1;
+        return { ok: false, output: '抓取失败：fetch failed', summary: '抓取失败' };
+      },
+    };
+    const toolMap: ToolMap = new Map([[fetchTool.name, fetchTool]]);
+    const runtime = {
+      resolveTool: (name: string) =>
+        name === fetchTool.name ? { tool: fetchTool, source: 'builtin' } : null,
+    } as unknown as ToolRuntime;
+    const url = 'https://example.com/a';
+    const calls: ToolCall[] = [1, 2, 3].map((i) => ({
+      id: `call-${i}`,
+      type: 'function' as const,
+      function: { name: fetchTool.name, arguments: JSON.stringify({ url }) },
+    }));
+
+    const trace: ToolTraceEntry[] = [];
+    const outgoing: import('@wbfm/ai').ChatMessage[] = [];
+    const generator = runToolCallLoop({
+      calls,
+      toolMap,
+      toolCtx: { knowledgeBaseIds: [], retrieve: async () => [] },
+      deps: {} as ServiceDeps,
+      runtime,
+      assistantId: 'a1',
+      turnTrace: null,
+      trace,
+      outgoing,
+      citations: [],
+      toolMessageBudgetTokens: 1024,
+      fetchFailures: new Map(),
+      onAbort: () => undefined,
+    });
+    let step = await generator.next();
+    while (!step.done) step = await generator.next();
+    const outcome = step.value;
+
+    // 第三次调用被跳过，只真正执行两次
+    expect(runs).toBe(2);
+    expect(trace).toHaveLength(3);
+    expect(trace[0]!.degraded).toBeFalsy();
+    expect(trace[1]!.degraded).toBe(true);
+    expect(trace[2]!.degraded).toBe(true);
+    expect(outcome.degradedFetchUrls).toEqual([url]);
+    const lastToolMessage = outgoing.filter((m) => m.role === 'tool').at(-1);
+    expect(lastToolMessage?.content).toContain('不再重试');
+  });
 });
