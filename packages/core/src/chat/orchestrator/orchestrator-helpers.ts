@@ -16,19 +16,41 @@ export function normalizeFailure(error: unknown): { code: string; message: strin
   return { code: 'INTERNAL_ERROR', message: '对话生成失败，请稍后重试' };
 }
 
-/** citations 按 documentId:ordinal 去重合并 */
+/** v2.27：引用去重键——文档/片段/静态层/表格坐标/网页地址共同定位一条来源 */
+function citationKey(c: Citation): string {
+  return [
+    c.documentId,
+    c.ordinal,
+    c.staticKind ?? 'chunk',
+    c.tableNo ?? '',
+    c.tableRow ?? '',
+    c.sourceUrl ?? '',
+  ].join('|');
+}
+
+/**
+ * v2.27：citations 合并——同键保留首条并合并 snippet（取更完整者），
+ * 合并后按列表顺序重编 citeIndex（从 1 连续），与资料块编号保持一致。
+ */
 export function mergeCitations(existing: Citation[], incoming: Citation[] | undefined): Citation[] {
   if (!incoming || incoming.length === 0) return existing;
-  const seen = new Set(existing.map((c) => `${c.documentId}:${c.ordinal}`));
-  const merged = [...existing];
+  const merged = existing.map((citation) => ({ ...citation }));
+  const seen = new Map<string, number>();
+  merged.forEach((citation, index) => seen.set(citationKey(citation), index));
   for (const citation of incoming) {
-    const key = `${citation.documentId}:${citation.ordinal}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      merged.push(citation);
+    const key = citationKey(citation);
+    const hit = seen.get(key);
+    if (hit === undefined) {
+      seen.set(key, merged.length);
+      merged.push({ ...citation });
+      continue;
+    }
+    const prev = merged[hit]!;
+    if (citation.snippet && citation.snippet.length > (prev.snippet?.length ?? 0)) {
+      merged[hit] = { ...prev, snippet: citation.snippet };
     }
   }
-  return merged;
+  return merged.map((citation, index) => ({ ...citation, citeIndex: index + 1 }));
 }
 
 /** 仅用于界面摘要的宽容解析，失败返回空对象 */

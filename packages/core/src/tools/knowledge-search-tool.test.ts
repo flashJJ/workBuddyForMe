@@ -71,6 +71,7 @@ describe('knowledge_search 工具', () => {
         documentId: 'd1',
         documentName: '员工手册.pdf',
         ordinal: 0,
+        citeIndex: 1,
         sourceUrl: null,
         snippet: '年假为 5 天',
         pageNo: 2,

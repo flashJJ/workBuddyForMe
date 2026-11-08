@@ -45,12 +45,19 @@ export function CitationsList({ message }: { message: Message }) {
       )}
       {(!collapsible || expanded) && (
         <ol className="space-y-1" data-testid="citations-list">
-          {message.citations.map((citation) => {
+          {message.citations.map((citation, index) => {
+            // v2.27：展示编号优先用 citeIndex；旧消息无该字段时按列表位置兜底
+            const number = citation.citeIndex ?? index + 1;
             const meta = formatCitationMeta(citation, t);
             return (
-              <li key={`${citation.documentId}-${citation.ordinal}`} className="text-xs">
+              <li
+                key={`${citation.documentId}-${index}`}
+                id={`citation-${number}`}
+                data-cite-index={number}
+                className="scroll-mt-24 text-xs"
+              >
                 <Badge variant="outline" className="mr-1">
-                  [{citation.ordinal}]
+                  [{number}]
                 </Badge>
                 {meta.kindLabel && (
                   <Badge variant="info" className="mr-1" data-testid="citation-static-kind">

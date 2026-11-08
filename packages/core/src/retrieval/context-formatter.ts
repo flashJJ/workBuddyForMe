@@ -106,6 +106,8 @@ export type CitableEntry = {
   documentId: string;
   documentName: string;
   content: string;
+  /** v2.27：文档内片段序号（缺省回落列表位置，兼容旧调用面） */
+  ordinal?: number;
   sourceUrl?: string | null;
   pageNo?: number | null;
   paragraphNo?: number | null;
@@ -125,12 +127,13 @@ function toSnippet(content: string): string {
     : content;
 }
 
-/** 转为随答返回的引用信息（按资料块编号统一从 0，snippet 截断控载荷） */
+/** 转为随答返回的引用信息（citeIndex 从 1 与资料块编号一致，ordinal 保留文档内序号） */
 export function toCitations(entries: CitableEntry[]): Citation[] {
   return entries.map((entry, index) => ({
     documentId: entry.documentId,
     documentName: entry.documentName,
-    ordinal: index,
+    ordinal: entry.ordinal ?? index,
+    citeIndex: index + 1,
     sourceUrl: entry.sourceUrl ?? null,
     snippet: toSnippet(entry.content),
     pageNo: entry.pageNo ?? null,

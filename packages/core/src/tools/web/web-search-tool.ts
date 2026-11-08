@@ -105,10 +105,11 @@ export const webSearchTool: Tool = {
           ...(limitations.length ? { limitations } : {}),
           capturedAt: new Date().toISOString(),
         },
-        citations: response.results.map((result, index) => ({
+        citations: response.results.map((result) => ({
           documentId: result.url,
           documentName: result.title,
-          ordinal: index + 1,
+          // v2.27：网页结果无文档分片，ordinal 固定 0；展示编号由装配层 citeIndex 统一分配
+          ordinal: 0,
           snippet: result.snippet,
           sourceUrl: result.url,
           staticKind: 'chunk',

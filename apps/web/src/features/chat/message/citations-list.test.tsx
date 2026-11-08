@@ -81,6 +81,25 @@ describe('CitationsList 引用来源折叠（v1.5）', () => {
     expect(container.querySelector('[data-testid="citations"]')).toBeNull();
   });
 
+  it('v2.27：优先展示 citeIndex，旧数据按列表位置兜底编号', () => {
+    const base = messageWith(1);
+    const { container } = renderWithProviders(
+      <CitationsList
+        message={{
+          ...base,
+          citations: [
+            { ...cite(7, '旧档.pdf'), citeIndex: 3 },
+            cite(0, '旧档二.pdf'),
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('[3]')).toBeInTheDocument();
+    // 第二条无 citeIndex：按列表位置兜底为 2（而非 ordinal 0）
+    expect(screen.getByText('[2]')).toBeInTheDocument();
+    expect(container.querySelector('#citation-3')).not.toBeNull();
+  });
+
   it('v2.19：展示章节路径与表格行定位', () => {
     const base = messageWith(1);
     renderWithProviders(
