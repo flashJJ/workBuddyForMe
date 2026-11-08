@@ -22,6 +22,7 @@ import { useChatVoiceCompanion } from '../hooks/use-chat-voice-companion';
 import { ChatVoiceControls } from '../composer/chat-voice-controls';
 import { ProactiveBubbleBar } from '../overlay/proactive-bubble';
 import { ChatAvatarRail } from '@/features/avatar/ui';
+import { useVoiceDraft } from '@/features/voice/draft';
 import { useChatEvents } from '../hooks/use-chat-events';
 import { useFirstAsk } from '../hooks/use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
@@ -54,6 +55,8 @@ export function ChatPage({
   const [taskMode, setTaskMode] = React.useState(false);
   const [draft, setDraft] = React.useState('');
   const [composerFocus, setComposerFocus] = React.useState(0);
+  // v2.25：PTT 识别先入草稿再润色，点发送才发出（免手 VAD 不经过这里）
+  const voiceDraft = useVoiceDraft({ draft, onChange: setDraft, requestFocus: () => setComposerFocus((v) => v + 1) });
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -267,7 +270,7 @@ export function ChatPage({
                   inputMode={voiceSettings?.inputMode}
                   handsfree={handsfree}
                   streaming={session.streaming}
-                  onRecognizedSend={session.send}
+                  voiceDraft={voiceDraft}
                 />
               }
               draftValue={draft}

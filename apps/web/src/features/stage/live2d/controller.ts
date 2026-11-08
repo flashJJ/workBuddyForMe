@@ -7,6 +7,7 @@ import {
   type ExpressionTag,
 } from '@/features/avatar';
 import type { StageSlot } from '@wbfm/shared/schemas';
+import { desiredAutoUpdate, syncAutoUpdate } from './auto-update';
 import type { StageLive2dActor, StageLive2dOptions } from './types';
 
 /**
@@ -61,6 +62,8 @@ interface Entry {
   actor: StageLive2dActor | null;
   lastSpeechAt: number;
   lastExpression: ExpressionTag | null;
+  /** 已写入 pld 的 autoUpdate；null=新模型/已销毁，首次写入才触达 setter */
+  appliedAutoUpdate: boolean | null;
 }
 
 export interface StageLive2dController {
@@ -98,9 +101,6 @@ export async function createStageLive2dController(
   let disposed = false;
   let options: StageLive2dOptions = { powerMode: 'live', focus: null };
 
-  const shouldUpdate = (entry: Entry): boolean =>
-    options.powerMode === 'live' || options.focus === entry.slot;
-
   function destroyEntry(entry: Entry): void {
     entry.token += 1;
     if (entry.idleTimer) clearTimeout(entry.idleTimer);
@@ -111,6 +111,7 @@ export async function createStageLive2dController(
       /* best-effort */
     }
     entry.model = null;
+    entry.appliedAutoUpdate = null;
   }
 
   function applyLayout(entry: Entry): void {
@@ -130,7 +131,12 @@ export async function createStageLive2dController(
     model.x = (actor.layout.leftPct / 100) * stageW;
     model.y = (actor.layout.topPct / 100) * stageH + boxH / 2 + 4;
     model.zIndex = actor.layout.zIndex;
-    model.autoUpdate = shouldUpdate(entry);
+    // 只能差量写入：pld 的 setter 每次赋 true 都会再注册一次 ticker
+    entry.appliedAutoUpdate = syncAutoUpdate(
+      model,
+      entry.appliedAutoUpdate,
+      desiredAutoUpdate(options.powerMode, options.focus, entry.slot),
+    );
   }
 
   function applyExpression(entry: Entry): void {
@@ -168,8 +174,8 @@ export async function createStageLive2dController(
         return;
       }
       entry.model = model;
+      entry.appliedAutoUpdate = null;
       model.anchor.set(0.5, 1);
-      model.autoUpdate = shouldUpdate(entry);
       app.stage.addChild(model as unknown as PIXI.DisplayObject);
       const name = entry.spec.expressions[DEFAULT_EXPRESSION];
       if (name) await model.expression(name);
@@ -196,6 +202,7 @@ export async function createStageLive2dController(
         actor,
         lastSpeechAt: 0,
         lastExpression: null,
+        appliedAutoUpdate: null,
       };
       entries.set(actor.slot, entry);
     }

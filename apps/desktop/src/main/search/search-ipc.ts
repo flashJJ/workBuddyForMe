@@ -1,9 +1,18 @@
 import { execFile } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
-import fs from 'node:fs';
 import net from 'node:net';
-import path from 'node:path';
 import type { SearxngDeployResult } from '@wbfm/shared/search';
+import {
+  defaultProbeEngine,
+  ensureConfigDir,
+  tuneEngines,
+  waitReady,
+  SEARXNG_CONTAINER,
+  type CommandResult,
+  type RunCommand,
+} from './searxng-tuning';
+
+export { SEARXNG_CONTAINER };
+export type { CommandResult, RunCommand };
 
 /**
  * 桌面端一键部署 SearXNG（v2.17 联网搜索的本地出口）。
@@ -15,27 +24,12 @@ import type { SearxngDeployResult } from '@wbfm/shared/search';
  * - 配置文件写在 userData 下，`formats` 必须显式含 json，否则应用拿不到结果。
  */
 
-export const SEARXNG_CONTAINER = 'wbfm-searxng';
 const IMAGE = 'searxng/searxng:latest';
 const CONTAINER_PORT = 8080;
 const CANDIDATE_PORTS = [8080, 8090, 8088, 8888];
 const READY_TIMEOUT_MS = 120_000;
-const POLL_INTERVAL_MS = 1_000;
 /** 首次 docker run 可能包含镜像拉取，给足预算 */
 const RUN_TIMEOUT_MS = 600_000;
-
-export interface CommandResult {
-  /** -1 表示可执行文件不存在（ENOENT） */
-  code: number;
-  stdout: string;
-  stderr: string;
-}
-
-export type RunCommand = (
-  file: string,
-  args: string[],
-  timeoutMs: number,
-) => Promise<CommandResult>;
 
 export interface SearxngDeployDeps {
   /** 配置目录（<userData>/searxng），映射到容器 /etc/searxng */
@@ -43,6 +37,8 @@ export interface SearxngDeployDeps {
   run?: RunCommand;
   /** 探活：GET /search?q=ping&format=json 是否返回 results 数组 */
   probe?: (endpoint: string) => Promise<boolean>;
+  /** 单引擎探测：该引擎能否返回结果（被墙/超时/验证码一律视为不可用） */
+  probeEngine?: (endpoint: string, engine: string) => Promise<boolean>;
   pickPort?: () => Promise<number>;
   sleep?: (ms: number) => Promise<void>;
   timeoutMs?: number;
@@ -128,30 +124,6 @@ async function defaultPickPort(): Promise<number> {
   });
 }
 
-/** SearXNG 配置：必须显式开启 json，否则 /search 返回 403 */
-function settingsYaml(): string {
-  return [
-    'use_default_settings: true',
-    'server:',
-    `  secret_key: "${randomBytes(24).toString('hex')}"`,
-    '  limiter: false',
-    '  image_proxy: false',
-    'search:',
-    '  safe_search: 0',
-    '  formats:',
-    '    - html',
-    '    - json',
-    '',
-  ].join('\n');
-}
-
-function ensureConfigDir(dataDir: string): void {
-  fs.mkdirSync(dataDir, { recursive: true });
-  const file = path.join(dataDir, 'settings.yml');
-  // 已存在则保留用户手改（例如换 secret_key 或加引擎）
-  if (!fs.existsSync(file)) fs.writeFileSync(file, settingsYaml(), 'utf8');
-}
-
 export function manualDeployCommand(dataDir: string, port = CONTAINER_PORT): string {
   return [
     'docker run -d --name wbfm-searxng --restart unless-stopped',
@@ -188,8 +160,9 @@ export async function deploySearxng(deps: SearxngDeployDeps): Promise<SearxngDep
     return fail('unsupported', `当前平台不支持自动部署：${process.platform}`, dataDir);
   }
 
+  let managed = false;
   try {
-    ensureConfigDir(dataDir);
+    ({ managed } = ensureConfigDir(dataDir));
   } catch (error) {
     return fail('start_failed', `无法写入配置目录：${(error as Error).message}`, dataDir);
   }
@@ -268,18 +241,37 @@ export async function deploySearxng(deps: SearxngDeployDeps): Promise<SearxngDep
 
   // 3) 等 JSON 接口可用（首次启动要等上游引擎初始化）
   const endpoint = `http://127.0.0.1:${port}`;
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (await probe(endpoint)) {
-      return { ok: true, endpoint, container: SEARXNG_CONTAINER };
-    }
-    await sleep(POLL_INTERVAL_MS);
+  if (!(await waitReady(endpoint, timeoutMs, probe, sleep))) {
+    return fail(
+      'timeout',
+      `容器已启动但 ${endpoint} 在 ${Math.round(timeoutMs / 1000)}s 内未返回 JSON。请稍后点「测试连接」重试，或执行 docker logs ${SEARXNG_CONTAINER} 查看原因。`,
+      dataDir,
+    );
   }
-  return fail(
-    'timeout',
-    `容器已启动但 ${endpoint} 在 ${Math.round(timeoutMs / 1000)}s 内未返回 JSON。请稍后点「测试连接」重试，或执行 docker logs ${SEARXNG_CONTAINER} 查看原因。`,
-    dataDir,
-  );
+
+  // 4) 动态引擎调优：按当前网络实测结果禁用拿不到结果的引擎（被墙/超时/验证码）
+  let engines: string[] | undefined;
+  if (managed) {
+    try {
+      engines = await tuneEngines({
+        dataDir,
+        endpoint,
+        run,
+        probe,
+        probeEngine: deps.probeEngine ?? defaultProbeEngine,
+        sleep,
+      });
+    } catch {
+      engines = [];
+    }
+  }
+
+  return {
+    ok: true,
+    endpoint,
+    container: SEARXNG_CONTAINER,
+    ...(engines ? { engines } : {}),
+  };
 }
 
 export interface SearchIpcMainLike {

@@ -7,8 +7,9 @@ export const enVoice = {
   },
   mic: {
     unavailable: 'Voice input unavailable: download the offline speech recognition model in Settings',
-    recording: 'Release to send (listening)',
-    holdToTalk: 'Hold to talk (offline speech recognition)',
+    recording: 'Release to transcribe (listening)',
+    holdToTalk: 'Hold to talk (released text goes to the input box for review)',
+    polishing: 'Polishing transcription…',
   },
   micError: {
     permissionDenied: 'Microphone permission denied. Allow it in browser/system settings',
@@ -195,9 +196,10 @@ export const enVoice = {
       'Kokoro multi-speaker: voices bind automatically to the character selected under “Live2D avatar” (103 Chinese-English voices, preview per character in the avatar section)',
     asrTitle: 'Voice input (ASR)',
     asrToggleLabel: 'Enable voice input',
-    asrToggleHintReady: 'Shows a microphone button (hold to talk) next to the chat input',
+    asrToggleHintReady:
+      'Shows a microphone button next to the chat input (hold to talk; released text fills the input box)',
     asrToggleHintNoModel: 'Download the ASR model first',
     inputModeLabel: 'Input mode',
-    inputModePttOption: 'Hold to talk (PTT) · auto segmentation in a later version',
+    inputModePttOption: 'Hold to talk (PTT) · released text is polished into the input box; you send it',
   },
 };

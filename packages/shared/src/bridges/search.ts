@@ -5,7 +5,13 @@
 
 /** 一键部署 SearXNG 的结果 */
 export type SearxngDeployResult =
-  | { ok: true; endpoint: string; container: string }
+  | {
+      ok: true;
+      endpoint: string;
+      container: string;
+      /** 动态探测后实际可用的引擎（配置为用户手改时缺省） */
+      engines?: string[];
+    }
   | {
       ok: false;
       /** docker_missing=未安装；docker_daemon=未启动；start_failed=启动失败；timeout=起来但不可用 */

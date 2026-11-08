@@ -8,3 +8,4 @@ export * from './summarizer';
 export * from './turn-context';
 export * from './turn-context-assembly';
 export * from './turn-preparation';
+export * from './voice-polish';

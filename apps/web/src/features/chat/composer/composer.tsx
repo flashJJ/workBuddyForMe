@@ -82,7 +82,13 @@ export function Composer({
   };
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   React.useEffect(() => {
-    if (focusToken) textareaRef.current?.focus();
+    if (!focusToken) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.focus();
+    // v2.25：语音追加后光标落到末尾，继续输入不会插到识别文本中间
+    const end = el.value.length;
+    el.setSelectionRange(end, end);
   }, [focusToken]);
   const [dragging, setDragging] = React.useState(false);
   const toast = useToast();

@@ -28,6 +28,9 @@ export const zhSettingsSearch = {
     deploy: '一键部署',
     deploying: '部署中…（首次会拉取镜像）',
     deployOk: '部署完成：{endpoint}，已自动保存并测试',
+    deployEngines: '已按当前网络自动启用：{engines}',
+    deployNoEngine:
+      '当前网络下候选搜索引擎均不可用，已保留全部引擎；网络恢复后重新部署即可自动收窄。',
     allowPrivate: '允许内网地址（仅自建 SearXNG）',
     maxResults: '每次结果数',
     save: '保存',
@@ -72,6 +75,9 @@ export const enSettingsSearch = {
     deploy: 'Deploy',
     deploying: 'Deploying… (first run pulls the image)',
     deployOk: 'Deployed at {endpoint}; settings saved and tested',
+    deployEngines: 'Enabled for your network: {engines}',
+    deployNoEngine:
+      'No candidate engines responded on this network; all engines stay enabled. Redeploy once the network recovers.',
     allowPrivate: 'Allow private network endpoint (self-hosted SearXNG only)',
     maxResults: 'Results per search',
     save: 'Save',

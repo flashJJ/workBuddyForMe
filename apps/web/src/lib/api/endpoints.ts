@@ -220,6 +220,8 @@ export const API = {
   voiceSettings: '/api/voice/settings',
   voiceTts: '/api/voice/tts',
   voiceAsr: '/api/voice/asr',
+  /** v2.25：PTT 识别结果润色（无模型/超时回退原文） */
+  voicePolish: '/api/voice/polish',
   voiceModelStatus: '/api/voice/models/status',
   voiceModelDownload: '/api/voice/models/download',
 } as const;

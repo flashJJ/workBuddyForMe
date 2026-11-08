@@ -9,19 +9,21 @@ import { useVoiceSettings } from './use-voice-settings';
 import { useVoiceRecorder } from './use-voice-recorder';
 
 interface MicButtonProps {
-  /** 识别完成后发送文本（流式中禁用，避免并发轮次） */
-  onRecognizedSend: (text: string) => void;
+  /** 识别完成后写入输入框（v2.25：不再自动发送，用户点发送才发出） */
+  onRecognizedText: (text: string) => void;
+  /** 模型润色进行中（仅视觉提示，不阻断下一次按压） */
+  polishing?: boolean;
   disabled?: boolean;
 }
 
 /**
- * 按住说话（PTT）：pointerdown 开始录音，pointerup 识别并自动发送。
+ * 按住说话（PTT）：pointerdown 开始录音，pointerup 识别后填入输入框并润色。
  * ASR 模型未就绪时禁用（设置面板提供下载入口）。
  *
  * 关键：按下期间绝不能切换 disabled（会令浏览器丢失活动指针、立即触发 cancel/up），
  * 并用 setPointerCapture 保证手指/鼠标小幅滑出按钮仍能收到 pointerup。
  */
-export function MicButton({ onRecognizedSend, disabled }: MicButtonProps) {
+export function MicButton({ onRecognizedText, polishing = false, disabled }: MicButtonProps) {
   const { t } = useI18n();
   const { modelStatus } = useVoiceSettings();
   const recorder = useVoiceRecorder();
@@ -38,14 +40,16 @@ export function MicButton({ onRecognizedSend, disabled }: MicButtonProps) {
   const handlePointerUp = React.useCallback(async () => {
     if (recorder.state !== 'recording') return;
     const text = await recorder.stopAndRecognize();
-    if (text.trim()) onRecognizedSend(text.trim());
-  }, [recorder, onRecognizedSend]);
+    if (text.trim()) onRecognizedText(text.trim());
+  }, [recorder, onRecognizedText]);
 
   const label = !asrReady
     ? t('voice.mic.unavailable')
     : recording
       ? t('voice.mic.recording')
-      : t('voice.mic.holdToTalk');
+      : polishing
+        ? t('voice.mic.polishing')
+        : t('voice.mic.holdToTalk');
 
   return (
     <Button
@@ -82,7 +86,7 @@ export function MicButton({ onRecognizedSend, disabled }: MicButtonProps) {
       }}
       onContextMenu={(event) => event.preventDefault()}
     >
-      {recognizing ? (
+      {recognizing || polishing ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <Mic className="h-4 w-4" />

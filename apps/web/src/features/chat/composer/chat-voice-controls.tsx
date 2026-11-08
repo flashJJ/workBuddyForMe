@@ -7,6 +7,7 @@ import {
   VoiceToggle,
 } from '@/features/voice/ui';
 import type { HandsfreeVoice } from '@/features/voice/runtime';
+import type { VoiceDraft } from '@/features/voice/draft';
 
 interface Props {
   ttsEnabled: boolean;
@@ -15,7 +16,8 @@ interface Props {
   inputMode: 'ptt' | 'vad' | undefined;
   handsfree: HandsfreeVoice;
   streaming: boolean;
-  onRecognizedSend: (text: string) => void;
+  /** v2.25：PTT 识别后只填草稿（+模型润色），点发送才发出 */
+  voiceDraft: VoiceDraft;
 }
 
 /**
@@ -23,7 +25,7 @@ interface Props {
  * v2.4 M3（D7 入口②）一键开启语音对话（就绪即当场武装免手）+ 朗读开关 + PTT / 免手麦克风。
  */
 export function ChatVoiceControls(props: Props) {
-  const { ttsEnabled, onTtsToggle, asrEnabled, inputMode, handsfree, streaming, onRecognizedSend } =
+  const { ttsEnabled, onTtsToggle, asrEnabled, inputMode, handsfree, streaming, voiceDraft } =
     props;
   return (
     <>
@@ -33,7 +35,11 @@ export function ChatVoiceControls(props: Props) {
         (inputMode === 'vad' ? (
           <HandsfreeMicButton handsfree={handsfree} />
         ) : (
-          <MicButton onRecognizedSend={onRecognizedSend} disabled={streaming} />
+          <MicButton
+            onRecognizedText={voiceDraft.insert}
+            polishing={voiceDraft.polishing > 0}
+            disabled={streaming}
+          />
         ))}
     </>
   );

@@ -70,6 +70,18 @@ function looksLikeHtml(response: Response, body: string): boolean {
   return (response.headers.get('content-type') ?? '').includes('text/html') || body.trimStart().startsWith('<');
 }
 
+/**
+ * 归一 unresponsive_engines：["brave","timeout"] → brave（timeout）。
+ * 0 条结果时用它区分「确实没搜到」与「引擎被墙/超时」。
+ */
+function describeUnresponsive(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (Array.isArray(item) ? `${String(item[0])}（${String(item[1])}）` : String(item)))
+    .filter((text) => text.length > 0)
+    .slice(0, 5);
+}
+
 /** 200 却拿到网页时的统一可读错误（SearXNG 需在 settings.yml 开启 json 输出） */
 function htmlPageError(status: number): SearchError {
   return new SearchError(
@@ -100,9 +112,9 @@ export function createSearxngProvider(endpoint: string, timeoutMs: number): Sear
       // 不用 response.json()：公共实例常以 200 返回反爬挑战页，
       // 原生报错是「Unexpected token '<' ... is not valid JSON」，对用户毫无指导意义
       const raw = await response.text().catch(() => '');
-      let payload: { results?: unknown };
+      let payload: { results?: unknown; unresponsive_engines?: unknown };
       try {
-        payload = JSON.parse(raw) as { results?: unknown };
+        payload = JSON.parse(raw) as { results?: unknown; unresponsive_engines?: unknown };
       } catch {
         throw htmlPageError(response.status);
       }
@@ -114,6 +126,14 @@ export function createSearxngProvider(endpoint: string, timeoutMs: number): Sear
         .map((item) => mapItem(item as SearxngItem))
         .filter((item): item is WebSearchResult => item !== null)
         .slice(0, maxResults);
+      // 0 条且带 unresponsive_engines：不是「没搜到」，而是引擎全挂了，给出可操作提示
+      const unresponsive = describeUnresponsive(payload.unresponsive_engines);
+      if (results.length === 0 && unresponsive.length > 0) {
+        throw new SearchError(
+          'unreachable',
+          `搜索服务没有返回结果：${unresponsive.join('、')} 不可用，请检查本机网络/代理，或改用 Brave / Tavily`,
+        );
+      }
       return { provider: 'searxng', results };
     } catch (error) {
       if (error instanceof SearchError) throw error;

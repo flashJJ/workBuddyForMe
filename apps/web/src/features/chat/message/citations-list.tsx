@@ -15,8 +15,11 @@ const COLLAPSE_THRESHOLD = 3;
 export function CitationsList({ message }: { message: Message }) {
   const { t } = useI18n();
   const collapsible = message.citations.length > COLLAPSE_THRESHOLD;
-  // 超过阈值默认折叠，避免长来源列表把正文挤出视口
-  const [expanded, setExpanded] = React.useState(!collapsible);
+  // 超过阈值默认折叠，避免长来源列表把正文挤出视口。
+  // 流式期间引用条数从 0 递增：不能把初始值写死进 state，否则首帧 ≤3 条时
+  // expanded 恒为 true，之后涨到 6 条也不会折叠；只有用户手动点过开关才固定。
+  const [override, setOverride] = React.useState<boolean | null>(null);
+  const expanded = override ?? !collapsible;
   const [viewer, setViewer] = React.useState<Message['citations'][number] | null>(null);
   if (message.citations.length === 0) return null;
 
@@ -25,7 +28,7 @@ export function CitationsList({ message }: { message: Message }) {
       {collapsible ? (
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => setOverride(!expanded)}
           aria-expanded={expanded}
           data-testid="citations-toggle"
           className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"

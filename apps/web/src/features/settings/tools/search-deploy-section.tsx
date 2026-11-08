@@ -35,7 +35,7 @@ export function SearxngDeploySection({
   const [deploy, setDeploy] = React.useState<
     | { kind: 'idle' }
     | { kind: 'running' }
-    | { kind: 'ok'; endpoint: string }
+    | { kind: 'ok'; endpoint: string; engines?: string[] }
     | { kind: 'fail'; result: Extract<SearxngDeployResult, { ok: false }> }
   >({ kind: 'idle' });
 
@@ -59,7 +59,7 @@ export function SearxngDeploySection({
       onFormChange(next);
       await update.mutateAsync({ searchSettings: next });
       onSettingsSaved();
-      setDeploy({ kind: 'ok', endpoint: result.endpoint });
+      setDeploy({ kind: 'ok', endpoint: result.endpoint, engines: result.engines });
       const tested = await test.mutateAsync();
       onTestResult(tested);
     } catch (error) {
@@ -94,9 +94,19 @@ export function SearxngDeploySection({
         </Button>
       </div>
       {deploy.kind === 'ok' && (
-        <p className="text-sm text-success" role="status">
-          {t('settings.search.deployOk', { endpoint: deploy.endpoint })}
-        </p>
+        <div className="space-y-1" role="status">
+          <p className="text-sm text-success">
+            {t('settings.search.deployOk', { endpoint: deploy.endpoint })}
+          </p>
+          {deploy.engines &&
+            (deploy.engines.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {t('settings.search.deployEngines', { engines: deploy.engines.join('、') })}
+              </p>
+            ) : (
+              <p className="text-xs text-warning">{t('settings.search.deployNoEngine')}</p>
+            ))}
+        </div>
       )}
       {deploy.kind === 'fail' && (
         <div className="space-y-1">
