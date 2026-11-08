@@ -128,6 +128,8 @@ export const API = {
   document: (id: string) => `/api/documents/${id}`,
   documentStructure: (id: string) => `/api/documents/${id}/structure`,
   documentReparse: (id: string) => `/api/documents/${id}/reparse`,
+  /** v2.29：批量重解析队列（start/pause/resume/cancel + 状态） */
+  kbReparseBatch: (kbId: string) => `/api/knowledge-bases/${kbId}/reparse-batch`,
   documentFigureSummary: (id: string) => `/api/documents/${id}/figure-summary`,
   /** v2.19：跨文档章节/表格对比产物 */
   documentCompare: '/api/documents/compare',
@@ -136,6 +138,8 @@ export const API = {
   memories: '/api/memories',
   memory: (id: string) => `/api/memories/${id}`,
   memoryClear: '/api/memories/clear',
+  /** v2.28：记忆线上计数（设置页统计卡） */
+  memoryStats: '/api/memories/stats',
   mcpServers: '/api/mcp/servers',
   mcpServer: (id: string) => `/api/mcp/servers/${id}`,
   /** v2.24：安装前运行环境探测 */
@@ -241,8 +245,10 @@ export const QUERY_KEYS = {
   documentStructure: (documentId: string) => ['document-structure', documentId] as const,
   kbGovernance: (kbId: string) => ['kb-governance', kbId] as const,
   kbCompileStatus: (kbId: string) => ['kb-compile-status', kbId] as const,
+  kbReparseBatch: (kbId: string) => ['kb-reparse-batch', kbId] as const,
   attachment: (id: string) => ['attachment', id] as const,
   memories: ['memories'] as const,
+  memoryStats: ['memories', 'stats'] as const,
   mcpServers: ['mcp-servers'] as const,
   mcpTools: ['mcp-tools'] as const,
   mcpRuntime: ['mcp-runtime'] as const,

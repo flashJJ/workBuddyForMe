@@ -50,6 +50,16 @@ export const MEMORY_RECALL_TOTAL_META_KEY = 'memory_recall_total';
 export const MEMORY_RECALL_ZERO_META_KEY = 'memory_recall_zero';
 
 /**
+ * v2.28 P1 审计轮转：
+ * - 过期事件按 (action, actor) 聚合后删除原文，计数保留在 memory_event_rollups；
+ * - 保留期可选 30 / 90 / 180 天或永久（0），缺省 90 天；
+ * - 轮转后最近一次执行时间写入 meta（设置页展示）。
+ */
+export const MEMORY_EVENT_RETENTION_DAYS = [30, 90, 180, 0] as const;
+export const MEMORY_EVENT_RETENTION_DEFAULT_DAYS = 90;
+export const MEMORY_EVENT_ROLLUP_META_KEY = 'memory_event_rollup_last_at';
+
+/**
  * v2.26 混合召回与生命周期：
  * - 候选池：向量与 FTS 各取 MEMORY_HYBRID_CANDIDATES 条后融合；
  * - 融合权重：语义 0.55 / 关键词 0.20 / 重要性 0.15 / 新鲜度 0.10；

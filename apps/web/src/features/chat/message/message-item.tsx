@@ -12,6 +12,7 @@ import { AgentRunCard, type AgentCardEntry } from '@/features/agent-collab';
 import { MessageBranchDialog } from '@/features/branch';
 import { AttachmentImage } from './attachment-image';
 import { CitationsList } from './citations-list';
+import { MemoryNoticeInline } from './memory-notice/memory-notice-inline';
 import { MarkdownContent } from './markdown';
 import { MessageActions } from './message-actions';
 import { TurnSummary } from './turn-summary/turn-summary';
@@ -270,6 +271,7 @@ export function MessageItem({
               })}
             </p>
           )}
+        <MemoryNoticeInline notices={message.memoryNotices} />
       </div>
       {conversationId && branchOpen && (
         <MessageBranchDialog

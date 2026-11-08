@@ -14,13 +14,13 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
+import { DOCUMENT_PARSE_VERSION } from '@wbfm/shared/constants';
 import { zipSync } from 'fflate';
 import * as XLSX from 'xlsx';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
 import { createSettingsService } from '../services/settings/settings-service';
 import { resetCompileQueueServiceForTest } from '../knowledge/compile-queue-service';
 import { createIngestionPipeline, INDEX_WRITE_BATCH_SIZE } from './ingestion-pipeline';
-
 const encoder = new TextEncoder();
 
 describe('文档摄入管线（TR-16.1）', () => {
@@ -113,6 +113,7 @@ describe('文档摄入管线（TR-16.1）', () => {
     expect(doc.status).toBe('indexed');
     expect(doc.chunkCount).toBe(2);
     expect(doc.indexedAt).toBeTruthy();
+    expect(doc.parseVersion).toBe(DOCUMENT_PARSE_VERSION);
     expect(createChunkRepository(db).countByDocument(documentId)).toBe(2);
     expect(createDocumentBlockRepository(db).countByDocument(documentId)).toBe(2);
 

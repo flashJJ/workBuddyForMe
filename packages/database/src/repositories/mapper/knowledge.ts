@@ -25,6 +25,7 @@ export interface DocumentRow {
   ocr_engine: DocumentRecord['ocrEngine'];
   error_message: string | null;
   chunk_count: number;
+  parse_version?: number;
   created_at: string;
   indexed_at: string | null;
   compile_status?: DocumentRecord['compileStatus'];
@@ -61,6 +62,7 @@ export function mapDocument(row: DocumentRow): DocumentRecord {
     ocrEngine: row.ocr_engine,
     errorMessage: row.error_message,
     chunkCount: row.chunk_count,
+    parseVersion: row.parse_version ?? 0,
     createdAt: row.created_at,
     indexedAt: row.indexed_at,
     compileStatus: row.compile_status ?? 'skipped',

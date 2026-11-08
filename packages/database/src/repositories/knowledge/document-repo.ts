@@ -18,6 +18,8 @@ export type DocumentStatusPatch = Partial<{
   errorMessage: string | null;
   chunkCount: number;
   indexedAt: string | null;
+  /** v2.29：解析成功时写入当前解析器版本 */
+  parseVersion: number;
   /** v0.4：OCR 状态与引擎（null 可显式清除，如重置） */
   ocrStatus: DocumentRecord['ocrStatus'];
   ocrEngine: DocumentRecord['ocrEngine'];
@@ -81,7 +83,7 @@ export function createDocumentRepository(db: DatabaseInstance) {
       db.prepare(
         `UPDATE documents SET file_type = @fileType, byte_size = @byteSize,
            content_hash = @contentHash, status = 'pending', error_message = NULL,
-           chunk_count = 0, indexed_at = NULL WHERE id = @id`,
+           chunk_count = 0, indexed_at = NULL, parse_version = 0 WHERE id = @id`,
       ).run({ id, ...patch });
     },
 
@@ -105,6 +107,24 @@ export function createDocumentRepository(db: DatabaseInstance) {
       ).map(mapDocument);
     },
 
+    /** v2.29：批量重建候选——解析版本落后或无结构块，且不在上传/处理中 */
+    listPendingReparse(knowledgeBaseId: string, currentParseVersion: number): DocumentRecord[] {
+      return (
+        db
+          .prepare(
+            `SELECT d.* FROM documents d
+             WHERE d.knowledge_base_id = ?
+               AND d.status IN ('indexed', 'partial', 'failed')
+               AND (
+                 d.parse_version < ?
+                 OR NOT EXISTS (SELECT 1 FROM document_blocks b WHERE b.document_id = d.id)
+               )
+             ORDER BY d.created_at ASC`,
+          )
+          .all(knowledgeBaseId, currentParseVersion) as DocumentRow[]
+      ).map(mapDocument);
+    },
+
     setStatus(id: string, status: DocumentStatus, patch: DocumentStatusPatch = {}): void {
       db.prepare(
         `UPDATE documents SET
@@ -112,6 +132,7 @@ export function createDocumentRepository(db: DatabaseInstance) {
            error_message = COALESCE(@errorMessage, error_message),
            chunk_count = COALESCE(@chunkCount, chunk_count),
            indexed_at = COALESCE(@indexedAt, indexed_at),
+           parse_version = COALESCE(@parseVersion, parse_version),
            ocr_status = COALESCE(@ocrStatus, ocr_status),
            ocr_engine = COALESCE(@ocrEngine, ocr_engine)
          WHERE id = @id`,
@@ -121,6 +142,7 @@ export function createDocumentRepository(db: DatabaseInstance) {
         errorMessage: patch.errorMessage ?? null,
         chunkCount: patch.chunkCount ?? null,
         indexedAt: patch.indexedAt ?? null,
+        parseVersion: patch.parseVersion ?? null,
         ocrStatus: patch.ocrStatus ?? null,
         ocrEngine: patch.ocrEngine ?? null,
       });

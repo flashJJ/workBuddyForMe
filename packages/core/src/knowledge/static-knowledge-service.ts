@@ -10,11 +10,12 @@
 import {
   createCompileQueryRepository,
   createRelationRepository,
+  createSettingsRepository,
   type EntityRecord,
 } from '@wbfm/database';
 import type { ServiceDeps } from '../services/base/deps';
 import { normalizeEntityName } from './entity-extractor';
-import { collectMultiHopRelations } from './relations';
+import { clampRelationCaps, collectMultiHopRelations } from './relations';
 import {
   analyzeQuery,
   isEntityMentioned,
@@ -89,10 +90,20 @@ export function createStaticKnowledgeService(deps: ServiceDeps) {
 
       const mentionedSet = new Set(mentionedIds);
       const relationRepo = createRelationRepository(deps.db);
+      const settings = createSettingsRepository(deps.db).getJson('app-settings', null) as {
+        knowledgeRelationMaxHops?: number;
+        knowledgeRelationMaxEdges?: number;
+      } | null;
+      const caps = clampRelationCaps({
+        maxHops: settings?.knowledgeRelationMaxHops,
+        maxEdges: settings?.knowledgeRelationMaxEdges,
+      });
       const relationRows =
         mentionedIds.length > 0
-          ? collectMultiHopRelations(mentionedIds, (ids) =>
-              relationRepo.listForEntities(knowledgeBaseId, ids),
+          ? collectMultiHopRelations(
+              mentionedIds,
+              (ids) => relationRepo.listForEntities(knowledgeBaseId, ids),
+              caps,
             )
           : [];
       relationRows.sort((a, b) => {

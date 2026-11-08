@@ -1,3 +1,4 @@
+import { LOW_CONFIDENCE_TABLE_THRESHOLD } from '@wbfm/shared/constants';
 import type { StructuredText } from '../text-structure';
 import type {
   BlockSegment,
@@ -107,9 +108,9 @@ export function assembleDocument(
       table = { ...segment.table, tableNo, confidence: tableConfidence(segment.table) };
       tables.push(table);
       warnings.push(...tableWarnings(tableNo, table));
-      if (table.confidence !== undefined && table.confidence < 0.75) {
+      if (table.confidence !== undefined && table.confidence < LOW_CONFIDENCE_TABLE_THRESHOLD) {
         warnings.push(
-          `表 ${tableNo} 置信度较低（${Math.round(table.confidence * 100)}%），表格结构可能不准确`,
+          `表 ${tableNo} 置信度较低（${Math.round(table.confidence * 100)}%），已降级为文本检索；表格结构可能不准确`,
         );
       }
     }

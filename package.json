@@ -1,6 +1,6 @@
 {
   "name": "workbuddy-for-me",
-  "version": "2.27.0",
+  "version": "2.29.0",
   "private": true,
   "license": "GPL-3.0-only",
   "description": "WorkBuddyForMe - 类 WorkBuddy 的私人 AI 平台（Next.js 全栈 + Electron）",
@@ -32,6 +32,7 @@
     "sync-version": "node scripts/sync-version.mjs",
     "sync-version:check": "node scripts/sync-version.mjs --check",
     "eval:memory": "node scripts/eval/eval-memory.mjs",
+    "memory:eval": "pnpm --filter @wbfm/core build && node scripts/eval/memory-report.mjs",
     "eval:agent": "node scripts/eval/eval-agent.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:ascii"

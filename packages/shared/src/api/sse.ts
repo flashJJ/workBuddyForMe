@@ -1,4 +1,4 @@
-import type { Citation, MemoryKind, MemoryRecallReason } from '../types/domain';
+import type { Citation, MemoryKind, MemoryNotice, MemoryRecallReason } from '../types/domain';
 import type { PermissionLevel } from '../types/permission';
 import type { FlowEventPayload } from '../types/flow';
 import type { TaskEventPayload } from '../schemas/work/task';
@@ -197,6 +197,8 @@ export type SsePayloadMap = {
     content: string;
     usage: TokenUsage | null;
     emotion?: EmotionSignal;
+    /** v2.28：本轮实时约束写入提示（旧客户端忽略；无命中不附带） */
+    memoryNotices?: MemoryNotice[];
   };
   /** v2.7：工作信号快照（桌宠/审批页独立订阅） */
   work_signal: WorkSignalSnapshot;

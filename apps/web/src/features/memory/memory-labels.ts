@@ -1,7 +1,7 @@
 import type { Language } from '@wbfm/shared/constants';
 import type { MemoryKind, MemoryRecallReason, MemoryStatus } from '@wbfm/shared/types';
 import type { MessageKey } from '@wbfm/shared/i18n';
-import { formatDateTime } from '@/lib/i18n/intl';
+import { formatDateTime, formatPercent } from '@/lib/i18n/intl';
 
 /** 长期记忆展示文案键与徽标配色集中管理（文案在渲染处 t() 解析） */
 
@@ -41,6 +41,30 @@ export const MEMORY_RECALL_REASON_LABELS: Record<MemoryRecallReason, MessageKey>
   hybrid: 'memory.recallReason.hybrid',
   pinned: 'memory.recallReason.pinned',
 };
+
+/** v2.28：审计动作与操作者文案键（未知动作降级为「其他」） */
+const MEMORY_AUDIT_ACTIONS: Record<string, MessageKey> = {
+  create: 'memory.stats.action.create',
+  merge: 'memory.stats.action.merge',
+  update: 'memory.stats.action.update',
+  supersede: 'memory.stats.action.supersede',
+  archive: 'memory.stats.action.archive',
+  restore: 'memory.stats.action.restore',
+  delete: 'memory.stats.action.delete',
+};
+
+export function memoryAuditActionKey(action: string): MessageKey {
+  return MEMORY_AUDIT_ACTIONS[action] ?? 'memory.stats.action.other';
+}
+
+export function memoryAuditActorKey(actor: string): MessageKey {
+  return actor === 'user' ? 'memory.stats.actor.user' : 'memory.stats.actor.system';
+}
+
+/** 统计卡比例统一格式化（后端返回 0~1，前端只格式化不重算） */
+export function formatStatsPercent(ratio: number, locale: Language): string {
+  return formatPercent(ratio, locale, { maximumFractionDigits: 1 });
+}
 
 export function formatMemoryDate(iso: string | null, locale: Language): string {
   if (!iso) return '—';

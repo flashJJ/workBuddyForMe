@@ -1,5 +1,5 @@
 import { MEMORY_BLOCK_RESERVE_TOKENS } from '@wbfm/shared/constants';
-import type { Memory } from '@wbfm/shared/types';
+import type { Memory, MemoryNotice } from '@wbfm/shared/types';
 import type { RecalledMemoryPayload } from '@wbfm/shared/api';
 import type { TraceHandle } from '@wbfm/ai';
 import type { ResolvedChatTarget } from '../chat/context/model-resolver';
@@ -128,32 +128,52 @@ export interface PostTurnMemoryParams {
   traceParent?: TraceHandle | null;
 }
 
+export interface RealtimeConstraintParams {
+  memory: MemoryService;
+  userContent: string;
+  conversationId: string;
+  assistantId: string;
+  sourceMessageId: string;
+  signal?: AbortSignal;
+  traceParent?: TraceHandle | null;
+}
+
 /**
- * 回合成功后写入记忆：
- * 1. 先跑实时硬约束规则（零 LLM，命中即置顶），失败不影响后续；
- * 2. 再调模型抽取常规记忆，去重/取代后入库。
+ * v2.28 P1：done 帧前同步写入实时硬约束（纯规则 + 单条事务，零模型成本）。
+ * 返回本轮需内联提示的记忆（最多 2 条）；失败只告警，不阻塞回答收尾。
+ */
+export async function writeRealtimeConstraints(
+  params: RealtimeConstraintParams,
+): Promise<MemoryNotice[]> {
+  const candidates = extractRealtimeConstraints(params.userContent);
+  if (candidates.length === 0) return [];
+  try {
+    const result = await params.memory.rememberCandidates(candidates, {
+      scope: 'assistant',
+      assistantId: params.assistantId,
+      source: 'realtime',
+      sourceConversationId: params.conversationId,
+      sourceMessageId: params.sourceMessageId,
+      skipEmbedding: true,
+      signal: params.signal,
+      traceParent: params.traceParent,
+    });
+    return result.memories.slice(0, 2).map((m) => ({ id: m.id, content: m.content }));
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[wbfm] 实时约束写入失败，本轮跳过：${error instanceof Error ? error.message : String(error)}`,
+    );
+    return [];
+  }
+}
+
+/**
+ * 回合成功后写入常规记忆：模型抽取 → 去重/取代后入库。
+ * 实时硬约束已在 done 帧前由 writeRealtimeConstraints 写入，此处不再重复。
  * 失败一律静默，仅告警，绝不影响已完成的回答。
  */
 export async function runPostTurnMemory(params: PostTurnMemoryParams): Promise<void> {
-  const constraints = extractRealtimeConstraints(params.userContent);
-  if (constraints.length > 0) {
-    try {
-      await params.memory.rememberCandidates(constraints, {
-        scope: 'assistant',
-        assistantId: params.assistantId,
-        source: 'realtime',
-        sourceConversationId: params.conversationId,
-        sourceMessageId: params.sourceMessageId,
-        signal: params.signal,
-        traceParent: params.traceParent,
-      });
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[wbfm] 实时约束写入失败，本轮跳过：${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
   try {
     const candidates = await extractTurnMemories({
       target: params.target,

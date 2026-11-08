@@ -1,0 +1,142 @@
+{
+  "version": "v2.28",
+  "at": "2026-11-08T18:25:27.826Z",
+  "channel": "keyword",
+  "topK": 3,
+  "cases": 12,
+  "hitAt3": 0.833,
+  "zeroRecallRate": 0,
+  "recallTotal": 12,
+  "avgRecallMs": 0.49,
+  "maxRecallMs": 1.3,
+  "results": [
+    {
+      "id": "recall-name",
+      "question": "你还记得我叫什么名字吗？",
+      "hit": true,
+      "topContents": [
+        "用户养了一只橘猫，名字叫橙子",
+        "用户名叫李明，朋友也叫他阿明"
+      ],
+      "elapsedMs": 1.3
+    },
+    {
+      "id": "recall-exam",
+      "question": "我最近在准备什么考试来着？",
+      "hit": true,
+      "topContents": [
+        "用户正在准备 PMP 考试，计划 2026 年 6 月参加考试",
+        "用户喜欢手冲咖啡，最近在练 V60 注水手法"
+      ],
+      "elapsedMs": 0.44
+    },
+    {
+      "id": "recall-city",
+      "question": "我在哪个城市上班？",
+      "hit": true,
+      "topContents": [
+        "用户在杭州未来科技城工作，是一名后端工程师",
+        "用户每周三和周五晚上去跑步，每次五公里",
+        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手"
+      ],
+      "elapsedMs": 0.4
+    },
+    {
+      "id": "recall-job",
+      "question": "我是做什么工作的？",
+      "hit": true,
+      "topContents": [
+        "用户在杭州未来科技城工作，是一名后端工程师",
+        "用户用的主力编程语言是 TypeScript"
+      ],
+      "elapsedMs": 0.3
+    },
+    {
+      "id": "recall-language",
+      "question": "我希望你用什么语言回复我？",
+      "hit": true,
+      "topContents": [
+        "用户用的主力编程语言是 TypeScript",
+        "用户偏好简体中文回复",
+        "用户喜欢先给结论再展开理由的回答结构"
+      ],
+      "elapsedMs": 0.43
+    },
+    {
+      "id": "recall-style",
+      "question": "回答问题的时候我喜欢什么结构？",
+      "hit": true,
+      "topContents": [
+        "用户喜欢先给结论再展开理由的回答结构",
+        "用户喜欢手冲咖啡，最近在练 V60 注水手法",
+        "用户不吃香菜，点餐时都会特别说明不要香菜"
+      ],
+      "elapsedMs": 0.46
+    },
+    {
+      "id": "recall-pet",
+      "question": "我养宠物了吗？它叫什么？",
+      "hit": true,
+      "topContents": [
+        "用户养了一只橘猫，名字叫橙子",
+        "用户名叫李明，朋友也叫他阿明"
+      ],
+      "elapsedMs": 0.31
+    },
+    {
+      "id": "recall-food",
+      "question": "晚上一起吃兰州拉面，帮我点单时要注意什么？",
+      "hit": true,
+      "topContents": [
+        "用户不吃香菜，点餐时都会特别说明不要香菜",
+        "用户每周三和周五晚上去跑步，每次五公里",
+        "用户在杭州未来科技城工作，是一名后端工程师"
+      ],
+      "elapsedMs": 0.48
+    },
+    {
+      "id": "recall-event-timeline",
+      "question": "我最近有什么已经安排好的事情吗？",
+      "hit": true,
+      "topContents": [
+        "用户下周六搬家，从余杭搬到西湖区，已经约好了搬家公司",
+        "用户喜欢手冲咖啡，最近在练 V60 注水手法",
+        "用户偏好简体中文回复"
+      ],
+      "elapsedMs": 0.43
+    },
+    {
+      "id": "recall-sideproject",
+      "question": "我业余时间在做什么项目？",
+      "hit": true,
+      "topContents": [
+        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手",
+        "用户不吃香菜，点餐时都会特别说明不要香菜",
+        "用户下周六搬家，从余杭搬到西湖区，已经约好了搬家公司"
+      ],
+      "elapsedMs": 0.38
+    },
+    {
+      "id": "recall-sport",
+      "question": "我平时的运动安排是怎样的？",
+      "hit": false,
+      "topContents": [
+        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手",
+        "用户用的主力编程语言是 TypeScript",
+        "用户喜欢先给结论再展开理由的回答结构"
+      ],
+      "elapsedMs": 0.43
+    },
+    {
+      "id": "recall-synthesize-gift",
+      "question": "想送我一个 200 元以内的小礼物，结合你对我的了解给一个建议，一句话就行。",
+      "hit": false,
+      "topContents": [
+        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手",
+        "用户喜欢先给结论再展开理由的回答结构",
+        "用户养了一只橘猫，名字叫橙子"
+      ],
+      "elapsedMs": 0.52
+    }
+  ]
+}

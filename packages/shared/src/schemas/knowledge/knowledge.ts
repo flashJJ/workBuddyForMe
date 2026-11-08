@@ -76,3 +76,9 @@ export const clipRequestSchema = z.object({
     .refine((v) => /^https?:\/\//i.test(v), '网址必须以 http:// 或 https:// 开头'),
 });
 export type ClipRequest = z.infer<typeof clipRequestSchema>;
+
+/** v2.29：批量重解析队列动作 */
+export const reparseBatchActionSchema = z.object({
+  action: z.enum(['start', 'pause', 'resume', 'cancel']),
+});
+export type ReparseBatchAction = z.infer<typeof reparseBatchActionSchema>;

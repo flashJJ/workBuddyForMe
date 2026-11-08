@@ -23,6 +23,7 @@ import { createEmotionService, recordTurnEmotion } from '../../emotion/index';
 import { stripEmotionSignalBlock, type EmotionSignal } from '@wbfm/shared/schemas';
 import { prepareTurnContext, type PreparedTurnContext } from '../context/turn-context-assembly';
 import { schedulePostTurnJobs } from '../turns/post-turn-schedule';
+import { writeRealtimeConstraints } from '../../memory/turn-memory';
 
 export function createChatOrchestrator(deps: ServiceDeps) {
   const assistants = createAssistantsService(deps);
@@ -251,33 +252,31 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         // v2.4 M1 T7：首次完整回答即记里程碑（首写优先；不含回答内容）
         recordMilestone(deps.db, 'firstAnswerAt');
 
-        // 先把 done 交给用户：回答已完整落库，UI 立即结束 loading。
-        // 摘要压缩/长期记忆是旁路 LLM 任务（本地 14B 上可能再花十几秒），
-        // 绝不能阻塞 done——否则会出现「文字已出完但停止生成一直转」。
+        // v2.28 P1：实时约束在 done 前同步写入，本轮即可内联提示与撤销
+        const memoryNotices = assistant.memoryEnabled
+          ? await writeRealtimeConstraints({ memory, userContent, conversationId: conversation.id,
+              assistantId: assistant.id, sourceMessageId: assistantMessage.id })
+          : [];
+
+        // 先把 done 交给用户：回答已完整落库，旁路任务（摘要/记忆抽取）绝不阻塞 done。
         yield {
           event: 'done',
-          data: resolvedEmotion
-            ? { content: full, usage, emotion: resolvedEmotion }
-            : { content: full, usage },
+          data: {
+            content: full, usage,
+            ...(resolvedEmotion ? { emotion: resolvedEmotion } : {}),
+            ...(memoryNotices.length > 0 ? { memoryNotices } : {}),
+          },
         };
 
-        // 后台任务 fire-and-forget：用独立 signal（响应关闭会 abort 请求 signal，
-        // 但摘要/记忆不应随之丢弃），超时兜底；失败内部均已静默。
+        // 后台任务 fire-and-forget：独立 signal，超时兜底；失败内部均已静默。
         schedulePostTurnJobs({
           schedule: scheduleBackgroundJob,
           aborted: Boolean(input.signal?.aborted),
           jobs: {
-            conversations,
-            attachments,
-            conversation,
-            assistant,
-            target,
-            toolDefs,
-            lastCompletionTokens: usage?.completionTokens ?? null,
-            memory,
-            userContent,
-            assistantContent: full,
-            sourceMessageId: assistantMessage.id, workPlans: deps.workPlans, toolTrace: trace,
+            conversations, attachments, conversation, assistant, target, toolDefs,
+            lastCompletionTokens: usage?.completionTokens ?? null, memory, userContent,
+            assistantContent: full, sourceMessageId: assistantMessage.id,
+            workPlans: deps.workPlans, toolTrace: trace,
           },
         });
       } finally {

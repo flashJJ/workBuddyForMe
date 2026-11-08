@@ -14,6 +14,8 @@ import { enToast } from './messages/toast';
 import { enErrors } from './messages/errors';
 import { enAssistants } from './messages/assistants';
 import { enKnowledge } from './messages/knowledge';
+import { enKnowledgeReparse } from './messages/knowledge-reparse';
+import { enKnowledgeRelationSettings } from './messages/knowledge-relation-settings';
 import { enKnowledgeCompare } from './messages/knowledge-compare';
 import { enDocumentViewer } from './messages/document-viewer';
 import { enMemory } from './messages/memory';
@@ -82,6 +84,8 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   stage: enStage,
   meeting: enMeeting,
   knowledge: enKnowledge,
+  knowledgeReparse: enKnowledgeReparse,
+  knowledgeRelationSettings: enKnowledgeRelationSettings,
   knowledgeCompare: enKnowledgeCompare,
   documentViewer: enDocumentViewer,
   memory: enMemory,

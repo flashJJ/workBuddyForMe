@@ -78,6 +78,13 @@ export function DocumentViewerDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, documentId]);
 
+  const citationStale = React.useMemo(() => {
+    if (!focus?.citedAt || !data?.parsedAt) return false;
+    const cited = Date.parse(focus.citedAt);
+    const parsed = Date.parse(data.parsedAt);
+    return Number.isFinite(cited) && Number.isFinite(parsed) && parsed > cited;
+  }, [focus?.citedAt, data?.parsedAt]);
+
   const figures = React.useMemo(
     () =>
       (data?.blocks ?? [])
@@ -119,6 +126,15 @@ export function DocumentViewerDialog({
           </p>
         )}
 
+        {citationStale && (
+          <p
+            className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800"
+            data-testid="citation-stale"
+          >
+            {t('documentViewer.citationStale')}
+          </p>
+        )}
+
         {structure.isLoading ? (
           <Spinner />
         ) : data ? (
@@ -136,6 +152,22 @@ export function DocumentViewerDialog({
                 </ul>
               </div>
             )}
+
+            {data.quality?.unrebuildable ? (
+              <p
+                className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800"
+                data-testid="quality-unrebuildable"
+              >
+                {t('documentViewer.qualityUnrebuildable')}
+              </p>
+            ) : data.quality?.pendingReparse ? (
+              <p
+                className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                data-testid="quality-pending-reparse"
+              >
+                {t('documentViewer.qualityPending')}
+              </p>
+            ) : null}
 
             {!data.structureAvailable ? (
               <p className="rounded-md border bg-muted/40 px-3 py-4 text-muted-foreground">

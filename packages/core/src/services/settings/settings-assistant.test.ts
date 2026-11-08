@@ -104,6 +104,8 @@ describe('settings / assistants 服务（TR-13.1）', () => {
         timeoutMs: 10_000,
         allowPrivateEndpoint: false,
       },
+      // v2.28：审计事件默认保留 90 天
+      memoryEventRetentionDays: 90,
     });
     const updated = settings.update({ theme: 'dark' });
     expect(updated.theme).toBe('dark');

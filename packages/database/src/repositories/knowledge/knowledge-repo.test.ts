@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import {
   createChunkRepository,
   createDatabase,
+  createDocumentBlockRepository,
   createDocumentRepository,
   createKnowledgeRepository,
   type DatabaseInstance,
@@ -97,5 +98,41 @@ describe('knowledge/document/chunk 仓储', () => {
     expect(kbs.delete(kb.id)).toBe(true);
     expect(docs.findById(doc.id)).toBeNull();
     expect(chunks.countByDocument(doc.id)).toBe(0);
+  });
+
+  it('v2.29 批量重建候选：版本落后或无结构块，排除处理中', () => {
+    const kbs = createKnowledgeRepository(db);
+    const docs = createDocumentRepository(db);
+    const blocks = createDocumentBlockRepository(db);
+    const kb = kbs.create({ name: 'kb', chunkSize: 500, chunkOverlap: 80 });
+    const create = (filename: string) =>
+      docs.create({
+        knowledgeBaseId: kb.id,
+        filename,
+        fileType: '.md',
+        byteSize: 1,
+        contentHash: filename,
+      });
+    const current = create('current.md');
+    const legacy = create('legacy.md');
+    const failed = create('failed.md');
+    const processing = create('processing.md');
+    docs.setStatus(current.id, 'indexed', { parseVersion: 1 });
+    blocks.bulkInsert(current.id, [
+      {
+        kind: 'paragraph',
+        pageNo: null,
+        content: '正文',
+        charStart: 0,
+        charEnd: 2,
+        sectionPath: [],
+      },
+    ]);
+    docs.setStatus(legacy.id, 'indexed');
+    docs.setStatus(failed.id, 'failed', { errorMessage: '解析失败' });
+    docs.setStatus(processing.id, 'processing');
+
+    const pending = docs.listPendingReparse(kb.id, 1);
+    expect(pending.map((doc) => doc.filename).sort()).toEqual(['failed.md', 'legacy.md']);
   });
 });

@@ -1,4 +1,5 @@
 import { runSchedulerTick } from '@wbfm/core/scheduler';
+import { MEMORY_EVENT_RETENTION_DEFAULT_DAYS } from '@wbfm/shared/constants';
 import { isScheduledAgentTask } from '@wbfm/shared/schemas';
 import type { ServiceContainer } from './container';
 import { startScheduledAgentTask } from './scheduled-agent';
@@ -12,9 +13,35 @@ import { startScheduledAgentTask } from './scheduled-agent';
 
 const INTERVAL_MS = 10_000;
 const HOLDER_KEY = '__WBFM_SERVER_SCHEDULER__';
+const ROLLUP_HOLDER_KEY = '__WBFM_MEMORY_EVENT_ROLLUP__';
+const ROLLUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 interface SchedulerHolder {
   [HOLDER_KEY]?: ReturnType<typeof setInterval>;
+  [ROLLUP_HOLDER_KEY]?: ReturnType<typeof setInterval>;
+}
+
+/**
+ * v2.28 P1：记忆审计轮转（启动后异步一次 + 每 24h，单飞）。
+ * 保留期读现有 settings；失败只告警，不阻塞启动与接口。
+ */
+function runMemoryEventRollupTick(services: ServiceContainer): void {
+  try {
+    const retentionDays =
+      services.settings.get().memoryEventRetentionDays ?? MEMORY_EVENT_RETENTION_DEFAULT_DAYS;
+    services.memories.runEventRollup({ retentionDays });
+  } catch (error) {
+    console.warn('[memory] 审计轮转失败', error);
+  }
+}
+
+function ensureMemoryEventRollup(services: ServiceContainer, holder: SchedulerHolder): void {
+  if (holder[ROLLUP_HOLDER_KEY]) return;
+  const boot = setTimeout(() => runMemoryEventRollupTick(services), 0);
+  (boot as { unref?: () => void }).unref?.();
+  const timer = setInterval(() => runMemoryEventRollupTick(services), ROLLUP_INTERVAL_MS);
+  (timer as { unref?: () => void }).unref?.();
+  holder[ROLLUP_HOLDER_KEY] = timer;
 }
 
 export async function runServerSchedulerTick(services: ServiceContainer): Promise<number> {
@@ -46,4 +73,5 @@ export function ensureServerScheduler(services: ServiceContainer): void {
   }, INTERVAL_MS);
   (timer as { unref?: () => void }).unref?.();
   holder[HOLDER_KEY] = timer;
+  ensureMemoryEventRollup(services, holder);
 }

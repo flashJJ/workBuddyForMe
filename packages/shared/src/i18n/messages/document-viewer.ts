@@ -6,6 +6,8 @@ export const zhDocumentViewer = {
   loading: '正在读取结构…',
   unavailable: '尚未解析结构（旧文档或解析失败），重新上传后可重建。',
   warnings: '解析警告',
+  qualityPending: '此文档尚未按当前解析器重建，章节与表格引用可能不可用；可点下方「重新解析」。',
+  qualityUnrebuildable: '原始文件未保留，无法重建；请重新上传该文档。',
   sections: '章节树',
   expand: '展开',
   collapse: '收起',
@@ -24,6 +26,8 @@ export const zhDocumentViewer = {
   tableRows: '{count} 行',
   tableNote: '行号按数据行从 1；单元格地址按 Excel 口径，表头占第 1 行',
   tableConfidence: '置信度 {value}%',
+  tableDegraded: '已降级为文本检索',
+  citationStale: '文档在引用生成后已重建，定位可能变化；请以引用片段为准。',
   figures: '图表/图片',
   noFigures: '未识别到图注或图表',
   figureUnavailable: '未配置视觉模型：可查看图注，但无法解读图表/图片；请在设置中选择支持图片理解（vision）的模型。',
@@ -49,6 +53,10 @@ export const enDocumentViewer = {
   loading: 'Loading structure…',
   unavailable: 'No structure parsed yet (legacy document or parse failure). Re-upload to rebuild.',
   warnings: 'Parse warnings',
+  qualityPending:
+    'This document has not been rebuilt with the current parser; section and table citations may be unavailable. Use Rebuild below.',
+  qualityUnrebuildable:
+    'The original file is no longer retained, so it cannot be rebuilt. Please upload it again.',
   sections: 'Section tree',
   expand: 'Expand',
   collapse: 'Collapse',
@@ -67,6 +75,9 @@ export const enDocumentViewer = {
   tableRows: '{count} rows',
   tableNote: 'Rows start at 1 for data rows; cell addresses use Excel numbering with the header on row 1',
   tableConfidence: 'Confidence {value}%',
+  tableDegraded: 'Text-only fallback',
+  citationStale:
+    'The document was rebuilt after this citation was created, so its location may have shifted. Rely on the citation snippet.',
   figures: 'Figures / images',
   noFigures: 'No figure captions detected',
   figureUnavailable:

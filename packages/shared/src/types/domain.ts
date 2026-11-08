@@ -13,6 +13,7 @@
   Language,
 } from '../constants/index';
 import type { ContentPart } from './content-part';
+import type { MemoryNotice } from './memory';
 import type { EventSettingsFields } from '../events/event-settings';
 import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { SubagentCliSettingsFields } from './subagent-settings';
@@ -36,7 +37,6 @@ export interface Provider extends Timestamped {
   enabled: boolean;
   sortOrder: number;
 }
-
 export interface ProviderModel {
   id: string;
   providerId: string;
@@ -46,13 +46,11 @@ export interface ProviderModel {
   contextWindow: number | null;
   createdAt: string;
 }
-
 /** 供应商远端模型发现项（v0.5）：contextLength 为自动探测的上下文长度，无法探测时为 null。 */
 export interface DiscoveredModel {
   id: string;
   contextLength: number | null;
 }
-
 export interface Assistant extends Timestamped {
   id: string;
   name: string;
@@ -100,7 +98,6 @@ export interface Conversation extends Timestamped {
   summaryTurns: number;
   modelId: string | null;
 }
-
 export interface Citation {
   documentId: string;
   documentName: string;
@@ -127,11 +124,9 @@ export interface Citation {
   /** v2.19：Excel 风格单元格（如 C3） */
   tableCell?: string;
 }
-
 // v2.6：长期记忆类型迁至 ./memory（domain 重新导出保持公开面不变）
 export { MEMORY_KINDS, MEMORY_STATUSES, MEMORY_RECALL_REASONS } from './memory';
-export type { Memory, MemoryKind, MemoryStatus, MemoryRecallReason } from './memory';
-
+export type { Memory, MemoryKind, MemoryStatus, MemoryRecallReason, MemoryNotice } from './memory';
 export interface Message {
   id: string;
   conversationId: string;
@@ -151,6 +146,8 @@ export interface Message {
   feedbackAt: string | null;
   errorCode: string | null;
   errorMessage: string | null;
+  /** v2.28：本轮新记住的硬约束提示（仅前端 live 态，不落库） */
+  memoryNotices?: MemoryNotice[];
   createdAt: string;
 }
 
@@ -163,7 +160,6 @@ export interface Attachment {
   contentHash: string;
   createdAt: string;
 }
-
 export interface KnowledgeBase extends Timestamped {
   id: string;
   name: string;
@@ -172,7 +168,6 @@ export interface KnowledgeBase extends Timestamped {
   chunkOverlap: number;
   documentCount: number;
 }
-
 export interface DocumentRecord {
   id: string;
   knowledgeBaseId: string;
@@ -191,6 +186,8 @@ export interface DocumentRecord {
   ocrEngine: OcrEngine | null;
   errorMessage: string | null;
   chunkCount: number;
+  /** v2.29：成功落库时的解析器版本，落后即待重建 */
+  parseVersion: number;
   createdAt: string;
   indexedAt: string | null;
   /** v1.3：知识编译状态机（skipped/queued/running/ready/failed）+ 世代/时间/错误 */
@@ -199,7 +196,6 @@ export interface DocumentRecord {
   compileError?: string | null;
   compileGeneration?: number;
 }
-
 export interface AppSettings
   extends EventSettingsFields,
     LocalModeSettingsFields,
@@ -220,6 +216,9 @@ export interface AppSettings
   retrievalMinSimilarity?: number;
   /** v1.3：RAG 注入片段上限，缺省由 core 给 8 */
   retrievalMaxChunks?: number;
+  /** v2.29：关系检索多跳上限（1–3 跳 / 4–24 边；缺省 2/12） */
+  knowledgeRelationMaxHops?: number;
+  knowledgeRelationMaxEdges?: number;
   /** v1.3：编译优先检索路由（静态知识层前置），缺省视为 true */
   compileRoutingEnabled?: boolean;
   /** v1.3 M4：摄入后自动入队编译（缺省视为 true） */
@@ -278,8 +277,8 @@ export interface AppSettings
   workReduceMotion?: boolean;
   /** v2.7：待机节奏（缺省 standard；quiet/lively 调整桌宠休息间隔） */
   workIdlePacing?: 'quiet' | 'standard' | 'lively';
-  /** v2.17：联网搜索设置（缺省关闭；仅影响 web_search 工具） */
-  searchSettings?: SearchSettings;
+  /** v2.17：联网搜索（缺省关闭；仅影响 web_search 工具） */ searchSettings?: SearchSettings;
+  /** v2.28：记忆审计保留期（30/90/180；0=永久；缺省 90） */ memoryEventRetentionDays?: number;
 }
 /** v1.8 M4：音色收藏条目（形状随 settings 持久化） */
 export interface VoiceFavorite {

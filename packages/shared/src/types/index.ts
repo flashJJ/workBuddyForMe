@@ -21,6 +21,7 @@ export type {
   Assistant,
   Conversation,
   Message,
+  MemoryNotice,
   Citation,
   KnowledgeBase,
   DocumentRecord,
@@ -156,6 +157,7 @@ export {
 export type {
   ConversationFact,
   ConversationFactKind,
+  MemoryAuditEntry,
   MemoryLifecycleStats,
   TaskCheckpoint,
   TaskCheckpointStatus,

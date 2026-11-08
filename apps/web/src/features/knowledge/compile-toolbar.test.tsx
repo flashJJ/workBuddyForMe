@@ -33,6 +33,7 @@ function doc(partial: Partial<DocumentRecord> & { id: string; status: DocumentRe
     ocrEngine: null,
     errorMessage: '未配置可用的 embedding 模型',
     chunkCount: 0,
+    parseVersion: 1,
     createdAt: '2025-01-01T00:00:00.000Z',
     indexedAt: null,
     ...partial,

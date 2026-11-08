@@ -19,6 +19,12 @@ export type MemoryRecallReason = (typeof MEMORY_RECALL_REASONS)[number];
 export const MEMORY_SCOPES = ['global', 'assistant', 'conversation'] as const;
 export type MemoryScope = (typeof MEMORY_SCOPES)[number];
 
+/** v2.28：done 帧下发的约束写入提示（仅 id 与正文；撤销走归档） */
+export interface MemoryNotice {
+  id: string;
+  content: string;
+}
+
 /** v2.26：写入来源——手工 / 回合后抽取 / 实时硬约束 / 摘要 / 旧数据 */
 export const MEMORY_SOURCES = ['manual', 'extract', 'realtime', 'summary', 'legacy'] as const;
 export type MemorySource = (typeof MEMORY_SOURCES)[number];
@@ -119,6 +125,14 @@ export interface TaskCheckpoint extends Timestamped {
   expiresAt: string | null;
 }
 
+/** v2.28：记忆审计条目（统计卡「最近审计」轻量展示） */
+export interface MemoryAuditEntry {
+  id: number;
+  action: string;
+  actor: string;
+  createdAt: string;
+}
+
 /** v2.26 P2 线上计数：零召回率 / superseded 比例 / 用户纠正次数（管理页与诊断使用） */
 export interface MemoryLifecycleStats {
   total: number;
@@ -134,4 +148,8 @@ export interface MemoryLifecycleStats {
   zeroRecallRate: number;
   /** 用户主动纠正（编辑/归档/恢复/删除）的审计条数 */
   userCorrections: number;
+  /** v2.28：最近 5 条审计（可选，旧客户端忽略） */
+  recentEvents?: MemoryAuditEntry[];
+  /** v2.28：最近一次审计轮转时间（ISO；尚未轮转为 null） */
+  lastRollupAt?: string | null;
 }

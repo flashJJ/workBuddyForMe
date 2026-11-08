@@ -14,8 +14,8 @@ describe('v044 迁移：阶段计划与模型字段', () => {
   it('全新库：版本 45、阶段表与三处加列就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(47);
-    expect(LATEST_SCHEMA_VERSION).toBe(47);
+    expect(getSchemaVersion(db)).toBe(49);
+    expect(LATEST_SCHEMA_VERSION).toBe(49);
 
     const tables = new Set(
       (db.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all() as Array<{
@@ -46,8 +46,8 @@ describe('v044 迁移：阶段计划与模型字段', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([44, 45, 46, 47]);
-    expect(getSchemaVersion(db)).toBe(47);
+    expect(result.applied).toEqual([44, 45, 46, 47, 48, 49]);
+    expect(getSchemaVersion(db)).toBe(49);
 
     const conversation = db
       .prepare(`SELECT model_id FROM conversations WHERE id = 'c1'`)

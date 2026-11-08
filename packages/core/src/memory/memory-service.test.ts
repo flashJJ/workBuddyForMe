@@ -3,6 +3,7 @@ import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
 import { getMemoryVectorDimension, searchMemoryVectors } from '@wbfm/database';
 import { createMemoryService } from './memory-service';
+import { writeRealtimeConstraints } from './turn-memory';
 import type { ExtractedMemory } from './extractor';
 import { resolveEmbeddingTarget, type ResolvedEmbeddingTarget } from '../ingestion/embedding-target';
 
@@ -264,4 +265,30 @@ describe('M3 长期记忆服务', () => {
     expect(memory.runDecay({ now, force: true }).archived).toBe(0);
   });
 
+  it('v2.28 writeRealtimeConstraints：done 前写入并返回最多 2 条提示', async () => {
+    const embed = mockEmbeddingByCall([[A]]);
+    const memory = createMemoryService({ db, cipher });
+    const notices = await writeRealtimeConstraints({
+      memory,
+      userContent: '我对花生过敏。我不能吃海鲜。以后不要熬夜。',
+      conversationId: 'c1',
+      assistantId: 'a1',
+      sourceMessageId: 'm1',
+    });
+    expect(notices).toHaveLength(2);
+    expect(notices[0]?.content).toContain('花生');
+    expect(memory.list({ status: 'active' })).toHaveLength(3);
+    // 实时约束为纯规则写入，不调用嵌入模型
+    expect(embed).not.toHaveBeenCalled();
+  });
+
+  it('v2.28 writeRealtimeConstraints：无硬约束时返回空且不写库', async () => {
+    mockNoEmbedding();
+    const memory = createMemoryService({ db, cipher });
+    const notices = await writeRealtimeConstraints({
+      memory, userContent: '今天天气不错', conversationId: 'c1', assistantId: 'a1', sourceMessageId: 'm1',
+    });
+    expect(notices).toEqual([]);
+    expect(memory.list({ status: 'active' })).toHaveLength(0);
+  });
 });

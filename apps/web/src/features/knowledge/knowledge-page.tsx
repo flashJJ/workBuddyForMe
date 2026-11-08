@@ -17,6 +17,7 @@ import { isStarterTemplateId } from '@/lib/templates/starter-templates';
 import { UploadDropzone } from './upload-dropzone';
 import { ClipDialog } from './clip-dialog';
 import { DocumentList } from './document-list';
+import { ReparseBatchBar } from './reparse/reparse-batch-bar';
 import { DocumentCompareDialog } from './document-compare';
 import { GovernancePanel } from './governance-panel';
 import { CompileToolbar } from './compile-toolbar';
@@ -211,6 +212,7 @@ export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) 
             </div>
             <UploadDropzone kbId={activeKb.id} />
             <CompileToolbar kbId={activeKb.id} documents={docs.data} />
+            <ReparseBatchBar kbId={activeKb.id} documents={docs.data} />
             <DocumentList kbId={activeKb.id} documents={docs.data} loading={docs.isLoading} />
             <GovernancePanel kbId={activeKb.id} />
           </div>

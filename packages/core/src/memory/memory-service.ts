@@ -23,6 +23,11 @@ import type { ServiceDeps } from '../services/base/deps';
 import type { ExtractedMemory } from './extractor';
 import { createMemoryPersister, createMemoryRecall } from './lifecycle';
 import { createMemoryStats } from './lifecycle/memory-stats';
+import {
+  runMemoryEventRollup,
+  type MemoryEventRollupOptions,
+  type MemoryEventRollupResult,
+} from './lifecycle/memory-event-rollup';
 import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-decay';
 import { embedTexts } from './memory-embedding';
 import { toExtractedMemory } from './memory-match';
@@ -65,11 +70,9 @@ export function createMemoryService(deps: ServiceDeps) {
     if (candidates.length === 0) {
       return { created: 0, updated: 0, superseded: 0, memories: [] };
     }
-    const embedded = await embedTexts(
-      deps,
-      candidates.map((c) => c.content),
-      options.signal,
-    );
+    const embedded = options.skipEmbedding
+      ? null
+      : await embedTexts(deps, candidates.map((c) => c.content), options.signal);
     const ctx = {
       scope: options.scope ?? 'global',
       assistantId: options.assistantId ?? null,
@@ -234,6 +237,13 @@ export function createMemoryService(deps: ServiceDeps) {
     return stats.read();
   }
 
+  /** v2.28 P1：审计事件轮转（保留期外聚合计数并删除原文） */
+  function runEventRollup(
+    options: MemoryEventRollupOptions = {},
+  ): MemoryEventRollupResult {
+    return runMemoryEventRollup(deps.db, options);
+  }
+
   return {
     rememberCandidates,
     rememberOne,
@@ -243,6 +253,7 @@ export function createMemoryService(deps: ServiceDeps) {
     remove,
     clearAll,
     runDecay,
+    runEventRollup,
     getStats,
     list,
     get,
