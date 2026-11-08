@@ -149,6 +149,11 @@ describe('工具门控策略与绑定（v2.13 M2）', () => {
     withDetails.confirmations!.resolve('c1', 'deny');
     let next = await gen.next();
     while (!next.done) next = await gen.next();
+    const denied = withDetails
+      .audit!.list({ limit: 50 })
+      .events.find((event) => event.kind === 'approval_denied');
+    expect(denied?.outcome).toContain('cap.skill@1.0.0');
+    expect(denied?.outcome).toContain('来源 bundled');
 
     const plain = makeDeps(DEFAULT_AGENT_POLICY);
     const gen2 = gateToolPermission({ deps: plain, tool, toolName: 'capability_install', callId: 'c2', argsSummary: '{}', args: {}, assistantId: 'a1', source: 'builtin', permission: 'write' });

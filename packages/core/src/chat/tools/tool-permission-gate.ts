@@ -119,6 +119,12 @@ export async function* gateToolPermission(
   }
 
   let auditFailed = false;
+  // v2.30：能力安装的 allow/deny 决策附带目录快照（仅字符串，不新增字段/表）
+  const decisionSnapshot = params.details
+    ? `${params.details.catalogId}@${params.details.version} · 来源 ${params.details.source} · effects ${
+        params.details.effects.length > 0 ? params.details.effects.join('、') : '无'
+      }`
+    : null;
   const recordSettlement = (settlement: ConfirmationSettlement): void => {
     const kind =
       settlement === 'allow'
@@ -132,6 +138,10 @@ export async function* gateToolPermission(
         : settlement === 'abort'
           ? 'APPROVAL_ABORTED'
           : null;
+    const outcome =
+      decisionSnapshot && (settlement === 'allow' || settlement === 'deny')
+        ? `${settlement} · ${decisionSnapshot}`
+        : settlement;
     if (
       !auditCritical(deps.audit, {
         ...auditBase,
@@ -139,7 +149,7 @@ export async function* gateToolPermission(
         decision: settlement === 'allow' ? 'allow' : 'deny',
         reasonCode,
         binding,
-        outcome: settlement,
+        outcome,
       })
     ) {
       auditFailed = true;
