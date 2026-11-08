@@ -46,6 +46,7 @@ const PACK: ContentPackDefinition = {
 
 function makeService(options: {
   fetchFile?: (url: string) => Promise<Uint8Array>;
+  fetchLatestCommit?: (sourceUrl: string) => Promise<string>;
   embeddingReady?: boolean;
   pack?: ContentPackDefinition;
 } = {}) {
@@ -67,6 +68,7 @@ function makeService(options: {
     fetchFile,
     embeddingReady: () => options.embeddingReady ?? true,
     autoIngest: false,
+    ...(options.fetchLatestCommit ? { fetchLatestCommit: options.fetchLatestCommit } : {}),
   });
   return { db, service, fetchFile };
 }
@@ -161,6 +163,62 @@ describe('内容包服务（v2.18 M4）', () => {
   it('未知 id 返回 404', async () => {
     const { db, service } = makeService();
     await expect(service.importPack('missing')).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    db.close();
+  });
+});
+
+describe('内容包更新检查（v2.30）', () => {
+  it('上游最新 commit 与当前版本一致 → latest', async () => {
+    const { db, service } = makeService({
+      fetchLatestCommit: async () => 'abc1234ffffffffffffffffffffffffffffffff',
+    });
+    const result = await service.checkUpdate('test-pack');
+    expect(result).toMatchObject({
+      status: 'latest',
+      currentVersion: 'abc1234',
+      latestVersion: 'abc1234',
+      updateAvailable: false,
+      sourceUrl: PACK.sourceUrl,
+    });
+    expect(result.checkedAt).toBeTruthy();
+    db.close();
+  });
+
+  it('上游有更新 → update-available，返回短哈希', async () => {
+    const { db, service } = makeService({
+      fetchLatestCommit: async () => 'def5678aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    });
+    const result = await service.checkUpdate('test-pack');
+    expect(result).toMatchObject({
+      status: 'update-available',
+      currentVersion: 'abc1234',
+      latestVersion: 'def5678',
+      updateAvailable: true,
+    });
+    expect(result.reason).toBeUndefined();
+    db.close();
+  });
+
+  it('上游不可达 → unavailable，含可读原因且不抛错', async () => {
+    const { db, service } = makeService({
+      fetchLatestCommit: async () => {
+        throw new Error('network down');
+      },
+    });
+    const result = await service.checkUpdate('test-pack');
+    expect(result).toMatchObject({
+      status: 'unavailable',
+      currentVersion: 'abc1234',
+      latestVersion: null,
+      updateAvailable: false,
+      reason: 'network down',
+    });
+    db.close();
+  });
+
+  it('未知 id 仍返回 404', async () => {
+    const { db, service } = makeService();
+    await expect(service.checkUpdate('missing')).rejects.toMatchObject({ code: 'NOT_FOUND' });
     db.close();
   });
 });

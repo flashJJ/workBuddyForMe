@@ -12,6 +12,7 @@ import type {
 import type {
   ContentPackImportResult,
   ContentPackSummary,
+  ContentPackUpdateCheck,
   DocumentComparisonResult,
   DocumentRecord,
   KnowledgeBase,
@@ -38,6 +39,13 @@ export function useContentPacks() {
   return useVisibleQuery({
     queryKey: QUERY_KEYS.contentPacks,
     queryFn: () => apiGet<ContentPackSummary[]>(API.contentPacks),
+  });
+}
+
+/** v2.30：手动检查内容包更新（不自动更新、不改动已导入内容） */
+export function useContentPackUpdateCheck() {
+  return useMutation({
+    mutationFn: (id: string) => apiGet<ContentPackUpdateCheck>(API.contentPackUpdateCheck(id)),
   });
 }
 

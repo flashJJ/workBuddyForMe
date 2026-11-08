@@ -116,6 +116,8 @@ export const API = {
   /** v2.18 M4：示例内容包清单与导入 */
   contentPacks: '/api/content-packs',
   contentPackImport: '/api/content-packs/import',
+  /** v2.30：内容包更新检查（手动触发） */
+  contentPackUpdateCheck: (id: string) => `/api/content-packs/${id}/update-check`,
   knowledgeBase: (id: string) => `/api/knowledge-bases/${id}`,
   documents: (kbId: string) => `/api/knowledge-bases/${kbId}/documents`,
   kbConflicts: (kbId: string) => `/api/knowledge-bases/${kbId}/conflicts`,
