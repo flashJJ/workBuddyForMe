@@ -11,6 +11,11 @@ export const zhAgents = {
     planner: '规划',
     executor: '执行',
     reviewer: '审查',
+    user: '用户',
+  },
+  handoff: {
+    title: '交接记录',
+    durationTitle: '距上次交接 {duration}',
   },
   phase: {
     planning: '规划中',

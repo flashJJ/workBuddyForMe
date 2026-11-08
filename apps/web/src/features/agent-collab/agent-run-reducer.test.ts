@@ -167,6 +167,24 @@ describe('agent-run-reducer（M4 泳道卡片状态纯函数）', () => {
     expect(s.errorMessage).toContain('预算触顶');
   });
 
+  it('v2.27 handoffs：按 seq 追加交接时间线并裁剪摘要', () => {
+    let s = initAgentCard(BUDGET);
+    s = reduceAgentFrame(s, f.planHandoff(0));
+    s = reduceAgentFrame(s, f.execHandoff(0));
+    s = reduceAgentFrame(s, f.reviewHandoff(0, 'approve'));
+    expect(s.handoffs).toHaveLength(3);
+    expect(s.handoffs[0]).toMatchObject({ from: 'planner', to: 'executor', kind: 'subtask', summary: '查证' });
+    expect(s.handoffs[1]).toMatchObject({ from: 'executor', to: 'reviewer', kind: 'outcome', summary: '15 天' });
+    expect(s.handoffs[2]).toMatchObject({ from: 'reviewer', to: 'user', kind: 'verdict', verdict: 'approve' });
+  });
+
+  it('v2.27 handoffs：同 round/seq 重复帧去重（断线重连回放）', () => {
+    let s = initAgentCard(BUDGET);
+    s = reduceAgentFrame(s, f.planHandoff(0));
+    s = reduceAgentFrame(s, f.planHandoff(0));
+    expect(s.handoffs).toHaveLength(1);
+  });
+
   it('cardFromRun：终态 handoffs 回放构图', () => {
     const run = runView({ status: 'done' });
     const handoffs = [

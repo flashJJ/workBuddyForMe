@@ -9,6 +9,7 @@ import { useSystemText } from '@/lib/i18n/use-system-text';
 import { toOutcome } from '@/lib/runs/run-outcome';
 import { getStageBridge } from '@/features/stage/bridge';
 import { cn } from '@/lib/utils';
+import { AgentHandoffTimeline } from './agent-handoff-timeline';
 import { AgentRounds } from './agent-rounds';
 import type { AgentCardState, AgentCardStatus } from './agent-run-reducer';
 
@@ -78,6 +79,7 @@ export function AgentRunCard({
 
       <div className={cn('space-y-2 px-3', compact ? 'py-2' : 'py-2.5')}>
         <BudgetBar state={state} />
+        <AgentHandoffTimeline handoffs={state.handoffs} />
         {state.pendingConfirm && (
           <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] text-warning">
             <ShieldQuestion className="h-3.5 w-3.5 shrink-0" />
