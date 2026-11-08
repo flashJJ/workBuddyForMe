@@ -63,3 +63,58 @@ export interface Memory extends Timestamped {
   /** v2.26：最近一次被确认/再次提及的时间（recency 基准） */
   lastConfirmedAt: string | null;
 }
+
+/**
+ * v2.26 P1 上下文分层压缩的领域类型：
+ * - ConversationFact：从已折叠对话抽取的结构化事实/决策/未决问题；
+ * - TaskCheckpoint：任务执行中的工作记忆快照（带 TTL，完成/超时归档）。
+ */
+
+/** 事实类别：客观事实 / 已做决策 / 未决问题 */
+export const CONVERSATION_FACT_KINDS = ['fact', 'decision', 'open_loop'] as const;
+export type ConversationFactKind = (typeof CONVERSATION_FACT_KINDS)[number];
+
+export interface ConversationFact extends Timestamped {
+  id: string;
+  conversationId: string;
+  kind: ConversationFactKind;
+  /** 稳定键：模型给出的主体键，或决策/未决问题的内容指纹 */
+  key: string;
+  value: string;
+  /** 可选单位（元、天、kg 等），无单位时为 null */
+  unit: string | null;
+  /** 事实生效时间（原文出现的时间点，缺失为 null） */
+  validFrom: string | null;
+  /** 来源消息 id 列表 */
+  sourceMessageIds: string[];
+  /** 内容校验和：相同则跳过写入 */
+  checksum: string;
+}
+
+/** 工作记忆状态：活跃 / 任务完成 / 超时过期 / 手动归档 */
+export const TASK_CHECKPOINT_STATUSES = ['active', 'done', 'expired', 'archived'] as const;
+export type TaskCheckpointStatus = (typeof TASK_CHECKPOINT_STATUSES)[number];
+
+/** 检查点待办状态与 WorkStepStatus 同源（不反向依赖 schemas） */
+export type TaskCheckpointTodoStatus = 'pending' | 'running' | 'done' | 'skipped' | 'blocked';
+
+export interface TaskCheckpointTodo {
+  title: string;
+  status: TaskCheckpointTodoStatus;
+}
+
+export interface TaskCheckpoint extends Timestamped {
+  id: string;
+  conversationId: string;
+  /** 关联的 task_run（普通对话为 null） */
+  taskRunId: string | null;
+  status: TaskCheckpointStatus;
+  goal: string | null;
+  plan: string | null;
+  todos: TaskCheckpointTodo[];
+  /** 最近一次工具结果的短摘要 */
+  lastToolSummary: string | null;
+  nextStep: string | null;
+  /** 到期时间（ISO），null=不过期 */
+  expiresAt: string | null;
+}

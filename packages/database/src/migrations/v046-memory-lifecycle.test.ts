@@ -21,9 +21,9 @@ function columns(db: Database.Database, table: string): Set<string> {
 describe('v046 迁移：记忆生命周期', () => {
   it('全新库：版本 46、生命周期列/审计表/全文表就位', () => {
     const db = new Database(':memory:');
-    applyMigrations(db);
+    applyMigrations(db, 46);
     expect(getSchemaVersion(db)).toBe(46);
-    expect(LATEST_SCHEMA_VERSION).toBe(46);
+    expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(46);
 
     const cols = columns(db, 'memories');
     for (const name of [
@@ -55,7 +55,7 @@ describe('v046 迁移：记忆生命周期', () => {
        VALUES ('fact', '用户住在杭州', 0.7, 'active', 't1', 't1')`,
     ).run();
 
-    const result = applyMigrations(db);
+    const result = applyMigrations(db, 46);
     expect(result.applied).toEqual([46]);
     expect(getSchemaVersion(db)).toBe(46);
 

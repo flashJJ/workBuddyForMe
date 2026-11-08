@@ -149,3 +149,15 @@ export type {
   MeetingActionItemRecord,
   MeetingConclusionView,
 } from './meeting';
+export {
+  CONVERSATION_FACT_KINDS,
+  TASK_CHECKPOINT_STATUSES,
+} from './memory';
+export type {
+  ConversationFact,
+  ConversationFactKind,
+  TaskCheckpoint,
+  TaskCheckpointStatus,
+  TaskCheckpointTodo,
+  TaskCheckpointTodoStatus,
+} from './memory';

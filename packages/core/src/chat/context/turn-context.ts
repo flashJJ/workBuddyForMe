@@ -19,7 +19,7 @@ import {
 import type { ResolvedChatTarget } from './model-resolver';
 import { buildImageMap } from './multimodal';
 import { toAiContent } from './multimodal';
-import { planCompaction, summarizeConversation } from './summarizer';
+import { planCompaction, summarizeConversationStructured } from './summarizer';
 
 export interface TurnMessageParams {
   assistant: Assistant;
@@ -35,6 +35,10 @@ export interface TurnMessageParams {
   summary: string | null;
   /** 回合前召回的长期记忆（注入 system 区块） */
   memoryBlock: string | null;
+  /** v2.26 P1：硬约束块（置顶 constraint 记忆） */
+  constraintBlock?: string | null;
+  /** v2.26 P1：会话结构化事实块 */
+  factsBlock?: string | null;
   /** v0.6 M3：启用技能的提示词模板块（注入 system 区块） */
   skillBlock: string | null;
   /** v1.6：情绪状态段 + 尾块协议（仅情绪功能开启时传入） */
@@ -71,13 +75,16 @@ export function buildTurnMessages(params: TurnMessageParams): {
   stats: HistoryBudgetStats | null;
 } {
   const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
-    summary, memoryBlock, skillBlock, emotionBlock, card, globalAppendPrompt, cardNickname } = params;
+    summary, memoryBlock, constraintBlock, factsBlock, skillBlock, emotionBlock, card,
+    globalAppendPrompt, cardNickname } = params;
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
     lastCompletionTokens,
     summary,
     memoryBlock,
+    constraintBlock: constraintBlock ?? null,
+    factsBlock: factsBlock ?? null,
     skillBlock,
     emotionBlock,
     card,
@@ -145,18 +152,32 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
   if (!plan) return { compactedTurns: 0, summary: null };
 
   const folded = unfolded.slice(0, plan.foldCount);
-  const summary = await summarizeConversation({
+  const structured = await summarizeConversationStructured({
     target,
     previousSummary: conversation.summary,
     folded,
     signal: params.signal,
     traceParent: params.traceParent,
   });
+  const summary = structured.payload.summary;
   conversations.updateSummary(
     conversation.id,
     summary,
     conversation.summaryTurns + plan.foldCount,
   );
+  // 结构化事实单独持久化：失败不影响摘要写回与主链路
+  try {
+    conversations.saveSummaryFacts(
+      conversation.id,
+      structured.payload,
+      folded.map((message) => message.id),
+    );
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[wbfm] 会话事实落库失败：${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
   return { compactedTurns: plan.foldCount, summary };
 }
 

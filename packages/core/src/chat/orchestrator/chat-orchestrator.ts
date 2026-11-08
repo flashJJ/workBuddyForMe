@@ -276,7 +276,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
             memory,
             userContent,
             assistantContent: full,
-            sourceMessageId: assistantMessage.id,
+            sourceMessageId: assistantMessage.id, workPlans: deps.workPlans, toolTrace: trace,
           },
         });
       } finally {

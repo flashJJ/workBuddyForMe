@@ -27,6 +27,20 @@ export function formatMemoryBlock(memories: Memory[]): string | null {
 }
 
 /**
+ * v2.26 P1 硬约束块：置顶 constraint 记忆单独成段，注入顺序位于人设之后、
+ * 结构化事实与摘要之前，明确其优先于普通记忆与临时要求。
+ */
+export function formatConstraintBlock(memories: Memory[]): string | null {
+  const constraints = memories.filter((m) => m.kind === 'constraint');
+  if (constraints.length === 0) return null;
+  const body = constraints.map((m) => `- ${m.content}`).join('\n');
+  return [
+    '【硬约束】以下约束必须始终遵守，优先级高于其他记忆与临时要求：',
+    truncateToTokens(body, MEMORY_BLOCK_RESERVE_TOKENS),
+  ].join('\n');
+}
+
+/**
  * v2.0 M2 主动搭话的关系记忆软引用块（G2）：
  * 只取 relationship 类记忆；纪律=无把握不提、不逐条复述、删除后因召回不到自然不再引用
  * （「可删即不引用」由存储侧保证，此处不做额外固化）。无关系记忆返回 null。

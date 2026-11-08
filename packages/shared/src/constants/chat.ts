@@ -64,6 +64,24 @@ export const COMPACTION_KEEP_RATIO = 0.5;
 export const COMPACTION_MIN_KEEP_MESSAGES = 4;
 export const SUMMARY_BLOCK_RESERVE_TOKENS = 512;
 
+/**
+ * v2.26 P1 上下文分层预算配额（占安全窗口比例）：
+ * 原文 50% / 摘要 25% / 结构化事实 10% / 长期记忆 10%（输出预留 5% 由
+ * OUTPUT_RESERVE_TOKENS 统一扣除）。配额是硬上限，不是强制分配，
+ * 无内容时其余区块可使用剩余空间。
+ */
+export const CONTEXT_QUOTA_HISTORY = 0.5;
+export const CONTEXT_QUOTA_SUMMARY = 0.25;
+export const CONTEXT_QUOTA_FACTS = 0.1;
+export const CONTEXT_QUOTA_MEMORY = 0.1;
+
+/** 单会话结构化事实保留上限（按 kind 分组后按更新时间截断） */
+export const CONVERSATION_FACT_MAX_ITEMS = 30;
+/** 工作记忆检查点 TTL（分钟）：任务无推进则自动过期归档 */
+export const TASK_CHECKPOINT_TTL_MINUTES = 120;
+/** 工作记忆检查点注入 system 的硬限长 */
+export const TASK_CHECKPOINT_BLOCK_RESERVE_TOKENS = 384;
+
 /** 外部请求默认超时（ms），SSE 不设短超时 */
 export const DEFAULT_HTTP_TIMEOUT_MS = 30_000;
 export const CONNECTION_TEST_TIMEOUT_MS = 10_000;

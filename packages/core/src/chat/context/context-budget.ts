@@ -105,6 +105,8 @@ export interface AssembleHistoryInput {
   toolsTokens: number;
   /** 上一轮真实 completion tokens；null 时使用默认输出预留 */
   lastCompletionTokens: number | null;
+  /** v2.26 P1：原文配额硬上限（占窗口 50%），缺省不额外限制 */
+  historyTokenCap?: number;
 }
 
 export interface AssembleHistoryResult {
@@ -123,10 +125,13 @@ export function assembleHistoryWithinBudget(
 ): AssembleHistoryResult {
   const { history, contextWindow, systemTokens, toolsTokens, lastCompletionTokens } = input;
   const reserveTokens = resolveReserveTokens(lastCompletionTokens);
-  const historyBudget = Math.max(
+  const available = Math.max(
     0,
     contextWindow - systemTokens - toolsTokens - reserveTokens,
   );
+  // v2.26 P1：原文配额与剩余预算取更严格者，保证其余区块的预算不被原文挤占
+  const historyBudget =
+    input.historyTokenCap != null ? Math.min(available, Math.max(0, input.historyTokenCap)) : available;
 
   const costs = history.map(estimateMessageTokens);
   let used = 0;
