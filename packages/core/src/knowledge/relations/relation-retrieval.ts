@@ -17,6 +17,19 @@ export interface MultiHopOptions {
   maxEdges?: number;
 }
 
+export const DEFAULT_RELATION_MAX_HOPS = 2;
+export const DEFAULT_RELATION_MAX_EDGES = 12;
+
+/** v2.29 P2：设置值统一收窄到 1–3 跳 / 4–24 边，非法值回落默认 */
+export function clampRelationCaps(options: MultiHopOptions = {}): Required<MultiHopOptions> {
+  const toInt = (value: number | undefined, fallback: number) =>
+    typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : fallback;
+  return {
+    maxHops: Math.min(3, Math.max(1, toInt(options.maxHops, DEFAULT_RELATION_MAX_HOPS))),
+    maxEdges: Math.min(24, Math.max(4, toInt(options.maxEdges, DEFAULT_RELATION_MAX_EDGES))),
+  };
+}
+
 /**
  * 多跳收集关系边（同步，SQLite 仓储直接读取）；fetchRelations 接收当前层实体 id。
  * 无来源文档的边仍参与遍历，但由上层选择器过滤，不进入引用上下文。
@@ -26,8 +39,8 @@ export function collectMultiHopRelations(
   fetchRelations: (entityIds: string[]) => RelationRecord[],
   options: MultiHopOptions = {},
 ): MultiHopRelation[] {
-  const maxHops = Math.max(1, options.maxHops ?? 2);
-  const maxEdges = Math.max(1, options.maxEdges ?? 12);
+  const maxHops = Math.max(1, options.maxHops ?? DEFAULT_RELATION_MAX_HOPS);
+  const maxEdges = Math.max(1, options.maxEdges ?? DEFAULT_RELATION_MAX_EDGES);
   const seenEntities = new Set(startEntityIds.filter(Boolean));
   const seenEdges = new Set<string>();
   const relations: MultiHopRelation[] = [];

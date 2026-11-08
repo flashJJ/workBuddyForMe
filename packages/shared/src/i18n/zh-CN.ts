@@ -14,6 +14,7 @@ import { zhErrors } from './messages/errors';
 import { zhAssistants } from './messages/assistants';
 import { zhKnowledge } from './messages/knowledge';
 import { zhKnowledgeReparse } from './messages/knowledge-reparse';
+import { zhKnowledgeRelationSettings } from './messages/knowledge-relation-settings';
 import { zhKnowledgeCompare } from './messages/knowledge-compare';
 import { zhDocumentViewer } from './messages/document-viewer';
 import { zhMemory } from './messages/memory';
@@ -84,6 +85,7 @@ export const zhCN = {
   meeting: zhMeeting,
   knowledge: zhKnowledge,
   knowledgeReparse: zhKnowledgeReparse,
+  knowledgeRelationSettings: zhKnowledgeRelationSettings,
   knowledgeCompare: zhKnowledgeCompare,
   documentViewer: zhDocumentViewer,
   memory: zhMemory,

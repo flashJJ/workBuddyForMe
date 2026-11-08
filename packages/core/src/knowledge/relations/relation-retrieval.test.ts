@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RelationRecord } from '@wbfm/database';
-import { collectMultiHopRelations } from './relation-retrieval';
+import { clampRelationCaps, collectMultiHopRelations } from './relation-retrieval';
 
 function edge(
   id: string,
@@ -73,5 +73,21 @@ describe('collectMultiHopRelations（v2.19 M5）', () => {
         maxHops: 1,
       }).map((row) => row.id),
     ).toEqual(['ab']);
+  });
+
+  it('v2.29 设置值收窄：缺省 2/12，越界钳制，非法值回落默认', () => {
+    expect(clampRelationCaps()).toEqual({ maxHops: 2, maxEdges: 12 });
+    expect(clampRelationCaps({ maxHops: 9, maxEdges: 100 })).toEqual({
+      maxHops: 3,
+      maxEdges: 24,
+    });
+    expect(clampRelationCaps({ maxHops: 0, maxEdges: 1 })).toEqual({
+      maxHops: 1,
+      maxEdges: 4,
+    });
+    expect(clampRelationCaps({ maxHops: Number.NaN, maxEdges: 8.9 })).toEqual({
+      maxHops: 2,
+      maxEdges: 8,
+    });
   });
 });

@@ -5,7 +5,10 @@ export {
   type RelationSeed,
 } from './relation-extractor';
 export {
+  clampRelationCaps,
   collectMultiHopRelations,
+  DEFAULT_RELATION_MAX_EDGES,
+  DEFAULT_RELATION_MAX_HOPS,
   type MultiHopOptions,
   type MultiHopRelation,
 } from './relation-retrieval';

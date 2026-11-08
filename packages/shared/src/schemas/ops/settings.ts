@@ -107,6 +107,9 @@ export const settingsUpdateSchema = z.object({
   hybridRetrievalEnabled: z.boolean().optional(),
   retrievalMinSimilarity: z.number().min(0).max(1).optional(),
   retrievalMaxChunks: z.number().int().min(1).max(20).optional(),
+  // v2.29 关系检索多跳边界（缺省 2 跳 / 12 条边；服务层统一收窄）
+  knowledgeRelationMaxHops: z.number().int().min(1).max(3).optional(),
+  knowledgeRelationMaxEdges: z.number().int().min(4).max(24).optional(),
   // v1.3 编译优先检索路由（缺省 true；关=静态知识层零差异回落）
   compileRoutingEnabled: z.boolean().optional(),
   // v1.3 M4 知识编译调度

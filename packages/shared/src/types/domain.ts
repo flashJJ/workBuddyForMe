@@ -13,6 +13,7 @@
   Language,
 } from '../constants/index';
 import type { ContentPart } from './content-part';
+import type { MemoryNotice } from './memory';
 import type { EventSettingsFields } from '../events/event-settings';
 import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { SubagentCliSettingsFields } from './subagent-settings';
@@ -125,12 +126,7 @@ export interface Citation {
 }
 // v2.6：长期记忆类型迁至 ./memory（domain 重新导出保持公开面不变）
 export { MEMORY_KINDS, MEMORY_STATUSES, MEMORY_RECALL_REASONS } from './memory';
-export type { Memory, MemoryKind, MemoryStatus, MemoryRecallReason } from './memory';
-/** v2.28：done 帧下发的约束写入提示（仅 id 与正文；撤销走归档） */
-export interface MemoryNotice {
-  id: string;
-  content: string;
-}
+export type { Memory, MemoryKind, MemoryStatus, MemoryRecallReason, MemoryNotice } from './memory';
 export interface Message {
   id: string;
   conversationId: string;
@@ -220,6 +216,9 @@ export interface AppSettings
   retrievalMinSimilarity?: number;
   /** v1.3：RAG 注入片段上限，缺省由 core 给 8 */
   retrievalMaxChunks?: number;
+  /** v2.29：关系检索多跳上限（1–3 跳 / 4–24 边；缺省 2/12） */
+  knowledgeRelationMaxHops?: number;
+  knowledgeRelationMaxEdges?: number;
   /** v1.3：编译优先检索路由（静态知识层前置），缺省视为 true */
   compileRoutingEnabled?: boolean;
   /** v1.3 M4：摄入后自动入队编译（缺省视为 true） */

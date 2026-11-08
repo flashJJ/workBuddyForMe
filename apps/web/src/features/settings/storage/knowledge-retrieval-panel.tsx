@@ -25,6 +25,8 @@ export function KnowledgeRetrievalPanel() {
   const [hybrid, setHybrid] = React.useState(true);
   const [minSim, setMinSim] = React.useState('0.55');
   const [maxChunks, setMaxChunks] = React.useState('8');
+  const [maxHops, setMaxHops] = React.useState('2');
+  const [maxEdges, setMaxEdges] = React.useState('12');
   const [compileRouting, setCompileRouting] = React.useState(true);
   const [autoCompile, setAutoCompile] = React.useState(true);
   const [compileLlm, setCompileLlm] = React.useState(false);
@@ -35,6 +37,8 @@ export function KnowledgeRetrievalPanel() {
     setHybrid(settings.hybridRetrievalEnabled !== false);
     setMinSim(String(settings.retrievalMinSimilarity ?? 0.55));
     setMaxChunks(String(settings.retrievalMaxChunks ?? 8));
+    setMaxHops(String(settings.knowledgeRelationMaxHops ?? 2));
+    setMaxEdges(String(settings.knowledgeRelationMaxEdges ?? 12));
     setCompileRouting(settings.compileRoutingEnabled !== false);
     setAutoCompile(settings.autoCompile !== false);
     setCompileLlm(settings.compileWithLlm === true);
@@ -49,6 +53,8 @@ export function KnowledgeRetrievalPanel() {
   const save = async () => {
     const sim = Number(minSim);
     const chunks = Number(maxChunks);
+    const hops = Number(maxHops);
+    const edges = Number(maxEdges);
     if (!Number.isFinite(sim) || sim < 0 || sim > 1) {
       toast.error(t('settings.retrieval.invalidThreshold'));
       return;
@@ -57,11 +63,21 @@ export function KnowledgeRetrievalPanel() {
       toast.error(t('settings.retrieval.invalidMaxChunks'));
       return;
     }
+    if (!Number.isInteger(hops) || hops < 1 || hops > 3) {
+      toast.error(t('knowledgeRelationSettings.invalidHops'));
+      return;
+    }
+    if (!Number.isInteger(edges) || edges < 4 || edges > 24) {
+      toast.error(t('knowledgeRelationSettings.invalidEdges'));
+      return;
+    }
     try {
       await updateSettings.mutateAsync({
         hybridRetrievalEnabled: hybrid,
         retrievalMinSimilarity: sim,
         retrievalMaxChunks: chunks,
+        knowledgeRelationMaxHops: hops,
+        knowledgeRelationMaxEdges: edges,
         compileRoutingEnabled: compileRouting,
         autoCompile,
         compileWithLlm: compileLlm,
@@ -113,6 +129,39 @@ export function KnowledgeRetrievalPanel() {
             value={Number(maxChunks)}
             onValueChange={(v) => setMaxChunks(String(v))}
           />
+        </div>
+      </div>
+
+      <div className="space-y-2 border-t pt-3">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{t('knowledgeRelationSettings.title')}</p>
+          <p className="text-xs text-muted-foreground">
+            {t('knowledgeRelationSettings.description')}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="relation-max-hops">{t('knowledgeRelationSettings.maxHops')}</Label>
+            <NumberInput
+              id="relation-max-hops"
+              min={1}
+              max={3}
+              step={1}
+              value={Number(maxHops)}
+              onValueChange={(v) => setMaxHops(String(v))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="relation-max-edges">{t('knowledgeRelationSettings.maxEdges')}</Label>
+            <NumberInput
+              id="relation-max-edges"
+              min={4}
+              max={24}
+              step={1}
+              value={Number(maxEdges)}
+              onValueChange={(v) => setMaxEdges(String(v))}
+            />
+          </div>
         </div>
       </div>
 

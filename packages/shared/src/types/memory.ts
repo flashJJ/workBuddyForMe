@@ -19,6 +19,12 @@ export type MemoryRecallReason = (typeof MEMORY_RECALL_REASONS)[number];
 export const MEMORY_SCOPES = ['global', 'assistant', 'conversation'] as const;
 export type MemoryScope = (typeof MEMORY_SCOPES)[number];
 
+/** v2.28：done 帧下发的约束写入提示（仅 id 与正文；撤销走归档） */
+export interface MemoryNotice {
+  id: string;
+  content: string;
+}
+
 /** v2.26：写入来源——手工 / 回合后抽取 / 实时硬约束 / 摘要 / 旧数据 */
 export const MEMORY_SOURCES = ['manual', 'extract', 'realtime', 'summary', 'legacy'] as const;
 export type MemorySource = (typeof MEMORY_SOURCES)[number];
