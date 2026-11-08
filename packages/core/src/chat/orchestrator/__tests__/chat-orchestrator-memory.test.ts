@@ -151,7 +151,7 @@ describe('M3 对话编排 × 长期记忆（端到端）', () => {
           content: '用户偏好中文回复',
           sourceConversationId: conversationId,
           sourceMessageId: meta.messageId,
-          reason: 'semantic',
+          reason: 'hybrid',
         },
       ],
     });

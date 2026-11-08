@@ -9,18 +9,37 @@ import { normalizeForFtsIndex } from '../fts-tokenize';
  * 旧数据统一 scope='global'、source='legacy'、version=1，保持全局可见与既有行为。
  */
 export function migrateV046(db: Database): void {
-  db.exec(`ALTER TABLE memories ADD COLUMN scope TEXT NOT NULL DEFAULT 'global'`);
-  db.exec(`ALTER TABLE memories ADD COLUMN assistant_id TEXT`);
-  db.exec(`ALTER TABLE memories ADD COLUMN source TEXT NOT NULL DEFAULT 'legacy'`);
-  db.exec(`ALTER TABLE memories ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0`);
-  db.exec(`ALTER TABLE memories ADD COLUMN confidence REAL NOT NULL DEFAULT 1`);
-  db.exec(`ALTER TABLE memories ADD COLUMN subject_key TEXT`);
-  db.exec(`ALTER TABLE memories ADD COLUMN version INTEGER NOT NULL DEFAULT 1`);
-  db.exec(`ALTER TABLE memories ADD COLUMN superseded_by INTEGER`);
-  db.exec(`ALTER TABLE memories ADD COLUMN valid_from TEXT`);
-  db.exec(`ALTER TABLE memories ADD COLUMN valid_to TEXT`);
-  db.exec(`ALTER TABLE memories ADD COLUMN ttl_at TEXT`);
-  db.exec(`ALTER TABLE memories ADD COLUMN last_confirmed_at TEXT`);
+  // 幂等：老库测试会先全量迁移再把 user_version 调回旧值重放，或从空库直接抬到高版本；
+  // 因此按表/列是否存在补齐，避免 duplicate column 或 no such table 中断迁移。
+  const hasMemories = Boolean(
+    db
+      .prepare(`SELECT 1 AS ok FROM sqlite_master WHERE type = 'table' AND name = 'memories'`)
+      .get(),
+  );
+  if (hasMemories) {
+    const existing = new Set(
+      (db.prepare('PRAGMA table_info(memories)').all() as Array<{ name: string }>).map(
+        (column) => column.name,
+      ),
+    );
+    const addColumn = (name: string, ddl: string) => {
+      if (existing.has(name)) return;
+      db.exec(`ALTER TABLE memories ADD COLUMN ${ddl}`);
+      existing.add(name);
+    };
+    addColumn('scope', `scope TEXT NOT NULL DEFAULT 'global'`);
+    addColumn('assistant_id', 'assistant_id TEXT');
+    addColumn('source', `source TEXT NOT NULL DEFAULT 'legacy'`);
+    addColumn('pinned', 'pinned INTEGER NOT NULL DEFAULT 0');
+    addColumn('confidence', 'confidence REAL NOT NULL DEFAULT 1');
+    addColumn('subject_key', 'subject_key TEXT');
+    addColumn('version', 'version INTEGER NOT NULL DEFAULT 1');
+    addColumn('superseded_by', 'superseded_by INTEGER');
+    addColumn('valid_from', 'valid_from TEXT');
+    addColumn('valid_to', 'valid_to TEXT');
+    addColumn('ttl_at', 'ttl_at TEXT');
+    addColumn('last_confirmed_at', 'last_confirmed_at TEXT');
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS memory_events (
@@ -37,11 +56,13 @@ export function migrateV046(db: Database): void {
     `CREATE INDEX IF NOT EXISTS idx_memory_events_memory
        ON memory_events(memory_id, created_at DESC)`,
   );
-  db.exec(
-    `CREATE INDEX IF NOT EXISTS idx_memories_scope
-       ON memories(scope, assistant_id, status)`,
-  );
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_memories_subject ON memories(subject_key)`);
+  if (hasMemories) {
+    db.exec(
+      `CREATE INDEX IF NOT EXISTS idx_memories_scope
+         ON memories(scope, assistant_id, status)`,
+    );
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_memories_subject ON memories(subject_key)`);
+  }
 
   db.exec(`
     CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
@@ -50,7 +71,7 @@ export function migrateV046(db: Database): void {
       tokenize = 'unicode61'
     )
   `);
-  backfillMemoryFts(db);
+  if (hasMemories) backfillMemoryFts(db);
 }
 
 /** 只在 FTS 为空时回填，避免重复迁移/重启造成重复索引 */
