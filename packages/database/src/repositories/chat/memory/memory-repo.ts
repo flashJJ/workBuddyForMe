@@ -2,12 +2,12 @@ import type { DatabaseInstance } from '../../../client';
 import type { Memory, MemoryStatus } from '@wbfm/shared/types';
 import { nowIso, mapMemory, type MemoryRow } from '../../ops/mappers';
 import { createMemoryEventRepository, type MemoryEventRow } from './memory-event-repo';
+import { createMemoryLifecycleRepository } from './memory-lifecycle-repo';
 import {
   applyScope,
   dayBoundary,
   toNumberOrNull,
   type MemoryAddFields,
-  type MemoryDecayFilter,
   type MemoryExactScope,
   type MemoryListFilter,
   type MemoryScopeFilter,
@@ -16,8 +16,10 @@ import {
 
 export function createMemoryRepository(db: DatabaseInstance) {
   const events = createMemoryEventRepository(db);
+  const lifecycle = createMemoryLifecycleRepository(db);
 
   return {
+    ...lifecycle,
     add(fields: MemoryAddFields): Memory {
       const ts = nowIso();
       const result = db
@@ -226,6 +228,11 @@ export function createMemoryRepository(db: DatabaseInstance) {
       return events.list(memoryId, limit);
     },
 
+    /** v2.26 P2 线上计数：用户主动纠正次数 */
+    countUserCorrections(): number {
+      return events.countUserCorrections();
+    },
+
     /** 召回命中后刷新访问时间并累加召回次数（LRU/P1 衰减与溯源使用） */
     touchAccessed(ids: string[]): void {
       if (ids.length === 0) return;
@@ -258,29 +265,6 @@ export function createMemoryRepository(db: DatabaseInstance) {
             .get(status) as { n: number })
         : (db.prepare(`SELECT COUNT(*) AS n FROM memories`).get() as { n: number });
       return row.n;
-    },
-
-    /**
-     * P1-1 遗忘策略：把又旧、低频、低重要性的 active 记忆软归档
-     * （status=archived，不物理删除，管理页可恢复）。置顶约束不参与。返回归档条数。
-     */
-    archiveStale(filter: MemoryDecayFilter): number {
-      return db
-        .prepare(
-          `UPDATE memories
-             SET status = 'archived', updated_at = @now
-           WHERE status = 'active'
-             AND pinned = 0
-             AND importance < @maxImportance
-             AND created_at < @createdBefore
-             AND (last_accessed_at IS NULL OR last_accessed_at < @accessedBefore)`,
-        )
-        .run({
-          now: nowIso(),
-          maxImportance: filter.maxImportance,
-          createdBefore: filter.createdBefore,
-          accessedBefore: filter.accessedBefore,
-        }).changes;
     },
   };
 }

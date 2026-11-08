@@ -1,5 +1,10 @@
 import { MEMORY_TOP_K } from '@wbfm/shared/constants';
-import { type Memory, type MemoryKind, type MemoryStatus } from '@wbfm/shared/types';
+import {
+  type Memory,
+  type MemoryKind,
+  type MemoryLifecycleStats,
+  type MemoryStatus,
+} from '@wbfm/shared/types';
 import {
   createMemoryRepository,
   deleteAllMemoryFts,
@@ -17,6 +22,7 @@ import { traceAsync } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/base/deps';
 import type { ExtractedMemory } from './extractor';
 import { createMemoryPersister, createMemoryRecall } from './lifecycle';
+import { createMemoryStats } from './lifecycle/memory-stats';
 import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-decay';
 import { embedTexts } from './memory-embedding';
 import { toExtractedMemory } from './memory-match';
@@ -50,6 +56,7 @@ export function createMemoryService(deps: ServiceDeps) {
   const repo: MemoryRepository = createMemoryRepository(deps.db);
   const persister = createMemoryPersister(deps.db, repo);
   const recaller = createMemoryRecall(deps.db, repo);
+  const stats = createMemoryStats(deps.db, repo);
 
   async function rememberCandidates(
     candidates: ExtractedMemory[],
@@ -69,6 +76,7 @@ export function createMemoryService(deps: ServiceDeps) {
       sourceConversationId: options.sourceConversationId ?? null,
       sourceMessageId: options.sourceMessageId ?? null,
       source: options.source ?? 'extract',
+      ttlAt: options.ttlAt ?? null,
     } as const;
     const result: RememberResult = { created: 0, updated: 0, superseded: 0, memories: [] };
     const tx = deps.db.transaction((index: number) => {
@@ -100,6 +108,7 @@ export function createMemoryService(deps: ServiceDeps) {
         sourceConversationId: input.sourceConversationId ?? null,
         sourceMessageId: input.sourceMessageId ?? null,
         source: input.source ?? 'summary',
+        ttlAt: input.ttlAt ?? null,
       }),
     );
     return tx().memory;
@@ -121,7 +130,7 @@ export function createMemoryService(deps: ServiceDeps) {
           const embedded = await embedTexts(deps, [trimmed], options.signal);
           vector = embedded?.vectors[0] ?? null;
         }
-        return recaller.collect({
+        const memories = recaller.collect({
           query: trimmed,
           vector,
           scope: {
@@ -129,6 +138,8 @@ export function createMemoryService(deps: ServiceDeps) {
             conversationId: options.conversationId ?? null,
           },
         });
+        stats.recordRecall(memories.length);
+        return memories;
       },
       (memories) => ({ recalled: memories.length }),
     );
@@ -189,7 +200,13 @@ export function createMemoryService(deps: ServiceDeps) {
   }
 
   function remove(id: string): boolean {
-    const existed = repo.delete(id);
+    const existing = repo.findById(id);
+    if (!existing) return false;
+    const tx = deps.db.transaction(() => {
+      repo.recordEvent(Number(id), 'delete', existing, null, 'user');
+      return repo.delete(id);
+    });
+    const existed = tx();
     if (existed) {
       deleteMemoryFts(deps.db, Number(id));
       if (getMemoryVectorDimension(deps.db) !== null) deleteMemoryVector(deps.db, Number(id));
@@ -207,9 +224,14 @@ export function createMemoryService(deps: ServiceDeps) {
     return tx();
   }
 
-  /** P1-1 遗忘策略：间隔保护 + 软归档，具体逻辑在 memory-decay.ts */
+  /** P2 遗忘策略：decay_score 分档 + TTL 到期软归档，具体逻辑在 memory-decay.ts */
   function runDecay(options: DecayOptions = {}): DecayResult {
     return runMemoryDecay(deps.db, repo, options);
+  }
+
+  /** P2 线上计数：零召回率 / superseded 比例 / 用户纠正次数 */
+  function getStats(): MemoryLifecycleStats {
+    return stats.read();
   }
 
   return {
@@ -221,6 +243,7 @@ export function createMemoryService(deps: ServiceDeps) {
     remove,
     clearAll,
     runDecay,
+    getStats,
     list,
     get,
   };

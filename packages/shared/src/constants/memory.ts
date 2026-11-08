@@ -23,19 +23,31 @@ export const MEMORY_IMPORTANCE_MIN = 0;
 export const MEMORY_IMPORTANCE_MAX = 1;
 
 /**
- * v0.5 P1-1 遗忘策略（软归档，可在管理页恢复）：
- * - 归档条件：创建超过 MEMORY_DECAY_AFTER_DAYS 天、重要性低于
- *   MEMORY_DECAY_MIN_IMPORTANCE、且从未被召回（或上次召回也早于
- *   MEMORY_DECAY_ACCESS_STALE_DAYS 天）的 active 记忆；
- * - 后台衰减任务借回合成功后机会执行，两次运行至少间隔
- *   MEMORY_DECAY_INTERVAL_DAYS 天；
- * - 会话压缩摘要作为情景记忆（event）入库时使用的固定重要性。
+ * v2.26 P2 遗忘策略（软归档，可在管理页恢复）：
+ * decay_score = importance × recency × usage，周任务按年龄分档归档；
+ * - recency：按类别半衰期指数衰减（见 MEMORY_HALF_LIFE_DAYS）；
+ * - usage：0 次召回 0.3，每次 +0.2，上限 1（常被召回的记忆更抗衰）；
+ * - 分档：30 天内不归档；30-90 天 score<0.05；90-180 天 <0.10；180 天以上 <0.20；
+ * - 只归档（status=archived）不删除；置顶与 constraint 不参与衰减。
+ * 任务借回合成功后机会执行，两次运行至少间隔 MEMORY_DECAY_INTERVAL_DAYS 天；
+ * 会话压缩摘要作为情景记忆（event）入库时使用固定重要性。
  */
-export const MEMORY_DECAY_MIN_IMPORTANCE = 0.4;
-export const MEMORY_DECAY_AFTER_DAYS = 30;
-export const MEMORY_DECAY_ACCESS_STALE_DAYS = 30;
 export const MEMORY_DECAY_INTERVAL_DAYS = 7;
+export const MEMORY_DECAY_MIN_AGE_DAYS = 30;
+export const MEMORY_DECAY_USAGE_BASE = 0.3;
+export const MEMORY_DECAY_USAGE_STEP = 0.2;
+export const MEMORY_DECAY_SCAN_LIMIT = 500;
+/** 年龄分档阈值（ageDays 落在 [前一档上限, 本档上限) 区间） */
+export const MEMORY_DECAY_TIERS = [
+  { maxAgeDays: 90, threshold: 0.05 },
+  { maxAgeDays: 180, threshold: 0.1 },
+  { maxAgeDays: Number.POSITIVE_INFINITY, threshold: 0.2 },
+] as const;
 export const MEMORY_SUMMARY_IMPORTANCE = 0.6;
+
+/** v2.26 P2 线上计数：召回会话累计次数与零召回次数（meta 表键） */
+export const MEMORY_RECALL_TOTAL_META_KEY = 'memory_recall_total';
+export const MEMORY_RECALL_ZERO_META_KEY = 'memory_recall_zero';
 
 /**
  * v2.26 混合召回与生命周期：

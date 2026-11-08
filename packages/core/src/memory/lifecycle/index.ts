@@ -21,3 +21,4 @@ export {
   type MemoryRecall,
   type RecallCollectInput,
 } from './memory-recall';
+export { createMemoryStats, type MemoryStats } from './memory-stats';

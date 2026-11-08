@@ -43,6 +43,17 @@ export function createMemoryEventRepository(db: DatabaseInstance) {
         .all(Number(memoryId), limit) as MemoryEventRow[];
     },
 
+    /** v2.26 P2 线上计数：用户主动纠正（编辑/归档/恢复/删除）的审计条数 */
+    countUserCorrections(): number {
+      const row = db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM memory_events
+            WHERE actor = 'user' AND action IN ('update', 'archive', 'restore', 'delete')`,
+        )
+        .get() as { n: number };
+      return row.n;
+    },
+
     deleteAll(): void {
       db.prepare(`DELETE FROM memory_events`).run();
     },

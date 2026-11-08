@@ -247,23 +247,21 @@ describe('M3 长期记忆服务', () => {
     expect(global.map((m) => m.content)).toContain('用户叫小林');
   });
 
-  it('P1-1 runDecay：归档陈旧低重要性记忆；7 天间隔保护；force 可绕过', () => {
+  it('P2 runDecay：decay_score 分档归档，30 天内保留，usage 提升抗衰', () => {
     mockNoEmbedding();
     const memory = createMemoryService({ db, cipher });
-    // 直接落库后回拨创建时间：id=1 陈旧低分，id=2 陈旧高分
-    db.prepare(`INSERT INTO memories(kind, content, importance, source_conversation_id, status, created_at, updated_at, last_accessed_at)
-                VALUES ('fact', '陈旧琐事', 0.2, NULL, 'active', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', NULL),
-                       ('preference', '长期偏好', 0.9, NULL, 'active', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', NULL)`).run();
+    db.prepare(`INSERT INTO memories(kind, content, importance, status, created_at, updated_at, recall_count)
+                VALUES ('fact','陈旧琐事',0.2,'active','2026-01-01T00:00:00.000Z','2026-01-01T00:00:00.000Z',0),
+                       ('preference','长期偏好',0.9,'active','2026-01-01T00:00:00.000Z','2026-01-01T00:00:00.000Z',0),
+                       ('fact','常被召回',0.5,'active','2025-12-01T00:00:00.000Z','2025-12-01T00:00:00.000Z',3),
+                       ('fact','新鲜琐事',0.1,'active','2026-03-10T00:00:00.000Z','2026-03-10T00:00:00.000Z',0)`).run();
 
     const now = new Date('2026-03-20T00:00:00.000Z');
-    const first = memory.runDecay({ now });
-    expect(first.skipped).toBe(false);
-    expect(first.archived).toBe(1);
-    expect(memory.list({ status: 'archived' })).toHaveLength(1);
-
-    // 间隔保护：立刻再跑被跳过
+    const result = memory.runDecay({ now });
+    expect(result).toMatchObject({ archived: 1, skipped: false });
+    expect(memory.list({ status: 'archived' }).map((m) => m.content)).toEqual(['陈旧琐事']);
     expect(memory.runDecay({ now }).skipped).toBe(true);
-    // force 绕过（已无符合条件的记忆，归档 0）
     expect(memory.runDecay({ now, force: true }).archived).toBe(0);
   });
+
 });

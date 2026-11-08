@@ -68,16 +68,6 @@ export interface MemoryListFilter {
   limit?: number;
 }
 
-/** P1-1 衰减归档参数（ISO 时间字符串，时间戳比较走 ISO 字典序） */
-export interface MemoryDecayFilter {
-  /** 仅扫描早于该时间创建的记忆 */
-  createdBefore: string;
-  /** 从未访问或最后访问早于该时间 */
-  accessedBefore: string;
-  /** 重要性严格小于该值才归档 */
-  maxImportance: number;
-}
-
 /** 作用域 SQL 片段：global 或当前助手或当前会话 */
 export function applyScope(
   filter: MemoryScopeFilter | undefined,

@@ -30,6 +30,8 @@ export interface RememberOptions {
   assistantId?: string | null;
   /** v2.26：写入来源（缺省按候选类型推断） */
   source?: MemorySource;
+  /** v2.26：批量写入的 TTL（临时事件用，null=永久） */
+  ttlAt?: string | null;
   signal?: AbortSignal;
   traceParent?: TraceHandle | null;
 }
@@ -61,4 +63,6 @@ export interface RememberOneInput {
   source?: MemorySource;
   subjectKey?: string | null;
   pinned?: boolean;
+  /** v2.26：TTL 到期时间（临时事件/工作记忆状态用，null=永久） */
+  ttlAt?: string | null;
 }

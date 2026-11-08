@@ -21,6 +21,8 @@ export interface PersistContext {
   sourceConversationId: string | null;
   sourceMessageId: string | null;
   source: MemorySource;
+  /** v2.26：临时事件 TTL（null=永久） */
+  ttlAt?: string | null;
 }
 
 export interface PersistResult {
@@ -64,6 +66,7 @@ export function createMemoryPersister(db: DatabaseInstance, repo: MemoryReposito
       pinned: candidate.pinned ?? false,
       confidence: candidate.confidence ?? 1,
       subjectKey: candidate.subjectKey ?? null,
+      ttlAt: ctx.ttlAt ?? null,
     };
 
     if (decision.action === 'merge' && decision.targetId) {

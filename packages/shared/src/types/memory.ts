@@ -118,3 +118,20 @@ export interface TaskCheckpoint extends Timestamped {
   /** 到期时间（ISO），null=不过期 */
   expiresAt: string | null;
 }
+
+/** v2.26 P2 线上计数：零召回率 / superseded 比例 / 用户纠正次数（管理页与诊断使用） */
+export interface MemoryLifecycleStats {
+  total: number;
+  active: number;
+  archived: number;
+  /** 被新版本取代的条数 */
+  superseded: number;
+  /** superseded / total（0~1，空库为 0） */
+  supersededRatio: number;
+  /** 累计召回次数（按回合计） */
+  recallTotal: number;
+  /** 零召回次数 / recallTotal（0~1，无召回记录为 0） */
+  zeroRecallRate: number;
+  /** 用户主动纠正（编辑/归档/恢复/删除）的审计条数 */
+  userCorrections: number;
+}
