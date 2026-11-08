@@ -49,8 +49,27 @@ function ok(data: unknown, status = 200) {
   });
 }
 
+const EMPTY_STATS = {
+  total: 0,
+  active: 0,
+  archived: 0,
+  superseded: 0,
+  supersededRatio: 0,
+  recallTotal: 0,
+  zeroRecallRate: 0,
+  userCorrections: 0,
+  recentEvents: [],
+};
+
 describe('长期记忆管理面板（M4）', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
+
+  /** 面板同时拉列表与统计：统计固定返回空口径，其余走用例自己的桩（每次新建 Response） */
+  function mockFetch(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) =>
+      url === '/api/memories/stats' ? ok(EMPTY_STATS) : handler(url, init),
+    );
+  }
 
   beforeEach(() => {
     fetchMock = vi.fn();
@@ -59,7 +78,7 @@ describe('长期记忆管理面板（M4）', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('列出记忆：类别徽标、重要性与内容正确展示', async () => {
-    fetchMock.mockResolvedValue(
+    mockFetch(() =>
       ok([
         makeMemory({ id: '1', kind: 'preference', content: '偏好中文回复', importance: 0.9 }),
         makeMemory({ id: '2', kind: 'event', content: '下周搬家', status: 'archived' }),
@@ -75,13 +94,13 @@ describe('长期记忆管理面板（M4）', () => {
   });
 
   it('空库展示空状态', async () => {
-    fetchMock.mockResolvedValue(ok([]));
+    mockFetch(() => ok([]));
     renderWithProviders(<MemoryPanel />);
     expect(await screen.findByText('还没有记忆')).toBeInTheDocument();
   });
 
   it('搜索框输入后以 search 查询参数重新拉取', async () => {
-    fetchMock.mockResolvedValue(ok([]));
+    mockFetch(() => ok([]));
     const user = userEvent.setup();
     renderWithProviders(<MemoryPanel />);
     await screen.findByText('还没有记忆');
@@ -96,7 +115,7 @@ describe('长期记忆管理面板（M4）', () => {
   });
 
   it('时间线筛选：选择起止日期后带 from/to 参数拉取', async () => {
-    fetchMock.mockResolvedValue(ok([]));
+    mockFetch(() => ok([]));
     const user = userEvent.setup();
     renderWithProviders(<MemoryPanel />);
     await screen.findByText('还没有记忆');
@@ -112,7 +131,7 @@ describe('长期记忆管理面板（M4）', () => {
   });
 
   it('添加记忆：默认 fact/0.5，POST 后关闭弹窗', async () => {
-    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+    mockFetch(async (url, init) => {
       if (url === '/api/memories' && init?.method === 'POST') return ok(makeMemory({ id: '9', content: '用户在杭州工作' }), 201);
       return ok([]);
     });
@@ -137,7 +156,7 @@ describe('长期记忆管理面板（M4）', () => {
   });
 
   it('删除单条：confirm 后发 DELETE', async () => {
-    fetchMock.mockImplementation(async (url: string) => {
+    mockFetch(async (url) => {
       if (url.startsWith('/api/memories/1')) return ok({ id: '1', deleted: true });
       return ok([makeMemory({ id: '1', content: '一条记忆' })]);
     });
@@ -155,7 +174,7 @@ describe('长期记忆管理面板（M4）', () => {
   });
 
   it('全部清空：confirm 后调用 clear 端点并回报删除条数', async () => {
-    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+    mockFetch(async (url) => {
       if (url === '/api/memories/clear') return ok({ removed: 3 });
       return ok([makeMemory({ id: '1', content: '记忆' })]);
     });
@@ -175,7 +194,7 @@ describe('长期记忆管理面板（M4）', () => {
   });
 
   it('v2.6 溯源：来源消息链接、召回次数与来源未知降级', async () => {
-    fetchMock.mockResolvedValue(
+    mockFetch(() =>
       ok([
         makeMemory({
           id: '1',

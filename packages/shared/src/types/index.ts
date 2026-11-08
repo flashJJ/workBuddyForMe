@@ -156,6 +156,7 @@ export {
 export type {
   ConversationFact,
   ConversationFactKind,
+  MemoryAuditEntry,
   MemoryLifecycleStats,
   TaskCheckpoint,
   TaskCheckpointStatus,

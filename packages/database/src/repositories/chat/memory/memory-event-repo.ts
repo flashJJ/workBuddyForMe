@@ -43,6 +43,16 @@ export function createMemoryEventRepository(db: DatabaseInstance) {
         .all(Number(memoryId), limit) as MemoryEventRow[];
     },
 
+    /** v2.28：全局最近审计（统计卡展示，不按记忆过滤） */
+    listRecent(limit = 5): MemoryEventRow[] {
+      return db
+        .prepare(
+          `SELECT id, action, actor, created_at AS createdAt FROM memory_events
+           ORDER BY created_at DESC, id DESC LIMIT ?`,
+        )
+        .all(limit) as MemoryEventRow[];
+    },
+
     /** v2.26 P2 线上计数：用户主动纠正（编辑/归档/恢复/删除）的审计条数 */
     countUserCorrections(): number {
       const row = db

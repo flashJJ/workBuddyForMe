@@ -119,6 +119,14 @@ export interface TaskCheckpoint extends Timestamped {
   expiresAt: string | null;
 }
 
+/** v2.28：记忆审计条目（统计卡「最近审计」轻量展示） */
+export interface MemoryAuditEntry {
+  id: number;
+  action: string;
+  actor: string;
+  createdAt: string;
+}
+
 /** v2.26 P2 线上计数：零召回率 / superseded 比例 / 用户纠正次数（管理页与诊断使用） */
 export interface MemoryLifecycleStats {
   total: number;
@@ -134,4 +142,6 @@ export interface MemoryLifecycleStats {
   zeroRecallRate: number;
   /** 用户主动纠正（编辑/归档/恢复/删除）的审计条数 */
   userCorrections: number;
+  /** v2.28：最近 5 条审计（可选，旧客户端忽略） */
+  recentEvents?: MemoryAuditEntry[];
 }

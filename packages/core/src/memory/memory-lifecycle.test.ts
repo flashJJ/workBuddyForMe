@@ -200,5 +200,7 @@ describe('P2 生命周期与评测', () => {
     await memory.update(active.id, { content: '用户搬到上海' });
     memory.remove(active.id);
     expect(memory.getStats().userCorrections).toBe(2);
+    // v2.28：统计同响应附带最近审计，供设置页统计卡展示
+    expect(memory.getStats().recentEvents?.length).toBeGreaterThan(0);
   });
 });

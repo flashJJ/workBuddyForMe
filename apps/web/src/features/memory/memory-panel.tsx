@@ -21,6 +21,7 @@ import {
   memorySourceHref,
 } from './memory-labels';
 import { MemoryFormDialog } from './memory-form-dialog';
+import { MemoryStatsCard } from './memory-stats-card';
 
 type StatusFilter = '' | MemoryStatus;
 
@@ -206,6 +207,8 @@ export function MemoryPanel() {
           </Button>
         </div>
       </div>
+
+      <MemoryStatsCard />
 
       <div className="flex flex-wrap gap-2">
         <Input

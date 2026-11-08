@@ -3,7 +3,13 @@ import {
   MEMORY_RECALL_ZERO_META_KEY,
 } from '@wbfm/shared/constants';
 import type { MemoryLifecycleStats } from '@wbfm/shared/types';
-import { getMeta, setMeta, type DatabaseInstance, type MemoryRepository } from '@wbfm/database';
+import {
+  createMemoryEventRepository,
+  getMeta,
+  setMeta,
+  type DatabaseInstance,
+  type MemoryRepository,
+} from '@wbfm/database';
 
 /**
  * v2.26 P2 线上计数：
@@ -13,6 +19,8 @@ import { getMeta, setMeta, type DatabaseInstance, type MemoryRepository } from '
  */
 
 export function createMemoryStats(db: DatabaseInstance, repo: MemoryRepository) {
+  const events = createMemoryEventRepository(db);
+
   function readCounter(key: string): number {
     const raw = getMeta(db, key);
     const value = raw === null ? 0 : Number(raw);
@@ -40,6 +48,7 @@ export function createMemoryStats(db: DatabaseInstance, repo: MemoryRepository) 
       recallTotal,
       zeroRecallRate: ratio(readCounter(MEMORY_RECALL_ZERO_META_KEY), recallTotal),
       userCorrections: repo.countUserCorrections(),
+      recentEvents: events.listRecent(5),
     };
   }
 
