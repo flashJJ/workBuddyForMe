@@ -68,6 +68,8 @@ v2.19 把文档解析做深之后，存量与低质输入一直没有收口：�
 
 v2.29 来源方案为 [v2.29-04](scheduled/v2.29-04-document-quality.md)，候选 04 已从 `candidates/` 移出。
 
+v2.30 已立项，方案见 [v2.30 方案](../plan/v2.30/README.md)，分支 `feat/v2.30-capability-completion`；来源方案为 [v2.30-03](scheduled/v2.30-03-capability-and-content-pack-completion.md)，候选 03 已从 `candidates/` 移出。
+
 ## ✅ 已正式发布：v2.26 记得久、说得清——双时态记忆、混合召回与上下文分层压缩（2026-11-08，tag `v2.26.0`）
 
 把长期记忆从「抽取 + 向量检索 + 覆盖写入」升级为可追溯、可解释的四条链路。写入侧引入双时态事实（`valid_from / valid_to / superseded_by / version`），新旧值并存、旧行 `superseded`，不再覆盖；回合后先用零模型成本的窄规则识别过敏 / 忌口 / 禁止 / 显式「记住」并实时置顶，常规抽取再交给模型；同一 `subject_key` 冲突由纯函数决定 create / merge / supersede，两侧各写一条审计。召回侧改为向量与 FTS 各取 20 条候选，按 `0.55 / 0.20 / 0.15 / 0.10` 融合，无嵌入时降级为 `0.75 / 0.15 / 0.10`，置顶硬约束每轮最多固定注入 3 条，理由标记 `pinned / hybrid / semantic / keyword`。压缩侧摘要输出结构化 JSON，事实落入 `conversation_facts` 并做数字 / 日期保真校验，注入顺序与 50 / 25 / 10 / 10 预算固定；计划执行时用 `task_checkpoints` 保存工作记忆。生命周期按 `importance × recency × usage` 计算衰减分，30 / 90 / 180 天分档，七天一次只归档不删除，`ttl_at` 到期清理不受间隔限制；新增 `GET /api/memories/stats` 暴露 superseded 比例、零召回率与用户纠正次数。共两次迁移（v046 / v047），`LATEST_SCHEMA_VERSION = 47`；图关系边、空闲整理、审计轮转与统计前端未包含在本版。
