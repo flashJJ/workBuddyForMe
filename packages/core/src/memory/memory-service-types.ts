@@ -32,6 +32,8 @@ export interface RememberOptions {
   source?: MemorySource;
   /** v2.26：批量写入的 TTL（临时事件用，null=永久） */
   ttlAt?: string | null;
+  /** v2.28：跳过嵌入调用（实时约束等纯规则写入，零模型成本） */
+  skipEmbedding?: boolean;
   signal?: AbortSignal;
   traceParent?: TraceHandle | null;
 }

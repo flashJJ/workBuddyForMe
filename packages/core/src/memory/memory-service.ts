@@ -70,11 +70,9 @@ export function createMemoryService(deps: ServiceDeps) {
     if (candidates.length === 0) {
       return { created: 0, updated: 0, superseded: 0, memories: [] };
     }
-    const embedded = await embedTexts(
-      deps,
-      candidates.map((c) => c.content),
-      options.signal,
-    );
+    const embedded = options.skipEmbedding
+      ? null
+      : await embedTexts(deps, candidates.map((c) => c.content), options.signal);
     const ctx = {
       scope: options.scope ?? 'global',
       assistantId: options.assistantId ?? null,

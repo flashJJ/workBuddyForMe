@@ -36,7 +36,6 @@ export interface Provider extends Timestamped {
   enabled: boolean;
   sortOrder: number;
 }
-
 export interface ProviderModel {
   id: string;
   providerId: string;
@@ -46,13 +45,11 @@ export interface ProviderModel {
   contextWindow: number | null;
   createdAt: string;
 }
-
 /** 供应商远端模型发现项（v0.5）：contextLength 为自动探测的上下文长度，无法探测时为 null。 */
 export interface DiscoveredModel {
   id: string;
   contextLength: number | null;
 }
-
 export interface Assistant extends Timestamped {
   id: string;
   name: string;
@@ -100,7 +97,6 @@ export interface Conversation extends Timestamped {
   summaryTurns: number;
   modelId: string | null;
 }
-
 export interface Citation {
   documentId: string;
   documentName: string;
@@ -132,6 +128,11 @@ export interface Citation {
 export { MEMORY_KINDS, MEMORY_STATUSES, MEMORY_RECALL_REASONS } from './memory';
 export type { Memory, MemoryKind, MemoryStatus, MemoryRecallReason } from './memory';
 
+/** v2.28：done 帧下发的约束写入提示（仅 id 与正文；撤销走归档） */
+export interface MemoryNotice {
+  id: string;
+  content: string;
+}
 export interface Message {
   id: string;
   conversationId: string;
@@ -151,6 +152,8 @@ export interface Message {
   feedbackAt: string | null;
   errorCode: string | null;
   errorMessage: string | null;
+  /** v2.28：本轮新记住的硬约束提示（仅前端 live 态，不落库） */
+  memoryNotices?: MemoryNotice[];
   createdAt: string;
 }
 
@@ -163,7 +166,6 @@ export interface Attachment {
   contentHash: string;
   createdAt: string;
 }
-
 export interface KnowledgeBase extends Timestamped {
   id: string;
   name: string;
@@ -172,7 +174,6 @@ export interface KnowledgeBase extends Timestamped {
   chunkOverlap: number;
   documentCount: number;
 }
-
 export interface DocumentRecord {
   id: string;
   knowledgeBaseId: string;
@@ -199,7 +200,6 @@ export interface DocumentRecord {
   compileError?: string | null;
   compileGeneration?: number;
 }
-
 export interface AppSettings
   extends EventSettingsFields,
     LocalModeSettingsFields,

@@ -24,6 +24,7 @@ import {
   buildStreamInput,
   buildTurnMessages,
   completedPatch,
+  applyMemoryNotices,
   confirmationFromPayload,
   applyMessageFeedback,
   markStreamingAssistantStopped,
@@ -183,6 +184,7 @@ export function useChatSession(
           settleTiming();
           setPendingConfirmation(null);
           patchLastAssistant(completedPatch(data));
+          setLive((prev) => applyMemoryNotices(prev, data.memoryNotices));
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
           void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
         },

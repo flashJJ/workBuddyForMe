@@ -15,6 +15,11 @@ export const zhChatMessages = {
   /** v2.23：助手消息底部展示本轮 token 用量 */
   turnTokens: '本轮 {count} tokens',
   turnTokensDetail: '输入 {prompt} · 输出 {completion} · 合计 {total} tokens',
+  /** v2.28：实时约束已记住提示与撤销 */
+  memoryNoticePrefix: '已记住：',
+  memoryNoticeUndo: '撤销',
+  memoryNoticeUndone: '已撤销',
+  memoryNoticeFailed: '撤销失败',
   /** v2.27：回合运行摘要（工具/引用/耗时），仅有工具或引用时展示 */
   turnSummaryTools: '工具 {count} 次（成功 {ok} / 失败 {failed}）',
   turnSummaryDuration: '工具耗时 {duration}',
@@ -71,6 +76,11 @@ export const enChatMessages = {
   /** v2.23: per-turn token usage under assistant messages */
   turnTokens: 'This turn: {count} tokens',
   turnTokensDetail: 'Prompt {prompt} · Completion {completion} · Total {total} tokens',
+  /** v2.28：constraint notice + undo */
+  memoryNoticePrefix: 'Remembered: ',
+  memoryNoticeUndo: 'Undo',
+  memoryNoticeUndone: 'Undone',
+  memoryNoticeFailed: 'Failed to undo',
   turnSummaryTools: 'Tools {count} (ok {ok} / failed {failed})',
   turnSummaryDuration: 'Tool time {duration}',
   turnSummaryCitations: '{count} citations',

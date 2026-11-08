@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ContentPart, Message } from '@wbfm/shared/types';
+import type { ContentPart, MemoryNotice, Message } from '@wbfm/shared/types';
 import type { SsePayloadMap } from '@wbfm/shared/api';
 import type { ChatStreamInput } from '@/lib/hooks/chat';
 import { API } from '@/lib/api/endpoints';
@@ -97,6 +97,28 @@ export function completedPatch(data: SsePayloadMap['done']): Partial<Message> {
     completionTokens: data.usage?.completionTokens ?? null,
     totalTokens: data.usage?.totalTokens ?? null,
   };
+}
+
+/**
+ * v2.28：把 done 下发的约束提示挂到最后一条助手消息。
+ * 同一会话内按记忆 id 去重（重复约束只提示一次），单条消息最多 2 条。
+ */
+export function applyMemoryNotices(
+  prev: Message[] | null,
+  notices: MemoryNotice[] | undefined,
+): Message[] | null {
+  if (!prev || !notices?.length) return prev;
+  const seen = new Set(prev.flatMap((m) => m.memoryNotices?.map((n) => n.id) ?? []));
+  const fresh = notices.filter((n) => !seen.has(n.id)).slice(0, 2);
+  if (fresh.length === 0) return prev;
+  const next = [...prev];
+  for (let i = next.length - 1; i >= 0; i -= 1) {
+    if (next[i]!.role === 'assistant') {
+      next[i] = { ...next[i]!, memoryNotices: fresh };
+      break;
+    }
+  }
+  return next;
 }
 
 /** 主动停止：把最后一条仍在流式的助手消息标记为 stopped */
