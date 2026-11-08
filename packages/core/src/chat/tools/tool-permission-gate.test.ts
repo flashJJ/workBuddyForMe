@@ -140,6 +140,25 @@ describe('工具门控策略与绑定（v2.13 M2）', () => {
     expect((next.value as { denied: boolean }).denied).toBe(true);
   });
 
+  it('v2.30：审批详情随事件下发；缺省时不出现 details 字段', async () => {
+    const details = { catalogId: 'cap.skill', name: '示例技能', kind: 'skill', version: '1.0.0', source: 'bundled', installStrategy: 'bundled-pack', permissions: ['skill:install'], effects: ['新增提示词'], toolNames: ['current_time'] };
+    const withDetails = makeDeps(DEFAULT_AGENT_POLICY);
+    const gen = gateToolPermission({ deps: withDetails, tool, toolName: 'capability_install', callId: 'c1', argsSummary: '{}', args: {}, assistantId: 'a1', source: 'builtin', permission: 'write', details });
+    const first = await gen.next();
+    expect((first.value as { data: { details?: unknown } }).data.details).toEqual(details);
+    withDetails.confirmations!.resolve('c1', 'deny');
+    let next = await gen.next();
+    while (!next.done) next = await gen.next();
+
+    const plain = makeDeps(DEFAULT_AGENT_POLICY);
+    const gen2 = gateToolPermission({ deps: plain, tool, toolName: 'capability_install', callId: 'c2', argsSummary: '{}', args: {}, assistantId: 'a1', source: 'builtin', permission: 'write' });
+    const first2 = await gen2.next();
+    expect((first2.value as { data: Record<string, unknown> }).data).not.toHaveProperty('details');
+    plain.confirmations!.resolve('c2', 'deny');
+    let next2 = await gen2.next();
+    while (!next2.done) next2 = await gen2.next();
+  });
+
   it('显式权限 deny 记录阻止审批绕过', async () => {
     const deps = makeDeps(DEFAULT_AGENT_POLICY);
     deps.permissions!.grantPermission('keyboard_type', 'all', 'deny');

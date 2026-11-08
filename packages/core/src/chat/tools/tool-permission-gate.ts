@@ -175,7 +175,13 @@ export async function* gateToolPermission(
   }
   yield {
     event: 'tool_confirmation_required',
-    data: { callId, tool: toolName, permission, argsSummary: params.argsSummary },
+    data: {
+      callId,
+      tool: toolName,
+      permission,
+      argsSummary: params.argsSummary,
+      ...(params.details ? { details: params.details } : {}),
+    },
   };
   const resolved = decisionPromise ? await decisionPromise : 'deny';
   if (resolved === 'allow') {

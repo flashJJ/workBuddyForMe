@@ -13,6 +13,7 @@ import type { RetrievedChunk } from '../retrieval/retrieval-service';
 import type {
   CapabilityCatalogInstallResult,
   CapabilityCatalogSearchItem,
+  CapabilityInventoryItem,
 } from '../capabilities/catalog/types';
 
 /** 工具执行时可使用的能力（由编排器按本轮对话注入） */
@@ -60,6 +61,8 @@ export interface ToolContext {
     catalogId: string;
     reason?: string;
   }) => CapabilityCatalogInstallResult;
+  /** v2.30：已安装能力清单（含目录 effects/toolNames），供 capability_list 与审批详情使用 */
+  listCapabilities?: () => CapabilityInventoryItem[];
   /** v2.17：安装后把只读工具追加到当前助手白名单；非只读工具跳过 */
   bindTools?: (toolNames: string[]) => { added: string[]; skipped: string[] };
   /** v2.18：写入产物文件（未提供时 artifact_write 返回不可用） */

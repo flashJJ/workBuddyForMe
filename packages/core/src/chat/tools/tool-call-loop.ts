@@ -52,6 +52,26 @@ export async function* runToolCallLoop(
     const name = call.function.name;
     const parsedArgs = safeParseArgs(call);
     const argsSummary = summarizeArgs(name, parsedArgs);
+    // v2.30：能力安装审批带上目录快照（来源/版本/effects/新增工具）
+    const confirmationDetails = (() => {
+      if (name !== 'capability_install' || !toolCtx.listCapabilities) return undefined;
+      const catalogId = (parsedArgs as { catalogId?: unknown }).catalogId;
+      if (typeof catalogId !== 'string') return undefined;
+      const item = toolCtx.listCapabilities().find((candidate) => candidate.id === catalogId);
+      if (!item) return undefined;
+      return {
+        catalogId: item.id,
+        name: item.name,
+        kind: item.kind,
+        version: item.version,
+        source: item.source,
+        installStrategy: item.installStrategy,
+        ...(item.signatureStatus ? { signatureStatus: item.signatureStatus } : {}),
+        permissions: item.permissions,
+        effects: item.effects,
+        toolNames: item.toolNames,
+      };
+    })();
     // v2.27：同一链接连续失败达上限后，本轮后续调用直接跳过，不再发网络请求
     const fetchUrl = name === 'fetch_webpage' ? fetchUrlOf(parsedArgs) : null;
     const skipFetch =
@@ -75,6 +95,7 @@ export async function* runToolCallLoop(
       signal,
       source,
       permission,
+      ...(confirmationDetails ? { details: confirmationDetails } : {}),
       ...(params.approvalContext ? { approvalContext: params.approvalContext } : {}),
     });
     if (gate.denied) {

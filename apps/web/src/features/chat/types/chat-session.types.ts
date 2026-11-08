@@ -8,6 +8,8 @@ export interface PendingToolConfirmation {
   tool: string;
   permission: PermissionLevel;
   argsSummary: string;
+  /** v2.30：能力安装审批详情（仅 capability_install） */
+  details?: SsePayloadMap['tool_confirmation_required']['details'];
   /**
    * v1.4 M4：协作 Executor 门控帧携带的 task run 作用域。
    * 存在即表示请求来自协作链路（弹窗标注「协作任务·Executor 发起」）；

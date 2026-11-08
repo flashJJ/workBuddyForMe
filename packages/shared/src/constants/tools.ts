@@ -10,6 +10,8 @@ export const TOOL_NAMES = [
   // v2.17 M4 能力目录（安装为 write，需 HITL）
   'capability_search',
   'capability_install',
+  // v2.30 已安装能力清单（只读）
+  'capability_list',
   // v2.18 M1 产物文件（write）
   'artifact_write',
   // v2.18 M2 结构化图表（write，渲染后落盘）

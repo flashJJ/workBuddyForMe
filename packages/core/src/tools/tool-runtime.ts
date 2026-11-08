@@ -10,6 +10,7 @@ import { knowledgeSearchTool } from './knowledge-search-tool';
 import { webSearchTool } from './web/web-search-tool';
 import {
   capabilityInstallTool,
+  capabilityListTool,
   capabilitySearchTool,
 } from './capability/capability-tools';
 import { artifactWriteTool } from './artifact/artifact-write-tool';
@@ -32,6 +33,8 @@ const ALL_TOOLS: Record<string, Tool> = {
   // v2.17 M4：能力目录检索与安装代理
   capability_search: capabilitySearchTool,
   capability_install: capabilityInstallTool,
+  // v2.30：已安装能力清单
+  capability_list: capabilityListTool,
   // v2.18 M1：产物文件
   artifact_write: artifactWriteTool,
   // v2.18 M2：结构化图表
@@ -205,6 +208,7 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
                 catalog.search(input),
               installCapability: (input: Parameters<NonNullable<ToolContext['installCapability']>>[0]) =>
                 catalog.install(input.catalogId),
+              listCapabilities: () => catalog.listInstalled(),
               ...(bindReadOnlyTools ? { bindTools: bindReadOnlyTools } : {}),
             }
           : {}),

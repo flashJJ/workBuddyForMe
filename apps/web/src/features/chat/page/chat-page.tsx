@@ -199,6 +199,7 @@ export function ChatPage({
         tool={session.pendingConfirmation?.tool ?? ''}
         permission={session.pendingConfirmation?.permission ?? 'write'}
         argsSummary={session.pendingConfirmation?.argsSummary ?? ''}
+        details={session.pendingConfirmation?.details}
         submitting={confirmSubmitting}
         taskScopeAvailable={Boolean(conversationId || session.pendingConfirmation?.taskScope)}
         origin={session.pendingConfirmation?.taskScope ? 'agent' : undefined}
