@@ -15,6 +15,14 @@ export const zhChatMessages = {
   /** v2.23：助手消息底部展示本轮 token 用量 */
   turnTokens: '本轮 {count} tokens',
   turnTokensDetail: '输入 {prompt} · 输出 {completion} · 合计 {total} tokens',
+  /** v2.27：回合运行摘要（工具/引用/耗时），仅有工具或引用时展示 */
+  turnSummaryTools: '工具 {count} 次（成功 {ok} / 失败 {failed}）',
+  turnSummaryDuration: '工具耗时 {duration}',
+  turnSummaryCitations: '引用 {count} 条',
+  turnSummarySourceKnowledge: '知识库',
+  turnSummarySourceWeb: '网页',
+  turnSummaryTokens: '输入 {prompt} / 输出 {completion} token',
+  turnSummaryToolsDetail: '逐工具耗时',
   resend: '重新发送',
   editAndResend: '编辑并重发',
   citations: '引用来源',
@@ -63,6 +71,13 @@ export const enChatMessages = {
   /** v2.23: per-turn token usage under assistant messages */
   turnTokens: 'This turn: {count} tokens',
   turnTokensDetail: 'Prompt {prompt} · Completion {completion} · Total {total} tokens',
+  turnSummaryTools: 'Tools {count} (ok {ok} / failed {failed})',
+  turnSummaryDuration: 'Tool time {duration}',
+  turnSummaryCitations: '{count} citations',
+  turnSummarySourceKnowledge: 'knowledge base',
+  turnSummarySourceWeb: 'web',
+  turnSummaryTokens: 'Prompt {prompt} / completion {completion} tokens',
+  turnSummaryToolsDetail: 'Per-tool time',
   resend: 'Send again',
   editAndResend: 'Edit and resend',
   citations: 'Sources',
