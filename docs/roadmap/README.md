@@ -21,12 +21,13 @@
 | `roadmap/scheduled/` | 已排期候选归档，`vX.Y-NN-slug.md`；保留来源方案，方便追溯立项原因 |
 | `roadmap/` 根 | 已发布版本总结/发行说明、跨版本专题与索引 |
 
-## 📋 规划中：v2.27 答得可查——行内引用角标、来源定位与回合运行摘要
+## 🚧 开发完成待发布：v2.27 答得可查——行内引用角标、来源定位与回合运行摘要
 
 v2.18 起工具结果就带证据字段、v2.19 起引用带章节与表格坐标、v2.24 又把工具过程收成时间线，但答案本身仍「看不出出处」：正文 `[1]` 不可点、底部角标直接取文档内片段序号（知识从 0 起、网页从 1 起，会出现 `[0]` 与重复编号）、来源平铺不分文档/网页、一轮结束只有 token 用量、抓取失败仍可能反复重试同一地址。v2.27 把这些已有数据接通：装配层统一 `citeIndex`（1 起、与提示词资料块一致），正文角标可点击并定位到来源卡与文档查看器，来源按文档/网页分组并显示类型、坐标、片段与采集时间；补一条回合运行摘要（工具次数、成功/失败、工具耗时、引用条数与来源类型），并让 `fetch_webpage` 连续失败后改用搜索摘要成文而不是重复重试。零迁移，`LATEST_SCHEMA_VERSION` 保持 47；子 Agent handoff 泳道列 P2，不进入验收口径。方案 §2 同时盘点了 v2.10–v2.26 的 26 项未交付点，其余按主题归档为 4 个未排期候选。
 
 - 方案：[v2.27 方案](../plan/v2.27/README.md) · 来源方案：[引用角标、来源定位与回合运行摘要](scheduled/v2.27-01-citation-and-turn-summary.md)
-- 状态：📋 规划中（分支 `feat/v2.27-planning`；零迁移，`LATEST_SCHEMA_VERSION` 保持 47）
+- 状态：🚧 开发完成待发布（分支 `feat/v2.27-planning`；P0/P1 已交付，P2 handoff 泳道后移；零迁移，`LATEST_SCHEMA_VERSION` 保持 47）
+- 发行说明：[v2.27-release-notes.md](v2.27-release-notes.md)
 - 范围：P0 引用编号契约 + 正文角标 + 来源分组定位；P1 回合运行摘要 + 抓取失败降级；P2 handoff 泳道（可选）
 - 未排期候选：[记忆图与空闲整理](candidates/01-memory-graph-and-consolidation.md) · [记忆可观测与治理](candidates/02-memory-observability-and-governance.md) · [能力生态与内容包](candidates/03-capability-and-content-pack-completion.md) · [文档质量](candidates/04-document-quality.md)
 
