@@ -45,6 +45,8 @@ v2.18 起工具结果就带证据字段、v2.19 起引用带章节与表格坐�
 
 排序原则：先做已有数据能直接接通、用户可感知的（引用、回合摘要、统计前端），再做需要新链路或需要人工修正的（重解析、OCR、内容包更新），最后评估成本最高的图能力。每个版本仍保持单一主题、零或一次迁移、Non-Goals 与功能清单同权重。
 
+v2.28 已立项，方案见 [v2.28 方案](../plan/v2.28/README.md)，分支 `feat/v2.28-memory-governance`。
+
 ## ✅ 已正式发布：v2.26 记得久、说得清——双时态记忆、混合召回与上下文分层压缩（2026-11-08，tag `v2.26.0`）
 
 把长期记忆从「抽取 + 向量检索 + 覆盖写入」升级为可追溯、可解释的四条链路。写入侧引入双时态事实（`valid_from / valid_to / superseded_by / version`），新旧值并存、旧行 `superseded`，不再覆盖；回合后先用零模型成本的窄规则识别过敏 / 忌口 / 禁止 / 显式「记住」并实时置顶，常规抽取再交给模型；同一 `subject_key` 冲突由纯函数决定 create / merge / supersede，两侧各写一条审计。召回侧改为向量与 FTS 各取 20 条候选，按 `0.55 / 0.20 / 0.15 / 0.10` 融合，无嵌入时降级为 `0.75 / 0.15 / 0.10`，置顶硬约束每轮最多固定注入 3 条，理由标记 `pinned / hybrid / semantic / keyword`。压缩侧摘要输出结构化 JSON，事实落入 `conversation_facts` 并做数字 / 日期保真校验，注入顺序与 50 / 25 / 10 / 10 预算固定；计划执行时用 `task_checkpoints` 保存工作记忆。生命周期按 `importance × recency × usage` 计算衰减分，30 / 90 / 180 天分档，七天一次只归档不删除，`ttl_at` 到期清理不受间隔限制；新增 `GET /api/memories/stats` 暴露 superseded 比例、零召回率与用户纠正次数。共两次迁移（v046 / v047），`LATEST_SCHEMA_VERSION = 47`；图关系边、空闲整理、审计轮转与统计前端未包含在本版。
@@ -420,6 +422,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.22 | 收口：分支事件备份、终态回传、重试、预算熔断与实时帧 | ✅ 已正式发布（2026-11-04，Release 已转正并置 Latest） | [方案](../plan/v2.22/README.md) · [M0 决策](../plan/v2.22/01-M0-决策记录.md) · [M0 契约](../plan/v2.22/02-M0-契约冻结.md) · [M1](../plan/v2.22/03-M1-实施记录.md) · [M2](../plan/v2.22/04-M2-实施记录.md) · [M3](../plan/v2.22/05-M3-实施记录.md) · [M4](../plan/v2.22/06-M4-实施记录.md) · [来源方案](scheduled/v2.22-01-branch-hardening.md) | — | [发行说明](v2.22-release-notes.md) · [blog/v2.22](../../blog/v2.22/) 7 篇 | `v2.22.0` |
 | v2.26 | 记得久、说得清：双时态记忆、混合召回与上下文分层压缩 | ✅ 已正式发布（2026-11-08，Release 已转正并置 Latest） | [方案](../plan/v2.26/README.md) | — | [发行说明](v2.26-release-notes.md) · [blog/v2.26](../../blog/v2.26/) 10 篇 | `v2.26.0` |
 | v2.27 | 答得可查：行内引用角标、来源定位与回合运行摘要 | ✅ 已发布（Release `42503470593`） | [方案](../plan/v2.27/README.md) · [来源方案](scheduled/v2.27-01-citation-and-turn-summary.md) | — | [发行说明](v2.27-release-notes.md) · [blog/v2.27](../../blog/v2.27/) 10 篇 | `v2.27.0` |
+| v2.28 | 记忆可管：统计前端、审计轮转与约束撤销 | 🚧 规划中（分支 `feat/v2.28-memory-governance`） | [方案](../plan/v2.28/README.md) · [来源方案](scheduled/v2.28-01-memory-observability-and-governance.md) | — | — | 待定 |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
