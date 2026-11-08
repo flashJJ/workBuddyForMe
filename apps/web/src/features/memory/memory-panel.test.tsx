@@ -26,6 +26,18 @@ function makeMemory(partial: Partial<Memory> & { id: string; content: string }):
     createdAt: '2025-01-01T00:00:00.000Z',
     updatedAt: '2025-01-02T00:00:00.000Z',
     lastAccessedAt: null,
+    scope: 'global',
+    assistantId: null,
+    source: 'legacy',
+    pinned: false,
+    confidence: 1,
+    subjectKey: null,
+    version: 1,
+    supersededBy: null,
+    validFrom: null,
+    validTo: null,
+    ttlAt: null,
+    lastConfirmedAt: null,
     ...partial,
   };
 }

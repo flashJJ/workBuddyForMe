@@ -7,6 +7,14 @@ export {
 } from './work-plan-service';
 export { buildPlanPromptBlock } from './plan-prompt';
 export {
+  buildCheckpointPromptBlock,
+  buildTaskCheckpointSnapshot,
+  summarizeLastTool,
+  type TaskCheckpointContext,
+  type TaskCheckpointOptions,
+  type TaskCheckpointSnapshot,
+} from './task-checkpoint';
+export {
   createRunCompletionService,
   type RunCompletionService,
 } from './run-completion';

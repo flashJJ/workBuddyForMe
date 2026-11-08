@@ -3,15 +3,20 @@ import {
   type Citation,
   type ContentPart,
   type Conversation,
+  type ConversationFact,
   type Message,
 } from '@wbfm/shared/types';
 import { type MessageFeedback, type MessageRole, type MessageStatus } from '@wbfm/shared/constants';
+import { CONVERSATION_FACT_MAX_ITEMS } from '@wbfm/shared/constants';
+import type { SummaryPayload } from '@wbfm/shared/schemas';
 import {
   createAssistantRepository,
   createCharacterCardRepository,
+  createConversationFactRepository,
   createConversationRepository,
   createMessageRepository,
   createStagePlanRepository,
+  createTaskCheckpointRepository,
 } from '@wbfm/database';
 import type { MessageUsage } from '@wbfm/database';
 import type { ServiceDeps } from '../base/deps';
@@ -38,6 +43,8 @@ export function createConversationService(deps: ServiceDeps) {
   const conversations = createConversationRepository(db);
   const messages = createMessageRepository(db);
   const stagePlans = createStagePlanRepository(db);
+  const conversationFacts = createConversationFactRepository(db);
+  const checkpoints = createTaskCheckpointRepository(db);
   /** v2.9：按消息反查会话后写事件；日志失败不影响对话主链路 */
   const recordForMessage = (id: string, type: string, payload: Record<string, unknown>): void => {
     const message = messages.findById(id);
@@ -87,6 +94,9 @@ export function createConversationService(deps: ServiceDeps) {
     delete(id: string): void {
       requireConversation(id);
       conversations.delete(id);
+      // v2.26 P1：会话删除时清理结构化事实与工作记忆，避免孤儿数据
+      conversationFacts.deleteByConversation(id);
+      checkpoints.deleteByConversation(id);
     },
 
     listMessages(conversationId: string, limit?: number): Message[] {
@@ -207,6 +217,21 @@ export function createConversationService(deps: ServiceDeps) {
     /** 最近一条助手响应的真实 completion tokens（v0.5 token 预算校准；无则 null） */
     lastAssistantUsage(conversationId: string): { completionTokens: number } | null {
       return messages.lastAssistantUsage(conversationId);
+    },
+
+    /** v2.26 P1：会话结构化事实（按更新时间倒序，最多 30 条） */
+    listFacts(conversationId: string): ConversationFact[] {
+      return conversationFacts.listByConversation(conversationId, CONVERSATION_FACT_MAX_ITEMS);
+    },
+
+    /** v2.26 P1：摘要器结构化载荷落库（facts/decisions/open_loops 幂等写入） */
+    saveSummaryFacts(
+      conversationId: string,
+      payload: SummaryPayload,
+      sourceMessageIds: readonly string[],
+    ): void {
+      requireConversation(conversationId);
+      conversationFacts.upsertPayload(conversationId, payload, sourceMessageIds);
     },
   };
 }

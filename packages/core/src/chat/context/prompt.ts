@@ -1,4 +1,11 @@
-import { CONTEXT_BUDGET_SAFETY_RATIO, RAG_CHUNK_MIN_TOKENS } from '@wbfm/shared/constants';
+import {
+  CONTEXT_BUDGET_SAFETY_RATIO,
+  CONTEXT_QUOTA_FACTS,
+  CONTEXT_QUOTA_HISTORY,
+  CONTEXT_QUOTA_MEMORY,
+  CONTEXT_QUOTA_SUMMARY,
+  RAG_CHUNK_MIN_TOKENS,
+} from '@wbfm/shared/constants';
 import type { Assistant, Message } from '@wbfm/shared/types';
 import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
 import type { ChatMessage } from '@wbfm/ai';
@@ -51,11 +58,16 @@ export interface BuildPromptOptions {
    * 组装侧负责只传 relationship 类记忆并做完删除一致性；null=不注入。
    */
   relationshipMemoryBlock?: string | null;
+  /** v2.26 P1：硬约束块（置顶 constraint 记忆），位于人设/情绪之后、事实之前 */
+  constraintBlock?: string | null;
+  /** v2.26 P1：结构化事实块（conversation_facts），位于摘要之前 */
+  factsBlock?: string | null;
 }
 
 /**
- * 组装系统提示词，固定段落顺序（v1.8 契约，快照测试锁死）：
- * 系统层（表情指令）→ 身份卡/旧人设 → 全局追加 → 情绪 → 摘要 → 记忆 → 技能 → RAG。
+ * 组装系统提示词，固定段落顺序（v2.26 P1 契约）：
+ * 系统层（表情指令）→ 身份卡/旧人设 → 全局追加 → 情绪
+ * → 硬约束 → 结构化事实 → 摘要 → 长效记忆 → 技能 → RAG。
  */
 export function buildSystemPrompt(
   assistant: Assistant,
@@ -86,6 +98,9 @@ export function buildSystemPrompt(
   }
   // v1.6：情绪块内已自带「当前状态段 + 尾块协议」两段，调用方在情绪功能开启时整体传入
   if (emotionBlock?.trim()) parts.push(emotionBlock.trim());
+  // v2.26 P1：硬约束先于结构化事实，事实先于摘要（注入顺序契约）
+  if (options.constraintBlock?.trim()) parts.push(options.constraintBlock.trim());
+  if (options.factsBlock?.trim()) parts.push(options.factsBlock.trim());
   if (summary?.trim()) {
     parts.push('以下是本次对话早期内容的摘要，其中的事实与约定仍然有效：\n\n【对话摘要】\n' + summary.trim());
   }
@@ -117,6 +132,10 @@ export interface ChatBudgetOptions {
   summary?: string | null;
   /** 回合前召回的长期记忆块（注入 system，占用预算） */
   memoryBlock?: string | null;
+  /** v2.26 P1：硬约束块（占记忆配额，优先于普通记忆注入） */
+  constraintBlock?: string | null;
+  /** v2.26 P1：结构化事实块（占事实配额 10%） */
+  factsBlock?: string | null;
   /** v0.6 M3：启用技能的提示词模板块（注入 system，占用预算） */
   skillBlock?: string | null;
   /** v1.6：情绪状态段 + 尾块协议（仅情绪功能开启时由调用方组装） */
@@ -159,14 +178,26 @@ export function buildChatMessages(
   // 按 0.9 系数收缩，所有区块（含 RAG）都在这个窗口内做账，杜绝超长请求打到上游。
   const usableWindow = Math.floor(budget.contextWindow * CONTEXT_BUDGET_SAFETY_RATIO);
   const reserveTokens = resolveReserveTokens(budget.lastCompletionTokens);
-  const summary = budget.summary ?? null;
-  const memoryBlock = budget.memoryBlock ?? null;
+  // v2.26 P1 分层预算：摘要 25% / 事实 10% / 记忆 10%（含硬约束）/ 原文 50%
+  const summaryCap = Math.floor(usableWindow * CONTEXT_QUOTA_SUMMARY);
+  const factsCap = Math.floor(usableWindow * CONTEXT_QUOTA_FACTS);
+  const memoryCap = Math.floor(usableWindow * CONTEXT_QUOTA_MEMORY);
+  const constraintBlock = truncateToTokens(
+    budget.constraintBlock ?? '',
+    Math.floor(memoryCap / 2),
+  );
+  const memoryLeft = Math.max(0, memoryCap - estimateTokens(constraintBlock));
+  const summary = budget.summary ? truncateToTokens(budget.summary, summaryCap) : null;
+  const memoryBlock = budget.memoryBlock ? truncateToTokens(budget.memoryBlock, memoryLeft) : null;
+  const factsBlock = budget.factsBlock ? truncateToTokens(budget.factsBlock, factsCap) : null;
   const skillBlock = budget.skillBlock ?? null;
   const emotionBlock = budget.emotionBlock ?? null;
   const promptOptions: BuildPromptOptions = {
     card: budget.card ?? null,
     globalAppendPrompt: budget.globalAppendPrompt ?? null,
     cardNickname: budget.cardNickname ?? null,
+    constraintBlock: constraintBlock || null,
+    factsBlock: factsBlock || null,
   };
 
   // 1) 先装不含 RAG 的固定系统块（系统层/身份卡/全局追加/情绪/摘要/记忆/技能）
@@ -213,6 +244,7 @@ export function buildChatMessages(
     systemTokens: systemPrompt ? estimateTokens(systemPrompt) : 0,
     toolsTokens: budget.toolsTokens,
     lastCompletionTokens: budget.lastCompletionTokens,
+    historyTokenCap: Math.floor(usableWindow * CONTEXT_QUOTA_HISTORY),
   });
   return { messages: [...prefix, ...kept], stats };
 }

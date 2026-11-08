@@ -1,9 +1,12 @@
+import { MEMORY_BLOCK_RESERVE_TOKENS } from '@wbfm/shared/constants';
 import type { Memory } from '@wbfm/shared/types';
 import type { RecalledMemoryPayload } from '@wbfm/shared/api';
 import type { TraceHandle } from '@wbfm/ai';
 import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 import type { OrchestratorEvent } from '../chat/base/types';
+import { truncateToTokens } from '../chat/context/context-budget';
 import { extractTurnMemories } from './extractor';
+import { extractRealtimeConstraints } from './lifecycle';
 import type { MemoryService, RecalledMemory } from './memory-service';
 
 /** v0.5 M3：对话回合与记忆服务之间的胶水，编排器只负责调用与吞错边界。 */
@@ -13,12 +16,28 @@ const KIND_LABELS: Record<Memory['kind'], string> = {
   preference: '偏好',
   event: '事件',
   relationship: '共同经历',
+  constraint: '硬约束',
 };
 
-/** 召回记忆格式化为 system 区块正文；无记忆返回 null */
+/** 召回记忆格式化为 system 区块正文（按预算硬截断）；无记忆返回 null */
 export function formatMemoryBlock(memories: Memory[]): string | null {
   if (memories.length === 0) return null;
-  return memories.map((m) => `- ［${KIND_LABELS[m.kind]}］${m.content}`).join('\n');
+  const body = memories.map((m) => `- ［${KIND_LABELS[m.kind]}］${m.content}`).join('\n');
+  return truncateToTokens(body, MEMORY_BLOCK_RESERVE_TOKENS);
+}
+
+/**
+ * v2.26 P1 硬约束块：置顶 constraint 记忆单独成段，注入顺序位于人设之后、
+ * 结构化事实与摘要之前，明确其优先于普通记忆与临时要求。
+ */
+export function formatConstraintBlock(memories: Memory[]): string | null {
+  const constraints = memories.filter((m) => m.kind === 'constraint');
+  if (constraints.length === 0) return null;
+  const body = constraints.map((m) => `- ${m.content}`).join('\n');
+  return [
+    '【硬约束】以下约束必须始终遵守，优先级高于其他记忆与临时要求：',
+    truncateToTokens(body, MEMORY_BLOCK_RESERVE_TOKENS),
+  ].join('\n');
 }
 
 /**
@@ -54,15 +73,20 @@ export function toRecalledPayload(memories: RecalledMemory[]): RecalledMemoryPay
 export interface RecallTurnParams {
   memory: MemoryService;
   query: string;
+  /** v2.26：作用域过滤 */
+  assistantId?: string | null;
+  conversationId?: string | null;
   signal?: AbortSignal;
   traceParent?: TraceHandle | null;
 }
 
-/** 回合前召回；服务内部已对未配置嵌入模型等场景返回空数组 */
+/** 回合前召回；服务内部已对未配置嵌入模型等场景退化为关键词召回 */
 export async function recallTurnMemories(params: RecallTurnParams): Promise<RecalledMemory[]> {
   return params.memory.recall(params.query, {
     signal: params.signal,
     traceParent: params.traceParent,
+    assistantId: params.assistantId ?? null,
+    conversationId: params.conversationId ?? null,
   });
 }
 
@@ -96,6 +120,8 @@ export interface PostTurnMemoryParams {
   userContent: string;
   assistantContent: string;
   conversationId: string;
+  /** v2.26：当前助手（记忆作用域） */
+  assistantId: string;
   /** v2.6：本轮助手消息 id（记忆来源消息） */
   sourceMessageId: string;
   signal?: AbortSignal;
@@ -103,10 +129,31 @@ export interface PostTurnMemoryParams {
 }
 
 /**
- * 回合成功后提取候选记忆并入库（去重合并）。
- * 失败（模型不可用/JSON 非法/嵌入失败）一律静默，仅告警，绝不影响已完成的回答。
+ * 回合成功后写入记忆：
+ * 1. 先跑实时硬约束规则（零 LLM，命中即置顶），失败不影响后续；
+ * 2. 再调模型抽取常规记忆，去重/取代后入库。
+ * 失败一律静默，仅告警，绝不影响已完成的回答。
  */
 export async function runPostTurnMemory(params: PostTurnMemoryParams): Promise<void> {
+  const constraints = extractRealtimeConstraints(params.userContent);
+  if (constraints.length > 0) {
+    try {
+      await params.memory.rememberCandidates(constraints, {
+        scope: 'assistant',
+        assistantId: params.assistantId,
+        source: 'realtime',
+        sourceConversationId: params.conversationId,
+        sourceMessageId: params.sourceMessageId,
+        signal: params.signal,
+        traceParent: params.traceParent,
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[wbfm] 实时约束写入失败，本轮跳过：${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
   try {
     const candidates = await extractTurnMemories({
       target: params.target,
@@ -117,6 +164,9 @@ export async function runPostTurnMemory(params: PostTurnMemoryParams): Promise<v
     });
     if (candidates.length === 0) return;
     await params.memory.rememberCandidates(candidates, {
+      scope: 'assistant',
+      assistantId: params.assistantId,
+      source: 'extract',
       sourceConversationId: params.conversationId,
       sourceMessageId: params.sourceMessageId,
       signal: params.signal,

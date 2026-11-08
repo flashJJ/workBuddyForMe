@@ -24,6 +24,9 @@ export const zhMemory = {
   sourceMessageMissing: '来源消息已删除',
   recallReason: {
     semantic: '语义召回',
+    keyword: '关键词召回',
+    hybrid: '混合召回',
+    pinned: '置顶约束',
   },
   recallLevel: {
     high: '高',
@@ -49,11 +52,14 @@ export const zhMemory = {
     preference: '偏好',
     event: '事件',
     relationship: '共同经历',
+    constraint: '硬约束',
   },
   status: {
     active: '活跃',
     archived: '已归档',
+    superseded: '已被取代',
   },
+  pinned: '置顶',
   form: {
     createTitle: '添加记忆',
     editTitle: '编辑记忆',
@@ -99,6 +105,9 @@ export const enMemory = {
   sourceMessageMissing: 'The source message has been deleted',
   recallReason: {
     semantic: 'Semantic recall',
+    keyword: 'Keyword recall',
+    hybrid: 'Hybrid recall',
+    pinned: 'Pinned constraint',
   },
   recallLevel: {
     high: 'high',
@@ -126,11 +135,14 @@ export const enMemory = {
     preference: 'Preference',
     event: 'Event',
     relationship: 'Shared moment',
+    constraint: 'Constraint',
   },
   status: {
     active: 'Active',
     archived: 'Archived',
+    superseded: 'Superseded',
   },
+  pinned: 'Pinned',
   form: {
     createTitle: 'Add memory',
     editTitle: 'Edit memory',

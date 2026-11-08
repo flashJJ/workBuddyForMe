@@ -8,18 +8,23 @@ import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 
 const EXTRACT_SYSTEM_INSTRUCTION =
   '你是长期记忆提取助手。阅读用户与 AI 助手的一轮对话，从中提取【值得长期保留】的信息。\n' +
-  '只提取以下四类：\n' +
+  '只提取以下五类：\n' +
   '- fact：用户的身份、背景、长期事实（职业、项目、所在地、关系等）；\n' +
   '- preference：明确表达的偏好、习惯、约定（语言风格、工具选择、忌口等）；\n' +
   '- event：已发生且日后可能被提及的重要事件（考试、决定、计划）；\n' +
   '- relationship：只属于「你（AI 助手）和这个用户」之间的共同经历——一起完成或熬过的事、' +
-  '共同度过的重要/低谷时刻、两人之间的专属约定或称呼由来；与助手无关的普通事件归 event，不归此类。\n' +
+  '共同度过的重要/低谷时刻、两人之间的专属约定或称呼由来；与助手无关的普通事件归 event，不归此类；\n' +
+  '- constraint：用户明确提出的硬约束（过敏、忌口、禁止事项、必须遵守的规则）。\n' +
   '要求：\n' +
   '1. 只提取跨对话仍有价值的信息；寒暄、一次性问题、临时计算一律不提取；\n' +
   '2. 每条 content 是一句自包含的客观陈述（中文，1-500 字），不写“用户提到”这类前缀；\n' +
-  '3. importance 取 0 到 1：0.8+ 核心身份/强烈偏好，0.5-0.8 一般重要，0.5 以下仅参考；\n' +
-  `4. 最多 ${MEMORY_EXTRACT_MAX_ITEMS} 条；没有值得记忆的内容时输出 []；\n` +
-  '5. 严格只输出 JSON 数组，不要代码块、不要解释。';
+  '3. importance 取 0 到 1：0.8+ 核心身份/强烈偏好/硬约束，0.5-0.8 一般重要，0.5 以下仅参考；\n' +
+  '4. 同一主体的属性请给出稳定 subjectKey（小写英文，如 allergy:peanut、residence:city、' +
+  'job:role）；无法确定主体时省略该字段；\n' +
+  `5. 最多 ${MEMORY_EXTRACT_MAX_ITEMS} 条；没有值得记忆的内容时输出 []；\n` +
+  '6. 严格只输出 JSON 数组，不要代码块、不要解释。';
+
+const SUBJECT_KEY_PATTERN = /^[a-z][a-z0-9:_-]{2,79}$/;
 
 const extractedMemorySchema = z
   .array(
@@ -27,6 +32,12 @@ const extractedMemorySchema = z
       kind: z.enum([...MEMORY_KINDS] as [MemoryKind, ...MemoryKind[]]),
       content: z.string().trim().min(1).max(500),
       importance: z.number().min(0).max(1),
+      subjectKey: z
+        .string()
+        .trim()
+        .regex(SUBJECT_KEY_PATTERN)
+        .nullable()
+        .optional(),
     }),
   )
   .max(MEMORY_EXTRACT_MAX_ITEMS);
@@ -35,6 +46,12 @@ export interface ExtractedMemory {
   kind: MemoryKind;
   content: string;
   importance: number;
+  /** v2.26：稳定主体键（缺失为 null） */
+  subjectKey?: string | null;
+  /** v2.26：实时硬约束直接置顶 */
+  pinned?: boolean;
+  /** v2.26：写入置信度 0~1 */
+  confidence?: number;
 }
 
 export function buildExtractMessages(userContent: string, assistantContent: string): ChatMessage[] {
@@ -62,6 +79,7 @@ export function parseExtractedMemories(raw: string): ExtractedMemory[] {
     kind: item.kind,
     content: item.content,
     importance: Math.round(item.importance * 100) / 100,
+    ...(item.subjectKey ? { subjectKey: item.subjectKey } : {}),
   }));
 }
 

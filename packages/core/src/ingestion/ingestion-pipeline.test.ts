@@ -19,7 +19,7 @@ import * as XLSX from 'xlsx';
 import { createWebCipher, type SecretCipher } from '../secrets/cipher';
 import { createSettingsService } from '../services/settings/settings-service';
 import { resetCompileQueueServiceForTest } from '../knowledge/compile-queue-service';
-import { createIngestionPipeline } from './ingestion-pipeline';
+import { createIngestionPipeline, INDEX_WRITE_BATCH_SIZE } from './ingestion-pipeline';
 
 const encoder = new TextEncoder();
 
@@ -125,6 +125,28 @@ describe('文档摄入管线（TR-16.1）', () => {
     expect(hits).toHaveLength(1);
     expect(hits[0]!.content).toContain('苹果');
     expect(hits[0]!.documentName).toBe('notes.txt');
+  });
+
+  it('大文档：分片跨批写入，序号连续且向量索引完整', async () => {
+    seedEmbeddingModel();
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse((init?.body as string) ?? '{}') as { input: string[] };
+      const data = body.input.map((_t, i) => ({ index: i, embedding: [1, 0] }));
+      return new Response(JSON.stringify({ data }), { status: 200 });
+    });
+    // 约 5 万字：分片数显著超过单批上限，覆盖多批次写入与偏移映射
+    const result = await createIngestionPipeline({ db, cipher }).ingest({
+      documentId,
+      buffer: encoder.encode('长期记忆需要稳定的写入与召回通道。'.repeat(3000)),
+    });
+    expect(result.status).toBe('indexed');
+    expect(result.chunkCount).toBeGreaterThan(INDEX_WRITE_BATCH_SIZE);
+    const stored = createChunkRepository(db).listByDocument(documentId);
+    expect(stored.map((chunk) => chunk.ordinal)).toEqual(
+      Array.from({ length: result.chunkCount }, (_, index) => index),
+    );
+    // 跨批次的向量均已写入：检索能命中（vec0 行数与分片一致才能返回最近邻）
+    expect(searchChunks(db, { knowledgeBaseId: kbId, vector: [1, 0], k: 1 })).toHaveLength(1);
   });
 
   it('结构落库：markdown 标题/表格写入 document_blocks，分片带章节路径', async () => {

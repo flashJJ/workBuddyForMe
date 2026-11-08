@@ -119,6 +119,7 @@ export function createProactiveTurn(deps: ServiceDeps) {
         const shared = createMemoryRepository(deps.db).list({
           kind: 'relationship',
           status: 'active',
+          scope: { assistantId: assistant.id },
           limit: 3,
         });
         relationshipMemoryBlock = buildRelationshipMemoryBlock(shared);

@@ -30,6 +30,18 @@ import type { IngestInput, IngestResult } from './types';
 const ERROR_EMBEDDING_MISSING = '未配置可用的 embedding 模型，请先在设置中绑定向量模型';
 const ERROR_EMPTY = '文档内容为空，无法建立索引';
 
+/**
+ * 单批写入的分片数上限。
+ * 分片落库（chunks + vec0 + FTS）是同步 CPU/IO 操作，大文档一次性提交会长时间
+ * 占住主线程；按批提交可把单次阻塞压到数十毫秒量级。
+ */
+export const INDEX_WRITE_BATCH_SIZE = 200;
+
+/** 让出事件循环一拍，给渲染/输入等其它任务执行机会 */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
 export function createIngestionPipeline(deps: ServiceDeps) {
   const documents = createDocumentRepository(deps.db);
   const knowledgeBases = createKnowledgeRepository(deps.db);
@@ -111,27 +123,35 @@ export function createIngestionPipeline(deps: ServiceDeps) {
         return fail(documentId, message);
       }
 
-      // chunks/vec/fts 三索引同一外层事务（内部仓储事务走 SAVEPOINT），
-      // 任一失败整体回滚，避免「向量重建了但 FTS 缺失」的半索引状态
-      const writeIndexes = deps.db.transaction(() => {
-        const dimension = embeddings[0]?.length ?? 0;
-        ensureVectorTable(deps.db, dimension);
+      // 索引重建前先清空旧索引与旧编译产物（短事务：只删不写）。
+      // 维度冲突在清理之前判定，避免换模型失败时把仍可用的旧索引删掉。
+      try {
+        ensureVectorTable(deps.db, embeddings[0]?.length ?? 0);
+      } catch (error) {
+        return fail(documentId, error instanceof Error ? error.message : '向量写入失败');
+      }
+
+      const purgeIndexes = deps.db.transaction(() => {
         deleteVectorsByDocument(deps.db, documentId);
         fts.deleteByDocument(document.knowledgeBaseId, documentId);
         chunks.deleteByDocument(documentId);
+        blocks.deleteByDocument(documentId);
         // v1.3：旧编译产物随索引重建同事务退役（摘要/mention 删除、世代归 0、
         // 状态置 queued），保证提交后检索不会读到上一版内容的静态事实
         compileWrite.purgeForReingest(documentId);
+      });
 
+      // 单批内 chunks/vec0/FTS 同事务（内部仓储事务嵌套为 SAVEPOINT），
+      // 批间让出事件循环；任一批失败则清理已写批次，保持「不留下半索引」的原语义
+      const writeChunkBatch = deps.db.transaction((start: number, end: number) => {
+        const batch = slices.slice(start, end);
         const stored = chunks.bulkInsert(
           documentId,
-          slices.map((slice, ordinal) => ({ ordinal, ...slice })),
+          batch.map((slice, index) => ({ ordinal: start + index, ...slice })),
         );
-        blocks.deleteByDocument(documentId);
-        blocks.bulkInsert(documentId, parsed.blocks);
         insertChunkVectors(
           deps.db,
-          stored.map((row, index) => ({ id: row.id, vector: embeddings[index]! })),
+          stored.map((row, index) => ({ id: row.id, vector: embeddings[start + index]! })),
         );
         fts.bulkInsert(
           stored.map((row) => ({
@@ -141,9 +161,20 @@ export function createIngestionPipeline(deps: ServiceDeps) {
           })),
         );
       });
+
       try {
-        writeIndexes();
+        purgeIndexes();
+        for (let start = 0; start < slices.length; start += INDEX_WRITE_BATCH_SIZE) {
+          writeChunkBatch(start, Math.min(start + INDEX_WRITE_BATCH_SIZE, slices.length));
+          if (start + INDEX_WRITE_BATCH_SIZE < slices.length) await yieldToEventLoop();
+        }
+        blocks.bulkInsert(documentId, parsed.blocks);
       } catch (error) {
+        try {
+          purgeIndexes();
+        } catch {
+          // 清理失败不掩盖原始错误
+        }
         return fail(documentId, error instanceof Error ? error.message : '向量写入失败');
       }
 

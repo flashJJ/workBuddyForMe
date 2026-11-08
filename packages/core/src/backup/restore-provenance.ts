@@ -11,8 +11,12 @@
 import { z } from 'zod';
 import {
   MEMORY_KINDS,
+  MEMORY_SCOPES,
+  MEMORY_SOURCES,
   MEMORY_STATUSES,
   type MemoryKind,
+  type MemoryScope,
+  type MemorySource,
   type MemoryStatus,
 } from '@wbfm/shared/types';
 import {
@@ -20,7 +24,7 @@ import {
   MEETING_ACTION_ITEM_STATUSES,
 } from '@wbfm/shared/schemas';
 import { ApiError } from '@wbfm/shared/errors';
-import type { DatabaseInstance } from '@wbfm/database';
+import { upsertMemoryFts, type DatabaseInstance } from '@wbfm/database';
 
 const memorySchema = z.object({
   id: z.string().regex(/^\d+$/),
@@ -34,6 +38,19 @@ const memorySchema = z.object({
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
   lastAccessedAt: z.string().nullable().optional(),
+  // v2.26：生命周期字段（旧档缺失时回落默认值）
+  scope: z.enum([...MEMORY_SCOPES] as [MemoryScope, ...MemoryScope[]]).optional(),
+  assistantId: z.string().nullable().optional(),
+  source: z.enum([...MEMORY_SOURCES] as [MemorySource, ...MemorySource[]]).optional(),
+  pinned: z.boolean().optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  subjectKey: z.string().nullable().optional(),
+  version: z.number().int().min(1).optional(),
+  supersededBy: z.string().nullable().optional(),
+  validFrom: z.string().nullable().optional(),
+  validTo: z.string().nullable().optional(),
+  ttlAt: z.string().nullable().optional(),
+  lastConfirmedAt: z.string().nullable().optional(),
 });
 
 const conclusionSchema = z.object({
@@ -106,10 +123,14 @@ export function restoreProvenance(
   const insertMemory = db.prepare(
     `INSERT OR IGNORE INTO memories(
        id, kind, content, importance, source_conversation_id, source_message_id,
-       status, created_at, updated_at, last_accessed_at, recall_count)
+       status, created_at, updated_at, last_accessed_at, recall_count,
+       scope, assistant_id, source, pinned, confidence, subject_key, version,
+       superseded_by, valid_from, valid_to, ttl_at, last_confirmed_at)
      VALUES (
        @id, @kind, @content, @importance, @sourceConversationId, @sourceMessageId,
-       @status, @createdAt, @updatedAt, @lastAccessedAt, @recallCount)`,
+       @status, @createdAt, @updatedAt, @lastAccessedAt, @recallCount,
+       @scope, @assistantId, @source, @pinned, @confidence, @subjectKey, @version,
+       @supersededBy, @validFrom, @validTo, @ttlAt, @lastConfirmedAt)`,
   );
   const insertConclusion = db.prepare(
     `INSERT OR IGNORE INTO meeting_conclusions(
@@ -149,9 +170,24 @@ export function restoreProvenance(
         updatedAt: d.updatedAt,
         lastAccessedAt: d.lastAccessedAt ?? null,
         recallCount: d.recallCount ?? 0,
+        scope: d.scope ?? 'global',
+        assistantId: d.assistantId ?? null,
+        source: d.source ?? 'legacy',
+        pinned: d.pinned ? 1 : 0,
+        confidence: d.confidence ?? 1,
+        subjectKey: d.subjectKey ?? null,
+        version: d.version ?? 1,
+        supersededBy: d.supersededBy ? Number(d.supersededBy) : null,
+        validFrom: d.validFrom ?? null,
+        validTo: d.validTo ?? null,
+        ttlAt: d.ttlAt ?? null,
+        lastConfirmedAt: d.lastConfirmedAt ?? null,
       });
-      if (result.changes > 0) counts.memories.imported++;
-      else counts.memories.skipped++;
+      if (result.changes > 0) {
+        counts.memories.imported++;
+        // v2.26：恢复后同步关键词索引（向量不入档，语义召回需重新嵌入）
+        upsertMemoryFts(db, { id: Number(d.id), content: d.content });
+      } else counts.memories.skipped++;
     } catch {
       counts.memories.skipped++;
     }

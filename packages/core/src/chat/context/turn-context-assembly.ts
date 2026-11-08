@@ -1,5 +1,6 @@
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
+  CONTEXT_QUOTA_FACTS,
   HISTORY_MESSAGE_SAFETY_CAP,
 } from '@wbfm/shared/constants';
 import type { Assistant, Citation, Conversation, ToolTraceEntry } from '@wbfm/shared/types';
@@ -10,7 +11,8 @@ import type { ServiceDeps } from '../../services/base/deps';
 import type { AttachmentService } from '../../services/assistant/attachment-service';
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import type { MemoryService } from '../../memory/memory-service';
-import { formatMemoryBlock, safeRecallEvent } from '../../memory/turn-memory';
+import { formatConstraintBlock, formatMemoryBlock, safeRecallEvent } from '../../memory/turn-memory';
+import { buildConversationFactsBlock } from './conversation-facts-block';
 import { buildImageMap } from './multimodal';
 import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap } from './turn-context';
 import { resolveToolMessageBudget } from './context-budget';
@@ -28,6 +30,7 @@ import {
 } from '../../emotion/index';
 import { resolveUnlockedNickname } from './persona-prompt';
 import { buildPlanPromptBlock } from '../../work-plan/plan-prompt';
+import { buildCheckpointPromptBlock } from '../../work-plan/task-checkpoint';
 
 export interface PrepareTurnContextParams {
   deps: ServiceDeps;
@@ -121,11 +124,31 @@ export async function* prepareTurnContext(
     ? yield* safeRecallEvent({
         memory,
         query: userContent,
+        assistantId: assistant.id,
+        conversationId,
         signal,
         traceParent,
       })
     : [];
-  const memoryBlock = formatMemoryBlock(recalledMemories);
+  const memoryBlock = formatMemoryBlock(
+    recalledMemories.filter((item) => item.kind !== 'constraint'),
+  );
+  // v2.26 P1：硬约束与结构化事实独立成块（事实先于摘要注入）
+  const constraintBlock = formatConstraintBlock(recalledMemories);
+  const checkpoint = deps.workPlans?.activeCheckpoint(conversationId) ?? null;
+  const checkpointBlock = checkpoint ? buildCheckpointPromptBlock(checkpoint) : null;
+  const factsBlock =
+    [
+      checkpointBlock,
+      buildConversationFactsBlock(
+        conversations.listFacts(conversationId),
+        Math.floor(
+          (target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET) * CONTEXT_QUOTA_FACTS,
+        ),
+      ),
+    ]
+      .filter((item): item is string => Boolean(item?.trim()))
+      .join('\n\n') || null;
 
   // v0.6 M3：启用技能——提示词模板注入 system；预绑定工具与助手白名单取并集
   // v2.4 M4：助手级勾选优先（空数组=跟随全局全部启用技能）
@@ -170,6 +193,8 @@ export async function* prepareTurnContext(
       conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
     summary: conversation.summary,
     memoryBlock,
+    constraintBlock,
+    factsBlock,
     skillBlock: combinedBlock,
     emotionBlock,
     card,

@@ -6,8 +6,8 @@ describe('v041 迁移：Agent 治理底座', () => {
   it('全新库：task_runs 四列与 audit_events 就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(45);
-    expect(LATEST_SCHEMA_VERSION).toBe(45);
+    expect(getSchemaVersion(db)).toBe(47);
+    expect(LATEST_SCHEMA_VERSION).toBe(47);
 
     const columns = db.prepare('PRAGMA table_info(task_runs)').all() as Array<{ name: string }>;
     const names = columns.map((column) => column.name);
@@ -40,8 +40,8 @@ describe('v041 迁移：Agent 治理底座', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([41, 42, 43, 44, 45]);
-    expect(getSchemaVersion(db)).toBe(45);
+    expect(result.applied).toEqual([41, 42, 43, 44, 45, 46, 47]);
+    expect(getSchemaVersion(db)).toBe(47);
     const row = db
       .prepare(
         'SELECT permission_mode, workspace_path, origin_scheduled_task_id FROM task_runs WHERE id = ?',

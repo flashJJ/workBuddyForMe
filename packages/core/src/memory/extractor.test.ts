@@ -27,13 +27,14 @@ describe('M3 记忆提取器', () => {
     expect(messages[1]!.content).toContain('你好张三');
   });
 
-  it('v2.0 golden：system 引导含 relationship 第四类与「共同经历」口径（弱模型回归锁）', () => {
+  it('golden：system 引导含 relationship 与 constraint 类别及「共同经历」口径（弱模型回归锁）', () => {
     const system = buildExtractMessages('x', 'y')[0]!.content;
-    expect(system).toContain('只提取以下四类');
+    expect(system).toContain('只提取以下五类');
     expect(system).toContain('relationship');
     // 口径关键约束：只属于助手与用户之间、普通事件不归此类
     expect(system).toContain('共同经历');
     expect(system).toContain('与助手无关的普通事件归 event');
+    expect(system).toContain('constraint');
   });
 
   it('relationship 类候选可解析入库；未知类别仍拒绝', () => {

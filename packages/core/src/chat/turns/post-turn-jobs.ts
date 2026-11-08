@@ -1,9 +1,10 @@
 import { MEMORY_SUMMARY_IMPORTANCE } from '@wbfm/shared/constants';
-import type { Assistant, Conversation } from '@wbfm/shared/types';
+import type { Assistant, Conversation, ToolTraceEntry } from '@wbfm/shared/types';
 import type { ToolDefinition, TraceHandle } from '@wbfm/ai';
 import type { AttachmentService } from '../../services/assistant/attachment-service';
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import type { MemoryService } from '../../memory/memory-service';
+import type { WorkPlanService } from '../../work-plan';
 import type { ResolvedChatTarget } from '../context/model-resolver';
 import { runPostTurnCompaction } from '../context/turn-context';
 import { runPostTurnMemory } from '../../memory/turn-memory';
@@ -24,6 +25,10 @@ export interface PostTurnJobsParams {
   assistantContent: string;
   /** v2.6：本轮助手消息 id（记忆来源） */
   sourceMessageId: string;
+  /** v2.26 P1：目标/计划/待办服务（未提供时不做工作记忆检查点） */
+  workPlans?: WorkPlanService;
+  /** v2.26 P1：本轮工具执行轨迹（检查点记录最近工具结果摘要） */
+  toolTrace?: readonly ToolTraceEntry[];
   signal?: AbortSignal;
   traceParent: TraceHandle | null;
 }
@@ -44,6 +49,9 @@ async function rememberSummaryEvent(params: PostTurnJobsParams, summary: string)
         sourceConversationId: params.conversation.id,
         // 摘要来自更早消息，无法定位单一来源消息；不伪造
         sourceMessageId: null,
+        scope: 'assistant',
+        assistantId: params.assistant.id,
+        source: 'summary',
       },
       params.signal,
     );
@@ -72,6 +80,14 @@ export async function runPostTurnJobs(params: PostTurnJobsParams): Promise<void>
     signal: params.signal,
     traceParent: params.traceParent,
   });
+  // v2.26 P1：无论长期记忆是否开启，每轮都刷新工作记忆检查点
+  if (params.workPlans) {
+    try {
+      params.workPlans.saveCheckpoint(params.conversation.id, { lastTrace: params.toolTrace });
+    } catch (error) {
+      warn('任务检查点保存失败', error);
+    }
+  }
   if (!params.assistant.memoryEnabled) return;
   if (compaction?.summary) await rememberSummaryEvent(params, compaction.summary);
   await runPostTurnMemory({
@@ -80,6 +96,7 @@ export async function runPostTurnJobs(params: PostTurnJobsParams): Promise<void>
     userContent: params.userContent,
     assistantContent: params.assistantContent,
     conversationId: params.conversation.id,
+    assistantId: params.assistant.id,
     sourceMessageId: params.sourceMessageId,
     signal: params.signal,
     traceParent: params.traceParent,

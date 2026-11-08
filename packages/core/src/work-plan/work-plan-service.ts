@@ -1,5 +1,11 @@
-import { createConversationRepository, createWorkPlanRepository } from '@wbfm/database';
+import {
+  createConversationRepository,
+  createTaskCheckpointRepository,
+  createWorkPlanRepository,
+} from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
+import type { TaskCheckpoint, ToolTraceEntry } from '@wbfm/shared/types';
+import { buildTaskCheckpointSnapshot } from './task-checkpoint';
 import type {
   ConversationGoalView,
   GoalCreateInput,
@@ -51,6 +57,7 @@ export interface WorkPlanServiceHooks {
 export function createWorkPlanService(deps: ServiceDeps, hooks: WorkPlanServiceHooks = {}) {
   const repo = createWorkPlanRepository(deps.db);
   const conversations = createConversationRepository(deps.db);
+  const checkpoints = createTaskCheckpointRepository(deps.db);
   const emit = (plan: WorkPlanView): WorkPlanView => {
     hooks.onChange?.(plan);
     return plan;
@@ -66,6 +73,27 @@ export function createWorkPlanService(deps: ServiceDeps, hooks: WorkPlanServiceH
     const plan = repo.getPlan(id);
     if (!plan) throw ApiError.notFound('计划', id);
     return plan;
+  };
+
+  /** 当前目标 + 最近计划 + 活跃 Todo（对话装配与检查点共用） */
+  const readActiveContext = (conversationId: string): {
+    goal: ConversationGoalView | null;
+    plan: WorkPlanView | null;
+    todo: WorkPlanView | null;
+  } => {
+    const goals = repo.listGoals(conversationId);
+    const goal = goals.find((item) => item.status === 'active') ?? null;
+    const plans = repo.listPlans(conversationId).filter((item) => item.kind === 'plan');
+    const plan =
+      plans.find(
+        (item) =>
+          item.status === 'approved' ||
+          item.status === 'running' ||
+          item.status === 'pending_review' ||
+          item.status === 'draft',
+      ) ?? null;
+    const todo = repo.findActiveTodo(conversationId);
+    return { goal, plan, todo };
   };
 
   return {
@@ -228,19 +256,34 @@ export function createWorkPlanService(deps: ServiceDeps, hooks: WorkPlanServiceH
       plan: WorkPlanView | null;
       todo: WorkPlanView | null;
     } {
-      const goals = repo.listGoals(conversationId);
-      const goal = goals.find((item) => item.status === 'active') ?? null;
-      const plans = repo.listPlans(conversationId).filter((item) => item.kind === 'plan');
-      const plan =
-        plans.find(
-          (item) =>
-            item.status === 'approved' ||
-            item.status === 'running' ||
-            item.status === 'pending_review' ||
-            item.status === 'draft',
-        ) ?? null;
-      const todo = repo.findActiveTodo(conversationId);
-      return { goal, plan, todo };
+      return readActiveContext(conversationId);
+    },
+
+    /* ---------------- 工作记忆检查点（v2.26 P1） ---------------- */
+
+    /** 保存/刷新任务检查点；无进行中的工作则归档旧检查点并返回 null */
+    saveCheckpoint(
+      conversationId: string,
+      options: { lastTrace?: readonly ToolTraceEntry[]; now?: number } = {},
+    ): TaskCheckpoint | null {
+      requireConversation(conversationId);
+      checkpoints.expireDue();
+      const snapshot = buildTaskCheckpointSnapshot(readActiveContext(conversationId), options);
+      if (!snapshot) {
+        checkpoints.finish(conversationId, 'done');
+        return null;
+      }
+      return checkpoints.save({ conversationId, ...snapshot });
+    },
+
+    /** 读取未过期检查点（先惰性归档到期行） */
+    activeCheckpoint(conversationId: string): TaskCheckpoint | null {
+      checkpoints.expireDue();
+      return checkpoints.findActive(conversationId);
+    },
+
+    finishCheckpoint(conversationId: string, status: 'done' | 'archived' = 'done'): boolean {
+      return checkpoints.finish(conversationId, status);
     },
 
     /* ---------------- 完成回投幂等 ---------------- */

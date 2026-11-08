@@ -8,7 +8,7 @@ import {
   searchMemoryVectors,
   getMemoryVectorDimension,
   type DatabaseInstance,
-} from '../../index';
+} from '../../../index';
 
 /**
  * 3 维单位向量：a 与 b 同向（距离 0），a 与 c 正交（距离 ≈√2=1.414）。
@@ -148,38 +148,42 @@ describe('memory 仓储与 memories_vec 向量管线', () => {
     ).toEqual(['旧记忆']);
   });
 
-  it('P1-1 衰减归档：旧+低重要性+未访问的 active 记忆被归档，高重要性/新/已访问的保留', () => {
+  it('v2.26 生命周期仓储：TTL 到期归档写审计，置顶/约束不进衰减候选', () => {
     const repo = createMemoryRepository(db);
-    const staleLow = repo.add({ kind: 'fact', content: '陈旧琐事', importance: 0.2 });
-    const staleHigh = repo.add({ kind: 'preference', content: '长期重要偏好', importance: 0.9 });
-    const recentLow = repo.add({ kind: 'fact', content: '新鲜琐事', importance: 0.1 });
-    const accessedLow = repo.add({ kind: 'event', content: '旧但常被召回', importance: 0.2 });
-    const oldTime = '2026-01-01T00:00:00.000Z';
-    db.prepare(
-      `UPDATE memories SET created_at = @ts, updated_at = @ts WHERE id IN (1, 2, 4)`,
-    ).run({ ts: oldTime });
-    // id=4 近期被访问过
-    db.prepare(`UPDATE memories SET last_accessed_at = ? WHERE id = 4`).run(
-      '2026-03-25T00:00:00.000Z',
-    );
-
-    const archived = repo.archiveStale({
-      createdBefore: '2026-03-01T00:00:00.000Z',
-      accessedBefore: '2026-03-01T00:00:00.000Z',
-      maxImportance: 0.4,
+    const expired = repo.add({
+      kind: 'event',
+      content: '临时任务状态',
+      importance: 0.5,
+      ttlAt: '2026-03-01T00:00:00.000Z',
     });
-    expect(archived).toBe(1);
-    expect(repo.findById(staleLow.id)!.status).toBe('archived');
-    expect(repo.findById(staleHigh.id)!.status).toBe('active');
-    expect(repo.findById(recentLow.id)!.status).toBe('active');
-    expect(repo.findById(accessedLow.id)!.status).toBe('active');
-    // 再跑一次不重复归档
-    expect(
-      repo.archiveStale({
-        createdBefore: '2026-03-01T00:00:00.000Z',
-        accessedBefore: '2026-03-01T00:00:00.000Z',
-        maxImportance: 0.4,
-      }),
-    ).toBe(0);
+    const live = repo.add({
+      kind: 'fact',
+      content: '永久事实',
+      importance: 0.5,
+      ttlAt: '2026-12-01T00:00:00.000Z',
+    });
+    const pinned = repo.add({ kind: 'preference', content: '置顶偏好', importance: 0.9, pinned: true });
+    const constraint = repo.add({
+      kind: 'constraint',
+      content: '对花生过敏',
+      importance: 0.95,
+      pinned: true,
+      ttlAt: '2026-03-01T00:00:00.000Z',
+    });
+
+    expect(repo.archiveExpired('2026-03-20T00:00:00.000Z')).toBe(2);
+    expect(repo.findById(expired.id)!.status).toBe('archived');
+    expect(repo.findById(constraint.id)!.status).toBe('archived');
+    expect(repo.findById(live.id)!.status).toBe('active');
+    const audit = db
+      .prepare(`SELECT action FROM memory_events WHERE memory_id = ? ORDER BY id`)
+      .all(Number(expired.id)) as { action: string }[];
+    expect(audit.map((row) => row.action)).toEqual(['archive']);
+
+    // 衰减候选：只含 active、未置顶、非 constraint
+    expect(repo.listDecayCandidates(10).map((memory) => memory.id)).toEqual([live.id]);
+    expect(repo.archiveByIds([live.id])).toBe(1);
+    expect(repo.findById(live.id)!.status).toBe('archived');
+    expect(repo.findById(pinned.id)!.status).toBe('active');
   });
 });

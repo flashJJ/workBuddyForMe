@@ -47,9 +47,10 @@ function MemoryRow({
           <Badge variant={MEMORY_KIND_BADGE[memory.kind]}>
             {t(MEMORY_KIND_LABELS[memory.kind])}
           </Badge>
-          {memory.status === 'archived' && (
-            <Badge variant="outline">{t(MEMORY_STATUS_LABELS.archived)}</Badge>
+          {memory.status !== 'active' && (
+            <Badge variant="outline">{t(MEMORY_STATUS_LABELS[memory.status])}</Badge>
           )}
+          {memory.pinned && <Badge variant="warning">{t('memory.pinned')}</Badge>}
           <span className="text-xs text-muted-foreground">
             {t('memory.importanceLine', {
               importance: memory.importance.toFixed(1),
