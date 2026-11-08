@@ -19,11 +19,11 @@ function columns(db: Database.Database, table: string): Set<string> {
 }
 
 describe('v047 迁移：结构化事实与任务检查点', () => {
-  it('全新库：版本 48，两张表与索引就位', () => {
+  it('全新库：版本 49，两张表与索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(48);
-    expect(LATEST_SCHEMA_VERSION).toBe(48);
+    expect(getSchemaVersion(db)).toBe(49);
+    expect(LATEST_SCHEMA_VERSION).toBe(49);
 
     expect(tables(db).has('conversation_facts')).toBe(true);
     expect(tables(db).has('task_checkpoints')).toBe(true);
@@ -70,8 +70,8 @@ describe('v047 迁移：结构化事实与任务检查点', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([47, 48]);
-    expect(getSchemaVersion(db)).toBe(48);
+    expect(result.applied).toEqual([47, 48, 49]);
+    expect(getSchemaVersion(db)).toBe(49);
     expect(
       (db.prepare(`SELECT COUNT(*) AS n FROM conversation_facts`).get() as { n: number }).n,
     ).toBe(0);

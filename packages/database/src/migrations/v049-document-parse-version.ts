@@ -7,6 +7,11 @@ import type { Database } from 'better-sqlite3';
  * - 只改版本号，不重写任何解析内容；重复执行安全。
  */
 export function migrateV049(db: Database): void {
+  const hasDocuments = db
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'documents'`)
+    .get();
+  if (!hasDocuments) return;
+
   const columns = db.prepare(`PRAGMA table_info(documents)`).all() as Array<{ name: string }>;
   if (!columns.some((column) => column.name === 'parse_version')) {
     db.exec(`ALTER TABLE documents ADD COLUMN parse_version INTEGER NOT NULL DEFAULT 0`);
