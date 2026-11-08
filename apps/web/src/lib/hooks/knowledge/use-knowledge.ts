@@ -4,7 +4,11 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import type { ConflictItem, DuplicatePair } from '@wbfm/core/knowledge';
-import type { DocumentStructureView, FigureSummary } from '@wbfm/core/services';
+import type {
+  DocumentReparseBatchStatus,
+  DocumentStructureView,
+  FigureSummary,
+} from '@wbfm/core/services';
 import type {
   ContentPackImportResult,
   ContentPackSummary,
@@ -55,6 +59,16 @@ export function useDocumentStructure(documentId: string | null, enabled = true) 
     queryKey: QUERY_KEYS.documentStructure(documentId ?? '_'),
     queryFn: () => apiGet<DocumentStructureView>(API.documentStructure(documentId!)),
     enabled: Boolean(documentId) && enabled,
+  });
+}
+
+/** v2.29：批量重解析队列状态；运行中轮询，暂停/完成后停止 */
+export function useReparseBatchStatus(kbId: string | null) {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.kbReparseBatch(kbId ?? '_'),
+    queryFn: () => apiGet<DocumentReparseBatchStatus>(API.kbReparseBatch(kbId!)),
+    enabled: Boolean(kbId),
+    refetchInterval: (query) => (query.state.data?.state === 'running' ? 1500 : false),
   });
 }
 
@@ -206,6 +220,20 @@ export function useKnowledgeMutations() {
         void qc.invalidateQueries({
           queryKey: QUERY_KEYS.documentStructure(variables.documentId),
         });
+      },
+    }),
+    /** v2.29：批量重解析队列动作 */
+    reparseBatch: useMutation({
+      mutationFn: (input: {
+        kbId: string;
+        action: 'start' | 'pause' | 'resume' | 'cancel';
+      }) =>
+        apiPost<DocumentReparseBatchStatus>(API.kbReparseBatch(input.kbId), {
+          action: input.action,
+        }),
+      onSuccess: (_data, variables) => {
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.kbReparseBatch(variables.kbId) });
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.kbId) });
       },
     }),
     /** v1.3 M4：触发编译（入队即返回） */

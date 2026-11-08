@@ -107,6 +107,24 @@ export function createDocumentRepository(db: DatabaseInstance) {
       ).map(mapDocument);
     },
 
+    /** v2.29：批量重建候选——解析版本落后或无结构块，且不在上传/处理中 */
+    listPendingReparse(knowledgeBaseId: string, currentParseVersion: number): DocumentRecord[] {
+      return (
+        db
+          .prepare(
+            `SELECT d.* FROM documents d
+             WHERE d.knowledge_base_id = ?
+               AND d.status IN ('indexed', 'partial', 'failed')
+               AND (
+                 d.parse_version < ?
+                 OR NOT EXISTS (SELECT 1 FROM document_blocks b WHERE b.document_id = d.id)
+               )
+             ORDER BY d.created_at ASC`,
+          )
+          .all(knowledgeBaseId, currentParseVersion) as DocumentRow[]
+      ).map(mapDocument);
+    },
+
     setStatus(id: string, status: DocumentStatus, patch: DocumentStatusPatch = {}): void {
       db.prepare(
         `UPDATE documents SET
