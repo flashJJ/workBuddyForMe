@@ -241,7 +241,7 @@ export class VrmController implements VrmControllerLike {
     this.pose.applyInteractionAngles(angles.yaw, angles.pitch);
     // v3.0 P1：待机时把 A-pose 手臂收成自然下垂；手势/长按期间不干预
     if (!this.mixer.hasGesture && !this.interaction.isLooping) {
-      this.pose.relaxArms(procedural ? 1 : 0.7);
+      this.pose.relaxArms(procedural ? 1 : 0.7, t);
     }
 
     // --- Step 5: 呼吸 + 身体微摆（交互 loop 阶段加深呼吸） ---

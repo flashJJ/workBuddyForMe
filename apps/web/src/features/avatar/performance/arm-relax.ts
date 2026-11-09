@@ -20,6 +20,10 @@ const LOWER_TARGET = {
   right: new THREE.Vector3(-0.06, -1, 0.12),
 } as const;
 
+/** 待机微摆幅度：目标方向上的小幅偏移，让放下的手仍有呼吸感 */
+const UPPER_SWAY = { x: 0.035, z: 0.05 } as const;
+const LOWER_SWAY = { x: 0.045, z: 0.06 } as const;
+
 const bonePos = new THREE.Vector3();
 const childPos = new THREE.Vector3();
 const currentDir = new THREE.Vector3();
@@ -29,6 +33,7 @@ const partial = new THREE.Quaternion();
 const boneWorld = new THREE.Quaternion();
 const parentWorld = new THREE.Quaternion();
 const targetWorld = new THREE.Quaternion();
+const swayTarget = new THREE.Vector3();
 
 /** 把 bone→child 的世界方向朝 target 旋转 weight（0..1） */
 export function aimBone(
@@ -60,7 +65,7 @@ export function aimBone(
   bone.updateWorldMatrix(false, true);
 }
 
-/** 左右手臂放松：上臂先下垂，再处理前臂（依赖上臂已更新） */
+/** 左右手臂放松：上臂先下垂，再处理前臂（依赖上臂已更新）；t 驱动小幅自然摆动 */
 export function relaxArm(
   upper: THREE.Object3D,
   lower: THREE.Object3D,
@@ -68,7 +73,21 @@ export function relaxArm(
   side: 'left' | 'right',
   upperWeight: number,
   lowerWeight: number,
+  t = 0,
 ): void {
-  aimBone(upper, lower, UPPER_TARGET[side], upperWeight);
-  aimBone(lower, hand, LOWER_TARGET[side], lowerWeight);
+  const phase = side === 'left' ? 0 : Math.PI * 0.85;
+  const swayX = Math.sin(t * 0.9 + phase);
+  const swayZ = Math.cos(t * 0.65 + phase);
+
+  const upperTarget = swayTarget
+    .copy(UPPER_TARGET[side])
+    .setX(UPPER_TARGET[side].x + swayX * UPPER_SWAY.x)
+    .setZ(UPPER_TARGET[side].z + swayZ * UPPER_SWAY.z);
+  aimBone(upper, lower, upperTarget, upperWeight);
+
+  const lowerTarget = swayTarget
+    .copy(LOWER_TARGET[side])
+    .setX(LOWER_TARGET[side].x + swayX * LOWER_SWAY.x)
+    .setZ(LOWER_TARGET[side].z + swayZ * LOWER_SWAY.z);
+  aimBone(lower, hand, lowerTarget, lowerWeight);
 }

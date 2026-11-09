@@ -1,16 +1,16 @@
 /**
  * v3.0 P1：VRM 视线追踪参数（借鉴 Mate-Engine）。
  *
- * 头部水平 45° / 俯仰 30°，脊柱 ±15°；用帧率无关的指数平滑，
+ * 头部水平 26° / 俯仰 16°，脊柱 ±8°；用帧率无关的指数平滑，
  * 避免高刷屏与 30fps 档位下手感不一致。
  */
 
 const DEG = Math.PI / 180;
 
 export const GAZE_LIMITS = {
-  headYawDeg: 45,
-  headPitchDeg: 30,
-  spineYawDeg: 15,
+  headYawDeg: 26,
+  headPitchDeg: 16,
+  spineYawDeg: 8,
 } as const;
 
 /** 平滑系数：越大越快（Mate 的头 10 / 脊柱 25） */

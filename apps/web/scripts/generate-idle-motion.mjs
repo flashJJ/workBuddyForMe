@@ -143,15 +143,10 @@ for (const channel of anim.channels) {
 
   if (channel.target.path === 'translation') {
     if (node.name === 'Hips') {
+      // 必须保持常量：VRMA 的髋部平移会按「模型髋高 / 动画髋高」放大数十倍，
+      // 这里若写毫米级正弦，运行时就会变成十几厘米的上下漂浮。
       const base = node.translation || [0, 0, 0];
-      writeVecs(buf, binStart, json, sampler.output, times.map((t) => {
-        const u = t / duration;
-        return [
-          base[0] + Math.sin(2 * Math.PI * u) * 0.0015,
-          base[1] + Math.sin(2 * Math.PI * 2 * u) * 0.002,
-          base[2],
-        ];
-      }));
+      writeVecs(buf, binStart, json, sampler.output, times.map(() => [base[0], base[1], base[2]]));
     }
     continue;
   }
@@ -180,7 +175,7 @@ for (const channel of anim.channels) {
         0,
       ).multiply(armBase);
     } else if (key === 'hips') {
-      qNorm = euler(0, s1 * 1.5 * DEG, Math.sin(2 * Math.PI * u + Math.PI / 2) * 0.8 * DEG);
+      qNorm = euler(0, s1 * 0.8 * DEG, Math.sin(2 * Math.PI * u + Math.PI / 2) * 0.5 * DEG);
     } else if (key === 'spine') {
       qNorm = euler(0, s1 * -0.8 * DEG, 0);
     } else if (key === 'chest') {

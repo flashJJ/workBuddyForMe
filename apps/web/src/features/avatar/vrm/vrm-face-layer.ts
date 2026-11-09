@@ -1,12 +1,13 @@
 import type { VRM } from '@pixiv/three-vrm';
 import { DEFAULT_EXPRESSION, type ExpressionTag } from '../expression/expression-parser';
 
-/** three-vrm expressionManager preset 名 */
-const VRM_EXPRESSION_MAP: Record<ExpressionTag, string> = {
+/** three-vrm expressionManager preset 名；null = 不叠加任何预设（自然睁眼） */
+const VRM_EXPRESSION_MAP: Record<ExpressionTag, string | null> = {
   joy: 'happy',
   sadness: 'sad',
   anger: 'angry',
-  neutral: 'relaxed',
+  // neutral 不能映射到 relaxed：多数模型 relaxed 会半闭眼，待机会显得一直眯眼
+  neutral: null,
   surprise: 'surprised',
   disgust: 'angry',
   fear: 'sad',
@@ -138,7 +139,7 @@ export class VrmFaceLayer {
   private applyNow(tag: ExpressionTag): void {
     const em = this.vrm.expressionManager;
     if (!em) return;
-    const preset = VRM_EXPRESSION_MAP[tag] ?? 'relaxed';
+    const preset = VRM_EXPRESSION_MAP[tag] ?? null;
     // 关键：先把所有 preset 清 0 再设目标——避免残留表情叠加（surprised + relaxed 同时 = 混乱）
     for (const name of PRESET_NAMES) {
       try { em.setValue(name, name === preset ? 1 : 0); } catch { /* preset 可能不存在 */ }

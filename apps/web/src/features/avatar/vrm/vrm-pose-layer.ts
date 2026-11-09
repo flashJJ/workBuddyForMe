@@ -171,21 +171,21 @@ export class VrmPoseLayer {
 
   /**
    * v3.0 P1：默认待机手臂放松（A-pose → 自然下垂）。
-   * 只在待机时调用；weight 1 = 完全下垂，0 = 保持动作。
+   * 只在待机时调用；weight 1 = 完全下垂，0 = 保持动作；t 驱动手臂微摆。
    */
-  relaxArms(weight: number): void {
+  relaxArms(weight: number, t: number): void {
     if (weight <= 0) return;
     const upperL = this.normBones.get('leftUpperArm');
     const lowerL = this.normBones.get('leftLowerArm');
     const handL = this.normBones.get('leftHand');
     if (upperL && lowerL && handL) {
-      relaxArm(upperL.node, lowerL.node, handL.node, 'left', weight, weight * 0.8);
+      relaxArm(upperL.node, lowerL.node, handL.node, 'left', weight, weight * 0.8, t);
     }
     const upperR = this.normBones.get('rightUpperArm');
     const lowerR = this.normBones.get('rightLowerArm');
     const handR = this.normBones.get('rightHand');
     if (upperR && lowerR && handR) {
-      relaxArm(upperR.node, lowerR.node, handR.node, 'right', weight, weight * 0.8);
+      relaxArm(upperR.node, lowerR.node, handR.node, 'right', weight, weight * 0.8, t);
     }
   }
 
