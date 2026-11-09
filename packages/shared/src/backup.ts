@@ -61,7 +61,13 @@ export const backupManifestSchema = z.object({
     }),
     knowledge: z.object({ files: z.string(), knowledgeBaseCount: z.number().int().min(0), documentCount: z.number().int().min(0) }),
     settings: z.object({ files: z.string() }),
-    attachments: z.object({ files: z.string(), entryCount: z.number().int().min(0), totalBytes: z.number().int().min(0) }),
+    attachments: z.object({
+      files: z.string(),
+      entryCount: z.number().int().min(0),
+      totalBytes: z.number().int().min(0),
+      /** v2.33：引用条数（refs.json；v8 及更早归档缺省 0，恢复后由回填补齐） */
+      refCount: z.number().int().min(0).optional(),
+    }),
     /** v0.6 新增；旧归档（v0.4/v0.5）无此键，故 optional 保持向前兼容 */
     skills: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
     /** v0.7 新增；旧归档无此键，故 optional 保持向前兼容 */

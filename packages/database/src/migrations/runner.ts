@@ -49,6 +49,7 @@ import { migrateV047 } from './v047-context-facts';
 import { migrateV048 } from './v048-memory-event-rollup';
 import { migrateV049 } from './v049-document-parse-version';
 import { migrateV050 } from './v050-memory-edges';
+import { migrateV051 } from './v051-attachment-refs';
 
 interface Migration {
   version: number;
@@ -274,6 +275,7 @@ const MIGRATIONS: Migration[] = [
   { version: 48, description: 'v2.28 P1: memory_event_rollups + memory_events.created_at 索引（纯加法）', up: migrateV048 },
   { version: 49, description: 'v2.29 P0: documents.parse_version + 已有结构块元数据回填', up: migrateV049 },
   { version: 50, description: 'v2.31 P0: memory_edges 关系边表（纯加法）', up: migrateV050 },
+  { version: 51, description: 'v2.33 P1: attachment_refs 附件引用计数表 + 消息删除触发器（纯加法）', up: migrateV051 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

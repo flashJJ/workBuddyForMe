@@ -15,7 +15,6 @@ import {
   createDocumentRepository,
   createChunkRepository,
   createSettingsRepository,
-  createAttachmentRepository,
   createSkillStateRepository,
   createEmotionStateRepository,
   createEmotionEventRepository,
@@ -24,6 +23,7 @@ import {
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
 import { serializeAgentRunsTrack, serializeAgentHandoffsTrack } from './portability/export-agent-runs';
+import { serializeAttachmentsTrack } from './portability/export-attachments';
 import { serializeEventsTrack } from './export-events-track';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared/errors';
@@ -92,7 +92,6 @@ export async function exportBackup(
   const documentsRepo = createDocumentRepository(deps.db);
   const chunksRepo = createChunkRepository(deps.db);
   const settingsRepo = createSettingsRepository(deps.db);
-  const attachmentsRepo = createAttachmentRepository(deps.db);
   const skillStateRepo = createSkillStateRepository(deps.db);
   const emotionStateRepo = createEmotionStateRepository(deps.db);
   const emotionEventRepo = createEmotionEventRepository(deps.db);
@@ -244,31 +243,14 @@ export async function exportBackup(
   // 2. 附件：元数据 JSON + 二进制（可选）
   const attachmentsToPack: Array<{ name: string; data: Buffer }> = [];
   if (tracks.includes('attachments')) {
-    const atts = attachmentsRepo.list();
-    const attDir = path.join(dataRoot, 'attachments');
-    let totalBytes = 0;
-    const serializedAtts = [];
-    for (const att of atts) {
-      serializedAtts.push({
-        id: att.id,
-        filename: att.filename,
-        mimeType: att.mime_type,
-        byteSize: att.byte_size,
-        storagePath: att.storage_path,
-        contentHash: att.content_hash,
-        createdAt: att.created_at,
-      });
-      const filePath = path.join(attDir, att.storage_path);
-      if (fs.existsSync(filePath)) {
-        const buf = fs.readFileSync(filePath);
-        attachmentsToPack.push({ name: `attachments/${att.storage_path}`, data: buf });
-        totalBytes += buf.length;
-      }
-    }
-    files['attachments.json'] = JSON.stringify(serializedAtts, null, 2);
-    manifestPartial.attachments.entryCount = attachmentsToPack.length;
-    manifestPartial.attachments.totalBytes = totalBytes;
-    onProgress?.({ track: 'attachments', processed: attachmentsToPack.length, total: atts.length });
+    // v2.33：元数据 + refs.json + 已存在文件（旧归档缺 refs 由恢复端回填补齐）
+    const track = serializeAttachmentsTrack(deps.db, dataRoot);
+    Object.assign(files, track.files);
+    attachmentsToPack.push(...track.binaries);
+    manifestPartial.attachments.entryCount = track.entryCount;
+    manifestPartial.attachments.totalBytes = track.totalBytes;
+    manifestPartial.attachments.refCount = track.refCount;
+    onProgress?.({ track: 'attachments', processed: track.entryCount, total: track.totalCount });
   }
 
   // 3. 打包成 tar.gz

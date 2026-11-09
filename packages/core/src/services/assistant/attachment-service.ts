@@ -14,12 +14,14 @@ import { type ArtifactRef, type ArtifactWriteInput, type Attachment } from '@wbf
 import { getDataDir } from '@wbfm/config';
 import {
   attachmentStorageName,
+  createAttachmentRefRepository,
   createAttachmentRepository,
   mapAttachment,
   type AttachmentRow,
 } from '@wbfm/database';
 import { createHash } from 'node:crypto';
 import type { ServiceDeps } from '../base/deps';
+import { backfillAttachmentRefs } from './attachment-refs-backfill';
 
 export interface AttachmentInput {
   filename: string;
@@ -59,9 +61,19 @@ function artifactFilename(filename: string, format: ArtifactWriteInput['format']
  */
 export function createAttachmentService(deps: ServiceDeps) {
   const repo = createAttachmentRepository(deps.db);
+  const refs = createAttachmentRefRepository(deps.db);
   const dir = getDataDir('attachments');
   // 服务自建即确保目录存在（ensureDataDirs 之外的幂等兜底，单测也依赖）
   mkdirSync(dir, { recursive: true });
+  // v2.33：容器装配时做一次引用回填（设置标记保证重复启动不重复扫描；失败只告警）
+  try {
+    const backfill = backfillAttachmentRefs(deps.db);
+    if (!backfill.skipped && backfill.inserted > 0) {
+      console.info(`[attachment] 已回填 ${backfill.inserted} 条附件引用`);
+    }
+  } catch (error) {
+    console.warn('[attachment] 附件引用回填失败', error);
+  }
 
   const validate = (input: AttachmentInput): void => {
     if (!ALLOWED_IMAGE_MIME.includes(input.mimeType as (typeof ALLOWED_IMAGE_MIME)[number])) {
@@ -137,6 +149,13 @@ export function createAttachmentService(deps: ServiceDeps) {
         rmSync(filePath, { force: true });
         throw error;
       }
+      // v2.33：产物自身即 owner，引用计数随附件行级联清理
+      refs.add({
+        attachmentId: created.id,
+        ownerType: 'artifact',
+        ownerId: created.id,
+        createdAt: created.created_at,
+      });
       return {
         attachmentId: created.id,
         title,

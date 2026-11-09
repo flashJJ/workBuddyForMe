@@ -2,6 +2,7 @@ import type { DatabaseInstance } from '../../client';
 import type { Citation, ContentPart, Message, ToolTraceEntry } from '@wbfm/shared/types';
 import type { MessageFeedback, MessageRole, MessageStatus } from '@wbfm/shared/constants';
 import { newId, nowIso, mapMessage, type MessageRow } from '../ops/mappers';
+import { registerMessageAttachmentRefs } from './attachment-ref-repo';
 
 export interface MessageAddFields {
   conversationId: string;
@@ -41,6 +42,8 @@ export function createMessageRepository(db: DatabaseInstance) {
         JSON.stringify(fields.contentParts ?? []),
         ts,
       );
+      // v2.33：图片片段登记 attachment_refs（删除侧由迁移触发器清理）
+      registerMessageAttachmentRefs(db, id, fields.contentParts, ts);
       return this.findById(id)!;
     },
 
@@ -62,6 +65,26 @@ export function createMessageRepository(db: DatabaseInstance) {
         )
         .get(...conversationIds) as { total: number };
       return row.total;
+    },
+
+    /** v2.33：引用回填扫描用，只取 id/content_parts/created_at，不加载正文 */
+    listContentParts(): Array<{ id: string; contentParts: ContentPart[]; createdAt: string }> {
+      const rows = db
+        .prepare(
+          `SELECT id, content_parts, created_at FROM messages
+           WHERE content_parts IS NOT NULL AND content_parts != '[]'`,
+        )
+        .all() as Array<{ id: string; content_parts: string; created_at: string }>;
+      return rows.map((row) => {
+        let contentParts: ContentPart[] = [];
+        try {
+          const parsed = JSON.parse(row.content_parts) as unknown;
+          if (Array.isArray(parsed)) contentParts = parsed as ContentPart[];
+        } catch {
+          contentParts = [];
+        }
+        return { id: row.id, contentParts, createdAt: row.created_at };
+      });
     },
 
     listByConversation(conversationId: string, limit = 200): Message[] {

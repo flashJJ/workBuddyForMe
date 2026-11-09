@@ -44,6 +44,11 @@ import {
   readCardsTrackPayload,
   restoreCharacterCards,
 } from './restore-cards';
+import {
+  readAttachmentRefsPayload,
+  restoreAttachmentRefs,
+} from './portability/restore-attachment-refs';
+import { backfillAttachmentRefs } from '../services/assistant/attachment-refs-backfill';
 import { determineTracks } from './restore-track-select';
 import { extractArchiveFull } from './restore-archive';
 import { ensureSeedData, migrateLegacySystemPrompts } from '../services/base/seed';
@@ -161,6 +166,15 @@ export async function restoreBackup(
     if (tracksToRestore.includes('attachments') && files.has('attachments.json')) {
       const { imported, skipped } = restoreAttachmentsMeta(deps.db, files.get('attachments.json')!);
       result.imported.attachments = imported; result.skipped.attachments = skipped;
+      // v2.33：引用清单在消息与附件行之后恢复（旧归档缺文件由事务外回填补齐）
+      if (files.has('refs.json')) {
+        const refCounts = restoreAttachmentRefs(
+          deps.db,
+          readAttachmentRefsPayload(files.get('refs.json')!),
+        );
+        result.imported.attachmentRefs = refCounts.imported;
+        result.skipped.attachmentRefs = refCounts.skipped;
+      }
       onProgress?.({ track: 'attachments', processed: imported, total: manifest.tracks.attachments.entryCount });
     }
 
@@ -263,6 +277,22 @@ export async function restoreBackup(
   // --- 事务外：附件二进制落盘 ---
   if (tracksToRestore.includes('attachments') && binaries.length > 0) {
     writeAttachmentBinaries(binaries);
+  }
+
+  // v2.33：旧归档缺 refs.json 时按现有消息与产物立即回填（幂等）
+  if (
+    tracksToRestore.includes('attachments') &&
+    files.has('attachments.json') &&
+    !files.has('refs.json')
+  ) {
+    try {
+      const backfill = backfillAttachmentRefs(deps.db, { force: true });
+      if (backfill.inserted > 0) {
+        warnings.push(`旧归档未含引用清单，已按现有消息与产物回填 ${backfill.inserted} 条附件引用`);
+      }
+    } catch (error) {
+      warnings.push(`旧归档附件引用回填失败：${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // --- 事务外：技能文件夹 skill.json 落盘（同名文件夹已存在则保留本机版本） ---

@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 import { migrateV043 } from './v043-document-structure';
@@ -39,8 +39,8 @@ describe('v043 迁移：文档结构块与知识关系', () => {
   it('全新库：版本 43、document_blocks/知识关系表与 chunks 结构列就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(50);
-    expect(LATEST_SCHEMA_VERSION).toBe(50);
+    expect(getSchemaVersion(db)).toBe(51);
+    expect(LATEST_SCHEMA_VERSION).toBe(51);
 
     expect(tableNames(db)).toContain('document_blocks');
     expect(tableNames(db)).toContain('knowledge_relations');
@@ -68,8 +68,8 @@ describe('v043 迁移：文档结构块与知识关系', () => {
       .get() as { n: number };
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([43, 44, 45, 46, 47, 48, 49, 50]);
-    expect(getSchemaVersion(db)).toBe(50);
+    expect(result.applied).toEqual([43, 44, 45, 46, 47, 48, 49, 50, 51]);
+    expect(getSchemaVersion(db)).toBe(51);
 
     const after = db
       .prepare(`SELECT COUNT(*) AS n FROM document_chunks WHERE document_id='doc'`)
@@ -149,7 +149,7 @@ describe('v043 迁移：文档结构块与知识关系', () => {
     applyMigrations(db);
     expect(() => migrateV043(db)).not.toThrow();
     expect(() => migrateV043(db)).not.toThrow();
-    expect(getSchemaVersion(db)).toBe(50);
+    expect(getSchemaVersion(db)).toBe(51);
     db.close();
   });
 });

@@ -16,8 +16,8 @@ describe('v050 迁移：记忆关系边', () => {
   it('全新库：版本 50，边表与双向索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(50);
-    expect(LATEST_SCHEMA_VERSION).toBe(50);
+    expect(getSchemaVersion(db)).toBe(51);
+    expect(LATEST_SCHEMA_VERSION).toBe(51);
 
     expect(names(db, 'table').has('memory_edges')).toBe(true);
     const columns = new Set(
@@ -34,7 +34,7 @@ describe('v050 迁移：记忆关系边', () => {
     db.close();
   });
 
-  it('旧库升级：49 → 50 纯加法，存量记忆不受影响', () => {
+  it('旧库升级：49 → 51 纯加法，存量记忆不受影响', () => {
     const db = new Database(':memory:');
     applyMigrations(db, 49);
     db.prepare(
@@ -46,8 +46,8 @@ describe('v050 迁移：记忆关系边', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([50]);
-    expect(getSchemaVersion(db)).toBe(50);
+    expect(result.applied).toEqual([50, 51]);
+    expect(getSchemaVersion(db)).toBe(51);
     expect((db.prepare(`SELECT COUNT(*) AS n FROM memories`).get() as { n: number }).n).toBe(1);
     expect((db.prepare(`SELECT COUNT(*) AS n FROM memory_edges`).get() as { n: number }).n).toBe(0);
     db.close();
