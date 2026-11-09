@@ -1,11 +1,13 @@
 import { MEMORY_TOP_K } from '@wbfm/shared/constants';
 import {
   type Memory,
+  type MemoryConsolidateSummary,
   type MemoryKind,
   type MemoryLifecycleStats,
   type MemoryStatus,
 } from '@wbfm/shared/types';
 import {
+  createMemoryEdgeRepository,
   createMemoryRepository,
   deleteAllMemoryFts,
   deleteAllMemoryVectors,
@@ -22,6 +24,7 @@ import { traceAsync } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/base/deps';
 import type { ExtractedMemory } from './extractor';
 import { createMemoryPersister, createMemoryRecall } from './lifecycle';
+import { runMemoryConsolidation } from './graph';
 import { createMemoryStats } from './lifecycle/memory-stats';
 import {
   runMemoryEventRollup,
@@ -30,6 +33,7 @@ import {
 } from './lifecycle/memory-event-rollup';
 import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-decay';
 import { embedTexts } from './memory-embedding';
+import { buildSameSourceEdges } from './graph';
 import { toExtractedMemory } from './memory-match';
 import type {
   ManualMemoryInput,
@@ -59,8 +63,9 @@ export type {
 
 export function createMemoryService(deps: ServiceDeps) {
   const repo: MemoryRepository = createMemoryRepository(deps.db);
+  const edgeRepo = createMemoryEdgeRepository(deps.db);
   const persister = createMemoryPersister(deps.db, repo);
-  const recaller = createMemoryRecall(deps.db, repo);
+  const recaller = createMemoryRecall(deps.db, repo, edgeRepo);
   const stats = createMemoryStats(deps.db, repo);
 
   async function rememberCandidates(
@@ -92,6 +97,12 @@ export function createMemoryService(deps: ServiceDeps) {
       else result.superseded += 1;
     });
     candidates.forEach((_, index) => tx(index));
+    // 关系边是派生数据：写入失败只告警，不影响记忆落库与回合完成
+    try {
+      edgeRepo.link(buildSameSourceEdges(result.memories, ctx.sourceMessageId));
+    } catch (error) {
+      console.warn('[memory] 关系边写入失败', error);
+    }
     return result;
   }
 
@@ -141,7 +152,10 @@ export function createMemoryService(deps: ServiceDeps) {
             conversationId: options.conversationId ?? null,
           },
         });
-        stats.recordRecall(memories.length);
+        stats.recordRecall(
+          memories.length,
+          memories.filter((memory) => memory.reason === 'neighbor').length,
+        );
         return memories;
       },
       (memories) => ({ recalled: memories.length }),
@@ -206,6 +220,7 @@ export function createMemoryService(deps: ServiceDeps) {
     const existing = repo.findById(id);
     if (!existing) return false;
     const tx = deps.db.transaction(() => {
+      edgeRepo.deleteForMemory(id);
       repo.recordEvent(Number(id), 'delete', existing, null, 'user');
       return repo.delete(id);
     });
@@ -221,6 +236,7 @@ export function createMemoryService(deps: ServiceDeps) {
   function clearAll(): number {
     const tx = deps.db.transaction(() => {
       deleteAllMemoryFts(deps.db);
+      edgeRepo.deleteAll();
       if (getMemoryVectorDimension(deps.db) !== null) deleteAllMemoryVectors(deps.db);
       return repo.deleteAll();
     });
@@ -244,6 +260,11 @@ export function createMemoryService(deps: ServiceDeps) {
     return runMemoryEventRollup(deps.db, options);
   }
 
+  /** v2.31 P1：空闲整理（同义主体归一、重复内容归档、悬空边清理） */
+  function consolidate(options: { now?: Date; limit?: number } = {}): MemoryConsolidateSummary {
+    return runMemoryConsolidation(deps.db, repo, edgeRepo, options);
+  }
+
   return {
     rememberCandidates,
     rememberOne,
@@ -254,6 +275,7 @@ export function createMemoryService(deps: ServiceDeps) {
     clearAll,
     runDecay,
     runEventRollup,
+    consolidate,
     getStats,
     list,
     get,

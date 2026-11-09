@@ -20,9 +20,16 @@ const KIND_LABELS: Record<Memory['kind'], string> = {
 };
 
 /** 召回记忆格式化为 system 区块正文（按预算硬截断）；无记忆返回 null */
-export function formatMemoryBlock(memories: Memory[]): string | null {
+export function formatMemoryBlock(memories: Array<Memory & { neighborOf?: string }>): string | null {
   if (memories.length === 0) return null;
-  const body = memories.map((m) => `- ［${KIND_LABELS[m.kind]}］${m.content}`).join('\n');
+  const byId = new Map(memories.map((memory) => [memory.id, memory]));
+  const body = memories
+    .map((m) => {
+      const seed = m.neighborOf ? byId.get(m.neighborOf) : undefined;
+      const suffix = seed ? `（关联自：${truncateToTokens(seed.content, 24)}）` : '';
+      return `- ［${KIND_LABELS[m.kind]}］${m.content}${suffix}`;
+    })
+    .join('\n');
   return truncateToTokens(body, MEMORY_BLOCK_RESERVE_TOKENS);
 }
 
@@ -67,6 +74,7 @@ export function toRecalledPayload(memories: RecalledMemory[]): RecalledMemoryPay
     sourceMessageId: m.sourceMessageId,
     score: m.score,
     reason: m.reason,
+    neighborOf: m.neighborOf,
   }));
 }
 

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+﻿import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
@@ -220,7 +220,7 @@ test.describe.serial('v2.15 可运营运维链路', () => {
       ledger: { lastSeq: number | null; lastHash: string | null };
     };
     expect(parsed.formatVersion).toBe(1);
-    expect(parsed.schemaVersion).toBe(49);
+    expect(parsed.schemaVersion).toBe(50);
     expect(parsed.range.count).toBe(lines.length);
     expect(parsed.ledger.lastSeq).not.toBeNull();
     expect(parsed.range.chain.ok).toBe(true);

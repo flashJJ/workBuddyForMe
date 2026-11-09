@@ -11,13 +11,28 @@ export type MemoryKind = (typeof MEMORY_KINDS)[number];
 export const MEMORY_STATUSES = ['active', 'archived', 'superseded'] as const;
 export type MemoryStatus = (typeof MEMORY_STATUSES)[number];
 
-/** v2.26：召回理由——语义 / 关键词 / 混合 / 置顶硬约束 */
-export const MEMORY_RECALL_REASONS = ['semantic', 'keyword', 'hybrid', 'pinned'] as const;
+/** v2.26：召回理由——语义 / 关键词 / 混合 / 置顶硬约束；v2.31 新增关系邻居 */
+export const MEMORY_RECALL_REASONS = [
+  'semantic',
+  'keyword',
+  'hybrid',
+  'pinned',
+  'neighbor',
+] as const;
 export type MemoryRecallReason = (typeof MEMORY_RECALL_REASONS)[number];
 
 /** v2.26：记忆作用域——全局 / 助手级 / 会话级 */
 export const MEMORY_SCOPES = ['global', 'assistant', 'conversation'] as const;
 export type MemoryScope = (typeof MEMORY_SCOPES)[number];
+
+/** v2.31：空闲整理结果摘要（写入 meta，设置页只读展示） */
+export interface MemoryConsolidateSummary {
+  at: string;
+  scanned: number;
+  archived: number;
+  mergedSubjects: number;
+  edgesRemoved: number;
+}
 
 /** v2.28：done 帧下发的约束写入提示（仅 id 与正文；撤销走归档） */
 export interface MemoryNotice {
@@ -152,4 +167,10 @@ export interface MemoryLifecycleStats {
   recentEvents?: MemoryAuditEntry[];
   /** v2.28：最近一次审计轮转时间（ISO；尚未轮转为 null） */
   lastRollupAt?: string | null;
+  /** v2.31：关系边总数 */
+  edgeTotal?: number;
+  /** v2.31：累计邻居召回条数 */
+  neighborRecallTotal?: number;
+  /** v2.31：最近一次空闲整理摘要（尚未整理为 null） */
+  lastConsolidate?: MemoryConsolidateSummary | null;
 }

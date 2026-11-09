@@ -89,3 +89,21 @@ export const MEMORY_HALF_LIFE_DAYS: Record<string, number> = {
   constraint: 36500,
 };
 
+/**
+ * v2.31 记忆关系边与一跳召回：
+ * - 只记录可解释的来源关系：同一条助手消息 same_source（权重 0.8）；
+ * - 召回在融合排序后取最高分 2 条作种子，对端分数 = 种子分 × 边权；
+ * - 邻居最多 2 条且总数仍为 MEMORY_TOP_K，置顶配额不变；
+ * - 约束与置顶记忆不建边、不作为邻居（它们已固定注入）。
+ */
+export const MEMORY_EDGE_SAME_SOURCE_WEIGHT = 0.8;
+export const MEMORY_EDGE_CO_TURN_WEIGHT = 0.65;
+export const MEMORY_NEIGHBOR_SEED_LIMIT = 2;
+export const MEMORY_NEIGHBOR_LIMIT = 2;
+
+/** v2.31 观测：邻居召回累计次数与最近一次整理时间（meta 表键） */
+export const MEMORY_NEIGHBOR_META_KEY = 'memory_neighbor_total';
+export const MEMORY_CONSOLIDATE_META_KEY = 'memory_consolidate_last_at';
+export const MEMORY_CONSOLIDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+export const MEMORY_CONSOLIDATE_SCAN_LIMIT = 1000;
+

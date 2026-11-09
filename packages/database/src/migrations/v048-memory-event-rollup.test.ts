@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -22,8 +22,8 @@ describe('v048 迁移：记忆审计轮转', () => {
   it('全新库：版本 49，聚合表与 created_at 索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(49);
-    expect(LATEST_SCHEMA_VERSION).toBe(49);
+    expect(getSchemaVersion(db)).toBe(50);
+    expect(LATEST_SCHEMA_VERSION).toBe(50);
 
     expect(tables(db).has('memory_event_rollups')).toBe(true);
     const columns = new Set(
@@ -45,8 +45,8 @@ describe('v048 迁移：记忆审计轮转', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([48, 49]);
-    expect(getSchemaVersion(db)).toBe(49);
+    expect(result.applied).toEqual([48, 49, 50]);
+    expect(getSchemaVersion(db)).toBe(50);
     expect(
       (db.prepare(`SELECT COUNT(*) AS n FROM memory_events`).get() as { n: number }).n,
     ).toBe(1);

@@ -40,6 +40,7 @@ export const MEMORY_RECALL_REASON_LABELS: Record<MemoryRecallReason, MessageKey>
   keyword: 'memory.recallReason.keyword',
   hybrid: 'memory.recallReason.hybrid',
   pinned: 'memory.recallReason.pinned',
+  neighbor: 'memory.recallReason.neighbor',
 };
 
 /** v2.28：审计动作与操作者文案键（未知动作降级为「其他」） */

@@ -159,6 +159,7 @@ export type {
   ConversationFact,
   ConversationFactKind,
   MemoryAuditEntry,
+  MemoryConsolidateSummary,
   MemoryLifecycleStats,
   TaskCheckpoint,
   TaskCheckpointStatus,

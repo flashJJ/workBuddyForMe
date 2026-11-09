@@ -1,9 +1,12 @@
 import {
+  MEMORY_CONSOLIDATE_META_KEY,
+  MEMORY_NEIGHBOR_META_KEY,
   MEMORY_RECALL_TOTAL_META_KEY,
   MEMORY_RECALL_ZERO_META_KEY,
 } from '@wbfm/shared/constants';
-import type { MemoryLifecycleStats } from '@wbfm/shared/types';
+import type { MemoryConsolidateSummary, MemoryLifecycleStats } from '@wbfm/shared/types';
 import {
+  createMemoryEdgeRepository,
   createMemoryEventRepository,
   getMeta,
   setMeta,
@@ -21,6 +24,7 @@ import { readLastRollupAt } from './memory-event-rollup';
 
 export function createMemoryStats(db: DatabaseInstance, repo: MemoryRepository) {
   const events = createMemoryEventRepository(db);
+  const edges = createMemoryEdgeRepository(db);
 
   function readCounter(key: string): number {
     const raw = getMeta(db, key);
@@ -28,11 +32,28 @@ export function createMemoryStats(db: DatabaseInstance, repo: MemoryRepository) 
     return Number.isFinite(value) && value > 0 ? value : 0;
   }
 
-  /** 每次召回会话调用一次：累计总次数，空结果累计零召回 */
-  function recordRecall(recalled: number): void {
+  /** 每次召回会话调用一次：累计总次数，空结果累计零召回，同时累计邻居召回条数 */
+  function recordRecall(recalled: number, neighbors = 0): void {
     setMeta(db, MEMORY_RECALL_TOTAL_META_KEY, String(readCounter(MEMORY_RECALL_TOTAL_META_KEY) + 1));
     if (recalled === 0) {
       setMeta(db, MEMORY_RECALL_ZERO_META_KEY, String(readCounter(MEMORY_RECALL_ZERO_META_KEY) + 1));
+    }
+    if (neighbors > 0) {
+      setMeta(
+        db,
+        MEMORY_NEIGHBOR_META_KEY,
+        String(readCounter(MEMORY_NEIGHBOR_META_KEY) + neighbors),
+      );
+    }
+  }
+
+  function readConsolidate(): MemoryConsolidateSummary | null {
+    const raw = getMeta(db, MEMORY_CONSOLIDATE_META_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as MemoryConsolidateSummary;
+    } catch {
+      return null;
     }
   }
 
@@ -51,6 +72,9 @@ export function createMemoryStats(db: DatabaseInstance, repo: MemoryRepository) 
       userCorrections: repo.countUserCorrections(),
       recentEvents: events.listRecent(5),
       lastRollupAt: readLastRollupAt(db),
+      edgeTotal: edges.count(),
+      neighborRecallTotal: readCounter(MEMORY_NEIGHBOR_META_KEY),
+      lastConsolidate: readConsolidate(),
     };
   }
 

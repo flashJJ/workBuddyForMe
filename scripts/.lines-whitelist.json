@@ -3,6 +3,14 @@
     {
       "path": "packages/voice/src/models/manifest-kokoro-files.ts",
       "reason": "由 HF tree API 自动生成的 Kokoro 模型文件清单（377 项，含 espeak-ng-data 全量小文件），纯数据无逻辑；拆分会破坏生成器的单文件覆盖写入约定"
+    },
+    {
+      "path": "apps/web/src/lib/api/endpoints.ts",
+      "reason": "API 路径与 React Query key 的扁平注册表，纯常量无逻辑；按域拆分会让调用方改为多入口导入，收益低。v2.31 起登记，v2.32 若继续增长再拆为 api/memory 等子表"
+    },
+    {
+      "path": "packages/database/src/migrations/runner.ts",
+      "reason": "顺序迁移注册表，每个版本一行 import + 一项元数据，纯声明式配置；拆分不影响单文件规模。v2.31 起登记，v2.32 复核是否改为目录扫描"
     }
   ]
 }

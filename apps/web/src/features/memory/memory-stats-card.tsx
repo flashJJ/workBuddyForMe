@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { ErrorState, Skeleton } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
-import { useMemoryStats } from '@/lib/hooks/assistant';
+import { useMemoryConsolidate, useMemoryStats } from '@/lib/hooks/assistant';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { formatNumber } from '@/lib/i18n/intl';
@@ -45,6 +45,7 @@ export function MemoryStatsCard() {
   const { data: stats, isLoading, isError, refetch } = useMemoryStats();
   const { data: settings } = useSettings();
   const updateSettings = useUpdateSettings();
+  const consolidate = useMemoryConsolidate();
   const toast = useToast();
   // 查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
   const [mounted, setMounted] = React.useState(false);
@@ -57,6 +58,20 @@ export function MemoryStatsCard() {
       await updateSettings.mutateAsync({ memoryEventRetentionDays: value });
     } catch {
       toast.error(t('memory.stats.retentionSaveFailed'));
+    }
+  };
+  const runConsolidate = async () => {
+    try {
+      const summary = await consolidate.mutateAsync();
+      toast.success(
+        t('memory.stats.consolidateDone', {
+          archived: summary.archived,
+          merged: summary.mergedSubjects,
+          edges: summary.edgesRemoved,
+        }),
+      );
+    } catch {
+      toast.error(t('memory.stats.consolidateFailed'));
     }
   };
 
@@ -80,7 +95,7 @@ export function MemoryStatsCard() {
 
       {mounted && isLoading && (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {Array.from({ length: 7 }, (_, index) => (
+          {Array.from({ length: 9 }, (_, index) => (
             <Skeleton key={index} className="h-12" />
           ))}
         </div>
@@ -95,6 +110,8 @@ export function MemoryStatsCard() {
           retention={retention}
           retentionDisabled={!settings}
           onRetentionChange={(value) => void changeRetention(value)}
+          onConsolidate={() => void runConsolidate()}
+          consolidating={consolidate.isPending}
         />
       )}
     </div>
@@ -107,12 +124,16 @@ function StatsBody({
   retention,
   retentionDisabled,
   onRetentionChange,
+  onConsolidate,
+  consolidating,
 }: {
   stats: MemoryLifecycleStats;
   locale: Language;
   retention: number;
   retentionDisabled: boolean;
   onRetentionChange: (value: number) => void;
+  onConsolidate: () => void;
+  consolidating: boolean;
 }) {
   const { t } = useI18n();
   const metrics = [
@@ -138,6 +159,16 @@ function StatsBody({
       key: 'userCorrections',
       label: t('memory.stats.userCorrections'),
       value: formatNumber(stats.userCorrections, locale),
+    },
+    {
+      key: 'edgeTotal',
+      label: t('memory.stats.edgeTotal'),
+      value: formatNumber(stats.edgeTotal ?? 0, locale),
+    },
+    {
+      key: 'neighborRecallTotal',
+      label: t('memory.stats.neighborRecallTotal'),
+      value: formatNumber(stats.neighborRecallTotal ?? 0, locale),
     },
   ];
   const recent = stats.recentEvents ?? [];
@@ -194,6 +225,28 @@ function StatsBody({
               })
             : t('memory.stats.neverRolledUp')}
         </span>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground" data-testid="memory-last-consolidate">
+          {stats.lastConsolidate
+            ? t('memory.stats.lastConsolidate', {
+                date: formatMemoryDate(stats.lastConsolidate.at, locale),
+                archived: stats.lastConsolidate.archived,
+                merged: stats.lastConsolidate.mergedSubjects,
+                edges: stats.lastConsolidate.edgesRemoved,
+              })
+            : t('memory.stats.neverConsolidated')}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-testid="memory-consolidate"
+          disabled={consolidating}
+          onClick={onConsolidate}
+        >
+          {consolidating ? t('memory.stats.consolidating') : t('memory.stats.consolidate')}
+        </Button>
       </div>
     </>
   );

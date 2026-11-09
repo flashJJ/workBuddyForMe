@@ -1,5 +1,5 @@
 import { runSchedulerTick } from '@wbfm/core/scheduler';
-import { MEMORY_EVENT_RETENTION_DEFAULT_DAYS } from '@wbfm/shared/constants';
+import { MEMORY_EVENT_RETENTION_DEFAULT_DAYS, MEMORY_CONSOLIDATE_INTERVAL_MS } from '@wbfm/shared/constants';
 import { isScheduledAgentTask } from '@wbfm/shared/schemas';
 import type { ServiceContainer } from './container';
 import { startScheduledAgentTask } from './scheduled-agent';
@@ -15,10 +15,12 @@ const INTERVAL_MS = 10_000;
 const HOLDER_KEY = '__WBFM_SERVER_SCHEDULER__';
 const ROLLUP_HOLDER_KEY = '__WBFM_MEMORY_EVENT_ROLLUP__';
 const ROLLUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const CONSOLIDATE_HOLDER_KEY = '__WBFM_MEMORY_CONSOLIDATE__';
 
 interface SchedulerHolder {
   [HOLDER_KEY]?: ReturnType<typeof setInterval>;
   [ROLLUP_HOLDER_KEY]?: ReturnType<typeof setInterval>;
+  [CONSOLIDATE_HOLDER_KEY]?: ReturnType<typeof setInterval>;
 }
 
 /**
@@ -42,6 +44,34 @@ function ensureMemoryEventRollup(services: ServiceContainer, holder: SchedulerHo
   const timer = setInterval(() => runMemoryEventRollupTick(services), ROLLUP_INTERVAL_MS);
   (timer as { unref?: () => void }).unref?.();
   holder[ROLLUP_HOLDER_KEY] = timer;
+}
+
+/**
+ * v2.31 P1：记忆空闲整理（启动后异步一次 + 每 24h，单飞）。
+ * 距上次整理不足 24h 时跳过，避免频繁重启反复扫描；失败只告警。
+ */
+function runMemoryConsolidateTick(services: ServiceContainer): void {
+  try {
+    const last = services.memories.getStats().lastConsolidate?.at;
+    if (last && Date.now() - Date.parse(last) < MEMORY_CONSOLIDATE_INTERVAL_MS) return;
+    const summary = services.memories.consolidate();
+    if (summary.archived + summary.mergedSubjects + summary.edgesRemoved > 0) {
+      console.info(
+        `[memory] 整理完成：扫描 ${summary.scanned}，归档 ${summary.archived}，合并主体 ${summary.mergedSubjects}，清理边 ${summary.edgesRemoved}`,
+      );
+    }
+  } catch (error) {
+    console.warn('[memory] 整理失败', error);
+  }
+}
+
+function ensureMemoryConsolidate(services: ServiceContainer, holder: SchedulerHolder): void {
+  if (holder[CONSOLIDATE_HOLDER_KEY]) return;
+  const boot = setTimeout(() => runMemoryConsolidateTick(services), 0);
+  (boot as { unref?: () => void }).unref?.();
+  const timer = setInterval(() => runMemoryConsolidateTick(services), MEMORY_CONSOLIDATE_INTERVAL_MS);
+  (timer as { unref?: () => void }).unref?.();
+  holder[CONSOLIDATE_HOLDER_KEY] = timer;
 }
 
 export async function runServerSchedulerTick(services: ServiceContainer): Promise<number> {
@@ -74,4 +104,5 @@ export function ensureServerScheduler(services: ServiceContainer): void {
   (timer as { unref?: () => void }).unref?.();
   holder[HOLDER_KEY] = timer;
   ensureMemoryEventRollup(services, holder);
+  ensureMemoryConsolidate(services, holder);
 }
