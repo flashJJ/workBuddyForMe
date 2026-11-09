@@ -134,6 +134,17 @@ $7z = "node_modules\7zip-bin\win\x64\7za.exe"
 
 ## 发版流程
 
+### 分支纪律（强制）
+
+每个版本（含修复版本）都必须从**已合入上一版本的最新 main** 切出，禁止在上一个尚未合入的功能分支上继续叠加新版本：
+
+1. 开发分支完成后先合入 main（`git merge --no-ff <branch>`），确认 main 已包含该分支再打 `vX.Y.Z` 标签。
+2. 新版本分支只能在合入完成之后从 main 拉出；未合入的分支不得作为下一个版本的工作基线。
+3. 合入前执行 `git branch -a --no-merged main`，结果必须为空；若有输出，逐条确认是待合入功能还是可删除的废弃分支。
+4. 分支合入并发布后删除，避免长期分叉。
+
+> 教训：v2.25 的「舞台拖动失速 + 引用折叠」修复只存在于 `fix/v2.25-citations-and-search-tuning`，后续 v2.26–v2.34 全部从 main 切出，导致修复连续 9 个版本未生效，v2.35 才补回。
+
 发版前：
 
 1. `pnpm check` → `pnpm test:unit` → `pnpm test:integration` → `pnpm build`。
