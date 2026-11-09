@@ -220,7 +220,7 @@ test.describe.serial('v2.15 可运营运维链路', () => {
       ledger: { lastSeq: number | null; lastHash: string | null };
     };
     expect(parsed.formatVersion).toBe(1);
-    expect(parsed.schemaVersion).toBe(48);
+    expect(parsed.schemaVersion).toBe(49);
     expect(parsed.range.count).toBe(lines.length);
     expect(parsed.ledger.lastSeq).not.toBeNull();
     expect(parsed.range.chain.ok).toBe(true);
