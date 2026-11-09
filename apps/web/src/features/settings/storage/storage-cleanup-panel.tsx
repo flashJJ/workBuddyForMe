@@ -17,8 +17,18 @@ interface StorageUsage {
 }
 
 interface OrphanScan {
-  candidates: Array<{ name: string; bytes: number }>;
+  files: Array<{ name: string; bytes: number }>;
+  unreferenced: Array<{ id: string; name: string; bytes: number; filename: string; createdAt: string }>;
+  filesBytes: number;
+  unreferencedBytes: number;
   totalBytes: number;
+}
+
+function orphanNames(scan: OrphanScan): string[] {
+  return [
+    ...scan.files.map((item) => item.name),
+    ...scan.unreferenced.map((item) => item.name),
+  ];
 }
 
 interface TrashEntry {
@@ -90,12 +100,13 @@ export function StorageCleanupPanel() {
   };
 
   const moveToTrash = async () => {
-    if (!scan || scan.candidates.length === 0) return;
+    const names = scan ? orphanNames(scan) : [];
+    if (names.length === 0) return;
     setTrashing(true);
     try {
-      const result = await apiPost<{ moved: number; totalBytes: number }>(
+      const result = await apiPost<{ moved: number; totalBytes: number; recordsRemoved: number }>(
         API.storageOrphansTrash,
-        { names: scan.candidates.map((item) => item.name) },
+        { names },
       );
       toast.success(
         t('settingsBackup.storage.trashDone', {
@@ -183,17 +194,23 @@ export function StorageCleanupPanel() {
           <Button type="button" variant="outline" size="sm" onClick={() => void runScan()} disabled={scanning}>
             {scanning ? t('settingsBackup.storage.scanning') : t('settingsBackup.storage.scan')}
           </Button>
-          {scan && scan.candidates.length === 0 && (
+          {scan && orphanNames(scan).length === 0 && (
             <span className="text-xs text-muted-foreground">
               {t('settingsBackup.storage.scanEmpty')}
             </span>
           )}
-          {scan && scan.candidates.length > 0 && (
+          {scan && orphanNames(scan).length > 0 && (
             <>
               <span className="text-xs text-muted-foreground">
-                {t('settingsBackup.storage.scanFound', {
-                  count: scan.candidates.length,
-                  size: formatBytes(scan.totalBytes),
+                {t('settingsBackup.storage.scanFoundFiles', {
+                  count: scan.files.length,
+                  size: formatBytes(scan.filesBytes),
+                })}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {t('settingsBackup.storage.scanFoundUnreferenced', {
+                  count: scan.unreferenced.length,
+                  size: formatBytes(scan.unreferencedBytes),
                 })}
               </span>
               <Button type="button" size="sm" onClick={() => void moveToTrash()} disabled={trashing}>

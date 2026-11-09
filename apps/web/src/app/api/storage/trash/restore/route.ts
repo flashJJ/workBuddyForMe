@@ -11,8 +11,8 @@ const schema = z.object({
   name: z.string().min(1),
 });
 
-/** POST /api/storage/trash/restore — 7 天内把文件从回收目录移回 attachments/ */
-export const POST = defineRoute(async ({ request }) => {
+/** POST /api/storage/trash/restore — 7 天内按清单重建附件行并移回文件 */
+export const POST = defineRoute(async ({ request, services }) => {
   const { date, name } = parseBody(schema, await readJsonBody(request));
-  return jsonOk(restoreFromTrash(date, name));
+  return jsonOk(restoreFromTrash(services.db, date, name));
 });

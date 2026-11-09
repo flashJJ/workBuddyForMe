@@ -25,13 +25,18 @@ export {
   resetStorageUsageCache,
   scanOrphanAttachments,
   trashOrphanAttachments,
+  type StorageBucket,
+  type StorageUsage,
+  type OrphanFileCandidate,
+  type UnreferencedAttachment,
+  type OrphanScanResult,
+  type TrashOrphansResult,
+} from './portability/storage-usage';
+export {
   listTrash,
   restoreFromTrash,
   purgeTrash,
-  type StorageBucket,
-  type StorageUsage,
-  type OrphanCandidate,
-  type OrphanScanResult,
   type TrashEntry,
   type TrashListing,
-} from './portability/storage-usage';
+  type TrashRestoreResult,
+} from './portability/trash-store';

@@ -58,8 +58,11 @@ describe('/api/storage（v2.32 M4）', () => {
     expect(usage.data.items.attachments).toBeGreaterThanOrEqual(16);
 
     const scanRes = await scanRoute(post('/api/storage/orphans/scan', {}));
-    const scan = (await scanRes.json()) as { data: { candidates: Array<{ name: string }> } };
-    expect(scan.data.candidates).toEqual([{ name: 'orphan.bin', bytes: 16 }]);
+    const scan = (await scanRes.json()) as {
+      data: { files: Array<{ name: string }>; unreferenced: Array<{ name: string }> };
+    };
+    expect(scan.data.files).toEqual([{ name: 'orphan.bin', bytes: 16 }]);
+    expect(scan.data.unreferenced).toEqual([]);
 
     const trashRes = await trashRoute(
       post('/api/storage/orphans/trash', { names: ['orphan.bin'] }),
@@ -74,9 +77,17 @@ describe('/api/storage（v2.32 M4）', () => {
     };
     expect(list.data.entries).toHaveLength(1);
 
-    await restoreRoute(
+    const restoreRes = await restoreRoute(
       post('/api/storage/trash/restore', { date: trashed.data.date, name: 'orphan.bin' }),
     );
+    const restored = (await restoreRes.json()) as {
+      data: { restored: string; recreatedRow: boolean; manifestApplied: boolean };
+    };
+    expect(restored.data).toMatchObject({
+      restored: 'orphan.bin',
+      recreatedRow: false,
+      manifestApplied: false,
+    });
     expect(existsSync(join(getDataDir('attachments'), 'orphan.bin'))).toBe(true);
 
     const purgeRes = await purgeRoute(post('/api/storage/trash/purge', {}));
