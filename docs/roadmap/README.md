@@ -86,7 +86,7 @@ v2.26 把记忆做成双时态事实与混合召回，v2.28 补上统计、轮�
 v2.17 把能力安装做成了审批闭环，v2.18 把内容包与产物做成了可交付能力，但外围仍有四个断点：助手无法列出现有能力，用户问「装了哪些技能」只能靠模型猜；安装审批只显示 `catalogId`，看不到来源、版本、签名与将新增哪些工具；内容包固定在上游某个 commit，没有检查更新，哈希校验失败时分不清网络问题还是版本过期；单轮产物只有单文件 2MB 限制，没有数量与总大小上限。v2.30 补上四条收口链路：新增只读 `capability_list`（最多 30 条，支持 kind/status 过滤）；`tool_confirmation_required` 增加可选 `details`，审批框默认精简展示来源/版本/新增工具数、展开看权限/effects/签名；新增只读更新检查接口，比较内置短哈希与上游最新 commit，10 秒超时、失败降级为 `unavailable`，不做自动下载或替换；回合上下文维护产物计数与累计字节，单轮最多 6 个 / 8MB，先检查再落盘，失败不计数；能力安装 allow/deny 审计附带 `catalogId@version`、来源与 effects 摘要。零迁移，`LATEST_SCHEMA_VERSION = 49` 不变。
 
 - 方案：[v2.30 方案](../plan/v2.30/README.md) · 发行说明：[v2.30-release-notes.md](v2.30-release-notes.md)
-- 状态：✅ 已合入 main（merge commit `8c580ab5`）；版本号已升至 2.30.0，待打 tag 与发布 Release（零迁移，`LATEST_SCHEMA_VERSION = 49`；main CI 的 E2E schema 断言已随 v049 修正）
+- 状态：✅ 已合入 main（merge commit `8c580ab5`）；版本号 2.30.0，已打 tag `v2.30.0`，待发布 Release（零迁移，`LATEST_SCHEMA_VERSION = 49`；main CI 的 E2E schema 断言已随 v049 修正）
 - 分支：`feat/v2.30-capability-completion`（已合入 main 并推送）
 - 博客：[blog/v2.30](../../blog/v2.30/) 10 篇
 - 范围：P0 能力清单 + 审批详情；P1 内容包更新检查 + 单轮产物限流；P2 审批审计快照
