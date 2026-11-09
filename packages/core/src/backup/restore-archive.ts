@@ -6,6 +6,7 @@ import zlib from 'node:zlib';
 import tar from 'tar-stream';
 import { backupManifestSchema, type BackupManifest } from '@wbfm/shared/backup';
 import { ApiError } from '@wbfm/shared/errors';
+import { openArchive } from './portability/archive-cipher';
 
 export interface ExtractedArchive {
   manifest: BackupManifest;
@@ -13,15 +14,17 @@ export interface ExtractedArchive {
   binaries: Array<{ name: string; data: Buffer }>;
 }
 
-export async function extractArchive(buf: Buffer): Promise<{
+export async function extractArchive(buf: Buffer, password?: string): Promise<{
   manifest: BackupManifest;
   files: Map<string, Buffer>;
 }> {
-  const r = await extractArchiveFull(buf);
+  const r = await extractArchiveFull(buf, password);
   return { manifest: r.manifest, files: r.files };
 }
 
-export async function extractArchiveFull(buf: Buffer): Promise<ExtractedArchive> {
+/** v2.33：加密容器先解密（未加密归档原样返回），再按 tar.gz 解包 */
+export async function extractArchiveFull(buf: Buffer, password?: string): Promise<ExtractedArchive> {
+  const plain = openArchive(buf, password);
   return new Promise((resolve, reject) => {
     const gunzip = zlib.createGunzip();
     const extract = tar.extract();
@@ -52,6 +55,6 @@ export async function extractArchiveFull(buf: Buffer): Promise<ExtractedArchive>
       resolve({ manifest, files, binaries });
     });
     gunzip.on('error', reject); extract.on('error', reject);
-    gunzip.pipe(extract); gunzip.end(buf);
+    gunzip.pipe(extract); gunzip.end(plain);
   });
 }

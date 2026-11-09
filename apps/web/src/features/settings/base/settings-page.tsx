@@ -21,7 +21,9 @@ import { ToolDebugPanel } from '../tools/tool-debug-panel';
 import { SearchSettingsPanel } from '../tools/search-settings-panel';
 import { SkillsPanel } from '../skills/skills-panel';
 import { MemoryPanel } from '@/features/memory';
-import { BackupPanel } from '../storage/backup-panel';
+import { BackupPanel } from '../storage/backup';
+import { ArtifactPackPanel } from '../storage/artifact-pack-panel';
+import { StorageCleanupPanel } from '../storage/storage-cleanup-panel';
 import { AboutPanel } from '../storage/about-panel';
 import { HelpCenterPanel } from '@/features/help-center';
 import { VoicePreferencePanel } from '@/features/voice';
@@ -134,6 +136,8 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         <ModPackPanel key="modpack" />,
         <MemoryPanel key="memory" />,
         <BackupPanel key="backup" />,
+        <ArtifactPackPanel key="artifact-pack" />,
+        <StorageCleanupPanel key="storage-cleanup" />,
         <HelpCenterPanel key="help" />,
         <AboutPanel key="about" />,
       ],

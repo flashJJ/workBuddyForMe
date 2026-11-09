@@ -15,19 +15,21 @@ import {
   createDocumentRepository,
   createChunkRepository,
   createSettingsRepository,
-  createAttachmentRepository,
   createSkillStateRepository,
   createEmotionStateRepository,
   createEmotionEventRepository,
-  createSessionEventRepository,
-  type SessionEventView,
 } from '@wbfm/database';
+import { serializeBranchEvents } from './portability/export/export-branch-events';
 import { serializeTasksTrack } from './export-tasks-track';
+import { serializeAgentRunsTrack, serializeAgentHandoffsTrack } from './portability/export-agent-runs';
+import { serializeAttachmentsTrack } from './portability/export/export-attachments';
+import { createExportReporter, payloadBytes } from './portability/export/export-report';
 import { serializeEventsTrack } from './export-events-track';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared/errors';
 import { getDataRoot } from '@wbfm/config';
 import { packTarGz } from './export-archive';
+import { sealArchive } from './portability/archive-cipher';
 import { sanitizeSettings } from './export-sanitize';
 import { BACKUP_MAX_ARCHIVE_BYTES } from './export-types';
 import type { BackupExportOptions, BackupExportResult } from './export-types';
@@ -35,36 +37,6 @@ import type { BackupExportOptions, BackupExportResult } from './export-types';
 // 既有域 barrel 导出名原位保留（实现已拆至 kebab-case 纯函数模块，exportBackup 主流程不变）
 export { sanitizeSettings };
 export { BACKUP_MAX_ARCHIVE_BYTES, type BackupExportOptions, type BackupExportResult };
-
-/** v2.22：单分支事件上限；超出只带最近记录，避免归档膨胀 */
-const MAX_BRANCH_EVENTS_PER_BRANCH = 200;
-
-/** v2.22：导出 branch 事件（scope='branch'），恢复端按数组顺序 append */
-function serializeBranchEvents(db: ServiceDeps['db']): {
-  json: string;
-  count: number;
-  truncated: boolean;
-} {
-  const eventsRepo = createSessionEventRepository(db);
-  const branches = createConversationBranchRepository(db).listAll();
-  const groups: SessionEventView[][] = [];
-  let truncated = false;
-  for (const branch of branches) {
-    const recent = eventsRepo
-      .listAll({ scope: 'branch', scopeId: branch.id, limit: MAX_BRANCH_EVENTS_PER_BRANCH })
-      .reverse();
-    if (eventsRepo.count('branch', branch.id) > MAX_BRANCH_EVENTS_PER_BRANCH) truncated = true;
-    groups.push(recent);
-  }
-  const events = groups
-    .flat()
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.seq - b.seq);
-  return {
-    json: JSON.stringify({ schemaVersion: 1, truncated, events }, null, 2),
-    count: events.length,
-    truncated,
-  };
-}
 
 /**
  * 备份导出：四轨 JSON 序列化 + tar.gz 归档。
@@ -81,6 +53,8 @@ export async function exportBackup(
 ): Promise<BackupExportResult> {
   const { tracks, onProgress } = options;
   const dataRoot = getDataRoot();
+  // v2.33：逐轨条目/字节/耗时（只读报告，失败不影响导出）
+  const reporter = createExportReporter();
 
   // 用 repository 接口拉取数据（monorepo workspace 可直接 import database）
   const conversationsRepo = createConversationRepository(deps.db);
@@ -90,7 +64,6 @@ export async function exportBackup(
   const documentsRepo = createDocumentRepository(deps.db);
   const chunksRepo = createChunkRepository(deps.db);
   const settingsRepo = createSettingsRepository(deps.db);
-  const attachmentsRepo = createAttachmentRepository(deps.db);
   const skillStateRepo = createSkillStateRepository(deps.db);
   const emotionStateRepo = createEmotionStateRepository(deps.db);
   const emotionEventRepo = createEmotionEventRepository(deps.db);
@@ -126,6 +99,11 @@ export async function exportBackup(
     manifestPartial.conversations.branchEventCount = branchEvents.count;
     manifestPartial.conversations.branchEventsTruncated = branchEvents.truncated;
     manifestPartial.conversations.entryCount = convs.length;
+    reporter.record(
+      'conversations',
+      convs.length + branchRows.length + branchEvents.count,
+      payloadBytes(files, ['conversations.json', 'branches.json', 'branch-events.json']),
+    );
     onProgress?.({ track: 'conversations', processed: convs.length, total: convs.length });
   }
 
@@ -168,12 +146,14 @@ export async function exportBackup(
     let docCount = 0;
     for (const kb of kbs) docCount += documentsRepo.listByKnowledgeBase(kb.id).length;
     manifestPartial.knowledge.documentCount = docCount;
+    reporter.record('knowledge', kbs.length + docCount, payloadBytes(files, ['knowledge.json']));
     onProgress?.({ track: 'knowledge', processed: kbs.length, total: kbs.length });
   }
 
   if (tracks.includes('settings')) {
     const raw = settingsRepo.all();
     files['settings.json'] = JSON.stringify(sanitizeSettings(raw), null, 2);
+    reporter.record('settings', 1, payloadBytes(files, ['settings.json']));
     onProgress?.({ track: 'settings', processed: 1, total: 1 });
   }
 
@@ -192,6 +172,7 @@ export async function exportBackup(
     }
     files['skills.json'] = JSON.stringify({ states: skillStateRepo.list(), skills }, null, 2);
     manifestPartial.skills = { files: 'skills.json', entryCount: skills.length };
+    reporter.record('skills', skills.length, payloadBytes(files, ['skills.json']));
     onProgress?.({ track: 'skills', processed: skills.length, total: skills.length });
   }
 
@@ -199,7 +180,22 @@ export async function exportBackup(
     // v0.7 M4：任务轨——task_runs + task_steps 全量序列化（截图附件 id 引用 attachments 表，独立于 attachments 轨）
     const serialized = serializeTasksTrack(deps.db);
     files['tasks.json'] = JSON.stringify(serialized, null, 2);
-    manifestPartial.tasks = { files: 'tasks.json', entryCount: serialized.length };
+    // v2.32：协作运行与角色交接随 tasks 轨（v7 归档缺文件，恢复端按空数组处理）
+    const agentRuns = serializeAgentRunsTrack(deps.db);
+    const agentHandoffs = serializeAgentHandoffsTrack(deps.db);
+    files['agentRuns.json'] = JSON.stringify(agentRuns, null, 2);
+    files['agentHandoffs.json'] = JSON.stringify(agentHandoffs, null, 2);
+    manifestPartial.tasks = {
+      files: 'tasks.json',
+      entryCount: serialized.length,
+      agentRunCount: agentRuns.length,
+      agentHandoffCount: agentHandoffs.length,
+    };
+    reporter.record(
+      'tasks',
+      serialized.length + agentRuns.length + agentHandoffs.length,
+      payloadBytes(files, ['tasks.json', 'agentRuns.json', 'agentHandoffs.json']),
+    );
     onProgress?.({ track: 'tasks', processed: serialized.length, total: serialized.length });
   }
 
@@ -217,6 +213,7 @@ export async function exportBackup(
     }));
     files['emotion.json'] = JSON.stringify(records, null, 2);
     manifestPartial.emotion = { files: 'emotion.json', entryCount: records.length };
+    reporter.record('emotion', records.length, payloadBytes(files, ['emotion.json']));
     onProgress?.({ track: 'emotion', processed: records.length, total: records.length });
   }
 
@@ -226,37 +223,26 @@ export async function exportBackup(
     const payload = serializeEventsTrack(deps.db);
     Object.assign(files, payload.files);
     manifestPartial.events = payload.manifest;
+    reporter.record('events', payload.total, payloadBytes(files, Object.keys(payload.files)));
     onProgress?.({ track: 'events', processed: payload.total, total: payload.total });
   }
 
   // 2. 附件：元数据 JSON + 二进制（可选）
   const attachmentsToPack: Array<{ name: string; data: Buffer }> = [];
   if (tracks.includes('attachments')) {
-    const atts = attachmentsRepo.list();
-    const attDir = path.join(dataRoot, 'attachments');
-    let totalBytes = 0;
-    const serializedAtts = [];
-    for (const att of atts) {
-      serializedAtts.push({
-        id: att.id,
-        filename: att.filename,
-        mimeType: att.mime_type,
-        byteSize: att.byte_size,
-        storagePath: att.storage_path,
-        contentHash: att.content_hash,
-        createdAt: att.created_at,
-      });
-      const filePath = path.join(attDir, att.storage_path);
-      if (fs.existsSync(filePath)) {
-        const buf = fs.readFileSync(filePath);
-        attachmentsToPack.push({ name: `attachments/${att.storage_path}`, data: buf });
-        totalBytes += buf.length;
-      }
-    }
-    files['attachments.json'] = JSON.stringify(serializedAtts, null, 2);
-    manifestPartial.attachments.entryCount = attachmentsToPack.length;
-    manifestPartial.attachments.totalBytes = totalBytes;
-    onProgress?.({ track: 'attachments', processed: attachmentsToPack.length, total: atts.length });
+    // v2.33：元数据 + refs.json + 已存在文件（旧归档缺 refs 由恢复端回填补齐）
+    const track = serializeAttachmentsTrack(deps.db, dataRoot);
+    Object.assign(files, track.files);
+    attachmentsToPack.push(...track.binaries);
+    manifestPartial.attachments.entryCount = track.entryCount;
+    manifestPartial.attachments.totalBytes = track.totalBytes;
+    manifestPartial.attachments.refCount = track.refCount;
+    reporter.record(
+      'attachments',
+      track.entryCount,
+      track.totalBytes + payloadBytes(files, ['attachments.json', 'refs.json']),
+    );
+    onProgress?.({ track: 'attachments', processed: track.entryCount, total: track.totalCount });
   }
 
   // 3. 打包成 tar.gz
@@ -268,19 +254,23 @@ export async function exportBackup(
     tracks: manifestPartial,
   });
 
-  const archive = await packTarGz(files, attachmentsToPack, manifest);
+  const packed = await packTarGz(files, attachmentsToPack, manifest);
 
-  if (archive.length > BACKUP_MAX_ARCHIVE_BYTES) {
+  // 上限按加密前的归档大小判断（加密在整包缓冲上完成，不引入流式依赖）
+  if (packed.length > BACKUP_MAX_ARCHIVE_BYTES) {
     throw new ApiError(
       'VALIDATION_ERROR',
-      `归档大小 ${(archive.length / 1024 / 1024).toFixed(1)}MB 超过上限 ${BACKUP_MAX_ARCHIVE_BYTES / 1024 / 1024}MB，请分批导出`,
+      `归档大小 ${(packed.length / 1024 / 1024).toFixed(1)}MB 超过上限 ${BACKUP_MAX_ARCHIVE_BYTES / 1024 / 1024}MB，请分批导出`,
     );
   }
+
+  const encrypted = typeof options.password === 'string' && options.password.length > 0;
+  const archive = encrypted ? sealArchive(packed, options.password!) : packed;
 
   if (options.outputPath) {
     fs.mkdirSync(path.dirname(options.outputPath), { recursive: true });
     fs.writeFileSync(options.outputPath, archive);
   }
 
-  return { archive, manifest, size: archive.length };
+  return { archive, manifest, size: archive.length, encrypted, report: reporter.finish(archive.length, encrypted) };
 }

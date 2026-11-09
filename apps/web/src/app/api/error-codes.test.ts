@@ -30,6 +30,8 @@ describe('API 错误码一致性（TR-33.1）', () => {
       ['DIAGNOSTICS_TIMEOUT', 503],
       ['CONTENT_PACK_FETCH_FAILED', 502],
       ['CONTENT_PACK_HASH_MISMATCH', 409],
+      ['BACKUP_PASSWORD_REQUIRED', 422],
+      ['BACKUP_PASSWORD_INVALID', 422],
       ['INTERNAL_ERROR', 500],
     ];
     // 另含 422/501×2 三个补充码

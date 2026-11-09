@@ -8,15 +8,19 @@ import {
   type BackupManifest,
   type BackupPrecheck,
 } from '@wbfm/shared/backup';
-import { extractArchive } from './restore-archive';
+import { extractArchiveFull } from './restore-archive';
 import { hasRedactedPlaceholder } from './restore-track-select';
+import { buildPrecheckVerification } from './portability/restore-verification';
 
 /**
  * 预检查：先于正式恢复调用，告知兼容性与将导入多少条目。
  * 版本不兼容时 compatible=false；settings 有 [REDACTED] 值或备份含 VRM 引用时给 warnings。
  */
-export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrecheck> {
-  const { manifest, files } = await extractArchive(archiveBuffer);
+export async function precheckBackup(
+  archiveBuffer: Buffer,
+  options: { password?: string } = {},
+): Promise<BackupPrecheck> {
+  const { manifest, files, binaries } = await extractArchiveFull(archiveBuffer, options.password);
   const warnings: string[] = [];
 
   if (manifest.backupSchemaVersion > CURRENT_BACKUP_SCHEMA_VERSION) {
@@ -64,7 +68,11 @@ export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrech
       meetingActionItems: m.tracks.events?.meetingActionItemCount ?? 0,
       branches: m.tracks.conversations.branchCount ?? 0,
       branchEvents: m.tracks.conversations.branchEventCount ?? 0,
+      agentRuns: m.tracks.tasks?.agentRunCount ?? 0,
+      agentHandoffs: m.tracks.tasks?.agentHandoffCount ?? 0,
     },
     warnings,
+    // v2.33：预检为只读——写入/跳过为 0，但可提前提示归档内缺失的附件
+    verification: buildPrecheckVerification(m, files, binaries),
   });
 }

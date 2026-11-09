@@ -137,6 +137,16 @@ export const API = {
   documentCompare: '/api/documents/compare',
   attachments: '/api/attachments',
   attachment: (id: string) => `/api/attachments/${id}`,
+  /** v2.32：产物清单与批量打包 */
+  artifacts: '/api/artifacts',
+  artifactsExport: '/api/artifacts/export',
+  /** v2.32：存储占用统计与孤儿附件回收 */
+  storageUsage: '/api/storage/usage',
+  storageOrphansScan: '/api/storage/orphans/scan',
+  storageOrphansTrash: '/api/storage/orphans/trash',
+  storageTrash: '/api/storage/trash',
+  storageTrashRestore: '/api/storage/trash/restore',
+  storageTrashPurge: '/api/storage/trash/purge',
   memories: '/api/memories',
   memory: (id: string) => `/api/memories/${id}`,
   memoryClear: '/api/memories/clear',

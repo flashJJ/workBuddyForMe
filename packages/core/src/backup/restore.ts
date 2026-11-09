@@ -1,14 +1,22 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import {
   CURRENT_BACKUP_SCHEMA_VERSION,
   type BackupTrack,
   type BackupProgressEvent,
 } from '@wbfm/shared/backup';
 import type { ServiceDeps } from '../services/base/deps';
-import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
-import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
+import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState } from './restore-ops';
+import { restoreTasks, type TaskTrackEntry } from './portability/restore-tasks-track';
+import type { SkillsTrackPayload } from './portability/restore-post-write';
+import { finalizeRestore } from './portability/restore-finalize';
+import { buildRestoreVerification } from './portability/restore-verification';
+import {
+  backfillTaskAgentRunIds,
+  readAgentHandoffsPayload,
+  readAgentRunsPayload,
+  restoreAgentHandoffs,
+  restoreAgentRuns,
+} from './portability/restore-agent-runs';
 import { emptyCounts, type BackupRestoreResult } from './export-types';
 import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
@@ -33,26 +41,24 @@ import {
   readCardsTrackPayload,
   restoreCharacterCards,
 } from './restore-cards';
+import {
+  readAttachmentRefsPayload,
+  restoreAttachmentRefs,
+} from './portability/restore-attachment-refs';
 import { determineTracks } from './restore-track-select';
 import { extractArchiveFull } from './restore-archive';
-import { createScheduledTaskRepository } from '@wbfm/database';
-import { computeNextRunMs } from '../scheduler/next-run';
-import { ensureSeedData, migrateLegacySystemPrompts } from '../services/base/seed';
+import { ensureSeedData } from '../services/base/seed';
 
 export interface BackupRestoreOptions {
   /** 指定恢复轨道；不传则恢复 manifest 中有数据的全部轨道 */
   tracks?: BackupTrack[];
+  /** v2.33：加密归档口令（未加密归档忽略） */
+  password?: string;
   /** 外部进度回调 */
   onProgress?: (ev: BackupProgressEvent) => void;
 }
 
 export type { BackupRestoreResult } from './export-types';
-
-/** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
-interface SkillsTrackPayload {
-  states?: SkillStateEntry[];
-  skills?: Array<{ name: string; skillJson: string }>;
-}
 
 /** 正式恢复：事务包裹 DB 写入，附件二进制在事务外落盘 */
 export async function restoreBackup(
@@ -60,7 +66,7 @@ export async function restoreBackup(
   archiveBuffer: Buffer,
   options: BackupRestoreOptions = {},
 ): Promise<BackupRestoreResult> {
-  const { manifest, files, binaries } = await extractArchiveFull(archiveBuffer);
+  const { manifest, files, binaries } = await extractArchiveFull(archiveBuffer, options.password);
 
   if (manifest.backupSchemaVersion > CURRENT_BACKUP_SCHEMA_VERSION) {
     throw new ApiError('VALIDATION_ERROR', `备份 schema 版本 ${manifest.backupSchemaVersion} 高于当前支持的 ${CURRENT_BACKUP_SCHEMA_VERSION}，请升级应用后再恢复`);
@@ -117,7 +123,7 @@ export async function restoreBackup(
 
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
-    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings'> = { imported: emptyCounts(), skipped: emptyCounts() };
+    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings' | 'verification'> = { imported: emptyCounts(), skipped: emptyCounts() };
 
     // v1.8：卡先于助手机行恢复，使 card_id 引用恢复后即对上
     if (cardRows.length > 0) {
@@ -156,6 +162,15 @@ export async function restoreBackup(
     if (tracksToRestore.includes('attachments') && files.has('attachments.json')) {
       const { imported, skipped } = restoreAttachmentsMeta(deps.db, files.get('attachments.json')!);
       result.imported.attachments = imported; result.skipped.attachments = skipped;
+      // v2.33：引用清单在消息与附件行之后恢复（旧归档缺文件由事务外回填补齐）
+      if (files.has('refs.json')) {
+        const refCounts = restoreAttachmentRefs(
+          deps.db,
+          readAttachmentRefsPayload(files.get('refs.json')!),
+        );
+        result.imported.attachmentRefs = refCounts.imported;
+        result.skipped.attachmentRefs = refCounts.skipped;
+      }
       onProgress?.({ track: 'attachments', processed: imported, total: manifest.tracks.attachments.entryCount });
     }
 
@@ -171,9 +186,20 @@ export async function restoreBackup(
       } catch {
         throw new ApiError('VALIDATION_ERROR', 'tasks.json 解析失败，归档可能已损坏');
       }
+      // v2.32 顺序：runs → handoffs → task_runs/task_steps 回填（v7 归档缺文件按空数组）
+      const agentRuns = readAgentRunsPayload(files.get('agentRuns.json'));
+      const agentHandoffs = readAgentHandoffsPayload(files.get('agentHandoffs.json'));
+      const runCounts = restoreAgentRuns(deps.db, agentRuns);
+      const handoffCounts = restoreAgentHandoffs(deps.db, agentHandoffs);
+      result.imported.agentRuns = runCounts.imported;
+      result.skipped.agentRuns = runCounts.skipped;
+      result.imported.agentHandoffs = handoffCounts.imported;
+      result.skipped.agentHandoffs = handoffCounts.skipped;
+
       const { imported, skipped } = restoreTasks(deps.db, taskPayload);
       result.imported.tasks = imported;
       result.skipped.tasks = skipped;
+      backfillTaskAgentRunIds(deps.db, taskPayload);
       onProgress?.({ track: 'tasks', processed: imported + skipped, total: manifest.tracks.tasks?.entryCount ?? taskPayload.length });
     }
 
@@ -241,56 +267,33 @@ export async function restoreBackup(
     return result;
   }).immediate();
 
-  // v1.8：旧档（无 card_id 的助手行）恢复后补跑提示词迁移；已选卡助手天然跳过
-  migrateLegacySystemPrompts(deps.db, { force: true });
+  // v2.33：事务外收尾（提示词迁移/附件落盘/旧档回填/技能落盘/提醒重排/VRM 提示）
+  warnings.push(
+    ...finalizeRestore({
+      db: deps.db,
+      manifest,
+      files,
+      binaries,
+      tracksToRestore,
+      skillsPayload,
+      imported: txResult.imported,
+      skipped: txResult.skipped,
+      restoredVrmRefs,
+      ...(onProgress ? { onProgress } : {}),
+    }),
+  );
 
-  // --- 事务外：附件二进制落盘 ---
-  if (tracksToRestore.includes('attachments') && binaries.length > 0) {
-    const attDir = path.join(getDataRoot(), 'attachments');
-    fs.mkdirSync(attDir, { recursive: true });
-    for (const bin of binaries) {
-      const destPath = path.join(attDir, bin.name.replace(/^attachments\//, ''));
-      fs.writeFileSync(destPath, bin.data);
-    }
-  }
+  // v2.33：只读核对（声明 vs 写入/跳过 + 附件缺失 + 未引用计数），差异只告警不阻断
+  const verification = buildRestoreVerification({
+    manifest,
+    files,
+    binaries,
+    db: deps.db,
+    imported: txResult.imported,
+    skipped: txResult.skipped,
+  });
 
-  // --- 事务外：技能文件夹 skill.json 落盘（同名文件夹已存在则保留本机版本） ---
-  if (tracksToRestore.includes('skills') && skillsPayload?.skills?.length) {
-    const skillsDir = path.join(getDataRoot(), 'skills');
-    fs.mkdirSync(skillsDir, { recursive: true });
-    const total = manifest.tracks.skills?.entryCount ?? skillsPayload.skills.length;
-    for (const sk of skillsPayload.skills) {
-      const folder = path.join(skillsDir, sk.name);
-      if (fs.existsSync(folder)) {
-        // 不覆盖：避免备份旧版本回滚用户对技能的修改
-        txResult.skipped.skills++;
-      } else {
-        fs.mkdirSync(folder, { recursive: true });
-        fs.writeFileSync(path.join(folder, 'skill.json'), sk.skillJson);
-        txResult.imported.skills++;
-      }
-      onProgress?.({ track: 'skills', processed: txResult.imported.skills + txResult.skipped.skills, total });
-    }
-  }
-
-  // --- 事务外：events 轨恢复后统一重排启用提醒（防备份时刻过期/未来漂移） ---
-  if (tracksToRestore.includes('events') && files.has('events.json')) {
-    try {
-      createScheduledTaskRepository(deps.db, { computeNextRunMs }).recomputeEnabled();
-    } catch (error) {
-      // 重排失败不判定恢复失败：提醒行已入库，下条编辑/tick 会自然纠偏
-      console.warn('[backup] 提醒时刻重排失败', error);
-    }
-  }
-
-  // --- v2.0 M5：VRM 引用悬空提示（二进制按红线从不入备份） ---
-  if (restoredVrmRefs.length > 0) {
-    warnings.push(
-      `已恢复 ${restoredVrmRefs.length} 个 VRM 形象引用（${restoredVrmRefs.join('、')}），但 .vrm 模型文件不随备份携带；请重新导入对应模型文件后形象才能上舞台`,
-    );
-  }
-
-  return { manifest, ...txResult, warnings };
+  return { manifest, ...txResult, warnings, verification };
 }
 
 export { precheckBackup } from './restore-precheck';
