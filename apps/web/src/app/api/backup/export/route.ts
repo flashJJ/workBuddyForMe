@@ -1,5 +1,6 @@
 import { backupExportRequestSchema } from '@wbfm/shared/backup';
 import { exportBackup } from '@wbfm/core/backup';
+import { createSettingsRepository } from '@wbfm/database';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { parseBody, readJsonBody } from '@/lib/server/validation';
 
@@ -9,9 +10,17 @@ export const dynamic = 'force-dynamic';
 export const POST = defineRoute(async ({ request, services }) => {
   const input = parseBody(backupExportRequestSchema, await readJsonBody(request));
   const deps = { db: services.db, cipher: services.cipher };
-  const { archive, manifest, encrypted } = await exportBackup(deps, {
+  const { archive, manifest, encrypted, report } = await exportBackup(deps, {
     tracks: input.tracks,
     password: input.password,
+  });
+
+  // v2.33：最近一次导出摘要（不含路径与密码），供设置页「最近备份」卡片读取
+  createSettingsRepository(services.db).setJson('backup.lastExport', {
+    at: manifest.createdAt,
+    encrypted,
+    totalBytes: report.totalBytes,
+    trackCount: report.tracks.length,
   });
 
   const suffix = encrypted ? '.tar.gz.enc' : '.tar.gz';
@@ -21,6 +30,7 @@ export const POST = defineRoute(async ({ request, services }) => {
       'content-type': encrypted ? 'application/octet-stream' : 'application/gzip',
       'content-disposition': `attachment; filename="${filename}"`,
       'x-backup-tracks': input.tracks.join(','),
+      'x-backup-report': encodeURIComponent(JSON.stringify(report)),
       ...(encrypted ? { 'x-backup-encrypted': '1' } : {}),
     },
   });

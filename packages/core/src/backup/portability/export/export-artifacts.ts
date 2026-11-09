@@ -10,7 +10,7 @@ import { createAttachmentRepository, type AttachmentRow } from '@wbfm/database';
 import type { DatabaseInstance } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
 import { ARTIFACT_MIME_BY_FORMAT } from '@wbfm/shared/constants';
-import { packEntries } from '../export-archive';
+import { packEntries } from '../../export-archive';
 
 export const ARTIFACT_BATCH_MAX_COUNT = 100;
 export const ARTIFACT_BATCH_MAX_BYTES = 200 * 1024 * 1024;

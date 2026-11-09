@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { BackupTrack, BackupPrecheck } from '@wbfm/shared/backup';
+import type { BackupTrack, BackupPrecheck, BackupVerification } from '@wbfm/shared/backup';
 import type { BackupRestoreResult } from '@wbfm/core/backup';
 import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
+import { BackupVerificationCard } from './backup-verification-card';
 import {
   defaultRestoreTracks,
   precheckCountRows,
@@ -35,6 +36,8 @@ export function BackupRestoreSection() {
   const [password, setPassword] = React.useState('');
   const [needsPassword, setNeedsPassword] = React.useState(false);
   const [passwordError, setPasswordError] = React.useState<string | null>(null);
+  // v2.33：恢复核对（声明 vs 写入/跳过 + 缺失项），成功恢复后保留展示
+  const [verification, setVerification] = React.useState<BackupVerification | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const reset = () => {
@@ -91,6 +94,7 @@ export function BackupRestoreSection() {
       if (password) form.append('password', password);
       const response = await apiUpload<RestoreResponse>('/api/backup/restore', form);
       toast.success(summarizeRestore(response.result, t));
+      setVerification(response.result.verification);
       if (response.result.imported.documents > 0) {
         toast.info(t('settingsBackup.reindexHint', { count: response.result.imported.documents }));
       }
@@ -261,6 +265,8 @@ export function BackupRestoreSection() {
           </div>
         </div>
       )}
+
+      {verification && <BackupVerificationCard verification={verification} />}
     </div>
   );
 }

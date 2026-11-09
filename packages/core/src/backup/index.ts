@@ -19,19 +19,21 @@ export {
   ARTIFACT_BATCH_MAX_COUNT,
   type ArtifactBatchManifest,
   type ArtifactBatchResult,
-} from './portability/export-artifacts';
+} from './portability/export/export-artifacts';
 export {
   getStorageUsage,
   resetStorageUsageCache,
-  scanOrphanAttachments,
   trashOrphanAttachments,
   type StorageBucket,
   type StorageUsage,
+  type TrashOrphansResult,
+} from './portability/storage-usage';
+export {
+  scanOrphanAttachments,
   type OrphanFileCandidate,
   type UnreferencedAttachment,
   type OrphanScanResult,
-  type TrashOrphansResult,
-} from './portability/storage-usage';
+} from './portability/orphan-scan';
 export {
   listTrash,
   restoreFromTrash,

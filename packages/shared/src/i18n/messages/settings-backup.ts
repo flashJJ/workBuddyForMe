@@ -1,5 +1,8 @@
 /** settingsBackup 命名空间：设置页数据备份与恢复面板 */
+import { zhBackupReportMessages, enBackupReportMessages } from './settings-backup-report';
+
 export const zhSettingsBackup = {
+  ...zhBackupReportMessages,
   title: '数据备份与恢复',
   descriptionLead: '导出本地数据到 ',
   descriptionTail: ' 归档，可跨机器迁移或作为备份恢复。知识库文档恢复后需重新索引向量。',
@@ -146,6 +149,7 @@ export const zhSettingsBackup = {
 };
 
 export const enSettingsBackup = {
+  ...enBackupReportMessages,
   title: 'Backup & restore',
   descriptionLead: 'Export local data to a ',
   descriptionTail:

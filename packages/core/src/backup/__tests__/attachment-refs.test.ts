@@ -12,13 +12,13 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { createAttachmentService } from '../services/assistant/attachment-service';
-import { backfillAttachmentRefs } from '../services/assistant/attachment-refs-backfill';
-import { createWebCipher } from '../secrets/cipher';
-import { exportBackup } from './export';
-import { packTarGz } from './export-archive';
-import { extractArchive, extractArchiveFull } from './restore-archive';
-import { restoreBackup } from './restore';
+import { createAttachmentService } from '../../services/assistant/attachment-service';
+import { backfillAttachmentRefs } from '../../services/assistant/attachment-refs-backfill';
+import { createWebCipher } from '../../secrets/cipher';
+import { exportBackup } from '../export';
+import { packTarGz } from '../export-archive';
+import { extractArchive, extractArchiveFull } from '../restore-archive';
+import { restoreBackup } from '../restore';
 
 let db: DatabaseInstance;
 let tempRoot: string;

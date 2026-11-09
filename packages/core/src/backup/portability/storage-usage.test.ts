@@ -11,12 +11,8 @@ import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { ensureDataDirs, getDataDir, resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '@wbfm/core/secrets';
 import { createAttachmentService } from '@wbfm/core/services';
-import {
-  getStorageUsage,
-  resetStorageUsageCache,
-  scanOrphanAttachments,
-  trashOrphanAttachments,
-} from './storage-usage';
+import { getStorageUsage, resetStorageUsageCache, trashOrphanAttachments } from './storage-usage';
+import { scanOrphanAttachments } from './orphan-scan';
 import { listTrash, purgeTrash, restoreFromTrash } from './trash-store';
 
 describe('storage usage & orphan cleanup（v2.32 M4）', () => {

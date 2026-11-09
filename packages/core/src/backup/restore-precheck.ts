@@ -8,8 +8,9 @@ import {
   type BackupManifest,
   type BackupPrecheck,
 } from '@wbfm/shared/backup';
-import { extractArchive } from './restore-archive';
+import { extractArchiveFull } from './restore-archive';
 import { hasRedactedPlaceholder } from './restore-track-select';
+import { buildPrecheckVerification } from './portability/restore-verification';
 
 /**
  * 预检查：先于正式恢复调用，告知兼容性与将导入多少条目。
@@ -19,7 +20,7 @@ export async function precheckBackup(
   archiveBuffer: Buffer,
   options: { password?: string } = {},
 ): Promise<BackupPrecheck> {
-  const { manifest, files } = await extractArchive(archiveBuffer, options.password);
+  const { manifest, files, binaries } = await extractArchiveFull(archiveBuffer, options.password);
   const warnings: string[] = [];
 
   if (manifest.backupSchemaVersion > CURRENT_BACKUP_SCHEMA_VERSION) {
@@ -71,5 +72,7 @@ export async function precheckBackup(
       agentHandoffs: m.tracks.tasks?.agentHandoffCount ?? 0,
     },
     warnings,
+    // v2.33：预检为只读——写入/跳过为 0，但可提前提示归档内缺失的附件
+    verification: buildPrecheckVerification(m, files, binaries),
   });
 }

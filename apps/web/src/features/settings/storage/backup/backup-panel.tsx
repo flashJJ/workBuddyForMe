@@ -1,15 +1,37 @@
 'use client';
 
 import * as React from 'react';
-import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
+import { apiGet, ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { BackupTrack } from '@wbfm/shared/backup';
+import {
+  backupExportReportSchema,
+  type BackupExportReport,
+  type BackupLastExport,
+  type BackupTrack,
+} from '@wbfm/shared/backup';
 import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
 import { BackupRestoreSection } from './backup-restore-section';
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function parseReportHeader(raw: string | null): BackupExportReport | null {
+  if (!raw) return null;
+  try {
+    const parsed = backupExportReportSchema.safeParse(JSON.parse(decodeURIComponent(raw)));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
 
 /** 备份面板：导出（勾选轨道）+ 恢复（v2.32 起为两步：预检确认 → 执行） */
 export function BackupPanel() {
@@ -20,6 +42,21 @@ export function BackupPanel() {
   const [encrypt, setEncrypt] = React.useState(false);
   const [password, setPassword] = React.useState('');
   const [passwordConfirm, setPasswordConfirm] = React.useState('');
+  // v2.33：导出核对报告（本次）+ 最近一次导出摘要（设置项，跨会话保留）
+  const [report, setReport] = React.useState<BackupExportReport | null>(null);
+  const [lastExport, setLastExport] = React.useState<BackupLastExport | null>(null);
+
+  React.useEffect(() => {
+    let alive = true;
+    apiGet<{ lastExport: BackupLastExport | null }>('/api/backup/last-export')
+      .then((data) => {
+        if (alive) setLastExport(data.lastExport);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   /** v2.33：密码长度与二次确认前端校验（服务端仍按 8–128 兜底） */
   const passwordError = (): string | null => {
@@ -62,6 +99,7 @@ export function BackupPanel() {
           res.status,
         );
       }
+      const nextReport = parseReportHeader(res.headers.get('x-backup-report'));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -73,6 +111,13 @@ export function BackupPanel() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      setReport(nextReport);
+      setLastExport({
+        at: new Date().toISOString(),
+        encrypted: nextReport?.encrypted ?? encrypt,
+        totalBytes: nextReport?.totalBytes ?? blob.size,
+        trackCount: nextReport?.tracks.length ?? selected.length,
+      });
       if (encrypt) {
         setPassword('');
         setPasswordConfirm('');
@@ -167,6 +212,39 @@ export function BackupPanel() {
           </Button>
         </div>
       </div>
+
+      {(lastExport || report) && (
+        <div
+          className="space-y-1 rounded-md border bg-muted/30 p-3"
+          data-testid="backup-export-summary"
+        >
+          <p className="text-sm font-medium">{t('settingsBackup.lastExportTitle')}</p>
+          {lastExport && (
+            <p className="text-xs text-muted-foreground">
+              {t('settingsBackup.lastExportSummary', {
+                time: new Date(lastExport.at).toLocaleString(),
+                size: formatBytes(lastExport.totalBytes),
+                tracks: lastExport.trackCount,
+              })}
+              {lastExport.encrypted ? ` · ${t('settingsBackup.lastExportEncrypted')}` : ''}
+            </p>
+          )}
+          {report && (
+            <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+              {report.tracks.map((row) => (
+                <li key={row.track}>
+                  {t('settingsBackup.exportTrackRow', {
+                    label: t(TRACK_KEYS[row.track].label),
+                    entries: row.entryCount,
+                    size: formatBytes(row.bytes),
+                    ms: row.elapsedMs,
+                  })}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <BackupRestoreSection />
     </section>

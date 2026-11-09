@@ -7,12 +7,9 @@ import type { ServiceDeps } from '../services/base/deps';
 import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState } from './restore-ops';
 import { restoreTasks, type TaskTrackEntry } from './portability/restore-tasks-track';
-import {
-  recomputeEnabledSchedules,
-  writeAttachmentBinaries,
-  writeSkillFolders,
-  type SkillsTrackPayload,
-} from './portability/restore-post-write';
+import type { SkillsTrackPayload } from './portability/restore-post-write';
+import { finalizeRestore } from './portability/restore-finalize';
+import { buildRestoreVerification } from './portability/restore-verification';
 import {
   backfillTaskAgentRunIds,
   readAgentHandoffsPayload,
@@ -48,10 +45,9 @@ import {
   readAttachmentRefsPayload,
   restoreAttachmentRefs,
 } from './portability/restore-attachment-refs';
-import { backfillAttachmentRefs } from '../services/assistant/attachment-refs-backfill';
 import { determineTracks } from './restore-track-select';
 import { extractArchiveFull } from './restore-archive';
-import { ensureSeedData, migrateLegacySystemPrompts } from '../services/base/seed';
+import { ensureSeedData } from '../services/base/seed';
 
 export interface BackupRestoreOptions {
   /** 指定恢复轨道；不传则恢复 manifest 中有数据的全部轨道 */
@@ -127,7 +123,7 @@ export async function restoreBackup(
 
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
-    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings'> = { imported: emptyCounts(), skipped: emptyCounts() };
+    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings' | 'verification'> = { imported: emptyCounts(), skipped: emptyCounts() };
 
     // v1.8：卡先于助手机行恢复，使 card_id 引用恢复后即对上
     if (cardRows.length > 0) {
@@ -271,51 +267,33 @@ export async function restoreBackup(
     return result;
   }).immediate();
 
-  // v1.8：旧档（无 card_id 的助手行）恢复后补跑提示词迁移；已选卡助手天然跳过
-  migrateLegacySystemPrompts(deps.db, { force: true });
+  // v2.33：事务外收尾（提示词迁移/附件落盘/旧档回填/技能落盘/提醒重排/VRM 提示）
+  warnings.push(
+    ...finalizeRestore({
+      db: deps.db,
+      manifest,
+      files,
+      binaries,
+      tracksToRestore,
+      skillsPayload,
+      imported: txResult.imported,
+      skipped: txResult.skipped,
+      restoredVrmRefs,
+      ...(onProgress ? { onProgress } : {}),
+    }),
+  );
 
-  // --- 事务外：附件二进制落盘 ---
-  if (tracksToRestore.includes('attachments') && binaries.length > 0) {
-    writeAttachmentBinaries(binaries);
-  }
+  // v2.33：只读核对（声明 vs 写入/跳过 + 附件缺失 + 未引用计数），差异只告警不阻断
+  const verification = buildRestoreVerification({
+    manifest,
+    files,
+    binaries,
+    db: deps.db,
+    imported: txResult.imported,
+    skipped: txResult.skipped,
+  });
 
-  // v2.33：旧归档缺 refs.json 时按现有消息与产物立即回填（幂等）
-  if (
-    tracksToRestore.includes('attachments') &&
-    files.has('attachments.json') &&
-    !files.has('refs.json')
-  ) {
-    try {
-      const backfill = backfillAttachmentRefs(deps.db, { force: true });
-      if (backfill.inserted > 0) {
-        warnings.push(`旧归档未含引用清单，已按现有消息与产物回填 ${backfill.inserted} 条附件引用`);
-      }
-    } catch (error) {
-      warnings.push(`旧归档附件引用回填失败：${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  // --- 事务外：技能文件夹 skill.json 落盘（同名文件夹已存在则保留本机版本） ---
-  if (tracksToRestore.includes('skills') && skillsPayload?.skills?.length) {
-    const total = manifest.tracks.skills?.entryCount ?? skillsPayload.skills.length;
-    const counts = writeSkillFolders(skillsPayload, total, onProgress);
-    txResult.imported.skills += counts.imported;
-    txResult.skipped.skills += counts.skipped;
-  }
-
-  // --- 事务外：events 轨恢复后统一重排启用提醒（防备份时刻过期/未来漂移） ---
-  if (tracksToRestore.includes('events') && files.has('events.json')) {
-    recomputeEnabledSchedules(deps.db);
-  }
-
-  // --- v2.0 M5：VRM 引用悬空提示（二进制按红线从不入备份） ---
-  if (restoredVrmRefs.length > 0) {
-    warnings.push(
-      `已恢复 ${restoredVrmRefs.length} 个 VRM 形象引用（${restoredVrmRefs.join('、')}），但 .vrm 模型文件不随备份携带；请重新导入对应模型文件后形象才能上舞台`,
-    );
-  }
-
-  return { manifest, ...txResult, warnings };
+  return { manifest, ...txResult, warnings, verification };
 }
 
 export { precheckBackup } from './restore-precheck';

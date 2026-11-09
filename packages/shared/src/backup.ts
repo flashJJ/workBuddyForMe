@@ -129,6 +129,60 @@ export const backupExportRequestSchema = z.object({
 });
 export type BackupExportRequest = z.infer<typeof backupExportRequestSchema>;
 
+/** v2.33：导出核对报告的单轨条目（条目数 / 负载字节 / 该轨耗时） */
+export const backupExportReportTrackSchema = z.object({
+  track: backupTrackSchema,
+  entryCount: z.number().int().min(0),
+  bytes: z.number().int().min(0),
+  elapsedMs: z.number().int().min(0),
+});
+export type BackupExportReportTrack = z.infer<typeof backupExportReportTrackSchema>;
+
+/** v2.33：导出核对报告（frontend 从响应头读取，只做展示） */
+export const backupExportReportSchema = z.object({
+  tracks: z.array(backupExportReportTrackSchema),
+  /** 最终归档字节数（加密时为容器字节） */
+  totalBytes: z.number().int().min(0),
+  elapsedMs: z.number().int().min(0),
+  encrypted: z.boolean(),
+});
+export type BackupExportReport = z.infer<typeof backupExportReportSchema>;
+
+/** v2.33：最近一次导出摘要（设置项 backup.lastExport，不含路径与密码） */
+export const backupLastExportSchema = z.object({
+  at: z.string().datetime(),
+  encrypted: z.boolean(),
+  totalBytes: z.number().int().min(0),
+  trackCount: z.number().int().min(0),
+});
+export type BackupLastExport = z.infer<typeof backupLastExportSchema>;
+
+/** 每轨计数（声明/写入/跳过共用同一结构，口径见 restore-verification） */
+const backupTrackCountsSchema = z.object({
+  conversations: z.number().int().min(0),
+  knowledge: z.number().int().min(0),
+  settings: z.number().int().min(0),
+  attachments: z.number().int().min(0),
+  skills: z.number().int().min(0),
+  tasks: z.number().int().min(0),
+  emotion: z.number().int().min(0),
+  events: z.number().int().min(0),
+});
+
+/** v2.33：恢复核对（manifest 声明 vs 实际写入/跳过 + 附件与引用缺失） */
+export const backupVerificationSchema = z.object({
+  declared: z.array(
+    z.object({ track: backupTrackSchema, entries: z.number().int().min(0) }),
+  ),
+  written: backupTrackCountsSchema,
+  skipped: backupTrackCountsSchema,
+  /** manifest 登记但归档内没有二进制文件的附件（按 storagePath 展示） */
+  missingAttachments: z.array(z.string()),
+  /** 恢复后仍无引用的非产物附件数（只读统计，不阻断恢复） */
+  unreferencedAttachments: z.number().int().min(0),
+});
+export type BackupVerification = z.infer<typeof backupVerificationSchema>;
+
 /** 恢复预检查结果（先于正式恢复调用，告知将导入多少条目） */
 export const backupPrecheckSchema = z.object({
   compatible: z.boolean(),
@@ -169,5 +223,7 @@ export const backupPrecheckSchema = z.object({
     agentHandoffs: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
+  /** v2.33：只读核对（预检阶段写入/跳过均为 0，附件缺失已可提示） */
+  verification: backupVerificationSchema,
 });
 export type BackupPrecheck = z.infer<typeof backupPrecheckSchema>;

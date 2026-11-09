@@ -6,7 +6,7 @@ import zlib from 'node:zlib';
 import tar from 'tar-stream';
 import { backupManifestSchema, type BackupManifest } from '@wbfm/shared/backup';
 import { ApiError } from '@wbfm/shared/errors';
-import { openArchive } from './archive-cipher';
+import { openArchive } from './portability/archive-cipher';
 
 export interface ExtractedArchive {
   manifest: BackupManifest;
