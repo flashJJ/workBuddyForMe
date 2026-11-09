@@ -77,6 +77,21 @@ describe('AudioPlaybackQueue', () => {
     expect(states.at(-1)).toBe('idle');
   });
 
+  it('final 后仍有新帧时保持 speaking，直到新帧播完才 idle', async () => {
+    const states: string[] = [];
+    const player = makePlayer();
+    const q = new AudioPlaybackQueue(player, (s) => states.push(s));
+    q.enqueue(frame({ spoken: 'old', final: true })); // 旧轮 final
+    q.enqueue(frame({ spoken: 'new', final: true })); // 新一轮音频排在后面
+    await flushTicks();
+    player.gate(); // old 播完
+    await flushTicks();
+    expect(states.at(-1)).toBe('speaking');
+    player.gate(); // new 播完
+    await flushTicks();
+    expect(states.at(-1)).toBe('idle');
+  });
+
   it('cancel 清空排队帧、调 cancelAll、回 idle；取消后新入队帧作为新轮次播放', async () => {
     const player = makePlayer();
     const states: string[] = [];

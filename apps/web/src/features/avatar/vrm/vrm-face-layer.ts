@@ -89,8 +89,12 @@ export class VrmFaceLayer {
   applyLipSync(speaking: boolean, getLevel: () => number): void {
     const em = this.vrm.expressionManager;
     if (!em) return;
-    const level = speaking ? Math.min(1, getLevel() * 3.2) : 0;
-    try { em.setValue('aa', level); } catch { /* aa morph 可能不存在 */ }
+    // 以真实播放电平为主：部分场景 speaking 状态会滞后/提前复位，只看它会导致嘴不动。
+    // 电平缺失但仍标记说话时，用低频开合兜底，保证「说话时嘴一定在动」。
+    const level = Math.min(1, getLevel() * 3.2);
+    const fallback = speaking ? 0.18 + 0.12 * Math.sin(performance.now() / 90) : 0;
+    const value = Math.min(1, Math.max(level, fallback));
+    try { em.setValue('aa', value); } catch { /* aa morph 可能不存在 */ }
   }
 
   /** 程序化眨眼（每帧 Step 9） */
