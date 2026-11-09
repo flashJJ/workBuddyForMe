@@ -113,9 +113,13 @@ export const backupManifestSchema = z.object({
 });
 export type BackupManifest = z.infer<typeof backupManifestSchema>;
 
-/** 导出请求体（设置页选择轨道后提交） */
+/** v2.33：归档密码长度约束（导出/预检/恢复共用） */
+export const backupPasswordSchema = z.string().min(8).max(128);
+
+/** 导出请求体（设置页选择轨道后提交；password 可选，提供即加密归档） */
 export const backupExportRequestSchema = z.object({
   tracks: z.array(backupTrackSchema).min(1),
+  password: backupPasswordSchema.optional(),
 });
 export type BackupExportRequest = z.infer<typeof backupExportRequestSchema>;
 

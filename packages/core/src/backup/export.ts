@@ -29,6 +29,7 @@ import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared/errors';
 import { getDataRoot } from '@wbfm/config';
 import { packTarGz } from './export-archive';
+import { sealArchive } from './archive-cipher';
 import { sanitizeSettings } from './export-sanitize';
 import { BACKUP_MAX_ARCHIVE_BYTES } from './export-types';
 import type { BackupExportOptions, BackupExportResult } from './export-types';
@@ -279,19 +280,23 @@ export async function exportBackup(
     tracks: manifestPartial,
   });
 
-  const archive = await packTarGz(files, attachmentsToPack, manifest);
+  const packed = await packTarGz(files, attachmentsToPack, manifest);
 
-  if (archive.length > BACKUP_MAX_ARCHIVE_BYTES) {
+  // 上限按加密前的归档大小判断（加密在整包缓冲上完成，不引入流式依赖）
+  if (packed.length > BACKUP_MAX_ARCHIVE_BYTES) {
     throw new ApiError(
       'VALIDATION_ERROR',
-      `归档大小 ${(archive.length / 1024 / 1024).toFixed(1)}MB 超过上限 ${BACKUP_MAX_ARCHIVE_BYTES / 1024 / 1024}MB，请分批导出`,
+      `归档大小 ${(packed.length / 1024 / 1024).toFixed(1)}MB 超过上限 ${BACKUP_MAX_ARCHIVE_BYTES / 1024 / 1024}MB，请分批导出`,
     );
   }
+
+  const encrypted = typeof options.password === 'string' && options.password.length > 0;
+  const archive = encrypted ? sealArchive(packed, options.password!) : packed;
 
   if (options.outputPath) {
     fs.mkdirSync(path.dirname(options.outputPath), { recursive: true });
     fs.writeFileSync(options.outputPath, archive);
   }
 
-  return { archive, manifest, size: archive.length };
+  return { archive, manifest, size: archive.length, encrypted };
 }

@@ -51,6 +51,8 @@ import { ensureSeedData, migrateLegacySystemPrompts } from '../services/base/see
 export interface BackupRestoreOptions {
   /** 指定恢复轨道；不传则恢复 manifest 中有数据的全部轨道 */
   tracks?: BackupTrack[];
+  /** v2.33：加密归档口令（未加密归档忽略） */
+  password?: string;
   /** 外部进度回调 */
   onProgress?: (ev: BackupProgressEvent) => void;
 }
@@ -63,7 +65,7 @@ export async function restoreBackup(
   archiveBuffer: Buffer,
   options: BackupRestoreOptions = {},
 ): Promise<BackupRestoreResult> {
-  const { manifest, files, binaries } = await extractArchiveFull(archiveBuffer);
+  const { manifest, files, binaries } = await extractArchiveFull(archiveBuffer, options.password);
 
   if (manifest.backupSchemaVersion > CURRENT_BACKUP_SCHEMA_VERSION) {
     throw new ApiError('VALIDATION_ERROR', `备份 schema 版本 ${manifest.backupSchemaVersion} 高于当前支持的 ${CURRENT_BACKUP_SCHEMA_VERSION}，请升级应用后再恢复`);

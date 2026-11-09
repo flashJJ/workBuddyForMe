@@ -5,6 +5,8 @@ export const BACKUP_MAX_ARCHIVE_BYTES = 500 * 1024 * 1024;
 
 export interface BackupExportOptions {
   tracks: BackupTrack[];
+  /** v2.33：可选口令；提供后输出 WBFM-ENC1 加密容器（内层仍是 v8 tar.gz） */
+  password?: string;
   /** 归档落盘路径（不传则返回 Buffer） */
   outputPath?: string;
   /** 外部进度回调（不传则静默） */
@@ -14,8 +16,10 @@ export interface BackupExportOptions {
 export interface BackupExportResult {
   archive: Buffer;
   manifest: BackupManifest;
-  /** 归档字节数 */
+  /** 归档字节数（加密时为容器字节） */
   size: number;
+  /** v2.33：本次导出是否加密 */
+  encrypted: boolean;
 }
 
 /** v2.22：恢复计数字段（导入/跳过按轨统计；类型放共享模块避免主流程超行数） */

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { BackupTrack } from '@wbfm/shared/backup';
@@ -16,6 +17,18 @@ export function BackupPanel() {
   const toast = useToast();
   const [selected, setSelected] = React.useState<BackupTrack[]>(TRACK_ORDER);
   const [exporting, setExporting] = React.useState(false);
+  const [encrypt, setEncrypt] = React.useState(false);
+  const [password, setPassword] = React.useState('');
+  const [passwordConfirm, setPasswordConfirm] = React.useState('');
+
+  /** v2.33：密码长度与二次确认前端校验（服务端仍按 8–128 兜底） */
+  const passwordError = (): string | null => {
+    if (!encrypt) return null;
+    if (password.length < 8) return t('settingsBackup.passwordTooShort');
+    if (password.length > 128) return t('settingsBackup.passwordTooLong');
+    if (password !== passwordConfirm) return t('settingsBackup.passwordMismatch');
+    return null;
+  };
 
   const toggle = (track: BackupTrack) => {
     setSelected((prev) =>
@@ -27,6 +40,11 @@ export function BackupPanel() {
 
   const doExport = async () => {
     if (exportDisabled) return;
+    const invalid = passwordError();
+    if (invalid) {
+      toast.error(invalid);
+      return;
+    }
     setExporting(true);
     try {
       const headers = new Headers(withManagedHeaders().headers);
@@ -34,7 +52,7 @@ export function BackupPanel() {
       const res = await fetch('/api/backup/export', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ tracks: selected }),
+        body: JSON.stringify({ tracks: selected, ...(encrypt ? { password } : {}) }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -55,6 +73,10 @@ export function BackupPanel() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      if (encrypt) {
+        setPassword('');
+        setPasswordConfirm('');
+      }
       toast.success(t('settingsBackup.exported'));
     } catch (error) {
       toast.error(
@@ -99,6 +121,43 @@ export function BackupPanel() {
               </span>
             </label>
           ))}
+        </div>
+        <div className="space-y-2 rounded-md border border-dashed p-2">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-muted-foreground"
+              checked={encrypt}
+              onChange={(event) => setEncrypt(event.target.checked)}
+              disabled={exporting}
+            />
+            {t('settingsBackup.passwordToggle')}
+          </label>
+          {encrypt && (
+            <>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  aria-label={t('settingsBackup.passwordLabel')}
+                  placeholder={t('settingsBackup.passwordLabel')}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={exporting}
+                />
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  aria-label={t('settingsBackup.passwordConfirmLabel')}
+                  placeholder={t('settingsBackup.passwordConfirmLabel')}
+                  value={passwordConfirm}
+                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                  disabled={exporting}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{t('settingsBackup.passwordHint')}</p>
+            </>
+          )}
         </div>
         <div className="flex justify-end">
           <Button type="button" onClick={() => void doExport()} disabled={exportDisabled}>

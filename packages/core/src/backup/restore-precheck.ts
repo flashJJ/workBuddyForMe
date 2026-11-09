@@ -15,8 +15,11 @@ import { hasRedactedPlaceholder } from './restore-track-select';
  * 预检查：先于正式恢复调用，告知兼容性与将导入多少条目。
  * 版本不兼容时 compatible=false；settings 有 [REDACTED] 值或备份含 VRM 引用时给 warnings。
  */
-export async function precheckBackup(archiveBuffer: Buffer): Promise<BackupPrecheck> {
-  const { manifest, files } = await extractArchive(archiveBuffer);
+export async function precheckBackup(
+  archiveBuffer: Buffer,
+  options: { password?: string } = {},
+): Promise<BackupPrecheck> {
+  const { manifest, files } = await extractArchive(archiveBuffer, options.password);
   const warnings: string[] = [];
 
   if (manifest.backupSchemaVersion > CURRENT_BACKUP_SCHEMA_VERSION) {

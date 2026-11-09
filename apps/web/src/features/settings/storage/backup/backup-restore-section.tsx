@@ -4,6 +4,7 @@ import * as React from 'react';
 import { apiUpload, ApiClientError } from '@/lib/api/client';
 import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { BackupTrack, BackupPrecheck } from '@wbfm/shared/backup';
@@ -31,30 +32,50 @@ export function BackupRestoreSection() {
   const [file, setFile] = React.useState<File | null>(null);
   const [precheck, setPrecheck] = React.useState<BackupPrecheck | null>(null);
   const [selected, setSelected] = React.useState<BackupTrack[]>([]);
+  const [password, setPassword] = React.useState('');
+  const [needsPassword, setNeedsPassword] = React.useState(false);
+  const [passwordError, setPasswordError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const reset = () => {
     setFile(null);
     setPrecheck(null);
     setSelected([]);
+    setPassword('');
+    setNeedsPassword(false);
+    setPasswordError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const runPrecheck = async (next: File) => {
+  /** v2.33：加密归档缺少/错误密码时不重置文件，改为就地输入密码重试预检 */
+  const runPrecheck = async (next: File, pwd: string) => {
     setChecking(true);
     setFile(next);
     setPrecheck(null);
+    setPasswordError(null);
     try {
       const form = new FormData();
       form.append('file', next);
+      if (pwd) form.append('password', pwd);
       const result = await apiUpload<BackupPrecheck>('/api/backup/precheck', form);
+      setPassword(pwd);
+      setNeedsPassword(false);
       setPrecheck(result);
       setSelected(defaultRestoreTracks(result));
     } catch (error) {
-      toast.error(
-        error instanceof ApiClientError ? error.message : t('settingsBackup.restoreFailed'),
-      );
-      reset();
+      const code = error instanceof ApiClientError ? error.code : '';
+      if (code === 'BACKUP_PASSWORD_REQUIRED' || code === 'BACKUP_PASSWORD_INVALID') {
+        setPassword('');
+        setNeedsPassword(true);
+        if (code === 'BACKUP_PASSWORD_INVALID') {
+          setPasswordError(t('settingsBackup.passwordInvalid'));
+        }
+      } else {
+        toast.error(
+          error instanceof ApiClientError ? error.message : t('settingsBackup.restoreFailed'),
+        );
+        reset();
+      }
     } finally {
       setChecking(false);
     }
@@ -67,6 +88,7 @@ export function BackupRestoreSection() {
       const form = new FormData();
       form.append('file', file);
       form.append('tracks', JSON.stringify(selected));
+      if (password) form.append('password', password);
       const response = await apiUpload<RestoreResponse>('/api/backup/restore', form);
       toast.success(summarizeRestore(response.result, t));
       if (response.result.imported.documents > 0) {
@@ -100,7 +122,10 @@ export function BackupRestoreSection() {
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const next = event.target.files?.[0];
-    if (next) void runPrecheck(next);
+    setPassword('');
+    setNeedsPassword(false);
+    setPasswordError(null);
+    if (next) void runPrecheck(next, '');
   };
 
   const countRows = precheck ? precheckCountRows(precheck) : [];
@@ -124,6 +149,36 @@ export function BackupRestoreSection() {
         <p className="text-sm text-muted-foreground" role="status">
           {t('settingsBackup.precheck.checking')}
         </p>
+      )}
+
+      {needsPassword && (
+        <div className="space-y-2 rounded-md border bg-muted/30 p-3" data-testid="backup-password">
+          <p className="text-sm font-medium">{t('settingsBackup.encryptedArchiveTitle')}</p>
+          <p className="text-xs text-muted-foreground">
+            {t('settingsBackup.encryptedArchiveHint')}
+          </p>
+          <Input
+            type="password"
+            autoComplete="off"
+            aria-label={t('settingsBackup.passwordInputAria')}
+            placeholder={t('settingsBackup.passwordInputAria')}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={checking || restoring}
+          />
+          {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              onClick={() => {
+                if (file) void runPrecheck(file, password);
+              }}
+              disabled={checking || restoring || password.length < 8}
+            >
+              {t('settingsBackup.passwordSubmit')}
+            </Button>
+          </div>
+        </div>
       )}
 
       {precheck && (

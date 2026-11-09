@@ -45,6 +45,10 @@ export const ERROR_CODES = {
   CONTENT_PACK_FETCH_FAILED: 502,
   /** v2.18 M4：内容包 SHA-256 与清单不一致（上游内容可能已更新） */
   CONTENT_PACK_HASH_MISMATCH: 409,
+  /** v2.33：加密归档未提供密码 */
+  BACKUP_PASSWORD_REQUIRED: 422,
+  /** v2.33：密码错误或加密归档损坏（不区分，避免信息泄露） */
+  BACKUP_PASSWORD_INVALID: 422,
   INTERNAL_ERROR: 500,
 } as const;
 
