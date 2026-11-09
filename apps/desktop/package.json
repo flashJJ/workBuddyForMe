@@ -28,6 +28,7 @@
   "dependencies": {
     "@nut-tree-fork/nut-js": "4.2.6",
     "electron-updater": "^6.8.11",
+    "koffi": "^3.3.7",
     "zod": "^3.25.0"
   }
 }

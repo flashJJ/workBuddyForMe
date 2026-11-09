@@ -19,6 +19,9 @@ const PARAM_EYE_X = 'ParamEyeBallX';
 const PARAM_EYE_Y = 'ParamEyeBallY';
 const PARAM_ANGLE_X = 'ParamAngleX';
 const PARAM_ANGLE_Y = 'ParamAngleY';
+const PARAM_ANGLE_Z = 'ParamAngleZ';
+const PARAM_EYE_L_OPEN = 'ParamEyeLOpen';
+const PARAM_EYE_R_OPEN = 'ParamEyeROpen';
 
 /** 呼吸周期（ms）与幅度 */
 const BREATH_PERIOD_MS = 3800;
@@ -34,6 +37,11 @@ const GAZE_ANGLE_GAIN = 0.18;
 const GAZE_TIMEOUT_MS = 2400;
 /** 每帧发起偷看的概率（约 60fps 下 ≈ 每分钟 0.29 次的低概率生命感） */
 const PEEK_PER_FRAME_PROBABILITY = 0.0008;
+/** 睡眠：更慢更浅的呼吸 + 歪头角度 */
+const SLEEP_BREATH_PERIOD_MS = 5200;
+const SLEEP_BREATH_AMPLITUDE = 0.18;
+const SLEEP_HEAD_TILT_Y = 4;
+const SLEEP_HEAD_TILT_Z = 10;
 
 function easeInOutSine(t: number): number {
   return -(Math.cos(Math.PI * t) - 1) / 2;
@@ -51,6 +59,9 @@ export class Live2dMicrodynamics {
   private swayTargetX = 0;
   private swayTargetY = 0;
   private swaying = false;
+  /** v3.0 P1：睡眠（闭眼/歪头/慢呼吸） */
+  private sleeping = false;
+  private wakeReset = false;
 
   constructor(private readonly now: () => number = () => performance.now()) {
     this.nextSwayAt = now() + SWAY_INTERVAL_MIN;
@@ -64,6 +75,13 @@ export class Live2dMicrodynamics {
     this.peekX = 0;
   }
 
+  /** v3.0 P1：睡眠切换；醒来的第一帧把闭眼/歪头参数复位 */
+  setSleeping(sleeping: boolean): void {
+    if (this.sleeping === sleeping) return;
+    this.sleeping = sleeping;
+    if (!sleeping) this.wakeReset = true;
+  }
+
   /**
    * 每帧写入参数。
    * @param core pld 核心模型
@@ -71,6 +89,26 @@ export class Live2dMicrodynamics {
    */
   update(core: CoreParamWriter, quiet: boolean): void {
     const now = this.now();
+
+    if (this.sleeping) {
+      const phase = (now % SLEEP_BREATH_PERIOD_MS) / SLEEP_BREATH_PERIOD_MS;
+      core.setParameterValueById(PARAM_BREATH, Math.sin(phase * Math.PI * 2) * SLEEP_BREATH_AMPLITUDE);
+      core.setParameterValueById(PARAM_EYE_X, 0);
+      core.setParameterValueById(PARAM_EYE_Y, 0);
+      core.setParameterValueById(PARAM_ANGLE_X, 0);
+      core.setParameterValueById(PARAM_ANGLE_Y, SLEEP_HEAD_TILT_Y);
+      core.setParameterValueById(PARAM_ANGLE_Z, SLEEP_HEAD_TILT_Z);
+      core.setParameterValueById(PARAM_EYE_L_OPEN, 0);
+      core.setParameterValueById(PARAM_EYE_R_OPEN, 0);
+      this.swaying = false;
+      return;
+    }
+    if (this.wakeReset) {
+      core.setParameterValueById(PARAM_EYE_L_OPEN, 1);
+      core.setParameterValueById(PARAM_EYE_R_OPEN, 1);
+      core.setParameterValueById(PARAM_ANGLE_Z, 0);
+      this.wakeReset = false;
+    }
 
     // 呼吸：恒定轻微
     const phase = (now % BREATH_PERIOD_MS) / BREATH_PERIOD_MS;

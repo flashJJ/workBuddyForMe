@@ -36,6 +36,8 @@ export interface VrmCanvasProps {
   relationshipLevel?: number;
   /** v3.0 P0：帧率档位（桌宠交互 60 / 待机 30 / 隐藏 0） */
   frameMode?: FrameMode;
+  /** v3.0 P1：睡眠（闭眼/低头/动作减速） */
+  sleeping?: boolean;
   /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
   onModelRect?: (rect: AvatarScreenRect | null) => void;
   className?: string;
@@ -53,6 +55,7 @@ export function VrmCanvas({
   mood = DEFAULT_MOTION_MOOD,
   relationshipLevel = 0,
   frameMode = 'idle',
+  sleeping = false,
   onModelRect,
   className,
   style,
@@ -67,6 +70,7 @@ export function VrmCanvas({
   const moodRef = React.useRef(mood);
   const relationshipLevelRef = React.useRef(relationshipLevel);
   const frameModeRef = React.useRef(frameMode);
+  const sleepingRef = React.useRef(sleeping);
   const onModelRectRef = React.useRef(onModelRect);
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -77,7 +81,13 @@ export function VrmCanvas({
   React.useEffect(() => { moodRef.current = mood; }, [mood]);
   React.useEffect(() => { relationshipLevelRef.current = relationshipLevel; }, [relationshipLevel]);
   React.useEffect(() => { frameModeRef.current = frameMode; }, [frameMode]);
+  React.useEffect(() => { sleepingRef.current = sleeping; }, [sleeping]);
   React.useEffect(() => { onModelRectRef.current = onModelRect; }, [onModelRect]);
+
+  // v3.0 P1：睡眠状态即时生效（控制器异步创建，创建时用 ref 兜底）
+  React.useEffect(() => {
+    controllerRefInternal.current?.setSleeping(sleeping);
+  }, [sleeping]);
 
   const fileRef = parseVrmAvatarId(modelId);
   React.useEffect(() => {
@@ -149,6 +159,7 @@ export function VrmCanvas({
         );
         controllerRefInternal.current = controller;
         if (controllerRef) controllerRef.current = controller;
+        controller.setSleeping(sleepingRef.current);
 
         // 调试钩子（仅 dev）：MCP/CDP 读取实时缩放/位置/相机/当前待机动作/取景自检结果
         debug = installVrmDebugProbe(

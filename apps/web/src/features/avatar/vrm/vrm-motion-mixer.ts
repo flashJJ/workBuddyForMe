@@ -64,6 +64,7 @@ export class MotionMixer {
   };
   /** 距下次轮播的累计秒数 */
   private rotationElapsed = 0;
+  private sleeping = false; // v3.0 P1：睡眠时减速动作并暂停轮播
 
   constructor(
     vrm: VRM,
@@ -148,12 +149,20 @@ export class MotionMixer {
   }
 
   /** 推进 mixer 时间轴（每帧 Step 1） */
-  update(dt: number): void {
-    this.mixer.update(dt);
+  update(dt: number): void { this.mixer.update(dt); }
+
+  /** v3.0 P1：睡眠时把动作放慢到 0.2 倍，保留呼吸/微动但不做新动作 */
+  setSleeping(sleeping: boolean): void {
+    this.sleeping = sleeping;
+    this.mixer.timeScale = sleeping ? 0.2 : 1;
   }
 
-  /** 到点随机换一个待机动作（手势/长按期间跳过，避免打断） */
+  /** 到点随机换一个待机动作（手势/长按/睡眠期间跳过，避免打断） */
   tickRotation(dt: number): void {
+    if (this.sleeping) {
+      this.rotationElapsed = 0;
+      return;
+    }
     if (!this.rotationConfig.enabled || this.entries.length < 2) return;
     if (this.gestureAction || this.hold.isHolding) {
       this.rotationElapsed = 0;

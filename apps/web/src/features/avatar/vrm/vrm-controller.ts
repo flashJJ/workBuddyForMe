@@ -14,8 +14,9 @@ import type { MotionPoolEntry } from '../motion/motion-segments';
 export type { MotionRotationConfig } from './vrm-motion-mixer';
 
 const NORM_BONE_NAMES = [
+  'spine',
   'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
-  'leftLowerArm', 'rightLowerArm', 'head',
+  'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand', 'head',
 ] as const;
 
 export interface VrmControllerLike extends TouchControllerLike {
@@ -156,6 +157,14 @@ export class VrmController implements VrmControllerLike {
     this.pose.setGaze(nx, ny);
   }
 
+  /** v3.0 P1：睡眠/唤醒（闭眼、低头、动作减速、待机轮播暂停） */
+  setSleeping(sleeping: boolean): void {
+    if (this.disposed) return;
+    this.pose.setSleeping(sleeping);
+    this.face.setSleeping(sleeping);
+    this.mixer.setSleeping(sleeping);
+  }
+
   /** 点击触发：优先从动作池随机播一个一次性动作；池空则退回内嵌 tap clip / 程序化微倾 */
   tap(): void {
     if (this.disposed) return;
@@ -200,8 +209,13 @@ export class VrmController implements VrmControllerLike {
       this.lastPhase = phase;
     }
 
+    // --- Step 0.7: 叠加骨骼复位（mixer 未驱动的轨道不残留上一帧视线）---
+    this.pose.resetOverlayBones();
+
     // --- Step 1: mixer 驱动动作池 clip ---
     this.mixer.update(dt);
+    // 快照 mixer 本帧姿态；视线/脊柱在其上合成，避免逐帧累积
+    this.pose.captureMixerPose();
 
     // --- Step 1.5: 待机动作轮播计时 ---
     this.mixer.tickRotation(dt);
@@ -212,11 +226,17 @@ export class VrmController implements VrmControllerLike {
     // --- Step 3: flash 到期检查 ---
     this.face.checkFlashExpiry();
 
-    // --- Step 4: 头部叠加层（程序化 wiggle 或 gaze/click）+ 三段式微倾 ---
+    // --- Step 4: 头部叠加层（视线/点击微倾）+ 三段式微倾 ---
     const procedural = this.mixer.usesProceduralPose;
-    this.pose.applyHeadOverlay(t, procedural);
+    // 交互动作期间淡出视线，避免「头被掰过去」
+    const gazeWeight = this.mixer.hasGesture || this.interaction.isLooping ? 0.25 : 1;
+    this.pose.applyHeadOverlay(t, procedural, dt, gazeWeight);
     const angles = this.interaction.overlayAngles();
     this.pose.applyInteractionAngles(angles.yaw, angles.pitch);
+    // v3.0 P1：待机时把 A-pose 手臂收成自然下垂；手势/长按期间不干预
+    if (!this.mixer.hasGesture && !this.interaction.isLooping) {
+      this.pose.relaxArms(procedural ? 1 : 0.7);
+    }
 
     // --- Step 5: 呼吸 + 身体微摆（交互 loop 阶段加深呼吸） ---
     this.pose.applyBodyIdle(t, dt, this.interaction.isLooping, procedural);

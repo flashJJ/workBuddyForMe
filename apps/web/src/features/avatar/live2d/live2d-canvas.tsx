@@ -26,6 +26,8 @@ export interface Live2dCanvasProps {
   interactive?: boolean;
   /** v3.0 P0：帧率档位（桌宠交互 60 / 待机 30 / 隐藏 0） */
   frameMode?: FrameMode;
+  /** v3.0 P1：睡眠（闭眼/歪头/慢呼吸，暂停待机动作） */
+  sleeping?: boolean;
   /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
   onModelRect?: (rect: AvatarScreenRect | null) => void;
 }

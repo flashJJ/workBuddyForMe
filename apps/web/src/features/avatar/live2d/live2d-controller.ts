@@ -13,6 +13,8 @@ import type { AvatarScreenRect } from '../performance/screen-rect';
 import type { ExpressionTag } from '../expression/expression-parser';
 import { DEFAULT_EXPRESSION } from '../expression/expression-parser';
 import { Live2dMicrodynamics } from './live2d-microdynamics';
+import { Live2dIdleScheduler } from './live2d-idle-scheduler';
+import { captureStageFrame } from './live2d-capture';
 import {
   TOUCH_SQUASH_MS,
   TOUCH_SQUASH_SCALE_X,
@@ -55,9 +57,6 @@ export interface Live2dControllerOptions {
 
 /** 说话时不再触发待机动作的静默窗口（ms） */
 const IDLE_QUIET_MS = 2500;
-/** 待机动作随机间隔区间（ms） */
-const IDLE_INTERVAL_MIN = 7000;
-const IDLE_INTERVAL_MAX = 14000;
 /** 口型增益：RMS→张合度 */
 const LIP_GAIN = 3.2;
 
@@ -67,7 +66,8 @@ export class Live2dController {
   private readonly micro = new Live2dMicrodynamics();
   private lipLevel = 0;
   private lastSpeechAt = 0;
-  private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly idle: Live2dIdleScheduler;
+  private sleeping = false;
   private disposed = false;
   private readonly resizeObserver: ResizeObserver;
   /** layout 计算出的基础等比缩放（squash 动画围绕它做包络） */
@@ -103,6 +103,12 @@ export class Live2dController {
 
     this.resizeObserver = new ResizeObserver(() => this.layout());
     this.resizeObserver.observe(host);
+    this.idle = new Live2dIdleScheduler({
+      getModel: () => this.model,
+      idleGroup: spec.idleGroup,
+      isQuiet: () => performance.now() - this.lastSpeechAt > IDLE_QUIET_MS,
+      isDisposed: () => this.disposed,
+    });
   }
 
   static async create(host: HTMLElement, options: Live2dControllerOptions): Promise<Live2dController> {
@@ -128,7 +134,7 @@ export class Live2dController {
       controller.layout();
       controller.baseExpression = DEFAULT_EXPRESSION;
       await model.expression(options.model.expressions[DEFAULT_EXPRESSION] ?? '');
-      controller.scheduleIdle();
+      controller.idle.start();
       // 每帧：口型 → squash 缩放 → 微动作参数；在 pld 自身更新之后写，避免被曲线覆盖
       controller.app.ticker.add(() => controller.applyFrame());
     } catch (error) {
@@ -168,7 +174,9 @@ export class Live2dController {
       void this.applyExpressionNow(this.baseExpression);
     }
     const quiet =
-      performance.now() - this.lastSpeechAt > IDLE_QUIET_MS && this.squashStart === 0;
+      !this.sleeping &&
+      performance.now() - this.lastSpeechAt > IDLE_QUIET_MS &&
+      this.squashStart === 0;
     this.micro.update(model.internalModel.coreModel, quiet);
   }
 
@@ -214,6 +222,15 @@ export class Live2dController {
     ticker.maxFPS = fps;
   }
 
+  /** v3.0 P1：睡眠（闭眼/歪头/慢呼吸，暂停待机动作，表情回到放松） */
+  setSleeping(sleeping: boolean): void {
+    if (this.sleeping === sleeping) return;
+    this.sleeping = sleeping;
+    this.micro.setSleeping(sleeping);
+    this.idle.setSleeping(sleeping);
+    void this.applyExpressionNow(sleeping ? DEFAULT_EXPRESSION : this.baseExpression);
+  }
+
   /**
    * 设置基础表情（React prop 驱动）。闪现表情生效期间只更新基准、不立即切换，
    * 闪现到期后自动恢复为最新基准。
@@ -250,19 +267,7 @@ export class Live2dController {
 
   /** v1.9 舞台省电档：截当前帧为 PNG dataURL（失败返回 null，调用方保持 Live2D） */
   captureDataUrl(): string | null {
-    if (!this.model) return null;
-    try {
-      // 先渲染一帧，确保 extract 拿到的是当前表情/动作而不是空舞台
-      this.app.renderer.render(this.app.stage);
-      // pixi v7 的 extract 挂在 Renderer 实例上，基类类型不含它
-      const renderer = this.app.renderer as unknown as {
-        extract: { canvas: (target: unknown) => HTMLCanvasElement };
-      };
-      const frame = renderer.extract.canvas(this.app.stage);
-      return frame.toDataURL('image/png');
-    } catch {
-      return null;
-    }
+    return captureStageFrame(this.app, Boolean(this.model));
   }
 
   /** 归一化指针（-1..1，相对舞台中心）→ 微动作视线跟随 */
@@ -274,20 +279,9 @@ export class Live2dController {
     void this.model.motion(this.spec.tapGroup);
   }
 
-  private scheduleIdle(): void {
-    if (this.disposed) return;
-    const delay = IDLE_INTERVAL_MIN + Math.random() * (IDLE_INTERVAL_MAX - IDLE_INTERVAL_MIN);
-    this.idleTimer = setTimeout(() => {
-      if (this.disposed || !this.model) return;
-      const quiet = performance.now() - this.lastSpeechAt > IDLE_QUIET_MS;
-      if (quiet) void this.model!.motion(this.spec.idleGroup).then(() => this.scheduleIdle());
-      else this.scheduleIdle();
-    }, delay);
-  }
-
   dispose(): void {
     this.disposed = true;
-    if (this.idleTimer) clearTimeout(this.idleTimer);
+    this.idle.stop();
     this.resizeObserver.disconnect();
     try {
       this.model?.destroy();

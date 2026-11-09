@@ -29,6 +29,8 @@ interface StageProps {
   interactive?: boolean;
   /** v3.0 P0：帧率档位（隐藏暂停 ticker / 待机 30 / 交互 60） */
   frameMode?: FrameMode;
+  /** v3.0 P1：睡眠 */
+  sleeping?: boolean;
   /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
   onModelRect?: (rect: AvatarScreenRect | null) => void;
 }
@@ -43,6 +45,7 @@ export function Live2dStage({
   controllerRef: externalControllerRef,
   interactive = false,
   frameMode = 'idle',
+  sleeping = false,
   onModelRect,
 }: StageProps) {
   const { t } = useI18n();
@@ -58,6 +61,8 @@ export function Live2dStage({
   // 渲染层循环读取最新档位/回调，避免 effect 重跑导致控制器重建
   const frameModeRef = React.useRef(frameMode);
   frameModeRef.current = frameMode;
+  const sleepingRef = React.useRef(sleeping);
+  sleepingRef.current = sleeping;
   const onModelRectRef = React.useRef(onModelRect);
   onModelRectRef.current = onModelRect;
 
@@ -87,6 +92,7 @@ export function Live2dStage({
       }
       controllerRef.current = controller;
       controller.setMaxFps(frameRateForMode(frameModeRef.current));
+      controller.setSleeping(sleepingRef.current);
       let lastLipAt = 0;
       const pump = (now: number) => {
         raf = requestAnimationFrame(pump);
@@ -116,7 +122,12 @@ export function Live2dStage({
   // v3.0 P0：档位变化即时生效（hidden 暂停 ticker，idle/interact 切 30/60）
   React.useEffect(() => {
     controllerRef.current?.setMaxFps(frameRateForMode(frameMode));
-  }, [frameMode]);
+  }, [frameMode, controllerRef]);
+
+  // v3.0 P1：睡眠状态即时生效
+  React.useEffect(() => {
+    controllerRef.current?.setSleeping(sleeping);
+  }, [sleeping, controllerRef]);
 
   // v1.6：视线跟随——指针在舞台内移动时归一化喂给控制器
   React.useEffect(() => {

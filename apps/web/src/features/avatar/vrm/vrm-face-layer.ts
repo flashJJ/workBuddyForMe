@@ -33,6 +33,8 @@ export class VrmFaceLayer {
   private blinkNextDelay = 0;   // 距下次眨眼剩余秒
 
   private lipLevel = 0;
+  /** v3.0 P1：睡眠时强制闭眼、表情回到放松 */
+  private sleeping = false;
 
   constructor(vrm: VRM) {
     this.vrm = vrm;
@@ -62,15 +64,24 @@ export class VrmFaceLayer {
     this.lipLevel = level;
   }
 
+  /** v3.0 P1：睡眠（闭眼 + 放松表情）；唤醒后恢复常驻表情与随机眨眼 */
+  setSleeping(sleeping: boolean): void {
+    this.sleeping = sleeping;
+    if (!sleeping) {
+      this.scheduleNextBlink();
+      this.applyNow(this.flashTag ?? this.baseExpression);
+    }
+  }
+
   /** 临时表情到期检查（每帧 Step 3） */
   checkFlashExpiry(): void {
     if (!this.flashTag) return;
     if (performance.now() > this.flashUntil) this.clearFlash();
   }
 
-  /** morph 表情层（每帧 Step 7）：临时表情优先，否则常驻表情 */
+  /** morph 表情层（每帧 Step 7）：睡眠优先放松，其次临时表情，最后常驻表情 */
   applyExpressionLayer(): void {
-    this.applyNow(this.flashTag ?? this.baseExpression);
+    this.applyNow(this.sleeping ? 'neutral' : this.flashTag ?? this.baseExpression);
   }
 
   /** 口型 aa（每帧 Step 8） */
@@ -85,6 +96,14 @@ export class VrmFaceLayer {
   applyBlink(dt: number): void {
     const em = this.vrm.expressionManager;
     if (!em) return;
+    if (this.sleeping) {
+      try {
+        em.setValue('blink', 1);
+        em.setValue('winkLeft', 0);
+        em.setValue('winkRight', 0);
+      } catch { /* morph 可能不存在 */ }
+      return;
+    }
 
     if (this.blinkProgress > 0) {
       // 眨眼进行中：0 → 峰值 → 0（sin 半波）
@@ -107,6 +126,12 @@ export class VrmFaceLayer {
 
   triggerBlink(): void {
     this.blinkProgress = 1;
+  }
+
+  /** 重置随机眨眼计时（唤醒后重新开始 2–6s 周期） */
+  private scheduleNextBlink(): void {
+    this.blinkProgress = 0;
+    this.blinkNextDelay = 2 + Math.random() * 4;
   }
 
   /** 写 preset morph（原 applyExpressionLayer / applyExpressionNow 两份同构实现合并至此） */

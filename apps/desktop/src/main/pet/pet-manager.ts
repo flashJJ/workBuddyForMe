@@ -1,8 +1,6 @@
 /**
- * 桌宠窗管理器（v1.1 M2 拆分为协作者）：本类只保留单窗生命周期、原位换窗与关窗语义；
- * 拖拽→pet-drag-controller，悬停轮询→pet-hover-poller，菜单→pet-menu，
- * pet:* channel→pet-ipc，注入接口→pet-types，启动工厂→pet-bootstrap。
- * 桌宠存活时关主窗=隐藏而非退出；桌宠被关后主窗重现；表现事件只净化+单窗转发。
+ * 桌宠窗管理器：单窗生命周期、原位换窗与关窗语义。
+ * 拖拽/抛掷/坐立、悬停轮询、菜单、IPC 均已外迁；本类负责状态与编排。
  */
 import { screen } from 'electron';
 import {
@@ -11,7 +9,7 @@ import {
   type PetPerformanceEvent,
 } from '@wbfm/shared/pet';
 import { PetClickThroughController } from './pet-penetration';
-import { loadPetState, savePetState, type PetState, type Rect } from './pet-state';
+import { loadPetState, savePetState, type PetState } from './pet-state';
 import {
   createPetWindow,
   PET_WINDOW_HEIGHT,
@@ -20,6 +18,8 @@ import {
 } from './pet-window';
 import { PetDragController, type PetDragWindow } from './pet-drag-controller';
 import { PetThrowController } from './pet-throw-controller';
+import { PetSitController } from '../pet-sit/pet-sit-controller';
+import { readDisplayBounds, readWorkArea } from '../pet-sit/display-info';
 import { PetHoverPoller } from './pet-hover-poller';
 import { showDefaultPetContextMenu } from './pet-menu';
 import { registerPetIpc, type IpcMainLike } from './pet-ipc';
@@ -38,6 +38,7 @@ export class PetManager {
   private readonly hoverPoller: PetHoverPoller;
   private readonly drag: PetDragController;
   private readonly thrower: PetThrowController;
+  private readonly sit: PetSitController;
 
   constructor(private readonly deps: PetManagerDeps) {
     this.state = loadPetState(deps.userDataDir);
@@ -51,34 +52,42 @@ export class PetManager {
     const fixedSize = () => ({ width: PET_WINDOW_WIDTH, height: PET_WINDOW_HEIGHT });
     this.thrower = new PetThrowController({
       setInterval: deps.setInterval, clearInterval: deps.clearInterval,
-      getWorkArea: (bounds) => this.readWorkArea(bounds),
+      getWorkArea: (bounds) => readWorkArea(this.deps, bounds),
       getFixedSize: fixedSize,
       onSettle: (win) => this.persistBounds(win),
       // 真机排查用（滑行/贴边的调用与坐标轨迹）
       log: (message) => process.stdout.write(`[pet-throw] ${message}\n`),
     });
+    this.sit = new PetSitController({
+      getFixedSize: fixedSize,
+      getWorkArea: (bounds) => readWorkArea(this.deps, bounds),
+      getDisplayBounds: (bounds) => readDisplayBounds(this.deps, bounds),
+      listWindows: this.deps.listWindows,
+      setInterval: deps.setInterval, clearInterval: deps.clearInterval,
+      onSettle: (win) => this.persistBounds(win),
+      log: (message) => process.stdout.write(`[pet-sit] ${message}\n`),
+    });
     this.drag = new PetDragController({
       getCursor: () => this.readCursor(),
       getFixedSize: fixedSize,
       onDragStart: () => {
-        // 停掉可能在跑的滑行，避免抛掷与拖拽互抢窗口位置
         this.thrower.stop();
+        this.sit.beginDrag();
         process.stdout.write('[pet-drag] begin\n');
         this.controller?.force(false);
       },
-      // 松手速度 + 累计位移 → 抛掷滑行/贴边（位移过小视为误触）
+      // 松手优先尝试坐窗口/任务栏；未命中才抛掷（位移过小视为误触）
       onDragEnd: (win, velocity, distance) => {
+        const sitting = this.sit.trySit(win);
         process.stdout.write(
-          `[pet-drag] end dist=${Math.round(distance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)}\n`,
+          `[pet-drag] end dist=${Math.round(distance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)} sit=${sitting}\n`,
         );
-        this.thrower.start(win, velocity, distance);
+        if (!sitting) this.thrower.start(win, velocity, distance);
       },
     });
   }
 
-  isOpen(): boolean {
-    return Boolean(this.win && !this.win.isDestroyed());
-  }
+  isOpen(): boolean { return Boolean(this.win && !this.win.isDestroyed()); }
 
   /** 打开桌宠；同模型幂等，不同模型原位静默换模型（不唤主窗、不重复广播） */
   async open(modelId?: string): Promise<boolean> {
@@ -124,6 +133,7 @@ export class PetManager {
   /** 绑定穿透滞回、右键菜单、悬停轮询（新建/换模型共用） */
   private attachWindow(win: PetWindowLike): void {
     this.win = win;
+    this.sit.stop();
 
     this.controller = new PetClickThroughController({
       setPenetrating: (penetrating) => {
@@ -157,9 +167,7 @@ export class PetManager {
   }
 
   /** 桌宠命中盒悬停结果 → 滞回控制器（高频，内部状态去重） */
-  reportHover(hovering: boolean): void {
-    this.controller?.update(hovering);
-  }
+  reportHover(hovering: boolean): void { this.controller?.update(hovering); }
 
   /** 渲染层右键：发送方校验后弹菜单；弹前强制可交互（穿透态菜单收不到点击） */
   requestMenu(): void {
@@ -238,16 +246,6 @@ export class PetManager {
     return (this.deps.getCursor ?? (() => screen.getCursorScreenPoint()))();
   }
 
-  /** 窗口所在工作区（DIP）：默认按窗口矩形匹配显示器；取不到（测试/无 screen API）返回 null */
-  private readWorkArea(bounds: Rect): Rect | null {
-    if (this.deps.getWorkArea) return this.deps.getWorkArea(bounds);
-    try {
-      return screen.getDisplayMatching(bounds).workArea;
-    } catch {
-      return null;
-    }
-  }
-
   private showMenu(win: PetWindowLike): void {
     const show = this.deps.showContextMenu ?? showDefaultPetContextMenu;
     show(win, {
@@ -274,6 +272,7 @@ export class PetManager {
   private resetAfterClose(): void {
     this.hoverPoller.stop();
     this.thrower.stop();
+    this.sit.stop();
     this.controller?.dispose();
     this.controller = null;
     this.win = null;

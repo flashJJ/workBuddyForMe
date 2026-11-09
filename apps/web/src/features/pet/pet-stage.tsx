@@ -27,6 +27,7 @@ import { PetWorkBubble, isWorkBubbleVisible, type WorkBubbleMode } from './pet-w
 import { useWorkSignals } from './use-work-signals';
 import { useWorkAlerts } from './use-work-alerts';
 import { usePetFrameMode } from './stage/use-pet-frame-mode';
+import { usePetSleep } from './stage/use-pet-sleep';
 import { usePetHitProxy } from './stage/hit-proxy';
 import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
 
@@ -67,8 +68,9 @@ export function PetStage({
   useSettingsSync();
   const bridge = getPetBridge();
   const controllerRef = React.useRef<Live2dController | null>(null);
-  // v3.0 P0：帧率档位 + 模型命中轮廓上报
+  // v3.0 P0：帧率档位 + 模型命中轮廓上报；P1：10min 无交互入睡
   const frameMode = usePetFrameMode(voiceState);
+  const sleeping = usePetSleep(voiceState);
   const onModelRect = usePetHitProxy(bridge);
   const [line, setLine] = React.useState<string>('');
   const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -247,6 +249,7 @@ export function PetStage({
           mood={mood}
           relationshipLevel={relationshipLevel}
           frameMode={frameMode}
+          sleeping={sleeping}
           onModelRect={onModelRect}
         />
       </div>

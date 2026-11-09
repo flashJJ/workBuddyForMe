@@ -8,6 +8,7 @@ import type { CursorPoint } from './pet-window';
 import type { PetDragWindow } from './pet-drag-controller';
 import type { PetHoverWindow } from './pet-hover-poller';
 import type { ShowPetContextMenu } from './pet-menu';
+import type { WindowEdge } from '../pet-sit/win32-windows';
 
 export interface PetWebContentsLike {
   on(channel: string, cb: (...args: unknown[]) => void): unknown;
@@ -62,6 +63,10 @@ export interface PetManagerDeps {
   getCursor?: () => CursorPoint;
   /** 测试注入：窗口所在工作区，默认 Electron screen.getDisplayMatching(bounds).workArea */
   getWorkArea?: (bounds: Rect) => Rect | null;
+  /** 测试注入：显示器完整 bounds（任务栏判定），默认 screen.getDisplayMatching(bounds).bounds */
+  getDisplayBounds?: (bounds: Rect) => Rect | null;
+  /** 测试注入：可坐窗口列表（DIP），默认 koffi/Win32；非 Windows 返回空 */
+  listWindows?: () => WindowEdge[];
   /** 测试注入：轮询定时器（默认 setInterval/clearInterval） */
   setInterval?: typeof setInterval;
   clearInterval?: typeof clearInterval;
