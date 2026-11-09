@@ -171,6 +171,19 @@ export function createAttachmentService(deps: ServiceDeps) {
         buffer: readFileSync(join(dir, row.storage_path)),
       };
     },
+
+    /** v2.32：产物清单（跨会话，最新在前；最多 200 条） */
+    listArtifacts(limit = 200): Array<Omit<Attachment, 'contentHash'>> {
+      return repo
+        .list()
+        .filter((row) => ARTIFACT_MIME_SET.has(row.mime_type))
+        .slice(-limit)
+        .reverse()
+        .map((row) => {
+          const { contentHash: _hash, ...rest } = mapAttachment(row);
+          return rest;
+        });
+    },
   };
 }
 

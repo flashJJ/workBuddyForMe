@@ -12,4 +12,11 @@ export {
   type BackupRestoreOptions,
   type BackupRestoreResult,
 } from './restore';
-export { packTarGz } from './export-archive';
+export { packEntries, packTarGz, type TarPayloadEntry } from './export-archive';
+export {
+  exportArtifactsBatch,
+  ARTIFACT_BATCH_MAX_BYTES,
+  ARTIFACT_BATCH_MAX_COUNT,
+  type ArtifactBatchManifest,
+  type ArtifactBatchResult,
+} from './export-artifacts';
