@@ -12,6 +12,20 @@ export interface ApprovalContext {
   deepLink: string;
 }
 
+/** v2.30：能力安装审批详情（只读目录快照，供确认框展示） */
+export interface ToolConfirmationDetails {
+  catalogId: string;
+  name: string;
+  kind: string;
+  version: string;
+  source: string;
+  installStrategy: string;
+  signatureStatus?: string;
+  permissions: string[];
+  effects: string[];
+  toolNames: string[];
+}
+
 export interface ToolGateParams {
   deps: ServiceDeps;
   tool: Tool | undefined;
@@ -36,6 +50,8 @@ export interface ToolGateParams {
   workspacePath?: string | null;
   /** v2.13：调用方已解析的策略（缺省读 deps.agentPolicy） */
   policy?: AgentPolicy;
+  /** v2.30：能力安装审批详情（仅 capability_install 填充） */
+  details?: ToolConfirmationDetails;
 }
 
 export interface ToolGateResult {

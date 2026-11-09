@@ -85,6 +85,7 @@ export function confirmationFromPayload(
     tool: data.tool,
     permission: data.permission,
     argsSummary: data.argsSummary,
+    ...(data.details ? { details: data.details } : {}),
   };
 }
 

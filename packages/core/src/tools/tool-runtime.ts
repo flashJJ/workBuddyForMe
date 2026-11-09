@@ -1,5 +1,6 @@
 import type { Assistant, PermissionLevel } from '@wbfm/shared/types';
 import { parseFlowToolName } from '@wbfm/shared/schemas';
+import { ARTIFACT_MAX_PER_TURN, ARTIFACT_TURN_MAX_BYTES } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../services/base/deps';
 import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/retrieval-service';
 import { createMcpTool } from '../mcp/mcp-tool';
@@ -10,6 +11,7 @@ import { knowledgeSearchTool } from './knowledge-search-tool';
 import { webSearchTool } from './web/web-search-tool';
 import {
   capabilityInstallTool,
+  capabilityListTool,
   capabilitySearchTool,
 } from './capability/capability-tools';
 import { artifactWriteTool } from './artifact/artifact-write-tool';
@@ -32,6 +34,8 @@ const ALL_TOOLS: Record<string, Tool> = {
   // v2.17 M4：能力目录检索与安装代理
   capability_search: capabilitySearchTool,
   capability_install: capabilityInstallTool,
+  // v2.30：已安装能力清单
+  capability_list: capabilityListTool,
   // v2.18 M1：产物文件
   artifact_write: artifactWriteTool,
   // v2.18 M2：结构化图表
@@ -166,6 +170,29 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
       // 白名单落库后，下一轮 buildTools 重新构造工具声明即生效。
       // 同一轮内多次安装共享同一份可变白名单快照，避免后一次覆盖前一次的新增工具
       const enabledTools = new Set(assistant.enabledTools);
+      // v2.30：单轮产物限流——上下文按回合创建，计数天然随回合重置；
+      // 先检查再落盘，超限或保存失败都不计数（失败写入不留半份文件）
+      let artifactCount = 0;
+      let artifactBytes = 0;
+      const writeArtifact = deps.artifacts
+        ? (input: Parameters<NonNullable<ToolContext['writeArtifact']>>[0]) => {
+            if (artifactCount >= ARTIFACT_MAX_PER_TURN) {
+              throw new Error(
+                `本轮产物已达上限（${ARTIFACT_MAX_PER_TURN} 个），请合并或下一轮再写`,
+              );
+            }
+            const byteSize = Buffer.byteLength(input.content, 'utf8');
+            if (artifactBytes + byteSize > ARTIFACT_TURN_MAX_BYTES) {
+              throw new Error(
+                `本轮产物总大小已达上限（${ARTIFACT_TURN_MAX_BYTES / 1024 / 1024}MB），请下一轮再写`,
+              );
+            }
+            const artifact = deps.artifacts!.saveArtifact(input);
+            artifactCount += 1;
+            artifactBytes += artifact.byteSize;
+            return artifact;
+          }
+        : undefined;
       const bindReadOnlyTools = deps.bindAssistantTools
         ? (toolNames: string[]) => {
             const added: string[] = [];
@@ -192,12 +219,7 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         ...(conversationId ? { conversationId } : {}),
         ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
         ...(deps.search ? { searchWeb: deps.search.search } : {}),
-        ...(deps.artifacts
-          ? {
-              writeArtifact: (input: Parameters<NonNullable<ToolContext['writeArtifact']>>[0]) =>
-                deps.artifacts!.saveArtifact(input),
-            }
-          : {}),
+        ...(writeArtifact ? { writeArtifact } : {}),
         ...(catalog
           ? {
               assistantId: assistant.id,
@@ -205,6 +227,7 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
                 catalog.search(input),
               installCapability: (input: Parameters<NonNullable<ToolContext['installCapability']>>[0]) =>
                 catalog.install(input.catalogId),
+              listCapabilities: () => catalog.listInstalled(),
               ...(bindReadOnlyTools ? { bindTools: bindReadOnlyTools } : {}),
             }
           : {}),

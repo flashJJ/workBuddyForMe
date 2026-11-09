@@ -10,6 +10,8 @@ export const TOOL_NAMES = [
   // v2.17 M4 能力目录（安装为 write，需 HITL）
   'capability_search',
   'capability_install',
+  // v2.30 已安装能力清单（只读）
+  'capability_list',
   // v2.18 M1 产物文件（write）
   'artifact_write',
   // v2.18 M2 结构化图表（write，渲染后落盘）
@@ -121,8 +123,10 @@ export type ArtifactFormat = (typeof ARTIFACT_FORMATS)[number];
 
 /** 单文件上限 2 MB（与产物工具参数校验一致） */
 export const ARTIFACT_MAX_BYTES = 2 * 1024 * 1024;
-/** 单轮产物数量上限（工具侧提示，权限门与熔断仍照常生效） */
-export const ARTIFACT_MAX_PER_TURN = 3;
+/** v2.30：单轮产物数量上限（超出不落盘，按回合重置） */
+export const ARTIFACT_MAX_PER_TURN = 6;
+/** v2.30：单轮产物总大小上限（8 MB，超出不落盘） */
+export const ARTIFACT_TURN_MAX_BYTES = 8 * 1024 * 1024;
 export const ARTIFACT_TITLE_MAX = 80;
 export const ARTIFACT_FILENAME_MAX = 120;
 

@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 import { ApiError } from '@wbfm/shared/errors';
-import type { ContentPackImportResult, ContentPackSummary } from '@wbfm/shared/types';
+import type {
+  ContentPackImportResult,
+  ContentPackSummary,
+  ContentPackUpdateCheck,
+} from '@wbfm/shared/types';
 import type { ServiceDeps } from '../base/deps';
 import { resolveEmbeddingTarget } from '../../ingestion/embedding-target';
 import { createDocumentService } from './document-service';
@@ -12,6 +16,8 @@ export interface ContentPackServiceOptions {
   /** 可替换清单（测试注入小样本） */
   packs?: readonly ContentPackDefinition[];
   fetchFile?: (url: string) => Promise<Uint8Array>;
+  /** v2.30：测试注入：返回上游最新 commit，默认请求 GitHub API */
+  fetchLatestCommit?: (sourceUrl: string) => Promise<string>;
   /** 测试/预检钩子：默认检查设置中的 embedding 模型 */
   embeddingReady?: () => boolean;
   /** 注册后是否后台摄入；测试关闭以避免异步写库 */
@@ -26,9 +32,42 @@ interface DownloadResult {
 const ATTRIBUTION_FILENAME = '00-内容包署名与免责声明.md';
 const DOWNLOAD_BATCH = 4;
 const DOWNLOAD_TIMEOUT_MS = 30_000;
+const UPDATE_CHECK_TIMEOUT_MS = 10_000;
 
 function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex');
+}
+
+/** v2.30：仅支持 GitHub 仓库来源；其他来源返回可读的不可用原因 */
+function commitsApiOf(sourceUrl: string): string {
+  const match = /^https:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(sourceUrl.trim());
+  if (!match) {
+    throw new ApiError('CONTENT_PACK_FETCH_FAILED', '内容包来源不是 GitHub 仓库，暂不支持检查更新');
+  }
+  return `https://api.github.com/repos/${match[1]}/${match[2]}/commits?per_page=1`;
+}
+
+/** v2.30：请求上游最新 commit；10 秒超时，失败由调用方降级为 unavailable */
+async function defaultFetchLatestCommit(sourceUrl: string): Promise<string> {
+  const response = await fetch(commitsApiOf(sourceUrl), {
+    headers: {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'WorkBuddyForMe content-pack-update-check',
+    },
+    signal: AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    throw new ApiError(
+      'CONTENT_PACK_FETCH_FAILED',
+      `上游仓库暂时不可达（HTTP ${response.status}）`,
+    );
+  }
+  const payload: unknown = await response.json();
+  const sha = Array.isArray(payload) ? (payload[0] as { sha?: unknown } | undefined)?.sha : undefined;
+  if (typeof sha !== 'string' || sha.length < 7) {
+    throw new ApiError('CONTENT_PACK_FETCH_FAILED', '上游返回的 commit 信息不可读');
+  }
+  return sha;
 }
 
 async function defaultFetchFile(url: string): Promise<Uint8Array> {
@@ -74,6 +113,7 @@ export function createContentPackService(
 ) {
   const packs = options.packs ?? [HOW_TO_LIVE_BETTER];
   const fetchFile = options.fetchFile ?? defaultFetchFile;
+  const fetchLatestCommit = options.fetchLatestCommit ?? defaultFetchLatestCommit;
   const embeddingReady =
     options.embeddingReady ?? (() => resolveEmbeddingTarget(deps) !== null);
   const autoIngest = options.autoIngest ?? true;
@@ -220,6 +260,38 @@ export function createContentPackService(
   return {
     list(): ContentPackSummary[] {
       return packs.map(summaryOf);
+    },
+    /**
+     * v2.30：只读检查上游是否有新 commit。
+     * 网络失败、限流或来源不支持时返回 unavailable，不抛 500；不下载、不替换。
+     */
+    async checkUpdate(id: string): Promise<ContentPackUpdateCheck> {
+      const pack = requirePack(id);
+      const checkedAt = new Date().toISOString();
+      try {
+        const latestVersion = (await fetchLatestCommit(pack.sourceUrl)).slice(0, 7);
+        const updateAvailable = latestVersion !== pack.version;
+        return {
+          id: pack.id,
+          currentVersion: pack.version,
+          latestVersion,
+          updateAvailable,
+          checkedAt,
+          sourceUrl: pack.sourceUrl,
+          status: updateAvailable ? 'update-available' : 'latest',
+        };
+      } catch (error) {
+        return {
+          id: pack.id,
+          currentVersion: pack.version,
+          latestVersion: null,
+          updateAvailable: false,
+          checkedAt,
+          sourceUrl: pack.sourceUrl,
+          status: 'unavailable',
+          reason: error instanceof Error ? error.message : String(error),
+        };
+      }
     },
     importPack,
   };

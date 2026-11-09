@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { CapabilityCatalogEntry, CapabilityView } from '@wbfm/shared/schemas';
+import type { CapabilityInventoryItem } from '../../capabilities/catalog/types';
 import type { ToolContext } from '../types';
 import { ToolArgError } from '../types';
-import { capabilityInstallTool, capabilitySearchTool } from './capability-tools';
+import { capabilityInstallTool, capabilityListTool, capabilitySearchTool } from './capability-tools';
 
 const entry: CapabilityCatalogEntry = {
   id: 'com.example.sample.workflow',
@@ -89,6 +90,100 @@ describe('capability_search 工具', () => {
     );
     await expect(
       capabilitySearchTool.run({ query: '示例', kind: 'unknown' }, context()),
+    ).rejects.toBeInstanceOf(ToolArgError);
+  });
+});
+
+describe('capability_list 工具（v2.30）', () => {
+  const inventory: CapabilityInventoryItem[] = [
+    {
+      id: 'com.example.sample.skill',
+      name: '示例技能：日报',
+      kind: 'skill',
+      version: '1.0.0',
+      status: 'enabled',
+      permissions: ['skill:install'],
+      effects: ['新增技能提示词'],
+      toolNames: ['current_time'],
+      source: 'bundled',
+      installStrategy: 'bundled-pack',
+      signatureStatus: 'valid',
+      installedAt: '2026-11-02T00:00:00.000Z',
+    },
+    {
+      id: 'com.example.sample.mcp',
+      name: '示例 MCP',
+      kind: 'mcp',
+      version: '0.9.0',
+      status: 'disabled',
+      permissions: ['mcp:connect'],
+      effects: [],
+      toolNames: [],
+      source: 'local',
+      installStrategy: 'manual',
+      installedAt: '2026-11-03T00:00:00.000Z',
+    },
+  ];
+
+  it('只读权限；未装配能力服务时明确拒绝', async () => {
+    expect(capabilityListTool.permission).toBe('read');
+    const result = await capabilityListTool.run({}, context());
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain('能力清单不可用');
+  });
+
+  it('输出已安装能力的 id、状态、版本、权限、效果、工具与签名', async () => {
+    const listCapabilities = vi.fn(() => inventory);
+    const result = await capabilityListTool.run({}, context({ listCapabilities }));
+    expect(result.ok).toBe(true);
+    expect(result.output).toContain('示例技能：日报（skill）');
+    expect(result.output).toContain('id: com.example.sample.skill');
+    expect(result.output).toContain('状态：已启用 · 版本：1.0.0');
+    expect(result.output).toContain('权限：skill:install');
+    expect(result.output).toContain('效果：新增技能提示词');
+    expect(result.output).toContain('工具：current_time');
+    expect(result.output).toContain('签名：valid');
+    expect(result.output).toContain('签名：未检查');
+    expect(result.summary).toBe('2 个能力');
+  });
+
+  it('kind / status 过滤生效；无匹配返回可读说明', async () => {
+    const listCapabilities = vi.fn(() => inventory);
+    const enabled = await capabilityListTool.run(
+      { status: 'enabled' },
+      context({ listCapabilities }),
+    );
+    expect(enabled.output).toContain('示例技能：日报');
+    expect(enabled.output).not.toContain('示例 MCP');
+    expect(enabled.summary).toBe('1 个能力');
+
+    const mcp = await capabilityListTool.run({ kind: 'mcp' }, context({ listCapabilities }));
+    expect(mcp.output).toContain('示例 MCP');
+    expect(mcp.output).not.toContain('示例技能：日报');
+
+    const none = await capabilityListTool.run(
+      { kind: 'report-widget' },
+      context({ listCapabilities }),
+    );
+    expect(none.ok).toBe(true);
+    expect(none.output).toContain('当前没有匹配的已安装能力');
+  });
+
+  it('超过 30 条截断并提示缩小范围', async () => {
+    const many = Array.from({ length: 31 }, (_, index) => ({
+      ...inventory[0]!,
+      id: `com.example.sample.${index}`,
+      name: `示例 ${index}`,
+    }));
+    const result = await capabilityListTool.run({}, context({ listCapabilities: () => many }));
+    expect(result.ok).toBe(true);
+    expect(result.summary).toBe('31 个能力');
+    expect(result.output).toContain('另有 1 项未展示');
+  });
+
+  it('参数非法抛 ToolArgError', async () => {
+    await expect(
+      capabilityListTool.run({ status: 'unknown' }, context({ listCapabilities: () => [] })),
     ).rejects.toBeInstanceOf(ToolArgError);
   });
 });

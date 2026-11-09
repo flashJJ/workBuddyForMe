@@ -111,6 +111,19 @@ export type SsePayloadMap = {
     tool: string;
     permission: PermissionLevel;
     argsSummary: string;
+    /** v2.30：能力安装审批详情（仅 capability_install；旧客户端忽略） */
+    details?: {
+      catalogId: string;
+      name: string;
+      kind: string;
+      version: string;
+      source: string;
+      installStrategy: string;
+      signatureStatus?: string;
+      permissions: string[];
+      effects: string[];
+      toolNames: string[];
+    };
   };
   /** v0.7 M3：任务运行/步骤事件 */
   task: TaskEventPayload;

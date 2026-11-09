@@ -103,6 +103,7 @@ export type {
   ToolSubstepStatus,
   ContentPackSummary,
   ContentPackImportResult,
+  ContentPackUpdateCheck,
   DocumentComparisonSectionStats,
   DocumentComparisonTableStats,
   DocumentComparisonSummary,

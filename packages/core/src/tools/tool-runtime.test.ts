@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Assistant } from '@wbfm/shared/types';
+import type { ArtifactRef, Assistant } from '@wbfm/shared/types';
 import type { ServiceDeps } from '../services/base/deps';
 import { createToolRuntime } from './tool-runtime';
 import { toToolDefinitions } from './types';
-import type { Tool } from './types';
+import type { Tool, ToolContext } from './types';
 
 function assistantWith(
   enabledTools: Assistant['enabledTools'],
@@ -60,7 +60,7 @@ describe('工具运行时白名单', () => {
     expect(typeof ctx.retrieve).toBe('function');
   });
 
-  it('listDebugTools 返回 25 个内置工具，每个含 source/permission/description/parameters', () => {
+  it('listDebugTools 返回 26 个内置工具，每个含 source/permission/description/parameters', () => {
     const list = runtime.listDebugTools();
     expect(list.map((t) => t.name).sort()).toEqual([
       'app_launch',
@@ -72,6 +72,7 @@ describe('工具运行时白名单', () => {
       'browser_snapshot',
       'browser_type',
       'capability_install',
+      'capability_list',
       'capability_search',
       'current_time',
       'diagram_render',
@@ -110,6 +111,58 @@ describe('工具运行时白名单', () => {
     expect(ctx.knowledgeBaseIds).toEqual([]);
     expect(ctx.signal).toBe(controller.signal);
     await expect(ctx.retrieve('q', 5)).resolves.toEqual([]);
+  });
+});
+
+describe('单轮产物限流（v2.30）', () => {
+  function makeRuntime(saved: string[], failFirst = false) {
+    let calls = 0;
+    const artifacts = {
+      saveArtifact: (input: { title: string; content: string }): ArtifactRef => {
+        calls += 1;
+        if (failFirst && calls === 1) throw new Error('磁盘写入失败');
+        const byteSize = Buffer.byteLength(input.content, 'utf8');
+        saved.push(input.title);
+        return {
+          attachmentId: `a-${calls}`,
+          title: input.title,
+          filename: `${input.title}.md`,
+          format: 'md',
+          mimeType: 'text/markdown',
+          byteSize,
+        };
+      },
+    } as unknown as NonNullable<ServiceDeps['artifacts']>;
+    return createToolRuntime({ ...deps, artifacts });
+  }
+
+  const write = (ctx: ToolContext, title: string, content = 'x') =>
+    ctx.writeArtifact!({ title, filename: title, format: 'md', content });
+
+  it('第 7 个产物被拒绝且不落盘', () => {
+    const saved: string[] = [];
+    const ctx = makeRuntime(saved).createContext(assistantWith([]));
+    for (let i = 0; i < 6; i += 1) write(ctx, `t${i}`);
+    expect(() => write(ctx, 't6')).toThrow('本轮产物已达上限（6 个）');
+    expect(saved).toHaveLength(6);
+  });
+
+  it('累计超过 8MB 被拒绝且不落盘', () => {
+    const saved: string[] = [];
+    const ctx = makeRuntime(saved).createContext(assistantWith([]));
+    const fourMb = 'x'.repeat(4 * 1024 * 1024);
+    write(ctx, 'a', fourMb);
+    write(ctx, 'b', fourMb);
+    expect(() => write(ctx, 'c')).toThrow('本轮产物总大小已达上限（8MB）');
+    expect(saved).toEqual(['a', 'b']);
+  });
+
+  it('保存失败不计数，后续仍可写满配额', () => {
+    const saved: string[] = [];
+    const ctx = makeRuntime(saved, true).createContext(assistantWith([]));
+    expect(() => write(ctx, 'fail')).toThrow('磁盘写入失败');
+    for (let i = 0; i < 6; i += 1) write(ctx, `t${i}`);
+    expect(saved).toHaveLength(6);
   });
 });
 

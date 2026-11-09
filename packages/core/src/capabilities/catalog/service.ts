@@ -7,6 +7,7 @@ import type {
   CapabilityCatalogInstallResult,
   CapabilityCatalogSearchInput,
   CapabilityCatalogSearchItem,
+  CapabilityInventoryItem,
 } from './types';
 
 /**
@@ -88,6 +89,28 @@ export function createCapabilityCatalog(deps: CapabilityCatalogDeps): Capability
       }
       const capability = deps.capabilities.install(deps.capabilities.sample(entry.kind));
       return { entry, capability };
+    },
+
+    /** v2.30：已安装视图；目录中不存在的第三方包只返回安装信息 */
+    listInstalled(): CapabilityInventoryItem[] {
+      const byId = new Map(catalog.map((entry) => [entry.id, entry]));
+      return deps.capabilities.list().map((view) => {
+        const entry = byId.get(view.id);
+        return {
+          id: view.id,
+          name: view.name,
+          kind: view.kind,
+          version: view.version,
+          status: view.status,
+          permissions: view.permissions,
+          effects: entry?.effects ?? [],
+          toolNames: entry?.toolNames ?? [],
+          source: entry?.source ?? 'local',
+          installStrategy: entry?.installStrategy ?? 'manual',
+          ...(view.signatureStatus ? { signatureStatus: view.signatureStatus } : {}),
+          installedAt: view.installedAt,
+        };
+      });
     },
   };
 }

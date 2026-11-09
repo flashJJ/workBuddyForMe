@@ -1,13 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { ExternalLink, Loader2, PackageOpen } from 'lucide-react';
-import type { ContentPackSummary } from '@wbfm/shared/types';
+import { ExternalLink, Loader2, PackageOpen, RefreshCw } from 'lucide-react';
+import type { ContentPackSummary, ContentPackUpdateCheck } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useToast } from '@/components/common/toast';
-import { useContentPacks, useKnowledgeMutations } from '@/lib/hooks/knowledge';
+import {
+  useContentPackUpdateCheck,
+  useContentPacks,
+  useKnowledgeMutations,
+} from '@/lib/hooks/knowledge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { errorText } from '@/lib/i18n/resolve-error';
 import { cn } from '@/lib/utils';
@@ -28,9 +32,37 @@ export function ContentPackSection({ compact = false }: { compact?: boolean }) {
   const confirm = useConfirm();
   const { data, isLoading } = useContentPacks();
   const { importContentPack } = useKnowledgeMutations();
+  const checkUpdate = useContentPackUpdateCheck();
   const [importingId, setImportingId] = React.useState<string | null>(null);
+  const [checkingId, setCheckingId] = React.useState<string | null>(null);
+  const [checkResults, setCheckResults] = React.useState<Record<string, ContentPackUpdateCheck>>(
+    {},
+  );
 
   if (isLoading || !data || data.length === 0) return null;
+
+  /** v2.30：手动检查更新；只在点击时请求一次，不自动轮询 */
+  const runUpdateCheck = async (pack: ContentPackSummary): Promise<void> => {
+    setCheckingId(pack.id);
+    try {
+      const result = await checkUpdate.mutateAsync(pack.id);
+      setCheckResults((prev) => ({ ...prev, [pack.id]: result }));
+    } catch (error) {
+      toast.error(errorText(error, t, { fallback: 'knowledge.contentPack.updateCheckFailed' }));
+    } finally {
+      setCheckingId(null);
+    }
+  };
+
+  const updateText = (result: ContentPackUpdateCheck): string =>
+    result.status === 'latest'
+      ? t('knowledge.contentPack.updateLatest', { version: result.currentVersion })
+      : result.status === 'update-available'
+        ? t('knowledge.contentPack.updateAvailable', {
+            current: result.currentVersion,
+            latest: result.latestVersion ?? '—',
+          })
+        : t('knowledge.contentPack.updateUnavailable', { reason: result.reason ?? '—' });
 
   const importPack = async (pack: ContentPackSummary): Promise<void> => {
     const confirmed = await confirm({
@@ -94,6 +126,19 @@ export function ContentPackSection({ compact = false }: { compact?: boolean }) {
             {formatSize(pack.totalBytes)} ·{' '}
             {t('knowledge.contentPack.version', { version: pack.version })}
           </p>
+          {checkResults[pack.id] && (
+            <p
+              className={cn(
+                'text-[11px]',
+                checkResults[pack.id]!.status === 'update-available'
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-muted-foreground',
+              )}
+              data-testid={`content-pack-update-${pack.id}`}
+            >
+              {updateText(checkResults[pack.id]!)}
+            </p>
+          )}
           <div className="flex items-center justify-between gap-2 pt-0.5">
             <a
               href={pack.sourceUrl}
@@ -104,23 +149,42 @@ export function ContentPackSection({ compact = false }: { compact?: boolean }) {
               <ExternalLink className="h-3 w-3 shrink-0" />
               {t('knowledge.contentPack.source')}
             </a>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              data-testid={`content-pack-import-${pack.id}`}
-              disabled={pack.imported || importingId !== null}
-              onClick={() => void importPack(pack)}
-            >
-              {importingId === pack.id && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              )}
-              {pack.imported
-                ? t('knowledge.contentPack.imported')
-                : importingId === pack.id
-                  ? t('knowledge.contentPack.importing')
-                  : t('knowledge.contentPack.import')}
-            </Button>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                data-testid={`content-pack-check-${pack.id}`}
+                disabled={checkingId !== null || importingId !== null}
+                onClick={() => void runUpdateCheck(pack)}
+              >
+                {checkingId === pack.id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {checkingId === pack.id
+                  ? t('knowledge.contentPack.checkingUpdate')
+                  : t('knowledge.contentPack.checkUpdate')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                data-testid={`content-pack-import-${pack.id}`}
+                disabled={pack.imported || importingId !== null}
+                onClick={() => void importPack(pack)}
+              >
+                {importingId === pack.id && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                )}
+                {pack.imported
+                  ? t('knowledge.contentPack.imported')
+                  : importingId === pack.id
+                    ? t('knowledge.contentPack.importing')
+                    : t('knowledge.contentPack.import')}
+              </Button>
+            </div>
           </div>
         </div>
       ))}

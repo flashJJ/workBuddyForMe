@@ -15,6 +15,13 @@ const installArgsSchema = z.object({
   reason: z.string().trim().max(200).optional(),
 });
 
+const listArgsSchema = z.object({
+  kind: z.enum(CAPABILITY_KINDS).optional(),
+  status: z.enum(['enabled', 'disabled', 'all']).default('all'),
+});
+
+const LIST_LIMIT = 30;
+
 function clip(text: string): string {
   return text.length > OUTPUT_MAX_CHARS ? `${text.slice(0, OUTPUT_MAX_CHARS)}…` : text;
 }
@@ -86,6 +93,71 @@ export const capabilitySearchTool: Tool = {
       ok: true,
       output: clip(`能力目录候选（${items.length} 个）：\n\n${lines.join('\n\n')}`),
       summary: `${items.length} 个候选`,
+    };
+  },
+};
+
+/** v2.30：已安装能力清单（只读；不访问网络、不触发安装） */
+export const capabilityListTool: Tool = {
+  name: 'capability_list',
+  description:
+    '列出现已安装的能力包（技能 / MCP / 工作流 / 桌面动作 / 事件剧本 / 报告组件），包含状态、版本、权限、效果与新增工具。只读。',
+  permission: 'read',
+  parameters: {
+    type: 'object',
+    properties: {
+      kind: {
+        type: 'string',
+        enum: [...CAPABILITY_KINDS],
+        description: '可选：按能力包种类过滤',
+      },
+      status: {
+        type: 'string',
+        enum: ['enabled', 'disabled', 'all'],
+        description: '可选：按启用状态过滤，默认 all',
+      },
+    },
+    additionalProperties: false,
+  },
+
+  async run(rawArgs, ctx): Promise<ToolResult> {
+    const parsed = listArgsSchema.safeParse(rawArgs ?? {});
+    if (!parsed.success) {
+      throw new ToolArgError(parsed.error.issues.map((issue) => issue.message).join('；'));
+    }
+    if (!ctx.listCapabilities) {
+      return {
+        ok: false,
+        output: '能力清单不可用：当前运行环境未装配能力目录服务。',
+        summary: '能力清单不可用',
+      };
+    }
+    const items = ctx
+      .listCapabilities()
+      .filter((item) => (parsed.data.kind ? item.kind === parsed.data.kind : true))
+      .filter((item) => (parsed.data.status === 'all' ? true : item.status === parsed.data.status));
+    if (items.length === 0) {
+      return { ok: true, output: '当前没有匹配的已安装能力。', summary: '0 个能力' };
+    }
+    const lines = items.slice(0, LIST_LIMIT).map((item, index) =>
+      [
+        `${index + 1}. ${item.name}（${item.kind}）`,
+        `   id: ${item.id}`,
+        `   状态：${item.status === 'enabled' ? '已启用' : '已停用'} · 版本：${item.version}`,
+        `   权限：${listOf(item.permissions)}`,
+        `   效果：${listOf(item.effects)}`,
+        `   工具：${listOf(item.toolNames)}`,
+        `   签名：${item.signatureStatus ?? '未检查'}`,
+      ].join('\n'),
+    );
+    const more =
+      items.length > LIST_LIMIT
+        ? `\n\n另有 ${items.length - LIST_LIMIT} 项未展示，请用 kind 或 status 缩小范围。`
+        : '';
+    return {
+      ok: true,
+      output: clip(`已安装能力（${items.length} 个）：\n\n${lines.join('\n\n')}${more}`),
+      summary: `${items.length} 个能力`,
     };
   },
 };

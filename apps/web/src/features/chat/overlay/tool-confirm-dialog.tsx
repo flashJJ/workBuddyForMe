@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { PermissionLevel } from '@wbfm/shared/types';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,6 +20,8 @@ interface Props {
   tool: string;
   permission: PermissionLevel;
   argsSummary: string;
+  /** v2.30：能力安装审批详情（仅 capability_install） */
+  details?: SsePayloadMap['tool_confirmation_required']['details'];
   submitting: boolean;
   /** v0.7 M2：是否存在任务作用域（对话已建立），决定「本任务内允许」按钮可用性 */
   taskScopeAvailable: boolean;
@@ -31,7 +34,7 @@ interface Props {
   onSubmit: (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => Promise<boolean>;
 }
 
-export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitting, taskScopeAvailable, origin, hideAllowAlways, onOpenChange, onSubmit }: Props) {
+export function ToolConfirmDialog({ open, tool, permission, argsSummary, details, submitting, taskScopeAvailable, origin, hideAllowAlways, onOpenChange, onSubmit }: Props) {
   const { t } = useI18n();
   // 未知权限等级回退展示枚举原值（write/danger 走本地化文案）
   const permissionVariant = permission === 'danger' ? 'danger' : 'warning';
@@ -81,6 +84,41 @@ export function ToolConfirmDialog({ open, tool, permission, argsSummary, submitt
             </div>
           )}
           <div className="rounded-md bg-muted p-3 text-sm font-mono break-all">{tool}</div>
+          {details && (
+            <div
+              className="rounded-md border bg-muted/40 p-3 text-sm"
+              data-testid="capability-install-details"
+            >
+              <p className="font-medium">{details.name}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t('chat.toolConfirm.capabilitySource')}：{details.source} ·{' '}
+                {t('chat.toolConfirm.capabilityVersion')}：{details.version} ·{' '}
+                {t('chat.toolConfirm.capabilityToolCount', { count: details.toolNames.length })}
+              </p>
+              <details className="mt-1 text-xs text-muted-foreground">
+                <summary className="cursor-pointer">{t('chat.toolConfirm.capabilityDetails')}</summary>
+                <ul className="mt-1 space-y-0.5">
+                  <li>
+                    {t('chat.toolConfirm.capabilitySignature')}：{details.signatureStatus ?? '—'}
+                  </li>
+                  <li>
+                    {t('chat.toolConfirm.capabilityPermissions')}：
+                    {details.permissions.length > 0 ? details.permissions.join('、') : '—'}
+                  </li>
+                  <li>
+                    {t('chat.toolConfirm.capabilityEffects')}：
+                    {details.effects.length > 0 ? details.effects.join('、') : '—'}
+                  </li>
+                  <li>
+                    {t('chat.toolConfirm.capabilityTools')}（{details.toolNames.length}）：
+                    {details.toolNames.length > 0
+                      ? details.toolNames.join('、')
+                      : t('chat.toolConfirm.capabilityNoTools')}
+                  </li>
+                </ul>
+              </details>
+            </div>
+          )}
           {argsSummary && (
             <div className="text-sm text-muted-foreground space-y-1">
               <div className="text-xs font-medium text-foreground">{t('chat.toolConfirm.argsSummaryLabel')}</div>

@@ -71,6 +71,19 @@ export interface ContentPackImportResult {
   sha256: string;
 }
 
+/** v2.30：内容包更新检查（只比较上游最新 commit，不自动下载或替换） */
+export interface ContentPackUpdateCheck {
+  id: string;
+  currentVersion: string;
+  latestVersion: string | null;
+  updateAvailable: boolean;
+  checkedAt: string;
+  sourceUrl: string;
+  status: 'latest' | 'update-available' | 'unavailable';
+  /** status=unavailable 时的可读原因 */
+  reason?: string;
+}
+
 /** v2.19 M3：跨文档对比产物统计（与产物引用同属可交付领域，并入本文件守目录门禁） */
 export interface DocumentComparisonSectionStats {
   /** 两侧章节并集数 */
