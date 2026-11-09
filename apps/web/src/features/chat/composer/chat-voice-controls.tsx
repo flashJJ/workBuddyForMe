@@ -10,6 +10,7 @@ import {
 } from '@/features/voice/ui';
 import { useVoiceSettings } from '@/features/voice/runtime';
 import type { HandsfreeVoice, VoicePlayback } from '@/features/voice/runtime';
+import type { VoiceDraft } from '@/features/voice/draft';
 import { ReadAloudButton } from './read-aloud-button';
 
 interface Props {
@@ -19,11 +20,12 @@ interface Props {
   inputMode: 'ptt' | 'vad' | undefined;
   handsfree: HandsfreeVoice;
   streaming: boolean;
-  onRecognizedSend: (text: string) => void;
   /** 朗读最新回复：消息列表与共享播放队列 */
   messages: Message[];
   playback: VoicePlayback;
   conversationId: string | null;
+  /** v2.25：PTT 识别后只填草稿（+模型润色），点发送才发出 */
+  voiceDraft: VoiceDraft;
 }
 
 /**
@@ -39,10 +41,10 @@ export function ChatVoiceControls(props: Props) {
     inputMode,
     handsfree,
     streaming,
-    onRecognizedSend,
     messages,
     playback,
     conversationId,
+    voiceDraft,
   } = props;
   // 语音设置/模型就绪态与 VoiceToggle 共用同一份查询缓存，不产生额外请求
   const { settings, modelStatus } = useVoiceSettings();
@@ -61,7 +63,11 @@ export function ChatVoiceControls(props: Props) {
         (inputMode === 'vad' ? (
           <HandsfreeMicButton handsfree={handsfree} />
         ) : (
-          <MicButton onRecognizedSend={onRecognizedSend} disabled={streaming} />
+          <MicButton
+            onRecognizedText={voiceDraft.insert}
+            polishing={voiceDraft.polishing > 0}
+            disabled={streaming}
+          />
         ))}
     </>
   );

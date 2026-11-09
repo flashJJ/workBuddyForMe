@@ -14,8 +14,9 @@ export const zhVoice = {
   },
   mic: {
     unavailable: '语音输入不可用：请在设置中下载离线语音识别模型',
-    recording: '松开发送（正在聆听）',
-    holdToTalk: '按住说话（离线语音识别）',
+    recording: '松开识别（正在聆听）',
+    holdToTalk: '按住说话（松开后填入输入框，可编辑再发送）',
+    polishing: '正在润色识别结果…',
   },
   micError: {
     permissionDenied: '麦克风权限被拒绝，请在浏览器/系统设置中允许',
@@ -202,9 +203,9 @@ export const zhVoice = {
       'Kokoro 多说话人：声线按「Live2D 形象」选中的角色自动绑定（103 个中英音色，可在形象区逐角色试听）',
     asrTitle: '语音输入（ASR）',
     asrToggleLabel: '启用语音输入',
-    asrToggleHintReady: '开启后对话页输入框旁显示麦克风按钮（按住说话）',
+    asrToggleHintReady: '开启后对话页输入框旁显示麦克风按钮（按住说话，松开填入输入框）',
     asrToggleHintNoModel: '请先下载 ASR 模型',
     inputModeLabel: '输入方式',
-    inputModePttOption: '按住说话（PTT）· 自动断句后续版本提供',
+    inputModePttOption: '按住说话（PTT）· 松开后润色并填入输入框，点发送才发出',
   },
 };

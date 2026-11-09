@@ -4,11 +4,9 @@ import * as React from 'react';
 import type { Conversation } from '@wbfm/shared/types';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
-import { useConfirm } from '@/components/common/confirm-dialog';
-import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssistants } from '@/lib/hooks/assistant';
-import { useConversations, useConversationMutations } from '@/lib/hooks/chat';
+import { useConversations } from '@/lib/hooks/chat';
 import { useAllModels, useSettings } from '@/lib/hooks/provider';
 import { ConversationRenameDialog } from '../sidebar/conversation-rename-dialog';
 import { ConversationShareDialog } from '../sidebar/conversation-share-dialog';
@@ -19,9 +17,11 @@ import { MessageList } from '../message/message-list';
 import { Composer } from '../composer/composer';
 import { ToolConfirmDialog } from '../overlay/tool-confirm-dialog';
 import { useChatVoiceCompanion } from '../hooks/use-chat-voice-companion';
+import { useConversationActions } from './use-conversation-actions';
 import { ChatVoiceControls } from '../composer/chat-voice-controls';
 import { ProactiveBubbleBar } from '../overlay/proactive-bubble';
 import { ChatAvatarRail } from '@/features/avatar/ui';
+import { useVoiceDraft } from '@/features/voice/draft';
 import { useChatEvents } from '../hooks/use-chat-events';
 import { useFirstAsk } from '../hooks/use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
@@ -39,9 +39,7 @@ export function ChatPage({
   const { data: assistants, isLoading: assistantsLoading } = useAssistants();
   const { data: settings } = useSettings();
   const { data: models } = useAllModels();
-  const conversationMutations = useConversationMutations();
   const toast = useToast();
-  const confirm = useConfirm();
   const { t } = useI18n();
 
   const [assistantId, setAssistantId] = React.useState<string>('');
@@ -54,6 +52,8 @@ export function ChatPage({
   const [taskMode, setTaskMode] = React.useState(false);
   const [draft, setDraft] = React.useState('');
   const [composerFocus, setComposerFocus] = React.useState(0);
+  // v2.25：PTT 识别先入草稿再润色，点发送才发出（免手 VAD 不经过这里）
+  const voiceDraft = useVoiceDraft({ draft, onChange: setDraft, requestFocus: () => setComposerFocus((v) => v + 1) });
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {
@@ -119,35 +119,9 @@ export function ChatPage({
   const warnMissingMessage = React.useCallback(() => toast.error(t('memory.sourceMessageMissing')), [toast, t]);
 
   // Electron 渲染进程不支持 window.prompt，统一使用应用内弹窗
-  const submitRename = async (id: string, title: string) => {
-    try {
-      await conversationMutations.rename.mutateAsync({ id, title });
-      return true;
-    } catch (error) {
-      toast.error(errorText(error, t, { fallback: 'toast.renameFailed' }));
-      return false;
-    }
-  };
-
-  const remove = async (conversation: { id: string; title: string }) => {
-    if (
-      !(await confirm({
-        title: t('chat.deleteConversationTitle'),
-        description: t('chat.deleteConversationConfirm', { title: conversation.title }),
-        confirmText: t('common.actions.delete'),
-        cancelText: t('common.actions.cancel'),
-        danger: true,
-      }))
-    ) {
-      return;
-    }
-    try {
-      await conversationMutations.remove.mutateAsync(conversation.id);
-      if (conversationId === conversation.id) setConversationId(null);
-    } catch (error) {
-      toast.error(errorText(error, t, { fallback: 'toast.deleteFailed' }));
-    }
-  };
+  const { submitRename, remove } = useConversationActions(conversationId, () =>
+    setConversationId(null),
+  );
 
   /** HITL 工具确认：提交失败（超时已被服务端自动拒绝等）提示并保持弹窗 */
   const submitToolConfirm = async (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => {
@@ -265,10 +239,10 @@ export function ChatPage({
                   inputMode={voiceSettings?.inputMode}
                   handsfree={handsfree}
                   streaming={session.streaming}
-                  onRecognizedSend={session.send}
                   messages={session.messages}
                   playback={companion.playback}
                   conversationId={conversationId}
+                  voiceDraft={voiceDraft}
                 />
               }
               draftValue={draft}

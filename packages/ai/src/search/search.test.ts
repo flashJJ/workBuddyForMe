@@ -80,6 +80,29 @@ describe('search providers', () => {
     await expect(provider.search({ query: 'x' })).rejects.not.toThrow(/doctype/);
   });
 
+  it('SearXNG 0 条且有不可用引擎时，错误里带引擎与原因', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            results: [],
+            unresponsive_engines: [
+              ['brave', 'timeout'],
+              ['duckduckgo', 'timeout'],
+            ],
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+    const provider = createSearchProvider(SETTINGS);
+    // 单次调用同时校验类型与文案（Response body 只能读一次，不能重复 search）
+    const error: unknown = await provider.search({ query: 'x' }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ name: 'SearchError', reason: 'unreachable' });
+    expect((error as Error).message).toMatch(/brave（timeout）/);
+  });
+
   it('mock 结果固定且不发起网络请求', async () => {
     vi.stubGlobal('fetch', vi.fn());
     const provider = createSearchProvider({ ...SETTINGS, provider: 'mock' });

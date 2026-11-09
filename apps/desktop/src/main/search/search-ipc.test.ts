@@ -22,11 +22,14 @@ function ok(stdout = ''): CommandResult {
 function makeRun(table: Record<string, CommandResult>): RunCommand {
   return async (_file, args) => {
     const key = args.slice(0, 2).join(' ');
+    // 引擎调优阶段会重启容器读取新配置；所有用例统一放行
+    if (key === 'restart wbfm-searxng') return ok('');
     return table[key] ?? { code: 1, stdout: '', stderr: `unexpected: ${args.join(' ')}` };
   };
 }
 
 const probeOk = async () => true;
+const enginesOk = async () => true;
 const noSleep = async () => undefined;
 
 describe('deploySearxng', () => {
@@ -57,15 +60,22 @@ describe('deploySearxng', () => {
       dataDir,
       run,
       probe: probeOk,
+      probeEngine: enginesOk,
       sleep: noSleep,
       pickPort: async () => 8080,
     });
 
-    expect(result).toEqual({ ok: true, endpoint: 'http://127.0.0.1:8080', container: SEARXNG_CONTAINER });
+    expect(result).toMatchObject({
+      ok: true,
+      endpoint: 'http://127.0.0.1:8080',
+      container: SEARXNG_CONTAINER,
+    });
+    if (result.ok) expect(result.engines).toContain('sogou');
     const settings = fs.readFileSync(path.join(dataDir, 'settings.yml'), 'utf8');
     expect(settings).toContain('formats:');
     expect(settings).toContain('- json');
     expect(settings).toContain('secret_key:');
+    expect(settings).toContain('# managed-by: wbfm');
   });
 
   it('已有容器但未运行：先 docker start，再按实际映射端口复用', async () => {
@@ -76,12 +86,23 @@ describe('deploySearxng', () => {
       if (key === 'version --format') return ok('27.0.0');
       if (key === 'inspect -f') return ok('false\n');
       if (key === 'start wbfm-searxng') return ok('');
+      if (key === 'restart wbfm-searxng') return ok('');
       if (key === 'port wbfm-searxng') return ok('127.0.0.1:8090\n');
       return { code: 1, stdout: '', stderr: 'unexpected' };
     };
 
-    const result = await deploySearxng({ dataDir, run, probe: probeOk, sleep: noSleep });
-    expect(result).toEqual({ ok: true, endpoint: 'http://127.0.0.1:8090', container: SEARXNG_CONTAINER });
+    const result = await deploySearxng({
+      dataDir,
+      run,
+      probe: probeOk,
+      probeEngine: enginesOk,
+      sleep: noSleep,
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      endpoint: 'http://127.0.0.1:8090',
+      container: SEARXNG_CONTAINER,
+    });
     expect(calls.some((c) => c.startsWith('start'))).toBe(true);
     expect(calls.some((c) => c.startsWith('run'))).toBe(false);
   });
@@ -96,6 +117,7 @@ describe('deploySearxng', () => {
       if (key === 'start wbfm-searxng') return { code: 1, stdout: '', stderr: 'port is already allocated' };
       if (key === 'rm -f') return ok('');
       if (key === 'run -d') return ok('new-id');
+      if (key === 'restart wbfm-searxng') return ok('');
       return { code: 1, stdout: '', stderr: 'unexpected' };
     };
 
@@ -103,11 +125,16 @@ describe('deploySearxng', () => {
       dataDir,
       run,
       probe: probeOk,
+      probeEngine: enginesOk,
       sleep: noSleep,
       pickPort: async () => 8090,
     });
 
-    expect(result).toEqual({ ok: true, endpoint: 'http://127.0.0.1:8090', container: SEARXNG_CONTAINER });
+    expect(result).toMatchObject({
+      ok: true,
+      endpoint: 'http://127.0.0.1:8090',
+      container: SEARXNG_CONTAINER,
+    });
     expect(calls).toContain('rm -f wbfm-searxng');
     expect(calls.some((c) => c.includes('127.0.0.1:8090:8080'))).toBe(true);
   });
@@ -159,13 +186,15 @@ describe('deploySearxng', () => {
       run,
       sleep: noSleep,
       pickPort: async () => 8080,
+      probeEngine: enginesOk,
       probe: async () => {
         attempts += 1;
         return attempts >= 3;
       },
     });
     expect(result.ok).toBe(true);
-    expect(attempts).toBe(3);
+    // 首次就绪至少重试到第 3 次；引擎调优重启后会再探一次，因此用下界断言
+    expect(attempts).toBeGreaterThanOrEqual(3);
   });
 
   it('配置文件已存在时保留用户手改内容', async () => {
@@ -174,5 +203,76 @@ describe('deploySearxng', () => {
     const run = makeRun({ 'version --format': { code: -1, stdout: '', stderr: 'ENOENT' } });
     await deploySearxng({ dataDir, run, probe: probeOk, sleep: noSleep });
     expect(fs.readFileSync(file, 'utf8')).toBe('# custom\n');
+  });
+
+  it('动态调优：只保留探测到结果的引擎，其余写回禁用', async () => {
+    const run = makeRun({
+      'version --format': ok('27.0.0'),
+      'inspect -f': { code: 1, stdout: '', stderr: 'No such object' },
+      'run -d': ok('container-id'),
+    });
+    const result = await deploySearxng({
+      dataDir,
+      run,
+      probe: probeOk,
+      probeEngine: async (_endpoint, engine) => engine === 'sogou' || engine === '360search',
+      sleep: noSleep,
+      pickPort: async () => 8080,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.engines).toEqual(['sogou', '360search']);
+    const settings = fs.readFileSync(path.join(dataDir, 'settings.yml'), 'utf8');
+    expect(settings).toMatch(/- name: "sogou"\n {4}disabled: false/);
+    expect(settings).toMatch(/- name: "360search"\n {4}disabled: false/);
+    expect(settings).toMatch(/- name: "brave"\n {4}disabled: true/);
+  });
+
+  it('动态调优：全部引擎不可用时保留候选全开并返回空列表', async () => {
+    const run = makeRun({
+      'version --format': ok('27.0.0'),
+      'inspect -f': { code: 1, stdout: '', stderr: 'No such object' },
+      'run -d': ok('container-id'),
+    });
+    const result = await deploySearxng({
+      dataDir,
+      run,
+      probe: probeOk,
+      probeEngine: async () => false,
+      sleep: noSleep,
+      pickPort: async () => 8080,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.engines).toEqual([]);
+    const settings = fs.readFileSync(path.join(dataDir, 'settings.yml'), 'utf8');
+    expect(settings).toMatch(/- name: "sogou"\n {4}disabled: false/);
+  });
+
+  it('用户手改配置（无托管标记）不自动调优，也不改写文件', async () => {
+    const file = path.join(dataDir, 'settings.yml');
+    fs.writeFileSync(file, 'use_default_settings: true\n', 'utf8');
+    let probed = 0;
+    const run = makeRun({
+      'version --format': ok('27.0.0'),
+      'inspect -f': { code: 1, stdout: '', stderr: 'No such object' },
+      'run -d': ok('container-id'),
+    });
+    const result = await deploySearxng({
+      dataDir,
+      run,
+      probe: probeOk,
+      probeEngine: async () => {
+        probed += 1;
+        return true;
+      },
+      sleep: noSleep,
+      pickPort: async () => 8080,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.engines).toBeUndefined();
+    expect(probed).toBe(0);
+    expect(fs.readFileSync(file, 'utf8')).toBe('use_default_settings: true\n');
   });
 });
