@@ -12,3 +12,4 @@ export {
   type BackupRestoreOptions,
   type BackupRestoreResult,
 } from './restore';
+export { packTarGz } from './export-archive';

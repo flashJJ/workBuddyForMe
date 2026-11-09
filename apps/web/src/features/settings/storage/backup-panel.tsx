@@ -1,25 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import { apiUpload, ApiClientError, withManagedHeaders } from '@/lib/api/client';
+import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
 import { useToast } from '@/components/common/toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import type { BackupTrack, BackupPrecheck } from '@wbfm/shared/backup';
-import type { BackupRestoreResult } from '@wbfm/core/backup';
+import type { BackupTrack } from '@wbfm/shared/backup';
 import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
+import { BackupRestoreSection } from './backup-restore-section';
 
-/** /api/backup/restore 成功信封解包后的 data（route 返回 jsonOk({precheck,result})） */
-type RestoreResponse = { precheck: BackupPrecheck; result: BackupRestoreResult };
-
+/** 备份面板：导出（勾选轨道）+ 恢复（v2.32 起为两步：预检确认 → 执行） */
 export function BackupPanel() {
   const { t } = useI18n();
   const toast = useToast();
   const [selected, setSelected] = React.useState<BackupTrack[]>(TRACK_ORDER);
   const [exporting, setExporting] = React.useState(false);
-  const [restoring, setRestoring] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const toggle = (track: BackupTrack) => {
     setSelected((prev) =>
@@ -69,122 +65,6 @@ export function BackupPanel() {
     }
   };
 
-  const handleFile = async (file: File) => {
-    setRestoring(true);
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const resp = await apiUpload<RestoreResponse>('/api/backup/restore', form);
-
-      const r = resp.result;
-      const parts: string[] = [];
-      if (r.imported.conversations) {
-        parts.push(t('settingsBackup.imported.conversations', { count: r.imported.conversations }));
-      }
-      if (r.imported.messages) {
-        parts.push(t('settingsBackup.imported.messages', { count: r.imported.messages }));
-      }
-      if (r.imported.knowledgeBases) {
-        parts.push(
-          t('settingsBackup.imported.knowledgeBases', { count: r.imported.knowledgeBases }),
-        );
-      }
-      if (r.imported.documents) {
-        parts.push(t('settingsBackup.imported.documents', { count: r.imported.documents }));
-      }
-      if (r.imported.settings) parts.push(t('settingsBackup.imported.settings'));
-      if (r.imported.attachments) {
-        parts.push(t('settingsBackup.imported.attachments', { count: r.imported.attachments }));
-      }
-      if (r.imported.skills) {
-        parts.push(t('settingsBackup.imported.skills', { count: r.imported.skills }));
-      }
-      if (r.imported.tasks) {
-        parts.push(t('settingsBackup.imported.tasks', { count: r.imported.tasks }));
-      }
-      if (r.imported.emotion) {
-        parts.push(t('settingsBackup.imported.emotion', { count: r.imported.emotion }));
-      }
-      if (r.imported.events) {
-        parts.push(t('settingsBackup.imported.events', { count: r.imported.events }));
-      }
-      if (r.imported.branches) {
-        parts.push(t('settingsBackup.imported.branches', { count: r.imported.branches }));
-      }
-      if (r.imported.branchEvents) {
-        parts.push(t('settingsBackup.imported.branchEvents', { count: r.imported.branchEvents }));
-      }
-
-      const skippedParts: string[] = [];
-      if (r.skipped.conversations) {
-        skippedParts.push(
-          t('settingsBackup.skipped.conversations', { count: r.skipped.conversations }),
-        );
-      }
-      if (r.skipped.documents) {
-        skippedParts.push(t('settingsBackup.skipped.documents', { count: r.skipped.documents }));
-      }
-      if (r.skipped.skills) {
-        skippedParts.push(t('settingsBackup.skipped.skills', { count: r.skipped.skills }));
-      }
-      if (r.skipped.tasks) {
-        skippedParts.push(t('settingsBackup.skipped.tasks', { count: r.skipped.tasks }));
-      }
-      if (r.skipped.emotion) {
-        skippedParts.push(t('settingsBackup.skipped.emotion', { count: r.skipped.emotion }));
-      }
-      if (r.skipped.events) {
-        skippedParts.push(t('settingsBackup.skipped.events', { count: r.skipped.events }));
-      }
-      if (r.skipped.branches) {
-        skippedParts.push(t('settingsBackup.skipped.branches', { count: r.skipped.branches }));
-      }
-      if (r.skipped.branchEvents) {
-        skippedParts.push(
-          t('settingsBackup.skipped.branchEvents', { count: r.skipped.branchEvents }),
-        );
-      }
-
-      let msg = t('settingsBackup.restoreDone', {
-        items: parts.join('、') || t('common.words.none'),
-      });
-      if (skippedParts.length) {
-        msg += t('settingsBackup.restoreSkipped', { items: skippedParts.join('、') });
-      }
-
-      toast.success(msg);
-
-      // needs_reindex 提示
-      if (r.imported.documents > 0) {
-        toast.info(t('settingsBackup.reindexHint', { count: r.imported.documents }));
-      }
-
-      // 脱敏警告
-      if (resp.precheck.warnings.some((w) => w.includes('脱敏'))) {
-        toast.info(t('settingsBackup.redactedHint'));
-      }
-    } catch (error) {
-      if (error instanceof ApiClientError && error.status === 422) {
-        const details = error.details as { precheck?: BackupPrecheck } | undefined;
-        if (details?.precheck?.warnings[0]) {
-          toast.error(details.precheck.warnings[0]);
-        }
-      } else {
-        toast.error(
-          error instanceof ApiClientError ? error.message : t('settingsBackup.restoreFailed'),
-        );
-      }
-    } finally {
-      setRestoring(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) void handleFile(file);
-  };
-
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="backup-panel">
       <h3 className="font-medium">{t('settingsBackup.title')}</h3>
@@ -229,20 +109,7 @@ export function BackupPanel() {
         </div>
       </div>
 
-      {/* 恢复区域 */}
-      <div className="space-y-3 rounded-md border p-3">
-        <Label>{t('settingsBackup.restoreTitle')}</Label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".tar.gz,.tgz"
-          aria-label={t('settingsBackup.chooseFileAria')}
-          className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:text-primary-foreground hover:file:bg-primary/90"
-          onChange={onFileChange}
-          disabled={restoring}
-        />
-        <p className="text-xs text-muted-foreground">{t('settingsBackup.restoreHint')}</p>
-      </div>
+      <BackupRestoreSection />
     </section>
   );
 }
