@@ -9,6 +9,7 @@ import { MotionMixer, type MotionRotationConfig } from './vrm-motion-mixer';
 import { VrmFaceLayer } from './vrm-face-layer';
 import { VrmInteractionState, type InteractionPhase } from './vrm-interaction-state';
 import { VrmPoseLayer, type NormalizedBoneRef } from './vrm-pose-layer';
+import { prepareVrmModel, VrmTailLayer } from './asset';
 import type { MotionPoolEntry } from '../motion/motion-segments';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
@@ -65,6 +66,7 @@ export class VrmController implements VrmControllerLike {
   private readonly mixer: MotionMixer;
   private readonly face: VrmFaceLayer;
   private readonly pose: VrmPoseLayer;
+  private readonly tail: VrmTailLayer;
   private readonly interaction = new VrmInteractionState();
   /** 上一帧交互阶段（用于检测阶段跃迁，驱动长按三段式） */
   private lastPhase: InteractionPhase = 'idle';
@@ -89,6 +91,9 @@ export class VrmController implements VrmControllerLike {
     this.renderer = renderer;
     this.clock = new THREE.Clock();
 
+    // 资产兜底：布料双面 + 重复弹簧冻结（必须在首次 update 之前）
+    prepareVrmModel(vrm);
+
     // 初始化 normalized bone（只读，供 gaze/wiggle 叠加用）
     vrm.update(0.016);
     const normBones = new Map<string, NormalizedBoneRef>();
@@ -99,6 +104,7 @@ export class VrmController implements VrmControllerLike {
 
     this.pose = new VrmPoseLayer(vrm, normBones);
     this.face = new VrmFaceLayer(vrm);
+    this.tail = new VrmTailLayer(vrm);
     this.mixer = new MotionMixer(vrm, gltfAnimations, motionPool, rotationConfig);
   }
 
@@ -245,6 +251,8 @@ export class VrmController implements VrmControllerLike {
     // normalized bone 在 Step 4 已写好（有 clip 时 mixer 写，无 clip 时程序化写 head）
     // vrm.update 负责把 normalized 同步到 raw，再应用到 scene mesh，并驱动 SpringBone 物理模拟
     this.vrm.update(dt);
+    // 非 humanoid 且未配 SpringBone 的尾巴：程序化小幅摆动
+    this.tail.update(t);
 
     // --- Step 7: morph 表情层 ---
     this.face.applyExpressionLayer();
