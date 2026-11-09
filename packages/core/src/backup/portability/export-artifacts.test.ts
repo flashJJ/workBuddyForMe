@@ -24,7 +24,7 @@ async function listArchive(archive: Buffer): Promise<Map<string, Buffer>> {
     const extract = tar.extract();
     extract.on('entry', (header, stream, next) => {
       const chunks: Buffer[] = [];
-      stream.on('data', (c: Buffer) => chunks.push(c));
+      stream.on('data', (chunk: unknown) => chunks.push(chunk as Buffer));
       stream.on('end', () => {
         files.set(header.name, Buffer.concat(chunks));
         next();

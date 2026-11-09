@@ -5,7 +5,7 @@
  */
 import type { DatabaseInstance } from '@wbfm/database';
 import type { AgentRunTrackEntry, AgentHandoffTrackEntry } from './export-agent-runs';
-import type { TaskTrackEntry } from './restore-ops';
+import type { TaskTrackEntry } from './restore-tasks-track';
 
 /** agentRuns.json 负载（缺失/损坏按空数组降级，兼容 v7 归档） */
 export function readAgentRunsPayload(raw: Buffer | undefined): AgentRunTrackEntry[] {

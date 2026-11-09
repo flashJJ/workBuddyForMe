@@ -1,21 +1,25 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import {
   CURRENT_BACKUP_SCHEMA_VERSION,
   type BackupTrack,
   type BackupProgressEvent,
 } from '@wbfm/shared/backup';
 import type { ServiceDeps } from '../services/base/deps';
-import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
-import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
+import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState } from './restore-ops';
+import { restoreTasks, type TaskTrackEntry } from './portability/restore-tasks-track';
+import {
+  recomputeEnabledSchedules,
+  writeAttachmentBinaries,
+  writeSkillFolders,
+  type SkillsTrackPayload,
+} from './portability/restore-post-write';
 import {
   backfillTaskAgentRunIds,
   readAgentHandoffsPayload,
   readAgentRunsPayload,
   restoreAgentHandoffs,
   restoreAgentRuns,
-} from './restore-agent-runs';
+} from './portability/restore-agent-runs';
 import { emptyCounts, type BackupRestoreResult } from './export-types';
 import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
@@ -42,8 +46,6 @@ import {
 } from './restore-cards';
 import { determineTracks } from './restore-track-select';
 import { extractArchiveFull } from './restore-archive';
-import { createScheduledTaskRepository } from '@wbfm/database';
-import { computeNextRunMs } from '../scheduler/next-run';
 import { ensureSeedData, migrateLegacySystemPrompts } from '../services/base/seed';
 
 export interface BackupRestoreOptions {
@@ -54,12 +56,6 @@ export interface BackupRestoreOptions {
 }
 
 export type { BackupRestoreResult } from './export-types';
-
-/** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
-interface SkillsTrackPayload {
-  states?: SkillStateEntry[];
-  skills?: Array<{ name: string; skillJson: string }>;
-}
 
 /** 正式恢复：事务包裹 DB 写入，附件二进制在事务外落盘 */
 export async function restoreBackup(
@@ -264,41 +260,20 @@ export async function restoreBackup(
 
   // --- 事务外：附件二进制落盘 ---
   if (tracksToRestore.includes('attachments') && binaries.length > 0) {
-    const attDir = path.join(getDataRoot(), 'attachments');
-    fs.mkdirSync(attDir, { recursive: true });
-    for (const bin of binaries) {
-      const destPath = path.join(attDir, bin.name.replace(/^attachments\//, ''));
-      fs.writeFileSync(destPath, bin.data);
-    }
+    writeAttachmentBinaries(binaries);
   }
 
   // --- 事务外：技能文件夹 skill.json 落盘（同名文件夹已存在则保留本机版本） ---
   if (tracksToRestore.includes('skills') && skillsPayload?.skills?.length) {
-    const skillsDir = path.join(getDataRoot(), 'skills');
-    fs.mkdirSync(skillsDir, { recursive: true });
     const total = manifest.tracks.skills?.entryCount ?? skillsPayload.skills.length;
-    for (const sk of skillsPayload.skills) {
-      const folder = path.join(skillsDir, sk.name);
-      if (fs.existsSync(folder)) {
-        // 不覆盖：避免备份旧版本回滚用户对技能的修改
-        txResult.skipped.skills++;
-      } else {
-        fs.mkdirSync(folder, { recursive: true });
-        fs.writeFileSync(path.join(folder, 'skill.json'), sk.skillJson);
-        txResult.imported.skills++;
-      }
-      onProgress?.({ track: 'skills', processed: txResult.imported.skills + txResult.skipped.skills, total });
-    }
+    const counts = writeSkillFolders(skillsPayload, total, onProgress);
+    txResult.imported.skills += counts.imported;
+    txResult.skipped.skills += counts.skipped;
   }
 
   // --- 事务外：events 轨恢复后统一重排启用提醒（防备份时刻过期/未来漂移） ---
   if (tracksToRestore.includes('events') && files.has('events.json')) {
-    try {
-      createScheduledTaskRepository(deps.db, { computeNextRunMs }).recomputeEnabled();
-    } catch (error) {
-      // 重排失败不判定恢复失败：提醒行已入库，下条编辑/tick 会自然纠偏
-      console.warn('[backup] 提醒时刻重排失败', error);
-    }
+    recomputeEnabledSchedules(deps.db);
   }
 
   // --- v2.0 M5：VRM 引用悬空提示（二进制按红线从不入备份） ---

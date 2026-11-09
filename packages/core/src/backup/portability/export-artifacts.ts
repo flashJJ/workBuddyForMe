@@ -10,7 +10,7 @@ import { createAttachmentRepository, type AttachmentRow } from '@wbfm/database';
 import type { DatabaseInstance } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
 import { ARTIFACT_MIME_BY_FORMAT } from '@wbfm/shared/constants';
-import { packEntries } from './export-archive';
+import { packEntries } from '../export-archive';
 
 export const ARTIFACT_BATCH_MAX_COUNT = 100;
 export const ARTIFACT_BATCH_MAX_BYTES = 200 * 1024 * 1024;
@@ -46,10 +46,15 @@ const FORMAT_BY_MIME = new Map<string, string>(
 
 /** 归档内文件名：去路径分隔符与控制字符，加序号避免同名覆盖 */
 function archiveName(index: number, filename: string, mimeType: string): string {
-  const safe = filename
-    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-')
+  const cleaned = Array.from(filename)
+    .map((ch) => {
+      if (ch.charCodeAt(0) < 0x20 || '\\/:*?"<>|'.includes(ch)) return '-';
+      return ch;
+    })
+    .join('')
     .replace(/^\.+/, '')
-    .trim() || `artifact.${mimeType.split('/')[1] ?? 'bin'}`;
+    .trim();
+  const safe = cleaned || `artifact.${mimeType.split('/')[1] ?? 'bin'}`;
   return `artifacts/${String(index + 1).padStart(3, '0')}-${safe}`;
 }
 

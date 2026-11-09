@@ -21,7 +21,7 @@ import { ToolDebugPanel } from '../tools/tool-debug-panel';
 import { SearchSettingsPanel } from '../tools/search-settings-panel';
 import { SkillsPanel } from '../skills/skills-panel';
 import { MemoryPanel } from '@/features/memory';
-import { BackupPanel } from '../storage/backup-panel';
+import { BackupPanel } from '../storage/backup';
 import { ArtifactPackPanel } from '../storage/artifact-pack-panel';
 import { StorageCleanupPanel } from '../storage/storage-cleanup-panel';
 import { AboutPanel } from '../storage/about-panel';

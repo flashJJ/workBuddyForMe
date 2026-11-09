@@ -66,8 +66,8 @@ export function StorageCleanupPanel() {
 
   const loadTrash = React.useCallback(async () => {
     try {
-      const data = await apiGet<{ entries: TrashEntry[] }>(API.storageTrash);
-      setTrash(data.entries);
+      const data = await apiGet<{ entries?: TrashEntry[] }>(API.storageTrash);
+      setTrash(Array.isArray(data?.entries) ? data.entries : []);
     } catch {
       /* 列表失败不阻断占用统计 */
     }
@@ -166,7 +166,7 @@ export function StorageCleanupPanel() {
             {BUCKETS.map((bucket) => (
               <li key={bucket} className="flex justify-between text-muted-foreground">
                 <span>{t(`settingsBackup.storage.buckets.${bucket}`)}</span>
-                <span>{formatBytes(usage.items[bucket])}</span>
+                <span>{formatBytes(usage.items?.[bucket] ?? 0)}</span>
               </li>
             ))}
           </ul>

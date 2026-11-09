@@ -19,7 +19,7 @@ export {
   ARTIFACT_BATCH_MAX_COUNT,
   type ArtifactBatchManifest,
   type ArtifactBatchResult,
-} from './export-artifacts';
+} from './portability/export-artifacts';
 export {
   getStorageUsage,
   resetStorageUsageCache,
@@ -34,4 +34,4 @@ export {
   type OrphanScanResult,
   type TrashEntry,
   type TrashListing,
-} from './storage-usage';
+} from './portability/storage-usage';

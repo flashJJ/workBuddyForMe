@@ -38,8 +38,8 @@ export function ArtifactPackPanel() {
     setLoading(true);
     setLoadError(false);
     try {
-      const data = await apiGet<{ items: ArtifactItem[] }>(API.artifacts);
-      setItems(data.items);
+      const data = await apiGet<{ items?: ArtifactItem[] }>(API.artifacts);
+      setItems(Array.isArray(data?.items) ? data.items : []);
     } catch {
       setLoadError(true);
     } finally {
