@@ -15,7 +15,7 @@ import type { MotionPoolEntry } from '../motion/motion-segments';
 export type { MotionRotationConfig } from './vrm-motion-mixer';
 
 const NORM_BONE_NAMES = [
-  'spine',
+  'spine', 'neck',
   'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
   'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand', 'head',
 ] as const;

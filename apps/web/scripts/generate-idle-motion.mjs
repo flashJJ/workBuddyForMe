@@ -181,10 +181,11 @@ for (const channel of anim.channels) {
     } else if (key === 'chest') {
       qNorm = euler(s2 * 0.6 * DEG, 0, 0);
     } else if (key === 'neck') {
-      qNorm = euler(0, Math.sin(2 * Math.PI * u + 0.4) * 1.2 * DEG, 0);
+      // 轻微低头：侧栏/桌宠相机位于胸口高度，纯中立头会被看成「上仰」
+      qNorm = euler(1 * DEG, Math.sin(2 * Math.PI * u + 0.4) * 1.2 * DEG, 0);
     } else if (key === 'head') {
       qNorm = euler(
-        s2 * 0.8 * DEG,
+        2.5 * DEG + s2 * 0.8 * DEG,
         s1 * 2.5 * DEG,
         Math.sin(2 * Math.PI * u + 0.8) * 0.5 * DEG,
       );

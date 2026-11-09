@@ -18,6 +18,8 @@ import { relaxArm } from '../performance/arm-relax';
 const UP = new THREE.Vector3(0, 1, 0);
 const PITCH_AXIS = new THREE.Vector3(1, 0, 0);
 const HEAD_IDLE_PITCH = 0.12;
+/** 待机颈部下压：多数模型默认颈部后仰，低机位会显得一直抬头 */
+const NECK_IDLE_PITCH = 0.2;
 
 /** 参与 gaze/wiggle 叠加的 normalized bone 引用 */
 export interface NormalizedBoneRef {
@@ -57,6 +59,7 @@ export class VrmPoseLayer {
   /** mixer 本帧写的骨骼姿态（叠加前快照，避免视线逐帧累积） */
   private readonly mixerHeadQuat = new THREE.Quaternion();
   private readonly mixerSpineQuat = new THREE.Quaternion();
+  private readonly mixerNeckQuat = new THREE.Quaternion();
   /** VRM lookAt 的眼睛目标（独立对象，不参与取景包围盒） */
   private readonly gazeTarget = new THREE.Object3D();
   private readonly headWorld = new THREE.Vector3();
@@ -73,6 +76,8 @@ export class VrmPoseLayer {
     if (head) this.mixerHeadQuat.copy(head.baseQuat);
     const spine = normBones.get('spine');
     if (spine) this.mixerSpineQuat.copy(spine.baseQuat);
+    const neck = normBones.get('neck');
+    if (neck) this.mixerNeckQuat.copy(neck.baseQuat);
     if (vrm.lookAt) vrm.lookAt.target = this.gazeTarget;
   }
 
@@ -113,6 +118,8 @@ export class VrmPoseLayer {
     if (head) head.node.quaternion.copy(head.baseQuat);
     const spine = this.normBones.get('spine');
     if (spine) spine.node.quaternion.copy(spine.baseQuat);
+    const neck = this.normBones.get('neck');
+    if (neck) neck.node.quaternion.copy(neck.baseQuat);
   }
 
   /** mixer.update 之后：快照本帧骨骼姿态，视线在其上合成 */
@@ -121,6 +128,8 @@ export class VrmPoseLayer {
     if (head) this.mixerHeadQuat.copy(head.node.quaternion);
     const spine = this.normBones.get('spine');
     if (spine) this.mixerSpineQuat.copy(spine.node.quaternion);
+    const neck = this.normBones.get('neck');
+    if (neck) this.mixerNeckQuat.copy(neck.node.quaternion);
   }
 
   /** 点击头部微倾（程序化回退分支用） */
@@ -160,6 +169,7 @@ export class VrmPoseLayer {
     this.headPitch = smoothDamp(this.headPitch, target.headPitch, GAZE_SMOOTH.head, dt);
     this.spineYaw = smoothDamp(this.spineYaw, target.spineYaw, GAZE_SMOOTH.spine, dt);
     this.applySpineTilt(procedural);
+    this.applyNeckPitch(procedural);
     this.applyEyeTarget(headRef);
     if (procedural) {
       this.applyProgrammaticPose(t, headRef);
@@ -252,6 +262,18 @@ export class VrmPoseLayer {
       spine.node.quaternion.copy(spine.baseQuat).premultiply(q);
     } else {
       spine.node.quaternion.copy(this.mixerSpineQuat).premultiply(q);
+    }
+  }
+
+  /** 颈部待机下压：抵消模型默认后仰，视线/交互角度仍叠加在头部 */
+  private applyNeckPitch(procedural: boolean): void {
+    const neck = this.normBones.get('neck');
+    if (!neck) return;
+    const q = new THREE.Quaternion().setFromAxisAngle(PITCH_AXIS, NECK_IDLE_PITCH);
+    if (procedural) {
+      neck.node.quaternion.copy(neck.baseQuat).premultiply(q);
+    } else {
+      neck.node.quaternion.copy(this.mixerNeckQuat).premultiply(q);
     }
   }
 
