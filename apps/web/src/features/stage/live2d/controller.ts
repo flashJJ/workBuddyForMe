@@ -7,6 +7,7 @@ import {
   type ExpressionTag,
 } from '@/features/avatar';
 import type { StageSlot } from '@wbfm/shared/schemas';
+import { desiredAutoUpdate, syncAutoUpdate } from './auto-update';
 import type { StageLive2dActor, StageLive2dOptions } from './types';
 
 /**
@@ -57,10 +58,15 @@ interface Entry {
   model: PldModel | null;
   micro: Live2dMicrodynamics;
   idleTimer: ReturnType<typeof setTimeout> | null;
+  /** 模型加载中：update 高频调用（拖拽）时避免并发重复加载同一角色 */
+  loading: boolean;
+  /** 加载代次：每次加载/销毁自增，旧加载回来时据此丢弃 */
   token: number;
   actor: StageLive2dActor | null;
   lastSpeechAt: number;
   lastExpression: ExpressionTag | null;
+  /** 已写入 pld 的 autoUpdate；null=新模型/已销毁，首次写入才触达 setter */
+  appliedAutoUpdate: boolean | null;
 }
 
 export interface StageLive2dController {
@@ -98,11 +104,9 @@ export async function createStageLive2dController(
   let disposed = false;
   let options: StageLive2dOptions = { powerMode: 'live', focus: null };
 
-  const shouldUpdate = (entry: Entry): boolean =>
-    options.powerMode === 'live' || options.focus === entry.slot;
-
   function destroyEntry(entry: Entry): void {
     entry.token += 1;
+    entry.loading = false;
     if (entry.idleTimer) clearTimeout(entry.idleTimer);
     entry.idleTimer = null;
     try {
@@ -111,6 +115,7 @@ export async function createStageLive2dController(
       /* best-effort */
     }
     entry.model = null;
+    entry.appliedAutoUpdate = null;
   }
 
   function applyLayout(entry: Entry): void {
@@ -130,7 +135,12 @@ export async function createStageLive2dController(
     model.x = (actor.layout.leftPct / 100) * stageW;
     model.y = (actor.layout.topPct / 100) * stageH + boxH / 2 + 4;
     model.zIndex = actor.layout.zIndex;
-    model.autoUpdate = shouldUpdate(entry);
+    // 只能差量写入：pld 的 setter 每次赋 true 都会再注册一次 ticker（拖动即失速）
+    entry.appliedAutoUpdate = syncAutoUpdate(
+      model,
+      entry.appliedAutoUpdate,
+      desiredAutoUpdate(options.powerMode, options.focus, entry.slot),
+    );
   }
 
   function applyExpression(entry: Entry): void {
@@ -145,6 +155,8 @@ export async function createStageLive2dController(
 
   function scheduleIdle(entry: Entry): void {
     if (disposed) return;
+    // 单链守卫：已有待机定时器时不再叠加，否则动作回调会指数级堆积（表现为动画失速）
+    if (entry.idleTimer) return;
     const delay = IDLE_INTERVAL_MIN + Math.random() * (IDLE_INTERVAL_MAX - IDLE_INTERVAL_MIN);
     entry.idleTimer = setTimeout(() => {
       entry.idleTimer = null;
@@ -160,16 +172,19 @@ export async function createStageLive2dController(
   }
 
   async function load(entry: Entry): Promise<void> {
-    const token = entry.token;
+    // 每次加载占用新的代次并置加载标记：拖拽期间 update 高频触发也只会有一次在途加载
+    const token = ++entry.token;
+    entry.loading = true;
     try {
       const model = await ModelCtor.from(entry.spec.url, { autoInteract: false });
       if (disposed || entry.token !== token) {
         model.destroy();
         return;
       }
+      entry.model?.destroy();
       entry.model = model;
+      entry.appliedAutoUpdate = null;
       model.anchor.set(0.5, 1);
-      model.autoUpdate = shouldUpdate(entry);
       app.stage.addChild(model as unknown as PIXI.DisplayObject);
       const name = entry.spec.expressions[DEFAULT_EXPRESSION];
       if (name) await model.expression(name);
@@ -179,6 +194,8 @@ export async function createStageLive2dController(
       scheduleIdle(entry);
     } catch {
       /* 单个模型加载失败不拖垮其他角色；错误由控制台诊断 */
+    } finally {
+      if (entry.token === token) entry.loading = false;
     }
   }
 
@@ -192,10 +209,12 @@ export async function createStageLive2dController(
         model: null,
         micro: new Live2dMicrodynamics(),
         idleTimer: null,
+        loading: false,
         token: 0,
         actor,
         lastSpeechAt: 0,
         lastExpression: null,
+        appliedAutoUpdate: null,
       };
       entries.set(actor.slot, entry);
     }
@@ -206,7 +225,7 @@ export async function createStageLive2dController(
       entry.lastExpression = null;
     }
     entry.actor = actor;
-    if (!entry.model) void load(entry);
+    if (!entry.model && !entry.loading) void load(entry);
     applyLayout(entry);
     applyExpression(entry);
     return entry;

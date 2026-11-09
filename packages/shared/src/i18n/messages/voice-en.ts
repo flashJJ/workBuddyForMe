@@ -5,6 +5,13 @@ export const enVoice = {
     off: 'Turn off voice readout',
     on: 'Turn on voice readout (offline)',
   },
+  readAloud: {
+    start: 'Read the latest reply aloud',
+    stop: 'Stop reading',
+    unavailable: 'Speech model is not ready',
+    empty: 'No reply to read yet',
+    failed: 'Failed to read aloud. Try again later.',
+  },
   mic: {
     unavailable: 'Voice input unavailable: download the offline speech recognition model in Settings',
     recording: 'Release to send (listening)',

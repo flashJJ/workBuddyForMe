@@ -76,6 +76,27 @@ describe('CitationsList 引用来源折叠（v1.5）', () => {
     expect(screen.queryByTestId('citations-list')).toBeNull();
   });
 
+  it('流式增长：从 2 条涨到 6 条时自动折叠，不会停留在展开态', () => {
+    const { rerender } = renderWithProviders(<CitationsList message={messageWith(2)} />);
+    expect(screen.queryByTestId('citations-toggle')).toBeNull();
+    expect(screen.getByTestId('citations-list')).toBeInTheDocument();
+
+    rerender(<CitationsList message={messageWith(6)} />);
+    const toggle = screen.getByTestId('citations-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('citations-list')).toBeNull();
+  });
+
+  it('用户手动展开后，引用继续增长仍保持展开', async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderWithProviders(<CitationsList message={messageWith(6)} />);
+    await user.click(screen.getByTestId('citations-toggle'));
+
+    rerender(<CitationsList message={messageWith(8)} />);
+    expect(screen.getByTestId('citations-toggle')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('citations-list')).toBeInTheDocument();
+  });
+
   it('无引用：不渲染容器', () => {
     const { container } = renderWithProviders(<CitationsList message={messageWith(0)} />);
     expect(container.querySelector('[data-testid="citations"]')).toBeNull();

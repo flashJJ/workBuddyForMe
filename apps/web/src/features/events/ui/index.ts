@@ -2,3 +2,4 @@
 export * from './custom-trigger-section';
 export * from './event-preview-menu';
 export * from './event-usage-stats';
+export * from './tts-clip';

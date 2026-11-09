@@ -116,10 +116,7 @@ export function ChatPage({
       selectConversation(conversation.id);
     },
   });
-  const warnMissingMessage = React.useCallback(
-    () => toast.error(t('memory.sourceMessageMissing')),
-    [toast, t],
-  );
+  const warnMissingMessage = React.useCallback(() => toast.error(t('memory.sourceMessageMissing')), [toast, t]);
 
   // Electron 渲染进程不支持 window.prompt，统一使用应用内弹窗
   const submitRename = async (id: string, title: string) => {
@@ -269,6 +266,9 @@ export function ChatPage({
                   handsfree={handsfree}
                   streaming={session.streaming}
                   onRecognizedSend={session.send}
+                  messages={session.messages}
+                  playback={companion.playback}
+                  conversationId={conversationId}
                 />
               }
               draftValue={draft}

@@ -5,6 +5,13 @@ export const zhVoice = {
     off: '关闭语音朗读',
     on: '开启语音朗读（离线）',
   },
+  readAloud: {
+    start: '朗读最新回复',
+    stop: '停止朗读',
+    unavailable: '语音模型未就绪，无法朗读',
+    empty: '暂无可朗读的回复',
+    failed: '朗读失败，请稍后重试',
+  },
   mic: {
     unavailable: '语音输入不可用：请在设置中下载离线语音识别模型',
     recording: '松开发送（正在聆听）',
