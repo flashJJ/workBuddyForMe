@@ -20,3 +20,18 @@ export {
   type ArtifactBatchManifest,
   type ArtifactBatchResult,
 } from './export-artifacts';
+export {
+  getStorageUsage,
+  resetStorageUsageCache,
+  scanOrphanAttachments,
+  trashOrphanAttachments,
+  listTrash,
+  restoreFromTrash,
+  purgeTrash,
+  type StorageBucket,
+  type StorageUsage,
+  type OrphanCandidate,
+  type OrphanScanResult,
+  type TrashEntry,
+  type TrashListing,
+} from './storage-usage';
