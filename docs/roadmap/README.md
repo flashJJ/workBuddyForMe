@@ -90,7 +90,7 @@ v2.32 让数据「能带走」，但还不能「放心托付」：归档是明�
 v2.33 让备份「可托付」，但备份生命周期仍不可持续：每次导出都是全量，附件二进制与全部消息重复打包，备份成本随数据线性增长；全量基线还有两处静默截断（最多 10,000 个会话、每会话最多 500 条消息），超出部分既不在归档也不告警；恢复只能单文件单次，无法表达「基线 + 日常补量」的链。v2.34 补三条链路：全量基线改为 keyset 分页并记录真实消息数，超过 500MB 显式失败；manifest 升 v9，增加 `archiveId/kind/chainId/sequence/parentArchiveId/startedAt`，按父段 `startedAt` 增量导出（只补新行 + settings/skills 小快照，不含删除/修改）；前端多选归档按链预检，服务端用 `meta` 链状态校验顺序，逐段调用恢复并聚合核对。零数据库迁移，`LATEST_SCHEMA_VERSION = 51`；备份 schema 由 8 升 9。删除/修改增量、恢复演练与附件合并视图留待 v2.35。
 
 - 方案：[v2.34 方案](../plan/v2.34/README.md) · 来源方案：[v2.34-01](scheduled/v2.34-01-incremental-and-chain-restore.md)
-- 发行说明：[v2.34-release-notes.md](v2.34-release-notes.md)
+- 发行说明：[v2.34.0-release-notes.md](v2.34.0-release-notes.md)
 - 博客：[blog/v2.34](../../blog/v2.34/) 10 篇
 - 状态：✅ 已合入 main（merge commit `46518d65`），已打 tag `v2.34.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 9
 - 下一版本：v2.35 待盘点（删除/修改增量与恢复演练优先评估）
