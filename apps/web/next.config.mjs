@@ -8,6 +8,10 @@ const appVersion = /** @type {string} */ (require('../../package.json').version)
 // Next 15 会向上探测 lockfile；E:\code\traeWork 下还有另一个 package-lock.json，
 // 不显式指定会把 tracing root 推到仓库外，standalone 目录层级随之改变。
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
+// instrumentation 的 edge 编译替身：避免把 server container/原生依赖打进 Edge bundle
+const voiceRuntimeStub = fileURLToPath(
+  new URL('./src/lib/server/voice/voice-runtime-singleton.edge-stub.ts', import.meta.url),
+);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -79,7 +83,16 @@ const nextConfig = {
    * 导致 Route Handler 调用 `pdfjs.getDocument()` 时抛出 fake worker 失败。
    * 解决：把 pdfjs-dist 整包设为 webpack externals，Node 运行时直接 require 原始文件。
    */
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config, { isServer, dev, nextRuntime, webpack }) => {
+    if (nextRuntime === 'edge') {
+      // instrumentation.ts 的 edge 分支运行时直接 return，但 bundler 仍会解析动态 import；
+      // 替换成 no-op 单例，避免 Node 原生依赖进入 Edge 编译。
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(/voice-runtime-singleton$/, (resource) => {
+          resource.request = voiceRuntimeStub;
+        }),
+      );
+    }
     if (isServer) {
       config.externals = config.externals || [];
       const existing = Array.isArray(config.externals)
