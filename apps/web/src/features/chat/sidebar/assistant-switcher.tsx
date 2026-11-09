@@ -14,7 +14,7 @@ interface Props {
 export function AssistantSwitcher({ assistants, value, disabled, onChange }: Props) {
   const { t } = useI18n();
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-3">
       <span className="shrink-0 text-sm text-muted-foreground">{t('chat.currentAssistant')}</span>
       <SimpleSelect
         aria-label={t('chat.switchAssistantAria')}

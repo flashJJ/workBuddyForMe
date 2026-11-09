@@ -53,11 +53,11 @@ function CapabilitySummary({ assistant }: { assistant: Assistant }) {
     mcpCount > 0
       ? t('assistants.capability.toolsMcp', { count: toolCount, mcp: mcpCount })
       : t('assistants.capability.tools', { count: toolCount }),
-  ].join(' · ');
+  ].join('  ·  ');
 
   return (
     <div
-      className="truncate text-[10px] leading-tight text-muted-foreground"
+      className="truncate text-[11px] leading-snug text-muted-foreground"
       title={summary}
       data-testid="chat-capability-summary"
     >
@@ -181,8 +181,8 @@ export function ChatHeader({
 }: Props) {
   return (
     <>
-      <header className="flex items-center justify-between gap-3 border-b px-3 py-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
+      <header className="flex items-center justify-between gap-4 border-b px-4 py-2.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <AssistantSwitcher
             assistants={assistants}
             value={assistantId}
