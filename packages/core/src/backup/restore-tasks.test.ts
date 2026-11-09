@@ -12,7 +12,10 @@ import {
   createTaskRunRepository,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
+import type { BackupManifest } from '@wbfm/shared/backup';
 import { exportBackup } from './export';
+import { packTarGz } from './export-archive';
+import { extractArchiveFull } from './restore-archive';
 import { restoreBackup } from './restore';
 import { createWebCipher } from '../secrets/cipher';
 import { ensureSeedData } from '../services/base/seed';
@@ -96,7 +99,7 @@ describe('tasks 轨备份恢复（v0.7 M4）', () => {
     expect(result.skipped.tasks).toBe(1);
   });
 
-  it('v1.4：协作运行记录不进备份；tasks 轨恢复后 agent 表为空、归属列回落 NULL', async () => {
+  it('v2.32：协作运行与交接随 tasks 轨恢复，并回填 task_runs.agent_run_id', async () => {
     ensureSeedData(srcDb);
     const convRepo = createConversationRepository(srcDb);
     const taskRepo = createTaskRunRepository(srcDb);
@@ -129,19 +132,67 @@ describe('tasks 轨备份恢复（v0.7 M4）', () => {
     });
     const result = await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
     expect(result.imported.tasks).toBe(1);
+    expect(result.imported.agentRuns).toBe(1);
+    expect(result.imported.agentHandoffs).toBe(1);
 
-    // 协作表随 v019 迁移存在，但不随备份迁移（与 workflow_runs 同级运行记录）
     const agentRuns = dstDb.prepare(`SELECT COUNT(*) AS n FROM agent_runs`).get() as { n: number };
     const handoffs = dstDb.prepare(`SELECT COUNT(*) AS n FROM agent_handoffs`).get() as {
       n: number;
     };
-    expect(agentRuns.n).toBe(0);
-    expect(handoffs.n).toBe(0);
+    expect(agentRuns.n).toBe(1);
+    expect(handoffs.n).toBe(1);
 
-    // 恢复的 task_run 归属列回落 NULL，无悬空 FK
+    // 恢复的 task_run 归属列指向迁移后的协作运行 id
     const restored = dstDb
       .prepare(`SELECT agent_run_id AS agentRunId FROM task_runs WHERE id=?`)
       .get(run.id) as { agentRunId: string | null };
-    expect(restored.agentRunId).toBeNull();
+    expect(restored.agentRunId).toBe('ar1');
+
+    // 重复恢复：协作运行/交接按主键跳过，不产生重复行
+    const again = await restoreBackup({ db: dstDb, cipher: createWebCipher() }, archive);
+    expect(again.imported.agentRuns).toBe(0);
+    expect(again.skipped.agentRuns).toBe(1);
+    expect(again.imported.agentHandoffs).toBe(0);
+    expect(again.skipped.agentHandoffs).toBe(1);
+    expect((dstDb.prepare('SELECT COUNT(*) AS n FROM agent_runs').get() as { n: number }).n).toBe(1);
+  });
+
+  it('v7 兼容：缺 agentRuns/agentHandoffs 文件时按空数组恢复，不报错', async () => {
+    ensureSeedData(srcDb);
+    const convRepo = createConversationRepository(srcDb);
+    const taskRepo = createTaskRunRepository(srcDb);
+    const conv = convRepo.create({ assistantId: 'builtin-general', title: '旧归档' });
+    taskRepo.createRun({
+      conversationId: conv.id,
+      assistantId: 'builtin-general',
+      goal: '旧任务',
+      maxSteps: 3,
+    });
+
+    const { archive } = await exportBackup({ db: srcDb, cipher: createWebCipher() }, {
+      tracks: ['tasks', 'conversations'],
+    });
+    const full = await extractArchiveFull(archive);
+    const legacyFiles: Record<string, string> = {};
+    for (const [name, content] of full.files) {
+      if (name === 'agentRuns.json' || name === 'agentHandoffs.json') continue;
+      legacyFiles[name] = content.toString('utf-8');
+    }
+    const tasksTrack = full.manifest.tracks.tasks!;
+    const legacyManifest: BackupManifest = {
+      ...full.manifest,
+      backupSchemaVersion: 7,
+      tracks: {
+        ...full.manifest.tracks,
+        tasks: { files: tasksTrack.files, entryCount: tasksTrack.entryCount },
+      },
+    };
+    const legacyArchive = await packTarGz(legacyFiles, full.binaries, legacyManifest);
+
+    const result = await restoreBackup({ db: dstDb, cipher: createWebCipher() }, legacyArchive);
+    expect(result.imported.tasks).toBe(1);
+    expect(result.imported.agentRuns).toBe(0);
+    expect(result.imported.agentHandoffs).toBe(0);
+    expect((dstDb.prepare('SELECT COUNT(*) AS n FROM agent_runs').get() as { n: number }).n).toBe(0);
   });
 });

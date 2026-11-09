@@ -9,6 +9,13 @@ import type { ServiceDeps } from '../services/base/deps';
 import { getDataRoot } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState, restoreTasks, type SkillStateEntry, type TaskTrackEntry } from './restore-ops';
+import {
+  backfillTaskAgentRunIds,
+  readAgentHandoffsPayload,
+  readAgentRunsPayload,
+  restoreAgentHandoffs,
+  restoreAgentRuns,
+} from './restore-agent-runs';
 import { emptyCounts, type BackupRestoreResult } from './export-types';
 import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
 import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
@@ -171,9 +178,20 @@ export async function restoreBackup(
       } catch {
         throw new ApiError('VALIDATION_ERROR', 'tasks.json 解析失败，归档可能已损坏');
       }
+      // v2.32 顺序：runs → handoffs → task_runs/task_steps 回填（v7 归档缺文件按空数组）
+      const agentRuns = readAgentRunsPayload(files.get('agentRuns.json'));
+      const agentHandoffs = readAgentHandoffsPayload(files.get('agentHandoffs.json'));
+      const runCounts = restoreAgentRuns(deps.db, agentRuns);
+      const handoffCounts = restoreAgentHandoffs(deps.db, agentHandoffs);
+      result.imported.agentRuns = runCounts.imported;
+      result.skipped.agentRuns = runCounts.skipped;
+      result.imported.agentHandoffs = handoffCounts.imported;
+      result.skipped.agentHandoffs = handoffCounts.skipped;
+
       const { imported, skipped } = restoreTasks(deps.db, taskPayload);
       result.imported.tasks = imported;
       result.skipped.tasks = skipped;
+      backfillTaskAgentRunIds(deps.db, taskPayload);
       onProgress?.({ track: 'tasks', processed: imported + skipped, total: manifest.tracks.tasks?.entryCount ?? taskPayload.length });
     }
 

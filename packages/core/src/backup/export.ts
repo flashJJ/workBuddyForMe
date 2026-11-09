@@ -23,6 +23,7 @@ import {
   type SessionEventView,
 } from '@wbfm/database';
 import { serializeTasksTrack } from './export-tasks-track';
+import { serializeAgentRunsTrack, serializeAgentHandoffsTrack } from './export-agent-runs';
 import { serializeEventsTrack } from './export-events-track';
 import { getAppVersion } from './app-version';
 import { ApiError } from '@wbfm/shared/errors';
@@ -199,7 +200,17 @@ export async function exportBackup(
     // v0.7 M4：任务轨——task_runs + task_steps 全量序列化（截图附件 id 引用 attachments 表，独立于 attachments 轨）
     const serialized = serializeTasksTrack(deps.db);
     files['tasks.json'] = JSON.stringify(serialized, null, 2);
-    manifestPartial.tasks = { files: 'tasks.json', entryCount: serialized.length };
+    // v2.32：协作运行与角色交接随 tasks 轨（v7 归档缺文件，恢复端按空数组处理）
+    const agentRuns = serializeAgentRunsTrack(deps.db);
+    const agentHandoffs = serializeAgentHandoffsTrack(deps.db);
+    files['agentRuns.json'] = JSON.stringify(agentRuns, null, 2);
+    files['agentHandoffs.json'] = JSON.stringify(agentHandoffs, null, 2);
+    manifestPartial.tasks = {
+      files: 'tasks.json',
+      entryCount: serialized.length,
+      agentRunCount: agentRuns.length,
+      agentHandoffCount: agentHandoffs.length,
+    };
     onProgress?.({ track: 'tasks', processed: serialized.length, total: serialized.length });
   }
 

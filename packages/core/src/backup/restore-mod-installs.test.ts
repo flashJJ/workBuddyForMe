@@ -68,7 +68,7 @@ describe('v2.0 M5 备份恢复（events 轨：modInstalls + vrmAvatars 引用）
       { db: srcDb, cipher: createWebCipher() },
       { tracks: ['events'] },
     );
-    expect(manifest.backupSchemaVersion).toBe(7);
+    expect(manifest.backupSchemaVersion).toBe(8);
     expect(manifest.tracks.events?.modInstallCount).toBe(1);
     expect(manifest.tracks.events?.vrmAvatarCount).toBe(1);
 

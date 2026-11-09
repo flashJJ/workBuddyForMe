@@ -42,7 +42,7 @@ export const zhSettingsBackup = {
     skillsLabel: '技能包',
     skillsDesc: '技能文件夹（skill.json）与启停状态',
     tasksLabel: '任务记录',
-    tasksDesc: '桌面 Agent 任务运行与步骤日志（v0.7+）',
+    tasksDesc: '桌面 Agent 任务运行、步骤日志与协作运行记录（v0.7+）',
     emotionLabel: '情绪与关系',
     emotionDesc: '各助手的心情、亲密度与信任度状态（v1.6+）',
     eventsLabel: '角色与提醒',
@@ -61,6 +61,8 @@ export const zhSettingsBackup = {
     events: '{count} 条提醒',
     branches: '{count} 分支',
     branchEvents: '{count} 分支事件',
+    agentRuns: '{count} 协作运行',
+    agentHandoffs: '{count} 角色交接',
   },
   skipped: {
     conversations: '{count} 对话（已存在或助手不存在）',
@@ -71,6 +73,8 @@ export const zhSettingsBackup = {
     events: '{count} 条提醒（已存在或助手不存在）',
     branches: '{count} 分支（父/子会话缺失或已存在）',
     branchEvents: '{count} 分支事件（分支缺失或数据损坏）',
+    agentRuns: '{count} 协作运行（已存在）',
+    agentHandoffs: '{count} 角色交接（所属运行缺失或已存在）',
   },
 };
 
@@ -120,7 +124,7 @@ export const enSettingsBackup = {
     skillsLabel: 'Skills',
     skillsDesc: 'Skill folders (skill.json) and enabled state',
     tasksLabel: 'Task records',
-    tasksDesc: 'Desktop agent task runs and step logs (v0.7+)',
+    tasksDesc: 'Desktop agent task runs, step logs and collaboration runs (v0.7+)',
     emotionLabel: 'Mood & relationship',
     emotionDesc: 'Per-assistant mood, intimacy and trust state (v1.6+)',
     eventsLabel: 'Personas & reminders',
@@ -139,6 +143,8 @@ export const enSettingsBackup = {
     events: '{count} reminders',
     branches: '{count} branches',
     branchEvents: '{count} branch events',
+    agentRuns: '{count} agent runs',
+    agentHandoffs: '{count} agent handoffs',
   },
   skipped: {
     conversations: '{count} conversations (already exist or assistant missing)',
@@ -149,5 +155,7 @@ export const enSettingsBackup = {
     events: '{count} reminders (already exist or assistant missing)',
     branches: '{count} branches (parent/child conversation missing or already exist)',
     branchEvents: '{count} branch events (branch missing or corrupted)',
+    agentRuns: '{count} agent runs (already exist)',
+    agentHandoffs: '{count} agent handoffs (owner run missing or already exist)',
   },
 };

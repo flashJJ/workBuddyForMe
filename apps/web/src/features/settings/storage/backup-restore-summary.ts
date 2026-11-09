@@ -19,7 +19,7 @@ export function trackCount(precheck: BackupPrecheck, track: BackupTrack): number
     case 'skills':
       return c.skills;
     case 'tasks':
-      return c.tasks;
+      return c.tasks + c.agentRuns + c.agentHandoffs;
     case 'emotion':
       return c.emotion;
     case 'events':
@@ -65,6 +65,8 @@ export function precheckCountRows(precheck: BackupPrecheck): CountRow[] {
     { label: 'settingsBackup.imported.emotion', count: c.emotion },
     { label: 'settingsBackup.imported.events', count: c.schedules },
     { label: 'settingsBackup.imported.branches', count: c.branches },
+    { label: 'settingsBackup.imported.agentRuns', count: c.agentRuns },
+    { label: 'settingsBackup.imported.agentHandoffs', count: c.agentHandoffs },
   ];
   return rows.filter((row) => row.count > 0);
 }
@@ -87,6 +89,8 @@ export function summarizeRestore(result: BackupRestoreResult, t: Translate): str
   add('settingsBackup.imported.events', result.imported.events);
   add('settingsBackup.imported.branches', result.imported.branches);
   add('settingsBackup.imported.branchEvents', result.imported.branchEvents);
+  add('settingsBackup.imported.agentRuns', result.imported.agentRuns);
+  add('settingsBackup.imported.agentHandoffs', result.imported.agentHandoffs);
 
   const skipped: string[] = [];
   const addSkipped = (key: MessageKey, count: number) => {
@@ -100,6 +104,8 @@ export function summarizeRestore(result: BackupRestoreResult, t: Translate): str
   addSkipped('settingsBackup.skipped.events', result.skipped.events);
   addSkipped('settingsBackup.skipped.branches', result.skipped.branches);
   addSkipped('settingsBackup.skipped.branchEvents', result.skipped.branchEvents);
+  addSkipped('settingsBackup.skipped.agentRuns', result.skipped.agentRuns);
+  addSkipped('settingsBackup.skipped.agentHandoffs', result.skipped.agentHandoffs);
 
   let message = t('settingsBackup.restoreDone', {
     items: parts.join('、') || t('common.words.none'),

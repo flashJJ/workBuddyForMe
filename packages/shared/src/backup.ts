@@ -5,9 +5,10 @@ import { z } from 'zod';
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。
- * 当前版本：7（v2.6 events 轨加法负载：memories.json 长期记忆（含来源消息/召回次数）、
- * meetingConclusions.json 会议结论、meetingActionItems.json 行动项；manifest.events
- * 对应三个 optional 计数；v6 及更早归档缺文件按 0 降级）。
+ * 当前版本：8（v2.32 tasks 轨加法负载：agentRuns.json 协作运行、agentHandoffs.json
+ * 角色交接；manifest.tasks 对应两个 optional 计数；v7 及更早归档缺文件按 0 降级）。
+ * v7（v2.6）：memories.json 长期记忆（含来源消息/召回次数）、meetingConclusions.json
+ * 会议结论、meetingActionItems.json 行动项。
  * v2.20 阶段计划为 v7 内可选字段（conversations 条目 stagePlan/modelId、助手/卡片 stagePlan），
  * 不升版；旧归档缺字段按 null 恢复。
  * v2.21 分支为 v7 内可选负载（conversations 轨 branches.json + 可选 branchCount），不升版；
@@ -19,7 +20,7 @@ import { z } from 'zod';
  * v1–v4 旧归档仍可恢复，缺文件/缺键按 0 处理。
  */
 
-export const CURRENT_BACKUP_SCHEMA_VERSION = 7 as const;
+export const CURRENT_BACKUP_SCHEMA_VERSION = 8 as const;
 
 export const backupTrackSchema = z.enum([
   'conversations',
@@ -64,7 +65,16 @@ export const backupManifestSchema = z.object({
     /** v0.6 新增；旧归档（v0.4/v0.5）无此键，故 optional 保持向前兼容 */
     skills: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
     /** v0.7 新增；旧归档无此键，故 optional 保持向前兼容 */
-    tasks: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
+    tasks: z
+      .object({
+        files: z.string(),
+        entryCount: z.number().int().min(0),
+        /** v2.32：协作运行条数（agentRuns.json；v7 及更早缺省 0） */
+        agentRunCount: z.number().int().min(0).optional(),
+        /** v2.32：角色交接条数（agentHandoffs.json；v7 及更早缺省 0） */
+        agentHandoffCount: z.number().int().min(0).optional(),
+      })
+      .optional(),
     /** v1.6 新增：助手情绪/关系状态；v1 旧归档无此键 */
     emotion: z.object({ files: z.string(), entryCount: z.number().int().min(0) }).optional(),
     /** v1.7 新增：自定义助手+提醒+演出流水；v2 及更早归档无此键 */
@@ -144,6 +154,9 @@ export const backupPrecheckSchema = z.object({
     branches: z.number().int().min(0),
     /** v2.22：分支事件条数（随 conversations 轨；v2.21 及更早为 0） */
     branchEvents: z.number().int().min(0),
+    /** v2.32：协作运行/交接条数（随 tasks 轨；v7 及更早为 0） */
+    agentRuns: z.number().int().min(0),
+    agentHandoffs: z.number().int().min(0),
   }),
   warnings: z.array(z.string()),
 });

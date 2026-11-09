@@ -209,6 +209,8 @@ export interface TaskTrackEntry {
     createdAt: string;
     updatedAt: string;
     finishedAt: string | null;
+    /** v2.32：协作运行关联（v7 归档缺省） */
+    agentRunId?: string | null;
   };
   steps: Array<{
     id: string;
@@ -224,6 +226,8 @@ export interface TaskTrackEntry {
     error: string;
     durationMs: number;
     createdAt: string;
+    /** v2.32：步骤级协作运行关联（v7 归档缺省） */
+    agentRunId?: string | null;
   }>;
 }
 
