@@ -77,7 +77,11 @@ export function VrmCanvas({
 
   React.useEffect(() => { speakingRef.current = speaking; }, [speaking]);
   React.useEffect(() => { getLevelRef.current = getLevel; }, [getLevel]);
-  React.useEffect(() => { expressionRef.current = expression; }, [expression]);
+  // 表情按 prop 变化下发；不能每帧写回基线，否则事件演出/情绪表情会被立刻覆盖
+  React.useEffect(() => {
+    expressionRef.current = expression;
+    if (expression) controllerRefInternal.current?.setExpression(expression);
+  }, [expression]);
   React.useEffect(() => { moodRef.current = mood; }, [mood]);
   React.useEffect(() => { relationshipLevelRef.current = relationshipLevel; }, [relationshipLevel]);
   React.useEffect(() => { frameModeRef.current = frameMode; }, [frameMode]);
@@ -160,6 +164,7 @@ export function VrmCanvas({
         controllerRefInternal.current = controller;
         if (controllerRef) controllerRef.current = controller;
         controller.setSleeping(sleepingRef.current);
+        if (expressionRef.current) controller.setExpression(expressionRef.current);
 
         // 调试钩子（仅 dev）：MCP/CDP 读取实时缩放/位置/相机/当前待机动作/取景自检结果
         debug = installVrmDebugProbe(
@@ -187,7 +192,6 @@ export function VrmCanvas({
           raf = requestAnimationFrame(animate);
           if (!shouldRenderFrame(now, lastFrameAt, frameModeRef.current)) return;
           lastFrameAt = now;
-          if (expressionRef.current) controller.setExpression(expressionRef.current);
           controller.setMotionPreference({
             mood: moodRef.current,
             relationshipLevel: relationshipLevelRef.current,
