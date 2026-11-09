@@ -185,7 +185,8 @@ export class VrmController implements VrmControllerLike {
 
   update(speaking: boolean, getLevel: () => number): void {
     if (this.disposed) return;
-    const dt = this.clock.getDelta();
+    // v3.0 P0：隐藏档暂停渲染后恢复时，避免一次巨大的 dt 让 SpringBone/动作跳变
+    const dt = Math.min(0.05, this.clock.getDelta());
     const t = this.clock.elapsedTime;
 
     // --- Step 0: InteractionState phase 推进 ---

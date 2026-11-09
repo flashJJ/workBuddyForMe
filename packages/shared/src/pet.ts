@@ -47,6 +47,29 @@ export type PetPerformanceEvent =
   | { kind: 'interaction'; event: InteractionEvent }
   | { kind: 'conversation' };
 
+/** 命中轮廓多边形（归一化窗口坐标 0..1，原点左上，顺时针） */
+export interface PetHitPolygon {
+  id: 'head' | 'body' | 'tail';
+  points: Array<[number, number]>;
+}
+
+/**
+ * v3.0 P0：渲染层上报的模型命中轮廓。
+ *
+ * 主进程把归一化点乘当前窗口 bounds 后做射线法判定，替代固定比例矩形，
+ * 让角色两侧/头顶的透明区不再「空气可点」。上报时机：模型加载、窗口尺寸变化、换模型。
+ */
+export interface PetHitProxy {
+  version: 1;
+  polygons: PetHitPolygon[];
+}
+
+/** 单次上报的多边形数量/点数上限（IPC 安全边界） */
+export const PET_HIT_PROXY_MAX_POLYGONS = 4;
+export const PET_HIT_PROXY_MAX_POINTS = 32;
+
+const HIT_POLYGON_IDS = new Set<string>(['head', 'body', 'tail']);
+
 /**
  * preload 通过 contextBridge 暴露的桌宠桥（window.wbfm.pet）。
  * 主窗调用 open/close/isOpen/relayPerformance/onOpenChange；
@@ -61,6 +84,8 @@ export interface WbfmPetBridge {
   isOpen(): Promise<boolean>;
   /** 桌宠窗：命中盒悬停结果（穿透滞回输入；高频，主进程节流） */
   reportHover(hovering: boolean): void;
+  /** 桌宠窗：上报模型命中轮廓（模型加载/尺寸变化时；null 回落固定矩形） */
+  reportHitProxy(proxy: PetHitProxy | null): void;
   /** 桌宠窗：双击回主窗（主窗显示并聚焦）；可选站内路径用于工作/审批深链 */
   focusMain(path?: string): void;
   /**
@@ -188,4 +213,66 @@ export function sanitizePetEvent(input: unknown): PetPerformanceEvent | null {
     default:
       return null;
   }
+}
+
+/** 射线法：点是否在多边形内（坐标同尺度，支持任意凸/凹多边形） */
+export function pointInPolygon(
+  x: number,
+  y: number,
+  points: Array<[number, number]>,
+): boolean {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i]!;
+    const [xj, yj] = points[j]!;
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** 归一化点是否落在任一命中多边形内 */
+export function isPointInPetHitProxy(
+  nx: number,
+  ny: number,
+  proxy: PetHitProxy | null | undefined,
+): boolean {
+  if (!proxy || proxy.polygons.length === 0) return false;
+  return proxy.polygons.some((polygon) => pointInPolygon(nx, ny, polygon.points));
+}
+
+/**
+ * 净化渲染层上报的命中轮廓（主进程安全边界：不信任 IPC 载荷）。
+ * 多边形/点数超限截断，非法点整条丢弃；无有效多边形返回 null（调用方回落矩形）。
+ */
+export function sanitizePetHitProxy(input: unknown): PetHitProxy | null {
+  if (typeof input !== 'object' || input === null) return null;
+  const record = input as Record<string, unknown>;
+  if (record.version !== 1 || !Array.isArray(record.polygons)) return null;
+  const polygons: PetHitPolygon[] = [];
+  for (const raw of record.polygons.slice(0, PET_HIT_PROXY_MAX_POLYGONS)) {
+    if (typeof raw !== 'object' || raw === null) continue;
+    const polygon = raw as Record<string, unknown>;
+    if (typeof polygon.id !== 'string' || !HIT_POLYGON_IDS.has(polygon.id)) continue;
+    if (!Array.isArray(polygon.points)) continue;
+    const rawPoints = polygon.points.slice(0, PET_HIT_PROXY_MAX_POINTS);
+    if (rawPoints.length < 3) continue;
+    const points: Array<[number, number]> = [];
+    let valid = true;
+    for (const point of rawPoints) {
+      if (!Array.isArray(point) || point.length !== 2) {
+        valid = false;
+        break;
+      }
+      const [x, y] = point;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        valid = false;
+        break;
+      }
+      points.push([Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))]);
+    }
+    if (valid) polygons.push({ id: polygon.id as PetHitPolygon['id'], points });
+  }
+  return polygons.length > 0 ? { version: 1, polygons } : null;
 }

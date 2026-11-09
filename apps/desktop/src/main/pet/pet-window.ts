@@ -10,7 +10,11 @@
  */
 import { app, BrowserWindow, screen } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
-import { normalizeAvatarModelId } from '@wbfm/shared/pet';
+import {
+  isPointInPetHitProxy,
+  normalizeAvatarModelId,
+  type PetHitProxy,
+} from '@wbfm/shared/pet';
 import { DEV_SERVER_URL, resolvePreloadPath } from '../config';
 import type { WindowBootInfo } from '../window';
 import { clampIntoDisplay, type PetState } from './pet-state';
@@ -36,19 +40,28 @@ export interface CursorPoint {
   y: number;
 }
 
-/** 全局光标是否落在桌宠命中列内（坐标均为 DIP） */
+/**
+ * 全局光标是否落在桌宠命中区（坐标均为 DIP）。
+ *
+ * v3.0 P0：优先用渲染层上报的模型轮廓（归一化多边形）做射线命中；
+ * 尚未上报/无有效轮廓时回落固定比例矩形（旧行为）。
+ */
 export function isCursorOverPet(
   cursor: CursorPoint,
   bounds: { x: number; y: number; width: number; height: number },
+  proxy?: PetHitProxy | null,
 ): boolean {
   if (bounds.width <= 0 || bounds.height <= 0) return false;
   const localX = cursor.x - bounds.x;
   const localY = cursor.y - bounds.y;
+  if (localX < 0 || localY < 0 || localX > bounds.width || localY > bounds.height) return false;
+  if (proxy && proxy.polygons.length > 0) {
+    return isPointInPetHitProxy(localX / bounds.width, localY / bounds.height, proxy);
+  }
   return (
     localX >= bounds.width * PET_HIT_DIP.leftRatio &&
     localX <= bounds.width * PET_HIT_DIP.rightRatio &&
-    localY >= bounds.height * PET_HIT_DIP.topRatio &&
-    localY <= bounds.height
+    localY >= bounds.height * PET_HIT_DIP.topRatio
   );
 }
 
@@ -84,6 +97,9 @@ export function buildPetWindowOptions(x: number, y: number, boot: WindowBootInfo
       sandbox: true,
       webSecurity: true,
       spellcheck: false,
+      // v3.0 P0：帧率档位由渲染层主动控制；关掉后台节流，避免窗口被判定后台后
+      // Chromium 把 rAF/定时器压到 1Hz，导致待机动作卡顿
+      backgroundThrottling: false,
       additionalArguments,
     },
   };

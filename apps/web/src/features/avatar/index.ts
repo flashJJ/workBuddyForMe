@@ -11,6 +11,13 @@ export { useEmotionState } from './expression/use-emotion-expression';
 export { pulseReunionSignal } from './reunion/reunion-storage';
 export { ReunionSignalHost } from './reunion/use-reunion-foreground-signal';
 export { useReunionGreeting } from './reunion/use-reunion-greeting';
+export {
+  FRAME_INTERVAL_BY_MODE,
+  frameRateForMode,
+  shouldRenderFrame,
+  type FrameMode,
+} from './performance/frame-governor';
+export type { AvatarScreenRect } from './performance/screen-rect';
 export type { Live2dController } from './live2d/live2d-controller';
 export { Live2dMicrodynamics } from './live2d/live2d-microdynamics';
 export { loadCubismCore } from './live2d/live2d-core';

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { SUPPORTED_AVATAR_MODEL_IDS } from './schemas/media/voice';
-import { PET_SUBTITLE_MAX, normalizeAvatarModelId, sanitizePetEvent } from './pet';
+import {
+  PET_SUBTITLE_MAX,
+  normalizeAvatarModelId,
+  isPointInPetHitProxy,
+  pointInPolygon,
+  sanitizePetEvent,
+  sanitizePetHitProxy,
+} from './pet';
 
 describe('normalizeAvatarModelId', () => {
   it('白名单内 id 原样返回', () => {
@@ -128,5 +135,75 @@ describe('sanitizePetEvent IPC 载荷净化', () => {
       sanitizePetEvent({ kind: 'interaction', event: { kind: 'chat', subtype: 'mention' } }),
     ).toBeNull();
     expect(sanitizePetEvent({ kind: 'interaction' })).toBeNull();
+  });
+});
+
+describe('PetHitProxy 命中轮廓', () => {
+  const square: Array<[number, number]> = [
+    [0.25, 0.25],
+    [0.75, 0.25],
+    [0.75, 0.75],
+    [0.25, 0.75],
+  ];
+
+  it('射线法区分内外与凹多边形的缺口', () => {
+    expect(pointInPolygon(0.5, 0.5, square)).toBe(true);
+    expect(pointInPolygon(0.1, 0.5, square)).toBe(false);
+    const concave: Array<[number, number]> = [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0.6, 1],
+      [0.6, 0.4],
+      [0.4, 0.4],
+      [0.4, 1],
+      [0, 1],
+    ];
+    expect(pointInPolygon(0.5, 0.8, concave)).toBe(false);
+    expect(pointInPolygon(0.2, 0.8, concave)).toBe(true);
+  });
+
+  it('多多边形取并集；空 proxy 为 false', () => {
+    const proxy = {
+      version: 1 as const,
+      polygons: [{ id: 'body' as const, points: square }],
+    };
+    expect(isPointInPetHitProxy(0.5, 0.5, proxy)).toBe(true);
+    expect(isPointInPetHitProxy(0.9, 0.5, proxy)).toBe(false);
+    expect(isPointInPetHitProxy(0.5, 0.5, null)).toBe(false);
+    expect(isPointInPetHitProxy(0.5, 0.5, { version: 1, polygons: [] })).toBe(false);
+  });
+
+  it('净化：合法载荷保留并夹紧 0..1', () => {
+    const got = sanitizePetHitProxy({
+      version: 1,
+      polygons: [{ id: 'body', points: [[-1, 0.2], [1.4, 0.2], [0.5, 1.2]] }],
+    });
+    expect(got).toEqual({
+      version: 1,
+      polygons: [{ id: 'body', points: [[0, 0.2], [1, 0.2], [0.5, 1]] }],
+    });
+  });
+
+  it('净化：版本/结构/顶点非法一律丢弃', () => {
+    expect(sanitizePetHitProxy(null)).toBeNull();
+    expect(sanitizePetHitProxy({ version: 2, polygons: [] })).toBeNull();
+    expect(sanitizePetHitProxy({ version: 1, polygons: 'x' })).toBeNull();
+    expect(sanitizePetHitProxy({ version: 1, polygons: [{ id: 'evil', points: square }] })).toBeNull();
+    expect(
+      sanitizePetHitProxy({ version: 1, polygons: [{ id: 'body', points: [[0, 0], [1, 1]] }] }),
+    ).toBeNull();
+    expect(
+      sanitizePetHitProxy({
+        version: 1,
+        polygons: [{ id: 'body', points: [[0, 0], [1, 'x'], [1, 1]] }],
+      }),
+    ).toBeNull();
+  });
+
+  it('净化：多边形数量超限截断', () => {
+    const poly = { id: 'body', points: square };
+    const got = sanitizePetHitProxy({ version: 1, polygons: [poly, poly, poly, poly, poly] });
+    expect(got?.polygons).toHaveLength(4);
   });
 });

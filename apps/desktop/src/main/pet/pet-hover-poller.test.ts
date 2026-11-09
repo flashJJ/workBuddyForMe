@@ -112,6 +112,63 @@ describe('PetHoverPoller（全局光标悬停轮询）', () => {
     expect(onHover).not.toHaveBeenCalled();
   });
 
+  it('渲染层轮廓优先于矩形：轮廓外（矩形内）不翻转穿透', () => {
+    const { win, setIgnore } = createFakeWindow();
+    let pollTick: () => void = () => undefined;
+    let cursor = { x: 10, y: 10 };
+    const controller = new PetClickThroughController({
+      setPenetrating: (p) => setIgnore(p, { forward: p }),
+    });
+    controller.start();
+    setIgnore.mockClear();
+    const poller = new PetHoverPoller({
+      getCursor: () => cursor,
+      setInterval: (cb: () => void) => {
+        pollTick = cb;
+        return 1 as unknown as ReturnType<typeof setInterval>;
+      },
+      clearInterval: vi.fn(),
+      onHover: (h) => controller.update(h),
+      onForceInteractive: () => controller.force(false),
+    });
+    poller.start(win); // start 会清空旧轮廓
+    poller.reportHitProxy({
+      version: 1,
+      polygons: [{ id: 'body', points: [[0.4, 0.1], [0.6, 0.1], [0.6, 0.9], [0.4, 0.9]] }],
+    });
+
+    // 窗口内 local x=59（0.227）在旧矩形内、轮廓外 → 不关穿透
+    cursor = { x: 380, y: 600 };
+    pollTick();
+    expect(setIgnore).not.toHaveBeenCalled();
+
+    // 移到轮廓中央 → 立即关穿透
+    cursor = { x: 451, y: 600 };
+    pollTick();
+    expect(setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
+  });
+
+  it('非法轮廓载荷被净化，回落矩形判定', () => {
+    const { win } = createFakeWindow();
+    let pollTick: () => void = () => undefined;
+    const onHover = vi.fn();
+    const poller = new PetHoverPoller({
+      getCursor: () => ({ x: 451, y: 600 }),
+      setInterval: (cb: () => void) => {
+        pollTick = cb;
+        return 1 as unknown as ReturnType<typeof setInterval>;
+      },
+      clearInterval: vi.fn(),
+      onHover,
+      onForceInteractive: vi.fn(),
+    });
+    poller.start(win);
+    poller.reportHitProxy({ version: 1, polygons: [{ id: 'evil', points: [] }] });
+    onHover.mockClear();
+    pollTick();
+    expect(onHover).toHaveBeenLastCalledWith(true); // 矩形内 → 命中
+  });
+
   it('stop 清理定时器后不再 tick', () => {
     const { win } = createFakeWindow();
     const clearInterval = vi.fn();

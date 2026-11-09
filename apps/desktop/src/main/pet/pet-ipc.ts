@@ -24,6 +24,8 @@ export interface PetIpcActions {
   open(modelId?: string): Promise<boolean> | boolean;
   close(): Promise<unknown> | unknown;
   reportHover(hovering: boolean): void;
+  /** v3.0 P0：渲染层上报的命中轮廓（未净化，由 manager 走 shared 净化） */
+  reportHitProxy(raw: unknown): void;
   focusMain(path?: string): void;
   beginDrag(): void;
   dragTo(): void;
@@ -56,6 +58,9 @@ export function registerPetIpc(
   ipc.handle('pet:is-open', () => actions.isOpen());
   ipc.on('pet:hover', (event, hovering) => {
     if (guards.fromPet(event.sender)) actions.reportHover(Boolean(hovering));
+  });
+  ipc.on('pet:hit-proxy', (event, raw) => {
+    if (guards.fromPet(event.sender)) actions.reportHitProxy(raw);
   });
   ipc.on('pet:focus-main', (event, path) => {
     if (guards.fromPet(event.sender)) {

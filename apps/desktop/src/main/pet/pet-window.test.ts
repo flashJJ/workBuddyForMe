@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BrowserWindowConstructorOptions } from 'electron';
+import type { PetHitProxy } from '@wbfm/shared/pet';
 
 /**
  * vi.hoisted 保证 mock 回调在工厂提升执行前已初始化：
@@ -84,6 +85,7 @@ describe('buildPetWindowOptions 透明窗安全配置', () => {
     expect(options.webPreferences?.contextIsolation).toBe(true);
     expect(options.webPreferences?.nodeIntegration).toBe(false);
     expect(options.webPreferences?.sandbox).toBe(true);
+    expect(options.webPreferences?.backgroundThrottling).toBe(false);
     expect(options.webPreferences?.preload).toMatch(/preload/);
   });
 
@@ -145,6 +147,45 @@ describe('isCursorOverPet 主进程命中（窗口 260×340 @ 1500,800）', () =
   });
   it('异常尺寸安全返回 false', () => {
     expect(isCursorOverPet({ x: 1, y: 1 }, { x: 0, y: 0, width: 0, height: 0 })).toBe(false);
+  });
+});
+
+describe('isCursorOverPet 多边形命中（v3.0 P0）', () => {
+  const bounds = { x: 1500, y: 800, width: 260, height: 340 };
+  // 窗口中央的窄轮廓：归一化 x∈[0.4,0.6]、y∈[0.1,0.9]
+  const proxy: PetHitProxy = {
+    version: 1,
+    polygons: [
+      {
+        id: 'body',
+        points: [
+          [0.4, 0.1],
+          [0.6, 0.1],
+          [0.6, 0.9],
+          [0.4, 0.9],
+        ],
+      },
+    ],
+  };
+
+  it('轮廓内为 true，矩形内但轮廓外为 false', () => {
+    // 中央 (local 130,200) → 归一化 (0.5,0.588)
+    expect(isCursorOverPet({ x: 1630, y: 1000 }, bounds, proxy)).toBe(true);
+    // 旧矩形命中列内（local 52 → 0.2），但轮廓外 → 穿透
+    expect(isCursorOverPet({ x: 1552, y: 1000 }, bounds, proxy)).toBe(false);
+    // 顶部留白带内（localY=10）同样在轮廓外
+    expect(isCursorOverPet({ x: 1630, y: 810 }, bounds, proxy)).toBe(false);
+  });
+
+  it('未上报/空多边形回落固定矩形', () => {
+    expect(isCursorOverPet({ x: 1552, y: 1000 }, bounds, null)).toBe(true);
+    expect(isCursorOverPet({ x: 1552, y: 1000 }, bounds, { version: 1, polygons: [] })).toBe(true);
+  });
+
+  it('窗口外仍优先返回 false（不受轮廓影响）', () => {
+    expect(isCursorOverPet({ x: 1400, y: 1000 }, bounds, proxy)).toBe(false);
+    const moved = { x: 200, y: 600, width: 260, height: 340 };
+    expect(isCursorOverPet({ x: 330, y: 800 }, moved, proxy)).toBe(true);
   });
 });
 

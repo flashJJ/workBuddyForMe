@@ -74,6 +74,7 @@ const pet: WbfmPetBridge = {
   close: () => ipcRenderer.invoke('pet:close'),
   isOpen: () => ipcRenderer.invoke('pet:is-open') as Promise<boolean>,
   reportHover: (hovering) => ipcRenderer.send('pet:hover', hovering),
+  reportHitProxy: (proxy) => ipcRenderer.send('pet:hit-proxy', proxy),
   focusMain: (path) => ipcRenderer.send('pet:focus-main', path),
   dragBegin: () => ipcRenderer.send('pet:drag-begin'),
   dragTo: () => ipcRenderer.send('pet:drag-to'),

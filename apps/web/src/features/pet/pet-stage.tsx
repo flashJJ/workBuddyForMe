@@ -26,6 +26,9 @@ import { PetHitBody, PetHitHead } from './pet-hit-regions';
 import { PetWorkBubble, isWorkBubbleVisible, type WorkBubbleMode } from './pet-work-bubble';
 import { useWorkSignals } from './use-work-signals';
 import { useWorkAlerts } from './use-work-alerts';
+import { usePetFrameMode } from './stage/use-pet-frame-mode';
+import { usePetHitProxy } from './stage/hit-proxy';
+import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
 
 interface Props {
   modelId: string;
@@ -64,6 +67,9 @@ export function PetStage({
   useSettingsSync();
   const bridge = getPetBridge();
   const controllerRef = React.useRef<Live2dController | null>(null);
+  // v3.0 P0：帧率档位 + 模型命中轮廓上报
+  const frameMode = usePetFrameMode(voiceState);
+  const onModelRect = usePetHitProxy(bridge);
   const [line, setLine] = React.useState<string>('');
   const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -240,6 +246,8 @@ export function PetStage({
           interactive={true}
           mood={mood}
           relationshipLevel={relationshipLevel}
+          frameMode={frameMode}
+          onModelRect={onModelRect}
         />
       </div>
 
@@ -264,34 +272,7 @@ export function PetStage({
       />
 
       {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}
-      <PetSubtitle text={line || subtitle} voiceState={voiceState} shifted={workVisible} />
-    </div>
-  );
-}
-
-function PetSubtitle({
-  text,
-  voiceState,
-  shifted,
-}: {
-  text: string;
-  voiceState: PetVoiceState;
-  shifted: boolean;
-}) {
-  if (!text.trim()) return null;
-  return (
-    <div
-      className={`pointer-events-none absolute inset-x-0 flex justify-center px-4 ${
-        shifted ? 'top-[18%]' : 'top-[4%]'
-      }`}
-    >
-      <div
-        className="line-clamp-3 max-w-[85%] break-words rounded-xl border border-border/50 bg-background/85 px-3 py-1.5 text-center text-sm leading-relaxed text-foreground shadow-sm backdrop-blur-sm"
-        data-testid="pet-subtitle"
-        data-voice-state={voiceState}
-      >
-        {text}
-      </div>
+      <PetSubtitleBubble text={line || subtitle} voiceState={voiceState} shifted={workVisible} />
     </div>
   );
 }

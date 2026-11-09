@@ -9,8 +9,14 @@ import { parseVrmAvatarId, DEFAULT_MOTION_MOOD, type MotionMood } from '@wbfm/sh
 import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from '../expression/expression-parser';
+import {
+  shouldRenderFrame,
+  type FrameMode,
+} from '../performance/frame-governor';
+import { projectObjectToViewport, type AvatarScreenRect } from '../performance/screen-rect';
 import { loadMotionPool, loadRotationConfig } from './vrm-motion-loader';
-import { fitVrmToCamera, type VrmFitResult } from './vrm-fit';
+import { fitVrmToCamera } from './vrm-fit';
+import { installVrmDebugProbe, removeVrmDebugProbe, type VrmDebugProbe } from './vrm-debug';
 import { VrmController, type VrmControllerLike } from './vrm-controller';
 
 export type { VrmControllerLike };
@@ -28,20 +34,13 @@ export interface VrmCanvasProps {
   /** v2.2：情绪档位 / 关系等级（待机动作按档位挑选；缺省 normal / 0） */
   mood?: MotionMood;
   relationshipLevel?: number;
+  /** v3.0 P0：帧率档位（桌宠交互 60 / 待机 30 / 隐藏 0） */
+  frameMode?: FrameMode;
+  /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
+  onModelRect?: (rect: AvatarScreenRect | null) => void;
   className?: string;
   style?: React.CSSProperties;
   'data-testid'?: string;
-}
-
-/** dev 调试钩子（window.__vrmDebug）暴露的形状 */
-interface VrmDebugProbe {
-  three: typeof THREE;
-  vrm: import('@pixiv/three-vrm').VRM;
-  camera: THREE.PerspectiveCamera;
-  controller: VrmController;
-  pool: THREE.AnimationClip[];
-  fit: VrmFitResult | null;
-  state: () => Record<string, unknown>;
 }
 
 export function VrmCanvas({
@@ -53,6 +52,8 @@ export function VrmCanvas({
   interactive = false,
   mood = DEFAULT_MOTION_MOOD,
   relationshipLevel = 0,
+  frameMode = 'idle',
+  onModelRect,
   className,
   style,
   'data-testid': testId,
@@ -65,6 +66,8 @@ export function VrmCanvas({
   const expressionRef = React.useRef(expression);
   const moodRef = React.useRef(mood);
   const relationshipLevelRef = React.useRef(relationshipLevel);
+  const frameModeRef = React.useRef(frameMode);
+  const onModelRectRef = React.useRef(onModelRect);
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -73,6 +76,8 @@ export function VrmCanvas({
   React.useEffect(() => { expressionRef.current = expression; }, [expression]);
   React.useEffect(() => { moodRef.current = mood; }, [mood]);
   React.useEffect(() => { relationshipLevelRef.current = relationshipLevel; }, [relationshipLevel]);
+  React.useEffect(() => { frameModeRef.current = frameMode; }, [frameMode]);
+  React.useEffect(() => { onModelRectRef.current = onModelRect; }, [onModelRect]);
 
   const fileRef = parseVrmAvatarId(modelId);
   React.useEffect(() => {
@@ -146,29 +151,13 @@ export function VrmCanvas({
         if (controllerRef) controllerRef.current = controller;
 
         // 调试钩子（仅 dev）：MCP/CDP 读取实时缩放/位置/相机/当前待机动作/取景自检结果
-        if (process.env.NODE_ENV !== 'production') {
-          debug = {
-            three: THREE,
-            vrm,
-            camera,
-            controller,
-            pool: poolEntries.map((entry) => entry.clip),
-            fit: null,
-            state: () => ({
-              scale: vrm!.scene.scale.toArray(),
-              pos: vrm!.scene.position.toArray(),
-              cam: camera.position.toArray(),
-              host: [host.offsetWidth, host.offsetHeight],
-              phase: (controller as any)?.interaction?.currentPhase ?? null,
-              idle: (controller as any)?.mixer?.idleClipName ?? null,
-              poolSize: (controller as any)?.mixer?.poolSize ?? 0,
-              gesture: Boolean((controller as any)?.mixer?.hasGesture),
-              holding: Boolean((controller as any)?.mixer?.isHolding),
-              clip: (controller as any)?.mixer?.currentClipName ?? null,
-            }),
-          };
-          (window as unknown as Record<string, unknown>).__vrmDebug = debug;
-        }
+        debug = installVrmDebugProbe(
+          vrm,
+          camera,
+          controller,
+          poolEntries.map((entry) => entry.clip),
+          host,
+        );
 
         onPointerMove = (e: PointerEvent) => {
           if (!controller) return;
@@ -179,14 +168,13 @@ export function VrmCanvas({
         };
         host.addEventListener('pointermove', onPointerMove);
 
-        // v2.22 性能：VRM 侧栏按 60fps 渲染。高刷屏 rAF 可达 240Hz，
+        // v3.0 P0：帧率三档（交互 60 / 待机 30 / 隐藏暂停）；高刷屏 rAF 可达 240Hz，
         // 无上限时每帧都做 SpringBone/矩阵/表情，空闲也占满主线程。
-        const FRAME_INTERVAL_MS = 1000 / 60;
         let lastFrameAt = 0;
         const animate = (now: number) => {
           if (disposed || !controller) return;
           raf = requestAnimationFrame(animate);
-          if (now - lastFrameAt < FRAME_INTERVAL_MS) return;
+          if (!shouldRenderFrame(now, lastFrameAt, frameModeRef.current)) return;
           lastFrameAt = now;
           if (expressionRef.current) controller.setExpression(expressionRef.current);
           controller.setMotionPreference({
@@ -232,6 +220,8 @@ export function VrmCanvas({
               const fitResult = fitVrmToCamera(vrm, camera, host, animBounds);
               if (debug) debug.fit = fitResult;
               controller.captureBaseScale();
+              // v3.0 P0：取景确定后投影包围盒 → 桌宠命中轮廓
+              onModelRectRef.current?.(projectObjectToViewport(vrm.scene, camera, w, h));
             }
           });
         };
@@ -256,9 +246,7 @@ export function VrmCanvas({
         if (controllerRef && controllerRef.current === controller) controllerRef.current = null;
       }
       if (vrm) VRMUtils.deepDispose(vrm.scene);
-      if (debug && (window as unknown as Record<string, unknown>).__vrmDebug === debug) {
-        delete (window as unknown as Record<string, unknown>).__vrmDebug;
-      }
+      removeVrmDebugProbe(debug);
       controllerRefInternal.current = null;
       renderer.dispose();
       renderer.forceContextLoss();

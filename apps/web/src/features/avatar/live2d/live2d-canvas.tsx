@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from '../expression/expression-parser';
+import type { FrameMode } from '../performance/frame-governor';
+import type { AvatarScreenRect } from '../performance/screen-rect';
 import type { Live2dController } from './live2d-controller';
 
 export interface Live2dCanvasProps {
@@ -22,6 +24,10 @@ export interface Live2dCanvasProps {
   controllerRef?: React.MutableRefObject<Live2dController | null>;
   /** 是否需要接收鼠标事件（默认 false → 穿透不挡点击；桌宠交互场景显式传 true） */
   interactive?: boolean;
+  /** v3.0 P0：帧率档位（桌宠交互 60 / 待机 30 / 隐藏 0） */
+  frameMode?: FrameMode;
+  /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
+  onModelRect?: (rect: AvatarScreenRect | null) => void;
 }
 
 /** 动态 chunk 加载占位（独立组件以便 useI18n） */

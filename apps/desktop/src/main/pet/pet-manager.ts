@@ -61,12 +61,12 @@ export class PetManager {
       getCursor: () => this.readCursor(),
       getFixedSize: fixedSize,
       onDragStart: () => {
-        // 新一轮拖拽开始：先停掉可能在跑的滑行，否则抛掷与拖拽会互相抢窗口位置（卡顿/乱跳）
+        // 停掉可能在跑的滑行，避免抛掷与拖拽互抢窗口位置
         this.thrower.stop();
         process.stdout.write('[pet-drag] begin\n');
         this.controller?.force(false);
       },
-      // 松手带释放速度 + 本次拖拽累计位移 → 抛掷控制器做惯性滑行 + 贴边回正（位移过小视为误触，不动作）
+      // 松手速度 + 累计位移 → 抛掷滑行/贴边（位移过小视为误触）
       onDragEnd: (win, velocity, distance) => {
         process.stdout.write(
           `[pet-drag] end dist=${Math.round(distance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)}\n`,
@@ -218,6 +218,7 @@ export class PetManager {
         open: (modelId) => this.open(modelId),
         close: () => this.close(),
         reportHover: (h) => this.reportHover(h),
+        reportHitProxy: (raw) => this.hoverPoller.reportHitProxy(raw),
         focusMain: (path) => this.focusMain(path),
         beginDrag: () => this.drag.begin(this.win),
         dragTo: () => this.drag.dragTo(this.win),

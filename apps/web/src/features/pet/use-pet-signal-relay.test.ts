@@ -18,6 +18,7 @@ function makePetBridge(): WbfmPetBridge & { relayPerformance: ReturnType<typeof 
     close: vi.fn(async () => undefined),
     isOpen: vi.fn(async () => false),
     reportHover: vi.fn(),
+    reportHitProxy: vi.fn(),
     focusMain: vi.fn(),
     dragBegin: vi.fn(),
     dragTo: vi.fn(),
