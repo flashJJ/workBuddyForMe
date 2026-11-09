@@ -22,6 +22,8 @@ interface StageActorProps {
   getLevel: () => number;
   onPlacementChange: (slot: StageSlot, placement: StageSlotPlacement) => void;
   onActorScale: (slot: StageSlot, scale: number) => void;
+  /** 轻点（未发生拖拽）时回调：mock 演示里用于让该角色说一句 */
+  onTap?: (slot: StageSlot) => void;
   /** Live2D 降为立绘前的截帧缓存（key=avatarModelId） */
   snapshot: string | null;
   onSnapshot: (modelId: string, dataUrl: string) => void;
@@ -40,7 +42,13 @@ export function StageActor(props: StageActorProps) {
   // 内部渲染态：即使目标档位是省电，也先挂一次 Live2D 拿到有效立绘再卸载；
   // 否则首帧直接进省电档时没有 controller，截帧永远是空，角色会变成空白。
   const [renderLive, setRenderLive] = React.useState(true);
-  const dragRef = React.useRef<{ pointerId: number; startX: number; startY: number; base: StageSlotPlacement } | null>(null);
+  const dragRef = React.useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+    base: StageSlotPlacement;
+  } | null>(null);
 
   React.useEffect(() => {
     // Live2D 已交给舞台共享渲染层，这里只处理 VRM 的立绘降级
@@ -78,6 +86,7 @@ export function StageActor(props: StageActorProps) {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      moved: false,
       base: {
         x: props.layout.leftPct / 100,
         y: props.layout.topPct / 100,
@@ -95,11 +104,18 @@ export function StageActor(props: StageActorProps) {
     const pr = parent.getBoundingClientRect();
     const nx = drag.base.x + (event.clientX - drag.startX) / pr.width;
     const ny = drag.base.y + (event.clientY - drag.startY) / pr.height;
+    if (Math.abs(event.clientX - drag.startX) > 4 || Math.abs(event.clientY - drag.startY) > 4) {
+      drag.moved = true;
+    }
     props.onPlacementChange(props.slot, { ...drag.base, x: clampRatio(nx), y: clampRatio(ny) });
   };
 
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+    const drag = dragRef.current;
+    if (drag?.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    // 轻点（没有产生位移）视为交互，交给上层决定说什么
+    if (!drag.moved) props.onTap?.(props.slot);
   };
 
   const onWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -162,8 +178,13 @@ export function StageActor(props: StageActorProps) {
 
       {!isVrm && props.layout.filter !== 'none' && (
         <div
-          className="pointer-events-none absolute inset-0 bg-black/25"
+          className="pointer-events-none absolute inset-0"
           data-testid={`stage-dim-${props.slot}`}
+          // 非焦点角色的压暗：用椭圆渐变收边，避免矩形硬边被误认成「选中框」
+          style={{
+            background:
+              'radial-gradient(ellipse 52% 42% at 50% 40%, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0) 78%)',
+          }}
         />
       )}
 

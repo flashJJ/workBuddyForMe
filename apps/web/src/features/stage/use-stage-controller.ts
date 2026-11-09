@@ -27,6 +27,11 @@ const CONTROLS_FADE_MS = 2600;
 export type StageMode = 'mock' | 'run' | 'meeting';
 export type StageRunStatus = 'connecting' | 'running' | 'done' | 'failed';
 
+export interface StageLine {
+  slot: StageSlot;
+  text: string;
+}
+
 export interface StageController {
   mode: StageMode;
   payload: StageScenePayload;
@@ -50,7 +55,10 @@ export interface StageController {
   snapshots: Record<string, string>;
   setSnapshot: (modelId: string, dataUrl: string) => void;
   nextSpeaker: () => void;
-  sayLine: () => void;
+  /** 说一句台词；传 slot 可指定角色（点击角色时用），返回实际发言的槽位与文本 */
+  sayLine: (slot?: StageSlot) => StageLine | null;
+  /** 台词播完/取消后清口型；expected 用于避免清掉同一槽位更新的新台词 */
+  clearSpeech: (slot: StageSlot, expected?: string) => void;
   cycleExpression: () => void;
   defocus: () => void;
   setPowerMode: (mode: StagePowerMode) => void;
@@ -159,14 +167,24 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     setExpressions((prev) => ({ ...prev, [next]: 'joy' }));
   }, []);
 
-  const sayLine = React.useCallback(() => {
+  const sayLine = React.useCallback((target?: StageSlot): StageLine | null => {
     // 散焦后按钮不应静默失效：没有焦点时自动选回中槽再说
-    const slot = focusRef.current ?? 'center';
-    if (!focusRef.current) setFocus(slot);
+    const slot = target ?? focusRef.current ?? 'center';
+    if (focusRef.current !== slot) setFocus(slot);
     const text = MOCK_SPEECH[slot];
-    if (!text) return;
-    setSpeech((prev) => ({ ...prev, [slot]: text }));
+    if (!text) return null;
+    // 同一时刻只保留一位发言者，避免上一句的口型/台词挂住
+    setSpeech({ left: null, center: null, right: null, farRight: null, [slot]: text });
     setLastLine({ slot, text });
+    return { slot, text };
+  }, []);
+
+  const clearSpeech = React.useCallback((slot: StageSlot, expected?: string) => {
+    setSpeech((prev) => {
+      if (!prev[slot]) return prev;
+      if (expected !== undefined && prev[slot] !== expected) return prev;
+      return { ...prev, [slot]: null };
+    });
   }, []);
 
   const cycleExpression = React.useCallback(() => {
@@ -253,6 +271,7 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     setSnapshot,
     nextSpeaker,
     sayLine,
+    clearSpeech,
     cycleExpression,
     defocus,
     setPowerMode,

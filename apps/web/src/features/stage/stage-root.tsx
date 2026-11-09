@@ -14,6 +14,7 @@ import { computeActorLayout, meetingPosition } from './stage-layout';
 import { useStageController, type StageMode } from './use-stage-controller';
 import { useStageRun } from './use-stage-run';
 import { useMeetingStage } from './use-meeting-stage';
+import { useStageSpeech } from './voice/use-stage-speech';
 import { getStageBridge } from './stage-bridge';
 
 /** 从 query 取目标 id（effect 内读 window，首帧恒等于 SSR 避免水合错配） */
@@ -43,6 +44,12 @@ export function StageRoot() {
   const { runId, meetingId } = useStageTarget();
   const mode: StageMode = meetingId ? 'meeting' : runId ? 'run' : 'mock';
   const c = useStageController(mode);
+  const { say, stop, voice } = useStageSpeech({
+    mode,
+    cast: c.cast,
+    sayLine: c.sayLine,
+    clearSpeech: c.clearSpeech,
+  });
   useStageRun(runId, c);
   const meeting = useMeetingStage(meetingId, c);
   const rootRef = React.useRef<HTMLDivElement>(null);
@@ -124,7 +131,13 @@ export function StageRoot() {
       layout: view.layout,
       expression: c.expressions[view.slot]!,
       speaking: view.slot === c.speakingSlot && Boolean(c.speech[view.slot]),
-      getLevel: c.levelReader(view.slot),
+      // 有真实语音时用播放电平驱动口型，合成失败/未启用时退回控制器的正弦口型
+      getLevel: () => {
+        const base = c.levelReader(view.slot)();
+        // 只有正在发言的角色跟随音频电平，避免全场角色一起动嘴
+        if (!voice.speaking || view.slot !== c.speakingSlot) return base;
+        return Math.max(base, voice.getLevel());
+      },
     }));
 
   return (
@@ -199,6 +212,7 @@ export function StageRoot() {
             showNameplate={c.payload.showNameplates}
             getLevel={c.levelReader(slot)}
             onPlacementChange={c.patchPlacement}
+            onTap={mode === 'mock' ? say : undefined}
             onActorScale={(s, scale) =>
               c.patchPlacement(s, {
                 x: layout.leftPct / 100,
@@ -233,9 +247,12 @@ export function StageRoot() {
           payload={c.payload}
           onPayloadChange={c.setPayload}
           onNextSpeaker={c.nextSpeaker}
-          onSayLine={c.sayLine}
+          onSayLine={() => say()}
           onCycleExpression={c.cycleExpression}
-          onDefocus={c.defocus}
+          onDefocus={() => {
+            stop();
+            c.defocus();
+          }}
           onScreenshot={() => void c.requestScreenshot()}
           onExit={exitStage}
         />
