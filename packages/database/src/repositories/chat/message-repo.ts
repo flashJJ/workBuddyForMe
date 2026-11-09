@@ -87,6 +87,18 @@ export function createMessageRepository(db: DatabaseInstance) {
       });
     },
 
+    /** v2.34：备份导出用，全量读取单会话消息（不受分页上限影响） */
+    listAllByConversation(conversationId: string): Message[] {
+      return (
+        db
+          .prepare(
+            `SELECT * FROM messages WHERE conversation_id = ?
+             ORDER BY created_at ASC, rowid ASC`,
+          )
+          .all(conversationId) as MessageRow[]
+      ).map(mapMessage);
+    },
+
     listByConversation(conversationId: string, limit = 200): Message[] {
       return (
         db

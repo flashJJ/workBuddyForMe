@@ -32,6 +32,8 @@ describe('API 错误码一致性（TR-33.1）', () => {
       ['CONTENT_PACK_HASH_MISMATCH', 409],
       ['BACKUP_PASSWORD_REQUIRED', 422],
       ['BACKUP_PASSWORD_INVALID', 422],
+      ['BACKUP_CHAIN_INCOMPLETE', 422],
+      ['BACKUP_CHAIN_MISMATCH', 422],
       ['INTERNAL_ERROR', 500],
     ];
     // 另含 422/501×2 三个补充码

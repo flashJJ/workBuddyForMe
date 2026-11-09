@@ -27,6 +27,14 @@ export function createConversationRepository(db: DatabaseInstance) {
     },
 
     /** 最近会话在前；无消息（last_message_at NULL）沉底 */
+    /** v2.34：备份导出用，全量读取（不受列表分页上限影响） */
+    listAll(): Conversation[] {
+      const rows = db
+        .prepare(`SELECT * FROM conversations ORDER BY created_at ASC, id ASC`)
+        .all() as ConversationRow[];
+      return rows.map(mapConversation);
+    },
+
     list(assistantId?: string, limit = 100): Conversation[] {
       const where = assistantId ? `WHERE assistant_id = ?` : '';
       const rows = db

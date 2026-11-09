@@ -8,8 +8,12 @@ import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState } from './restore-ops';
 import { restoreTasks, type TaskTrackEntry } from './portability/restore-tasks-track';
 import type { SkillsTrackPayload } from './portability/restore-post-write';
-import { finalizeRestore } from './portability/restore-finalize';
-import { buildRestoreVerification } from './portability/restore-verification';
+import { finishRestore } from './portability/chain/restore-finish';
+// v2.34：核对与收尾合并到 restore-finish（差异只告警）
+import { chainInfoFromManifest } from './portability/chain/chain-info';
+import {
+  assertIncrementalPredecessor,
+} from './portability/chain/backup-registry';
 import {
   backfillTaskAgentRunIds,
   readAgentHandoffsPayload,
@@ -72,6 +76,12 @@ export async function restoreBackup(
     throw new ApiError('VALIDATION_ERROR', `备份 schema 版本 ${manifest.backupSchemaVersion} 高于当前支持的 ${CURRENT_BACKUP_SCHEMA_VERSION}，请升级应用后再恢复`);
   }
 
+  // v2.34：增量归档必须接在本地已应用的前置段之后；全量总是允许并重置链
+  const chain = chainInfoFromManifest(manifest);
+  if (chain.kind === 'incremental') {
+    assertIncrementalPredecessor(deps.db, chain);
+  }
+
   // 恢复前先确保目标库有内置助手（conversations 依赖 assistants 的 FK）
   ensureSeedData(deps.db);
 
@@ -123,7 +133,7 @@ export async function restoreBackup(
 
   // --- 事务内：DB 写入 ---
   const txResult = deps.db.transaction(() => {
-    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings' | 'verification'> = { imported: emptyCounts(), skipped: emptyCounts() };
+    const result: Omit<BackupRestoreResult, 'manifest' | 'warnings' | 'verification' | 'chain'> = { imported: emptyCounts(), skipped: emptyCounts() };
 
     // v1.8：卡先于助手机行恢复，使 card_id 引用恢复后即对上
     if (cardRows.length > 0) {
@@ -152,6 +162,7 @@ export async function restoreBackup(
         files.get('conversations.json')!,
         files.get('branches.json'),
         files.get('branch-events.json'),
+        chain.kind,
       );
       result.imported.conversations = convs.imported; result.skipped.conversations = convs.skipped; result.imported.messages = msgs;
       result.imported.branches = branches.imported; result.skipped.branches = branches.skipped;
@@ -267,33 +278,23 @@ export async function restoreBackup(
     return result;
   }).immediate();
 
-  // v2.33：事务外收尾（提示词迁移/附件落盘/旧档回填/技能落盘/提醒重排/VRM 提示）
-  warnings.push(
-    ...finalizeRestore({
-      db: deps.db,
-      manifest,
-      files,
-      binaries,
-      tracksToRestore,
-      skillsPayload,
-      imported: txResult.imported,
-      skipped: txResult.skipped,
-      restoredVrmRefs,
-      ...(onProgress ? { onProgress } : {}),
-    }),
-  );
-
-  // v2.33：只读核对（声明 vs 写入/跳过 + 附件缺失 + 未引用计数），差异只告警不阻断
-  const verification = buildRestoreVerification({
+  // v2.33/v2.34：事务外收尾 + 只读核对 + 链登记（差异只告警不阻断）
+  const finished = finishRestore({
+    db: deps.db,
     manifest,
     files,
     binaries,
-    db: deps.db,
+    tracksToRestore,
+    skillsPayload,
     imported: txResult.imported,
     skipped: txResult.skipped,
+    restoredVrmRefs,
+    chain,
+    ...(onProgress ? { onProgress } : {}),
   });
+  warnings.push(...finished.warnings);
 
-  return { manifest, ...txResult, warnings, verification };
+  return { manifest, ...txResult, warnings, verification: finished.verification, chain };
 }
 
 export { precheckBackup } from './restore-precheck';

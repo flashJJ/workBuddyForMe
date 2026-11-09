@@ -113,3 +113,51 @@ export function summarizeRestore(result: BackupRestoreResult, t: Translate): str
   if (skipped.length) message += t('settingsBackup.restoreSkipped', { items: skipped.join('、') });
   return message;
 }
+
+/** v2.34：多选归档的预检条目（file 与只读预检结果成对保存） */
+export interface ArchivePrecheckEntry {
+  file: File;
+  precheck: BackupPrecheck;
+}
+
+/** 按链序号排序（同序号保持原顺序） */
+export function sortArchiveEntries(entries: ArchivePrecheckEntry[]): ArchivePrecheckEntry[] {
+  return [...entries].sort(
+    (a, b) => a.precheck.chain.sequence - b.precheck.chain.sequence,
+  );
+}
+
+/** 链连续性校验：返回 i18n 错误 key，null 表示通过 */
+export function validateArchiveChain(entries: ArchivePrecheckEntry[]): MessageKey | null {
+  if (entries.length <= 1) return null;
+  const sorted = sortArchiveEntries(entries);
+  if (new Set(sorted.map((item) => item.precheck.chain.chainId)).size !== 1) {
+    return 'settingsBackup.chain.mismatch';
+  }
+  const base = sorted[0]!.precheck.chain;
+  if (base.kind !== 'full' || base.sequence !== 0) return 'settingsBackup.chain.incomplete';
+  if (sorted.filter((item) => item.precheck.chain.kind === 'full').length !== 1) {
+    return 'settingsBackup.chain.mismatch';
+  }
+  for (let i = 1; i < sorted.length; i += 1) {
+    const prev = sorted[i - 1]!.precheck.chain;
+    const current = sorted[i]!.precheck.chain;
+    if (current.sequence !== prev.sequence + 1 || current.parentArchiveId !== prev.archiveId) {
+      return 'settingsBackup.chain.mismatch';
+    }
+  }
+  return null;
+}
+
+/** 多段都必须兼容当前版本 */
+export function archiveChainCompatible(entries: ArchivePrecheckEntry[]): boolean {
+  return entries.length > 0 && entries.every((item) => item.precheck.compatible);
+}
+
+/** v2.34：备份历史与摘要共用的字节格式化 */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}

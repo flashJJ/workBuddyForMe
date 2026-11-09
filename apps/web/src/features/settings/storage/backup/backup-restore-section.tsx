@@ -9,13 +9,15 @@ import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { BackupTrack, BackupPrecheck, BackupVerification } from '@wbfm/shared/backup';
 import type { BackupRestoreResult } from '@wbfm/core/backup';
-import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
 import { BackupVerificationCard } from './backup-verification-card';
+import { BackupPrecheckPanel } from './backup-precheck-panel';
 import {
+  archiveChainCompatible,
   defaultRestoreTracks,
-  precheckCountRows,
+  sortArchiveEntries,
   summarizeRestore,
-  trackCount,
+  validateArchiveChain,
+  type ArchivePrecheckEntry,
 } from './backup-restore-summary';
 
 /** /api/backup/restore 成功信封解包后的 data（route 返回 jsonOk({precheck,result})） */
@@ -24,14 +26,15 @@ type RestoreResponse = { precheck: BackupPrecheck; result: BackupRestoreResult }
 /**
  * v2.32：两步恢复——先只读预检（不写库），展示版本/计数/警告并勾选轨道，
  * 再确认执行恢复。版本不兼容时直接禁用确认。
+ * v2.34：支持多选归档；前端按 manifest 链信息排序并校验连续性，逐段调用恢复接口。
  */
 export function BackupRestoreSection() {
   const { t } = useI18n();
   const toast = useToast();
   const [checking, setChecking] = React.useState(false);
   const [restoring, setRestoring] = React.useState(false);
-  const [file, setFile] = React.useState<File | null>(null);
-  const [precheck, setPrecheck] = React.useState<BackupPrecheck | null>(null);
+  const [entries, setEntries] = React.useState<ArchivePrecheckEntry[]>([]);
+  const [pendingFiles, setPendingFiles] = React.useState<File[]>([]);
   const [selected, setSelected] = React.useState<BackupTrack[]>([]);
   const [password, setPassword] = React.useState('');
   const [needsPassword, setNeedsPassword] = React.useState(false);
@@ -41,8 +44,8 @@ export function BackupRestoreSection() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const reset = () => {
-    setFile(null);
-    setPrecheck(null);
+    setEntries([]);
+    setPendingFiles([]);
     setSelected([]);
     setPassword('');
     setNeedsPassword(false);
@@ -51,20 +54,30 @@ export function BackupRestoreSection() {
   };
 
   /** v2.33：加密归档缺少/错误密码时不重置文件，改为就地输入密码重试预检 */
-  const runPrecheck = async (next: File, pwd: string) => {
+  const runPrecheck = async (files: File[], pwd: string) => {
     setChecking(true);
-    setFile(next);
-    setPrecheck(null);
+    setPendingFiles(files);
+    setEntries([]);
     setPasswordError(null);
     try {
-      const form = new FormData();
-      form.append('file', next);
-      if (pwd) form.append('password', pwd);
-      const result = await apiUpload<BackupPrecheck>('/api/backup/precheck', form);
+      const results: ArchivePrecheckEntry[] = [];
+      for (const next of files) {
+        const form = new FormData();
+        form.append('file', next);
+        if (pwd) form.append('password', pwd);
+        const precheck = await apiUpload<BackupPrecheck>('/api/backup/precheck', form);
+        results.push({ file: next, precheck });
+      }
+      const sorted = sortArchiveEntries(results);
+      const chainError = validateArchiveChain(sorted);
+      if (chainError) {
+        toast.error(t(chainError));
+        return;
+      }
       setPassword(pwd);
       setNeedsPassword(false);
-      setPrecheck(result);
-      setSelected(defaultRestoreTracks(result));
+      setEntries(sorted);
+      setSelected(defaultRestoreTracks(sorted[0]!.precheck));
     } catch (error) {
       const code = error instanceof ApiClientError ? error.code : '';
       if (code === 'BACKUP_PASSWORD_REQUIRED' || code === 'BACKUP_PASSWORD_INVALID') {
@@ -85,33 +98,53 @@ export function BackupRestoreSection() {
   };
 
   const doRestore = async () => {
-    if (!file || !precheck?.compatible || selected.length === 0) return;
+    if (entries.length === 0 || !archiveChainCompatible(entries)) return;
+    if (entries.length === 1 && selected.length === 0) return;
     setRestoring(true);
+    let current = 0;
     try {
-      const form = new FormData();
-      form.append('file', file);
-      form.append('tracks', JSON.stringify(selected));
-      if (password) form.append('password', password);
-      const response = await apiUpload<RestoreResponse>('/api/backup/restore', form);
-      toast.success(summarizeRestore(response.result, t));
-      setVerification(response.result.verification);
-      if (response.result.imported.documents > 0) {
-        toast.info(t('settingsBackup.reindexHint', { count: response.result.imported.documents }));
+      let last: BackupVerification | null = null;
+      for (const entry of entries) {
+        current += 1;
+        const form = new FormData();
+        form.append('file', entry.file);
+        // 多段恢复不传 tracks：每段按自身 manifest 恢复全部可用轨道
+        if (entries.length === 1) form.append('tracks', JSON.stringify(selected));
+        if (password) form.append('password', password);
+        const response = await apiUpload<RestoreResponse>('/api/backup/restore', form);
+        last = response.result.verification;
+        toast.success(
+          t('settingsBackup.chain.segmentDone', { current, total: entries.length }),
+        );
+        if (response.result.imported.documents > 0) {
+          toast.info(
+            t('settingsBackup.reindexHint', { count: response.result.imported.documents }),
+          );
+        }
+        if (response.precheck.warnings.some((w) => w.includes('脱敏'))) {
+          toast.info(t('settingsBackup.redactedHint'));
+        }
       }
-      if (response.precheck.warnings.some((w) => w.includes('脱敏'))) {
-        toast.info(t('settingsBackup.redactedHint'));
-      }
+      if (last) setVerification(last);
       reset();
     } catch (error) {
-      if (error instanceof ApiClientError && error.status === 422) {
+      if (error instanceof ApiClientError && error.status === 422 && current === 1) {
         const details = error.details as { precheck?: BackupPrecheck } | undefined;
         if (details?.precheck?.warnings[0]) {
           toast.error(details.precheck.warnings[0]);
           return;
         }
       }
+      const reason =
+        error instanceof ApiClientError ? error.message : t('settingsBackup.restoreFailed');
       toast.error(
-        error instanceof ApiClientError ? error.message : t('settingsBackup.restoreFailed'),
+        entries.length > 1
+          ? t('settingsBackup.chain.segmentFailed', {
+              current,
+              total: entries.length,
+              message: reason,
+            })
+          : reason,
       );
     } finally {
       setRestoring(false);
@@ -125,15 +158,12 @@ export function BackupRestoreSection() {
   };
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const next = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     setPassword('');
     setNeedsPassword(false);
     setPasswordError(null);
-    if (next) void runPrecheck(next, '');
+    if (files.length > 0) void runPrecheck(files, '');
   };
-
-  const countRows = precheck ? precheckCountRows(precheck) : [];
-  const compatible = precheck?.compatible === true;
 
   return (
     <div className="space-y-3 rounded-md border p-3" data-testid="backup-restore">
@@ -141,7 +171,8 @@ export function BackupRestoreSection() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".tar.gz,.tgz"
+        multiple
+        accept=".tar.gz,.tgz,.enc"
         aria-label={t('settingsBackup.chooseFileAria')}
         className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:text-primary-foreground hover:file:bg-primary/90"
         onChange={onFileChange}
@@ -175,7 +206,7 @@ export function BackupRestoreSection() {
             <Button
               type="button"
               onClick={() => {
-                if (file) void runPrecheck(file, password);
+                if (pendingFiles.length > 0) void runPrecheck(pendingFiles, password);
               }}
               disabled={checking || restoring || password.length < 8}
             >
@@ -185,86 +216,14 @@ export function BackupRestoreSection() {
         </div>
       )}
 
-      {precheck && (
-        <div className="space-y-3 rounded-md border bg-muted/30 p-3" data-testid="backup-precheck">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-medium">{t('settingsBackup.precheck.title')}</span>
-            <span className="text-muted-foreground">
-              {t('settingsBackup.precheck.sourceVersion', { version: precheck.sourceVersion })}
-            </span>
-            <span className={compatible ? 'text-emerald-600' : 'text-destructive'}>
-              {compatible
-                ? t('settingsBackup.precheck.compatible')
-                : t('settingsBackup.precheck.incompatible')}
-            </span>
-          </div>
-
-          {countRows.length > 0 ? (
-            <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-              {countRows.map((row) => (
-                <li key={row.label}>{t(row.label, { count: row.count })}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              {t('settingsBackup.precheck.noData')}
-            </p>
-          )}
-
-          {precheck.warnings.length > 0 && (
-            <div className="space-y-1" data-testid="backup-precheck-warnings">
-              <p className="text-xs font-medium">{t('settingsBackup.precheck.warnings')}</p>
-              {precheck.warnings.map((warning) => (
-                <p key={warning} className="text-xs text-destructive">
-                  {warning}
-                </p>
-              ))}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <p className="text-xs font-medium">{t('settingsBackup.precheck.selectTracks')}</p>
-            <div className="grid gap-1 sm:grid-cols-2">
-              {TRACK_ORDER.map((track) => {
-                const count = trackCount(precheck, track);
-                return (
-                  <label
-                    key={track}
-                    className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground"
-                  >
-                    <input
-                      type="checkbox"
-                      className="h-3.5 w-3.5 rounded border-muted-foreground"
-                      checked={selected.includes(track)}
-                      onChange={() => toggle(track)}
-                      disabled={!compatible || restoring}
-                    />
-                    <span>
-                      {t(TRACK_KEYS[track].label)}
-                      {count > 0 ? ` · ${count}` : ''}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={reset} disabled={restoring}>
-              {t('settingsBackup.precheck.cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void doRestore()}
-              disabled={!compatible || selected.length === 0 || restoring}
-            >
-              {restoring
-                ? t('settingsBackup.restoring')
-                : t('settingsBackup.precheck.confirm')}
-            </Button>
-          </div>
-        </div>
-      )}
+      <BackupPrecheckPanel
+        entries={entries}
+        selected={selected}
+        restoring={restoring}
+        onToggle={toggle}
+        onCancel={reset}
+        onConfirm={() => void doRestore()}
+      />
 
       {verification && <BackupVerificationCard verification={verification} />}
     </div>

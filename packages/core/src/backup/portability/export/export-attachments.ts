@@ -20,14 +20,21 @@ export interface AttachmentsTrackPayload {
 
 /**
  * v2.33：attachments 轨序列化（元数据 + refs.json + 已存在文件）。
+ * v2.34：可选 since——增量只带该时间之后新建的附件行及其二进制与引用。
  * 引用文件为可选负载：旧归档缺 refs.json 时恢复端按启动回填补齐。
  */
 export function serializeAttachmentsTrack(
   db: DatabaseInstance,
   dataRoot: string,
+  since?: string,
 ): AttachmentsTrackPayload {
-  const rows = createAttachmentRepository(db).list();
-  const refs = createAttachmentRefRepository(db).list();
+  const rows = createAttachmentRepository(db)
+    .list()
+    .filter((row) => !since || row.created_at > since);
+  const keptIds = new Set(rows.map((row) => row.id));
+  const refs = createAttachmentRefRepository(db)
+    .list()
+    .filter((ref) => keptIds.has(ref.attachmentId));
   const attDir = path.join(dataRoot, 'attachments');
   const files: Record<string, string> = {};
   const binaries: Array<{ name: string; data: Buffer }> = [];

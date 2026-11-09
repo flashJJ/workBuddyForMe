@@ -3,7 +3,8 @@
  * 声明数来自归档 manifest，写入/跳过来自恢复事务计数；附件缺失与引用缺失只告警，不阻断恢复。
  *
  * 口径约定：声明与写入按「用户可见条目」对齐——
- * · conversations：会话 + 分支 + 分支事件
+ * · conversations：会话 + 消息（v2.34 manifest 记录 messageCount）+ 分支 + 分支事件；
+ *   v8 及更早归档无 messageCount，消息数不参与比对
  * · knowledge：知识库 + 文档
  * · settings：固定 1（upsert）
  * · attachments：附件条目（不含引用行）
@@ -41,6 +42,7 @@ export function declaredTrackCounts(manifest: BackupManifest): Record<BackupTrac
   return {
     conversations:
       t.conversations.entryCount +
+      (t.conversations.messageCount ?? 0) +
       (t.conversations.branchCount ?? 0) +
       (t.conversations.branchEventCount ?? 0),
     knowledge: t.knowledge.knowledgeBaseCount + t.knowledge.documentCount,
@@ -59,11 +61,17 @@ export function declaredTrackCounts(manifest: BackupManifest): Record<BackupTrac
   };
 }
 
-/** 恢复计数 → 每轨条目数（与 declaredTrackCounts 同口径） */
-export function trackCountsFromResult(counts: BackupCounts): Record<BackupTrack, number> {
+/** 恢复计数 → 每轨条目数（与 declaredTrackCounts 同口径；v8 不计消息） */
+export function trackCountsFromResult(
+  counts: BackupCounts,
+  includeMessages: boolean,
+): Record<BackupTrack, number> {
   return {
-    // manifest 的 conversations.entryCount 是会话条数（消息为其内容），此处与声明同口径
-    conversations: counts.conversations + counts.branches + counts.branchEvents,
+    conversations:
+      counts.conversations +
+      (includeMessages ? counts.messages : 0) +
+      counts.branches +
+      counts.branchEvents,
     knowledge: counts.knowledgeBases + counts.documents,
     settings: counts.settings,
     attachments: counts.attachments,
@@ -151,10 +159,11 @@ export interface RestoreVerificationInput {
 
 /** 恢复核对：声明 vs 实际写入/跳过 + 附件缺失 + 未引用计数 */
 export function buildRestoreVerification(input: RestoreVerificationInput): BackupVerification {
+  const includeMessages = input.manifest.tracks.conversations.messageCount !== undefined;
   return backupVerificationSchema.parse({
     declared: declaredRows(input.manifest),
-    written: trackCountsFromResult(input.imported),
-    skipped: trackCountsFromResult(input.skipped),
+    written: trackCountsFromResult(input.imported, includeMessages),
+    skipped: trackCountsFromResult(input.skipped, includeMessages),
     missingAttachments: missingAttachmentFiles(input.files, input.binaries),
     unreferencedAttachments: countUnreferencedAttachments(input.db),
   });

@@ -49,6 +49,10 @@ export const ERROR_CODES = {
   BACKUP_PASSWORD_REQUIRED: 422,
   /** v2.33：密码错误或加密归档损坏（不区分，避免信息泄露） */
   BACKUP_PASSWORD_INVALID: 422,
+  /** v2.34：增量链缺少全量基线或中间段 */
+  BACKUP_CHAIN_INCOMPLETE: 422,
+  /** v2.34：链 id 不一致、父指针或序号不连续 */
+  BACKUP_CHAIN_MISMATCH: 422,
   INTERNAL_ERROR: 500,
 } as const;
 

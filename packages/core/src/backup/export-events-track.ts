@@ -25,7 +25,7 @@ import {
 import type { BackupManifest } from '@wbfm/shared/backup';
 import { computeNextRunMs } from '../scheduler/next-run';
 
-type EventsTrackManifest = BackupManifest['tracks']['events'];
+export type EventsTrackManifest = NonNullable<BackupManifest['tracks']['events']>;
 
 interface RawVrmRow {
   id: string;

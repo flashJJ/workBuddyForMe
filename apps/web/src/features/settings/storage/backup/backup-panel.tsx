@@ -9,19 +9,14 @@ import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   backupExportReportSchema,
+  type BackupArchiveKind,
   type BackupExportReport,
-  type BackupLastExport,
+  type BackupHistoryEntry,
   type BackupTrack,
 } from '@wbfm/shared/backup';
 import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
+import { BackupHistoryCard } from './backup-history-card';
 import { BackupRestoreSection } from './backup-restore-section';
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
-}
 
 function parseReportHeader(raw: string | null): BackupExportReport | null {
   if (!raw) return null;
@@ -42,21 +37,26 @@ export function BackupPanel() {
   const [encrypt, setEncrypt] = React.useState(false);
   const [password, setPassword] = React.useState('');
   const [passwordConfirm, setPasswordConfirm] = React.useState('');
-  // v2.33：导出核对报告（本次）+ 最近一次导出摘要（设置项，跨会话保留）
+  // v2.33：导出核对报告（本次）+ v2.34 本地备份历史（meta，跨会话保留）
   const [report, setReport] = React.useState<BackupExportReport | null>(null);
-  const [lastExport, setLastExport] = React.useState<BackupLastExport | null>(null);
+  const [history, setHistory] = React.useState<BackupHistoryEntry[]>([]);
+  const [mode, setMode] = React.useState<BackupArchiveKind>('full');
+
+  const refreshHistory = React.useCallback(async () => {
+    try {
+      const data = await apiGet<{ history?: BackupHistoryEntry[] }>('/api/backup/last-export');
+      setHistory(Array.isArray(data.history) ? data.history : []);
+    } catch {
+      /* 历史读取失败不阻断导出 */
+    }
+  }, []);
 
   React.useEffect(() => {
-    let alive = true;
-    apiGet<{ lastExport: BackupLastExport | null }>('/api/backup/last-export')
-      .then((data) => {
-        if (alive) setLastExport(data.lastExport);
-      })
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, []);
+    void refreshHistory();
+  }, [refreshHistory]);
+
+  const tail = history[0];
+  const incrementalAvailable = Boolean(tail && tail.sequence < 19);
 
   /** v2.33：密码长度与二次确认前端校验（服务端仍按 8–128 兜底） */
   const passwordError = (): string | null => {
@@ -73,7 +73,8 @@ export function BackupPanel() {
     );
   };
 
-  const exportDisabled = selected.length === 0 || exporting;
+  const exportDisabled =
+    selected.length === 0 || exporting || (mode === 'incremental' && !incrementalAvailable);
 
   const doExport = async () => {
     if (exportDisabled) return;
@@ -89,7 +90,7 @@ export function BackupPanel() {
       const res = await fetch('/api/backup/export', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ tracks: selected, ...(encrypt ? { password } : {}) }),
+        body: JSON.stringify({ tracks: selected, mode, ...(encrypt ? { password } : {}) }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -112,12 +113,7 @@ export function BackupPanel() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setReport(nextReport);
-      setLastExport({
-        at: new Date().toISOString(),
-        encrypted: nextReport?.encrypted ?? encrypt,
-        totalBytes: nextReport?.totalBytes ?? blob.size,
-        trackCount: nextReport?.tracks.length ?? selected.length,
-      });
+      await refreshHistory();
       if (encrypt) {
         setPassword('');
         setPasswordConfirm('');
@@ -143,6 +139,56 @@ export function BackupPanel() {
 
       {/* 导出区域 */}
       <div className="space-y-3 rounded-md border p-3">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="radio"
+                name="backup-mode"
+                className="h-4 w-4"
+                checked={mode === 'full'}
+                onChange={() => setMode('full')}
+                disabled={exporting}
+              />
+              {t('settingsBackup.modeFull')}
+            </label>
+            <label
+              className={
+                incrementalAvailable
+                  ? 'flex cursor-pointer items-center gap-2'
+                  : 'flex cursor-not-allowed items-center gap-2 opacity-50'
+              }
+            >
+              <input
+                type="radio"
+                name="backup-mode"
+                className="h-4 w-4"
+                checked={mode === 'incremental'}
+                onChange={() => setMode('incremental')}
+                disabled={exporting || !incrementalAvailable}
+              />
+              {t('settingsBackup.modeIncremental')}
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {mode === 'incremental'
+              ? t('settingsBackup.incrementalHint')
+              : t('settingsBackup.fullHint')}
+          </p>
+          {tail && (
+            <p className="text-xs text-muted-foreground">
+              {t('settingsBackup.chainTail', {
+                kind: t(
+                  tail.kind === 'full'
+                    ? 'settingsBackup.chain.full'
+                    : 'settingsBackup.chain.incremental',
+                ),
+                sequence: tail.sequence,
+                time: new Date(tail.at).toLocaleString(),
+              })}
+            </p>
+          )}
+        </div>
         <Label>{t('settingsBackup.selectTracks')}</Label>
         <div className="grid gap-2 sm:grid-cols-2">
           {TRACK_ORDER.map((track) => (
@@ -213,38 +259,7 @@ export function BackupPanel() {
         </div>
       </div>
 
-      {(lastExport || report) && (
-        <div
-          className="space-y-1 rounded-md border bg-muted/30 p-3"
-          data-testid="backup-export-summary"
-        >
-          <p className="text-sm font-medium">{t('settingsBackup.lastExportTitle')}</p>
-          {lastExport && (
-            <p className="text-xs text-muted-foreground">
-              {t('settingsBackup.lastExportSummary', {
-                time: new Date(lastExport.at).toLocaleString(),
-                size: formatBytes(lastExport.totalBytes),
-                tracks: lastExport.trackCount,
-              })}
-              {lastExport.encrypted ? ` · ${t('settingsBackup.lastExportEncrypted')}` : ''}
-            </p>
-          )}
-          {report && (
-            <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-              {report.tracks.map((row) => (
-                <li key={row.track}>
-                  {t('settingsBackup.exportTrackRow', {
-                    label: t(TRACK_KEYS[row.track].label),
-                    entries: row.entryCount,
-                    size: formatBytes(row.bytes),
-                    ms: row.elapsedMs,
-                  })}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      <BackupHistoryCard history={history} report={report} />
 
       <BackupRestoreSection />
     </section>
