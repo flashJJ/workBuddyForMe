@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -33,8 +33,8 @@ describe('v049 迁移：文档解析版本', () => {
   it('全新库：版本 49，parse_version 默认为 0', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(49);
-    expect(LATEST_SCHEMA_VERSION).toBe(49);
+    expect(getSchemaVersion(db)).toBe(50);
+    expect(LATEST_SCHEMA_VERSION).toBe(50);
     db.close();
   });
 
@@ -45,7 +45,7 @@ describe('v049 迁移：文档解析版本', () => {
     insertDocument(db, 'legacy', false);
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([49]);
+    expect(result.applied).toEqual([49, 50]);
     expect(parseVersion(db, 'with-block')).toBe(1);
     expect(parseVersion(db, 'legacy')).toBe(0);
     db.close();

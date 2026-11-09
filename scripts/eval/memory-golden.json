@@ -12,7 +12,11 @@
     { "kind": "fact", "content": "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手", "importance": 0.85 },
     { "kind": "event", "content": "用户每周三和周五晚上去跑步，每次五公里", "importance": 0.6 },
     { "kind": "preference", "content": "用户喜欢手冲咖啡，最近在练 V60 注水手法", "importance": 0.65 },
-    { "kind": "fact", "content": "用户用的主力编程语言是 TypeScript", "importance": 0.7 }
+    { "kind": "fact", "content": "用户用的主力编程语言是 TypeScript", "importance": 0.7 },
+    { "kind": "event", "content": "用户下周六搬家，搬家箱里最贵重的是手冲咖啡壶", "importance": 0.7, "group": "neighbor-move" },
+    { "kind": "fact", "content": "用户把咖啡壶和滤纸单独装进搬家随身包", "importance": 0.6, "group": "neighbor-move" },
+    { "kind": "fact", "content": "用户养的橘猫橙子最近食欲不好", "importance": 0.75, "group": "neighbor-cat" },
+    { "kind": "preference", "content": "橙子改吃鸡肉味口粮，配料表前三位不含谷物", "importance": 0.6, "group": "neighbor-cat" }
   ],
   "cases": [
     {
@@ -74,6 +78,30 @@
       "id": "recall-synthesize-gift",
       "question": "想送我一个 200 元以内的小礼物，结合你对我的了解给一个建议，一句话就行。",
       "anyOf": ["咖啡", "V60", "手冲"]
+    },
+    {
+      "id": "recall-neighbor-move-1",
+      "question": "搬家那天要特别注意什么？",
+      "anyOf": ["咖啡壶"],
+      "neighbor": true
+    },
+    {
+      "id": "recall-neighbor-move-2",
+      "question": "我搬家时哪些东西要单独打包？",
+      "anyOf": ["咖啡壶", "滤纸", "随身包"],
+      "neighbor": true
+    },
+    {
+      "id": "recall-neighbor-cat-1",
+      "question": "我家猫最近要买什么？",
+      "anyOf": ["猫粮", "鸡肉"],
+      "neighbor": true
+    },
+    {
+      "id": "recall-neighbor-cat-2",
+      "question": "给猫买粮时要注意什么配料？",
+      "anyOf": ["配料表", "谷物"],
+      "neighbor": true
     }
   ]
 }

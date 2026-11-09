@@ -2,4 +2,5 @@
 export * from './memory-repo';
 export * from './memory-repo-types';
 export * from './memory-event-repo';
+export * from './memory-edge-repo';
 export * from './memory-fts';

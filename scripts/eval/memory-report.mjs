@@ -63,13 +63,21 @@ async function main() {
 
   const db = createDatabase(':memory:');
   const memory = createMemoryService({ db, cipher: createWebCipher() });
-  await memory.rememberCandidates(
-    golden.seedMemories.map((item) => ({
+  // v2.31：按 group 分组写入并共享 sourceMessageId，组内自动生成 same_source 关系边；
+  // 未标注 group 的种子各自独立写入，避免产生无关边污染邻居召回。
+  const groups = new Map();
+  golden.seedMemories.forEach((item, index) => {
+    const key = item.group ?? `solo-${index}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({
       kind: item.kind,
       content: item.content,
       importance: item.importance,
-    })),
-  );
+    });
+  });
+  for (const [key, items] of groups) {
+    await memory.rememberCandidates(items, { sourceMessageId: `seed-${key}` });
+  }
 
   const results = [];
   for (const testCase of golden.cases) {
@@ -81,25 +89,35 @@ async function main() {
       id: testCase.id,
       question: testCase.question,
       hit: top.some((item) => containsAny(item.content, testCase.anyOf)),
+      neighborHit: top.some((item) => item.reason === 'neighbor'),
       topContents: top.map((item) => item.content),
+      topReasons: top.map((item) => item.reason),
       elapsedMs: Number(elapsedMs.toFixed(2)),
     });
   }
 
   const hitCount = results.filter((item) => item.hit).length;
   const hitRate = hitCount / results.length;
+  const neighborCases = results.filter((item) => golden.cases.find((c) => c.id === item.id)?.neighbor);
+  const neighborHitCount = neighborCases.filter((item) => item.hit).length;
   const elapsed = results.map((item) => item.elapsedMs);
   const avgMs = elapsed.reduce((sum, value) => sum + value, 0) / elapsed.length;
   const stats = memory.getStats();
   const report = {
-    version: 'v2.28',
+    version: 'v2.31',
     at: new Date().toISOString(),
     channel: 'keyword',
     topK: TOP_K,
     cases: results.length,
     hitAt3: Number(hitRate.toFixed(3)),
+    neighborCases: neighborCases.length,
+    neighborHits: neighborHitCount,
+    neighborHitAt3: neighborCases.length
+      ? Number((neighborHitCount / neighborCases.length).toFixed(3))
+      : null,
     zeroRecallRate: stats.zeroRecallRate,
     recallTotal: stats.recallTotal,
+    edgeTotal: stats.edgeTotal ?? 0,
     avgRecallMs: Number(avgMs.toFixed(2)),
     maxRecallMs: Number(Math.max(...elapsed).toFixed(2)),
     results,
@@ -107,6 +125,9 @@ async function main() {
 
   console.log(`\n记忆基线报告（${report.channel} 通道，top-${TOP_K}）`);
   console.log(`用例 ${report.cases} · hit@3 ${report.hitAt3} · 零召回率 ${report.zeroRecallRate.toFixed(2)} · 平均召回 ${report.avgRecallMs}ms`);
+  console.log(
+    `关系边 ${report.edgeTotal} · 关联用例 ${report.neighborHits}/${report.neighborCases}（hit@3 ${report.neighborHitAt3 ?? '—'}）`,
+  );
   console.log(`对比上一版：hit@3 ${delta(report.hitAt3, previous?.hitAt3)} · 零召回率 ${delta(report.zeroRecallRate, previous?.zeroRecallRate)} · 平均耗时 ${delta(report.avgRecallMs, previous?.avgRecallMs)}`);
   for (const item of results) {
     console.log(`${item.hit ? 'HIT ' : 'MISS'}  ${item.id.padEnd(26)} ${item.elapsedMs.toFixed(2)}ms`);

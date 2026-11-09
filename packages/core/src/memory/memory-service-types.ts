@@ -11,6 +11,8 @@ import type {
 export interface RecalledMemory extends Memory {
   score: number;
   reason: MemoryRecallReason;
+  /** v2.31：邻居召回时记录种子记忆 id（用于提示词「关联自」说明） */
+  neighborOf?: string;
 }
 
 export interface RememberResult {

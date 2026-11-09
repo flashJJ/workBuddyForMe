@@ -1,6 +1,8 @@
 import type { RecalledMemory } from '../memory-service-types';
 import {
   MEMORY_HYBRID_CANDIDATES,
+  MEMORY_NEIGHBOR_LIMIT,
+  MEMORY_NEIGHBOR_SEED_LIMIT,
   MEMORY_PINNED_LIMIT,
   MEMORY_PINNED_MIN_SCORE,
   MEMORY_RECALL_MAX_DISTANCE,
@@ -11,6 +13,7 @@ import {
   searchMemoryFts,
   searchMemoryVectors,
   type DatabaseInstance,
+  type MemoryEdgeRepository,
   type MemoryRepository,
   type MemoryScopeFilter,
 } from '@wbfm/database';
@@ -33,7 +36,11 @@ export interface RecallCollectInput {
   now?: Date;
 }
 
-export function createMemoryRecall(db: DatabaseInstance, repo: MemoryRepository) {
+export function createMemoryRecall(
+  db: DatabaseInstance,
+  repo: MemoryRepository,
+  edgeRepo: MemoryEdgeRepository,
+) {
   function collect(input: RecallCollectInput): RecalledMemory[] {
     const now = input.now ?? new Date();
     const nowIso = now.toISOString();
@@ -85,6 +92,41 @@ export function createMemoryRecall(db: DatabaseInstance, repo: MemoryRepository)
       .filter((memory) => memory.pinned || memory.score >= MEMORY_RECALL_MIN_SCORE)
       .sort((a, b) => b.score - a.score || b.importance - a.importance);
 
+    // v2.31：对最高分种子沿来源边扩一跳；邻居分数 = 种子分 × 边权，总数仍受 MEMORY_TOP_K 约束
+    const seeds = scored.slice(0, MEMORY_NEIGHBOR_SEED_LIMIT);
+    const neighborScores = new Map<string, { score: number; viaId: string }>();
+    for (const neighbor of edgeRepo.listNeighbors(
+      seeds.map((memory) => memory.id),
+      { assistantId: input.scope.assistantId ?? null, now },
+    )) {
+      const seed = seeds.find((memory) => memory.id === neighbor.viaId);
+      if (!seed) continue;
+      const score = seed.score * neighbor.weight;
+      if (score < MEMORY_RECALL_MIN_SCORE) continue;
+      const existing = neighborScores.get(neighbor.memoryId);
+      if (!existing || score > existing.score) {
+        neighborScores.set(neighbor.memoryId, { score, viaId: neighbor.viaId });
+      }
+    }
+    const known = new Set(scored.map((memory) => memory.id));
+    const neighborIds = [...neighborScores.keys()].filter((id) => !known.has(id));
+    const neighbors = repo
+      .findActiveByIds(neighborIds, input.scope, nowIso)
+      .map((memory) => {
+        const hit = neighborScores.get(memory.id)!;
+        return {
+          ...memory,
+          score: hit.score,
+          reason: 'neighbor' as const,
+          neighborOf: hit.viaId,
+        };
+      })
+      .sort((a, b) => b.score - a.score || b.importance - a.importance)
+      .slice(0, MEMORY_NEIGHBOR_LIMIT);
+    const candidates = [...scored, ...neighbors].sort(
+      (a, b) => b.score - a.score || b.importance - a.importance,
+    );
+
     const pinned = repo.listPinned(input.scope, MEMORY_PINNED_LIMIT, nowIso).map((memory) => ({
       ...memory,
       score: Math.max(
@@ -105,7 +147,7 @@ export function createMemoryRecall(db: DatabaseInstance, repo: MemoryRepository)
 
     const final: RecalledMemory[] = [];
     const seen = new Set<string>();
-    for (const memory of [...pinned, ...scored]) {
+    for (const memory of [...pinned, ...candidates]) {
       if (final.length >= MEMORY_TOP_K) break;
       if (seen.has(memory.id)) continue;
       seen.add(memory.id);

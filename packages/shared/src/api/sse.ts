@@ -29,6 +29,8 @@ export interface RecalledMemoryPayload {
   /** 语义相似度 0~1（内部排序用；UI 只展示高/中/低档） */
   score: number;
   reason: MemoryRecallReason;
+  /** v2.31：邻居召回时的种子记忆 id（旧客户端忽略） */
+  neighborOf?: string;
 }
 
 /** SSE 事件类型（POST /api/chat/stream） */
