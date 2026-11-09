@@ -76,7 +76,7 @@ describe('v2.0 M2 备份恢复（events 轨：relationshipMilestones）', () => 
       { db: srcDb, cipher: createWebCipher() },
       { tracks: ['events'] },
     );
-    expect(manifest.backupSchemaVersion).toBe(8);
+    expect(manifest.backupSchemaVersion).toBe(9);
     expect(manifest.tracks.events?.relationshipMilestoneCount).toBe(2);
 
     const pre = await precheckBackup(archive);

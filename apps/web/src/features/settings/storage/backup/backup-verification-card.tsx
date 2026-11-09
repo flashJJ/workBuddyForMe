@@ -39,6 +39,18 @@ export function BackupVerificationCard({ verification }: { verification: BackupV
             </li>
           ))}
       </ul>
+      {verification.chain && (
+        <p className="text-xs text-muted-foreground">
+          {t('settingsBackup.verification.chain', {
+            count: verification.chain.segments.length,
+          })}
+          {verification.chain.missingSequences.length > 0
+            ? ` · ${t('settingsBackup.verification.chainMissing', {
+                sequences: verification.chain.missingSequences.join(', '),
+              })}`
+            : ''}
+        </p>
+      )}
       {verification.missingAttachments.length > 0 && (
         <p className="text-xs text-destructive">
           {t('settingsBackup.verification.missing', {

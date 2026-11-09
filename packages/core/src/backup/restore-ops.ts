@@ -99,10 +99,16 @@ interface ConvEntry {
 }
 
 /**
- * conversations：INSERT OR IGNORE 幂等跳过。
+ * conversations：幂等写入。
+ * v2.34：增量模式下允许向已有会话追加新消息（会话头保持本机版本）；
+ * 全量模式仍为「会话已存在即整段跳过」。
  * SQLite INSERT OR IGNORE 不忽略外键约束冲突，故先检查 assistant 是否存在。
  */
-export function restoreConversations(db: any, buf: Buffer): { convs: { imported: number; skipped: number }; msgs: number } {
+export function restoreConversations(
+  db: any,
+  buf: Buffer,
+  mode: 'full' | 'incremental' = 'full',
+): { convs: { imported: number; skipped: number }; msgs: number } {
   const convs = JSON.parse(buf.toString('utf-8')) as ConvEntry[];
   let convImported = 0, convSkipped = 0, msgImported = 0;
 
@@ -122,30 +128,35 @@ export function restoreConversations(db: any, buf: Buffer): { convs: { imported:
 
   for (const entry of convs) {
     const c = entry.conversation;
-    // 先检查：assistant 必须存在（外键）+ conversation 本身不能存在（幂等）
+    // 先检查：assistant 必须存在（外键）；全量模式下会话已存在即跳过
     const hasAssistant = assistantExists.get(c.assistantId);
     const hasConv = convExists.get(c.id);
-    if (!hasAssistant || hasConv) { convSkipped++; continue; }
+    if (!hasAssistant || (hasConv && mode === 'full')) { convSkipped++; continue; }
 
-    const modelId =
-      typeof c.modelId === 'string' && modelExists.get(c.modelId) ? c.modelId : null;
-    insertConv.run(c.id, c.assistantId, c.title, c.lastMessageAt ?? null, modelId, c.createdAt, c.updatedAt);
-    convImported++;
+    if (!hasConv) {
+      const modelId =
+        typeof c.modelId === 'string' && modelExists.get(c.modelId) ? c.modelId : null;
+      insertConv.run(c.id, c.assistantId, c.title, c.lastMessageAt ?? null, modelId, c.createdAt, c.updatedAt);
+      convImported++;
 
-    // v2.20：非法/缺失阶段计划不阻断恢复；activeStep 不单独存储
-    const plan = stagePlanSchema.safeParse(c.stagePlan);
-    if (plan.success) {
-      const ts = new Date().toISOString();
-      insertStagePlan.run(c.id, JSON.stringify(plan.data), ts, ts);
+      // v2.20：非法/缺失阶段计划不阻断恢复；activeStep 不单独存储
+      const plan = stagePlanSchema.safeParse(c.stagePlan);
+      if (plan.success) {
+        const ts = new Date().toISOString();
+        insertStagePlan.run(c.id, JSON.stringify(plan.data), ts, ts);
+      }
+    } else {
+      // 增量模式：会话头已存在，仅补录新消息
+      convSkipped++;
     }
 
     for (const m of entry.messages) {
-      insertMsg.run(m.id, c.id, m.role, m.content, m.status,
+      const r: DBRunResult = insertMsg.run(m.id, c.id, m.role, m.content, m.status,
         JSON.stringify(m.citations ?? []), JSON.stringify(m.toolTrace ?? []), JSON.stringify(m.contentParts ?? []),
         m.feedback === 'up' || m.feedback === 'down' ? m.feedback : null,
         m.feedbackAt ?? null,
         m.createdAt ?? new Date().toISOString());
-      msgImported++;
+      if (r.changes > 0) msgImported++;
     }
   }
   return { convs: { imported: convImported, skipped: convSkipped }, msgs: msgImported };
@@ -200,13 +211,14 @@ export function restoreConversationsTrack(
   conversationsBuf: Buffer,
   branchesBuf?: Buffer,
   branchEventsBuf?: Buffer,
+  mode: 'full' | 'incremental' = 'full',
 ): {
   convs: { imported: number; skipped: number };
   msgs: number;
   branches: { imported: number; skipped: number };
   branchEvents: { imported: number; skipped: number };
 } {
-  const conversations = restoreConversations(db, conversationsBuf);
+  const conversations = restoreConversations(db, conversationsBuf, mode);
   const branches = branchesBuf ? restoreBranches(db, branchesBuf) : { imported: 0, skipped: 0 };
   // v2.22：事件依赖分支关联已落库，缺失分支的事件会被跳过
   const branchEvents = branchEventsBuf

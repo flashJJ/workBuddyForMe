@@ -61,7 +61,10 @@ describe('导出报告与恢复核对（v2.33 M4）', () => {
     );
 
     const byTrack = Object.fromEntries(report.tracks.map((row) => [row.track, row]));
-    expect(byTrack.conversations?.entryCount).toBe(manifest.tracks.conversations.entryCount);
+    expect(byTrack.conversations?.entryCount).toBe(
+      manifest.tracks.conversations.entryCount +
+        (manifest.tracks.conversations.messageCount ?? 0),
+    );
     expect(byTrack.attachments?.entryCount).toBe(manifest.tracks.attachments.entryCount);
     expect(byTrack.conversations?.bytes).toBeGreaterThan(0);
     expect(byTrack.attachments?.bytes).toBeGreaterThan(0);
@@ -103,9 +106,9 @@ describe('导出报告与恢复核对（v2.33 M4）', () => {
       const declared = Object.fromEntries(
         result.verification.declared.map((row) => [row.track, row.entries]),
       );
-      expect(declared.conversations).toBe(1);
+      expect(declared.conversations).toBe(2);
       expect(declared.attachments).toBe(1);
-      expect(result.verification.written.conversations).toBe(1);
+      expect(result.verification.written.conversations).toBe(2);
       expect(result.verification.written.attachments).toBe(1);
       expect(result.verification.skipped.conversations).toBe(0);
       expect(result.verification.missingAttachments).toEqual([]);

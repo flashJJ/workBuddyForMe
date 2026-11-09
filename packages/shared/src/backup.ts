@@ -5,8 +5,10 @@ import { z } from 'zod';
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。
- * 当前版本：8（v2.32 tasks 轨加法负载：agentRuns.json 协作运行、agentHandoffs.json
- * 角色交接；manifest.tasks 对应两个 optional 计数；v7 及更早归档缺文件按 0 降级）。
+ * 当前版本：9（v2.34 备份可续：archiveId/kind/chainId/sequence/parentArchiveId/startedAt
+ * 与 conversations.messageCount；v8 旧归档缺字段按「单段全量」兼容）。
+ * v8（v2.32）：tasks 轨加法负载：agentRuns.json 协作运行、agentHandoffs.json
+ * 角色交接；manifest.tasks 对应两个 optional 计数；v7 及更早归档缺文件按 0 降级。
  * v7（v2.6）：memories.json 长期记忆（含来源消息/召回次数）、meetingConclusions.json
  * 会议结论、meetingActionItems.json 行动项。
  * v2.20 阶段计划为 v7 内可选字段（conversations 条目 stagePlan/modelId、助手/卡片 stagePlan），
@@ -20,7 +22,7 @@ import { z } from 'zod';
  * v1–v4 旧归档仍可恢复，缺文件/缺键按 0 处理。
  */
 
-export const CURRENT_BACKUP_SCHEMA_VERSION = 8 as const;
+export const CURRENT_BACKUP_SCHEMA_VERSION = 9 as const;
 
 export const backupTrackSchema = z.enum([
   'conversations',
@@ -42,16 +44,60 @@ export const backupProgressEventSchema = z.object({
 });
 export type BackupProgressEvent = z.infer<typeof backupProgressEventSchema>;
 
+/** v2.34：归档类型；缺省视为 full（v8 旧归档） */
+export const backupArchiveKindSchema = z.enum(['full', 'incremental']);
+export type BackupArchiveKind = z.infer<typeof backupArchiveKindSchema>;
+
+/** v2.34：归档链信息（预检/恢复响应，前端据此排序与校验连续性） */
+export const backupChainInfoSchema = z.object({
+  archiveId: z.string().min(1),
+  kind: backupArchiveKindSchema,
+  chainId: z.string().min(1),
+  sequence: z.number().int().min(0),
+  parentArchiveId: z.string().min(1).nullable(),
+  startedAt: z.string().nullable(),
+});
+export type BackupChainInfo = z.infer<typeof backupChainInfoSchema>;
+/** v2.34：链上已应用/已导出的单段摘要 */
+export const backupChainSegmentSchema = backupChainInfoSchema.extend({
+  declaredTotal: z.number().int().min(0).optional(),
+  writtenTotal: z.number().int().min(0).optional(),
+  skippedTotal: z.number().int().min(0).optional(),
+});
+export type BackupChainSegment = z.infer<typeof backupChainSegmentSchema>;
+/** v2.34：链级核对摘要（恢复后累积，差异只告警） */
+export const backupChainSummarySchema = z.object({
+  chainId: z.string().min(1),
+  segments: z.array(backupChainSegmentSchema),
+  missingSequences: z.array(z.number().int().min(0)),
+});
+export type BackupChainSummary = z.infer<typeof backupChainSummarySchema>;
 export const backupManifestSchema = z.object({
   backupSchemaVersion: z.number().int().positive(),
   appVersion: z.string().describe('源应用 package.json version 字段'),
   createdAt: z.string().datetime(),
   /** 源数据根路径（仅做参考，恢复不依赖） */
   sourceDataRoot: z.string().optional(),
+  /** v2.34：归档唯一 id（全量新建，增量继承链） */
+  archiveId: z.string().min(1).optional(),
+  /** v2.34：归档类型；缺省视为 full（v8 旧归档） */
+  kind: backupArchiveKindSchema.optional(),
+  /** v2.34：链 id；全量导出新建，增量继承 */
+  chainId: z.string().min(1).optional(),
+  /** v2.34：链序号（全量固定 0，增量父段 +1） */
+  sequence: z.number().int().min(0).optional(),
+  /** v2.34：增量父段 archiveId */
+  parentArchiveId: z.string().min(1).optional(),
+  /** v2.34：导出开始时间，作为下一段增量的 since 下界（宁可重复不可遗漏） */
+  startedAt: z.string().datetime().optional(),
+  /** v2.34：每轨实际最大 created_at（仅审计；可能只含部分轨道） */
+  watermarks: z.record(z.string(), z.string()).optional(),
   tracks: z.object({
     conversations: z.object({
       files: z.string(),
       entryCount: z.number().int().min(0),
+      /** v2.34：实际导出的消息条数（v8 及更早缺省，核对时回退会话数） */
+      messageCount: z.number().int().min(0).optional(),
       /** v2.21：分支关联条数（branches.json；v2.20 及更早缺省 0） */
       branchCount: z.number().int().min(0).optional(),
       /** v2.22：分支事件条数（branch-events.json；v2.21 及更早缺省 0） */
@@ -126,6 +172,8 @@ export const backupPasswordSchema = z.string().min(8).max(128);
 export const backupExportRequestSchema = z.object({
   tracks: z.array(backupTrackSchema).min(1),
   password: backupPasswordSchema.optional(),
+  /** v2.34：导出模式；incremental 需要本地存在同链全量基线 */
+  mode: backupArchiveKindSchema.optional(),
 });
 export type BackupExportRequest = z.infer<typeof backupExportRequestSchema>;
 
@@ -148,14 +196,33 @@ export const backupExportReportSchema = z.object({
 });
 export type BackupExportReport = z.infer<typeof backupExportReportSchema>;
 
-/** v2.33：最近一次导出摘要（设置项 backup.lastExport，不含路径与密码） */
+/** v2.33：最近一次导出摘要（v2.34 起由 meta backup.history 派生，不含路径与密码） */
 export const backupLastExportSchema = z.object({
   at: z.string().datetime(),
   encrypted: z.boolean(),
   totalBytes: z.number().int().min(0),
   trackCount: z.number().int().min(0),
+  /** v2.34：链信息（旧数据缺省视为单段全量） */
+  archiveId: z.string().optional(),
+  kind: backupArchiveKindSchema.optional(),
+  chainId: z.string().optional(),
+  sequence: z.number().int().min(0).optional(),
 });
 export type BackupLastExport = z.infer<typeof backupLastExportSchema>;
+
+/** v2.34：本地备份历史单条（meta backup.history，最多 20 段） */
+export const backupHistoryEntrySchema = z.object({
+  archiveId: z.string().min(1),
+  kind: backupArchiveKindSchema,
+  chainId: z.string().min(1),
+  sequence: z.number().int().min(0),
+  at: z.string().datetime(),
+  startedAt: z.string().nullable(),
+  trackCount: z.number().int().min(0),
+  totalBytes: z.number().int().min(0),
+  encrypted: z.boolean(),
+});
+export type BackupHistoryEntry = z.infer<typeof backupHistoryEntrySchema>;
 
 /** 每轨计数（声明/写入/跳过共用同一结构，口径见 restore-verification） */
 const backupTrackCountsSchema = z.object({
@@ -180,6 +247,8 @@ export const backupVerificationSchema = z.object({
   missingAttachments: z.array(z.string()),
   /** 恢复后仍无引用的非产物附件数（只读统计，不阻断恢复） */
   unreferencedAttachments: z.number().int().min(0),
+  /** v2.34：链级核对（单段恢复也返回，段数=1） */
+  chain: backupChainSummarySchema.optional(),
 });
 export type BackupVerification = z.infer<typeof backupVerificationSchema>;
 
@@ -225,5 +294,7 @@ export const backupPrecheckSchema = z.object({
   warnings: z.array(z.string()),
   /** v2.33：只读核对（预检阶段写入/跳过均为 0，附件缺失已可提示） */
   verification: backupVerificationSchema,
+  /** v2.34：归档链信息（v8 旧归档按单段全量补齐） */
+  chain: backupChainInfoSchema,
 });
 export type BackupPrecheck = z.infer<typeof backupPrecheckSchema>;

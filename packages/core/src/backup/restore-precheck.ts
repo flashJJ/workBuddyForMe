@@ -11,6 +11,7 @@ import {
 import { extractArchiveFull } from './restore-archive';
 import { hasRedactedPlaceholder } from './restore-track-select';
 import { buildPrecheckVerification } from './portability/restore-verification';
+import { chainInfoFromManifest } from './portability/chain/chain-info';
 
 /**
  * 预检查：先于正式恢复调用，告知兼容性与将导入多少条目。
@@ -74,5 +75,7 @@ export async function precheckBackup(
     warnings,
     // v2.33：预检为只读——写入/跳过为 0，但可提前提示归档内缺失的附件
     verification: buildPrecheckVerification(m, files, binaries),
+    // v2.34：链信息供前端多选排序与连续性校验
+    chain: chainInfoFromManifest(m),
   });
 }

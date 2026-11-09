@@ -14,6 +14,14 @@ export {
 } from './restore';
 export { packEntries, packTarGz, type TarPayloadEntry } from './export-archive';
 export {
+  readBackupHistory,
+  readRestoreChain,
+} from './portability/chain/backup-registry';
+export {
+  chainInfoFromManifest,
+  MAX_BACKUP_CHAIN_SEGMENTS,
+} from './portability/chain/chain-info';
+export {
   exportArtifactsBatch,
   ARTIFACT_BATCH_MAX_BYTES,
   ARTIFACT_BATCH_MAX_COUNT,
