@@ -75,7 +75,7 @@ describe('6 条触摸链的 golden 等价', () => {
 
 describe('内置场景注册表', () => {
   it('按 id 与触发键可查，触发键候选按优先级升序', () => {
-    expect(BUILT_IN_SCENE_REGISTRY.list()).toHaveLength(6);
+    expect(BUILT_IN_SCENE_REGISTRY.list()).toHaveLength(13);
     expect(BUILT_IN_SCENE_REGISTRY.get('touch.head-tap')?.cooldownMs).toBe(500);
     expect(BUILT_IN_SCENE_REGISTRY.get('missing')).toBeNull();
     expect(BUILT_IN_SCENE_REGISTRY.byTrigger('touch::body::double').map((s) => s.id)).toEqual([

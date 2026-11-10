@@ -10,6 +10,8 @@ class FakeController implements VrmCueTarget {
   gaze: { x: number; y: number } | null = null;
   gesture: { gesture: ScriptGesture; intensity?: number } | null = null;
   motion: { motion: string; loop?: boolean; fadeMs?: number } | null = null;
+  sleeping: boolean | null = null;
+  faceAway: boolean | null = null;
 
   playSquash(): void {
     this.calls.push('squash');
@@ -27,6 +29,16 @@ class FakeController implements VrmCueTarget {
   setExpression(tag: ExpressionTag): void {
     this.calls.push('setExpression');
     this.expression = { tag, holdMs: 0 };
+  }
+
+  setSleeping(sleeping: boolean): void {
+    this.calls.push('sleeping');
+    this.sleeping = sleeping;
+  }
+
+  setFaceAway(away: boolean): void {
+    this.calls.push('faceAway');
+    this.faceAway = away;
   }
 
   setGaze(x: number, y: number): void {
@@ -70,7 +82,19 @@ describe('VrmCueAdapter（cue → 现有控制器）', () => {
     adapter.execute(entryOf({ kind: 'pose', preset: 'squash' }), () => 0);
     adapter.execute(entryOf({ kind: 'pose', preset: 'tap' }), () => 0);
     expect(controller.calls).toEqual(['squash', 'tap']);
-    expect(BUILTIN_POSE_PRESETS).toEqual({ squash: { squash: true }, tap: { tap: true } });
+    expect(BUILTIN_POSE_PRESETS.squash).toEqual({ squash: true });
+    expect(BUILTIN_POSE_PRESETS.tap).toEqual({ tap: true });
+  });
+
+  it('状态预设映射 setSleeping / setFaceAway', () => {
+    const { controller, adapter } = setup();
+    adapter.execute(entryOf({ kind: 'pose', preset: 'sleep' }), () => 0);
+    adapter.execute(entryOf({ kind: 'pose', preset: 'wake' }), () => 0);
+    adapter.execute(entryOf({ kind: 'pose', preset: 'face-away' }), () => 0);
+    adapter.execute(entryOf({ kind: 'pose', preset: 'face-front' }), () => 0);
+    expect(controller.calls).toEqual(['sleeping', 'sleeping', 'faceAway', 'faceAway']);
+    expect(controller.sleeping).toBe(false);
+    expect(controller.faceAway).toBe(false);
   });
 
   it('未知 pose 预设 warn 后跳过，不影响后续 cue', () => {

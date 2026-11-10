@@ -23,6 +23,8 @@ export interface VrmCueTarget {
   flashExpression(tag: ExpressionTag, durationMs: number): void;
   setExpression?(tag: ExpressionTag): void;
   setGaze?(nx: number, ny: number): void;
+  setSleeping?(sleeping: boolean): void;
+  setFaceAway?(away: boolean): void;
   playGesture?(gesture: ScriptGesture, intensity?: number): boolean;
   playMotion?(motion: string, options?: { loop?: boolean; fadeMs?: number }): boolean;
 }
@@ -31,11 +33,17 @@ export interface VrmCueTarget {
 export interface PosePresetActions {
   squash?: boolean;
   tap?: boolean;
+  sleeping?: boolean;
+  faceAway?: boolean;
 }
 
 export const BUILTIN_POSE_PRESETS: Readonly<Record<string, PosePresetActions>> = {
   squash: { squash: true },
   tap: { tap: true },
+  sleep: { sleeping: true },
+  wake: { sleeping: false },
+  'face-away': { faceAway: true },
+  'face-front': { faceAway: false },
 };
 
 export const DEFAULT_EXPRESSION_HOLD_MS = 2000;
@@ -101,6 +109,8 @@ export class VrmCueAdapter implements CueSink {
       return;
     }
     const target = this.options.controller;
+    if (preset.sleeping !== undefined) target.setSleeping?.(preset.sleeping);
+    if (preset.faceAway !== undefined) target.setFaceAway?.(preset.faceAway);
     if (preset.squash) target.playSquash?.();
     if (preset.tap) target.tap?.();
   }
