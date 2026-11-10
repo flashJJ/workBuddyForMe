@@ -163,18 +163,90 @@ export const LIFTED: BehaviorDefinition = {
 
 ## 7. 代码布局与契约
 
+### 7.1 目录结构
+
 ```text
 apps/web/src/features/avatar/animation/
-  math.ts           缓动/弹簧/钟摆/延迟（纯函数）       ≤120 行
-  mask.ts           BoneGroup / BoneMask / 解析          ≤100 行
-  pose.ts           PoseDefinition + 应用到骨骼          ≤150 行
-  motion.ts         MotionDefinition + 采样             ≤180 行
-  behavior.ts       BehaviorDefinition + Runner 阶段机   ≤220 行
-  composer.ts       层栈/优先级/权重/淡入淡出            ≤220 行
-  poses/            arms-limp / legs-dangle / scruff...  数据文件
-  motions/          nod / tilt / bounce / pendulum...    数据文件
-  behaviors/        lifted / idle / sleep / face-away    数据文件
+  index.ts                 公共入口（只 re-export 稳定 API）
+  contracts.ts             BoneGroup / BoneMask / Pose / Motion / Behavior / Track
+  math.ts                  缓动 / 弹簧 / 钟摆 / 延迟（纯函数）
+  mask.ts                  BoneGroup → normalized bone 名单、include/exclude
+  skeleton.ts              BoneMap 快照 / 写回 / 重置（L0 运行时）
+  pose.ts                  Pose 应用（override / additive / weight）
+  motion.ts                Motion 采样（关键帧 / 循环 / 相位偏移）
+  behavior.ts              Behavior 定义 + Runner（enter / loop / exit、打断）
+  composer.ts              层栈 / 优先级 / 权重 / fade / 单帧合成
+  tuning.ts                集中调参（相位差、弹簧、淡入淡出）
+  __tests__/               根模块单测（不占根目录直接文件预算）
+    math.test.ts
+    mask.test.ts
+    pose.test.ts
+    motion.test.ts
+    behavior.test.ts
+    composer.test.ts
+  poses/
+    index.ts                姿势注册表（id → PoseDefinition）
+    arms.ts                 arms-hang / arms-limp
+    legs.ts                 legs-stand / legs-dangle
+    torso.ts                scruff-arch / land-settle
+    head.ts                 head-lag / head-tilt
+  motions/
+    index.ts
+    nod.ts
+    tilt.ts
+    glance.ts
+    squash.ts
+    pendulum.ts
+  behaviors/
+    index.ts                行为注册表（id → BehaviorDefinition）
+    lifted.ts               grab → dangle → release → land
+    idle.ts                 呼吸 / 微摆 / 环境漂移
+    sleep.ts
+    face-away.ts
+  adapters/
+    index.ts
+    vrm.ts                  接 VrmPoseLayer / Controller，写 normalized bone
+    live2d.ts               仅 motion / expression / look，姿势叠加 no-op
+  devtools/
+    preview-panel.tsx       T1.8：逐阶段 / 逐轨道预览与调参
 ```
+
+### 7.2 预算与依赖方向
+
+| 位置 | 直接文件预算 | 单文件预算 | 说明 |
+|---|---|---|---|
+| `animation/` 根 | 10 / 12 | 220 行 | 测试放 `__tests__/`，避免占用根预算 |
+| `poses/` | 5 / 12 | 120 行 | 纯数据，只 import `contracts` |
+| `motions/` | 6 / 12 | 120 行 | 纯数据，只 import `contracts` |
+| `behaviors/` | 5 / 12 | 150 行 | 纯数据，只 import `contracts` |
+| `adapters/` | 3 / 12 | 220 行 | 唯一允许 import three / 控制器的位置 |
+| `devtools/` | 1 / 12 | 220 行 | dev 面板，不参与运行时调度 |
+
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart LR
+  Contracts["contracts.ts"] --> Math["math.ts"]
+  Contracts --> Mask["mask.ts"]
+  Contracts --> Skeleton["skeleton.ts"]
+  Math --> Pose["pose.ts"]
+  Mask --> Pose
+  Skeleton --> Pose
+  Pose --> Motion["motion.ts"]
+  Pose --> Behavior["behavior.ts"]
+  Motion --> Behavior
+  Pose --> Composer["composer.ts"]
+  Behavior --> Composer
+  Composer --> Vrm["adapters/vrm.ts"]
+  Composer --> Live2d["adapters/live2d.ts"]
+```
+
+约束：
+
+- `contracts.ts` 不 import three；数据目录只引用 `contracts.ts` 的 id/类型。
+- `pose/motion/behavior` 不直接碰 VRM；骨骼读取与写回统一经 `skeleton.ts`。
+- `composer.ts` 是唯一决定「谁覆盖谁」的地方；adapter 只负责把结果写进具体模型。
+- 现有 `pose/bones.ts` 的 `NORM_BONE_NAMES` 迁到 `animation/mask.ts`，`pose/bones.ts` 只做兼容 re-export。
+- 现有 `pose/raised-pose.ts` 在 T1.6 删除，由 `poses/*` + `behaviors/lifted.ts` 取代。
 
 核心契约：
 
