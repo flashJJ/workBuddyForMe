@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import { describe, expect, it } from 'vitest';
-import { VrmPoseLayer } from './vrm-pose-layer';
+import { VrmPoseLayer, type NormalizedBoneRef } from './vrm-pose-layer';
 
 /** 只用到 scene 的最小 VRM 替身（构造函数只读 scene.scale 与 lookAt） */
 function makeVrm(baseRotationY = Math.PI): { vrm: VRM; scene: THREE.Object3D } {
@@ -10,6 +10,44 @@ function makeVrm(baseRotationY = Math.PI): { vrm: VRM; scene: THREE.Object3D } {
   scene.position.y = 0.5;
   return { vrm: { scene, lookAt: null } as unknown as VRM, scene };
 }
+
+describe('VrmPoseLayer.applyNeckPitch', () => {
+  /** 最小 spine → neck → head 链；scene.rotation.y 模拟 VRM0（π）/ VRM1（0） */
+  function makeBones(baseRotationY: number): {
+    vrm: VRM;
+    neck: THREE.Object3D;
+    bones: Map<string, NormalizedBoneRef>;
+  } {
+    const scene = new THREE.Object3D();
+    scene.rotation.y = baseRotationY;
+    const spine = new THREE.Object3D();
+    const neck = new THREE.Object3D();
+    const head = new THREE.Object3D();
+    scene.add(spine);
+    spine.add(neck);
+    neck.add(head);
+    const bones = new Map<string, NormalizedBoneRef>([
+      ['spine', { name: 'spine', node: spine, baseQuat: spine.quaternion.clone() }],
+      ['neck', { name: 'neck', node: neck, baseQuat: neck.quaternion.clone() }],
+      ['head', { name: 'head', node: head, baseQuat: head.quaternion.clone() }],
+    ]);
+    return { vrm: { scene, lookAt: null } as unknown as VRM, neck, bones };
+  }
+
+  it('VRM0（rotateVRM0 后）颈部下压为负向，与头部俯仰符号一致', () => {
+    const { vrm, neck, bones } = makeBones(Math.PI);
+    const layer = new VrmPoseLayer(vrm, bones);
+    layer.applyHeadOverlay(0, true, 1 / 60, 1);
+    expect(neck.quaternion.x).toBeLessThan(0);
+  });
+
+  it('VRM1 颈部下压为正向', () => {
+    const { vrm, neck, bones } = makeBones(0);
+    const layer = new VrmPoseLayer(vrm, bones);
+    layer.applyHeadOverlay(0, true, 1 / 60, 1);
+    expect(neck.quaternion.x).toBeGreaterThan(0);
+  });
+});
 
 describe('VrmPoseLayer.applyBodyIdle', () => {
   it('身体微摆叠加在基准朝向上，不覆盖 VRM0 的 180°（rotateVRM0）', () => {

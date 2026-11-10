@@ -81,10 +81,8 @@ export class VrmPoseLayer {
     const headBone = normBones.get('head');
     this.pitchSign = headBone ? rigPitchSign(headBone.node) : 1;
     this.lastGazeAt = performance.now();
-    const head = normBones.get('head');
-    if (head) this.mixerHeadQuat.copy(head.baseQuat);
-    const spine = normBones.get('spine');
-    if (spine) this.mixerSpineQuat.copy(spine.baseQuat);
+    if (headBone) this.mixerHeadQuat.copy(headBone.baseQuat);
+    const spine = normBones.get('spine'); if (spine) this.mixerSpineQuat.copy(spine.baseQuat);
     const neck = normBones.get('neck');
     if (neck) this.mixerNeckQuat.copy(neck.baseQuat);
     if (vrm.lookAt) vrm.lookAt.target = this.gazeTarget;
@@ -269,7 +267,9 @@ export class VrmPoseLayer {
   private applyNeckPitch(procedural: boolean): void {
     const neck = this.normBones.get('neck');
     if (!neck) return;
-    const q = new THREE.Quaternion().setFromAxisAngle(PITCH_AXIS, NECK_IDLE_PITCH);
+    // 与头部俯仰同一套骨骼轴向标定：VRM0 为 -1、VRM1 为 +1
+    const angle = NECK_IDLE_PITCH * this.pitchSign;
+    const q = new THREE.Quaternion().setFromAxisAngle(PITCH_AXIS, angle);
     if (procedural) {
       neck.node.quaternion.copy(neck.baseQuat).premultiply(q);
     } else {
