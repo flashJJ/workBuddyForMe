@@ -219,3 +219,22 @@ M0b（并行，可与 T0.x 交错）：原位换模型、资源回收审计、Q 
 | M3 记忆/语音/决策 | P1 | Utility 决策 + 声线 + 主动说话 | 决策层接 Director |
 | M4 小剧场/分享/角色包 | P1 | Scene 复用 + Preset 包 | 内容生态 |
 | M5 发布 | P2 | 物料/合规/门禁 | 剧本 lint + golden 纳入 CI |
+
+## 12. 实施状态（2026-11-10）
+
+| 任务 | 状态 | 落地 |
+|---|---|---|
+| T0.1–T0.8 | 已完成 | 契约、录影、Director、VRM 适配、触摸/环境/状态场景、开关接入、`__petDebug` |
+| T0.9 | 待实测 | 需要 `WBFM_PET_SCRIPT=1` 的桌面会话跑帧时间/CPU 与 4h 长稳 |
+| T0.10 | 进行中 | 本节状态回填；剧本 lint/CI 门禁留到 M0.6 |
+
+关键落地决策（对 §4 的补充，不改变契约定稿）：
+
+1. Track 归属 `scene.ts`，`cueTrack` 由 cue kind 推导；时间轴展开外迁 `timeline.ts`，Director 保持单时钟且 ≤300 行。
+2. `interaction.start/end` 继续由指针层驱动；6 条链 golden 对比忽略 interaction 观测项。
+3. `expression.holdMs=0` 表示常驻表情，对应旧 executor 的 `setExpression`；其余走 `flashExpression`。
+4. pose 预设新增 `sleep` / `wake` / `face-away` / `face-front`，映射 `setSleeping` / `setFaceAway`。
+5. T0.7 开关先只接 VRM：Live2D 继续走旧 Resolver；Director 帧推进复用 `VrmCanvas` 现有 rAF（hidden 档冻结）。
+6. `__petDebug` 先提供 console 只读快照（场景/活跃游标/日志/seed），可视化面板留到 M0.6。
+
+基线：shared 41 文件 / 382 项、web 189 文件 / 903 项全绿；`pnpm check` 各门禁通过（并行 turbo 在低内存机器需串行执行）。
