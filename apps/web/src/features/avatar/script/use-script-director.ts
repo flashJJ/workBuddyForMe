@@ -22,6 +22,7 @@ import {
   type CancelReason,
   type ScriptContext,
 } from './director';
+import { installPetScriptDebug } from './debug';
 import { BUILT_IN_SCENE_REGISTRY, BUILT_IN_SCENES } from './scenes';
 
 export const PET_SCRIPT_ENABLED = process.env.NEXT_PUBLIC_WBFM_PET_SCRIPT === '1';
@@ -93,6 +94,17 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
   );
 
   React.useEffect(() => () => director.dispose(), [director]);
+
+  // T0.8：dev 下暴露只读观测入口，生产不挂载
+  React.useEffect(() => {
+    if (!options.enabled) return;
+    return (
+      installPetScriptDebug(
+        director,
+        BUILT_IN_SCENES.map((scene) => scene.id),
+      ) ?? undefined
+    );
+  }, [director, options.enabled]);
 
   const playEvent = React.useCallback(
     (event: InteractionEvent, ctx: ScriptCueContext): boolean => {

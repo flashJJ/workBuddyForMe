@@ -40,6 +40,15 @@ export interface CueLogEntry {
   cue: Cue;
 }
 
+/** 调试快照：当前活跃场景（只读，不参与调度） */
+export interface ActiveSceneSnapshot {
+  sceneId: string;
+  priority: Scene['priority'];
+  /** 已消费的 timeline cue 数 */
+  cursor: number;
+  total: number;
+}
+
 export interface CueSink {
   execute(entry: CueLogEntry, random: () => number): void;
   end?(sceneId: string, reason: SceneEndReason): void;
@@ -142,6 +151,20 @@ export class ScriptDirector {
 
   getLog(): readonly CueLogEntry[] {
     return this.entries;
+  }
+
+  /** 调试快照：当前活跃场景与推进游标（T0.8 __petDebug） */
+  getActive(): readonly ActiveSceneSnapshot[] {
+    return this.active.map((play) => ({
+      sceneId: play.scene.id,
+      priority: play.scene.priority,
+      cursor: play.cursor,
+      total: play.timeline.length,
+    }));
+  }
+
+  getSeed(): number {
+    return this.seed;
   }
 
   dispose(): void {
