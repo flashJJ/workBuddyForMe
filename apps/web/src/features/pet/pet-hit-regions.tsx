@@ -5,6 +5,7 @@ import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import type { InteractionEvent } from '@wbfm/shared/schemas';
 import type { Live2dController } from '@/features/avatar';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useRaisedGesture } from './stage/use-pet-raised';
 
 /**
  * 桌宠交互命中盒（由 PetStage 外迁）。
@@ -35,7 +36,7 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
   const pointerDownRef = React.useRef<boolean>(false);
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFiredRef = React.useRef<boolean>(false);
-
+  const raised = useRaisedGesture(controllerRef, resolveAndDispatch);
   React.useEffect(
     () => () => {
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
@@ -64,8 +65,7 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
         pressStartRef.current = { x: e.clientX, y: e.clientY };
         pressMovedRef.current = false;
         bridgeActiveRef.current = false;
-        longPressFiredRef.current = false;
-        // body-touch 程序化 start（让角色提前进入 phase='start'，等待后续判定）
+        longPressFiredRef.current = false; raised.reset();
         (controllerRef.current as any)?.startInteraction?.('body-touch');
         longPressTimerRef.current = setTimeout(() => {
           if (!pressMovedRef.current) {
@@ -97,6 +97,7 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
         // 轴对齐 AND 判定（和主进程 PetDragController 保持一致），避免对角线方向误触发
         if (Math.abs(dx) >= DRAG_THRESHOLD_PX || Math.abs(dy) >= DRAG_THRESHOLD_PX) {
           pressMovedRef.current = true;
+          raised.move(dy);
           if (longPressTimerRef.current) {
             clearTimeout(longPressTimerRef.current);
             longPressTimerRef.current = null;
@@ -135,7 +136,7 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
         }
       }}
       onPointerUp={() => {
-        pointerDownRef.current = false;
+        pointerDownRef.current = false; raised.release();
         if (bridgeActiveRef.current) {
           bridge?.dragEnd();
           bridgeActiveRef.current = false;
@@ -148,7 +149,7 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
         }
       }}
       onPointerCancel={() => {
-        pointerDownRef.current = false;
+        pointerDownRef.current = false; raised.release();
         if (bridgeActiveRef.current) {
           bridge?.dragEnd();
           bridgeActiveRef.current = false;
@@ -176,7 +177,7 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
   const pointerDownRef = React.useRef<boolean>(false);
   const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFiredRef = React.useRef<boolean>(false); // 长按已触发过 → 挡 onClick tap
-
+  const raised = useRaisedGesture(controllerRef, resolveAndDispatch);
   React.useEffect(
     () => () => {
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
@@ -200,13 +201,12 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
       title={t('pet.stage.headHint')}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
-        // 指针捕获：拖出命中盒/甩出窗口后仍能收到 pointerup（否则 endInteraction 丢失、姿势卡住）
         try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 指针已释放 */ }
         pointerDownRef.current = true;
         pressStartPosRef.current = { x: e.clientX, y: e.clientY, at: performance.now() };
         pressMovedRef.current = false;
         bridgeActiveRef.current = false;
-        longPressFiredRef.current = false; // 重置长按标记
+        longPressFiredRef.current = false; raised.reset(); // 重置长按标记
         (controllerRef.current as any)?.startInteraction?.('head-touch');
         if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = setTimeout(() => {
@@ -239,6 +239,7 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
         // 轴对齐 AND 判定（和主进程 PetDragController 保持一致），避免对角线方向误触发
         if (Math.abs(dx) >= DRAG_THRESHOLD_PX || Math.abs(dy) >= DRAG_THRESHOLD_PX) {
           pressMovedRef.current = true;
+          raised.move(dy);
           if (longPressTimerRef.current) {
             clearTimeout(longPressTimerRef.current);
             longPressTimerRef.current = null;
@@ -266,7 +267,7 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
         resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'tap' });
       }}
       onPointerUp={() => {
-        pointerDownRef.current = false;
+        pointerDownRef.current = false; raised.release();
         (controllerRef.current as any)?.endInteraction?.();
         if (bridgeActiveRef.current) {
           bridge?.dragEnd();
@@ -278,7 +279,7 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
         }
       }}
       onPointerCancel={() => {
-        pointerDownRef.current = false;
+        pointerDownRef.current = false; raised.release();
         (controllerRef.current as any)?.endInteraction?.();
         if (bridgeActiveRef.current) {
           bridge?.dragEnd();

@@ -12,14 +12,9 @@ import { VrmPoseLayer, type NormalizedBoneRef } from './vrm-pose-layer';
 import { prepareVrmModel, VrmTailLayer } from './asset';
 import { pickAmbientBehavior, pickTapGesture } from '../performance/gesture';
 import type { MotionPoolEntry } from '../motion/motion-segments';
+import { NORM_BONE_NAMES } from '../pose/bones';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
-
-const NORM_BONE_NAMES = [
-  'spine', 'neck',
-  'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
-  'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand', 'head',
-] as const;
 
 export interface VrmControllerLike extends TouchControllerLike {
   playSquash(): void;
@@ -184,6 +179,11 @@ export class VrmController implements VrmControllerLike {
     this.pose.setFaceAway(away);
   }
 
+  /** 被拎起：向上拖拽时进入悬空姿态，松手回弹 */
+  setRaised(raised: boolean): void {
+    if (!this.disposed) this.pose.setRaised(raised);
+  }
+
   /** 点击触发：优先从动作池随机播一个一次性动作；池空则退回程序化手势 */
   tap(): void {
     if (this.disposed) return;
@@ -268,8 +268,8 @@ export class VrmController implements VrmControllerLike {
     this.pose.applyHeadOverlay(t, procedural, dt, gazeWeight);
     const angles = this.interaction.overlayAngles();
     this.pose.applyInteractionAngles(angles.yaw, angles.pitch);
-    // v3.0 P1：待机时把 A-pose 手臂收成自然下垂；手势/长按期间不干预
-    if (!this.mixer.hasGesture && !this.interaction.isLooping) {
+    // v3.0 P1：待机时把 A-pose 手臂收成自然下垂；手势/长按/被拎起期间不干预
+    if (!this.mixer.hasGesture && !this.interaction.isLooping && !this.pose.raised) {
       this.pose.relaxArms(procedural ? 1 : 0.7, t);
     }
 

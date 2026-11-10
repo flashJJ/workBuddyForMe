@@ -7,7 +7,6 @@ import {
 } from '@wbfm/shared/constants';
 import {
   GAZE_IDLE_RESET_MS,
-  GAZE_LIMITS,
   GAZE_SMOOTH,
   gazeAngles,
   normalizeGaze,
@@ -17,20 +16,16 @@ import {
 import { relaxBothArms } from '../performance/arm-relax';
 import { GestureState, ambientHeadAngles, type ProceduralGestureKind } from '../performance/gesture';
 import { TurnState } from '../performance/turn';
+import type { NormalizedBoneRef } from '../pose/bones';
+import { RaisedPose } from '../pose/raised-pose';
+import { aimEyeTarget, applyNeckIdlePitch, applySpineYaw } from '../pose/head-overlay';
+
+export type { NormalizedBoneRef } from '../pose/bones';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const PITCH_AXIS = new THREE.Vector3(1, 0, 0);
 const ROLL_AXIS = new THREE.Vector3(0, 0, 1);
 const HEAD_IDLE_PITCH = 0.12;
-/** 待机颈部下压：多数模型默认颈部后仰，低机位会显得一直抬头 */
-const NECK_IDLE_PITCH = 0.26;
-
-/** 参与 gaze/wiggle 叠加的 normalized bone 引用 */
-export interface NormalizedBoneRef {
-  name: string;
-  node: THREE.Object3D;
-  baseQuat: THREE.Quaternion;
-}
 
 /** 姿态叠加层：squash / 头部叠加（视线/手势/转身）/ 呼吸与身体微摆，全部叠加在动画之上 */
 export class VrmPoseLayer {
@@ -60,6 +55,9 @@ export class VrmPoseLayer {
   private readonly gesture = new GestureState();
   /** 背对/转身（久无交互 → π，被交互 → 0） */
   private readonly turn = new TurnState();
+  /** 被拎起姿态（向上拖拽触发；松手回弹） */
+  private readonly raisedPose = new RaisedPose();
+  private baseSceneRotationZ = 0;
 
   /** mixer 本帧写的骨骼姿态（叠加前快照，避免视线逐帧累积） */
   private readonly mixerHeadQuat = new THREE.Quaternion();
@@ -78,6 +76,7 @@ export class VrmPoseLayer {
     this.baseSceneScale = vrm.scene.scale.clone();
     // 朝向必须在首帧前记录：rotateVRM0 写的 π 一旦被微摆覆盖就再也回不来
     this.baseSceneRotationY = vrm.scene.rotation.y;
+    this.baseSceneRotationZ = vrm.scene.rotation.z;
     const headBone = normBones.get('head');
     this.pitchSign = headBone ? rigPitchSign(headBone.node) : 1;
     this.lastGazeAt = performance.now();
@@ -147,6 +146,15 @@ export class VrmPoseLayer {
     this.turn.setAway(away);
   }
 
+  /** 被拎起 / 放下（程序化悬空姿态） */
+  setRaised(raised: boolean): void {
+    this.raisedPose.setRaised(raised);
+  }
+
+  get raised(): boolean {
+    return this.raisedPose.active;
+  }
+
   /** squash 包络（每帧 Step 2） */
   applySquash(): void {
     if (this.squashStart === 0) return;
@@ -169,6 +177,8 @@ export class VrmPoseLayer {
 
   /** 头部叠加层（每帧 Step 4）：平滑追踪 + 脊柱微转 + lookAt 眼睛目标 */
   applyHeadOverlay(t: number, procedural: boolean, dt: number, gazeWeight: number): void {
+    this.raisedPose.update(dt);
+    this.raisedPose.applyLimbs((name) => this.normBones.get(name), t);
     const headRef = this.normBones.get('head');
     if (!headRef) return;
     const idle = performance.now() - this.lastGazeAt > GAZE_IDLE_RESET_MS;
@@ -176,6 +186,9 @@ export class VrmPoseLayer {
     const muted = this.sleeping || this.turn.away;
     const weight = muted ? 0 : gazeWeight;
     const target = gazeAngles(idle ? 0 : this.gazeNx, idle ? 0 : this.gazeNy, weight);
+    const raisedHead = this.raisedPose.headOffsets();
+    target.headYaw += raisedHead.yaw;
+    target.headPitch -= raisedHead.pitch;
     if (this.sleeping) target.headPitch += HEAD_IDLE_PITCH;
     // 环境漂移：待机时头部有极低频的「活人感」；睡眠/背对时收起
     const ambient = muted ? { yaw: 0, pitch: 0 } : ambientHeadAngles(t);
@@ -197,7 +210,8 @@ export class VrmPoseLayer {
       this.applyGazeOnly(headRef);
     }
     // roll 只在头节点统一叠一次，不参与 yaw/pitch 的平滑
-    const rollQ = g.roll === 0 ? null : new THREE.Quaternion().setFromAxisAngle(ROLL_AXIS, g.roll);
+    const roll = g.roll + raisedHead.roll * this.pitchSign;
+    const rollQ = roll === 0 ? null : new THREE.Quaternion().setFromAxisAngle(ROLL_AXIS, roll);
     if (rollQ) headRef.node.quaternion.premultiply(rollQ);
     this.decayHeadOffset();
   }
@@ -221,9 +235,13 @@ export class VrmPoseLayer {
     const speed = this.sleeping ? 0.5 : 1;
     this.breathePhase += dt * speed;
     const breatheAmp = this.sleeping ? 0.006 : breatheDeep ? 0.026 : 0.016;
-    this.vrm.scene.position.y = this.baseSceneY + Math.sin(this.breathePhase * 1.2) * breatheAmp;
+    const raisedSway = this.raisedPose.bodySway(t);
+    this.vrm.scene.position.y =
+      this.baseSceneY + Math.sin(this.breathePhase * 1.2) * breatheAmp + this.raisedPose.liftY;
     const sway = this.sleeping ? 0 : Math.sin(t * 0.25) * (procedural ? 0.018 : 0.012);
-    this.vrm.scene.rotation.y = this.baseSceneRotationY + this.turn.update(dt) + sway;
+    this.vrm.scene.rotation.y =
+      this.baseSceneRotationY + this.turn.update(dt) + sway + raisedSway.y;
+    this.vrm.scene.rotation.z = this.baseSceneRotationZ + raisedSway.z;
   }
 
   /** 无动作池 clip 时：叠头部 wiggle + gaze + 手势（不动身体骨骼） */
@@ -255,41 +273,19 @@ export class VrmPoseLayer {
   private applySpineTilt(procedural: boolean): void {
     const spine = this.normBones.get('spine');
     if (!spine || this.spineYaw === 0) return;
-    const q = new THREE.Quaternion().setFromAxisAngle(UP, this.spineYaw);
-    if (procedural) {
-      spine.node.quaternion.copy(spine.baseQuat).premultiply(q);
-    } else {
-      spine.node.quaternion.copy(this.mixerSpineQuat).premultiply(q);
-    }
+    applySpineYaw(spine, procedural, this.mixerSpineQuat, this.spineYaw);
   }
 
   /** 颈部待机下压：抵消模型默认后仰，视线/交互角度仍叠加在头部 */
   private applyNeckPitch(procedural: boolean): void {
     const neck = this.normBones.get('neck');
-    if (!neck) return;
-    // 与头部俯仰同一套骨骼轴向标定：VRM0 为 -1、VRM1 为 +1
-    const angle = NECK_IDLE_PITCH * this.pitchSign;
-    const q = new THREE.Quaternion().setFromAxisAngle(PITCH_AXIS, angle);
-    if (procedural) {
-      neck.node.quaternion.copy(neck.baseQuat).premultiply(q);
-    } else {
-      neck.node.quaternion.copy(this.mixerNeckQuat).premultiply(q);
-    }
+    if (neck) applyNeckIdlePitch(neck, procedural, this.mixerNeckQuat, this.pitchSign);
   }
 
   /** 眼睛追踪：lookAt 目标放在头部前方，左右/上下偏移由平滑后的头部角度换算 */
   private applyEyeTarget(headRef: NormalizedBoneRef): void {
-    if (!this.vrm.lookAt) return;
-    headRef.node.updateWorldMatrix(true, false);
-    headRef.node.getWorldPosition(this.headWorld);
-    const yawRatio = this.headYaw / (GAZE_LIMITS.headYawDeg * (Math.PI / 180));
-    const pitchRatio = this.headPitch / (GAZE_LIMITS.headPitchDeg * (Math.PI / 180));
-    this.gazeTarget.position.set(
-      this.headWorld.x + yawRatio * 0.6,
-      this.headWorld.y - pitchRatio * 0.4,
-      this.headWorld.z + 1,
-    );
-    this.gazeTarget.updateMatrixWorld(true);
+    const enabled = Boolean(this.vrm.lookAt);
+    aimEyeTarget(enabled, headRef, this.headYaw, this.headPitch, this.gazeTarget, this.headWorld);
   }
 
   /** 点击微倾指数衰减（两条叠加路径共用） */
