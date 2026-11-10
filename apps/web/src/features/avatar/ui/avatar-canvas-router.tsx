@@ -21,6 +21,8 @@ export type AvatarCanvasRouterProps = Live2dCanvasProps & {
   relationshipLevel?: number;
   /** v3.5：久无交互背对 / 被交互转回（仅 VRM；Live2D 忽略） */
   faceAway?: boolean;
+  /** v3.0 T0.7：VRM 帧循环回调（仅 VRM；Live2D 忽略） */
+  onFrame?: (dtMs: number) => void;
 };
 
 /**

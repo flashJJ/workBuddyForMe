@@ -22,3 +22,10 @@ export type { Live2dController } from './live2d/live2d-controller';
 export { Live2dMicrodynamics } from './live2d/live2d-microdynamics';
 export { loadCubismCore } from './live2d/live2d-core';
 export type { VrmControllerLike } from './vrm/vrm-controller';
+export {
+  PET_SCRIPT_ENABLED,
+  useScriptDirector,
+  type ScriptControllerHandle,
+  type ScriptCueContext,
+  type ScriptDirectorHandle,
+} from './script/use-script-director';

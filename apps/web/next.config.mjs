@@ -21,6 +21,8 @@ const nextConfig = {
   poweredByHeader: false,
   env: {
     NEXT_PUBLIC_APP_VERSION: appVersion,
+    // v3.0 剧本引擎开关：构建/启动前设置 WBFM_PET_SCRIPT=1 才走 Director 新路径
+    NEXT_PUBLIC_WBFM_PET_SCRIPT: process.env.WBFM_PET_SCRIPT ?? '',
   },
   // 工作区 TS 源码包在 Next 编译管线中转译
   transpilePackages: ['@wbfm/shared', '@wbfm/config', '@wbfm/database', '@wbfm/ai', '@wbfm/core'],

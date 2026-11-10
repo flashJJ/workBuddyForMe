@@ -1,15 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { AvatarCanvasRouter } from '@/features/avatar';
+import {
+  AvatarCanvasRouter,
+  PET_SCRIPT_ENABLED,
+  useScriptDirector,
+} from '@/features/avatar';
 import type { Live2dController } from '@/features/avatar';
-import { pulseReunionSignal } from '@/features/avatar';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
   buildInteractionGraph,
   DEFAULT_DO_NOT_DISTURB,
   isDoNotDisturbHour,
+  isVrmAvatarId,
   relationshipLevelName,
   touchTriggerKey,
   type InteractionEvent,
@@ -32,6 +36,7 @@ import { usePetHitProxy } from './stage/hit-proxy';
 import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
 import { usePetAmbientTalk } from './stage/use-pet-ambient-talk';
 import { usePetFaceAway } from './stage/use-pet-face-away';
+import { usePetPointerGaze } from './stage/use-pet-pointer-gaze';
 
 interface Props {
   modelId: string;
@@ -112,6 +117,16 @@ export function PetStage({
     });
   }, [showLine, t, linesEnabled]);
 
+  // v3.0 T0.7：剧本开关（仅 VRM；关闭时完全走旧 Resolver/ActionExecutor）
+  const script = useScriptDirector({
+    enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId),
+    getController: () => controllerRef.current,
+    showSubtitle: (key, ms) => {
+      if (!linesEnabled) return;
+      showLine(t(key), ms ?? 3200);
+    },
+  });
+
   // L2：静默时低频自主低语（本地短句；睡眠/说话/勿扰/台词开关任一命中即安静）
   const inDnd = isDoNotDisturbHour(new Date().getHours(), {
     enabled: dndEnabled,
@@ -170,7 +185,6 @@ export function PetStage({
         mood,
         doNotDisturb: { enabled: dndEnabled, startHour: dndStartHour, endHour: dndEndHour },
       };
-      const chain = resolveInteraction(event, ctx, interactionGraph);
       // 更新冷却时间戳（按 region::gesture 记，双击不被单击冷却吃掉）
       if (event.kind === 'touch') {
         lastTriggerAtRef.current = {
@@ -178,6 +192,24 @@ export function PetStage({
           [touchTriggerKey(event.region, event.gesture)]: Date.now(),
         };
       }
+      // v3.0 T0.7：有对应场景时优先走 Director；返回 false 表示无场景 → 回退旧链
+      if (
+        script.playEvent(event, {
+          hour: ctx.hour,
+          relationshipLevel: ctx.relationshipLevel,
+          mood: ctx.mood,
+          emotionEnabled,
+          linesEnabled,
+          doNotDisturb: ctx.doNotDisturb,
+          busy: voiceState !== 'idle',
+          sleeping,
+          faceAway,
+        })
+      ) {
+        TriggerBus.emit(event);
+        return;
+      }
+      const chain = resolveInteraction(event, ctx, interactionGraph);
       if (chain) {
         executorRef.current?.dispatch(chain);
       }
@@ -192,6 +224,11 @@ export function PetStage({
       dndStartHour,
       dndEndHour,
       interactionGraph,
+      script,
+      voiceState,
+      sleeping,
+      faceAway,
+      linesEnabled,
     ],
   );
 
@@ -207,45 +244,8 @@ export function PetStage({
     });
   }, []);
 
-  // v1.7 久别迎接收归主窗事件导演（唯一出口，禁止双播）：
-  // 桌宠仅在指针重新进入窗口时发跨窗信号；主窗 storage 监听后自行判定/去重/演出。
-  // 情绪/短句任一总开关关闭时不发信号。
-  const lastReunionPulseRef = React.useRef(0);
-
-  // 全域视线跟随（拖拽盒遮挡 canvas 宿主，故在舞台根层归一化喂指针）；
-  // 指针重新进入窗口 → 节流发一次久别信号（人回到桌宠前的「被重新关注」信号）
-  React.useEffect(() => {
-    let inside = false;
-    const onMove = (event: PointerEvent) => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      if (w > 0 && h > 0) {
-        controllerRef.current?.setGaze(
-          (event.clientX / w - 0.5) * 2,
-          (event.clientY / h - 0.5) * 2,
-        );
-      }
-      if (!inside) {
-        inside = true;
-        if (linesEnabled && emotionEnabled) {
-          const now = Date.now();
-          if (now - lastReunionPulseRef.current >= 30_000) {
-            lastReunionPulseRef.current = now;
-            pulseReunionSignal(now);
-          }
-        }
-      }
-    };
-    const onLeave = () => {
-      inside = false;
-    };
-    window.addEventListener('pointermove', onMove);
-    document.documentElement.addEventListener('mouseleave', onLeave);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      document.documentElement.removeEventListener('mouseleave', onLeave);
-    };
-  }, [linesEnabled, emotionEnabled]);
+  // 全域视线跟随 + 指针重新进入窗口的节流久别信号（实现见 use-pet-pointer-gaze）
+  usePetPointerGaze({ controllerRef, enabled: linesEnabled && emotionEnabled });
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-transparent">
@@ -263,6 +263,7 @@ export function PetStage({
           sleeping={sleeping}
           faceAway={faceAway}
           onModelRect={onModelRect}
+          onFrame={script.onFrame}
         />
       </div>
 

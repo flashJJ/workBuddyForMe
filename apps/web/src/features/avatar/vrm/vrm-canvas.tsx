@@ -17,6 +17,7 @@ import { projectObjectToViewport, type AvatarScreenRect } from '../performance/s
 import { loadMotionPool, loadRotationConfig } from './vrm-motion-loader';
 import { fitVrmToCamera } from './vrm-fit';
 import { installVrmDebugProbe, removeVrmDebugProbe, type VrmDebugProbe } from './vrm-debug';
+import { attachGazePointer } from '../performance/pointer-gaze';
 import { VrmController, type VrmControllerLike } from './vrm-controller';
 
 export type { VrmControllerLike };
@@ -41,6 +42,7 @@ export interface VrmCanvasProps {
   faceAway?: boolean;
   /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
   onModelRect?: (rect: AvatarScreenRect | null) => void;
+  onFrame?: (dtMs: number) => void;
   className?: string;
   style?: React.CSSProperties;
   'data-testid'?: string;
@@ -59,6 +61,7 @@ export function VrmCanvas({
   sleeping = false,
   faceAway = false,
   onModelRect,
+  onFrame,
   className,
   style,
   'data-testid': testId,
@@ -75,6 +78,7 @@ export function VrmCanvas({
   const sleepingRef = React.useRef(sleeping);
   const faceAwayRef = React.useRef(faceAway);
   const onModelRectRef = React.useRef(onModelRect);
+  const onFrameRef = React.useRef(onFrame);
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -90,6 +94,7 @@ export function VrmCanvas({
   React.useEffect(() => { frameModeRef.current = frameMode; }, [frameMode]);
   React.useEffect(() => { sleepingRef.current = sleeping; }, [sleeping]);
   React.useEffect(() => { onModelRectRef.current = onModelRect; }, [onModelRect]);
+  onFrameRef.current = onFrame;
 
   React.useEffect(() => {
     controllerRefInternal.current?.setSleeping(sleeping);
@@ -124,7 +129,7 @@ export function VrmCanvas({
     let debug: VrmDebugProbe | null = null;
     let raf = 0;
     let observer: ResizeObserver | null = null;
-    let onPointerMove: ((e: PointerEvent) => void) | null = null;
+    let detachGazePointer: (() => void) | null = null;
 
     const token = getManagedToken();
     const vrmUrl = token
@@ -182,14 +187,7 @@ export function VrmCanvas({
           host,
         );
 
-        onPointerMove = (e: PointerEvent) => {
-          if (!controller) return;
-          const r = host.getBoundingClientRect();
-          const nx = (e.clientX - r.left) / r.width * 2 - 1;
-          const ny = (e.clientY - r.top) / r.height * 2 - 1;
-          controller.setGaze(nx, ny);
-        };
-        host.addEventListener('pointermove', onPointerMove);
+        detachGazePointer = attachGazePointer(host, () => controller);
 
         // v3.0 P0：帧率三档（交互 60 / 待机 30 / 隐藏暂停）；高刷屏 rAF 可达 240Hz，
         // 无上限时每帧都做 SpringBone/矩阵/表情，空闲也占满主线程。
@@ -198,12 +196,14 @@ export function VrmCanvas({
           if (disposed || !controller) return;
           raf = requestAnimationFrame(animate);
           if (!shouldRenderFrame(now, lastFrameAt, frameModeRef.current)) return;
+          const dtMs = lastFrameAt > 0 ? Math.min(now - lastFrameAt, 100) : 0;
           lastFrameAt = now;
           controller.setMotionPreference({
             mood: moodRef.current,
             relationshipLevel: relationshipLevelRef.current,
           });
           controller.update(speakingRef.current, () => getLevelRef.current?.() ?? 0);
+          onFrameRef.current?.(dtMs);
         };
         raf = requestAnimationFrame(animate);
 
@@ -262,7 +262,7 @@ export function VrmCanvas({
       disposed = true;
       cancelAnimationFrame(raf);
       if (observer) observer.disconnect();
-      if (onPointerMove) host.removeEventListener('pointermove', onPointerMove);
+      detachGazePointer?.();
       if (controller) {
         controller.dispose();
         if (controllerRef && controllerRef.current === controller) controllerRef.current = null;
