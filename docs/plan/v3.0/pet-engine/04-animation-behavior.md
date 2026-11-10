@@ -2,6 +2,10 @@
 
 > 结论：动画生硬不是模型问题，是调度问题。把待机、触摸、拖拽、口型、睡眠收进一个
 > `AnimationDirector`，用优先级 + crossfade + 冷却管理；视线追踪与眨眼作为叠加层。
+>
+> **v3.0 定稿（见 08/09）**：`AnimationDirector` 不再作为独立概念存在——场景级调度归
+> `ScriptDirector`，动作级执行归 `MotionKit`。本文的优先级、crossfade、待机权重与验收
+> 表继续有效，作为 Director/MotionKit 的策略来源。
 
 ## 1. 已知教训
 

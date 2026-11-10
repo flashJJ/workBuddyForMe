@@ -73,6 +73,8 @@
 5. [05-interaction-mod-ai.md](./05-interaction-mod-ai.md)：触摸区域、手势、模组包、语音与 AI。
 6. [06-benchmark-roadmap.md](./06-benchmark-roadmap.md)：指标、测试矩阵、分阶段落地与风险。
 7. [07-p0-changelog.md](./07-p0-changelog.md)：P0 前两项（多边形命中、帧率三档）的落地变更摘要。
+8. [08-script-architecture.md](./08-script-architecture.md)：剧本 DSL、表现套件（Kit）与 ScriptDirector，重构 3.0 的架构主轴。
+9. [09-script-dev-plan.md](./09-script-dev-plan.md)：M0 开发规格——冲突定稿、契约、模块布局、任务拆分与准备清单。
 
 ## 6. 优先级
 
@@ -80,6 +82,7 @@
 |---|---|---|
 | **P0** | 多边形命中、帧率三档、资源 dispose、单一动画调度 | 交互不再「鬼畜」，待机 CPU/GPU 明显下降 |
 | **P1** | 眼神跟随、待机动作库、睡眠/唤醒、窗口坐立 | 从「贴纸」变成「在场」 |
+| **P1.5** | 剧本 DSL、6 个表现 Kit、golden test 与 dev 预览（M0a）；原位换模型/资源回收/Q 版（M0b） | 表现可复用、可预览、可回归（见 08/09） |
 | **P2** | 任务栏坐立、贴边探头、模组包、多角色 | 可玩性与二创空间 |
 
 ## 7. 明确不做
