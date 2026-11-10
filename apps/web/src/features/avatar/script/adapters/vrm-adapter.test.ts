@@ -24,6 +24,11 @@ class FakeController implements VrmCueTarget {
     this.expression = { tag, holdMs };
   }
 
+  setExpression(tag: ExpressionTag): void {
+    this.calls.push('setExpression');
+    this.expression = { tag, holdMs: 0 };
+  }
+
   setGaze(x: number, y: number): void {
     this.calls.push('gaze');
     this.gaze = { x, y };
@@ -78,12 +83,13 @@ describe('VrmCueAdapter（cue → 现有控制器）', () => {
     warn.mockRestore();
   });
 
-  it('expression 使用 holdMs，缺省回落 2000ms', () => {
+  it('expression 使用 holdMs，缺省回落 2000ms；holdMs=0 走常驻表情', () => {
     const { controller, adapter } = setup();
     adapter.execute(entryOf({ kind: 'expression', tag: 'joy', holdMs: 2600 }), () => 0);
     adapter.execute(entryOf({ kind: 'expression', tag: 'smirk' }), () => 0);
-    expect(controller.calls).toEqual(['expression', 'expression']);
-    expect(controller.expression).toEqual({ tag: 'smirk', holdMs: 2000 });
+    adapter.execute(entryOf({ kind: 'expression', tag: 'smirk', holdMs: 0 }), () => 0);
+    expect(controller.calls).toEqual(['expression', 'expression', 'setExpression']);
+    expect(controller.expression).toEqual({ tag: 'smirk', holdMs: 0 });
   });
 
   it('look 目标映射归一化坐标，pointer 支持外部坐标与权重', () => {

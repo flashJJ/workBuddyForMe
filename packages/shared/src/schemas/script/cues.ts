@@ -50,6 +50,7 @@ export interface MotionCue {
 export interface ExpressionCue {
   kind: 'expression';
   tag: ExpressionTag;
+  /** 临时表情保留毫秒；0 = 常驻不自动恢复（对应旧 executor 的 setExpression） */
   holdMs?: number;
 }
 export interface LookCue {

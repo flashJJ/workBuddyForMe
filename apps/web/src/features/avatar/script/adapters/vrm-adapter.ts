@@ -21,6 +21,7 @@ export interface VrmCueTarget {
   playSquash?(): void;
   tap?(): void;
   flashExpression(tag: ExpressionTag, durationMs: number): void;
+  setExpression?(tag: ExpressionTag): void;
   setGaze?(nx: number, ny: number): void;
   playGesture?(gesture: ScriptGesture, intensity?: number): boolean;
   playMotion?(motion: string, options?: { loop?: boolean; fadeMs?: number }): boolean;
@@ -76,7 +77,7 @@ export class VrmCueAdapter implements CueSink {
         this.motion(cue.motion, cue.loop, cue.fadeMs);
         break;
       case 'expression':
-        this.options.controller.flashExpression(cue.tag, cue.holdMs ?? DEFAULT_EXPRESSION_HOLD_MS);
+        this.expression(cue.tag, cue.holdMs);
         break;
       case 'look':
         this.look(cue.target, cue.weight);
@@ -102,6 +103,15 @@ export class VrmCueAdapter implements CueSink {
     const target = this.options.controller;
     if (preset.squash) target.playSquash?.();
     if (preset.tap) target.tap?.();
+  }
+
+  /** holdMs=0 对应旧 executor 的 setExpression（常驻），否则走临时表情 */
+  private expression(tag: ExpressionTag, holdMs?: number): void {
+    if (holdMs === 0) {
+      this.options.controller.setExpression?.(tag);
+      return;
+    }
+    this.options.controller.flashExpression(tag, holdMs ?? DEFAULT_EXPRESSION_HOLD_MS);
   }
 
   private gesture(gesture: ScriptGesture, intensity?: number): void {
