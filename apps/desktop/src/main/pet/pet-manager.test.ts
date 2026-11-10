@@ -98,6 +98,20 @@ describe('PetManager', () => {
     expect(broadcasts).toEqual([true]);
   });
 
+  it('换模型后旧窗迟到的 closed 不回收新窗（兼容异步 destroy）', async () => {
+    await manager.open('haru');
+    const old = pet.win;
+    await manager.open('wanko');
+
+    const onClosed = (old.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (call) => call[0] === 'closed',
+    )?.[1] as (() => void) | undefined;
+    onClosed!(); // 模拟旧窗 closed 在新窗就绪之后才派发
+
+    ipcKit.emit('pet:hover', pet.wc, true); // 新窗仍受管：hover 还能驱动穿透
+    expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
+  });
+
   it('close 持久化位置、广播关闭并唤回主窗；关后中继事件被丢弃', async () => {
     await manager.open();
     await manager.close();
@@ -163,6 +177,23 @@ describe('PetManager', () => {
 
     menuActions!.hide();
     expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', false);
+  });
+
+  it('取消穿透后：重开窗立即常驻可交互，悬停上报不再翻转', async () => {
+    await manager.open();
+    ipcKit.emit('pet:show-menu', pet.wc);
+    menuActions!.toggleClickThrough(); // clickThrough=false → 常驻可交互
+    expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
+
+    // 悬停进出都不得翻回穿透（渲染层上报与主进程轮询共用同一开关）
+    ipcKit.emit('pet:hover', pet.wc, false);
+    ipcKit.emit('pet:hover', pet.wc, true);
+    expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
+
+    // 关窗再开：新窗按持久化偏好初始化，而不是 start() 的默认穿透
+    await manager.close();
+    await manager.open();
+    expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
   });
 
   it('桌宠存活时拦截主窗关闭（改为隐藏）；prepareQuit 后放行且不再唤主窗', async () => {

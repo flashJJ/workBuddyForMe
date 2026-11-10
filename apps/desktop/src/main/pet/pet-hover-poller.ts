@@ -50,6 +50,8 @@ export class PetHoverPoller {
 
   /** 绑定 move 宽限窗并启动轮询（新建/换模型后调用一次） */
   start(win: PetHoverWindow): void {
+    // 幂等：重复 start（换窗未走 stop 的路径）会留下仍在轮询旧窗的定时器
+    this.stop();
     this.hitProxy = null;
     let nativeMovingUntil = 0;
     let lastMoveAt = 0;

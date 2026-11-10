@@ -169,8 +169,8 @@ export function createPetWindow(
     };
     repaint();
     setTimeout(repaint, 120);
-    // dev 下自动开 devtools，便于看 VRM 渲染日志
-    if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' });
+    // dev 下默认不开 devtools（会抢焦、换模型还会堆窗）；需要时 WBFM_PET_DEVTOOLS=1 显式开启
+    if (!app.isPackaged && process.env.WBFM_PET_DEVTOOLS === '1') win.webContents.openDevTools({ mode: 'detach' });
   });
   void win.loadURL(buildPetUrl(baseUrl, modelId));
   return win;
