@@ -10,6 +10,7 @@ import { VrmFaceLayer } from './vrm-face-layer';
 import { VrmInteractionState, type InteractionPhase } from './vrm-interaction-state';
 import { VrmPoseLayer, type NormalizedBoneRef } from './vrm-pose-layer';
 import { prepareVrmModel, VrmTailLayer } from './asset';
+import { pickAmbientBehavior, pickTapGesture } from '../performance/gesture';
 import type { MotionPoolEntry } from '../motion/motion-segments';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
@@ -68,8 +69,10 @@ export class VrmController implements VrmControllerLike {
   private readonly pose: VrmPoseLayer;
   private readonly tail: VrmTailLayer;
   private readonly interaction = new VrmInteractionState();
-  /** 上一帧交互阶段（用于检测阶段跃迁，驱动长按三段式） */
   private lastPhase: InteractionPhase = 'idle';
+  private nextAmbientAt = 0;
+  private sleeping = false;
+  private faceAway = false;
 
   private disposed = false;
 
@@ -166,15 +169,26 @@ export class VrmController implements VrmControllerLike {
   /** v3.0 P1：睡眠/唤醒（闭眼、低头、动作减速、待机轮播暂停） */
   setSleeping(sleeping: boolean): void {
     if (this.disposed) return;
+    this.sleeping = sleeping;
+    // 唤醒后重新排期，避免把睡眠时长一次性补成「立刻做动作」
+    if (!sleeping) this.nextAmbientAt = 0;
     this.pose.setSleeping(sleeping);
     this.face.setSleeping(sleeping);
     this.mixer.setSleeping(sleeping);
   }
 
-  /** 点击触发：优先从动作池随机播一个一次性动作；池空则退回内嵌 tap clip / 程序化微倾 */
+  /** v3.5：久无交互背对 / 被交互转回（只影响 VRM；Live2D 无此 API） */
+  setFaceAway(away: boolean): void {
+    if (this.disposed) return;
+    this.faceAway = away;
+    this.pose.setFaceAway(away);
+  }
+
+  /** 点击触发：优先从动作池随机播一个一次性动作；池空则退回程序化手势 */
   tap(): void {
     if (this.disposed) return;
     if (this.mixer.playRandomGesture()) return;
+    this.pose.playGesture(pickTapGesture());
     this.pose.nudgeHead();
     this.face.triggerBlink();
   }
@@ -197,6 +211,21 @@ export class VrmController implements VrmControllerLike {
   }
 
   // ======= 核心 update（固定 10 步） =======
+
+  /** 环境微行为：无动作 clip/手势/交互/睡眠/背对时每 8–20s 随机一次 */
+  private tickAmbient(): void {
+    if (this.sleeping || this.faceAway || this.mixer.hasGesture || this.interaction.currentPhase !== 'idle') return;
+    const now = performance.now();
+    if (this.nextAmbientAt === 0) {
+      this.nextAmbientAt = now + 6000 + Math.random() * 6000;
+      return;
+    }
+    if (now < this.nextAmbientAt) return;
+    this.nextAmbientAt = now + 8000 + Math.random() * 12_000;
+    const behavior = pickAmbientBehavior();
+    if (behavior === 'blink') this.face.triggerBlink();
+    else this.pose.playGesture(behavior);
+  }
 
   update(speaking: boolean, getLevel: () => number): void {
     if (this.disposed) return;
@@ -246,6 +275,8 @@ export class VrmController implements VrmControllerLike {
 
     // --- Step 5: 呼吸 + 身体微摆（交互 loop 阶段加深呼吸） ---
     this.pose.applyBodyIdle(t, dt, this.interaction.isLooping, procedural);
+    // --- Step 5.5: 环境微行为（眨眼/点头/歪头/瞥视），避免待机像摆件 ---
+    this.tickAmbient();
 
     // --- Step 6: vrm.update → normalized → raw → 场景 + SpringBone ---
     // normalized bone 在 Step 4 已写好（有 clip 时 mixer 写，无 clip 时程序化写 head）

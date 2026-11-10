@@ -88,6 +88,17 @@ describe('usePetSignalRelay（系统信号中继）', () => {
     expect(signals(pet)).toEqual(['voice-start', 'voice-end']);
   });
 
+  it('桌宠在说话中才打开：补发 voice-start，说完只有一次 voice-end', () => {
+    const h = render(false, 'speaking');
+    expect(signals(pet)).toEqual([]);
+
+    act(() => h.rerender({ a: true, v: 'speaking' }));
+    expect(signals(pet)).toEqual(['voice-start']);
+
+    act(() => h.rerender({ a: true, v: 'idle' }));
+    expect(signals(pet)).toEqual(['voice-start', 'voice-end']);
+  });
+
   it('桌宠未打开 / 无桌面桥：不转发', () => {
     const closed = render(false, 'idle');
     act(() => closed.rerender({ a: false, v: 'speaking' }));

@@ -11,15 +11,19 @@ import {
   GAZE_SMOOTH,
   gazeAngles,
   normalizeGaze,
+  rigPitchSign,
   smoothDamp,
 } from '../performance/gaze';
-import { relaxArm } from '../performance/arm-relax';
+import { relaxBothArms } from '../performance/arm-relax';
+import { GestureState, ambientHeadAngles, type ProceduralGestureKind } from '../performance/gesture';
+import { TurnState } from '../performance/turn';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const PITCH_AXIS = new THREE.Vector3(1, 0, 0);
+const ROLL_AXIS = new THREE.Vector3(0, 0, 1);
 const HEAD_IDLE_PITCH = 0.12;
 /** 待机颈部下压：多数模型默认颈部后仰，低机位会显得一直抬头 */
-const NECK_IDLE_PITCH = 0.2;
+const NECK_IDLE_PITCH = 0.26;
 
 /** 参与 gaze/wiggle 叠加的 normalized bone 引用 */
 export interface NormalizedBoneRef {
@@ -28,14 +32,7 @@ export interface NormalizedBoneRef {
   baseQuat: THREE.Quaternion;
 }
 
-/**
- * 姿态叠加层协作者（由 VrmController 外迁）。
- *
- * 负责三类「在动画之上叠加、但不动动画轨道」的东西：
- * 1. squash 形变（触摸反馈的 scale sin 包络，210ms）；
- * 2. 头部叠加（视线跟随 gaze / 点击微倾 / 程序化 wiggle / 交互三段式微倾）；
- * 3. 呼吸浮动与身体微摆（scene.position.y / rotation.y）。
- */
+/** 姿态叠加层：squash / 头部叠加（视线/手势/转身）/ 呼吸与身体微摆，全部叠加在动画之上 */
 export class VrmPoseLayer {
   private readonly vrm: VRM;
   private readonly normBones: Map<string, NormalizedBoneRef>;
@@ -45,6 +42,8 @@ export class VrmPoseLayer {
   private readonly baseSceneScale: THREE.Vector3;
   /** fitVrmToCamera 设置的基准 position.y（呼吸浮动以它为基准叠加，不可直接覆盖） */
   private baseSceneY = 0;
+  /** 基准朝向：VRM0 经 rotateVRM0 后为 π，微摆必须在其上叠加 */
+  private baseSceneRotationY = 0;
 
   private gazeNx = 0;
   private gazeNy = 0;
@@ -55,6 +54,12 @@ export class VrmPoseLayer {
   private spineYaw = 0;
   private headYawOffset = 0; // 点击头部微倾
   private sleeping = false;
+  /** 俯仰旋转方向：VRM0 为 -1、VRM1 为 +1（按头部世界 X 轴标定） */
+  private readonly pitchSign: number;
+  /** 程序化手势（点头/歪头/瞥一眼）：动作池为空或环境调度触发 */
+  private readonly gesture = new GestureState();
+  /** 背对/转身（久无交互 → π，被交互 → 0） */
+  private readonly turn = new TurnState();
 
   /** mixer 本帧写的骨骼姿态（叠加前快照，避免视线逐帧累积） */
   private readonly mixerHeadQuat = new THREE.Quaternion();
@@ -71,6 +76,10 @@ export class VrmPoseLayer {
     this.normBones = normBones;
     // 捕获 fitVrmToCamera 之后的基础 scale，squash 在其之上叠加
     this.baseSceneScale = vrm.scene.scale.clone();
+    // 朝向必须在首帧前记录：rotateVRM0 写的 π 一旦被微摆覆盖就再也回不来
+    this.baseSceneRotationY = vrm.scene.rotation.y;
+    const headBone = normBones.get('head');
+    this.pitchSign = headBone ? rigPitchSign(headBone.node) : 1;
     this.lastGazeAt = performance.now();
     const head = normBones.get('head');
     if (head) this.mixerHeadQuat.copy(head.baseQuat);
@@ -81,17 +90,12 @@ export class VrmPoseLayer {
     if (vrm.lookAt) vrm.lookAt.target = this.gazeTarget;
   }
 
-  /**
-   * fitVrmToCamera 后重新捕获基础变换（squash / 呼吸叠加的基准）。
-   * 必须同时记录 position.y——否则 applyBodyIdle 每帧写 position.y 会覆盖
-   * fitVrm 在归一化阶段设置的「底部对齐」偏移，导致模型整体下沉出视锥。
-   */
+  /** 重新捕获基础变换（squash/呼吸基准）；position.y 必须记录，否则底部对齐偏移会被覆盖 */
   captureBase(): void {
     this.baseSceneScale.copy(this.vrm.scene.scale);
     this.baseSceneY = this.vrm.scene.position.y;
   }
 
-  /** 触摸弹性反馈（scale sin 包络） */
   playSquash(): void {
     this.squashStart = performance.now();
   }
@@ -112,7 +116,6 @@ export class VrmPoseLayer {
     }
   }
 
-  /** mixer.update 之前：叠加骨骼回到绑定姿态，避免未驱动轨道残留上一帧视线 */
   resetOverlayBones(): void {
     const head = this.normBones.get('head');
     if (head) head.node.quaternion.copy(head.baseQuat);
@@ -122,7 +125,6 @@ export class VrmPoseLayer {
     if (neck) neck.node.quaternion.copy(neck.baseQuat);
   }
 
-  /** mixer.update 之后：快照本帧骨骼姿态，视线在其上合成 */
   captureMixerPose(): void {
     const head = this.normBones.get('head');
     if (head) this.mixerHeadQuat.copy(head.node.quaternion);
@@ -132,9 +134,19 @@ export class VrmPoseLayer {
     if (neck) this.mixerNeckQuat.copy(neck.node.quaternion);
   }
 
-  /** 点击头部微倾（程序化回退分支用） */
   nudgeHead(): void {
     this.headYawOffset = (Math.random() - 0.5) * 0.15;
+  }
+
+  /** 播放一个程序化手势（动作池为空时的点击 / 环境调度） */
+  playGesture(kind: ProceduralGestureKind): void {
+    this.gesture.play(kind);
+  }
+
+  /** 久无交互背对 / 被交互转回 */
+  setFaceAway(away: boolean): void {
+    if (away) this.gesture.reset();
+    this.turn.setAway(away);
   }
 
   /** squash 包络（每帧 Step 2） */
@@ -162,44 +174,41 @@ export class VrmPoseLayer {
     const headRef = this.normBones.get('head');
     if (!headRef) return;
     const idle = performance.now() - this.lastGazeAt > GAZE_IDLE_RESET_MS;
-    const weight = this.sleeping ? 0 : gazeWeight;
+    // 睡眠 / 背对时收起视线与环境漂移，避免「背对着还盯着人」
+    const muted = this.sleeping || this.turn.away;
+    const weight = muted ? 0 : gazeWeight;
     const target = gazeAngles(idle ? 0 : this.gazeNx, idle ? 0 : this.gazeNy, weight);
     if (this.sleeping) target.headPitch += HEAD_IDLE_PITCH;
-    this.headYaw = smoothDamp(this.headYaw, target.headYaw, GAZE_SMOOTH.head, dt);
-    this.headPitch = smoothDamp(this.headPitch, target.headPitch, GAZE_SMOOTH.head, dt);
+    // 环境漂移：待机时头部有极低频的「活人感」；睡眠/背对时收起
+    const ambient = muted ? { yaw: 0, pitch: 0 } : ambientHeadAngles(t);
+    this.headYaw = smoothDamp(this.headYaw, target.headYaw + ambient.yaw, GAZE_SMOOTH.head, dt);
+    this.headPitch = smoothDamp(
+      this.headPitch,
+      target.headPitch * this.pitchSign + ambient.pitch,
+      GAZE_SMOOTH.head,
+      dt,
+    );
     this.spineYaw = smoothDamp(this.spineYaw, target.spineYaw, GAZE_SMOOTH.spine, dt);
     this.applySpineTilt(procedural);
     this.applyNeckPitch(procedural);
     this.applyEyeTarget(headRef);
+    const g = this.gesture.update();
     if (procedural) {
       this.applyProgrammaticPose(t, headRef);
     } else {
       this.applyGazeOnly(headRef);
     }
+    // roll 只在头节点统一叠一次，不参与 yaw/pitch 的平滑
+    const rollQ = g.roll === 0 ? null : new THREE.Quaternion().setFromAxisAngle(ROLL_AXIS, g.roll);
+    if (rollQ) headRef.node.quaternion.premultiply(rollQ);
     this.decayHeadOffset();
   }
 
-  /**
-   * v3.0 P1：默认待机手臂放松（A-pose → 自然下垂）。
-   * 只在待机时调用；weight 1 = 完全下垂，0 = 保持动作；t 驱动手臂微摆。
-   */
+  /** 待机手臂放松（A-pose → 自然下垂）：weight 1 = 完全下垂，0 = 保持动作 */
   relaxArms(weight: number, t: number): void {
-    if (weight <= 0) return;
-    const upperL = this.normBones.get('leftUpperArm');
-    const lowerL = this.normBones.get('leftLowerArm');
-    const handL = this.normBones.get('leftHand');
-    if (upperL && lowerL && handL) {
-      relaxArm(upperL.node, lowerL.node, handL.node, 'left', weight, weight * 0.8, t);
-    }
-    const upperR = this.normBones.get('rightUpperArm');
-    const lowerR = this.normBones.get('rightLowerArm');
-    const handR = this.normBones.get('rightHand');
-    if (upperR && lowerR && handR) {
-      relaxArm(upperR.node, lowerR.node, handR.node, 'right', weight, weight * 0.8, t);
-    }
+    relaxBothArms((name) => this.normBones.get(name), weight, t);
   }
 
-  /** 交互三段式微倾叠加（每帧 Step 4 后半，角度由状态机给出） */
   applyInteractionAngles(extraYaw: number, extraPitch: number): void {
     if (extraYaw === 0 && extraPitch === 0) return;
     const headRef = this.normBones.get('head');
@@ -209,47 +218,38 @@ export class VrmPoseLayer {
     headRef.node.quaternion.premultiply(pitchQ).premultiply(yawQ);
   }
 
-  /**
-   * 呼吸浮动 + 身体微摆（每帧 Step 5）。
-   * @param breatheDeep 交互 loop 阶段加深呼吸（VPpet B_Loop 身体反应）
-   * @param procedural 无 clip 时叠身体微摆（有动画时由动画本体提供微动，避免叠成双份）
-   */
+  /** 呼吸浮动 + 身体微摆（每帧 Step 5）；clip/procedural 都保留一点身体摆动 */
   applyBodyIdle(t: number, dt: number, breatheDeep: boolean, procedural: boolean): void {
     const speed = this.sleeping ? 0.5 : 1;
     this.breathePhase += dt * speed;
-    const breatheAmp = this.sleeping ? 0.006 : breatheDeep ? 0.022 : 0.012;
+    const breatheAmp = this.sleeping ? 0.006 : breatheDeep ? 0.026 : 0.016;
     this.vrm.scene.position.y = this.baseSceneY + Math.sin(this.breathePhase * 1.2) * breatheAmp;
-    if (procedural && !this.sleeping) {
-      this.vrm.scene.rotation.y = Math.sin(t * 0.25) * 0.015;
-    }
+    const sway = this.sleeping ? 0 : Math.sin(t * 0.25) * (procedural ? 0.018 : 0.012);
+    this.vrm.scene.rotation.y = this.baseSceneRotationY + this.turn.update(dt) + sway;
   }
 
-  /**
-   * 无动作池 clip 时：每帧叠头部 wiggle + gaze + clickFeedback。
-   * 不改身体骨骼——尊重模型 GLTF 里的原始姿态，
-   * 避免对某些模型过度修正导致手臂张开 → box 变宽 → fitVrm scale 不准。
-   */
+  /** 无动作池 clip 时：叠头部 wiggle + gaze + 手势（不动身体骨骼） */
   private applyProgrammaticPose(t: number, headRef: NormalizedBoneRef): void {
     const wiggleYaw = Math.sin(t * 0.5) * 0.06;
     const wigglePitch = Math.sin(t * 0.7) * 0.04;
     const yawQ = new THREE.Quaternion().setFromAxisAngle(
       UP,
-      wiggleYaw + this.headYaw + this.headYawOffset,
+      wiggleYaw + this.headYaw + this.headYawOffset + this.gesture.angles.yaw,
     );
-    const pitchQ = new THREE.Quaternion().setFromAxisAngle(PITCH_AXIS, wigglePitch + this.headPitch);
+    const pitchQ = new THREE.Quaternion().setFromAxisAngle(
+      PITCH_AXIS,
+      wigglePitch + this.headPitch + this.gesture.angles.pitch * this.pitchSign,
+    );
     // 叠加在当前姿态之上（premultiply 保持与 idle clip 路径一致的叠加语义）
     headRef.node.quaternion.copy(headRef.baseQuat).premultiply(pitchQ).premultiply(yawQ);
   }
 
-  /** 有动作 clip 时：只叠 gaze + clickFeedback（不破坏 mixer 轨道） */
+  /** 有动作 clip 时：只叠 gaze + clickFeedback + 手势角度（不破坏 mixer 轨道） */
   private applyGazeOnly(headRef: NormalizedBoneRef): void {
-    if (this.headYaw === 0 && this.headPitch === 0 && this.headYawOffset === 0) return;
-    // 以 mixer 本帧写出的姿态为基准，避免视线在骨骼上逐帧累积
-    const yawQ = new THREE.Quaternion().setFromAxisAngle(
-      UP,
-      this.headYaw + this.headYawOffset,
-    );
-    const pitchQ = new THREE.Quaternion().setFromAxisAngle(PITCH_AXIS, this.headPitch);
+    const g = this.gesture.angles;
+    if (this.headYaw === 0 && this.headPitch === 0 && this.headYawOffset === 0 && g.yaw === 0 && g.pitch === 0) return;
+    const yawQ = new THREE.Quaternion().setFromAxisAngle(UP, this.headYaw + this.headYawOffset + g.yaw);
+    const pitchQ = new THREE.Quaternion().setFromAxisAngle(PITCH_AXIS, this.headPitch + g.pitch * this.pitchSign);
     headRef.node.quaternion.copy(this.mixerHeadQuat).premultiply(pitchQ).premultiply(yawQ);
   }
 

@@ -19,6 +19,8 @@ const VrmCanvas = dynamic(() => import('../vrm/vrm-canvas').then((m) => m.VrmCan
 export type AvatarCanvasRouterProps = Live2dCanvasProps & {
   mood?: MotionMood;
   relationshipLevel?: number;
+  /** v3.5：久无交互背对 / 被交互转回（仅 VRM；Live2D 忽略） */
+  faceAway?: boolean;
 };
 
 /**

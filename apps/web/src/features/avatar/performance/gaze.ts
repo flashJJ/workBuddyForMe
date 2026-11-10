@@ -5,6 +5,8 @@
  * 避免高刷屏与 30fps 档位下手感不一致。
  */
 
+import * as THREE from 'three';
+
 const DEG = Math.PI / 180;
 
 export const GAZE_LIMITS = {
@@ -37,17 +39,29 @@ export function normalizeGaze(nx: number, ny: number): [number, number] {
   ];
 }
 
-/** 归一化指针 → 头部/脊柱弧度（weight 用于交互动作期间淡出） */
+/** 归一化指针 → 头部/脊柱弧度（weight 用于交互动作期间淡出）。headPitch 正值 = 低头 */
 export function gazeAngles(nx: number, ny: number, weight = 1): GazeAngles {
   const [x, y] = normalizeGaze(nx, ny);
   const w = clamp01(weight);
   const zero = (value: number) => (value === 0 ? 0 : value); // 归一化 -0
   return {
     headYaw: zero(x * w * GAZE_LIMITS.headYawDeg * DEG),
-    // 屏幕 y 向下为正，three.js 绕 X 正转是抬头 → 取反
-    headPitch: zero(-y * w * GAZE_LIMITS.headPitchDeg * DEG),
+    // 屏幕 y 向下为正 = 低头；rig 的旋转方向由姿态层按骨骼世界轴标定
+    headPitch: zero(y * w * GAZE_LIMITS.headPitchDeg * DEG),
     spineYaw: zero(x * w * GAZE_LIMITS.spineYawDeg * DEG),
   };
+}
+
+/**
+ * 头部俯仰符号标定：VRM0 经 rotateVRM0 后归一化骨骼 +X 指向世界 -X，
+ * 绕 +X 正转是抬头；VRM1 则为低头。按头部世界 X 轴返回 +1/-1。
+ */
+export function rigPitchSign(head: THREE.Object3D): number {
+  head.updateWorldMatrix(true, false);
+  const q = new THREE.Quaternion();
+  head.getWorldQuaternion(q);
+  const axis = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+  return axis.x >= 0 ? 1 : -1;
 }
 
 /** 帧率无关指数平滑：dt 变化时收敛速度一致 */

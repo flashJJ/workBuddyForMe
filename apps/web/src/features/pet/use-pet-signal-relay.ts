@@ -34,10 +34,19 @@ export function usePetSignalRelay(args: { active: boolean; voiceState: PetVoiceS
 
   // 语音状态边沿（inactive → 非 idle 起说，非 idle → idle 说完）
   const prevVoiceRef = React.useRef<PetVoiceState>('idle');
+  const wasActiveRef = React.useRef(false);
   React.useEffect(() => {
     const prev = prevVoiceRef.current;
     prevVoiceRef.current = voiceState;
-    if (!activeNow || prev === voiceState) return;
+    const justActivated = activeNow && !wasActiveRef.current;
+    wasActiveRef.current = activeNow;
+    if (!activeNow) return;
+    // 桌宠在「说话中」才被打开：补一次 start，否则说完只会收到孤立的 voice-end
+    if (justActivated) {
+      if (voiceState !== 'idle') relay('voice-start');
+      return;
+    }
+    if (prev === voiceState) return;
     if (prev === 'idle') relay('voice-start');
     else if (voiceState === 'idle') relay('voice-end');
   }, [activeNow, relay, voiceState]);

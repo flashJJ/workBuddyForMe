@@ -58,6 +58,8 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
       className="absolute cursor-grab"
       onPointerDown={(e) => {
         if (e.button !== 0) return;
+        // 指针捕获：拖出命中盒/甩出窗口后仍能收到 pointerup（否则 endInteraction 丢失、姿势卡住）
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 指针已释放 */ }
         pointerDownRef.current = true;
         pressStartRef.current = { x: e.clientX, y: e.clientY };
         pressMovedRef.current = false;
@@ -119,6 +121,8 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
           longPressFiredRef.current = false;
           return;
         }
+        // 拖拽松手后浏览器仍会补发 click：位移超过阈值时不能再算 tap
+        if (pressMovedRef.current) return;
         // 纯点击（pointerdown → pointerup 间 move ≤ 3px）→ body-touch
         if (!bridgeActiveRef.current) {
           resolveAndDispatch({ kind: 'touch', region: 'body', gesture: 'tap' });
@@ -196,6 +200,8 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
       title={t('pet.stage.headHint')}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
+        // 指针捕获：拖出命中盒/甩出窗口后仍能收到 pointerup（否则 endInteraction 丢失、姿势卡住）
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 指针已释放 */ }
         pointerDownRef.current = true;
         pressStartPosRef.current = { x: e.clientX, y: e.clientY, at: performance.now() };
         pressMovedRef.current = false;
@@ -249,12 +255,14 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
           bridge?.dragTo();
         }
       }}
-      onClick={() => {
+      onClick={(e) => {
         // 长按已触发 → 跳过 tap（否则 flashExpression(joy) 会覆盖 longpress 的 surprise）
         if (longPressFiredRef.current) {
           longPressFiredRef.current = false;
           return;
         }
+        // 双击的第二下交给 onDoubleClick（回主窗）；拖拽松手补发的 click 也不算摸头
+        if (e.detail > 1 || pressMovedRef.current) return;
         resolveAndDispatch({ kind: 'touch', region: 'head', gesture: 'tap' });
       }}
       onPointerUp={() => {

@@ -3,13 +3,13 @@
 import * as React from 'react';
 import { AvatarCanvasRouter } from '@/features/avatar';
 import type { Live2dController } from '@/features/avatar';
-import { useHeadTouch, type TouchControllerLike } from '@/features/avatar';
 import { pulseReunionSignal } from '@/features/avatar';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
   buildInteractionGraph,
   DEFAULT_DO_NOT_DISTURB,
+  isDoNotDisturbHour,
   relationshipLevelName,
   touchTriggerKey,
   type InteractionEvent,
@@ -30,6 +30,8 @@ import { usePetFrameMode } from './stage/use-pet-frame-mode';
 import { usePetSleep } from './stage/use-pet-sleep';
 import { usePetHitProxy } from './stage/hit-proxy';
 import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
+import { usePetAmbientTalk } from './stage/use-pet-ambient-talk';
+import { usePetFaceAway } from './stage/use-pet-face-away';
 
 interface Props {
   modelId: string;
@@ -71,6 +73,8 @@ export function PetStage({
   // v3.0 P0：帧率档位 + 模型命中轮廓上报；P1：10min 无交互入睡
   const frameMode = usePetFrameMode(voiceState);
   const sleeping = usePetSleep(voiceState);
+  // v3.5：久无交互背对 / 点击或说话转回
+  const faceAway = usePetFaceAway(voiceState);
   const onModelRect = usePetHitProxy(bridge);
   const [line, setLine] = React.useState<string>('');
   const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,15 +92,6 @@ export function PetStage({
     [],
   );
 
-  // M0: ActionExecutor 实例——绑定 controller + showLine
-  const executorRef = React.useRef<ActionExecutor | null>(null);
-  React.useEffect(() => {
-    executorRef.current = new ActionExecutor({
-      controllerRef: controllerRef as React.MutableRefObject<any>,
-      showSubtitle: (key, ms) => showLine(t(key as MessageKey), ms ?? 3200),
-    });
-  }, [showLine, t]);
-
   // 互动短句开关（缺省开）；关闭后摸头只保留弹性/表情，久别不迎接
   const linesEnabled = settings?.interactionLinesEnabled !== false;
   const emotionEnabled = settings?.emotionEnabled !== false;
@@ -104,6 +99,32 @@ export function PetStage({
   const dndEnabled = settings?.doNotDisturbEnabled !== false;
   const dndStartHour = settings?.doNotDisturbStartHour ?? DEFAULT_DO_NOT_DISTURB.startHour;
   const dndEndHour = settings?.doNotDisturbEndHour ?? DEFAULT_DO_NOT_DISTURB.endHour;
+
+  // M0: ActionExecutor 实例——绑定 controller + showLine（台词开关关闭时只执行动作）
+  const executorRef = React.useRef<ActionExecutor | null>(null);
+  React.useEffect(() => {
+    executorRef.current = new ActionExecutor({
+      controllerRef: controllerRef as React.MutableRefObject<any>,
+      showSubtitle: (key, ms) => {
+        if (!linesEnabled) return;
+        showLine(t(key as MessageKey), ms ?? 3200);
+      },
+    });
+  }, [showLine, t, linesEnabled]);
+
+  // L2：静默时低频自主低语（本地短句；睡眠/说话/勿扰/台词开关任一命中即安静）
+  const inDnd = isDoNotDisturbHour(new Date().getHours(), {
+    enabled: dndEnabled,
+    startHour: dndStartHour,
+    endHour: dndEndHour,
+  });
+  usePetAmbientTalk({
+    enabled: linesEnabled && !inDnd,
+    sleeping,
+    voiceState,
+    t,
+    speak: showLine,
+  });
   // v2.3：交互动画图 = 用户覆盖条目（排前）+ 内置图（剔除被停用条目）
   const graphOverrides = settings?.interactionGraphOverrides;
   const graphDisabled = settings?.interactionGraphDisabledEntryIds;
@@ -186,16 +207,6 @@ export function PetStage({
     });
   }, []);
 
-  // 摸头短句：本地文案气泡（零模型调用、零 IPC），受短句开关门控
-  const onHeadTouch = useHeadTouch(
-    controllerRef as React.MutableRefObject<TouchControllerLike | null>,
-    {
-      onLine: (key: MessageKey) => {
-        if (linesEnabled) showLine(t(key), 3200);
-      },
-    },
-  );
-
   // v1.7 久别迎接收归主窗事件导演（唯一出口，禁止双播）：
   // 桌宠仅在指针重新进入窗口时发跨窗信号；主窗 storage 监听后自行判定/去重/演出。
   // 情绪/短句任一总开关关闭时不发信号。
@@ -250,6 +261,7 @@ export function PetStage({
           relationshipLevel={relationshipLevel}
           frameMode={frameMode}
           sleeping={sleeping}
+          faceAway={faceAway}
           onModelRect={onModelRect}
         />
       </div>

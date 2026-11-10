@@ -91,3 +91,22 @@ export function relaxArm(
     .setZ(LOWER_TARGET[side].z + swayZ * LOWER_SWAY.z);
   aimBone(lower, hand, lowerTarget, lowerWeight);
 }
+
+type BoneLookup = (name: string) => { node: THREE.Object3D } | undefined;
+
+/** 左右手臂一起放松：姿态层只需传骨骼查找函数与权重 */
+export function relaxBothArms(lookup: BoneLookup, weight: number, t = 0): void {
+  if (weight <= 0) return;
+  const sides = [
+    ['left', 'leftUpperArm', 'leftLowerArm', 'leftHand'],
+    ['right', 'rightUpperArm', 'rightLowerArm', 'rightHand'],
+  ] as const;
+  for (const [side, upperName, lowerName, handName] of sides) {
+    const upper = lookup(upperName);
+    const lower = lookup(lowerName);
+    const hand = lookup(handName);
+    if (upper && lower && hand) {
+      relaxArm(upper.node, lower.node, hand.node, side, weight, weight * 0.8, t);
+    }
+  }
+}

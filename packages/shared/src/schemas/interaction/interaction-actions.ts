@@ -7,6 +7,7 @@
 
 import type { ExpressionTag } from '../emotion/expression';
 import type { MessageKey } from '../../i18n/index';
+import type { PetLinePoolId } from './pet-lines';
 
 export type InteractionAction =
   | { type: 'interaction.start'; kind: InteractionKind }
@@ -16,6 +17,7 @@ export type InteractionAction =
   | { type: 'controller.tap'; intensity?: number }
   | { type: 'controller.setExpression'; tag: ExpressionTag; durationMs?: number }
   | { type: 'subtitle.show'; i18nKey: MessageKey; durationMs?: number }
+  | { type: 'subtitle.pick'; pool: PetLinePoolId; durationMs?: number }
   | { type: 'chat.request'; prompt: string }
   | { type: 'event.fire'; sceneId: string };
 

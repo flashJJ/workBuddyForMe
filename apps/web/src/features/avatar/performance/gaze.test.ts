@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import {
   GAZE_LIMITS,
   GAZE_SMOOTH,
   gazeAngles,
   normalizeGaze,
+  rigPitchSign,
   smoothDamp,
 } from './gaze';
 
@@ -16,18 +18,32 @@ describe('VRM 视线参数', () => {
     expect(right.spineYaw).toBeCloseTo(8 * DEG, 6);
     expect(right.headPitch).toBeCloseTo(0, 6);
 
-    // 屏幕向下 → 低头（俯仰取反）
+    // 屏幕向下 → 低头（正值）；姿态层按 rig 标定旋转方向
     const down = gazeAngles(0, 1);
-    expect(down.headPitch).toBeCloseTo(-16 * DEG, 6);
+    expect(down.headPitch).toBeCloseTo(16 * DEG, 6);
+    // 屏幕向上 → 抬头
+    const up = gazeAngles(0, -1);
+    expect(up.headPitch).toBeCloseTo(-16 * DEG, 6);
   });
 
   it('越界输入夹紧，weight 线性缩放', () => {
     expect(gazeAngles(9, -9)).toEqual(gazeAngles(1, -1));
     const half = gazeAngles(1, 1, 0.5);
     expect(half.headYaw).toBeCloseTo((26 * DEG) / 2, 6);
-    expect(half.headPitch).toBeCloseTo((-16 * DEG) / 2, 6);
+    expect(half.headPitch).toBeCloseTo((16 * DEG) / 2, 6);
     expect(gazeAngles(1, 1, 0)).toEqual({ headYaw: 0, headPitch: 0, spineYaw: 0 });
     expect(normalizeGaze(2, -2)).toEqual([1, -1]);
+  });
+
+  it('俯仰符号按头部世界 X 轴标定：VRM0（场景转 π）为 -1，VRM1（不转）为 +1', () => {
+    const vrm1 = new THREE.Object3D();
+    expect(rigPitchSign(vrm1)).toBe(1);
+
+    const scene = new THREE.Object3D();
+    scene.rotation.y = Math.PI;
+    const head = new THREE.Object3D();
+    scene.add(head);
+    expect(rigPitchSign(head)).toBe(-1);
   });
 
   it('平滑与帧率无关：60fps 两帧 ≈ 30fps 一帧', () => {
