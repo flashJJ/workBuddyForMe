@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import * as React from 'react';
 import { describe, expect, it } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { MessageKey } from '@wbfm/shared/i18n';
@@ -19,7 +20,7 @@ function cueCtx(): ScriptCueContext {
   };
 }
 
-function setup(enabled = true) {
+function setup(enabled = true, strict = false) {
   const calls: string[] = [];
   const subtitles: MessageKey[] = [];
   const controller: ScriptControllerHandle = {
@@ -27,12 +28,17 @@ function setup(enabled = true) {
     tap: () => calls.push('tap'),
     flashExpression: (tag) => calls.push(`expression:${tag}`),
   };
-  const hook = renderHook(() =>
-    useScriptDirector({
-      enabled,
-      getController: () => controller,
-      showSubtitle: (key) => subtitles.push(key),
-    }),
+  const wrapper = strict
+    ? ({ children }: { children: React.ReactNode }) => <React.StrictMode>{children}</React.StrictMode>
+    : undefined;
+  const hook = renderHook(
+    () =>
+      useScriptDirector({
+        enabled,
+        getController: () => controller,
+        showSubtitle: (key) => subtitles.push(key),
+      }),
+    { wrapper },
   );
   return { ...hook, calls, subtitles };
 }
@@ -71,6 +77,19 @@ describe('useScriptDirector（T0.7 开关接线）', () => {
     });
     expect(handled).toBe(false);
     expect(calls).toEqual([]);
+  });
+
+  it('StrictMode 双重 effect 后仍能播放（Director 不被复用为已 dispose 实例）', () => {
+    const { result, calls } = setup(true, true);
+    let handled = false;
+    act(() => {
+      handled = result.current.playEvent(
+        { kind: 'touch', region: 'head', gesture: 'tap' },
+        cueCtx(),
+      );
+    });
+    expect(handled).toBe(true);
+    expect(calls).toEqual(['squash', 'tap', 'expression:joy']);
   });
 
   it('场景存在但被门控拒绝时视为已消费，不回退旧链', () => {

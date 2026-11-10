@@ -12,6 +12,12 @@ export interface PetScriptDebugApi {
   readonly active: readonly ActiveSceneSnapshot[];
   readonly log: readonly CueLogEntry[];
   readonly seed: number;
+  /** dev 诊断：playEvent 调用次数 */
+  events: number;
+  /** dev 诊断：被 Director 接受（或场景存在但被门控）的次数 */
+  handled: number;
+  /** dev 诊断：最近一次触发键 */
+  lastTrigger: string | null;
 }
 
 export interface PetScriptDebugSource {
@@ -32,6 +38,9 @@ export function installPetScriptDebug(
   const previous = target.__petDebug;
   const api: PetScriptDebugApi = {
     scenes: sceneIds,
+    events: 0,
+    handled: 0,
+    lastTrigger: null,
     get active() {
       return director.getActive();
     },
@@ -46,4 +55,10 @@ export function installPetScriptDebug(
   return () => {
     if (target.__petDebug === api) target.__petDebug = previous;
   };
+}
+
+/** dev 诊断入口（生产返回 null）；供 Director 接线记录触发计数 */
+export function getPetScriptDebug(): PetScriptDebugApi | null {
+  if (process.env.NODE_ENV === 'production') return null;
+  return (window as DebugWindow).__petDebug ?? null;
 }

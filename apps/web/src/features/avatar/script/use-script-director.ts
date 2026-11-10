@@ -22,7 +22,7 @@ import {
   type CancelReason,
   type ScriptContext,
 } from './director';
-import { installPetScriptDebug } from './debug';
+import { getPetScriptDebug, installPetScriptDebug } from './debug';
 import { BUILT_IN_SCENE_REGISTRY, BUILT_IN_SCENES } from './scenes';
 
 export const PET_SCRIPT_ENABLED = process.env.NEXT_PUBLIC_WBFM_PET_SCRIPT === '1';
@@ -88,43 +88,55 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
     });
   }, []);
 
-  const director = React.useMemo(
-    () => new ScriptDirector({ scenes: BUILT_IN_SCENES, sink: adapter }),
-    [adapter],
-  );
+  const directorRef = React.useRef<ScriptDirector | null>(null);
 
-  React.useEffect(() => () => director.dispose(), [director]);
-
-  // T0.8：dev 下暴露只读观测入口，生产不挂载
+  // StrictMode 会执行 setup → cleanup → setup：Director 必须在 effect 内创建，
+  // 否则 memo 实例被首次 cleanup dispose 后，第二次 setup 会拿着废实例（play 恒 false）。
   React.useEffect(() => {
     if (!options.enabled) return;
-    return (
-      installPetScriptDebug(
-        director,
-        BUILT_IN_SCENES.map((scene) => scene.id),
-      ) ?? undefined
+    const director = new ScriptDirector({ scenes: BUILT_IN_SCENES, sink: adapter });
+    directorRef.current = director;
+    const uninstall = installPetScriptDebug(
+      director,
+      BUILT_IN_SCENES.map((scene) => scene.id),
     );
-  }, [director, options.enabled]);
+    return () => {
+      uninstall?.();
+      director.dispose();
+      if (directorRef.current === director) directorRef.current = null;
+    };
+  }, [adapter, options.enabled]);
 
   const playEvent = React.useCallback(
     (event: InteractionEvent, ctx: ScriptCueContext): boolean => {
       if (!optionsRef.current.enabled) return false;
+      const director = directorRef.current;
+      if (!director) return false;
       const trigger = eventTriggerKey(event);
+      const debug = getPetScriptDebug();
+      if (debug) {
+        debug.events += 1;
+        debug.lastTrigger = trigger;
+      }
       if (!trigger) return false;
       const scenes = BUILT_IN_SCENE_REGISTRY.byTrigger(trigger);
       if (scenes.length === 0) return false;
       const scriptCtx: ScriptContext = { ...ctx, random: Math.random };
       for (const scene of scenes) {
-        if (director.play(scene.id, scriptCtx)) return true;
+        if (director.play(scene.id, scriptCtx)) {
+          if (debug) debug.handled += 1;
+          return true;
+        }
       }
       // 场景存在但被门控/冷却拒绝：视为已消费，不回退旧链（避免绕过新规则）
+      if (debug) debug.handled += 1;
       return true;
     },
-    [director],
+    [],
   );
 
-  const onFrame = React.useCallback((dtMs: number) => director.update(dtMs), [director]);
-  const cancel = React.useCallback((reason: CancelReason) => director.cancel(reason), [director]);
+  const onFrame = React.useCallback((dtMs: number) => directorRef.current?.update(dtMs), []);
+  const cancel = React.useCallback((reason: CancelReason) => directorRef.current?.cancel(reason), []);
 
   return React.useMemo(
     () => ({ enabled: options.enabled, playEvent, onFrame, cancel }),
