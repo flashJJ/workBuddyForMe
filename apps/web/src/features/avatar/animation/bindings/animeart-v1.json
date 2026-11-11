@@ -1,0 +1,946 @@
+{
+  "schema": 1,
+  "family": "animeart-v1",
+  "engine": "vrm0",
+  "mesh": "Body_Model_up",
+  "morphCount": 118,
+  "sourceBaseline": "雪团.vrm",
+  "targets": [
+    {
+      "index": 0,
+      "name": "Eyebrows_thinking_left_op"
+    },
+    {
+      "index": 1,
+      "name": "Eyebrows_serious_op"
+    },
+    {
+      "index": 2,
+      "name": "Mouth_happy_broad_op"
+    },
+    {
+      "index": 3,
+      "name": "Mouth_happy_slight_op"
+    },
+    {
+      "index": 4,
+      "name": "Mouth_tongue_out_op"
+    },
+    {
+      "index": 5,
+      "name": "Eyes_crying_op"
+    },
+    {
+      "index": 6,
+      "name": "Eyes_squeeze_2_cl"
+    },
+    {
+      "index": 7,
+      "name": "Mouth_neko_cl"
+    },
+    {
+      "index": 8,
+      "name": "Mouth_happy_broad_cl"
+    },
+    {
+      "index": 9,
+      "name": "Eyebrows_wink_right_op"
+    },
+    {
+      "index": 10,
+      "name": "Eyebrows_doubt_left_cl"
+    },
+    {
+      "index": 11,
+      "name": "Mouth_o_small_op"
+    },
+    {
+      "index": 12,
+      "name": "Mouth_angry_op"
+    },
+    {
+      "index": 13,
+      "name": "Eyes_wink_right_op"
+    },
+    {
+      "index": 14,
+      "name": "Mouth_e_big_op"
+    },
+    {
+      "index": 15,
+      "name": "Mouth_smile_op"
+    },
+    {
+      "index": 16,
+      "name": "Mouth_chewing_cl"
+    },
+    {
+      "index": 17,
+      "name": "Mouth_serious_2_op"
+    },
+    {
+      "index": 18,
+      "name": "Eyes_serious_op"
+    },
+    {
+      "index": 19,
+      "name": "Eyes_wink_left_op"
+    },
+    {
+      "index": 20,
+      "name": "Eyebrows_wink_left_cl"
+    },
+    {
+      "index": 21,
+      "name": "Mouth_default_op"
+    },
+    {
+      "index": 22,
+      "name": "Mouth_eating_2_op"
+    },
+    {
+      "index": 23,
+      "name": "Mouth_triangle_op"
+    },
+    {
+      "index": 24,
+      "name": "Mouth_angry_cl"
+    },
+    {
+      "index": 25,
+      "name": "Mouth_lick_cl"
+    },
+    {
+      "index": 26,
+      "name": "Eyebrows_bored_op"
+    },
+    {
+      "index": 27,
+      "name": "Mouth_n_small_cl"
+    },
+    {
+      "index": 28,
+      "name": "Eyes_smile_cl"
+    },
+    {
+      "index": 29,
+      "name": "Eyebrows_doubt_right_op"
+    },
+    {
+      "index": 30,
+      "name": "Mouth_doki_moderate_op"
+    },
+    {
+      "index": 31,
+      "name": "Eyebrows_smug_cl"
+    },
+    {
+      "index": 32,
+      "name": "Mouth_e_small_op"
+    },
+    {
+      "index": 33,
+      "name": "Mouth_doki_moderate_cl"
+    },
+    {
+      "index": 34,
+      "name": "Mouth_cartoon_mouth_op"
+    },
+    {
+      "index": 35,
+      "name": "Mouth_eating_op"
+    },
+    {
+      "index": 36,
+      "name": "Eyebrows_wink_right_cl"
+    },
+    {
+      "index": 37,
+      "name": "Eyebrows_smug_op"
+    },
+    {
+      "index": 38,
+      "name": "Eyebrows_dejected_cl"
+    },
+    {
+      "index": 39,
+      "name": "Mouth_a_big_op"
+    },
+    {
+      "index": 40,
+      "name": "Eyes_thinking_op"
+    },
+    {
+      "index": 41,
+      "name": "Eyebrows_thinking_right_op"
+    },
+    {
+      "index": 42,
+      "name": "Mouth_chewing_op"
+    },
+    {
+      "index": 43,
+      "name": "Eyes_impatient_op"
+    },
+    {
+      "index": 44,
+      "name": "Mouth_smile_sharp_op"
+    },
+    {
+      "index": 45,
+      "name": "Mouth_shocked_op"
+    },
+    {
+      "index": 46,
+      "name": "Eyebrows_dejected_op"
+    },
+    {
+      "index": 47,
+      "name": "Eyebrows_displeased_op"
+    },
+    {
+      "index": 48,
+      "name": "Eyes_squeeze_cl"
+    },
+    {
+      "index": 49,
+      "name": "Eyebrows_shocked_op"
+    },
+    {
+      "index": 50,
+      "name": "Mouth_n_big_cl"
+    },
+    {
+      "index": 51,
+      "name": "Eyes_shy_op"
+    },
+    {
+      "index": 52,
+      "name": "Eyebrows_angry_right_op"
+    },
+    {
+      "index": 53,
+      "name": "Eyebrows_angry_left_cl"
+    },
+    {
+      "index": 54,
+      "name": "Eyes_bored_op"
+    },
+    {
+      "index": 55,
+      "name": "Mouth_smug_op"
+    },
+    {
+      "index": 56,
+      "name": "Mouth_lonely_op"
+    },
+    {
+      "index": 57,
+      "name": "Eyes_gageye"
+    },
+    {
+      "index": 58,
+      "name": "Eyes_hate_op"
+    },
+    {
+      "index": 59,
+      "name": "Mouth_neko_op"
+    },
+    {
+      "index": 60,
+      "name": "Eyes_smile_op"
+    },
+    {
+      "index": 61,
+      "name": "Mouth_cartoon_mouth_cl"
+    },
+    {
+      "index": 62,
+      "name": "Mouth_u_big_op"
+    },
+    {
+      "index": 63,
+      "name": "Eyebrows_doubt_right_cl"
+    },
+    {
+      "index": 64,
+      "name": "Eyebrows_angry_cl"
+    },
+    {
+      "index": 65,
+      "name": "Mouth_impatient_op"
+    },
+    {
+      "index": 66,
+      "name": "Eyes_smug_op"
+    },
+    {
+      "index": 67,
+      "name": "Mouth_o_big_op"
+    },
+    {
+      "index": 68,
+      "name": "Mouth_doki_cl"
+    },
+    {
+      "index": 69,
+      "name": "Mouth_i_small_op"
+    },
+    {
+      "index": 70,
+      "name": "Mouth_hold_in_mouth_op"
+    },
+    {
+      "index": 71,
+      "name": "Mouth_kiss_op"
+    },
+    {
+      "index": 72,
+      "name": "Mouth_shocked_small_op"
+    },
+    {
+      "index": 73,
+      "name": "Eyes_sad_op"
+    },
+    {
+      "index": 74,
+      "name": "Eyes_dejected_op"
+    },
+    {
+      "index": 75,
+      "name": "Eyes_angry_op"
+    },
+    {
+      "index": 76,
+      "name": "Eyebrows_thinking_right_cl"
+    },
+    {
+      "index": 77,
+      "name": "Mouth_serious_2_cl"
+    },
+    {
+      "index": 78,
+      "name": "Mouth_doki_slight_op"
+    },
+    {
+      "index": 79,
+      "name": "Eyebrows_serious_cl"
+    },
+    {
+      "index": 80,
+      "name": "Eyebrows_bored_cl"
+    },
+    {
+      "index": 81,
+      "name": "Mouth_doki_slight_cl"
+    },
+    {
+      "index": 82,
+      "name": "Eyes_default_cl copy"
+    },
+    {
+      "index": 83,
+      "name": "Eyes_distress_op"
+    },
+    {
+      "index": 84,
+      "name": "Eyes_default_cl"
+    },
+    {
+      "index": 85,
+      "name": "Mouth_a_small_op"
+    },
+    {
+      "index": 86,
+      "name": "Eyebrows_worried_cl"
+    },
+    {
+      "index": 87,
+      "name": "Eyes_pain_op"
+    },
+    {
+      "index": 88,
+      "name": "Mouth_angry_2_op"
+    },
+    {
+      "index": 89,
+      "name": "Eyes_squeeze_left_2_op"
+    },
+    {
+      "index": 90,
+      "name": "Eyebrows_angry_op"
+    },
+    {
+      "index": 91,
+      "name": "Mouth_hate_op"
+    },
+    {
+      "index": 92,
+      "name": "Eyebrows_angry_left_op"
+    },
+    {
+      "index": 93,
+      "name": "Mouth_i_big_op"
+    },
+    {
+      "index": 94,
+      "name": "Mouth_serious_1_op"
+    },
+    {
+      "index": 95,
+      "name": "Eyes_squeeze_left_op"
+    },
+    {
+      "index": 96,
+      "name": "Eyebrows_displeased_cl"
+    },
+    {
+      "index": 97,
+      "name": "Mouth_displeased_cl"
+    },
+    {
+      "index": 98,
+      "name": "Mouth_u_small_op"
+    },
+    {
+      "index": 99,
+      "name": "Eyebrows_default_cl"
+    },
+    {
+      "index": 100,
+      "name": "Eyebrows_angry_right_cl"
+    },
+    {
+      "index": 101,
+      "name": "Mouth_amazed_op"
+    },
+    {
+      "index": 102,
+      "name": "Eyebrows_doubt_left_op"
+    },
+    {
+      "index": 103,
+      "name": "Eyebrows_thinking_left_cl"
+    },
+    {
+      "index": 104,
+      "name": "Eyes_smile_sharp_op"
+    },
+    {
+      "index": 105,
+      "name": "Mouth_happy_moderate_op"
+    },
+    {
+      "index": 106,
+      "name": "Mouth_smug_cl"
+    },
+    {
+      "index": 107,
+      "name": "Eyes_squeeze_right_op"
+    },
+    {
+      "index": 108,
+      "name": "Eyebrows_worried_op"
+    },
+    {
+      "index": 109,
+      "name": "Eyebrows_wink_left_op"
+    },
+    {
+      "index": 110,
+      "name": "Eyes_worried_op"
+    },
+    {
+      "index": 111,
+      "name": "Eyebrows_shocked_cl"
+    },
+    {
+      "index": 112,
+      "name": "Eyes_squeeze_right_2_op"
+    },
+    {
+      "index": 113,
+      "name": "Eye_look_left"
+    },
+    {
+      "index": 114,
+      "name": "Eye_look_right"
+    },
+    {
+      "index": 115,
+      "name": "Eye_look_up"
+    },
+    {
+      "index": 116,
+      "name": "Eye_look_down"
+    },
+    {
+      "index": 117,
+      "name": "Basis.001"
+    }
+  ],
+  "standardExpressions": {
+    "A": [
+      {
+        "index": 39,
+        "name": "Mouth_a_big_op",
+        "weight": 0.699999988079071
+      }
+    ],
+    "I": [
+      {
+        "index": 93,
+        "name": "Mouth_i_big_op",
+        "weight": 0.11999999731779099
+      }
+    ],
+    "U": [
+      {
+        "index": 62,
+        "name": "Mouth_u_big_op",
+        "weight": 1
+      }
+    ],
+    "E": [
+      {
+        "index": 14,
+        "name": "Mouth_e_big_op",
+        "weight": 1
+      }
+    ],
+    "O": [
+      {
+        "index": 67,
+        "name": "Mouth_o_big_op",
+        "weight": 0.699999988079071
+      }
+    ],
+    "Blink": [
+      {
+        "index": 19,
+        "name": "Eyes_wink_left_op",
+        "weight": 1
+      },
+      {
+        "index": 13,
+        "name": "Eyes_wink_right_op",
+        "weight": 1
+      },
+      {
+        "index": 20,
+        "name": "Eyebrows_wink_left_cl",
+        "weight": 1
+      },
+      {
+        "index": 36,
+        "name": "Eyebrows_wink_right_cl",
+        "weight": 1
+      }
+    ],
+    "Blink_L": [
+      {
+        "index": 19,
+        "name": "Eyes_wink_left_op",
+        "weight": 1
+      },
+      {
+        "index": 20,
+        "name": "Eyebrows_wink_left_cl",
+        "weight": 1
+      }
+    ],
+    "Blink_R": [
+      {
+        "index": 13,
+        "name": "Eyes_wink_right_op",
+        "weight": 1
+      },
+      {
+        "index": 36,
+        "name": "Eyebrows_wink_right_cl",
+        "weight": 1
+      }
+    ],
+    "Fun": [
+      {
+        "index": 8,
+        "name": "Mouth_happy_broad_cl",
+        "weight": 1
+      },
+      {
+        "index": 28,
+        "name": "Eyes_smile_cl",
+        "weight": 0.800000011920929
+      },
+      {
+        "index": 31,
+        "name": "Eyebrows_smug_cl",
+        "weight": 1
+      }
+    ],
+    "Joy": [
+      {
+        "index": 8,
+        "name": "Mouth_happy_broad_cl",
+        "weight": 1
+      },
+      {
+        "index": 28,
+        "name": "Eyes_smile_cl",
+        "weight": 0.800000011920929
+      },
+      {
+        "index": 31,
+        "name": "Eyebrows_smug_cl",
+        "weight": 1
+      }
+    ],
+    "Angry": [
+      {
+        "index": 24,
+        "name": "Mouth_angry_cl",
+        "weight": 1
+      },
+      {
+        "index": 75,
+        "name": "Eyes_angry_op",
+        "weight": 1
+      },
+      {
+        "index": 64,
+        "name": "Eyebrows_angry_cl",
+        "weight": 1
+      }
+    ],
+    "Sorrow": [
+      {
+        "index": 56,
+        "name": "Mouth_lonely_op",
+        "weight": 0.5
+      },
+      {
+        "index": 5,
+        "name": "Eyes_crying_op",
+        "weight": 1
+      },
+      {
+        "index": 86,
+        "name": "Eyebrows_worried_cl",
+        "weight": 1
+      }
+    ],
+    "Neutral": []
+  },
+  "channels": {
+    "gaze.left": [
+      {
+        "index": 113,
+        "name": "Eye_look_left",
+        "scale": 1
+      }
+    ],
+    "gaze.right": [
+      {
+        "index": 114,
+        "name": "Eye_look_right",
+        "scale": 1
+      }
+    ],
+    "gaze.up": [
+      {
+        "index": 115,
+        "name": "Eye_look_up",
+        "scale": 1
+      }
+    ],
+    "gaze.down": [
+      {
+        "index": 116,
+        "name": "Eye_look_down",
+        "scale": 1
+      }
+    ],
+    "eye.smile": [
+      {
+        "index": 28,
+        "name": "Eyes_smile_cl",
+        "scale": 1
+      }
+    ],
+    "eye.smile.open": [
+      {
+        "index": 60,
+        "name": "Eyes_smile_op",
+        "scale": 1
+      }
+    ],
+    "eye.wink.left": [
+      {
+        "index": 19,
+        "name": "Eyes_wink_left_op",
+        "scale": 1
+      }
+    ],
+    "eye.wink.right": [
+      {
+        "index": 13,
+        "name": "Eyes_wink_right_op",
+        "scale": 1
+      }
+    ],
+    "eye.cry": [
+      {
+        "index": 5,
+        "name": "Eyes_crying_op",
+        "scale": 1
+      }
+    ],
+    "eye.angry": [
+      {
+        "index": 75,
+        "name": "Eyes_angry_op",
+        "scale": 1
+      }
+    ],
+    "eye.sad": [
+      {
+        "index": 73,
+        "name": "Eyes_sad_op",
+        "scale": 1
+      }
+    ],
+    "eye.shy": [
+      {
+        "index": 51,
+        "name": "Eyes_shy_op",
+        "scale": 1
+      }
+    ],
+    "brow.angry": [
+      {
+        "index": 64,
+        "name": "Eyebrows_angry_cl",
+        "scale": 1
+      }
+    ],
+    "brow.sad": [
+      {
+        "index": 86,
+        "name": "Eyebrows_worried_cl",
+        "scale": 1
+      }
+    ],
+    "brow.smug": [
+      {
+        "index": 31,
+        "name": "Eyebrows_smug_cl",
+        "scale": 1
+      }
+    ],
+    "brow.surprised": [
+      {
+        "index": 49,
+        "name": "Eyebrows_shocked_op",
+        "scale": 1
+      }
+    ],
+    "brow.thinking": [
+      {
+        "index": 0,
+        "name": "Eyebrows_thinking_left_op",
+        "scale": 1
+      },
+      {
+        "index": 41,
+        "name": "Eyebrows_thinking_right_op",
+        "scale": 1
+      }
+    ],
+    "brow.bored": [
+      {
+        "index": 80,
+        "name": "Eyebrows_bored_cl",
+        "scale": 1
+      }
+    ],
+    "mouth.a.big": [
+      {
+        "index": 39,
+        "name": "Mouth_a_big_op",
+        "scale": 1
+      }
+    ],
+    "mouth.i.big": [
+      {
+        "index": 93,
+        "name": "Mouth_i_big_op",
+        "scale": 1
+      }
+    ],
+    "mouth.u.big": [
+      {
+        "index": 62,
+        "name": "Mouth_u_big_op",
+        "scale": 1
+      }
+    ],
+    "mouth.e.big": [
+      {
+        "index": 14,
+        "name": "Mouth_e_big_op",
+        "scale": 1
+      }
+    ],
+    "mouth.o.big": [
+      {
+        "index": 67,
+        "name": "Mouth_o_big_op",
+        "scale": 1
+      }
+    ],
+    "mouth.smile": [
+      {
+        "index": 15,
+        "name": "Mouth_smile_op",
+        "scale": 1
+      }
+    ],
+    "mouth.grin": [
+      {
+        "index": 2,
+        "name": "Mouth_happy_broad_op",
+        "scale": 1
+      }
+    ],
+    "mouth.angry": [
+      {
+        "index": 24,
+        "name": "Mouth_angry_cl",
+        "scale": 1
+      }
+    ],
+    "mouth.sad": [
+      {
+        "index": 56,
+        "name": "Mouth_lonely_op",
+        "scale": 1
+      }
+    ],
+    "mouth.shocked": [
+      {
+        "index": 45,
+        "name": "Mouth_shocked_op",
+        "scale": 1
+      }
+    ],
+    "mouth.chew": [
+      {
+        "index": 42,
+        "name": "Mouth_chewing_op",
+        "scale": 1
+      }
+    ],
+    "mouth.tongue": [
+      {
+        "index": 4,
+        "name": "Mouth_tongue_out_op",
+        "scale": 1
+      }
+    ],
+    "expr.joy": [
+      {
+        "index": 28,
+        "name": "Eyes_smile_cl",
+        "scale": 1
+      },
+      {
+        "index": 8,
+        "name": "Mouth_happy_broad_cl",
+        "scale": 1
+      },
+      {
+        "index": 31,
+        "name": "Eyebrows_smug_cl",
+        "scale": 1
+      }
+    ],
+    "expr.fun": [
+      {
+        "index": 28,
+        "name": "Eyes_smile_cl",
+        "scale": 1
+      },
+      {
+        "index": 8,
+        "name": "Mouth_happy_broad_cl",
+        "scale": 1
+      },
+      {
+        "index": 31,
+        "name": "Eyebrows_smug_cl",
+        "scale": 1
+      }
+    ],
+    "expr.angry": [
+      {
+        "index": 75,
+        "name": "Eyes_angry_op",
+        "scale": 1
+      },
+      {
+        "index": 24,
+        "name": "Mouth_angry_cl",
+        "scale": 1
+      },
+      {
+        "index": 64,
+        "name": "Eyebrows_angry_cl",
+        "scale": 1
+      }
+    ],
+    "expr.sorrow": [
+      {
+        "index": 5,
+        "name": "Eyes_crying_op",
+        "scale": 1
+      },
+      {
+        "index": 56,
+        "name": "Mouth_lonely_op",
+        "scale": 1
+      },
+      {
+        "index": 86,
+        "name": "Eyebrows_worried_cl",
+        "scale": 1
+      }
+    ],
+    "expr.shy": [
+      {
+        "index": 51,
+        "name": "Eyes_shy_op",
+        "scale": 1
+      },
+      {
+        "index": 86,
+        "name": "Eyebrows_worried_cl",
+        "scale": 1
+      },
+      {
+        "index": 15,
+        "name": "Mouth_smile_op",
+        "scale": 1
+      }
+    ]
+  },
+  "reservedChannels": [
+    "blink",
+    "viseme"
+  ],
+  "notes": [
+    "AnimeArt 系模型共享 49 根 humanoid、同一 rest pose、118 个面部 morph 与相同 VRM 表情索引。",
+    "morph NORMAL 数据为全零，精简版已删除；只保留 POSITION morph。",
+    "gaze.* 可优先由 eye bone 实现，morph 作为回退。",
+    "blink/viseme 由 VrmFaceLayer 保留，行为轨道不得写入。"
+  ]
+}

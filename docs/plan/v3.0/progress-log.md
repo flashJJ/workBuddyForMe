@@ -16,7 +16,7 @@
 | 阶段 | 状态 | 最近更新 |
 |---|---|---|
 | P0 基线收尾 | 进行中 | 2026-11-11 |
-| P1 M0d-A 能力解锁 | 未开始 | 2026-11-11 |
+| P1 M0d-A 能力解锁 | 进行中（T2.1 完成） | 2026-11-11 |
 | P2 M0d-B 内容做厚 | 未开始 | 2026-11-11 |
 | P3 M0d-C 剧本接线 | 未开始 | 2026-11-11 |
 | P4 M0b 运行时补齐 | 未开始 | 2026-11-11 |
@@ -74,9 +74,18 @@
 - 截至 minute 180（3h）：渲染 30fps；回调 p95 0.9–1.0ms；堆 167.9–189.4MB；DOM 41 节点。
 - 结论：待 4h 完成后写最终报告；目前无 p95 退化，堆需看最终漂移。
 
+### 2026-11-11 P1 T2.1 binding 契约与加载器
+
+- 内容：`MotionBinding` zod schema、`buildMorphBinding`（O(1) 通道索引、名称/索引/保留通道校验）、`animeart-v1` 家族 binding 入代码。
+- 决策：`standardExpressions.weight` 统一为 0..1；VRM0 原始的 0–100 已在 binding JSON 中归一。
+- 结构：`binding.test.ts` 放入 `__tests__/binding/`，避免测试目录直接文件超 12。
+- 结果：binding 5 项测试通过；typecheck/lint/行数/结构/循环通过。
+- 文件：`animation/binding.ts`、`animation/bindings/animeart-v1.json`、`animation/__tests__/binding/binding.test.ts`、`animation/index.ts`。
+- 遗留：T2.2 `MorphExecutor`；100 个非标准 morph 首次导入抽查；运行时按模型选择 family binding。
+
 ## 下一步
 
 1. P0：4h 长稳收尾 + T1.9/T0.9 报告。
-2. P0：binding/fingerprint 入仓（本文件同批），家族校验脚本化。
-3. P1 T2.1：`MotionBinding` schema + 家族 binding 加载。
-4. P1 T2.2：`MorphExecutor` + 预览。
+2. P1 T2.2：`MorphExecutor` + 原始 morph 写入 + 预览。
+3. P1 T2.4：`LookExecutor`，让 `behavior.face-away` 的 look 生效。
+4. P0/P1：决定正式 cast 与模型体积口径。

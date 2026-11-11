@@ -20,6 +20,15 @@ export type {
 } from './contracts';
 
 export {
+  MorphBindingError,
+  buildMorphBinding,
+  morphBindingSchema,
+  type MorphBindingDefinition,
+  type MorphBindingIndex,
+  type MorphBindingTarget,
+} from './binding';
+
+export {
   clamp01,
   copyQuat,
   ease,

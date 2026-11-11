@@ -484,149 +484,149 @@
       {
         "index": 39,
         "name": "Mouth_a_big_op",
-        "weight": 69.9999988079071
+        "weight": 0.699999988079071
       }
     ],
     "I": [
       {
         "index": 93,
         "name": "Mouth_i_big_op",
-        "weight": 11.999999731779099
+        "weight": 0.11999999731779099
       }
     ],
     "U": [
       {
         "index": 62,
         "name": "Mouth_u_big_op",
-        "weight": 100
+        "weight": 1
       }
     ],
     "E": [
       {
         "index": 14,
         "name": "Mouth_e_big_op",
-        "weight": 100
+        "weight": 1
       }
     ],
     "O": [
       {
         "index": 67,
         "name": "Mouth_o_big_op",
-        "weight": 69.9999988079071
+        "weight": 0.699999988079071
       }
     ],
     "Blink": [
       {
         "index": 19,
         "name": "Eyes_wink_left_op",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 13,
         "name": "Eyes_wink_right_op",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 20,
         "name": "Eyebrows_wink_left_cl",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 36,
         "name": "Eyebrows_wink_right_cl",
-        "weight": 100
+        "weight": 1
       }
     ],
     "Blink_L": [
       {
         "index": 19,
         "name": "Eyes_wink_left_op",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 20,
         "name": "Eyebrows_wink_left_cl",
-        "weight": 100
+        "weight": 1
       }
     ],
     "Blink_R": [
       {
         "index": 13,
         "name": "Eyes_wink_right_op",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 36,
         "name": "Eyebrows_wink_right_cl",
-        "weight": 100
+        "weight": 1
       }
     ],
     "Fun": [
       {
         "index": 8,
         "name": "Mouth_happy_broad_cl",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 28,
         "name": "Eyes_smile_cl",
-        "weight": 80.0000011920929
+        "weight": 0.800000011920929
       },
       {
         "index": 31,
         "name": "Eyebrows_smug_cl",
-        "weight": 100
+        "weight": 1
       }
     ],
     "Joy": [
       {
         "index": 8,
         "name": "Mouth_happy_broad_cl",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 28,
         "name": "Eyes_smile_cl",
-        "weight": 80.0000011920929
+        "weight": 0.800000011920929
       },
       {
         "index": 31,
         "name": "Eyebrows_smug_cl",
-        "weight": 100
+        "weight": 1
       }
     ],
     "Angry": [
       {
         "index": 24,
         "name": "Mouth_angry_cl",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 75,
         "name": "Eyes_angry_op",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 64,
         "name": "Eyebrows_angry_cl",
-        "weight": 100
+        "weight": 1
       }
     ],
     "Sorrow": [
       {
         "index": 56,
         "name": "Mouth_lonely_op",
-        "weight": 50
+        "weight": 0.5
       },
       {
         "index": 5,
         "name": "Eyes_crying_op",
-        "weight": 100
+        "weight": 1
       },
       {
         "index": 86,
         "name": "Eyebrows_worried_cl",
-        "weight": 100
+        "weight": 1
       }
     ],
     "Neutral": []
