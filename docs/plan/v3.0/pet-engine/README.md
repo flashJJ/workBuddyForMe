@@ -76,6 +76,8 @@
 8. [08-script-architecture.md](./08-script-architecture.md)：剧本 DSL、表现套件（Kit）与 ScriptDirector，重构 3.0 的架构主轴。
 9. [09-script-dev-plan.md](./09-script-dev-plan.md)：M0 开发规格——冲突定稿、契约、模块布局、任务拆分与准备清单。
 10. [10-motion-library.md](./10-motion-library.md)：M0c 动效分层库——原子/姿势/动作/行为四层、合成语义、「被提起」拆解与任务拆分。
+11. [11-motion-library-v2.md](./11-motion-library-v2.md)：M0d 动效库扩充——表情/视线执行器、L1–L3 内容扩容与 binding 方案（提案）。
+12. [12-motion-plugin-feasibility.md](./12-motion-plugin-feasibility.md)：动效库解耦与插件化可行性——包拆分、数据包协议与迁移路径（探索）。
 
 ## 6. 优先级
 
