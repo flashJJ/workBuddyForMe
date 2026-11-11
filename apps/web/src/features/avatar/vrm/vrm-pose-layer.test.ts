@@ -99,6 +99,8 @@ describe('VrmPoseLayer raised pose', () => {
     layer.setRaised(true);
     expect(layer.raised).toBe(true);
     for (let i = 0; i < 60; i += 1) {
+      layer.resetOverlayBones();
+      layer.captureMixerPose();
       layer.applyHeadOverlay(i / 30, true, 1 / 30, 1);
       layer.applyBodyIdle(i / 30, 1 / 30, false, true);
     }
@@ -107,6 +109,8 @@ describe('VrmPoseLayer raised pose', () => {
 
     layer.setRaised(false);
     for (let i = 0; i < 150; i += 1) {
+      layer.resetOverlayBones();
+      layer.captureMixerPose();
       layer.applyHeadOverlay(i / 30, true, 1 / 30, 1);
       layer.applyBodyIdle(i / 30, 1 / 30, false, true);
     }

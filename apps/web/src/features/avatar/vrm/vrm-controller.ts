@@ -23,6 +23,8 @@ export interface VrmControllerLike extends TouchControllerLike {
   tap(): void;
   setLipLevel(level: number): void;
   setExpression(tag: ExpressionTag): void;
+  playBehavior?(id: string): boolean;
+  stopBehavior?(): boolean;
   dispose(): void;
 }
 
@@ -40,17 +42,14 @@ export interface VrmControllerLike extends TouchControllerLike {
  *
  * animate loop 固定顺序（update 方法内，不可动）：
  *   Step 0  interaction.tick()        ← 三段式阶段推进
- *   Step 1  mixer.update(dt)          ← 动作池 clip 驱动 normalized bone
- *   Step 1.5 mixer.tickRotation(dt)   ← 到点随机换一个待机动作
+ *   Step 1  mixer.update(dt) + tickRotation(dt) ← 动作池 clip 驱动 + 待机轮播
  *   Step 2  pose.applySquash()        ← vrm.scene.scale sin 包络（210ms）
  *   Step 3  face.checkFlashExpiry()   ← flashUntil 到期恢复 baseExpression
- *   Step 4  pose.applyHeadOverlay()   ← 程序化 wiggle（无 clip）或 gaze/click（有 clip）
- *           pose.applyInteractionAngles() ← 叠三段式微倾
+ *   Step 4  pose.applyHeadOverlay() + applyInteractionAngles() ← wiggle/gaze/微倾
  *   Step 5  pose.applyBodyIdle()      ← 呼吸 position.y + 身体微摆 rotation.y
  *   Step 6  vrm.update(dt)            ← normalized → raw → 场景 + SpringBone 物理
  *   Step 7  face.applyExpressionLayer() ← morph (happy/sad/angry/relaxed/surprised)
- *   Step 8  face.applyLipSync()       ← morph aa = level*3.2
- *   Step 9  face.applyBlink(dt)       ← 每 2-6s 随机眨眼 0.35s sin 包络
+ *   Step 8  face.applyLipSync() + applyBlink(dt) ← 口型 + 随机眨眼
  *   Step 10 renderer.render(scene, camera)
  */
 export class VrmController implements VrmControllerLike {
@@ -68,10 +67,7 @@ export class VrmController implements VrmControllerLike {
   private nextAmbientAt = 0;
   private sleeping = false;
   private faceAway = false;
-
   private disposed = false;
-
-  // ======= 构造 =======
 
   constructor(
     vrm: VRM,
@@ -184,6 +180,10 @@ export class VrmController implements VrmControllerLike {
     if (!this.disposed) this.pose.setRaised(raised);
   }
 
+  /** M0c：播放/停止 L3 分层行为（behavior.*），enter/loop/exit 由动效库单时钟推进 */
+  playBehavior(id: string): boolean { return !this.disposed && this.pose.playBehavior(id); }
+  stopBehavior(): boolean { return !this.disposed && this.pose.stopBehavior(); }
+
   /** 点击触发：优先从动作池随机播一个一次性动作；池空则退回程序化手势 */
   tap(): void {
     if (this.disposed) return;
@@ -279,8 +279,7 @@ export class VrmController implements VrmControllerLike {
     this.tickAmbient();
 
     // --- Step 6: vrm.update → normalized → raw → 场景 + SpringBone ---
-    // normalized bone 在 Step 4 已写好（有 clip 时 mixer 写，无 clip 时程序化写 head）
-    // vrm.update 负责把 normalized 同步到 raw，再应用到 scene mesh，并驱动 SpringBone 物理模拟
+    // normalized bone 在 Step 4 已写好；vrm.update 同步到 raw、应用到 mesh 并驱动 SpringBone
     this.vrm.update(dt);
     // 非 humanoid 且未配 SpringBone 的尾巴：程序化小幅摆动
     this.tail.update(t);

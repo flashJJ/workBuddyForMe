@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import type { VrmController } from './vrm-controller';
 import type { VrmFitResult } from './vrm-fit';
+import { setBehaviorDebugSource } from '../animation/observability';
 
 /** dev 调试钩子（window.__vrmDebug）暴露的形状 */
 export interface VrmDebugProbe {
@@ -46,11 +47,16 @@ export function installVrmDebugProbe(
     }),
   };
   (window as unknown as Record<string, unknown>).__vrmDebug = probe;
+  // T1.8：__petDebug.behaviors 的数据源（预览面板复用同一快照）
+  setBehaviorDebugSource(() => (controller as any)?.pose?.behaviorDebug ?? null);
   return probe;
 }
 
 export function removeVrmDebugProbe(probe: VrmDebugProbe | null): void {
   if (!probe) return;
   const host = window as unknown as Record<string, unknown>;
-  if (host.__vrmDebug === probe) delete host.__vrmDebug;
+  if (host.__vrmDebug === probe) {
+    delete host.__vrmDebug;
+    setBehaviorDebugSource(null);
+  }
 }

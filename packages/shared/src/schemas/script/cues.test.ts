@@ -10,11 +10,12 @@ function cueOf(value: unknown): Cue {
 }
 
 describe('cueSchema（Cue 契约）', () => {
-  it('M0 九类 cue 均可解析，且推导到正确轨道', () => {
+  it('内置 cue 均可解析，且推导到正确轨道', () => {
     const cues: Array<[unknown, Cue['kind'], string | null]> = [
       [{ kind: 'pose', preset: 'pose.wave', fadeMs: 200 }, 'pose', 'body'],
       [{ kind: 'gesture', gesture: 'nod', intensity: 0.6 }, 'gesture', 'body'],
       [{ kind: 'motion', motion: 'motion:wave.vrma', loop: false }, 'motion', 'body'],
+      [{ kind: 'behavior', behavior: 'behavior.lifted' }, 'behavior', 'body'],
       [{ kind: 'expression', tag: 'joy', holdMs: 1200 }, 'expression', 'face'],
       [{ kind: 'look', target: 'camera', weight: 0.8 }, 'look', 'look'],
       [{ kind: 'line', pool: 'head-tap', ms: 2600 }, 'line', 'voice'],
@@ -74,6 +75,7 @@ describe('cueSchema（Cue 契约）', () => {
     expect(cueSchema.safeParse({ kind: 'line', pool: 'unknown-pool' }).success).toBe(false);
     expect(cueSchema.safeParse({ kind: 'speak', text: 42 }).success).toBe(false);
     expect(cueSchema.safeParse({ kind: 'motion', motion: '   ' }).success).toBe(false);
+    expect(cueSchema.safeParse({ kind: 'behavior', behavior: '  ' }).success).toBe(false);
     expect(cueSchema.safeParse({ kind: 'gesture', gesture: 'tilt', intensity: 2 }).success).toBe(
       false,
     );

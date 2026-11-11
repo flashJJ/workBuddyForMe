@@ -27,6 +27,8 @@ export interface VrmCueTarget {
   setFaceAway?(away: boolean): void;
   playGesture?(gesture: ScriptGesture, intensity?: number): boolean;
   playMotion?(motion: string, options?: { loop?: boolean; fadeMs?: number }): boolean;
+  /** M0c：L3 分层行为（behavior.*），由动效库推进 enter/loop/exit */
+  playBehavior?(behavior: string): boolean;
 }
 
 /** pose 预设 → 现有控制器调用（T0.5 的场景常量引用这些 id） */
@@ -84,6 +86,9 @@ export class VrmCueAdapter implements CueSink {
       case 'motion':
         this.motion(cue.motion, cue.loop, cue.fadeMs);
         break;
+      case 'behavior':
+        this.behavior(cue.behavior);
+        break;
       case 'expression':
         this.expression(cue.tag, cue.holdMs);
         break;
@@ -132,6 +137,11 @@ export class VrmCueAdapter implements CueSink {
   private motion(motion: string, loop?: boolean, fadeMs?: number): void {
     if (this.options.controller.playMotion?.(motion, { loop, fadeMs })) return;
     console.warn('[VrmCueAdapter] 控制器无指定动作能力，跳过:', motion);
+  }
+
+  private behavior(behavior: string): void {
+    if (this.options.controller.playBehavior?.(behavior)) return;
+    console.warn('[VrmCueAdapter] 控制器无分层行为能力，跳过:', behavior);
   }
 
   private look(target: ScriptLookTarget, weight = 1): void {

@@ -10,6 +10,7 @@ class FakeController implements VrmCueTarget {
   gaze: { x: number; y: number } | null = null;
   gesture: { gesture: ScriptGesture; intensity?: number } | null = null;
   motion: { motion: string; loop?: boolean; fadeMs?: number } | null = null;
+  behavior: string | null = null;
   sleeping: boolean | null = null;
   faceAway: boolean | null = null;
 
@@ -55,6 +56,12 @@ class FakeController implements VrmCueTarget {
   playMotion(motion: string, options?: { loop?: boolean; fadeMs?: number }): boolean {
     this.calls.push('motion');
     this.motion = { motion, ...options };
+    return true;
+  }
+
+  playBehavior(behavior: string): boolean {
+    this.calls.push('behavior');
+    this.behavior = behavior;
     return true;
   }
 }
@@ -160,7 +167,15 @@ describe('VrmCueAdapter（cue → 现有控制器）', () => {
     expect(controller.motion).toEqual({ motion: 'motion:wave.vrma', loop: true, fadeMs: 200 });
   });
 
-  it('控制器缺少手势/动作能力时 warn 跳过，不抛错', () => {
+  it('behavior 走分层行为执行器（behavior.*）', () => {
+    const { controller, adapter } = setup();
+    adapter.execute(entryOf({ kind: 'behavior', behavior: 'behavior.lifted' }), () => 0);
+    adapter.execute(entryOf({ kind: 'behavior', behavior: 'behavior.land' }), () => 0);
+    expect(controller.calls).toEqual(['behavior', 'behavior']);
+    expect(controller.behavior).toBe('behavior.land');
+  });
+
+  it('控制器缺少手势/动作/行为能力时 warn 跳过，不抛错', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { adapter } = setup({
       controller: {
@@ -170,8 +185,9 @@ describe('VrmCueAdapter（cue → 现有控制器）', () => {
     expect(() => {
       adapter.execute(entryOf({ kind: 'gesture', gesture: 'nod' }), () => 0);
       adapter.execute(entryOf({ kind: 'motion', motion: 'motion:none.vrma' }), () => 0);
+      adapter.execute(entryOf({ kind: 'behavior', behavior: 'behavior.lifted' }), () => 0);
     }).not.toThrow();
-    expect(warn).toHaveBeenCalledTimes(2);
+    expect(warn).toHaveBeenCalledTimes(3);
     warn.mockRestore();
   });
 

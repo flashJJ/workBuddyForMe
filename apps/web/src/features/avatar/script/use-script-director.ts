@@ -38,6 +38,8 @@ export interface ScriptControllerHandle {
   setFaceAway?(away: boolean): void;
   playGesture?(gesture: ScriptGesture, intensity?: number): boolean;
   playMotion?(motion: string, options?: { loop?: boolean; fadeMs?: number }): boolean;
+  /** M0c：L3 分层行为（behavior.*） */
+  playBehavior?(behavior: string): boolean;
 }
 
 export interface UseScriptDirectorOptions {
@@ -79,6 +81,8 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
         optionsRef.current.getController()?.playGesture?.(gesture, intensity) ?? false,
       playMotion: (motion: string, opts?: { loop?: boolean; fadeMs?: number }) =>
         optionsRef.current.getController()?.playMotion?.(motion, opts) ?? false,
+      playBehavior: (behavior: string) =>
+        optionsRef.current.getController()?.playBehavior?.(behavior) ?? false,
     };
     return new VrmCueAdapter({
       controller: target,

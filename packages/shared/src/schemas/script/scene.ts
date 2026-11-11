@@ -22,6 +22,7 @@ export function cueTrack(cue: Cue): ScriptTrack | null {
     case 'pose':
     case 'gesture':
     case 'motion':
+    case 'behavior':
       return 'body';
     case 'expression':
       return 'face';

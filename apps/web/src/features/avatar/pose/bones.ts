@@ -7,10 +7,5 @@ export interface NormalizedBoneRef {
   baseQuat: THREE.Quaternion;
 }
 
-/** VrmController 构造时捕获的 normalized bone 名单（姿态叠加/被拎起共用） */
-export const NORM_BONE_NAMES = [
-  'spine', 'neck',
-  'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
-  'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand', 'head',
-  'leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg', 'leftFoot', 'rightFoot',
-] as const;
+/** 名单已迁至 animation/mask.ts（M0c T1.1），此处保留兼容 re-export */
+export { NORM_BONE_NAMES } from '../animation/mask';

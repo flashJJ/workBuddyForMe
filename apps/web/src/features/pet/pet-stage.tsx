@@ -3,6 +3,7 @@
 import * as React from 'react';
 import {
   AvatarCanvasRouter,
+  MotionPreviewOverlay,
   PET_SCRIPT_ENABLED,
   useScriptDirector,
 } from '@/features/avatar';
@@ -289,6 +290,11 @@ export function PetStage({
 
       {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}
       <PetSubtitleBubble text={line || subtitle} voiceState={voiceState} shifted={workVisible} />
+
+      {/* M0c dev：动效库逐阶段/逐轨道预览（默认关闭） */}
+      {process.env.NEXT_PUBLIC_WBFM_MOTION_PREVIEW === '1' && (
+        <MotionPreviewOverlay controllerRef={controllerRef} />
+      )}
     </div>
   );
 }

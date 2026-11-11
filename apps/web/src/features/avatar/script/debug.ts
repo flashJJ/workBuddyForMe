@@ -6,12 +6,15 @@
  */
 
 import type { ActiveSceneSnapshot, CueLogEntry } from './director';
+import { getBehaviorDebug, type BehaviorDebugSnapshot } from '../animation';
 
 export interface PetScriptDebugApi {
   readonly scenes: readonly string[];
   readonly active: readonly ActiveSceneSnapshot[];
   readonly log: readonly CueLogEntry[];
   readonly seed: number;
+  /** M0c：当前行为 id/阶段/轨道权重与最近 10 条过渡 */
+  readonly behaviors: BehaviorDebugSnapshot | null;
   /** dev 诊断：playEvent 调用次数 */
   events: number;
   /** dev 诊断：被 Director 接受（或场景存在但被门控）的次数 */
@@ -49,6 +52,9 @@ export function installPetScriptDebug(
     },
     get seed() {
       return director.getSeed();
+    },
+    get behaviors() {
+      return getBehaviorDebug();
     },
   };
   target.__petDebug = api;

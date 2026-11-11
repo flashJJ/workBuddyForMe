@@ -47,6 +47,11 @@ export interface MotionCue {
   loop?: boolean;
   fadeMs?: number;
 }
+/** M0c：L3 分层行为（behaviors/ 注册表，如 behavior.lifted） */
+export interface BehaviorCue {
+  kind: 'behavior';
+  behavior: string;
+}
 export interface ExpressionCue {
   kind: 'expression';
   tag: ExpressionTag;
@@ -110,6 +115,7 @@ export type Cue =
   | PoseCue
   | GestureCue
   | MotionCue
+  | BehaviorCue
   | ExpressionCue
   | LookCue
   | LineCue
@@ -150,6 +156,7 @@ export const cueSchema: z.ZodType<Cue> = z.lazy(() =>
       loop: z.boolean().optional(),
       fadeMs: fadeMsSchema,
     }),
+    z.object({ kind: z.literal('behavior'), behavior: idSchema }),
     z.object({
       kind: z.literal('expression'),
       tag: z.enum(EXPRESSION_TAGS),

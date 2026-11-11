@@ -29,3 +29,4 @@ export {
   type ScriptCueContext,
   type ScriptDirectorHandle,
 } from './script/use-script-director';
+export { MotionPreviewOverlay } from './animation/devtools/preview-panel';

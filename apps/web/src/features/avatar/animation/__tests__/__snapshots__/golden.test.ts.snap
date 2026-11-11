@@ -1,0 +1,46 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`动效库 golden（量化容差 0.02） > behavior.face-away 1`] = `
+{
+  "t0": "af46af7d",
+  "t120": "af46af7d",
+  "t300": "af46af7d",
+  "t600": "af46af7d",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.idle 1`] = `
+{
+  "t0": "af46af7d",
+  "t120": "71e36cc7",
+  "t300": "757d958b",
+  "t600": "51743d97",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.land 1`] = `
+{
+  "t0": "af46af7d",
+  "t120": "7452141e",
+  "t300": "ab424fe1",
+  "t600": "af46af7d",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.lifted 1`] = `
+{
+  "t0": "af46af7d",
+  "t120": "fb5e4018",
+  "t300": "878df5f0",
+  "t600": "ffb25cca",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.sleep 1`] = `
+{
+  "t0": "af46af7d",
+  "t120": "18c474af",
+  "t300": "ee85fa0a",
+  "t600": "a49254c8",
+}
+`;
