@@ -37,7 +37,7 @@
 - **不复制**「溟月」的具体设计、配色比例、服装与线稿；**不使用** DeepSeek 名称、Logo、商标；不内置女仆装原图。
 - 只借用类型化萌点（鲸鱼娘、干饭、拒胖、摸鱼），角色卡明示「原创角色，与 DeepSeek 无关联」。
 - 人设由角色卡承载，用户可替换/关闭；不把「服从主人」这类设定写成默认文案，改为平等的陪伴语气。
-- 所有素材自制或使用可商用授权；发布说明与设置页均保留合规声明。
+- 内置原创角色「雪团」VRM 为项目自制，采用 **CC BY-NC-SA 4.0**（署名、禁商用、衍生同协议）；其余第三方素材使用与项目非商用许可兼容的授权；发布说明与设置页均保留合规声明。
 - 概念稿：`concepts/xuetuan-front.jpg`（正面）、`xuetuan-back.jpg`（背面）、`xuetuan-left.jpg`（左视）、`xuetuan-right.jpg`（右视）、`xuetuan-top.jpg`（顶视）、`xuetuan-bottom.jpg`（底视）、`xuetuan-6views.jpg`（六视图合版）、`xuetuan-expressions.jpg`（表情差分），用于图生 3D 参考。
 
 ### 角色资产管线

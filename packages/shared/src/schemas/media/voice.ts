@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  BUILTIN_VRM_MODEL_ID,
   MOTION_ROTATION_SECONDS_DEFAULT,
   MOTION_ROTATION_SECONDS_MAX,
   MOTION_ROTATION_SECONDS_MIN,
@@ -197,7 +198,8 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   modelMirrorBase: 'https://hf-mirror.com',
   modelsDir: null,
   avatarEnabled: false,
-  avatarModelId: DEFAULT_AVATAR_MODEL_ID,
+  // v3.0：新用户默认形象为内置雪团 VRM（老用户已存的值不受影响）
+  avatarModelId: BUILTIN_VRM_MODEL_ID,
   petEnabled: false,
   petClickThrough: false,
   proactiveEnabled: false,

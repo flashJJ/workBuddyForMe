@@ -199,4 +199,6 @@ v2.22.2 发布验证：CI 打包日志确认 `pm=pnpm`（packageManager 字段�
 
 ## 许可
 
-GPL-3.0-only（见根 `package.json`）。
+代码采用 **PolyForm Noncommercial License 1.0.0**（见根 `LICENSE`），仅限非商业用途，不提供任何担保。
+
+内置角色「雪团」VRM 模型（`apps/web/public/vrm/models/xuetuan.vrm`）单独采用 **CC BY-NC-SA 4.0**，作者为 WorkBuddyForMe / 黄俊杰-flash；该模型不适用上述代码许可，详见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。

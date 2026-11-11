@@ -6,13 +6,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { VRMAnimationLoaderPlugin } from '@pixiv/three-vrm-animation';
 import { parseVrmAvatarId, DEFAULT_MOTION_MOOD, type MotionMood } from '@wbfm/shared/schemas';
+import { BUILTIN_VRM_ASSET_PATH, BUILTIN_VRM_FILE_REF } from '@wbfm/shared/constants';
 import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from '../expression/expression-parser';
-import {
-  shouldRenderFrame,
-  type FrameMode,
-} from '../performance/frame-governor';
+import { shouldRenderFrame, type FrameMode } from '../performance/frame-governor';
 import { projectObjectToViewport, type AvatarScreenRect } from '../performance/screen-rect';
 import { loadMotionPool, loadRotationConfig } from './vrm-motion-loader';
 import { fitVrmToCamera } from './vrm-fit';
@@ -132,9 +130,11 @@ export function VrmCanvas({
     let detachGazePointer: (() => void) | null = null;
 
     const token = getManagedToken();
-    const vrmUrl = token
-      ? `/api/vrm-avatars/${fileRef}/file?token=${encodeURIComponent(token)}`
-      : `/api/vrm-avatars/${fileRef}/file`;
+    // 内置雪团走 public 静态资源，不写用户数据目录；导入模型仍走受 token 守卫的 API
+    const vrmUrl =
+      fileRef === BUILTIN_VRM_FILE_REF
+        ? BUILTIN_VRM_ASSET_PATH
+        : `/api/vrm-avatars/${fileRef}/file${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));

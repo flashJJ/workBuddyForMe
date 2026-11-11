@@ -14,3 +14,11 @@ export const VRM_AVATAR_PREFIX = 'vrm:';
 
 /** VRM 扩展名（仅 .vrm，不收 .glb/.gltf） */
 export const VRM_FILE_EXT = '.vrm';
+
+/**
+ * 内置雪团 VRM（静态资源随安装包分发，不写用户数据目录）：
+ * fileRef 走 `builtin:` 前缀，vrm-canvas 直接解析到 ASSET_PATH，不经 /api/vrm-avatars。
+ */
+export const BUILTIN_VRM_FILE_REF = 'builtin:xuetuan';
+export const BUILTIN_VRM_MODEL_ID = 'vrm:builtin:xuetuan';
+export const BUILTIN_VRM_ASSET_PATH = '/vrm/models/xuetuan.vrm';

@@ -7,6 +7,7 @@ import {
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared/schemas';
+import { BUILTIN_VRM_MODEL_ID } from '@wbfm/shared/constants';
 import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar';
 import { getPetBridge } from '@/features/pet/bridge';
 import { usePetOpenState } from '@/features/pet/bridge';
@@ -186,6 +187,9 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
                   {t(item.label)}
                 </option>
               ))}
+            </optgroup>
+            <optgroup label={t('avatar.vrm.builtinSectionTitle')}>
+              <option value={BUILTIN_VRM_MODEL_ID}>{t('avatar.vrm.builtinXuetuan')}</option>
             </optgroup>
             {vrmAvatars.length > 0 && (
               <optgroup label={t('avatar.vrm.sectionTitle')}>

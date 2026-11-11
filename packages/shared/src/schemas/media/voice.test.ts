@@ -5,9 +5,11 @@ import {
   DEFAULT_VOICE_SETTINGS,
   SUPPORTED_AVATAR_MODEL_IDS,
   getAvatarSpeakerId,
+  parseVrmAvatarId,
   voiceSettingsUpdateSchema,
   voiceTtsRequestSchema,
 } from '../../index';
+import { BUILTIN_VRM_FILE_REF, BUILTIN_VRM_MODEL_ID } from '../../constants';
 
 describe('AVATAR_TTS_VOICES 角色声线绑定', () => {
   it('每个内置角色都绑定一个 Kokoro 音色', () => {
@@ -40,6 +42,13 @@ describe('AVATAR_TTS_VOICES 角色声线绑定', () => {
     expect(AVATAR_TTS_VOICES.mark).toMatchObject({ sid: 58, voice: 'zm_009' });
     expect(AVATAR_TTS_VOICES.mao).toMatchObject({ sid: 32, voice: 'zf_049' });
     expect(AVATAR_TTS_VOICES.wanko).toMatchObject({ sid: 59, voice: 'zm_010' });
+  });
+});
+
+describe('内置雪团 VRM', () => {
+  it('新用户默认形象为内置雪团，且 id 可被 VRM 解析', () => {
+    expect(DEFAULT_VOICE_SETTINGS.avatarModelId).toBe(BUILTIN_VRM_MODEL_ID);
+    expect(parseVrmAvatarId(BUILTIN_VRM_MODEL_ID)).toBe(BUILTIN_VRM_FILE_REF);
   });
 });
 
