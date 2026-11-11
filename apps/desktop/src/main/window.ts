@@ -3,6 +3,7 @@ import path from 'node:path';
 import { app, BrowserWindow, shell } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { resolvePreloadPath } from './config';
+import { loadWithDevRetry } from './wait-for-server';
 import {
   loadWindowState,
   MIN_WINDOW_HEIGHT,
@@ -85,7 +86,9 @@ export function createMainWindow(userDataDir: string, url: string, boot: WindowB
     return { action: 'deny' };
   });
 
-  void win.loadURL(url);
+  // dev 下 dev server 可能尚未就绪/正在重启：失败后自动重载，避免停在错误页
+  if (app.isPackaged) void win.loadURL(url);
+  else loadWithDevRetry(win, url);
   return win;
 }
 

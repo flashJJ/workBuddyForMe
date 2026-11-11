@@ -17,6 +17,7 @@ import {
 } from '@wbfm/shared/pet';
 import { DEV_SERVER_URL, resolvePreloadPath } from '../config';
 import type { WindowBootInfo } from '../window';
+import { loadWithDevRetry } from '../wait-for-server';
 import { clampIntoDisplay, type PetState } from './pet-state';
 
 /** 桌宠窗固定尺寸（DIP）：紧贴角色，尽量少挡桌面；命中盒在页面内定义 */
@@ -172,6 +173,9 @@ export function createPetWindow(
     // dev 下默认不开 devtools（会抢焦、换模型还会堆窗）；需要时 WBFM_PET_DEVTOOLS=1 显式开启
     if (!app.isPackaged && process.env.WBFM_PET_DEVTOOLS === '1') win.webContents.openDevTools({ mode: 'detach' });
   });
-  void win.loadURL(buildPetUrl(baseUrl, modelId));
+  // dev 下 dev server 可能尚未就绪/正在重启：失败后自动重载，避免停在错误页
+  const petUrl = buildPetUrl(baseUrl, modelId);
+  if (app.isPackaged) void win.loadURL(petUrl);
+  else loadWithDevRetry(win, petUrl);
   return win;
 }
