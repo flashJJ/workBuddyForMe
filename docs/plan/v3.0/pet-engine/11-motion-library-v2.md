@@ -189,6 +189,8 @@ animation/
 - binding 文件用 zod 校验；加载失败时降级为“无表情”并 warn，不阻塞角色渲染。
 - 新增目录预算：expressions ≤6 文件、bindings ≤4 文件。
 
+> 实测草案：[bindings/animeart-v1.binding.json](./bindings/animeart-v1.binding.json) 与 [bindings/animeart-v1.fingerprint.json](./bindings/animeart-v1.fingerprint.json)。6 个 AnimeArt 模型已验证同骨架、同 118 morph 模板，可共用家族级 binding。
+
 ## 7. 任务拆分（T2.x）
 
 | 任务 | 内容 | 依赖 | 验收 | 规模 |
