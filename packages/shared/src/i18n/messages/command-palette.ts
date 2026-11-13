@@ -36,6 +36,7 @@ export const zhCommandPalette = {
     asstSwitch: { label: '切换助手', description: '选择不同的智能体' },
     setProviders: { label: '管理模型供应商', description: '新增 / 编辑 API 供应商' },
     setTheme: { label: '切换主题', description: '深色 / 浅色模式' },
+    settingsSection: { description: '跳转到设置分组' },
     updCheck: { label: '检查更新', description: '查看是否有新版本可用' },
   },
 };
@@ -80,6 +81,7 @@ export const enCommandPalette = {
     asstSwitch: { label: 'Switch assistant', description: 'Choose a different agent' },
     setProviders: { label: 'Manage model providers', description: 'Add / edit API providers' },
     setTheme: { label: 'Toggle theme', description: 'Switch between dark and light mode' },
+    settingsSection: { description: 'Jump to a settings section' },
     updCheck: { label: 'Check for updates', description: 'See whether a new version is available' },
   },
 };

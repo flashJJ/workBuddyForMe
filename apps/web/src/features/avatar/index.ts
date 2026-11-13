@@ -31,6 +31,13 @@ export {
   type ScriptDirectorHandle,
 } from './script/use-script-director';
 export { useGeneratedScripts, type GeneratedScriptsState } from './script/generation/client';
+export {
+  usePetProactivePlayback,
+  useProactivePlayback,
+  type ProactivePlaybackHandle,
+  type UsePetProactivePlaybackOptions,
+  type UseProactivePlaybackOptions,
+} from './script/generation/client';
 export { MotionPreviewOverlay } from './animation/devtools/preview-panel';
 export { ScriptDebugPanel } from './script/devtools/script-debug-panel';
 export {

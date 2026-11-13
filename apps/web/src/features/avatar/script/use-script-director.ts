@@ -85,6 +85,8 @@ export interface ScriptDirectorHandle {
   playEvent(event: InteractionEvent, ctx: ScriptCueContext): boolean;
   /** P3：dev 手动播放（干饭/被叫胖暂无触发键）；沿用最近一次事件上下文 */
   playScene(sceneId: string): boolean;
+  /** P8.8：是否有场次在演（主动播放前避让） */
+  isPlaying(): boolean;
   onFrame(dtMs: number): void;
   cancel(reason: CancelReason): void;
 }
@@ -242,9 +244,13 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
     optionsRef.current.getController()?.setScriptBusy?.(director.getActive().length > 0);
   }, []);
   const cancel = React.useCallback((reason: CancelReason) => directorRef.current?.cancel(reason), []);
+  const isPlaying = React.useCallback(
+    () => (directorRef.current?.getActive().length ?? 0) > 0,
+    [],
+  );
 
   return React.useMemo(
-    () => ({ enabled: options.enabled, playEvent, playScene, onFrame, cancel }),
-    [options.enabled, playEvent, playScene, onFrame, cancel],
+    () => ({ enabled: options.enabled, playEvent, playScene, isPlaying, onFrame, cancel }),
+    [options.enabled, playEvent, playScene, isPlaying, onFrame, cancel],
   );
 }

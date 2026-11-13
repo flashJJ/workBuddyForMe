@@ -4,6 +4,7 @@ import type {
   PetScriptTickResult,
 } from '@wbfm/shared/schemas';
 import {
+  isQuietHour,
   isScheduleDue,
   markScheduleRun,
   resolveScheduleState,
@@ -11,6 +12,7 @@ import {
   setScheduleEnabled,
   setSchedulePerDay,
   type PetScriptScheduleStore,
+  type QuietHours,
 } from './schedule';
 import type { PetScriptGenerator } from '../service';
 import { localDateKey } from '../state';
@@ -26,6 +28,8 @@ export interface PetScriptSchedulerDeps {
   generator: PetScriptGenerator;
   store: PetScriptScheduleStore;
   now?: () => Date;
+  /** P8.7 打扰预算：勿扰时段内不生成（不消耗当日次数） */
+  quietHours?: () => QuietHours | null;
 }
 
 export interface PetScriptScheduler {
@@ -68,6 +72,15 @@ export function createPetScriptScheduler(deps: PetScriptSchedulerDeps): PetScrip
           schedule: scheduleSummary(state),
           triggered: false,
           reason: 'disabled',
+          issues: [],
+        };
+      }
+      if (isQuietHour(now().getHours(), deps.quietHours?.())) {
+        return {
+          ...deps.generator.list(),
+          schedule: scheduleSummary(state),
+          triggered: false,
+          reason: 'quiet-hours',
           issues: [],
         };
       }

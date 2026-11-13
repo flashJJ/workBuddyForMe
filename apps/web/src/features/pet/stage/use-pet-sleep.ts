@@ -8,12 +8,19 @@ export const PET_SLEEP_AFTER_MS = 10 * 60 * 1000;
 /** 检查间隔：不需要每秒轮询，30s 足够；命中后最迟 30s 内入睡 */
 const CHECK_INTERVAL_MS = 30_000;
 
+export interface PetSleepState {
+  sleeping: boolean;
+  /** 主动唤醒并刷新活跃时间（主动播放前调用） */
+  wake: () => void;
+}
+
 /**
  * v3.0 P1 桌宠睡眠状态机：
  * - 指针移动/按下、语音非 idle → 立即唤醒并刷新活跃时间；
- * - 连续 10min 无交互 → 入睡（由渲染器切换闭眼/低头表现）。
+ * - 连续 10min 无交互 → 入睡（由渲染器切换闭眼/低头表现）；
+ * - P8.8：主动播放前可调用 wake()，避免睡着演出。
  */
-export function usePetSleep(voiceState: PetVoiceState): boolean {
+export function usePetSleep(voiceState: PetVoiceState): PetSleepState {
   const [sleeping, setSleeping] = React.useState(false);
   const lastActiveRef = React.useRef(Date.now());
   const sleepingRef = React.useRef(false);
@@ -47,5 +54,5 @@ export function usePetSleep(voiceState: PetVoiceState): boolean {
     if (voiceState !== 'idle') wake();
   }, [voiceState, wake]);
 
-  return sleeping;
+  return { sleeping, wake };
 }

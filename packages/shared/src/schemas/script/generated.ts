@@ -124,7 +124,12 @@ export interface PetScriptStatusView extends PetScriptGenerationView {
   schedule: PetScriptScheduleSummary;
 }
 
-export type PetScriptTickReason = 'ok' | 'disabled' | 'not-due' | PetScriptGenerationReason;
+export type PetScriptTickReason =
+  | 'ok'
+  | 'disabled'
+  | 'quiet-hours'
+  | 'not-due'
+  | PetScriptGenerationReason;
 
 /** POST /api/pet/script/tick：客户端心跳触发一次「到期检查」 */
 export interface PetScriptTickResult extends PetScriptStatusView {
@@ -198,3 +203,66 @@ export const petScriptScheduleRequestSchema = z
     message: 'enabled 与 perDay 至少提供一项',
   });
 export type PetScriptScheduleRequest = z.infer<typeof petScriptScheduleRequestSchema>;
+
+/** P8.8：主动播放预算（空闲触发、每日场次上限、勿扰与去重） */
+export const PET_SCRIPT_PLAYBACK_LIMITS = {
+  defaultPerDay: 3,
+  minPerDay: 0,
+  maxPerDay: 10,
+  defaultIdleMinutes: 10,
+  minIdleMinutes: 1,
+  maxIdleMinutes: 120,
+} as const;
+
+export interface PetScriptPlaybackSummary {
+  /** 每日主动播放上限（0 = 不主动播放） */
+  perDay: number;
+  /** 今日已主动播放场次 */
+  playsToday: number;
+  /** 空闲多少分钟后才触发 */
+  idleMinutes: number;
+  /** 今日已主动播放过的场景 id（去重，避免重复表演） */
+  playedSceneIds: string[];
+}
+
+export type PetScriptPlaybackReason =
+  | 'ok'
+  | 'disabled'
+  | 'daily-cap'
+  | 'quiet-hours'
+  | 'duplicate'
+  | 'not-generated';
+
+/** POST /api/pet/script/playback/claim：播放前认领一场（先扣预算再演出） */
+export interface PetScriptPlaybackClaimResult {
+  ok: boolean;
+  reason: PetScriptPlaybackReason;
+  /** 认领成功时回显场景 id */
+  sceneId: string | null;
+  playback: PetScriptPlaybackSummary;
+}
+
+export const petScriptPlaybackSettingsSchema = z
+  .object({
+    perDay: z
+      .number()
+      .int()
+      .min(PET_SCRIPT_PLAYBACK_LIMITS.minPerDay)
+      .max(PET_SCRIPT_PLAYBACK_LIMITS.maxPerDay)
+      .optional(),
+    idleMinutes: z
+      .number()
+      .int()
+      .min(PET_SCRIPT_PLAYBACK_LIMITS.minIdleMinutes)
+      .max(PET_SCRIPT_PLAYBACK_LIMITS.maxIdleMinutes)
+      .optional(),
+  })
+  .refine((value) => value.perDay !== undefined || value.idleMinutes !== undefined, {
+    message: 'perDay 与 idleMinutes 至少提供一项',
+  });
+export type PetScriptPlaybackSettings = z.infer<typeof petScriptPlaybackSettingsSchema>;
+
+export const petScriptPlaybackClaimSchema = z.object({
+  sceneId: z.string().trim().min(1).max(120),
+});
+export type PetScriptPlaybackClaim = z.infer<typeof petScriptPlaybackClaimSchema>;

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PET_SCRIPT_SCHEDULE_LIMITS } from '@wbfm/shared/schemas';
 import {
+  isQuietHour,
   isScheduleDue,
   markScheduleRun,
+  quietHoursFrom,
   resolveScheduleState,
   scheduleSummary,
   setScheduleEnabled,
@@ -81,5 +83,29 @@ describe('每日自动生成调度（P8.5/P8.6 间隔机制）', () => {
     const ran = markScheduleRun(enabled, at(20));
     expect(isScheduleDue(ran, at(20, 29))).toBe(false);
     expect(isScheduleDue(ran, at(20, 30))).toBe(true);
+  });
+
+  it('勿扰时段判定：支持跨午夜、关闭与同起止', () => {
+    const night = { enabled: true, startHour: 23, endHour: 6 };
+    expect(isQuietHour(22, night)).toBe(false);
+    expect(isQuietHour(23, night)).toBe(true);
+    expect(isQuietHour(5, night)).toBe(true);
+    expect(isQuietHour(6, night)).toBe(false);
+    expect(isQuietHour(12, { enabled: false, startHour: 23, endHour: 6 })).toBe(false);
+    expect(isQuietHour(12, { enabled: true, startHour: 9, endHour: 18 })).toBe(true);
+    expect(isQuietHour(8, { enabled: true, startHour: 9, endHour: 18 })).toBe(false);
+    expect(isQuietHour(9, { enabled: true, startHour: 9, endHour: 9 })).toBe(false);
+    expect(isQuietHour(3, null)).toBe(false);
+  });
+
+  it('从设置读取勿扰：默认开启 23–6，显式关闭生效', () => {
+    expect(quietHoursFrom({})).toEqual({ enabled: true, startHour: 23, endHour: 6 });
+    expect(
+      quietHoursFrom({
+        doNotDisturbEnabled: false,
+        doNotDisturbStartHour: 1,
+        doNotDisturbEndHour: 7,
+      }),
+    ).toEqual({ enabled: false, startHour: 1, endHour: 7 });
   });
 });

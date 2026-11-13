@@ -7,6 +7,7 @@ import {
   PET_SCRIPT_ENABLED,
   ScriptDebugPanel,
   useGeneratedScripts,
+  usePetProactivePlayback,
   useScriptDirector,
   useAvatarChibi,
 } from '@/features/avatar';
@@ -85,7 +86,7 @@ export function PetStage({
   const controllerRef = React.useRef<Live2dController | null>(null); usePetPropDebug(controllerRef);
   // v3.0 P0：帧率档位 + 模型命中轮廓上报；P1：10min 无交互入睡
   const frameMode = usePetFrameMode(voiceState);
-  const sleeping = usePetSleep(voiceState);
+  const sleep = usePetSleep(voiceState); const sleeping = sleep.sleeping;
   // v3.5：久无交互背对 / 点击或说话转回
   const faceAway = usePetFaceAway(voiceState);
   const onModelRect = usePetHitProxy(bridge); const generated = useGeneratedScripts(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId));
@@ -98,12 +99,7 @@ export function PetStage({
     lineTimerRef.current = setTimeout(() => setLine(''), durationMs);
   }, []);
 
-  React.useEffect(
-    () => () => {
-      if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
-    },
-    [],
-  );
+  React.useEffect(() => () => { if (lineTimerRef.current) clearTimeout(lineTimerRef.current); }, []);
 
   // 互动短句开关（缺省开）；关闭后摸头只保留弹性/表情，久别不迎接
   const linesEnabled = settings?.interactionLinesEnabled !== false;
@@ -139,6 +135,8 @@ export function PetStage({
     startHour: dndStartHour,
     endHour: dndEndHour,
   });
+  // P8.8：空闲主动播放（扣预算 → 唤醒 → 演出）；交互时刷新空闲计时
+  const markActivity = usePetProactivePlayback({ enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId), canPlay: voiceState === 'idle' && !inDnd, voiceState, scenes: generated.scenes, script, wake: sleep.wake });
   usePetAmbientTalk({
     enabled: linesEnabled && !inDnd,
     sleeping,
@@ -173,6 +171,7 @@ export function PetStage({
   // M1: resolveAndDispatch 正式模式（生产环境也生效），旧 useHeadTouch 逐步退役
   const resolveAndDispatch = React.useCallback(
     (event: InteractionEvent) => {
+      markActivity();
       const ctx = {
         hour: new Date().getHours(),
         capabilities: {
@@ -230,6 +229,7 @@ export function PetStage({
       sleeping,
       faceAway,
       linesEnabled,
+      markActivity,
     ],
   );
 

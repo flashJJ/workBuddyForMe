@@ -2,6 +2,7 @@
 import { enCapabilityTrust, enSettingsWork, zhCapabilityTrust, zhSettingsWork } from './settings-work';
 import { enSettingsSearch, zhSettingsSearch } from './settings-search';
 import { enSettingsScript, zhSettingsScript } from './settings-script';
+import { enSettingsRegistry, zhSettingsRegistry } from './settings-registry';
 export const zhSettings = {
   title: '设置',
   description: '管理模型供应商、默认模型与本地偏好，所有数据仅保存在本机。',
@@ -138,11 +139,11 @@ export const zhSettings = {
   capabilityTrust: zhCapabilityTrust,
   work: zhSettingsWork,
   script: zhSettingsScript,
+  ...zhSettingsRegistry,
 };
 export const enSettings = {
   title: 'Settings',
-  description:
-    'Manage model providers, default models and local preferences. All data stays on this device.',
+  description: 'Manage model providers, default models and local preferences. All data stays on this device.',
   // v2.0 section anchors (right-side nav / scroll-to)
   sections: {
     appearance: 'Theme', avatar: 'Avatar models', motion: 'Motion library',
@@ -175,8 +176,7 @@ export const enSettings = {
   },
   retrieval: {
     title: 'Knowledge retrieval',
-    description:
-      'How knowledge-base answers are retrieved: hybrid semantic vectors + keywords, reranked by relevance.',
+    description: 'How knowledge-base answers are retrieved: hybrid semantic vectors + keywords, reranked by relevance.',
     hybridEnabled: 'Enable hybrid retrieval (vectors + keywords)',
     minSimilarity: 'Similarity floor (0–1)',
     maxChunks: 'Max cited snippets (1–20)',
@@ -191,11 +191,9 @@ export const enSettings = {
   // v1.6 M4 emotion & interaction
   emotion: {
     title: 'Mood & relationship',
-    description:
-      'Your companion builds mood, intimacy and trust over time. All data stays on this device.',
+    description: 'Your companion builds mood, intimacy and trust over time. All data stays on this device.',
     enable: 'Enable emotion engine (detect praise/criticism, build relationship, drive expressions)',
-    enableHint:
-      'When off, no emotion protocol is appended to replies, emotion signals are ignored, and no state is stored.',
+    enableHint: 'When off, no emotion protocol is appended to replies, emotion signals are ignored, and no state is stored.',
     enableLines: 'Interaction lines (head pats and welcome-back greetings, generated locally)',
     enableLinesHint:
       'When off, the character stays silent on pats and reunions (expressions and motions remain). Chat and voice are unaffected.',
@@ -296,4 +294,5 @@ export const enSettings = {
   capabilityTrust: enCapabilityTrust,
   work: enSettingsWork,
   script: enSettingsScript,
+  ...enSettingsRegistry,
 };

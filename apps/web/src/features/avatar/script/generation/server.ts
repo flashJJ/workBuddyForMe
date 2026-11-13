@@ -4,6 +4,7 @@ import { createSettingsRepository, type DatabaseInstance } from '@wbfm/database'
 import {
   createPetScriptScheduler,
   PET_SCRIPT_SCHEDULE_KEY,
+  type QuietHours,
   type ScheduleState,
 } from './schedule';
 import { createPetScriptGenerator } from './service';
@@ -26,6 +27,11 @@ import {
   type StoryState,
 } from './story';
 import {
+  createPetScriptPlaybackService,
+  PET_SCRIPT_PLAYBACK_KEY,
+} from './playback';
+import type { PlaybackState } from './playback';
+import {
   createPetTopicFetcher,
   PET_SCRIPT_TOPICS_KEY,
   type DailyTopics,
@@ -37,6 +43,8 @@ export interface PetScriptServerDeps {
   cipher: SecretCipher;
   /** P8.6：core 联网搜索服务（未配置/失败时自动降级为纯日常剧情） */
   search?: TopicSearch;
+  /** P8.7 打扰预算：勿扰时段内自动生成直接跳过（不消耗次数） */
+  quietHours?: () => QuietHours | null;
 }
 
 /** P8.3–P8.5：服务端装配（settings_kv 持久化队列/用量/剧情/调度） */
@@ -84,9 +92,19 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
 
   const scheduler = createPetScriptScheduler({
     generator,
+    quietHours: deps.quietHours,
     store: {
       load: () => settings.getJson<unknown>(PET_SCRIPT_SCHEDULE_KEY, null),
       save: (state: ScheduleState) => settings.setJson(PET_SCRIPT_SCHEDULE_KEY, state),
+    },
+  });
+
+  const playback = createPetScriptPlaybackService({
+    listScenes: () => generator.list().scenes,
+    quietHours: deps.quietHours,
+    store: {
+      load: () => settings.getJson<unknown>(PET_SCRIPT_PLAYBACK_KEY, null),
+      save: (state: PlaybackState) => settings.setJson(PET_SCRIPT_PLAYBACK_KEY, state),
     },
   });
 
@@ -117,5 +135,5 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
     },
   };
 
-  return { generator, scheduler, journal };
+  return { generator, scheduler, journal, playback };
 }

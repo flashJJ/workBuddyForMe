@@ -30,6 +30,37 @@ export interface PetScriptScheduleStore {
   save(state: ScheduleState): void;
 }
 
+/** 用户设置里的勿扰时段（缺省开启 23:00–06:00） */
+export interface QuietHours {
+  enabled: boolean;
+  startHour: number;
+  endHour: number;
+}
+
+export function isQuietHour(hour: number, quiet: QuietHours | null | undefined): boolean {
+  if (!quiet?.enabled) return false;
+  const { startHour, endHour } = quiet;
+  if (!Number.isFinite(startHour) || !Number.isFinite(endHour) || startHour === endHour) {
+    return false;
+  }
+  return startHour < endHour
+    ? hour >= startHour && hour < endHour
+    : hour >= startHour || hour < endHour;
+}
+
+/** 从 AppSettings 取勿扰配置：关闭开关或字段缺失时按默认 23–6 处理 */
+export function quietHoursFrom(settings: {
+  doNotDisturbEnabled?: boolean;
+  doNotDisturbStartHour?: number;
+  doNotDisturbEndHour?: number;
+}): QuietHours {
+  return {
+    enabled: settings.doNotDisturbEnabled !== false,
+    startHour: settings.doNotDisturbStartHour ?? 23,
+    endHour: settings.doNotDisturbEndHour ?? 6,
+  };
+}
+
 function numberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }

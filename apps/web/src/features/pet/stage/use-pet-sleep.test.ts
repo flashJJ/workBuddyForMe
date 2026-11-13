@@ -13,17 +13,17 @@ describe('usePetSleep（v3.0 P1）', () => {
 
   it('10min 无交互入睡，指针移动立即唤醒', () => {
     const { result } = renderHook(() => usePetSleep('idle'));
-    expect(result.current).toBe(false);
+    expect(result.current.sleeping).toBe(false);
 
     act(() => {
       vi.advanceTimersByTime(PET_SLEEP_AFTER_MS + 30_000);
     });
-    expect(result.current).toBe(true);
+    expect(result.current.sleeping).toBe(true);
 
     act(() => {
       window.dispatchEvent(new Event('pointermove'));
     });
-    expect(result.current).toBe(false);
+    expect(result.current.sleeping).toBe(false);
   });
 
   it('语音非 idle 会唤醒', () => {
@@ -34,10 +34,10 @@ describe('usePetSleep（v3.0 P1）', () => {
     act(() => {
       vi.advanceTimersByTime(PET_SLEEP_AFTER_MS + 30_000);
     });
-    expect(result.current).toBe(true);
+    expect(result.current.sleeping).toBe(true);
 
     rerender({ state: 'speaking' });
-    expect(result.current).toBe(false);
+    expect(result.current.sleeping).toBe(false);
   });
 
   it('持续指针活动保持清醒', () => {
@@ -49,6 +49,16 @@ describe('usePetSleep（v3.0 P1）', () => {
       }
       vi.advanceTimersByTime(60_000);
     });
-    expect(result.current).toBe(false);
+    expect(result.current.sleeping).toBe(false);
+  });
+
+  it('wake() 可主动唤醒（主动播放前）', () => {
+    const { result } = renderHook(() => usePetSleep('idle'));
+    act(() => {
+      vi.advanceTimersByTime(PET_SLEEP_AFTER_MS + 30_000);
+    });
+    expect(result.current.sleeping).toBe(true);
+    act(() => result.current.wake());
+    expect(result.current.sleeping).toBe(false);
   });
 });

@@ -5,7 +5,7 @@ import type {
 } from '@wbfm/shared/schemas';
 import type { PetScriptGenerator } from '../service';
 import { createPetScriptScheduler } from './scheduler';
-import type { ScheduleState } from './schedule';
+import type { QuietHours, ScheduleState } from './schedule';
 
 const USAGE = {
   date: '2026-11-13',
@@ -45,7 +45,12 @@ function okResult(over: Partial<PetScriptGenerationResult> = {}): PetScriptGener
 }
 
 function setup(
-  options: { generated?: PetScriptGenerationResult; initial?: unknown; now?: () => Date } = {},
+  options: {
+    generated?: PetScriptGenerationResult;
+    initial?: unknown;
+    now?: () => Date;
+    quietHours?: () => QuietHours | null;
+  } = {},
 ) {
   let calls = 0;
   const generator: PetScriptGenerator = {
@@ -60,6 +65,7 @@ function setup(
     generator,
     store,
     now: options.now ?? (() => at(10)),
+    quietHours: options.quietHours,
   });
   return { scheduler, store, calls: () => calls };
 }
@@ -115,6 +121,27 @@ describe('定时入口调度器（P8.5）', () => {
     expect(result.issues).toEqual(['重复']);
     expect(result.schedule.runsToday).toBe(1);
     expect(calls()).toBe(1);
+  });
+
+  it('勿扰时段内跳过生成且不消耗次数', async () => {
+    let clock = at(23, 30);
+    const { scheduler, store, calls } = setup({
+      initial: { enabled: true },
+      now: () => clock,
+      quietHours: () => ({ enabled: true, startHour: 23, endHour: 6 }),
+    });
+
+    const quiet = await scheduler.tick();
+    expect(quiet.triggered).toBe(false);
+    expect(quiet.reason).toBe('quiet-hours');
+    expect(quiet.schedule.runsToday).toBe(0);
+    expect(calls()).toBe(0);
+
+    clock = at(7);
+    const woke = await scheduler.tick();
+    expect(woke.triggered).toBe(true);
+    expect(calls()).toBe(1);
+    expect((store.state as ScheduleState).runsToday).toBe(1);
   });
 
   it('开关与每日次数写入持久化状态', () => {

@@ -21,6 +21,7 @@ describe('ScriptSchedulePanel', () => {
   it('读取开关、每日次数与回顾保留，可切换并持久化', async () => {
     let schedule = { enabled: false, perDay: 5, runsToday: 0 };
     let journal = { retentionDays: null as number | null };
+    let playback = { perDay: 3, playsToday: 0, idleMinutes: 10, playedSceneIds: [] as string[] };
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/pet/script' && (!init || init.method === 'GET')) {
         return ok({
@@ -47,6 +48,12 @@ describe('ScriptSchedulePanel', () => {
         }
         return ok(journal);
       }
+      if (url === '/api/pet/script/playback') {
+        if (init?.method === 'POST') {
+          playback = { ...playback, ...(JSON.parse(String(init.body ?? '{}')) as object) };
+        }
+        return ok(playback);
+      }
       return ok(null);
     });
 
@@ -55,10 +62,14 @@ describe('ScriptSchedulePanel', () => {
     const checkbox = await screen.findByTestId('script-schedule-enabled');
     const perDay = screen.getByTestId('script-schedule-per-day');
     const retention = screen.getByTestId('journal-retention');
+    const playbackPerDay = screen.getByTestId('playback-per-day');
     expect(checkbox).not.toBeChecked();
     expect(perDay).toHaveValue('5');
     expect(retention).toHaveValue('forever');
+    expect(playbackPerDay).toHaveValue('3');
+    expect(screen.getByTestId('playback-idle')).toHaveValue('10');
     await screen.findByText('今日已自动生成 0/5 次');
+    await screen.findByText('今日已主动播放 0/3 场');
 
     await userEvent.setup().click(checkbox);
 
@@ -86,6 +97,14 @@ describe('ScriptSchedulePanel', () => {
         method: 'POST',
         body: JSON.stringify({ retentionDays: 30 }),
       }),
+    );
+
+    await userEvent.setup().selectOptions(playbackPerDay, '2');
+
+    await waitFor(() => expect(playbackPerDay).toHaveValue('2'));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/pet/script/playback',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ perDay: 2 }) }),
     );
   });
 });
