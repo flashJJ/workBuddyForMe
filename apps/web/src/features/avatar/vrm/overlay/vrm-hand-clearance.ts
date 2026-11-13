@@ -7,7 +7,7 @@ import {
   clearanceTarget,
   DEFAULT_HAND_CLEARANCE,
   type HandClearanceParams,
-} from '../../animation/liveliness';
+} from '../../animation/liveliness/hand-clearance';
 import type { VrmAnimationRuntime } from '../../animation/adapters/vrm';
 
 /**
