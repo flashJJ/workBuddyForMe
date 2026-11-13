@@ -1,4 +1,5 @@
-// 开发态启动器：拉起 Next dev → 轮询 3000 就绪 → 启动 Electron
+// 开发态启动器：拉起 Next dev → 轮询端口就绪 → 启动 Electron
+// 端口约定：42337（Web dev）/ 42338（CDP），避开 3000 与 Windows 动态端口段。
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
@@ -7,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const desktopDir = path.resolve(here, '..');
 const repoRoot = path.resolve(desktopDir, '..', '..');
-const devPort = process.env.WBFM_DEV_PORT ?? '3000';
+const devPort = process.env.WBFM_DEV_PORT ?? '42337';
+const debugPort = process.env.WBFM_DEBUG_PORT ?? '42338';
 const devUrl = `http://127.0.0.1:${devPort}`;
 const READY_TIMEOUT_MS = 90_000;
 
@@ -41,11 +43,11 @@ async function main() {
   // apps/desktop/node_modules/.bin 下不存在，因此必须从 repoRoot 解析绝对路径。
   const binName = process.platform === 'win32' ? 'electron.cmd' : 'electron';
   const bin = path.join(repoRoot, 'node_modules', '.bin', binName);
-  const electron = spawn(`"${bin}" . --remote-debugging-port=9222 --no-proxy-server`, {
+  const electron = spawn(`"${bin}" . --remote-debugging-port=${debugPort} --no-proxy-server`, {
     cwd: desktopDir,
     shell: true,
     stdio: 'inherit',
-    env: { ...process.env, WBFM_DEV: '1', WBFM_DEV_SERVER_URL: devUrl },
+    env: { ...process.env, WBFM_DEV: '1', WBFM_DEV_SERVER_URL: devUrl, WBFM_DEBUG_PORT: debugPort },
   });
 
   electron.on('exit', (code) => shutdown(code ?? 0));

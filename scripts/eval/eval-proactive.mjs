@@ -21,7 +21,7 @@ import { ensureMockStack } from './lib/mock-seed.mjs';
 const PROACTIVE_PREFIX = 'proactive-';
 
 function parseArgs(argv) {
-  const args = { baseUrl: process.env.WBFM_BASE_URL ?? 'http://127.0.0.1:3000', out: null };
+  const args = { baseUrl: process.env.WBFM_BASE_URL ?? 'http://127.0.0.1:42337', out: null };
   for (const arg of argv.slice(2)) {
     if (arg.startsWith('--base-url=')) args.baseUrl = arg.slice('--base-url='.length);
     else if (arg.startsWith('--out=')) args.out = arg.slice('--out='.length);

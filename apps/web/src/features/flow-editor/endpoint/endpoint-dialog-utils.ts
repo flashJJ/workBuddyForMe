@@ -9,7 +9,7 @@ export const TIMEOUT_OPTIONS = [5_000, 10_000, 30_000, 60_000, 120_000];
 /** 对外服务 API 的本机基础地址（SSR 下回退到默认端口） */
 export function getEndpointBaseUrl(): string {
   return typeof window === 'undefined'
-    ? 'http://127.0.0.1:3000/api/public'
+    ? 'http://127.0.0.1:42337/api/public'
     : `${window.location.origin}/api/public`;
 }
 

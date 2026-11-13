@@ -12,7 +12,7 @@ import {
 } from './window-state';
 
 export interface WindowBootInfo {
-  /** 生产态托管服务地址；开发态传 null 加载 localhost:3000 */
+  /** 生产态托管服务地址；开发态传 null 加载本机 dev server（默认 42337） */
   url: string;
   /** 注入 preload 的一次性令牌（仅生产态） */
   token?: string;

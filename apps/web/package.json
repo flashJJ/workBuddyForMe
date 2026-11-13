@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "dev": "next dev -H 127.0.0.1 -p 42337",
     "build": "node scripts/build.mjs && node scripts/build-mcp-server.mjs",
     "mcp:build": "node scripts/build-mcp-server.mjs",
     "mcp:stdio": "node .next/mcp-server/mcp-server.cjs",
-    "start": "next start -H 127.0.0.1 -p 3000",
+    "start": "next start -H 127.0.0.1 -p 42337",
     "typecheck": "tsc --noEmit && tsc --noEmit -p ../../tests/e2e/tsconfig.json",
     "lint": "next lint",
     "test": "vitest run",

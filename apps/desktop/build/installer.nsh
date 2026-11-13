@@ -12,7 +12,7 @@
 ; 注意 2：数据路径有两个真实位置（v1.2 真机验收核实，勿用 productName 猜）：
 ;   %APPDATA%\@wbfm\desktop        Electron userData（appId=com.wbfm.desktop），
 ;                                  打包态数据根 userData/data、pet/updater/窗口状态均在此
-;   %USERPROFILE%\.workbuddy-for-me  dev:3000 与显式 WBFM_DATA_ROOT 共用的数据根
+;   %USERPROFILE%\.workbuddy-for-me  开发态与显式 WBFM_DATA_ROOT 共用的数据根
 ; ------------------------------------------------------------------
 
 !include "LogicLib.nsh"
