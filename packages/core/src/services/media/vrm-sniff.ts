@@ -7,7 +7,26 @@ import { isGlbContainer, readExtensionsUsed, readGlbJson } from './glb';
 
 export interface VrmSniffResult {
   ok: boolean;
-  reason?: 'not_glb' | 'not_vrm_extension' | 'parse_failed';
+  reason?: 'not_glb' | 'not_vrm_extension' | 'parse_failed' | 'broken_references';
+}
+
+/**
+ * 引用越界校验：部分导出器/精简工具会删掉 bufferView 却保留 image/accessor 引用，
+ * GLTFLoader 会在加载纹理时抛 `Cannot read properties of undefined (reading 'extensions')`。
+ * 这里在导入阶段就拒绝，避免把坏文件写进库。
+ */
+function hasDanglingReferences(json: Record<string, unknown>): boolean {
+  const bufferViews = Array.isArray(json.bufferViews) ? json.bufferViews : [];
+  const images = Array.isArray(json.images) ? json.images : [];
+  const accessors = Array.isArray(json.accessors) ? json.accessors : [];
+  const textures = Array.isArray(json.textures) ? json.textures : [];
+  const invalid = (value: unknown, max: number) =>
+    typeof value === 'number' && (value < 0 || value >= max);
+  return (
+    images.some((item) => invalid((item as { bufferView?: unknown }).bufferView, bufferViews.length)) ||
+    accessors.some((item) => invalid((item as { bufferView?: unknown }).bufferView, bufferViews.length)) ||
+    textures.some((item) => invalid((item as { source?: unknown }).source, images.length))
+  );
 }
 
 export function sniffVrm(buffer: ArrayBuffer): VrmSniffResult {
@@ -18,6 +37,7 @@ export function sniffVrm(buffer: ArrayBuffer): VrmSniffResult {
   if (!exts.includes('VRMC_vrm') && !exts.includes('VRM')) {
     return { ok: false, reason: 'not_vrm_extension' };
   }
+  if (hasDanglingReferences(json)) return { ok: false, reason: 'broken_references' };
   return { ok: true };
 }
 

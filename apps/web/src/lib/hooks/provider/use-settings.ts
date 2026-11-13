@@ -25,6 +25,9 @@ function broadcastSettingsChanged(): void {
   channel.close();
 }
 
+/** 语音设置等其他设置域更新后也走同一条广播（桌宠大小等需要跨窗口即时生效） */
+export { broadcastSettingsChanged };
+
 /** 在需要跟随设置变化的独立窗口里调用（桌宠等）；主窗自身靠 mutation 失效即可 */
 export function useSettingsSync(): void {
   const qc = useQueryClient();
@@ -33,6 +36,7 @@ export function useSettingsSync(): void {
     const channel = new BroadcastChannel(SETTINGS_SYNC_CHANNEL);
     const onMessage = () => {
       void qc.invalidateQueries({ queryKey: QUERY_KEYS.settings });
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.voiceSettings });
     };
     channel.addEventListener('message', onMessage);
     return () => {

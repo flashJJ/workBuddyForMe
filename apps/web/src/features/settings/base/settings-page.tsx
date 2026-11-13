@@ -48,15 +48,26 @@ import { AgentGovernanceSection } from '../tools/agent-governance-section';
 import { BranchLimitsPanel } from '../branch/limits-panel';
 
 /**
- * 设置页 4 大分组（右侧 sticky 锚点导航）：
- * - appearance 形象外观：命名主题、VRM 导入与列表
- * - dialog 对话互动：语音偏好、情绪内核、关系等级、剧情事件、提醒、关系报告
- * - tools 工具与权限：MCP 服务器、工具权限/熔断/调试、技能包、参数调优
- * - data 数据与备份：角色卡、知识检索、个性化包、记忆、备份、关于
+ * 设置页分组（右侧 sticky 锚点导航）：
+ * 主题外观 / 形象模型 / 动作库 / 语音与对话 / 情绪与关系 / 事件与提醒 /
+ * 工具与权限 / 技能与智能体 / 数据与备份 / 帮助与关于。
+ * 分组只影响导航与标题，面板本身仍由 PanelVisibilityGate 统一控制显隐。
  */
+type SettingsSectionId =
+  | 'appearance'
+  | 'avatar'
+  | 'motion'
+  | 'voice'
+  | 'emotion'
+  | 'events'
+  | 'tools'
+  | 'agents'
+  | 'data'
+  | 'about';
+
 interface SettingsSection {
-  id: 'appearance' | 'dialog' | 'tools' | 'data';
-  labelKey: `settings.sections.${'appearance' | 'dialog' | 'tools' | 'data'}`;
+  id: SettingsSectionId;
+  labelKey: `settings.sections.${SettingsSectionId}`;
   panels: React.ReactNode[];
 }
 
@@ -88,27 +99,37 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
     {
       id: 'appearance',
       labelKey: 'settings.sections.appearance',
+      panels: [<AppearancePanel key="appear" />],
+    },
+    {
+      id: 'avatar',
+      labelKey: 'settings.sections.avatar',
+      panels: [<VrmImportSection key="vrm-import" />, <VrmAvatarList key="vrm-list" />],
+    },
+    {
+      id: 'motion',
+      labelKey: 'settings.sections.motion',
+      panels: [<MotionImportSection key="motion-import" />, <MotionList key="motion-list" />],
+    },
+    {
+      id: 'voice',
+      labelKey: 'settings.sections.voice',
+      panels: [<VoicePreferencePanel key="voice" />, <WorkSignalPanel key="work-signal" />],
+    },
+    {
+      id: 'emotion',
+      labelKey: 'settings.sections.emotion',
       panels: [
-        <AppearancePanel key="appear" />,
-        <VrmImportSection key="vrm-import" />,
-        <VrmAvatarList key="vrm-list" />,
-        <MotionImportSection key="motion-import" />,
-        <MotionList key="motion-list" />,
+        <EmotionPanel key="emotion" />,
+        <RelationshipPanel key="relationship" />,
+        <RelationshipReportPanel key="report" />,
+        <InteractionGraphPanel key="interaction-graph" />,
       ],
     },
     {
-      id: 'dialog',
-      labelKey: 'settings.sections.dialog',
-      panels: [
-        <VoicePreferencePanel key="voice" />,
-        <EmotionPanel key="emotion" />,
-        <InteractionGraphPanel key="interaction-graph" />,
-        <WorkSignalPanel key="work-signal" />,
-        <RelationshipPanel key="relationship" />,
-        <EventPanel key="events" />,
-        <RelationshipReportPanel key="report" />,
-        <ReminderPanel key="reminder" />,
-      ],
+      id: 'events',
+      labelKey: 'settings.sections.events',
+      panels: [<EventPanel key="events" />, <ReminderPanel key="reminder" />],
     },
     {
       id: 'tools',
@@ -119,11 +140,17 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         <PermissionPanel key="perm" />,
         <ToolBreakerPanel key="breaker" />,
         <ToolDebugPanel key="tool-debug" />,
-        <SkillsPanel key="skills" />,
-        <SubagentPanel key="subagent" />,
         <CapabilityTrustSection key="capability-trust" />,
         <AgentGovernanceSection key="agent-governance" />,
         <BranchLimitsPanel key="branch-limits" />,
+      ],
+    },
+    {
+      id: 'agents',
+      labelKey: 'settings.sections.agents',
+      panels: [
+        <SkillsPanel key="skills" />,
+        <SubagentPanel key="subagent" />,
         <TuningPanel key="tuning" />,
       ],
     },
@@ -138,9 +165,12 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         <BackupPanel key="backup" />,
         <ArtifactPackPanel key="artifact-pack" />,
         <StorageCleanupPanel key="storage-cleanup" />,
-        <HelpCenterPanel key="help" />,
-        <AboutPanel key="about" />,
       ],
+    },
+    {
+      id: 'about',
+      labelKey: 'settings.sections.about',
+      panels: [<HelpCenterPanel key="help" />, <AboutPanel key="about" />],
     },
   ];
 
