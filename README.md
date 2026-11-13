@@ -119,7 +119,7 @@ docs/         架构、开发、模块与版本方案
 # 安装依赖
 pnpm install
 
-# Web 开发模式（仅监听 127.0.0.1:3000）
+# Web 开发模式（仅监听 127.0.0.1:42337）
 pnpm dev:web
 
 # 桌面开发模式（自动等待 Next 就绪后启动 Electron）
@@ -138,13 +138,13 @@ pnpm dev:desktop
 
 ```powershell
 # 同步调用（超时自动转异步，响应头 X-WBFM-Async=1）
-curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<key>/invoke" `
+curl.exe -X POST "http://127.0.0.1:42337/api/public/flows/<key>/invoke" `
   -H "Authorization: Bearer <key>" -H "Content-Type: application/json" -d '{}'
 
 # 异步调用 + 轮询
-curl.exe -X POST "http://127.0.0.1:3000/api/public/flows/<key>/invoke?mode=async" `
+curl.exe -X POST "http://127.0.0.1:42337/api/public/flows/<key>/invoke?mode=async" `
   -H "Authorization: Bearer <key>" -H "Content-Type: application/json" -d '{}'
-curl.exe "http://127.0.0.1:3000/api/public/flows/<key>/runs/<runId>" `
+curl.exe "http://127.0.0.1:42337/api/public/flows/<key>/runs/<runId>" `
   -H "Authorization: Bearer <key>"
 ```
 
@@ -152,7 +152,7 @@ MCP 接入（支持 MCP 的客户端，或本应用「设置 → MCP 服务器�
 
 ```json
 {
-  "url": "http://127.0.0.1:3000/api/public/mcp",
+  "url": "http://127.0.0.1:42337/api/public/mcp",
   "headers": { "Authorization": "Bearer <key>" }
 }
 ```
@@ -201,4 +201,4 @@ v2.22.2 发布验证：CI 打包日志确认 `pm=pnpm`（packageManager 字段�
 
 代码采用 **PolyForm Noncommercial License 1.0.0**（见根 `LICENSE`），仅限非商业用途，不提供任何担保。
 
-内置角色「雪团」VRM 模型（`apps/web/public/vrm/models/xuetuan.vrm`）单独采用 **CC BY-NC-SA 4.0**，作者为 WorkBuddyForMe / 黄俊杰-flash；该模型不适用上述代码许可，详见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
+内置角色 VRM 模型「鲸鱼娘-雪团」（`apps/web/public/vrm/models/xuetuan.vrm`）、「运动健将-冉卡露丽」（`apps/web/public/vrm/models/rankaluli.vrm`）与「兔耳娘-菲比」（`apps/web/public/vrm/models/feibi.vrm`）单独采用 **CC BY-NC-SA 4.0**，不适用上述代码许可，详见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
