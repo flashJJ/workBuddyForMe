@@ -48,6 +48,33 @@
 
 ## 工作日志
 
+### 2026-11-13 P8.6 长剧本 + 每日时事 + 额度扩容
+
+- 长度：生成契约改为 60–180 秒（8–80 beats、至少 3 条台词、允许 wait 停顿）；校验拒绝过短/过长/beat 不足；cooldown 收紧到 2–30 分钟。
+- 时事：新增 `generation/topics/`；每日话题优先百度热搜（更贴近当天），失败/为空时退回设置里的联网搜索（SearXNG/Brave/Tavily）；按生活/科技/文娱/天气/交通白名单过滤，同日缓存、失败 30 分钟后重试；标题以「今日时事」注入 user prompt，规则要求轻量影射不复述原文。
+- 搜索：本机 SearXNG（127.0.0.1:42390，容器 `wbfm-searxng`，支持自定义端口）已写入设置，`/api/search/test` 返回可用；SearXNG provider 补 `time_range`，让 freshness 真正生效。
+- 额度：每日调用 3→8、估算 token 20k→60k、队列 6→10。
+- 验证：generation 42 项（含 topics 7 项）、shared 385 项通过；结构/行数门禁通过；真机生成 `gen.cool-down-wardrobe`（22 beats / 90 秒 / 6 句台词 / 3 次停顿，源自热搜「大回暖后迎大降温」），19 个非 wait cue 全部执行，结束无残留、无控制台错误。
+- 备注：Bing News RSS 在 Node 下会被重定向到首页（PowerShell 走系统代理才成功），因此兜底改用百度热搜。
+- 下一步：P8.6 回顾页与设置页自动生成开关。
+
+### 2026-11-13 P8.6 剧情母题去重 + 道具扩容
+
+- 背景：连续三场生成都围绕茶/饮水，原因是续接规则优先收旧悬念，且道具白名单只有 teacup/bowl/book/table。
+- 剧情状态：`story/threads.ts` 增加每场 `props/linePools` 记录与 `recentProps` 摘要；`findDuplicate` 拦截最近 2 场重复道具（resolves 收线场例外）；开放线索连续 2 场后，下一场必须收线，收旧开新会重置场次。
+- 提示词：`protocol.ts` 新增规则 11/12；`story/context.ts` 注入线索场次（n/3）、最近道具与台词池。
+- 道具资产：重写 `scripts/avatar/generate-props.mjs`，茶杯/碗/书/桌改用带内壁、圆角与双色材质；新增 `phone`、`flower`（hand）与 `cushion`、`lamp`（stage），共 8 个道具；dev 快捷键 5/6/7/8 可预览。
+- 验证：story 7 项、service 7 项、props 8 项、generation + validation 共 54 项通过；结构/行数/循环门禁通过。
+- 真机：新提示词生成 `gen.offwork-glance`（下班题材，phone + lamp，17 beats / 4269 tok），17/17 cue 全部执行，手机/台灯按 4.6s/9.6s 出现、13.2s/16.4s 收起，结束回到待机，无控制台错误。
+- 仍存在：`behavior.chin-rest` 与右手道具（茶杯/手机）同时出现时，行为会被道具抢占到收道具后才可见；后续在生成器提示词或 FrameLedger 仲裁里限制。
+- 下一步：P8.6 回顾页与设置页自动生成开关；道具可继续替换为外部 CC0 GLB（保持文件名与原点约定）。
+
+### 2026-11-13 SearXNG 一键部署支持自定义端口
+
+- 部署：`searxng-deploy.ts` 接受 `requestedPort`（1024–65535），端口被占用直接失败；已有容器端口不一致时 `docker rm -f` 后按新端口重建；端口探测拆到 `searxng-port.ts`。
+- 链路：shared bridge / preload 的 `deploySearxng(port?)` 打通，设置页新增端口输入（留空自动选择），非法端口前端提示。
+- 验证：本机容器重建为 `127.0.0.1:42390 -> 8080`，`deploySearxng(80)` 返回端口校验失败，`deploySearxng(42390)` 返回 ok，`/api/search/test` 可用。
+
 ### 2026-11-13 规划：新增 P8 AI 剧情推进器
 
 - 背景：对比 dsh-pet「几百个动画堆剧情」的路线，确定本项目走「动作原语 + 剧本编排」的组合路线。
