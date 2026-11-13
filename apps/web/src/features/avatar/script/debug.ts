@@ -15,6 +15,8 @@ export interface PetScriptDebugApi {
   readonly seed: number;
   /** M0c：当前行为 id/阶段/轨道权重与最近 10 条过渡 */
   readonly behaviors: BehaviorDebugSnapshot | null;
+  /** P3：仅 dev 的手动播放入口（干饭/被叫胖暂无触发键） */
+  playScene(sceneId: string): boolean;
   /** dev 诊断：playEvent 调用次数 */
   events: number;
   /** dev 诊断：被 Director 接受（或场景存在但被门控）的次数 */
@@ -35,12 +37,14 @@ type DebugWindow = Window & { __petDebug?: PetScriptDebugApi };
 export function installPetScriptDebug(
   director: PetScriptDebugSource,
   sceneIds: readonly string[],
+  playScene: (sceneId: string) => boolean = () => false,
 ): (() => void) | null {
   if (process.env.NODE_ENV === 'production') return null;
   const target = window as DebugWindow;
   const previous = target.__petDebug;
   const api: PetScriptDebugApi = {
     scenes: sceneIds,
+    playScene,
     events: 0,
     handled: 0,
     lastTrigger: null,

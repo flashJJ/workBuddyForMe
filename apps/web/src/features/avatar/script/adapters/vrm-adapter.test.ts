@@ -11,8 +11,11 @@ class FakeController implements VrmCueTarget {
   gesture: { gesture: ScriptGesture; intensity?: number } | null = null;
   motion: { motion: string; loop?: boolean; fadeMs?: number } | null = null;
   behavior: string | null = null;
+  stoppedBehavior: string | null = null;
+  stopClearQueue = false;
   sleeping: boolean | null = null;
   faceAway: boolean | null = null;
+  seat: 'sill' | 'desk' | null = null;
 
   playSquash(): void {
     this.calls.push('squash');
@@ -59,15 +62,37 @@ class FakeController implements VrmCueTarget {
     return true;
   }
 
+  stoppedScriptMotion: Array<string | null> = [];
+
+  stopScriptMotion(motion?: string): boolean {
+    this.calls.push('stopScriptMotion');
+    this.stoppedScriptMotion.push(motion ?? null);
+    return true;
+  }
+
   playBehavior(behavior: string): boolean {
     this.calls.push('behavior');
     this.behavior = behavior;
     return true;
   }
+
+  stopBehavior(behavior?: string, clearQueue?: boolean): boolean {
+    this.calls.push('stopBehavior');
+    this.stoppedBehavior = behavior ?? null;
+    this.stopClearQueue = clearQueue ?? false;
+    if (behavior && this.behavior && behavior !== this.behavior) return false;
+    this.behavior = null;
+    return true;
+  }
+
+  setSeat(mode: 'sill' | 'desk' | null): void {
+    this.calls.push('seat');
+    this.seat = mode;
+  }
 }
 
-function entryOf(cue: Cue): CueLogEntry {
-  return { sceneId: 'test.scene', at: 0, beatAt: 0, track: 'body', cue };
+function entryOf(cue: Cue, sceneId = 'test.scene'): CueLogEntry {
+  return { sceneId, at: 0, beatAt: 0, track: 'body', cue };
 }
 
 function setup(overrides: Partial<ConstructorParameters<typeof VrmCueAdapter>[0]> = {}) {
@@ -102,6 +127,25 @@ describe('VrmCueAdapter（cue → 现有控制器）', () => {
     expect(controller.calls).toEqual(['sleeping', 'sleeping', 'faceAway', 'faceAway']);
     expect(controller.sleeping).toBe(false);
     expect(controller.faceAway).toBe(false);
+  });
+
+  it('坐姿预设映射 setSeat，stand 恢复站立', () => {
+    const { controller, adapter } = setup();
+    adapter.execute(entryOf({ kind: 'pose', preset: 'sit-sill' }), () => 0);
+    expect(controller.seat).toBe('sill');
+    adapter.execute(entryOf({ kind: 'pose', preset: 'sit-desk' }), () => 0);
+    expect(controller.seat).toBe('desk');
+    adapter.execute(entryOf({ kind: 'pose', preset: 'stand' }), () => 0);
+    expect(controller.seat).toBeNull();
+  });
+
+  it('坐姿场景结束/被打断时恢复站立，其他场景不动坐姿', () => {
+    const { controller, adapter } = setup();
+    adapter.execute(entryOf({ kind: 'pose', preset: 'sit-sill' }), () => 0);
+    adapter.end('other.scene', 'complete');
+    expect(controller.seat).toBe('sill');
+    adapter.end('test.scene', 'cancel');
+    expect(controller.seat).toBeNull();
   });
 
   it('未知 pose 预设 warn 后跳过，不影响后续 cue', () => {
@@ -167,12 +211,48 @@ describe('VrmCueAdapter（cue → 现有控制器）', () => {
     expect(controller.motion).toEqual({ motion: 'motion:wave.vrma', loop: true, fadeMs: 200 });
   });
 
+  it('motion 随场景结束停止；共用同一动作时不抢停', () => {
+    const { controller, adapter } = setup();
+    adapter.execute(entryOf({ kind: 'motion', motion: 'motion.wave', loop: true }, 'a'), () => 0);
+    adapter.execute(entryOf({ kind: 'motion', motion: 'motion.wave', loop: true }, 'b'), () => 0);
+    adapter.end('a', 'complete');
+    expect(controller.stoppedScriptMotion).toEqual([]);
+    adapter.end('b', 'complete');
+    expect(controller.stoppedScriptMotion).toEqual(['motion.wave']);
+  });
+
   it('behavior 走分层行为执行器（behavior.*）', () => {
     const { controller, adapter } = setup();
     adapter.execute(entryOf({ kind: 'behavior', behavior: 'behavior.lifted' }), () => 0);
     adapter.execute(entryOf({ kind: 'behavior', behavior: 'behavior.land' }), () => 0);
     expect(controller.calls).toEqual(['behavior', 'behavior']);
     expect(controller.behavior).toBe('behavior.land');
+  });
+
+  it('场景结束时停掉该场景启动的行为', () => {
+    const { controller, adapter } = setup();
+    adapter.execute(entryOf({ kind: 'behavior', behavior: 'behavior.eat-rice' }), () => 0);
+    adapter.end('test.scene', 'complete');
+    expect(controller.calls).toEqual(['behavior', 'stopBehavior']);
+    expect(controller.stoppedBehavior).toBe('behavior.eat-rice');
+    expect(controller.stopClearQueue).toBe(true);
+    expect(controller.behavior).toBeNull();
+  });
+
+  it('多场景逐个结束：只停本场景行为，另一个场景的行为不被抢停', () => {
+    const { controller, adapter } = setup();
+    adapter.execute(entryOf({ kind: 'pose', preset: 'squash' }), () => 0);
+    adapter.end('test.scene', 'complete');
+    expect(controller.calls).toEqual(['squash']);
+
+    adapter.execute({ ...entryOf({ kind: 'behavior', behavior: 'behavior.a' }), sceneId: 'a' }, () => 0);
+    adapter.execute({ ...entryOf({ kind: 'behavior', behavior: 'behavior.b' }), sceneId: 'b' }, () => 0);
+    adapter.end('a', 'preempt');
+    expect(controller.stoppedBehavior).toBe('behavior.a');
+    expect(controller.behavior).toBe('behavior.b');
+    adapter.end('b', 'complete');
+    expect(controller.stoppedBehavior).toBe('behavior.b');
+    expect(controller.behavior).toBeNull();
   });
 
   it('控制器缺少手势/动作/行为能力时 warn 跳过，不抛错', () => {

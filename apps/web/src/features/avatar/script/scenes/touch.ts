@@ -17,11 +17,15 @@ export const TOUCH_SCENES: readonly Scene[] = [
     priority: 1,
     cooldownMs: 500,
     interrupt: 'all',
+    // P3：被摸头改由 behavior.head-pat 主导（缩脖偏头 → 蹭手 → 回站姿）；
+    // 不再发 pose:tap，避免 react-flinch 与行为抢上半身。
     beats: [
       { at: 0, cue: { kind: 'pose', preset: 'squash' } },
-      { at: 0, cue: { kind: 'pose', preset: 'tap' } },
+      { at: 0, cue: { kind: 'behavior', behavior: 'behavior.head-pat' } },
       { at: 0, cue: { kind: 'expression', tag: 'joy', holdMs: 2600 } },
       { at: 0, cue: { kind: 'line', pool: 'head-tap' } },
+      // 收尾锚点：2.8s 后场景结束，适配器据此停行为并回站姿
+      { at: 2800, cue: { kind: 'look', target: 'camera' } },
     ],
   },
   {
@@ -81,7 +85,6 @@ export const TOUCH_SCENES: readonly Scene[] = [
     priority: 1,
     cooldownMs: 1500,
     interrupt: 'all',
-    gating: { level: { min: 'partner' } },
     beats: [
       { at: 0, cue: { kind: 'pose', preset: 'squash' } },
       { at: 0, cue: { kind: 'expression', tag: 'surprise', holdMs: 2000 } },

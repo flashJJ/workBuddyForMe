@@ -43,7 +43,6 @@ function observeCue(cue: Cue): ObservedCue | null {
 }
 
 const PAIRS: ReadonlyArray<[ActionChainId, string]> = [
-  ['head-tap', 'touch.head-tap'],
   ['head-longpress', 'touch.head-longpress'],
   ['body-tap', 'touch.body-tap'],
   ['body-longpress', 'touch.body-longpress'],
@@ -51,7 +50,8 @@ const PAIRS: ReadonlyArray<[ActionChainId, string]> = [
   ['raised-tap', 'touch.raised-tap'],
 ];
 
-describe('6 条触摸链的 golden 等价', () => {
+describe('5 条触摸链的 golden 等价', () => {
+  // P3：head-tap 已升级为 behavior.head-pat 主导，不再与旧链逐条等价（见 moments.test.ts）。
   for (const [chainId, sceneId] of PAIRS) {
     it(`${sceneId} ↔ ${chainId}`, () => {
       const recorder = new CueRecorder({ now: () => 0 });
@@ -75,9 +75,18 @@ describe('6 条触摸链的 golden 等价', () => {
 
 describe('内置场景注册表', () => {
   it('按 id 与触发键可查，触发键候选按优先级升序', () => {
-    expect(BUILT_IN_SCENE_REGISTRY.list()).toHaveLength(13);
+    expect(BUILT_IN_SCENE_REGISTRY.list()).toHaveLength(26);
     expect(BUILT_IN_SCENE_REGISTRY.get('touch.head-tap')?.cooldownMs).toBe(500);
     expect(BUILT_IN_SCENE_REGISTRY.get('missing')).toBeNull();
+    expect(BUILT_IN_SCENE_REGISTRY.byTrigger('touch::body::tap').map((s) => s.id)).toEqual([
+      'touch.body-tap',
+      'moment.bow',
+      'moment.hands-on-hips',
+      'moment.chin-rest',
+      'moment.yawn',
+      'moment.hug',
+      'moment.tea',
+    ]);
     expect(BUILT_IN_SCENE_REGISTRY.byTrigger('touch::body::double').map((s) => s.id)).toEqual([
       'touch.body-double',
     ]);
@@ -87,12 +96,10 @@ describe('内置场景注册表', () => {
     expect(BUILT_IN_SCENE_REGISTRY.byTrigger('touch::missing::tap')).toEqual([]);
   });
 
-  it('保留旧动画图的关系门槛', () => {
+  it('保留 head-longpress 关系门槛；拎起询问对所有关系开放', () => {
     expect(BUILT_IN_SCENE_REGISTRY.get('touch.head-longpress')?.gating).toEqual({
       level: { min: 'acquaintance' },
     });
-    expect(BUILT_IN_SCENE_REGISTRY.get('touch.raised-tap')?.gating).toEqual({
-      level: { min: 'partner' },
-    });
+    expect(BUILT_IN_SCENE_REGISTRY.get('touch.raised-tap')?.gating).toBeUndefined();
   });
 });
