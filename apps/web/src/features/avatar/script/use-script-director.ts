@@ -17,6 +17,7 @@ import {
   type ScriptGesture,
 } from '@wbfm/shared/schemas';
 import type { MessageKey } from '@wbfm/shared/i18n';
+import { apiPost } from '@/lib/api/client';
 import { VrmCueAdapter } from './adapters/vrm-adapter';
 import {
   ScriptDirector,
@@ -29,6 +30,12 @@ import { BUILT_IN_SCENES } from './scenes';
 import { validateScenes } from './validation/validate';
 
 export const PET_SCRIPT_ENABLED = process.env.NEXT_PUBLIC_WBFM_PET_SCRIPT === '1';
+
+/** P8.6：生成场景开始播放时写日记；失败静默，绝不阻塞表演 */
+function reportScriptPlay(sceneId: string): void {
+  if (!sceneId.startsWith('gen.')) return;
+  void apiPost('/api/pet/script/journal', { sceneId }).catch(() => {});
+}
 
 /** PetStage 控制器的最小结构（VRM/Live2D 均结构兼容；缺失能力静默降级） */
 export interface ScriptControllerHandle {
@@ -167,7 +174,9 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
       const director = directorRef.current;
       if (!director) return false;
       const ctx = lastCtxRef.current ?? fallbackCtx();
-      return director.play(sceneId, { ...ctx, random: Math.random });
+      const started = director.play(sceneId, { ...ctx, random: Math.random });
+      if (started) reportScriptPlay(sceneId);
+      return started;
     },
     [fallbackCtx],
   );
@@ -215,6 +224,7 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
         if (director.play(scene.id, scriptCtx)) {
           rotationRef.current[trigger] = (index + 1) % candidates.length;
           if (debug) debug.handled += 1;
+          reportScriptPlay(scene.id);
           return true;
         }
       }

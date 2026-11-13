@@ -104,10 +104,17 @@ export interface PetScriptGenerationView {
   story: PetScriptStorySummary;
 }
 
+/** P8.5/P8.6：每日自动生成次数限制（设置页可配置，0 = 不生成） */
+export const PET_SCRIPT_SCHEDULE_LIMITS = {
+  defaultPerDay: 5,
+  minPerDay: 0,
+  maxPerDay: 24,
+} as const;
+
 /** P8.5：每日自动生成摘要（默认关闭） */
 export interface PetScriptScheduleSummary {
   enabled: boolean;
-  /** 每日计划次数（当前固定 2，对应 10 点 / 16 点两个窗口） */
+  /** 每日计划次数（默认 5，可在设置页配置 0–24） */
   perDay: number;
   /** 今日已自动生成次数 */
   runsToday: number;
@@ -126,7 +133,68 @@ export interface PetScriptTickResult extends PetScriptStatusView {
   issues: string[];
 }
 
-export const petScriptScheduleRequestSchema = z.object({
-  enabled: z.boolean(),
+/** P8.6：剧情日记保留天数候选（null = 永久保留，默认） */
+export const PET_SCRIPT_JOURNAL_RETENTION_OPTIONS = [7, 30, 90, 365] as const;
+export const PET_SCRIPT_JOURNAL_MAX_RETENTION_DAYS = 3650;
+/** 默认永久保留（null），用户可在设置页改 */
+export const PET_SCRIPT_JOURNAL_DEFAULT_RETENTION: number | null = null;
+
+export interface PetScriptJournalSettings {
+  /** 保留天数；null = 永久保留（默认） */
+  retentionDays: number | null;
+}
+
+export const petScriptJournalSettingsSchema = z.object({
+  retentionDays: z
+    .number()
+    .int()
+    .min(1)
+    .max(PET_SCRIPT_JOURNAL_MAX_RETENTION_DAYS)
+    .nullable(),
 });
+
+/** P8.6：剧情日记条目（只记录 gen.* 生成场景） */
+export interface PetScriptJournalItem {
+  sceneId: string;
+  /** 剧情短标题（生成时由模型给出） */
+  title: string;
+  /** 主题指纹 */
+  theme: string;
+  /** 场景挂载的触发键 */
+  trigger: string;
+  /** auto=定时窗口，manual=手动/事件生成 */
+  source: 'auto' | 'manual';
+  /** 生成时间（epoch ms） */
+  generatedAt: number;
+  /** 最近一次播放时间；null = 生成后还没播过 */
+  playedAt: number | null;
+  /** 播放次数（同一场重播累加） */
+  playCount: number;
+}
+
+/** GET /api/pet/script/journal：某一天的回顾视图 */
+export interface PetScriptJournalDay {
+  /** YYYY-MM-DD（本地时区） */
+  date: string;
+  /** 当天生成的场景，新→旧 */
+  items: PetScriptJournalItem[];
+  /** 当天生成场次 */
+  generated: number;
+  /** 当天生成且已播放过的场次 */
+  played: number;
+}
+
+export const petScriptScheduleRequestSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    perDay: z
+      .number()
+      .int()
+      .min(PET_SCRIPT_SCHEDULE_LIMITS.minPerDay)
+      .max(PET_SCRIPT_SCHEDULE_LIMITS.maxPerDay)
+      .optional(),
+  })
+  .refine((value) => value.enabled !== undefined || value.perDay !== undefined, {
+    message: 'enabled 与 perDay 至少提供一项',
+  });
 export type PetScriptScheduleRequest = z.infer<typeof petScriptScheduleRequestSchema>;

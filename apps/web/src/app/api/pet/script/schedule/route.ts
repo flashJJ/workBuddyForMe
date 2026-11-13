@@ -7,9 +7,11 @@ import { createPetScriptServer } from '@/features/avatar/script/generation';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** POST /api/pet/script/schedule — 开/关每日自动生成（默认关闭） */
+/** POST /api/pet/script/schedule — 开关/每日次数（默认关闭、每日 5 次） */
 export const POST = defineRoute(async ({ request, services }) => {
   const input = parseBody(petScriptScheduleRequestSchema, await readJsonBody(request));
-  const schedule = createPetScriptServer(services).scheduler.setEnabled(input.enabled);
+  const { scheduler } = createPetScriptServer(services);
+  if (input.perDay !== undefined) scheduler.setPerDay(input.perDay);
+  const schedule = input.enabled !== undefined ? scheduler.setEnabled(input.enabled) : scheduler.status();
   return jsonOk({ schedule });
 });

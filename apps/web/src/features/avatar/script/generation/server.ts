@@ -8,6 +8,16 @@ import {
 } from './schedule';
 import { createPetScriptGenerator } from './service';
 import {
+  journalDay,
+  journalSettings,
+  PET_SCRIPT_JOURNAL_KEY,
+  recordPlayed,
+  resolveJournal,
+  setJournalRetention,
+  type PetScriptJournalState,
+} from './journal';
+import {
+  localDateKey,
   PET_SCRIPT_GENERATION_KEY,
   type PetScriptGenerationState,
 } from './state';
@@ -49,6 +59,10 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
       load: () => settings.getJson<unknown>(PET_SCRIPT_STORY_KEY, null),
       save: (state: StoryState) => settings.setJson(PET_SCRIPT_STORY_KEY, state),
     },
+    journalStore: {
+      load: () => settings.getJson<unknown>(PET_SCRIPT_JOURNAL_KEY, null),
+      save: (state: PetScriptJournalState) => settings.setJson(PET_SCRIPT_JOURNAL_KEY, state),
+    },
     topics,
     resolveTarget: () => resolveChatTargetForModelId(deps, null),
     complete: async (target, { system, user }) => {
@@ -76,5 +90,32 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
     },
   });
 
-  return { generator, scheduler };
+  const journal = {
+    /** 某天（缺省今天）的生成/播放记录 */
+    view(date?: string) {
+      const day = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : localDateKey();
+      return journalDay(resolveJournal(settings.getJson<unknown>(PET_SCRIPT_JOURNAL_KEY, null)), day);
+    },
+    /** 播放上报：只认已记录的 gen.* 场景，重复上报累加次数 */
+    recordPlay(sceneId: string) {
+      if (!sceneId.startsWith('gen.')) return { ok: false as const };
+      const state = resolveJournal(settings.getJson<unknown>(PET_SCRIPT_JOURNAL_KEY, null));
+      const next = recordPlayed(state, sceneId, Date.now());
+      if (next !== state) settings.setJson(PET_SCRIPT_JOURNAL_KEY, next);
+      return { ok: next !== state };
+    },
+    /** 回顾保留天数（null = 永久保留，默认） */
+    settings() {
+      return journalSettings(resolveJournal(settings.getJson<unknown>(PET_SCRIPT_JOURNAL_KEY, null)));
+    },
+    /** 修改保留天数并立即裁剪旧记录 */
+    setRetention(days: number | null) {
+      const state = resolveJournal(settings.getJson<unknown>(PET_SCRIPT_JOURNAL_KEY, null));
+      const next = setJournalRetention(state, days, Date.now());
+      settings.setJson(PET_SCRIPT_JOURNAL_KEY, next);
+      return journalSettings(next);
+    },
+  };
+
+  return { generator, scheduler, journal };
 }

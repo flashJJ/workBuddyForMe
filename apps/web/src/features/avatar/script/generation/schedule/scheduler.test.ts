@@ -44,7 +44,9 @@ function okResult(over: Partial<PetScriptGenerationResult> = {}): PetScriptGener
   };
 }
 
-function setup(options: { generated?: PetScriptGenerationResult; initial?: unknown } = {}) {
+function setup(
+  options: { generated?: PetScriptGenerationResult; initial?: unknown; now?: () => Date } = {},
+) {
   let calls = 0;
   const generator: PetScriptGenerator = {
     list: () => VIEW,
@@ -54,7 +56,11 @@ function setup(options: { generated?: PetScriptGenerationResult; initial?: unkno
     },
   };
   const store = memoryStore(options.initial);
-  const scheduler = createPetScriptScheduler({ generator, store, now: () => at(10) });
+  const scheduler = createPetScriptScheduler({
+    generator,
+    store,
+    now: options.now ?? (() => at(10)),
+  });
   return { scheduler, store, calls: () => calls };
 }
 
@@ -67,24 +73,23 @@ describe('定时入口调度器（P8.5）', () => {
     expect(calls()).toBe(0);
   });
 
-  it('未到窗口：tick 不调用生成器', async () => {
-    const { scheduler, calls } = setup({ initial: { enabled: true } });
-    // now 固定 10 点会到期，这里换成 9 点
-    const early = createPetScriptScheduler({
-      generator: { list: () => VIEW, generate: async () => okResult() },
-      store: memoryStore({ enabled: true }),
-      now: () => at(9),
-    });
-    const result = await early.tick();
-    expect(result.reason).toBe('not-due');
-    expect(calls()).toBe(0);
+  it('首次 tick 立即生成；满 30 分钟后才再次生成', async () => {
+    let clock = at(10);
+    const { scheduler, calls } = setup({ initial: { enabled: true }, now: () => clock });
 
-    // 10 点的实例到期
     expect((await scheduler.tick()).triggered).toBe(true);
     expect(calls()).toBe(1);
+
+    clock = at(10, 29);
+    expect((await scheduler.tick()).triggered).toBe(false);
+    expect(calls()).toBe(1);
+
+    clock = at(10, 30);
+    expect((await scheduler.tick()).triggered).toBe(true);
+    expect(calls()).toBe(2);
   });
 
-  it('到期：生成一次并记窗口；同窗口再次 tick 不再生成', async () => {
+  it('到期：生成一次并记运行时间；间隔内再次 tick 不再生成', async () => {
     const { scheduler, store, calls } = setup({ initial: { enabled: true } });
     const first = await scheduler.tick();
     expect(first.triggered).toBe(true);
@@ -99,7 +104,7 @@ describe('定时入口调度器（P8.5）', () => {
     expect(calls()).toBe(1);
   });
 
-  it('生成失败也消费窗口，返回失败原因', async () => {
+  it('生成失败也消费一次运行，返回失败原因', async () => {
     const { scheduler, calls } = setup({
       initial: { enabled: true },
       generated: okResult({ ok: false, reason: 'invalid', issues: ['重复'], fallback: true }),
@@ -112,10 +117,12 @@ describe('定时入口调度器（P8.5）', () => {
     expect(calls()).toBe(1);
   });
 
-  it('开关写入持久化状态', () => {
+  it('开关与每日次数写入持久化状态', () => {
     const { scheduler, store } = setup();
     expect(scheduler.setEnabled(true)).toMatchObject({ enabled: true });
     expect(store.state).toMatchObject({ enabled: true });
+    expect(scheduler.setPerDay(3)).toMatchObject({ perDay: 3 });
+    expect(store.state).toMatchObject({ perDay: 3 });
     expect(scheduler.setEnabled(false)).toMatchObject({ enabled: false });
   });
 });

@@ -8,6 +8,12 @@ import type {
 } from '@wbfm/shared/schemas';
 import { SCRIPT_PRIMITIVES } from '../validation/registry';
 import { GENERATED_SCENE_TRIGGERS } from './constants';
+import {
+  recordGenerated,
+  resolveJournal,
+  type PetScriptJournalSource,
+  type PetScriptJournalStore,
+} from './journal';
 import { parseGeneratedScene } from './parse';
 import { buildScriptGenerationPrompt } from './protocol';
 import {
@@ -43,6 +49,8 @@ export interface PetScriptGeneratorDeps {
   storyStore: PetScriptStoryStore;
   /** P8.6：每日时事/热点（可选；失败自动降级） */
   topics?: PetTopicFetcher;
+  /** P8.6：剧情日记（可选；缺省不记录） */
+  journalStore?: PetScriptJournalStore;
   /** 解析默认对话模型；无模型时抛错 */
   resolveTarget: () => ResolvedChatTarget;
   complete: (target: ResolvedChatTarget, params: { system: string; user: string }) => Promise<string>;
@@ -50,9 +58,14 @@ export interface PetScriptGeneratorDeps {
   random?: () => number;
 }
 
+export interface PetScriptGeneratorInput extends PetScriptGenerationRequest {
+  /** P8.6：自动窗口生成标记为 auto，手动/事件生成缺省 manual */
+  source?: PetScriptJournalSource;
+}
+
 export interface PetScriptGenerator {
   list(): PetScriptGenerationView;
-  generate(input: PetScriptGenerationRequest): Promise<PetScriptGenerationResult>;
+  generate(input: PetScriptGeneratorInput): Promise<PetScriptGenerationResult>;
 }
 
 function pickTrigger(
@@ -189,6 +202,20 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
         scenes: enqueueScene(state.scenes, scene),
       };
       save(next);
+      if (deps.journalStore) {
+        const journal = recordGenerated(
+          resolveJournal(deps.journalStore.load()),
+          {
+            sceneId: scene.id,
+            title: parsed.story.title,
+            theme: parsed.story.theme,
+            trigger,
+            source: input.source ?? 'manual',
+            at: now().getTime(),
+          },
+        );
+        deps.journalStore.save(journal);
+      }
       return {
         ok: true,
         reason: 'ok',

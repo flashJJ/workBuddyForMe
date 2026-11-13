@@ -1,13 +1,12 @@
 /** settings 命名空间：设置中心页面 / 默认偏好 / 通用进行态；供应商见 settingsProviders，其余面板见 settingsMcp */
 import { enCapabilityTrust, enSettingsWork, zhCapabilityTrust, zhSettingsWork } from './settings-work';
 import { enSettingsSearch, zhSettingsSearch } from './settings-search';
+import { enSettingsScript, zhSettingsScript } from './settings-script';
 export const zhSettings = {
   title: '设置',
   description: '管理模型供应商、默认模型与本地偏好，所有数据仅保存在本机。',
   sections: {
-    appearance: '主题外观', avatar: '形象模型', motion: '动作库', voice: '语音与对话',
-    emotion: '情绪与关系', events: '事件与提醒', tools: '工具与权限',
-    agents: '技能与智能体', data: '数据与备份', about: '帮助与关于',
+    appearance: '主题外观', avatar: '形象模型', motion: '动作库', voice: '语音与对话', emotion: '情绪与关系', events: '事件与提醒', tools: '工具与权限', agents: '技能与智能体', data: '数据与备份', about: '帮助与关于',
   },
   addProvider: '新增供应商',
   loadError: '供应商加载失败',
@@ -138,6 +137,7 @@ export const zhSettings = {
   ...zhSettingsSearch,
   capabilityTrust: zhCapabilityTrust,
   work: zhSettingsWork,
+  script: zhSettingsScript,
 };
 export const enSettings = {
   title: 'Settings',
@@ -295,4 +295,5 @@ export const enSettings = {
   ...enSettingsSearch,
   capabilityTrust: enCapabilityTrust,
   work: enSettingsWork,
+  script: enSettingsScript,
 };

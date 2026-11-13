@@ -16,7 +16,7 @@ import { apiGet, apiPost } from '@/lib/api/client';
  * P8.3–P8.5：生成剧本队列（客户端）。
  *
  * - 启动时 GET 队列/用量/剧情/调度，并 tick 一次（到期才生成）；
- * - 每 10 分钟 tick 一次；页面关闭即停，不建服务端常驻定时器；
+ * - 之后每小时 tick 一次；页面关闭即停，不建服务端常驻定时器；
  * - `generate()` 手动生成；`toggleSchedule` 开/关每日自动（默认关）。
  * - 队列/剧情变化会让 useScriptDirector 重建 Director（生成发生在空闲时）。
  */
@@ -34,7 +34,7 @@ export interface GeneratedScriptsState {
   refresh: () => Promise<void>;
 }
 
-const TICK_MS = 10 * 60 * 1000;
+const TICK_MS = 60 * 60 * 1000;
 
 export function useGeneratedScripts(enabled: boolean): GeneratedScriptsState {
   const [scenes, setScenes] = React.useState<Scene[]>([]);

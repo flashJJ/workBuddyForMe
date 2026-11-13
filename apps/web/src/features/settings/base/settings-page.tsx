@@ -32,6 +32,7 @@ import { EmotionPanel } from '../dialog/emotion-panel';
 import { InteractionGraphPanel } from '../dialog/interaction-graph-panel';
 import { RelationshipPanel } from '../dialog/relationship-panel';
 import { EventPanel } from '../events/event-panel';
+import { ScriptSchedulePanel } from '../script/script-schedule-panel';
 import { ReminderPanel } from '@/features/reminders';
 import { CharacterCardsPanel } from '@/features/character-cards';
 import { TuningPanel } from '@/features/tuning';
@@ -129,7 +130,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
     {
       id: 'events',
       labelKey: 'settings.sections.events',
-      panels: [<EventPanel key="events" />, <ReminderPanel key="reminder" />],
+      panels: [<EventPanel key="events" />, <ScriptSchedulePanel key="script-schedule" />, <ReminderPanel key="reminder" />],
     },
     {
       id: 'tools',

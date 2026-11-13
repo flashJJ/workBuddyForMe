@@ -9,6 +9,7 @@ import {
   resolveScheduleState,
   scheduleSummary,
   setScheduleEnabled,
+  setSchedulePerDay,
   type PetScriptScheduleStore,
 } from './schedule';
 import type { PetScriptGenerator } from '../service';
@@ -17,8 +18,8 @@ import { localDateKey } from '../state';
 /**
  * P8.5：定时入口（薄壳）。
  *
- * 不持有定时器：客户端心跳调用 tick，服务端用持久化的「今日次数 + 上次时间」判到期。
- * 到期 → 记一次窗口并调用生成器；未到期/关闭直接返回当前视图，零副作用。
+ * 不持有定时器：客户端每小时心跳调用 tick，服务端用持久化的「今日次数 + 上次时间」判到期。
+ * 到期 → 先记一次运行再调用生成器；未到期/关闭直接返回当前视图，零副作用。
  */
 
 export interface PetScriptSchedulerDeps {
@@ -31,6 +32,7 @@ export interface PetScriptScheduler {
   status(): PetScriptScheduleSummary;
   view(): PetScriptStatusView;
   setEnabled(enabled: boolean): PetScriptScheduleSummary;
+  setPerDay(perDay: number): PetScriptScheduleSummary;
   tick(): Promise<PetScriptTickResult>;
 }
 
@@ -50,6 +52,11 @@ export function createPetScriptScheduler(deps: PetScriptSchedulerDeps): PetScrip
     view: () => ({ ...deps.generator.list(), schedule: scheduleSummary(load()) }),
     setEnabled(enabled) {
       const next = setScheduleEnabled(load(), enabled);
+      save(next);
+      return scheduleSummary(next);
+    },
+    setPerDay(perDay) {
+      const next = setSchedulePerDay(load(), perDay);
       save(next);
       return scheduleSummary(next);
     },
@@ -74,10 +81,10 @@ export function createPetScriptScheduler(deps: PetScriptSchedulerDeps): PetScrip
         };
       }
 
-      // 先记窗口再生成：并发/失败都不会重复消费同一个窗口
+      // 先记一次运行再生成：并发/失败都不会在 30 分钟内重复触发
       const marked = markScheduleRun(state, now());
       save(marked);
-      const result = await deps.generator.generate({});
+      const result = await deps.generator.generate({ source: 'auto' });
       return {
         ...deps.generator.list(),
         schedule: scheduleSummary(marked),
