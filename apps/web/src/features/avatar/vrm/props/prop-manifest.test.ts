@@ -3,10 +3,21 @@ import { PROPS, PROP_IDS } from './prop-manifest';
 
 describe('道具 manifest（S2/S4）', () => {
   it('手持与场景道具均已登记', () => {
-    expect(PROP_IDS).toEqual(['teacup', 'bowl', 'book', 'table']);
+    expect(PROP_IDS).toEqual([
+      'teacup',
+      'bowl',
+      'book',
+      'table',
+      'phone',
+      'flower',
+      'cushion',
+      'lamp',
+    ]);
     expect(PROPS.teacup?.animation).toBe('pour');
     expect(PROPS.book?.animation).toBe('flip');
     expect(PROPS.table?.animation).toBeUndefined();
+    expect(PROPS.phone?.kind).toBe('hand');
+    expect(PROPS.lamp?.kind).toBe('stage');
   });
 
   it('id、路径、许可与握持/摆放参数合法', () => {

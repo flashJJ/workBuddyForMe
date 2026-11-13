@@ -76,6 +76,42 @@ export const PROPS: Readonly<Record<string, PropSpec>> = {
     rotationY: -0.35,
     scale: 0.75,
   },
+  phone: {
+    id: 'phone',
+    url: '/props/phone.glb',
+    kind: 'hand',
+    license: CC0,
+    contact: 0.022,
+    lateral: 0.008,
+    handPose: PROP_HOLD,
+    yaw: 0.45,
+  },
+  flower: {
+    id: 'flower',
+    url: '/props/flower.glb',
+    kind: 'hand',
+    license: CC0,
+    contact: 0.02,
+    lateral: 0.006,
+    handPose: PROP_HOLD,
+    yaw: 0.3,
+  },
+  cushion: {
+    id: 'cushion',
+    url: '/props/cushion.glb',
+    kind: 'stage',
+    license: CC0,
+    position: [-0.3, 0, -0.12],
+    rotationY: 0.25,
+  },
+  lamp: {
+    id: 'lamp',
+    url: '/props/lamp.glb',
+    kind: 'stage',
+    license: CC0,
+    position: [-0.42, 0, -0.2],
+    rotationY: 0.4,
+  },
 };
 
 export const PROP_IDS = Object.keys(PROPS);

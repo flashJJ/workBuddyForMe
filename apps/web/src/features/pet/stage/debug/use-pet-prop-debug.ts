@@ -6,14 +6,18 @@ const HAND_KEYS: Readonly<Record<string, string>> = {
   '1': 'teacup',
   '2': 'bowl',
   '3': 'book',
+  '5': 'phone',
+  '6': 'flower',
 };
 
 const STAGE_KEYS: Readonly<Record<string, string>> = {
   '4': 'table',
+  '7': 'cushion',
+  '8': 'lamp',
 };
 
-const HAND_IDS = ['teacup', 'bowl', 'book'] as const;
-const STAGE_IDS = ['table'] as const;
+const HAND_IDS = ['teacup', 'bowl', 'book', 'phone', 'flower'] as const;
+const STAGE_IDS = ['table', 'cushion', 'lamp'] as const;
 
 interface PropDebugTarget {
   attachProp?(id: string, on?: boolean): Promise<boolean>;
@@ -46,7 +50,7 @@ export function usePetPropDebug(ref: { readonly current: unknown }): void {
       void controller.attachProp(id);
     };
     window.addEventListener('keydown', onKeyDown);
-    console.info('[pet] 道具调试：1=茶杯 2=碗 3=书 4=桌子 0=收起');
+    console.info('[pet] 道具调试：1=茶杯 2=碗 3=书 4=桌子 5=手机 6=花 7=靠垫 8=台灯 0=收起');
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [ref]);
 }
