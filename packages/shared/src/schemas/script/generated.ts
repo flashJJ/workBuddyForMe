@@ -12,15 +12,17 @@ export const PET_SCRIPT_GENERATED_PREFIX = 'gen.';
 
 export const PET_SCRIPT_GENERATION_LIMITS = {
   /** 每日最多调用次数（失败也计数） */
-  dailyCalls: 3,
+  dailyCalls: 8,
   /** 每日估算 token 上限（按字符数粗略折算） */
-  dailyTokens: 20_000,
-  /** 单场 beat 数上限 */
-  maxBeats: 24,
-  /** 单场最后一条 beat 的毫秒上限 */
-  maxDurationMs: 30_000,
+  dailyTokens: 60_000,
+  /** 单场 beat 数下限/上限（1–3 分钟需要足够多的节点） */
+  minBeats: 8,
+  maxBeats: 80,
+  /** 单场时长下限/上限：最后一条 beat 必须落在这个区间 */
+  minDurationMs: 60_000,
+  maxDurationMs: 180_000,
   /** 队列里最多保留的生成场景数 */
-  maxQueue: 6,
+  maxQueue: 10,
 } as const;
 
 export const petScriptGenerationRequestSchema = z.object({

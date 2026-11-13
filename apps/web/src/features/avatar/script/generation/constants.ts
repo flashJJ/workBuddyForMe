@@ -40,7 +40,6 @@ export const GENERATED_BLOCKED_BEHAVIORS = new Set([
 /** 生成场景禁用的 cue 类型：未接线或会引入分支/外部资源 */
 export const GENERATED_BLOCKED_CUES = new Set([
   'speak',
-  'wait',
   'branch',
   'sound',
   'effect',

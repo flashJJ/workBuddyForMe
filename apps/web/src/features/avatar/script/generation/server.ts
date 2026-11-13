@@ -11,16 +11,34 @@ import {
   PET_SCRIPT_GENERATION_KEY,
   type PetScriptGenerationState,
 } from './state';
-import { PET_SCRIPT_STORY_KEY, type StoryState } from './story';
+import {
+  PET_SCRIPT_STORY_KEY,
+  type StoryState,
+} from './story';
+import {
+  createPetTopicFetcher,
+  PET_SCRIPT_TOPICS_KEY,
+  type DailyTopics,
+  type TopicSearch,
+} from './topics';
 
 export interface PetScriptServerDeps {
   db: DatabaseInstance;
   cipher: SecretCipher;
+  /** P8.6：core 联网搜索服务（未配置/失败时自动降级为纯日常剧情） */
+  search?: TopicSearch;
 }
 
 /** P8.3–P8.5：服务端装配（settings_kv 持久化队列/用量/剧情/调度） */
 export function createPetScriptServer(deps: PetScriptServerDeps) {
   const settings = createSettingsRepository(deps.db);
+  const topics = createPetTopicFetcher({
+    store: {
+      load: () => settings.getJson<unknown>(PET_SCRIPT_TOPICS_KEY, null),
+      save: (state: DailyTopics) => settings.setJson(PET_SCRIPT_TOPICS_KEY, state),
+    },
+    search: deps.search,
+  });
   const generator = createPetScriptGenerator({
     store: {
       load: () => settings.getJson<unknown>(PET_SCRIPT_GENERATION_KEY, null),
@@ -31,6 +49,7 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
       load: () => settings.getJson<unknown>(PET_SCRIPT_STORY_KEY, null),
       save: (state: StoryState) => settings.setJson(PET_SCRIPT_STORY_KEY, state),
     },
+    topics,
     resolveTarget: () => resolveChatTargetForModelId(deps, null),
     complete: async (target, { system, user }) => {
       let content = '';

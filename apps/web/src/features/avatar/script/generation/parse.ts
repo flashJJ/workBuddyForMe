@@ -95,14 +95,19 @@ function sceneRules(scene: Scene): string[] {
   }
   if (scene.triggers.length !== 1) issues.push('triggers 必须恰好一个');
   if (scene.priority > 2) issues.push('priority 只能是 1 或 2');
-  if (scene.cooldownMs < 60_000 || scene.cooldownMs > 600_000) {
-    issues.push('cooldownMs 必须在 60000..600000');
+  if (scene.cooldownMs < 120_000 || scene.cooldownMs > 1_800_000) {
+    issues.push('cooldownMs 必须在 120000..1800000');
   }
-  if (scene.beats.length < 4) issues.push('beats 至少 4 条');
+  if (scene.beats.length < PET_SCRIPT_GENERATION_LIMITS.minBeats) {
+    issues.push(`beats 至少 ${PET_SCRIPT_GENERATION_LIMITS.minBeats} 条`);
+  }
   if (scene.beats.length > PET_SCRIPT_GENERATION_LIMITS.maxBeats) {
     issues.push(`beats 不能超过 ${PET_SCRIPT_GENERATION_LIMITS.maxBeats} 条`);
   }
   const last = scene.beats[scene.beats.length - 1]?.at ?? 0;
+  if (last < PET_SCRIPT_GENERATION_LIMITS.minDurationMs) {
+    issues.push(`最后一条 beat 不能早于 ${PET_SCRIPT_GENERATION_LIMITS.minDurationMs}ms`);
+  }
   if (last > PET_SCRIPT_GENERATION_LIMITS.maxDurationMs) {
     issues.push(`最后一条 beat 不能超过 ${PET_SCRIPT_GENERATION_LIMITS.maxDurationMs}ms`);
   }

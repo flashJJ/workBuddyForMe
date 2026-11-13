@@ -21,6 +21,8 @@ function buildSearchUrl(endpoint: string, input: WebSearchInput): string {
   url.searchParams.set('categories', 'general');
   url.searchParams.set('pageno', '1');
   if (input.locale) url.searchParams.set('language', input.locale);
+  // SearXNG 原生支持 time_range=day/week/month/year，用于「今日热点」等时效查询
+  if (input.freshness) url.searchParams.set('time_range', input.freshness);
   return url.toString();
 }
 

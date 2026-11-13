@@ -28,6 +28,7 @@ import {
   storySummary,
   type PetScriptStoryStore,
 } from './story';
+import { topicsContextForPrompt, type PetTopicFetcher } from './topics';
 
 /**
  * P8.3：剧本生成服务（服务端）。
@@ -40,6 +41,8 @@ export interface PetScriptGeneratorDeps {
   store: PetScriptGenerationStore;
   /** P8.4：剧情状态（线索/悬念/去重） */
   storyStore: PetScriptStoryStore;
+  /** P8.6：每日时事/热点（可选；失败自动降级） */
+  topics?: PetTopicFetcher;
   /** 解析默认对话模型；无模型时抛错 */
   resolveTarget: () => ResolvedChatTarget;
   complete: (target: ResolvedChatTarget, params: { system: string; user: string }) => Promise<string>;
@@ -130,11 +133,13 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
         return fallback(next, storySummary(story), 'provider', [errorText(error)], null);
       }
 
+      const topics = deps.topics ? await deps.topics.today() : null;
       const prompt = buildScriptGenerationPrompt({
         primitives: SCRIPT_PRIMITIVES,
         trigger,
         triggers: GENERATED_SCENE_TRIGGERS,
         storyContext: storyContextForPrompt(story),
+        todayContext: topicsContextForPrompt(topics),
         context: { hour: now().getHours() },
       });
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { PET_SCRIPT_GENERATION_LIMITS } from '@wbfm/shared/schemas';
 import type { ResolvedChatTarget } from '@wbfm/core/chat';
 import { createPetScriptGenerator } from './service';
 import { localDateKey, type PetScriptGenerationState, type PetScriptGenerationStore } from './state';
+import type { DailyTopics } from './topics';
 
 const NOW = new Date(2026, 10, 13, 12, 0);
 
@@ -15,7 +17,12 @@ const VALID_RAW = JSON.stringify({
     { at: 0, cue: { kind: 'look', target: 'camera' } },
     { at: 0, cue: { kind: 'expression', tag: 'joy', holdMs: 2000 } },
     { at: 0, cue: { kind: 'line', pool: 'head-tap' } },
-    { at: 1600, cue: { kind: 'look', target: 'camera' } },
+    { at: 12_000, cue: { kind: 'wait', ms: 2000 } },
+    { at: 20_000, cue: { kind: 'motion', motion: 'motion.stance-sway' } },
+    { at: 28_000, cue: { kind: 'line', pool: 'ambient' } },
+    { at: 42_000, cue: { kind: 'gesture', gesture: 'nod', intensity: 0.5 } },
+    { at: 56_000, cue: { kind: 'line', pool: 'work-rest' } },
+    { at: 70_000, cue: { kind: 'look', target: 'camera' } },
   ],
 });
 
@@ -31,8 +38,12 @@ function wrapper(id: string, story: Record<string, unknown>): string {
       beats: [
         { at: 0, cue: { kind: 'look', target: 'camera' } },
         { at: 0, cue: { kind: 'line', pool: 'head-tap' } },
-        { at: 1200, cue: { kind: 'expression', tag: 'joy', holdMs: 1500 } },
-        { at: 2000, cue: { kind: 'look', target: 'camera' } },
+        { at: 12_000, cue: { kind: 'expression', tag: 'joy', holdMs: 1500 } },
+        { at: 24_000, cue: { kind: 'wait', ms: 2000 } },
+        { at: 34_000, cue: { kind: 'motion', motion: 'motion.stance-sway' } },
+        { at: 44_000, cue: { kind: 'line', pool: 'ambient' } },
+        { at: 58_000, cue: { kind: 'gesture', gesture: 'tilt', intensity: 0.4 } },
+        { at: 72_000, cue: { kind: 'line', pool: 'work-rest' } },
       ],
     },
   });
@@ -83,6 +94,7 @@ function setup(options: {
   raw?: string | (() => string);
   store?: PetScriptGenerationStore;
   storyStore?: ReturnType<typeof memoryStoryStore>;
+  topics?: { today(): Promise<DailyTopics> };
   fail?: Error;
 } = {}) {
   const prompts: Array<{ system: string; user: string }> = [];
@@ -90,6 +102,7 @@ function setup(options: {
   const generator = createPetScriptGenerator({
     store: options.store ?? memoryStore(),
     storyStore,
+    topics: options.topics,
     resolveTarget: () => target,
     complete: async (_target, params) => {
       prompts.push(params);
@@ -120,6 +133,25 @@ describe('剧本生成服务（P8.3）', () => {
     expect(generator.list().scenes).toHaveLength(1);
   });
 
+  it('P8.6：今日时事注入提示词，搜索失败不阻断生成', async () => {
+    const topics: DailyTopics = {
+      date: '2026-11-13',
+      fetchedAt: NOW.getTime(),
+      items: ['城市马拉松周末开跑', '新款折叠屏发布'],
+      provider: 'mock',
+      error: null,
+    };
+    const withTopics = setup({ topics: { today: async () => topics } });
+    expect((await withTopics.generator.generate({})).ok).toBe(true);
+    expect(withTopics.prompts[0]?.user).toContain('城市马拉松周末开跑');
+    expect(withTopics.prompts[0]?.user).toContain('今日时事');
+
+    const failed: DailyTopics = { ...topics, items: [], error: '联网搜索未启用' };
+    const withoutTopics = setup({ topics: { today: async () => failed } });
+    expect((await withoutTopics.generator.generate({})).ok).toBe(true);
+    expect(withoutTopics.prompts[0]?.user).toContain('今天没有可用话题');
+  });
+
   it('非法输出回落：不落场景，但消耗一次调用与估算 token', async () => {
     const { generator } = setup({ raw: '这不是 JSON' });
     const result = await generator.generate({});
@@ -143,9 +175,10 @@ describe('剧本生成服务（P8.3）', () => {
   });
 
   it('每日调用上限：达到上限后不再请求模型', async () => {
+    const limit = PET_SCRIPT_GENERATION_LIMITS.dailyCalls;
     const store = memoryStore({
       date: localDateKey(NOW),
-      calls: 3,
+      calls: limit,
       tokens: 0,
       scenes: [],
     });
@@ -164,7 +197,7 @@ describe('剧本生成服务（P8.3）', () => {
     const result = await generator.generate({});
     expect(result.reason).toBe('daily-cap');
     expect(called).toBe(false);
-    expect(result.usage.calls).toBe(3);
+    expect(result.usage.calls).toBe(limit);
   });
 
   it('P8.4：留下悬念 → 下次上下文可续接，resolves 收线', async () => {

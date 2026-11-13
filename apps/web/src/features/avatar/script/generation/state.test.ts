@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Scene } from '@wbfm/shared/schemas';
+import { PET_SCRIPT_GENERATION_LIMITS, type Scene } from '@wbfm/shared/schemas';
 import {
   enqueueScene,
   estimateTokens,
@@ -45,10 +45,11 @@ describe('生成用量与队列（P8.3）', () => {
   });
 
   it('入队去重并裁到上限', () => {
+    const limit = PET_SCRIPT_GENERATION_LIMITS.maxQueue;
     let queue: Scene[] = [];
-    for (let i = 0; i < 8; i += 1) queue = enqueueScene(queue, scene(`gen.${i}`));
-    expect(queue).toHaveLength(6);
-    expect(queue[0]?.id).toBe('gen.7');
+    for (let i = 0; i < limit + 2; i += 1) queue = enqueueScene(queue, scene(`gen.${i}`));
+    expect(queue).toHaveLength(limit);
+    expect(queue[0]?.id).toBe(`gen.${limit + 1}`);
 
     const replaced = enqueueScene(queue, scene('gen.3'));
     expect(replaced[0]?.id).toBe('gen.3');

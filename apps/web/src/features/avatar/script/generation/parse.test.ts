@@ -9,11 +9,17 @@ const VALID = {
   interrupt: 'all',
   beats: [
     { at: 0, cue: { kind: 'look', target: 'camera' } },
-    { at: 0, cue: { kind: 'expression', tag: 'joy', holdMs: 2000 } },
+    { at: 0, cue: { kind: 'expression', tag: 'joy', holdMs: 3000 } },
     { at: 0, cue: { kind: 'line', pool: 'head-tap' } },
-    { at: 1200, cue: { kind: 'prop', prop: 'teacup', action: 'attach' } },
-    { at: 3200, cue: { kind: 'prop', prop: 'teacup', action: 'detach' } },
-    { at: 3200, cue: { kind: 'look', target: 'camera' } },
+    { at: 8000, cue: { kind: 'wait', ms: 2000 } },
+    { at: 12000, cue: { kind: 'motion', motion: 'motion.stance-sway' } },
+    { at: 18000, cue: { kind: 'prop', prop: 'teacup', action: 'attach' } },
+    { at: 26000, cue: { kind: 'line', pool: 'ambient' } },
+    { at: 42000, cue: { kind: 'wait', ms: 2500 } },
+    { at: 52000, cue: { kind: 'prop', prop: 'teacup', action: 'detach' } },
+    { at: 64000, cue: { kind: 'gesture', gesture: 'nod', intensity: 0.5 } },
+    { at: 78000, cue: { kind: 'line', pool: 'work-rest' } },
+    { at: 90000, cue: { kind: 'look', target: 'camera' } },
   ],
 };
 
@@ -74,12 +80,28 @@ describe('生成场景解析（P8.3）', () => {
     expect(parseGeneratedScene(JSON.stringify(noLine)).scene).toBeNull();
   });
 
-  it('节奏上限：beat 太少或总时长太长拒绝', () => {
-    const few = { ...VALID, beats: VALID.beats.slice(0, 3) };
+  it('节奏上下限：beat 太少、时长不足/过长、冷却过短都拒绝', () => {
+    const few = { ...VALID, beats: VALID.beats.slice(0, 7) };
     expect(parseGeneratedScene(JSON.stringify(few)).scene).toBeNull();
 
-    const long = withBeat({ at: 40_000 }, VALID.beats.length - 1);
+    const short = {
+      ...VALID,
+      beats: VALID.beats.map((beat) => ({ ...beat, at: Math.min(beat.at, 50_000) })),
+    };
+    expect(parseGeneratedScene(JSON.stringify(short)).issues.join('')).toContain('不能早于');
+
+    const long = withBeat({ at: 200_000 }, VALID.beats.length - 1);
     expect(parseGeneratedScene(JSON.stringify(long)).scene).toBeNull();
+
+    const shortCooldown = clone({ cooldownMs: 60_000 });
+    expect(parseGeneratedScene(JSON.stringify(shortCooldown)).issues.join('')).toContain('cooldownMs');
+  });
+
+  it('P8.6：wait 可用于场内战停顿', () => {
+    expect(VALID.beats.some((beat) => beat.cue.kind === 'wait')).toBe(true);
+    const parsed = parseGeneratedScene(JSON.stringify(VALID));
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.scene?.beats).toHaveLength(12);
   });
 
   it('P8.4：接受 { story, scene } 包装并保留剧情元信息', () => {
