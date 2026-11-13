@@ -14,7 +14,7 @@ const USAGE = {
   callLimit: 3,
   tokenLimit: 20_000,
 };
-const STORY = { openThreads: 0, recentThemes: [], cliffhanger: null, usedTags: [] };
+const STORY = { openThreads: 0, recentThemes: [], cliffhanger: null, usedTags: [], recentProps: [] };
 const VIEW: PetScriptGenerationView = { scenes: [], usage: USAGE, story: STORY };
 
 const at = (hour: number, minute = 0): Date => new Date(2026, 10, 13, hour, minute);

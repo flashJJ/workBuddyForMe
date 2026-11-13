@@ -69,6 +69,17 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : '生成失败';
 }
 
+/** 提取本场母题：道具与台词池，用于近期去重 */
+function sceneMotifs(scene: Scene): { props: string[]; linePools: string[] } {
+  const props = new Set<string>();
+  const linePools = new Set<string>();
+  for (const beat of scene.beats) {
+    if (beat.cue.kind === 'prop') props.add(beat.cue.prop);
+    if (beat.cue.kind === 'line') linePools.add(beat.cue.pool);
+  }
+  return { props: [...props], linePools: [...linePools] };
+}
+
 export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScriptGenerator {
   const now = deps.now ?? (() => new Date());
   const random = deps.random ?? Math.random;
@@ -161,14 +172,15 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
       }
 
       const scene: Scene = parsed.scene;
-      const duplicate = findDuplicate(story, scene.id, parsed.story);
+      const motifs = sceneMotifs(scene);
+      const duplicate = findDuplicate(story, scene.id, parsed.story, motifs);
       if (duplicate) {
         const next = { ...state, calls, tokens };
         save(next);
         return fallback(next, storySummary(story), 'invalid', [duplicate], target.model.modelId);
       }
 
-      const nextStory = ingestStory(story, scene.id, parsed.story, now().getTime());
+      const nextStory = ingestStory(story, scene.id, parsed.story, now().getTime(), motifs);
       deps.storyStore.save(nextStory);
       const next: PetScriptGenerationState = {
         date: state.date,

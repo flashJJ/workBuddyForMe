@@ -218,7 +218,14 @@ export function ScriptDebugPanel({
       {story && (
         <div
           className="mb-1 truncate text-neutral-400"
-          title={story.recentThemes.length > 0 ? `最近主题：${story.recentThemes.join(' / ')}` : undefined}
+          title={
+            [
+              story.recentThemes.length > 0 ? `最近主题：${story.recentThemes.join(' / ')}` : '',
+              story.recentProps.length > 0 ? `最近道具：${story.recentProps.join(' / ')}` : '',
+            ]
+              .filter(Boolean)
+              .join('\n') || undefined
+          }
         >
           线索 {story.openThreads} · 悬念 {story.cliffhanger ?? '无'}
         </div>

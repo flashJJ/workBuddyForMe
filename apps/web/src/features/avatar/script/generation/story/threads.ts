@@ -1,7 +1,4 @@
-import type {
-  PetScriptStoryMeta,
-  PetScriptStorySummary,
-} from '@wbfm/shared/schemas';
+import type { PetScriptStoryMeta } from '@wbfm/shared/schemas';
 
 /**
  * P8.4：剧情状态机（纯函数 + 可注入存储）。
@@ -15,6 +12,16 @@ export const PET_SCRIPT_STORY_KEY = 'pet-script.story';
 const MAX_THREADS = 8;
 const MAX_RECENT = 20;
 const MAX_TAGS = 30;
+/** 同一条线索最多连续场次：到上限后本场必须用 resolves 收线 */
+export const MAX_THREAD_SCENES = 3;
+/** 母题去重回看：最近 N 场用过的道具不再复用（收线场除外） */
+export const MOTIF_LOOKBACK = 2;
+
+/** 本场用到的母题（道具/台词池），用于避免连续多场都是同一套东西 */
+export interface StoryMotifs {
+  props: string[];
+  linePools: string[];
+}
 
 export interface StoryThread {
   id: string;
@@ -31,7 +38,14 @@ export interface StoryThread {
 export interface StoryState {
   /** 最近在前 */
   threads: StoryThread[];
-  recent: Array<{ sceneId: string; theme: string; tags: string[]; at: number }>;
+  recent: Array<{
+    sceneId: string;
+    theme: string;
+    tags: string[];
+    props: string[];
+    linePools: string[];
+    at: number;
+  }>;
   cliffhanger: { text: string; sceneId: string; at: number } | null;
   usedTags: string[];
 }
@@ -82,6 +96,8 @@ export function resolveStoryState(raw: unknown): StoryState {
         sceneId: typeof item.sceneId === 'string' ? item.sceneId : '',
         theme: typeof item.theme === 'string' ? item.theme : '',
         tags: strings(item.tags, 8),
+        props: strings(item.props, 8),
+        linePools: strings(item.linePools, 6),
         at: numberOr(item.at),
       }))
       .filter((item) => item.sceneId !== ''),
@@ -105,11 +121,38 @@ export function normalizeTheme(theme: string): string {
     .slice(0, 40);
 }
 
-/** 返回重复原因；null = 不重复 */
+const EMPTY_MOTIFS: StoryMotifs = { props: [], linePools: [] };
+
+/** 当前最需要续接的开放线索（resolves 命中优先，否则跟随全局悬念） */
+export function openThreadToContinue(
+  state: StoryState,
+  meta: PetScriptStoryMeta,
+): StoryThread | undefined {
+  if (meta.resolves) {
+    const target = normalizeTheme(meta.resolves);
+    return (
+      state.threads.find(
+        (thread) =>
+          thread.status === 'open' &&
+          thread.cliffhanger !== null &&
+          normalizeTheme(thread.cliffhanger) === target,
+      ) ??
+      state.threads.find(
+        (thread) => thread.status === 'open' && normalizeTheme(thread.theme) === target,
+      ) ??
+      state.threads.find((thread) => thread.status === 'open')
+    );
+  }
+  if (!state.cliffhanger) return undefined;
+  return state.threads.find((thread) => thread.sceneIds.includes(state.cliffhanger!.sceneId));
+}
+
+/** 返回重复/超限原因；null = 可接受 */
 export function findDuplicate(
   state: StoryState,
   sceneId: string,
   meta: PetScriptStoryMeta,
+  motifs: StoryMotifs = EMPTY_MOTIFS,
 ): string | null {
   if (state.recent.some((entry) => entry.sceneId === sceneId)) return `场景 id 重复: ${sceneId}`;
   const theme = normalizeTheme(meta.theme);
@@ -118,6 +161,23 @@ export function findDuplicate(
     const shared = meta.tags.filter((tag) => entry.tags.includes(tag)).length;
     if (shared >= 2) return `梗标签与近期重复: ${shared} 个`;
   }
+
+  // 母题去重：最近 2 场用过的道具不再复用；resolves 收线场允许沿用（同一杯茶要收尾）
+  if (!meta.resolves) {
+    for (const entry of state.recent.slice(0, MOTIF_LOOKBACK)) {
+      const repeated = motifs.props.find((prop) => entry.props.includes(prop));
+      if (repeated) return `道具与近期重复: ${repeated}`;
+    }
+  }
+
+  // 线索续接上限：已连续 MAX-1 场仍未收线时，本场必须 resolves
+  if (!meta.resolves) {
+    const open = state.threads.filter((thread) => thread.status === 'open');
+    const latest = open.sort((a, b) => b.lastAt - a.lastAt)[0];
+    if (latest && latest.sceneIds.length >= MAX_THREAD_SCENES - 1) {
+      return `线索「${latest.title || latest.theme}」已连续 ${latest.sceneIds.length} 场，本场必须收线`;
+    }
+  }
   return null;
 }
 
@@ -125,50 +185,38 @@ function unique(values: readonly string[], max: number): string[] {
   return [...new Set(values)].slice(0, max);
 }
 
-function findThread(
-  threads: StoryThread[],
-  pending: StoryState['cliffhanger'],
-  meta: PetScriptStoryMeta,
-): StoryThread | undefined {
-  if (meta.resolves) {
-    const target = normalizeTheme(meta.resolves);
-    return (
-      threads.find(
-        (thread) =>
-          thread.status === 'open' &&
-          thread.cliffhanger !== null &&
-          normalizeTheme(thread.cliffhanger) === target,
-      ) ??
-      threads.find(
-        (thread) => thread.status === 'open' && normalizeTheme(thread.theme) === target,
-      ) ??
-      threads.find((thread) => thread.status === 'open')
-    );
-  }
-  if (!pending) return undefined;
-  return threads.find((thread) => thread.sceneIds.includes(pending.sceneId));
-}
-
-/** 把一次生成入账：续接/开线、更新悬念与梗标签 */
+/** 把一次生成入账：续接/开线、更新悬念、梗标签与母题 */
 export function ingestStory(
   state: StoryState,
   sceneId: string,
   meta: PetScriptStoryMeta,
   at: number,
+  motifs: StoryMotifs = EMPTY_MOTIFS,
 ): StoryState {
   const threads = state.threads.map((thread) => ({ ...thread, sceneIds: [...thread.sceneIds] }));
-  const existing = findThread(threads, state.cliffhanger, meta);
-  const continues = Boolean(existing);
+  const existing = openThreadToContinue({ ...state, threads }, meta);
   const nextCliffhanger = meta.cliffhanger ?? null;
 
   if (existing) {
     existing.sceneIds.push(sceneId);
     existing.lastAt = at;
     existing.tags = unique([...existing.tags, ...meta.tags], 8);
-    // resolves 表示本场把这条线收掉了；若本场又留下新悬念则续开
     if (meta.resolves) {
-      existing.cliffhanger = nextCliffhanger;
-      existing.status = nextCliffhanger ? 'open' : 'closed';
+      // 收旧线；若本场又留下新悬念，视为开一条新线（场次计数从本场重新开始）
+      existing.cliffhanger = null;
+      existing.status = 'closed';
+      if (nextCliffhanger) {
+        threads.unshift({
+          id: `thread.${at}`,
+          title: meta.title,
+          theme: meta.theme,
+          tags: [...meta.tags],
+          cliffhanger: nextCliffhanger,
+          sceneIds: [sceneId],
+          lastAt: at,
+          status: 'open',
+        });
+      }
     } else {
       existing.cliffhanger = nextCliffhanger ?? existing.cliffhanger;
       existing.status = existing.cliffhanger ? 'open' : 'closed';
@@ -187,13 +235,20 @@ export function ingestStory(
   }
 
   const recent = [
-    { sceneId, theme: meta.theme, tags: [...meta.tags], at },
+    {
+      sceneId,
+      theme: meta.theme,
+      tags: [...meta.tags],
+      props: [...motifs.props],
+      linePools: [...motifs.linePools],
+      at,
+    },
     ...state.recent,
   ].slice(0, MAX_RECENT);
 
   const cliffhanger = nextCliffhanger
     ? { text: nextCliffhanger, sceneId, at }
-    : meta.resolves || continues
+    : meta.resolves
       ? null
       : state.cliffhanger;
 
@@ -205,35 +260,3 @@ export function ingestStory(
   };
 }
 
-export function storySummary(state: StoryState): PetScriptStorySummary {
-  return {
-    openThreads: state.threads.filter((thread) => thread.status === 'open').length,
-    recentThemes: state.recent.slice(0, 5).map((entry) => entry.theme),
-    cliffhanger: state.cliffhanger?.text ?? null,
-    usedTags: state.usedTags.slice(0, 12),
-  };
-}
-
-/** 拼进提示词：当前悬念 + 进行中的线 + 近期主题/梗 */
-export function storyContextForPrompt(state: StoryState): string {
-  const open = state.threads.filter((thread) => thread.status === 'open');
-  if (!state.cliffhanger && open.length === 0 && state.recent.length === 0) {
-    return '（暂无历史剧情，可以开一条新线）';
-  }
-  const lines: string[] = [];
-  if (state.cliffhanger) {
-    lines.push(
-      `未收悬念：${state.cliffhanger.text}（续接时在 story.resolves 原样引用；也可以留新的 story.cliffhanger）`,
-    );
-  }
-  if (open.length > 0) {
-    lines.push(`进行中的线：${open.map((thread) => thread.title || thread.theme).join(' / ')}`);
-  }
-  if (state.recent.length > 0) {
-    lines.push(`最近主题（不要重复）：${state.recent.slice(0, 5).map((entry) => entry.theme).join(' / ')}`);
-  }
-  if (state.usedTags.length > 0) {
-    lines.push(`已用梗标签（避免复用）：${state.usedTags.slice(0, 10).join(' / ')}`);
-  }
-  return lines.join('\n');
-}

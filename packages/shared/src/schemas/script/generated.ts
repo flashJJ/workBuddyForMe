@@ -56,6 +56,8 @@ export interface PetScriptStorySummary {
   cliffhanger: string | null;
   /** 已用梗标签（去重后的最近集合） */
   usedTags: string[];
+  /** 最近用过的道具（新→旧，用于避免母题重复） */
+  recentProps: string[];
 }
 
 export const EMPTY_STORY_SUMMARY: PetScriptStorySummary = {
@@ -63,6 +65,7 @@ export const EMPTY_STORY_SUMMARY: PetScriptStorySummary = {
   recentThemes: [],
   cliffhanger: null,
   usedTags: [],
+  recentProps: [],
 };
 
 export interface PetScriptGenerationUsage {

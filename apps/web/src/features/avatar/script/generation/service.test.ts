@@ -63,6 +63,29 @@ const RESOLVE_RAW = wrapper('gen.tea-drink', {
   resolves: '茶杯凉了还没喝',
 });
 
+function propWrapper(id: string, story: Record<string, unknown>): string {
+  return JSON.stringify({
+    story,
+    scene: {
+      id,
+      triggers: ['touch::body::tap'],
+      priority: 2,
+      cooldownMs: 180_000,
+      interrupt: 'all',
+      beats: [
+        { at: 0, cue: { kind: 'look', target: 'camera' } },
+        { at: 0, cue: { kind: 'line', pool: 'body-tap' } },
+        { at: 10_000, cue: { kind: 'prop', prop: 'teacup', action: 'attach' } },
+        { at: 20_000, cue: { kind: 'wait', ms: 1500 } },
+        { at: 30_000, cue: { kind: 'expression', tag: 'smirk', holdMs: 2000 } },
+        { at: 42_000, cue: { kind: 'line', pool: 'ambient' } },
+        { at: 56_000, cue: { kind: 'prop', prop: 'teacup', action: 'detach' } },
+        { at: 70_000, cue: { kind: 'line', pool: 'work-rest' } },
+      ],
+    },
+  });
+}
+
 const target = {
   model: { modelId: 'mock-model' },
   provider: {},
@@ -227,5 +250,35 @@ describe('剧本生成服务（P8.3）', () => {
     expect(duplicate.issues.join('')).toMatch(/重复/);
     expect(duplicate.scenes).toHaveLength(1);
     expect(duplicate.usage.calls).toBe(2);
+  });
+
+  it('P8.6：最近用过的道具不能连续复用，收线场例外', async () => {
+    const first = propWrapper('gen.hold-tea', {
+      title: '端茶',
+      theme: '端茶过来',
+      tags: ['端茶'],
+    });
+    const second = propWrapper('gen.hold-tea-again', {
+      title: '再端一次',
+      theme: '擦桌子',
+      tags: ['擦桌'],
+    });
+    const resolve = propWrapper('gen.put-tea', {
+      title: '把茶放下',
+      theme: '收杯',
+      tags: ['收杯'],
+      resolves: '端茶过来',
+    });
+    const raws = [first, second, resolve];
+    const { generator } = setup({ raw: () => raws.shift() ?? resolve });
+
+    expect((await generator.generate({})).ok).toBe(true);
+    const blocked = await generator.generate({});
+    expect(blocked.ok).toBe(false);
+    expect(blocked.issues.join('')).toContain('道具与近期重复');
+
+    const closing = await generator.generate({});
+    expect(closing.ok).toBe(true);
+    expect(closing.story.openThreads).toBe(0);
   });
 });
