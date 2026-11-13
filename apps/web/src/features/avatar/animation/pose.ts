@@ -17,6 +17,7 @@ import {
   quatNlerp,
 } from './math';
 import type { Skeleton } from './skeleton';
+import { resolvePoseVariant } from './variants';
 
 export class PoseLibrary {
   private readonly poses = new Map<string, PoseDefinition>();
@@ -25,8 +26,9 @@ export class PoseLibrary {
     for (const pose of poses) this.poses.set(pose.id, pose);
   }
 
+  /** 取姿势；带变体簇时会返回当前变体（交叉淡入结果） */
   get(id: string): PoseDefinition | undefined {
-    return this.poses.get(id);
+    return resolvePoseVariant(this.poses.get(id));
   }
 
   has(id: string): boolean {

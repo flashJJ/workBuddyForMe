@@ -45,6 +45,11 @@ export function pickTapGesture(random = Math.random()): ProceduralGestureKind {
   return random < 0.5 ? 'nod' : 'tilt';
 }
 
+/** 无 VRMA 手势时点击的内部 MOTION 回退：挥手/害羞 */
+export function pickMotionGesture(random = Math.random()): string {
+  return random < 0.5 ? 'motion.wave' : 'motion.shy';
+}
+
 /** 环境微行为：眨眼也走同一调度，保证间歇有反应 */
 export type AmbientBehavior = ProceduralGestureKind | 'blink';
 

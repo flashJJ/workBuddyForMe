@@ -128,4 +128,23 @@ describe('BehaviorRunner 打断与队列', () => {
     runner.update(40);
     expect(runner.active).toBe(false);
   });
+
+  it('playNow 强制接管并清空排队行为', () => {
+    const runner = setup(behavior('a', 1), behavior('b', 1), behavior('c', 2));
+    runner.play('a');
+    runner.play('b');
+    runner.play('c');
+    expect(runner.queuedIds).toEqual(['b', 'c']);
+    expect(runner.playNow('c')).toBe(true);
+    expect(runner.behaviorId).toBe('c');
+    expect(runner.queuedIds).toEqual([]);
+  });
+
+  it('排队上限 4，防止连续交互无限堆积', () => {
+    const defs = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => behavior(id, 1));
+    const runner = setup(...defs);
+    runner.play('a');
+    for (const id of ['b', 'c', 'd', 'e', 'f']) runner.play(id);
+    expect(runner.queuedIds).toHaveLength(4);
+  });
 });

@@ -7,20 +7,48 @@
 
 import type { BoneGroup, BoneMask } from './contracts';
 
-/** VrmController 构造时捕获的 normalized bone 名单（姿态叠加/被拎起共用） */
-export const NORM_BONE_NAMES = [
+/** 身体骨骼：Composer/行为只写这些，golden 按此采样 */
+export const BODY_BONE_NAMES = [
   'spine', 'neck',
   'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
   'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand', 'head',
   'leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg', 'leftFoot', 'rightFoot',
 ] as const;
 
+const LEFT_FINGERS = [
+  'leftThumbMetacarpal', 'leftThumbProximal', 'leftThumbDistal',
+  'leftIndexProximal', 'leftIndexIntermediate', 'leftIndexDistal',
+  'leftMiddleProximal', 'leftMiddleIntermediate', 'leftMiddleDistal',
+  'leftRingProximal', 'leftRingIntermediate', 'leftRingDistal',
+  'leftLittleProximal', 'leftLittleIntermediate', 'leftLittleDistal',
+] as const;
+
+const RIGHT_FINGERS = [
+  'rightThumbMetacarpal', 'rightThumbProximal', 'rightThumbDistal',
+  'rightIndexProximal', 'rightIndexIntermediate', 'rightIndexDistal',
+  'rightMiddleProximal', 'rightMiddleIntermediate', 'rightMiddleDistal',
+  'rightRingProximal', 'rightRingIntermediate', 'rightRingDistal',
+  'rightLittleProximal', 'rightLittleIntermediate', 'rightLittleDistal',
+] as const;
+
+/** 手指骨骼：自然垂手需要逐节微屈，不能像站军姿一样笔直 */
+export const FINGER_BONE_NAMES = [...LEFT_FINGERS, ...RIGHT_FINGERS] as const;
+
+/** VrmController 构造时捕获的 normalized bone 名单（姿态叠加/被拎起/自然垂手共用） */
+export const NORM_BONE_NAMES = [...BODY_BONE_NAMES, ...FINGER_BONE_NAMES] as const;
+
 export const BONE_GROUP_MEMBERS: Readonly<Record<BoneGroup, readonly string[]>> = {
   root: [],
   spine: ['spine', 'neck'],
   head: ['head'],
-  leftArm: ['leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand'],
-  rightArm: ['rightShoulder', 'rightUpperArm', 'rightLowerArm', 'rightHand'],
+  leftArm: [
+    'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand',
+    ...LEFT_FINGERS,
+  ],
+  rightArm: [
+    'rightShoulder', 'rightUpperArm', 'rightLowerArm', 'rightHand',
+    ...RIGHT_FINGERS,
+  ],
   leftLeg: ['leftUpperLeg', 'leftLowerLeg', 'leftFoot'],
   rightLeg: ['rightUpperLeg', 'rightLowerLeg', 'rightFoot'],
   face: [],

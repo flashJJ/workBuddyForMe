@@ -1,28 +1,14 @@
 import * as THREE from 'three';
 
 /**
- * v3.0 P1：默认待机手臂放松。
+ * 手臂求解的原语：只做「世界方向对齐」与「绕前臂轴滚腕」。
  *
- * 内置 daiji.vrma 与多数 VRM 素体的手臂是 A-pose（上臂外展、手掌悬在身体两侧），
- * 直接播放会显得「手不是垂直放下」。这里不修改动作资产，而是在 mixer 之后按
- * 「骨骼 → 子骨骼」的真实世界方向，把上臂/前臂朝下目标旋转一部分：
+ * 目标方向与掌心意图由 animation/arms/intents.ts 声明，求解编排由
+ * animation/arms/solver.ts 统一完成；这里不保存任何动作数值。
+ *
  * - 世界空间求方向，不依赖骨骼命名与局部轴；
- * - weight 控制覆盖幅度（1=完全下垂，0=保持动作原样）；
- * - 交互手势/长按期间不调用，避免把举手动作掰下来。
+ * - weight 控制覆盖幅度（1=完全对齐，0=保持原样）。
  */
-
-const UPPER_TARGET = {
-  left: new THREE.Vector3(0.16, -1, 0.04),
-  right: new THREE.Vector3(-0.16, -1, 0.04),
-} as const;
-const LOWER_TARGET = {
-  left: new THREE.Vector3(0.06, -1, 0.12),
-  right: new THREE.Vector3(-0.06, -1, 0.12),
-} as const;
-
-/** 待机微摆幅度：目标方向上的小幅偏移，让放下的手仍有呼吸感 */
-const UPPER_SWAY = { x: 0.035, z: 0.05 } as const;
-const LOWER_SWAY = { x: 0.045, z: 0.06 } as const;
 
 const bonePos = new THREE.Vector3();
 const childPos = new THREE.Vector3();
@@ -33,7 +19,6 @@ const partial = new THREE.Quaternion();
 const boneWorld = new THREE.Quaternion();
 const parentWorld = new THREE.Quaternion();
 const targetWorld = new THREE.Quaternion();
-const swayTarget = new THREE.Vector3();
 
 /** 把 bone→child 的世界方向朝 target 旋转 weight（0..1） */
 export function aimBone(
@@ -65,48 +50,42 @@ export function aimBone(
   bone.updateWorldMatrix(false, true);
 }
 
-/** 左右手臂放松：上臂先下垂，再处理前臂（依赖上臂已更新）；t 驱动小幅自然摆动 */
-export function relaxArm(
-  upper: THREE.Object3D,
-  lower: THREE.Object3D,
+/**
+ * 绕前臂轴滚动手掌，让掌心朝目标方向；weight 0..1。
+ *
+ * 实测本家族手骨的掌心法线是局部 -Y（+Y 是手背）；
+ * 不能按 T-pose 世界轴或局部 +Y 猜，否则整只手会翻转 180°。
+ */
+const PALM_LOCAL = new THREE.Vector3(0, -1, 0);
+const palmAxis = new THREE.Vector3();
+const palmNow = new THREE.Vector3();
+const palmWant = new THREE.Vector3();
+const palmCross = new THREE.Vector3();
+const palmWorldQ = new THREE.Quaternion();
+const palmParentQ = new THREE.Quaternion();
+const palmRollQ = new THREE.Quaternion();
+
+export function orientPalm(
   hand: THREE.Object3D,
-  side: 'left' | 'right',
-  upperWeight: number,
-  lowerWeight: number,
-  t = 0,
+  forearmDir: THREE.Vector3,
+  targetNormal: THREE.Vector3,
+  weight: number,
 ): void {
-  const phase = side === 'left' ? 0 : Math.PI * 0.85;
-  const swayX = Math.sin(t * 0.9 + phase);
-  const swayZ = Math.cos(t * 0.65 + phase);
-
-  const upperTarget = swayTarget
-    .copy(UPPER_TARGET[side])
-    .setX(UPPER_TARGET[side].x + swayX * UPPER_SWAY.x)
-    .setZ(UPPER_TARGET[side].z + swayZ * UPPER_SWAY.z);
-  aimBone(upper, lower, upperTarget, upperWeight);
-
-  const lowerTarget = swayTarget
-    .copy(LOWER_TARGET[side])
-    .setX(LOWER_TARGET[side].x + swayX * LOWER_SWAY.x)
-    .setZ(LOWER_TARGET[side].z + swayZ * LOWER_SWAY.z);
-  aimBone(lower, hand, lowerTarget, lowerWeight);
-}
-
-type BoneLookup = (name: string) => { node: THREE.Object3D } | undefined;
-
-/** 左右手臂一起放松：姿态层只需传骨骼查找函数与权重 */
-export function relaxBothArms(lookup: BoneLookup, weight: number, t = 0): void {
-  if (weight <= 0) return;
-  const sides = [
-    ['left', 'leftUpperArm', 'leftLowerArm', 'leftHand'],
-    ['right', 'rightUpperArm', 'rightLowerArm', 'rightHand'],
-  ] as const;
-  for (const [side, upperName, lowerName, handName] of sides) {
-    const upper = lookup(upperName);
-    const lower = lookup(lowerName);
-    const hand = lookup(handName);
-    if (upper && lower && hand) {
-      relaxArm(upper.node, lower.node, hand.node, side, weight, weight * 0.8, t);
-    }
-  }
+  if (weight <= 0 || forearmDir.lengthSq() < 1e-8) return;
+  const axis = palmAxis.copy(forearmDir).normalize();
+  hand.getWorldQuaternion(palmWorldQ);
+  palmNow.copy(PALM_LOCAL).applyQuaternion(palmWorldQ).projectOnPlane(axis);
+  palmWant.copy(targetNormal).projectOnPlane(axis);
+  if (palmNow.lengthSq() < 1e-6 || palmWant.lengthSq() < 1e-6) return;
+  palmNow.normalize();
+  palmWant.normalize();
+  palmCross.crossVectors(palmNow, palmWant);
+  const angle = Math.atan2(palmCross.dot(axis), palmNow.dot(palmWant));
+  palmRollQ.setFromAxisAngle(axis, angle * Math.min(1, weight));
+  const parent = hand.parent;
+  if (!parent) return;
+  parent.getWorldQuaternion(palmParentQ);
+  palmRollQ.multiply(palmWorldQ);
+  hand.quaternion.copy(palmParentQ.invert().multiply(palmRollQ));
+  hand.updateWorldMatrix(false, true);
 }

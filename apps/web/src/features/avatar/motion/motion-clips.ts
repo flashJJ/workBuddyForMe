@@ -17,6 +17,42 @@ export interface EmbeddedClips {
   tapClip: THREE.AnimationClip | null;
 }
 
+/** 上臂旋转跨度阈值（约 20°）：超过即视为 clip 自带手臂动画 */
+const ARM_ANIMATED_RAD = 0.35;
+
+/** clip 是否自带手臂动画；按 clip 缓存，避免每帧扫轨道 */
+const armAnimatedCache = new WeakMap<THREE.AnimationClip, boolean>();
+
+/**
+ * 判断 clip 的上臂是否有明显运动（挥手、伸展、走路摆臂）。
+ * 自带手臂动画时，待机垂臂层不再叠加，否则会把举手动作压回垂手。
+ */
+export function clipAnimatesArms(clip: THREE.AnimationClip): boolean {
+  const cached = armAnimatedCache.get(clip);
+  if (cached !== undefined) return cached;
+  let animated = false;
+  for (const track of clip.tracks) {
+    if (!/^(left|right)UpperArm\.quaternion$/.test(track.name)) continue;
+    const values = track.values;
+    const [x0, y0, z0, w0] = [values[0] ?? 0, values[1] ?? 0, values[2] ?? 0, values[3] ?? 0];
+    for (let i = 4; i < values.length; i += 4) {
+      const dot = Math.abs(
+        x0 * (values[i] ?? 0) +
+          y0 * (values[i + 1] ?? 0) +
+          z0 * (values[i + 2] ?? 0) +
+          w0 * (values[i + 3] ?? 0),
+      );
+      if (2 * Math.acos(Math.min(1, dot)) > ARM_ANIMATED_RAD) {
+        animated = true;
+        break;
+      }
+    }
+    if (animated) break;
+  }
+  armAnimatedCache.set(clip, animated);
+  return animated;
+}
+
 /** 动作池为空时，从模型内嵌 AnimationClip 里挑 idle（名匹配或最长）与 tap（名匹配） */
 export function selectEmbeddedClips(clips: THREE.AnimationClip[]): EmbeddedClips {
   if (clips.length === 0) return { idleClip: null, tapClip: null };

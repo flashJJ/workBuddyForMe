@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { aimBone, relaxArm } from './arm-relax';
+import { aimBone, orientPalm } from './arm-relax';
 
 function makeArm() {
   const root = new THREE.Object3D();
@@ -25,30 +25,13 @@ function armDir(upper: THREE.Object3D, lower: THREE.Object3D) {
   return b.sub(a).normalize();
 }
 
-describe('待机手臂放松（v3.0 P1）', () => {
-  it('T-pose 上臂被转到自然下垂（略外）', () => {
-    const { upper, lower, hand } = makeArm();
-    relaxArm(upper, lower, hand, 'left', 1, 1);
+describe('世界方向对齐（aimBone）', () => {
+  it('T-pose 上臂被转到目标方向', () => {
+    const { upper, lower } = makeArm();
+    aimBone(upper, lower, new THREE.Vector3(0.26, -1, 0.04), 1);
     const dir = armDir(upper, lower);
     expect(dir.y).toBeLessThan(-0.9);
     expect(dir.x).toBeGreaterThan(0.1);
-    expect(Math.abs(dir.z)).toBeLessThan(0.1);
-  });
-
-  it('右臂镜像；前臂也向下', () => {
-    const { root, upper, lower, hand } = makeArm();
-    upper.position.set(0, 1, 0);
-    lower.position.set(-0.5, 0, 0);
-    hand.position.set(-0.5, 0, 0);
-    root.updateMatrixWorld(true);
-    relaxArm(upper, lower, hand, 'right', 1, 1);
-    expect(armDir(upper, lower).x).toBeLessThan(-0.1);
-
-    const elbow = new THREE.Vector3();
-    const wrist = new THREE.Vector3();
-    lower.getWorldPosition(elbow);
-    hand.getWorldPosition(wrist);
-    expect(wrist.sub(elbow).normalize().y).toBeLessThan(-0.9);
   });
 
   it('weight=0 保持原姿势，weight=0.5 介于中间', () => {
@@ -58,17 +41,46 @@ describe('待机手臂放松（v3.0 P1）', () => {
     expect(armDir(rest.upper, rest.lower).x).toBeCloseTo(before.x, 5);
 
     const half = makeArm();
-    relaxArm(half.upper, half.lower, half.hand, 'left', 0.5, 0.5);
+    aimBone(half.upper, half.lower, new THREE.Vector3(0.26, -1, 0.04), 0.5);
     const dir = armDir(half.upper, half.lower);
     expect(dir.y).toBeGreaterThan(-0.9);
     expect(dir.y).toBeLessThan(0);
   });
 
   it('零长度骨骼安全跳过', () => {
-    const { upper, lower, hand } = makeArm();
+    const { upper, lower } = makeArm();
     lower.position.set(0, 0, 0);
-    hand.position.set(0, 0, 0);
     upper.updateMatrixWorld(true);
-    expect(() => relaxArm(upper, lower, hand, 'left', 1, 1)).not.toThrow();
+    expect(() => aimBone(upper, lower, new THREE.Vector3(0, -1, 0), 1)).not.toThrow();
+  });
+});
+
+describe('掌心 roll（orientPalm）', () => {
+  function palmNormal(hand: THREE.Object3D): THREE.Vector3 {
+    return new THREE.Vector3(0, -1, 0)
+      .applyQuaternion(hand.getWorldQuaternion(new THREE.Quaternion()))
+      .normalize();
+  }
+
+  it('局部 -Y 是掌心法线：绕前臂轴转向目标', () => {
+    const { hand } = makeArm();
+    orientPalm(hand, new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 1), 1);
+    const normal = palmNormal(hand);
+    expect(normal.z).toBeCloseTo(1, 5);
+    expect(Math.abs(normal.y)).toBeLessThan(1e-5);
+  });
+
+  it('weight=0.5 只转一半角度', () => {
+    const { hand } = makeArm();
+    orientPalm(hand, new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 1), 0.5);
+    const normal = palmNormal(hand);
+    expect(normal.y).toBeCloseTo(-Math.SQRT1_2, 5);
+    expect(normal.z).toBeCloseTo(Math.SQRT1_2, 5);
+  });
+
+  it('目标与前臂平行时跳过，不产生 NaN', () => {
+    const { hand } = makeArm();
+    expect(() => orientPalm(hand, new THREE.Vector3(1, 0, 0), new THREE.Vector3(1, 0, 0), 1)).not.toThrow();
+    expect(Number.isNaN(palmNormal(hand).x)).toBe(false);
   });
 });

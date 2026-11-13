@@ -109,6 +109,11 @@ export class BehaviorRunner {
     return current.def[current.phase]?.tracks ?? NO_TRACKS;
   }
 
+  /** dev/探针：当前排队的行为 id */
+  get queuedIds(): readonly string[] {
+    return this.queued;
+  }
+
   get snapshot(): Readonly<RunnerSnapshot> {
     this.snap.id = this.current?.def.id ?? null;
     this.snap.phase = this.current?.phase ?? null;
@@ -144,6 +149,20 @@ export class BehaviorRunner {
     return false;
   }
 
+  /** 强制接管：清空队列并立即进入新行为（用户交互/场景新 cue 用） */
+  playNow(id: string): boolean {
+    const def = this.library.get(id);
+    if (!def) return false;
+    this.queued.length = 0;
+    this.enter(def);
+    return true;
+  }
+
+  /** 清空排队行为（场景结束/强制切换时用） */
+  clearQueue(): void {
+    this.queued.length = 0;
+  }
+
   /** 请求收尾；已在 exit 或空闲时返回 false */
   stop(): boolean {
     if (!this.current || this.current.phase === 'exit') return false;
@@ -162,7 +181,14 @@ export class BehaviorRunner {
     this.advancePhases(current);
     if (this.current !== current) return;
     const target = current.phase === 'exit' ? 0 : 1;
-    current.weight = smoothDamp(current.weight, target, 1000 / this.fadeMs, dt / 1000);
+    const phase =
+      current.phase === 'enter'
+        ? current.def.enter
+        : current.phase === 'exit'
+          ? current.def.exit
+          : current.def.loop;
+    const fadeMs = Math.max(1, phase?.fadeMs ?? this.fadeMs);
+    current.weight = smoothDamp(current.weight, target, 1000 / fadeMs, dt / 1000);
   }
 
   private advancePhases(current: ActiveBehavior): void {
@@ -210,7 +236,10 @@ export class BehaviorRunner {
   }
 
   private enqueue(id: string): void {
-    if (!this.queued.includes(id)) this.queued.push(id);
+    if (this.queued.includes(id)) return;
+    // 队列上限：防止连续点击/场景 cue 无限堆积，导致后续交互全部排队
+    if (this.queued.length >= 4) this.queued.shift();
+    this.queued.push(id);
   }
 
   /** 同级按优先数值（小者优先）、再按入队顺序出队 */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Composer } from '../composer';
+import { Composer, stageOfTrack } from '../composer';
 import type { PoseDefinition } from '../contracts';
 import { quatFromEuler, quatMultiply } from '../math';
 import { PoseLibrary } from '../pose';
@@ -85,5 +85,54 @@ describe('Composer', () => {
     ]);
     expect(written).toBe(1);
     expectQuatClose(store.get('spine'), quatFromEuler(quat(), 0, HALF_PI, 0));
+  });
+
+  it('轨道按手臂子树根阶段归类', () => {
+    const { skeleton } = createSkeleton([
+      'spine', 'head', 'leftUpperArm', 'leftHand', 'leftIndexDistal', 'leftFoot',
+    ]);
+    const library = new PoseLibrary([
+      { id: 'torso', mask: { include: ['spine', 'head'] }, bones: { spine: { x: 0.1 }, head: { x: 0.1 } } },
+      { id: 'arm', mask: { include: ['leftArm'] }, bones: { leftUpperArm: { x: 0.1 } } },
+      { id: 'hand', mask: { include: ['leftArm'] }, bones: { leftHand: { x: 0.1 } } },
+      { id: 'finger', mask: { include: ['leftArm'] }, bones: { leftIndexDistal: { x: 0.1 } } },
+      { id: 'foot', mask: { include: ['leftLeg'] }, bones: { leftFoot: { x: 0.1 } } },
+    ]);
+    expect(stageOfTrack({ pose: 'torso' }, skeleton, library)).toBe('head');
+    expect(stageOfTrack({ pose: 'arm' }, skeleton, library)).toBe('arms');
+    expect(stageOfTrack({ pose: 'hand' }, skeleton, library)).toBe('arms');
+    expect(stageOfTrack({ pose: 'finger' }, skeleton, library)).toBe('arms');
+    expect(stageOfTrack({ pose: 'foot' }, skeleton, library)).toBe('legs');
+    expect(
+      stageOfTrack({ executor: { id: 'x', progress: 1 }, mask: { include: ['leftArm'] } }, skeleton, library),
+    ).toBe('arms');
+  });
+
+  it('阶段顺序优先于 priority：手臂轨在脊柱轨之后执行', () => {
+    const { skeleton } = createSkeleton(['spine', 'leftUpperArm']);
+    const order: string[] = [];
+    const composer = new Composer(skeleton, new PoseLibrary(), (id) => {
+      order.push(id);
+      return true;
+    });
+    composer.compose([
+      { executor: { id: 'arm', progress: 1 }, mask: { include: ['leftArm'] }, priority: 3 },
+      { executor: { id: 'spine', progress: 1 }, mask: { include: ['spine'] }, priority: 0 },
+    ]);
+    expect(order).toEqual(['spine', 'arm']);
+  });
+
+  it('同一阶段内仍按 priority 从高到低执行', () => {
+    const { skeleton } = createSkeleton(['leftUpperArm']);
+    const order: string[] = [];
+    const composer = new Composer(skeleton, new PoseLibrary(), (id) => {
+      order.push(id);
+      return true;
+    });
+    composer.compose([
+      { executor: { id: 'arm-high', progress: 1 }, mask: { include: ['leftArm'] }, priority: 3 },
+      { executor: { id: 'arm-low', progress: 1 }, mask: { include: ['leftArm'] }, priority: 0 },
+    ]);
+    expect(order).toEqual(['arm-high', 'arm-low']);
   });
 });

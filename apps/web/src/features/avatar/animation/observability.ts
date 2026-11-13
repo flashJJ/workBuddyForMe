@@ -68,7 +68,14 @@ export class BehaviorObserver {
       elapsedMs: Math.round(runner.elapsedMs),
       tracks: runner.tracks.map((track) => ({
         kind: track.kind,
-        ref: 'pose' in track ? track.pose : 'motion' in track ? track.motion : undefined,
+        ref:
+          'pose' in track
+            ? track.pose
+            : 'motion' in track
+              ? track.motion
+              : 'channels' in track
+                ? Object.keys(track.channels).join(',')
+                : undefined,
         weight: round(weight * ('weight' in track ? track.weight ?? 1 : 1)),
       })),
       transitions: this.transitions.slice(),

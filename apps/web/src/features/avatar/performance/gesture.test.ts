@@ -4,9 +4,17 @@ import {
   ambientHeadAngles,
   gestureAngles,
   pickAmbientBehavior,
+  pickMotionGesture,
   pickTapGesture,
   type ProceduralGestureKind,
 } from './gesture';
+
+describe('pickMotionGesture', () => {
+  it('无 VRMA 手势时点击回退到内部 MOTION', () => {
+    expect(pickMotionGesture(0.1)).toBe('motion.wave');
+    expect(pickMotionGesture(0.9)).toBe('motion.shy');
+  });
+});
 
 describe('gestureAngles', () => {
   it('首尾归零：包络保证不产生跳变', () => {

@@ -48,3 +48,36 @@ export const HEAD_LIFT: PoseDefinition = {
   mask: HEAD,
   bones: { head: { x: 0.16, y: 0.06, z: -0.12 } },
 };
+
+/** 抬头看上方（伸懒腰/环顾时的上缘） */
+export const HEAD_UP: PoseDefinition = {
+  id: 'pose.head-up',
+  mask: HEAD,
+  bones: { head: { x: -0.18 } },
+};
+
+/** 摇头（否定）：左右各 17°，比瞥视幅度大、接近日常拒绝 */
+export const HEAD_SHAKE_LEFT: PoseDefinition = {
+  id: 'pose.head-shake-left',
+  mask: HEAD,
+  bones: { head: { y: 0.3, z: 0.04 } },
+};
+
+export const HEAD_SHAKE_RIGHT: PoseDefinition = {
+  id: 'pose.head-shake-right',
+  mask: HEAD,
+  bones: { head: { y: -0.3, z: -0.04 } },
+};
+
+/** 环顾左上/右上：仰头 + 偏转，用于东张西望的动作中段 */
+export const HEAD_LOOK_UP_LEFT: PoseDefinition = {
+  id: 'pose.head-look-up-left',
+  mask: HEAD,
+  bones: { head: { x: -0.14, y: 0.2 } },
+};
+
+export const HEAD_LOOK_UP_RIGHT: PoseDefinition = {
+  id: 'pose.head-look-up-right',
+  mask: HEAD,
+  bones: { head: { x: -0.14, y: -0.2 } },
+};

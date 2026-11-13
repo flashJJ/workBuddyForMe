@@ -34,6 +34,13 @@ describe('行为注册表', () => {
             expect(poseIds.has(track.pose), `${behavior.id} -> ${track.pose}`).toBe(true);
           } else if (track.kind === 'motion') {
             expect(motionIds.has(track.motion), `${behavior.id} -> ${track.motion}`).toBe(true);
+          } else if (track.kind === 'morph') {
+            const channels = Object.entries(track.channels);
+            expect(channels.length, `${behavior.id} morph 轨道不能为空`).toBeGreaterThan(0);
+            for (const [channel, value] of channels) {
+              expect(value, `${behavior.id} -> ${channel}`).toBeGreaterThanOrEqual(0);
+              expect(value, `${behavior.id} -> ${channel}`).toBeLessThanOrEqual(1);
+            }
           }
         }
       }

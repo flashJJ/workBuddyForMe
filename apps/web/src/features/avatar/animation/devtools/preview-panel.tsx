@@ -13,9 +13,23 @@ import { getBehaviorDebug, type BehaviorDebugSnapshot } from '../observability';
 
 const POLL_MS = 250;
 
+/** T2.2：dev 预览用的高频语义通道（binding 里都有映射；可多选叠加） */
+const MORPH_PREVIEW_CHANNELS = [
+  'expr.joy',
+  'expr.sorrow',
+  'expr.angry',
+  'expr.shy',
+  'expr.fun',
+  'eye.smile',
+  'mouth.smile',
+  'mouth.a.big',
+] as const;
+
 export interface BehaviorPreviewPanelProps {
   onPlay: (id: string) => void;
   onStop: () => void;
+  /** 语义表情通道预览；不传则不显示该区块 */
+  onMorph?: (channels: Record<string, number> | null) => void;
   /** 默认读全局观测源（dev 探针安装后有效） */
   getSnapshot?: () => BehaviorDebugSnapshot | null;
   behaviors?: readonly { id: string; priority: number }[];
@@ -29,11 +43,13 @@ function shortId(id: string): string {
 export function BehaviorPreviewPanel({
   onPlay,
   onStop,
+  onMorph,
   getSnapshot = getBehaviorDebug,
   behaviors = BEHAVIORS,
   pollMs = POLL_MS,
 }: BehaviorPreviewPanelProps) {
   const [snapshot, setSnapshot] = React.useState<BehaviorDebugSnapshot | null>(null);
+  const [morph, setMorph] = React.useState<Record<string, number>>({});
 
   React.useEffect(() => {
     const tick = () => setSnapshot(getSnapshot());
@@ -41,6 +57,19 @@ export function BehaviorPreviewPanel({
     const timer = setInterval(tick, pollMs);
     return () => clearInterval(timer);
   }, [getSnapshot, pollMs]);
+
+  const toggleMorph = (channel: string) => {
+    const next = { ...morph };
+    if (next[channel]) delete next[channel];
+    else next[channel] = 1;
+    setMorph(next);
+    onMorph?.(Object.keys(next).length > 0 ? next : null);
+  };
+
+  const clearMorph = () => {
+    setMorph({});
+    onMorph?.(null);
+  };
 
   const tracks = snapshot?.tracks ?? [];
   const transitions = snapshot?.transitions ?? [];
@@ -75,6 +104,33 @@ export function BehaviorPreviewPanel({
           停止
         </button>
       </div>
+
+      {onMorph && (
+        <div className="mb-1">
+          <div className="mb-0.5 text-neutral-500">语义表情（可多选叠加）</div>
+          <div className="flex flex-wrap gap-1">
+            {MORPH_PREVIEW_CHANNELS.map((channel) => (
+              <button
+                key={channel}
+                type="button"
+                onClick={() => toggleMorph(channel)}
+                className={`rounded px-1.5 py-0.5 ${
+                  morph[channel] ? 'bg-emerald-500/40 text-white' : 'bg-white/10 hover:bg-white/20'
+                }`}
+              >
+                {channel}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={clearMorph}
+              className="rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20"
+            >
+              清除
+            </button>
+          </div>
+        </div>
+      )}
 
       <ul className="mb-1 space-y-0.5">
         {tracks.map((track, index) => (
@@ -127,6 +183,15 @@ export function MotionPreviewOverlay({ controllerRef }: MotionPreviewOverlayProp
     const controller = controllerRef.current as { stopBehavior?: () => boolean } | null;
     controller?.stopBehavior?.();
   }, [controllerRef]);
+  const morph = React.useCallback(
+    (channels: Record<string, number> | null) => {
+      const controller = controllerRef.current as {
+        setMorphChannels?: (next: Record<string, number> | null) => void;
+      } | null;
+      controller?.setMorphChannels?.(channels);
+    },
+    [controllerRef],
+  );
 
-  return <BehaviorPreviewPanel onPlay={play} onStop={stop} />;
+  return <BehaviorPreviewPanel onPlay={play} onStop={stop} onMorph={morph} />;
 }

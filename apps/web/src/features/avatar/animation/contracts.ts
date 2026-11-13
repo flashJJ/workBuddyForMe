@@ -30,12 +30,19 @@ export interface BoneRotation {
   z?: number;
 }
 
+/** 姿态变体：同语义、细微差异的替代骨骼集，运行时按 hold 周期随机切换 */
+export interface PoseVariant {
+  bones: Partial<Record<string, BoneRotation>>;
+}
+
 /** L1 姿势：命名静态姿态，不含时间轴 */
 export interface PoseDefinition {
   id: string;
   mask: BoneMask;
   /** 骨骼名 → 相对绑定姿态旋转；未列出的骨骼保持 base */
   bones: Partial<Record<string, BoneRotation>>;
+  /** 可选变体簇：同一个姿势的自然差异样本（2 个以上才有意义） */
+  variants?: readonly PoseVariant[];
   /** 默认 additive（叠加在 mixer 姿态之上）；false = 替换为 base + 偏移 */
   additive?: boolean;
 }
@@ -70,6 +77,8 @@ export interface BehaviorDefinition {
 
 export interface PhaseDefinition {
   durationMs?: number;
+  /** 本阶段权重淡入/淡出时间（毫秒）；缺省用 Runner 的 120ms */
+  fadeMs?: number;
   tracks: TrackDefinition[];
 }
 
@@ -85,7 +94,13 @@ export type TrackDefinition =
   | { kind: 'motion'; mask: BoneMask; motion: string; weight?: number; at?: number }
   | { kind: 'root'; motion: string }
   | { kind: 'expression'; tag: ExpressionTag; holdMs?: number }
-  | { kind: 'look'; target: ScriptLookTarget; weight?: number };
+  | { kind: 'look'; target: ScriptLookTarget; weight?: number }
+  | {
+      kind: 'morph';
+      /** 语义通道 → 目标权重（0..1）；运行时会乘行为/轨道权重，多轨道同通道取最大 */
+      channels: Readonly<Record<string, number>>;
+      weight?: number;
+    };
 
 /** 四元数快照（字段与 three 的 Quaternion 一致，但不依赖 three） */
 export interface BoneQuat {

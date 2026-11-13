@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BODY_BONE_NAMES,
   BONE_GROUP_MEMBERS,
+  FINGER_BONE_NAMES,
   NORM_BONE_NAMES,
   groupOfBone,
   isBoneInMask,
@@ -10,8 +12,10 @@ import {
 import type { BoneGroup } from '../contracts';
 
 describe('骨骼名单', () => {
-  it('17 根 normalized bone 不重复', () => {
-    expect(NORM_BONE_NAMES).toHaveLength(17);
+  it('17 身体 + 30 手指 = 47 根 normalized bone，且不重复', () => {
+    expect(BODY_BONE_NAMES).toHaveLength(17);
+    expect(FINGER_BONE_NAMES).toHaveLength(30);
+    expect(NORM_BONE_NAMES).toHaveLength(47);
     expect(new Set(NORM_BONE_NAMES).size).toBe(NORM_BONE_NAMES.length);
   });
 
@@ -38,15 +42,22 @@ describe('骨骼名单', () => {
 describe('resolveMask', () => {
   it('按组声明顺序展开，重复组去重', () => {
     const bones = resolveMask({ include: ['leftArm', 'leftArm', 'head'] });
-    expect(bones).toEqual([
-      'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand', 'head',
+    expect(bones.slice(0, 5)).toEqual([
+      'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand', 'leftThumbMetacarpal',
     ]);
+    expect(bones).toContain('leftLittleDistal');
+    expect(bones.at(-1)).toBe('head');
+    expect(new Set(bones).size).toBe(bones.length);
   });
 
   it('exclude 后置生效', () => {
     const bones = resolveMask({ include: ['leftArm', 'rightArm'], exclude: ['rightArm'] });
-    expect(bones).toEqual(['leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand']);
+    expect(bones.slice(0, 4)).toEqual([
+      'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand',
+    ]);
+    expect(bones).toContain('leftIndexProximal');
     expect(bones).not.toContain('rightUpperArm');
+    expect(bones).not.toContain('rightIndexProximal');
   });
 });
 

@@ -1,46 +1,136 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`动效库 golden（量化容差 0.02） > behavior.bow 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "af12186d",
+  "t300": "6f7a4ca7",
+  "t600": "a9672a91",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.chin-rest 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "e11434ee",
+  "t300": "b909051b",
+  "t600": "9a7fdcc9",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.eat-rice 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "1d758ac6",
+  "t300": "97c3479c",
+  "t600": "15e5ae09",
+}
+`;
+
 exports[`动效库 golden（量化容差 0.02） > behavior.face-away 1`] = `
 {
-  "t0": "af46af7d",
-  "t120": "af46af7d",
-  "t300": "af46af7d",
-  "t600": "af46af7d",
+  "t0": "af12186d",
+  "t120": "af12186d",
+  "t300": "af12186d",
+  "t600": "af12186d",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.hands-on-hips 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "1e8772a4",
+  "t300": "b4fb85bc",
+  "t600": "47eba81d",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.head-pat 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "2fbc097d",
+  "t300": "3c8410ec",
+  "t600": "cc4fba8c",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.hug 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "af12186d",
+  "t300": "92a2dfb0",
+  "t600": "972483ca",
 }
 `;
 
 exports[`动效库 golden（量化容差 0.02） > behavior.idle 1`] = `
 {
-  "t0": "af46af7d",
-  "t120": "71e36cc7",
-  "t300": "757d958b",
-  "t600": "51743d97",
+  "t0": "af12186d",
+  "t120": "db6bca1b",
+  "t300": "db6bca1b",
+  "t600": "7368123e",
 }
 `;
 
 exports[`动效库 golden（量化容差 0.02） > behavior.land 1`] = `
 {
-  "t0": "af46af7d",
-  "t120": "7452141e",
-  "t300": "ab424fe1",
+  "t0": "af12186d",
+  "t120": "b8580ce0",
+  "t300": "af46af7d",
   "t600": "af46af7d",
 }
 `;
 
 exports[`动效库 golden（量化容差 0.02） > behavior.lifted 1`] = `
 {
-  "t0": "af46af7d",
-  "t120": "fb5e4018",
-  "t300": "878df5f0",
-  "t600": "ffb25cca",
+  "t0": "af12186d",
+  "t120": "db47a994",
+  "t300": "f8341295",
+  "t600": "803eb69b",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.scold-fat 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "6834504f",
+  "t300": "06656049",
+  "t600": "4bf3fec3",
 }
 `;
 
 exports[`动效库 golden（量化容差 0.02） > behavior.sleep 1`] = `
 {
-  "t0": "af46af7d",
-  "t120": "18c474af",
-  "t300": "ee85fa0a",
-  "t600": "a49254c8",
+  "t0": "af12186d",
+  "t120": "2045c79f",
+  "t300": "fd0e3ffa",
+  "t600": "85de7095",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.wake 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "ca57595e",
+  "t300": "f0ec1a51",
+  "t600": "ccc7f34e",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.work-focus 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "34c2f301",
+  "t300": "a6d7e0bd",
+  "t600": "8aa1e01b",
+}
+`;
+
+exports[`动效库 golden（量化容差 0.02） > behavior.yawn 1`] = `
+{
+  "t0": "af12186d",
+  "t120": "af12186d",
+  "t300": "c33403a9",
+  "t600": "35cb6a64",
 }
 `;

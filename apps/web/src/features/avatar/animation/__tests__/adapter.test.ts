@@ -9,7 +9,7 @@ function ref(name: string, node: THREE.Object3D): NormalizedBoneRef {
 }
 
 /** 最小手臂链：肩 → 上臂 → 前臂 → 手，骨骼朝 +X，便于世界空间垂臂求解 */
-function makeRig(): { bones: Map<string, NormalizedBoneRef>; upperArm: THREE.Object3D } {
+function makeRig(): { bones: Map<string, NormalizedBoneRef>; upperArm: THREE.Object3D; head: THREE.Object3D } {
   const spine = new THREE.Object3D();
   const neck = new THREE.Object3D();
   const head = new THREE.Object3D();
@@ -34,7 +34,7 @@ function makeRig(): { bones: Map<string, NormalizedBoneRef>; upperArm: THREE.Obj
     ['leftLowerArm', ref('leftLowerArm', lowerArm)],
     ['leftHand', ref('leftHand', hand)],
   ]);
-  return { bones, upperArm };
+  return { bones, upperArm, head };
 }
 
 describe('createVrmSkeleton', () => {
@@ -51,6 +51,19 @@ describe('createVrmSkeleton', () => {
 });
 
 describe('VrmAnimationRuntime', () => {
+  it('applyPose additive=false 每帧从绑定姿态重算，重复调用不累加', () => {
+    const { bones, head } = makeRig();
+    const runtime = new VrmAnimationRuntime(bones);
+    runtime.captureBase();
+    runtime.applyPose('pose.head-down', 1, 0, false);
+    const first = head.quaternion.clone();
+    runtime.applyPose('pose.head-down', 1, 0, false);
+    expect(head.quaternion.angleTo(first)).toBeCloseTo(0, 5);
+    // 默认 additive 仍叠加在当前姿态上
+    runtime.applyPose('pose.head-down', 1, 0);
+    expect(head.quaternion.angleTo(first)).toBeGreaterThan(0.01);
+  });
+
   it('行为姿势按阶段合成到骨架（idle → 垂臂）', () => {
     const { bones, upperArm } = makeRig();
     const runtime = new VrmAnimationRuntime(bones);

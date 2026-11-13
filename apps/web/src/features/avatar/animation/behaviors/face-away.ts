@@ -9,6 +9,10 @@ export const FACE_AWAY: BehaviorDefinition = {
   priority: 2,
   interrupt: 'all',
   loop: {
-    tracks: [{ kind: 'look', target: 'away', weight: 1 }],
+    tracks: [
+      { kind: 'look', target: 'away', weight: 1 },
+      // 背对时小幅嘟嘴：验证 T2.3 行为表情轨道（随行为权重淡入淡出）
+      { kind: 'morph', channels: { 'brow.bored': 0.7, 'mouth.sad': 0.35 } },
+    ],
   },
 };

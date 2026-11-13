@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import type { MotionDefinition } from '../contracts';
 import { MotionLibrary, sampleMotion, type MotionSample } from '../motion';
 import { MOTIONS } from '../motions';
+import { clipAnimatesArms } from '../../motion/motion-clips';
 
 const newSample = (): MotionSample => ({ from: '', to: '', t: 0, timeMs: 0, done: true });
 
@@ -93,5 +95,36 @@ describe('内置动作数据', () => {
     expect(library.get('motion.nod')).toBeDefined();
     expect(library.get('missing')).toBeUndefined();
     expect(library.size).toBe(MOTIONS.length);
+  });
+});
+
+describe('clipAnimatesArms（垂臂层是否让位）', () => {
+  const q = (angle: number) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
+
+  it('上臂静止的 A-pose 片段交给垂臂层', () => {
+    const track = new THREE.QuaternionKeyframeTrack(
+      'leftUpperArm.quaternion',
+      [0, 1],
+      [...q(0), ...q(0)],
+    );
+    expect(clipAnimatesArms(new THREE.AnimationClip('a-pose', 1, [track]))).toBe(false);
+  });
+
+  it('上臂大幅摆动（挥手 / 伸展）时让位', () => {
+    const track = new THREE.QuaternionKeyframeTrack(
+      'leftUpperArm.quaternion',
+      [0, 1],
+      [...q(0), ...q(Math.PI / 2)],
+    );
+    expect(clipAnimatesArms(new THREE.AnimationClip('wave', 1, [track]))).toBe(true);
+  });
+
+  it('只看上臂，头部摆动不算手臂动画', () => {
+    const track = new THREE.QuaternionKeyframeTrack(
+      'head.quaternion',
+      [0, 1],
+      [...q(0), ...q(Math.PI / 2)],
+    );
+    expect(clipAnimatesArms(new THREE.AnimationClip('head', 1, [track]))).toBe(false);
   });
 });

@@ -29,6 +29,31 @@ export {
 } from './binding';
 
 export {
+  MorphExecutor,
+  type MorphDebugSnapshot,
+  type MorphMeshHandle,
+} from './morph';
+
+export { LOOK_DIRECTIONS } from './look';
+
+export {
+  JOINT_LIMITS,
+  validatePose,
+  validatePoses,
+  type Axis,
+  type AxisLimit,
+  type BoneLimits,
+  type PoseLimitIssue,
+} from './constraints';
+
+export {
+  direction,
+  solveTwoBone,
+  type TwoBoneSolution,
+  type Vec3,
+} from './ik';
+
+export {
   clamp01,
   copyQuat,
   ease,
@@ -66,26 +91,66 @@ export {
   type MotionSample,
 } from './motion';
 
-export { GLANCE, MOTIONS, NOD, TILT } from './motions';
+export {
+  EAT_BITE_MOTION,
+  GLANCE,
+  LOOK_AROUND,
+  MOTIONS,
+  NOD,
+  NOD_DOUBLE,
+  SHAKE,
+  SHY_MOTION,
+  STOMP,
+  STRETCH_UP,
+  TILT,
+  WAVE,
+} from './motions';
 
 export {
   ARMS_HANG,
   ARMS_LIMP,
+  EAT_BITE,
+  EAT_HOLD,
   HEAD_DOWN,
   HEAD_GLANCE_LEFT,
   HEAD_GLANCE_RIGHT,
   HEAD_LIFT,
+  HEAD_LOOK_UP_LEFT,
+  HEAD_LOOK_UP_RIGHT,
   HEAD_NEUTRAL,
+  HEAD_SHAKE_LEFT,
+  HEAD_SHAKE_RIGHT,
   HEAD_TILT_LEFT,
   HEAD_TILT_RIGHT,
+  HEAD_UP,
+  IDLE_BODY,
   LAND_SETTLE,
   LEGS_DANGLE,
   LEGS_STAND,
   POSES,
+  SCOLD_HUFF,
   SCRUFF_ARCH,
+  SHY,
+  STOMP_DOWN,
+  STOMP_LIFT,
+  WAVE_IN,
+  WAVE_OUT,
+  WAVE_RAISED,
 } from './poses';
 
-export { BEHAVIORS, FACE_AWAY, IDLE, LAND, LIFTED, SLEEP } from './behaviors';
+export {
+  BEHAVIORS,
+  EAT_RICE,
+  FACE_AWAY,
+  HEAD_PAT,
+  IDLE,
+  LAND,
+  LIFTED,
+  SCOLD_FAT,
+  SLEEP,
+  WAKE,
+  WORK_FOCUS,
+} from './behaviors';
 
 export {
   BehaviorLibrary,

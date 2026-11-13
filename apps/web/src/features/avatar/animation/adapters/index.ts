@@ -6,4 +6,6 @@
 
 export { createVrmSkeleton, VrmAnimationRuntime } from './vrm';
 export { POSE_EXECUTORS, type PoseExecutor } from './vrm-executors';
+export { createVrmMorphExecutor } from './vrm-morph';
+export { applyTwoBoneIk, type TwoBoneIkOptions } from './vrm-ik';
 export { ROOT_MOTIONS, type RootMotionSampler } from './vrm-root';

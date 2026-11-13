@@ -7,6 +7,7 @@ import type { BehaviorDefinition, BoneMask, TrackDefinition } from '../contracts
 
 const ARMS: BoneMask = { include: ['leftArm', 'rightArm'] };
 const LEGS: BoneMask = { include: ['leftLeg', 'rightLeg'] };
+const LIMBS: BoneMask = { include: ['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] };
 const HEAD: BoneMask = { include: ['head'] };
 const TORSO: BoneMask = { include: ['spine'] };
 
@@ -20,23 +21,47 @@ function liftTracks(rootMotion: string): TrackDefinition[] {
   ];
 }
 
+/** 被拎起时的表情：进入惊讶，悬空转为生气/挣扎，退出随行为权重淡出 */
+const MORPH_ENTER = {
+  kind: 'morph',
+  channels: { 'brow.surprised': 1, 'mouth.o.big': 0.6 },
+} as const;
+const MORPH_LOOP = {
+  kind: 'morph',
+  channels: { 'brow.angry': 0.55, 'eye.angry': 0.35, 'mouth.angry': 0.3 },
+} as const;
+
 export const LIFTED: BehaviorDefinition = {
   id: 'behavior.lifted',
   priority: 1,
   interrupt: 'all',
   enter: {
-    durationMs: 320,
+    durationMs: 80,
+    fadeMs: 30,
     tracks: [
-      { kind: 'pose', mask: TORSO, pose: 'pose.scruff-arch', fadeMs: 320 },
+      { kind: 'pose', mask: TORSO, pose: 'pose.scruff-arch', fadeMs: 80 },
       ...liftTracks('motion.lift-rise'),
+      MORPH_ENTER,
     ],
   },
   loop: {
-    tracks: liftTracks('motion.lift-hover'),
+    tracks: [
+      { kind: 'root', motion: 'motion.lift-hover' },
+      { kind: 'pose', mask: HEAD, pose: 'pose.lift-head' },
+      // 按住期间持续挣扎：四肢由执行器按时间交替摆动
+      { kind: 'pose', mask: LIMBS, pose: 'pose.lift-struggle' },
+      MORPH_LOOP,
+    ],
   },
   exit: {
-    durationMs: 300,
-    tracks: liftTracks('motion.lift-drop'),
+    durationMs: 75,
+    fadeMs: 30,
+    tracks: [
+      // 垂臂基准：退出权重降到 0 时不再回到 A-pose
+      { kind: 'pose', mask: ARMS, pose: 'pose.gesture-hang' },
+      ...liftTracks('motion.lift-drop'),
+      MORPH_LOOP,
+    ],
   },
 };
 
@@ -46,7 +71,18 @@ export const LAND: BehaviorDefinition = {
   priority: 1,
   interrupt: 'all',
   enter: {
-    durationMs: 320,
-    tracks: [{ kind: 'pose', mask: TORSO, pose: 'pose.land-settle', fadeMs: 320 }],
+    durationMs: 80,
+    fadeMs: 40,
+    tracks: [
+      { kind: 'pose', mask: TORSO, pose: 'pose.land-settle', fadeMs: 80 },
+      // 落地后手臂回到自然垂臂（从被拎起的姿势按权重过渡）
+      { kind: 'pose', mask: ARMS, pose: 'pose.arms-hang' },
+    ],
+  },
+  // 收尾阶段 weight 会降到 0；用不吃权重的基准轨保持垂臂，避免回 A-pose
+  exit: {
+    durationMs: 30,
+    fadeMs: 25,
+    tracks: [{ kind: 'pose', mask: ARMS, pose: 'pose.gesture-hang' }],
   },
 };

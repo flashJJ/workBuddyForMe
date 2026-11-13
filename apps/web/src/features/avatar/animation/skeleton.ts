@@ -90,6 +90,13 @@ export class Skeleton {
     }
   }
 
+  /** 覆盖帧快照中的指定骨骼：交叉淡化时用上一姿势作为本帧基准 */
+  overrideFrame(entries: Iterable<readonly [string, Readonly<BoneQuat>]>): void {
+    for (const [name, quat] of entries) {
+      this.frame.set(name, { x: quat.x, y: quat.y, z: quat.z, w: quat.w });
+    }
+  }
+
   /** 只恢复 mask 命中的骨骼，未声明部分保持现状 */
   resetMask(mask: BoneMask): void {
     this.reset(this.namesForMask(mask));
