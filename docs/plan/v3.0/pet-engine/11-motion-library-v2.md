@@ -1,7 +1,7 @@
 # M0d 动效库扩充（Motion Library v2）方案
 
 > 状态：**提案，待评审**。目标是在 M1 角色行动与剧情之前，把 M0c 的“可运行骨架”扩成“有足够内容可编排”的表现库。
-> 关联：[10-motion-library.md](./10-motion-library.md)、[12-motion-plugin-feasibility.md](./12-motion-plugin-feasibility.md)。
+> 关联：[10-motion-library.md](./10-motion-library.md)、[12-motion-plugin-feasibility.md](./12-motion-plugin-feasibility.md)、[13-human-pose-reference.md](./13-human-pose-reference.md)（姿势/动作约束）。
 
 ## 1. 为什么现在做
 
@@ -11,13 +11,13 @@ M0c 已完成分层运行时（L0 原子 / L1 姿势 / L2 动作 / L3 行为 / L
 |---|---|---|
 | 形态键（morph targets） | 118 个 | 18 个（15%） |
 | VRM 表情组 | 13 组 | 5 个预设映射（happy/sad/angry/relaxed/surprised） |
-| 人形骨骼 | 49 根（含手指、眼、脚趾） | 17 根 normalized bone |
+| 人形骨骼 | 49 根（含手指、眼、脚趾） | 47 根 normalized bone（17 身体 + 30 手指） |
 | SpringBone | 3 组 / 156 关节 | 仅物理驱动，未参与编排 |
-| L1 姿势 | — | 13 个 |
-| L2 动作 | — | 3 个（nod / tilt / glance） |
+| L1 姿势 | — | 19 个（含 6 个手型） |
+| L2 动作 | — | 5 个（nod / tilt / glance / 左右手 fidget） |
 | L3 行为 | — | 5 个 |
 
-同时存在一个**运行时缺口**：`TrackDefinition` 已声明 `expression` 与 `look` 轨道，但 `VrmAnimationRuntime.resolve()` 只执行 pose/motion，`behavior.face-away` 的 look 轨道目前是空转。也就是说，即使继续写内容，表情和视线也接不上。
+运行时缺口已补齐（T2.2–T2.4）：`morph` / `look` 轨道已接入运行时，`expression` 仍由脸层按 tag 接管。下一缺口是把新内容接进剧本 cue（T2.8）。
 
 结论：现在缺的不是合成器，而是
 

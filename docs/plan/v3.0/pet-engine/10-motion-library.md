@@ -1,5 +1,6 @@
 # 10 桌宠动效分层库（Motion Library）方案
 
+> 动效库 Wiki（版本、变更、避坑点、改造方案）：[docs/wiki/motion-library](../../../wiki/motion-library/README.md)
 > 目标：把「动作 / 姿势 / 行为」从 `VrmPoseLayer` 里的硬编码角度，升级为可组合、可分层、可预览、可回归的动效库。
 > 背景：「被提起」不协调的根因不是常数不对，而是缺少 L1 姿势、L2 动作、L3 行为的层级与合成语义。
 > 关联：[08 剧本化架构](./08-script-architecture.md)、[09 剧本开发细则](./09-script-dev-plan.md)、[04 动画与行为](./04-animation-behavior.md)。

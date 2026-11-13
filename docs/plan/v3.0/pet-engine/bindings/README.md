@@ -19,8 +19,16 @@
 - `blink` / `viseme` 为 `VrmFaceLayer` 保留通道，行为轨道不得写入。
 - 100 个非标准 morph 的语义顺序按同一模板推断；首次导入后建议抽查 `Eye_look_left`、`Mouth_shocked_op` 等。
 
-## 重新生成
+## 重新生成与校验
 
 - 精简：删除全零 morph NORMAL、补 `targetNames`、重建 buffer。
 - 绑定：以雪团的 118 个 `targetNames` 为索引表，生成 `standardExpressions` 与 `channels`。
 - 新增 AnimeArt 模型时先跑家族校验，偏差超过阈值不并入 `animeart-v1`。
+- 校验命令：
+  ```bash
+  pnpm check:family
+  # 指定文件 / 基线 / binding
+  node scripts/avatar/validate-family.mjs --baseline xuetuan.vrm a.vrm b.vrm
+  ```
+  脚本核对 49 骨骼、骨骼父级、rest 四元数 ≤ 0.5°、118 morph、`targetNames`、13 组表情绑定索引（18 个）与 POSITION-only morph。
+- 2026-11-12 实测：内置 3 个角色 + `AI模型精简版` 15 个样本，18/18 通过（rest 0°、11 primitive × 118 morph、18 binds）。

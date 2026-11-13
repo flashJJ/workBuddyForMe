@@ -42,7 +42,7 @@ desktop ──→ config（仅路径/环境契约）
 ### 2.1 Web 模式
 
 ```text
-浏览器 ──HTTP 127.0.0.1:3000──▶ next dev / next start
+浏览器 ──HTTP 127.0.0.1:42337──▶ next dev / next start
                                   └─ Route Handler ─▶ core ─▶ SQLite / 供应商 API
 ```
 

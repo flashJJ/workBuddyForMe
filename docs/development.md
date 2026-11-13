@@ -10,7 +10,7 @@
 
 | 命令 | 作用 |
 |---|---|
-| `pnpm dev:web` | Next dev（127.0.0.1:3000） |
+| `pnpm dev:web` | Next dev（127.0.0.1:42337） |
 | `pnpm dev:desktop` | Electron 开发态（自动等待 Next dev 就绪） |
 | `pnpm build` | Turborepo 全量构建（web 产出 `.next/standalone`） |
 | `pnpm typecheck` / `pnpm lint` | 类型检查 / Lint（含分层边界规则） |
@@ -21,6 +21,9 @@
 | `pnpm test:integration` | Web API 集成测试全集（内存库 + 路由直调） |
 | `pnpm test:e2e` | Web 关键路径 E2E（Playwright + Mock 供应商） |
 | `pnpm test:e2e:desktop` | Electron 冒烟（构建 → 归集 → pack:dir → 启动断言） |
+
+> 端口约定：Web dev **42337**、Electron CDP **42338**、E2E **42339**（避开 3000 与 Windows 动态端口段）；可分别用 `WBFM_DEV_PORT` / `WBFM_DEBUG_PORT` / `WBFM_E2E_PORT` 覆盖。
+> 剧本引擎（Director / 行为场戏 / `__petDebug`）需要构建期开关：`$env:WBFM_PET_SCRIPT='1'; pnpm dev:desktop`。
 
 Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./scripts/dev-desktop.ps1`（检查 node/pnpm 版本与依赖安装后启动）。
 
@@ -90,7 +93,7 @@ packages/shared, config → 不依赖任何业务包
 
 - **单元测试**（`pnpm test:unit`）：config/database/ai/core statements ≥70%（Vitest 阈值阻断）；mock 边界为 fetch（供应商）、时间、数据根；不允许真实出网。
 - **集成测试**（`apps/web/src/app/api/integration.test.ts`）：`mkdtempSync` 临时数据根 + 内存 SQLite + `__buildContainerForTest` 注入容器，路由 handler 直调 `new Request(...)`；覆盖级联删除、SSE 上游失败落库、错误码矩阵一致性等跨层行为。
-- **Web E2E**（`tests/e2e/critical-path.spec.ts`，`pnpm test:e2e`）：Playwright 启动 next dev（端口 3100，`WBFM_MOCK_AI=1` + 临时数据根，`reuseExistingServer: !CI`），5 个串行场景：供应商/模型配置 → 流式对话与中途停止 → 知识库上传索引 → RAG 带引用问答 → 四模块导航。
+- **Web E2E**（`tests/e2e/critical-path.spec.ts`，`pnpm test:e2e`）：Playwright 启动 next dev（端口 42339，`WBFM_MOCK_AI=1` + 临时数据根，`reuseExistingServer: !CI`），5 个串行场景：供应商/模型配置 → 流式对话与中途停止 → 知识库上传索引 → RAG 带引用问答 → 四模块导航。
 - **Electron 冒烟**（`apps/desktop/e2e/smoke.spec.ts`，`pnpm test:e2e:desktop`）：`run-e2e.mjs` 串行执行 web build → desktop build → prepare-server（归集 standalone）→ electron-builder --dir → Playwright `_electron.launch`；断言窗口渲染、四模块导航、webPreferences 安全基线（contextIsolation/sandbox/no nodeIntegration）、托管令牌 401/200。
 
 ### Mock 供应商

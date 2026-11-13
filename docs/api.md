@@ -2,7 +2,7 @@
 
 > 与 `apps/web/src/app/api/**/route.ts` 一一对应（19 个路由文件，全部已实现）。
 > 入参校验事实源：`packages/shared/src/schemas/*`；错误码事实源：`packages/shared/src/errors/error-codes.ts`。
-> Base URL：`http://127.0.0.1:3000/api`（Web 开发态）；Electron 生产模式为随机回环端口，由 preload 注入 `window.wbfm.baseUrl`。
+> Base URL：`http://127.0.0.1:42337/api`（Web 开发态）；Electron 生产模式为随机回环端口，由 preload 注入 `window.wbfm.baseUrl`。
 
 ## 1. 通用约定
 
@@ -119,7 +119,7 @@ meta → (citations? | tool(start → end) | delta)* → done | error
 - 出参 `data`：`{ "dataDir": string, "version": string }`
 
 ```bash
-curl -s http://127.0.0.1:3000/api/system/info
+curl -s http://127.0.0.1:42337/api/system/info
 ```
 
 ### 4.3 GET /api/providers
@@ -157,7 +157,7 @@ interface Provider {
   - `ollama`：本地服务（默认 `http://127.0.0.1:11434`），`apiKey` 忽略；chat/embeddings 复用 OpenAI 兼容 `/v1` 端点（baseUrl 裸地址会自动补 `/v1`），连通性测试与模型列表走 Ollama 原生 `GET /api/tags`。
 
 ```bash
-curl -s -X POST http://127.0.0.1:3000/api/providers \
+curl -s -X POST http://127.0.0.1:42337/api/providers \
   -H 'content-type: application/json' \
   -d '{"name":"本地 Ollama","protocol":"ollama","baseUrl":"http://127.0.0.1:11434","apiKey":""}'
 ```
@@ -342,7 +342,7 @@ interface Message {
 - 流中上游错误 → `error` 事件（HTTP 仍 200）
 
 ```bash
-curl -N -X POST http://127.0.0.1:3000/api/chat/stream \
+curl -N -X POST http://127.0.0.1:42337/api/chat/stream \
   -H 'content-type: application/json' \
   -d '{"assistantId":"<id>","content":"介绍一下这个项目"}'
 ```
@@ -405,7 +405,7 @@ interface DocumentRecord {
 - 错误：404 / 409 / 422（超限/类型不支持/缺文件字段）
 
 ```bash
-curl -s -X POST http://127.0.0.1:3000/api/knowledge-bases/<kbId>/documents \
+curl -s -X POST http://127.0.0.1:42337/api/knowledge-bases/<kbId>/documents \
   -F "file=@./产品介绍.md;type=text/markdown"
 ```
 
