@@ -3,8 +3,9 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { PetStage } from '@/features/pet';
-import { readPetModelId } from '@/features/pet/bridge';
-import { usePetBridge } from '@/features/pet/bridge';
+import { getPetBridge, readPetModelId, usePetBridge } from '@/features/pet/bridge';
+import { useVoiceSettings } from '@/features/voice';
+import { normalizeAvatarModelId } from '@wbfm/shared/pet';
 
 /**
  * /pet：桌宠窗独立路由（不进 (main) 布局，无侧栏、透明背景）。
@@ -22,6 +23,9 @@ export default function PetPage() {
   const runtime = usePetBridge();
   const [mounted, setMounted] = React.useState(false);
   const [modelId, setModelId] = React.useState<string | null>(null);
+  /** 设置真源兜底：主进程热替换未回执/广播延迟时，桌宠也能跟随角色切换 */
+  const { settings: voiceSettings } = useVoiceSettings();
+  const settingsModelId = voiceSettings?.avatarModelId;
 
   React.useEffect(() => {
     // 水合后再打一次标，防止首帧/React 调和期间丢失 data-pet 而露出主题底色
@@ -36,6 +40,31 @@ export default function PetPage() {
       router.replace('/chat');
     }
   }, [mounted, modelId, runtime.ready, router]);
+
+  // v3.0 P4：主进程同窗口换模型 → 热替换 + 回执（主进程收不到回执会回退重建窗口）
+  React.useEffect(() => {
+    const bridge = getPetBridge();
+    // 正在运行的旧桌面壳尚未重建 preload：没有该桥时保持旧行为，避免整页报错
+    if (!bridge || typeof bridge.onModelChange !== 'function') return;
+    return bridge.onModelChange((next) => {
+      const id = normalizeAvatarModelId(next);
+      setModelId(id);
+      if (typeof bridge.confirmModel === 'function') bridge.confirmModel(id);
+      // dev HMR/刷新后仍能从 query 读到最新模型
+      window.history.replaceState(null, '', `?model=${encodeURIComponent(id)}`);
+    });
+  }, []);
+
+  // 设置广播兜底：切换角色后立即重载，不再依赖主进程换模型消息/回执
+  React.useEffect(() => {
+    if (!settingsModelId) return;
+    const next = normalizeAvatarModelId(settingsModelId);
+    if (next === modelId) return;
+    setModelId(next);
+    const bridge = getPetBridge();
+    if (typeof bridge?.confirmModel === 'function') bridge.confirmModel(next);
+    window.history.replaceState(null, '', `?model=${encodeURIComponent(next)}`);
+  }, [settingsModelId, modelId]);
 
   if (!mounted || !modelId) {
     return <div data-testid="pet-booting" className="h-screen w-screen bg-transparent" />;

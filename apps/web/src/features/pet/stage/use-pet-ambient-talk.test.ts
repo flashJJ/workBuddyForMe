@@ -5,6 +5,8 @@ import {
   AMBIENT_IDLE_BEFORE_MS,
   AMBIENT_MAX_PER_HOUR,
   AMBIENT_MIN_GAP_MS,
+  LONG_IDLE_MS,
+  pickAmbientPool,
   usePetAmbientTalk,
   type PetAmbientTalkArgs,
 } from './use-pet-ambient-talk';
@@ -16,6 +18,7 @@ function makeArgs(overrides: Partial<PetAmbientTalkArgs> = {}): PetAmbientTalkAr
     voiceState: 'idle',
     t: (key) => `T:${key}`,
     speak: vi.fn(),
+    hour: () => 12,
     ...overrides,
   };
 }
@@ -25,6 +28,7 @@ const TICK = 15_000;
 describe('usePetAmbientTalk（L2 自主低语）', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    window.localStorage.clear();
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -115,5 +119,38 @@ describe('usePetAmbientTalk（L2 自主低语）', () => {
       ...times.map((start) => times.filter((at) => at >= start && at < start + 3_600_000).length),
     );
     expect(maxPerHour).toBeLessThanOrEqual(AMBIENT_MAX_PER_HOUR);
+  });
+
+  it('分层选池：深夜 > 久无互动 > 日常', () => {
+    expect(pickAmbientPool(23, 0)).toBe('late-night');
+    expect(pickAmbientPool(5, 0)).toBe('late-night');
+    expect(pickAmbientPool(12, LONG_IDLE_MS)).toBe('idle-long');
+    expect(pickAmbientPool(12, 0)).toBe('ambient');
+  });
+
+  it('深夜低语使用 late-night 台词池', () => {
+    const args = makeArgs({ hour: () => 23 });
+    renderHook(() => usePetAmbientTalk(args));
+    act(() => {
+      vi.advanceTimersByTime(AMBIENT_IDLE_BEFORE_MS + TICK);
+    });
+    expect(String((args.speak as ReturnType<typeof vi.fn>).mock.calls[0]![0])).toMatch(
+      /^T:emotion\.lateNight\.line[0-2]$/,
+    );
+  });
+
+  it('跨会话久无互动时使用 idle-long 台词池', () => {
+    window.localStorage.setItem(
+      'wbfm.pet.lastActiveAt',
+      String(Date.now() - LONG_IDLE_MS - 60_000),
+    );
+    const args = makeArgs();
+    renderHook(() => usePetAmbientTalk(args));
+    act(() => {
+      vi.advanceTimersByTime(AMBIENT_IDLE_BEFORE_MS + TICK);
+    });
+    expect(String((args.speak as ReturnType<typeof vi.fn>).mock.calls[0]![0])).toMatch(
+      /^T:emotion\.idleLong\.line[0-2]$/,
+    );
   });
 });

@@ -43,7 +43,6 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
     },
     [],
   );
-
   return (
     <div
       data-testid="pet-hitbody"
@@ -62,7 +61,8 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
         // 指针捕获：拖出命中盒/甩出窗口后仍能收到 pointerup（否则 endInteraction 丢失、姿势卡住）
         try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 指针已释放 */ }
         pointerDownRef.current = true;
-        pressStartRef.current = { x: e.clientX, y: e.clientY };
+        // 用屏幕坐标：窗口跟手拖动后 clientY 不再变化，会把「拎起」判定卡在拖拽阶段
+        pressStartRef.current = { x: e.screenX, y: e.screenY };
         pressMovedRef.current = false;
         bridgeActiveRef.current = false;
         longPressFiredRef.current = false; raised.reset();
@@ -80,20 +80,18 @@ export function PetHitBody({ bridge, controllerRef, resolveAndDispatch }: PetHit
         // 之后仅悬停就会持续 dragBegin/dragTo，把窗口按陈旧偏移一路带着走
         //（表现：鼠标一靠近桌宠就被挪走、怎么追都追不上）。
         if (e.buttons === 0) {
-          if (bridgeActiveRef.current) {
-            bridge?.dragEnd();
-            bridgeActiveRef.current = false;
-          }
-          pointerDownRef.current = false;
-          pressMovedRef.current = false;
+          if (bridgeActiveRef.current) bridge?.dragEnd();
+          else (controllerRef.current as any)?.endInteraction?.();
+          raised.release();
+          bridgeActiveRef.current = pointerDownRef.current = pressMovedRef.current = false;
           return;
         }
         // 穿透态 forward=true 时 pointermove 也会到达渲染层，但没有 pointerdown——
         // 必须确认按下确实发生过才进入拖拽判定，避免假 dragBegin 把窗口追着光标拖
         if (!pointerDownRef.current) return;
         const start = pressStartRef.current;
-        const dx = e.clientX - start.x;
-        const dy = e.clientY - start.y;
+        const dx = e.screenX - start.x;
+        const dy = e.screenY - start.y;
         // 轴对齐 AND 判定（和主进程 PetDragController 保持一致），避免对角线方向误触发
         if (Math.abs(dx) >= DRAG_THRESHOLD_PX || Math.abs(dy) >= DRAG_THRESHOLD_PX) {
           pressMovedRef.current = true;
@@ -203,7 +201,8 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
         if (e.button !== 0) return;
         try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 指针已释放 */ }
         pointerDownRef.current = true;
-        pressStartPosRef.current = { x: e.clientX, y: e.clientY, at: performance.now() };
+        // 用屏幕坐标：窗口跟手拖动后 clientY 不再变化，会把「拎起」判定卡在拖拽阶段
+        pressStartPosRef.current = { x: e.screenX, y: e.screenY, at: performance.now() };
         pressMovedRef.current = false;
         bridgeActiveRef.current = false;
         longPressFiredRef.current = false; raised.reset(); // 重置长按标记
@@ -222,20 +221,18 @@ export function PetHitHead({ bridge, controllerRef, resolveAndDispatch, focusPat
         // 之后仅悬停就会持续 dragBegin/dragTo，把窗口按陈旧偏移一路带着走
         //（表现：鼠标一靠近桌宠就被挪走、怎么追都追不上）。
         if (e.buttons === 0) {
-          if (bridgeActiveRef.current) {
-            bridge?.dragEnd();
-            bridgeActiveRef.current = false;
-          }
-          pointerDownRef.current = false;
-          pressMovedRef.current = false;
+          if (bridgeActiveRef.current) bridge?.dragEnd();
+          else (controllerRef.current as any)?.endInteraction?.();
+          raised.release();
+          bridgeActiveRef.current = pointerDownRef.current = pressMovedRef.current = false;
           return;
         }
         // 穿透态 forward=true 时 pointermove 也会到达渲染层，但没有 pointerdown——
         // 必须确认按下确实发生过才进入拖拽判定，避免假 dragBegin 把窗口追着光标拖
         if (!pointerDownRef.current) return;
         const start = pressStartPosRef.current;
-        const dx = e.clientX - start.x;
-        const dy = e.clientY - start.y;
+        const dx = e.screenX - start.x;
+        const dy = e.screenY - start.y;
         // 轴对齐 AND 判定（和主进程 PetDragController 保持一致），避免对角线方向误触发
         if (Math.abs(dx) >= DRAG_THRESHOLD_PX || Math.abs(dy) >= DRAG_THRESHOLD_PX) {
           pressMovedRef.current = true;

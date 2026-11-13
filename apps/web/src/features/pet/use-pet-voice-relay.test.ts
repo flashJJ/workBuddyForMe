@@ -17,9 +17,13 @@ function makeBridge(): WbfmPetBridge & { relayPerformance: ReturnType<typeof vi.
     dragTo: vi.fn(),
     dragEnd: vi.fn(),
     showMenu: vi.fn(),
+    reportCompanionSettings: vi.fn(),
     relayPerformance: vi.fn(),
     onPerformance: vi.fn(() => () => undefined),
     onOpenChange: vi.fn(() => () => undefined),
+    onModelChange: vi.fn(() => () => undefined),
+    confirmModel: vi.fn(),
+    onQuickAction: vi.fn(() => () => undefined),
   };
 }
 

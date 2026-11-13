@@ -70,4 +70,7 @@ export interface PetManagerDeps {
   /** 测试注入：轮询定时器（默认 setInterval/clearInterval） */
   setInterval?: typeof setInterval;
   clearInterval?: typeof clearInterval;
+  /** 测试注入：换模型回执超时（默认全局 setTimeout/clearTimeout） */
+  setTimeout?: typeof setTimeout;
+  clearTimeout?: typeof clearTimeout;
 }

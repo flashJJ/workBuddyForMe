@@ -7,24 +7,24 @@ import {
   normalizeAvatarModelId,
   sanitizePetEvent,
   type PetPerformanceEvent,
+  type PetQuickAction,
 } from '@wbfm/shared/pet';
 import { PetClickThroughController } from './pet-penetration';
 import { loadPetState, savePetState, type PetState } from './pet-state';
 import {
   createPetWindow,
-  PET_WINDOW_HEIGHT,
-  PET_WINDOW_WIDTH,
   type CursorPoint,
 } from './pet-window';
 import { PetDragController, type PetDragWindow } from './pet-drag-controller';
 import { PetThrowController } from './pet-throw-controller';
-import { PetSitController } from '../pet-sit/pet-sit-controller';
-import { readDisplayBounds, readWorkArea } from '../pet-sit/display-info';
+import { PetSitController, type PetSitWindow } from '../pet-sit/pet-sit-controller';
 import { PetHoverPoller } from './pet-hover-poller';
-import { showDefaultPetContextMenu } from './pet-menu';
+import { PetCompanionSettingsStore, showDefaultPetContextMenu } from './pet-menu';
 import { registerPetIpc, type IpcMainLike } from './pet-ipc';
 import type { PetManagerDeps, PetWindowLike } from './pet-types';
-import { OPEN_CHANGED_CHANNEL, PERFORMANCE_CHANNEL, DEFAULT_MODEL } from './pet-constants';
+import { OPEN_CHANGED_CHANNEL, PERFORMANCE_CHANNEL, DEFAULT_MODEL, MODEL_CHANGED_CHANNEL, QUICK_ACTION_CHANNEL } from './pet-constants';
+import { PetModelSwitcher } from './switch/pet-model-switch';
+import { createPetMotionControllers } from './motion/pet-motion';
 
 export class PetManager {
   private win: PetWindowLike | null = null;
@@ -37,6 +37,10 @@ export class PetManager {
   private readonly drag: PetDragController;
   private readonly thrower: PetThrowController;
   private readonly sit: PetSitController;
+  /** v3.0 P4：同窗口换模型协调（回执等待 / 超时回退 / 连续切换作废） */
+  private readonly modelSwitch: PetModelSwitcher;
+  /** 右键菜单勾选态：由桌宠窗上报 */
+  private readonly companion = new PetCompanionSettingsStore();
 
   constructor(private readonly deps: PetManagerDeps) {
     this.state = loadPetState(deps.userDataDir);
@@ -47,43 +51,16 @@ export class PetManager {
       onHover: (h) => { if (this.state.clickThrough) this.controller?.update(h); },
       onForceInteractive: () => this.controller?.force(false),
     });
-    // 桌宠窗固定尺寸（不可缩放）：拖拽/滑行一律回写规范尺寸，避免棘轮式变大
-    const fixedSize = () => ({ width: PET_WINDOW_WIDTH, height: PET_WINDOW_HEIGHT });
-    this.thrower = new PetThrowController({
-      setInterval: deps.setInterval, clearInterval: deps.clearInterval,
-      getWorkArea: (bounds) => readWorkArea(this.deps, bounds),
-      getFixedSize: fixedSize,
-      onSettle: (win) => this.persistBounds(win),
-      // 真机排查用（滑行/贴边的调用与坐标轨迹）
-      log: (message) => process.stdout.write(`[pet-throw] ${message}\n`),
-    });
-    this.sit = new PetSitController({
-      getFixedSize: fixedSize,
-      getWorkArea: (bounds) => readWorkArea(this.deps, bounds),
-      getDisplayBounds: (bounds) => readDisplayBounds(this.deps, bounds),
-      listWindows: this.deps.listWindows,
-      setInterval: deps.setInterval, clearInterval: deps.clearInterval,
-      onSettle: (win) => this.persistBounds(win),
-      log: (message) => process.stdout.write(`[pet-sit] ${message}\n`),
-    });
-    this.drag = new PetDragController({
+    this.modelSwitch = new PetModelSwitcher(deps);
+    const motion = createPetMotionControllers({
+      deps,
       getCursor: () => this.readCursor(),
-      getFixedSize: fixedSize,
-      onDragStart: () => {
-        this.thrower.stop();
-        this.sit.beginDrag();
-        process.stdout.write('[pet-drag] begin\n');
-        this.controller?.force(false);
-      },
-      // 松手优先尝试坐窗口/任务栏；未命中才抛掷（位移过小视为误触）
-      onDragEnd: (win, velocity, distance) => {
-        const sitting = this.sit.trySit(win);
-        process.stdout.write(
-          `[pet-drag] end dist=${Math.round(distance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)} sit=${sitting}\n`,
-        );
-        if (!sitting) this.thrower.start(win, velocity, distance);
-      },
+      persist: (win) => this.persistBounds(win),
+      forceInteractive: () => this.controller?.force(false),
     });
+    this.drag = motion.drag;
+    this.thrower = motion.thrower;
+    this.sit = motion.sit;
   }
 
   isOpen(): boolean { return Boolean(this.win && !this.win.isDestroyed()); }
@@ -102,10 +79,30 @@ export class PetManager {
     return true;
   }
 
-  /** 原位换模型：持久化当前位置 → 摘引用后销毁旧窗（closed 不回收新窗）→ 同位置建新窗 */
+  /**
+   * 原位换模型（v3.0 P4）：先通知渲染层热替换，保住位置/穿透/悬停状态；
+   * 超时未回执（旧渲染层/崩溃）再回退为「销毁重建窗口」。
+   */
   private async swapModel(target: string): Promise<boolean> {
     const old = this.win;
     if (!old || old.isDestroyed()) return this.open(target);
+    const hot = await this.modelSwitch.request(
+      old,
+      target,
+      (win, modelId) => win.webContents.send(MODEL_CHANGED_CHANNEL, modelId),
+      (win, modelId) => this.recreateWindow(win, modelId),
+    );
+    if (hot) this.currentModelId = target; // 换模型不广播 open-changed（桌宠一直开着）
+    return hot || this.isOpen();
+  }
+
+  /** 渲染层回执（IPC 已做发送方校验）：modelId 匹配当前等待才视为成功 */
+  confirmModel(modelId: string): void { this.modelSwitch.confirm(modelId); }
+
+  /** 回退路径：原位销毁重建（旧实现），窗口位置由持久化 state 沿用 */
+  private recreateWindow(old: PetWindowLike, target: string): boolean {
+    // 等待回执期间可能已关窗/退出：此时不能再建窗
+    if (this.quitting || this.win !== old || old.isDestroyed()) return this.isOpen();
     this.hoverPoller.stop();
     this.thrower.stop();
     this.controller?.dispose();
@@ -113,11 +110,10 @@ export class PetManager {
     this.persistBounds(old); // state 变为当前 bounds，新窗据此定位
     this.win = null; // 先摘引用：旧窗 closed 时身份不匹配，不会回收随后的新窗
     old.destroy();
-
     const win = this.createWindow(target);
     this.attachWindow(win);
     this.currentModelId = target;
-    return true; // 换模型不广播 open-changed（对主窗桌宠一直开着）
+    return true;
   }
 
   private createWindow(modelId: string): PetWindowLike {
@@ -229,7 +225,9 @@ export class PetManager {
         dragTo: () => this.drag.dragTo(this.win),
         endDrag: () => this.drag.end(this.win),
         requestMenu: () => this.requestMenu(),
+        reportCompanionSettings: (raw) => this.companion.update(raw),
         relayPerformance: (raw) => this.relayPerformance(raw),
+        confirmModel: (modelId) => this.confirmModel(modelId),
       },
       { fromMain: (s) => this.fromMain(s), fromPet: (s) => s === this.win?.webContents },
     );
@@ -247,8 +245,10 @@ export class PetManager {
     const show = this.deps.showContextMenu ?? showDefaultPetContextMenu;
     show(win, {
       isClickThrough: this.state.clickThrough,
+      companion: this.companion.get(),
       focusMain: () => this.focusMain(),
       toggleClickThrough: () => this.setClickThrough(!this.state.clickThrough),
+      quickAction: (action: PetQuickAction) => win.webContents.send(QUICK_ACTION_CHANNEL, action),
       hide: () => void this.close(),
     });
   }
@@ -268,6 +268,7 @@ export class PetManager {
   }
 
   private resetAfterClose(): void {
+    this.modelSwitch.cancel(); // 关窗后不得再走超时重建
     this.hoverPoller.stop();
     this.thrower.stop();
     this.sit.stop();
@@ -277,7 +278,7 @@ export class PetManager {
     this.broadcastOpen(false);
   }
 
-  private persistBounds(win: PetDragWindow): void {
+  private persistBounds(win: PetDragWindow | PetSitWindow): void {
     const { x, y } = win.getBounds();
     if (Number.isFinite(x) && Number.isFinite(y)) {
       this.state = { ...this.state, x: Math.round(x), y: Math.round(y) };

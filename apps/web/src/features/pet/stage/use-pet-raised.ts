@@ -23,7 +23,7 @@ export function useRaisedGesture(
 ): RaisedGesture {
   const liftedRef = React.useRef(false);
 
-  return React.useMemo(
+  const gesture = React.useMemo(
     () => ({
       reset: () => {
         liftedRef.current = false;
@@ -44,4 +44,16 @@ export function useRaisedGesture(
     }),
     [controllerRef, resolveAndDispatch],
   );
+
+  // 兜底：指针移出命中盒/窗口跟随光标时可能收不到 pointerup，全局监听避免悬空姿势卡死
+  React.useEffect(() => {
+    window.addEventListener('pointerup', gesture.release);
+    window.addEventListener('pointercancel', gesture.release);
+    return () => {
+      window.removeEventListener('pointerup', gesture.release);
+      window.removeEventListener('pointercancel', gesture.release);
+    };
+  }, [gesture]);
+
+  return gesture;
 }

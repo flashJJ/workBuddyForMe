@@ -5,7 +5,10 @@ import {
   AvatarCanvasRouter,
   MotionPreviewOverlay,
   PET_SCRIPT_ENABLED,
+  ScriptDebugPanel,
+  useGeneratedScripts,
   useScriptDirector,
+  useAvatarChibi,
 } from '@/features/avatar';
 import type { Live2dController } from '@/features/avatar';
 import type { PetVoiceState } from '@wbfm/shared/pet';
@@ -23,8 +26,8 @@ import {
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings, useSettingsSync } from '@/lib/hooks/provider';
 import { getPetBridge } from './pet-bridge';
-import { TriggerBus } from '@/features/interaction';
-import { ActionExecutor } from '@/features/interaction';
+import { usePetSize } from './stage/settings/use-pet-size';
+import { ActionExecutor, TriggerBus } from '@/features/interaction';
 import { resolveInteraction } from '@wbfm/shared/schemas';
 import { aggregateWorkSignals, type PetWorkView } from '@wbfm/shared';
 import { PetHitBody, PetHitHead } from './pet-hit-regions';
@@ -33,11 +36,13 @@ import { useWorkSignals } from './use-work-signals';
 import { useWorkAlerts } from './use-work-alerts';
 import { usePetFrameMode } from './stage/use-pet-frame-mode';
 import { usePetSleep } from './stage/use-pet-sleep';
-import { usePetHitProxy } from './stage/hit-proxy';
+import { reportPetUiRect, usePetHitProxy } from './stage/hit-proxy';
 import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
 import { usePetAmbientTalk } from './stage/use-pet-ambient-talk';
 import { usePetFaceAway } from './stage/use-pet-face-away';
 import { usePetPointerGaze } from './stage/use-pet-pointer-gaze';
+import { usePetCompanion } from './stage/companion';
+import { usePetPropDebug } from './stage/debug/use-pet-prop-debug';
 
 interface Props {
   modelId: string;
@@ -72,18 +77,20 @@ export function PetStage({
 }: Props) {
   const { t } = useI18n();
   const { data: settings } = useSettings();
+  const petSize = usePetSize();
+  const chibi = useAvatarChibi();
   // 主窗保存设置后立即拉取新值：勿扰/互动短句等开关不再需要重开桌宠才生效
   useSettingsSync();
   const bridge = getPetBridge();
-  const controllerRef = React.useRef<Live2dController | null>(null);
+  const controllerRef = React.useRef<Live2dController | null>(null); usePetPropDebug(controllerRef);
   // v3.0 P0：帧率档位 + 模型命中轮廓上报；P1：10min 无交互入睡
   const frameMode = usePetFrameMode(voiceState);
   const sleeping = usePetSleep(voiceState);
   // v3.5：久无交互背对 / 点击或说话转回
   const faceAway = usePetFaceAway(voiceState);
-  const onModelRect = usePetHitProxy(bridge);
-  const [line, setLine] = React.useState<string>('');
-  const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onModelRect = usePetHitProxy(bridge); const generated = useGeneratedScripts(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId));
+  const onScriptPanelRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect(rect, bridge), [bridge]);
+  const [line, setLine] = React.useState<string>(''); const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showLine = React.useCallback((text: string, durationMs: number) => {
     setLine(text);
@@ -121,14 +128,12 @@ export function PetStage({
   // v3.0 T0.7：剧本开关（仅 VRM；关闭时完全走旧 Resolver/ActionExecutor）
   const script = useScriptDirector({
     enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId),
-    getController: () => controllerRef.current,
-    showSubtitle: (key, ms) => {
-      if (!linesEnabled) return;
-      showLine(t(key), ms ?? 3200);
-    },
+    getController: () => controllerRef.current, extraScenes: generated.scenes,
+    showSubtitle: (key, ms) => { if (!linesEnabled) return; showLine(t(key), ms ?? 3200); },
   });
 
-  // L2：静默时低频自主低语（本地短句；睡眠/说话/勿扰/台词开关任一命中即安静）
+  // v3.0 M1：首次见面问候 + 右键快捷动作（静音/主动说话/干饭/炸毛）
+  usePetCompanion({ linesEnabled, script, showLine, t });
   const inDnd = isDoNotDisturbHour(new Date().getHours(), {
     enabled: dndEnabled,
     startHour: dndStartHour,
@@ -155,13 +160,8 @@ export function PetStage({
   const work = useWorkSignals(workEnabled);
   const workConnected = work.snapshot ? work.connected : true;
   const workView = React.useMemo<PetWorkView>(() => {
-    const baseView = aggregateWorkSignals(
-      work.snapshot?.signals ?? [],
-      work.snapshot?.approvals ?? [],
-    );
-    if (workEnabled && work.snapshot && !work.connected) {
-      return { ...baseView, base: 'disconnected', pulse: null };
-    }
+    const baseView = aggregateWorkSignals(work.snapshot?.signals ?? [], work.snapshot?.approvals ?? []);
+    if (workEnabled && work.snapshot && !work.connected) return { ...baseView, base: 'disconnected', pulse: null };
     return baseView;
   }, [work.snapshot, work.connected, workEnabled]);
   useWorkAlerts(work.snapshot, settings);
@@ -263,6 +263,8 @@ export function PetStage({
           frameMode={frameMode}
           sleeping={sleeping}
           faceAway={faceAway}
+          petSize={petSize}
+          chibi={chibi}
           onModelRect={onModelRect}
           onFrame={script.onFrame}
         />
@@ -279,7 +281,6 @@ export function PetStage({
         resolveAndDispatch={resolveAndDispatch}
         focusPath={workView.primary?.deepLink}
       />
-
       <PetWorkBubble
         view={workView}
         mode={workMode}
@@ -290,11 +291,8 @@ export function PetStage({
 
       {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}
       <PetSubtitleBubble text={line || subtitle} voiceState={voiceState} shifted={workVisible} />
-
-      {/* M0c dev：动效库逐阶段/逐轨道预览（默认关闭） */}
-      {process.env.NEXT_PUBLIC_WBFM_MOTION_PREVIEW === '1' && (
-        <MotionPreviewOverlay controllerRef={controllerRef} />
-      )}
+      {process.env.NEXT_PUBLIC_WBFM_MOTION_PREVIEW === '1' && <MotionPreviewOverlay controllerRef={controllerRef} />}
+      {PET_SCRIPT_ENABLED && <ScriptDebugPanel onRectChange={onScriptPanelRect} onGenerate={generated.generate} generating={generated.loading} generationMessage={generated.message} usage={generated.usage} story={generated.story} schedule={generated.schedule} onToggleSchedule={generated.toggleSchedule} />}
     </div>
   );
 }

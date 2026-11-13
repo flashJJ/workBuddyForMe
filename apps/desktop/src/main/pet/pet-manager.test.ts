@@ -76,7 +76,7 @@ describe('PetManager', () => {
     expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', true);
   });
 
-  it('换模型：原位销毁重建新窗、不唤主窗、不重复广播开关', async () => {
+  it('换模型：同窗口通知渲染层热替换，回执后不重建、不广播开关', async () => {
     const broadcasts: unknown[] = [];
     (main.webContents.send as ReturnType<typeof vi.fn>).mockImplementation(
       (channel: string, value: unknown) => {
@@ -86,30 +86,53 @@ describe('PetManager', () => {
     await manager.open('haru');
     expect(createWindow).toHaveBeenCalledTimes(1);
 
-    await manager.open('wanko');
-    expect(createWindow).toHaveBeenCalledTimes(2);
-    expect(createWindow).toHaveBeenLastCalledWith(
-      expect.anything(),
-      expect.objectContaining({ x: 321, y: 432 }),
-      'wanko',
-    );
-    // 旧窗被销毁（换模型），但主窗没被唤回，也没广播 false
+    const swapping = manager.open('wanko');
+    expect(pet.wc.send).toHaveBeenLastCalledWith('pet:model-changed', 'wanko');
+    ipcKit.emit('pet:model-applied', pet.wc, 'wanko');
+    await expect(swapping).resolves.toBe(true);
+
+    expect(createWindow).toHaveBeenCalledTimes(1);
+    expect(pet.win.destroy).not.toHaveBeenCalled();
     expect(main.show).not.toHaveBeenCalled();
     expect(broadcasts).toEqual([true]);
   });
 
-  it('换模型后旧窗迟到的 closed 不回收新窗（兼容异步 destroy）', async () => {
+  it('换模型：渲染层未回执时超时回退为重建窗口（位置沿用）', async () => {
+    let fireTimeout: (() => void) | null = null;
+    const open = vi.fn(() => {
+      pet = createFakePetWindow();
+      return pet.win;
+    });
+    const mgr = new PetManager({
+      userDataDir: dir,
+      boot: null,
+      getMainWindow: () => main,
+      createWindow: open,
+      getCursor: () => ({ x: 0, y: 0 }),
+      setInterval: () => 1 as unknown as ReturnType<typeof setInterval>,
+      setTimeout: ((fn: () => void) => {
+        fireTimeout = fn;
+        return 1 as unknown as ReturnType<typeof setTimeout>;
+      }) as typeof setTimeout,
+      clearTimeout: vi.fn() as unknown as typeof clearTimeout,
+    });
+    mgr.registerIpc(ipcKit.ipc);
+    await mgr.open('haru');
+    const swapping = mgr.open('wanko');
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(fireTimeout).not.toBeNull();
+    fireTimeout!();
+    await expect(swapping).resolves.toBe(true);
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(open).toHaveBeenLastCalledWith(null, expect.objectContaining({ x: 321, y: 432 }), 'wanko');
+  });
+
+  it('换模型等待回执期间关闭桌宠：不再重建窗口', async () => {
     await manager.open('haru');
-    const old = pet.win;
-    await manager.open('wanko');
-
-    const onClosed = (old.on as ReturnType<typeof vi.fn>).mock.calls.find(
-      (call) => call[0] === 'closed',
-    )?.[1] as (() => void) | undefined;
-    onClosed!(); // 模拟旧窗 closed 在新窗就绪之后才派发
-
-    ipcKit.emit('pet:hover', pet.wc, true); // 新窗仍受管：hover 还能驱动穿透
-    expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
+    const swapping = manager.open('wanko');
+    await manager.close();
+    await expect(swapping).resolves.toBe(false);
+    expect(createWindow).toHaveBeenCalledTimes(1);
   });
 
   it('close 持久化位置、广播关闭并唤回主窗；关后中继事件被丢弃', async () => {
@@ -163,17 +186,20 @@ describe('PetManager', () => {
 
   it('右键菜单动作：回主窗/切换穿透并持久化/隐藏桌宠', async () => {
     await manager.open();
-    // 经渲染层右键 IPC 触发菜单收集动作集
+    // 经渲染层右键 IPC 触发菜单收集动作集；勾选态取最近一次上报
+    ipcKit.emit('pet:companion-settings', pet.wc, { muted: true, proactive: true });
     ipcKit.emit('pet:show-menu', pet.wc);
     expect(menuActions).not.toBeNull();
     expect(menuActions!.isClickThrough).toBe(true);
-
+    expect(menuActions!.companion).toEqual({ muted: true, proactive: true });
     menuActions!.toggleClickThrough();
     expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
     expect(JSON.parse(fs.readFileSync(path.join(dir, 'pet-state.json'), 'utf8')).clickThrough).toBe(false);
 
     menuActions!.focusMain();
     expect(main.focus).toHaveBeenCalledTimes(1);
+    menuActions!.quickAction('toggle-mute');
+    expect(pet.wc.send).toHaveBeenLastCalledWith('pet:quick-action', 'toggle-mute');
 
     menuActions!.hide();
     expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', false);

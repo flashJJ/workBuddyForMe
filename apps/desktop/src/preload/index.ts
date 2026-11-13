@@ -80,7 +80,12 @@ const pet: WbfmPetBridge = {
   dragTo: () => ipcRenderer.send('pet:drag-to'),
   dragEnd: () => ipcRenderer.send('pet:drag-end'),
   showMenu: () => ipcRenderer.send('pet:show-menu'),
+  reportCompanionSettings: (settings) => ipcRenderer.send('pet:companion-settings', settings),
   relayPerformance: (event) => ipcRenderer.send('pet:relay', event),
+  onModelChange: (cb) => subscribe('pet:model-changed', (payload) => cb(String(payload))),
+  confirmModel: (modelId) => ipcRenderer.send('pet:model-applied', modelId),
+  onQuickAction: (cb) =>
+    subscribe('pet:quick-action', (payload) => cb(payload as Parameters<typeof cb>[0])),
   onPerformance: (cb) =>
     subscribe('pet:performance', (payload) => cb(payload as Parameters<typeof cb>[0])),
   onOpenChange: (cb) => subscribe('pet:open-changed', (payload) => cb(Boolean(payload))),

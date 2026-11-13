@@ -31,7 +31,11 @@ export interface PetIpcActions {
   dragTo(): void;
   endDrag(): void;
   requestMenu(): void;
+  /** v3.0：渲染层上报静音/主动说话状态（未净化，由 manager 收口） */
+  reportCompanionSettings(raw: unknown): void;
   relayPerformance(raw: unknown): void;
+  /** v3.0 P4：渲染层确认换模型已应用（等待回执的 swapModel 据此走原位路径） */
+  confirmModel(modelId: string): void;
 }
 
 export interface PetIpcGuards {
@@ -81,7 +85,16 @@ export function registerPetIpc(
   ipc.on('pet:show-menu', (event) => {
     if (guards.fromPet(event.sender)) actions.requestMenu();
   });
+  ipc.on('pet:companion-settings', (event, raw) => {
+    if (guards.fromPet(event.sender)) actions.reportCompanionSettings(raw);
+  });
   ipc.on('pet:relay', (event, raw) => {
     if (guards.fromMain(event.sender)) actions.relayPerformance(raw);
+  });
+  // v3.0 P4：换模型回执（仅当前桌宠窗；参数必须是字符串）
+  ipc.on('pet:model-applied', (event, modelId) => {
+    if (guards.fromPet(event.sender) && typeof modelId === 'string') {
+      actions.confirmModel(modelId);
+    }
   });
 }

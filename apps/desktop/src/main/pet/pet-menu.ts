@@ -10,12 +10,36 @@
  * popup({}) 无主窗口时菜单可能不显示或立即消失。
  */
 import { Menu, type BrowserWindow } from 'electron';
+import type { PetCompanionSettings, PetQuickAction } from '@wbfm/shared/pet';
+
+/**
+ * 右键菜单勾选态缓存：只接受完整的布尔字段，非法上报直接忽略。
+ * 主进程不持久化伴身设置，真实值以渲染层语音设置为准。
+ */
+export class PetCompanionSettingsStore {
+  private value: PetCompanionSettings = { muted: false, proactive: false };
+
+  get(): PetCompanionSettings {
+    return this.value;
+  }
+
+  update(raw: unknown): void {
+    if (!raw || typeof raw !== 'object') return;
+    const next = raw as Partial<PetCompanionSettings>;
+    if (typeof next.muted !== 'boolean' || typeof next.proactive !== 'boolean') return;
+    this.value = { muted: next.muted, proactive: next.proactive };
+  }
+}
 
 /** 菜单动作集（manager 组装并注入持久化/关窗副作用） */
 export interface PetContextMenuActions {
   isClickThrough: boolean;
+  /** 静音 / 主动说话勾选态（渲染层上报的最近状态） */
+  companion: PetCompanionSettings;
   focusMain(): void;
   toggleClickThrough(): void;
+  /** v3.0 M1：静音 / 主动说话 / 干饭 / 炸毛（由渲染层执行并回报台词） */
+  quickAction(action: PetQuickAction): void;
   hide(): void;
 }
 
@@ -28,7 +52,7 @@ export type ShowPetContextMenu = (
   actions: PetContextMenuActions,
 ) => void;
 
-/** 默认 Electron 菜单：回主窗 / 鼠标穿透勾选 / 隐藏桌宠 */
+/** 默认 Electron 菜单：回主窗 / 穿透 / 互动与不打扰 / 隐藏 */
 export const showDefaultPetContextMenu: ShowPetContextMenu = (win, actions) => {
   const menu = Menu.buildFromTemplate([
     { label: '回到主窗口', click: () => actions.focusMain() },
@@ -37,6 +61,22 @@ export const showDefaultPetContextMenu: ShowPetContextMenu = (win, actions) => {
       type: 'checkbox',
       checked: actions.isClickThrough,
       click: () => actions.toggleClickThrough(),
+    },
+    { type: 'separator' },
+    { label: '喂一口（干饭）', click: () => actions.quickAction('play-eat-rice') },
+    { label: '叫它胖（炸毛）', click: () => actions.quickAction('play-called-fat') },
+    { type: 'separator' },
+    {
+      label: '静音（不播放语音）',
+      type: 'checkbox',
+      checked: actions.companion.muted,
+      click: () => actions.quickAction('toggle-mute'),
+    },
+    {
+      label: '主动说话',
+      type: 'checkbox',
+      checked: actions.companion.proactive,
+      click: () => actions.quickAction('toggle-proactive'),
     },
     { type: 'separator' },
     { label: '隐藏桌宠', click: () => actions.hide() },
