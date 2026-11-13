@@ -22,7 +22,9 @@ export const zhAvatar = {
   vrm: {
     sectionTitle: '已导入 VRM',
     builtinSectionTitle: '内置 VRM',
-    builtinXuetuan: '内置 · 雪团',
+    builtinXuetuan: '鲸鱼娘-雪团',
+    builtinRankaluli: '运动健将-冉卡露丽',
+    builtinFeibi: '兔耳娘-菲比',
     importTitle: '导入 VRM 模型',
     importHint: '支持 .vrm 格式（≤60MB），仅本地渲染，不联网传输',
     fileLabel: '选择文件',
@@ -109,7 +111,9 @@ export const enAvatar = {
   vrm: {
     sectionTitle: 'Imported VRM',
     builtinSectionTitle: 'Built-in VRM',
-    builtinXuetuan: 'Built-in · Xuetuan',
+    builtinXuetuan: 'Whale Girl - Xuetuan',
+    builtinRankaluli: 'Athlete - Rankaluli',
+    builtinFeibi: 'Bunny Girl - Feibi',
     importTitle: 'Import VRM Model',
     importHint: '.vrm only (≤60MB); local rendering only, no network transfer',
     fileLabel: 'Select file',

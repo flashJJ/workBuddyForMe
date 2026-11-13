@@ -80,6 +80,9 @@ export const voiceSettingsUpdateSchema = z
     petEnabled: z.boolean().optional(),
     /** 桌宠默认鼠标穿透 */
     petClickThrough: z.boolean().optional(),
+    petSize: z.enum(['sm', 'md', 'lg']).optional(),
+    /** v3.0 P4：Q 版（头身比放大 + 腿缩短；仅 VRM） */
+    avatarChibi: z.boolean().optional(),
     /** AI 主动说话（P1） */
     proactiveEnabled: z.boolean().optional(),
     proactiveIdleSeconds: z.number().int().min(30).max(3600).optional(),
@@ -121,6 +124,8 @@ export const voiceSettingsSchema = voiceSettingsUpdateSchema.required({
   avatarModelId: true,
   petEnabled: true,
   petClickThrough: true,
+  petSize: true,
+  avatarChibi: true,
   proactiveEnabled: true,
   proactiveIdleSeconds: true,
   idleMotionId: true,
@@ -168,12 +173,21 @@ export const AVATAR_TTS_VOICES: Record<SupportedAvatarModelId, AvatarTtsVoice> =
   wanko: { sid: 59, voice: 'zm_010', gender: 'male' },
 };
 
+/** 内置 VRM 角色声线（键为 `vrm:` 后的 fileRef）；导入模型未登记时回落默认角色 */
+export const BUILTIN_VRM_TTS_VOICES: Readonly<Record<string, AvatarTtsVoice>> = {
+  'builtin:xuetuan': { sid: 18, voice: 'zf_026', gender: 'female' },
+  'builtin:rankaluli': { sid: 32, voice: 'zf_049', gender: 'female' },
+  'builtin:feibi': { sid: 3, voice: 'zf_001', gender: 'female' },
+};
+
 /** 角色 → sid；未知/空角色回落默认角色（Haru）的声线 */
 export function getAvatarSpeakerId(
   avatarModelId: string | null | undefined,
 ): number {
+  const vrm = avatarModelId?.startsWith('vrm:') ? BUILTIN_VRM_TTS_VOICES[avatarModelId.slice(4)] : undefined;
   const voice =
     AVATAR_TTS_VOICES[avatarModelId as SupportedAvatarModelId] ??
+    vrm ??
     AVATAR_TTS_VOICES[DEFAULT_AVATAR_MODEL_ID];
   return voice.sid;
 }
@@ -198,10 +212,12 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   modelMirrorBase: 'https://hf-mirror.com',
   modelsDir: null,
   avatarEnabled: false,
-  // v3.0：新用户默认形象为内置雪团 VRM（老用户已存的值不受影响）
+  // v3.0：新用户默认形象为内置鲸鱼娘-雪团 VRM（老用户已存的值不受影响）
   avatarModelId: BUILTIN_VRM_MODEL_ID,
   petEnabled: false,
   petClickThrough: false,
+  petSize: 'md',
+  avatarChibi: false,
   proactiveEnabled: false,
   proactiveIdleSeconds: 300,
   // v2.0：缺省内置默认待机动作（null 表示内置 daiji）
@@ -210,8 +226,6 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   motionRotationEnabled: true,
   motionRotationSeconds: MOTION_ROTATION_SECONDS_DEFAULT,
 };
-
-// ---------- HTTP 载荷 ----------
 
 /** POST /api/voice/asr 请求体（multipart 字段的 JSON 侧描述，供文档/校验复用） */
 export const voiceAsrRequestSchema = z.object({
@@ -282,17 +296,5 @@ export const voiceModelStatusSchema = voiceModelFileStatusSchema.extend({
 });
 export type VoiceModelStatus = z.infer<typeof voiceModelStatusSchema>;
 
-/** v2.25：PTT 识别文本润色（只纠错/断句，不改语义） */
-export const voicePolishRequestSchema = z
-  .object({
-    text: z.string().trim().min(1).max(2000),
-  })
-  .strict();
-export type VoicePolishRequest = z.infer<typeof voicePolishRequestSchema>;
-
-export const voicePolishResponseSchema = z.object({
-  text: z.string(),
-  /** false=沿用原文（无模型/超时/输出不合格） */
-  polished: z.boolean(),
-});
-export type VoicePolishResponse = z.infer<typeof voicePolishResponseSchema>;
+// v2.25：PTT 识别文本润色（独立子域，避免语音设置 schema 持续膨胀）
+export * from './polish';

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   AVATAR_TTS_VOICES,
+  BUILTIN_VRM_TTS_VOICES,
   DEFAULT_AVATAR_MODEL_ID,
   DEFAULT_VOICE_SETTINGS,
   SUPPORTED_AVATAR_MODEL_IDS,
@@ -9,7 +10,7 @@ import {
   voiceSettingsUpdateSchema,
   voiceTtsRequestSchema,
 } from '../../index';
-import { BUILTIN_VRM_FILE_REF, BUILTIN_VRM_MODEL_ID } from '../../constants';
+import { BUILTIN_VRM_FILE_REF, BUILTIN_VRM_MODEL_ID, BUILTIN_VRM_MODELS } from '../../constants';
 
 describe('AVATAR_TTS_VOICES 角色声线绑定', () => {
   it('每个内置角色都绑定一个 Kokoro 音色', () => {
@@ -45,10 +46,18 @@ describe('AVATAR_TTS_VOICES 角色声线绑定', () => {
   });
 });
 
-describe('内置雪团 VRM', () => {
-  it('新用户默认形象为内置雪团，且 id 可被 VRM 解析', () => {
+describe('内置 VRM', () => {
+  it('新用户默认形象为鲸鱼娘-雪团，且 id 可被 VRM 解析', () => {
     expect(DEFAULT_VOICE_SETTINGS.avatarModelId).toBe(BUILTIN_VRM_MODEL_ID);
     expect(parseVrmAvatarId(BUILTIN_VRM_MODEL_ID)).toBe(BUILTIN_VRM_FILE_REF);
+  });
+
+  it('每个内置模型都有可解析的 modelId / fileRef 与静态资源路径', () => {
+    for (const model of BUILTIN_VRM_MODELS) {
+      expect(parseVrmAvatarId(model.modelId)).toBe(model.fileRef);
+      expect(model.assetPath.startsWith('/vrm/models/')).toBe(true);
+      expect(BUILTIN_VRM_TTS_VOICES[model.fileRef]).toBeDefined();
+    }
   });
 });
 
@@ -63,6 +72,15 @@ describe('getAvatarSpeakerId', () => {
     expect(getAvatarSpeakerId(undefined)).toBe(fallback);
     expect(getAvatarSpeakerId(null)).toBe(fallback);
     expect(getAvatarSpeakerId('not-exist')).toBe(fallback);
+  });
+
+  it('内置 VRM 角色返回绑定 sid，导入模型回落默认', () => {
+    expect(getAvatarSpeakerId('vrm:builtin:xuetuan')).toBe(18);
+    expect(getAvatarSpeakerId('vrm:builtin:rankaluli')).toBe(32);
+    expect(getAvatarSpeakerId('vrm:builtin:feibi')).toBe(3);
+    expect(getAvatarSpeakerId('vrm:vrm-123.vrm')).toBe(
+      AVATAR_TTS_VOICES[DEFAULT_AVATAR_MODEL_ID].sid,
+    );
   });
 
   it('全局兜底 ttsSpeakerId 默认值与 Haru 绑定一致', () => {

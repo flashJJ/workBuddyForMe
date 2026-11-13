@@ -8,6 +8,7 @@
 import type { MessageKey } from '../../i18n/index';
 
 export type PetLinePoolId =
+  | 'first-meet'
   | 'head-tap'
   | 'head-longpress'
   | 'body-tap'
@@ -15,9 +16,21 @@ export type PetLinePoolId =
   | 'body-double'
   | 'raised'
   | 'cheer'
-  | 'ambient';
+  | 'ambient'
+  | 'late-night'
+  | 'idle-long'
+  | 'hungry'
+  | 'eat-rice'
+  | 'work-rest'
+  | 'called-fat';
 
 export const PET_LINE_POOLS: Record<PetLinePoolId, readonly MessageKey[]> = {
+  // v3.0 M1：分层台词（首次见面 / 深夜 / 久无互动 / 饿了）
+  'first-meet': [
+    'emotion.firstMeet.line0',
+    'emotion.firstMeet.line1',
+    'emotion.firstMeet.line2',
+  ],
   'head-tap': [
     'emotion.touch.blush0',
     'emotion.touch.blush1',
@@ -48,7 +61,7 @@ export const PET_LINE_POOLS: Record<PetLinePoolId, readonly MessageKey[]> = {
     'emotion.touch.double1',
     'emotion.touch.double2',
   ],
-  raised: ['emotion.touch.protect2', 'emotion.touch.protect3', 'emotion.touch.blush5'],
+  raised: ['emotion.touch.protect2', 'emotion.touch.protect3', 'emotion.touch.protect4', 'emotion.touch.blush5'],
   cheer: ['emotion.touch.cheer0', 'emotion.touch.cheer1', 'emotion.touch.cheer2'],
   ambient: [
     'emotion.ambient.line0',
@@ -60,6 +73,22 @@ export const PET_LINE_POOLS: Record<PetLinePoolId, readonly MessageKey[]> = {
     'emotion.ambient.line6',
     'emotion.ambient.line7',
   ],
+  // v3.0 M1：晚间/久无互动/饿了（饿了由 M2 的饥饿度消费者接入）
+  'late-night': [
+    'emotion.lateNight.line0',
+    'emotion.lateNight.line1',
+    'emotion.lateNight.line2',
+  ],
+  'idle-long': [
+    'emotion.idleLong.line0',
+    'emotion.idleLong.line1',
+    'emotion.idleLong.line2',
+  ],
+  hungry: ['emotion.hungry.line0', 'emotion.hungry.line1', 'emotion.hungry.line2'],
+  // P3 日常三场戏（台词在 i18n `emotion.eatRice/workRest/calledFat`）
+  'eat-rice': ['emotion.eatRice.line0', 'emotion.eatRice.line1', 'emotion.eatRice.line2'],
+  'work-rest': ['emotion.workRest.line0', 'emotion.workRest.line1', 'emotion.workRest.line2'],
+  'called-fat': ['emotion.calledFat.line0', 'emotion.calledFat.line1', 'emotion.calledFat.line2'],
 };
 
 /** 从池中随机取一条；random ∈ [0,1) */

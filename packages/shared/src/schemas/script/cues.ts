@@ -2,7 +2,7 @@
  * v3.0 剧本引擎：Cue 契约（M0）。
  *
  * Cue 是最小表现单元，只描述「要什么」，不持有状态、不直接写骨骼/音频；
- * 由 Director 调度、轨道适配器执行。M0 冻结 9 类 cue；
+ * 由 Director 调度、轨道适配器执行。M0 冻结 9 类 cue，S3 增加 prop（手持道具）；
  * sound / effect / move / emit 仅保留类型，运行时忽略并 warn（见 09 文档 §4.2）。
  */
 
@@ -18,6 +18,13 @@ export type ScriptGesture = (typeof SCRIPT_GESTURES)[number];
 /** 视线目标（双栈） */
 export const SCRIPT_LOOK_TARGETS = ['camera', 'pointer', 'away', 'up', 'down'] as const;
 export type ScriptLookTarget = (typeof SCRIPT_LOOK_TARGETS)[number];
+
+/**
+ * 道具动作：attach/detach 用于手持道具；show/hide 预留给场景道具（S4）。
+ * 只手道具当前把 show/hide 映射为 attach/detach。
+ */
+export const SCRIPT_PROP_ACTIONS = ['attach', 'detach', 'show', 'hide'] as const;
+export type ScriptPropAction = (typeof SCRIPT_PROP_ACTIONS)[number];
 
 /** M0 只保留类型、运行时忽略的 cue（保留给 M1 的表现层扩展） */
 export const M0_IGNORED_CUE_KINDS = ['sound', 'effect', 'move', 'emit'] as const;
@@ -51,6 +58,12 @@ export interface MotionCue {
 export interface BehaviorCue {
   kind: 'behavior';
   behavior: string;
+}
+/** S3：手持道具（id 由 prop-manifest 白名单校验，挂哪只手由 manifest 决定） */
+export interface PropCue {
+  kind: 'prop';
+  prop: string;
+  action: ScriptPropAction;
 }
 export interface ExpressionCue {
   kind: 'expression';
@@ -116,6 +129,7 @@ export type Cue =
   | GestureCue
   | MotionCue
   | BehaviorCue
+  | PropCue
   | ExpressionCue
   | LookCue
   | LineCue
@@ -157,6 +171,11 @@ export const cueSchema: z.ZodType<Cue> = z.lazy(() =>
       fadeMs: fadeMsSchema,
     }),
     z.object({ kind: z.literal('behavior'), behavior: idSchema }),
+    z.object({
+      kind: z.literal('prop'),
+      prop: idSchema,
+      action: z.enum(SCRIPT_PROP_ACTIONS),
+    }),
     z.object({
       kind: z.literal('expression'),
       tag: z.enum(EXPRESSION_TAGS),

@@ -76,6 +76,7 @@ export const zhEmotion = {
     protect1: '再摸我可要收摸摸费了哦。',
     protect2: '够了够了，让我歇一会儿嘛~',
     protect3: '哼，再摸我就不理你了。',
+    protect4: '喂喂，要干嘛呀？先放我下来。',
     body0: '诶？怎么突然戳我。',
     body1: '痒痒的，别闹啦。',
     body2: '找我玩吗？',
@@ -100,6 +101,50 @@ export const zhEmotion = {
     line5: '有点安静，不过这样也挺好。',
     line6: '刚刚好像听到你叹气了？',
     line7: '偷偷告诉你，我一直看着你哦。',
+  },
+  /** P3：日常三场戏的本地短句（干饭 / 工作提醒 / 被叫胖） */
+  eatRice: {
+    line0: '开饭啦，今天也要好好吃饭。',
+    line1: '这碗看起来好香，我先尝一口。',
+    line2: '吃饭的时候就不要想工作啦。',
+  },
+  workRest: {
+    line0: '坐太久啦，起来动一动吧。',
+    line1: '伸个懒腰，让眼睛也歇一会儿。',
+    line2: '我陪你歇五分钟，再继续。',
+  },
+  calledFat: {
+    line0: '哼，我才不胖，这叫圆润！',
+    line1: '再说一遍试试？我可要跺脚了。',
+    line2: '生气归生气，还是想让你摸摸头。',
+  },
+  // v3.0 M1：分层台词（首次见面 / 深夜 / 久无互动 / 饿了）
+  firstMeet: {
+    line0: '初次见面，我是鲸鱼娘-雪团，请多关照。',
+    line1: '你好呀，以后就由我陪着你啦。',
+    line2: '终于见到你了，我会乖乖待在这儿的。',
+  },
+  lateNight: {
+    line0: '这么晚还没睡吗？我陪你一会儿就休息吧。',
+    line1: '夜深了，记得把屏幕调暗一点。',
+    line2: '熬夜的话，我会一直在这里看着你哦。',
+  },
+  idleLong: {
+    line0: '好久没见到你了，刚刚去哪啦？',
+    line1: '你终于回来了，我都快数完窗外的云了。',
+    line2: '不在的时候，我也有好好待着等你。',
+  },
+  hungry: {
+    line0: '肚子好像有点空了……可以喂我一口吗？',
+    line1: '闻到米饭的味道了，好香。',
+    line2: '再不吃点东西，我就要没力气陪你啦。',
+  },
+  /** M1：不打扰快捷动作的反馈短句 */
+  quick: {
+    muteOn: '好，我先安静一会儿。',
+    muteOff: '声音回来啦。',
+    proactiveOn: '我会继续主动找你说话。',
+    proactiveOff: '好，我不主动打扰你。',
   },
 };
 
@@ -180,6 +225,7 @@ export const enEmotion: typeof zhEmotion = {
     protect1: 'Keep this up and I will start charging petting fees.',
     protect2: 'Okay okay, let me rest for a bit~',
     protect3: "Hmph, pet me again and I'll ignore you.",
+    protect4: 'Hey hey, what are you doing? Put me down first.',
     body0: 'Huh? Why the sudden poke?',
     body1: 'That tickles, stop it~',
     body2: 'Want to play?',
@@ -203,5 +249,46 @@ export const enEmotion: typeof zhEmotion = {
     line5: "It's a bit quiet, but that's nice too.",
     line6: 'Did I just hear you sigh?',
     line7: 'Secret: I keep watching you.',
+  },
+  eatRice: {
+    line0: "Meal time! Let's eat properly today too.",
+    line1: 'This bowl smells so good. Let me try a bite.',
+    line2: "Don't think about work while eating.",
+  },
+  workRest: {
+    line0: "You've sat too long. Get up and move a little.",
+    line1: 'Stretch a bit and let your eyes rest too.',
+    line2: "I'll rest with you for five minutes, then we continue.",
+  },
+  calledFat: {
+    line0: "Hmph, I'm not fat. I'm pleasantly round!",
+    line1: 'Say that again and I will stomp my foot.',
+    line2: 'Angry as I am, I still want a head pat.',
+  },
+  firstMeet: {
+    line0: "Nice to meet you. I'm Xuetuan, the whale girl. Please take care of me.",
+    line1: "Hello! I'll be keeping you company from now on.",
+    line2: "We finally met. I'll stay right here like a good girl.",
+  },
+  lateNight: {
+    line0: "Still awake this late? I'll keep you company a little longer.",
+    line1: 'It\'s late. Remember to dim the screen a bit.',
+    line2: "If you stay up, I'll be right here watching over you.",
+  },
+  idleLong: {
+    line0: "I haven't seen you in a while. Where did you go?",
+    line1: 'You are finally back. I almost finished counting the clouds.',
+    line2: 'While you were away, I stayed put and waited for you.',
+  },
+  hungry: {
+    line0: 'My tummy feels a little empty... Could you feed me?',
+    line1: 'I smell rice. It smells so good.',
+    line2: "If I don't eat soon, I won't have the energy to keep you company.",
+  },
+  quick: {
+    muteOn: "Okay, I'll be quiet for a while.",
+    muteOff: 'My voice is back.',
+    proactiveOn: "I'll keep starting conversations with you.",
+    proactiveOff: "Okay, I won't disturb you on my own.",
   },
 };

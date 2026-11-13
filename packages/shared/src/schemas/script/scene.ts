@@ -36,6 +36,7 @@ export function cueTrack(cue: Cue): ScriptTrack | null {
       return 'ui';
     case 'move':
     case 'emit':
+    case 'prop':
       return 'world';
     case 'wait':
     case 'branch':

@@ -47,9 +47,9 @@ export type PetPerformanceEvent =
   | { kind: 'interaction'; event: InteractionEvent }
   | { kind: 'conversation' };
 
-/** 命中轮廓多边形（归一化窗口坐标 0..1，原点左上，顺时针） */
+/** 命中轮廓多边形（归一化窗口坐标 0..1，原点左上，顺时针；ui = dev 面板等非模型交互区） */
 export interface PetHitPolygon {
-  id: 'head' | 'body' | 'tail';
+  id: 'head' | 'body' | 'tail' | 'ui';
   points: Array<[number, number]>;
 }
 
@@ -68,8 +68,19 @@ export interface PetHitProxy {
 export const PET_HIT_PROXY_MAX_POLYGONS = 4;
 export const PET_HIT_PROXY_MAX_POINTS = 32;
 
-const HIT_POLYGON_IDS = new Set<string>(['head', 'body', 'tail']);
+const HIT_POLYGON_IDS = new Set<string>(['head', 'body', 'tail', 'ui']);
 
+/** v3.0 M1：桌宠右键菜单快捷动作（主进程 → 桌宠渲染层执行） */
+export const PET_QUICK_ACTIONS = [
+  'toggle-mute',
+  'toggle-proactive',
+  'play-eat-rice',
+  'play-called-fat',
+] as const;
+export type PetQuickAction = (typeof PET_QUICK_ACTIONS)[number];
+
+/** 桌宠窗上报的伴身设置（右键菜单勾选态；主进程只缓存） */
+export interface PetCompanionSettings { muted: boolean; proactive: boolean }
 /**
  * preload 通过 contextBridge 暴露的桌宠桥（window.wbfm.pet）。
  * 主窗调用 open/close/isOpen/relayPerformance/onOpenChange；
@@ -98,8 +109,19 @@ export interface WbfmPetBridge {
   dragEnd(): void;
   /** 桌宠窗：右键角色 → 请求主进程弹出菜单（渲染层显式上报） */
   showMenu(): void;
+  /** 桌宠窗：上报当前静音/主动说话状态，供右键菜单显示勾选态 */
+  reportCompanionSettings(settings: PetCompanionSettings): void;
   /** 主窗：中继语音表现事件（单窗转发；桌宠未开时主进程直接丢弃） */
   relayPerformance(event: PetPerformanceEvent): void;
+  /**
+   * 桌宠窗：订阅主进程的换模型通知（原位热替换，不重建窗口）。
+   * 渲染层应用后必须 `confirmModel` 回执；主进程超时未收到回执会回退为重建窗口。
+   */
+  onModelChange(cb: (modelId: string) => void): () => void;
+  /** 桌宠窗：换模型已应用回执（仅回执主进程最近一次通知的 modelId 有效） */
+  confirmModel(modelId: string): void;
+  /** 桌宠窗：订阅右键菜单快捷动作（静音 / 主动说话 / 场戏），返回取消订阅 */
+  onQuickAction(cb: (action: PetQuickAction) => void): () => void;
   /** 桌宠窗：订阅表现事件，返回取消订阅 */
   onPerformance(cb: (event: PetPerformanceEvent) => void): () => void;
   /** 主窗：订阅桌宠开关状态（用于主窗形象栏让位），返回取消订阅 */

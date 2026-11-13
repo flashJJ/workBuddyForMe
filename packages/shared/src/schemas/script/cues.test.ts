@@ -16,6 +16,7 @@ describe('cueSchema（Cue 契约）', () => {
       [{ kind: 'gesture', gesture: 'nod', intensity: 0.6 }, 'gesture', 'body'],
       [{ kind: 'motion', motion: 'motion:wave.vrma', loop: false }, 'motion', 'body'],
       [{ kind: 'behavior', behavior: 'behavior.lifted' }, 'behavior', 'body'],
+      [{ kind: 'prop', prop: 'teacup', action: 'attach' }, 'prop', 'world'],
       [{ kind: 'expression', tag: 'joy', holdMs: 1200 }, 'expression', 'face'],
       [{ kind: 'look', target: 'camera', weight: 0.8 }, 'look', 'look'],
       [{ kind: 'line', pool: 'head-tap', ms: 2600 }, 'line', 'voice'],
@@ -76,6 +77,10 @@ describe('cueSchema（Cue 契约）', () => {
     expect(cueSchema.safeParse({ kind: 'speak', text: 42 }).success).toBe(false);
     expect(cueSchema.safeParse({ kind: 'motion', motion: '   ' }).success).toBe(false);
     expect(cueSchema.safeParse({ kind: 'behavior', behavior: '  ' }).success).toBe(false);
+    expect(cueSchema.safeParse({ kind: 'prop', prop: '   ', action: 'attach' }).success).toBe(false);
+    expect(cueSchema.safeParse({ kind: 'prop', prop: 'teacup', action: 'throw' }).success).toBe(
+      false,
+    );
     expect(cueSchema.safeParse({ kind: 'gesture', gesture: 'tilt', intensity: 2 }).success).toBe(
       false,
     );
