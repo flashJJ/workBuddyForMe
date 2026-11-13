@@ -4,29 +4,23 @@ import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import type { InteractionKind, MotionSelectionContext } from '@wbfm/shared/schemas';
 import type { ExpressionTag } from '../expression/expression-parser';
-import type { TouchControllerLike } from '../ui/use-head-touch';
 import { MotionMixer, type MotionRotationConfig } from './vrm-motion-mixer';
 import { VrmFaceLayer } from './vrm-face-layer';
 import { VrmInteractionState, type InteractionPhase } from './vrm-interaction-state';
 import { VrmPoseLayer, type NormalizedBoneRef } from './vrm-pose-layer';
+import { VrmAmbient } from './overlay/vrm-ambient';
+import { VrmTension } from './overlay/vrm-tension';
 import { prepareVrmModel, VrmTailLayer } from './asset';
-import { pickAmbientBehavior, pickTapGesture } from '../performance/gesture';
+import { pickMotionGesture, pickTapGesture } from '../performance/gesture';
 import type { MotionPoolEntry } from '../motion/motion-segments';
 import { NORM_BONE_NAMES } from '../pose/bones';
+import type { VrmControllerLike } from './session/vrm-controller-like';
+import { applyChibi, groundFeet } from './chibi/apply-chibi';
+import { VrmFrameLedger } from './overlay/vrm-frame-ledger';
+import { VrmPropLayer } from './props/vrm-prop-layer';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
-
-export interface VrmControllerLike extends TouchControllerLike {
-  playSquash(): void;
-  flashExpression(tag: ExpressionTag, durationMs: number): void;
-  setGaze(nx: number, ny: number): void;
-  tap(): void;
-  setLipLevel(level: number): void;
-  setExpression(tag: ExpressionTag): void;
-  playBehavior?(id: string): boolean;
-  stopBehavior?(): boolean;
-  dispose(): void;
-}
+export type { VrmControllerLike } from './session/vrm-controller-like';
 
 /**
  * VrmController：VRM 渲染运行时门面。
@@ -41,16 +35,7 @@ export interface VrmControllerLike extends TouchControllerLike {
  * - `VrmInteractionState` 三段式阶段机（只产出阶段与微倾角度）
  *
  * animate loop 固定顺序（update 方法内，不可动）：
- *   Step 0  interaction.tick()        ← 三段式阶段推进
- *   Step 1  mixer.update(dt) + tickRotation(dt) ← 动作池 clip 驱动 + 待机轮播
- *   Step 2  pose.applySquash()        ← vrm.scene.scale sin 包络（210ms）
- *   Step 3  face.checkFlashExpiry()   ← flashUntil 到期恢复 baseExpression
- *   Step 4  pose.applyHeadOverlay() + applyInteractionAngles() ← wiggle/gaze/微倾
- *   Step 5  pose.applyBodyIdle()      ← 呼吸 position.y + 身体微摆 rotation.y
- *   Step 6  vrm.update(dt)            ← normalized → raw → 场景 + SpringBone 物理
- *   Step 7  face.applyExpressionLayer() ← morph (happy/sad/angry/relaxed/surprised)
- *   Step 8  face.applyLipSync() + applyBlink(dt) ← 口型 + 随机眨眼
- *   Step 10 renderer.render(scene, camera)
+ *   interaction → mixer → squash/flash → 头部叠加 → 呼吸 → vrm.update → 表情 preset → 口型/眨眼 → 行为语义表情 → render（每步含义见 update 内注释）
  */
 export class VrmController implements VrmControllerLike {
   private readonly vrm: VRM;
@@ -60,11 +45,19 @@ export class VrmController implements VrmControllerLike {
   private readonly clock: THREE.Clock;
   private readonly mixer: MotionMixer;
   private readonly face: VrmFaceLayer;
-  private readonly pose: VrmPoseLayer;
+  private readonly pose: VrmPoseLayer; private readonly props: VrmPropLayer;
   private readonly tail: VrmTailLayer;
   private readonly interaction = new VrmInteractionState();
   private lastPhase: InteractionPhase = 'idle';
-  private nextAmbientAt = 0;
+  /** 环境微行为计时（眨眼 / 点头 / 歪头 / 瞥视） */
+  private readonly ambient = new VrmAmbient(
+    () => this.face.triggerBlink(),
+    (kind) => this.pose.playGesture(kind),
+  );
+  /** T2.6：自然度张力，跟随交互状态平滑变化（见 Step 0.6） */
+  private readonly tension = new VrmTension();
+  /** 帧台账：区域 → 写者/优先级/意图（只记录，不拦截） */
+  private readonly frames: VrmFrameLedger;
   private sleeping = false;
   private faceAway = false;
   private disposed = false;
@@ -97,9 +90,10 @@ export class VrmController implements VrmControllerLike {
     }
 
     this.pose = new VrmPoseLayer(vrm, normBones);
+    this.frames = new VrmFrameLedger(this.pose);
     this.face = new VrmFaceLayer(vrm);
     this.tail = new VrmTailLayer(vrm);
-    this.mixer = new MotionMixer(vrm, gltfAnimations, motionPool, rotationConfig);
+    this.mixer = new MotionMixer(vrm, gltfAnimations, motionPool, rotationConfig); this.props = new VrmPropLayer(vrm, scene, () => this.pose.applyPropHold('pose.prop-hold'));
   }
 
   // ======= VrmControllerLike 公开方法 =======
@@ -137,8 +131,7 @@ export class VrmController implements VrmControllerLike {
 
   endInteraction(_kind?: InteractionKind): void {
     if (this.disposed) return;
-    // 关键：三段式收尾时**强制取消临时表情**，让角色回 idle。
-    // 否则 Resolver ActionChain 里 flashExpression(tag, 2600ms) 会独立挂着不走。
+    // 关键：三段式收尾时强制取消临时表情，否则 ActionChain 的 flashExpression 会独立挂着不走
     if (this.interaction.end()) this.face.clearFlash();
   }
 
@@ -162,70 +155,63 @@ export class VrmController implements VrmControllerLike {
     if (this.disposed) return;
     this.sleeping = sleeping;
     // 唤醒后重新排期，避免把睡眠时长一次性补成「立刻做动作」
-    if (!sleeping) this.nextAmbientAt = 0;
+    if (!sleeping) this.ambient.reset();
     this.pose.setSleeping(sleeping);
     this.face.setSleeping(sleeping);
     this.mixer.setSleeping(sleeping);
   }
 
   /** v3.5：久无交互背对 / 被交互转回（只影响 VRM；Live2D 无此 API） */
-  setFaceAway(away: boolean): void {
-    if (this.disposed) return;
-    this.faceAway = away;
-    this.pose.setFaceAway(away);
-  }
+  setFaceAway(away: boolean): void { if (this.disposed) return; this.faceAway = away; this.pose.setFaceAway(away); } setScriptBusy(busy: boolean): void { if (!this.disposed) this.pose.setScriptBusy(busy); }
 
   /** 被拎起：向上拖拽时进入悬空姿态，松手回弹 */
-  setRaised(raised: boolean): void {
-    if (!this.disposed) this.pose.setRaised(raised);
-  }
+  setRaised(raised: boolean): void { if (!this.disposed) this.pose.setRaised(raised); }
 
   /** M0c：播放/停止 L3 分层行为（behavior.*），enter/loop/exit 由动效库单时钟推进 */
   playBehavior(id: string): boolean { return !this.disposed && this.pose.playBehavior(id); }
-  stopBehavior(): boolean { return !this.disposed && this.pose.stopBehavior(); }
+  /** 场景 cue：强制接管，清空排队行为，避免连续点击拥塞 */
+  playBehaviorNow(id: string): boolean { return !this.disposed && this.pose.playBehaviorNow(id); }
+  stopBehavior(id?: string, clearQueue = false): boolean { return !this.disposed && this.pose.stopBehavior(id, clearQueue); }
 
-  /** 点击触发：优先从动作池随机播一个一次性动作；池空则退回程序化手势 */
+  /** 坐窗沿/坐桌沿：高度锚点 + 腿部端点 IK；null 恢复站立 */
+  setSeat(mode: 'sill' | 'desk' | null): void { if (!this.disposed) this.pose.setSeat(mode ? { mode } : null); }
+
+  /** v3.0 P4：Q 版骨架缩放（关闭即还原） */
+  setChibi(on: boolean): void { if (this.disposed) return; applyChibi(this.vrm, on); this.pose.refreshSeating(); this.captureBaseScale(); }  /** v3.0 P4：Q 版缩腿后按当前骨架把脚底重新贴地（坐姿交给座位下沉） */
+  alignFeetToGround(): void {
+    if (!this.disposed && !this.pose.seated) groundFeet(this.vrm);
+  }
+
+  /** M0d T2.2：语义表情预览（dev 面板）；null 释放所有通道 */
+  setMorphChannels(channels: Record<string, number> | null): void { if (!this.disposed) this.pose.setMorphChannels(channels); }
+
+  /** 帧台账：区域 → 写者/优先级/意图（dev 排查越改越乱用） */
+  get frameDebug() { return this.frames.snapshot; }
+  /** S1 道具原型：attach/detach 程序化茶杯（dev 入口） */
+  attachProp(id: string, on = true): Promise<boolean> { return this.disposed ? Promise.resolve(false) : on ? this.props.attach(id) : Promise.resolve(this.props.detach(id)); }
+  showProp(id: string, on = true): Promise<boolean> { return this.disposed ? Promise.resolve(false) : on ? this.props.show(id) : Promise.resolve(this.props.hide(id)); }
+  /** 点击触发：先播触摸反应；无 VRMA 手势时用内部 MOTION 兜底 */
   tap(): void {
     if (this.disposed) return;
-    if (this.mixer.playRandomGesture()) return;
-    this.pose.playGesture(pickTapGesture());
+    const reacted = this.pose.playReaction('motion.react-flinch');
+    if (!reacted && this.mixer.poolSize > 1 && this.mixer.playRandomGesture()) return;
+    if (!reacted && this.playMotion(pickMotionGesture())) { this.face.triggerBlink(); return; }
+    if (!reacted) this.pose.playGesture(pickTapGesture());
     this.pose.nudgeHead();
     this.face.triggerBlink();
   }
+  /** 内部 MOTION 一次性回退（无 VRMA 手势时）；返回 false 表示动作不存在 */
+  playMotion(id: string): boolean { const duration = this.pose.motionDuration(id); return duration > 0 && this.pose.playReaction(id, duration); }
+  /** P8 桥接点 3：剧本动作专用槽（全身体，独立于触摸反应）；返回 false = 未注册 */
+  playScriptMotion(id: string, options?: { loop?: boolean; fadeMs?: number }): boolean { return !this.disposed && this.pose.playScriptMotion(id, options); }
+  stopScriptMotion(id?: string): boolean { return !this.disposed && this.pose.stopScriptMotion(id); }
 
-  setLipLevel(level: number): void {
-    if (this.disposed) return;
-    this.face.setLipLevel(level);
-  }
-
-  setExpression(tag: ExpressionTag): void {
-    if (this.disposed) return;
-    this.face.setExpression(tag);
-  }
-
-  dispose(): void {
-    if (this.disposed) return;
-    this.disposed = true;
-    this.mixer.dispose();
-    // 注意：renderer 和 scene 的 dispose 由 vrm-canvas.tsx 的 disposeVrm 统一处理
-  }
+  setLipLevel(level: number): void { if (!this.disposed) this.face.setLipLevel(level); }
+  setExpression(tag: ExpressionTag): void { if (!this.disposed) this.face.setExpression(tag); }
+  /** 注意：renderer 和 scene 的 dispose 由 vrm-canvas.tsx 的 disposeVrm 统一处理 */
+  dispose(): void { if (this.disposed) return; this.disposed = true; this.mixer.dispose(); this.props.dispose(); }
 
   // ======= 核心 update（固定 10 步） =======
-
-  /** 环境微行为：无动作 clip/手势/交互/睡眠/背对时每 8–20s 随机一次 */
-  private tickAmbient(): void {
-    if (this.sleeping || this.faceAway || this.mixer.hasGesture || this.interaction.currentPhase !== 'idle') return;
-    const now = performance.now();
-    if (this.nextAmbientAt === 0) {
-      this.nextAmbientAt = now + 6000 + Math.random() * 6000;
-      return;
-    }
-    if (now < this.nextAmbientAt) return;
-    this.nextAmbientAt = now + 8000 + Math.random() * 12_000;
-    const behavior = pickAmbientBehavior();
-    if (behavior === 'blink') this.face.triggerBlink();
-    else this.pose.playGesture(behavior);
-  }
 
   update(speaking: boolean, getLevel: () => number): void {
     if (this.disposed) return;
@@ -244,8 +230,13 @@ export class VrmController implements VrmControllerLike {
       this.lastPhase = phase;
     }
 
+    // --- Step 0.6: 自然度张力跟随交互状态（睡眠 < 待机 < 说话 < 行为 < 触摸 < 拎起）---
+    const state = { sleeping: this.sleeping, raised: this.pose.raised, touching: this.pose.reacting || this.interaction.currentPhase !== 'idle', behavior: this.pose.behavior.id !== null, speaking, faceAway: this.faceAway };
+    this.pose.setLiveliness({ tension: this.tension.tick(dt, state) });
+
     // --- Step 0.7: 叠加骨骼复位（mixer 未驱动的轨道不残留上一帧视线）---
     this.pose.resetOverlayBones();
+    this.pose.rememberFrame(); // 缓存上一帧最终手臂姿势，供帧内行为切换（lifted→land）交叉淡化
 
     // --- Step 1: mixer 驱动动作池 clip ---
     this.mixer.update(dt);
@@ -268,21 +259,25 @@ export class VrmController implements VrmControllerLike {
     this.pose.applyHeadOverlay(t, procedural, dt, gazeWeight);
     const angles = this.interaction.overlayAngles();
     this.pose.applyInteractionAngles(angles.yaw, angles.pitch);
-    // v3.0 P1：待机时把 A-pose 手臂收成自然下垂；手势/长按/被拎起期间不干预
-    if (!this.mixer.hasGesture && !this.interaction.isLooping && !this.pose.raised) {
-      this.pose.relaxArms(procedural ? 1 : 0.7, t);
-    }
+    // v3.0 P1：待机时把 A-pose 手臂收成自然下垂；clip 自带手臂动画时让位，手势/长按/被拎起/触摸反应/行为期间不干预
+    const relaxable = !this.mixer.hasGesture && !this.interaction.isLooping && !this.pose.raised && !this.pose.reacting && !this.pose.seated && this.pose.behavior.id === null && this.pose.accent === null && this.pose.scriptMotion === null;
+    const relaxWeight = !relaxable ? 0 : procedural ? 1 : this.mixer.idleClipAnimatesArms ? 0 : 1; const propHold = this.props.hold;
+    this.frames.beginFrame({ procedural, gazeWeight, relaxWeight, accent: this.pose.accent, reaction: this.pose.reaction, propHold, scriptMotion: this.pose.scriptMotion });
+    if (relaxWeight > 0 && this.frames.allows('idle:relax')) this.pose.relaxArms(relaxWeight, t);
 
     // --- Step 5: 呼吸 + 身体微摆（交互 loop 阶段加深呼吸） ---
     this.pose.applyBodyIdle(t, dt, this.interaction.isLooping, procedural);
+    if (propHold && this.frames.allows('prop:hold')) this.pose.applyPropHold(propHold.pose); this.frames.commit(performance.now());
     // --- Step 5.5: 环境微行为（眨眼/点头/歪头/瞥视），避免待机像摆件 ---
-    this.tickAmbient();
+    this.ambient.tick(performance.now(), !this.sleeping && !this.faceAway && !this.mixer.hasGesture && this.interaction.currentPhase === 'idle');
+
+
 
     // --- Step 6: vrm.update → normalized → raw → 场景 + SpringBone ---
     // normalized bone 在 Step 4 已写好；vrm.update 同步到 raw、应用到 mesh 并驱动 SpringBone
     this.vrm.update(dt);
     // 非 humanoid 且未配 SpringBone 的尾巴：程序化小幅摆动
-    this.tail.update(t);
+    this.tail.update(t); this.props.update(dt * 1000);
 
     // --- Step 7: morph 表情层 ---
     this.face.applyExpressionLayer();
@@ -292,6 +287,10 @@ export class VrmController implements VrmControllerLike {
 
     // --- Step 9: 程序化眨眼 ---
     this.face.applyBlink(dt);
+
+    // --- Step 9.5: 行为语义表情（T2.2）---
+    // 放在 vrm.update 与表情层之后：只写 binding 的非保留通道，下一帧 preset 会重新应用
+    this.pose.applyMorph();
 
     // --- Step 10: render ---
     this.renderer.render(this.scene, this.camera);

@@ -23,6 +23,10 @@ export type AvatarCanvasRouterProps = Live2dCanvasProps & {
   faceAway?: boolean;
   /** v3.0 T0.7：VRM 帧循环回调（仅 VRM；Live2D 忽略） */
   onFrame?: (dtMs: number) => void;
+  /** v3.5：桌宠大小（仅 VRM 取景生效；Live2D 忽略） */
+  petSize?: 'sm' | 'md' | 'lg';
+  /** v3.0 P4：Q 版比例（仅 VRM 生效；Live2D 忽略） */
+  chibi?: boolean;
 };
 
 /**

@@ -6,6 +6,13 @@ import type { VrmController } from './vrm-controller';
 import type { VrmFitResult } from './vrm-fit';
 import { setBehaviorDebugSource } from '../animation/observability';
 
+/** GPU 资源计数（换模型后应回到基线） */
+export interface VrmResourceSnapshot {
+  geometries: number;
+  textures: number;
+  programs: number;
+}
+
 /** dev 调试钩子（window.__vrmDebug）暴露的形状 */
 export interface VrmDebugProbe {
   three: typeof THREE;
@@ -14,6 +21,8 @@ export interface VrmDebugProbe {
   controller: VrmController;
   pool: THREE.AnimationClip[];
   fit: VrmFitResult | null;
+  /** P4-2：renderer.info 快照，用于换模型/卸载后的回收审计 */
+  resources: () => VrmResourceSnapshot;
   state: () => Record<string, unknown>;
 }
 
@@ -24,6 +33,7 @@ export function installVrmDebugProbe(
   controller: VrmController,
   pool: THREE.AnimationClip[],
   host: HTMLElement,
+  getResources?: () => VrmResourceSnapshot,
 ): VrmDebugProbe | null {
   if (process.env.NODE_ENV === 'production') return null;
   const probe: VrmDebugProbe = {
@@ -33,6 +43,7 @@ export function installVrmDebugProbe(
     controller,
     pool,
     fit: null,
+    resources: getResources ?? (() => ({ geometries: 0, textures: 0, programs: 0 })),
     state: () => ({
       scale: vrm.scene.scale.toArray(),
       pos: vrm.scene.position.toArray(),
@@ -44,6 +55,8 @@ export function installVrmDebugProbe(
       gesture: Boolean((controller as any)?.mixer?.hasGesture),
       holding: Boolean((controller as any)?.mixer?.isHolding),
       clip: (controller as any)?.mixer?.currentClipName ?? null,
+      props: (controller as any)?.props?.debug ?? null,
+      frames: (controller as any)?.frameDebug ?? null,
     }),
   };
   (window as unknown as Record<string, unknown>).__vrmDebug = probe;

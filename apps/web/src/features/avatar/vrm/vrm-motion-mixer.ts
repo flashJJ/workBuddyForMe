@@ -14,6 +14,7 @@ import {
 import { entryLoopClip, groupMotionEntries, type MotionEntry, type MotionPoolEntry } from '../motion/motion-segments';
 import {
   allEntryClips,
+  clipAnimatesArms,
   crossFadeLoopAction,
   embeddedSingleEntry,
   selectEmbeddedClips,
@@ -103,6 +104,11 @@ export class MotionMixer {
     return this.currentIdleEntry === null;
   }
 
+  /** 当前待机 clip 自带手臂动画（自带时垂臂层让位） */
+  get idleClipAnimatesArms(): boolean {
+    return this.currentIdleEntry ? clipAnimatesArms(this.currentIdleEntry.loopClip) : false;
+  }
+
   /** 动作条目数 */
   get poolSize(): number {
     return this.entries.length;
@@ -132,15 +138,8 @@ export class MotionMixer {
   /** 注入待机动作轮播配置（开关 + 间隔秒数，越界回落默认） */
   setRotationConfig(config: MotionRotationConfig): void {
     const seconds = Math.round(config.seconds);
-    this.rotationConfig = {
-      enabled: config.enabled,
-      seconds:
-        Number.isFinite(seconds) &&
-        seconds >= MOTION_ROTATION_SECONDS_MIN &&
-        seconds <= MOTION_ROTATION_SECONDS_MAX
-          ? seconds
-          : MOTION_ROTATION_SECONDS_DEFAULT,
-    };
+    const valid = Number.isFinite(seconds) && seconds >= MOTION_ROTATION_SECONDS_MIN && seconds <= MOTION_ROTATION_SECONDS_MAX;
+    this.rotationConfig = { enabled: config.enabled, seconds: valid ? seconds : MOTION_ROTATION_SECONDS_DEFAULT };
   }
 
   /** v2.2：注入状态驱动挑选输入（情绪档位 + 关系等级）；由 VrmController 每帧同步 */

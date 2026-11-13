@@ -120,6 +120,73 @@ describe('VrmPoseLayer raised pose', () => {
   });
 });
 
+describe('VrmPoseLayer 行为视线（T2.4）', () => {
+  function makeHeadSkeleton(): {
+    vrm: VRM;
+    bones: Map<string, NormalizedBoneRef>;
+    head: THREE.Object3D;
+  } {
+    const scene = new THREE.Object3D();
+    scene.rotation.y = Math.PI;
+    const spine = new THREE.Object3D();
+    const neck = new THREE.Object3D();
+    const head = new THREE.Object3D();
+    scene.add(spine);
+    spine.add(neck);
+    neck.add(head);
+    const bones = new Map<string, NormalizedBoneRef>([
+      ['spine', { name: 'spine', node: spine, baseQuat: spine.quaternion.clone() }],
+      ['neck', { name: 'neck', node: neck, baseQuat: neck.quaternion.clone() }],
+      ['head', { name: 'head', node: head, baseQuat: head.quaternion.clone() }],
+    ]);
+    return { vrm: { scene, lookAt: null } as unknown as VRM, bones, head };
+  }
+
+  /** 用不吃 wiggle 的 clip 分支，保证头部只有行为视线贡献 */
+  function tick(layer: VrmPoseLayer, frames: number): void {
+    for (let i = 0; i < frames; i += 1) {
+      layer.resetOverlayBones();
+      layer.captureMixerPose();
+      layer.applyHeadOverlay(i / 30, false, 1 / 30, 1);
+    }
+  }
+
+  it('背对静默时，行为 look 仍驱动头部转向', () => {
+    const { vrm, bones, head } = makeHeadSkeleton();
+    const layer = new VrmPoseLayer(vrm, bones);
+    layer.captureBase();
+    layer.setFaceAway(true); // 常规 gaze 与环境漂移已被静默
+    layer.playBehavior('behavior.face-away');
+    tick(layer, 90);
+
+    expect(Math.abs(head.quaternion.y)).toBeGreaterThan(0.1);
+  });
+
+  it('停止行为后头部回正', () => {
+    const { vrm, bones, head } = makeHeadSkeleton();
+    const layer = new VrmPoseLayer(vrm, bones);
+    layer.captureBase();
+    layer.setFaceAway(true);
+    layer.playBehavior('behavior.face-away');
+    tick(layer, 60);
+    layer.stopBehavior();
+    tick(layer, 90);
+
+    expect(Math.abs(head.quaternion.y)).toBeLessThan(0.02);
+  });
+
+  it('睡眠优先级高于行为 look', () => {
+    const { vrm, bones, head } = makeHeadSkeleton();
+    const layer = new VrmPoseLayer(vrm, bones);
+    layer.captureBase();
+    layer.setSleeping(true);
+    layer.playBehavior('behavior.face-away');
+    tick(layer, 90);
+
+    expect(Math.abs(head.quaternion.y)).toBeLessThan(0.02);
+  });
+});
+
 describe('VrmPoseLayer.applyBodyIdle', () => {
   it('身体微摆叠加在基准朝向上，不覆盖 VRM0 的 180°（rotateVRM0）', () => {
     const { vrm, scene } = makeVrm();

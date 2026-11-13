@@ -1,21 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
-import { VRMAnimationLoaderPlugin } from '@pixiv/three-vrm-animation';
 import { parseVrmAvatarId, DEFAULT_MOTION_MOOD, type MotionMood } from '@wbfm/shared/schemas';
-import { BUILTIN_VRM_ASSET_PATH, BUILTIN_VRM_FILE_REF } from '@wbfm/shared/constants';
-import { getManagedToken } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ExpressionTag } from '../expression/expression-parser';
-import { shouldRenderFrame, type FrameMode } from '../performance/frame-governor';
-import { projectObjectToViewport, type AvatarScreenRect } from '../performance/screen-rect';
-import { loadMotionPool, loadRotationConfig } from './vrm-motion-loader';
-import { fitVrmToCamera } from './vrm-fit';
-import { installVrmDebugProbe, removeVrmDebugProbe, type VrmDebugProbe } from './vrm-debug';
-import { attachGazePointer } from '../performance/pointer-gaze';
+import type { FrameMode } from '../performance/frame-governor';
+import type { AvatarScreenRect } from '../performance/screen-rect';
+import { createVrmSession, type VrmSession } from './session/vrm-session';
 import { VrmController, type VrmControllerLike } from './vrm-controller';
 
 export type { VrmControllerLike };
@@ -38,6 +29,10 @@ export interface VrmCanvasProps {
   /** v3.0 P1：睡眠（闭眼/低头/动作减速） */
   sleeping?: boolean;
   faceAway?: boolean;
+  /** v3.5：桌宠大小（只影响取景比例；主窗形象栏忽略） */
+  petSize?: 'sm' | 'md' | 'lg';
+  /** v3.0 P4：Q 版比例（仅 VRM；切换后自动重新取景） */
+  chibi?: boolean;
   /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
   onModelRect?: (rect: AvatarScreenRect | null) => void;
   onFrame?: (dtMs: number) => void;
@@ -46,6 +41,12 @@ export interface VrmCanvasProps {
   'data-testid'?: string;
 }
 
+/**
+ * VRM 画布（v3.0 P4：薄包装）。
+ *
+ * 渲染运行时全部交给 VrmSession：renderer/scene/相机/rAF 只建一次，
+ * modelId 变化只触发 `loadModel` 热替换，不销毁 canvas，因此换模型不闪黑帧。
+ */
 export function VrmCanvas({
   modelId,
   speaking = false,
@@ -58,6 +59,8 @@ export function VrmCanvas({
   frameMode = 'idle',
   sleeping = false,
   faceAway = false,
+  petSize,
+  chibi = false,
   onModelRect,
   onFrame,
   className,
@@ -66,7 +69,12 @@ export function VrmCanvas({
 }: VrmCanvasProps) {
   const { t } = useI18n();
   const hostRef = React.useRef<HTMLDivElement | null>(null);
+  const sessionRef = React.useRef<VrmSession | null>(null);
+  const petSizeRef = React.useRef<'sm' | 'md' | 'lg'>(petSize ?? 'md');
+  const petModeRef = React.useRef(petSize !== undefined);
+  const chibiRef = React.useRef(chibi);
   const controllerRefInternal = React.useRef<VrmController | null>(null);
+  const externalControllerRef = React.useRef(controllerRef);
   const speakingRef = React.useRef(speaking);
   const getLevelRef = React.useRef(getLevel);
   const expressionRef = React.useRef(expression);
@@ -92,6 +100,18 @@ export function VrmCanvas({
   React.useEffect(() => { frameModeRef.current = frameMode; }, [frameMode]);
   React.useEffect(() => { sleepingRef.current = sleeping; }, [sleeping]);
   React.useEffect(() => { onModelRectRef.current = onModelRect; }, [onModelRect]);
+  // 桌宠大小切换：比例变化不改变容器尺寸，需要主动重 fit 一次
+  React.useEffect(() => {
+    petSizeRef.current = petSize ?? 'md';
+    petModeRef.current = petSize !== undefined;
+    sessionRef.current?.refit();
+  }, [petSize]);
+  // Q 版：改写骨架缩放后重取景；脚底贴地由 session 的 onFit 统一修正
+  React.useEffect(() => {
+    chibiRef.current = chibi;
+    controllerRefInternal.current?.setChibi(chibi);
+    sessionRef.current?.refit();
+  }, [chibi]);
   onFrameRef.current = onFrame;
 
   React.useEffect(() => {
@@ -102,178 +122,54 @@ export function VrmCanvas({
     faceAwayRef.current = faceAway;
     controllerRefInternal.current?.setFaceAway(faceAway);
   }, [faceAway]);
+
   const fileRef = parseVrmAvatarId(modelId);
+
+  // 运行时只建一次：换模型走下面的 loadModel，不重建 renderer/canvas
   React.useEffect(() => {
-    if (!fileRef || !hostRef.current) return;
-    let disposed = false;
     const host = hostRef.current;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
-    camera.position.set(0, 1.2, 2.5);
-    camera.lookAt(0, 1, 0);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0);
-    host.appendChild(renderer.domElement);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
-    const dir = new THREE.DirectionalLight(0xffffff, 1.5);
-    dir.position.set(1, 2, 2);
-    scene.add(dir);
-
-    // 提升到顶层——让 useEffect cleanup 能访问
-    let controller: VrmController | null = null;
-    let vrm: import('@pixiv/three-vrm').VRM | null = null;
-    let debug: VrmDebugProbe | null = null;
-    let raf = 0;
-    let observer: ResizeObserver | null = null;
-    let detachGazePointer: (() => void) | null = null;
-
-    const token = getManagedToken();
-    // 内置雪团走 public 静态资源，不写用户数据目录；导入模型仍走受 token 守卫的 API
-    const vrmUrl =
-      fileRef === BUILTIN_VRM_FILE_REF
-        ? BUILTIN_VRM_ASSET_PATH
-        : `/api/vrm-avatars/${fileRef}/file${token ? `?token=${encodeURIComponent(token)}` : ''}`;
-
-    const loader = new GLTFLoader();
-    loader.register((parser) => new VRMLoaderPlugin(parser));
-    loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
-
-    void (async () => {
-      try {
-        const gltf = await loader.loadAsync(vrmUrl);
-        if (disposed) return;
-        vrm = (gltf.userData.vrm as import('@pixiv/three-vrm').VRM | undefined) ?? null;
-        if (!vrm) { setError('VRM 解析失败'); return; }
-
-        VRMUtils.removeUnnecessaryVertices(gltf.scene);
-        VRMUtils.combineSkeletons(gltf.scene);
-        VRMUtils.removeUnnecessaryJoints(gltf.scene);
-        VRMUtils.rotateVRM0(vrm);
-
-        vrm.scene.traverse((o) => { o.frustumCulled = false; });
-        scene.add(vrm.scene);
-
-        // 模型自身不含 AnimationClip（静止姿态就是 T-pose），
-        // 加载动作池（内置 daiji + 全部已导入 VRMA）与轮播配置
-        const [poolEntries, rotation] = await Promise.all([
-          loadMotionPool(loader, vrm),
-          loadRotationConfig(),
-        ]);
-        if (disposed) return;
-
-        controller = new VrmController(
-          vrm,
-          gltf.animations,
-          renderer,
-          scene,
-          camera,
-          poolEntries,
-          rotation,
-        );
+    if (!host) return;
+    const session = createVrmSession({
+      host,
+      getPetSize: () => petSizeRef.current,
+      isPet: () => petModeRef.current,
+      getRuntime: () => ({
+        speaking: speakingRef.current,
+        level: () => getLevelRef.current?.() ?? 0,
+        mood: moodRef.current,
+        relationshipLevel: relationshipLevelRef.current,
+        frameMode: frameModeRef.current,
+        sleeping: sleepingRef.current,
+        faceAway: faceAwayRef.current,
+        expression: expressionRef.current,
+        chibi: chibiRef.current,
+      }),
+      onController: (controller) => {
         controllerRefInternal.current = controller;
-        if (controllerRef) controllerRef.current = controller;
-        controller.setSleeping(sleepingRef.current);
-        controller.setFaceAway(faceAwayRef.current);
-        if (expressionRef.current) controller.setExpression(expressionRef.current);
-
-        // 调试钩子（仅 dev）：MCP/CDP 读取实时缩放/位置/相机/当前待机动作/取景自检结果
-        debug = installVrmDebugProbe(
-          vrm,
-          camera,
-          controller,
-          poolEntries.map((entry) => entry.clip),
-          host,
-        );
-
-        detachGazePointer = attachGazePointer(host, () => controller);
-
-        // v3.0 P0：帧率三档（交互 60 / 待机 30 / 隐藏暂停）；高刷屏 rAF 可达 240Hz，
-        // 无上限时每帧都做 SpringBone/矩阵/表情，空闲也占满主线程。
-        let lastFrameAt = 0;
-        const animate = (now: number) => {
-          if (disposed || !controller) return;
-          raf = requestAnimationFrame(animate);
-          if (!shouldRenderFrame(now, lastFrameAt, frameModeRef.current)) return;
-          const dtMs = lastFrameAt > 0 ? Math.min(now - lastFrameAt, 100) : 0;
-          lastFrameAt = now;
-          controller.setMotionPreference({
-            mood: moodRef.current,
-            relationshipLevel: relationshipLevelRef.current,
-          });
-          controller.update(speakingRef.current, () => getLevelRef.current?.() ?? 0);
-          onFrameRef.current?.(dtMs);
-        };
-        raf = requestAnimationFrame(animate);
-
-        let fitted = false;
-        let lastW = 0, lastH = 0;
-        // 上一次 fit 时的容器尺寸——容器尺寸变了必须重算 scale
-        let fitW = 0, fitH = 0;
-        // 整个动作池的包围盒并集（primeForFit 采样一次，后续重 fit 复用）
-        let fitBounds: { min: THREE.Vector3; max: THREE.Vector3 } | null = null;
-        const resize = () => {
-          requestAnimationFrame(() => {
-            if (disposed) return;
-            const w = host.offsetWidth || host.clientWidth;
-            const h = host.offsetHeight || host.clientHeight;
-            if (!w || !h) return;
-            if (w === lastW && h === lastH) return;
-            lastW = w; lastH = h;
-            renderer.setSize(w, h, false);
-            renderer.domElement.style.width = w + 'px';
-            renderer.domElement.style.height = h + 'px';
-            renderer.domElement.style.display = 'block';
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            // 只 fit 一次会漏两件事：① 布局未稳定时量到错误容器尺寸；
-            // ② 只按单帧包围盒取景，待机动画的大幅摆臂会被裁。
-            // 因此：首次 primeForFit 采样「整个动作池」的包围盒并集，之后容器尺寸变了就重 fit。
-            let animBounds = fitBounds;
-            const sizeChanged = Math.abs(w - fitW) > 2 || Math.abs(h - fitH) > 2;
-            if (controller && vrm && (!fitted || sizeChanged)) {
-              if (!fitted) {
-                animBounds = controller.primeForFit();
-                fitBounds = animBounds;
-              }
-              fitted = true;
-              fitW = w; fitH = h;
-              const fitResult = fitVrmToCamera(vrm, camera, host, animBounds);
-              if (debug) debug.fit = fitResult;
-              controller.captureBaseScale();
-              // v3.0 P0：取景确定后投影包围盒 → 桌宠命中轮廓
-              onModelRectRef.current?.(projectObjectToViewport(vrm.scene, camera, w, h));
-            }
-          });
-        };
-        observer = new ResizeObserver(resize);
-        observer.observe(host);
-        resize();
-
-        setReady(true);
-      } catch (err) {
-        if (!disposed) setError(err instanceof Error ? err.message : String(err));
-      }
-    })();
-
-    // 顶层 cleanup——React StrictMode 触发时必调，彻底释放所有资源
+        const external = externalControllerRef.current;
+        if (external) external.current = controller;
+      },
+      onReady: setReady,
+      onError: setError,
+      onModelRect: (rect) => onModelRectRef.current?.(rect),
+      onFrame: (dtMs) => onFrameRef.current?.(dtMs),
+    });
+    sessionRef.current = session;
+    // 尺寸同步（renderer/canvas/camera.aspect）+ 首帧取景；只 refit 会让 canvas 停在默认 300×150
+    const observer = new ResizeObserver(() => session.resize());
+    observer.observe(host);
+    session.resize();
     return () => {
-      disposed = true;
-      cancelAnimationFrame(raf);
-      if (observer) observer.disconnect();
-      detachGazePointer?.();
-      if (controller) {
-        controller.dispose();
-        if (controllerRef && controllerRef.current === controller) controllerRef.current = null;
-      }
-      if (vrm) VRMUtils.deepDispose(vrm.scene);
-      removeVrmDebugProbe(debug);
-      controllerRefInternal.current = null;
-      renderer.dispose();
-      renderer.forceContextLoss();
-      renderer.domElement.remove(); // 关键！从 DOM 移除 canvas，StrictMode 第二次 setup 才不会叠加
+      observer.disconnect();
+      sessionRef.current = null;
+      session.dispose();
     };
+  }, []);
+
+  // 模型切换（含首次）：同一 session 内热替换
+  React.useEffect(() => {
+    if (!fileRef) return;
+    void sessionRef.current?.loadModel(fileRef);
   }, [fileRef]);
 
   const pointerClass = interactive ? '' : 'pointer-events-none';
