@@ -20,6 +20,7 @@ import {
 } from '../pose/head-overlay';
 import { VrmAnimationRuntime } from '../animation/adapters/vrm';
 import { collectBehaviorClaims, type BehaviorClaim } from '../animation/frame/behavior-claims';
+import { maskIncludes } from '../animation/mask';
 import { reapplyPalms } from '../animation/arms/solver';
 import { VrmIdleOverlay } from './overlay/vrm-idle-overlay';
 import { VrmScriptMotionOverlay, type ScriptMotionOptions } from './overlay/script-motion/vrm-script-motion';
@@ -250,7 +251,7 @@ export class VrmPoseLayer {
     this.anim.applyMotion('motion.hand-fidget-right', t * 1000, weight, 3200);
   }
 
-  applyPropHold(poseId: string): void { this.anim.applyPose(poseId, 1, 0, false); }
+  applyPropHold(poseId: string): void { const gripOnly = this.behaviorClaims.some((claim) => maskIncludes(claim.mask, 'rightArm')); this.anim.applyPose(gripOnly ? 'pose.hand-right-cup-hold' : poseId, 1, 0, false); }
 
   applyInteractionAngles(extraYaw: number, extraPitch: number): void {
     const head = this.normBones.get('head');
