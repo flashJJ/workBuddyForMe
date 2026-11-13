@@ -3,7 +3,11 @@ import type { NormalizedBoneRef } from '../../pose/bones';
 import type { PoseDefinition } from '../../animation/contracts';
 import { applyPose } from '../../animation/pose';
 import { smoothDamp } from '../../animation/math';
-import { clearanceTarget, DEFAULT_HAND_CLEARANCE, type HandClearanceParams } from '../../animation/liveliness';
+import {
+  clearanceTarget,
+  DEFAULT_HAND_CLEARANCE,
+  type HandClearanceParams,
+} from '../../animation/liveliness';
 import type { VrmAnimationRuntime } from '../../animation/adapters/vrm';
 
 /**

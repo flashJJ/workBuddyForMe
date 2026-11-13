@@ -1,4 +1,8 @@
-import { pickAmbientBehavior, type AmbientBehavior, type ProceduralGestureKind } from '../../performance/gesture';
+import {
+  pickAmbientBehavior,
+  type AmbientBehavior,
+  type ProceduralGestureKind,
+} from '../../performance/gesture';
 
 /**
  * 环境微行为调度（从 VrmController 外迁）：空闲时每 8–20s 随机眨眼 / 点头 / 歪头 / 瞥视。
