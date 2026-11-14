@@ -59,8 +59,9 @@
 - 打分：新增 `script/utility/`（`score.ts` / `select.ts` / `types.ts`）：时段 0.20、心情 0.15、关系 0.15、工作信号 0.20、空闲与打扰成本 0.15、新鲜度 0.15；先过滤已播，再排序，平局按「上次播放 → sceneId」保证确定性；阶段 1 用道具去重（`dedupe:prop`），theme/tags 留阶段 2。
 - 接入：桌宠把关系等级、心情、工作信号（`workView.base` → idle/busy/unknown）与最近道具传入 `usePetProactivePlayback`；claim 成功且真正开演后才上报决策，上报失败静默。
 - 服务/界面：`generation/decisions/` 负责裁剪与标题回填（gen.* 查剧情日记），新增 `GET/POST /api/pet/script/decisions`；设置页「AI 日常剧情」新增「最近决策」区块（时间、标题、来源、得分、理由 chips），中英文案与空态齐全。
-- 验证：utility 6 项、decisions 3 项、设置组件 2 项通过；script+pet+settings 37 文件 218 项、shared i18n 35 项通过；web typecheck、eslint、行数/结构/循环/ASCII 门禁通过；真机 `GET /api/pet/script/decisions` 200，设置页渲染空态且无页面错误。
-- 遗留：需真机观察忙碌/深夜/关系变化下的排序是否符合直觉，再决定是否调权重与进入阶段 2（触发键候选 + 环境低语）。
+- 验证：utility 6 项、decisions 3 项、设置组件 2 项通过；script+pet+settings 37 文件 218 项、shared i18n 35 项通过；web typecheck、eslint、行数/结构/循环/ASCII 门禁通过；真机（`WBFM_PET_SCRIPT=1`）静置 1 分钟自动开演 `gen.flight-pause`，plays 1→2/3，决策记录 score 0.538（道具重复 -0.12 / 今日未播 +0.075 / 空闲陪伴 +0.07 / 场景偏长 -0.06 / 工作时段 -0.02），设置页「最近决策」滚动到可见区域后显示标题、来源、得分与理由，无页面错误。
+- 说明：设置页沿用 `useVisibleQuery`，面板滚动进入视口后才会请求决策接口；未滚动时显示空态属预期。
+- 遗留：首场观察显示道具重复惩罚偏高（-0.12），阶段 2 前用更多样本复核权重；触发键候选与环境低语仍未接入。
 
 ### 2026-11-14 M3 Utility 决策层方案
 

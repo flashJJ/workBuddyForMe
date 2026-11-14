@@ -1,6 +1,6 @@
 # 14 Utility 决策层（M3 方案稿）
 
-> 状态：**阶段 1 已实施**（2026-11-14，主动播放选场 + 设置页最近决策）；阶段 2/3 待评审。
+> 状态：**阶段 1 已实施并真机验收**（2026-11-14，主动播放选场 + 设置页最近决策）；阶段 2/3 待评审。
 > 范围：主动播放选场、触发键候选排序、环境低语选池的统一打分；面向用户的「最近决策」展示。
 > 关联：[execution-roadmap P6](../../execution-roadmap.md)、[08-script-architecture](./08-script-architecture.md)、[09-script-dev-plan](./09-script-dev-plan.md)、[04-animation-behavior](./04-animation-behavior.md)。
 
