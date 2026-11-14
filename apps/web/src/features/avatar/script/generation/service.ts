@@ -1,4 +1,5 @@
 import type { ResolvedChatTarget } from '@wbfm/core/chat';
+import type { Memory } from '@wbfm/shared/types';
 import type {
   PetScriptGenerationRequest,
   PetScriptGenerationResult,
@@ -15,6 +16,7 @@ import {
   type PetScriptJournalStore,
 } from './journal';
 import { parseGeneratedScene } from './parse';
+import { profileContextForPrompt } from './profile';
 import { buildScriptGenerationPrompt } from './protocol';
 import {
   enqueueScene,
@@ -51,6 +53,8 @@ export interface PetScriptGeneratorDeps {
   topics?: PetTopicFetcher;
   /** P8.6：剧情日记（可选；缺省不记录） */
   journalStore?: PetScriptJournalStore;
+  /** M3：用户画像来源（称呼/忌口/作息）；读取失败自动降级 */
+  memories?: () => readonly Memory[];
   /** 解析默认对话模型；无模型时抛错 */
   resolveTarget: () => ResolvedChatTarget;
   complete: (target: ResolvedChatTarget, params: { system: string; user: string }) => Promise<string>;
@@ -80,6 +84,16 @@ function pickTrigger(
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : '生成失败';
+}
+
+/** 记忆库读取失败不应阻断生成：降级为无画像 */
+function readProfile(memories: (() => readonly Memory[]) | undefined): string | null {
+  if (!memories) return null;
+  try {
+    return profileContextForPrompt(memories());
+  } catch {
+    return null;
+  }
 }
 
 /** 提取本场母题：道具与台词池，用于近期去重 */
@@ -164,6 +178,7 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
         triggers: GENERATED_SCENE_TRIGGERS,
         storyContext: storyContextForPrompt(story),
         todayContext: topicsContextForPrompt(topics),
+        profileContext: readProfile(deps.memories) ?? undefined,
         context: { hour: now().getHours() },
       });
 

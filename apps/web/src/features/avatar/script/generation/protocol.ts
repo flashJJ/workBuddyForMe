@@ -18,6 +18,8 @@ export interface ScriptGenerationPromptInput {
   storyContext?: string;
   /** P8.6：今日时事/热点标题（只作灵感，不复述原文） */
   todayContext?: string;
+  /** M3：用户画像（称呼/忌口/作息/共同经历） */
+  profileContext?: string;
   context?: {
     hour?: number;
     relationshipLevel?: string;
@@ -62,6 +64,7 @@ export function buildScriptGenerationPrompt(input: ScriptGenerationPromptInput):
     '11) 不要与「最近主题」重复，也不要复用「已用梗标签」；最近 2 场用过的道具不要再用（用 story.resolves 收线时可以沿用）。',
     '12) 若上下文提示线索「已连续 n 场」，到上限那场必须用 story.resolves 收线，且不要再给同一线索留新悬念；最近几场是同一母题（如茶/饮水）时必须换题材。',
     '13) 若提供「今日时事」，选一条生活/科技/娱乐/节庆类话题做轻量影射（角色看到新闻后的日常反应）；不要复述标题或原文，不碰灾难/伤亡/政治/军事/犯罪等沉重话题，没有合适话题就忽略。',
+    '14) 若提供「用户画像」，可以自然称呼用户、避开忌口、尊重作息与共同经历；不要编造画像之外的隐私，也不要在台词里直接复述条目。',
     '可用原语：',
     'pose 预设: ' + list(primitives.posePresets),
     'gesture: ' + list(primitives.gestures),
@@ -79,6 +82,8 @@ export function buildScriptGenerationPrompt(input: ScriptGenerationPromptInput):
     `时间：${ctx.hour ?? 12} 点；关系：${ctx.relationshipLevel ?? 'partner'}；心情：${ctx.mood ?? 'normal'}`,
     '今日时事（只作灵感，不要复述标题/原文）：',
     input.todayContext ?? '（今天没有可用话题，按日常主题写）',
+    '用户画像（只作背景，不要直接复述）：',
+    input.profileContext ?? '（暂无可用画像，按普通用户处理）',
     '当前剧情上下文：',
     input.storyContext ?? '（暂无历史剧情，可以开一条新线）',
     '请生成 1 条 60–150 秒（8–40 条 beat）的日常小剧本，只输出 JSON。',

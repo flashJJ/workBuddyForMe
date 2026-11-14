@@ -1,6 +1,6 @@
 import { resolveChatTargetForModelId } from '@wbfm/core/chat';
 import type { SecretCipher } from '@wbfm/core/secrets';
-import { createSettingsRepository, type DatabaseInstance } from '@wbfm/database';
+import { createMemoryRepository, createSettingsRepository, type DatabaseInstance } from '@wbfm/database';
 import {
   createPetScriptScheduler,
   PET_SCRIPT_SCHEDULE_KEY,
@@ -50,6 +50,7 @@ export interface PetScriptServerDeps {
 /** P8.3–P8.5：服务端装配（settings_kv 持久化队列/用量/剧情/调度） */
 export function createPetScriptServer(deps: PetScriptServerDeps) {
   const settings = createSettingsRepository(deps.db);
+  const memories = createMemoryRepository(deps.db);
   const topics = createPetTopicFetcher({
     store: {
       load: () => settings.getJson<unknown>(PET_SCRIPT_TOPICS_KEY, null),
@@ -72,6 +73,8 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
       save: (state: PetScriptJournalState) => settings.setJson(PET_SCRIPT_JOURNAL_KEY, state),
     },
     topics,
+    // M3：画像只取高价值 active 记忆（约束/事实/偏好/共同经历），限 40 条再压缩
+    memories: () => memories.list({ status: 'active', limit: 40 }),
     resolveTarget: () => resolveChatTargetForModelId(deps, null),
     complete: async (target, { system, user }) => {
       let content = '';
