@@ -1,5 +1,6 @@
 import { resolveChatTargetForModelId } from '@wbfm/core/chat';
 import type { SecretCipher } from '@wbfm/core/secrets';
+import { PET_SCRIPT_DECISION_LIMITS, type PetScriptDecisionReport } from '@wbfm/shared/schemas';
 import { createMemoryRepository, createSettingsRepository, type DatabaseInstance } from '@wbfm/database';
 import {
   createPetScriptScheduler,
@@ -31,6 +32,12 @@ import {
   PET_SCRIPT_PLAYBACK_KEY,
 } from './playback';
 import type { PlaybackState } from './playback';
+import {
+  appendDecision,
+  PET_SCRIPT_DECISIONS_KEY,
+  resolveDecisions,
+  toDecisionRecord,
+} from './decisions';
 import {
   createPetTopicFetcher,
   PET_SCRIPT_TOPICS_KEY,
@@ -138,5 +145,34 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
     },
   };
 
-  return { generator, scheduler, journal, playback };
+  const decisions = {
+    /** 最近决策（设置页只读；新→旧） */
+    list(limit: number = PET_SCRIPT_DECISION_LIMITS.visible) {
+      const safe = Math.min(
+        PET_SCRIPT_DECISION_LIMITS.maxStored,
+        Math.max(1, Math.floor(limit)),
+      );
+      return resolveDecisions(settings.getJson<unknown>(PET_SCRIPT_DECISIONS_KEY, null)).items.slice(
+        0,
+        safe,
+      );
+    },
+    /** 桌宠开演后上报；gen.* 标题从剧情日记补齐 */
+    record(report: PetScriptDecisionReport) {
+      const journalState = resolveJournal(
+        settings.getJson<unknown>(PET_SCRIPT_JOURNAL_KEY, null),
+      );
+      const title =
+        journalState.items.find((item) => item.sceneId === report.sceneId)?.title ??
+        report.sceneId;
+      const current = resolveDecisions(
+        settings.getJson<unknown>(PET_SCRIPT_DECISIONS_KEY, null),
+      );
+      const next = appendDecision(current, toDecisionRecord(report, Date.now(), title));
+      settings.setJson(PET_SCRIPT_DECISIONS_KEY, next);
+      return next.items[0] ?? null;
+    },
+  };
+
+  return { generator, scheduler, journal, playback, decisions };
 }

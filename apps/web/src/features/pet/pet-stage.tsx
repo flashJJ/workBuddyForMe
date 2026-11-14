@@ -135,8 +135,8 @@ export function PetStage({
     startHour: dndStartHour,
     endHour: dndEndHour,
   });
-  // P8.8：空闲主动播放（扣预算 → 唤醒 → 演出）；交互时刷新空闲计时
-  const markActivity = usePetProactivePlayback({ enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId), canPlay: voiceState === 'idle' && !inDnd, voiceState, scenes: generated.scenes, script, wake: sleep.wake });
+  // P8.8：空闲主动播放（扣预算 → 唤醒 → 演出）；交互时刷新空闲计时。
+  // M3 Utility 需要工作信号，调用点移到 workView 之后。
   usePetAmbientTalk({
     enabled: linesEnabled && !inDnd,
     sleeping,
@@ -158,12 +158,18 @@ export function PetStage({
   const work = useWorkSignals(workEnabled);
   const workConnected = work.snapshot ? work.connected : true;
   const workView = React.useMemo<PetWorkView>(() => {
-    const baseView = aggregateWorkSignals(work.snapshot?.signals ?? [], work.snapshot?.approvals ?? []);
-    if (workEnabled && work.snapshot && !work.connected) return { ...baseView, base: 'disconnected', pulse: null };
-    return baseView;
+    const view = aggregateWorkSignals(work.snapshot?.signals ?? [], work.snapshot?.approvals ?? []);
+    return workEnabled && work.snapshot && !work.connected ? { ...view, base: 'disconnected', pulse: null } : view;
   }, [work.snapshot, work.connected, workEnabled]);
   useWorkAlerts(work.snapshot, settings);
   const workVisible = isWorkBubbleVisible(workView, workMode, workEnabled, workConnected);
+  // M3 Utility：工作信号只压成 idle/busy/unknown 三态，驱动主动播放选场
+  const decisionWork = workView.base === 'disconnected' ? 'unknown' : workView.base === 'idle' || workView.base === 'success' || workView.base === 'error' ? 'idle' : 'busy';
+  const markActivity = usePetProactivePlayback({
+    enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId), canPlay: voiceState === 'idle' && !inDnd,
+    voiceState, scenes: generated.scenes, script, wake: sleep.wake,
+    relationshipLevel, mood, work: decisionWork, recentProps: generated.story?.recentProps ?? [],
+  });
 
   // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底（键为 region::gesture）
   const lastTriggerAtRef = React.useRef<Record<string, number>>({});
@@ -270,17 +276,8 @@ export function PetStage({
         />
       </div>
 
-      <PetHitBody
-        bridge={bridge}
-        controllerRef={controllerRef}
-        resolveAndDispatch={resolveAndDispatch}
-      />
-      <PetHitHead
-        bridge={bridge}
-        controllerRef={controllerRef}
-        resolveAndDispatch={resolveAndDispatch}
-        focusPath={workView.primary?.deepLink}
-      />
+      <PetHitBody bridge={bridge} controllerRef={controllerRef} resolveAndDispatch={resolveAndDispatch} />
+      <PetHitHead bridge={bridge} controllerRef={controllerRef} resolveAndDispatch={resolveAndDispatch} focusPath={workView.primary?.deepLink} />
       <PetWorkBubble
         view={workView}
         mode={workMode}

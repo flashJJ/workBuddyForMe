@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
+import { ScriptDecisions } from './script-decisions';
 
 const QUERY_KEY = ['pet-script-schedule'] as const;
 const JOURNAL_QUERY_KEY = ['pet-script-journal-settings'] as const;
@@ -264,6 +265,8 @@ export function ScriptSchedulePanel() {
           </p>
         )}
       </div>
+
+      <ScriptDecisions />
 
       {schedule && (
         <p className="text-xs text-muted-foreground">

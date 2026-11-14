@@ -78,6 +78,8 @@
 10. [10-motion-library.md](./10-motion-library.md)：M0c 动效分层库——原子/姿势/动作/行为四层、合成语义、「被提起」拆解与任务拆分。
 11. [11-motion-library-v2.md](./11-motion-library-v2.md)：M0d 动效库扩充——表情/视线执行器、L1–L3 内容扩容与 binding 方案（提案）。
 12. [12-motion-plugin-feasibility.md](./12-motion-plugin-feasibility.md)：动效库解耦与插件化可行性——包拆分、数据包协议与迁移路径（探索）。
+13. [13-human-pose-reference.md](./13-human-pose-reference.md)：人体姿势参考——关节舒适范围、自然手型、行为约束与评审清单。
+14. [14-utility-decision.md](./14-utility-decision.md)：M3 Utility 决策层——硬门控之后的候选打分、理由码与设置页「最近决策」（方案稿）。
 
 ## 6. 优先级
 

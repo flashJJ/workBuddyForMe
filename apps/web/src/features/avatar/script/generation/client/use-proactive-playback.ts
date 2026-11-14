@@ -3,11 +3,18 @@
 import * as React from 'react';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type {
+  PetScriptDecisionReport,
+  PetScriptDecisionWorkState,
   PetScriptPlaybackClaimResult,
   PetScriptPlaybackSummary,
   Scene,
 } from '@wbfm/shared/schemas';
 import { apiGet, apiPost } from '@/lib/api/client';
+import {
+  selectBestCandidate,
+  toDecisionCandidate,
+  type DecisionContext,
+} from '../../utility';
 import type { ScriptDirectorHandle } from '../../use-script-director';
 
 /**
@@ -32,6 +39,14 @@ export interface UseProactivePlaybackOptions {
   playScene: (sceneId: string) => boolean;
   /** 睡眠中播放前先唤醒 */
   onBeforePlay?: () => void;
+  /** M3 Utility：关系等级 0–3 */
+  relationshipLevel: number;
+  /** M3 Utility：情绪档位 good/normal/low */
+  mood: string;
+  /** M3 Utility：工作信号粗粒度状态 */
+  work: PetScriptDecisionWorkState;
+  /** M3 Utility：最近用过的道具（阶段 1 去重） */
+  recentProps: readonly string[];
 }
 
 export interface ProactivePlaybackHandle {
@@ -39,6 +54,30 @@ export interface ProactivePlaybackHandle {
   markActivity: () => void;
   /** 立即判定一次；返回是否真正开演（dev/测试可用） */
   check: () => Promise<boolean>;
+}
+
+function buildDecisionContext(
+  options: UseProactivePlaybackOptions,
+  lastActiveAt: number,
+): DecisionContext {
+  return {
+    hour: new Date().getHours(),
+    relationshipLevel: options.relationshipLevel,
+    mood: options.mood,
+    work: options.work,
+    idleMinutes: Math.max(0, Math.floor((Date.now() - lastActiveAt) / 60_000)),
+    recentProps: options.recentProps,
+  };
+}
+
+function toReportContext(ctx: DecisionContext): PetScriptDecisionReport['context'] {
+  return {
+    hour: ctx.hour,
+    idleMinutes: ctx.idleMinutes,
+    level: Math.min(3, Math.max(0, Math.round(ctx.relationshipLevel))),
+    mood: ctx.mood.slice(0, 24) || 'normal',
+    work: ctx.work,
+  };
 }
 
 export function useProactivePlayback(
@@ -77,23 +116,36 @@ export function useProactivePlayback(
     if (!current || current.perDay <= 0 || current.playsToday >= current.perDay) return false;
     if (Date.now() - lastActiveRef.current < current.idleMinutes * 60_000) return false;
     const played = new Set(current.playedSceneIds);
-    const candidate = opts.scenes.find(
-      (scene) => scene.id.startsWith(GENERATED_PREFIX) && !played.has(scene.id),
-    );
-    if (!candidate) return false;
+    const decisionCtx = buildDecisionContext(opts, lastActiveRef.current);
+    const candidates = opts.scenes
+      .filter((scene) => scene.id.startsWith(GENERATED_PREFIX) && !played.has(scene.id))
+      .map((scene) => toDecisionCandidate(scene));
+    const decision = selectBestCandidate(decisionCtx, candidates);
+    if (!decision) return false;
+    const sceneId = decision.candidate.sceneId;
 
     claimingRef.current = true;
     try {
       const result = await apiPost<PetScriptPlaybackClaimResult>(
         '/api/pet/script/playback/claim',
-        { sceneId: candidate.id },
+        { sceneId },
       );
       apply(result.playback);
       if (!result.ok) return false;
       opts.onBeforePlay?.();
-      const started = opts.playScene(candidate.id);
+      const started = opts.playScene(sceneId);
       // 播放成功或失败都刷新空闲计时，避免同一窗口连续认领
       lastActiveRef.current = Date.now();
+      if (started) {
+        // 记录失败不影响演出；设置页只是只读展示
+        void apiPost('/api/pet/script/decisions', {
+          sceneId,
+          source: 'proactive',
+          score: decision.score,
+          reasons: decision.reasons,
+          context: toReportContext(decisionCtx),
+        } satisfies PetScriptDecisionReport).catch(() => {});
+      }
       return started;
     } catch {
       return false;
@@ -148,6 +200,10 @@ export interface UsePetProactivePlaybackOptions {
   script: ScriptDirectorHandle;
   /** 睡眠中播放前唤醒 */
   wake: () => void;
+  relationshipLevel: number;
+  mood: string;
+  work: PetScriptDecisionWorkState;
+  recentProps: readonly string[];
 }
 
 /**
@@ -155,7 +211,18 @@ export interface UsePetProactivePlaybackOptions {
  * 返回 markActivity 供触摸/中继事件调用。
  */
 export function usePetProactivePlayback(options: UsePetProactivePlaybackOptions): () => void {
-  const { enabled, canPlay, voiceState, scenes, script, wake } = options;
+  const {
+    enabled,
+    canPlay,
+    voiceState,
+    scenes,
+    script,
+    wake,
+    relationshipLevel,
+    mood,
+    work,
+    recentProps,
+  } = options;
   const { markActivity } = useProactivePlayback({
     enabled,
     canPlay,
@@ -163,6 +230,10 @@ export function usePetProactivePlayback(options: UsePetProactivePlaybackOptions)
     isPlaying: script.isPlaying,
     playScene: script.playScene,
     onBeforePlay: wake,
+    relationshipLevel,
+    mood,
+    work,
+    recentProps,
   });
 
   React.useEffect(() => {
