@@ -1,4 +1,5 @@
-import type { PetScriptStoryMeta } from '@wbfm/shared/schemas';
+import type { MotionMood, PetScriptStoryMeta } from '@wbfm/shared/schemas';
+import { sanitizeHours, sanitizeMoods, storyHints } from './hints';
 
 /**
  * P8.4：剧情状态机（纯函数 + 可注入存储）。
@@ -35,17 +36,22 @@ export interface StoryThread {
   status: 'open' | 'closed';
 }
 
+export interface StoryRecentEntry {
+  sceneId: string;
+  theme: string;
+  tags: string[];
+  props: string[];
+  linePools: string[];
+  at: number;
+  /** 阶段 3：弱偏好提示 */
+  moods?: MotionMood[];
+  hours?: { from: number; to: number }[];
+}
+
 export interface StoryState {
   /** 最近在前 */
   threads: StoryThread[];
-  recent: Array<{
-    sceneId: string;
-    theme: string;
-    tags: string[];
-    props: string[];
-    linePools: string[];
-    at: number;
-  }>;
+  recent: StoryRecentEntry[];
   cliffhanger: { text: string; sceneId: string; at: number } | null;
   usedTags: string[];
 }
@@ -92,14 +98,20 @@ export function resolveStoryState(raw: unknown): StoryState {
       .filter((item) => item.id !== 'thread.unknown'),
     recent: recent
       .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
-      .map((item) => ({
-        sceneId: typeof item.sceneId === 'string' ? item.sceneId : '',
-        theme: typeof item.theme === 'string' ? item.theme : '',
-        tags: strings(item.tags, 8),
-        props: strings(item.props, 8),
-        linePools: strings(item.linePools, 6),
-        at: numberOr(item.at),
-      }))
+      .map((item) => {
+        const moods = sanitizeMoods(item.moods);
+        const hours = sanitizeHours(item.hours);
+        return {
+          sceneId: typeof item.sceneId === 'string' ? item.sceneId : '',
+          theme: typeof item.theme === 'string' ? item.theme : '',
+          tags: strings(item.tags, 8),
+          props: strings(item.props, 8),
+          linePools: strings(item.linePools, 6),
+          at: numberOr(item.at),
+          ...(moods ? { moods } : {}),
+          ...(hours ? { hours } : {}),
+        };
+      })
       .filter((item) => item.sceneId !== ''),
     cliffhanger:
       cliff && typeof cliff.text === 'string' && cliff.text.trim()
@@ -242,6 +254,7 @@ export function ingestStory(
       props: [...motifs.props],
       linePools: [...motifs.linePools],
       at,
+      ...storyHints(meta),
     },
     ...state.recent,
   ].slice(0, MAX_RECENT);

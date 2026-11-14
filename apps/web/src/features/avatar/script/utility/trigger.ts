@@ -2,6 +2,7 @@ import {
   RELATIONSHIP_LEVEL_NAMES,
   type PetScriptDecisionReport,
   type PetScriptDecisionWorkState,
+  type PetScriptSceneMeta,
   type Scene,
 } from '@wbfm/shared/schemas';
 import { rankSceneCandidates } from './select';
@@ -23,6 +24,10 @@ export interface TriggerContextLike {
 export interface TriggerDecisionExtras {
   work: PetScriptDecisionWorkState;
   recentProps: readonly string[];
+  recentThemes: readonly string[];
+  usedTags: readonly string[];
+  recentSceneIds: readonly string[];
+  sceneMeta: Record<string, PetScriptSceneMeta>;
 }
 
 export interface TriggerOrderResult {
@@ -51,8 +56,15 @@ export function orderTriggerCandidates(
     // 触发是即时事件，空闲时长不参与排序
     idleMinutes: 0,
     recentProps: extras.recentProps,
+    recentThemes: extras.recentThemes,
+    usedTags: extras.usedTags,
   };
-  const ranked = rankSceneCandidates(context, scenes);
+  const ranked = rankSceneCandidates(
+    context,
+    scenes,
+    extras.sceneMeta,
+    extras.recentSceneIds,
+  );
   if (ranked.length === 0) return { ordered: [], nextRotation: rotationStart, context };
 
   const topScore = ranked[0]!.score;

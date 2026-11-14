@@ -15,7 +15,7 @@ const USAGE = {
   tokenLimit: 20_000,
 };
 const STORY = { openThreads: 0, recentThemes: [], cliffhanger: null, usedTags: [], recentProps: [] };
-const VIEW: PetScriptGenerationView = { scenes: [], usage: USAGE, story: STORY };
+const VIEW: PetScriptGenerationView = { scenes: [], usage: USAGE, story: STORY, sceneMeta: {} };
 
 const at = (hour: number, minute = 0): Date => new Date(2026, 10, 13, hour, minute);
 
@@ -38,6 +38,7 @@ function okResult(over: Partial<PetScriptGenerationResult> = {}): PetScriptGener
     issues: [],
     usage: USAGE,
     story: STORY,
+    sceneMeta: {},
     modelId: 'mock',
     fallback: false,
     ...over,

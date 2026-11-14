@@ -229,6 +229,10 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
       const extras: TriggerDecisionExtras = optionsRef.current.decisionContext?.() ?? {
         work: 'unknown',
         recentProps: [],
+        recentThemes: [],
+        usedTags: [],
+        recentSceneIds: [],
+        sceneMeta: {},
       };
       const { ordered, nextRotation, context } = orderTriggerCandidates(
         ctx,

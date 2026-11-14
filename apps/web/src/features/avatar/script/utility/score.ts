@@ -65,6 +65,26 @@ function propOverlap(candidate: DecisionCandidate, recentProps: readonly string[
   return candidate.props.some((prop) => recentProps.includes(prop));
 }
 
+function normalizeKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function sameTheme(candidate: DecisionCandidate, recentThemes: readonly string[]): boolean {
+  if (!candidate.theme) return false;
+  const theme = normalizeKey(candidate.theme);
+  return recentThemes.some((item) => normalizeKey(item) === theme);
+}
+
+function sharedTagCount(candidate: DecisionCandidate, usedTags: readonly string[]): number {
+  return candidate.tags.filter((tag) =>
+    usedTags.some((used) => normalizeKey(used) === normalizeKey(tag)),
+  ).length;
+}
+
+function inHourWindow(hour: number, from: number, to: number): boolean {
+  return from <= to ? hour >= from && hour <= to : hour >= from || hour <= to;
+}
+
 function push(
   list: PetScriptDecisionReason[],
   code: PetScriptDecisionReasonCode,
@@ -87,16 +107,29 @@ export function scoreCandidate(
     idleCost: idleCostDimension(ctx.idleMinutes, candidate),
     fresh: candidate.playedToday ? 0.2 : 1,
   };
-  const score = round(
-    clamp01(
-      dims.hour * DECISION_WEIGHTS.hour +
-        dims.mood * DECISION_WEIGHTS.mood +
-        dims.level * DECISION_WEIGHTS.level +
-        dims.work * DECISION_WEIGHTS.work +
-        dims.idleCost * DECISION_WEIGHTS.idleCost +
-        dims.fresh * DECISION_WEIGHTS.fresh,
-    ),
-  );
+  const base =
+    dims.hour * DECISION_WEIGHTS.hour +
+    dims.mood * DECISION_WEIGHTS.mood +
+    dims.level * DECISION_WEIGHTS.level +
+    dims.work * DECISION_WEIGHTS.work +
+    dims.idleCost * DECISION_WEIGHTS.idleCost +
+    dims.fresh * DECISION_WEIGHTS.fresh;
+  // 去重与弱偏好必须真正影响排序，而不只是解释文案
+  const propDup = propOverlap(candidate, ctx.recentProps);
+  const themeDup = sameTheme(candidate, ctx.recentThemes);
+  const tagDup = sharedTagCount(candidate, ctx.usedTags) > 0;
+  const prefHour =
+    candidate.preferredHours?.some((window) => inHourWindow(ctx.hour, window.from, window.to)) ??
+    false;
+  const prefMood = candidate.preferredMoods?.some((mood) => mood === ctx.mood) ?? false;
+  const longScene = candidate.durationMs >= 90_000;
+  const penalty =
+    (propDup ? -0.12 : 0) +
+    (themeDup ? -0.15 : 0) +
+    (tagDup ? -0.08 : 0) +
+    (longScene ? -0.06 : 0);
+  const bonus = (prefHour ? 0.04 : 0) + (prefMood ? 0.03 : 0);
+  const score = round(clamp01(base + penalty + bonus));
 
   const reasons: PetScriptDecisionReason[] = [];
   if (ctx.hour >= 22 || ctx.hour < 6) {
@@ -124,8 +157,12 @@ export function scoreCandidate(
   if (!candidate.playedToday) {
     push(reasons, 'fresh:unplayed', DECISION_WEIGHTS.fresh * (dims.fresh - NEUTRAL));
   }
-  if (propOverlap(candidate, ctx.recentProps)) push(reasons, 'dedupe:prop', -0.12);
-  if (candidate.durationMs >= 90_000) push(reasons, 'cost:long-scene', -0.06);
+  if (propDup) push(reasons, 'dedupe:prop', -0.12);
+  if (themeDup) push(reasons, 'dedupe:theme', -0.15);
+  if (tagDup) push(reasons, 'dedupe:tag', -0.08);
+  if (longScene) push(reasons, 'cost:long-scene', -0.06);
+  if (prefHour) push(reasons, 'pref:hour', 0.04);
+  if (prefMood) push(reasons, 'pref:mood', 0.03);
 
   const ranked = [...reasons]
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.code.localeCompare(b.code))

@@ -4,6 +4,7 @@ import * as React from 'react';
 import type {
   PetScriptGenerationResult,
   PetScriptGenerationUsage,
+  PetScriptSceneMeta,
   PetScriptScheduleSummary,
   PetScriptStatusView,
   PetScriptStorySummary,
@@ -22,6 +23,8 @@ import { apiGet, apiPost } from '@/lib/api/client';
  */
 export interface GeneratedScriptsState {
   scenes: Scene[];
+  /** 阶段 3：队列场景的 theme/tags 与弱偏好（sceneId → meta） */
+  sceneMeta: Record<string, PetScriptSceneMeta>;
   usage: PetScriptGenerationUsage | null;
   story: PetScriptStorySummary | null;
   schedule: PetScriptScheduleSummary | null;
@@ -38,6 +41,7 @@ const TICK_MS = 60 * 60 * 1000;
 
 export function useGeneratedScripts(enabled: boolean): GeneratedScriptsState {
   const [scenes, setScenes] = React.useState<Scene[]>([]);
+  const [sceneMeta, setSceneMeta] = React.useState<Record<string, PetScriptSceneMeta>>({});
   const [usage, setUsage] = React.useState<PetScriptGenerationUsage | null>(null);
   const [story, setStory] = React.useState<PetScriptStorySummary | null>(null);
   const [schedule, setSchedule] = React.useState<PetScriptScheduleSummary | null>(null);
@@ -47,6 +51,7 @@ export function useGeneratedScripts(enabled: boolean): GeneratedScriptsState {
 
   const applyView = React.useCallback((view: PetScriptStatusView) => {
     setScenes(view.scenes);
+    setSceneMeta(view.sceneMeta ?? {});
     setUsage(view.usage);
     setStory(view.story);
     setSchedule(view.schedule);
@@ -84,6 +89,7 @@ export function useGeneratedScripts(enabled: boolean): GeneratedScriptsState {
     try {
       const result = await apiPost<PetScriptGenerationResult>('/api/pet/script', {});
       setScenes(result.scenes);
+      setSceneMeta(result.sceneMeta ?? {});
       setUsage(result.usage);
       setStory(result.story);
       setMessage(
@@ -135,6 +141,7 @@ export function useGeneratedScripts(enabled: boolean): GeneratedScriptsState {
 
   return {
     scenes,
+    sceneMeta,
     usage,
     story,
     schedule,

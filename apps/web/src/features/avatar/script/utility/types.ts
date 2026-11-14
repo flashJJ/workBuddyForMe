@@ -1,4 +1,5 @@
 import type {
+  MotionMood,
   PetScriptDecisionReason,
   PetScriptDecisionWorkState,
 } from '@wbfm/shared/schemas';
@@ -15,11 +16,15 @@ export interface DecisionContext {
   work: PetScriptDecisionWorkState;
   /** 实际空闲分钟数（桌宠窗口内） */
   idleMinutes: number;
-  /** 最近用过的道具（用于阶段 1 去重） */
+  /** 最近用过的道具（阶段 1 去重） */
   recentProps: readonly string[];
+  /** 最近用过的主题（阶段 3 去重） */
+  recentThemes: readonly string[];
+  /** 最近用过的梗标签（阶段 3 去重） */
+  usedTags: readonly string[];
 }
 
-/** 参与打分的候选场景特征（阶段 1 不依赖 theme/tags） */
+/** 参与打分的候选场景特征 */
 export interface DecisionCandidate {
   sceneId: string;
   /** 最后一个 beat 的 at，近似场景时长 */
@@ -29,6 +34,11 @@ export interface DecisionCandidate {
   playedToday: boolean;
   /** 上次开演时间（epoch ms；未知为 null） */
   lastPlayedAt: number | null;
+  /** 阶段 3：剧情主题/标签与弱偏好 */
+  theme?: string;
+  tags: readonly string[];
+  preferredMoods?: readonly MotionMood[];
+  preferredHours?: readonly { from: number; to: number }[];
 }
 
 export interface RankedCandidate {

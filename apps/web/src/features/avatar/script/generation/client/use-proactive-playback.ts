@@ -7,13 +7,13 @@ import type {
   PetScriptDecisionWorkState,
   PetScriptPlaybackClaimResult,
   PetScriptPlaybackSummary,
+  PetScriptSceneMeta,
   Scene,
 } from '@wbfm/shared/schemas';
 import { apiGet, apiPost } from '@/lib/api/client';
 import {
   decisionReportContext,
-  selectBestCandidate,
-  toDecisionCandidate,
+  rankSceneCandidates,
   type DecisionContext,
 } from '../../utility';
 import type { ScriptDirectorHandle } from '../../use-script-director';
@@ -48,6 +48,13 @@ export interface UseProactivePlaybackOptions {
   work: PetScriptDecisionWorkState;
   /** M3 Utility：最近用过的道具（阶段 1 去重） */
   recentProps: readonly string[];
+  /** M3 Utility：最近主题与梗标签（阶段 3 去重） */
+  recentThemes: readonly string[];
+  usedTags: readonly string[];
+  /** 与 recentThemes 对齐的场景 id（排除候选自身） */
+  recentSceneIds: readonly string[];
+  /** M3 Utility：队列场景的 theme/tags 与弱偏好 */
+  sceneMeta: Record<string, PetScriptSceneMeta>;
 }
 
 export interface ProactivePlaybackHandle {
@@ -68,6 +75,8 @@ function buildDecisionContext(
     work: options.work,
     idleMinutes: Math.max(0, Math.floor((Date.now() - lastActiveAt) / 60_000)),
     recentProps: options.recentProps,
+    recentThemes: options.recentThemes,
+    usedTags: options.usedTags,
   };
 }
 
@@ -108,10 +117,11 @@ export function useProactivePlayback(
     if (Date.now() - lastActiveRef.current < current.idleMinutes * 60_000) return false;
     const played = new Set(current.playedSceneIds);
     const decisionCtx = buildDecisionContext(opts, lastActiveRef.current);
-    const candidates = opts.scenes
-      .filter((scene) => scene.id.startsWith(GENERATED_PREFIX) && !played.has(scene.id))
-      .map((scene) => toDecisionCandidate(scene));
-    const decision = selectBestCandidate(decisionCtx, candidates);
+    const scenes = opts.scenes.filter(
+      (scene) => scene.id.startsWith(GENERATED_PREFIX) && !played.has(scene.id),
+    );
+    const decision =
+      rankSceneCandidates(decisionCtx, scenes, opts.sceneMeta, opts.recentSceneIds)[0] ?? null;
     if (!decision) return false;
     const sceneId = decision.candidate.sceneId;
 
@@ -195,6 +205,10 @@ export interface UsePetProactivePlaybackOptions {
   mood: string;
   work: PetScriptDecisionWorkState;
   recentProps: readonly string[];
+  recentThemes: readonly string[];
+  usedTags: readonly string[];
+  recentSceneIds: readonly string[];
+  sceneMeta: Record<string, PetScriptSceneMeta>;
 }
 
 /**
@@ -213,6 +227,10 @@ export function usePetProactivePlayback(options: UsePetProactivePlaybackOptions)
     mood,
     work,
     recentProps,
+    recentThemes,
+    usedTags,
+    recentSceneIds,
+    sceneMeta,
   } = options;
   const { markActivity } = useProactivePlayback({
     enabled,
@@ -225,6 +243,10 @@ export function usePetProactivePlayback(options: UsePetProactivePlaybackOptions)
     mood,
     work,
     recentProps,
+    recentThemes,
+    usedTags,
+    recentSceneIds,
+    sceneMeta,
   });
 
   React.useEffect(() => {

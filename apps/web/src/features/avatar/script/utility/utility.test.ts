@@ -3,6 +3,7 @@ import type { Scene } from '@wbfm/shared/schemas';
 import {
   orderTriggerCandidates,
   rankCandidates,
+  rankSceneCandidates,
   selectBestCandidate,
   toDecisionCandidate,
   type DecisionContext,
@@ -36,6 +37,8 @@ const BASE: DecisionContext = {
   work: 'unknown',
   idleMinutes: 45,
   recentProps: [],
+  recentThemes: [],
+  usedTags: [],
 };
 
 describe('M3 Utility 打分（阶段 1）', () => {
@@ -110,10 +113,76 @@ describe('M3 Utility 打分（阶段 1）', () => {
     expect(candidate.playedToday).toBe(false);
   });
 
+  it('最近主题/梗标签重复时降权', () => {
+    const ctx: DecisionContext = { ...BASE, recentThemes: ['喝茶'], usedTags: ['便签'] };
+    const ranked = rankCandidates(ctx, [
+      { ...toDecisionCandidate(scene('gen.tea', 60_000)), theme: '喝茶' },
+      { ...toDecisionCandidate(scene('gen.walk', 60_000)), theme: '散步', tags: ['便签'] },
+      { ...toDecisionCandidate(scene('gen.book', 60_000)), theme: '看书', tags: ['书页'] },
+    ]);
+    expect(ranked[0]?.candidate.sceneId).toBe('gen.book');
+    expect(ranked[1]?.reasons.some((reason) => reason.code === 'dedupe:tag')).toBe(true);
+    expect(ranked[2]?.reasons.some((reason) => reason.code === 'dedupe:theme')).toBe(true);
+  });
+
+  it('弱偏好只是加分项：时段/心情匹配时小幅提升', () => {
+    const ctx: DecisionContext = { ...BASE, hour: 12, mood: 'good' };
+    const plain = toDecisionCandidate(scene('gen.plain', 60_000));
+    const hinted = {
+      ...toDecisionCandidate(scene('gen.hint', 60_000)),
+      preferredHours: [{ from: 11, to: 13 }],
+      preferredMoods: ['good' as const],
+    };
+    const ranked = rankCandidates(ctx, [plain, hinted]);
+    expect(ranked[0]?.candidate.sceneId).toBe('gen.hint');
+    expect(ranked[0]?.reasons.some((reason) => reason.code === 'pref:hour')).toBe(true);
+    expect(ranked[0]?.reasons.some((reason) => reason.code === 'pref:mood')).toBe(true);
+  });
+
+  it('从 Scene + meta 提取主题/标签与弱偏好', () => {
+    const candidate = toDecisionCandidate(scene('gen.meta', 60_000), {
+      theme: '夜读',
+      tags: ['书页'],
+      moods: ['low'],
+      hours: [{ from: 21, to: 23 }],
+    });
+    expect(candidate.theme).toBe('夜读');
+    expect(candidate.tags).toEqual(['书页']);
+    expect(candidate.preferredMoods).toEqual(['low']);
+    expect(candidate.preferredHours).toEqual([{ from: 21, to: 23 }]);
+  });
+
+  it('rankSceneCandidates 排除候选自身，不会因自己的主题/标签被扣分', () => {
+    const ctx: DecisionContext = { ...BASE, recentThemes: ['喝茶'] };
+    const meta = {
+      'gen.tea': { theme: '喝茶', tags: ['茶'] },
+      'gen.walk': { theme: '散步', tags: ['路'] },
+    };
+    const ranked = rankSceneCandidates(
+      ctx,
+      [scene('gen.tea', 60_000), scene('gen.walk', 60_000)],
+      meta,
+      ['gen.tea'],
+    );
+    const tea = ranked.find((item) => item.candidate.sceneId === 'gen.tea');
+    expect(
+      tea?.reasons.some(
+        (reason) => reason.code === 'dedupe:theme' || reason.code === 'dedupe:tag',
+      ),
+    ).toBe(false);
+  });
+
   it('同触发键候选按上下文排序：忙时短场景优先，关系名转数值', () => {
     const result = orderTriggerCandidates(
       { hour: 12, relationshipLevel: 'partner', mood: 'normal' },
-      { work: 'busy', recentProps: [] },
+      {
+        work: 'busy',
+        recentProps: [],
+        recentThemes: [],
+        usedTags: [],
+        recentSceneIds: [],
+        sceneMeta: {},
+      },
       [scene('gen.long', 120_000), scene('gen.short', 45_000)],
       0,
     );
@@ -124,7 +193,14 @@ describe('M3 Utility 打分（阶段 1）', () => {
   it('同分候选在最高分组内轮换，不同分不参与轮换', () => {
     const scenes = [scene('gen.a', 60_000), scene('gen.b', 60_000), scene('gen.long', 120_000)];
     const ctx = { hour: 20, relationshipLevel: 'stranger', mood: 'normal' };
-    const extras = { work: 'unknown' as const, recentProps: [] };
+    const extras = {
+      work: 'unknown' as const,
+      recentProps: [],
+      recentThemes: [],
+      usedTags: [],
+      recentSceneIds: [],
+      sceneMeta: {},
+    };
     const first = orderTriggerCandidates(ctx, extras, scenes, 0);
     const second = orderTriggerCandidates(ctx, extras, scenes, first.nextRotation);
     expect(first.ordered[0]?.candidate.sceneId).toBe('gen.a');

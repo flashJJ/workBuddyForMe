@@ -135,4 +135,27 @@ describe('生成场景解析（P8.3）', () => {
     const bad = JSON.stringify({ story: { title: '' }, scene: VALID });
     expect(parseGeneratedScene(bad).scene).toBeNull();
   });
+
+  it('阶段 3：弱偏好非法时只丢弃提示，不影响场次校验', () => {
+    const invalid = JSON.stringify({
+      story: { title: '夜读', theme: '夜读陪伴', tags: ['书页'], moods: 'bad', hours: 'bad' },
+      scene: VALID,
+    });
+    const parsed = parseGeneratedScene(invalid);
+    expect(parsed.scene?.id).toBe('gen.tea-hello');
+    expect(parsed.story?.moods).toBeUndefined();
+    expect(parsed.story?.hours).toBeUndefined();
+
+    const valid = JSON.stringify({
+      story: {
+        title: '夜读',
+        theme: '夜读陪伴',
+        tags: ['书页'],
+        moods: ['low'],
+        hours: [{ from: 21, to: 23 }],
+      },
+      scene: VALID,
+    });
+    expect(parseGeneratedScene(valid).story?.moods).toEqual(['low']);
+  });
 });

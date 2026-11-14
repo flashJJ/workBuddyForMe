@@ -31,6 +31,7 @@ export {
   type ScriptDirectorHandle,
 } from './script/use-script-director';
 export { useGeneratedScripts, type GeneratedScriptsState } from './script/generation/client';
+export type { TriggerDecisionExtras } from './script/utility';
 export {
   usePetProactivePlayback,
   useProactivePlayback,

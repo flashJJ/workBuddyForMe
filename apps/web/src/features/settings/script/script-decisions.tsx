@@ -31,6 +31,10 @@ const REASON_LABELS: Record<PetScriptDecisionReasonCode, MessageKey> = {
   'idle:long': 'settings.script.decisions.reasons.idleLong',
   'fresh:unplayed': 'settings.script.decisions.reasons.unplayed',
   'dedupe:prop': 'settings.script.decisions.reasons.propRepeat',
+  'dedupe:theme': 'settings.script.decisions.reasons.themeRepeat',
+  'dedupe:tag': 'settings.script.decisions.reasons.tagRepeat',
+  'pref:hour': 'settings.script.decisions.reasons.prefHour',
+  'pref:mood': 'settings.script.decisions.reasons.prefMood',
   'cost:long-scene': 'settings.script.decisions.reasons.longScene',
 };
 

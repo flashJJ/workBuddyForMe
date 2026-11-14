@@ -25,6 +25,10 @@ export const PET_SCRIPT_DECISION_REASON_CODES = [
   'idle:long',
   'fresh:unplayed',
   'dedupe:prop',
+  'dedupe:theme',
+  'dedupe:tag',
+  'pref:hour',
+  'pref:mood',
   'cost:long-scene',
 ] as const;
 export type PetScriptDecisionReasonCode = (typeof PET_SCRIPT_DECISION_REASON_CODES)[number];

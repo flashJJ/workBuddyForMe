@@ -10,6 +10,7 @@ import {
   usePetProactivePlayback,
   useScriptDirector,
   useAvatarChibi,
+  type TriggerDecisionExtras,
 } from '@/features/avatar';
 import type { Live2dController } from '@/features/avatar';
 import type { PetVoiceState } from '@wbfm/shared/pet';
@@ -122,7 +123,7 @@ export function PetStage({
   }, [showLine, t, linesEnabled]);
 
   // v3.0 T0.7：剧本开关（仅 VRM；关闭时完全走旧 Resolver/ActionExecutor）
-  const decisionExtrasRef = React.useRef<{ work: 'idle' | 'busy' | 'unknown'; recentProps: readonly string[] }>({ work: 'unknown', recentProps: [] });
+  const decisionExtrasRef = React.useRef<TriggerDecisionExtras>({ work: 'unknown', recentProps: [], recentThemes: [], usedTags: [], recentSceneIds: [], sceneMeta: {} });
   const script = useScriptDirector({
     enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId),
     getController: () => controllerRef.current, extraScenes: generated.scenes,
@@ -164,8 +165,12 @@ export function PetStage({
     enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId), canPlay: voiceState === 'idle' && !inDnd,
     voiceState, scenes: generated.scenes, script, wake: sleep.wake,
     relationshipLevel, mood, work: decisionWork, recentProps: generated.story?.recentProps ?? [],
+    recentThemes: generated.story?.recentThemes ?? [], usedTags: generated.story?.usedTags ?? [],
+    recentSceneIds: generated.story?.recentSceneIds ?? [], sceneMeta: generated.sceneMeta,
   });
-  React.useEffect(() => { decisionExtrasRef.current = { work: decisionWork, recentProps: generated.story?.recentProps ?? [] }; }, [decisionWork, generated.story]);
+  React.useEffect(() => {
+    decisionExtrasRef.current = { work: decisionWork, recentProps: generated.story?.recentProps ?? [], recentThemes: generated.story?.recentThemes ?? [], usedTags: generated.story?.usedTags ?? [], recentSceneIds: generated.story?.recentSceneIds ?? [], sceneMeta: generated.sceneMeta };
+  }, [decisionWork, generated.story, generated.sceneMeta]);
   usePetAmbientTalk({ enabled: linesEnabled && !inDnd, sleeping, voiceState, t, speak: showLine, work: decisionWork });
 
   // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底（键为 region::gesture）

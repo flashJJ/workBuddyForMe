@@ -8,12 +8,14 @@ import { MOTIF_LOOKBACK, MAX_THREAD_SCENES, type StoryState } from './threads';
  */
 
 export function storySummary(state: StoryState): PetScriptStorySummary {
+  const recent = state.recent.slice(0, 5);
   return {
     openThreads: state.threads.filter((thread) => thread.status === 'open').length,
-    recentThemes: state.recent.slice(0, 5).map((entry) => entry.theme),
+    recentThemes: recent.map((entry) => entry.theme),
+    recentSceneIds: recent.map((entry) => entry.sceneId),
     cliffhanger: state.cliffhanger?.text ?? null,
     usedTags: state.usedTags.slice(0, 12),
-    recentProps: [...new Set(state.recent.slice(0, 5).flatMap((entry) => entry.props))].slice(0, 8),
+    recentProps: [...new Set(recent.flatMap((entry) => entry.props))].slice(0, 8),
   };
 }
 

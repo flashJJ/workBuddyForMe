@@ -5,6 +5,7 @@
  * 因为原语目录来自 animation/prop 注册表，不能下沉到 shared。
  */
 import { z } from 'zod';
+import { MOTION_MOODS, type MotionMood } from '../media/motion-asset';
 import type { Scene } from './scene';
 
 /** 生成场景 id 前缀：与手写场景隔离，便于清理与排查 */
@@ -43,8 +44,25 @@ export const petScriptStoryMetaSchema = z.object({
   cliffhanger: z.string().trim().max(80).optional(),
   /** 本场收掉的旧悬念（与 cliffhanger 二选一） */
   resolves: z.string().trim().max(80).optional(),
+  /** 阶段 3：弱偏好提示（可选；非法值直接丢弃，不影响整条校验） */
+  moods: z.array(z.enum(MOTION_MOODS)).max(2).optional().catch(undefined),
+  hours: z
+    .array(z.object({ from: z.number().int().min(0).max(23), to: z.number().int().min(0).max(23) }))
+    .max(1)
+    .optional()
+    .catch(undefined),
 });
 export type PetScriptStoryMeta = z.infer<typeof petScriptStoryMetaSchema>;
+
+/** 阶段 3：队列场景的剧情元数据（客户端排序用；标题由日记/场景 id 回填） */
+export interface PetScriptSceneMeta {
+  theme: string;
+  tags: string[];
+  /** 弱偏好：更适合的心情档位 */
+  moods?: MotionMood[];
+  /** 弱偏好：更适合的时段窗口 */
+  hours?: { from: number; to: number }[];
+}
 
 /** 剧情状态摘要（客户端/面板只读展示） */
 export interface PetScriptStorySummary {
@@ -52,6 +70,8 @@ export interface PetScriptStorySummary {
   openThreads: number;
   /** 最近用过的主题（新→旧） */
   recentThemes: string[];
+  /** 阶段 3：与 recentThemes 对齐的场景 id（播放时排除自身，避免自己匹配自己） */
+  recentSceneIds?: string[];
   /** 当前待续接的悬念；null = 无 */
   cliffhanger: string | null;
   /** 已用梗标签（去重后的最近集合） */
@@ -63,6 +83,7 @@ export interface PetScriptStorySummary {
 export const EMPTY_STORY_SUMMARY: PetScriptStorySummary = {
   openThreads: 0,
   recentThemes: [],
+  recentSceneIds: [],
   cliffhanger: null,
   usedTags: [],
   recentProps: [],
@@ -90,6 +111,8 @@ export interface PetScriptGenerationResult {
   usage: PetScriptGenerationUsage;
   /** 剧情状态摘要（续接/去重展示） */
   story: PetScriptStorySummary;
+  /** 阶段 3：队列场景的 theme/tags 与弱偏好（sceneId → meta） */
+  sceneMeta: Record<string, PetScriptSceneMeta>;
   /** 实际使用的模型 id（解析失败为 null） */
   modelId: string | null;
   /** true = 本次没有可播放的新场景，客户端继续用本地剧本池 */
@@ -102,6 +125,8 @@ export interface PetScriptGenerationView {
   usage: PetScriptGenerationUsage;
   /** 剧情状态摘要 */
   story: PetScriptStorySummary;
+  /** 阶段 3：队列场景的 theme/tags 与弱偏好（sceneId → meta） */
+  sceneMeta: Record<string, PetScriptSceneMeta>;
 }
 
 /** P8.5/P8.6：每日自动生成次数限制（设置页可配置，0 = 不生成） */

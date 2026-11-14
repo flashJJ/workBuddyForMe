@@ -4,6 +4,7 @@ import type {
   PetScriptGenerationRequest,
   PetScriptGenerationResult,
   PetScriptGenerationView,
+  PetScriptSceneMeta,
   PetScriptStorySummary,
   Scene,
 } from '@wbfm/shared/schemas';
@@ -35,6 +36,7 @@ import {
   storyContextForPrompt,
   storySummary,
   type PetScriptStoryStore,
+  type StoryState,
 } from './story';
 import { topicsContextForPrompt, type PetTopicFetcher } from './topics';
 
@@ -107,6 +109,25 @@ function sceneMotifs(scene: Scene): { props: string[]; linePools: string[] } {
   return { props: [...props], linePools: [...linePools] };
 }
 
+/** 阶段 3：从剧情状态回填队列场景的 theme/tags 与弱偏好 */
+function sceneMetaFor(
+  story: StoryState,
+  scenes: readonly Scene[],
+): Record<string, PetScriptSceneMeta> {
+  const queued = new Set(scenes.map((scene) => scene.id));
+  const meta: Record<string, PetScriptSceneMeta> = {};
+  for (const entry of story.recent) {
+    if (!queued.has(entry.sceneId)) continue;
+    meta[entry.sceneId] = {
+      theme: entry.theme,
+      tags: entry.tags,
+      ...(entry.moods?.length ? { moods: entry.moods } : {}),
+      ...(entry.hours?.length ? { hours: entry.hours } : {}),
+    };
+  }
+  return meta;
+}
+
 export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScriptGenerator {
   const now = deps.now ?? (() => new Date());
   const random = deps.random ?? Math.random;
@@ -137,6 +158,7 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
       issues,
       usage: resolveUsage(state),
       story,
+      sceneMeta: sceneMetaFor(loadStory(), state.scenes),
       modelId,
       fallback: true,
     };
@@ -145,10 +167,12 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
   return {
     list() {
       const state = load();
+      const storyState = loadStory();
       return {
         scenes: state.scenes,
         usage: resolveUsage(state),
-        story: storySummary(loadStory()),
+        story: storySummary(storyState),
+        sceneMeta: sceneMetaFor(storyState, state.scenes),
       };
     },
 
@@ -238,6 +262,7 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
         issues: [],
         usage: resolveUsage(next),
         story: storySummary(nextStory),
+        sceneMeta: sceneMetaFor(nextStory, next.scenes),
         modelId: target.model.modelId,
         fallback: false,
       };
