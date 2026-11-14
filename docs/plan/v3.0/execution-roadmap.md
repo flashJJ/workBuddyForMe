@@ -108,7 +108,7 @@ flowchart TD
 - M4：小剧场、分享卡、角色卡/动作包导入导出。
 - M5：发布物料、合规声明、剧本 lint/golden 门禁、版本号。
 - Gate：全量验收；`pnpm check` 通过（避免全量 OOM，按门禁拆分跑）。
-- 状态：**进行中**（2026-11-14）。M3 已完成角色声线（2026-11-12）、主动说话/主动播放（P8.8）、用户画像注入剧本生成（`generation/profile/`）与 Utility 阶段 1（[14-utility-decision.md](./pet-engine/14-utility-decision.md)：主动播放选场打分、理由码、设置页最近决策）；阶段 2（触发键候选 + 环境低语）待真机调权重后评估。M4/M5 未开始。
+- 状态：**进行中**（2026-11-14）。M3 已完成角色声线（2026-11-12）、主动说话/主动播放（P8.8）、用户画像注入剧本生成（`generation/profile/`）与 Utility 阶段 1–2（[14-utility-decision.md](./pet-engine/14-utility-decision.md)：主动播放选场、同触发键候选排序、理由码、设置页最近决策、低语忙碌静默）；低语池间打分与阶段 3 待候选元数据。M4/M5 未开始。
 
 ### P7 插件化（P3 之后再启动）
 

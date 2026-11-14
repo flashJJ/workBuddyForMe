@@ -3,7 +3,11 @@
 import * as React from 'react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import type { PetVoiceState } from '@wbfm/shared/pet';
-import { pickPetLine, type PetLinePoolId } from '@wbfm/shared/schemas';
+import {
+  pickPetLine,
+  type PetLinePoolId,
+  type PetScriptDecisionWorkState,
+} from '@wbfm/shared/schemas';
 
 /** 静默多久才有资格开口（先让人专注一阵子） */
 export const AMBIENT_IDLE_BEFORE_MS = 3 * 60 * 1000;
@@ -29,6 +33,8 @@ export interface PetAmbientTalkArgs {
   speak: (text: string, durationMs: number) => void;
   /** 取当前小时（测试注入；缺省读系统时间） */
   hour?: () => number;
+  /** M3 Utility：工作信号为忙时闭嘴，避免打断（缺省 unknown） */
+  work?: PetScriptDecisionWorkState;
 }
 
 /** 分层台词选池：深夜 > 久无互动 > 日常 */
@@ -86,7 +92,7 @@ export function usePetAmbientTalk(args: PetAmbientTalkArgs): void {
 
     const timer = window.setInterval(() => {
       const a = argsRef.current;
-      if (!a.enabled || a.sleeping || a.voiceState !== 'idle') return;
+      if (!a.enabled || a.sleeping || a.voiceState !== 'idle' || a.work === 'busy') return;
       const now = Date.now();
       if (now - lastActiveRef.current < AMBIENT_IDLE_BEFORE_MS) return;
       if (now < nextAtRef.current) return;

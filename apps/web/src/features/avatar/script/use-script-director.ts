@@ -13,12 +13,18 @@ import {
   eventTriggerKey,
   type ExpressionTag,
   type InteractionEvent,
+  type PetScriptDecisionReport,
   type Scene,
   type ScriptGesture,
 } from '@wbfm/shared/schemas';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { apiPost } from '@/lib/api/client';
 import { VrmCueAdapter } from './adapters/vrm-adapter';
+import {
+  decisionReportContext,
+  orderTriggerCandidates,
+  type TriggerDecisionExtras,
+} from './utility';
 import {
   ScriptDirector,
   type CancelReason,
@@ -75,6 +81,8 @@ export interface UseScriptDirectorOptions {
   getPointer?: () => { x: number; y: number } | null;
   /** P8.3：生成场景（服务端已校验；这里再走一次白名单） */
   extraScenes?: readonly Scene[];
+  /** M3 Utility：触发候选排序所需的粗粒度状态（工作信号/最近道具） */
+  decisionContext?: () => TriggerDecisionExtras;
 }
 
 export type ScriptCueContext = Omit<ScriptContext, 'random'>;
@@ -218,15 +226,28 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
       const candidates = registry.byTrigger(trigger);
       if (candidates.length === 0) return director.getActive().length > 0;
       const scriptCtx: ScriptContext = { ...ctx, random: Math.random };
-      const start = rotationRef.current[trigger] ?? 0;
-      for (let offset = 0; offset < candidates.length; offset += 1) {
-        const index = (start + offset) % candidates.length;
-        const scene = candidates[index];
-        if (!scene) continue;
-        if (director.play(scene.id, scriptCtx)) {
-          rotationRef.current[trigger] = (index + 1) % candidates.length;
+      const extras: TriggerDecisionExtras = optionsRef.current.decisionContext?.() ?? {
+        work: 'unknown',
+        recentProps: [],
+      };
+      const { ordered, nextRotation, context } = orderTriggerCandidates(
+        ctx,
+        extras,
+        candidates,
+        rotationRef.current[trigger] ?? 0,
+      );
+      for (const item of ordered) {
+        if (director.play(item.candidate.sceneId, scriptCtx)) {
+          rotationRef.current[trigger] = nextRotation;
           if (debug) debug.handled += 1;
-          reportScriptPlay(scene.id);
+          reportScriptPlay(item.candidate.sceneId);
+          void apiPost('/api/pet/script/decisions', {
+            sceneId: item.candidate.sceneId,
+            source: 'trigger',
+            score: item.score,
+            reasons: item.reasons,
+            context: decisionReportContext(context),
+          } satisfies PetScriptDecisionReport).catch(() => {});
           return true;
         }
       }

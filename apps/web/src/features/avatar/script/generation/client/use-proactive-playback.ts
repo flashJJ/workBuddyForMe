@@ -11,6 +11,7 @@ import type {
 } from '@wbfm/shared/schemas';
 import { apiGet, apiPost } from '@/lib/api/client';
 import {
+  decisionReportContext,
   selectBestCandidate,
   toDecisionCandidate,
   type DecisionContext,
@@ -67,16 +68,6 @@ function buildDecisionContext(
     work: options.work,
     idleMinutes: Math.max(0, Math.floor((Date.now() - lastActiveAt) / 60_000)),
     recentProps: options.recentProps,
-  };
-}
-
-function toReportContext(ctx: DecisionContext): PetScriptDecisionReport['context'] {
-  return {
-    hour: ctx.hour,
-    idleMinutes: ctx.idleMinutes,
-    level: Math.min(3, Math.max(0, Math.round(ctx.relationshipLevel))),
-    mood: ctx.mood.slice(0, 24) || 'normal',
-    work: ctx.work,
   };
 }
 
@@ -143,7 +134,7 @@ export function useProactivePlayback(
           source: 'proactive',
           score: decision.score,
           reasons: decision.reasons,
-          context: toReportContext(decisionCtx),
+          context: decisionReportContext(decisionCtx),
         } satisfies PetScriptDecisionReport).catch(() => {});
       }
       return started;

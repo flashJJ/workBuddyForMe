@@ -44,3 +44,14 @@ export function selectBestCandidate(
 ): RankedCandidate | null {
   return rankCandidates(ctx, candidates)[0] ?? null;
 }
+
+/** Scene → 候选特征 → 排序（同触发键候选共用） */
+export function rankSceneCandidates(
+  ctx: DecisionContext,
+  scenes: readonly Scene[],
+): RankedCandidate[] {
+  return rankCandidates(
+    ctx,
+    scenes.map((scene) => toDecisionCandidate(scene)),
+  );
+}

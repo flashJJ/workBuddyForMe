@@ -71,6 +71,15 @@ describe('usePetAmbientTalk（L2 自主低语）', () => {
     }
   });
 
+  it('工作信号为忙时保持安静', () => {
+    const args = makeArgs({ work: 'busy' });
+    renderHook(() => usePetAmbientTalk(args));
+    act(() => {
+      vi.advanceTimersByTime(AMBIENT_IDLE_BEFORE_MS + TICK);
+    });
+    expect(args.speak).not.toHaveBeenCalled();
+  });
+
   it('指针活动会顺延静默计时', () => {
     const args = makeArgs();
     renderHook(() => usePetAmbientTalk(args));

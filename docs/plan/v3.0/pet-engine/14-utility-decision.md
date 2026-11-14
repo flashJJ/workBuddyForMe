@@ -1,6 +1,6 @@
 # 14 Utility 决策层（M3 方案稿）
 
-> 状态：**阶段 1 已实施并真机验收**（2026-11-14，主动播放选场 + 设置页最近决策）；阶段 2/3 待评审。
+> 状态：**阶段 1 与阶段 2 触发键部分已实施并真机验收**（2026-11-14）；环境低语只接「工作忙静默」，池间打分与阶段 3 待评审。
 > 范围：主动播放选场、触发键候选排序、环境低语选池的统一打分；面向用户的「最近决策」展示。
 > 关联：[execution-roadmap P6](../../execution-roadmap.md)、[08-script-architecture](./08-script-architecture.md)、[09-script-dev-plan](./09-script-dev-plan.md)、[04-animation-behavior](./04-animation-behavior.md)。
 
@@ -187,7 +187,7 @@ interface PetScriptDecisionRecord {
 | 阶段 2（M3-U4） | 同触发键候选排序；环境低语共用打分；候选 theme/tags 与软偏好元数据 | `useScriptDirector`、`generation` 视图、Scene 可选字段 | 轮换仍可兜底；同触发键选择符合打分 |
 | 阶段 3（M3-U5） | 生成器输出「适宜时段/心情」提示，作为弱权重 | 生成协议与校验、剧情元数据 | LLM 只提案，非法/缺失不影响播放 |
 
-阶段 1 不改 Director，也不改 Scene schema；如果阶段 1 的排序在真机上不够用，再进入阶段 2。
+阶段 2 实施说明（2026-11-14）：同触发键候选已接入打分，并在最高分组内保留轮换；环境低语因池缺少场景元数据，只落地「工作忙静默」，池间打分留待主题/风格元数据补齐后再评估。
 
 计划文件布局（阶段 1）：
 

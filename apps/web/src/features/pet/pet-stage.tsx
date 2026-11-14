@@ -122,9 +122,11 @@ export function PetStage({
   }, [showLine, t, linesEnabled]);
 
   // v3.0 T0.7：剧本开关（仅 VRM；关闭时完全走旧 Resolver/ActionExecutor）
+  const decisionExtrasRef = React.useRef<{ work: 'idle' | 'busy' | 'unknown'; recentProps: readonly string[] }>({ work: 'unknown', recentProps: [] });
   const script = useScriptDirector({
     enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId),
     getController: () => controllerRef.current, extraScenes: generated.scenes,
+    decisionContext: () => decisionExtrasRef.current,
     showSubtitle: (key, ms) => { if (!linesEnabled) return; showLine(t(key), ms ?? 3200); },
   });
 
@@ -137,13 +139,6 @@ export function PetStage({
   });
   // P8.8：空闲主动播放（扣预算 → 唤醒 → 演出）；交互时刷新空闲计时。
   // M3 Utility 需要工作信号，调用点移到 workView 之后。
-  usePetAmbientTalk({
-    enabled: linesEnabled && !inDnd,
-    sleeping,
-    voiceState,
-    t,
-    speak: showLine,
-  });
   // v2.3：交互动画图 = 用户覆盖条目（排前）+ 内置图（剔除被停用条目）
   const graphOverrides = settings?.interactionGraphOverrides;
   const graphDisabled = settings?.interactionGraphDisabledEntryIds;
@@ -170,6 +165,8 @@ export function PetStage({
     voiceState, scenes: generated.scenes, script, wake: sleep.wake,
     relationshipLevel, mood, work: decisionWork, recentProps: generated.story?.recentProps ?? [],
   });
+  React.useEffect(() => { decisionExtrasRef.current = { work: decisionWork, recentProps: generated.story?.recentProps ?? [] }; }, [decisionWork, generated.story]);
+  usePetAmbientTalk({ enabled: linesEnabled && !inDnd, sleeping, voiceState, t, speak: showLine, work: decisionWork });
 
   // M1: lastTriggerAt 同时用于 Resolver 冷却闸门 + 生产环境影子兜底（键为 region::gesture）
   const lastTriggerAtRef = React.useRef<Record<string, number>>({});

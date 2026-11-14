@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Scene } from '@wbfm/shared/schemas';
 import {
+  orderTriggerCandidates,
   rankCandidates,
   selectBestCandidate,
   toDecisionCandidate,
@@ -107,5 +108,27 @@ describe('M3 Utility 打分（阶段 1）', () => {
     expect(candidate.beatCount).toBe(3);
     expect(candidate.props).toEqual(['book']);
     expect(candidate.playedToday).toBe(false);
+  });
+
+  it('同触发键候选按上下文排序：忙时短场景优先，关系名转数值', () => {
+    const result = orderTriggerCandidates(
+      { hour: 12, relationshipLevel: 'partner', mood: 'normal' },
+      { work: 'busy', recentProps: [] },
+      [scene('gen.long', 120_000), scene('gen.short', 45_000)],
+      0,
+    );
+    expect(result.ordered[0]?.candidate.sceneId).toBe('gen.short');
+    expect(result.context.relationshipLevel).toBe(2);
+  });
+
+  it('同分候选在最高分组内轮换，不同分不参与轮换', () => {
+    const scenes = [scene('gen.a', 60_000), scene('gen.b', 60_000), scene('gen.long', 120_000)];
+    const ctx = { hour: 20, relationshipLevel: 'stranger', mood: 'normal' };
+    const extras = { work: 'unknown' as const, recentProps: [] };
+    const first = orderTriggerCandidates(ctx, extras, scenes, 0);
+    const second = orderTriggerCandidates(ctx, extras, scenes, first.nextRotation);
+    expect(first.ordered[0]?.candidate.sceneId).toBe('gen.a');
+    expect(second.ordered[0]?.candidate.sceneId).toBe('gen.b');
+    expect(first.ordered.at(-1)?.candidate.sceneId).toBe('gen.long');
   });
 });
