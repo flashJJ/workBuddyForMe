@@ -21,6 +21,11 @@ import {
   type SettingsSectionId,
 } from '@/lib/settings/catalog';
 import { createSettingsPanelEntries } from './settings-registry';
+import {
+  SettingsPinButton,
+  SettingsShortcuts,
+  useSettingsShortcuts,
+} from './settings-shortcuts';
 
 const SECTION_LABELS = new Map(SETTINGS_SECTIONS.map((section) => [section.id, section.labelKey]));
 
@@ -36,6 +41,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
   const [editing, setEditing] = React.useState<Provider | null>(null);
   const [query, setQuery] = React.useState('');
   const [highlight, setHighlight] = React.useState<string | null>(null);
+  const shortcuts = useSettingsShortcuts();
   // 水合门控：供应商查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -110,6 +116,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
       scrollTimer = setTimeout(() => {
         const target = document.getElementById(hash);
         if (!target) return;
+        if (hash.startsWith('panel-')) shortcuts.remember(hash.slice('panel-'.length));
         target.scrollIntoView({ block: 'start', behavior: 'smooth' });
         setHighlight(hash);
         if (highlightTimer) clearTimeout(highlightTimer);
@@ -124,13 +131,23 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
       if (scrollTimer) clearTimeout(scrollTimer);
       window.removeEventListener('hashchange', focusHash);
     };
-  }, []);
+  }, [shortcuts.remember]);
 
   const jumpToSection = (id: SettingsSectionId) => {
     setQuery('');
     requestAnimationFrame(() => {
       document.getElementById(settingsSectionAnchor(id))?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
+  };
+
+  const openPanel = (id: string) => {
+    setQuery('');
+    const anchor = settingsPanelAnchor(id);
+    if (window.location.hash === `#${anchor}`) {
+      window.dispatchEvent(new Event('hashchange'));
+    } else {
+      window.location.hash = `#${anchor}`;
+    }
   };
 
   return (
@@ -180,6 +197,10 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
             </p>
           </div>
 
+          {!searching && shortcuts.ids.length > 0 && (
+            <SettingsShortcuts ids={shortcuts.ids} onOpen={openPanel} />
+          )}
+
           {SETTINGS_SECTIONS.map((section) => {
             const sectionEntries = entries.filter(
               (entry) => entry.meta.section === section.id && (!searching || matched.has(entry.meta.id)),
@@ -202,10 +223,15 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
                         id={anchor}
                         data-testid={`settings-panel-${entry.meta.id}`}
                         className={cn(
-                          'scroll-mt-24 rounded-lg transition-shadow',
+                          'group relative scroll-mt-24 rounded-lg transition-shadow',
                           highlight === anchor && 'ring-2 ring-primary/60',
                         )}
                       >
+                        <SettingsPinButton
+                          id={entry.meta.id}
+                          pinned={shortcuts.isPinned(entry.meta.id)}
+                          onToggle={() => shortcuts.togglePin(entry.meta.id)}
+                        />
                         {entry.node}
                       </div>
                     );

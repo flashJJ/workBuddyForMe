@@ -195,9 +195,10 @@ describe('PetManager', () => {
     menuActions!.toggleClickThrough();
     expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
     expect(JSON.parse(fs.readFileSync(path.join(dir, 'pet-state.json'), 'utf8')).clickThrough).toBe(false);
-
     menuActions!.focusMain();
     expect(main.focus).toHaveBeenCalledTimes(1);
+    menuActions!.focusMain('/settings#panel-script-schedule');
+    expect(main.webContents.send).toHaveBeenLastCalledWith('app:deep-link', '/settings#panel-script-schedule');
     menuActions!.quickAction('toggle-mute');
     expect(pet.wc.send).toHaveBeenLastCalledWith('pet:quick-action', 'toggle-mute');
 

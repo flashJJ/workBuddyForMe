@@ -36,7 +36,8 @@ export interface PetContextMenuActions {
   isClickThrough: boolean;
   /** 静音 / 主动说话勾选态（渲染层上报的最近状态） */
   companion: PetCompanionSettings;
-  focusMain(): void;
+  /** 唤回主窗；path 为站内深链（如 /settings#panel-...） */
+  focusMain(path?: string): void;
   toggleClickThrough(): void;
   /** v3.0 M1：静音 / 主动说话 / 干饭 / 炸毛（由渲染层执行并回报台词） */
   quickAction(action: PetQuickAction): void;
@@ -56,6 +57,10 @@ export type ShowPetContextMenu = (
 export const showDefaultPetContextMenu: ShowPetContextMenu = (win, actions) => {
   const menu = Menu.buildFromTemplate([
     { label: '回到主窗口', click: () => actions.focusMain() },
+    {
+      label: '设置：AI 日常剧情',
+      click: () => actions.focusMain('/settings#panel-script-schedule'),
+    },
     {
       label: '鼠标穿透（点击落到下层）',
       type: 'checkbox',

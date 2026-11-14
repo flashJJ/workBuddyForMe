@@ -246,7 +246,7 @@ export class PetManager {
     show(win, {
       isClickThrough: this.state.clickThrough,
       companion: this.companion.get(),
-      focusMain: () => this.focusMain(),
+      focusMain: (path) => this.focusMain(path),
       toggleClickThrough: () => this.setClickThrough(!this.state.clickThrough),
       quickAction: (action: PetQuickAction) => win.webContents.send(QUICK_ACTION_CHANNEL, action),
       hide: () => void this.close(),

@@ -13,7 +13,15 @@ export function DeepLinkHost() {
     const bridge = window.wbfm?.appLinks;
     if (!bridge) return;
     return bridge.onOpen((path) => {
-      if (path.startsWith('/')) router.push(path);
+      if (!path.startsWith('/')) return;
+      router.push(path);
+      const hash = path.includes('#') ? path.slice(path.indexOf('#') + 1) : '';
+      if (!hash) return;
+      // 同页 router.push 带 hash 不一定触发 hashchange：补发一次，让设置页滚动到目标面板
+      window.setTimeout(() => {
+        if (window.location.hash === `#${hash}`) window.dispatchEvent(new Event('hashchange'));
+        else window.location.hash = hash;
+      }, 0);
     });
   }, [router]);
   return null;

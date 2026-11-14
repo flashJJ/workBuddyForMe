@@ -10,6 +10,11 @@ export const zhSettingsRegistry = {
       clear: '清除搜索',
       hint: '支持标题、说明与中英别名',
     },
+    shortcuts: {
+      title: '常用设置',
+      pin: '置顶到常用',
+      unpin: '取消置顶',
+    },
     panels: {
       demoMode: { label: '演示模式', description: '本地模拟回复，无需 API Key 即可体验' },
       providers: { label: '模型供应商', description: '新增、编辑 API 供应商与模型' },
@@ -62,6 +67,11 @@ export const enSettingsRegistry = {
       empty: 'No settings match. Try another keyword.',
       clear: 'Clear search',
       hint: 'Matches titles, descriptions and aliases',
+    },
+    shortcuts: {
+      title: 'Shortcuts',
+      pin: 'Pin to shortcuts',
+      unpin: 'Unpin from shortcuts',
     },
     panels: {
       demoMode: { label: 'Demo mode', description: 'Locally simulated replies, no API key needed' },
