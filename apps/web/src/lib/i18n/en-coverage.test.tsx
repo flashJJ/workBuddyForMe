@@ -16,6 +16,7 @@ import { AssistantsPage } from '@/features/assistants';
 import { SettingsPage } from '@/features/settings';
 import { FlowsListPage } from '@/features/flows';
 import { ConfigPanel } from '@/features/flow-editor/panels';
+import { MusicProvider } from '@/features/music';
 import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 
 vi.mock('next/link', () => ({
@@ -81,7 +82,7 @@ describe('英文态 P0 覆盖（strict 缺键即失败）', () => {
     { name: 'chat', el: <ChatPage /> },
     { name: 'knowledge', el: <KnowledgePage /> },
     { name: 'assistants', el: <AssistantsPage /> },
-    { name: 'settings', el: <SettingsPage /> },
+    { name: 'settings', el: <MusicProvider><SettingsPage /></MusicProvider> },
     { name: 'tasks', el: <TasksPage /> },
     { name: 'flows', el: <FlowsListPage /> },
   ];

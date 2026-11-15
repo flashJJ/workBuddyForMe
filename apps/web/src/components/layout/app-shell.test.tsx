@@ -15,6 +15,7 @@ import { KnowledgePage } from '@/features/knowledge';
 import { AssistantsPage } from '@/features/assistants';
 import { SettingsPage } from '@/features/settings';
 import { FlowsListPage } from '@/features/flows';
+import { MusicProvider } from '@/features/music';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -112,7 +113,8 @@ describe('应用外壳（TR-23.1）', () => {
 
     const pages = [ChatPage, KnowledgePage, AssistantsPage, SettingsPage, TasksPage, FlowsListPage, MeetingsPage];
     for (const Page of pages) {
-      const { unmount } = renderWithProviders(<Page />);
+      const page = Page === SettingsPage ? <MusicProvider><Page /></MusicProvider> : <Page />;
+      const { unmount } = renderWithProviders(page);
       expect(screen.queryByText('页面出了点问题')).toBeNull();
       if (Page === SettingsPage) {
         expect(await screen.findByRole('button', { name: '新增供应商' })).toBeInTheDocument();
