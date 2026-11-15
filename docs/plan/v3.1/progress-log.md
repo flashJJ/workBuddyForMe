@@ -12,6 +12,7 @@
 | M2 provider 注册表 | ✅ 完成（内置协议零回归，新协议可注册） | 2026-11-15 |
 | M3 动效内容快照 | ✅ 完成（默认 golden 零差异，注入快照可播放） | 2026-11-15 |
 | M4 门禁与收尾 | ✅ 完成（`pnpm check` 全绿；已合入 main 并推送工蜂） | 2026-11-15 |
+| 发布收尾 | ✅ v3.1.0（版本号、发布说明、版本总结、10 篇博客） | 2026-11-15 |
 
 ## 决策日志
 
@@ -57,4 +58,12 @@
 - 行数：`vrm.ts` 297 行、`effects/index.ts` 164 行、`registry.ts`（ai）30 行、`script/validation/registry.ts` 88 行，均低于 300 行硬门禁。
 - 结构：新增测试首次放在 `animation/__tests__` 根下触发 13 > 12，改为 `__tests__/content/` 子目录后通过。
 - 合入：merge commit `d97024a1` 已推送到 `tencent/main`；未推 GitHub。
-- 遗留：未做 v3.1 安装包、发布说明与博客。
+- 遗留：安装包未生成，更新公告与截图待补。
+
+### 2026-11-15 发布收尾
+
+- 版本号升至 3.1.0，`pnpm sync-version` 同步 web / desktop / shared 运行时版本。
+- 新增 `release-notes.md` 与 `version-summary.md`：交付、用户可见变化、内部改动、门禁、限制与下一版本衔接。
+- 新增 `blog/v3.1/` 10 篇：注册表总览、能力 handler、provider factory、动效快照、golden 测试、舞台默认 VRM、舞台入口、结构门禁、零迁移兼容、复盘。
+- 更新根 README、roadmap 索引、scheduled 状态、blog 索引与本页状态。
+- `pnpm check` 全绿；安装包未生成，更新公告与截图待补。
