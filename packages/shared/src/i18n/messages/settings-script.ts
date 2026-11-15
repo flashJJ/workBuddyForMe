@@ -23,7 +23,7 @@ export const zhSettingsScript = {
   playbackToday: '今日已主动播放 {plays}/{limit} 场',
   decisions: {
     title: '最近决策',
-    hint: '最近实际开演的主动播放与排序理由；只保留本机记录，最多展示 5 条。',
+    hint: '最近实际开演的主动播放与排序理由；只保留本机记录，保存最近 50 条，最多展示 5 条。',
     empty: '还没有决策记录。开启自动生成并让桌宠空闲一段时间后再来看。',
     score: '得分 {score}',
     sources: {
@@ -78,7 +78,7 @@ export const enSettingsScript = {
   playbackToday: 'Played proactively today: {plays}/{limit}',
   decisions: {
     title: 'Recent decisions',
-    hint: 'Scenes that actually started, with the ranking reasons. Local records only; up to 5 shown.',
+    hint: 'Scenes that actually started, with the ranking reasons. Local records only; keeps the latest 50 and shows up to 5.',
     empty: 'No decisions yet. Enable auto-generation and leave the pet idle for a while.',
     score: 'Score {score}',
     sources: {

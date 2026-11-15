@@ -8,7 +8,7 @@
 | 里程碑 | 状态 | 最近更新 |
 |---|---|---|
 | M0 方案与归档 | ✅ 完成（方案/Spec/Tasks 落盘，07/11 转正，三处索引已更新） | 2026-11-15 |
-| M1 打分契约下沉 | ⏳ 待开始 | — |
+| M1 打分契约下沉 | ✅ 完成（shared/script 契约、权重可选末参、历史 50） | 2026-11-15 |
 | M2 评测与质量卡 | ⏳ 待开始 | — |
 | M3 性能门禁 | ⏳ 待开始 | — |
 | M4 收尾 | ⏳ 待开始 | — |
@@ -32,4 +32,14 @@
 - 新增 `docs/plan/v4.1/README.md`：范围 07A+B、11A+B；非目标含在线 A/B、绝对帧率、CI 接入。
 - 新增 `docs/plan/v4.1/spec.md`：记录现状依据、模块签名、文件清单、验证命令与已决问题。
 - 新增 `docs/plan/v4.1/tasks.md`：M0–M4 可勾选任务。
-- 待批准：候选 07/11 转正与三处索引更新。
+- 候选 07/11 已移入 `docs/roadmap/scheduled/`，三处索引已更新。
+
+### 2026-11-15 M1 打分契约下沉与历史扩展
+
+- 新增 `packages/shared/src/script/{types,score,select,index}.ts`：Utility 打分、候选提取与确定性排序原样迁移；`scoreCandidate`/排序函数增加可选 `weights` 末参，默认值不变。
+- `packages/shared/package.json` 增加 `./script` 子路径；根 barrel 补充导出；web `utility/{types,score,select}.ts` 改为 re-export，`index.ts` 与 `trigger.ts` 未改。
+- `PET_SCRIPT_DECISION_LIMITS.maxStored` 20 → 50，设置页仍展示 5 条；中英提示同步。
+- 验证：shared 42 文件 390 项通过、`tsc --noEmit` 通过；web Utility 12 项零改动通过；web `tsc --noEmit` 通过。
+- 结果：离线评测与线上共用同一打分器，现有 import 与测试无需修改。
+- 下一步：M2 评测纯函数、脚本与质量卡。
+

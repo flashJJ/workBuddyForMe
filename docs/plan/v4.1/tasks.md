@@ -14,13 +14,13 @@
 
 ## M1 打分契约下沉与历史扩展
 
-- [ ] T1.1 新增 `packages/shared/src/script/{types,score,select,index}.ts`，逻辑原样迁移
-- [ ] T1.2 `scoreCandidate` / 排序函数增加可选 `weights` 末参，默认 `DECISION_WEIGHTS`
-- [ ] T1.3 `packages/shared/package.json` 增加 `./script` 导出；`src/index.ts` 增加导出
-- [ ] T1.4 web `utility/types.ts`、`score.ts`、`select.ts` 改为 re-export；`index.ts`/`trigger.ts` 不动
-- [ ] T1.5 `PET_SCRIPT_DECISION_LIMITS.maxStored` 20 → 50；i18n 提示同步（中英）
-- [ ] T1.6 新增 shared 打分测试；跑 web Utility 现有测试零改动通过
-- [ ] T1.7 提交 `feat(v4.1): 打分契约下沉 shared 与决策历史扩展`
+- [x] T1.1 新增 `packages/shared/src/script/{types,score,select,index}.ts`，逻辑原样迁移
+- [x] T1.2 `scoreCandidate` / 排序函数增加可选 `weights` 末参，默认 `DECISION_WEIGHTS`
+- [x] T1.3 `packages/shared/package.json` 增加 `./script` 导出；`src/index.ts` 增加导出
+- [x] T1.4 web `utility/types.ts`、`score.ts`、`select.ts` 改为 re-export；`index.ts`/`trigger.ts` 不动
+- [x] T1.5 `PET_SCRIPT_DECISION_LIMITS.maxStored` 20 → 50；i18n 提示同步（中英）
+- [x] T1.6 新增 shared 打分测试；跑 web Utility 现有测试零改动通过
+- [x] T1.7 提交 `feat(v4.1): 打分契约下沉 shared 与决策历史扩展`
 
 ## M2 评测纯函数、脚本与质量卡
 

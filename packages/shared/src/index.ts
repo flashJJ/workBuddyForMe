@@ -10,6 +10,8 @@ export * from './errors/index';
 export * from './api/index';
 export * from './types/index';
 export * from './schemas/index';
+// v4.1 Utility 打分与排序契约（web 与离线评测共用）
+export * from './script/index';
 export * from './backup';
 export * from './updater';
 export * from './pet';

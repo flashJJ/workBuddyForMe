@@ -43,6 +43,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./script": {
+      "types": "./src/script/index.ts",
+      "development": "./src/script/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./constants": {
       "types": "./src/constants/index.ts",
       "development": "./src/constants/index.ts",

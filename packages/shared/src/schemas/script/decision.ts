@@ -34,8 +34,8 @@ export const PET_SCRIPT_DECISION_REASON_CODES = [
 export type PetScriptDecisionReasonCode = (typeof PET_SCRIPT_DECISION_REASON_CODES)[number];
 
 export const PET_SCRIPT_DECISION_LIMITS = {
-  /** settings_kv 保留的决策条数 */
-  maxStored: 20,
+  /** settings_kv 保留的决策条数（v4.1：20 → 50，供离线回放） */
+  maxStored: 50,
   /** 设置页展示条数 */
   visible: 5,
   /** 单条决策最多理由数 */
