@@ -1,0 +1,2062 @@
+{
+  "version": "v4.1",
+  "at": "2026-11-15T16:37:04.751Z",
+  "dbFile": "wbfm.sqlite",
+  "weights": {
+    "hour": 0.2,
+    "mood": 0.15,
+    "level": 0.15,
+    "work": 0.2,
+    "idleCost": 0.15,
+    "fresh": 0.15
+  },
+  "limit": 50,
+  "decisions": {
+    "rows": [
+      {
+        "at": 1794631465228,
+        "sceneId": "gen.raised-hand-question",
+        "recordedScore": 0.369,
+        "recomputedScore": 0.369,
+        "delta": 0,
+        "missing": false
+      },
+      {
+        "at": 1794629657777,
+        "sceneId": "touch.body-tap",
+        "recordedScore": 0.7,
+        "recomputedScore": null,
+        "delta": null,
+        "missing": true
+      },
+      {
+        "at": 1794628948016,
+        "sceneId": "gen.flight-pause",
+        "recordedScore": 0.538,
+        "recomputedScore": 0.358,
+        "delta": -0.18,
+        "missing": false
+      }
+    ],
+    "total": 3,
+    "replayable": 2,
+    "missing": 1,
+    "meanAbsDelta": 0.09,
+    "maxAbsDelta": 0.18
+  },
+  "metrics": {
+    "window": 50,
+    "count": 3,
+    "repeats": 0,
+    "repeatRate": 0,
+    "dedupeHits": 2,
+    "dedupeRate": 0.667,
+    "freshHits": 3,
+    "freshRate": 1,
+    "prefHits": 0,
+    "prefRate": 0,
+    "longSceneHits": 2,
+    "avgScore": 0.536,
+    "topReasons": [
+      {
+        "code": "fresh:unplayed",
+        "count": 3
+      },
+      {
+        "code": "hour:work-hours",
+        "count": 3
+      },
+      {
+        "code": "cost:long-scene",
+        "count": 2
+      },
+      {
+        "code": "dedupe:prop",
+        "count": 2
+      },
+      {
+        "code": "work:idle-companion",
+        "count": 2
+      }
+    ],
+    "gate": {
+      "perDay": 3,
+      "playsToday": 0,
+      "budgetRemaining": 3,
+      "unplayedScenes": 7,
+      "quietHoursActive": false
+    }
+  },
+  "matrix": {
+    "contexts": 12,
+    "candidates": 7,
+    "source": "generation",
+    "rows": [
+      {
+        "contextId": "ctx-01",
+        "label": "深夜·忙碌·初识·平静",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.412,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.339,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.337,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.331,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.33,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.328,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.328,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-02",
+        "label": "深夜·空闲·亲近·低落",
+        "ranked": [
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.661,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.66,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.654,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.653,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.65,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.65,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.592,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              },
+              {
+                "code": "idle:long",
+                "delta": 0.024
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-03",
+        "label": "工作时段·忙碌·初识·平静",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.522,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": 0.07
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.359,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.358,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.351,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.35,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.348,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.348,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-04",
+        "label": "工作时段·空闲·亲近·愉快",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.754,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": 0.07
+              },
+              {
+                "code": "mood:lively",
+                "delta": 0.06
+              },
+              {
+                "code": "idle:long",
+                "delta": 0.024
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.614,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.613,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.606,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.605,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.603,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.603,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-05",
+        "label": "晚间·未知·初识·平静",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.577,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.515,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.514,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.513,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.513,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.511,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.511,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-06",
+        "label": "晚间·空闲·亲近·低落",
+        "ranked": [
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.73,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.729,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.728,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.728,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.726,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.726,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.649,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "idle:long",
+                "delta": 0.024
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-07",
+        "label": "深夜·未知·亲近·愉快",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.634,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "mood:lively",
+                "delta": 0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              },
+              {
+                "code": "idle:long",
+                "delta": 0.024
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.524,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.523,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.516,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.515,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.513,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.513,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-08",
+        "label": "工作时段·未知·初识·低落",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.624,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": 0.07
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.506,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.505,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.499,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.498,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.495,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.495,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-09",
+        "label": "晚间·忙碌·亲近·平静",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.499,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.475,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.474,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.473,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.473,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.471,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.471,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-10",
+        "label": "深夜·忙碌·亲近·愉快",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.502,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "mood:lively",
+                "delta": 0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.391,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.39,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.384,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.383,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.38,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.38,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:busy-short",
+                "delta": -0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "level:partner",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-11",
+        "label": "工作时段·空闲·初识·低落",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.672,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": 0.07
+              },
+              {
+                "code": "idle:long",
+                "delta": 0.024
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.614,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.613,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.606,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.605,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.603,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.603,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "mood:calm",
+                "delta": 0.053
+              },
+              {
+                "code": "hour:work-hours",
+                "delta": -0.02
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "contextId": "ctx-12",
+        "label": "晚间·空闲·初识·愉快",
+        "ranked": [
+          {
+            "sceneId": "gen.afternoon-book-page",
+            "score": 0.614,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "mood:lively",
+                "delta": 0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              },
+              {
+                "code": "idle:long",
+                "delta": 0.024
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.raised-hand-question",
+            "score": 0.526,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.note-found",
+            "score": 0.525,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.morning-note-tap",
+            "score": 0.519,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.hand-raise-answer",
+            "score": 0.518,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.ground-time-noon",
+            "score": 0.515,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          },
+          {
+            "sceneId": "gen.flight-pause",
+            "score": 0.515,
+            "reasons": [
+              {
+                "code": "fresh:unplayed",
+                "delta": 0.075
+              },
+              {
+                "code": "work:idle-companion",
+                "delta": 0.07
+              },
+              {
+                "code": "cost:long-scene",
+                "delta": -0.06
+              },
+              {
+                "code": "hour:late-night",
+                "delta": -0.04
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "rankDiff": []
+  }
+}

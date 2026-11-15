@@ -94,6 +94,46 @@ function inHourWindow(hour: number, from: number, to: number): boolean {
   return from <= to ? hour >= from && hour <= to : hour >= from || hour <= to;
 }
 
+interface Dimensions {
+  hour: number;
+  mood: number;
+  level: number;
+  work: number;
+  idleCost: number;
+  fresh: number;
+}
+
+function dimensions(ctx: DecisionContext, candidate: DecisionCandidate): Dimensions {
+  return {
+    hour: hourDimension(ctx.hour, candidate.durationMs),
+    mood: moodDimension(ctx.mood, candidate.durationMs),
+    level: levelDimension(ctx.relationshipLevel, candidate.durationMs),
+    work: workDimension(ctx.work, candidate.durationMs),
+    idleCost: idleCostDimension(ctx.idleMinutes, candidate),
+    fresh: candidate.playedToday ? 0.2 : 1,
+  };
+}
+
+function weightedBase(dims: Dimensions, weights: DecisionWeights): number {
+  return (
+    dims.hour * weights.hour +
+    dims.mood * weights.mood +
+    dims.level * weights.level +
+    dims.work * weights.work +
+    dims.idleCost * weights.idleCost +
+    dims.fresh * weights.fresh
+  );
+}
+
+/** 仅六个基础维度的加权分（未叠加去重/偏好/长场次增减），供离线回放复用 */
+export function baseScore(
+  ctx: DecisionContext,
+  candidate: DecisionCandidate,
+  weights: DecisionWeights = DECISION_WEIGHTS,
+): number {
+  return weightedBase(dimensions(ctx, candidate), weights);
+}
+
 function push(
   list: PetScriptDecisionReason[],
   code: PetScriptDecisionReasonCode,
@@ -109,21 +149,8 @@ export function scoreCandidate(
   candidate: DecisionCandidate,
   weights: DecisionWeights = DECISION_WEIGHTS,
 ): { score: number; reasons: PetScriptDecisionReason[] } {
-  const dims = {
-    hour: hourDimension(ctx.hour, candidate.durationMs),
-    mood: moodDimension(ctx.mood, candidate.durationMs),
-    level: levelDimension(ctx.relationshipLevel, candidate.durationMs),
-    work: workDimension(ctx.work, candidate.durationMs),
-    idleCost: idleCostDimension(ctx.idleMinutes, candidate),
-    fresh: candidate.playedToday ? 0.2 : 1,
-  };
-  const base =
-    dims.hour * weights.hour +
-    dims.mood * weights.mood +
-    dims.level * weights.level +
-    dims.work * weights.work +
-    dims.idleCost * weights.idleCost +
-    dims.fresh * weights.fresh;
+  const dims = dimensions(ctx, candidate);
+  const base = weightedBase(dims, weights);
   // 去重与弱偏好必须真正影响排序，而不只是解释文案
   const propDup = propOverlap(candidate, ctx.recentProps);
   const themeDup = sameTheme(candidate, ctx.recentThemes);

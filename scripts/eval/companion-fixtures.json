@@ -1,0 +1,72 @@
+{
+  "contexts": [
+    { "id": "ctx-01", "label": "深夜·忙碌·初识·平静", "hour": 23, "idleMinutes": 5, "relationshipLevel": 0, "mood": "normal", "work": "busy" },
+    { "id": "ctx-02", "label": "深夜·空闲·亲近·低落", "hour": 1, "idleMinutes": 60, "relationshipLevel": 2, "mood": "low", "work": "idle" },
+    { "id": "ctx-03", "label": "工作时段·忙碌·初识·平静", "hour": 14, "idleMinutes": 5, "relationshipLevel": 0, "mood": "normal", "work": "busy" },
+    { "id": "ctx-04", "label": "工作时段·空闲·亲近·愉快", "hour": 10, "idleMinutes": 45, "relationshipLevel": 2, "mood": "good", "work": "idle" },
+    { "id": "ctx-05", "label": "晚间·未知·初识·平静", "hour": 20, "idleMinutes": 20, "relationshipLevel": 0, "mood": "normal", "work": "unknown" },
+    { "id": "ctx-06", "label": "晚间·空闲·亲近·低落", "hour": 21, "idleMinutes": 90, "relationshipLevel": 2, "mood": "low", "work": "idle" },
+    { "id": "ctx-07", "label": "深夜·未知·亲近·愉快", "hour": 2, "idleMinutes": 30, "relationshipLevel": 2, "mood": "good", "work": "unknown" },
+    { "id": "ctx-08", "label": "工作时段·未知·初识·低落", "hour": 16, "idleMinutes": 15, "relationshipLevel": 0, "mood": "low", "work": "unknown" },
+    { "id": "ctx-09", "label": "晚间·忙碌·亲近·平静", "hour": 19, "idleMinutes": 5, "relationshipLevel": 2, "mood": "normal", "work": "busy" },
+    { "id": "ctx-10", "label": "深夜·忙碌·亲近·愉快", "hour": 0, "idleMinutes": 5, "relationshipLevel": 2, "mood": "good", "work": "busy" },
+    { "id": "ctx-11", "label": "工作时段·空闲·初识·低落", "hour": 11, "idleMinutes": 60, "relationshipLevel": 0, "mood": "low", "work": "idle" },
+    { "id": "ctx-12", "label": "晚间·空闲·初识·愉快", "hour": 22, "idleMinutes": 45, "relationshipLevel": 0, "mood": "good", "work": "idle" }
+  ],
+  "candidates": [
+    {
+      "sceneId": "gen.fixture-tea",
+      "title": "桌边热茶",
+      "durationMs": 42000,
+      "beatCount": 8,
+      "props": ["teacup"],
+      "theme": "日常陪伴",
+      "tags": ["tea", "calm"],
+      "preferredMoods": ["low", "normal"],
+      "preferredHours": [{ "from": 20, "to": 23 }]
+    },
+    {
+      "sceneId": "gen.fixture-read",
+      "title": "读一页书",
+      "durationMs": 65000,
+      "beatCount": 7,
+      "props": ["book"],
+      "theme": "安静工作",
+      "tags": ["read", "focus"],
+      "preferredMoods": ["normal"],
+      "preferredHours": [{ "from": 9, "to": 18 }]
+    },
+    {
+      "sceneId": "gen.fixture-stretch",
+      "title": "伸个懒腰",
+      "durationMs": 30000,
+      "beatCount": 5,
+      "props": [],
+      "theme": "休息提醒",
+      "tags": ["stretch", "break"],
+      "preferredMoods": ["good"],
+      "preferredHours": [{ "from": 10, "to": 16 }]
+    },
+    {
+      "sceneId": "gen.fixture-night",
+      "title": "深夜低语",
+      "durationMs": 95000,
+      "beatCount": 6,
+      "props": ["lamp"],
+      "theme": "深夜陪伴",
+      "tags": ["night", "quiet"],
+      "preferredMoods": ["low"],
+      "preferredHours": [{ "from": 22, "to": 2 }]
+    },
+    {
+      "sceneId": "gen.fixture-chat",
+      "title": "说说今天",
+      "durationMs": 120000,
+      "beatCount": 10,
+      "props": ["table", "teacup"],
+      "theme": "聊天",
+      "tags": ["daily", "talk"],
+      "preferredMoods": ["good", "normal"]
+    }
+  ]
+}

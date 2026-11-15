@@ -9,7 +9,7 @@
 |---|---|---|
 | M0 方案与归档 | ✅ 完成（方案/Spec/Tasks 落盘，07/11 转正，三处索引已更新） | 2026-11-15 |
 | M1 打分契约下沉 | ✅ 完成（shared/script 契约、权重可选末参、历史 50） | 2026-11-15 |
-| M2 评测与质量卡 | ⏳ 待开始 | — |
+| M2 评测与质量卡 | ✅ 完成（回放/矩阵/指标、eval 脚本、质量 API 与只读卡） | 2026-11-15 |
 | M3 性能门禁 | ⏳ 待开始 | — |
 | M4 收尾 | ⏳ 待开始 | — |
 
@@ -42,4 +42,15 @@
 - 验证：shared 42 文件 390 项通过、`tsc --noEmit` 通过；web Utility 12 项零改动通过；web `tsc --noEmit` 通过。
 - 结果：离线评测与线上共用同一打分器，现有 import 与测试无需修改。
 - 下一步：M2 评测纯函数、脚本与质量卡。
+
+### 2026-11-15 M2 评测纯函数、脚本与质量卡
+
+- 新增 `packages/shared/src/script/eval/{types,matrix,replay,metrics}.ts`：12 组固定上下文、候选快照转换、矩阵与排名差异、离线回放（基础维度重算 + 记录去重/偏好增量）、质量指标汇总。
+- 新增 `scripts/eval/companion-report.mjs` 与 `companion-fixtures.json`：只读 SQLite，读取五个 settings 键，输出回放/矩阵/指标/门控报告；根命令 `eval:companion`。
+- 新增 `GET /api/pet/script/quality` 与 `createPetScriptServer(...).quality()`：聚合决策、生成队列、播放预算与勿扰状态，复用 shared 统计。
+- 新增 `ScriptQuality` 只读卡，挂载在 AI 日常剧情面板；中英文案与三态测试（有数据/空/接口失败）。
+- 验证：shared 7 文件 50 项（i18n + script）通过；settings/script 3 文件 6 项通过；web `tsc --noEmit` 通过。
+- 本地报告：3 条决策可回放 2、缺失 1，均值差 0.09；12 组矩阵 × 7 个生成候选；权重覆盖可输出 22 处排名变化。
+- 下一步：M3 性能采样增强与短跑门禁。
+
 

@@ -24,15 +24,15 @@
 
 ## M2 评测纯函数、脚本与质量卡
 
-- [ ] T2.1 新增 `packages/shared/src/script/eval/{types,matrix,replay,metrics}.ts`
-- [ ] T2.2 新增 eval 测试：12 组矩阵确定性、权重换位、回放差值、指标统计
-- [ ] T2.3 新增 `scripts/eval/companion-report.mjs` 与 `companion-fixtures.json`
-- [ ] T2.4 根 `package.json` 增加 `eval:companion`
-- [ ] T2.5 新增 `api/pet/script/quality/route.ts`；`generation/server.ts` 增加 `quality()`
-- [ ] T2.6 新增 `settings/script/script-quality.tsx` + 测试；挂载到 `script-schedule-panel.tsx`
-- [ ] T2.7 新增 i18n `settings.script.quality.*`（中英）
-- [ ] T2.8 本地跑 `pnpm eval:companion -- --db=<本地库>` 生成报告
-- [ ] T2.9 提交 `feat(v4.1): 陪伴质量回放、场景矩阵与设置页质量卡`
+- [x] T2.1 新增 `packages/shared/src/script/eval/{types,matrix,replay,metrics}.ts`
+- [x] T2.2 新增 eval 测试：12 组矩阵确定性、权重换位、回放差值、指标统计
+- [x] T2.3 新增 `scripts/eval/companion-report.mjs` 与 `companion-fixtures.json`
+- [x] T2.4 根 `package.json` 增加 `eval:companion`
+- [x] T2.5 新增 `api/pet/script/quality/route.ts`；`generation/server.ts` 增加 `quality()`
+- [x] T2.6 新增 `settings/script/script-quality.tsx` + 测试；挂载到 `script-schedule-panel.tsx`
+- [x] T2.7 新增 i18n `settings.script.quality.*`（中英）
+- [x] T2.8 本地跑 `pnpm eval:companion -- --db=<本地库>` 生成报告
+- [x] T2.9 提交 `feat(v4.1): 陪伴质量回放、场景矩阵与设置页质量卡`
 
 ## M3 性能采样与短跑门禁
 

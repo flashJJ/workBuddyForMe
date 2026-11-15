@@ -16,6 +16,7 @@ import { apiGet, apiPost } from '@/lib/api/client';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
 import { ScriptDecisions } from './script-decisions';
+import { ScriptQuality } from './script-quality';
 
 const QUERY_KEY = ['pet-script-schedule'] as const;
 const JOURNAL_QUERY_KEY = ['pet-script-journal-settings'] as const;
@@ -267,6 +268,7 @@ export function ScriptSchedulePanel() {
       </div>
 
       <ScriptDecisions />
+      <ScriptQuality />
 
       {schedule && (
         <p className="text-xs text-muted-foreground">
