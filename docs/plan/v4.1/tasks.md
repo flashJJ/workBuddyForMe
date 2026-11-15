@@ -36,12 +36,12 @@
 
 ## M3 性能采样与短跑门禁
 
-- [ ] T3.1 `pet-longrun.mjs` 增加 p50、长任务、GPU 资源计数与 `--summary-out`
-- [ ] T3.2 新增 `scripts/perf/perf-budget.mjs`（场景时间线、基线读写、阈值门禁）
-- [ ] T3.3 新增 `apps/web/src/app/perf-nav-debug.tsx` 并在根布局挂载
-- [ ] T3.4 根 `package.json` 增加 `check:perf`、`perf:baseline`
-- [ ] T3.5 3 分钟冒烟：先 `--write-baseline`，再复跑 PASS；失败时记录残留
-- [ ] T3.6 提交 `feat(v4.1): 性能长跑采样增强与相对基线门禁`
+- [x] T3.1 `pet-longrun.mjs` 增加 p50、长任务、GPU 资源计数与 `--summary-out`
+- [x] T3.2 新增 `scripts/perf/perf-budget.mjs`（场景时间线、基线读写、阈值门禁）
+- [x] T3.3 新增 `apps/web/src/app/perf-nav-debug.tsx` 并在根布局挂载
+- [x] T3.4 根 `package.json` 增加 `check:perf`、`perf:baseline`
+- [x] T3.5 3 分钟冒烟：先 `--write-baseline`，再复跑 PASS；失败时记录残留
+- [x] T3.6 提交 `feat(v4.1): 性能长跑采样增强与相对基线门禁`
 
 ## M4 收尾
 

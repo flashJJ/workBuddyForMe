@@ -1,0 +1,58 @@
+{
+  "version": "v4.1",
+  "at": "2026-11-15T16:48:29.889Z",
+  "machine": {
+    "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+    "cores": 24,
+    "totalMemGB": 31.4,
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "viewport": "480x640",
+  "models": [
+    "vrm:builtin:xuetuan",
+    "vrm:builtin:rankaluli"
+  ],
+  "url": "http://127.0.0.1:42337/pet?model=vrm%3Abuiltin%3Axuetuan",
+  "phases": [
+    {
+      "phase": "idle",
+      "at": 46522
+    },
+    {
+      "phase": "playback",
+      "at": 82047,
+      "sceneId": "touch.head-tap"
+    },
+    {
+      "phase": "swap",
+      "at": 127618,
+      "swaps": 2
+    },
+    {
+      "phase": "stage",
+      "at": 184206,
+      "cycles": 2
+    }
+  ],
+  "metrics": {
+    "samples": 7,
+    "rafP50AvgMs": 0,
+    "rafP95AvgMs": 1.757,
+    "longTasksTotal": 13,
+    "heapPeakMB": 227.9,
+    "resourcesPeak": {
+      "geometries": 24,
+      "textures": 56,
+      "programs": 6
+    },
+    "resourcesEnd": {
+      "geometries": 20,
+      "textures": 48,
+      "programs": 5
+    },
+    "errors": 0,
+    "pageErrors": 0,
+    "durationMin": 3
+  }
+}

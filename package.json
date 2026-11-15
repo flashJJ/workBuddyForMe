@@ -34,6 +34,8 @@
     "check:scenes": "pnpm --filter @wbfm/web exec vitest run src/features/avatar/script/scenes",
     "props:build": "node scripts/avatar/generate-props.mjs",
     "perf:pet-longrun": "node scripts/perf/pet-longrun.mjs",
+    "check:perf": "node scripts/perf/perf-budget.mjs",
+    "perf:baseline": "node scripts/perf/perf-budget.mjs --write-baseline",
     "check:ascii": "node scripts/check-ascii-width.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "sync-version:check": "node scripts/sync-version.mjs --check",
