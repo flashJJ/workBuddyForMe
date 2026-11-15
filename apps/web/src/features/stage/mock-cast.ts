@@ -3,6 +3,7 @@ import type { StageCastMember, StageSlot } from '@wbfm/shared/schemas';
 /**
  * M1 mock cast（docs/plan/v1.9/README M1 出口：mock cast 可演）。
  * M2 协作 run 适配器产出的真实 cast 替换这里，舞台组件不感知来源。
+ * v3.1：默认形象统一为内置 VRM，与剧场三席槽位一致。
  */
 export const MOCK_CAST: StageCastMember[] = [
   {
@@ -10,7 +11,7 @@ export const MOCK_CAST: StageCastMember[] = [
     kind: 'agent-role',
     refId: 'planner',
     displayName: '规划',
-    avatarModelId: 'hiyori',
+    avatarModelId: 'vrm:builtin:rankaluli',
     expression: 'neutral',
     actionLabelKey: 'stage.mock.action.listening',
   },
@@ -19,7 +20,7 @@ export const MOCK_CAST: StageCastMember[] = [
     kind: 'agent-role',
     refId: 'executor',
     displayName: '执行',
-    avatarModelId: 'haru',
+    avatarModelId: 'vrm:builtin:xuetuan',
     expression: 'neutral',
     actionLabelKey: 'stage.mock.action.working',
   },
@@ -28,7 +29,7 @@ export const MOCK_CAST: StageCastMember[] = [
     kind: 'agent-role',
     refId: 'reviewer',
     displayName: '审查',
-    avatarModelId: 'mao',
+    avatarModelId: 'vrm:builtin:feibi',
     expression: 'neutral',
     actionLabelKey: 'stage.mock.action.listening',
   },

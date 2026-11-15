@@ -83,8 +83,8 @@ export const enStage = {
     smirk: 'Smirk',
   },
   power: {
-    live: 'Full Live2D (high performance)',
-    portrait: 'Power-save (speaker Live2D only)',
+    live: 'Full render (high performance)',
+    portrait: 'Power-save (speaker only)',
     degraded: 'Sustained jank detected — switched to power-save',
     autoDegraded: 'Low frame rate — switched to power-save',
     restore: 'Restore full',

@@ -7,8 +7,16 @@ import type { StageCastMember, StageDirection, StageSlot } from '@wbfm/shared/sc
 import type { MeetingEvent } from './meeting-types';
 import { meetingSlotsFor } from './meeting-protocol';
 
-/** avatar 回落（协议 §2.1：场景覆盖 → 全局设置（由调用方传入）→ haru） */
-export const DEFAULT_MEETING_AVATAR = 'haru';
+/** avatar 回落（协议 §2.1：场景覆盖 → 调用方 fallback → 槽位内置 VRM） */
+export const DEFAULT_MEETING_AVATAR = 'vrm:builtin:xuetuan';
+
+/** 未指定 fallback 时按槽位分配内置 VRM，避免整场同一模型 */
+const DEFAULT_AVATARS_BY_SLOT: Record<StageSlot, string> = {
+  left: 'vrm:builtin:rankaluli',
+  center: DEFAULT_MEETING_AVATAR,
+  right: 'vrm:builtin:feibi',
+  farRight: DEFAULT_MEETING_AVATAR,
+};
 
 export interface MeetingCastMemberInput {
   id: string;
@@ -22,11 +30,11 @@ export interface MeetingAdapterState {
   seq: number;
 }
 
-/** 席次按 memberIds 顺序绑定槽位；avatar 逐槽覆盖优先，否则回落 fallback 模型 */
+/** 席次按 memberIds 顺序绑定槽位；avatar 逐槽覆盖优先，否则回落 fallback 或槽位默认模型 */
 export function createMeetingCast(
   members: MeetingCastMemberInput[],
   avatarOverrides?: Partial<Record<StageSlot, string>>,
-  fallback = DEFAULT_MEETING_AVATAR,
+  fallback?: string,
 ): StageCastMember[] {
   const slots = meetingSlotsFor(members.length);
   return members.slice(0, slots.length).map((member, index) => {
@@ -36,7 +44,7 @@ export function createMeetingCast(
       kind: 'assistant' as const,
       refId: member.id,
       displayName: member.name,
-      avatarModelId: avatarOverrides?.[slot] ?? fallback,
+      avatarModelId: avatarOverrides?.[slot] ?? fallback ?? DEFAULT_AVATARS_BY_SLOT[slot],
       expression: 'neutral',
       actionLabelKey: 'stage.run.action.listening',
     };

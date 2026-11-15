@@ -39,10 +39,11 @@ export const AGENT_ROLE_SLOT: Record<AgentRole, StageSlot> = {
   reviewer: 'right',
 };
 
+/** v3.1：协作舞台默认改用内置 VRM，槽位与剧场三席一致 */
 const ROLE_AVATARS: Record<AgentRole, string> = {
-  planner: 'hiyori',
-  executor: 'haru',
-  reviewer: 'mao',
+  planner: 'vrm:builtin:rankaluli',
+  executor: 'vrm:builtin:xuetuan',
+  reviewer: 'vrm:builtin:feibi',
 };
 
 const ROLE_NAMES: Record<AgentRole, string> = {

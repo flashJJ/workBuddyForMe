@@ -72,22 +72,24 @@ test.describe.serial('v1.9 M1 舞台骨架（mock cast）', () => {
     await expect(page.getByTestId('stage-dialog')).toContainText('执行收到');
   });
 
-  test('省电档：仅聚焦槽 live，其余立绘槽', async ({ page }) => {
+  test('省电档：仅聚焦槽 live，VRM 画布常驻', async ({ page }) => {
     await openStage(page);
-    // 全 Live2D：三槽 data-live=true
+    // 全渲染：三槽 data-live=true
     for (const slot of ['left', 'center', 'right'] as const) {
       await expect(page.getByTestId(`stage-actor-${slot}`)).toHaveAttribute('data-live', 'true');
     }
 
     // 省电档（stage.power.portrait）：点触发器 → 按文案选
-    await chooseOption(page, page.getByTestId('stage-power-mode'), '省电档（仅发言者 Live2D）');
+    await chooseOption(page, page.getByTestId('stage-power-mode'), '省电档（仅发言者）');
     await expect(page.getByTestId('stage-actor-center')).toHaveAttribute('data-live', 'true');
     await expect(page.getByTestId('stage-actor-left')).toHaveAttribute('data-live', 'false');
     await expect(page.getByTestId('stage-actor-right')).toHaveAttribute('data-live', 'false');
-    await expect(page.getByTestId('stage-portrait-left')).toBeVisible();
-    await expect(page.getByTestId('stage-portrait-right')).toBeVisible();
-    // 切回全 live（stage.power.live）恢复
-    await chooseOption(page, page.getByTestId('stage-power-mode'), '全 Live2D（高性能）');
+    // 默认三席已是 VRM：省电档保留画布而不是切 Live2D 立绘占位
+    await expect(page.getByTestId('stage-actor-left')).toBeVisible();
+    await expect(page.getByTestId('stage-portrait-left')).toHaveCount(0);
+    await expect(page.getByTestId('stage-portrait-right')).toHaveCount(0);
+    // 切回全渲染（stage.power.live）恢复
+    await chooseOption(page, page.getByTestId('stage-power-mode'), '全渲染（高性能）');
     await expect(page.getByTestId('stage-actor-left')).toHaveAttribute('data-live', 'true');
   });
 
