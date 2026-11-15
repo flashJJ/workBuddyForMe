@@ -2,13 +2,15 @@
 export const enStage = {
   title: 'Stage',
   modeTitle: {
-    mock: 'Demo stage',
+    mock: 'Free stage',
     run: 'Collaboration stage',
     meeting: 'Meeting stage',
     theater: 'Mini theater',
   },
   theater: {
     title: 'Mini theater',
+    enter: 'Open mini theater',
+    exit: 'Back to free stage',
     prev: 'Previous',
     next: 'Next',
     restart: 'Replay',
@@ -32,7 +34,7 @@ export const enStage = {
     footer: 'WorkBuddyForMe · original characters',
   },
   panel: {
-    demo: 'Demo',
+    demo: 'Free controls',
     scene: 'Scene',
     background: 'Background',
     power: 'Performance',

@@ -27,6 +27,8 @@ interface Props {
   onDefocus: () => void;
   onScreenshot: () => void;
   onExit: () => void;
+  /** 同页切换舞台模式（自由舞台 ↔ 小剧场） */
+  onSwitchMode?: (mode: 'mock' | 'theater') => void;
   /** M4 小剧场控制（仅 theater 模式） */
   theater?: {
     index: number;
@@ -135,6 +137,14 @@ export function StageToolbar(props: Props) {
                 {t('stage.demo.clearFocus')}
               </button>
             </div>
+            <button
+              type="button"
+              className={`${BTN} mt-1 w-full`}
+              data-testid="stage-enter-theater"
+              onClick={() => props.onSwitchMode?.('theater')}
+            >
+              {t('stage.theater.enter')}
+            </button>
           </>
         )}
       </section>
@@ -192,6 +202,14 @@ export function StageToolbar(props: Props) {
               onClick={props.theater.onShare}
             >
               {t('stage.theater.share')}
+            </button>
+            <button
+              type="button"
+              className={`${BTN} w-full`}
+              data-testid="stage-exit-theater"
+              onClick={() => props.onSwitchMode?.('mock')}
+            >
+              {t('stage.theater.exit')}
             </button>
           </>
         )}

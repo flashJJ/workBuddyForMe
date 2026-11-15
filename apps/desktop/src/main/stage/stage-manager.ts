@@ -10,7 +10,7 @@ import { BrowserWindow, dialog } from 'electron';
 import type { PetManager } from '../pet/pet-manager';
 import { DEV_SERVER_URL } from '../config';
 import type { WindowBootInfo } from '../window';
-import { buildStageUrl, createStageWindow } from './stage-window';
+import { buildStageUrl, createStageWindow, type StageOpenTarget } from './stage-window';
 import { registerStageIpc } from './stage-ipc';
 import type { IpcMainLike } from '../pet/pet-ipc';
 import { loadStageState, saveStageState, type StageBounds } from './stage-state';
@@ -36,10 +36,10 @@ export class StageManager {
     return Boolean(this.win && !this.win.isDestroyed());
   }
 
-  async open(target?: { runId?: string; meetingId?: string }): Promise<boolean> {
+  async open(target?: StageOpenTarget): Promise<boolean> {
     if (this.isOpen()) {
-      // 已开窗：幂等聚焦；带目标时导航到指定现场（切换观看对象）
-      if (target && (target.runId || target.meetingId)) {
+      // 已开窗：幂等聚焦；带目标时导航到指定现场（切换观看对象/模式）
+      if (target && (target.runId || target.meetingId || target.theater || target.free)) {
         const baseUrl = this.deps.boot?.url ?? DEV_SERVER_URL;
         await this.win!.loadURL(buildStageUrl(baseUrl, target));
       }
@@ -104,7 +104,7 @@ export class StageManager {
       ipc,
       {
         isOpen: () => this.isOpen(),
-        open: (target?: { runId?: string; meetingId?: string }) => this.open(target),
+        open: (target?: StageOpenTarget) => this.open(target),
         close: () => this.close(),
         toggleFullscreen: () => this.toggleFullscreen(),
         capture: () => this.capture(),

@@ -95,7 +95,7 @@ const pet: WbfmPetBridge = {
  * 舞台桥（v1.9）：主窗 open/isOpen/onOpenChange；舞台窗 close/capture。
  */
 const stage: WbfmStageBridge = {
-  open: (target?: { runId?: string; meetingId?: string }) =>
+  open: (target?: { runId?: string; meetingId?: string; theater?: boolean }) =>
     ipcRenderer.invoke('stage:open', target) as Promise<boolean>,
   openMeeting: (meetingId: string) =>
     ipcRenderer.invoke('stage:open', { meetingId }) as Promise<boolean>,

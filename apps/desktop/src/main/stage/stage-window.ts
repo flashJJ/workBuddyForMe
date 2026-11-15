@@ -56,23 +56,34 @@ export function buildStageWindowOptions(
   };
 }
 
-/** 舞台路由：runId/meetingId 非空时直达对应只读现场（v1.9 M2/M3） */
+/** 舞台路由目标：会议 > 协作 > 小剧场 > 自由舞台 */
+export interface StageOpenTarget {
+  runId?: string;
+  meetingId?: string;
+  /** v3.1：直达小剧场（/stage?stage=play） */
+  theater?: boolean;
+  /** v3.1：显式自由舞台；已开窗时也导航回裸 /stage */
+  free?: boolean;
+}
+
+/** 舞台路由：会议/协作/小剧场直达对应现场，其余回落自由舞台 */
 export function buildStageUrl(
   baseUrl: string,
-  target?: { runId?: string; meetingId?: string },
+  target?: StageOpenTarget,
 ): string {
   const root = `${baseUrl}/stage`;
   if (target?.meetingId) return `${root}?meeting=${encodeURIComponent(target.meetingId)}`;
   if (target?.runId) return `${root}?run=${encodeURIComponent(target.runId)}`;
+  if (target?.theater) return `${root}?stage=play`;
   return root;
 }
 
-/** 创建舞台窗并加载 /stage（可带 run/meeting 直达现场） */
+/** 创建舞台窗并加载 /stage（可带 run/meeting/theater 直达现场） */
 export function createStageWindow(
   boot: WindowBootInfo | null,
   fullscreen: boolean,
   bounds: StageBounds | null,
-  target?: { runId?: string; meetingId?: string },
+  target?: StageOpenTarget,
 ): BrowserWindow {
   const baseUrl = boot?.url ?? DEV_SERVER_URL;
   const win = new BrowserWindow(buildStageWindowOptions(boot, fullscreen, bounds));

@@ -269,6 +269,7 @@ export function StageRoot() {
           }}
           onScreenshot={() => void c.requestScreenshot()}
           onExit={exitStage}
+          onSwitchMode={(next) => window.location.assign(next === 'theater' ? '/stage?stage=play' : '/stage')}
           theater={
             mode === 'theater'
               ? {

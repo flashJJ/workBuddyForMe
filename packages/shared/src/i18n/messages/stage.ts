@@ -2,13 +2,15 @@
 export const zhStage = {
   title: '会议舞台',
   modeTitle: {
-    mock: '演示舞台',
+    mock: '自由舞台',
     run: '协作舞台',
     meeting: '会议舞台',
     theater: '小剧场',
   },
   theater: {
     title: '小剧场',
+    enter: '进入小剧场',
+    exit: '返回自由舞台',
     prev: '上一句',
     next: '下一句',
     restart: '重播',
@@ -32,7 +34,7 @@ export const zhStage = {
     footer: 'WorkBuddyForMe · 原创角色',
   },
   panel: {
-    demo: '演示',
+    demo: '自由操控',
     scene: '场景',
     background: '背景',
     power: '性能',

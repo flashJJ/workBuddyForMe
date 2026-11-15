@@ -1,7 +1,10 @@
 import { app, Menu, shell } from 'electron';
 
 /** 基础应用菜单；开发态额外提供 DevTools/强制刷新 */
-export function buildAppMenu(isDev: boolean, onOpenStage?: () => void): Menu {
+export function buildAppMenu(
+  isDev: boolean,
+  onOpenStage?: (target?: { theater?: boolean; free?: boolean }) => void,
+): Menu {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: app.name,
@@ -34,7 +37,17 @@ export function buildAppMenu(isDev: boolean, onOpenStage?: () => void): Menu {
         ...(onOpenStage
           ? ([
               { type: 'separator' as const },
-              { label: '舞台…', accelerator: 'CommandOrControl+Shift+S', click: () => onOpenStage() },
+              {
+                label: '舞台',
+                submenu: [
+                  {
+                    label: '自由舞台',
+                    accelerator: 'CommandOrControl+Shift+S',
+                    click: () => onOpenStage({ free: true }),
+                  },
+                  { label: '小剧场', click: () => onOpenStage({ theater: true }) },
+                ],
+              },
             ] satisfies Electron.MenuItemConstructorOptions[])
           : []),
       ],
@@ -56,6 +69,9 @@ export function buildAppMenu(isDev: boolean, onOpenStage?: () => void): Menu {
   return Menu.buildFromTemplate(template);
 }
 
-export function installAppMenu(isDev: boolean, onOpenStage?: () => void): void {
+export function installAppMenu(
+  isDev: boolean,
+  onOpenStage?: (target?: { theater?: boolean; free?: boolean }) => void,
+): void {
   Menu.setApplicationMenu(buildAppMenu(isDev, onOpenStage));
 }

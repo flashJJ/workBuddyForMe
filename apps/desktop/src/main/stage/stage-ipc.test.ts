@@ -57,6 +57,15 @@ describe('v1.9 stage IPC 身份校验', () => {
       ipc.handlers.get('stage:open')!({ sender: mainSender }, { runId: 'a?observe=1#/x' }),
     ).toBe(true);
     expect(actions.open).toHaveBeenLastCalledWith(undefined);
+    // v3.1：仅显式 theater=true 才透传小剧场
+    expect(
+      ipc.handlers.get('stage:open')!({ sender: mainSender }, { theater: true }),
+    ).toBe(true);
+    expect(actions.open).toHaveBeenLastCalledWith({ theater: true });
+    expect(
+      ipc.handlers.get('stage:open')!({ sender: mainSender }, { theater: 'yes' }),
+    ).toBe(true);
+    expect(actions.open).toHaveBeenLastCalledWith(undefined);
   });
 
   it('stage:close：主窗与舞台窗自身可关，陌生人被忽略', () => {

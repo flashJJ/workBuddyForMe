@@ -19,11 +19,18 @@ export interface TrayState {
   hasStage: boolean;
 }
 
+export interface TrayStageTarget {
+  /** v3.1：已开窗时强制导航回自由舞台 */
+  free?: boolean;
+  /** v3.1：直达小剧场（/stage?stage=play） */
+  theater?: boolean;
+}
+
 export interface TrayActions {
   showMain: () => void;
   hideMain: () => void;
   togglePet: () => void;
-  openStage: () => void;
+  openStage: (target?: TrayStageTarget) => void;
   quit: () => void;
 }
 
@@ -44,7 +51,13 @@ export function buildTrayMenuTemplate(
     },
   ];
   if (state.hasStage) {
-    items.push({ label: '打开全屏舞台…', click: () => actions.openStage() });
+    items.push({
+      label: '全屏舞台',
+      submenu: [
+        { label: '自由舞台', click: () => actions.openStage({ free: true }) },
+        { label: '小剧场', click: () => actions.openStage({ theater: true }) },
+      ],
+    });
   }
   items.push(
     { type: 'separator' },
@@ -67,7 +80,7 @@ export interface TrayDeps {
   isPetOpen: () => boolean;
   openPet: () => void;
   closePet: () => void;
-  openStage?: () => void;
+  openStage?: (target?: TrayStageTarget) => void;
   quit: () => void;
   /** 测试注入托盘工厂；默认 Electron Tray */
   createTray?: (icon: string) => TrayLike;
@@ -150,7 +163,7 @@ export class AppTray {
         else this.deps.openPet();
         this.refreshTooltip();
       },
-      openStage: () => this.deps.openStage?.(),
+      openStage: (target) => this.deps.openStage?.(target),
       quit: () => this.deps.quit(),
     };
   }
