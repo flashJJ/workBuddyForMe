@@ -82,6 +82,21 @@ describe('usePetCompanion（M1 伴身交互）', () => {
     expect(args.script.playScene).toHaveBeenNthCalledWith(2, 'moment.called-fat');
   });
 
+  it('剧本不可用时右键动作回退本地台词', () => {
+    const args = makeArgs({ script: { playScene: vi.fn(() => false) } });
+    renderHook(() => usePetCompanion(args));
+
+    act(() => {
+      quickHandler?.('play-eat-rice');
+      quickHandler?.('play-called-fat');
+    });
+    const lines = (args.showLine as ReturnType<typeof vi.fn>).mock.calls.map((call) =>
+      String(call[0]),
+    );
+    expect(lines.some((line) => /^T:emotion\.eatRice\.line[0-2]$/.test(line))).toBe(true);
+    expect(lines.some((line) => /^T:emotion\.calledFat\.line[0-2]$/.test(line))).toBe(true);
+  });
+
   it('一键静音：取反 ttsEnabled 并回报台词', async () => {
     const args = makeArgs();
     renderHook(() => usePetCompanion(args));
