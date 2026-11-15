@@ -4,7 +4,7 @@
 > 分支：`feat/v4.0-platform`
 > 口径：单仓多包；只做数据包与服务提供者，不做运行时代码插件；零或一次纯加法迁移。
 > 来源：[候选 05 插件化](../roadmap/scheduled/v3.1-05-plugin-architecture.md) 的 S5/S6、[候选 06 动效库包化](../roadmap/scheduled/v3.1-06-motion-library-package.md) 的方案 B、[候选 09 发布信任](../roadmap/scheduled/v4.0-09-release-trust-and-update.md) 的方案 A。
-> 状态：🚧 M0 方案、M1 依赖拓扑、M2 动效契约抽包、M3 `motion-pack` 与 M4 内容刷新完成（2026-11-15）；进度见 [progress-log.md](./progress-log.md)。
+> 状态：🚧 M0 方案、M1 依赖拓扑、M2 动效契约抽包、M3 `motion-pack`、M4 内容刷新与 M5 发布校验完成（2026-11-15）；进度见 [progress-log.md](./progress-log.md)。
 
 ## 1. 背景
 
@@ -109,6 +109,16 @@ flowchart LR
 3. 下一次打开舞台、桌宠或主窗形象栏时读取新快照。
 
 这样避免运行中替换内容导致的骨骼与轨道错位。
+
+### 5.5 发布校验与构建信息
+
+`pnpm release:win` 在归档完成后调用 `scripts/release-manifest.mjs`，归档目录固定包含：
+
+- `WorkBuddyForMe-Setup-<version>.exe`、`.blockmap`、`latest.yml`；
+- `SHA256SUMS.txt`：coreutils 风格（小写哈希 + 两个空格 + 文件名），可直接复核；
+- `build-info.json`：版本、commit、分支、构建时间、平台、架构与逐文件哈希。
+
+复核命令：`node scripts/release-manifest.mjs --check --dir <归档目录>`；不带 `--dir` 时校验 `apps/desktop/release`（`pnpm release:verify`）。发布说明引用安装包哈希与 `build-info.json` 的 commit / 构建时间。
 
 ## 6. 验收口径
 

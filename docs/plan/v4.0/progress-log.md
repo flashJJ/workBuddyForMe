@@ -12,7 +12,7 @@
 | M2 动效契约抽包 | ✅ 完成（`@wbfm/motion`：契约、内容、默认快照） | 2026-11-15 |
 | M3 motion-pack | ✅ 完成（kind、payload schema、effect、样例包） | 2026-11-15 |
 | M4 内容刷新 | ✅ 完成（聚合启用内容、快照版本、会话级读取） | 2026-11-15 |
-| M5 发布校验 | 待开始 | — |
+| M5 发布校验 | ✅ 完成（`release-manifest.mjs`、归档接入、复核命令） | 2026-11-15 |
 | M6 收尾 | 待开始 | — |
 
 ## 决策日志
@@ -84,5 +84,18 @@
 - 门禁：`vrm-controller.ts` 与 `vrm-pose-layer.ts` 压至 300 行内；`pnpm check` 全绿。
 - 结果：安装/停用 `motion-pack` 后不重启应用，下一次打开舞台/桌宠即使用新快照；当前会话保持旧快照，不热替换。
 - 下一步：M5 发布校验（`SHA256SUMS` 与 `build-info.json`）。
+
+### 2026-11-15 M5 发布校验
+
+- 新增 `scripts/release-manifest.mjs`：
+  - 扫描归档目录产物，流式计算 SHA256，生成 coreutils 风格 `SHA256SUMS.txt`；
+  - 生成 `build-info.json`：版本、commit、分支、构建时间（取产物最新 mtime）、生成时间、平台、架构与逐文件大小/哈希；
+  - `--check` 复算全部哈希，并核对 `build-info.json` 的版本与文件哈希；缺失、篡改、版本漂移均 exit 1。
+- `scripts/archive-installer.ps1` 归档后改为调用该脚本，一次生成校验和与构建信息；失败即中止归档。
+- 根 `package.json` 增加 `release:manifest` 与 `release:verify`；`release:win` 自动获得校验清单。
+- 验证：临时目录生成→复核通过；篡改 `latest.yml` 后复核失败并同时报出校验和与 build-info 两处不一致。
+- 文档：v4.0 方案新增 §5.5，固定归档五件套、复核命令与发布说明引用字段。
+- 结果：安装包、blockmap 与 `latest.yml` 可复算校验和，构建信息可回溯到 commit 与构建时间；不涉及代码签名与更新源。
+- 下一步：M6 收尾（测试、门禁、发布说明、版本总结与博客）。
 
 
