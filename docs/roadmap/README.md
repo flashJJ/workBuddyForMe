@@ -101,11 +101,12 @@ v2.33 让备份「可托付」，但备份生命周期仍不可持续：每次�
 
 v2.35 补齐了回归与朗读，v3.0 把桌宠从「会动、会说话」推进到「有剧本、有决策、有小剧场」：原创白鲸娘「雪团」与冉卡露丽、菲比一起进入内置 VRM 模型表；剧本引擎用受限 Scene / Beat / Cue 承接触摸、久别、深夜、低语等场景，`ScriptDirector` 负责冷却、打断与门控；生成队列按每日调用与 token 预算接 LLM，剧情状态机维护线索、悬念与去重，失败自动回落本地剧本池；Utility 决策按时段 / 心情 / 关系 / 工作信号 / 打扰成本 / 新鲜度选出下一场，主动播放有预算、claim 去重与可解释理由；舞台新增 `/stage?stage=play` 三席 VRM 小剧场与剧情分享卡 PNG；关于页补原创角色与二创包合规声明，新增剧本 lint/golden 门禁与 `pnpm check:scenes`。M2 五维养成按用户决定取消，不做投喂 / 亲密度 / 成长阶段；零数据库迁移，v2.35 数据与设置原样保留。
 
-- 方案：[v3.0 方案](../plan/v3.0/README.md) · [执行路线](../plan/v3.0/execution-roadmap.md) · [发布说明](../plan/v3.0/release-notes.md)
+- 方案：[v3.0 方案](../plan/v3.0/README.md) · [执行路线](../plan/v3.0/execution-roadmap.md) · [发布说明](../plan/v3.0/release-notes.md) · [版本总结](../plan/v3.0/version-summary.md)
 - Spec：[M4/M5 Spec](../plan/v3.0/milestone-m4-m5/spec.md) · [Tasks](../plan/v3.0/milestone-m4-m5/tasks.md)
 - 状态：✅ 已发布 `v3.0.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 9 不变
 - 验证：单测 62 项 + `check:scenes` 37 项通过；typecheck / lint / 行数 / 结构 / 循环 / ASCII 门禁全绿；真机小剧场、分享卡与 PNG 导出通过
-- 物料：发布说明与合规声明已就绪；演示短片、截图组与技术博客见发布说明第 6 节
+- 博客：[blog/v3.0](../../blog/v3.0/) 10 篇
+- 物料：发布说明、版本总结、合规声明与技术博客已就绪；演示短片、截图组与更新公告待补
 
 ## ✅ 已合入 main 并打 tag：v2.35 回归修复与朗读
 
