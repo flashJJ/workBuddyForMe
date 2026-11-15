@@ -4,7 +4,7 @@
 > 分支：`feat/v3.1-pluggable`
 > 口径：小步迭代；默认行为零差异；零数据库迁移，`LATEST_SCHEMA_VERSION = 51` 不变。
 > 来源：[候选 05 插件化](../roadmap/scheduled/v3.1-05-plugin-architecture.md) 的 S1/S3 + [候选 06 动效库包化](../roadmap/scheduled/v3.1-06-motion-library-package.md) 的方案 A。
-> 状态：✅ 开发完成，已合入 main（2026-11-15），待发布；进度见 [progress-log.md](./progress-log.md)。
+> 状态：✅ 已发布 `v3.1.0`（2026-11-15）；发布说明见 [release-notes.md](./release-notes.md)，进度见 [progress-log.md](./progress-log.md)。
 
 ## 1. 背景
 

@@ -2,16 +2,16 @@
 
 本地优先的**私人 AI 工作台 + 桌面陪伴角色**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v3.0.0**（2026-11-14）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
-> 本版主线：原创角色「雪团」+ 剧本引擎 + Utility 决策 + 小剧场与分享卡，详见 [v3.0.0 发布说明](docs/plan/v3.0/release-notes.md)。
+> 当前版本：**v3.1.0**（2026-11-15）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 本版主线：能力/provider 注册表 + 动效内容快照 + 舞台默认 VRM 与正式入口，详见 [v3.1.0 发布说明](docs/plan/v3.1/release-notes.md)。
 
-## v3.0.0 陪伴里程碑
+## v3.1.0 可插拔前置
 
-- **剧本引擎**：Scene / Beat / Cue 受限剧本、`ScriptDirector` 冷却/打断/门控、生成队列、剧情状态机与定时入口；生成失败自动回落本地剧本池。
-- **Utility 决策**：时段 / 心情 / 关系 / 工作信号 / 打扰成本 / 新鲜度打分，主动播放与触发键候选排序可解释；设置页展示最近 5 条决策理由。
-- **小剧场**：`/stage?stage=play` 深链进入三席内置 VRM（雪团 / 冉卡露丽 / 菲比），按节拍轮播台词；分享卡叠加今日剧情数据并导出 PNG。
-- **角色与声音**：原创 VRM 角色入内置模型表，雪团声线接入本地 TTS；用户画像（称呼 / 忌口 / 作息）注入剧本生成。
-- **发布门禁**：剧本跨场景 lint + cue 时间线 golden（`pnpm check:scenes`），原创角色与二创包合规声明，版本号 3.0.0。
+- **能力 effect 注册表**：六类能力从 `switch` 改为 handler 表，新增 kind 只需注册；现有行为零回归。
+- **provider 注册表**：模型协议改为 protocol → factory 表，新协议可注册；未知协议错误语义不变。
+- **动效内容快照**：运行时接受 `MotionContent`，默认仍用内置内容；剧本白名单由同一快照派生，golden 零差异。
+- **舞台默认 VRM**：自由舞台、协作 run、会议默认角色统一为内置 VRM；托盘与应用菜单可直接进入自由舞台或小剧场。
+- **发布门禁**：相关单测与 `pnpm check` 全绿，零数据库迁移；v3.0 的剧本、决策与小剧场能力保留。
 
 ## 功能
 
@@ -199,7 +199,7 @@ v3.0.0 发布验证：舞台 + 场景 + 设置存储单测 62 项与 `check:scen
 - [开发与测试指南](docs/development.md)
 - [Electron 桌面外壳](docs/modules/electron-shell.md)
 - 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
-- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v3.0 方案](docs/plan/v3.0/README.md) ｜ [v3.0.0 发布说明](docs/plan/v3.0/release-notes.md) ｜ [M4/M5 Spec](docs/plan/v3.0/milestone-m4-m5/spec.md)
+- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v3.1 方案](docs/plan/v3.1/README.md) ｜ [v3.1.0 发布说明](docs/plan/v3.1/release-notes.md) ｜ [v3.0 方案](docs/plan/v3.0/README.md)
 - 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](docs/learn/desktop-pet-implementation.md)
 
 ## 许可

@@ -98,6 +98,18 @@ v2.33 让备份「可托付」，但备份生命周期仍不可持续：每次�
 - 状态：✅ 已合入 main（merge commit `46518d65`），已打 tag `v2.34.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 9
 - 下一版本：[v2.35 回归修复与朗读](v2.35.0-release-notes.md)
 
+## ✅ 已发布：v3.1.0 可插拔前置——能力/provider 注册表与动效内容注入
+
+v3.0 把陪伴闭环做完，但扩展仍绑在三个硬编码分叉上：新增能力要改 `switch (kind)`，新增模型协议要改 `switch (protocol)`，动效内容写死静态表。v3.1 做三个低风险探针：六类能力 effect 改为 handler 注册表，provider 改为 protocol → factory 表，动效运行时接受 `MotionContent` 快照并由同一快照派生剧本白名单；默认内容 golden 零差异。附带把自由舞台、协作 run、会议默认形象统一为内置 VRM，并把托盘/应用菜单/舞台内入口补齐为自由舞台与小剧场双向切换。零数据库迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 不变。
+
+- 方案：[v3.1 方案](../plan/v3.1/README.md) · 发布说明：[release-notes.md](../plan/v3.1/release-notes.md) · 版本总结：[version-summary.md](../plan/v3.1/version-summary.md)
+- 来源方案：[v3.1-05](scheduled/v3.1-05-plugin-architecture.md) · [v3.1-06](scheduled/v3.1-06-motion-library-package.md)
+- 状态：✅ 已发布 `v3.1.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 不变
+- 验证：core 能力 57 项、ai 5 项、web 动效/剧本 215 项、web 舞台 65 项、desktop 20 项；`pnpm check` 全绿
+- 博客：[blog/v3.1](../../blog/v3.1/) 10 篇
+- 物料：发布说明、版本总结与技术博客已就绪；安装包、更新公告与截图待补
+- 下一版本：v4.0 平台化（S1–S6 + 内容包）仍待评审
+
 ## ✅ 已发布：v3.0.0 肥鱼计划——会记住你的桌面鲸鱼娘
 
 v2.35 补齐了回归与朗读，v3.0 把桌宠从「会动、会说话」推进到「有剧本、有决策、有小剧场」：原创白鲸娘「雪团」与冉卡露丽、菲比一起进入内置 VRM 模型表；剧本引擎用受限 Scene / Beat / Cue 承接触摸、久别、深夜、低语等场景，`ScriptDirector` 负责冷却、打断与门控；生成队列按每日调用与 token 预算接 LLM，剧情状态机维护线索、悬念与去重，失败自动回落本地剧本池；Utility 决策按时段 / 心情 / 关系 / 工作信号 / 打扰成本 / 新鲜度选出下一场，主动播放有预算、claim 去重与可解释理由；舞台新增 `/stage?stage=play` 三席 VRM 小剧场与剧情分享卡 PNG；关于页补原创角色与二创包合规声明，新增剧本 lint/golden 门禁与 `pnpm check:scenes`。M2 五维养成按用户决定取消，不做投喂 / 亲密度 / 成长阶段；零数据库迁移，v2.35 数据与设置原样保留。
@@ -109,7 +121,7 @@ v2.35 补齐了回归与朗读，v3.0 把桌宠从「会动、会说话」推进
 - 博客：[blog/v3.0](../../blog/v3.0/) 10 篇
 - 物料：发布说明、版本总结、合规声明与技术博客已就绪；演示短片、截图组与更新公告待补
 - 未排期候选：[陪伴质量评测](./candidates/07-companion-eval-harness.md) · [资产体积预算](./candidates/08-asset-size-budget.md) · [发布信任](./candidates/09-release-trust-and-update.md) · [音频导演](./candidates/10-audio-director.md) · [性能长跑门禁](./candidates/11-perf-budget-and-longrun-gate.md)
-- 下一版本：✅ v3.1 小步迭代已合入 main、待发布（能力/provider 注册表 + 动效内容注入），方案见 [v3.1 方案](../plan/v3.1/README.md)；v4.0 平台化（S1–S6 + 内容包）仍待评审
+- 下一版本：✅ v3.1 已发布，见上方章节；v4.0 平台化（S1–S6 + 内容包）仍待评审
 
 ## ✅ 已合入 main 并打 tag：v2.35 回归修复与朗读
 
