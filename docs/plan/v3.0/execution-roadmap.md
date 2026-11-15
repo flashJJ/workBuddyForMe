@@ -114,7 +114,7 @@ flowchart TD
 
 - 先 monorepo 拆 `motion-core` / `motion-vrm` / `motion-content` / `motion-bindings`。
 - 契约稳定后再独立仓库/私有 npm；运行时只做数据包，不做代码插件。
-- 预研（待评审）：[05-plugin-architecture.md](../../roadmap/candidates/05-plugin-architecture.md)。候选结论是**不引入 Cordis 式微内核、不拆多仓**，按「能力包 + 服务提供者 + MCP 桥」三线推进。
+- 预研（待评审）：[05-plugin-architecture.md](../../roadmap/scheduled/v3.1-05-plugin-architecture.md)（已排期 v3.1 的 S1/S3）。候选结论是**不引入 Cordis 式微内核、不拆多仓**，按「能力包 + 服务提供者 + MCP 桥」三线推进。
 - Gate：主项目 re-export 兼容，现有测试零改断言，独立包可发布/回滚。
 
 ### P8 AI 剧情推进器（P3、P6 之后启动）

@@ -1,5 +1,5 @@
 import { ApiError } from '@wbfm/shared/errors';
-import type { CapabilityManifest } from '@wbfm/shared/schemas';
+import type { CapabilityKind, CapabilityManifest } from '@wbfm/shared/schemas';
 import type {
   InstalledEventScriptRepository,
   ReportWidgetRepository,
@@ -77,27 +77,72 @@ export {
   replaceEventScriptDefinition,
 } from './event-script';
 
+/** v3.1：单类能力的 effect 处理器；新增 kind 只需注册，不再改分发函数 */
+export interface CapabilityEffectHandler {
+  enable(manifest: CapabilityManifest, packDir: string, deps: CapabilityEffectDeps): string;
+  disable(effectRef: string, deps: CapabilityEffectDeps): void;
+  /** 卸载补偿（disable 已执行）；无额外清理可省略 */
+  uninstall?(effectRef: string, deps: CapabilityEffectDeps): void;
+}
+
+const BUILTIN_EFFECT_HANDLERS: Record<CapabilityKind, CapabilityEffectHandler> = {
+  skill: {
+    enable: (_manifest, packDir, deps) =>
+      enableSkill(packDir, { skills: deps.skills, skillsDir: deps.skillsDir }),
+    disable: (effectRef, deps) =>
+      disableSkill(effectRef, { skills: deps.skills, skillsDir: deps.skillsDir }),
+  },
+  mcp: {
+    enable: (manifest, packDir, deps) => enableMcp(packDir, manifest, { mcp: deps.mcp }),
+    disable: (effectRef, deps) => disableMcp(effectRef, { mcp: deps.mcp }),
+  },
+  workflow: {
+    enable: (manifest, packDir, deps) =>
+      enableWorkflow(manifest, packDir, { workflows: deps.workflows }),
+    disable: (effectRef, deps) => disableWorkflow(effectRef, { workflows: deps.workflows }),
+    uninstall: (effectRef, deps) => uninstallWorkflow(effectRef, { workflows: deps.workflows }),
+  },
+  'pet-action': {
+    enable: (manifest, packDir, deps) =>
+      enablePetAction(manifest, packDir, { motions: deps.motions }),
+    disable: (effectRef, deps) => disablePetAction(effectRef, { motions: deps.motions }),
+  },
+  'event-script': {
+    enable: (manifest, packDir, deps) =>
+      enableEventScript(manifest, packDir, { eventScripts: deps.eventScripts }),
+    disable: (effectRef, deps) => disableEventScript(effectRef, { eventScripts: deps.eventScripts }),
+    uninstall: (effectRef, deps) =>
+      uninstallEventScript(effectRef, { eventScripts: deps.eventScripts }),
+  },
+  'report-widget': {
+    enable: (manifest, packDir, deps) =>
+      enableReportWidget(manifest, packDir, { reportWidgets: deps.reportWidgets }),
+    disable: (effectRef, deps) =>
+      disableReportWidget(effectRef, { reportWidgets: deps.reportWidgets }),
+  },
+};
+
+const EFFECT_HANDLERS = new Map<CapabilityKind, CapabilityEffectHandler>(
+  Object.entries(BUILTIN_EFFECT_HANDLERS) as [CapabilityKind, CapabilityEffectHandler][],
+);
+
+/** v3.1：注册新 kind 的 effect 处理器；内置 kind 不允许覆盖 */
+export function registerCapabilityEffectHandler(
+  kind: CapabilityKind,
+  handler: CapabilityEffectHandler,
+): void {
+  if (EFFECT_HANDLERS.has(kind)) throw ApiError.conflict(`能力类型已注册：${kind}`);
+  EFFECT_HANDLERS.set(kind, handler);
+}
+
 export function enableCapabilityEffect(
   manifest: CapabilityManifest,
   packDir: string,
   deps: CapabilityEffectDeps,
 ): string {
-  switch (manifest.kind) {
-    case 'skill':
-      return enableSkill(packDir, { skills: deps.skills, skillsDir: deps.skillsDir });
-    case 'mcp':
-      return enableMcp(packDir, manifest, { mcp: deps.mcp });
-    case 'workflow':
-      return enableWorkflow(manifest, packDir, { workflows: deps.workflows });
-    case 'pet-action':
-      return enablePetAction(manifest, packDir, { motions: deps.motions });
-    case 'event-script':
-      return enableEventScript(manifest, packDir, { eventScripts: deps.eventScripts });
-    case 'report-widget':
-      return enableReportWidget(manifest, packDir, { reportWidgets: deps.reportWidgets });
-    default:
-      throw ApiError.validation(`该能力类型尚未接入：${manifest.kind}`);
-  }
+  const handler = EFFECT_HANDLERS.get(manifest.kind);
+  if (!handler) throw ApiError.validation(`该能力类型尚未接入：${manifest.kind}`);
+  return handler.enable(manifest, packDir, deps);
 }
 
 export function disableCapabilityEffect(
@@ -105,22 +150,7 @@ export function disableCapabilityEffect(
   effectRef: string,
   deps: CapabilityEffectDeps,
 ): void {
-  switch (manifest.kind) {
-    case 'skill':
-      return disableSkill(effectRef, { skills: deps.skills, skillsDir: deps.skillsDir });
-    case 'mcp':
-      return disableMcp(effectRef, { mcp: deps.mcp });
-    case 'workflow':
-      return disableWorkflow(effectRef, { workflows: deps.workflows });
-    case 'pet-action':
-      return disablePetAction(effectRef, { motions: deps.motions });
-    case 'event-script':
-      return disableEventScript(effectRef, { eventScripts: deps.eventScripts });
-    case 'report-widget':
-      return disableReportWidget(effectRef, { reportWidgets: deps.reportWidgets });
-    default:
-      return;
-  }
+  EFFECT_HANDLERS.get(manifest.kind)?.disable(effectRef, deps);
 }
 
 /** 卸载补偿：disable 已执行；workflow 判定删行或保留禁用行，剧本/卡片清行 */
@@ -130,11 +160,5 @@ export function uninstallCapabilityEffect(
   deps: CapabilityEffectDeps,
 ): void {
   if (!effectRef) return;
-  if (manifest.kind === 'workflow') {
-    uninstallWorkflow(effectRef, { workflows: deps.workflows });
-    return;
-  }
-  if (manifest.kind === 'event-script') {
-    uninstallEventScript(effectRef, { eventScripts: deps.eventScripts });
-  }
+  EFFECT_HANDLERS.get(manifest.kind)?.uninstall?.(effectRef, deps);
 }

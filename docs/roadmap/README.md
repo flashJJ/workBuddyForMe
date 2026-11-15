@@ -47,6 +47,7 @@ v2.18 起工具结果就带证据字段、v2.19 起引用带章节与表格坐�
 | 8 | v2.34 | 备份可续：增量归档与链式恢复 | v2.33 §9 候选 / v1.5 备份边界 | 高 |
 | 9 | v2.35 | 回归修复与朗读：补合 v2.25 分支、会话朗读入口 | v2.25 未合入修复 / 会话下栏朗读需求 | 低 |
 | 10 | v3.0 | 肥鱼计划：原创鲸鱼娘陪伴（剧本 / 决策 / 小剧场 / 发布） | 2026-10「蓝色大肥鱼」二创热度 / 桌宠 + 记忆 + 语音能力 | 高 |
+| 11 | v3.1 | 可插拔前置：能力/provider 注册表与动效内容注入 | 候选 05 的 S1/S3、候选 06 的方案 A | 中 |
 
 排序原则：先做已有数据能直接接通、用户可感知的（引用、回合摘要、统计前端），再做需要新链路或需要人工修正的（重解析、OCR、内容包更新），最后评估成本最高的图能力。每个版本仍保持单一主题、零或一次迁移、Non-Goals 与功能清单同权重。
 
@@ -107,8 +108,8 @@ v2.35 补齐了回归与朗读，v3.0 把桌宠从「会动、会说话」推进
 - 验证：单测 62 项 + `check:scenes` 37 项通过；typecheck / lint / 行数 / 结构 / 循环 / ASCII 门禁全绿；真机小剧场、分享卡与 PNG 导出通过
 - 博客：[blog/v3.0](../../blog/v3.0/) 10 篇
 - 物料：发布说明、版本总结、合规声明与技术博客已就绪；演示短片、截图组与更新公告待补
-- 未排期候选：[插件化](./candidates/05-plugin-architecture.md) · [动效库包化](./candidates/06-motion-library-package.md) · [陪伴质量评测](./candidates/07-companion-eval-harness.md) · [资产体积预算](./candidates/08-asset-size-budget.md) · [发布信任](./candidates/09-release-trust-and-update.md) · [音频导演](./candidates/10-audio-director.md) · [性能长跑门禁](./candidates/11-perf-budget-and-longrun-gate.md)
-- 下一版本建议：v3.1 小步（能力/provider 注册表 + 动效注入 + 质量基线）或 v4.0 平台化（S1–S6 + 内容包），详见 [候选方案索引](./candidates/README.md)
+- 未排期候选：[陪伴质量评测](./candidates/07-companion-eval-harness.md) · [资产体积预算](./candidates/08-asset-size-budget.md) · [发布信任](./candidates/09-release-trust-and-update.md) · [音频导演](./candidates/10-audio-director.md) · [性能长跑门禁](./candidates/11-perf-budget-and-longrun-gate.md)
+- 下一版本：🚧 v3.1 小步迭代开发完成、待合入 main（能力/provider 注册表 + 动效内容注入），方案见 [v3.1 方案](../plan/v3.1/README.md)；v4.0 平台化（S1–S6 + 内容包）仍待评审
 
 ## ✅ 已合入 main 并打 tag：v2.35 回归修复与朗读
 

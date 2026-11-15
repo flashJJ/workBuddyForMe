@@ -13,7 +13,7 @@ import {
   SCRIPT_GESTURES,
   SCRIPT_LOOK_TARGETS,
 } from '@wbfm/shared/schemas';
-import { BEHAVIORS, MOTIONS, POSES } from '../../animation';
+import { DEFAULT_MOTION_CONTENT, type MotionContent } from '../../animation';
 import { PROPS } from '../../vrm/props/prop-manifest';
 import { BUILTIN_POSE_PRESETS } from '../adapters/vrm-adapter';
 
@@ -39,17 +39,24 @@ export interface ScriptPrimitiveCatalog {
   props: readonly ScriptPropPrimitive[];
 }
 
-export const SCRIPT_PRIMITIVES: ScriptPrimitiveCatalog = {
-  poses: POSES.map((pose) => pose.id),
-  posePresets: Object.keys(BUILTIN_POSE_PRESETS),
-  motions: MOTIONS.map((motion) => motion.id),
-  behaviors: BEHAVIORS.map((behavior) => behavior.id),
-  expressions: [...EXPRESSION_TAGS],
-  gestures: [...SCRIPT_GESTURES],
-  lookTargets: [...SCRIPT_LOOK_TARGETS],
-  linePools: Object.keys(PET_LINE_POOLS),
-  props: Object.entries(PROPS).map(([id, spec]) => ({ id, kind: spec.kind })),
-};
+/** v3.1：从内容快照派生白名单；默认快照 = 内置静态表 */
+export function createScriptPrimitives(
+  content: MotionContent = DEFAULT_MOTION_CONTENT,
+): ScriptPrimitiveCatalog {
+  return {
+    poses: content.poses.map((pose) => pose.id),
+    posePresets: Object.keys(BUILTIN_POSE_PRESETS),
+    motions: content.motions.map((motion) => motion.id),
+    behaviors: content.behaviors.map((behavior) => behavior.id),
+    expressions: [...EXPRESSION_TAGS],
+    gestures: [...SCRIPT_GESTURES],
+    lookTargets: [...SCRIPT_LOOK_TARGETS],
+    linePools: Object.keys(PET_LINE_POOLS),
+    props: Object.entries(PROPS).map(([id, spec]) => ({ id, kind: spec.kind })),
+  };
+}
+
+export const SCRIPT_PRIMITIVES: ScriptPrimitiveCatalog = createScriptPrimitives();
 
 /** 运行时校验用的集合视图；presets 可追加调用方的自定义预设 */
 export interface ScriptPrimitiveSets {

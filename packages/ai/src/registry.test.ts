@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createProvider } from './index';
-import type { ProviderConnection } from './index';
+import { createProvider, registerProviderFactory } from './index';
+import type { ChatProvider, ProviderConnection } from './index';
 
 const openaiConnection: ProviderConnection = {
   protocol: 'openai-compatible',
@@ -68,5 +68,22 @@ describe('Provider 注册中心（TR-11.1）', () => {
         protocol: 'anthropic' as unknown as ProviderConnection['protocol'],
       }),
     ).toThrow(/anthropic/);
+  });
+
+  it('新协议注册后可创建，不需要修改 createProvider', () => {
+    const stub = { supportsTools: false } as ChatProvider;
+    const factory = vi.fn(() => stub);
+    registerProviderFactory('mock-protocol', factory);
+    const connection = {
+      protocol: 'mock-protocol' as unknown as ProviderConnection['protocol'],
+      baseUrl: 'mock://local',
+      apiKey: null,
+    };
+    expect(createProvider(connection)).toBe(stub);
+    expect(factory).toHaveBeenCalledWith(connection);
+  });
+
+  it('已注册协议拒绝覆盖', () => {
+    expect(() => registerProviderFactory('ollama', () => ({}) as ChatProvider)).toThrow(/已注册/);
   });
 });

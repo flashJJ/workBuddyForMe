@@ -21,9 +21,7 @@ import { MorphExecutor, MorphMixer, type MorphDebugSnapshot } from '../morph';
 import { BehaviorObserver } from '../observability';
 import { applyPose, blendPoses, PoseLibrary } from '../pose';
 import { Skeleton, type SkeletonBone } from '../skeleton';
-import { BEHAVIORS } from '../behaviors';
-import { MOTIONS } from '../motions';
-import { POSES } from '../poses';
+import { DEFAULT_MOTION_CONTENT, type MotionContent } from '../content';
 import { POSE_EXECUTORS, resolveTransitionExecutor, type PoseExecutor } from './vrm-executors';
 import { collectTrackBones, resolveTrack } from './vrm-compose';
 import { BoneCrossFade } from './vrm-crossfade';
@@ -90,12 +88,12 @@ export class VrmAnimationRuntime {
   private lookLevel = 0;
   /** 额外转身角：世界方向意图随身体朝向旋转（背对时左右手不镜像到中线） */
   private frameYaw = 0;
-  constructor(normBones: Map<string, NormalizedBoneRef>) {
+  constructor(normBones: Map<string, NormalizedBoneRef>, content: MotionContent = DEFAULT_MOTION_CONTENT) {
     this.normBones = normBones;
     this.skeleton = createVrmSkeleton(normBones);
-    this.poses = new PoseLibrary(POSES);
-    this.motions = new MotionLibrary(MOTIONS);
-    this.behaviors = new BehaviorLibrary(BEHAVIORS);
+    this.poses = new PoseLibrary(content.poses);
+    this.motions = new MotionLibrary(content.motions);
+    this.behaviors = new BehaviorLibrary(content.behaviors);
     this.runner = new BehaviorRunner(this.behaviors);
     this.composer = new Composer(this.skeleton, this.poses, (id, weight, progress, timeMs) => {
       const executor = POSE_EXECUTORS[id];

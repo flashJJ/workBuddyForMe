@@ -28,6 +28,8 @@ export {
   type MorphBindingTarget,
 } from './binding';
 
+export { DEFAULT_MOTION_CONTENT, type MotionContent } from './content';
+
 export {
   MorphExecutor,
   type MorphDebugSnapshot,

@@ -62,7 +62,7 @@
 - 背景：对照 DSH/Cordis 微内核方案，评估本项目插件化的适用性、仓库策略与能力接入改造。
 - 盘点：已有能力包（六类 effect + 签名/健康/升级预检）、MCP 全链路、provider 适配器、工具运行时、内容/模组包服务；缺口是统一插件契约、依赖拓扑、运行时内容注入、能力发现。
 - 候选结论（待评审）：不搬 Cordis 微内核；保留 monorepo；走「能力包 + 服务提供者 + MCP 桥」三线；不做运行时代码插件。
-- 产出：[05-plugin-architecture.md](../../roadmap/candidates/05-plugin-architecture.md)，含 S1–S6 预研 spike 与验收口径。
+- 产出：[05-plugin-architecture.md](../../roadmap/scheduled/v3.1-05-plugin-architecture.md)，含 S1–S6 预研 spike 与验收口径（已排期 v3.1 的 S1/S3）。
 - 关联：P7 插件化。
 
 ### 2026-11-14 M3 Utility 阶段 3（生成场景 theme/tags 与弱偏好）

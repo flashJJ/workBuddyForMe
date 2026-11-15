@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCRIPT_PRIMITIVES, createScriptPrimitiveSets } from './registry';
+import { SCRIPT_PRIMITIVES, createScriptPrimitives, createScriptPrimitiveSets } from './registry';
 
 describe('剧本原语注册表（P8.1）', () => {
   it('覆盖生成器需要的全部原语类别', () => {
@@ -22,5 +22,19 @@ describe('剧本原语注册表（P8.1）', () => {
     expect(sets.poses.has('pose.idle-body')).toBe(true);
     expect(sets.props.get('teacup')).toBe('hand');
     expect(sets.props.get('table')).toBe('stage');
+  });
+
+  it('v3.1：白名单可由注入的内容快照派生', () => {
+    const catalog = createScriptPrimitives({
+      version: 'test-1',
+      poses: [{ id: 'pose.only', mask: { include: ['head'] }, bones: {} }],
+      motions: [],
+      behaviors: [],
+    });
+    expect(catalog.poses).toEqual(['pose.only']);
+    expect(catalog.motions).toEqual([]);
+    expect(catalog.behaviors).toEqual([]);
+    expect(catalog.posePresets).toContain('squash');
+    expect(catalog.props).toContainEqual({ id: 'teacup', kind: 'hand' });
   });
 });
