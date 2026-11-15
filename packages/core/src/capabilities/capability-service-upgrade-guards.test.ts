@@ -68,6 +68,30 @@ function mcpPack(version: string): Uint8Array {
   );
 }
 
+function namedSkillPack(
+  id: string,
+  name: string,
+  version: string,
+  dependencies: Array<{ id: string; version?: string }> = [],
+  coreVersion?: string,
+): Uint8Array {
+  const skill = JSON.stringify({ name, description: name });
+  return buildTestPack(
+    {
+      id,
+      version,
+      kind: 'skill',
+      name,
+      permissions: ['skill:install'],
+      entry: 'payload/skill.json',
+      dependencies,
+      ...(coreVersion ? { coreVersion } : {}),
+      checksums: { 'payload/skill.json': hashOf(skill) },
+    },
+    { 'payload/skill.json': skill },
+  );
+}
+
 describe('v2.12 能力包升级守卫与回滚', () => {
   let ctx: TestContext;
   beforeEach(() => {
@@ -209,5 +233,35 @@ describe('v2.12 能力包升级守卫与回滚', () => {
     ctx.signature.capabilitySignaturePolicy = 'require';
     expect(() => ctx.service.upgrade(installed.id, skillPack('2.0.0'))).toThrow(/有效签名/);
     expect(ctx.service.list().find((item) => item.id === installed.id)?.version).toBe('1.0.0');
+  });
+
+  it('v4.0：coreVersion 高于当前应用时拒绝安装', () => {
+    const error = catchError(() =>
+      ctx.service.install(
+        namedSkillPack('com.test.future', '未来技能', '1.0.0', [], '99.0.0'),
+      ),
+    );
+    expect(error).toMatchObject({ status: 422 });
+    expect(error?.message).toMatch(/应用版本/);
+    expect(ctx.service.list().some((item) => item.id === 'com.test.future')).toBe(false);
+  });
+
+  it('v4.0：升级引入依赖环时拒绝，旧版本保持不变', () => {
+    const b = ctx.service.install(namedSkillPack('com.test.cycle.b', 'cycle-b', '1.0.0'));
+    ctx.service.install(
+      namedSkillPack('com.test.cycle.a', 'cycle-a', '1.0.0', [
+        { id: 'com.test.cycle.b' },
+      ]),
+    );
+    const error = catchError(() =>
+      ctx.service.upgrade(
+        b.id,
+        namedSkillPack('com.test.cycle.b', 'cycle-b', '2.0.0', [
+          { id: 'com.test.cycle.a' },
+        ]),
+      ),
+    );
+    expect(error?.message).toMatch(/存在环/);
+    expect(ctx.service.list().find((item) => item.id === b.id)?.version).toBe('1.0.0');
   });
 });

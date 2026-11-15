@@ -95,6 +95,8 @@ export const capabilityManifestSchema = z.object({
     .string()
     .trim()
     .regex(/^payload\/[a-zA-Z0-9._/-]+$/, 'entry 必须位于 payload/ 下'),
+  /** 可选最低应用版本；当前应用低于该版本时拒绝安装/启用 */
+  coreVersion: versionSchema.optional(),
   dependencies: z.array(capabilityDependencySchema).max(20).default([]),
   /** 相对路径 → sha256（覆盖 payload/ 下全部文件） */
   checksums: z.record(z.string(), z.string().regex(/^[a-f0-9]{64}$/)).default({}),
