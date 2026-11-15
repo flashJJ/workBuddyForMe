@@ -13,7 +13,7 @@
 | M3 motion-pack | ✅ 完成（kind、payload schema、effect、样例包） | 2026-11-15 |
 | M4 内容刷新 | ✅ 完成（聚合启用内容、快照版本、会话级读取） | 2026-11-15 |
 | M5 发布校验 | ✅ 完成（`release-manifest.mjs`、归档接入、复核命令） | 2026-11-15 |
-| M6 收尾 | 待开始 | — |
+| M6 收尾 | ✅ 完成（全量测试、门禁、发布说明、版本总结、10 篇博客） | 2026-11-15 |
 
 ## 决策日志
 
@@ -97,5 +97,16 @@
 - 文档：v4.0 方案新增 §5.5，固定归档五件套、复核命令与发布说明引用字段。
 - 结果：安装包、blockmap 与 `latest.yml` 可复算校验和，构建信息可回溯到 commit 与构建时间；不涉及代码签名与更新源。
 - 下一步：M6 收尾（测试、门禁、发布说明、版本总结与博客）。
+
+### 2026-11-15 M6 收尾
+
+- 全量测试：9 个包 717 个测试文件 4108 项通过（core 1637、web 1398、shared 385、database 283、desktop 218、ai 86、voice 85、config 14、motion 2）。
+- 修复两处存量测试环境缺口：设置页挂载测试未包 `MusicProvider`，在 `app-shell.test.tsx` 与 `en-coverage.test.tsx` 中按真实布局补齐；业务代码未改。
+- 版本号升至 `4.0.0`，`pnpm sync-version` 同步 web / desktop / shared 运行时版本。
+- 新增 `release-notes.md` 与 `version-summary.md`：交付、用户可见变化、内部改动、门禁、限制与下一版本衔接。
+- 新增 `blog/v4.0/` 10 篇：总览、依赖拓扑、coreVersion、动效包、payload 契约、能力管道复用、会话快照、渲染透传、发布校验、复盘。
+- 更新根 README、roadmap 索引、scheduled 状态与 blog 索引。
+- `pnpm check` 全绿；安装包未生成，合入 main、tag、更新公告与截图待补。
+- 下一步：发布收尾（合入 main、打 tag、生成安装包与公告）。
 
 

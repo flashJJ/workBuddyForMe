@@ -2,16 +2,16 @@
 
 本地优先的**私人 AI 工作台 + 桌面陪伴角色**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v3.1.0**（2026-11-15）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
-> 本版主线：能力/provider 注册表 + 动效内容快照 + 舞台默认 VRM 与正式入口，详见 [v3.1.0 发布说明](docs/plan/v3.1/release-notes.md)。
+> 当前版本：**v4.0.0**（2026-11-15）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 本版主线：能力依赖拓扑 + 内部动效包 + `motion-pack` 内容包 + 会话快照刷新 + 发布校验，详见 [v4.0.0 发布说明](docs/plan/v4.0/release-notes.md)。
 
-## v3.1.0 可插拔前置
+## v4.0.0 平台化一期
 
-- **能力 effect 注册表**：六类能力从 `switch` 改为 handler 表，新增 kind 只需注册；现有行为零回归。
-- **provider 注册表**：模型协议改为 protocol → factory 表，新协议可注册；未知协议错误语义不变。
-- **动效内容快照**：运行时接受 `MotionContent`，默认仍用内置内容；剧本白名单由同一快照派生，golden 零差异。
-- **舞台默认 VRM**：自由舞台、协作 run、会议默认角色统一为内置 VRM；托盘与应用菜单可直接进入自由舞台或小剧场。
-- **发布门禁**：相关单测与 `pnpm check` 全绿，零数据库迁移；v3.0 的剧本、决策与小剧场能力保留。
+- **依赖拓扑**：manifest 增加 `coreVersion`；安装/启用/升级统一执行缺依赖、版本不匹配与环检测，依赖序稳定可复现。
+- **动效内部包**：契约、默认内容与 payload schema 抽到纯数据包，web 保留兼容入口，默认 golden 零差异。
+- **内容包**：新增 `motion-pack` 能力类型，复用现有 ZIP / 校验和 / 签名 / 升级 / 回滚；坏包整包拒绝。
+- **会话快照**：安装/停用后不重启应用，下一次打开桌宠、主窗或舞台读取新内容；当前会话保持旧快照。
+- **发布校验**：归档产物生成 `SHA256SUMS.txt` 与 `build-info.json`，可复算、可回溯 commit；零数据库迁移。
 
 ## 功能
 
@@ -199,7 +199,7 @@ v3.0.0 发布验证：舞台 + 场景 + 设置存储单测 62 项与 `check:scen
 - [开发与测试指南](docs/development.md)
 - [Electron 桌面外壳](docs/modules/electron-shell.md)
 - 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
-- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v3.1 方案](docs/plan/v3.1/README.md) ｜ [v3.1.0 发布说明](docs/plan/v3.1/release-notes.md) ｜ [v3.0 方案](docs/plan/v3.0/README.md)
+- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v4.0 方案](docs/plan/v4.0/README.md) ｜ [v4.0.0 发布说明](docs/plan/v4.0/release-notes.md) ｜ [v3.1 方案](docs/plan/v3.1/README.md)
 - 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](docs/learn/desktop-pet-implementation.md)
 
 ## 许可

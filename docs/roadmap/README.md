@@ -99,15 +99,17 @@ v2.33 让备份「可托付」，但备份生命周期仍不可持续：每次�
 - 状态：✅ 已合入 main（merge commit `46518d65`），已打 tag `v2.34.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 9
 - 下一版本：[v2.35 回归修复与朗读](v2.35.0-release-notes.md)
 
-## 🚧 进行中：v4.0 平台化一期——依赖拓扑、内容包与发布校验
+## ✅ 已完成待发布：v4.0 平台化一期——依赖拓扑、内容包与发布校验
 
 v3.1 把能力分发、模型协议与动效内容改成了注册表/快照，但注册口还没有形成内容生态：能力包缺依赖拓扑，动效内容不能安装，安装后也不能刷新运行时快照。v4.0 把这些口接成完整链路：manifest 增加 `coreVersion` 与依赖环检测；动效契约抽成内部 motion 包；新增 `motion-pack` 能力类型复用现有 ZIP/签名/升级/回滚；安装/停用后生成新内容快照，下一次打开舞台或桌宠时生效；发布产物补 `SHA256SUMS` 与 `build-info.json`。不做运行时代码插件、不拆多仓、不做代码签名与自有更新源。
 
-- 方案：[v4.0 方案](../plan/v4.0/README.md)
+- 方案：[v4.0 方案](../plan/v4.0/README.md) · 发布说明：[release-notes.md](../plan/v4.0/release-notes.md) · 版本总结：[version-summary.md](../plan/v4.0/version-summary.md)
 - 来源方案：[v3.1-05](scheduled/v3.1-05-plugin-architecture.md) · [v3.1-06](scheduled/v3.1-06-motion-library-package.md) · [v4.0-09](scheduled/v4.0-09-release-trust-and-update.md)
-- 状态：🚧 M0 方案、M1 依赖拓扑、M2 动效契约抽包、M3 motion-pack、M4 内容刷新与 M5 发布校验完成；M6 收尾待开始
-- 范围：P0 依赖拓扑 / motion 内部包 / motion-pack / 内容刷新；P1 发布校验；P2 场景包、工具描述符、质量基线延后
-- 下一里程碑：M6 收尾（测试、门禁、发布说明、版本总结与博客）
+- 状态：✅ M0–M6 全部完成；版本号 `4.0.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 不变
+- 验证：9 个包 717 个测试文件 4108 项通过；`pnpm check` 全绿；归档可生成并复核 `SHA256SUMS.txt` 与 `build-info.json`
+- 博客：[blog/v4.0](../../blog/v4.0/) 10 篇
+- 物料：发布说明、版本总结、技术博客与校验清单脚本已就绪；合入 main、tag、安装包、更新公告与截图待补
+- 下一里程碑：发布收尾（合入 main、打 tag、生成安装包）
 
 ## ✅ 已发布：v3.1.0 可插拔前置——能力/provider 注册表与动效内容注入
 
@@ -119,7 +121,7 @@ v3.0 把陪伴闭环做完，但扩展仍绑在三个硬编码分叉上：新增
 - 验证：core 能力 57 项、ai 5 项、web 动效/剧本 215 项、web 舞台 65 项、desktop 20 项；`pnpm check` 全绿
 - 博客：[blog/v3.1](../../blog/v3.1/) 10 篇
 - 物料：发布说明、版本总结与技术博客已就绪；安装包、更新公告与截图待补
-- 下一版本：v4.0 平台化（S1–S6 + 内容包）仍待评审
+- 下一版本：v4.0 已完成（见上方章节）
 
 ## ✅ 已发布：v3.0.0 肥鱼计划——会记住你的桌面鲸鱼娘
 
