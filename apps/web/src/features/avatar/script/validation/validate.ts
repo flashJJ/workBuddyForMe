@@ -14,6 +14,7 @@
  * branch 递归清洗；清洗后为空的 branch 整条丢弃。
  */
 import { BEAT_MAX_MS, type Cue, type Scene } from '@wbfm/shared/schemas';
+import type { MotionContent } from '../../animation';
 import { createScriptPrimitiveSets, type ScriptPrimitiveSets } from './registry';
 
 const DEFAULT_PRIMITIVES = createScriptPrimitiveSets();
@@ -26,6 +27,8 @@ const MAX_ID_LENGTH = 160;
 export interface ValidateSceneOptions {
   /** 额外允许的 pose 预设（与适配器的 presets 保持一致） */
   presets?: readonly string[];
+  /** v4.0：按会话内容快照校验；缺省使用内置内容 */
+  content?: MotionContent;
 }
 
 export interface SceneValidationResult {
@@ -35,7 +38,8 @@ export interface SceneValidationResult {
 }
 
 function primitivesFor(options?: ValidateSceneOptions): ScriptPrimitiveSets {
-  return options?.presets?.length ? createScriptPrimitiveSets(options.presets) : DEFAULT_PRIMITIVES;
+  if (!options?.content && !options?.presets?.length) return DEFAULT_PRIMITIVES;
+  return createScriptPrimitiveSets(options?.presets ?? [], options?.content);
 }
 
 /** 可选数值的 0..max 校验；undefined 表示未设置，直接通过 */

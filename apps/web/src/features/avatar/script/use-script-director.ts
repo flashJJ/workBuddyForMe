@@ -34,6 +34,7 @@ import { getPetScriptDebug, installPetScriptDebug } from './debug';
 import { createSceneRegistry } from './registry';
 import { BUILT_IN_SCENES } from './scenes';
 import { validateScenes } from './validation/validate';
+import { useMotionContent } from '../animation';
 
 export const PET_SCRIPT_ENABLED = process.env.NEXT_PUBLIC_WBFM_PET_SCRIPT === '1';
 
@@ -108,6 +109,7 @@ export interface ScriptDirectorHandle {
 export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDirectorHandle {
   const optionsRef = React.useRef(options);
   optionsRef.current = options;
+  const { content } = useMotionContent();
 
   const adapter = React.useMemo(() => {
     const target = {
@@ -154,12 +156,12 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
     const result = validateScenes([
       ...BUILT_IN_SCENES,
       ...(options.extraScenes ?? []),
-    ]);
+    ], { content });
     if (process.env.NODE_ENV !== 'production' && result.dropped.length > 0) {
       console.warn('[ScriptDirector] 已丢弃非法 cue:', result.dropped);
     }
     return result.scenes;
-  }, [options.extraScenes]);
+  }, [options.extraScenes, content]);
   /** 触发键索引跟随动态场景重建（生成场景也能被真实事件触发） */
   const registry = React.useMemo(() => createSceneRegistry(scenes), [scenes]);
 

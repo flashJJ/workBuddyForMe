@@ -29,6 +29,7 @@ export {
 } from './binding';
 
 export { DEFAULT_MOTION_CONTENT, type MotionContent } from './content';
+export { useMotionContent } from './content/use-motion-content';
 
 export {
   MorphExecutor,

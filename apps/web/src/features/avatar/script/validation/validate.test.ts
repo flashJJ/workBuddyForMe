@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BEAT_MAX_MS, type Beat, type Cue, type Scene } from '@wbfm/shared/schemas';
+import type { MotionContent } from '../../animation';
 import { validateScene, validateScenes } from './validate';
 
 function scene(id: string, beats: Beat[]): Scene {
@@ -40,6 +41,31 @@ describe('剧本白名单校验（P8.1 前置）', () => {
     );
     expect(result.scene.beats).toHaveLength(2);
     expect(result.dropped).toHaveLength(1);
+  });
+
+  it('v4.0：内容包姿势/动作按注入快照通过白名单', () => {
+    const content: MotionContent = {
+      version: 'packs:test',
+      poses: [{ id: 'pack.pose.wave', mask: { include: ['rightArm'] }, bones: {} }],
+      motions: [
+        {
+          id: 'pack.motion.wave',
+          durationMs: 1000,
+          keys: [{ at: 0, pose: 'pack.pose.wave' }],
+        },
+      ],
+      behaviors: [],
+    };
+    const result = validateScene(
+      scene('pack.scene', [
+        { at: 0, cue: cue({ kind: 'pose', preset: 'pack.pose.wave' }) },
+        { at: 1, cue: cue({ kind: 'motion', motion: 'pack.motion.wave' }) },
+        { at: 2, cue: cue({ kind: 'pose', preset: 'pose.idle-body' }) },
+      ]),
+      { content },
+    );
+    expect(result.scene.beats).toHaveLength(2);
+    expect(result.dropped.join('\n')).toContain('pose.idle-body');
   });
 
   it('branch 递归清洗；全空时整条丢弃', () => {

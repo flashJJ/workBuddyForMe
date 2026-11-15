@@ -37,4 +37,15 @@ describe('剧本原语注册表（P8.1）', () => {
     expect(catalog.posePresets).toContain('squash');
     expect(catalog.props).toContainEqual({ id: 'teacup', kind: 'hand' });
   });
+
+  it('v4.0：集合视图跟随注入的内容快照，不再保留内置 id', () => {
+    const sets = createScriptPrimitiveSets([], {
+      version: 'packs:test',
+      poses: [{ id: 'pack.pose.wave', mask: { include: ['head'] }, bones: {} }],
+      motions: [],
+      behaviors: [],
+    });
+    expect(sets.poses.has('pack.pose.wave')).toBe(true);
+    expect(sets.poses.has('pose.idle-body')).toBe(false);
+  });
 });

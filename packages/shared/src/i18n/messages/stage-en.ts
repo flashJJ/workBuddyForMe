@@ -39,6 +39,18 @@ export const enStage = {
     background: 'Background',
     power: 'Performance',
   },
+  motion: {
+    title: 'Motion content',
+    target: 'Character',
+    kind: 'Type',
+    behavior: 'Behavior',
+    motion: 'Motion',
+    pose: 'Pose',
+    item: 'Item',
+    play: 'Play',
+    loading: 'Loading…',
+    empty: 'No items for this type',
+  },
   demo: {
     nextSpeaker: 'Next speaker',
     sayLine: 'Say line',

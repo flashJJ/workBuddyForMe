@@ -11,6 +11,8 @@ export interface VrmControllerLike extends TouchControllerLike {
   setExpression(tag: ExpressionTag, intensity?: 1 | 2 | 3): void;
   playBehavior?(id: string): boolean;
   stopBehavior?(): boolean;
+  /** v4.0：内容包姿势预览 */
+  playPose?(id: string, holdMs?: number): boolean;
   /** M0d T2.2：语义表情通道预览；null 释放 */
   setMorphChannels?(channels: Record<string, number> | null): void;
   dispose(): void;

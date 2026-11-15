@@ -106,7 +106,7 @@ v3.1 把能力分发、模型协议与动效内容改成了注册表/快照，�
 - 方案：[v4.0 方案](../plan/v4.0/README.md) · 发布说明：[release-notes.md](../plan/v4.0/release-notes.md) · 版本总结：[version-summary.md](../plan/v4.0/version-summary.md)
 - 来源方案：[v3.1-05](scheduled/v3.1-05-plugin-architecture.md) · [v3.1-06](scheduled/v3.1-06-motion-library-package.md) · [v4.0-09](scheduled/v4.0-09-release-trust-and-update.md)
 - 状态：✅ M0–M6 全部完成；版本号 `4.0.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 不变
-- 验证：9 个包 717 个测试文件 4108 项通过；`pnpm check` 全绿；归档可生成并复核 `SHA256SUMS.txt` 与 `build-info.json`
+- 验证：9 个包 719 个测试文件 4115 项通过；`pnpm check` 全绿；归档可生成并复核 `SHA256SUMS.txt` 与 `build-info.json`
 - 博客：[blog/v4.0](../../blog/v4.0/) 10 篇
 - 物料：发布说明、版本总结、技术博客与校验清单脚本已就绪；合入 main、tag、安装包、更新公告与截图待补
 - 下一里程碑：发布收尾（合入 main、打 tag、生成安装包）

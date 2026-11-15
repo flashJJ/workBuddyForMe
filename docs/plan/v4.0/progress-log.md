@@ -11,7 +11,7 @@
 | M1 依赖拓扑 | ✅ 完成（coreVersion、环检测、依赖顺序、健康报告） | 2026-11-15 |
 | M2 动效契约抽包 | ✅ 完成（`@wbfm/motion`：契约、内容、默认快照） | 2026-11-15 |
 | M3 motion-pack | ✅ 完成（kind、payload schema、effect、样例包） | 2026-11-15 |
-| M4 内容刷新 | ✅ 完成（聚合启用内容、快照版本、会话级读取） | 2026-11-15 |
+| M4 内容刷新 | ✅ 完成（内容聚合、快照版本、选择入口与剧本白名单） | 2026-11-15 |
 | M5 发布校验 | ✅ 完成（`release-manifest.mjs`、归档接入、复核命令） | 2026-11-15 |
 | M6 收尾 | ✅ 完成（全量测试、门禁、发布说明、版本总结、10 篇博客） | 2026-11-15 |
 
@@ -108,6 +108,15 @@
 - 更新根 README、roadmap 索引、scheduled 状态与 blog 索引。
 - `pnpm check` 全绿；安装包未生成，合入 main、tag、更新公告与截图待补。
 - 口径修正：v4.0 README 去掉 `motion-pack` “可选 VRMA”的表述；VRMA 动作继续由 `pet-action` 承载，`motion-pack` 只合并程序化 JSON。
+- 下一步：发布收尾（合入 main、打 tag、生成安装包与公告）。
+
+### 2026-11-15 M4 补链：内容包动效选择入口与剧本白名单
+
+- 剧本白名单：`createScriptPrimitiveSets`、`validateScene` 与 `parseGeneratedScene` 接受 `MotionContent`；生成提示词与生成场景校验使用服务端内容快照；客户端 `useScriptDirector` 跟随 `useMotionContent`。
+- 运行时：新增 `VrmPreviewPose` 与 `VrmController.playPose`；行为/动作开始时清除姿势预览，避免叠加冲突。
+- 入口：新增共用 `MotionContentMenu`；自由舞台按聚焦角色选择行为/动作/姿势，桌宠直接在当前控制器上播放。
+- 测试：新增白名单、集合视图、选择菜单、姿势预览与失败回落 7 项；avatar/stage/pet 113 文件 665 项；全量 9 包 719 文件 4115 项；`pnpm check` 全绿。
+- 结果：安装内容包后，舞台/桌宠可选择并预览内容包条目，生成剧本可引用已启用内容，对应验收 §6.4 补齐。
 - 下一步：发布收尾（合入 main、打 tag、生成安装包与公告）。
 
 
