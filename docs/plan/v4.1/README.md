@@ -4,7 +4,7 @@
 > 分支：`feat/v4.1-quality-gates`
 > 口径：只做开发期评测与本地门禁；不改决策链路、不新增运行时计数、不接在线 A/B、不设绝对帧率。
 > 来源：[候选 07 陪伴质量评测](../roadmap/scheduled/v4.1-07-companion-eval-harness.md) 的方案 A+B、[候选 11 性能预算与长跑门禁](../roadmap/scheduled/v4.1-11-perf-budget-and-longrun-gate.md) 的方案 A+B。
-> 状态：🚧 M0 完成，M1–M4 开发中。
+> 状态：✅ M0–M4 完成（2026-11-15），开发完成待发布；进度见 [progress-log.md](./progress-log.md)。
 
 ## 1. 背景
 
@@ -85,7 +85,7 @@ flowchart LR
 
 ### 4.4 质量卡只读，不新增埋点
 
-服务端 `createPetScriptServer(services).quality()` 汇总：决策窗口 50 条、重复率、任一 `dedupe:*` 命中率、`pref:hour|pref:mood` 命中率、`fresh:unplayed` 命中率、长场次命中率、理由码 Top 5，以及门控快照（预算剩余、今日已播、未播生成场景数、当前是否勿扰）。前端只格式化，不重算。
+服务端 `createPetScriptServer(services).quality()` 汇总：决策窗口 50 条、重复率、任一 `dedupe:*` 命中率、`pref:hour|pref:mood` 命中率、`fresh:unplayed` 命中率、理由码 Top 5，以及门控快照（预算剩余、今日已播、未播生成场景数、当前是否勿扰）。长场次命中只进离线报告，不上卡。前端只格式化，不重算。
 
 ### 4.5 短跑门禁只比相对基线
 

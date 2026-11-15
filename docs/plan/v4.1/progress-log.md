@@ -11,7 +11,7 @@
 | M1 打分契约下沉 | ✅ 完成（shared/script 契约、权重可选末参、历史 50） | 2026-11-15 |
 | M2 评测与质量卡 | ✅ 完成（回放/矩阵/指标、eval 脚本、质量 API 与只读卡） | 2026-11-15 |
 | M3 性能门禁 | ✅ 完成（p50/长任务/资源采样、短跑门禁、3 分钟冒烟 PASS） | 2026-11-15 |
-| M4 收尾 | ⏳ 待开始 | — |
+| M4 收尾 | ✅ 完成（`pnpm check` 与全量测试全绿，基线归档） | 2026-11-15 |
 
 ## 决策日志
 
@@ -61,6 +61,16 @@
 - 3 分钟冒烟（SwiftShader）：基线 p95 1.757ms、堆峰值 227.9MB、资源峰值 24/56/6；复跑 p95 1.613ms、堆 202.2MB、资源末值 20/48/5，7 项全 PASS。
 - `pet-longrun` 3 分钟冒烟：p50 0.025ms、p95 1.725ms、长任务 2 次（最大 87ms）、资源末值 24/56/6，`--summary-out` 正常落盘。
 - 下一步：M4 全量测试、门禁与收尾。
+
+### 2026-11-15 M4 收尾
+
+- `pnpm check` 全绿（typecheck、lint、行数、结构、循环、ASCII）。
+- 全量测试：9 个包 724 个测试文件 4133 项通过（core 1637、web 1408、shared 400、database 283、desktop 218、ai 86、voice 85、config 14、motion 2）。
+- 归档 `docs/perf/baseline-v4.1.json`：Intel Core Ultra 9 275HX / 24 核 / 31.4GB / win32 x64；480×640；模型 xuetuan ↔ rankaluli；SwiftShader。
+- 文档：v4.1 状态改为开发完成待发布，roadmap 与 scheduled 索引同步；`docs/eval/companion-report.json` 入库（不含聊天正文与本地绝对路径）。
+- 结果：v4.1 开发完成，零数据库迁移；发布动作（版本号、安装包、tag）留待用户确认。
+- 遗留：4h 长跑命令已写入 tasks.md，待人工执行后归档 `docs/perf/v4.1-longrun.json`。
+
 
 
 

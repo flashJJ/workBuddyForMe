@@ -45,8 +45,11 @@
 
 ## M4 收尾
 
-- [ ] T4.1 运行 `pnpm check` 与全量测试，修复门禁问题
-- [ ] T4.2 归档 `docs/perf/baseline-v4.1.json`；记录硬件与模型口径
-- [ ] T4.3 回填 progress-log 状态表、决策日志与工作日志
-- [ ] T4.4 提交 `docs(v4.1): 质量门禁收尾与基线归档`
-- [ ] T4.5 人工待办：4h 长跑（`pet-longrun --duration-min 240 --summary-out docs/perf/v4.1-longrun.json`）
+- [x] T4.1 运行 `pnpm check` 与全量测试，修复门禁问题
+- [x] T4.2 归档 `docs/perf/baseline-v4.1.json`；记录硬件与模型口径
+- [x] T4.3 回填 progress-log 状态表、决策日志与工作日志
+- [x] T4.4 提交 `docs(v4.1): 质量门禁收尾与基线归档`
+
+> 后续人工执行（不属于本次开发范围）：4h 长跑
+> `node scripts/perf/pet-longrun.mjs --duration-min 240 --summary-out docs/perf/v4.1-longrun.json`，
+> 结果用于发布说明引用 p50/p95、堆漂移与资源峰值。
