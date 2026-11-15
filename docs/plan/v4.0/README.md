@@ -4,7 +4,7 @@
 > 分支：`feat/v4.0-platform`
 > 口径：单仓多包；只做数据包与服务提供者，不做运行时代码插件；零或一次纯加法迁移。
 > 来源：[候选 05 插件化](../roadmap/scheduled/v3.1-05-plugin-architecture.md) 的 S5/S6、[候选 06 动效库包化](../roadmap/scheduled/v3.1-06-motion-library-package.md) 的方案 B、[候选 09 发布信任](../roadmap/scheduled/v4.0-09-release-trust-and-update.md) 的方案 A。
-> 状态：🚧 M0 方案、M1 依赖拓扑与 M2 动效契约抽包完成（2026-11-15）；进度见 [progress-log.md](./progress-log.md)。
+> 状态：🚧 M0 方案、M1 依赖拓扑、M2 动效契约抽包与 M3 `motion-pack` 完成（2026-11-15）；进度见 [progress-log.md](./progress-log.md)。
 
 ## 1. 背景
 

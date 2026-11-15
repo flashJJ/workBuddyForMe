@@ -43,8 +43,9 @@ import {
   enableReportWidget,
   type ReportWidgetEffectDeps,
 } from './report-widget';
+import { disableMotionPack, enableMotionPack } from './motion-pack';
 
-/** v2.11：六类 effect 依赖 */
+/** v2.11：能力 effect 依赖；v4.0 七类 */
 export interface CapabilityEffectDeps {
   skills: SkillService;
   mcp: McpRegistry;
@@ -119,6 +120,10 @@ const BUILTIN_EFFECT_HANDLERS: Record<CapabilityKind, CapabilityEffectHandler> =
       enableReportWidget(manifest, packDir, { reportWidgets: deps.reportWidgets }),
     disable: (effectRef, deps) =>
       disableReportWidget(effectRef, { reportWidgets: deps.reportWidgets }),
+  },
+  'motion-pack': {
+    enable: (manifest, packDir) => enableMotionPack(manifest, packDir),
+    disable: () => disableMotionPack(),
   },
 };
 

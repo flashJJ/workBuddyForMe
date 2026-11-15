@@ -7,3 +7,10 @@ export { POSES } from './poses';
 export { MOTIONS } from './motions';
 export { BEHAVIORS } from './behaviors';
 export { DEFAULT_MOTION_CONTENT, type MotionContent } from './content';
+export {
+  motionPackPayloadSchema,
+  type MotionPackBehavior,
+  type MotionPackMotion,
+  type MotionPackPayload,
+  type MotionPackPose,
+} from './pack';

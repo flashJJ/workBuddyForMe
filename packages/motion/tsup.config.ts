@@ -8,6 +8,7 @@ export default defineConfig({
     motions: 'src/motions/index.ts',
     behaviors: 'src/behaviors/index.ts',
     content: 'src/content.ts',
+    pack: 'src/pack.ts',
   },
   format: ['esm', 'cjs'],
   sourcemap: true,

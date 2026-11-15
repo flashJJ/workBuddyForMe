@@ -42,6 +42,12 @@
       "development": "./src/content.ts",
       "import": "./dist/content.mjs",
       "require": "./dist/content.cjs"
+    },
+    "./pack": {
+      "types": "./src/pack.ts",
+      "development": "./src/pack.ts",
+      "import": "./dist/pack.mjs",
+      "require": "./dist/pack.cjs"
     }
   },
   "files": [
@@ -57,6 +63,7 @@
     "test:unit": "vitest run --coverage"
   },
   "dependencies": {
-    "@wbfm/shared": "workspace:*"
+    "@wbfm/shared": "workspace:*",
+    "zod": "^3.25.0"
   }
 }

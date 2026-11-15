@@ -280,6 +280,9 @@ importers:
       '@wbfm/database':
         specifier: workspace:*
         version: link:../database
+      '@wbfm/motion':
+        specifier: workspace:*
+        version: link:../motion
       '@wbfm/shared':
         specifier: workspace:*
         version: link:../shared
@@ -340,6 +343,9 @@ importers:
       '@wbfm/shared':
         specifier: workspace:*
         version: link:../shared
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
 
   packages/shared:
     dependencies:

@@ -105,9 +105,9 @@ v3.1 把能力分发、模型协议与动效内容改成了注册表/快照，�
 
 - 方案：[v4.0 方案](../plan/v4.0/README.md)
 - 来源方案：[v3.1-05](scheduled/v3.1-05-plugin-architecture.md) · [v3.1-06](scheduled/v3.1-06-motion-library-package.md) · [v4.0-09](scheduled/v4.0-09-release-trust-and-update.md)
-- 状态：🚧 M0 方案、M1 依赖拓扑与 M2 动效契约抽包完成；M3 motion-pack 待开始
+- 状态：🚧 M0 方案、M1 依赖拓扑、M2 动效契约抽包与 M3 motion-pack 完成；M4 内容刷新待开始
 - 范围：P0 依赖拓扑 / motion 内部包 / motion-pack / 内容刷新；P1 发布校验；P2 场景包、工具描述符、质量基线延后
-- 下一里程碑：M3 motion-pack 能力类型与 effect
+- 下一里程碑：M4 聚合启用内容并刷新运行时快照
 
 ## ✅ 已发布：v3.1.0 可插拔前置——能力/provider 注册表与动效内容注入
 

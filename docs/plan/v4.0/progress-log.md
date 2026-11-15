@@ -10,7 +10,7 @@
 | M0 方案与归档 | ✅ 完成（方案落盘，候选 09 移入 scheduled） | 2026-11-15 |
 | M1 依赖拓扑 | ✅ 完成（coreVersion、环检测、依赖顺序、健康报告） | 2026-11-15 |
 | M2 动效契约抽包 | ✅ 完成（`@wbfm/motion`：契约、内容、默认快照） | 2026-11-15 |
-| M3 motion-pack | 待开始 | — |
+| M3 motion-pack | ✅ 完成（kind、payload schema、effect、样例包） | 2026-11-15 |
 | M4 内容刷新 | 待开始 | — |
 | M5 发布校验 | 待开始 | — |
 | M6 收尾 | 待开始 | — |
@@ -61,4 +61,15 @@
 - 验证：motion 包 2 项、web 动效与剧本校验 34 文件 215 项通过；`golden.test.ts` 16 项零差异；web typecheck 通过。
 - 结果：动效内容与渲染适配解耦，包不依赖 three.js/PIXI；`animation/` 直接文件仍为 12 个。
 - 下一步：M3 `motion-pack` 能力类型与 effect。
+
+### 2026-11-15 M3 motion-pack
+
+- 能力类型：`CAPABILITY_KINDS` 增加 `motion-pack`，权限 `motion:pack`，entry 固定 `payload/motion-pack.json`，纳入支持列表与 payload 体积上限（256 KB）。
+- payload schema：`@wbfm/motion/pack` 用 zod 校验姿势/动作/行为、轨道、表情与视线枚举；空内容拒绝。
+- effect：`enableMotionPack` 解析 payload、检查类型内重复 id 与内置内容冲突，返回 manifest.id；停用/卸载无需额外清理。
+- 示例包：新增 `com.example.sample.motion-pack`，含一个右臂姿势；能力目录与服务示例可下载。
+- 测试：payload 合法/非法、重复、内置冲突 2 项；安装→停用→再启用→卸载生命周期 1 项；注册表 4 项。
+- 结果：motion-pack 复用现有 ZIP/校验和/签名/升级/回滚链路，不新增数据库表。
+- 下一步：M4 聚合启用内容并刷新运行时快照。
+
 
