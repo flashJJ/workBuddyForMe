@@ -202,10 +202,17 @@ function sampleMcpTemplate(): Uint8Array {
   );
 }
 
-/**
- * 生成示例包：六类均返回 ZIP；mcp 为模板包。
- * pet-action 需要注入内置 VRMA；缺失时返回 422。
- */
+function sampleMotionPackPayload(): Uint8Array {
+  const pose = {
+    id: 'com.example.sample.motion-pack.pose.wave',
+    mask: { include: ['rightArm'] },
+    bones: { rightUpperArm: { z: -0.65 }, rightLowerArm: { z: -0.35 }, rightHand: { z: -0.15 } },
+  };
+  const payload = { name: '示例动效内容包', poses: [pose], motions: [], behaviors: [] };
+  return strToU8(JSON.stringify(payload, null, 2));
+}
+
+/** 生成示例包：七类均返回 ZIP；mcp 为模板包，pet-action 需注入 VRMA */
 export function buildSamplePack(
   kind: CapabilityKind,
   options: { motionAsset?: Uint8Array } = {},
@@ -269,6 +276,21 @@ export function buildSamplePack(
         dependencies: [],
       },
       [{ path: 'payload/widget.json', bytes: sampleReportWidgetPayload() }],
+    );
+  }
+  if (kind === 'motion-pack') {
+    return buildPack(
+      {
+        id: 'com.example.sample.motion-pack',
+        version: '1.0.0',
+        kind: 'motion-pack',
+        name: '示例动效内容包',
+        description: '安装后增加一组自定义姿势；停用即移除。',
+        permissions: ['motion:pack'],
+        entry: 'payload/motion-pack.json',
+        dependencies: [],
+      },
+      [{ path: 'payload/motion-pack.json', bytes: sampleMotionPackPayload() }],
     );
   }
   return sampleMcpTemplate();

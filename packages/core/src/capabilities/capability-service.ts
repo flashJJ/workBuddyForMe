@@ -142,18 +142,7 @@ export function createCapabilityService(deps: CapabilityServiceDeps) {
       assertManifestSignature(manifest, signatureContext(deps));
       const existing = repo.get(manifest.id);
       if (existing) throw ApiError.conflict(`能力包已安装：${manifest.id}`);
-
-      const installed = repo.list();
-      for (const dependency of manifest.dependencies) {
-        const hit = installed.find((item) => item.id === dependency.id);
-        if (!hit) throw ApiError.validation(`依赖未安装：${dependency.id}`);
-        if (hit.status !== 'enabled') throw ApiError.validation(`依赖未启用：${dependency.id}`);
-        if (dependency.version && hit.version !== dependency.version) {
-          throw ApiError.validation(
-            `依赖版本不匹配：${dependency.id} 需要 ${dependency.version}，已安装 ${hit.version}`,
-          );
-        }
-      }
+      assertDependencies(repo, manifest);
 
       const dir = packDir(manifest.id);
       if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });

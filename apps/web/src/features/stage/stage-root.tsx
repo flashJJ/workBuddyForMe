@@ -9,6 +9,7 @@ import { StageBackgroundLayer } from './stage-background';
 import { StageActor } from './stage-actor';
 import { StageDialogBox } from './stage-dialog-box';
 import { StageToolbar } from './stage-toolbar';
+import { StageMotionMenu } from './motion/stage-motion-menu';
 import { StageLive2dLayer, type StageLive2dActor } from './live2d';
 import { computeActorLayout, meetingPosition, stageFacingYaw } from './stage-layout';
 import { useStageController, type StageMode } from './use-stage-controller';
@@ -95,7 +96,6 @@ export function StageRoot() {
       c.zoomSceneBy(event.deltaY > 0 ? -0.05 : 0.05);
     }
   };
-
   // mock：散焦即收台词；run/meeting：最近一句台词挂住（跨等待期不空白）
   const activeLine =
     mode === 'mock'
@@ -135,7 +135,6 @@ export function StageRoot() {
         voice.getLevel,
       ),
     }));
-
   return (
     <div
       ref={rootRef}
@@ -253,6 +252,7 @@ export function StageRoot() {
         data-testid="stage-chrome"
         data-visible={showChrome}
       >
+        {mode === 'mock' && <StageMotionMenu cast={c.cast} focus={c.focus} />}
         <StageToolbar
           mode={mode}
           powerMode={c.powerMode}

@@ -1,6 +1,6 @@
 {
   "name": "workbuddy-for-me",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "description": "WorkBuddyForMe - 类 WorkBuddy 的私人 AI 平台（Next.js 全栈 + Electron）",
@@ -17,6 +17,8 @@
     "dist:win": "pnpm --filter @wbfm/desktop dist:win",
     "archive:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/archive-installer.ps1",
     "release:win": "pnpm dist:win && pnpm archive:win",
+    "release:manifest": "node scripts/release-manifest.mjs",
+    "release:verify": "node scripts/release-manifest.mjs --check",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "lint:boundaries": "eslint . --ext .ts,.tsx",

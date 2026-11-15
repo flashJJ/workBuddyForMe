@@ -8,7 +8,8 @@ import type {
   PetScriptStorySummary,
   Scene,
 } from '@wbfm/shared/schemas';
-import { SCRIPT_PRIMITIVES } from '../validation/registry';
+import { createScriptPrimitives } from '../validation/registry';
+import { DEFAULT_MOTION_CONTENT, type MotionContent } from '../../animation';
 import { GENERATED_SCENE_TRIGGERS } from './constants';
 import {
   recordGenerated,
@@ -60,6 +61,8 @@ export interface PetScriptGeneratorDeps {
   /** 解析默认对话模型；无模型时抛错 */
   resolveTarget: () => ResolvedChatTarget;
   complete: (target: ResolvedChatTarget, params: { system: string; user: string }) => Promise<string>;
+  /** v4.0：会话内容快照；缺省使用内置内容 */
+  content?: () => MotionContent;
   now?: () => Date;
   random?: () => number;
 }
@@ -196,8 +199,14 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
       }
 
       const topics = deps.topics ? await deps.topics.today() : null;
+      let content: MotionContent = DEFAULT_MOTION_CONTENT;
+      try {
+        content = deps.content?.() ?? DEFAULT_MOTION_CONTENT;
+      } catch {
+        // 内容包损坏不应阻断剧本生成：回落内置内容
+      }
       const prompt = buildScriptGenerationPrompt({
-        primitives: SCRIPT_PRIMITIVES,
+        primitives: createScriptPrimitives(content),
         trigger,
         triggers: GENERATED_SCENE_TRIGGERS,
         storyContext: storyContextForPrompt(story),
@@ -216,7 +225,7 @@ export function createPetScriptGenerator(deps: PetScriptGeneratorDeps): PetScrip
       }
 
       const tokens = state.tokens + estimateTokens(prompt.system, prompt.user, raw);
-      const parsed = parseGeneratedScene(raw, GENERATED_SCENE_TRIGGERS);
+      const parsed = parseGeneratedScene(raw, GENERATED_SCENE_TRIGGERS, content);
       if (!parsed.scene || !parsed.story) {
         const next = { ...state, calls, tokens };
         save(next);

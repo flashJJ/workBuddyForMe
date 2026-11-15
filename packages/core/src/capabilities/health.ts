@@ -13,6 +13,7 @@ import { capabilityManifestSchema } from '@wbfm/shared/schemas';
 import type { CapabilityRepository } from '@wbfm/database';
 import type { CapabilityEffectDeps } from './effects/index';
 import { verifyCapabilitySignature } from './signature';
+import { dependencyIssues, findDependencyCycle, installedDependencyNodes } from './deps';
 
 /**
  * v2.12 M3：能力包健康自检与无主目录清理。
@@ -95,38 +96,6 @@ function checkChecksums(packDir: string, manifest: CapabilityManifest): Capabili
   return issues;
 }
 
-function checkDependencies(
-  manifest: CapabilityManifest,
-  installed: CapabilityView[],
-): CapabilityHealthIssue[] {
-  const issues: CapabilityHealthIssue[] = [];
-  for (const dependency of manifest.dependencies) {
-    const hit = installed.find((item) => item.id === dependency.id);
-    if (!hit) {
-      issues.push(
-        issue('dependency_missing', 'error', `依赖未安装：${dependency.id}`, dependency.id),
-      );
-      continue;
-    }
-    if (hit.status !== 'enabled') {
-      issues.push(
-        issue('dependency_disabled', 'warn', `依赖未启用：${dependency.id}`, dependency.id),
-      );
-    }
-    if (dependency.version && hit.version !== dependency.version) {
-      issues.push(
-        issue(
-          'dependency_version_mismatch',
-          'error',
-          `依赖版本不匹配：${dependency.id} 需要 ${dependency.version}，已安装 ${hit.version}`,
-          dependency.id,
-        ),
-      );
-    }
-  }
-  return issues;
-}
-
 function checkEffect(
   view: CapabilityView,
   manifest: CapabilityManifest,
@@ -193,6 +162,7 @@ function scanPack(
   view: CapabilityView,
   input: HealthScanInput,
   installed: CapabilityView[],
+  cycle: string[] | null,
 ): CapabilityHealth {
   const issues: CapabilityHealthIssue[] = [];
   const packDir = join(input.rootDir, view.id);
@@ -204,7 +174,7 @@ function scanPack(
     issues.push(issue('manifest_invalid', 'error', '能力包清单无法解析或校验失败'));
   } else {
     if (existsSync(packDir)) issues.push(...checkChecksums(packDir, manifest));
-    issues.push(...checkDependencies(manifest, installed));
+    issues.push(...dependencyIssues(manifest, installed, cycle));
     try {
       issues.push(...checkEffect(view, manifest, input.effects));
     } catch (error) {
@@ -256,9 +226,10 @@ function listOrphans(rootDir: string, repo: CapabilityRepository): string[] {
 
 export function scanCapabilitiesHealth(input: HealthScanInput): CapabilityHealthReport {
   const installed = input.repo.list();
+  const cycle = findDependencyCycle(installedDependencyNodes(input.repo));
   return {
     checkedAt: new Date().toISOString(),
-    packs: installed.map((view) => scanPack(view, input, installed)),
+    packs: installed.map((view) => scanPack(view, input, installed, cycle)),
     orphans: listOrphans(input.rootDir, input.repo),
   };
 }

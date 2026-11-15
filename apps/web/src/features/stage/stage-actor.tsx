@@ -9,6 +9,7 @@ import { isVrmAvatarId } from '@wbfm/shared/schemas';
 import type { StageCastMember, StageExpressionIntensity, StageSlot, StageSlotPlacement } from '@wbfm/shared/schemas';
 import { clampActorScale, clampRatio, type ActorLayout } from './stage-layout';
 import type { StageMotionCue } from './theater/stage-motion-cue';
+import { STAGE_PREVIEW_EVENT, type StagePreviewDetail } from './motion/stage-motion-menu';
 
 interface StageActorProps {
   slot: StageSlot;
@@ -83,6 +84,25 @@ export function StageActor(props: StageActorProps) {
     // cue 对象每次渲染重建，触发只看序号；动作 id 在 effect 首帧固化
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.motionCueKey, isVrm]);
+
+  // v4.0：内容包动效预览（菜单事件只命中对应槽位）
+  React.useEffect(() => {
+    const onPreview = (event: Event) => {
+      const detail = (event as CustomEvent<StagePreviewDetail>).detail;
+      if (!isVrm || !detail || detail.slot !== props.slot) return;
+      const controller = controllerRef.current as unknown as {
+        playBehaviorNow?(id: string): boolean;
+        playScriptMotion?(id: string, options?: { fadeMs?: number }): boolean;
+        playPose?(id: string, holdMs?: number): boolean;
+      } | null;
+      if (detail.kind === 'behavior') controller?.playBehaviorNow?.(detail.id);
+      else if (detail.kind === 'motion') {
+        controller?.playScriptMotion?.(detail.id, { fadeMs: 200 });
+      } else controller?.playPose?.(detail.id, 2400);
+    };
+    window.addEventListener(STAGE_PREVIEW_EVENT, onPreview);
+    return () => window.removeEventListener(STAGE_PREVIEW_EVENT, onPreview);
+  }, [isVrm, props.slot]);
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     // 拖拽基准取当前生效比例坐标（leftPct/topPct 即锚点比例×100，未含缩放/聚焦系数）

@@ -39,6 +39,18 @@ export const zhStage = {
     background: '背景',
     power: '性能',
   },
+  motion: {
+    title: '动效内容',
+    target: '角色',
+    kind: '类型',
+    behavior: '行为',
+    motion: '动作',
+    pose: '姿势',
+    item: '条目',
+    play: '播放',
+    loading: '读取中…',
+    empty: '当前类型没有内容',
+  },
   demo: {
     nextSpeaker: '下一位发言',
     sayLine: '说台词',

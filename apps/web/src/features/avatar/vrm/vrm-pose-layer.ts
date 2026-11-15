@@ -1,12 +1,6 @@
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
-import {
-  GAZE_IDLE_RESET_MS,
-  GAZE_SMOOTH,
-  normalizeGaze,
-  rigPitchSign,
-  smoothDamp,
-} from '../performance/gaze';
+import { GAZE_IDLE_RESET_MS, GAZE_SMOOTH, normalizeGaze, rigPitchSign, smoothDamp } from '../performance/gaze';
 import { GestureState, type ProceduralGestureKind } from '../performance/gesture';
 import { TurnState } from '../performance/turn';
 import type { NormalizedBoneRef } from '../pose/bones';
@@ -19,6 +13,7 @@ import {
   applySpineYaw,
 } from '../pose/head-overlay';
 import { VrmAnimationRuntime } from '../animation/adapters/vrm';
+import type { MotionContent } from '../animation';
 import { collectBehaviorClaims, type BehaviorClaim } from '../animation/frame/behavior-claims';
 import { maskIncludes } from '../animation/mask';
 import { reapplyPalms } from '../animation/arms/solver';
@@ -29,6 +24,7 @@ import { VrmHandClearance } from './overlay/vrm-hand-clearance';
 import { VrmStageStance } from './overlay/vrm-stage-stance';
 import { VrmSquash } from './overlay/vrm-squash';
 import { VrmSeating } from './overlay/vrm-seating';
+import { VrmPreviewPose } from './overlay/preview/vrm-preview-pose';
 import type { SeatAnchor } from '../animation/seating';
 import { DEFAULT_LIVELINESS, type LivelinessParams } from '../animation/liveliness';
 import { createVrmMorphExecutor } from '../animation/adapters/vrm-morph';
@@ -68,6 +64,7 @@ export class VrmPoseLayer {
   private readonly turn = new TurnState();
   /** M0c：行为/姿势分层库的 VRM 运行时（骨架快照 + Composer + root 偏移） */
   private readonly anim: VrmAnimationRuntime;
+  private readonly previewPose = new VrmPreviewPose(() => this.anim);
   private readonly idleOverlay: VrmIdleOverlay; private readonly scriptMotionOverlay: VrmScriptMotionOverlay; // 待机重心/触摸反应 + 剧本动作
   private readonly liveliness: VrmLiveliness; // 呼吸 / 不对称 / 微扰
   private readonly handClearance: VrmHandClearance; // 抱手/拥抱防穿模
@@ -80,7 +77,12 @@ export class VrmPoseLayer {
   private breathePhase = 0;
   /** 舞台相对位置朝向（左右角色向内微转） */
   private facingYaw = 0; private facingCurrent = 0;
-  constructor(vrm: VRM, normBones: Map<string, NormalizedBoneRef>) {
+  constructor(
+    vrm: VRM,
+    normBones: Map<string, NormalizedBoneRef>,
+    /** v4.0 M4：会话内容快照；缺省使用内置内容 */
+    content?: MotionContent,
+  ) {
     this.vrm = vrm;
     this.normBones = normBones;
     this.baseSceneRotationY = vrm.scene.rotation.y; // rotateVRM0 的 π 必须先记录
@@ -88,7 +90,7 @@ export class VrmPoseLayer {
     const headBone = normBones.get('head');
     this.pitchSign = headBone ? rigPitchSign(headBone.node) : 1;
     this.lastGazeAt = performance.now();
-    this.anim = new VrmAnimationRuntime(normBones);
+    this.anim = new VrmAnimationRuntime(normBones, content);
     this.anim.captureBase();
     this.idleOverlay = new VrmIdleOverlay(this.anim); this.scriptMotionOverlay = new VrmScriptMotionOverlay(this.anim);
     this.liveliness = new VrmLiveliness(normBones, this.anim, DEFAULT_LIVELINESS);
@@ -108,8 +110,7 @@ export class VrmPoseLayer {
     this.baseSceneY = this.vrm.scene.position.y;
     this.anim.captureBase();
   }
-  playSquash(): void { this.squash.play(); }
-  setFacing(yaw: number): void { this.facingYaw = Number.isFinite(yaw) ? yaw : 0; }
+  playSquash(): void { this.squash.play(); } setFacing(yaw: number): void { this.facingYaw = Number.isFinite(yaw) ? yaw : 0; }
   setGaze(nx: number, ny: number): void {
     const [x, y] = normalizeGaze(nx, ny);
     this.gazeNx = x;
@@ -128,15 +129,12 @@ export class VrmPoseLayer {
     }
   }
 
-  captureMixerPose(): void { this.anim.captureFrame(); }
-  rememberFrame(): void { this.anim.rememberFrame(); }
-  nudgeHead(): void { this.headYawOffset = (Math.random() - 0.5) * 0.15; }
-  /** 播放一个程序化手势（动作池为空时的点击 / 环境调度） */
-  playGesture(kind: ProceduralGestureKind): void { this.gesture.play(kind); }
+  captureMixerPose(): void { this.anim.captureFrame(); } rememberFrame(): void { this.anim.rememberFrame(); }
+  nudgeHead(): void { this.headYawOffset = (Math.random() - 0.5) * 0.15; } playGesture(kind: ProceduralGestureKind): void { this.gesture.play(kind); }
   /** 触摸反应（L2 一次性动作）；返回 false 表示动作缺失，可回退其他手势 */
   playReaction(id: string, durationMs = 720): boolean { return this.idleOverlay.playReaction(id, durationMs); }
   /** P8 桥接点 3：剧本动作专用槽位（全身体，不与触摸反应互抢）；返回 false = 未注册 */
-  playScriptMotion(id: string, options?: ScriptMotionOptions): boolean { return this.scriptMotionOverlay.play(id, options); }
+  playScriptMotion(id: string, options?: ScriptMotionOptions): boolean { this.previewPose.clear(); return this.scriptMotionOverlay.play(id, options); }
   stopScriptMotion(id?: string): boolean { return this.scriptMotionOverlay.stop(id); }
 
   /** T2.6：自然度参数；tension 由 VrmController 每帧按交互状态派生（Step 0.6） */
@@ -147,19 +145,15 @@ export class VrmPoseLayer {
   motionDuration(id: string): number { return this.anim.motions.get(id)?.durationMs ?? 0; }
   /** 久无交互背对 / 被交互转回 */
   setFaceAway(away: boolean): void { if (away) this.gesture.reset(); this.turn.setAway(away); } setScriptBusy(busy: boolean): void { this.idleOverlay.setScriptBusy(busy); } setStageStance(on: boolean): void { this.stageMode = on; this.stageStance.setEnabled(on); }
-
   /** 被拎起 / 放下：强制接管，松手立即进 land，不排队等 exit */
   setRaised(raised: boolean): void { if (raised) this.anim.play('behavior.lifted', true); else if (this.raised) this.anim.play('behavior.land', true); }
-
   get raised(): boolean { return this.anim.snapshot.id === 'behavior.lifted'; }
 
   /** M0c：播放/停止分层行为（enter → loop → exit 由 runtime 推进） */
-  playBehavior(id: string): boolean { return this.anim.play(id); }
+  playBehavior(id: string): boolean { this.previewPose.clear(); return this.anim.play(id); }
   /** 场景 cue：强制接管并清空队列，避免连续点击堆队列 */
-  playBehaviorNow(id: string): boolean { return this.anim.play(id, true); }
-
+  playBehaviorNow(id: string): boolean { this.previewPose.clear(); return this.anim.play(id, true); }
   stopBehavior(id?: string, clearQueue = false): boolean { if (id && this.anim.snapshot.id !== id) return false; return this.anim.stop(clearQueue); }
-
   get behavior(): Readonly<RunnerSnapshot> { return this.anim.snapshot; }
 
   /** 帧台账：本帧行为轨道写到的区域（只读投影，不改变执行） */
@@ -250,6 +244,9 @@ export class VrmPoseLayer {
 
   applyPropHold(poseId: string): void { const gripOnly = this.behaviorClaims.some((claim) => maskIncludes(claim.mask, 'rightArm')); this.anim.applyPose(gripOnly ? 'pose.hand-right-cup-hold' : poseId, 1, 0, false); }
 
+  /** v4.0：内容包姿势预览（限时叠加，到期自动释放） */
+  playPose(id: string, holdMs = 2400): boolean { return this.previewPose.play(id, holdMs); }
+
   applyInteractionAngles(extraYaw: number, extraPitch: number): void {
     const head = this.normBones.get('head');
     if (head) applyHeadInteraction(head, extraYaw, extraPitch);
@@ -271,6 +268,7 @@ export class VrmPoseLayer {
     this.liveliness.update(dt, this.sleeping);
     this.handClearance.update(dt, this.sleeping);
     reapplyPalms(this.normBones); // 掌心的最后写者：呼吸/防穿模调整上臂之后重新滚腕
+    this.previewPose.apply(performance.now());
   }
 
   /** 脊柱跟随（幅度小、更慢）：叠加在当前姿态上，行为姿势不会被覆盖 */

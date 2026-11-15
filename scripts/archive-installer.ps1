@@ -1,7 +1,7 @@
 ﻿# WorkBuddyForMe Windows 安装包自动归档
 #
 # 把 electron-builder 产物中的三件套（安装包 exe / blockmap / latest.yml）归集到
-# <ArchiveRoot>\v<Version>\，并生成 SHA256SUMS.txt；归档后默认**彻底清空** Source 目录
+# <ArchiveRoot>\v<Version>\，并生成 SHA256SUMS.txt 与 build-info.json；归档后默认**彻底清空** Source 目录
 # （解包目录数百 MB + tsinup dist/build + builder debug），避免工作区残留老构建。
 #
 # 用法：
@@ -70,12 +70,12 @@ foreach ($name in $required) {
     }
 }
 
-# 生成 coreutils 风格 SHA256SUMS.txt（小写哈希，便于 certutil/sha256sum -c 核对）
-$sums = foreach ($name in $required) {
-    $hash = (Get-FileHash (Join-Path $dest $name) -Algorithm SHA256).Hash.ToLower()
-    "$hash  $name"
+# 生成发布校验清单：SHA256SUMS.txt + build-info.json（版本 / commit / 构建时间 / 平台）
+$manifestScript = Join-Path $repoRoot 'scripts\release-manifest.mjs'
+& node $manifestScript --dir $dest --version $Version
+if ($LASTEXITCODE -ne 0) {
+    throw "生成发布校验清单失败（exit $LASTEXITCODE）：$manifestScript"
 }
-Set-Content -Path (Join-Path $dest 'SHA256SUMS.txt') -Value $sums -Encoding ASCII
 
 # 清理 Source 目录：**默认彻底清空**（最干净，归档后三件套已移/拷走）；
 # 若 Trae/IDE 句柄锁住子目录无法整删，降级为逐项扫删已知模式。

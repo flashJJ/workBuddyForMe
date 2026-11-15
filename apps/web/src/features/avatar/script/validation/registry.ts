@@ -73,16 +73,18 @@ export interface ScriptPrimitiveSets {
 
 export function createScriptPrimitiveSets(
   extraPresets: readonly string[] = [],
+  content?: MotionContent,
 ): ScriptPrimitiveSets {
+  const catalog = content ? createScriptPrimitives(content) : SCRIPT_PRIMITIVES;
   return {
-    poses: new Set(SCRIPT_PRIMITIVES.poses),
-    presets: new Set([...SCRIPT_PRIMITIVES.posePresets, ...extraPresets]),
-    motions: new Set(SCRIPT_PRIMITIVES.motions),
-    behaviors: new Set(SCRIPT_PRIMITIVES.behaviors),
-    expressions: new Set(SCRIPT_PRIMITIVES.expressions),
-    gestures: new Set(SCRIPT_PRIMITIVES.gestures),
-    lookTargets: new Set(SCRIPT_PRIMITIVES.lookTargets),
-    pools: new Set(SCRIPT_PRIMITIVES.linePools),
-    props: new Map(SCRIPT_PRIMITIVES.props.map((prop) => [prop.id, prop.kind])),
+    poses: new Set(catalog.poses),
+    presets: new Set([...catalog.posePresets, ...extraPresets]),
+    motions: new Set(catalog.motions),
+    behaviors: new Set(catalog.behaviors),
+    expressions: new Set(catalog.expressions),
+    gestures: new Set(catalog.gestures),
+    lookTargets: new Set(catalog.lookTargets),
+    pools: new Set(catalog.linePools),
+    props: new Map(catalog.props.map((prop) => [prop.id, prop.kind])),
   };
 }

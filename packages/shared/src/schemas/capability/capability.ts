@@ -9,7 +9,7 @@ import { RUN_EVIDENCE_CHAINS } from '../work/report';
  *
  * 口径：ZIP 根目录固定 `wbfm-capability.json` + `payload/**`；
  * 清单声明 kind/permissions/entry/checksums，安装侧 fail-closed 校验；
- * v2.11 M1 起 skill / mcp / workflow / pet-action 四类可执行，其余两类仍拒绝安装。
+ * v4.0 起七类可执行：skill / mcp / workflow / pet-action / event-script / report-widget / motion-pack。
  */
 
 export const CAPABILITY_KINDS = [
@@ -19,6 +19,7 @@ export const CAPABILITY_KINDS = [
   'pet-action',
   'event-script',
   'report-widget',
+  'motion-pack',
 ] as const;
 export type CapabilityKind = (typeof CAPABILITY_KINDS)[number];
 
@@ -29,6 +30,7 @@ export const CAPABILITY_PERMISSIONS = [
   'pet:action',
   'events:write',
   'report:widget',
+  'motion:pack',
 ] as const;
 export type CapabilityPermission = (typeof CAPABILITY_PERMISSIONS)[number];
 
@@ -95,6 +97,8 @@ export const capabilityManifestSchema = z.object({
     .string()
     .trim()
     .regex(/^payload\/[a-zA-Z0-9._/-]+$/, 'entry 必须位于 payload/ 下'),
+  /** 可选最低应用版本；当前应用低于该版本时拒绝安装/启用 */
+  coreVersion: versionSchema.optional(),
   dependencies: z.array(capabilityDependencySchema).max(20).default([]),
   /** 相对路径 → sha256（覆盖 payload/ 下全部文件） */
   checksums: z.record(z.string(), z.string().regex(/^[a-f0-9]{64}$/)).default({}),
@@ -129,6 +133,7 @@ export const CAPABILITY_REQUIRED_PERMISSION: Record<CapabilityKind, CapabilityPe
   'pet-action': 'pet:action',
   'event-script': 'events:write',
   'report-widget': 'report:widget',
+  'motion-pack': 'motion:pack',
 };
 
 /** 当前已接入 effect 的 kind（其余安装时明确拒绝） */
@@ -139,6 +144,7 @@ export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = [
   'pet-action',
   'event-script',
   'report-widget',
+  'motion-pack',
 ];
 
 /** v2.17：能力目录来源与安装策略（目录只收录内置精选包与 MCP 预置） */
@@ -176,6 +182,7 @@ export const CAPABILITY_ENTRY_BY_KIND: Record<CapabilityKind, string> = {
   'pet-action': 'payload/action.json',
   'event-script': 'payload/script.json',
   'report-widget': 'payload/widget.json',
+  'motion-pack': 'payload/motion-pack.json',
 };
 
 /** v2.11：workflow 能力包 payload */

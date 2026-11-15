@@ -11,6 +11,7 @@ export const CAPABILITY_HEALTH_ISSUE_CODES = [
   'dependency_missing',
   'dependency_disabled',
   'dependency_version_mismatch',
+  'dependency_cycle',
   'effect_missing',
   'effect_status_mismatch',
   'signature_invalid',

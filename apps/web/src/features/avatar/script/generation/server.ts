@@ -1,4 +1,5 @@
 import { resolveChatTargetForModelId } from '@wbfm/core/chat';
+import { createMotionContentService } from '@wbfm/core/services';
 import type { SecretCipher } from '@wbfm/core/secrets';
 import { PET_SCRIPT_DECISION_LIMITS, type PetScriptDecisionReport } from '@wbfm/shared/schemas';
 import { createMemoryRepository, createSettingsRepository, type DatabaseInstance } from '@wbfm/database';
@@ -80,6 +81,7 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
       save: (state: PetScriptJournalState) => settings.setJson(PET_SCRIPT_JOURNAL_KEY, state),
     },
     topics,
+    content: () => createMotionContentService({ db: deps.db }).get(),
     // M3：画像只取高价值 active 记忆（约束/事实/偏好/共同经历），限 40 条再压缩
     memories: () => memories.list({ status: 'active', limit: 40 }),
     resolveTarget: () => resolveChatTargetForModelId(deps, null),

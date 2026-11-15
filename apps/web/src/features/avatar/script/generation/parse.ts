@@ -13,6 +13,7 @@ import {
   GENERATED_SCENE_TRIGGERS,
 } from './constants';
 import { validateScene } from '../validation/validate';
+import type { MotionContent } from '../../animation';
 
 /**
  * P8.3：模型输出 → 场景（fail-closed）。
@@ -133,6 +134,7 @@ function sceneRules(scene: Scene): string[] {
 export function parseGeneratedScene(
   raw: string,
   allowedTriggers: readonly string[] = GENERATED_SCENE_TRIGGERS,
+  content?: MotionContent,
 ): ParsedGeneratedScene {
   let payload: unknown;
   try {
@@ -181,7 +183,7 @@ export function parseGeneratedScene(
   }
   if (issues.length > 0) return { scene: null, story: null, issues };
 
-  const validated = validateScene(scene);
+  const validated = validateScene(scene, content ? { content } : undefined);
   if (validated.dropped.length > 0) {
     return { scene: null, story: null, issues: validated.dropped };
   }

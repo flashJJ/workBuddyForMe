@@ -132,6 +132,9 @@ importers:
       '@wbfm/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@wbfm/motion':
+        specifier: workspace:*
+        version: link:../../packages/motion
       '@wbfm/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -277,6 +280,9 @@ importers:
       '@wbfm/database':
         specifier: workspace:*
         version: link:../database
+      '@wbfm/motion':
+        specifier: workspace:*
+        version: link:../motion
       '@wbfm/shared':
         specifier: workspace:*
         version: link:../shared
@@ -331,6 +337,15 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
+
+  packages/motion:
+    dependencies:
+      '@wbfm/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
 
   packages/shared:
     dependencies:
@@ -11783,14 +11798,6 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.7(vite@7.3.6(@types/node@24.13.5)(jiti@1.21.7)(tsx@4.23.15))':
-    dependencies:
-      '@vitest/spy': 3.2.7
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 7.3.6(@types/node@24.13.5)(jiti@1.21.7)(tsx@4.23.15)
-
   '@vitest/mocker@3.2.7(vite@7.3.6(@types/node@24.13.5)(jiti@2.7.0)(tsx@4.23.15))':
     dependencies:
       '@vitest/spy': 3.2.7
@@ -17675,7 +17682,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.7
-      '@vitest/mocker': 3.2.7(vite@7.3.6(@types/node@24.13.5)(jiti@1.21.7)(tsx@4.23.15))
+      '@vitest/mocker': 3.2.7(vite@7.3.6(@types/node@24.13.5)(jiti@2.7.0)(tsx@4.23.15))
       '@vitest/pretty-format': 3.2.7
       '@vitest/runner': 3.2.7
       '@vitest/snapshot': 3.2.7

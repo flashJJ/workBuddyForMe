@@ -199,7 +199,14 @@ describe('v2.10 能力包服务', () => {
   it('示例包：mcp 模板安装被拒，其余类型可下载', () => {
     expect(() => service.sample('mcp')).not.toThrow();
     expect(() => service.install(service.sample('mcp'))).toThrow(/必须提供 url/);
-    for (const kind of ['skill', 'workflow', 'pet-action', 'event-script', 'report-widget'] as const) {
+    for (const kind of [
+      'skill',
+      'workflow',
+      'pet-action',
+      'event-script',
+      'report-widget',
+      'motion-pack',
+    ] as const) {
       expect(service.sample(kind).byteLength).toBeGreaterThan(0);
     }
   });
@@ -233,6 +240,18 @@ describe('v2.10 能力包服务', () => {
 
     service.uninstall(installed.id);
     expect(reportWidgets.listEnabled()).toHaveLength(0);
+  });
+
+  it('v4.0：动效内容包示例可安装、停用与卸载', () => {
+    const installed = service.install(service.sample('motion-pack'));
+    expect(installed.kind).toBe('motion-pack');
+    expect(installed.status).toBe('enabled');
+    expect(installed.effectRef).toBe('com.example.sample.motion-pack');
+
+    expect(service.disable(installed.id).status).toBe('disabled');
+    expect(service.enable(installed.id).status).toBe('enabled');
+    service.uninstall(installed.id);
+    expect(service.list().some((item) => item.id === installed.id)).toBe(false);
   });
 
   it('剧本 id 跨包占用：重复安装 409 且不留新包', () => {

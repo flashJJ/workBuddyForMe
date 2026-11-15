@@ -40,6 +40,7 @@ export {
   type UseProactivePlaybackOptions,
 } from './script/generation/client';
 export { MotionPreviewOverlay } from './animation/devtools/preview-panel';
+export { MotionContentMenu, type MotionContentSelection, type MotionContentKind } from './animation/content/motion-content-menu';
 export { ScriptDebugPanel } from './script/devtools/script-debug-panel';
 export {
   SCRIPT_PRIMITIVES,

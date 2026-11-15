@@ -10,6 +10,7 @@ import {
   readSkillName,
   type CapabilityEffectDeps,
 } from './effects/index';
+import { assertAcyclicDependencies, assertCoreVersion, installedDependencyNodes } from './deps';
 import type { UpgradeSnapshot } from './upgrade-types';
 
 /** v2.12 M2：升级预检（依赖、从属、资源冲突、快照）与暂存目录写入 */
@@ -33,6 +34,8 @@ export function affectedDependents(
 }
 
 export function assertDependencies(repo: CapabilityRepository, manifest: CapabilityManifest): void {
+  assertCoreVersion(manifest);
+  assertAcyclicDependencies(installedDependencyNodes(repo, manifest));
   const installed = repo.list();
   for (const dependency of manifest.dependencies) {
     const hit = installed.find((item) => item.id === dependency.id);

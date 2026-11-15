@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { aimBone } from '../../performance/arm-relax';
 import type { BoneMask } from '../contracts';
 import { applyPose } from '../pose';
-import { LEAN_DESK as LEAN_DESK_POSE } from '../poses/sitting';
+import { LEAN_DESK as LEAN_DESK_POSE } from '@wbfm/motion/poses';
 import type { Skeleton } from '../skeleton';
 import type { NormalizedBoneRef } from '../../pose/bones';
 import { LEAN_DESK, LIFT_ARM, type ArmVec } from '../arms/intents';

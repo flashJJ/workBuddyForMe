@@ -13,6 +13,7 @@ import {
   type TriggerDecisionExtras,
 } from '@/features/avatar';
 import type { Live2dController } from '@/features/avatar';
+import { PetMotionMenu } from './motion/pet-motion-menu';
 import type { PetVoiceState } from '@wbfm/shared/pet';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
@@ -290,10 +291,9 @@ export function PetStage({
         connected={workConnected}
         reduceMotion={settings?.workReduceMotion === true}
       />
-
       {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}
       <PetSubtitleBubble text={line || subtitle} voiceState={voiceState} shifted={workVisible} />
-      {process.env.NEXT_PUBLIC_WBFM_MOTION_PREVIEW === '1' && <MotionPreviewOverlay controllerRef={controllerRef} />}
+      <PetMotionMenu controllerRef={controllerRef} />{process.env.NEXT_PUBLIC_WBFM_MOTION_PREVIEW === '1' && <MotionPreviewOverlay controllerRef={controllerRef} />}
       {PET_SCRIPT_ENABLED && <ScriptDebugPanel onRectChange={onScriptPanelRect} onGenerate={generated.generate} generating={generated.loading} generationMessage={generated.message} usage={generated.usage} story={generated.story} schedule={generated.schedule} onToggleSchedule={generated.toggleSchedule} />}
     </div>
   );

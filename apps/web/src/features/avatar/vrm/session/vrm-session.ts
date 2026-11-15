@@ -6,6 +6,7 @@ import type { MotionMood } from '@wbfm/shared/schemas';
 import { resolveBuiltinVrmAsset } from '@wbfm/shared/constants';
 import { getManagedToken } from '@/lib/api/client';
 import type { ExpressionTag } from '../../expression/expression-parser';
+import type { MotionContent } from '../../animation';
 import { shouldRenderFrame, type FrameMode } from '../../performance/frame-governor';
 import { projectObjectToViewport, type AvatarScreenRect } from '../../performance/screen-rect';
 import { attachGazePointer } from '../../performance/pointer-gaze';
@@ -32,6 +33,8 @@ export interface VrmSessionRuntime {
   chibi: boolean;
   /** v3.0 M4：展示面（舞台/小剧场）只用内置待机，避免导入动作轮播造成怪异姿态 */
   builtinIdleOnly: boolean;
+  /** v4.0 M4：本次会话的动效内容快照（默认 + 已启用内容包） */
+  motionContent: MotionContent;
 }
 
 export interface VrmSessionDeps {
@@ -237,6 +240,7 @@ export function createVrmSession(deps: VrmSessionDeps): VrmSession {
         camera,
         poolEntries,
         rotation,
+        deps.getRuntime().motionContent,
       );
       applyRuntime(controller);
       // 展示面不需要待机余兴（踮脚/插兜/抱臂），并固定一个自然站姿

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PET_SCRIPT_GENERATION_LIMITS } from '@wbfm/shared/schemas';
 import type { ResolvedChatTarget } from '@wbfm/core/chat';
+import type { MotionContent } from '../../animation';
 import { createPetScriptGenerator } from './service';
 import { localDateKey, type PetScriptGenerationState, type PetScriptGenerationStore } from './state';
 import type { DailyTopics } from './topics';
@@ -118,6 +119,7 @@ function setup(options: {
   store?: PetScriptGenerationStore;
   storyStore?: ReturnType<typeof memoryStoryStore>;
   topics?: { today(): Promise<DailyTopics> };
+  content?: () => MotionContent;
   fail?: Error;
 } = {}) {
   const prompts: Array<{ system: string; user: string }> = [];
@@ -126,6 +128,7 @@ function setup(options: {
     store: options.store ?? memoryStore(),
     storyStore,
     topics: options.topics,
+    content: options.content,
     resolveTarget: () => target,
     complete: async (_target, params) => {
       prompts.push(params);
@@ -156,8 +159,7 @@ describe('剧本生成服务（P8.3）', () => {
     expect(generator.list().scenes).toHaveLength(1);
   });
 
-  it('P8.6：今日时事注入提示词，搜索失败不阻断生成', async () => {
-    const topics: DailyTopics = {
+  it('P8.6：今日时事注入提示词，搜索失败不阻断生成', async () => {    const topics: DailyTopics = {
       date: '2026-11-13',
       fetchedAt: NOW.getTime(),
       items: ['城市马拉松周末开跑', '新款折叠屏发布'],
@@ -173,6 +175,15 @@ describe('剧本生成服务（P8.3）', () => {
     const withoutTopics = setup({ topics: { today: async () => failed } });
     expect((await withoutTopics.generator.generate({})).ok).toBe(true);
     expect(withoutTopics.prompts[0]?.user).toContain('今天没有可用话题');
+  });
+
+  it('v4.0：内容快照读取失败回落内置内容，不阻断生成', async () => {
+    const { generator } = setup({
+      content: () => {
+        throw new Error('bad pack');
+      },
+    });
+    expect((await generator.generate({})).ok).toBe(true);
   });
 
   it('非法输出回落：不落场景，但消耗一次调用与估算 token', async () => {

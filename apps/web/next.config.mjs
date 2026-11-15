@@ -25,7 +25,7 @@ const nextConfig = {
     NEXT_PUBLIC_WBFM_PET_SCRIPT: process.env.WBFM_PET_SCRIPT ?? '',
   },
   // 工作区 TS 源码包在 Next 编译管线中转译
-  transpilePackages: ['@wbfm/shared', '@wbfm/config', '@wbfm/database', '@wbfm/ai', '@wbfm/core'],
+  transpilePackages: ['@wbfm/shared', '@wbfm/config', '@wbfm/database', '@wbfm/ai', '@wbfm/core', '@wbfm/motion'],
   // 三席 VRM 各 25MB 左右：允许浏览器缓存，二次进入剧场不再重新下载
   async headers() {
     return [

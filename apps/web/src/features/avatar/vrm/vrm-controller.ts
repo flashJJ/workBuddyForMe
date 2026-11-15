@@ -18,6 +18,7 @@ import type { VrmControllerLike } from './session/vrm-controller-like';
 import { applyChibi, groundFeet } from './chibi/apply-chibi';
 import { VrmFrameLedger } from './overlay/vrm-frame-ledger';
 import { VrmPropLayer } from './props/vrm-prop-layer';
+import type { MotionContent } from '../animation';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
 export type { VrmControllerLike } from './session/vrm-controller-like';
@@ -71,6 +72,8 @@ export class VrmController implements VrmControllerLike {
     /** 动作池（内置 + 已导入 VRMA）；空数组/undefined 时退回模型内嵌 clip 或程序化姿态 */
     motionPool?: MotionPoolEntry[] | null,
     rotationConfig?: MotionRotationConfig | null,
+    /** v4.0 M4：本次会话的动效内容快照；缺省使用内置表 */
+    motionContent?: MotionContent,
   ) {
     this.vrm = vrm;
     this.scene = scene;
@@ -89,7 +92,7 @@ export class VrmController implements VrmControllerLike {
       if (node) normBones.set(name, { name, node, baseQuat: node.quaternion.clone() });
     }
 
-    this.pose = new VrmPoseLayer(vrm, normBones);
+    this.pose = new VrmPoseLayer(vrm, normBones, motionContent);
     this.frames = new VrmFrameLedger(this.pose);
     this.face = new VrmFaceLayer(vrm);
     this.tail = new VrmTailLayer(vrm);
@@ -206,6 +209,8 @@ export class VrmController implements VrmControllerLike {
   /** P8 桥接点 3：剧本动作专用槽（全身体，独立于触摸反应）；返回 false = 未注册 */
   playScriptMotion(id: string, options?: { loop?: boolean; fadeMs?: number }): boolean { return !this.disposed && this.pose.playScriptMotion(id, options); }
   stopScriptMotion(id?: string): boolean { return !this.disposed && this.pose.stopScriptMotion(id); }
+  /** v4.0：内容包姿势预览（限时叠加） */
+  playPose(id: string, holdMs = 2400): boolean { return !this.disposed && this.pose.playPose(id, holdMs); }
 
   setLipLevel(level: number): void { if (!this.disposed) this.face.setLipLevel(level); }
   setExpression(tag: ExpressionTag, intensity: 1 | 2 | 3 = 2): void { if (!this.disposed) this.face.setExpression(tag, intensity); }
@@ -265,15 +270,11 @@ export class VrmController implements VrmControllerLike {
     const relaxWeight = !relaxable ? 0 : procedural ? 1 : this.mixer.idleClipAnimatesArms ? 0 : 1; const propHold = this.props.hold;
     this.frames.beginFrame({ procedural, gazeWeight, relaxWeight, accent: this.pose.accent, reaction: this.pose.reaction, propHold, scriptMotion: this.pose.scriptMotion });
     if (relaxWeight > 0 && this.frames.allows('idle:relax')) this.pose.relaxArms(relaxWeight, t);
-
     // --- Step 5: 呼吸 + 身体微摆（交互 loop 阶段加深呼吸） ---
     this.pose.applyBodyIdle(t, dt, this.interaction.isLooping, procedural);
     if (propHold && this.frames.allows('prop:hold')) this.pose.applyPropHold(propHold.pose); this.frames.commit(performance.now());
     // --- Step 5.5: 环境微行为（眨眼/点头/歪头/瞥视），避免待机像摆件 ---
     this.ambient.tick(performance.now(), !this.sleeping && !this.faceAway && !this.mixer.hasGesture && this.interaction.currentPhase === 'idle');
-
-
-
     // --- Step 6: vrm.update → normalized → raw → 场景 + SpringBone ---
     // normalized bone 在 Step 4 已写好；vrm.update 同步到 raw、应用到 mesh 并驱动 SpringBone
     this.vrm.update(dt);
