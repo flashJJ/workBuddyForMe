@@ -134,14 +134,14 @@ async function start(): Promise<void> {
   });
   stageManager.registerIpc(ipcMain);
   // 舞台入口就绪后重建菜单（首装菜单无舞台项）
-  installAppMenu(isDev, () => void stageManager?.open());
+  installAppMenu(isDev, (target) => void stageManager?.open(target));
   // v2.23：桌面常驻托盘（桌宠存活时关主窗只是隐藏，托盘让「是否还在跑」可见）
   appTray = createAppTray({
     getMainWindow: () => mainWindow,
     isPetOpen: () => petManager?.isOpen() ?? false,
     openPet: () => void petManager?.open(),
     closePet: () => void petManager?.close(),
-    openStage: () => void stageManager?.open(),
+    openStage: (target) => void stageManager?.open(target),
     quit: () => app.quit(),
   });
   appTray.start();

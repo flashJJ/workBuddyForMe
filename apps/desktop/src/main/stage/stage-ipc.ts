@@ -9,8 +9,8 @@ import type { IpcEventLike, IpcMainLike } from '../pet/pet-ipc';
 
 export interface StageIpcActions {
   isOpen(): boolean;
-  /** 舞台窗导航到 /stage?run= 或 ?meeting=（v1.9 M2/M3 只读观看） */
-  open(target?: { runId?: string; meetingId?: string }): Promise<boolean> | boolean;
+  /** 舞台窗导航到 /stage?run=、?meeting= 或 ?stage=play（v1.9 M2/M3；v3.1 小剧场） */
+  open(target?: { runId?: string; meetingId?: string; theater?: boolean }): Promise<boolean> | boolean;
   close(): Promise<unknown> | unknown;
   /** 舞台窗原生全屏切换，返回切换后的全屏状态 */
   toggleFullscreen(): Promise<boolean> | boolean;
@@ -26,12 +26,14 @@ export function registerStageIpc(ipc: IpcMainLike, actions: StageIpcActions, gua
   ipc.handle('stage:open', (event, target?: unknown) => {
     if (!guards.fromMain(event.sender)) return actions.isOpen();
     // 目标 id 来自渲染层，严格白名单校验，防注入成任意 URL/query
-    const raw = (target ?? {}) as { runId?: unknown; meetingId?: unknown };
+    const raw = (target ?? {}) as { runId?: unknown; meetingId?: unknown; theater?: unknown };
     const clean = (v: unknown): string | undefined =>
       typeof v === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(v) ? v : undefined;
     const runId = clean(raw.runId);
     const meetingId = clean(raw.meetingId);
-    return actions.open(runId || meetingId ? { runId, meetingId } : undefined);
+    // 观看现场优先；仅显式 theater=true 才进小剧场
+    if (runId || meetingId) return actions.open({ runId, meetingId });
+    return actions.open(raw.theater === true ? { theater: true } : undefined);
   });
   ipc.handle('stage:close', (event) => {
     if (!guards.fromMain(event.sender) && !guards.fromStage(event.sender)) return undefined;

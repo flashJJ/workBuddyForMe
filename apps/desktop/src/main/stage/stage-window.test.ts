@@ -91,6 +91,13 @@ describe('v1.9 舞台窗选项', () => {
       buildStageUrl('http://127.0.0.1:3100', { runId: 'r', meetingId: 'm' }),
     ).toBe('http://127.0.0.1:3100/stage?meeting=m');
     expect(buildStageUrl('http://127.0.0.1:3100')).toBe('http://127.0.0.1:3100/stage');
+    expect(buildStageUrl('http://127.0.0.1:3100', { theater: true })).toBe(
+      'http://127.0.0.1:3100/stage?stage=play',
+    );
+    // free 只表达「回到裸舞台」，URL 与无目标一致
+    expect(buildStageUrl('http://127.0.0.1:3100', { free: true })).toBe(
+      'http://127.0.0.1:3100/stage',
+    );
     createStageWindow({ url: 'http://127.0.0.1:3100' }, true, null, { runId: 'run-9' });
     expect(m.loadURL).toHaveBeenCalledWith('http://127.0.0.1:3100/stage?run=run-9');
   });

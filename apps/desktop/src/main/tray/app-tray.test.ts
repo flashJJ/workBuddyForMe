@@ -70,20 +70,27 @@ describe('桌面常驻托盘菜单', () => {
     expect(actions.togglePet).toHaveBeenCalledTimes(1);
   });
 
-  it('舞台入口按可用性出现', () => {
+  it('舞台入口按可用性出现，子菜单区分自由舞台与小剧场', () => {
     const actions = createActions();
     const withoutStage = buildTrayMenuTemplate(
       { mainVisible: true, petOpen: false, hasStage: false },
       actions,
     );
-    expect(withoutStage.some((item) => item.label === '打开全屏舞台…')).toBe(false);
+    expect(withoutStage.some((item) => item.label === '全屏舞台')).toBe(false);
 
     const withStage = buildTrayMenuTemplate(
       { mainVisible: true, petOpen: false, hasStage: true },
       actions,
     );
-    click(find(withStage, '打开全屏舞台…'));
-    expect(actions.openStage).toHaveBeenCalledTimes(1);
+    const stage = find(withStage, '全屏舞台');
+    const submenu = stage.submenu as MenuItemConstructorOptions[];
+    expect(submenu.map((item) => item.label)).toEqual(['自由舞台', '小剧场']);
+
+    click(submenu[0]!);
+    expect(actions.openStage).toHaveBeenLastCalledWith({ free: true });
+    click(submenu[1]!);
+    expect(actions.openStage).toHaveBeenLastCalledWith({ theater: true });
+    expect(actions.openStage).toHaveBeenCalledTimes(2);
   });
 
   it('「彻底退出」始终是最后一项且触发退出', () => {
