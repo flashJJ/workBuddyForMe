@@ -11,7 +11,7 @@
 | M1 能力 handler 注册表 | ✅ 完成（六类零回归，新 kind 可注册） | 2026-11-15 |
 | M2 provider 注册表 | ✅ 完成（内置协议零回归，新协议可注册） | 2026-11-15 |
 | M3 动效内容快照 | ✅ 完成（默认 golden 零差异，注入快照可播放） | 2026-11-15 |
-| M4 门禁与收尾 | ✅ 完成（`pnpm check` 全绿） | 2026-11-15 |
+| M4 门禁与收尾 | ✅ 完成（`pnpm check` 全绿；已合入 main 并推送工蜂） | 2026-11-15 |
 
 ## 决策日志
 
@@ -56,4 +56,5 @@
 - `pnpm check` 通过：typecheck、lint（仅存量 warning）、行数、结构、循环依赖、ASCII 文档检查。
 - 行数：`vrm.ts` 297 行、`effects/index.ts` 164 行、`registry.ts`（ai）30 行、`script/validation/registry.ts` 88 行，均低于 300 行硬门禁。
 - 结构：新增测试首次放在 `animation/__tests__` 根下触发 13 > 12，改为 `__tests__/content/` 子目录后通过。
-- 遗留：本版为分支内开发完成，待合入 main 并推送工蜂；未做 v3.1 安装包、发布说明与博客。
+- 合入：merge commit `d97024a1` 已推送到 `tencent/main`；未推 GitHub。
+- 遗留：未做 v3.1 安装包、发布说明与博客。

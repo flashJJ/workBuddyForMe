@@ -109,7 +109,7 @@ v2.35 补齐了回归与朗读，v3.0 把桌宠从「会动、会说话」推进
 - 博客：[blog/v3.0](../../blog/v3.0/) 10 篇
 - 物料：发布说明、版本总结、合规声明与技术博客已就绪；演示短片、截图组与更新公告待补
 - 未排期候选：[陪伴质量评测](./candidates/07-companion-eval-harness.md) · [资产体积预算](./candidates/08-asset-size-budget.md) · [发布信任](./candidates/09-release-trust-and-update.md) · [音频导演](./candidates/10-audio-director.md) · [性能长跑门禁](./candidates/11-perf-budget-and-longrun-gate.md)
-- 下一版本：🚧 v3.1 小步迭代开发完成、待合入 main（能力/provider 注册表 + 动效内容注入），方案见 [v3.1 方案](../plan/v3.1/README.md)；v4.0 平台化（S1–S6 + 内容包）仍待评审
+- 下一版本：✅ v3.1 小步迭代已合入 main、待发布（能力/provider 注册表 + 动效内容注入），方案见 [v3.1 方案](../plan/v3.1/README.md)；v4.0 平台化（S1–S6 + 内容包）仍待评审
 
 ## ✅ 已合入 main 并打 tag：v2.35 回归修复与朗读
 
