@@ -107,6 +107,7 @@
 - 新增 `blog/v4.0/` 10 篇：总览、依赖拓扑、coreVersion、动效包、payload 契约、能力管道复用、会话快照、渲染透传、发布校验、复盘。
 - 更新根 README、roadmap 索引、scheduled 状态与 blog 索引。
 - `pnpm check` 全绿；安装包未生成，合入 main、tag、更新公告与截图待补。
+- 口径修正：v4.0 README 去掉 `motion-pack` “可选 VRMA”的表述；VRMA 动作继续由 `pet-action` 承载，`motion-pack` 只合并程序化 JSON。
 - 下一步：发布收尾（合入 main、打 tag、生成安装包与公告）。
 
 

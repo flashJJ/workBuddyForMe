@@ -31,7 +31,7 @@ flowchart LR
 
 1. **依赖拓扑（S5）**：manifest 增加 `coreVersion`；安装/升级前检测依赖环；提供依赖优先顺序；健康检查报告缺失、禁用、版本不匹配与环。
 2. **动效契约抽包（06 B）**：把 `MotionContent`、默认内容与纯函数注册表抽到内部包，web 通过公开入口消费，渲染适配仍留在 web。
-3. **`motion-pack` 能力类型**：复用现有 ZIP / manifest / 校验和 / 签名 / 升级 / 回滚，安装一组姿势、动作、行为与可选 VRMA。
+3. **`motion-pack` 能力类型**：复用现有 ZIP / manifest / 校验和 / 签名 / 升级 / 回滚，安装一组程序化姿势、动作与行为；单个 VRMA 动作仍由 `pet-action` 承载。
 4. **内容快照刷新（S6）**：安装、启用、停用后生成新的内容快照版本；桌宠、主窗、舞台在下次会话或下次挂载时读取新快照，不要求热替换当前模型。
 
 ### 2.2 P1
@@ -85,7 +85,7 @@ flowchart LR
 
 - manifest.kind = `motion-pack`；
 - entry = `payload/motion-pack.json`；
-- payload 内声明 poses / motions / behaviors 与可选 VRMA 文件；
+- payload 内只声明 poses / motions / behaviors；VRMA 资源继续由 `pet-action` 承载，避免两条安装链路重复；
 - 复用校验和、签名、健康、升级、回滚与卸载补偿；
 - 安装后写入内容快照，停用后移除。
 
@@ -136,7 +136,7 @@ flowchart LR
 | 风险 | 对策 |
 |---|---|
 | 动效契约抽包导致大面积 import 变更 | 先抽类型与默认内容，保留 web 适配；golden 作为硬门禁 |
-| 内容包引入任意代码 | payload 只允许数据与 VRMA/纹理；执行器仍由内核注册 |
+| 内容包引入任意代码 | payload 只允许数据；VRMA 走 `pet-action`，执行器仍由内核注册 |
 | 环检测误伤旧包 | 只对存在依赖边的包建图；缺依赖仍走原错误 |
 | 快照刷新与正在播放的模型冲突 | 会话级快照，不热替换 |
 | 包体积增长 | 单包体积上限、只加载被引用条目、发布前统计 |
