@@ -119,4 +119,13 @@
 - 结果：安装内容包后，舞台/桌宠可选择并预览内容包条目，生成剧本可引用已启用内容，对应验收 §6.4 补齐。
 - 下一步：发布收尾（合入 main、打 tag、生成安装包与公告）。
 
+### 2026-11-15 发布收尾
+
+- 本地构建：`pnpm release:win` 产出 `WorkBuddyForMe-Setup-4.0.0.exe` 264.58 MB（277,427,368 字节），归档到 `E:\builds\archive\v4.0.0`；同目录生成 `SHA256SUMS.txt` 与 `build-info.json`（commit `bf2eb015`、branch `feat/v4.0-platform`、builtAt 2026-11-15T15:35:02Z）。
+- 复核：`node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.0.0` 输出「校验通过 3 个产物（4.0.0）」；安装包 SHA256 `6a4af79a24eadd584af288ed3810cd0cdc3ba4e282d8c2f101c3148a86800d9e`。
+- 文档：发布说明补齐安装包物料、哈希与更新公告（§7）；roadmap 状态由「已完成待发布」改为「已发布」。
+- 合并与推送：`feat/v4.0-platform` 合入 main（merge commit），打 tag `v4.0.0`，推送工蜂 `tencent`；不推 GitHub。
+- 结果：v4.0.0 可分发；工蜂无 CI 配置，门禁以本地 `pnpm check` 与全量测试为准。
+- 遗留：真机截图（内容包安装页、舞台动效菜单）待补。
+
 

@@ -54,7 +54,7 @@
 - 内容刷新是会话级快照，不做运行时热替换；安装/停用后需要重新打开对应入口。
 - 发布只做校验和与构建信息，不做 Windows 代码签名、自有更新源与 beta 通道。
 - 场景包、道具包、provider 能力元数据与陪伴质量基线不在本版范围。
-- 未生成 v4.0 安装包；需要时执行 `pnpm release:win`，归档后按 §6 复核。
+- 安装包为本地构建且未做代码签名，Windows SmartScreen 可能提示未知发布者；完整性请按 §6 的 SHA256 复核。
 
 ## 6. 发布物料清单
 
@@ -63,6 +63,12 @@
 | 发布说明（本文） | 完成 | 交付、变化、门禁、限制、复核方式 |
 | 版本总结 | 完成 | [version-summary.md](./version-summary.md) |
 | 技术博客 | 完成 | 10 篇归档至 `blog/v4.0/`：总览、依赖拓扑、coreVersion、动效包、payload 契约、能力管道复用、内容快照、渲染透传、发布校验、复盘 |
-| 安装包 | 未生成 | `pnpm release:win`；归档目录含 exe / blockmap / latest.yml / SHA256SUMS.txt / build-info.json |
-| 校验和复核 | 可用 | `node scripts/release-manifest.mjs --check --dir <归档目录>` |
-| 更新公告 / 截图 | 待补 | 内容包安装与快照刷新截图 |
+| 安装包 | 完成 | `WorkBuddyForMe-Setup-4.0.0.exe` 264.58 MB（277,427,368 字节）；归档于 `E:\builds\archive\v4.0.0`，同目录含 blockmap / latest.yml / SHA256SUMS.txt / build-info.json |
+| 校验和 | 完成 | 安装包 `6a4af79a…86800d9e`；blockmap `45e35d73…ad585eda`；latest.yml `b942658a…42c69d3e0`；`build-info.json` 记录 commit `bf2eb015`、branch `feat/v4.0-platform`、构建时间 2026-11-15T15:35:02Z |
+| 校验和复核 | 已通过 | `node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.0.0` 输出「校验通过 3 个产物（4.0.0）」 |
+| 更新公告 | 完成 | 见 §7 |
+| 截图 | 待补 | 内容包安装页与舞台动效菜单需真机截图 |
+
+## 7. 更新公告
+
+> v4.0.0 来了。能力包现在能声明依赖，缺依赖、版本过低或成环会在安装前就被拦下；新增内容包（`motion-pack`），导入一个 ZIP 就能给桌宠加上新的姿势、动作与行为，启用后下一次打开桌宠或舞台即生效，不用重启；发布包同时附上 `SHA256SUMS.txt` 与 `build-info.json`，一条命令就能核对安装包有没有被改过。
