@@ -121,6 +121,13 @@ export const zhVoice = {
     petModeHint:
       '角色以透明置顶小窗陪在桌面：身体区拖动、双击回主窗、右键切换鼠标穿透；朗读时桌宠口型/字幕同步',
     petModeNote: '桌宠打开时主窗形象栏自动让位；关闭主窗口不会退出应用，双击桌宠可唤回',
+    petSizeLabel: '桌宠大小',
+    petSizeHint: '调整桌宠在桌面上的显示大小，切换后立即生效',
+    petSizeSm: '小',
+    petSizeMd: '中',
+    petSizeLg: '大',
+    chibiLabel: 'Q 版比例',
+    chibiHint: '放大头部、缩短腿部（仅 VRM 形象），切换后立即生效',
   },
   proactive: {
     title: 'AI 主动说话',

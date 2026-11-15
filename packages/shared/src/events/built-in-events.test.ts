@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { lookup, zhCN } from '../i18n';
 import {
   BUILT_IN_EVENT_INTENTS,
   BUILT_IN_EVENTS,
@@ -61,6 +62,18 @@ describe('内置剧本注册表（M0 冻结 + v2.0 等级/里程碑/上下文剧
       for (const step of def.steps) {
         if (step.kind === 'speech') {
           expect(step.lineKey).toMatch(/^event\.[a-zA-Z0-9.]+$/);
+        }
+      }
+    }
+  });
+
+  it('标题与台词键都能在 zh-CN 词条中命中（防嵌套层级错位）', () => {
+    for (const def of BUILT_IN_EVENTS) {
+      expect(def.titleKey, def.id).toBeTypeOf('string');
+      expect(lookup(zhCN, def.titleKey!), def.titleKey).toBeTypeOf('string');
+      for (const step of def.steps) {
+        if (step.kind === 'speech') {
+          expect(lookup(zhCN, step.lineKey!), step.lineKey).toBeTypeOf('string');
         }
       }
     }

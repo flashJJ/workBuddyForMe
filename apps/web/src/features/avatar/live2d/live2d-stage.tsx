@@ -4,6 +4,12 @@ import * as React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { getAvatarModel } from '../ui/avatar-models';
+import {
+  frameRateForMode,
+  shouldRenderFrame,
+  type FrameMode,
+} from '../performance/frame-governor';
+import type { AvatarScreenRect } from '../performance/screen-rect';
 import { loadCubismCore } from './live2d-core';
 import type { Live2dController } from './live2d-controller';
 import type { ExpressionTag } from '../expression/expression-parser';
@@ -21,6 +27,12 @@ interface StageProps {
   controllerRef?: React.MutableRefObject<Live2dController | null>;
   /** 是否需要接收鼠标事件（默认 false → 穿透不挡点击；桌宠显式传 true） */
   interactive?: boolean;
+  /** v3.0 P0：帧率档位（隐藏暂停 ticker / 待机 30 / 交互 60） */
+  frameMode?: FrameMode;
+  /** v3.0 P1：睡眠 */
+  sleeping?: boolean;
+  /** v3.0 P0：模型屏幕包围盒（桌宠命中轮廓） */
+  onModelRect?: (rect: AvatarScreenRect | null) => void;
 }
 
 export function Live2dStage({
@@ -32,6 +44,9 @@ export function Live2dStage({
   headZoneRatio = 0.4,
   controllerRef: externalControllerRef,
   interactive = false,
+  frameMode = 'idle',
+  sleeping = false,
+  onModelRect,
 }: StageProps) {
   const { t } = useI18n();
   const hostRef = React.useRef<HTMLDivElement | null>(null);
@@ -43,6 +58,13 @@ export function Live2dStage({
   headTouchRef.current = onHeadTouch;
   const ratioRef = React.useRef(headZoneRatio);
   ratioRef.current = headZoneRatio;
+  // 渲染层循环读取最新档位/回调，避免 effect 重跑导致控制器重建
+  const frameModeRef = React.useRef(frameMode);
+  frameModeRef.current = frameMode;
+  const sleepingRef = React.useRef(sleeping);
+  sleepingRef.current = sleeping;
+  const onModelRectRef = React.useRef(onModelRect);
+  onModelRectRef.current = onModelRect;
 
   React.useEffect(() => {
     const host = hostRef.current;
@@ -62,15 +84,22 @@ export function Live2dStage({
         model: spec,
         // 控制器只上报底层错误详情，界面文案在渲染处经 t() 组装
         onError: (message) => !cancelled && setError(t('avatar.stage.loadFailed', { message })),
+        onRect: (rect) => onModelRectRef.current?.(rect),
       });
       if (cancelled) {
         controller.dispose();
         return;
       }
       controllerRef.current = controller;
-      const pump = () => {
-        controller.setLipLevel(getLevel());
+      controller.setMaxFps(frameRateForMode(frameModeRef.current));
+      controller.setSleeping(sleepingRef.current);
+      let lastLipAt = 0;
+      const pump = (now: number) => {
         raf = requestAnimationFrame(pump);
+        const mode = frameModeRef.current;
+        if (!shouldRenderFrame(now, lastLipAt, mode)) return;
+        lastLipAt = now;
+        controller.setLipLevel(getLevel());
       };
       raf = requestAnimationFrame(pump);
     };
@@ -89,6 +118,16 @@ export function Live2dStage({
   React.useEffect(() => {
     void controllerRef.current?.setExpression(expression);
   }, [expression]);
+
+  // v3.0 P0：档位变化即时生效（hidden 暂停 ticker，idle/interact 切 30/60）
+  React.useEffect(() => {
+    controllerRef.current?.setMaxFps(frameRateForMode(frameMode));
+  }, [frameMode, controllerRef]);
+
+  // v3.0 P1：睡眠状态即时生效
+  React.useEffect(() => {
+    controllerRef.current?.setSleeping(sleeping);
+  }, [sleeping, controllerRef]);
 
   // v1.6：视线跟随——指针在舞台内移动时归一化喂给控制器
   React.useEffect(() => {

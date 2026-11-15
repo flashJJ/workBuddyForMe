@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
+import { broadcastSettingsChanged } from '@/lib/hooks/provider';
 import type { VoiceSettings, VoiceSettingsUpdateInput } from '@wbfm/shared/schemas';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { apiGet, apiPut } from '@/lib/api/client';
@@ -48,6 +49,8 @@ export function useVoiceSettings() {
     },
     onSuccess: (next) => {
       queryClient.setQueryData(QUERY_KEYS.voiceSettings, next);
+      // 桌宠等独立窗口需要即时跟随（大小、待机动作等）
+      broadcastSettingsChanged();
     },
   });
 

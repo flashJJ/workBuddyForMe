@@ -31,7 +31,7 @@ v2.18 起工具结果就带证据字段、v2.19 起引用带章节与表格坐�
 - 博客：[blog/v2.27](../../blog/v2.27/) 10 篇
 - 发行说明：[v2.27-release-notes.md](v2.27-release-notes.md)
 - 范围：P0 引用编号契约 + 正文角标 + 来源分组定位；P1 回合运行摘要 + 抓取失败降级；P2 协作卡交接泳道时间线
-- 未排期候选：[记忆图与空闲整理](candidates/01-memory-graph-and-consolidation.md) · [记忆可观测与治理](candidates/02-memory-observability-and-governance.md) · [能力生态与内容包](candidates/03-capability-and-content-pack-completion.md) · [文档质量](candidates/04-document-quality.md)
+- 未排期候选：[记忆图与空闲整理](scheduled/v2.31-01-memory-graph-and-consolidation.md) · [记忆可观测与治理](scheduled/v2.28-01-memory-observability-and-governance.md) · [能力生态与内容包](scheduled/v2.30-03-capability-and-content-pack-completion.md) · [文档质量](scheduled/v2.29-04-document-quality.md)
 
 ### 后续版本序列（优先补全遗漏项）
 
@@ -46,6 +46,7 @@ v2.18 起工具结果就带证据字段、v2.19 起引用带章节与表格坐�
 | 7 | v2.33 | 备份可托付：加密归档、附件引用计数与恢复核对 | v2.32 §9 候选 / v0.3 附件 GC 留白 | 中高 |
 | 8 | v2.34 | 备份可续：增量归档与链式恢复 | v2.33 §9 候选 / v1.5 备份边界 | 高 |
 | 9 | v2.35 | 回归修复与朗读：补合 v2.25 分支、会话朗读入口 | v2.25 未合入修复 / 会话下栏朗读需求 | 低 |
+| 10 | v3.0 | 肥鱼计划：原创鲸鱼娘陪伴（剧本 / 决策 / 小剧场 / 发布） | 2026-10「蓝色大肥鱼」二创热度 / 桌宠 + 记忆 + 语音能力 | 高 |
 
 排序原则：先做已有数据能直接接通、用户可感知的（引用、回合摘要、统计前端），再做需要新链路或需要人工修正的（重解析、OCR、内容包更新），最后评估成本最高的图能力。每个版本仍保持单一主题、零或一次迁移、Non-Goals 与功能清单同权重。
 
@@ -96,6 +97,17 @@ v2.33 让备份「可托付」，但备份生命周期仍不可持续：每次�
 - 状态：✅ 已合入 main（merge commit `46518d65`），已打 tag `v2.34.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 9
 - 下一版本：[v2.35 回归修复与朗读](v2.35.0-release-notes.md)
 
+## ✅ 已发布：v3.0.0 肥鱼计划——会记住你的桌面鲸鱼娘
+
+v2.35 补齐了回归与朗读，v3.0 把桌宠从「会动、会说话」推进到「有剧本、有决策、有小剧场」：原创白鲸娘「雪团」与冉卡露丽、菲比一起进入内置 VRM 模型表；剧本引擎用受限 Scene / Beat / Cue 承接触摸、久别、深夜、低语等场景，`ScriptDirector` 负责冷却、打断与门控；生成队列按每日调用与 token 预算接 LLM，剧情状态机维护线索、悬念与去重，失败自动回落本地剧本池；Utility 决策按时段 / 心情 / 关系 / 工作信号 / 打扰成本 / 新鲜度选出下一场，主动播放有预算、claim 去重与可解释理由；舞台新增 `/stage?stage=play` 三席 VRM 小剧场与剧情分享卡 PNG；关于页补原创角色与二创包合规声明，新增剧本 lint/golden 门禁与 `pnpm check:scenes`。M2 五维养成按用户决定取消，不做投喂 / 亲密度 / 成长阶段；零数据库迁移，v2.35 数据与设置原样保留。
+
+- 方案：[v3.0 方案](../plan/v3.0/README.md) · [执行路线](../plan/v3.0/execution-roadmap.md) · [发布说明](../plan/v3.0/release-notes.md) · [版本总结](../plan/v3.0/version-summary.md)
+- Spec：[M4/M5 Spec](../plan/v3.0/milestone-m4-m5/spec.md) · [Tasks](../plan/v3.0/milestone-m4-m5/tasks.md)
+- 状态：✅ 已发布 `v3.0.0`；零迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 9 不变
+- 验证：单测 62 项 + `check:scenes` 37 项通过；typecheck / lint / 行数 / 结构 / 循环 / ASCII 门禁全绿；真机小剧场、分享卡与 PNG 导出通过
+- 博客：[blog/v3.0](../../blog/v3.0/) 10 篇
+- 物料：发布说明、版本总结、合规声明与技术博客已就绪；演示短片、截图组与更新公告待补
+
 ## ✅ 已合入 main 并打 tag：v2.35 回归修复与朗读
 
 v2.34 之后暴露的两个回归其实早在 v2.25 就修过，只因修复分支从未合入 main（无 PR、无 tag），v2.26–v2.34 连续 9 个版本都在带缺陷的基线上迭代：全屏舞台拖动一次后动画失速（`autoUpdate` setter 不去重，每个 `pointermove` 都重复注册 `Ticker.shared` 回调），引用超过 3 条不折叠（`expanded` 只在挂载时初始化，流式引用后到不会重置）。本版把 v2.25 分支整条合入并补齐门禁，同时给会话下栏加朗读入口：朗读最新一条助手回复、去 Markdown、跳过代码块、超 2000 字按句分块，复用 `/api/voice/tts` 与唯一播放队列，声线跟随角色。一并带回 PTT 识别入草稿 + 模型润色、SearXNG 引擎自动探测。零数据库迁移，`LATEST_SCHEMA_VERSION = 51`，备份 schema 保持 9。
@@ -103,7 +115,7 @@ v2.34 之后暴露的两个回归其实早在 v2.25 就修过，只因修复分�
 - 发行说明：[v2.35.0-release-notes.md](v2.35.0-release-notes.md)
 - 状态：✅ 已合入 main，已打 tag `v2.35.0`；零迁移，备份 schema 9 不变
 - 规范：[发版分支纪律](../development.md)（每个版本必须从已合入上一版本的最新 main 切出）
-- 下一版本：v2.36 待盘点（v2.34 遗留的删除/修改增量与恢复演练优先评估）
+- 下一版本：v3.0.0 已发布（见上方章节）；v3.1 待盘点（多角色包、更多小剧场剧本与跨设备迁移优先评估）
 
 ## 🚧 开发完成待合入：v2.31 记忆成图——关系边、一跳召回与空闲整理
 
@@ -115,7 +127,7 @@ v2.26 把记忆做成双时态事实与混合召回，v2.28 补上统计、轮�
 - 博客：[blog/v2.31](../../blog/v2.31/) 10 篇
 - 范围：P0 关系边模型 + 回合建边；P1 一跳召回 + 空闲整理；P2 统计卡与 eval 邻居用例
 - 评测基线：`pnpm memory:eval` hit@3 `0.875`、邻居用例 `4/4`、零召回率 `0.00`、平均召回 `0.48ms`（keyword 通道，16 条用例，关系边 2 条）
-- 下一版本：v2.32 数据可带走（[候选 02](candidates/02-data-portability-and-storage.md)，待立项）
+- 下一版本：v2.32 数据可带走（[候选 02](scheduled/v2.32-02-data-portability-and-storage.md)，待立项）
 
 ## ✅ 已合入 main，待发布：v2.30 能力补齐——能力可见、审批可读与内容包/产物收口
 
@@ -518,7 +530,15 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v2.22 | 收口：分支事件备份、终态回传、重试、预算熔断与实时帧 | ✅ 已正式发布（2026-11-04，Release 已转正并置 Latest） | [方案](../plan/v2.22/README.md) · [M0 决策](../plan/v2.22/01-M0-决策记录.md) · [M0 契约](../plan/v2.22/02-M0-契约冻结.md) · [M1](../plan/v2.22/03-M1-实施记录.md) · [M2](../plan/v2.22/04-M2-实施记录.md) · [M3](../plan/v2.22/05-M3-实施记录.md) · [M4](../plan/v2.22/06-M4-实施记录.md) · [来源方案](scheduled/v2.22-01-branch-hardening.md) | — | [发行说明](v2.22-release-notes.md) · [blog/v2.22](../../blog/v2.22/) 7 篇 | `v2.22.0` |
 | v2.26 | 记得久、说得清：双时态记忆、混合召回与上下文分层压缩 | ✅ 已正式发布（2026-11-08，Release 已转正并置 Latest） | [方案](../plan/v2.26/README.md) | — | [发行说明](v2.26-release-notes.md) · [blog/v2.26](../../blog/v2.26/) 10 篇 | `v2.26.0` |
 | v2.27 | 答得可查：行内引用角标、来源定位与回合运行摘要 | ✅ 已发布（Release `42503470593`） | [方案](../plan/v2.27/README.md) · [来源方案](scheduled/v2.27-01-citation-and-turn-summary.md) | — | [发行说明](v2.27-release-notes.md) · [blog/v2.27](../../blog/v2.27/) 10 篇 | `v2.27.0` |
-| v2.28 | 记忆可管：统计前端、审计轮转与约束撤销 | 🚧 规划中（分支 `feat/v2.28-memory-governance`） | [方案](../plan/v2.28/README.md) · [来源方案](scheduled/v2.28-01-memory-observability-and-governance.md) | — | — | 待定 |
+| v2.28 | 记忆可管：统计前端、审计轮转与约束撤销 | ✅ 已随 v2.29.0 发布 | [方案](../plan/v2.28/README.md) · [来源方案](scheduled/v2.28-01-memory-observability-and-governance.md) | — | [发行说明](v2.28-release-notes.md) | `v2.29.0` |
+| v2.29 | 文档可信：存量重解析、质量标记与低质收口 | ✅ 已发布（2026-11-09） | [方案](../plan/v2.29/README.md) | — | [发行说明](v2.29-release-notes.md) | `v2.29.0` |
+| v2.30 | 能力补齐：能力可见、审批可读与内容包/产物收口 | ✅ 已打 tag | [方案](../plan/v2.30/README.md) | — | [发行说明](v2.30-release-notes.md) | `v2.30.0` |
+| v2.31 | 记忆成图：关系边、一跳召回与空闲整理 | ✅ 已打 tag | [方案](../plan/v2.31/README.md) | — | [发行说明](v2.31-release-notes.md) | `v2.31.0` |
+| v2.32 | 数据可带走：恢复预检前置、备份补全、产物打包与空间清理 | ✅ 已随 v2.33.0 合并交付 | [方案](../plan/v2.32/README.md) | — | [v2.33 发行说明](v2.33-release-notes.md) | `v2.33.0` |
+| v2.33 | 备份可托付：加密归档、附件引用计数与恢复核对 | ✅ 已打 tag | [方案](../plan/v2.33/README.md) | — | [发行说明](v2.33-release-notes.md) | `v2.33.0` |
+| v2.34 | 备份可续：增量归档、链式恢复与基线完整性 | ✅ 已打 tag | [方案](../plan/v2.34/README.md) | — | [发行说明](v2.34.0-release-notes.md) | `v2.34.0` |
+| v2.35 | 回归修复与朗读：补合 v2.25 分支、会话朗读入口 | ✅ 已打 tag | — | — | [发行说明](v2.35.0-release-notes.md) | `v2.35.0` |
+| v3.0 | 肥鱼计划：原创鲸鱼娘陪伴（剧本 / 决策 / 小剧场 / 发布） | ✅ 已发布（2026-11-14，`v3.0.0`） | [方案](../plan/v3.0/README.md) · [执行路线](../plan/v3.0/execution-roadmap.md) · [M4/M5 Spec](../plan/v3.0/milestone-m4-m5/spec.md) | — | [发布说明](../plan/v3.0/release-notes.md) | `v3.0.0` |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 

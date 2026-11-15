@@ -22,6 +22,9 @@ export type SearxngDeployResult =
     };
 
 export interface WbfmSearchBridge {
-  /** 用本机 Docker 拉起 SearXNG 并等待 JSON 接口可用（幂等：容器已存在则复用） */
-  deploySearxng(): Promise<SearxngDeployResult>;
+  /**
+   * 用本机 Docker 拉起 SearXNG 并等待 JSON 接口可用（幂等：容器已存在则复用）。
+   * port 指定宿主端口（1024..65535）；缺省从候选端口里挑空闲的。
+   */
+  deploySearxng(port?: number): Promise<SearxngDeployResult>;
 }

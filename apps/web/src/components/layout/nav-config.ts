@@ -3,6 +3,7 @@ import {
   Library,
   Bot,
   Settings,
+  NotebookPen,
   MonitorCog,
   Users,
   Workflow,
@@ -89,6 +90,12 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.assistants.label',
     descriptionKey: 'nav.assistants.description',
     icon: Bot,
+  },
+  {
+    href: '/journal',
+    labelKey: 'nav.journal.label',
+    descriptionKey: 'nav.journal.description',
+    icon: NotebookPen,
   },
   {
     href: '/settings',

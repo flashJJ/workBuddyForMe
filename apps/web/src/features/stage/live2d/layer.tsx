@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { StageSlot } from '@wbfm/shared/schemas';
+import type { StageMotionCue } from '../theater/stage-motion-cue';
 import type { StageLive2dController } from './controller';
 import type { StageLive2dActor } from './types';
 
@@ -9,6 +10,11 @@ interface Props {
   actors: StageLive2dActor[];
   powerMode: 'live' | 'portrait';
   focus: StageSlot | null;
+  /** 剧场动作 cue：仅当槽位是 Live2D 角色时执行 */
+  motionCue?: StageMotionCue | null;
+  motionSlot?: StageSlot | null;
+  /** 台词序号：变化时才重放 */
+  motionKey?: number;
 }
 
 /**
@@ -54,11 +60,39 @@ export function StageLive2dLayer(props: Props) {
     });
   }, [props.actors, props.powerMode, props.focus]);
 
+  // 剧场 cue：控制器/模型未就绪时按台词序号重试，避免首句丢失
+  React.useEffect(() => {
+    const cue = props.motionCue;
+    const slot = props.motionSlot;
+    if (!cue || !slot || props.motionKey === undefined) return;
+    if (!props.actors.some((actor) => actor.slot === slot)) return;
+    let cancelled = false;
+    let attempts = 0;
+    const play = (): boolean => {
+      const controller = controllerRef.current;
+      if (!controller) return false;
+      controller.playCue(slot, cue);
+      return true;
+    };
+    if (play()) return;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      if (cancelled || play() || attempts >= 30) window.clearInterval(timer);
+    }, 400);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+    // cue 对象每次渲染重建，触发只看台词序号
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.motionKey, props.motionSlot]);
+
   return (
     <div
       ref={hostRef}
       className="pointer-events-none absolute inset-0 z-0"
       data-testid="stage-live2d-layer"
+      data-motion-cue={props.motionCue && props.motionSlot ? `${props.motionSlot}:${props.motionCue.id}` : undefined}
     />
   );
 }

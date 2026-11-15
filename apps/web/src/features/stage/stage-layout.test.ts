@@ -9,6 +9,8 @@ import {
   computeActorLayout,
   DEFAULT_SLOT_PLACEMENTS,
   resolvePlacement,
+  stageFacingYaw,
+  STAGE_FACING_MAX_YAW,
 } from './stage-layout';
 import { defaultScenePayload } from './stage-defaults';
 
@@ -23,6 +25,16 @@ describe('v1.9 舞台布局纯函数', () => {
     expect(left.x).toBe(DEFAULT_SLOT_PLACEMENTS.left.x);
     expect(right.x).toBe(1 - DEFAULT_SLOT_PLACEMENTS.left.x);
     expect(DEFAULT_SLOT_PLACEMENTS.center.x).toBe(0.5);
+  });
+
+  it('相对位置朝向：左右向内、中间正向，拖拽后重算', () => {
+    expect(stageFacingYaw(21, [50, 79])).toBeCloseTo(STAGE_FACING_MAX_YAW);
+    expect(stageFacingYaw(79, [21, 50])).toBeCloseTo(-STAGE_FACING_MAX_YAW);
+    expect(stageFacingYaw(50, [21, 79])).toBe(0);
+    expect(stageFacingYaw(100, [100])).toBe(0);
+    expect(stageFacingYaw(20, [80])).toBeCloseTo(STAGE_FACING_MAX_YAW);
+    expect(stageFacingYaw(80, [20])).toBeCloseTo(-STAGE_FACING_MAX_YAW);
+    expect(stageFacingYaw(45, [50])).toBe(0);
   });
 
   it('场景 slots 覆盖优先生效，缺省回落默认', () => {

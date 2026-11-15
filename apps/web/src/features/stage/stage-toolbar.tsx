@@ -27,6 +27,18 @@ interface Props {
   onDefocus: () => void;
   onScreenshot: () => void;
   onExit: () => void;
+  /** M4 小剧场控制（仅 theater 模式） */
+  theater?: {
+    index: number;
+    total: number;
+    playing: boolean;
+    shareOpen: boolean;
+    onPrev: () => void;
+    onNext: () => void;
+    onRestart: () => void;
+    onToggle: () => void;
+    onShare: () => void;
+  };
 }
 
 const BTN =
@@ -48,7 +60,9 @@ export function StageToolbar(props: Props) {
       ? 'stage.modeTitle.mock'
       : props.mode === 'run'
         ? 'stage.modeTitle.run'
-        : 'stage.modeTitle.meeting';
+        : props.mode === 'theater'
+          ? 'stage.modeTitle.theater'
+          : 'stage.modeTitle.meeting';
 
   const save = async () => {
     if (!name.trim()) {
@@ -121,6 +135,64 @@ export function StageToolbar(props: Props) {
                 {t('stage.demo.clearFocus')}
               </button>
             </div>
+          </>
+        )}
+      </section>
+
+      <section
+        className="space-y-1 rounded-lg border border-white/10 bg-white/[0.03] p-1.5"
+        data-testid="stage-theater-section"
+        hidden={props.mode !== 'theater'}
+      >
+        {props.mode === 'theater' && props.theater && (
+          <>
+            <p className="text-[10px] uppercase tracking-wider text-white/45">
+              {t('stage.theater.title')} · {props.theater.index + 1}/{props.theater.total}
+            </p>
+            <div className="grid grid-cols-3 gap-1">
+              <button
+                type="button"
+                className={BTN}
+                data-testid="stage-theater-prev"
+                onClick={props.theater.onPrev}
+              >
+                {t('stage.theater.prev')}
+              </button>
+              <button
+                type="button"
+                className={BTN}
+                data-testid="stage-theater-next"
+                onClick={props.theater.onNext}
+              >
+                {t('stage.theater.next')}
+              </button>
+              <button
+                type="button"
+                className={BTN}
+                data-testid="stage-theater-restart"
+                onClick={props.theater.onRestart}
+              >
+                {t('stage.theater.restart')}
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`${BTN} w-full`}
+              data-testid="stage-theater-toggle"
+              aria-pressed={!props.theater.playing}
+              onClick={props.theater.onToggle}
+            >
+              {props.theater.playing ? t('stage.theater.pause') : t('stage.theater.resume')}
+            </button>
+            <button
+              type="button"
+              className={`${BTN} w-full`}
+              data-testid="stage-theater-share"
+              aria-pressed={props.theater.shareOpen}
+              onClick={props.theater.onShare}
+            >
+              {t('stage.theater.share')}
+            </button>
           </>
         )}
       </section>

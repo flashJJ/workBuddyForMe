@@ -1,7 +1,7 @@
 # WorkBuddy For Me 架构设计文档
 
-> 版本：1.0.0 ｜ 状态：定稿（Task 38 已与实现逐项核对）
-> 配套：[接口文档](./api.md) ｜ [开发指南](./development.md) ｜ [模块设计](./modules/)
+> 版本：2.0（对齐 v3.0.0）｜ 状态：定稿（v3.0.0 复核）
+> 配套：[接口文档](./api.md) ｜ [开发指南](./development.md) ｜ [模块设计](./modules/) ｜ [v3.0 方案](./plan/v3.0/README.md)
 
 ## 1. 总体分层架构
 
@@ -10,7 +10,7 @@ WBFM 采用 pnpm + Turborepo monorepo，分三层：**应用层 → 业务层 �
 ```text
 ┌────────────────────────────────────────────────────────────────────────
 │ 应用层
-│ apps/web    Next.js 14（App Router 页面 + Route Handlers）
+│ apps/web    Next.js 15.5（App Router 页面 + Route Handlers）
 │ apps/desktop Electron 主进程 / preload / 服务托管 / 打包
 ├────────────────────────────────────────────────────────────────────────
 │ 业务层 packages/core
@@ -42,7 +42,7 @@ desktop ──→ config（仅路径/环境契约）
 ### 2.1 Web 模式
 
 ```text
-浏览器 ──HTTP 127.0.0.1:3000──▶ next dev / next start
+浏览器 ──HTTP 127.0.0.1:42337──▶ next dev / next start
                                   └─ Route Handler ─▶ core ─▶ SQLite / 供应商 API
 ```
 
@@ -118,6 +118,26 @@ SSE 事件协议：`data:` 行承载 JSON，`event` 类型见 `shared` 的 `SseE
   → indexed（chunk_count 回写）
   任一失败 → failed + error_message（如「未配置 Embedding 模型」）
 ```
+
+### 4.3 剧本生成与主动播放（v3.0）
+
+```text
+设置页 / 定时心跳 → POST /api/pet/script/tick
+  → PetScriptScheduler（开关 / 每日次数 / 勿扰时段，未到期零副作用）
+  → PetScriptGenerator：每日调用与 token 预算闸门 → 用户画像 + 剧情上下文 + 今日热点提示词
+  → LLM 文本 → fail-closed 校验（Scene / Cue 白名单、节奏与冷却）→ 剧情状态机入账
+  → settings_kv 入队（零数据库迁移），失败自动回落本地剧本池
+
+桌宠空闲 → Utility 纯函数排序（时段 / 心情 / 关系 / 工作信号 / 打扰成本 / 新鲜度）
+  → POST /api/pet/script/playback/claim（服务端扣预算 + 场景去重）
+  → ScriptDirector 开演（冷却 / 打断 / 门控）
+  → POST /api/pet/script/decisions 记录理由码（最近 20 条，设置页展示 5 条）
+
+舞台小剧场：/stage?stage=play → stage/theater 纯数据剧本 → StageDirection
+  → 既有 cast / focus / speech / expression / motion 执行链；分享卡复用舞台截图
+```
+
+剧本与播放状态都落在 `settings_kv` 单键 JSON，不新增表；生成失败、预算耗尽与接口异常都不阻断本地剧本池。
 
 ## 5. 数据模型（ER）
 

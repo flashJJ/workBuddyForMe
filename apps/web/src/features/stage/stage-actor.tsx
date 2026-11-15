@@ -6,8 +6,9 @@ import type { Live2dController } from '@/features/avatar';
 import type { ExpressionTag } from '@/features/avatar';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { isVrmAvatarId } from '@wbfm/shared/schemas';
-import type { StageCastMember, StageSlot, StageSlotPlacement } from '@wbfm/shared/schemas';
+import type { StageCastMember, StageExpressionIntensity, StageSlot, StageSlotPlacement } from '@wbfm/shared/schemas';
 import { clampActorScale, clampRatio, type ActorLayout } from './stage-layout';
+import type { StageMotionCue } from './theater/stage-motion-cue';
 
 interface StageActorProps {
   slot: StageSlot;
@@ -16,6 +17,10 @@ interface StageActorProps {
   /** 是否处于活跃更新（省电档下仅聚焦槽为 true）；Live2D 画布由共享层负责 */
   live: boolean;
   expression: ExpressionTag;
+  /** 表情强度（1 轻 / 2 中 / 3 强）；Live2D 忽略 */
+  expressionIntensity?: StageExpressionIntensity;
+  /** 舞台相对位置朝向（弧度；仅 VRM 执行整体微转） */
+  stageFacing?: number;
   actionLabelKey?: string;
   speaking: boolean;
   showNameplate: boolean;
@@ -24,24 +29,25 @@ interface StageActorProps {
   onActorScale: (slot: StageSlot, scale: number) => void;
   /** 轻点（未发生拖拽）时回调：mock 演示里用于让该角色说一句 */
   onTap?: (slot: StageSlot) => void;
-  /** Live2D 降为立绘前的截帧缓存（key=avatarModelId） */
-  snapshot: string | null;
-  onSnapshot: (modelId: string, dataUrl: string) => void;
+  /** 剧场动作 cue（仅 VRM 执行；Live2D 保持共享层行为） */
+  motionCue?: StageMotionCue | null;
+  /** cue 触发序号（台词 index）；变化时才重放 */
+  motionCueKey?: number;
+  /** 模型就绪/失败：剧场加载幕布据此放行 */
+  onActorReady?: (slot: StageSlot) => void;
+  onActorError?: (slot: StageSlot) => void;
 }
 
 /**
  * 单槽角色的 DOM 命中盒与名字牌：
  * - Live2D 由舞台共享层统一渲染（单 WebGL 上下文），本组件只保留拖拽/缩放与压暗遮罩；
- * - VRM 仍在本组件挂载画布，省电档下截帧为立绘；
+ * - VRM 始终保留画布：省电档只暂停渲染，不卸载模型，避免换发言者时重复加载；
  * - 名字牌：名字（强）/表情+动作（弱色）一行分层。
  */
 export function StageActor(props: StageActorProps) {
   const { t } = useI18n();
   const isVrm = isVrmAvatarId(props.member.avatarModelId);
   const controllerRef = React.useRef<Live2dController | null>(null);
-  // 内部渲染态：即使目标档位是省电，也先挂一次 Live2D 拿到有效立绘再卸载；
-  // 否则首帧直接进省电档时没有 controller，截帧永远是空，角色会变成空白。
-  const [renderLive, setRenderLive] = React.useState(true);
   const dragRef = React.useRef<{
     pointerId: number;
     startX: number;
@@ -50,35 +56,33 @@ export function StageActor(props: StageActorProps) {
     base: StageSlotPlacement;
   } | null>(null);
 
+  // 剧场 cue：只走剧本动作槽，不碰待机余兴；模型异步就绪后补播
   React.useEffect(() => {
-    // Live2D 已交给舞台共享渲染层，这里只处理 VRM 的立绘降级
-    if (!isVrm) return;
-    if (props.live) {
-      setRenderLive(true);
-      return;
-    }
+    const cue = props.motionCue;
+    if (!isVrm || !cue || props.motionCueKey === undefined) return;
     let cancelled = false;
-    const capture = (): boolean => {
-      const shot = controllerRef.current?.captureDataUrl();
-      if (!shot) return false;
-      props.onSnapshot(props.member.avatarModelId, shot);
-      if (!cancelled) setRenderLive(false);
-      return true;
-    };
-    // 模型是异步加载的：首轮截不到就每 500ms 重试，最多 6s；
-    // 仍失败则保持 Live2D（宁可多一个实例，也不要空白角色）。
-    if (capture()) return;
     let attempts = 0;
-    const timer = setInterval(() => {
+    const play = (): boolean => {
+      const controller = controllerRef.current as unknown as {
+        playScriptMotion?(id: string, options?: { fadeMs?: number }): boolean;
+        playBehaviorNow?(id: string): boolean;
+      } | null;
+      if (!controller) return false;
+      if (cue.kind === 'behavior') return controller.playBehaviorNow?.(cue.id) ?? false;
+      return controller.playScriptMotion?.(cue.id, { fadeMs: cue.fadeMs }) ?? false;
+    };
+    if (play()) return;
+    const timer = window.setInterval(() => {
       attempts += 1;
-      if (cancelled || capture() || attempts >= 12) clearInterval(timer);
-    }, 500);
+      if (cancelled || play() || attempts >= 20) window.clearInterval(timer);
+    }, 400);
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      window.clearInterval(timer);
     };
+    // cue 对象每次渲染重建，触发只看序号；动作 id 在 effect 首帧固化
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.live, props.member.avatarModelId, isVrm]);
+  }, [props.motionCueKey, isVrm]);
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     // 拖拽基准取当前生效比例坐标（leftPct/topPct 即锚点比例×100，未含缩放/聚焦系数）
@@ -144,33 +148,29 @@ export function StageActor(props: StageActorProps) {
       style={style}
       data-testid={`stage-actor-${props.slot}`}
       data-focused={props.layout.focused}
-      data-live={isVrm ? renderLive : props.live}
+      data-live={props.live}
+      data-motion-cue={props.motionCue ? `${props.motionCue.kind}:${props.motionCue.id}` : undefined}
+      data-expression-intensity={props.expressionIntensity}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onWheel={onWheel}
     >
       {isVrm ? (
-        renderLive ? (
-          <AvatarCanvasRouter
-            modelId={props.member.avatarModelId}
-            expression={props.expression}
-            getLevel={props.getLevel}
-            speaking={props.speaking}
-            controllerRef={controllerRef}
-          />
-        ) : (
-          <div className="relative h-full w-full" data-testid={`stage-portrait-${props.slot}`}>
-            {props.snapshot ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={props.snapshot} alt="" className="h-full w-full object-contain" />
-            ) : (
-              <div className="flex h-full w-full items-end justify-center pb-[18%] text-5xl opacity-60">
-                {props.member.displayName.slice(0, 1)}
-              </div>
-            )}
-          </div>
-        )
+        <AvatarCanvasRouter
+          modelId={props.member.avatarModelId}
+          expression={props.expression}
+          expressionIntensity={props.expressionIntensity}
+          stageFacing={props.stageFacing}
+          getLevel={props.getLevel}
+          speaking={props.speaking}
+          controllerRef={controllerRef}
+          motionProfile="stage"
+          onReady={() => props.onActorReady?.(props.slot)}
+          onError={() => props.onActorError?.(props.slot)}
+          // 非焦点角色降速而不是停渲染：画布常驻可避免重载，停渲染会让 WebGL 画布变透明
+          frameMode={props.live ? 'idle' : 'slow'}
+        />
       ) : !props.live ? (
         // Live2D 模型在共享层里保持可见；省电档只是停止更新，不再截一张可能空白的立绘
         <div className="relative h-full w-full" data-testid={`stage-portrait-${props.slot}`} />

@@ -15,7 +15,7 @@ vi.mock('electron', () => ({
       loadURL: loadURlMock,
       on: onMock,
       once: onMock,
-      webContents: { setWindowOpenHandler: vi.fn() },
+      webContents: { on: vi.fn(), setWindowOpenHandler: vi.fn() },
       isMaximized: vi.fn(() => false),
       maximize: vi.fn(),
       show: vi.fn(),

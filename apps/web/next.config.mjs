@@ -8,6 +8,10 @@ const appVersion = /** @type {string} */ (require('../../package.json').version)
 // Next 15 会向上探测 lockfile；E:\code\traeWork 下还有另一个 package-lock.json，
 // 不显式指定会把 tracing root 推到仓库外，standalone 目录层级随之改变。
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
+// instrumentation 的 edge 编译替身：避免把 server container/原生依赖打进 Edge bundle
+const voiceRuntimeStub = fileURLToPath(
+  new URL('./src/lib/server/voice/voice-runtime-singleton.edge-stub.ts', import.meta.url),
+);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -17,9 +21,22 @@ const nextConfig = {
   poweredByHeader: false,
   env: {
     NEXT_PUBLIC_APP_VERSION: appVersion,
+    // v3.0 剧本引擎开关：构建/启动前设置 WBFM_PET_SCRIPT=1 才走 Director 新路径
+    NEXT_PUBLIC_WBFM_PET_SCRIPT: process.env.WBFM_PET_SCRIPT ?? '',
   },
   // 工作区 TS 源码包在 Next 编译管线中转译
   transpilePackages: ['@wbfm/shared', '@wbfm/config', '@wbfm/database', '@wbfm/ai', '@wbfm/core'],
+  // 三席 VRM 各 25MB 左右：允许浏览器缓存，二次进入剧场不再重新下载
+  async headers() {
+    return [
+      {
+        source: '/vrm/models/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
+        ],
+      },
+    ];
+  },
   experimental: {
     // Windows 页面文件有限时降低构建 worker 并发，避免 spawn UNKNOWN / OOM
     cpus: 2,
@@ -79,7 +96,16 @@ const nextConfig = {
    * 导致 Route Handler 调用 `pdfjs.getDocument()` 时抛出 fake worker 失败。
    * 解决：把 pdfjs-dist 整包设为 webpack externals，Node 运行时直接 require 原始文件。
    */
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config, { isServer, dev, nextRuntime, webpack }) => {
+    if (nextRuntime === 'edge') {
+      // instrumentation.ts 的 edge 分支运行时直接 return，但 bundler 仍会解析动态 import；
+      // 替换成 no-op 单例，避免 Node 原生依赖进入 Edge 编译。
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(/voice-runtime-singleton$/, (resource) => {
+          resource.request = voiceRuntimeStub;
+        }),
+      );
+    }
     if (isServer) {
       config.externals = config.externals || [];
       const existing = Array.isArray(config.externals)

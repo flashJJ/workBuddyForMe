@@ -7,6 +7,7 @@ import type { Live2dController } from '../live2d/live2d-controller';
 import { DEFAULT_EXPRESSION } from '../expression/expression-parser';
 import type { ExpressionTag } from '../expression/expression-parser';
 import { useHeadTouch, type TouchControllerLike } from './use-head-touch';
+import { useAvatarChibi } from './use-avatar-chibi';
 import { type ActiveFx } from '@/features/events/player';
 import { EventFxLayer } from '@/features/events/player';
 import { EventSubtitleSlot } from '@/features/events/player';
@@ -53,6 +54,8 @@ export function AvatarHost({
   onHeadTouchStreak,
 }: AvatarHostProps) {
   const { t } = useI18n();
+  // v3.0 P4：Q 版比例（与桌宠共用同一设置项）
+  const chibi = useAvatarChibi();
   const onHeadTouch = useHeadTouch(
     controllerRef as React.MutableRefObject<TouchControllerLike | null>,
   );
@@ -89,6 +92,7 @@ export function AvatarHost({
           speaking={speaking}
           controllerRef={controllerRef}
           onHeadTouch={handleHeadTouch}
+          chibi={chibi}
         />
         <EventFxLayer fx={eventFx} />
         <EventSubtitleSlot text={eventSubtitle} />

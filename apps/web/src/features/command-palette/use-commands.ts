@@ -19,6 +19,7 @@ import { useAssistants } from '@/lib/hooks/assistant';
 import { useConversationMutations } from '@/lib/hooks/chat';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
+import { SETTINGS_SECTIONS, settingsPanelAnchor } from '@/lib/settings/catalog';
 
 interface UseCommandsOptions {
   navigate: (href: string) => void;
@@ -39,6 +40,17 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
   return React.useMemo<Command[]>(() => {
     const firstAssistantId = assistants?.[0]?.id;
     const ck = 'commandPalette.commands';
+
+    // 已在设置页时只改 hash，交给页面的 hashchange 滚动定位；否则带 hash 跳转
+    const openSettings = (anchor: string) => {
+      const path = typeof window === 'undefined' ? '' : window.location.pathname.replace(/\/$/, '');
+      if (path.endsWith('/settings')) {
+        window.location.hash = `#${anchor}`;
+        close();
+        return;
+      }
+      navigate(`/settings#${anchor}`);
+    };
 
     const commands: Command[] = [
       // ── 导航 ──
@@ -122,7 +134,7 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         description: t(`${ck}.cardNew.description`),
         group: 'create',
         keywords: ['new', 'create', '新建', '角色卡', 'card', 'persona'],
-        action: () => navigate('/settings?new=card#setting-data'),
+        action: () => navigate('/settings?new=card#panel-character-cards'),
       },
       {
         id: 'branch:new',
@@ -197,14 +209,14 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         action: () => navigate('/assistants'),
       },
 
-      // ── 设置 ──
+      // ── 设置（深链到分组 / 具体面板） ──
       {
         id: 'set:providers',
         label: t(`${ck}.setProviders.label`),
         description: t(`${ck}.setProviders.description`),
         group: 'settings',
         keywords: ['provider', '供应商', '模型', 'api'],
-        action: () => navigate('/settings'),
+        action: () => openSettings(settingsPanelAnchor('providers')),
       },
       {
         id: 'set:theme',
@@ -212,8 +224,16 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         description: t(`${ck}.setTheme.description`),
         group: 'settings',
         keywords: ['theme', '主题', '深色', '浅色', 'dark', 'light'],
-        action: () => navigate('/settings'),
+        action: () => openSettings(settingsPanelAnchor('appearance')),
       },
+      ...SETTINGS_SECTIONS.map((section) => ({
+        id: `set:section:${section.id}`,
+        label: t(section.labelKey),
+        description: t(`${ck}.settingsSection.description`),
+        group: 'settings' as const,
+        keywords: ['settings', '设置', section.id],
+        action: () => openSettings(`setting-${section.id}`),
+      })),
 
       // ── 更新 ──
       {
@@ -222,7 +242,7 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         description: t(`${ck}.updCheck.description`),
         group: 'update',
         keywords: ['update', '检查', '更新', '版本'],
-        action: () => navigate('/settings'),
+        action: () => navigate('/settings#panel-about'),
       },
     ];
 

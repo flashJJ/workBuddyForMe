@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import type { PetPerformanceEvent, PetVoiceState } from '@wbfm/shared/pet';
 import { DEFAULT_MOTION_MOOD, type MotionMood } from '@wbfm/shared/schemas';
 import { DEFAULT_EXPRESSION, type ExpressionTag } from '@/features/avatar';
-import { getPetBridge, isPetHitPoint } from './pet-bridge';
+import { getPetBridge } from './pet-bridge';
+import { isPetHitPointAt } from './stage/hit-proxy';
 
 export interface PetRuntime {
   /** 桌面桥是否可用（false 时页面会重定向，仅首帧可能为 false） */
@@ -116,7 +117,7 @@ export function usePetBridge(): PetRuntime {
       requestAnimationFrame(() => {
         scheduled = false;
         report(
-          isPetHitPoint(event.clientX, event.clientY, window.innerWidth, window.innerHeight),
+          isPetHitPointAt(event.clientX, event.clientY, window.innerWidth, window.innerHeight),
         );
       });
     };

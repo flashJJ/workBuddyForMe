@@ -14,6 +14,7 @@ import {
 import { entryLoopClip, groupMotionEntries, type MotionEntry, type MotionPoolEntry } from '../motion/motion-segments';
 import {
   allEntryClips,
+  clipAnimatesArms,
   crossFadeLoopAction,
   embeddedSingleEntry,
   selectEmbeddedClips,
@@ -43,6 +44,7 @@ export interface MotionRotationConfig {
  */
 export class MotionMixer {
   private readonly vrm: VRM;
+  private readonly armTrackNodes: string[];
   private readonly mixer: THREE.AnimationMixer;
   /** 动作条目池（初始待机排首位）；空池时退回模型内嵌 clip / 程序化姿态 */
   private entries: MotionEntry[];
@@ -64,6 +66,7 @@ export class MotionMixer {
   };
   /** 距下次轮播的累计秒数 */
   private rotationElapsed = 0;
+  private sleeping = false; // v3.0 P1：睡眠时减速动作并暂停轮播
 
   constructor(
     vrm: VRM,
@@ -73,6 +76,9 @@ export class MotionMixer {
     rotationConfig?: MotionRotationConfig | null,
   ) {
     this.vrm = vrm;
+    this.armTrackNodes = ['leftUpperArm', 'rightUpperArm']
+      .map((name) => vrm.humanoid?.getNormalizedBoneNode(name as never)?.name)
+      .filter((name): name is string => typeof name === 'string');
     // 单 mixer：优先复用 three-vrm 自带的（已绑定正确的 root）
     const existing = (vrm as unknown as { animationMixer?: THREE.AnimationMixer }).animationMixer;
     const root = vrm.humanoid?.normalizedHumanBonesRoot ?? vrm.scene;
@@ -102,10 +108,13 @@ export class MotionMixer {
     return this.currentIdleEntry === null;
   }
 
-  /** 动作条目数 */
-  get poolSize(): number {
-    return this.entries.length;
+  /** 当前待机 clip 自带手臂动画（自带时垂臂层让位） */
+  get idleClipAnimatesArms(): boolean {
+    return this.currentIdleEntry ? clipAnimatesArms(this.currentIdleEntry.loopClip, this.armTrackNodes) : false;
   }
+
+  /** 动作条目数 */
+  get poolSize(): number { return this.entries.length; }
 
   /** 当前待机 clip 名（调试钩子用） */
   get idleClipName(): string | null {
@@ -131,29 +140,28 @@ export class MotionMixer {
   /** 注入待机动作轮播配置（开关 + 间隔秒数，越界回落默认） */
   setRotationConfig(config: MotionRotationConfig): void {
     const seconds = Math.round(config.seconds);
-    this.rotationConfig = {
-      enabled: config.enabled,
-      seconds:
-        Number.isFinite(seconds) &&
-        seconds >= MOTION_ROTATION_SECONDS_MIN &&
-        seconds <= MOTION_ROTATION_SECONDS_MAX
-          ? seconds
-          : MOTION_ROTATION_SECONDS_DEFAULT,
-    };
+    const valid = Number.isFinite(seconds) && seconds >= MOTION_ROTATION_SECONDS_MIN && seconds <= MOTION_ROTATION_SECONDS_MAX;
+    this.rotationConfig = { enabled: config.enabled, seconds: valid ? seconds : MOTION_ROTATION_SECONDS_DEFAULT };
   }
 
   /** v2.2：注入状态驱动挑选输入（情绪档位 + 关系等级）；由 VrmController 每帧同步 */
-  setPreference(preference: MotionSelectionContext): void {
-    this.preference = preference;
-  }
+  setPreference(preference: MotionSelectionContext): void { this.preference = preference; }
 
   /** 推进 mixer 时间轴（每帧 Step 1） */
-  update(dt: number): void {
-    this.mixer.update(dt);
+  update(dt: number): void { this.mixer.update(dt); }
+
+  /** v3.0 P1：睡眠时把动作放慢到 0.2 倍，保留呼吸/微动但不做新动作 */
+  setSleeping(sleeping: boolean): void {
+    this.sleeping = sleeping;
+    this.mixer.timeScale = sleeping ? 0.2 : 1;
   }
 
-  /** 到点随机换一个待机动作（手势/长按期间跳过，避免打断） */
+  /** 到点随机换一个待机动作（手势/长按/睡眠期间跳过，避免打断） */
   tickRotation(dt: number): void {
+    if (this.sleeping) {
+      this.rotationElapsed = 0;
+      return;
+    }
     if (!this.rotationConfig.enabled || this.entries.length < 2) return;
     if (this.gestureAction || this.hold.isHolding) {
       this.rotationElapsed = 0;

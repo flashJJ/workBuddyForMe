@@ -82,4 +82,25 @@ describe('Live2dMicrodynamics（v1.6 A 档微动作）', () => {
     expect(core.values.get('ParamAngleY')).toBe(0);
     vi.restoreAllMocks();
   });
+
+  it('v3.0 P1 睡眠：闭眼/歪头/慢呼吸，唤醒首帧复位', () => {
+    let now = 0;
+    const micro = new Live2dMicrodynamics(() => now);
+    const core = fakeCore();
+    micro.setSleeping(true);
+
+    now = 1300; // 5200ms 周期的 1/4 → sin(π/2)
+    micro.update(core, true);
+    expect(core.values.get('ParamEyeLOpen')).toBe(0);
+    expect(core.values.get('ParamEyeROpen')).toBe(0);
+    expect(core.values.get('ParamAngleZ')).toBe(10);
+    expect(core.values.get('ParamAngleX')).toBe(0);
+    expect(core.values.get('ParamBreath')).toBeCloseTo(0.18, 5);
+
+    micro.setSleeping(false);
+    micro.update(core, true);
+    expect(core.values.get('ParamEyeLOpen')).toBe(1);
+    expect(core.values.get('ParamEyeROpen')).toBe(1);
+    expect(core.values.get('ParamAngleZ')).toBe(0);
+  });
 });

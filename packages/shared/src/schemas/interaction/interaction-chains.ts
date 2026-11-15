@@ -30,6 +30,7 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
       // 点击头部顺带随机播一个一次性动作（动作池为空时 controller 内部走程序化回退）
       { type: 'controller.tap' },
       { type: 'controller.flashExpression', tag: 'joy', durationMs: 2600 },
+      { type: 'subtitle.pick', pool: 'head-tap' },
     ],
     priority: 'normal',
     cooldownMs: 500,
@@ -39,6 +40,7 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
       { type: 'interaction.start', kind: 'head-touch' },
       { type: 'controller.playSquash', scaleX: 1.06, scaleY: 0.96, durationMs: 400 },
       { type: 'controller.flashExpression', tag: 'surprise', durationMs: 4200 },
+      { type: 'subtitle.pick', pool: 'head-longpress' },
     ],
     priority: 'high',
     cooldownMs: 1000,
@@ -50,6 +52,7 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
       { type: 'controller.playSquash', scaleX: 1.02, scaleY: 0.98, durationMs: 160 },
       { type: 'controller.tap' },
       { type: 'controller.flashExpression', tag: 'smirk', durationMs: 1800 },
+      { type: 'subtitle.pick', pool: 'body-tap' },
     ],
     priority: 'normal',
     cooldownMs: 800,
@@ -59,6 +62,7 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
       { type: 'interaction.start', kind: 'body-touch' },
       { type: 'controller.playSquash', scaleX: 1.03, scaleY: 0.97, durationMs: 200 },
       { type: 'controller.flashExpression', tag: 'joy', durationMs: 2400 },
+      { type: 'subtitle.pick', pool: 'body-longpress' },
     ],
     priority: 'normal',
     cooldownMs: 1600,
@@ -71,6 +75,7 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
       { type: 'controller.setExpression', tag: 'smirk' },
       { type: 'controller.tap' },
       { type: 'controller.flashExpression', tag: 'joy', durationMs: 1400 },
+      { type: 'subtitle.pick', pool: 'body-double' },
     ],
     priority: 'normal',
     cooldownMs: 1600,
@@ -81,6 +86,7 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
       { type: 'interaction.start', kind: 'raised' },
       { type: 'controller.playSquash', scaleX: 0.94, scaleY: 1.08, durationMs: 300 },
       { type: 'controller.flashExpression', tag: 'surprise', durationMs: 2000 },
+      { type: 'subtitle.pick', pool: 'raised' },
     ],
     priority: 'high',
     cooldownMs: 1500,
@@ -94,11 +100,12 @@ export const ACTION_CHAINS: Record<ActionChainId, () => ActionChain> = {
     priority: 'normal',
     cooldownMs: 4000,
   }),
-  // 高兴一下：播动作池里一个一次性动作 + 开心表情（欢迎回来 / 关系升级庆祝）
+  // 高兴一下：播动作池里一个一次性动作 + 开心表情 + 一句招呼（欢迎回来 / 关系升级庆祝）
   'cheer': () => ({
     actions: [
       { type: 'controller.tap' },
       { type: 'controller.flashExpression', tag: 'joy', durationMs: 2600 },
+      { type: 'subtitle.pick', pool: 'cheer' },
     ],
     priority: 'normal',
     cooldownMs: 5000,

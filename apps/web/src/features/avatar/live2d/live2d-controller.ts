@@ -3,16 +3,17 @@
  *
  * 本文件静态 import pixi.js / pixi-live2d-display，只被 live2d-stage 动态 import()，
  * 因此 Cubism/PIXI 全部落在独立 chunk：未开启形象时不下载、不解析、不初始化。
- *
- * pld 0.4.0 自带的打包类型内嵌了一份 pixi 类型，与 pixi@7 类型身份不一致
- * （addChild 报 DisplayObject 不兼容），运行时完全兼容；边界处统一走 PldModel 结构化类型。
+ * pld 0.4.0 的类型内嵌了一份 pixi 类型，与 pixi@7 身份不一致（addChild 不兼容），
+ * 运行时完全兼容；边界处统一走 PldModel 结构化类型。
  */
 import * as PIXI from 'pixi.js';
 import { Live2DModel as PldLive2DModel } from 'pixi-live2d-display/cubism4';
 import type { AvatarModelSpec } from '../ui/avatar-models';
+import type { AvatarScreenRect } from '../performance/screen-rect';
 import type { ExpressionTag } from '../expression/expression-parser';
 import { DEFAULT_EXPRESSION } from '../expression/expression-parser';
 import { Live2dMicrodynamics } from './live2d-microdynamics';
+import { Live2dIdleScheduler } from './live2d-idle-scheduler';
 import {
   TOUCH_SQUASH_MS,
   TOUCH_SQUASH_SCALE_X,
@@ -38,6 +39,7 @@ interface PldModel {
     originalHeight: number;
     coreModel: PldCoreModel;
   };
+  getBounds(): { x: number; y: number; width: number; height: number };
   expression(name?: string): Promise<unknown>;
   motion(group: string): Promise<unknown>;
   destroy(): void;
@@ -49,13 +51,11 @@ interface PldModelConstructor {
 export interface Live2dControllerOptions {
   model: AvatarModelSpec;
   onError?: (message: string) => void;
+  onRect?: (rect: AvatarScreenRect) => void;
 }
 
 /** 说话时不再触发待机动作的静默窗口（ms） */
 const IDLE_QUIET_MS = 2500;
-/** 待机动作随机间隔区间（ms） */
-const IDLE_INTERVAL_MIN = 7000;
-const IDLE_INTERVAL_MAX = 14000;
 /** 口型增益：RMS→张合度 */
 const LIP_GAIN = 3.2;
 
@@ -65,7 +65,8 @@ export class Live2dController {
   private readonly micro = new Live2dMicrodynamics();
   private lipLevel = 0;
   private lastSpeechAt = 0;
-  private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly idle: Live2dIdleScheduler;
+  private sleeping = false;
   private disposed = false;
   private readonly resizeObserver: ResizeObserver;
   /** layout 计算出的基础等比缩放（squash 动画围绕它做包络） */
@@ -81,6 +82,7 @@ export class Live2dController {
     private readonly host: HTMLElement,
     private readonly spec: AvatarModelSpec,
     private readonly onError?: (message: string) => void,
+    private readonly onRect?: (rect: AvatarScreenRect) => void,
   ) {
     this.app = new PIXI.Application({
       width: host.clientWidth || 320,
@@ -100,10 +102,21 @@ export class Live2dController {
 
     this.resizeObserver = new ResizeObserver(() => this.layout());
     this.resizeObserver.observe(host);
+    this.idle = new Live2dIdleScheduler({
+      getModel: () => this.model,
+      idleGroup: spec.idleGroup,
+      isQuiet: () => performance.now() - this.lastSpeechAt > IDLE_QUIET_MS,
+      isDisposed: () => this.disposed,
+    });
   }
 
   static async create(host: HTMLElement, options: Live2dControllerOptions): Promise<Live2dController> {
-    const controller = new Live2dController(host, options.model, options.onError);
+    const controller = new Live2dController(
+      host,
+      options.model,
+      options.onError,
+      options.onRect,
+    );
     try {
       const model = await (PldLive2DModel as unknown as PldModelConstructor).from(options.model.url, {
         // pld 0.4 的交互层按 pixi6 InteractionManager 注册，pixi7 下会刷 console error；
@@ -120,7 +133,7 @@ export class Live2dController {
       controller.layout();
       controller.baseExpression = DEFAULT_EXPRESSION;
       await model.expression(options.model.expressions[DEFAULT_EXPRESSION] ?? '');
-      controller.scheduleIdle();
+      controller.idle.start();
       // 每帧：口型 → squash 缩放 → 微动作参数；在 pld 自身更新之后写，避免被曲线覆盖
       controller.app.ticker.add(() => controller.applyFrame());
     } catch (error) {
@@ -145,6 +158,8 @@ export class Live2dController {
     this.baseScale = fit * 0.92;
     model.x = w / 2;
     model.y = h + 4;
+    const bounds = model.getBounds();
+    this.onRect?.({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
   }
 
   /** 每帧综合：口型 + squash 包络 + 微动作 + 闪现表情到期回收 */
@@ -158,7 +173,9 @@ export class Live2dController {
       void this.applyExpressionNow(this.baseExpression);
     }
     const quiet =
-      performance.now() - this.lastSpeechAt > IDLE_QUIET_MS && this.squashStart === 0;
+      !this.sleeping &&
+      performance.now() - this.lastSpeechAt > IDLE_QUIET_MS &&
+      this.squashStart === 0;
     this.micro.update(model.internalModel.coreModel, quiet);
   }
 
@@ -191,6 +208,26 @@ export class Live2dController {
   setLipLevel(level: number): void {
     if (level > 0.02) this.lastSpeechAt = performance.now();
     this.lipLevel = level;
+  }
+
+  /** v3.0 P0：帧率档位（0 暂停 ticker，30/60 调 maxFPS） */
+  setMaxFps(fps: number): void {
+    const ticker = this.app.ticker;
+    if (fps <= 0) {
+      ticker.stop();
+      return;
+    }
+    if (!ticker.started) ticker.start();
+    ticker.maxFPS = fps;
+  }
+
+  /** v3.0 P1：睡眠（闭眼/歪头/慢呼吸，暂停待机动作，表情回到放松） */
+  setSleeping(sleeping: boolean): void {
+    if (this.sleeping === sleeping) return;
+    this.sleeping = sleeping;
+    this.micro.setSleeping(sleeping);
+    this.idle.setSleeping(sleeping);
+    void this.applyExpressionNow(sleeping ? DEFAULT_EXPRESSION : this.baseExpression);
   }
 
   /**
@@ -227,32 +264,8 @@ export class Live2dController {
     this.squashStart = performance.now();
   }
 
-  /**
-   * v1.9 舞台省电档：截当前舞台一帧为 PNG dataURL（非发言者立绘缓存）。
-   * 用 extract 同步取 canvas，不依赖 preserveDrawingBuffer；失败返回 null。
-   */
-  captureDataUrl(): string | null {
-    // 模型尚未加载完时 extract 会得到一张全透明图；返回 null 让调用方保持 Live2D，
-    // 避免省电档出现「有 img 但看不见角色」的空白立绘。
-    if (!this.model) return null;
-    try {
-      // 先渲染一帧，确保 extract 拿到的是当前表情/动作，而不是上一帧的空舞台
-      this.app.renderer.render(this.app.stage);
-      // pixi v7 的 extract 插件挂在 Renderer 实例上，AbstractRenderer 基类类型不含它
-      const renderer = this.app.renderer as unknown as {
-        extract: { canvas: (target: unknown) => HTMLCanvasElement };
-      };
-      const frame = renderer.extract.canvas(this.app.stage);
-      return frame.toDataURL('image/png');
-    } catch {
-      return null;
-    }
-  }
-
   /** 归一化指针（-1..1，相对舞台中心）→ 微动作视线跟随 */
-  setGaze(nx: number, ny: number): void {
-    this.micro.setPointer(nx, ny);
-  }
+  setGaze(nx: number, ny: number): void { this.micro.setPointer(nx, ny); }
 
   /** 身体点击/触碰：播放 Tap 组随机动作（头部摸头不走这里） */
   tap(): void {
@@ -260,20 +273,9 @@ export class Live2dController {
     void this.model.motion(this.spec.tapGroup);
   }
 
-  private scheduleIdle(): void {
-    if (this.disposed) return;
-    const delay = IDLE_INTERVAL_MIN + Math.random() * (IDLE_INTERVAL_MAX - IDLE_INTERVAL_MIN);
-    this.idleTimer = setTimeout(() => {
-      if (this.disposed || !this.model) return;
-      const quiet = performance.now() - this.lastSpeechAt > IDLE_QUIET_MS;
-      if (quiet) void this.model!.motion(this.spec.idleGroup).then(() => this.scheduleIdle());
-      else this.scheduleIdle();
-    }, delay);
-  }
-
   dispose(): void {
     this.disposed = true;
-    if (this.idleTimer) clearTimeout(this.idleTimer);
+    this.idle.stop();
     this.resizeObserver.disconnect();
     try {
       this.model?.destroy();

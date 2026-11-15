@@ -7,8 +7,14 @@ import {
   type ExpressionTag,
 } from '@/features/avatar';
 import type { StageSlot } from '@wbfm/shared/schemas';
+import type { StageMotionCue } from '../theater/stage-motion-cue';
 import { desiredAutoUpdate, syncAutoUpdate } from './auto-update';
-import type { StageLive2dActor, StageLive2dOptions } from './types';
+import type {
+  PldModel,
+  PldModelConstructor,
+  StageLive2dActor,
+  StageLive2dOptions,
+} from './types';
 
 /**
  * 舞台专用 Live2D 共享渲染器。
@@ -21,29 +27,6 @@ import type { StageLive2dActor, StageLive2dOptions } from './types';
 
 if (typeof window !== 'undefined') {
   (window as unknown as { PIXI: unknown }).PIXI = PIXI;
-}
-
-interface PldCoreModel {
-  setParameterValueById(id: string, value: number): void;
-}
-interface PldModel {
-  anchor: { set(x: number, y: number): void };
-  scale: { set(x: number, y?: number): void };
-  x: number;
-  y: number;
-  zIndex: number;
-  autoUpdate: boolean;
-  internalModel: {
-    originalWidth: number;
-    originalHeight: number;
-    coreModel: PldCoreModel;
-  };
-  expression(name?: string): Promise<unknown>;
-  motion(group: string): Promise<unknown>;
-  destroy(): void;
-}
-interface PldModelConstructor {
-  from(source: string, options?: { autoInteract?: boolean }): Promise<PldModel>;
 }
 
 const LIP_GAIN = 3.2;
@@ -67,11 +50,15 @@ interface Entry {
   lastExpression: ExpressionTag | null;
   /** 已写入 pld 的 autoUpdate；null=新模型/已销毁，首次写入才触达 setter */
   appliedAutoUpdate: boolean | null;
+  /** 模型未就绪时暂存的剧场 cue，加载完成后补播一次 */
+  pendingCue: StageMotionCue | null;
 }
 
 export interface StageLive2dController {
   update(actors: StageLive2dActor[], options: StageLive2dOptions): void;
   tap(slot: StageSlot): void;
+  /** 剧场 cue：统一走模型 Tap 组，模型未就绪时排队等加载 */
+  playCue(slot: StageSlot, cue: StageMotionCue): void;
   dispose(): void;
 }
 
@@ -109,13 +96,16 @@ export async function createStageLive2dController(
     entry.loading = false;
     if (entry.idleTimer) clearTimeout(entry.idleTimer);
     entry.idleTimer = null;
-    try {
-      entry.model?.destroy();
-    } catch {
-      /* best-effort */
-    }
+    try { entry.model?.destroy(); } catch { /* best-effort */ }
     entry.model = null;
     entry.appliedAutoUpdate = null;
+    entry.pendingCue = null;
+  }
+
+  /** 播一次 Tap 组动作；动作组缺失时 pld 内部静默失败 */
+  function playEntryCue(entry: Entry): void {
+    if (!entry.model) return;
+    void entry.model.motion(entry.spec.tapGroup).catch(() => undefined);
   }
 
   function applyLayout(entry: Entry): void {
@@ -192,6 +182,9 @@ export async function createStageLive2dController(
       applyLayout(entry);
       applyExpression(entry);
       scheduleIdle(entry);
+      const pending = entry.pendingCue;
+      entry.pendingCue = null;
+      if (pending) playEntryCue(entry);
     } catch {
       /* 单个模型加载失败不拖垮其他角色；错误由控制台诊断 */
     } finally {
@@ -215,6 +208,7 @@ export async function createStageLive2dController(
         lastSpeechAt: 0,
         lastExpression: null,
         appliedAutoUpdate: null,
+        pendingCue: null,
       };
       entries.set(actor.slot, entry);
     }
@@ -279,6 +273,16 @@ export async function createStageLive2dController(
     tap(slot) {
       const entry = entries.get(slot);
       if (entry?.model) void entry.model.motion(entry.spec.tapGroup);
+    },
+
+    playCue(slot, cue) {
+      const entry = entries.get(slot);
+      if (!entry) return;
+      if (!entry.model) {
+        entry.pendingCue = cue;
+        return;
+      }
+      playEntryCue(entry);
     },
 
     dispose() {

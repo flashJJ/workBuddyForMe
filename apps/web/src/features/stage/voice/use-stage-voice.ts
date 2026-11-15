@@ -16,6 +16,8 @@ export interface StageVoice {
   /** 合成并播放一句台词；返回是否真的播完（模型缺失/网络失败为 failed） */
   speak: (text: string, avatarModelId: string) => Promise<StageSpeakResult>;
   stop: () => void;
+  /** 用户手势内同步解锁音频上下文（首句自动播放策略） */
+  unlock: () => void;
   speaking: boolean;
   getLevel: () => number;
 }
@@ -26,7 +28,7 @@ export interface StageVoice {
  * 口型由播放电平驱动，合成失败时回落到控制器里的正弦口型。
  */
 export function useStageVoice(): StageVoice {
-  const { enqueue, cancel, waitDrained, getLevel, speaking } = useVoicePlayback();
+  const { enqueue, cancel, waitDrained, getLevel, unlock, speaking } = useVoicePlayback();
   const abortRef = React.useRef<AbortController | null>(null);
 
   const stop = React.useCallback(() => {
@@ -78,5 +80,5 @@ export function useStageVoice(): StageVoice {
     [],
   );
 
-  return { speak, stop, speaking, getLevel };
+  return { speak, stop, unlock, speaking, getLevel };
 }

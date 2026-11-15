@@ -121,6 +121,13 @@ export const enVoice = {
     petModeHint:
       'The character sits on your desktop in a transparent always-on-top window: drag the body, double-click to return to the main window, right-click to toggle mouse pass-through; pet mouth/subtitles sync during readout',
     petModeNote: 'While the pet is open the main-window avatar rail yields automatically; closing the main window does not quit the app — double-click the pet to bring it back',
+    petSizeLabel: 'Pet size',
+    petSizeHint: 'Adjust how large the desktop pet appears; applies immediately',
+    petSizeSm: 'Small',
+    petSizeMd: 'Medium',
+    petSizeLg: 'Large',
+    chibiLabel: 'Chibi proportions',
+    chibiHint: 'Bigger head and shorter legs (VRM avatars only); applies immediately',
   },
   proactive: {
     title: 'AI proactive speech',

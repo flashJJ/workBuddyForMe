@@ -44,12 +44,25 @@ interface UseProactiveChatResult {
 const CHECK_INTERVAL_MS = 10_000;
 /** 活动事件写时间戳的最小间隔（避免连续 mousemove 级事件刷屏，这里只听离散事件） */
 const ACTIVITY_THROTTLE_MS = 1_000;
+/** 成功主动搭话后的最小间隔与每小时上限（只统计真正说出口的成功轮次） */
+export const PROACTIVE_MIN_GAP_MS = 20 * 60 * 1000;
+export const PROACTIVE_MAX_PER_HOUR = 2;
+const HOUR_MS = 60 * 60 * 1000;
+
+/** 低频闸门：已成功搭话的时间戳 + 当前时刻 → 是否允许再开口（纯函数，便于单测） */
+export function canProactiveSpeak(spokenAt: readonly number[], now: number): boolean {
+  const recent = spokenAt.filter((at) => now - at < HOUR_MS);
+  if (recent.length >= PROACTIVE_MAX_PER_HOUR) return false;
+  const last = recent[recent.length - 1];
+  return last === undefined || now - last >= PROACTIVE_MIN_GAP_MS;
+}
 
 /**
  * F8 主动说话：
  * - 仅 proactiveEnabled 且有视觉出口（形象栏/桌宠）时武装；
  * - 用户离散操作（按键/点击/滚动）与正常对话轮次重置空闲计时；
  * - 到阈值且全局空闲时发起一次 skip-history 轻量轮，单飞、不并发；
+ * - 成功搭话后 20 分钟内不再开口，且任意 1 小时最多 2 次（失败重试不受限）；
  * - 轮次完成后冷却一个完整阈值周期；用户开始新对话立即中止主动轮。
  */
 export function useProactiveChat(args: UseProactiveChatArgs): UseProactiveChatResult {
@@ -61,6 +74,8 @@ export function useProactiveChat(args: UseProactiveChatArgs): UseProactiveChatRe
   const lastActivityRef = React.useRef(Date.now());
   const inFlightRef = React.useRef(false);
   const controllerRef = React.useRef<AbortController | null>(null);
+  /** 成功搭话时间戳（L3 低频闸门：失败重试不计入，避免影响瞬断恢复） */
+  const spokenAtRef = React.useRef<number[]>([]);
   // 最新参数供 interval/事件闭包读取，避免重建监听器
   const argsRef = React.useRef(args);
   argsRef.current = args;
@@ -137,6 +152,12 @@ export function useProactiveChat(args: UseProactiveChatArgs): UseProactiveChatRe
       inFlightRef.current = false;
       setActive(false);
       controllerRef.current = null;
+      if (status === 'completed' && holder.bubble) {
+        // 只有「真的说出口」才计入低频闸门
+        const now = Date.now();
+        spokenAtRef.current = spokenAtRef.current.filter((at) => now - at < HOUR_MS);
+        spokenAtRef.current.push(now);
+      }
       if (status === 'error') {
         // 主动搭话失败不打扰用户：静默收起
         setBubble(null);
@@ -224,10 +245,12 @@ export function useProactiveChat(args: UseProactiveChatArgs): UseProactiveChatRe
     const timer = window.setInterval(() => {
       if (argsRef.current.busy || inFlightRef.current) return;
       const idleMs = (voiceSettings?.proactiveIdleSeconds ?? 300) * 1000;
-      if (Date.now() - lastActivityRef.current >= idleMs) {
-        lastActivityRef.current = Date.now();
-        void trigger();
-      }
+      if (Date.now() - lastActivityRef.current < idleMs) return;
+      // L3 低频闸门：成功说过话的轮次才计数（每小时上限 + 最小间隔）
+      const now = Date.now();
+      if (!canProactiveSpeak(spokenAtRef.current, now)) return;
+      lastActivityRef.current = now;
+      void trigger();
     }, CHECK_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [armed, voiceSettings?.proactiveIdleSeconds, trigger]);

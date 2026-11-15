@@ -7,6 +7,7 @@
  *
  * 定时器/光标/窗口均注入，纯逻辑可单测。
  */
+import { sanitizePetHitProxy, type PetHitProxy } from '@wbfm/shared/pet';
 import { isCursorOverPet, type CursorPoint } from './pet-window';
 
 export interface PetHoverWindow {
@@ -42,11 +43,16 @@ export const MOVE_EVENT_DEBOUNCE_MS = 50;
 
 export class PetHoverPoller {
   private timer: ReturnType<typeof setInterval> | null = null;
+  /** v3.0 P0：渲染层上报的模型轮廓（换窗 start 时清空，回落矩形） */
+  private hitProxy: PetHitProxy | null = null;
 
   constructor(private readonly deps: PetHoverPollerDeps) {}
 
   /** 绑定 move 宽限窗并启动轮询（新建/换模型后调用一次） */
   start(win: PetHoverWindow): void {
+    // 幂等：重复 start（换窗未走 stop 的路径）会留下仍在轮询旧窗的定时器
+    this.stop();
+    this.hitProxy = null;
     let nativeMovingUntil = 0;
     let lastMoveAt = 0;
     win.on('move', () => {
@@ -61,12 +67,21 @@ export class PetHoverPoller {
       if (win.isDestroyed()) return;
       if (win.isMinimized?.() || win.isVisible?.() === false) return;
       if (Date.now() < nativeMovingUntil) return;
-      const hovering = isCursorOverPet(this.deps.getCursor(), win.getBounds());
+      const hovering = isCursorOverPet(
+        this.deps.getCursor(),
+        win.getBounds(),
+        this.hitProxy,
+      );
       this.deps.onHover(hovering);
     };
     tick();
     const setter = this.deps.setInterval ?? setInterval;
     this.timer = setter(tick, HOVER_POLL_MS);
+  }
+
+  /** v3.0 P0：渲染层上报的命中轮廓（净化后缓存；非法载荷回落矩形） */
+  reportHitProxy(raw: unknown): void {
+    this.hitProxy = sanitizePetHitProxy(raw);
   }
 
   stop(): void {

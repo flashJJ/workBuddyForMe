@@ -53,6 +53,8 @@ export interface AssetImportConfig<TMeta, TResponse> {
   buildForm?: (file: File, meta: TMeta | null) => FormData;
   /** 可选上传标注字段（如 VRMA 的动作段/档位/条目键/关系门槛） */
   extraFields?: AssetExtraField[];
+  /** 上传成功后的额外动作（如 VRM 导入后自动切换到新模型） */
+  onImported?: (response: TResponse) => void;
 }
 
 /** 读取 GLB 的 JSON chunk（本地快速嗅探，不做完整校验） */
@@ -103,6 +105,7 @@ export function AssetImportSection<TMeta, TResponse>({
       setExtras(initialExtras());
       if (fileInputRef.current) fileInputRef.current.value = '';
       void queryClient.invalidateQueries({ queryKey: config.queryKey });
+      config.onImported?.(data);
     },
     onError: (err) => {
       toast.error(t(key('importFailed'), { message: err instanceof Error ? err.message : String(err) }));

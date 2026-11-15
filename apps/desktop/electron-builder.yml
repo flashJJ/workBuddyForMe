@@ -69,7 +69,7 @@ nsis:
   shortcutName: WorkBuddyForMe
   # 「应用和功能」中的卸载项显示名
   uninstallDisplayName: WorkBuddyForMe ${version}
-  # GPL-3.0 许可协议页
+  # 项目许可协议页（PolyForm Noncommercial 1.0.0）
   license: build/installer-license.txt
   # 安装界面：简中默认，可切英文（electron-builder 自带 NSIS 语言包）
   installerLanguages:

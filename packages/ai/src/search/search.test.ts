@@ -26,7 +26,7 @@ describe('search providers', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
     const provider = createSearchProvider(SETTINGS);
-    const response = await provider.search({ query: '测试', maxResults: 2 });
+    const response = await provider.search({ query: '测试', maxResults: 2, freshness: 'day' });
     expect(response.results).toHaveLength(2);
     expect(response.results[0]).toMatchObject({
       title: 'A',
@@ -35,6 +35,7 @@ describe('search providers', () => {
       source: 'google',
     });
     expect(fetchMock.mock.calls[0]?.[0]).toContain('/search?');
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('time_range=day');
   });
 
   it('SearXNG 429 映射为 rate_limited', async () => {

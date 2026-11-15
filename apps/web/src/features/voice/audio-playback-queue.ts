@@ -9,6 +9,8 @@ export interface AudioPlayer {
   cancelAll(): void;
   /** 可选：当前播放电平 RMS（0~1），供 Live2D 口型驱动 */
   getLevel?(): number;
+  /** 可选：在用户手势内解锁音频上下文（自动播放策略） */
+  unlock?(): void;
 }
 
 interface StampedFrame {
@@ -97,6 +99,11 @@ export class AudioPlaybackQueue {
     return this.player.getLevel?.() ?? 0;
   }
 
+  /** 用户手势内解锁音频上下文，避免首句被自动播放策略吞掉 */
+  unlock(): void {
+    this.player.unlock?.();
+  }
+
   dispose(): void {
     this.cancel();
     this.disposed = true;
@@ -113,6 +120,9 @@ export class AudioPlaybackQueue {
         if (stamped.epoch !== this.epoch) continue;
         const { frame } = stamped;
         if (frame.audio) {
+          // 入队只代表「有新音频」；真正开播时再确认一次 speaking，
+          // 避免前一轮 final 的 idle 把本轮状态提前压回 idle（口型/UI 会误判）。
+          this.onState?.('speaking');
           try {
             await this.player.play(frame);
           } catch {
@@ -123,7 +133,8 @@ export class AudioPlaybackQueue {
         }
         if (frame.final) {
           this.queue = this.queue.filter((item) => item.epoch === this.epoch);
-          this.onState?.('idle');
+          // 只有队列确实排空才回 idle；后面还有帧（新一轮）时保持 speaking
+          if (this.queue.length === 0) this.onState?.('idle');
         }
       }
     } finally {

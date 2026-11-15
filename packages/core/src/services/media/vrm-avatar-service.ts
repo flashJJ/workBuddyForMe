@@ -58,7 +58,9 @@ export function createVrmAvatarService(db: Database) {
             ? '不是合法的 glTF 二进制文件'
             : sniff.reason === 'not_vrm_extension'
               ? '缺少 VRM 扩展标记'
-              : '不是合法的 VRM 文件';
+              : sniff.reason === 'broken_references'
+                ? '模型文件不完整（内部 bufferView 引用越界），请重新导出后再导入'
+                : '不是合法的 VRM 文件';
         throw ApiError.validation(msg);
       }
       const meta = extractVrmMeta(input.buffer.buffer as ArrayBuffer);

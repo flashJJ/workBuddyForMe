@@ -37,6 +37,14 @@ export const zhAbout = {
   secretRotationDone: '已重新加密 {rotated} 个凭证；跳过 {skipped} 个，失败 {failed} 个。',
   secretRotationFailed: '凭证轮换失败',
   secretRotationHint: '仅处理 Provider API Key；MCP 环境变量与请求头留待后续版本。',
+  compliance: {
+    title: '原创角色与二创说明',
+    character:
+      '原创角色「雪团」「冉卡露丽」「菲比」的模型、贴图与剧本由本项目制作或二次制作，依 CC BY-NC-SA 4.0 授权：需署名、禁止商用、衍生作品同协议共享。',
+    disclaimer:
+      '本项目与 DeepSeek 官方及「溟月」无关联，仓库不含官方素材；Live2D 样本模型的版权归 Live2D Inc.。',
+    pack: '角色包仅含 Markdown 文本与静态资源，不含可执行代码；导入时只解析 frontmatter，不运行脚本。',
+  },
   // v2.4 M1 T7：TTFV 里程碑（本地、可清除）
   ttfv: {
     title: '首次可用用时（TTFV）',
@@ -99,6 +107,14 @@ export const enAbout = {
   secretRotationFailed: 'Credential rotation failed',
   secretRotationHint:
     'Provider API keys only; MCP environment variables and headers are planned for a later version.',
+  compliance: {
+    title: 'Original characters & derivative packs',
+    character:
+      'Models, textures and scripts for the original characters Xuetuan, Rankaluli and Feibi are made or post-processed by this project and licensed under CC BY-NC-SA 4.0: attribution, non-commercial, share-alike.',
+    disclaimer:
+      'This project is not affiliated with DeepSeek or Mingyue and ships no official assets. Live2D sample models remain copyright Live2D Inc.',
+    pack: 'Character packs contain only Markdown text and static assets, no executable code; imports parse frontmatter only and never run scripts.',
+  },
   // v2.4 M1 T7 time-to-first-value milestones (local, clearable)
   ttfv: {
     title: 'Time to first value (TTFV)',

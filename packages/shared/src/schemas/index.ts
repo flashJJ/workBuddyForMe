@@ -11,6 +11,7 @@ export * from './provider';
 export * from './work';
 export * from './flow';
 export * from './interaction';
+export * from './script';
 export * from './emotion';
 export * from './media';
 export * from './ops';

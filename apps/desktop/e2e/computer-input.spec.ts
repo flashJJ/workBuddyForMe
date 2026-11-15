@@ -64,7 +64,16 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  await electronApp?.close();
+  const pid = electronApp?.process().pid;
+  // close() 在失败/受限桌面可能永久挂起，直接结束整棵进程树，避免 worker 退出被拖住
+  if (pid) {
+    await execFileAsync('taskkill', ['/PID', String(pid), '/T', '/F']).catch(() => undefined);
+  }
+  await execFileAsync('powershell', [
+    '-NoProfile',
+    '-Command',
+    "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*win-unpacked\\resources\\server*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Get-Process Notepad -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like '*wbfm-m2-e2e*' } | Stop-Process -Force -ErrorAction SilentlyContinue",
+  ]).catch(() => undefined);
 });
 
 test('键鼠通道：移动鼠标并读回位置（nut-js 原生依赖打包验证）', async () => {
@@ -131,7 +140,10 @@ test('记事本链路：UIA 定位 + 键盘输入 + Ctrl+S 保存落盘（M2 验
     expect(uia.status).toBe(200);
     const uiaData = uia.json as {
       windowTitle: string;
-      elements: Array<{ controlType: string; rect: { width: number; height: number } }>;
+      elements: Array<{
+        controlType: string;
+        rect: { x: number; y: number; width: number; height: number };
+      }>;
     };
     expect(uiaData.windowTitle).toContain(titleKey);
     const editor = uiaData.elements.find(
@@ -139,10 +151,31 @@ test('记事本链路：UIA 定位 + 键盘输入 + Ctrl+S 保存落盘（M2 验
     );
     expect(editor, 'UIA 树中应存在编辑控件').toBeTruthy();
 
-    // 4) 聚焦窗口 → 键盘输入 ASCII 文本 → Ctrl+S 保存
-    const focused = await postChannel(info, '/windows/focus', { handle: notepadWin!.handle });
-    expect(focused.status).toBe(200);
+    // 4) 聚焦窗口 → 点击编辑区 → 键盘输入 ASCII 文本 → Ctrl+S 保存
+    await postChannel(info, '/windows/focus', { handle: notepadWin!.handle });
+    const point = {
+      x: editor!.rect.x + Math.floor(editor!.rect.width / 2),
+      y: editor!.rect.y + Math.floor(editor!.rect.height / 2),
+    };
+    // focus 未必把输入焦点落到编辑控件；再点一次编辑区，保证按键发往正文
+    const clicked = await postChannel(info, '/input/mouse-click', { ...point, button: 'left' });
+    expect(clicked.status).toBe(200);
+    await expect
+      .poll(
+        async () => {
+          const res = await postChannel(info, '/windows/list', {});
+          const wins = (res.json as { windows: Array<{ handle: string; isForeground: boolean }> })
+            .windows;
+          return wins.find((w) => w.handle === notepadWin!.handle)?.isForeground ?? false;
+        },
+        { timeout: 5_000, intervals: [200, 500] },
+      )
+      .toBe(true);
+
     expect((await postChannel(info, '/input/keyboard-type', { text: 'WBFM-M2-UIA' })).status).toBe(200);
+    // Win11 记事本可能把键入留在输入预处理框：先回车提交，再保存
+    expect((await postChannel(info, '/input/keyboard-press', { keys: ['enter'] })).status).toBe(200);
+    await new Promise((resolve) => setTimeout(resolve, 300));
     expect((await postChannel(info, '/input/keyboard-press', { keys: ['control', 's'] })).status).toBe(200);
 
     // 5) 轮询文件内容落盘
@@ -150,7 +183,7 @@ test('记事本链路：UIA 定位 + 键盘输入 + Ctrl+S 保存落盘（M2 验
       .poll(() => readFileSync(filePath, 'utf8'), { timeout: 15_000, intervals: [500, 1000, 2000] })
       .toContain('WBFM-M2-UIA');
   } finally {
-    // 只按标题精确前缀清理本测试拉起的记事本，避免误关用户窗口
-    await execFileAsync('taskkill', ['/FI', `WINDOWTITLE eq ${titleKey}*`, '/T', '/F']).catch(() => {});
+    // 只按标题精确前缀清理本测试拉起的记事本，避免误关用户窗口（未保存标题带 * 前缀）
+    await execFileAsync('taskkill', ['/FI', `WINDOWTITLE eq *${titleKey}*`, '/T', '/F']).catch(() => {});
   }
 });

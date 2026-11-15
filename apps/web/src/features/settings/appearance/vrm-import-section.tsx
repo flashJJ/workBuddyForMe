@@ -1,7 +1,8 @@
 'use client';
 
 import { VRM_MAX_BYTES } from '@wbfm/shared/constants';
-import type { VrmAvatarUploadResponse } from '@wbfm/shared/schemas';
+import { buildVrmAvatarId, type VrmAvatarUploadResponse } from '@wbfm/shared/schemas';
+import { useVoiceSettings } from '@/features/voice';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { AssetImportSection } from './asset-import-section';
 
@@ -28,6 +29,7 @@ function sniffVrmMeta(json: Record<string, unknown>): VrmMetaPreview {
 
 export function VrmImportSection() {
   const { t } = useI18n();
+  const { update } = useVoiceSettings();
   return (
     <AssetImportSection<VrmMetaPreview, VrmAvatarUploadResponse>
       config={{
@@ -39,6 +41,10 @@ export function VrmImportSection() {
         queryKey: ['vrm-avatars'],
         sniff: sniffVrmMeta,
         pickName: (data) => data.avatar.name,
+        // 导入成功即切换为当前形象，省去再到形象选择器里滚动查找
+        onImported: (data) => {
+          void update({ avatarModelId: buildVrmAvatarId(data.avatar.fileRef) });
+        },
         buildForm: (file, meta) => {
           const formData = new FormData();
           formData.append('file', file);

@@ -3,7 +3,7 @@
  * v0.5 P1-2 长期记忆回归评估（golden set + LLM-as-judge）。
  *
  * 前置条件：
- *   1. Web 服务正在运行（默认 http://127.0.0.1:3000，可用 --base-url 覆盖）；
+ *   1. Web 服务正在运行（默认 http://127.0.0.1:42337，可用 --base-url 覆盖）；
  *   2. 已配置默认对话模型与嵌入模型（Ollama 或 OpenAI 兼容供应商均可）；
  *   3. 存在 memoryEnabled=true 的助手（内置助手默认开启）。
  *
@@ -31,7 +31,7 @@ const GOLDEN_PATH = join(HERE, 'memory-golden.json');
 const KEYWORD_PASS_RATIO = 0.7;
 
 function parseArgs(argv) {
-  const args = { baseUrl: process.env.WBFM_BASE_URL ?? 'http://127.0.0.1:3000', reset: false, judge: true, out: null };
+  const args = { baseUrl: process.env.WBFM_BASE_URL ?? 'http://127.0.0.1:42337', reset: false, judge: true, out: null };
   for (const arg of argv.slice(2)) {
     if (arg === '--reset-memories') args.reset = true;
     else if (arg.startsWith('--base-url=')) args.baseUrl = arg.slice('--base-url='.length);

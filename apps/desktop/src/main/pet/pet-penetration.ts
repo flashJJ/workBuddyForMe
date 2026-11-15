@@ -49,9 +49,9 @@ export class PetClickThroughController {
     this.leaveDelayMs = controllers.leaveDelayMs ?? DEFAULT_PET_LEAVE_DELAY_MS;
   }
 
-  /** 初始化：桌宠窗默认穿透（只有模型本体可交互） */
-  start(): void {
-    this.applyPenetrating(true);
+  /** 初始化：默认穿透（只有模型本体可交互）；传 false = 常驻可交互（用户取消了穿透） */
+  start(penetrating = true): void {
+    this.applyPenetrating(penetrating);
   }
 
   /**

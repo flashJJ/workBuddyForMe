@@ -49,6 +49,16 @@ describe('vrm-avatar-service', () => {
     expect(() => svc.importAvatar({ filename: 'a.vrm', buffer: glbNoVrm })).toThrow(/缺少 VRM 扩展/);
   });
 
+  it('内部引用越界（精简损坏的模型）拒绝导入', () => {
+    const broken = buildFakeGlb({
+      extensionsUsed: ['VRMC_vrm'],
+      extensions: { VRMC_vrm: { meta: { name: 'Broken' } } },
+      bufferViews: [{ buffer: 0, byteLength: 4 }],
+      images: [{ bufferView: 9 }],
+    });
+    expect(() => svc.importAvatar({ filename: 'broken.vrm', buffer: broken })).toThrow(/不完整/);
+  });
+
   it('删除后文件与记录一并移除', () => {
     const buffer = buildFakeVrm();
     const avatar = svc.importAvatar({ filename: 'del.vrm', buffer });
@@ -73,7 +83,7 @@ function buildFakeVrm(): Uint8Array {
   return buildFakeGlb({ extensionsUsed: ['VRMC_vrm'], extensions: { VRMC_vrm: { meta: { name: 'FakeVrm' } } } });
 }
 
-function buildFakeGlb(extra: { extensionsUsed?: string[]; extensions?: unknown }): Uint8Array {
+function buildFakeGlb(extra: Record<string, unknown>): Uint8Array {
   const json = JSON.stringify({ asset: { version: '2.0' }, ...extra });
   const jsonBytes = new TextEncoder().encode(json);
   const total = 20 + jsonBytes.length;

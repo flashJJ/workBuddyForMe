@@ -1,6 +1,7 @@
 'use client';
 
 import type { ActionChain, InteractionAction, InteractionKind } from '@wbfm/shared/schemas';
+import { pickPetLine } from '@wbfm/shared/schemas';
 import type { TouchControllerLike } from '@/features/avatar';
 import type { VrmControllerLike } from '@/features/avatar';
 
@@ -71,6 +72,10 @@ export class ActionExecutor {
 
       case 'subtitle.show':
         this.deps.showSubtitle?.(action.i18nKey, action.durationMs);
+        break;
+
+      case 'subtitle.pick':
+        this.deps.showSubtitle?.(pickPetLine(action.pool), action.durationMs);
         break;
 
       case 'event.fire':

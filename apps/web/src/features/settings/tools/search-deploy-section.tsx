@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { SearchSettings } from '@wbfm/shared/types';
 import type { SearxngDeployResult } from '@wbfm/shared/search';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useUpdateSettings } from '@/lib/hooks/provider';
 import { apiPost } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
@@ -38,14 +39,31 @@ export function SearxngDeploySection({
     | { kind: 'ok'; endpoint: string; engines?: string[] }
     | { kind: 'fail'; result: Extract<SearxngDeployResult, { ok: false }> }
   >({ kind: 'idle' });
+  /** 端口留空 = 自动从候选里挑空闲端口 */
+  const [port, setPort] = React.useState('');
 
   const bridge = typeof window !== 'undefined' ? window.wbfm?.search : undefined;
   if (!bridge) return null;
 
   const runDeploy = async () => {
+    const portValue = port.trim() ? Number(port) : undefined;
+    if (
+      portValue !== undefined &&
+      (!Number.isInteger(portValue) || portValue < 1024 || portValue > 65535)
+    ) {
+      setDeploy({
+        kind: 'fail',
+        result: {
+          ok: false,
+          reason: 'start_failed',
+          message: t('settings.search.deployPortInvalid'),
+        },
+      });
+      return;
+    }
     setDeploy({ kind: 'running' });
     try {
-      const result = await bridge.deploySearxng();
+      const result = await bridge.deploySearxng(portValue);
       if (!result.ok) {
         setDeploy({ kind: 'fail', result });
         return;
@@ -81,17 +99,32 @@ export function SearxngDeploySection({
           <p className="text-sm">{t('settings.search.deployTitle')}</p>
           <p className="text-xs text-muted-foreground">{t('settings.search.deployHint')}</p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => void runDeploy()}
-          disabled={deploy.kind === 'running' || update.isPending}
-        >
-          {deploy.kind === 'running'
-            ? t('settings.search.deploying')
-            : t('settings.search.deploy')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span>{t('settings.search.deployPort')}</span>
+            <Input
+              type="number"
+              min={1024}
+              max={65535}
+              value={port}
+              onChange={(event) => setPort(event.target.value)}
+              placeholder={t('settings.search.deployPortAuto')}
+              className="h-8 w-36"
+              disabled={deploy.kind === 'running' || update.isPending}
+            />
+          </label>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void runDeploy()}
+            disabled={deploy.kind === 'running' || update.isPending}
+          >
+            {deploy.kind === 'running'
+              ? t('settings.search.deploying')
+              : t('settings.search.deploy')}
+          </Button>
+        </div>
       </div>
       {deploy.kind === 'ok' && (
         <div className="space-y-1" role="status">

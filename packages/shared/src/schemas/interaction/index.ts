@@ -5,3 +5,4 @@ export * from './interaction-events';
 export * from './interaction-graph';
 export * from './interaction-hitbox';
 export * from './interaction-resolvers';
+export * from './pet-lines';

@@ -13,6 +13,8 @@ onlyBuiltDependencies:
   - esbuild
   - unrs-resolver
   - electron
+  # v3.0 P1 窗口坐立：koffi 需执行安装脚本落地 Win32 FFI 原生二进制
+  - koffi
 
 # pnpm 11 新增的显式构建批准
 allowBuilds:
@@ -24,6 +26,8 @@ allowBuilds:
   tesseract.js: false
   # electron-builder 26 的 Squirrel.Windows 传递依赖；本项目只出 NSIS，不需要其 postinstall
   electron-winstaller: false
+  # v3.0 P1：koffi 安装时落地 Win32 FFI 原生二进制
+  koffi: true
 
 # brace-expansion@2.1.7 引入 balanced-match@2（ESM 具名导出），与仓库内
 # minimatch@3 等仍用 balanced-match@1（默认导出）的调用方在 hoisted 布局下

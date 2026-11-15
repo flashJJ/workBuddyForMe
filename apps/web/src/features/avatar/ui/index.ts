@@ -4,4 +4,5 @@ export * from './avatar-canvas-router';
 export * from './avatar-host';
 export * from './avatar-models';
 export * from './chat-avatar-rail';
+export * from './use-avatar-chibi';
 export * from './use-head-touch';

@@ -14,7 +14,9 @@
 
 ## 当前候选
 
-暂无未排期候选。
+| 编号 | 候选 | 状态 | 说明 |
+|---|---|---|---|
+| 05 | [项目级插件化预研](./05-plugin-architecture.md) | 待评审 | 对照 DSH/Cordis 微内核，评估适用范围、改造清单与仓库策略；候选结论是不引入微内核、不拆多仓，走「能力包 + 服务提供者 + MCP 桥」三线 |
 
 候选 02「数据可带走：备份补全、恢复预检与空间清理」已排期 v2.32，移至 [v2.32-02](../scheduled/v2.32-02-data-portability-and-storage.md)，正式方案见 [v2.32 方案](../../plan/v2.32/README.md)。候选 01「记忆图关系边与空闲整理」已排期 v2.31，移至 [v2.31-01](../scheduled/v2.31-01-memory-graph-and-consolidation.md)，社区聚类（方案 B）永久关闭。v2.30 已合入 main 为「能力补齐：能力可见、审批可读与内容包/产物收口」，候选 03 已移至 [v2.30-03](../scheduled/v2.30-03-capability-and-content-pack-completion.md)。v2.29 已发布为「文档可信：存量重解析、质量标记与低质收口」，候选 04 已移至 [v2.29-04](../scheduled/v2.29-04-document-quality.md)。v2.28 已随 v2.29.0 交付为「记忆可管：统计前端、审计轮转与约束撤销」，候选 02 已移至 [v2.28-01](../scheduled/v2.28-01-memory-observability-and-governance.md)。v2.27 已立项为「引用角标、来源定位与回合运行摘要」，来源方案见 [v2.27-01](../scheduled/v2.27-01-citation-and-turn-summary.md)。Lancer 借鉴分析已排期并归档为 [v2.20-01](../scheduled/v2.20-01-lancer-borrowing-analysis.md)，拆分到 [v2.20 方案](../../plan/v2.20/README.md)（P0+P1）与 [v2.21 方案](../../plan/v2.21/README.md)（P2）；自由分支的来源方案见 [v2.21-01](../scheduled/v2.21-01-free-branch-sessions.md)。
 

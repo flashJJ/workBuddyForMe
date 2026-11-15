@@ -9,7 +9,7 @@
  *   3. 打印阶段/交接/裁决/预算与最终交付；error 帧以非零码退出。
  *
  * 前置：
- *   - pnpm --filter @wbfm/web dev（默认 BASE_URL=http://127.0.0.1:3000）
+ *   - pnpm --filter @wbfm/web dev（默认 BASE_URL=http://127.0.0.1:42337）
  *   - 设置中已配置可用对话模型；助手可配置 plannerModelId/executorModelId/reviewerModelId
  *   - 知识型冒烟：助手绑定已编译知识库（executor 走 tool 模式 + knowledge_search）
  *   - 桌面型冒烟：子任务含桌面操作时 executor 模型必须具备视觉能力
@@ -23,7 +23,7 @@
  * 退出码：0=done 或 budget_exceeded（预算触顶属通道正常）；1=error 帧/HTTP 错误/参数缺失。
  */
 
-const baseUrl = process.env.BASE_URL ?? 'http://127.0.0.1:3000';
+const baseUrl = process.env.BASE_URL ?? 'http://127.0.0.1:42337';
 const assistantId = process.env.ASSISTANT_ID;
 const goal = process.env.GOAL;
 const maxRounds = process.env.MAX_ROUNDS ? Number(process.env.MAX_ROUNDS) : undefined;

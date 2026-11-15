@@ -18,14 +18,19 @@ function makePetBridge(): WbfmPetBridge & { relayPerformance: ReturnType<typeof 
     close: vi.fn(async () => undefined),
     isOpen: vi.fn(async () => false),
     reportHover: vi.fn(),
+    reportHitProxy: vi.fn(),
     focusMain: vi.fn(),
     dragBegin: vi.fn(),
     dragTo: vi.fn(),
     dragEnd: vi.fn(),
     showMenu: vi.fn(),
+    reportCompanionSettings: vi.fn(),
     relayPerformance: vi.fn(),
     onPerformance: vi.fn(() => () => undefined),
     onOpenChange: vi.fn(() => () => undefined),
+    onModelChange: vi.fn(() => () => undefined),
+    confirmModel: vi.fn(),
+    onQuickAction: vi.fn(() => () => undefined),
   };
 }
 
@@ -78,6 +83,17 @@ describe('usePetSignalRelay（系统信号中继）', () => {
 
   it('语音状态边沿：idle → 说话发 voice-start，说完回 idle 发 voice-end', () => {
     const h = render(true, 'idle');
+    expect(signals(pet)).toEqual([]);
+
+    act(() => h.rerender({ a: true, v: 'speaking' }));
+    expect(signals(pet)).toEqual(['voice-start']);
+
+    act(() => h.rerender({ a: true, v: 'idle' }));
+    expect(signals(pet)).toEqual(['voice-start', 'voice-end']);
+  });
+
+  it('桌宠在说话中才打开：补发 voice-start，说完只有一次 voice-end', () => {
+    const h = render(false, 'speaking');
     expect(signals(pet)).toEqual([]);
 
     act(() => h.rerender({ a: true, v: 'speaking' }));

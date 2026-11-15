@@ -1,84 +1,69 @@
 /**
- * 桌宠窗管理器（v1.1 M2 拆分为协作者）：本类只保留单窗生命周期、原位换窗与关窗语义；
- * 拖拽→pet-drag-controller，悬停轮询→pet-hover-poller，菜单→pet-menu，
- * pet:* channel→pet-ipc，注入接口→pet-types，启动工厂→pet-bootstrap。
- * 桌宠存活时关主窗=隐藏而非退出；桌宠被关后主窗重现；表现事件只净化+单窗转发。
+ * 桌宠窗管理器：单窗生命周期、原位换窗与关窗语义。
+ * 拖拽/抛掷/坐立、悬停轮询、菜单、IPC 均已外迁；本类负责状态与编排。
  */
 import { screen } from 'electron';
 import {
   normalizeAvatarModelId,
   sanitizePetEvent,
   type PetPerformanceEvent,
+  type PetQuickAction,
 } from '@wbfm/shared/pet';
 import { PetClickThroughController } from './pet-penetration';
-import { loadPetState, savePetState, type PetState, type Rect } from './pet-state';
+import { loadPetState, savePetState, type PetState } from './pet-state';
 import {
   createPetWindow,
-  PET_WINDOW_HEIGHT,
-  PET_WINDOW_WIDTH,
   type CursorPoint,
 } from './pet-window';
 import { PetDragController, type PetDragWindow } from './pet-drag-controller';
 import { PetThrowController } from './pet-throw-controller';
+import { PetSitController, type PetSitWindow } from '../pet-sit/pet-sit-controller';
 import { PetHoverPoller } from './pet-hover-poller';
-import { showDefaultPetContextMenu } from './pet-menu';
+import { PetCompanionSettingsStore, showDefaultPetContextMenu } from './pet-menu';
 import { registerPetIpc, type IpcMainLike } from './pet-ipc';
 import type { PetManagerDeps, PetWindowLike } from './pet-types';
-import { OPEN_CHANGED_CHANNEL, PERFORMANCE_CHANNEL, DEFAULT_MODEL } from './pet-constants';
+import { OPEN_CHANGED_CHANNEL, PERFORMANCE_CHANNEL, DEFAULT_MODEL, MODEL_CHANGED_CHANNEL, QUICK_ACTION_CHANNEL } from './pet-constants';
+import { PetModelSwitcher } from './switch/pet-model-switch';
+import { createPetMotionControllers } from './motion/pet-motion';
 
 export class PetManager {
   private win: PetWindowLike | null = null;
   private controller: PetClickThroughController | null = null;
   private state: PetState;
   private quitting = false;
-  /** 原位换模型进行中：closed 事件不唤主窗、不广播关闭 */
-  private swapping = false;
   /** 当前桌宠展示的模型（归一后） */
   private currentModelId = DEFAULT_MODEL;
   private readonly hoverPoller: PetHoverPoller;
   private readonly drag: PetDragController;
   private readonly thrower: PetThrowController;
+  private readonly sit: PetSitController;
+  /** v3.0 P4：同窗口换模型协调（回执等待 / 超时回退 / 连续切换作废） */
+  private readonly modelSwitch: PetModelSwitcher;
+  /** 右键菜单勾选态：由桌宠窗上报 */
+  private readonly companion = new PetCompanionSettingsStore();
 
   constructor(private readonly deps: PetManagerDeps) {
     this.state = loadPetState(deps.userDataDir);
     this.hoverPoller = new PetHoverPoller({
       getCursor: () => this.readCursor(),
       setInterval: deps.setInterval, clearInterval: deps.clearInterval,
-      onHover: (h) => this.controller?.update(h),
+      // 取消穿透（clickThrough=false）后轮询不得再翻回
+      onHover: (h) => { if (this.state.clickThrough) this.controller?.update(h); },
       onForceInteractive: () => this.controller?.force(false),
     });
-    // 桌宠窗固定尺寸（不可缩放）：拖拽/滑行一律回写规范尺寸，避免棘轮式变大
-    const fixedSize = () => ({ width: PET_WINDOW_WIDTH, height: PET_WINDOW_HEIGHT });
-    this.thrower = new PetThrowController({
-      setInterval: deps.setInterval, clearInterval: deps.clearInterval,
-      getWorkArea: (bounds) => this.readWorkArea(bounds),
-      getFixedSize: fixedSize,
-      onSettle: (win) => this.persistBounds(win),
-      // 真机排查用（滑行/贴边的调用与坐标轨迹）
-      log: (message) => process.stdout.write(`[pet-throw] ${message}\n`),
-    });
-    this.drag = new PetDragController({
+    this.modelSwitch = new PetModelSwitcher(deps);
+    const motion = createPetMotionControllers({
+      deps,
       getCursor: () => this.readCursor(),
-      getFixedSize: fixedSize,
-      onDragStart: () => {
-        // 新一轮拖拽开始：先停掉可能在跑的滑行，否则抛掷与拖拽会互相抢窗口位置（卡顿/乱跳）
-        this.thrower.stop();
-        process.stdout.write('[pet-drag] begin\n');
-        this.controller?.force(false);
-      },
-      // 松手带释放速度 + 本次拖拽累计位移 → 抛掷控制器做惯性滑行 + 贴边回正（位移过小视为误触，不动作）
-      onDragEnd: (win, velocity, distance) => {
-        process.stdout.write(
-          `[pet-drag] end dist=${Math.round(distance)} v=${Math.round(velocity.x)},${Math.round(velocity.y)}\n`,
-        );
-        this.thrower.start(win, velocity, distance);
-      },
+      persist: (win) => this.persistBounds(win),
+      forceInteractive: () => this.controller?.force(false),
     });
+    this.drag = motion.drag;
+    this.thrower = motion.thrower;
+    this.sit = motion.sit;
   }
 
-  isOpen(): boolean {
-    return Boolean(this.win && !this.win.isDestroyed());
-  }
+  isOpen(): boolean { return Boolean(this.win && !this.win.isDestroyed()); }
 
   /** 打开桌宠；同模型幂等，不同模型原位静默换模型（不唤主窗、不重复广播） */
   async open(modelId?: string): Promise<boolean> {
@@ -94,24 +79,41 @@ export class PetManager {
     return true;
   }
 
-  /** 原位换模型：持久化当前位置 → 销毁旧窗（抑制 closed 副作用）→ 同位置建新窗 */
+  /**
+   * 原位换模型（v3.0 P4）：先通知渲染层热替换，保住位置/穿透/悬停状态；
+   * 超时未回执（旧渲染层/崩溃）再回退为「销毁重建窗口」。
+   */
   private async swapModel(target: string): Promise<boolean> {
     const old = this.win;
     if (!old || old.isDestroyed()) return this.open(target);
-    this.swapping = true;
+    const hot = await this.modelSwitch.request(
+      old,
+      target,
+      (win, modelId) => win.webContents.send(MODEL_CHANGED_CHANNEL, modelId),
+      (win, modelId) => this.recreateWindow(win, modelId),
+    );
+    if (hot) this.currentModelId = target; // 换模型不广播 open-changed（桌宠一直开着）
+    return hot || this.isOpen();
+  }
+
+  /** 渲染层回执（IPC 已做发送方校验）：modelId 匹配当前等待才视为成功 */
+  confirmModel(modelId: string): void { this.modelSwitch.confirm(modelId); }
+
+  /** 回退路径：原位销毁重建（旧实现），窗口位置由持久化 state 沿用 */
+  private recreateWindow(old: PetWindowLike, target: string): boolean {
+    // 等待回执期间可能已关窗/退出：此时不能再建窗
+    if (this.quitting || this.win !== old || old.isDestroyed()) return this.isOpen();
     this.hoverPoller.stop();
     this.thrower.stop();
     this.controller?.dispose();
     this.controller = null;
     this.persistBounds(old); // state 变为当前 bounds，新窗据此定位
+    this.win = null; // 先摘引用：旧窗 closed 时身份不匹配，不会回收随后的新窗
     old.destroy();
-    this.win = null;
-    this.swapping = false;
-
     const win = this.createWindow(target);
     this.attachWindow(win);
     this.currentModelId = target;
-    return true; // 换模型不广播 open-changed（对主窗桌宠一直开着）
+    return true;
   }
 
   private createWindow(modelId: string): PetWindowLike {
@@ -124,23 +126,24 @@ export class PetManager {
   /** 绑定穿透滞回、右键菜单、悬停轮询（新建/换模型共用） */
   private attachWindow(win: PetWindowLike): void {
     this.win = win;
+    this.sit.stop();
 
     this.controller = new PetClickThroughController({
       setPenetrating: (penetrating) => {
         if (!win.isDestroyed()) win.setIgnoreMouseEvents(penetrating, { forward: penetrating });
       },
     });
-    this.controller.start();
+    // 持久化「常驻可交互」偏好必须在开窗时生效（start 默认穿透）
+    this.controller.start(this.state.clickThrough);
 
     // 右键菜单：头部走 IPC；身体 drag 区经 system-context-menu preventDefault 弹同一菜单
     win.on('system-context-menu', (event) => {
       event?.preventDefault();
       if (this.isOpen()) this.requestMenu();
     });
-    win.webContents.on('renderer-process-crashed', () => {
-      void this.close();
-    });
-    win.on('closed', () => this.handleClosed());
+    // 渲染进程崩溃会留下点不动的透明残留窗（旧事件名 renderer-process-crashed 在 Electron 45 已移除）
+    win.webContents.on('render-process-gone', () => void this.close());
+    win.on('closed', () => this.handleClosed(win));
     this.hoverPoller.start(win);
   }
 
@@ -156,10 +159,8 @@ export class PetManager {
     win.close();
   }
 
-  /** 桌宠命中盒悬停结果 → 滞回控制器（高频，内部状态去重） */
-  reportHover(hovering: boolean): void {
-    this.controller?.update(hovering);
-  }
+  /** 桌宠命中盒悬停结果 → 滞回控制器（高频，内部状态去重；取消穿透后不再翻转） */
+  reportHover(hovering: boolean): void { if (this.state.clickThrough) this.controller?.update(hovering); }
 
   /** 渲染层右键：发送方校验后弹菜单；弹前强制可交互（穿透态菜单收不到点击） */
   requestMenu(): void {
@@ -218,12 +219,15 @@ export class PetManager {
         open: (modelId) => this.open(modelId),
         close: () => this.close(),
         reportHover: (h) => this.reportHover(h),
+        reportHitProxy: (raw) => this.hoverPoller.reportHitProxy(raw),
         focusMain: (path) => this.focusMain(path),
         beginDrag: () => this.drag.begin(this.win),
         dragTo: () => this.drag.dragTo(this.win),
         endDrag: () => this.drag.end(this.win),
         requestMenu: () => this.requestMenu(),
+        reportCompanionSettings: (raw) => this.companion.update(raw),
         relayPerformance: (raw) => this.relayPerformance(raw),
+        confirmModel: (modelId) => this.confirmModel(modelId),
       },
       { fromMain: (s) => this.fromMain(s), fromPet: (s) => s === this.win?.webContents },
     );
@@ -237,22 +241,14 @@ export class PetManager {
     return (this.deps.getCursor ?? (() => screen.getCursorScreenPoint()))();
   }
 
-  /** 窗口所在工作区（DIP）：默认按窗口矩形匹配显示器；取不到（测试/无 screen API）返回 null */
-  private readWorkArea(bounds: Rect): Rect | null {
-    if (this.deps.getWorkArea) return this.deps.getWorkArea(bounds);
-    try {
-      return screen.getDisplayMatching(bounds).workArea;
-    } catch {
-      return null;
-    }
-  }
-
   private showMenu(win: PetWindowLike): void {
     const show = this.deps.showContextMenu ?? showDefaultPetContextMenu;
     show(win, {
       isClickThrough: this.state.clickThrough,
-      focusMain: () => this.focusMain(),
+      companion: this.companion.get(),
+      focusMain: (path) => this.focusMain(path),
       toggleClickThrough: () => this.setClickThrough(!this.state.clickThrough),
+      quickAction: (action: PetQuickAction) => win.webContents.send(QUICK_ACTION_CHANNEL, action),
       hide: () => void this.close(),
     });
   }
@@ -263,23 +259,26 @@ export class PetManager {
     this.controller?.force(value); // 立即生效并清滞回计时
   }
 
-  private handleClosed(): void {
-    if (this.swapping) return; // 原位换模型由 swapModel 自行回收
+  private handleClosed(win: PetWindowLike): void {
+    // 身份判定替代「换模型时间窗」：旧窗迟到的 closed（异步 destroy）不得回收新窗
+    if (this.win !== win) return;
     const shouldFocusMain = !this.quitting; // prepareQuit 的 destroy 不唤主窗
     this.resetAfterClose();
     if (shouldFocusMain) this.focusMain();
   }
 
   private resetAfterClose(): void {
+    this.modelSwitch.cancel(); // 关窗后不得再走超时重建
     this.hoverPoller.stop();
     this.thrower.stop();
+    this.sit.stop();
     this.controller?.dispose();
     this.controller = null;
     this.win = null;
     this.broadcastOpen(false);
   }
 
-  private persistBounds(win: PetDragWindow): void {
+  private persistBounds(win: PetDragWindow | PetSitWindow): void {
     const { x, y } = win.getBounds();
     if (Number.isFinite(x) && Number.isFinite(y)) {
       this.state = { ...this.state, x: Math.round(x), y: Math.round(y) };

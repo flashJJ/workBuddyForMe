@@ -1,14 +1,13 @@
 /** settings 命名空间：设置中心页面 / 默认偏好 / 通用进行态；供应商见 settingsProviders，其余面板见 settingsMcp */
 import { enCapabilityTrust, enSettingsWork, zhCapabilityTrust, zhSettingsWork } from './settings-work';
 import { enSettingsSearch, zhSettingsSearch } from './settings-search';
+import { enSettingsScript, zhSettingsScript } from './settings-script';
+import { enSettingsRegistry, zhSettingsRegistry } from './settings-registry';
 export const zhSettings = {
   title: '设置',
   description: '管理模型供应商、默认模型与本地偏好，所有数据仅保存在本机。',
   sections: {
-    appearance: '形象外观',
-    dialog: '对话互动',
-    tools: '工具与权限',
-    data: '数据与备份',
+    appearance: '主题外观', avatar: '形象模型', motion: '动作库', voice: '语音与对话', music: '音乐与背景声', emotion: '情绪与关系', events: '事件与提醒', tools: '工具与权限', agents: '技能与智能体', data: '数据与备份', about: '帮助与关于',
   },
   addProvider: '新增供应商',
   loadError: '供应商加载失败',
@@ -139,17 +138,19 @@ export const zhSettings = {
   ...zhSettingsSearch,
   capabilityTrust: zhCapabilityTrust,
   work: zhSettingsWork,
+  script: zhSettingsScript,
+  ...zhSettingsRegistry,
 };
 export const enSettings = {
   title: 'Settings',
-  description:
-    'Manage model providers, default models and local preferences. All data stays on this device.',
+  description: 'Manage model providers, default models and local preferences. All data stays on this device.',
   // v2.0 section anchors (right-side nav / scroll-to)
   sections: {
-    appearance: 'Avatar & appearance',
-    dialog: 'Conversation',
-    tools: 'Tools & permissions',
-    data: 'Data & backup',
+    appearance: 'Theme', avatar: 'Avatar models', motion: 'Motion library',
+    voice: 'Voice & conversation', music: 'Music & ambience',
+    emotion: 'Emotion & relationship',
+    events: 'Events & reminders', tools: 'Tools & permissions',
+    agents: 'Skills & agents', data: 'Data & backup', about: 'Help & about',
   },
   addProvider: 'Add provider',
   loadError: 'Failed to load providers',
@@ -176,8 +177,7 @@ export const enSettings = {
   },
   retrieval: {
     title: 'Knowledge retrieval',
-    description:
-      'How knowledge-base answers are retrieved: hybrid semantic vectors + keywords, reranked by relevance.',
+    description: 'How knowledge-base answers are retrieved: hybrid semantic vectors + keywords, reranked by relevance.',
     hybridEnabled: 'Enable hybrid retrieval (vectors + keywords)',
     minSimilarity: 'Similarity floor (0–1)',
     maxChunks: 'Max cited snippets (1–20)',
@@ -192,11 +192,9 @@ export const enSettings = {
   // v1.6 M4 emotion & interaction
   emotion: {
     title: 'Mood & relationship',
-    description:
-      'Your companion builds mood, intimacy and trust over time. All data stays on this device.',
+    description: 'Your companion builds mood, intimacy and trust over time. All data stays on this device.',
     enable: 'Enable emotion engine (detect praise/criticism, build relationship, drive expressions)',
-    enableHint:
-      'When off, no emotion protocol is appended to replies, emotion signals are ignored, and no state is stored.',
+    enableHint: 'When off, no emotion protocol is appended to replies, emotion signals are ignored, and no state is stored.',
     enableLines: 'Interaction lines (head pats and welcome-back greetings, generated locally)',
     enableLinesHint:
       'When off, the character stays silent on pats and reunions (expressions and motions remain). Chat and voice are unaffected.',
@@ -296,4 +294,6 @@ export const enSettings = {
   ...enSettingsSearch,
   capabilityTrust: enCapabilityTrust,
   work: enSettingsWork,
+  script: enSettingsScript,
+  ...enSettingsRegistry,
 };

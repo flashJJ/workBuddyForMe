@@ -2,7 +2,7 @@
 
 ## 环境准备
 
-1. 安装 Node.js ≥ 20 与 pnpm ≥ 9（corepack：`corepack enable`）。
+1. 安装 Node.js ≥ 22.13（推荐 24，见 `.nvmrc`）与 pnpm 11.24（corepack：`corepack enable`）。
 2. 仓库根执行 `pnpm install`。Windows 下 pnpm 构建白名单已在 `pnpm-workspace.yaml`（`allowBuilds`）配置。
 3. 推荐 VS Code 插件：ESLint、Prettier、Tailwind CSS IntelliSense。
 
@@ -10,17 +10,28 @@
 
 | 命令 | 作用 |
 |---|---|
-| `pnpm dev:web` | Next dev（127.0.0.1:3000） |
+| `pnpm dev:web` | Next dev（127.0.0.1:42337） |
 | `pnpm dev:desktop` | Electron 开发态（自动等待 Next dev 就绪） |
 | `pnpm build` | Turborepo 全量构建（web 产出 `.next/standalone`） |
 | `pnpm typecheck` / `pnpm lint` | 类型检查 / Lint（含分层边界规则） |
 | `pnpm lint:boundaries` | 仅扫描分层边界违例（`import/no-restricted-paths`） |
 | `pnpm check` | lint + typecheck + check:lines 聚合门禁 |
 | `pnpm check:lines` | 300 行硬门禁 + 260 行预警（`--self-test` 自测） |
+| `pnpm check:scenes` | 剧本跨场景 lint + cue 时间线 golden 快照 |
+| `pnpm check:structure` | 目录直接文件预算、多文件入口与公开面检查 |
+| `pnpm check:cycles` | 循环依赖检查（存量基线冻结） |
+| `pnpm check:ascii` | Markdown 框图宽度检查（中文对齐） |
+| `pnpm sync-version` / `pnpm sync-version:check` | 同步 / 校验 root 版本到各包与 `version.ts` |
 | `pnpm test:unit` | 全仓单元测试（覆盖率阈值阻断） |
 | `pnpm test:integration` | Web API 集成测试全集（内存库 + 路由直调） |
 | `pnpm test:e2e` | Web 关键路径 E2E（Playwright + Mock 供应商） |
 | `pnpm test:e2e:desktop` | Electron 冒烟（构建 → 归集 → pack:dir → 启动断言） |
+
+> 端口约定：Web dev **42337**、Electron CDP **42338**、E2E **42339**（避开 3000 与 Windows 动态端口段）；可分别用 `WBFM_DEV_PORT` / `WBFM_DEBUG_PORT` / `WBFM_E2E_PORT` 覆盖。
+> 剧本引擎（Director / 行为场戏 / `__petDebug`）需要构建期开关：`$env:WBFM_PET_SCRIPT='1'; pnpm dev:desktop`。
+> 舞台深链：`/stage?run=`（协作）、`/stage?meeting=`（会议）、`/stage?stage=play&ep=late-tea-break`（小剧场，M4）。
+> 小剧场硬化（M4）：语音按角色声线逐句合成，BGM 复用 4 首 CC0 曲目、说话时 duck 35%，开场/换句有合成短音效，右上角可静音；工具栏支持暂停/继续、上一句/下一句、重播；三席加载完成前有进度幕布；分享卡 PNG 仅桌面端可保存。内置 4 集（`late-tea-break` / `morning-drill` / `proposal-night` / `rainy-wait`），每集分幕并可切换背景/配乐/类型标签；英文界面走 `titleEn` / `textEn`；舞台角色按相对位置自动向内微转。剧场单测：`pnpm --filter @wbfm/web exec vitest run src/features/stage/theater/__tests__`。
+> 背景音乐：`features/music` 提供全局播放器；主题曲 3 首组内轮播，氛围音乐 8 首；设置页 `#panel-music-library` 可导入歌曲并复制氛围清单；播放偏好存 localStorage，导入音频存 IndexedDB；进入舞台路由随主布局卸载。内置 11 首均为 OpenGameArt 的 CC0 1.0 曲目，可随仓库与安装包分发；来源与作者见 `ASSETS-LICENSE.md`。MP3 验收用系统 Edge/Chrome（Playwright 内置 Chromium 不含 MP3 解码）。单测：`pnpm --filter @wbfm/web exec vitest run src/features/music`。
 
 Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./scripts/dev-desktop.ps1`（检查 node/pnpm 版本与依赖安装后启动）。
 
@@ -35,6 +46,7 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 | `WBFM_SERVER_PATH` | 覆盖 standalone server.js 路径（Electron 冒烟降级场景使用） |
 | `WBFM_USER_DATA_DIR` | 覆盖 Electron userData（单实例锁/窗口状态落此；测试隔离用） |
 | `WBFM_DEV` | 置 `1` 强制开发态行为（加载 dev server、打开 DevTools） |
+| `WBFM_PET_SCRIPT` | 置 `1` 在构建期注入剧本引擎与 `__petDebug` 调试面板（默认不含） |
 
 ## 编码约定
 
@@ -90,7 +102,7 @@ packages/shared, config → 不依赖任何业务包
 
 - **单元测试**（`pnpm test:unit`）：config/database/ai/core statements ≥70%（Vitest 阈值阻断）；mock 边界为 fetch（供应商）、时间、数据根；不允许真实出网。
 - **集成测试**（`apps/web/src/app/api/integration.test.ts`）：`mkdtempSync` 临时数据根 + 内存 SQLite + `__buildContainerForTest` 注入容器，路由 handler 直调 `new Request(...)`；覆盖级联删除、SSE 上游失败落库、错误码矩阵一致性等跨层行为。
-- **Web E2E**（`tests/e2e/critical-path.spec.ts`，`pnpm test:e2e`）：Playwright 启动 next dev（端口 3100，`WBFM_MOCK_AI=1` + 临时数据根，`reuseExistingServer: !CI`），5 个串行场景：供应商/模型配置 → 流式对话与中途停止 → 知识库上传索引 → RAG 带引用问答 → 四模块导航。
+- **Web E2E**（`tests/e2e/critical-path.spec.ts`，`pnpm test:e2e`）：Playwright 启动 next dev（端口 42339，`WBFM_MOCK_AI=1` + 临时数据根，`reuseExistingServer: !CI`），5 个串行场景：供应商/模型配置 → 流式对话与中途停止 → 知识库上传索引 → RAG 带引用问答 → 四模块导航。
 - **Electron 冒烟**（`apps/desktop/e2e/smoke.spec.ts`，`pnpm test:e2e:desktop`）：`run-e2e.mjs` 串行执行 web build → desktop build → prepare-server（归集 standalone）→ electron-builder --dir → Playwright `_electron.launch`；断言窗口渲染、四模块导航、webPreferences 安全基线（contextIsolation/sandbox/no nodeIntegration）、托管令牌 401/200。
 
 ### Mock 供应商
@@ -120,17 +132,19 @@ Electron 冒烟需 Windows 环境（better-sqlite3 原生重编译 + electron-bu
 
 ### Windows 本机构建的 winCodeSign 前置
 
-electron-builder 的 rcedit（写入 exe 图标/版本资源）依赖 `winCodeSign-2.6.0` 工具包。CI 的 Windows runner 可直接解压；**本机非提权终端**解压会因包内两个 macOS dylib 符号链接失败（`Cannot create symbolic link`，7za 报 Sub items Errors 2），需一次性预置缓存：
+electron-builder 的 rcedit（写入 exe 图标/版本资源）依赖 `winCodeSign-2.6.0` 工具包。electron-builder 26 使用带 `.state` 的新缓存布局，旧版手工解压出的 `winCodeSign-2.6.0` 目录不会被识别，仍会回源 GitHub；弱网下表现为 `Timeout awaiting 'request' for 600000ms`。正确做法是把官方 7z 预置到归档缓存，让 electron-builder 本地校验并解压：
 
 ```powershell
 $env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
-# 触发一次下载（会失败并留下 <随机数>.7z），随后手工解压（忽略 darwin 符号链接错误）：
-$cache = "$env:LOCALAPPDATA\electron-builder\Cache\winCodeSign"
-$7z = "node_modules\7zip-bin\win\x64\7za.exe"
-& $7z x "$cache\<下载得到的>.7z" "-o$cache\winCodeSign-2.6.0" -y   # 两个 dylib 报错可忽略
+$dir = "$env:LOCALAPPDATA\electron-builder\Cache\winCodeSign-2.6.0"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+$out = Join-Path $dir 'winCodeSign-2.6.0.7z'
+Invoke-WebRequest -UseBasicParsing -Uri 'https://npmmirror.com/mirrors/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z' -OutFile $out
+(Get-FileHash $out -Algorithm SHA256).Hash.ToLower()
+# 期望：cdaec7154dda7cc31f88d886e2489379a0625a737d610b5ae7f62a12f16743a4
 ```
 
-之后 `dist:win`/`pack:dir` 正常。一劳永逸方案是开启 Windows「开发者模式」（赋予非提权符号链接权限）。
+首次解压时 7za 仍会因包内两个 macOS dylib 符号链接报错，electron-builder 允许「有产物即继续」；之后 `dist:win`/`pack:dir` 不再回源。一劳永逸方案是开启 Windows「开发者模式」（赋予非提权符号链接权限）。
 
 ## 发版流程
 
@@ -155,7 +169,7 @@ $7z = "node_modules\7zip-bin\win\x64\7za.exe"
 发版：
 
 5. 合入 main 后打附注标签 `vX.Y.Z` 并推送 → release.yml 在 Windows runner 上产出 NSIS 并创建 **draft** Release。
-6. 在 GitHub 编辑 draft Release：核对资产（exe/blockmap/latest.yml 三件套）、粘贴并补全发行说明（v1.2 英文草稿：[v1.2-release-notes-en.md](../roadmap/v1.2-release-notes-en.md)，发布前填日期与 sha256），人工转正式发布。
+6. 在 GitHub 编辑 draft Release：核对资产（exe/blockmap/latest.yml 三件套）、粘贴并补全发行说明（v1.2 英文草稿：[v1.2-release-notes-en.md](roadmap/v1.2-release-notes-en.md)，发布前填日期与 sha256），人工转正式发布。
 7. 真机验证：旧版安装包应用内「检查更新」走完整更新链；全新安装走首次启动向导（详见各版本真机验收清单）。
 
 本机构建（调试安装器）用 `pnpm --filter @wbfm/desktop dist:win`（自动 build web → 归集 → electron-builder，`--publish never`），产物在 `apps/desktop/release/`。

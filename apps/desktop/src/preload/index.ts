@@ -74,12 +74,18 @@ const pet: WbfmPetBridge = {
   close: () => ipcRenderer.invoke('pet:close'),
   isOpen: () => ipcRenderer.invoke('pet:is-open') as Promise<boolean>,
   reportHover: (hovering) => ipcRenderer.send('pet:hover', hovering),
+  reportHitProxy: (proxy) => ipcRenderer.send('pet:hit-proxy', proxy),
   focusMain: (path) => ipcRenderer.send('pet:focus-main', path),
   dragBegin: () => ipcRenderer.send('pet:drag-begin'),
   dragTo: () => ipcRenderer.send('pet:drag-to'),
   dragEnd: () => ipcRenderer.send('pet:drag-end'),
   showMenu: () => ipcRenderer.send('pet:show-menu'),
+  reportCompanionSettings: (settings) => ipcRenderer.send('pet:companion-settings', settings),
   relayPerformance: (event) => ipcRenderer.send('pet:relay', event),
+  onModelChange: (cb) => subscribe('pet:model-changed', (payload) => cb(String(payload))),
+  confirmModel: (modelId) => ipcRenderer.send('pet:model-applied', modelId),
+  onQuickAction: (cb) =>
+    subscribe('pet:quick-action', (payload) => cb(payload as Parameters<typeof cb>[0])),
   onPerformance: (cb) =>
     subscribe('pet:performance', (payload) => cb(payload as Parameters<typeof cb>[0])),
   onOpenChange: (cb) => subscribe('pet:open-changed', (payload) => cb(Boolean(payload))),
@@ -137,7 +143,7 @@ const dialog: WbfmDialogBridge = {
  * 联网搜索桥：一键用本机 Docker 拉起 SearXNG（不开放任意命令执行）。
  */
 const search: WbfmSearchBridge = {
-  deploySearxng: () => ipcRenderer.invoke('search:deploy-searxng'),
+  deploySearxng: (port?: number) => ipcRenderer.invoke('search:deploy-searxng', port),
 };
 
 contextBridge.exposeInMainWorld('wbfm', {

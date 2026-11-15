@@ -9,63 +9,39 @@ import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useProviders, useSettings } from '@/lib/hooks/provider';
 import { PanelVisibilityGate } from '@/lib/ui/panel-visibility';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { cn } from '@/lib/utils';
 import { ProviderCard } from '../providers/provider-card';
 import { ProviderFormDialog } from '../providers/provider-form-dialog';
-import { DemoModePanel } from '../providers/demo-mode-panel';
-import { DefaultsPanel } from '../providers/defaults-panel';
-import { AppearancePanel } from '../appearance/appearance-panel';
-import { McpPanel } from '../mcp/mcp-panel';
-import { PermissionPanel } from '../tools/permission-panel';
-import { ToolBreakerPanel } from '../tools/tool-breaker-panel';
-import { ToolDebugPanel } from '../tools/tool-debug-panel';
-import { SearchSettingsPanel } from '../tools/search-settings-panel';
-import { SkillsPanel } from '../skills/skills-panel';
-import { MemoryPanel } from '@/features/memory';
-import { BackupPanel } from '../storage/backup';
-import { ArtifactPackPanel } from '../storage/artifact-pack-panel';
-import { StorageCleanupPanel } from '../storage/storage-cleanup-panel';
-import { AboutPanel } from '../storage/about-panel';
-import { HelpCenterPanel } from '@/features/help-center';
-import { VoicePreferencePanel } from '@/features/voice';
-import { KnowledgeRetrievalPanel } from '../storage/knowledge-retrieval-panel';
-import { EmotionPanel } from '../dialog/emotion-panel';
-import { InteractionGraphPanel } from '../dialog/interaction-graph-panel';
-import { RelationshipPanel } from '../dialog/relationship-panel';
-import { EventPanel } from '../events/event-panel';
-import { ReminderPanel } from '@/features/reminders';
-import { CharacterCardsPanel } from '@/features/character-cards';
-import { TuningPanel } from '@/features/tuning';
-import { VrmImportSection } from '../appearance/vrm-import-section';
-import { VrmAvatarList } from '../appearance/vrm-avatar-list';
-import { MotionImportSection } from '../appearance/motion-import-section';
-import { MotionList } from '../appearance/motion-list';
-import { ModPackPanel } from '../storage/mod-pack-panel';
-import { RelationshipReportPanel } from '../dialog/relationship-report-panel';
-import { WorkSignalPanel } from '../dialog/work-signal-panel';
-import { SubagentPanel } from '../subagent/subagent-panel';
-import { CapabilityTrustSection } from '../tools/capability-trust-section';
-import { AgentGovernanceSection } from '../tools/agent-governance-section';
-import { BranchLimitsPanel } from '../branch/limits-panel';
+import {
+  SETTINGS_SECTIONS,
+  matchesSettingsQuery,
+  settingsPanelAnchor,
+  settingsPanelHaystack,
+  settingsSectionAnchor,
+  type SettingsSectionId,
+} from '@/lib/settings/catalog';
+import { createSettingsPanelEntries } from './settings-registry';
+import {
+  SettingsPinButton,
+  SettingsShortcuts,
+  useSettingsShortcuts,
+} from './settings-shortcuts';
+
+const SECTION_LABELS = new Map(SETTINGS_SECTIONS.map((section) => [section.id, section.labelKey]));
 
 /**
- * 设置页 4 大分组（右侧 sticky 锚点导航）：
- * - appearance 形象外观：命名主题、VRM 导入与列表
- * - dialog 对话互动：语音偏好、情绪内核、关系等级、剧情事件、提醒、关系报告
- * - tools 工具与权限：MCP 服务器、工具权限/熔断/调试、技能包、参数调优
- * - data 数据与备份：角色卡、知识检索、个性化包、记忆、备份、关于
+ * 设置中心：面板元数据来自 settings-index / settings-registry。
+ * 顶部搜索按标题、描述与中英别名过滤面板；`#panel-*` 深链直达面板，`#setting-*` 直达分组。
  */
-interface SettingsSection {
-  id: 'appearance' | 'dialog' | 'tools' | 'data';
-  labelKey: `settings.sections.${'appearance' | 'dialog' | 'tools' | 'data'}`;
-  panels: React.ReactNode[];
-}
-
 export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: boolean }) {
   const { t } = useI18n();
   const { data: providers, isLoading, isError, refetch } = useProviders();
   const { data: settings } = useSettings();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Provider | null>(null);
+  const [query, setQuery] = React.useState('');
+  const [highlight, setHighlight] = React.useState<string | null>(null);
+  const shortcuts = useSettingsShortcuts();
   // 水合门控：供应商查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -84,65 +60,95 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
     setDialogOpen(true);
   };
 
-  const sections: SettingsSection[] = [
-    {
-      id: 'appearance',
-      labelKey: 'settings.sections.appearance',
-      panels: [
-        <AppearancePanel key="appear" />,
-        <VrmImportSection key="vrm-import" />,
-        <VrmAvatarList key="vrm-list" />,
-        <MotionImportSection key="motion-import" />,
-        <MotionList key="motion-list" />,
-      ],
-    },
-    {
-      id: 'dialog',
-      labelKey: 'settings.sections.dialog',
-      panels: [
-        <VoicePreferencePanel key="voice" />,
-        <EmotionPanel key="emotion" />,
-        <InteractionGraphPanel key="interaction-graph" />,
-        <WorkSignalPanel key="work-signal" />,
-        <RelationshipPanel key="relationship" />,
-        <EventPanel key="events" />,
-        <RelationshipReportPanel key="report" />,
-        <ReminderPanel key="reminder" />,
-      ],
-    },
-    {
-      id: 'tools',
-      labelKey: 'settings.sections.tools',
-      panels: [
-        <SearchSettingsPanel key="search" />,
-        <McpPanel key="mcp" />,
-        <PermissionPanel key="perm" />,
-        <ToolBreakerPanel key="breaker" />,
-        <ToolDebugPanel key="tool-debug" />,
-        <SkillsPanel key="skills" />,
-        <SubagentPanel key="subagent" />,
-        <CapabilityTrustSection key="capability-trust" />,
-        <AgentGovernanceSection key="agent-governance" />,
-        <BranchLimitsPanel key="branch-limits" />,
-        <TuningPanel key="tuning" />,
-      ],
-    },
-    {
-      id: 'data',
-      labelKey: 'settings.sections.data',
-      panels: [
-        <CharacterCardsPanel key="cards" autoCreate={autoCreateCard} />,
-        <KnowledgeRetrievalPanel key="knowledge" />,
-        <ModPackPanel key="modpack" />,
-        <MemoryPanel key="memory" />,
-        <BackupPanel key="backup" />,
-        <ArtifactPackPanel key="artifact-pack" />,
-        <StorageCleanupPanel key="storage-cleanup" />,
-        <HelpCenterPanel key="help" />,
-        <AboutPanel key="about" />,
-      ],
-    },
-  ];
+  const searching = query.trim().length > 0;
+
+  const providerListNode = (
+    <>
+      {mounted && isLoading && <Spinner />}
+      {mounted && isError && (
+        <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />
+      )}
+      {mounted && !isLoading && !isError && visibleProviders && (
+        <div className="space-y-4" data-testid="provider-list">
+          {visibleProviders.length === 0 && !demoEnabled && (
+            <EmptyState
+              title={t('settings.empty.title')}
+              description={t('settings.empty.description')}
+              action={
+                <Button type="button" onClick={openCreate}>
+                  {t('settings.empty.action')}
+                </Button>
+              }
+            />
+          )}
+          {visibleProviders.map((provider) => (
+            <ProviderCard key={provider.id} provider={provider} onEdit={openEdit} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  const entries = createSettingsPanelEntries({ autoCreateCard, providers: providerListNode });
+
+  const matched = new Set<string>();
+  if (searching) {
+    for (const entry of entries) {
+      const haystack = settingsPanelHaystack(entry.meta, {
+        label: t(entry.meta.labelKey),
+        description: t(entry.meta.descriptionKey),
+        sectionLabel: t(SECTION_LABELS.get(entry.meta.section) ?? entry.meta.labelKey),
+      });
+      if (matchesSettingsQuery(haystack, query)) matched.add(entry.meta.id);
+    }
+  }
+
+  // 深链：首帧与 hashchange 都滚动定位，并短暂高亮目标面板
+  React.useEffect(() => {
+    let highlightTimer: ReturnType<typeof setTimeout> | undefined;
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+    const focusHash = () => {
+      const hash = decodeURIComponent(window.location.hash.replace(/^#/, ''));
+      if (!hash) return;
+      // 搜索过滤可能隐藏目标面板，先清空再滚动
+      setQuery('');
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        const target = document.getElementById(hash);
+        if (!target) return;
+        if (hash.startsWith('panel-')) shortcuts.remember(hash.slice('panel-'.length));
+        target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        setHighlight(hash);
+        if (highlightTimer) clearTimeout(highlightTimer);
+        highlightTimer = setTimeout(() => setHighlight(null), 2400);
+      }, 0);
+    };
+    const raf = requestAnimationFrame(focusHash);
+    window.addEventListener('hashchange', focusHash);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (highlightTimer) clearTimeout(highlightTimer);
+      if (scrollTimer) clearTimeout(scrollTimer);
+      window.removeEventListener('hashchange', focusHash);
+    };
+  }, [shortcuts.remember]);
+
+  const jumpToSection = (id: SettingsSectionId) => {
+    setQuery('');
+    requestAnimationFrame(() => {
+      document.getElementById(settingsSectionAnchor(id))?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+  };
+
+  const openPanel = (id: string) => {
+    setQuery('');
+    const anchor = settingsPanelAnchor(id);
+    if (window.location.hash === `#${anchor}`) {
+      window.dispatchEvent(new Event('hashchange'));
+    } else {
+      window.location.hash = `#${anchor}`;
+    }
+  };
 
   return (
     <PageShell
@@ -161,67 +167,106 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
       <div className="mx-auto flex w-full max-w-6xl gap-8">
         {/* 左侧：设置主内容 */}
         <div className="min-w-0 flex-1 space-y-8">
-          {/* 基础设置：演示模式开关 + 供应商 + 默认偏好（不进分组，始终置顶） */}
-          <DemoModePanel />
-
-          {mounted && isLoading && <Spinner />}
-          {mounted && isError && (
-            <ErrorState message={t('settings.loadError')} onRetry={() => void refetch()} />
-          )}
-          {mounted && !isLoading && !isError && visibleProviders && (
-            <div className="space-y-4" data-testid="provider-list">
-              {visibleProviders.length === 0 && !demoEnabled && (
-                <EmptyState
-                  title={t('settings.empty.title')}
-                  description={t('settings.empty.description')}
-                  action={
-                    <Button type="button" onClick={openCreate}>
-                      {t('settings.empty.action')}
-                    </Button>
-                  }
-                />
+          {/* 页内搜索：按标题 / 描述 / 中英别名过滤面板 */}
+          <div className="sticky top-0 z-10 space-y-2 bg-background/95 py-2 backdrop-blur">
+            <div className="flex items-center gap-2">
+              <input
+                id="settings-search"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t('settings.registry.search.placeholder')}
+                aria-label={t('settings.registry.search.label')}
+                data-testid="settings-search"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
+              />
+              {searching && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="shrink-0 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                >
+                  {t('settings.registry.search.clear')}
+                </button>
               )}
-              {visibleProviders.map((provider) => (
-                <ProviderCard key={provider.id} provider={provider} onEdit={openEdit} />
-              ))}
             </div>
+            <p className="text-xs text-muted-foreground" aria-live="polite">
+              {searching
+                ? t('settings.registry.search.count', { count: matched.size })
+                : t('settings.registry.search.hint')}
+            </p>
+          </div>
+
+          {!searching && shortcuts.ids.length > 0 && (
+            <SettingsShortcuts ids={shortcuts.ids} onOpen={openPanel} />
           )}
 
-          <DefaultsPanel />
-
-          {/* 4 大分组 */}
-          {sections.map((section) => (
-            <div key={section.id} data-testid={`settings-section-${section.id}`}>
-              <div
-                id={`setting-${section.id}`}
-                className="scroll-mt-6 border-b pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
-              >
-                {t(section.labelKey)}
+          {SETTINGS_SECTIONS.map((section) => {
+            const sectionEntries = entries.filter(
+              (entry) => entry.meta.section === section.id && (!searching || matched.has(entry.meta.id)),
+            );
+            if (sectionEntries.length === 0) return null;
+            return (
+              <div key={section.id} data-testid={`settings-section-${section.id}`}>
+                <div
+                  id={settingsSectionAnchor(section.id)}
+                  className="scroll-mt-24 border-b pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  {t(section.labelKey)}
+                </div>
+                <PanelVisibilityGate className="space-y-4 pt-4">
+                  {sectionEntries.map((entry) => {
+                    const anchor = settingsPanelAnchor(entry.meta.id);
+                    return (
+                      <div
+                        key={entry.meta.id}
+                        id={anchor}
+                        data-testid={`settings-panel-${entry.meta.id}`}
+                        className={cn(
+                          'group relative scroll-mt-24 rounded-lg transition-shadow',
+                          highlight === anchor && 'ring-2 ring-primary/60',
+                        )}
+                      >
+                        <SettingsPinButton
+                          id={entry.meta.id}
+                          pinned={shortcuts.isPinned(entry.meta.id)}
+                          onToggle={() => shortcuts.togglePin(entry.meta.id)}
+                        />
+                        {entry.node}
+                      </div>
+                    );
+                  })}
+                </PanelVisibilityGate>
               </div>
-              <PanelVisibilityGate className="space-y-4 pt-4">{section.panels}</PanelVisibilityGate>
-            </div>
-          ))}
+            );
+          })}
 
-          <ProviderFormDialog
-            open={dialogOpen}
-            onOpenChange={setDialogOpen}
-            provider={editing}
-          />
+          {searching && matched.size === 0 && (
+            <EmptyState
+              title={t('settings.registry.search.empty')}
+              description={t('settings.registry.search.hint')}
+              action={
+                <Button type="button" onClick={() => setQuery('')}>
+                  {t('settings.registry.search.clear')}
+                </Button>
+              }
+            />
+          )}
+
+          <ProviderFormDialog open={dialogOpen} onOpenChange={setDialogOpen} provider={editing} />
         </div>
 
         {/* 右侧：sticky 分组导航（lg+ 可见） */}
-        <nav
-          aria-label={t('settings.title')}
-          className="sticky top-0 hidden h-fit w-48 shrink-0 space-y-1 lg:block"
-        >
-          {sections.map((section) => (
-            <a
+        <nav aria-label={t('settings.title')} className="sticky top-0 hidden h-fit w-48 shrink-0 space-y-1 lg:block">
+          {SETTINGS_SECTIONS.map((section) => (
+            <button
               key={section.id}
-              href={`#setting-${section.id}`}
-              className="block rounded px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+              type="button"
+              onClick={() => jumpToSection(section.id)}
+              className="block w-full rounded px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
             >
               {t(section.labelKey)}
-            </a>
+            </button>
           ))}
         </nav>
       </div>

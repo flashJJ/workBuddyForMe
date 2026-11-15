@@ -2,7 +2,7 @@
 
 > 与 `apps/web/src/app/api/**/route.ts` 一一对应（19 个路由文件，全部已实现）。
 > 入参校验事实源：`packages/shared/src/schemas/*`；错误码事实源：`packages/shared/src/errors/error-codes.ts`。
-> Base URL：`http://127.0.0.1:3000/api`（Web 开发态）；Electron 生产模式为随机回环端口，由 preload 注入 `window.wbfm.baseUrl`。
+> Base URL：`http://127.0.0.1:42337/api`（Web 开发态）；Electron 生产模式为随机回环端口，由 preload 注入 `window.wbfm.baseUrl`。
 
 ## 1. 通用约定
 
@@ -72,8 +72,18 @@ SSE 流中产生的上游错误不中断 HTTP 200，而是以 `error` 事件下�
 | PATCH / DELETE | `/api/knowledge-bases/{id}` | 更新 / 删除（级联文档与分片） |
 | GET / POST | `/api/knowledge-bases/{id}/documents` | 文档列表 / 上传（multipart） |
 | GET / DELETE | `/api/documents/{id}` | 状态轮询 / 删除 |
+| GET / POST | `/api/pet/script` | 剧本队列 + 今日用量 + 剧情摘要 / 生成一条受限剧本 |
+| POST | `/api/pet/script/schedule` | 自动生成开关与每日次数 |
+| POST | `/api/pet/script/tick` | 客户端心跳：到期才生成，未到期/关闭/勿扰零副作用 |
+| GET / POST | `/api/pet/script/playback` | 今日主动播放预算 / 修改每日场次与空闲阈值 |
+| POST | `/api/pet/script/playback/claim` | 开演前认领一场（先扣预算 + 去重） |
+| GET / POST | `/api/pet/script/decisions` | 最近决策（默认 5 条）/ 开演后上报决策 |
+| GET / POST | `/api/pet/script/journal` | 某天剧情日记（`?date=`）/ 上报场景开演 |
+| GET / POST | `/api/pet/script/journal/settings` | 日记保留天数读取 / 修改并立即裁剪 |
 
 除非另行说明：请求体均为 JSON；`{id}` 为路径参数（字符串，非空）；列接口按创建时间/约定排序返回数组。
+
+> 本文覆盖核心对话 / 知识库与 v3.0 剧本引擎接口；Flow、MCP、会议、备份、语音等其余能力以 `apps/web/src/app/api/**/route.ts` 为准（当前共 219 个 Route Handler）。
 
 ## 3. SSE 事件协议（POST /api/chat/stream）
 
@@ -119,7 +129,7 @@ meta → (citations? | tool(start → end) | delta)* → done | error
 - 出参 `data`：`{ "dataDir": string, "version": string }`
 
 ```bash
-curl -s http://127.0.0.1:3000/api/system/info
+curl -s http://127.0.0.1:42337/api/system/info
 ```
 
 ### 4.3 GET /api/providers
@@ -157,7 +167,7 @@ interface Provider {
   - `ollama`：本地服务（默认 `http://127.0.0.1:11434`），`apiKey` 忽略；chat/embeddings 复用 OpenAI 兼容 `/v1` 端点（baseUrl 裸地址会自动补 `/v1`），连通性测试与模型列表走 Ollama 原生 `GET /api/tags`。
 
 ```bash
-curl -s -X POST http://127.0.0.1:3000/api/providers \
+curl -s -X POST http://127.0.0.1:42337/api/providers \
   -H 'content-type: application/json' \
   -d '{"name":"本地 Ollama","protocol":"ollama","baseUrl":"http://127.0.0.1:11434","apiKey":""}'
 ```
@@ -342,7 +352,7 @@ interface Message {
 - 流中上游错误 → `error` 事件（HTTP 仍 200）
 
 ```bash
-curl -N -X POST http://127.0.0.1:3000/api/chat/stream \
+curl -N -X POST http://127.0.0.1:42337/api/chat/stream \
   -H 'content-type: application/json' \
   -d '{"assistantId":"<id>","content":"介绍一下这个项目"}'
 ```
@@ -405,7 +415,7 @@ interface DocumentRecord {
 - 错误：404 / 409 / 422（超限/类型不支持/缺文件字段）
 
 ```bash
-curl -s -X POST http://127.0.0.1:3000/api/knowledge-bases/<kbId>/documents \
+curl -s -X POST http://127.0.0.1:42337/api/knowledge-bases/<kbId>/documents \
   -F "file=@./产品介绍.md;type=text/markdown"
 ```
 
@@ -416,3 +426,57 @@ curl -s -X POST http://127.0.0.1:3000/api/knowledge-bases/<kbId>/documents \
 ### 4.32 DELETE /api/documents/{id}
 
 - 出参 `data`：`{ "id": string }`；级联删除分片与向量。错误：404
+
+> 陪伴 / 剧本引擎（v3.0）：剧本、播放预算、决策与日记都落在 `settings_kv` 单键 JSON，不新增表；接口失败时客户端回落到本地剧本池。
+
+### 4.33 GET /api/pet/script
+
+- 出参 `data`：`{ scenes, usage, story, sceneMeta, schedule }`
+  - `scenes`：当前生成队列（新→旧）；`usage`：`date / calls / tokens / callLimit / tokenLimit`
+  - `story`：开放线索数、近期主题、悬念、标签与道具；`sceneMeta`：队列场景的 theme / tags / 弱偏好
+  - `schedule`：`{ enabled, perDay, runsToday, lastRunAt }`
+
+### 4.34 POST /api/pet/script
+
+- 入参：`{ "trigger"?: string }`，触发键必须在白名单内，缺省由生成器选择
+- 出参 `data`：`{ ok, reason, scenes, issues, usage, story, sceneMeta, modelId, fallback }`
+- 失败（`ok=false`）仍消耗一次调用额度，`reason` 为 `daily-cap` / `provider` / `invalid` 等，客户端继续用手写剧本池
+- 错误：422（触发键非法）
+
+### 4.35 POST /api/pet/script/schedule
+
+- 入参：`{ "enabled"?: boolean, "perDay"?: number }`，至少一项；`perDay` 受 `PET_SCRIPT_SCHEDULE_LIMITS` 约束
+- 出参 `data`：`{ "schedule": { enabled, perDay, runsToday, lastRunAt } }`
+
+### 4.36 POST /api/pet/script/tick
+
+无请求体。客户端心跳调用，到期才生成：
+
+- 出参 `data`：`{ triggered, reason, schedule, issues? }`
+- `reason`：`ok` / `disabled` / `not-due` / `quiet-hours` / 生成失败原因；未触发时零副作用
+
+### 4.37 GET / POST /api/pet/script/playback
+
+- GET 出参：`{ perDay, playsToday, idleMinutes, playedSceneIds }`
+- POST 入参：`{ "perDay"?: number, "idleMinutes"?: number }`，至少一项；出参同上
+
+### 4.38 POST /api/pet/script/playback/claim
+
+- 入参：`{ "sceneId": string }`
+- 出参 `data`：`{ ok, reason, sceneId, playback }`
+- 只接受生成队列中的 `gen.*` 场景；`reason`：`ok` / `disabled` / `daily-cap` / `quiet-hours` / `duplicate` / `not-generated`
+- 服务端先扣预算再开演，避免多窗口重复播放
+
+### 4.39 GET / POST /api/pet/script/decisions
+
+- GET `?limit=`：默认 5 条，最多 20 条；出参 `{ decisions: [{ at, sceneId, title, source, score, reasons, context }] }`
+- POST 入参：`{ sceneId, source: 'proactive' | 'trigger', score: 0..1, reasons: [{ code, delta }], context }`
+- 理由码白名单见 `PET_SCRIPT_DECISION_REASON_CODES`；`at` 与 `title` 由服务端补全（`gen.*` 查剧情日记）
+- 错误：422（理由码/分数/上下文非法）
+
+### 4.40 GET / POST /api/pet/script/journal 与 journal/settings
+
+- `GET /api/pet/script/journal?date=YYYY-MM-DD`：某天剧情日记，缺省今天
+- `POST /api/pet/script/journal`：`{ "sceneId": string }`，场景开演时上报，只累加 `gen.*`
+- `GET /api/pet/script/journal/settings`：`{ retentionDays: number | null }`（null = 永久保留）
+- `POST /api/pet/script/journal/settings`：`{ "retentionDays": number | null }`，保存后立即裁剪旧记录

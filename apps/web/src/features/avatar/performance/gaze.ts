@@ -1,0 +1,76 @@
+/**
+ * v3.0 P1：VRM 视线追踪参数（借鉴 Mate-Engine）。
+ *
+ * 头部水平 26° / 俯仰 16°，脊柱 ±8°；用帧率无关的指数平滑，
+ * 避免高刷屏与 30fps 档位下手感不一致。
+ */
+
+import * as THREE from 'three';
+
+const DEG = Math.PI / 180;
+
+export const GAZE_LIMITS = {
+  headYawDeg: 26,
+  headPitchDeg: 16,
+  spineYawDeg: 8,
+} as const;
+
+/** 平滑系数：越大越快（Mate 的头 10 / 脊柱 25） */
+export const GAZE_SMOOTH = { head: 10, spine: 25 } as const;
+
+/** 指针离开后多久回正（与 Live2D 微动作同一量级） */
+export const GAZE_IDLE_RESET_MS = 2500;
+
+export interface GazeAngles {
+  headYaw: number;
+  headPitch: number;
+  spineYaw: number;
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+/** 指针归一化到 -1..1（越界输入来自舞台/窗口缩放时兜底） */
+export function normalizeGaze(nx: number, ny: number): [number, number] {
+  return [
+    Math.max(-1, Math.min(1, nx)),
+    Math.max(-1, Math.min(1, ny)),
+  ];
+}
+
+/** 归一化指针 → 头部/脊柱弧度（weight 用于交互动作期间淡出）。headPitch 正值 = 低头 */
+export function gazeAngles(nx: number, ny: number, weight = 1): GazeAngles {
+  const [x, y] = normalizeGaze(nx, ny);
+  const w = clamp01(weight);
+  const zero = (value: number) => (value === 0 ? 0 : value); // 归一化 -0
+  return {
+    headYaw: zero(x * w * GAZE_LIMITS.headYawDeg * DEG),
+    // 屏幕 y 向下为正 = 低头；rig 的旋转方向由姿态层按骨骼世界轴标定
+    headPitch: zero(y * w * GAZE_LIMITS.headPitchDeg * DEG),
+    spineYaw: zero(x * w * GAZE_LIMITS.spineYawDeg * DEG),
+  };
+}
+
+/**
+ * 头部俯仰符号标定：VRM0 经 rotateVRM0 后归一化骨骼 +X 指向世界 -X，
+ * 绕 +X 正转是抬头；VRM1 则为低头。按头部世界 X 轴返回 +1/-1。
+ */
+export function rigPitchSign(head: THREE.Object3D): number {
+  head.updateWorldMatrix(true, false);
+  const q = new THREE.Quaternion();
+  head.getWorldQuaternion(q);
+  const axis = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+  return axis.x >= 0 ? 1 : -1;
+}
+
+/** 帧率无关指数平滑：dt 变化时收敛速度一致 */
+export function smoothDamp(
+  current: number,
+  target: number,
+  lambda: number,
+  dt: number,
+): number {
+  if (!(dt > 0) || !(lambda > 0)) return current;
+  return current + (target - current) * (1 - Math.exp(-lambda * dt));
+}

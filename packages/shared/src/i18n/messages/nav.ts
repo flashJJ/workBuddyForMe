@@ -15,6 +15,7 @@ export const zhNav = {
   flows: { label: '工作流', description: '可视化流程编排与试运行' },
   knowledge: { label: '知识库', description: '文档管理与 RAG 问答' },
   assistants: { label: '助手', description: '智能体与提示词预设' },
+  journal: { label: '日常回顾', description: '她今天做了什么：生成剧情与播放记录' },
   settings: { label: '设置', description: '供应商、模型与偏好' },
 };
 
@@ -34,5 +35,6 @@ export const enNav = {
   flows: { label: 'Flows', description: 'Visual workflow builder and trial runs' },
   knowledge: { label: 'Knowledge', description: 'Document management and RAG Q&A' },
   assistants: { label: 'Assistants', description: 'Agents and prompt presets' },
+  journal: { label: 'Journal', description: 'What she did today: generated scenes and playback' },
   settings: { label: 'Settings', description: 'Providers, models and preferences' },
 };

@@ -1,164 +1,295 @@
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import {
-  TOUCH_SQUASH_MS,
-  TOUCH_SQUASH_SCALE_X,
-  TOUCH_SQUASH_SCALE_Y,
-} from '@wbfm/shared/constants';
+  GAZE_IDLE_RESET_MS,
+  GAZE_SMOOTH,
+  normalizeGaze,
+  rigPitchSign,
+  smoothDamp,
+} from '../performance/gaze';
+import { GestureState, type ProceduralGestureKind } from '../performance/gesture';
+import { TurnState } from '../performance/turn';
+import type { NormalizedBoneRef } from '../pose/bones';
+import {
+  aimEyeTarget,
+  applyClipHead,
+  applyHeadInteraction,
+  applyNeckIdlePitch,
+  applyProceduralHead,
+  applySpineYaw,
+} from '../pose/head-overlay';
+import { VrmAnimationRuntime } from '../animation/adapters/vrm';
+import { collectBehaviorClaims, type BehaviorClaim } from '../animation/frame/behavior-claims';
+import { maskIncludes } from '../animation/mask';
+import { reapplyPalms } from '../animation/arms/solver';
+import { VrmIdleOverlay } from './overlay/vrm-idle-overlay';
+import { VrmScriptMotionOverlay, type ScriptMotionOptions } from './overlay/script-motion/vrm-script-motion';
+import { VrmLiveliness } from './overlay/vrm-liveliness';
+import { VrmHandClearance } from './overlay/vrm-hand-clearance';
+import { VrmStageStance } from './overlay/vrm-stage-stance';
+import { VrmSquash } from './overlay/vrm-squash';
+import { VrmSeating } from './overlay/vrm-seating';
+import type { SeatAnchor } from '../animation/seating';
+import { DEFAULT_LIVELINESS, type LivelinessParams } from '../animation/liveliness';
+import { createVrmMorphExecutor } from '../animation/adapters/vrm-morph';
+import { resolveGazeTarget } from '../pose/gaze-resolver';
+import type { RunnerSnapshot } from '../animation/behavior';
+import type { BehaviorDebugSnapshot } from '../animation/observability';
+import type { MorphDebugSnapshot } from '../animation/morph';
 
-/** 参与 gaze/wiggle 叠加的 normalized bone 引用 */
-export interface NormalizedBoneRef {
-  name: string;
-  node: THREE.Object3D;
-  baseQuat: THREE.Quaternion;
-}
+export type { NormalizedBoneRef } from '../pose/bones';
 
-/**
- * 姿态叠加层协作者（由 VrmController 外迁）。
- *
- * 负责三类「在动画之上叠加、但不动动画轨道」的东西：
- * 1. squash 形变（触摸反馈的 scale sin 包络，210ms）；
- * 2. 头部叠加（视线跟随 gaze / 点击微倾 / 程序化 wiggle / 交互三段式微倾）；
- * 3. 呼吸浮动与身体微摆（scene.position.y / rotation.y）。
- */
+const ROLL_AXIS = new THREE.Vector3(0, 0, 1);
+const OVERLAY_BONES = ['head', 'spine', 'neck'] as const;
+
+/** 姿态叠加层：squash / 头部叠加（视线/手势/转身）/ 呼吸与身体微摆，全部叠加在动画之上 */
 export class VrmPoseLayer {
   private readonly vrm: VRM;
   private readonly normBones: Map<string, NormalizedBoneRef>;
 
-  private squashStart = 0;
-  /** fitVrmToCamera 设置的基础 scale，squash 在其之上叠加 */
-  private readonly baseSceneScale: THREE.Vector3;
-  /** fitVrmToCamera 设置的基准 position.y（呼吸浮动以它为基准叠加，不可直接覆盖） */
   private baseSceneY = 0;
-
-  private gazeYaw = 0;
-  private gazePitch = 0;
+  /** 基准朝向：VRM0 经 rotateVRM0 后为 π，微摆必须在其上叠加 */
+  private baseSceneRotationY = 0;
+  private gazeNx = 0;
+  private gazeNy = 0;
+  private lastGazeAt = 0;
+  private headYaw = 0;
+  private headPitch = 0;
+  private spineYaw = 0;
   private headYawOffset = 0; // 点击头部微倾
-
+  private sleeping = false;
+  private stageMode = false; // 展示面：保留自然垂臂，不跑手指 fidget
+  private readonly stageStance = new VrmStageStance();
+  /** 俯仰旋转方向：VRM0 为 -1、VRM1 为 +1（按头部世界 X 轴标定） */
+  private readonly pitchSign: number;
+  /** 程序化手势（点头/歪头/瞥一眼）：动作池为空或环境调度触发 */
+  private readonly gesture = new GestureState();
+  /** 背对/转身（久无交互 → π，被交互 → 0） */
+  private readonly turn = new TurnState();
+  /** M0c：行为/姿势分层库的 VRM 运行时（骨架快照 + Composer + root 偏移） */
+  private readonly anim: VrmAnimationRuntime;
+  private readonly idleOverlay: VrmIdleOverlay; private readonly scriptMotionOverlay: VrmScriptMotionOverlay; // 待机重心/触摸反应 + 剧本动作
+  private readonly liveliness: VrmLiveliness; // 呼吸 / 不对称 / 微扰
+  private readonly handClearance: VrmHandClearance; // 抱手/拥抱防穿模
+  private readonly squash: VrmSquash; // 触摸 squash 包络
+  private readonly seating: VrmSeating; // 坐窗沿/坐桌沿（高度锚点 + 腿部 IK）
+  private baseSceneRotationZ = 0;
+  /** VRM lookAt 的眼睛目标（独立对象，不参与取景包围盒） */
+  private readonly gazeTarget = new THREE.Object3D();
+  private readonly headWorld = new THREE.Vector3();
   private breathePhase = 0;
-
+  /** 舞台相对位置朝向（左右角色向内微转） */
+  private facingYaw = 0; private facingCurrent = 0;
   constructor(vrm: VRM, normBones: Map<string, NormalizedBoneRef>) {
     this.vrm = vrm;
     this.normBones = normBones;
-    // 捕获 fitVrmToCamera 之后的基础 scale，squash 在其之上叠加
-    this.baseSceneScale = vrm.scene.scale.clone();
+    this.baseSceneRotationY = vrm.scene.rotation.y; // rotateVRM0 的 π 必须先记录
+    this.baseSceneRotationZ = vrm.scene.rotation.z;
+    const headBone = normBones.get('head');
+    this.pitchSign = headBone ? rigPitchSign(headBone.node) : 1;
+    this.lastGazeAt = performance.now();
+    this.anim = new VrmAnimationRuntime(normBones);
+    this.anim.captureBase();
+    this.idleOverlay = new VrmIdleOverlay(this.anim); this.scriptMotionOverlay = new VrmScriptMotionOverlay(this.anim);
+    this.liveliness = new VrmLiveliness(normBones, this.anim, DEFAULT_LIVELINESS);
+    this.handClearance = new VrmHandClearance(normBones, this.anim);
+    this.squash = new VrmSquash(vrm);
+    this.seating = new VrmSeating(vrm, normBones, this.anim);
+    const morph = createVrmMorphExecutor(vrm);
+    if (morph) {
+      this.anim.attachMorph(morph);
+      if (!morph.available) console.warn(`[motion] 行为表情停用：${morph.warning ?? '未知原因'}`);
+    }
+    if (vrm.lookAt) vrm.lookAt.target = this.gazeTarget;
   }
-
-  /**
-   * fitVrmToCamera 后重新捕获基础变换（squash / 呼吸叠加的基准）。
-   * 必须同时记录 position.y——否则 applyBodyIdle 每帧写 position.y 会覆盖
-   * fitVrm 在归一化阶段设置的「底部对齐」偏移，导致模型整体下沉出视锥。
-   */
+  /** 重新捕获基础变换（squash/呼吸基准）；position.y 必须记录，否则底部对齐偏移会被覆盖 */
   captureBase(): void {
-    this.baseSceneScale.copy(this.vrm.scene.scale);
+    this.squash.captureBase();
     this.baseSceneY = this.vrm.scene.position.y;
+    this.anim.captureBase();
   }
-
-  /** 触摸弹性反馈（scale sin 包络） */
-  playSquash(): void {
-    this.squashStart = performance.now();
-  }
-
+  playSquash(): void { this.squash.play(); }
+  setFacing(yaw: number): void { this.facingYaw = Number.isFinite(yaw) ? yaw : 0; }
   setGaze(nx: number, ny: number): void {
-    // nx/ny 归一化 -1..1 → 角度制 yaw/pitch（弧度）
-    this.gazeYaw = nx * 0.2;
-    this.gazePitch = -ny * 0.15;
+    const [x, y] = normalizeGaze(nx, ny);
+    this.gazeNx = x;
+    this.gazeNy = y;
+    this.lastGazeAt = performance.now();
+  }
+  /** v3.0 P1：睡眠时收起视线并低头（闭眼由脸层负责） */
+  setSleeping(sleeping: boolean): void {
+    this.sleeping = sleeping;
+    if (sleeping) { this.gazeNx = 0; this.gazeNy = 0; }
+  }
+  resetOverlayBones(): void {
+    for (const name of OVERLAY_BONES) {
+      const ref = this.normBones.get(name);
+      if (ref) ref.node.quaternion.copy(ref.baseQuat);
+    }
   }
 
-  /** 点击头部微倾（程序化回退分支用） */
-  nudgeHead(): void {
-    this.headYawOffset = (Math.random() - 0.5) * 0.15;
+  captureMixerPose(): void { this.anim.captureFrame(); }
+  rememberFrame(): void { this.anim.rememberFrame(); }
+  nudgeHead(): void { this.headYawOffset = (Math.random() - 0.5) * 0.15; }
+  /** 播放一个程序化手势（动作池为空时的点击 / 环境调度） */
+  playGesture(kind: ProceduralGestureKind): void { this.gesture.play(kind); }
+  /** 触摸反应（L2 一次性动作）；返回 false 表示动作缺失，可回退其他手势 */
+  playReaction(id: string, durationMs = 720): boolean { return this.idleOverlay.playReaction(id, durationMs); }
+  /** P8 桥接点 3：剧本动作专用槽位（全身体，不与触摸反应互抢）；返回 false = 未注册 */
+  playScriptMotion(id: string, options?: ScriptMotionOptions): boolean { return this.scriptMotionOverlay.play(id, options); }
+  stopScriptMotion(id?: string): boolean { return this.scriptMotionOverlay.stop(id); }
+
+  /** T2.6：自然度参数；tension 由 VrmController 每帧按交互状态派生（Step 0.6） */
+  setLiveliness(patch: Partial<LivelinessParams>): void { this.liveliness.setParams(patch); }
+  get reacting(): boolean { return this.idleOverlay.reacting; }
+  get reaction(): string | null { return this.idleOverlay.reactionId; }
+  get accent(): string | null { return this.idleOverlay.accentId; } get scriptMotion(): string | null { return this.scriptMotionOverlay.motionId; }
+  motionDuration(id: string): number { return this.anim.motions.get(id)?.durationMs ?? 0; }
+  /** 久无交互背对 / 被交互转回 */
+  setFaceAway(away: boolean): void { if (away) this.gesture.reset(); this.turn.setAway(away); } setScriptBusy(busy: boolean): void { this.idleOverlay.setScriptBusy(busy); } setStageStance(on: boolean): void { this.stageMode = on; this.stageStance.setEnabled(on); }
+
+  /** 被拎起 / 放下：强制接管，松手立即进 land，不排队等 exit */
+  setRaised(raised: boolean): void { if (raised) this.anim.play('behavior.lifted', true); else if (this.raised) this.anim.play('behavior.land', true); }
+
+  get raised(): boolean { return this.anim.snapshot.id === 'behavior.lifted'; }
+
+  /** M0c：播放/停止分层行为（enter → loop → exit 由 runtime 推进） */
+  playBehavior(id: string): boolean { return this.anim.play(id); }
+  /** 场景 cue：强制接管并清空队列，避免连续点击堆队列 */
+  playBehaviorNow(id: string): boolean { return this.anim.play(id, true); }
+
+  stopBehavior(id?: string, clearQueue = false): boolean { if (id && this.anim.snapshot.id !== id) return false; return this.anim.stop(clearQueue); }
+
+  get behavior(): Readonly<RunnerSnapshot> { return this.anim.snapshot; }
+
+  /** 帧台账：本帧行为轨道写到的区域（只读投影，不改变执行） */
+  get behaviorClaims(): readonly BehaviorClaim[] { return collectBehaviorClaims(this.anim.runner); }
+
+  /** T1.8：行为观测快照（dev 预览面板 / __petDebug.behaviors） */
+  get behaviorDebug(): BehaviorDebugSnapshot { return this.anim.debug; }
+
+  /** T2.2：语义表情通道（dev 预览/后续 morph 轨道）；null 释放 */
+  setMorphChannels(channels: Readonly<Record<string, number>> | null): void {
+    this.anim.setMorphChannels(channels);
   }
+
+  /** T2.2：在 vrm.update 之后、render 之前写 morph */
+  applyMorph(): number {
+    return this.anim.applyMorph();
+  }
+
+  get morphDebug(): MorphDebugSnapshot | null { return this.anim.morph; }
 
   /** squash 包络（每帧 Step 2） */
   applySquash(): void {
-    if (this.squashStart === 0) return;
-    const t = (performance.now() - this.squashStart) / TOUCH_SQUASH_MS;
-    if (t >= 1) {
-      this.squashStart = 0;
-      this.vrm.scene.scale.copy(this.baseSceneScale);
-      return;
-    }
-    const envelope = Math.sin(t * Math.PI);
-    // 在 fitVrmToCamera 设置的基础 scale 上叠加 squash 形变
-    const sx = 1 + (TOUCH_SQUASH_SCALE_X - 1) * envelope;
-    const sy = 1 - (1 - TOUCH_SQUASH_SCALE_Y) * envelope;
-    this.vrm.scene.scale.set(
-      this.baseSceneScale.x * sx,
-      this.baseSceneScale.y * sy,
-      this.baseSceneScale.z,
-    );
+    this.squash.update();
   }
 
-  /** 头部叠加层（每帧 Step 4 前半）：无 clip 时叠 wiggle，有 clip 时只叠 gaze/click */
-  applyHeadOverlay(t: number, procedural: boolean): void {
+  /** T2.5：坐窗沿 / 坐桌沿（高度锚点 + 腿部端点 IK）；null 恢复站立 */
+  setSeat(anchor: SeatAnchor | null): void {
+    this.seating.setAnchor(anchor);
+  }
+
+  /** v3.0 P4：Q 版缩放后重测坐姿尺寸 */
+  refreshSeating(): void {
+    this.seating.refreshRig();
+  }
+
+  get seated(): boolean { return this.seating.active; }
+
+  /** 头部叠加层（每帧 Step 4）：平滑追踪 + 脊柱微转 + lookAt 眼睛目标 */
+  applyHeadOverlay(t: number, procedural: boolean, dt: number, gazeWeight: number): void {
+    // 世界方向手臂意图跟随转身：背对时左右手不会镜像到身体中线
+    this.anim.setFrameYaw(this.turn.yaw + this.anim.root.yaw);
+    this.anim.update(dt * 1000);
+    // 待机重心换脚 / 触摸反应：剧本动作激活时让位（独立槽位，P8 桥接点 3）
+    this.idleOverlay.update(t, procedural, this.sleeping || this.turn.away || this.seating.active, this.scriptMotionOverlay.active);
+    // 坐姿层在待机层之后：坐姿覆盖腿/脊柱，再对脚踝做端点 IK
+    this.seating.update(dt);
+    // 剧本动作最后写：全身 mask，覆盖待机/坐姿；非循环动作结尾自动淡出
+    this.scriptMotionOverlay.update(dt * 1000);
     const headRef = this.normBones.get('head');
     if (!headRef) return;
-    if (procedural) {
-      this.applyProgrammaticPose(t, headRef);
-    } else {
-      this.applyGazeOnly(headRef);
-    }
+    // 睡眠 / 背对时收起常规视线与环境漂移；行为 look 轨道可覆盖背对静默
+    const muted = this.sleeping || this.turn.away;
+    const target = resolveGazeTarget({
+      t,
+      pointerX: this.gazeNx,
+      pointerY: this.gazeNy,
+      gazeWeight,
+      idle: performance.now() - this.lastGazeAt > GAZE_IDLE_RESET_MS,
+      muted,
+      sleeping: this.sleeping,
+      look: this.anim.activeLookTarget,
+      lookWeight: this.anim.activeLookWeight,
+      pitchSign: this.pitchSign,
+    });
+    this.headYaw = smoothDamp(this.headYaw, target.headYaw, GAZE_SMOOTH.head, dt);
+    this.headPitch = smoothDamp(this.headPitch, target.headPitch, GAZE_SMOOTH.head, dt);
+    this.spineYaw = smoothDamp(this.spineYaw, target.spineYaw, GAZE_SMOOTH.spine, dt);
+    this.applySpineTilt();
+    this.applyNeckPitch();
+    this.applyEyeTarget(headRef);
+    const g = this.gesture.update();
+    const { headYaw, headPitch, headYawOffset, pitchSign } = this;
+    if (procedural) applyProceduralHead(headRef, t, headYaw, headPitch, headYawOffset, g, pitchSign);
+    else applyClipHead(headRef, headYaw, headPitch, headYawOffset, g, pitchSign);
+    // roll 只在头节点统一叠一次，不参与 yaw/pitch 的平滑
+    const rollQ = g.roll === 0 ? null : new THREE.Quaternion().setFromAxisAngle(ROLL_AXIS, g.roll);
+    if (rollQ) headRef.node.quaternion.premultiply(rollQ);
     this.decayHeadOffset();
   }
+  /** 待机手臂放松（A-pose → 自然下垂）+ 手部微动作组件；目标随转身角旋转，避免背对时双手收到中线 */
+  relaxArms(weight: number, t: number): void {
+    this.anim.applyPose('pose.arms-hang', weight, t, true, this.turn.yaw + this.anim.root.yaw);
+    if (this.stageMode) return; // 舞台只保留垂臂：握拳/摊开会覆盖 daiji 腕姿
+    // 左右手错开半个周期：一只手握拳/摊开时，另一只保持放松
+    this.anim.applyMotion('motion.hand-fidget-left', t * 1000, weight);
+    this.anim.applyMotion('motion.hand-fidget-right', t * 1000, weight, 3200);
+  }
 
-  /** 交互三段式微倾叠加（每帧 Step 4 后半，角度由状态机给出） */
+  applyPropHold(poseId: string): void { const gripOnly = this.behaviorClaims.some((claim) => maskIncludes(claim.mask, 'rightArm')); this.anim.applyPose(gripOnly ? 'pose.hand-right-cup-hold' : poseId, 1, 0, false); }
+
   applyInteractionAngles(extraYaw: number, extraPitch: number): void {
-    if (extraYaw === 0 && extraPitch === 0) return;
-    const headRef = this.normBones.get('head');
-    if (!headRef) return;
-    const yawQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), extraYaw);
-    const pitchQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), extraPitch);
-    headRef.node.quaternion.premultiply(pitchQ).premultiply(yawQ);
+    const head = this.normBones.get('head');
+    if (head) applyHeadInteraction(head, extraYaw, extraPitch);
   }
-
-  /**
-   * 呼吸浮动 + 身体微摆（每帧 Step 5）。
-   * @param breatheDeep 交互 loop 阶段加深呼吸（VPpet B_Loop 身体反应）
-   * @param procedural 无 clip 时叠身体微摆（有动画时由动画本体提供微动，避免叠成双份）
-   */
+  /** 呼吸浮动 + 身体微摆（每帧 Step 5）；root 轨道叠加在基准变换之上 */
   applyBodyIdle(t: number, dt: number, breatheDeep: boolean, procedural: boolean): void {
-    this.breathePhase += dt;
-    const breatheAmp = breatheDeep ? 0.022 : 0.012;
-    this.vrm.scene.position.y = this.baseSceneY + Math.sin(this.breathePhase * 1.2) * breatheAmp;
-    if (procedural) {
-      this.vrm.scene.rotation.y = Math.sin(t * 0.25) * 0.015;
-    }
+    const speed = this.sleeping ? 0.5 : 1;
+    this.breathePhase += dt * speed;
+    const breatheAmp = this.sleeping ? 0.006 : breatheDeep ? 0.026 : 0.016;
+    const root = this.anim.root;
+    this.vrm.scene.position.y =
+      this.baseSceneY + Math.sin(this.breathePhase * 1.2) * breatheAmp + root.y - this.seating.depth;
+    const sway = this.sleeping ? 0 : Math.sin(t * 0.25) * (procedural ? 0.018 : 0.012);
+    this.facingCurrent = smoothDamp(this.facingCurrent, this.facingYaw, 5, dt);
+    this.vrm.scene.rotation.y =
+      this.baseSceneRotationY + this.turn.update(dt) + sway + root.yaw + this.facingCurrent;
+    this.vrm.scene.rotation.z = this.baseSceneRotationZ + root.roll;
+    this.stageStance.apply(this.normBones);
+    this.liveliness.update(dt, this.sleeping);
+    this.handClearance.update(dt, this.sleeping);
+    reapplyPalms(this.normBones); // 掌心的最后写者：呼吸/防穿模调整上臂之后重新滚腕
   }
 
-  /**
-   * 无动作池 clip 时：每帧叠头部 wiggle + gaze + clickFeedback。
-   * 不改身体骨骼——尊重模型 GLTF 里的原始姿态，
-   * 避免对某些模型过度修正导致手臂张开 → box 变宽 → fitVrm scale 不准。
-   */
-  private applyProgrammaticPose(t: number, headRef: NormalizedBoneRef): void {
-    const wiggleYaw = Math.sin(t * 0.5) * 0.06;
-    const wigglePitch = Math.sin(t * 0.7) * 0.04;
-    const yawQ = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      wiggleYaw + this.gazeYaw + this.headYawOffset,
-    );
-    const pitchQ = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(1, 0, 0),
-      wigglePitch + this.gazePitch,
-    );
-    // 叠加在当前姿态之上（premultiply 保持与 idle clip 路径一致的叠加语义）
-    headRef.node.quaternion.copy(headRef.baseQuat).premultiply(pitchQ).premultiply(yawQ);
+  /** 脊柱跟随（幅度小、更慢）：叠加在当前姿态上，行为姿势不会被覆盖 */
+  private applySpineTilt(): void {
+    const spine = this.normBones.get('spine');
+    if (!spine || this.spineYaw === 0) return;
+    applySpineYaw(spine, this.spineYaw);
   }
 
-  /** 有动作 clip 时：只叠 gaze + clickFeedback（不破坏 mixer 轨道） */
-  private applyGazeOnly(headRef: NormalizedBoneRef): void {
-    if (this.gazeYaw === 0 && this.gazePitch === 0 && this.headYawOffset === 0) return;
-    // premultiply 在当前 mixer 已设的 quaternion 上叠加
-    const yawQ = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      this.gazeYaw + this.headYawOffset,
-    );
-    const pitchQ = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(1, 0, 0),
-      this.gazePitch,
-    );
-    headRef.node.quaternion.premultiply(pitchQ).premultiply(yawQ);
+  /** 颈部待机下压：抵消模型默认后仰，视线/交互角度仍叠加在头部 */
+  private applyNeckPitch(): void {
+    const neck = this.normBones.get('neck');
+    if (neck) applyNeckIdlePitch(neck, this.pitchSign);
+  }
+
+  /** 眼睛追踪：lookAt 目标放在头部前方，左右/上下偏移由平滑后的头部角度换算 */
+  private applyEyeTarget(headRef: NormalizedBoneRef): void {
+    const enabled = Boolean(this.vrm.lookAt);
+    aimEyeTarget(enabled, headRef, this.headYaw, this.headPitch, this.gazeTarget, this.headWorld);
   }
 
   /** 点击微倾指数衰减（两条叠加路径共用） */

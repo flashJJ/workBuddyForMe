@@ -1,26 +1,23 @@
 'use client';
 
 import * as React from 'react';
-import { Loader2, Play } from 'lucide-react';
 import {
   AVATAR_TTS_VOICES,
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared/schemas';
+import { BUILTIN_VRM_MODELS } from '@wbfm/shared/constants';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar';
 import { getPetBridge } from '@/features/pet/bridge';
 import { usePetOpenState } from '@/features/pet/bridge';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { SimpleSelect } from '@/components/ui/simple-select';
-import { useToast } from '@/components/common/toast';
-import { ApiClientError, withManagedHeaders } from '@/lib/api/client';
-import { API } from '@/lib/api/endpoints';
-
 import { apiGet } from '@/lib/api/client';
 import type { VrmAvatarListResponse } from '@wbfm/shared/schemas';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
+import { AvatarVoicePreview } from './avatar-voice-preview';
 
 interface Props {
   settings: VoiceSettings;
@@ -28,64 +25,12 @@ interface Props {
   onPatch: (patch: VoiceSettingsUpdateInput) => Promise<void>;
 }
 
-/** 角色声线试听：按绑定 sid 合成 WAV 并播放 */
-function AvatarVoicePreview(props: { sid: number; ready: boolean }) {
-  const { t } = useI18n();
-  const toast = useToast();
-  const [playing, setPlaying] = React.useState(false);
-
-  const play = async () => {
-    if (playing) return;
-    setPlaying(true);
-    try {
-      const res = await fetch(
-        API.voiceTts,
-        withManagedHeaders({
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ text: t('voice.avatar.previewText'), speakerId: props.sid }),
-        }),
-      );
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => null)) as
-          | { error?: { message?: string } }
-          | null;
-        throw new Error(payload?.error?.message ?? t('voice.preview.synthFailed', { status: res.status }));
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        setPlaying(false);
-      };
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        setPlaying(false);
-        toast.error(t('voice.preview.playbackFailed'));
-      };
-      await audio.play();
-    } catch (err) {
-      setPlaying(false);
-      toast.error(err instanceof ApiClientError ? err.message : (err as Error).message);
-    }
-  };
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className="h-8 shrink-0"
-      disabled={!props.ready || playing}
-      onClick={() => void play()}
-      data-testid="avatar-voice-preview"
-    >
-      {playing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1 h-3.5 w-3.5" />}
-      {t('voice.avatar.previewButton')}
-    </Button>
-  );
-}
+/** 内置 VRM 的展示名（常量层不依赖 i18n，标签在渲染处解析） */
+const BUILTIN_VRM_LABELS: Readonly<Record<string, MessageKey>> = {
+  'builtin:xuetuan': 'avatar.vrm.builtinXuetuan',
+  'builtin:rankaluli': 'avatar.vrm.builtinRankaluli',
+  'builtin:feibi': 'avatar.vrm.builtinFeibi',
+};
 
 /**
  * Live2D 形象：对话页右侧虚拟角色开关 + 内置模型选择（M3.5 起 5 套官方样本）。
@@ -176,14 +121,14 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
               setModelId(next);
               void onPatch({ avatarModelId: next });
               // 桌宠正开着：原位切换桌宠模型（主进程 open 对不同模型做静默换窗），
-              // 不必先关再勾选；桌宠未开时 open 不调用即无副作用
-              if (petBridge && petOpen) void petBridge.open(next);
+              // petEnabled 兜底 isOpen 广播延迟/缺失，避免必须关掉再勾选才生效
+              if (petBridge && (petOpen || settings.petEnabled)) void petBridge.open(next);
             }}
           >
-            <optgroup label={t('avatar.rail.title')}>
-              {AVATAR_MODEL_LIST.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {t(item.label)}
+            <optgroup label={t('avatar.vrm.builtinSectionTitle')}>
+              {BUILTIN_VRM_MODELS.map((model) => (
+                <option key={model.modelId} value={model.modelId}>
+                  {t(BUILTIN_VRM_LABELS[model.fileRef] ?? 'avatar.vrm.builtinXuetuan')}
                 </option>
               ))}
             </optgroup>
@@ -196,6 +141,13 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
                 ))}
               </optgroup>
             )}
+            <optgroup label={t('avatar.rail.title')}>
+              {AVATAR_MODEL_LIST.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {t(item.label)}
+                </option>
+              ))}
+            </optgroup>
           </SimpleSelect>
           <div
             className="flex items-center justify-between gap-2"
@@ -231,6 +183,24 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
         {t('voice.avatar.resourceNote')}
       </p>
 
+      {/* v3.0 P4：Q 版比例（仅 VRM；主窗与桌宠共用同一设置） */}
+      <label className="flex cursor-pointer items-start justify-between gap-3">
+        <span>
+          <span className="block text-sm font-medium">{t('voice.avatar.chibiLabel')}</span>
+          <span className="block text-xs text-muted-foreground">
+            {t('voice.avatar.chibiHint')}
+          </span>
+        </span>
+        <input
+          id="avatar-chibi"
+          type="checkbox"
+          className="mt-1 h-4 w-4 shrink-0"
+          data-testid="avatar-chibi"
+          checked={settings.avatarChibi === true}
+          onChange={(e) => void onPatch({ avatarChibi: e.target.checked })}
+        />
+      </label>
+
       {petBridge && (
         <div className="border-t pt-3">
           <label
@@ -255,6 +225,20 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
           <p className="mt-1 text-xs text-muted-foreground">
             {t('voice.avatar.petModeNote')}
           </p>
+          <div className="mt-3 space-y-1.5" data-testid="pet-size-row">
+            <Label htmlFor="pet-size">{t('voice.avatar.petSizeLabel')}</Label>
+            <SimpleSelect
+              id="pet-size"
+              data-testid="pet-size"
+              value={settings.petSize ?? 'md'}
+              onValueChange={(next) => void onPatch({ petSize: next as 'sm' | 'md' | 'lg' })}
+            >
+              <option value="sm">{t('voice.avatar.petSizeSm')}</option>
+              <option value="md">{t('voice.avatar.petSizeMd')}</option>
+              <option value="lg">{t('voice.avatar.petSizeLg')}</option>
+            </SimpleSelect>
+            <p className="text-xs text-muted-foreground">{t('voice.avatar.petSizeHint')}</p>
+          </div>
         </div>
       )}
     </div>
