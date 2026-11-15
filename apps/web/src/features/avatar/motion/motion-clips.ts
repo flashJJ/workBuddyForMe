@@ -20,19 +20,34 @@ export interface EmbeddedClips {
 /** 上臂旋转跨度阈值（约 20°）：超过即视为 clip 自带手臂动画 */
 const ARM_ANIMATED_RAD = 0.35;
 
-/** clip 是否自带手臂动画；按 clip 缓存，避免每帧扫轨道 */
-const armAnimatedCache = new WeakMap<THREE.AnimationClip, boolean>();
+/** clip 是否自带手臂动画；按 clip + 手臂节点名缓存，避免每帧扫轨道 */
+const armAnimatedCache = new WeakMap<THREE.AnimationClip, Map<string, boolean>>();
 
 /**
  * 判断 clip 的上臂是否有明显运动（挥手、伸展、走路摆臂）。
  * 自带手臂动画时，待机垂臂层不再叠加，否则会把举手动作压回垂手。
+ *
+ * `armNodes` 传模型归一化骨架的节点名：VRMA 转出的轨道名是
+ * `Normalized_DEF-Left_arm.quaternion` 这类模型节点名，不再是 humanoid 词表，
+ * 只按 `leftUpperArm` 匹配会漏判，导致垂臂/手指程序化动作叠在待机动作上。
  */
-export function clipAnimatesArms(clip: THREE.AnimationClip): boolean {
-  const cached = armAnimatedCache.get(clip);
+export function clipAnimatesArms(
+  clip: THREE.AnimationClip,
+  armNodes: readonly string[] = ['leftUpperArm', 'rightUpperArm'],
+): boolean {
+  const nodes = armNodes.length > 0 ? armNodes : ['leftUpperArm', 'rightUpperArm'];
+  const key = nodes.join('|');
+  let cache = armAnimatedCache.get(clip);
+  if (!cache) {
+    cache = new Map();
+    armAnimatedCache.set(clip, cache);
+  }
+  const cached = cache.get(key);
   if (cached !== undefined) return cached;
+  const targets = new Set(nodes.map((node) => `${node}.quaternion`));
   let animated = false;
   for (const track of clip.tracks) {
-    if (!/^(left|right)UpperArm\.quaternion$/.test(track.name)) continue;
+    if (!targets.has(track.name)) continue;
     const values = track.values;
     const [x0, y0, z0, w0] = [values[0] ?? 0, values[1] ?? 0, values[2] ?? 0, values[3] ?? 0];
     for (let i = 4; i < values.length; i += 4) {
@@ -49,7 +64,7 @@ export function clipAnimatesArms(clip: THREE.AnimationClip): boolean {
     }
     if (animated) break;
   }
-  armAnimatedCache.set(clip, animated);
+  cache.set(key, animated);
   return animated;
 }
 

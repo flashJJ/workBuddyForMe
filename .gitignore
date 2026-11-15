@@ -38,10 +38,15 @@ Thumbs.db
 # local data
 data/
 *.sqlite
+
+# 原始 VRM 源（体积大，仅本地保留；由 scripts/optimize-vrm.mjs 生成 public 产物）
+apps/web/assets-src/vrm/*.vrm
 *.sqlite-*
 
 # local scratch (CDP 调试、截图、临时脚本)
 .tmp/
+# 根目录临时截图/探针脚本
+/.tmp-*
 
 # OCR 调试/真机实测临时产物
 .tmp-ocr/

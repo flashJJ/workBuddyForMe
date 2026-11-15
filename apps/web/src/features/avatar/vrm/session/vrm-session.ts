@@ -24,8 +24,14 @@ export interface VrmSessionRuntime {
   sleeping: boolean;
   faceAway: boolean;
   expression: ExpressionTag | null;
+  /** 表情强度（1 轻 / 2 中 / 3 强；模型挂载时生效） */
+  expressionIntensity: 1 | 2 | 3;
+  /** 舞台相对位置朝向（弧度；模型挂载时生效） */
+  stageFacing: number;
   /** v3.0 P4：Q 版比例（新模型挂载时立即生效） */
   chibi: boolean;
+  /** v3.0 M4：展示面（舞台/小剧场）只用内置待机，避免导入动作轮播造成怪异姿态 */
+  builtinIdleOnly: boolean;
 }
 
 export interface VrmSessionDeps {
@@ -161,7 +167,10 @@ export function createVrmSession(deps: VrmSessionDeps): VrmSession {
     const runtime = deps.getRuntime();
     controller.setSleeping(runtime.sleeping);
     controller.setFaceAway(runtime.faceAway);
-    if (runtime.expression) controller.setExpression(runtime.expression);
+    if (runtime.expression) {
+      controller.setExpression(runtime.expression, runtime.expressionIntensity);
+    }
+    controller.setStageFacing(runtime.stageFacing);
     if (runtime.chibi) controller.setChibi(true);
   };
 
@@ -212,7 +221,7 @@ export function createVrmSession(deps: VrmSessionDeps): VrmSession {
       vrm.scene.traverse((o) => { o.frustumCulled = false; });
 
       const [poolEntries, rotation] = await Promise.all([
-        loadMotionPool(loader, vrm),
+        loadMotionPool(loader, vrm, { builtinOnly: deps.getRuntime().builtinIdleOnly }),
         loadRotationConfig(),
       ]);
       if (disposed || token !== swapToken) {
@@ -230,6 +239,11 @@ export function createVrmSession(deps: VrmSessionDeps): VrmSession {
         rotation,
       );
       applyRuntime(controller);
+      // 展示面不需要待机余兴（踮脚/插兜/抱臂），并固定一个自然站姿
+      if (deps.getRuntime().builtinIdleOnly) {
+        controller.setScriptBusy(true);
+        controller.setStageStance(true);
+      }
 
       const next: ActiveModel = {
         vrm,

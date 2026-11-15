@@ -35,20 +35,15 @@
 
 ## 一次解读的完整调用链
 
-```text
-查看器读结构 ──► visionAvailable?
-    │ false                        │ true
-    ▼                              ▼
-内联提示 + 按钮禁用            用户点「理解图表」
-                                   │ POST { blockId }
-                                   ▼
-                        校验块类型 → 取页码 → PDF.js 渲染该页
-                                   │ scale 2 / ≤120 万像素
-                                   ▼
-                        已配置视觉模型（60s 超时 / 可中止）
-                                   │
-                                   ▼
-                        摘要（剥代码围栏）→ 前端展示 + 免责声明
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart TD
+  A["查看器读结构"] --> B{"visionAvailable?"}
+  B -->|"false"| C["内联提示 + 按钮禁用"]
+  B -->|"true"| D["用户点「理解图表」<br/>POST { blockId }"]
+  D --> E["校验块类型 → 取页码<br/>PDF.js 渲染该页（scale 2 / ≤ 120 万像素）"]
+  E --> F["已配置视觉模型<br/>60s 超时 / 可中止"]
+  F --> G["摘要（剥代码围栏）<br/>前端展示 + 免责声明"]
 ```
 
 链路里没有任何「自动」环节：没有后台预取，没有打开文档就批量解读，没有把摘要塞进检索。每一次调用都对应一次明确的用户动作。

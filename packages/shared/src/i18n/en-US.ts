@@ -57,6 +57,7 @@ import { enRunGraph } from './messages/run-graph';
 import { enBranch } from './messages/branch';
 import { enCapabilities } from './messages/capabilities';
 import { enSubagent } from './messages/subagent';
+import { enMusic } from './messages/music';
 
 /**
  * English dictionary (DeepPartial of zh-CN structure).
@@ -122,6 +123,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   branch: enBranch,
   capabilities: enCapabilities,
   subagent: enSubagent,
+  music: enMusic,
 };
 
 export type EnDictionary = typeof enUS;

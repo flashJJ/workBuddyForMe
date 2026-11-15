@@ -22,6 +22,8 @@ export interface VoicePlayback {
   waitDrained: (signal?: AbortSignal) => Promise<void>;
   /** 当前播放电平 RMS（Live2D 口型 rAF 轮询用） */
   getLevel: () => number;
+  /** 在用户手势内解锁音频上下文（自动播放策略） */
+  unlock: () => void;
   /** M4：VAD 回声门控快照（speaking 提阈值；停播冷却窗内静音） */
   getGate: () => VadGate;
   /** 当前语音状态（idle/speaking；listening/thinking 由别处驱动） */
@@ -83,6 +85,7 @@ export function useVoicePlayback(): VoicePlayback {
     [],
   );
   const getLevel = React.useCallback(() => queueRef.current?.getLevel() ?? 0, []);
+  const unlock = React.useCallback(() => queueRef.current?.unlock(), []);
   const getGate = React.useCallback(
     (): VadGate => ({
       speaking: speakingRef.current,
@@ -105,6 +108,7 @@ export function useVoicePlayback(): VoicePlayback {
     cancel,
     waitDrained,
     getLevel,
+    unlock,
     getGate,
     subscribeLevel,
     voiceState,

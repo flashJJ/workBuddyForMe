@@ -73,12 +73,53 @@ public class WbfmFocus {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr pid);
+  [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint attach, uint attachTo, bool on);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+  [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr h, bool altTab);
 }
 '@
 Add-Type -TypeDefinition $sig
 $h = [IntPtr][int64]$args[0]
 if ([WbfmFocus]::IsIconic($h)) { [void][WbfmFocus]::ShowWindow($h, 9) }
-if (-not [WbfmFocus]::SetForegroundWindow($h)) { throw 'SetForegroundWindow 失败' }
+$ok = [WbfmFocus]::GetForegroundWindow() -eq $h
+if (-not $ok) {
+  # 前台锁只信任"最近有用户输入"的进程：先注入一次 Alt 键，再抢焦点（Windows 常见解锁法）
+  [WbfmFocus]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)
+  Start-Sleep -Milliseconds 80
+  [void][WbfmFocus]::SetForegroundWindow($h)
+  [WbfmFocus]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+  # SetForegroundWindow 返回 true 不等于已完成切换：等真正成为前台再返回
+  for ($i = 0; $i -lt 15 -and [WbfmFocus]::GetForegroundWindow() -ne $h; $i++) {
+    Start-Sleep -Milliseconds 200
+  }
+  $ok = [WbfmFocus]::GetForegroundWindow() -eq $h
+}
+if (-not $ok) {
+  # 仍失败时与前台线程共享输入状态再重试
+  $fgThread = [WbfmFocus]::GetWindowThreadProcessId([WbfmFocus]::GetForegroundWindow(), [IntPtr]::Zero)
+  $curThread = [WbfmFocus]::GetCurrentThreadId()
+  $attached = $false
+  if ($fgThread -ne 0 -and $fgThread -ne $curThread) {
+    $attached = [WbfmFocus]::AttachThreadInput($curThread, $fgThread, $true)
+  }
+  try {
+    [void][WbfmFocus]::SetForegroundWindow($h)
+    for ($i = 0; $i -lt 10 -and [WbfmFocus]::GetForegroundWindow() -ne $h; $i++) {
+      Start-Sleep -Milliseconds 200
+    }
+    if ([WbfmFocus]::GetForegroundWindow() -ne $h) {
+      [WbfmFocus]::SwitchToThisWindow($h, $true)
+      Start-Sleep -Milliseconds 300
+    }
+    $ok = [WbfmFocus]::GetForegroundWindow() -eq $h
+  } finally {
+    if ($attached) { [void][WbfmFocus]::AttachThreadInput($curThread, $fgThread, $false) }
+  }
+}
+if (-not $ok) { throw 'SetForegroundWindow 失败' }
 '{"ok":true}'
 `.trim();
 

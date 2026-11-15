@@ -21,7 +21,7 @@
 | P3 M0d-C 剧本接线 | 完成（4 场戏已接线 + 台词池） | 2026-11-12 |
 | P4 M0b 运行时补齐 | 完成（热替换/回收/Q 版，真机验收通过） | 2026-11-12 |
 | P5 M1/M2 | M1 完成；M2 放弃，转向动效库深化 | 2026-11-12 |
-| P6 M3/M4/M5 | 进行中（M3：声线、画像注入、Utility 阶段 1-3） | 2026-11-14 |
+| P6 M3/M4/M5 | 完成（M3 声线/画像/Utility；M4 小剧场/分享；M5 门禁与 3.0.0） | 2026-11-14 |
 | P7 插件化 | 方案完成 | 2026-11-11 |
 | P8.8 主动播放 | 完成（预算/空闲/勿扰/去重已接线） | 2026-11-14 |
 | P9 设置页 IA | 完成（P0 注册表/搜索/深链/命令面板；P1 常用入口） | 2026-11-14 |
@@ -52,8 +52,18 @@
 | D20 | 2026-11-14 | M3 Utility 阶段 1 落地口径：只替换 P8.8 主动播放选场；权重 0.20/0.15/0.15/0.20/0.15/0.15；只记录实际开演，拒绝候选仅 dev；存 20 条展示 5 条；去重先按最近道具，theme/tags 留阶段 2 | 阶段 1 不依赖生成队列新增元数据即可闭环；先验证打分是否符合直觉，再统一触发键与低语，避免一次改太多选择链路 | 真机对比忙碌/深夜/关系变化下的排序，再调权重 |
 | D21 | 2026-11-14 | Utility 阶段 2 先接触发键候选排序；环境低语只加「工作忙静默」，不引入池间打分 | 触发键已有 Scene 特征可直接复用阶段 1 打分；低语池没有场景元数据，硬造候选会产生伪精度 | 低语池补主题/风格元数据后再评估 |
 | D22 | 2026-11-14 | 阶段 3 的 theme/tags 去重按 `recentSceneIds` 排除候选自身；弱偏好只做小幅加分且非法即丢弃 | 生成场景生成时就进入 recent，不排除自身会把「自己的主题/标签」误判成重复；弱偏好必须 fail-open，不能反向卡住场次 | 模型稳定输出偏好后复核权重 |
+| D23 | 2026-11-15 | 三个内置 VRM（雪团 / 冉卡露丽 / 菲比）统一 CC BY-NC-SA 4.0、作者 WorkBuddyForMe / flashJJ、禁商用、衍生同协议；D6 的 AnimeArt/CC0 仅适用于未入内置名单的测试模型 | 用户确认三者同一授权口径；此前文档多处只写雪团、roadmap 仍把「测试模型许可」列为待确认，读起来像三套授权 | 已按 `CC_BY_NC_SA` 规范化，三模型 meta 同步；后续换模型复用 `normalize-vrm-meta.mjs --check` |
+| D24 | 2026-11-15 | 雪团来源口径：参考「蓝色大肥鱼」主题 → AI Agent 独立生成形象参考图 → Neural4D 付费会员图生 3D → 项目二次制作与压缩；不把溟月图集作为生成输入 | 用户澄清实际生成链路；此前 README 把「形象源头」写成溟月，容易被理解为直接二创 | 保留 Neural4D 订阅凭证、生成时间与原始文件；如后续发现参考图含溟月元素，需按 CC BY-NC-SA 复核 |
 
 ## 工作日志
+
+### 2026-11-14 预研：项目级插件化可行性
+
+- 背景：对照 DSH/Cordis 微内核方案，评估本项目插件化的适用性、仓库策略与能力接入改造。
+- 盘点：已有能力包（六类 effect + 签名/健康/升级预检）、MCP 全链路、provider 适配器、工具运行时、内容/模组包服务；缺口是统一插件契约、依赖拓扑、运行时内容注入、能力发现。
+- 候选结论（待评审）：不搬 Cordis 微内核；保留 monorepo；走「能力包 + 服务提供者 + MCP 桥」三线；不做运行时代码插件。
+- 产出：[05-plugin-architecture.md](../../roadmap/candidates/05-plugin-architecture.md)，含 S1–S6 预研 spike 与验收口径。
+- 关联：P7 插件化。
 
 ### 2026-11-14 M3 Utility 阶段 3（生成场景 theme/tags 与弱偏好）
 
@@ -1087,6 +1097,120 @@
 - 就地入口：桌宠右键菜单新增「设置：AI 日常剧情」，唤回主窗并深链到 `#panel-script-schedule`；`DeepLinkHost` 对同页 hash 补发 `hashchange`，确保已在设置页时也能滚动高亮。
 - 验证：shortcuts 4 项 + catalog 5 项；设置域 11 文件 39 项通过；desktop 类型检查与桌宠菜单 13 项通过；web/shared typecheck 与行数/结构/循环/ASCII 门禁通过。
 
+### 2026-11-14 M4 小剧场 / 分享卡 / 角色包验收
+
+- 舞台深链新增 `stage=play` 与 `ep`，解析抽到 `stage/theater/stage-target.ts`；`StageMode` 增加 `theater`，`data-mode` 同步。
+- 小剧场 `theater-script.ts`：1 集「摸鱼小剧场 · 深夜茶歇」，三席全部内置 VRM（雪团 / 冉卡露丽 / 菲比），6 句按人设分工；`theaterDirections()` 纯函数输出 focus + speech + expression + motion，越界回落首句。
+- `use-stage-theater.ts`：进入换 cast，5.2s 节拍循环，支持上一句/下一句/重播；只复用舞台既有 StageDirection 执行链。
+- 分享卡 `stage-share-card.tsx`：420×560 卡面含标题、日期、当前台词、席位、今日主动播放/生成；数据走 `/api/pet/script` 与 `/api/pet/script/playback`，失败显示 `--`；保存复用 `requestScreenshot()`，截图时只隐藏按钮不隐藏卡面。
+- 角色包：验收既有 Markdown 导出/导入（仅文本、非法 frontmatter 不落库、无脚本执行），无代码改动。
+- 验证：theater 5 项 + 分享卡 4 项 + 形状/宽高；舞台/设置存储域共 12 文件 62 项通过。
+
+### 2026-11-14 M5 剧本 lint/golden、合规声明、3.0.0
+
+- `scenes/lint.test.ts`：跨场景校验 id 唯一、触发键/打断白名单、priority/cooldown、beats 时间单调且 ≤240s、可感知 cue、prop 成对、`validateScene` 零丢弃。
+- `scenes/golden.test.ts`：内置场景 `id → [{at, kind}]` 与 id 顺序快照；新增 `pnpm check:scenes`（6 文件 37 项）。
+- 关于页新增「原创角色与二创说明」（CC BY-NC-SA 4.0、无官方关联、角色包不含代码），中英文 i18n。
+- 版本 2.35.0 → 3.0.0，`pnpm sync-version` / `sync-version:check` 通过；新增 [release-notes.md](./release-notes.md)。
+- 门禁：lint 8 包 0 error；行数/结构/循环/ASCII 全绿；`stage/` 直接文件未增长（新代码在 `stage/theater/`）。
+
+### 2026-11-14 文档对齐 v3.0.0
+
+- 根 `README.md`：版本 2.22.2 → 3.0.0，替换旧补丁摘要为 v3.0 陪伴里程碑，补剧本/决策/小剧场/分享卡能力、219 个 Route Handler、`check:scenes` 等门禁与 v3.0 文档入口。
+- `docs/roadmap/README.md`：v3.0 从「规划中」改为已发布章节与索引行，补齐 v2.28–v2.35 索引，修正 5 个 `candidates/` → `scheduled/` 失效链接。
+- `docs/plan/v3.0/README.md`：里程碑补状态、M2 标注取消、验收口径改为分享卡今日播放/生成数据、物料改为 3 篇博客；`execution-roadmap.md` 状态表与 M1–M3 行同步。
+- `docs/architecture.md`：文档版本 2.0（对齐 v3.0.0）、Next.js 15.5，新增「4.3 剧本生成与主动播放」数据流。
+- `docs/api.md`：补 8 条 `/api/pet/script*` 路由总览与 4.33–4.40 明细，说明其余能力以 Route Handler 为准。
+- `docs/development.md`：Node ≥22.13 / pnpm 11.24、`check:scenes` / 结构 / 循环 / ASCII / sync-version 命令、`WBFM_PET_SCRIPT`、舞台深链；修正英文发行说明相对路径。
+- `docs/learn/desktop-pet-implementation.md`：基线版本改为 v3.0.0，补剧本/决策/小剧场增量说明；`pet-engine/README.md` 与 14 号文档状态同步为已实施。
+- 校验：更新文档的相对链接全部可解析，`pnpm check:ascii` 通过（767 个 Markdown）。
+
+### 2026-11-14 剧场 VRM 待机姿态修复
+
+- 现象：小剧场三席手脚交叉/扭曲，尤其在「第 2/6 句」等开场阶段；固定内置待机后仍有手指爪状与双脚重叠。
+- 定位：三层原因叠加——
+  1. `/api/motions` 里用户导入的 `cmu-walk / cmu-stretch / beishou` 等 `segment=single` 动作进入待机池，每 8 秒轮播，三席落到走路/背手帧；
+  2. 内置 `daiji` 在 VRM0 模型上会抬小腿、内扣脚掌、屈指；
+  3. `clipAnimatesArms` 只按 humanoid 词表 `leftUpperArm.quaternion` 匹配，而 VRMA 实际轨道名是 `Normalized_DEF-Left_arm.quaternion`，导致判定为「无手臂动画」，程序化垂臂与 hand-fidget 手指屈曲叠在待机动作上，形成爪状手。
+- 修复：
+  - `loadMotionPool` 新增 `builtinOnly`；`VrmSessionRuntime` 增加 `builtinIdleOnly`，`VrmCanvas` 增加 `motionProfile`，舞台 `StageActor` 固定传 `stage`，只加载内置 `daiji`（池大小 1）。
+  - 舞台待机按 humanoid 节点映射剔除腿/脚/脚趾/手指轨道（`stage-idle`，保留骨盆、脊柱、肩臂与手腕），避免抬腿、内扣脚掌与屈指；`setScriptBusy(true)` 关闭踮脚/插兜/抱臂等待机余兴。
+  - `clipAnimatesArms(clip, armNodes)` 支持传入模型归一化上臂节点名，VRMA 轨道也能正确判定手臂动画，不再叠加程序化垂手与 hand-fidget。
+  - `setStageStance(true)` 给上腿各加约 5° 外旋，固定自然站姿，避免三席并排时鞋子重叠。
+- 影响面：舞台/展示面；桌宠与主窗形象栏仍按用户动作池轮播。`clipAnimatesArms` 的修复同时改善桌宠上 VRMA 待机的手臂/手指叠加。
+- 验证：`vrm-motion-loader.test.ts`（builtinOnly + 轨道剔除）、`motion.test.ts`（归一化节点名识别）等 VRM/动效 16 文件 69 项通过；真机 `poolSize=1`、`stage-idle` 12 条轨道，等待 20 秒越过轮播周期后三席手指自然、双脚分开，截图确认。
+
+### 2026-11-15 M4 剧场硬化 S5 验收与门禁
+
+- 单测：新增 `use-stage-theater.test.ts`（开演换 cast、逐句派发、按句长推进、暂停/恢复、跳句循环、语音保持与 15s 兜底）、`use-theater-audio.test.ts`（TTS 触发/停止、BGM 跟随、duck、静音、自动播放拦截与手势解锁、切后台补播）、`theater-bgm.test.ts`（WebAudio 拦截、增益 0.055/duck 0.35/静音、9s 换和弦、dispose 重建）；剧场域 7 文件 34 项通过。
+- 控制入口：工具栏接线 `toggle`，新增「暂停/继续」按钮与中英文词条；暂停同时停时间线、语音与 BGM。
+- 真机（`/stage?stage=play`，1440×900）：三席 3/3 就绪后开演；真实 TTS 200，speakerId 18/32/3 分别对应雪团/冉卡露丽/菲比；BGM 起播 0.055、说话 duck 0.35、结束恢复 1、静音归零；12s 推进 2→4，暂停 8s 不动，继续后恢复；下一句 4→5、上一句 5→4；幕布/聚光灯/地板/暗角齐全；分享卡数据与卡面正常，浏览器裸访保存 PNG 按预期提示需桌面端；控制台无错误，`/vrm/` 无失败请求。
+- 门禁：typecheck 14 tasks；lint 8 包 0 error（28 存量 warning）；lines ≤300；structure 通过（`stage/` 21 个直接文件未增长）；cycles 8 个存量 SCC；ascii 769 个 Markdown；scenes 6 文件 37 项。
+- 文档：`theater-hardening-plan.md` 标记 S0–S6 完成并记录验收；发布说明、开发指南同步。
+- 所有改动未提交。
+
+### 2026-11-15 剧场补强：表情强度 / 短音效 / 多集 i18n / 桌面 PNG
+
+- 表情强度：`StageDirection.expression` 增加可选 `intensity`（1/2/3）；控制器新增 `expressionIntensities`，经 `StageActor → AvatarCanvasRouter → VrmCanvas → VrmSession` 透传到 KK morph 组合；剧场第 2 句标 3、第 6 句标 1，换 cast 重置 2。新增 `expression-intensity.test.ts` 3 项，真机 `data-expression-intensity` 确认 2→3→1。
+- 短音效：新增 `theater-sfx.ts`（WebAudio 合成幕布音与换句提示音），与 BGM 共用静音；`theater-sfx.test.ts` 4 项 + 音频编排断言。真机：幕布 buffer ×1、换句振荡器 +1、静音后 +0。
+- 多集与 i18n：新增 `morning-drill` 集（聚光灯背景）；`titleEn` / `textEn` + `localizeTheaterEpisode()`，舞台根按 locale 重算；英文界面标题与台词自动切换，缺省回落中文。
+- 桌面 PNG：Playwright `_electron` 启动桌面壳并替换保存对话框，经分享卡保存 2561×1601 PNG（1.05MB），toast「截图已保存」、UI 恢复、主进程无错误。
+- 验证：剧场 9 文件 45 项通过；typecheck 14 tasks、lines、structure 通过；真机无控制台错误。
+- 所有改动未提交。
+
+### 2026-11-15 剧场体验扩展：相对朝向 / 分幕 / 类型配乐 / 四集
+
+- 朝向：新增 `stageFacingYaw()`（按同台 x 坐标面向其他人重心，最大约 19.5°），`VrmPoseLayer` 增加平滑朝向偏移并叠加转身/微摆；全链 `StageActor → VrmCanvas → VrmSession` 透传，拖拽换位自动重算。真机截图确认左右整体向内、站姿自然。
+- 数据：剧集拆到 `theater/episodes/`（types/cast/4 集/index）；`TheaterAct` 用 `[from,to)` 描述幕，`genres` 标记喜剧/日常/悲剧/悬疑；新增《提案夜》《等伞》，共 4 集 24 句，保留 en 标题/台词。角标显示「幕名 · 第 n/N 句」。
+- 配乐：`TheaterBgm` 增加四套情绪和弦与 `setMood()`（运行中平滑换和弦、调整周期）；`theaterMoodAt` 按幕/剧集/类型推导；换句音效按类型选择音高。
+- 研究取舍：舞台调度采用小角度整体内转保留正面可读性；配乐继续 WebAudio 合成，避免第三方音频许可；外部 CC0/FMA/Musopen/豆包素材的登记规则写入 `ASSETS-LICENSE.md`。
+- 验证：剧场 10 文件 57 项 + 布局 8 项通过；真机 `proposal-night` 第 1→2 幕确认角标、幕布背景与配乐频率切换，无控制台错误。
+- 修复：`joy` 强度 3 原来用 `Mouth_happy_broad_op`，该 morph 会把舌头一起带出；改为闭口版 `Mouth_happy_broad_cl`，并在说话时由 `stripMouthMorphs()` 剥掉表情层嘴部 morph，只保留眼/眉，嘴型交给口型通道。真机复验 joy3 / joy2 / smirk 三句均不再露舌。
+- 所有改动未提交。
+
+### 2026-11-15 全局背景音乐模块
+
+- 新增 `features/music/`：`MusicProvider`（单 `<audio>` 播放、列表/单曲/不循环、音量与进度、localStorage 记忆）、右下角迷你播放条、设置页「音乐与背景声」面板。
+- 内置 7 个主题曲槽位（`public/audio/music/theme-*.mp3`），缺失时提示路径；导入支持 MP3/M4A/OGG/WAV/FLAC，单曲 ≤40MB，存 IndexedDB（无 IndexedDB 时退回内存），删除仅移除本地记录。
+- 氛围清单：7 首曲目的 BPM/时长/场景/豆包提示词，设置面板可逐条或全部复制；文档 `docs/plan/v3.0/music-atmospheres.md`；许可登记补入 `ASSETS-LICENSE.md`。
+- 曲目接入：9 首豆包生成 MP4 去除视频轨并转 MP3 192kbps（-16 LUFS），33.3MB → 21.5MB；三首主题曲进入组内轮播，6 首氛围曲按暖光/浪漫/深夜/俏皮/活力/忧郁近似匹配，悬疑与专注保留待生成槽位。
+- 许可修正（依据豆包平台反馈）：9 首仅为个人学习娱乐使用，无商用与再分发授权；`music-tracks.ts` 标记 `license: 'personal-only'`（2 个待生成槽位不标），设置面板加入「个人仅用」徽标与提示，`.gitignore` 排除 `apps/web/public/audio/music/*.mp3`；发布/交付/商用前必须移除或替换为 CC0/已授权曲目。
+- 可发布曲目协议建议：公开非商业版首选 CC0 1.0；需署名用 CC BY 4.0；仅非商业可用 CC BY-NC 4.0 / CC BY-NC-SA 4.0；商业交付购买付费商用授权（Epidemic Sound / Artlist / Mubert / Suno 付费计划等）；豆包火山 API 条款需单独核对并留档。
+- 验证：音乐 2 文件 9 项通过；Edge 真机 3 首主题曲自动 1/3→2/3→3/3 轮播、氛围曲 1:00 播放正常；Playwright 内置 Chromium 不含 MP3 解码，音乐验收改用系统 Edge/Chrome。
+- 所有改动未提交。
+
+### 2026-11-15 背景音乐替换为 CC0 可分发曲目
+
+- 来源：OpenGameArt.org，11 首 **CC0 1.0**；3 首主题曲 + 8 首氛围曲（`theme-tense` / `theme-focus` 已补齐，不再有待生成槽位）。
+- 处理：原始 MP3 / OGG / WAV → MP3 192kbps 44.1kHz 立体声，`loudnorm -16 LUFS`，合计约 30.4MB；逐曲作者、来源页与时长登记在 `ASSETS-LICENSE.md` 与 `docs/plan/v3.0/music-atmospheres.md`。
+- 代码：`BUILTIN_TRACKS` 全部标记 `license: 'cc0'`，移除 `pending`；设置页改为绿色「CC0」徽标与可分发提示；`.gitignore` 移除 MP3 排除规则，音频可随仓库与安装包分发。
+- 旧批次：9 首豆包 App 曲目已移出 `public/audio/music/`，仅在本机 `.tmp/personal-music/` 留档；豆包 App 输出仍仅限个人学习娱乐，不进入发布版。
+- 验证：音乐单测 2 文件 10 项通过（11 首全 CC0、零 pending）；`pnpm typecheck` 14 tasks、`pnpm lint` 8 包 0 error、`check:lines`、`check:ascii` 770 个 Markdown 通过；Edge 真机设置页显示 11 首与 11 个 CC0 徽标，主题曲 `readyState=4`、时长 84.6s 正常播放，`/audio/` 无失败请求。
+- 所有改动未提交。
+
+### 2026-11-15 剧场背景乐接入 CC0 曲目
+
+- 实现：`theater/theater-bgm.ts` 从 WebAudio 振荡器垫音改为 HTMLAudioElement 播放，复用应用内置的 4 首 CC0 曲目：`warm` → `theme-warm`、`playful` → `theme-playful`、`tense` → `theme-tense`、`melancholy` → `theme-melancholy`。
+- 行为：进入剧场淡入到音量 0.3，说话时 duck 到 35%（约 0.105）；换幕先淡出旧曲再换源淡入；暂停、静音、切后台、退出与 dispose 都会淡出并暂停；自动播放拦截仍返回 false，由首次手势解锁。
+- 复用面：`TheaterBgm` 对外接口（`start / stop / setMuted / setMood / setDucked / dispose`）不变，`use-theater-audio` 未改；舞台路由随主布局卸载全局播放器，不会叠音。
+- 文档：`ASSETS-LICENSE.md` 剧场音乐章节改为「背景乐复用 CC0、音效仍合成」；`release-notes.md` 与 `music-atmospheres.md` 同步四情绪映射与音量口径。
+- 验证：剧场域 9 文件 49 项通过，其中 `theater-bgm.test.ts` 重写为音频元素用例（拦截/淡入、duck/静音/停止归零、换幕切曲、未运行切情绪、淡出途中停止后补齐曲目、dispose）；`pnpm typecheck`、`pnpm lint`、`check:lines`、`check:ascii` 通过。
+- 跨幕真机（Edge，`/stage?stage=play`）：第一幕 `theme-warm.mp3` 音量 0.3 播放；8 秒采样最低 0.105、最高 0.3，确认说话 duck 生效；点 3 次下一句跨到第二幕（明日之约 5/6 句），切到 `theme-playful.mp3` 并回到 0.3；静音后音量 0、暂停，恢复后 0.3 继续；两个曲目均 206，`/audio/` 无失败请求，控制台无错误。
+- 构建：`pnpm build` 通过；`apps/web/.next/standalone` 内含 11 首 MP3 共 30.4MB；启动 standalone 后 `/audio/music/theme-warm.mp3` 返回 200（1,496,109 字节），`/stage?stage=play` 返回 200。
+- 桌面冒烟：electron-builder 26 的 winCodeSign 缓存需按新布局预置 7z（校验 sha256 通过），之后打包成功；安装包 `resources/server/apps/web/public/audio/music` 含 11 首 MP3 共 30.4MB。
+- 两处既有用例修复：① 桌宠 `/pet` 首次加载时设置默认形象会覆盖 URL 显式 `model=haru`，改为 URL 模型优先、后续设置变更仍热替换；② `/windows/focus` 在受限桌面被前台锁拒绝，增加 Alt 键解锁、前台状态轮询与 AttachThreadInput/SwitchToThisWindow 兜底，测试侧改为聚焦后点击编辑区、回车提交输入法预处理、Ctrl+S，并清理进程树避免 worker 退出挂起。
+- 最终 `pnpm test:e2e:desktop` 11 项全部通过（50.3s），覆盖键鼠通道、记事本落盘、桌宠四例、窗口渲染、四模块导航、安全基线、控制通道与托管令牌。
+- 所有改动未提交。
+
+### 2026-11-15 三个内置 VRM 许可一致性审计
+
+- 事实：`xuetuan.vrm` / `rankaluli.vrm` / `feibi.vrm` 内嵌 meta 的 `licenseName` 均为「CC BY-NC-SA 4.0」，`author` 均为 WorkBuddyForMe / flashJJ，`commercialUssageName` 均为 Disallow；三者一致，没有某一个漏写。
+- 文档：`docs/plan/v3.0/README.md`、`milestone-m4-m5/spec.md` 原先只写雪团，`execution-roadmap.md` 第 6 条仍把「测试模型许可」列为待确认；已统一为三个模型同一授权口径，并在决策日志补 D23，说明 D6 的 AnimeArt/CC0 只适用于未入内置名单的测试模型。
+- 来源口径（用户已确认）：雪团参考「蓝色大肥鱼」主题，由 AI Agent 独立生成形象图片，再经 Neural4D 付费会员图生 3D，后期二次制作与压缩；不以溟月图集作为生成输入。README 第 14/38/46/151 行、`ASSETS-LICENSE.md`、`public/vrm/models/LICENSE.md` 已按此链路改写。
+- 内嵌 meta 规范化（已完成）：三个模型的 `licenseName` 从自由文本改为枚举 `CC_BY_NC_SA`；`sexualUssageName` / `violentUssageName` 由 `Allow` 改为 `Disallow`；`reference` 补 CC 许可 URL；商用保持 `Disallow`。脚本 `scripts/avatar/normalize-vrm-meta.mjs` 支持 `--check` / `--write`，写入前备份到 `.tmp/vrm-meta-backup/`，并断言 BIN chunk SHA256 不变。
+- 验证：`validate-family` 三模型 49 骨骼 / 118 morph / 18 binds 全部通过；`check:lines` 通过。`contactInformation` 仍为空，如后续有公开联系地址可再补。
+- 范围：本次只改文档，未改 `.vrm` 二进制与代码。
+
 ## 下一步
 
 P4、P5 M1 与动效库两轮深化已完成。后续：
@@ -1095,5 +1219,5 @@ P4、P5 M1 与动效库两轮深化已完成。后续：
 2. P8.1–P8.8 与 P9 P1 已完成并真机验收（深链/搜索/常用入口/主动播放/长剧本收尾）；M3 Utility 阶段 1–3 已落地并真机验收，低语池间打分仍待候选元数据。
 3. T0.9：用 `WBFM_PET_SCRIPT=1` 会话跑 `pnpm perf:pet-longrun` 4h，补 p95/堆漂移报告。
 4. 资产管线：贴图压缩（13 个精简模型仍 25–33MB）、各模型穿模检查、100 个非标准 morph 语义抽查。
-5. P6（M3 收尾、M4 小剧场/分享、M5 发布验收）与 P7 插件化拆包。
+5. P6 已收尾（M3 决策层、M4 小剧场/分享、M5 发布门禁）；后续为 P7 插件化拆包与发布物料（短片/截图/博客）。
 6. 待产品决策：坐姿观感二轮（3/4 侧机位或加坐面道具）、模型体积口径（20MB 硬门槛 vs 25–30MB）。

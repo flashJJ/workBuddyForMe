@@ -44,6 +44,7 @@ export interface MotionRotationConfig {
  */
 export class MotionMixer {
   private readonly vrm: VRM;
+  private readonly armTrackNodes: string[];
   private readonly mixer: THREE.AnimationMixer;
   /** 动作条目池（初始待机排首位）；空池时退回模型内嵌 clip / 程序化姿态 */
   private entries: MotionEntry[];
@@ -75,6 +76,9 @@ export class MotionMixer {
     rotationConfig?: MotionRotationConfig | null,
   ) {
     this.vrm = vrm;
+    this.armTrackNodes = ['leftUpperArm', 'rightUpperArm']
+      .map((name) => vrm.humanoid?.getNormalizedBoneNode(name as never)?.name)
+      .filter((name): name is string => typeof name === 'string');
     // 单 mixer：优先复用 three-vrm 自带的（已绑定正确的 root）
     const existing = (vrm as unknown as { animationMixer?: THREE.AnimationMixer }).animationMixer;
     const root = vrm.humanoid?.normalizedHumanBonesRoot ?? vrm.scene;
@@ -106,13 +110,11 @@ export class MotionMixer {
 
   /** 当前待机 clip 自带手臂动画（自带时垂臂层让位） */
   get idleClipAnimatesArms(): boolean {
-    return this.currentIdleEntry ? clipAnimatesArms(this.currentIdleEntry.loopClip) : false;
+    return this.currentIdleEntry ? clipAnimatesArms(this.currentIdleEntry.loopClip, this.armTrackNodes) : false;
   }
 
   /** 动作条目数 */
-  get poolSize(): number {
-    return this.entries.length;
-  }
+  get poolSize(): number { return this.entries.length; }
 
   /** 当前待机 clip 名（调试钩子用） */
   get idleClipName(): string | null {
@@ -143,9 +145,7 @@ export class MotionMixer {
   }
 
   /** v2.2：注入状态驱动挑选输入（情绪档位 + 关系等级）；由 VrmController 每帧同步 */
-  setPreference(preference: MotionSelectionContext): void {
-    this.preference = preference;
-  }
+  setPreference(preference: MotionSelectionContext): void { this.preference = preference; }
 
   /** 推进 mixer 时间轴（每帧 Step 1） */
   update(dt: number): void { this.mixer.update(dt); }

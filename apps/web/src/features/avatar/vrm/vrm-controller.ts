@@ -140,9 +140,9 @@ export class VrmController implements VrmControllerLike {
     this.pose.playSquash();
   }
 
-  flashExpression(tag: ExpressionTag, durationMs: number): void {
+  flashExpression(tag: ExpressionTag, durationMs: number, intensity: 1 | 2 | 3 = 2): void {
     if (this.disposed) return;
-    this.face.flashExpression(tag, durationMs);
+    this.face.flashExpression(tag, durationMs, intensity);
   }
 
   setGaze(nx: number, ny: number): void {
@@ -162,8 +162,9 @@ export class VrmController implements VrmControllerLike {
   }
 
   /** v3.5：久无交互背对 / 被交互转回（只影响 VRM；Live2D 无此 API） */
-  setFaceAway(away: boolean): void { if (this.disposed) return; this.faceAway = away; this.pose.setFaceAway(away); } setScriptBusy(busy: boolean): void { if (!this.disposed) this.pose.setScriptBusy(busy); }
-
+  setFaceAway(away: boolean): void { if (this.disposed) return; this.faceAway = away; this.pose.setFaceAway(away); } setScriptBusy(busy: boolean): void { if (!this.disposed) this.pose.setScriptBusy(busy); }  setStageStance(on: boolean): void { if (!this.disposed) this.pose.setStageStance(on); }
+  /** 舞台相对位置朝向：左右角色向内微转（弧度，0 = 正向） */
+  setStageFacing(yaw: number): void { if (!this.disposed) this.pose.setFacing(yaw); }
   /** 被拎起：向上拖拽时进入悬空姿态，松手回弹 */
   setRaised(raised: boolean): void { if (!this.disposed) this.pose.setRaised(raised); }
 
@@ -207,7 +208,7 @@ export class VrmController implements VrmControllerLike {
   stopScriptMotion(id?: string): boolean { return !this.disposed && this.pose.stopScriptMotion(id); }
 
   setLipLevel(level: number): void { if (!this.disposed) this.face.setLipLevel(level); }
-  setExpression(tag: ExpressionTag): void { if (!this.disposed) this.face.setExpression(tag); }
+  setExpression(tag: ExpressionTag, intensity: 1 | 2 | 3 = 2): void { if (!this.disposed) this.face.setExpression(tag, intensity); }
   /** 注意：renderer 和 scene 的 dispose 由 vrm-canvas.tsx 的 disposeVrm 统一处理 */
   dispose(): void { if (this.disposed) return; this.disposed = true; this.mixer.dispose(); this.props.dispose(); }
 
@@ -280,7 +281,7 @@ export class VrmController implements VrmControllerLike {
     this.tail.update(t); this.props.update(dt * 1000);
 
     // --- Step 7: morph 表情层 ---
-    this.face.applyExpressionLayer();
+    this.face.applyExpressionLayer(speaking);
 
     // --- Step 8: 口型 aa ---
     this.face.applyLipSync(speaking, getLevel);

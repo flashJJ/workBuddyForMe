@@ -9,6 +9,8 @@ export interface AudioPlayer {
   cancelAll(): void;
   /** 可选：当前播放电平 RMS（0~1），供 Live2D 口型驱动 */
   getLevel?(): number;
+  /** 可选：在用户手势内解锁音频上下文（自动播放策略） */
+  unlock?(): void;
 }
 
 interface StampedFrame {
@@ -95,6 +97,11 @@ export class AudioPlaybackQueue {
   /** 当前播放电平（播放器不支持或无活动声源时为 0） */
   getLevel(): number {
     return this.player.getLevel?.() ?? 0;
+  }
+
+  /** 用户手势内解锁音频上下文，避免首句被自动播放策略吞掉 */
+  unlock(): void {
+    this.player.unlock?.();
   }
 
   dispose(): void {

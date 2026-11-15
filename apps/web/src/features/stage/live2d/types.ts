@@ -17,3 +17,27 @@ export interface StageLive2dOptions {
   powerMode: 'live' | 'portrait';
   focus: StageSlot | null;
 }
+
+/** pixi-live2d-display 的最小结构（舞台层不直接依赖 pld 类型） */
+export interface PldCoreModel {
+  setParameterValueById(id: string, value: number): void;
+}
+export interface PldModel {
+  anchor: { set(x: number, y: number): void };
+  scale: { set(x: number, y?: number): void };
+  x: number;
+  y: number;
+  zIndex: number;
+  autoUpdate: boolean;
+  internalModel: {
+    originalWidth: number;
+    originalHeight: number;
+    coreModel: PldCoreModel;
+  };
+  expression(name?: string): Promise<unknown>;
+  motion(group: string): Promise<unknown>;
+  destroy(): void;
+}
+export interface PldModelConstructor {
+  from(source: string, options?: { autoInteract?: boolean }): Promise<PldModel>;
+}

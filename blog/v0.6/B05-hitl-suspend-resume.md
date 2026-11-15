@@ -53,10 +53,10 @@ const pending = new Map<string, Pending>();       // key: confirmationId
 前端 `tool-confirm-dialog.tsx` 收到 SSE 事件后弹模态：
 
 ```text
+助手请求执行危险操作
 ┌────────────────────────────────────────────────────
-│ ⚠ 助手请求执行危险操作
-│ 工具：mcp:filesystem:write_file
-│ 权限：[write]（黄）/ [danger]（红）
+│ ⚠ 工具：mcp:filesystem:write_file
+│ 权限：write（黄） / danger（红）
 │ 参数：{ path: "...", content: ... }
 │
 │ [拒绝]  [本次允许]  [一直允许]

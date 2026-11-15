@@ -127,4 +127,18 @@ describe('clipAnimatesArms（垂臂层是否让位）', () => {
     );
     expect(clipAnimatesArms(new THREE.AnimationClip('head', 1, [track]))).toBe(false);
   });
+
+  it('VRMA 归一化节点名（Normalized_*.quaternion）也能识别上臂动画', () => {
+    const track = new THREE.QuaternionKeyframeTrack(
+      'Normalized_DEF-Left_arm.quaternion',
+      [0, 1],
+      [...q(0), ...q(Math.PI / 2)],
+    );
+    expect(
+      clipAnimatesArms(new THREE.AnimationClip('vrma', 1, [track]), [
+        'Normalized_DEF-Left_arm',
+        'Normalized_DEF-Right_arm',
+      ]),
+    ).toBe(true);
+  });
 });

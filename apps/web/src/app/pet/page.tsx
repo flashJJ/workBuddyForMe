@@ -56,9 +56,16 @@ export default function PetPage() {
   }, []);
 
   // 设置广播兜底：切换角色后立即重载，不再依赖主进程换模型消息/回执
+  const settingsSyncedRef = React.useRef(false);
   React.useEffect(() => {
     if (!settingsModelId) return;
     const next = normalizeAvatarModelId(settingsModelId);
+    if (!settingsSyncedRef.current) {
+      settingsSyncedRef.current = true;
+      // 首次加载：URL 已显式指定模型（pet.open(modelId)）时以 URL 为准，
+      // 避免默认设置把它覆盖成另一套舞台；后续设置变更仍会触发热替换
+      if (readPetModelId()) return;
+    }
     if (next === modelId) return;
     setModelId(next);
     const bridge = getPetBridge();

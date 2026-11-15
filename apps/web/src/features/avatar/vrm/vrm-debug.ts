@@ -55,6 +55,7 @@ export function installVrmDebugProbe(
       gesture: Boolean((controller as any)?.mixer?.hasGesture),
       holding: Boolean((controller as any)?.mixer?.isHolding),
       clip: (controller as any)?.mixer?.currentClipName ?? null,
+      scriptMotion: (controller as any)?.pose?.scriptMotion ?? null,
       props: (controller as any)?.props?.debug ?? null,
       frames: (controller as any)?.frameDebug ?? null,
     }),

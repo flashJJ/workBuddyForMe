@@ -56,6 +56,7 @@ import { zhRunGraph } from './messages/run-graph';
 import { zhBranch } from './messages/branch';
 import { zhCapabilities } from './messages/capabilities';
 import { zhSubagent } from './messages/subagent';
+import { zhMusic } from './messages/music';
 
 /**
  * 简体中文完整字典（i18n 结构唯一真源）。按 namespace 拆分到 messages/*，
@@ -122,6 +123,7 @@ export const zhCN = {
   branch: zhBranch,
   capabilities: zhCapabilities,
   subagent: zhSubagent,
+  music: zhMusic,
 } satisfies MessageNode;
 
 export type ZhDictionary = typeof zhCN;

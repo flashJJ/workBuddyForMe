@@ -1,0 +1,571 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`内置场景 golden（M5） > cue 时间线快照 1`] = `
+[
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+      {
+        "at": 2800,
+        "kind": "look",
+      },
+    ],
+    "id": "touch.head-tap",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+    ],
+    "id": "touch.head-longpress",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+    ],
+    "id": "touch.body-tap",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+    ],
+    "id": "touch.body-longpress",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+    ],
+    "id": "touch.body-double",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+    ],
+    "id": "touch.raised-tap",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+      {
+        "at": 4000,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.eat-rice",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 2400,
+        "kind": "behavior",
+      },
+      {
+        "at": 2400,
+        "kind": "look",
+      },
+      {
+        "at": 2400,
+        "kind": "expression",
+      },
+      {
+        "at": 2400,
+        "kind": "line",
+      },
+      {
+        "at": 5400,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.work-rest",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+      {
+        "at": 3000,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.called-fat",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 6000,
+        "kind": "pose",
+      },
+      {
+        "at": 6000,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.sit-sill",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 2300,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.bow",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 3200,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.hands-on-hips",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 3600,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.chin-rest",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 3100,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.yawn",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 2900,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.hug",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "prop",
+      },
+      {
+        "at": 0,
+        "kind": "prop",
+      },
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 3200,
+        "kind": "prop",
+      },
+      {
+        "at": 3200,
+        "kind": "prop",
+      },
+      {
+        "at": 3200,
+        "kind": "look",
+      },
+    ],
+    "id": "moment.tea",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "line",
+      },
+    ],
+    "id": "ambient.whisper",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 700,
+        "kind": "look",
+      },
+    ],
+    "id": "ambient.glance",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "gesture",
+      },
+    ],
+    "id": "ambient.shift-weight",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+    ],
+    "id": "state.sleep",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+    ],
+    "id": "state.wake",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+    ],
+    "id": "state.face-away",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "pose",
+      },
+    ],
+    "id": "state.face-front",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "prop",
+      },
+      {
+        "at": 0,
+        "kind": "prop",
+      },
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+      {
+        "at": 4600,
+        "kind": "look",
+      },
+      {
+        "at": 5200,
+        "kind": "prop",
+      },
+      {
+        "at": 5200,
+        "kind": "prop",
+      },
+      {
+        "at": 5200,
+        "kind": "look",
+      },
+    ],
+    "id": "pool.morning-tea",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "prop",
+      },
+      {
+        "at": 0,
+        "kind": "behavior",
+      },
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 0,
+        "kind": "line",
+      },
+      {
+        "at": 3600,
+        "kind": "expression",
+      },
+      {
+        "at": 3600,
+        "kind": "look",
+      },
+      {
+        "at": 3600,
+        "kind": "line",
+      },
+      {
+        "at": 5600,
+        "kind": "prop",
+      },
+      {
+        "at": 5600,
+        "kind": "look",
+      },
+    ],
+    "id": "pool.reading-break",
+  },
+  {
+    "beats": [
+      {
+        "at": 0,
+        "kind": "motion",
+      },
+      {
+        "at": 0,
+        "kind": "expression",
+      },
+      {
+        "at": 0,
+        "kind": "look",
+      },
+      {
+        "at": 2400,
+        "kind": "look",
+      },
+      {
+        "at": 2600,
+        "kind": "line",
+      },
+      {
+        "at": 3400,
+        "kind": "look",
+      },
+    ],
+    "id": "pool.desk-stretch",
+  },
+]
+`;
+
+exports[`内置场景 golden（M5） > 场景 id 顺序稳定（新增场景需显式更新快照） 1`] = `
+[
+  "touch.head-tap",
+  "touch.head-longpress",
+  "touch.body-tap",
+  "touch.body-longpress",
+  "touch.body-double",
+  "touch.raised-tap",
+  "moment.eat-rice",
+  "moment.work-rest",
+  "moment.called-fat",
+  "moment.sit-sill",
+  "moment.bow",
+  "moment.hands-on-hips",
+  "moment.chin-rest",
+  "moment.yawn",
+  "moment.hug",
+  "moment.tea",
+  "ambient.whisper",
+  "ambient.glance",
+  "ambient.shift-weight",
+  "state.sleep",
+  "state.wake",
+  "state.face-away",
+  "state.face-front",
+  "pool.morning-tea",
+  "pool.reading-break",
+  "pool.desk-stretch",
+]
+`;

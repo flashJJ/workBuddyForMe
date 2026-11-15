@@ -26,6 +26,7 @@ import { VrmIdleOverlay } from './overlay/vrm-idle-overlay';
 import { VrmScriptMotionOverlay, type ScriptMotionOptions } from './overlay/script-motion/vrm-script-motion';
 import { VrmLiveliness } from './overlay/vrm-liveliness';
 import { VrmHandClearance } from './overlay/vrm-hand-clearance';
+import { VrmStageStance } from './overlay/vrm-stage-stance';
 import { VrmSquash } from './overlay/vrm-squash';
 import { VrmSeating } from './overlay/vrm-seating';
 import type { SeatAnchor } from '../animation/seating';
@@ -57,6 +58,8 @@ export class VrmPoseLayer {
   private spineYaw = 0;
   private headYawOffset = 0; // 点击头部微倾
   private sleeping = false;
+  private stageMode = false; // 展示面：保留自然垂臂，不跑手指 fidget
+  private readonly stageStance = new VrmStageStance();
   /** 俯仰旋转方向：VRM0 为 -1、VRM1 为 +1（按头部世界 X 轴标定） */
   private readonly pitchSign: number;
   /** 程序化手势（点头/歪头/瞥一眼）：动作池为空或环境调度触发 */
@@ -75,7 +78,8 @@ export class VrmPoseLayer {
   private readonly gazeTarget = new THREE.Object3D();
   private readonly headWorld = new THREE.Vector3();
   private breathePhase = 0;
-
+  /** 舞台相对位置朝向（左右角色向内微转） */
+  private facingYaw = 0; private facingCurrent = 0;
   constructor(vrm: VRM, normBones: Map<string, NormalizedBoneRef>) {
     this.vrm = vrm;
     this.normBones = normBones;
@@ -104,8 +108,8 @@ export class VrmPoseLayer {
     this.baseSceneY = this.vrm.scene.position.y;
     this.anim.captureBase();
   }
-
   playSquash(): void { this.squash.play(); }
+  setFacing(yaw: number): void { this.facingYaw = Number.isFinite(yaw) ? yaw : 0; }
   setGaze(nx: number, ny: number): void {
     const [x, y] = normalizeGaze(nx, ny);
     this.gazeNx = x;
@@ -115,12 +119,8 @@ export class VrmPoseLayer {
   /** v3.0 P1：睡眠时收起视线并低头（闭眼由脸层负责） */
   setSleeping(sleeping: boolean): void {
     this.sleeping = sleeping;
-    if (sleeping) {
-      this.gazeNx = 0;
-      this.gazeNy = 0;
-    }
+    if (sleeping) { this.gazeNx = 0; this.gazeNy = 0; }
   }
-
   resetOverlayBones(): void {
     for (const name of OVERLAY_BONES) {
       const ref = this.normBones.get(name);
@@ -146,7 +146,7 @@ export class VrmPoseLayer {
   get accent(): string | null { return this.idleOverlay.accentId; } get scriptMotion(): string | null { return this.scriptMotionOverlay.motionId; }
   motionDuration(id: string): number { return this.anim.motions.get(id)?.durationMs ?? 0; }
   /** 久无交互背对 / 被交互转回 */
-  setFaceAway(away: boolean): void { if (away) this.gesture.reset(); this.turn.setAway(away); } setScriptBusy(busy: boolean): void { this.idleOverlay.setScriptBusy(busy); }
+  setFaceAway(away: boolean): void { if (away) this.gesture.reset(); this.turn.setAway(away); } setScriptBusy(busy: boolean): void { this.idleOverlay.setScriptBusy(busy); } setStageStance(on: boolean): void { this.stageMode = on; this.stageStance.setEnabled(on); }
 
   /** 被拎起 / 放下：强制接管，松手立即进 land，不排队等 exit */
   setRaised(raised: boolean): void { if (raised) this.anim.play('behavior.lifted', true); else if (this.raised) this.anim.play('behavior.land', true); }
@@ -178,9 +178,7 @@ export class VrmPoseLayer {
     return this.anim.applyMorph();
   }
 
-  get morphDebug(): MorphDebugSnapshot | null {
-    return this.anim.morph;
-  }
+  get morphDebug(): MorphDebugSnapshot | null { return this.anim.morph; }
 
   /** squash 包络（每帧 Step 2） */
   applySquash(): void {
@@ -197,9 +195,7 @@ export class VrmPoseLayer {
     this.seating.refreshRig();
   }
 
-  get seated(): boolean {
-    return this.seating.active;
-  }
+  get seated(): boolean { return this.seating.active; }
 
   /** 头部叠加层（每帧 Step 4）：平滑追踪 + 脊柱微转 + lookAt 眼睛目标 */
   applyHeadOverlay(t: number, procedural: boolean, dt: number, gazeWeight: number): void {
@@ -246,6 +242,7 @@ export class VrmPoseLayer {
   /** 待机手臂放松（A-pose → 自然下垂）+ 手部微动作组件；目标随转身角旋转，避免背对时双手收到中线 */
   relaxArms(weight: number, t: number): void {
     this.anim.applyPose('pose.arms-hang', weight, t, true, this.turn.yaw + this.anim.root.yaw);
+    if (this.stageMode) return; // 舞台只保留垂臂：握拳/摊开会覆盖 daiji 腕姿
     // 左右手错开半个周期：一只手握拳/摊开时，另一只保持放松
     this.anim.applyMotion('motion.hand-fidget-left', t * 1000, weight);
     this.anim.applyMotion('motion.hand-fidget-right', t * 1000, weight, 3200);
@@ -266,8 +263,11 @@ export class VrmPoseLayer {
     this.vrm.scene.position.y =
       this.baseSceneY + Math.sin(this.breathePhase * 1.2) * breatheAmp + root.y - this.seating.depth;
     const sway = this.sleeping ? 0 : Math.sin(t * 0.25) * (procedural ? 0.018 : 0.012);
-    this.vrm.scene.rotation.y = this.baseSceneRotationY + this.turn.update(dt) + sway + root.yaw;
+    this.facingCurrent = smoothDamp(this.facingCurrent, this.facingYaw, 5, dt);
+    this.vrm.scene.rotation.y =
+      this.baseSceneRotationY + this.turn.update(dt) + sway + root.yaw + this.facingCurrent;
     this.vrm.scene.rotation.z = this.baseSceneRotationZ + root.roll;
+    this.stageStance.apply(this.normBones);
     this.liveliness.update(dt, this.sleeping);
     this.handClearance.update(dt, this.sleeping);
     reapplyPalms(this.normBones); // 掌心的最后写者：呼吸/防穿模调整上臂之后重新滚腕

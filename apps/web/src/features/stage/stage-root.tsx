@@ -10,26 +10,20 @@ import { StageActor } from './stage-actor';
 import { StageDialogBox } from './stage-dialog-box';
 import { StageToolbar } from './stage-toolbar';
 import { StageLive2dLayer, type StageLive2dActor } from './live2d';
-import { computeActorLayout, meetingPosition } from './stage-layout';
+import { computeActorLayout, meetingPosition, stageFacingYaw } from './stage-layout';
 import { useStageController, type StageMode } from './use-stage-controller';
 import { useStageRun } from './use-stage-run';
 import { useMeetingStage } from './use-meeting-stage';
 import { useStageSpeech } from './voice/use-stage-speech';
-import { getStageBridge } from './stage-bridge';
+import { getStageBridge, toggleStageFullscreen } from './stage-bridge';
+import { findTheaterEpisode, localizeTheaterEpisode, theaterActAt, theaterBackdropAt } from './theater/theater-script';
+import { TheaterBackdrop } from './theater/theater-backdrop';
+import { useStageTheater } from './theater/use-stage-theater';
+import { StageTheaterOverlay } from './theater/stage-share-card';
+import { useStageTarget } from './theater/stage-target';
 
-/** 从 query 取目标 id（effect 内读 window，首帧恒等于 SSR 避免水合错配） */
-function useStageTarget(): { runId: string | null; meetingId: string | null } {
-  const [target, setTarget] = React.useState<{ runId: string | null; meetingId: string | null }>({
-    runId: null,
-    meetingId: null,
-  });
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const clean = (v: string | null) => (v && /^[a-zA-Z0-9_-]{1,80}$/.test(v) ? v : null);
-    setTarget({ runId: clean(params.get('run')), meetingId: clean(params.get('meeting')) });
-  }, []);
-  return target;
-}
+/** 舞台口型：真实语音电平优先，合成失败/未启用时回到控制器正弦口型 */
+const stageLevel = (base: () => number, active: boolean, voiceLevel: () => number) => () => Math.max(base(), active ? voiceLevel() : 0);
 
 /**
  * 舞台根：
@@ -39,27 +33,33 @@ function useStageTarget(): { runId: string | null; meetingId: string | null } {
  * 后两者零执行控件，关窗不杀后台；快捷键 H/F11/Esc/Ctrl+滚轮。
  */
 export function StageRoot() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
-  const { runId, meetingId } = useStageTarget();
-  const mode: StageMode = meetingId ? 'meeting' : runId ? 'run' : 'mock';
+  const { runId, meetingId, theater: theaterMode, episodeId } = useStageTarget();
+  const mode: StageMode = theaterMode ? 'theater' : meetingId ? 'meeting' : runId ? 'run' : 'mock';
   const c = useStageController(mode);
+  const episode = React.useMemo(() => localizeTheaterEpisode(findTheaterEpisode(episodeId), locale), [episodeId, locale]);
+  const [shareOpen, setShareOpen] = React.useState(false);
   const { say, stop, voice } = useStageSpeech({
     mode,
     cast: c.cast,
     sayLine: c.sayLine,
     clearSpeech: c.clearSpeech,
   });
+  const theater = useStageTheater({
+    enabled: mode === 'theater',
+    episode,
+    applyDirection: c.applyDirection,
+    voice,
+  });
   useStageRun(runId, c);
   const meeting = useMeetingStage(meetingId, c);
   const rootRef = React.useRef<HTMLDivElement>(null);
-
   // 鼠标移动唤醒控制栏（pointermove 足够频繁，无需节流，poke 内部幂等重置计时）
   React.useEffect(() => {
     window.addEventListener('pointermove', c.poke);
     return () => window.removeEventListener('pointermove', c.poke);
   }, [c.poke]);
-
   // 键盘快捷键
   React.useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -112,10 +112,7 @@ export function StageRoot() {
   // 每个槽位的布局只算一次：共享 Live2D 层与 DOM 命中盒必须使用同一组坐标
   const actorViews = c.cast.map((member, castIndex) => {
     const slot = member.slot;
-    const positionOverride =
-      mode === 'meeting'
-        ? meetingPosition(castIndex, Math.max(c.cast.length, 2))
-        : null;
+    const positionOverride = mode === 'meeting' ? meetingPosition(castIndex, Math.max(c.cast.length, 2)) : null;
     return {
       member,
       slot,
@@ -132,12 +129,11 @@ export function StageRoot() {
       expression: c.expressions[view.slot]!,
       speaking: view.slot === c.speakingSlot && Boolean(c.speech[view.slot]),
       // 有真实语音时用播放电平驱动口型，合成失败/未启用时退回控制器的正弦口型
-      getLevel: () => {
-        const base = c.levelReader(view.slot)();
-        // 只有正在发言的角色跟随音频电平，避免全场角色一起动嘴
-        if (!voice.speaking || view.slot !== c.speakingSlot) return base;
-        return Math.max(base, voice.getLevel());
-      },
+      getLevel: stageLevel(
+        c.levelReader(view.slot),
+        voice.speaking && view.slot === c.speakingSlot,
+        voice.getLevel,
+      ),
     }));
 
   return (
@@ -151,6 +147,7 @@ export function StageRoot() {
       onWheel={onRootWheel}
     >
       <StageBackgroundLayer background={c.payload.background} />
+      {mode === 'theater' && <TheaterBackdrop variant={theaterBackdropAt(episode, theater.index)} focus={c.focus} slots={c.payload.slots} />}
 
       {/* 2D 暖光层（不做三维光照） */}
       <div
@@ -196,7 +193,7 @@ export function StageRoot() {
 
       {/* 角色（cast 驱动：mock/run 三槽，meeting 2–4 席均布） */}
       <div className="absolute inset-0 z-10" data-testid="stage-cast">
-        <StageLive2dLayer actors={live2dActors} powerMode={c.powerMode} focus={c.focus} />
+        <StageLive2dLayer actors={live2dActors} powerMode={c.powerMode} focus={c.focus} motionCue={mode === 'theater' ? theater.cue : null} motionSlot={mode === 'theater' ? theater.current.slot : null} motionKey={mode === 'theater' ? theater.index : undefined} />
         {actorViews.map(({ member, slot, live, layout }) => (
           <StageActor
             key={slot}
@@ -204,13 +201,16 @@ export function StageRoot() {
             member={{ ...member, expression: c.expressions[slot]! }}
             layout={layout}
             live={live}
-            expression={c.expressions[slot]!}
+            expression={c.expressions[slot]!} expressionIntensity={c.expressionIntensities[slot]!}
             actionLabelKey={
               mode === 'mock' ? member.actionLabelKey : `stage.run.action.${c.motions[slot]}`
             }
             speaking={slot === c.speakingSlot && Boolean(c.speech[slot])}
             showNameplate={c.payload.showNameplates}
-            getLevel={c.levelReader(slot)}
+            getLevel={stageLevel(c.levelReader(slot), voice.speaking && slot === c.speakingSlot, voice.getLevel)}
+            motionCue={mode === 'theater' && slot === theater.current.slot ? theater.cue : null} motionCueKey={mode === 'theater' ? theater.index : undefined}
+            stageFacing={stageFacingYaw(layout.leftPct, actorViews.filter((view) => view.slot !== slot).map((view) => view.layout.leftPct))}
+            onActorReady={theater.markActorReady} onActorError={theater.markActorReady}
             onPlacementChange={c.patchPlacement}
             onTap={mode === 'mock' ? say : undefined}
             onActorScale={(s, scale) =>
@@ -220,8 +220,6 @@ export function StageRoot() {
                 scale,
               })
             }
-            snapshot={c.snapshots[member.avatarModelId] ?? null}
-            onSnapshot={c.setSnapshot}
           />
         ))}
       </div>
@@ -231,6 +229,22 @@ export function StageRoot() {
         text={dialogText}
         visible={c.payload.showDialog && !c.uiHidden && Boolean(activeLine)}
       />
+
+      {mode === 'theater' && (
+        <StageTheaterOverlay
+          episode={episode}
+          index={theater.index}
+          total={theater.total} actTitle={theaterActAt(episode, theater.index)?.title}
+          line={theater.current}
+          uiHidden={c.uiHidden} shareOpen={shareOpen}
+          ready={theater.ready} readyCount={theater.readyCount} readyTotal={theater.readyTotal}
+          bgmMuted={theater.bgmMuted}
+          audioBlocked={theater.audioBlocked}
+          onToggleBgm={theater.toggleBgm}
+          onSave={() => void c.requestScreenshot()}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
 
       {/* 控制栏（空闲淡出） */}
       <div
@@ -255,6 +269,21 @@ export function StageRoot() {
           }}
           onScreenshot={() => void c.requestScreenshot()}
           onExit={exitStage}
+          theater={
+            mode === 'theater'
+              ? {
+                  index: theater.index,
+                  total: theater.total,
+                  playing: theater.playing,
+                  shareOpen,
+                  onPrev: theater.prev,
+                  onNext: theater.next,
+                  onRestart: theater.restart,
+                  onToggle: theater.toggle,
+                  onShare: () => setShareOpen(true),
+                }
+              : undefined
+          }
         />
       </div>
 
@@ -267,19 +296,4 @@ export function StageRoot() {
       </div>
     </div>
   );
-}
-
-async function toggleStageFullscreen(): Promise<void> {
-  // Electron 舞台窗走主进程原生全屏；浏览器全屏 API 在已全屏的原生窗口里会互相打架。
-  const bridge = getStageBridge();
-  if (bridge) {
-    await bridge.toggleFullscreen().catch(() => false);
-    return;
-  }
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else await document.documentElement.requestFullscreen();
-  } catch {
-    /* 浏览器不允许时静默（多为用户手势/权限限制） */
-  }
 }

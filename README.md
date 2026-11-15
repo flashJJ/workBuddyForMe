@@ -1,29 +1,17 @@
 # WorkBuddyForMe
 
-本地优先的**私人 AI 工作台**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
+本地优先的**私人 AI 工作台 + 桌面陪伴角色**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v2.22.2**（2026-11-05）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 当前版本：**v3.0.0**（2026-11-14）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 本版主线：原创角色「雪团」+ 剧本引擎 + Utility 决策 + 小剧场与分享卡，详见 [v3.0.0 发布说明](docs/plan/v3.0/release-notes.md)。
 
-## v2.22.2 加固
+## v3.0.0 陪伴里程碑
 
-- **包管理器判定不再靠环境**：desktop 的 `packageManager` 字段让 electron-builder 直接按 pnpm 收依赖，`npx` 类调用不再重现 v2.22.0 的漏收事故。
-- **自检覆盖传递依赖**：asar 校验递归展开 `nut-js` 等传递包，并核对每个原生 `.node` 已解包到 `app.asar.unpacked`。
-- **缺件不再静默**：服务端归集的 MCP stdio、OCR、语音、向量运行时依赖任一缺失即构建失败。
-- **启动失败可见**：启动异常会弹错误框并写 `userData/startup-error.log`，不再是「双击没反应」。
-
-## v2.22.1 修复
-
-- **安装包可启动**：CI 打包改用 `pnpm exec electron-builder`，修复 v2.22.0 线上安装包漏收 pnpm hoisted 生产依赖、启动即报 `Cannot find module '@nut-tree-fork/nut-js'` 的问题。
-- **发布自检**：`verify-artifacts.ps1` 新增 asar 生产依赖校验，缺依赖直接阻断发布。
-
-## v2.22.0 重点
-
-- **分支事件随备份走**：conversations 轨新增 `branch-events.json`，恢复后分支车道、子会话与回传节点无需重新运行；旧备份缺文件按空处理，单分支保留最近 200 条。
-- **终态都有交代**：`interrupted` / `cancelled` / `budget_exceeded` 与成功/失败一样写回传；无运行结果时摘要为空、标记待复核，面板显示「无运行结果」。
-- **失败可重试**：终态分支一键以原目标派生新分支，旧分支保留终态与回传；并发、深度与预算上限继续生效。
-- **预算熔断**：结算时若会话树已用 + 预留超过上限，`succeeded` 改判 `budget_exceeded` 并预留归零。
-- **分支实时帧**：分支变化 1 秒内推入过程图，面板关闭即停止，10 秒快照继续兜底。
-- **零迁移**：不新增表与列，`LATEST_SCHEMA_VERSION` 保持 45，旧库与旧备份直接可用。
+- **剧本引擎**：Scene / Beat / Cue 受限剧本、`ScriptDirector` 冷却/打断/门控、生成队列、剧情状态机与定时入口；生成失败自动回落本地剧本池。
+- **Utility 决策**：时段 / 心情 / 关系 / 工作信号 / 打扰成本 / 新鲜度打分，主动播放与触发键候选排序可解释；设置页展示最近 5 条决策理由。
+- **小剧场**：`/stage?stage=play` 深链进入三席内置 VRM（雪团 / 冉卡露丽 / 菲比），按节拍轮播台词；分享卡叠加今日剧情数据并导出 PNG。
+- **角色与声音**：原创 VRM 角色入内置模型表，雪团声线接入本地 TTS；用户画像（称呼 / 忌口 / 作息）注入剧本生成。
+- **发布门禁**：剧本跨场景 lint + cue 时间线 golden（`pnpm check:scenes`），原创角色与二创包合规声明，版本号 3.0.0。
 
 ## 功能
 
@@ -62,9 +50,13 @@
 
 ### 陪伴与形象
 
-- 角色卡、情绪三变量、亲密 / 信任关系、关系里程碑与长期记忆。
-- 提醒与事件触发、Live2D / VRM 桌宠、舞台场景与 `.wbfm-pack` 导入导出。
-- 本地语音输入与朗读（sherpa-onnx，离线）；语音模型按需下载。
+- 原创角色「雪团」「冉卡露丽」「菲比」（VRM）与 Live2D 样本模型；桌宠 / 主窗 / 舞台共享形象与表情。
+- 角色卡、情绪三变量、亲密 / 信任关系、关系里程碑与长期记忆；角色卡与 `.wbfm-pack` 导入导出（纯 Markdown / 资源，不含代码）。
+- 剧本引擎：受限 Scene 剧本池、生成队列（每日调用 / token 预算）、剧情线索与悬念、剧情日记与回顾。
+- Utility 决策：按时段 / 心情 / 关系 / 工作信号 / 打扰成本选场，主动播放有预算与去重，决策理由可在设置页回看。
+- 舞台小剧场：`/stage?stage=play` 三席 VRM 轮播；剧情分享卡叠加今日数据导出 PNG；桌面截图走原生保存框。
+- 提醒与事件触发、不打扰开关（静音 / 隐藏 / 关闭主动说话即时生效）。
+- 本地语音输入与朗读（sherpa-onnx，离线）；语音模型按需下载，雪团声线走 kokoro。
 
 ### 设置、数据与安全
 
@@ -91,7 +83,7 @@ pnpm + Turborepo monorepo：
 
 ```text
 apps/
-  web/        Next.js 全栈应用（页面 + 124 个 API Route Handlers）
+  web/        Next.js 全栈应用（页面 + 219 个 API Route Handlers）
   desktop/    Electron 主进程、preload、打包
 packages/
   shared/     领域类型 / Zod schema / 错误码
@@ -131,6 +123,14 @@ pnpm dev:desktop
 ```
 
 首次启动向导支持演示模式、厂商预设与本机 Ollama 探测；也可以在「设置 → 供应商」添加 OpenAI-compatible 供应商（baseURL / API Key）与模型，再回到「对话」开始使用。
+
+剧本引擎与 `__petDebug` 调试面板需要构建期开关：
+
+```powershell
+$env:WBFM_PET_SCRIPT='1'; pnpm dev:desktop
+```
+
+舞台独立窗口可直接访问 `http://127.0.0.1:42337/stage?stage=play` 进入小剧场（`?run=` / `?meeting=` 分别观看协作与会议）。
 
 ## 对外服务示例
 
@@ -172,13 +172,17 @@ pnpm release:win    # 出包并归档产物
 ```powershell
 pnpm check                # typecheck + lint + 300 行门禁
 pnpm check:lines          # 仅行数门禁（含 --self-test）
+pnpm check:scenes         # 剧本跨场景 lint + cue 时间线 golden
+pnpm check:structure      # 目录预算 / 公开入口检查
+pnpm check:cycles         # 循环依赖检查
+pnpm check:ascii          # 文档框图宽度检查
 pnpm test:unit            # 单元测试（覆盖率阈值阻断）
 pnpm test:integration     # Web API 集成测试
 pnpm test:e2e             # Web 关键路径 E2E
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v2.22.2 发布验证：CI 打包日志确认 `pm=pnpm`（packageManager 字段生效），asar 自检递归核对 138 个包含传递依赖与 3 个原生模块全部通过，安装包三件套齐全（205.57 MB）；无功能变更、零迁移（schema 仍 v45）。v2.22.0 功能验证详见 [v2.22 M4 实施记录](docs/plan/v2.22/06-M4-实施记录.md)。
+v3.0.0 发布验证：舞台 + 场景 + 设置存储单测 62 项与 `check:scenes` 37 项通过；typecheck、lint（8 包 0 error）与行数 / 结构 / 循环 / ASCII 门禁全绿。真机验证 `/stage?stage=play` 三席 VRM 轮播、句间控制、分享卡数据与 PNG 导出均正常，零数据库迁移。详见 [v3.0.0 发布说明](docs/plan/v3.0/release-notes.md)。
 
 ## 数据与隐私
 
@@ -195,10 +199,13 @@ v2.22.2 发布验证：CI 打包日志确认 `pm=pnpm`（packageManager 字段�
 - [开发与测试指南](docs/development.md)
 - [Electron 桌面外壳](docs/modules/electron-shell.md)
 - 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
-- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v2.7–v2.10 路线](docs/plan/v2.7-v2.10/README.md)
+- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v3.0 方案](docs/plan/v3.0/README.md) ｜ [v3.0.0 发布说明](docs/plan/v3.0/release-notes.md) ｜ [M4/M5 Spec](docs/plan/v3.0/milestone-m4-m5/spec.md)
+- 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](docs/learn/desktop-pet-implementation.md)
 
 ## 许可
 
 代码采用 **PolyForm Noncommercial License 1.0.0**（见根 `LICENSE`），仅限非商业用途，不提供任何担保。
 
 内置角色 VRM 模型「鲸鱼娘-雪团」（`apps/web/public/vrm/models/xuetuan.vrm`）、「运动健将-冉卡露丽」（`apps/web/public/vrm/models/rankaluli.vrm`）与「兔耳娘-菲比」（`apps/web/public/vrm/models/feibi.vrm`）单独采用 **CC BY-NC-SA 4.0**，不适用上述代码许可，详见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
+
+内置背景音乐全部来自 OpenGameArt 的 **CC0 1.0** 素材（11 首，可商用、可修改、可随项目分发，无需署名）；逐曲作者、来源页与处理方式见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。此前用于本机试听的豆包 App 生成曲目已移出发布目录，仅本地留档。

@@ -14,7 +14,6 @@ import type { ExpressionTag } from '../expression/expression-parser';
 import { DEFAULT_EXPRESSION } from '../expression/expression-parser';
 import { Live2dMicrodynamics } from './live2d-microdynamics';
 import { Live2dIdleScheduler } from './live2d-idle-scheduler';
-import { captureStageFrame } from './live2d-capture';
 import {
   TOUCH_SQUASH_MS,
   TOUCH_SQUASH_SCALE_X,
@@ -263,11 +262,6 @@ export class Live2dController {
   playSquash(): void {
     if (!this.model) return;
     this.squashStart = performance.now();
-  }
-
-  /** v1.9 舞台省电档：截当前帧为 PNG dataURL（失败返回 null，调用方保持 Live2D） */
-  captureDataUrl(): string | null {
-    return captureStageFrame(this.app, Boolean(this.model));
   }
 
   /** 归一化指针（-1..1，相对舞台中心）→ 微动作视线跟随 */

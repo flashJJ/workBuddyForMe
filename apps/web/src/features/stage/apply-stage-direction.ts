@@ -3,6 +3,7 @@
 import type {
   StageCastMember,
   StageDirection,
+  StageExpressionIntensity,
   StageMotionGroup,
   StageSlot,
 } from '@wbfm/shared/schemas';
@@ -19,6 +20,11 @@ export interface StageRuntimeSetters {
   setExpressions: (
     updater: (prev: Record<StageSlot, ExpressionTag>) => Record<StageSlot, ExpressionTag>,
   ) => void;
+  setExpressionIntensities: (
+    updater: (
+      prev: Record<StageSlot, StageExpressionIntensity>,
+    ) => Record<StageSlot, StageExpressionIntensity>,
+  ) => void;
   setSpeech: (updater: (prev: Record<StageSlot, string | null>) => Record<StageSlot, string | null>) => void;
   setMotions: (updater: (prev: Record<StageSlot, StageMotionGroup>) => Record<StageSlot, StageMotionGroup>) => void;
   setLastLine: (line: { slot: StageSlot; text: string } | null) => void;
@@ -29,6 +35,13 @@ const INITIAL_EXPRESSION: Record<StageSlot, ExpressionTag> = {
   center: 'neutral',
   right: 'neutral',
   farRight: 'neutral',
+};
+
+const INITIAL_INTENSITY: Record<StageSlot, StageExpressionIntensity> = {
+  left: 2,
+  center: 2,
+  right: 2,
+  farRight: 2,
 };
 
 const LISTENING: Record<StageSlot, StageMotionGroup> = {
@@ -43,6 +56,7 @@ export function applyStageDirection(setters: StageRuntimeSetters, d: StageDirect
     case 'cast':
       setters.setCast(d.members);
       setters.setExpressions(() => ({ ...INITIAL_EXPRESSION }));
+      setters.setExpressionIntensities(() => ({ ...INITIAL_INTENSITY }));
       setters.setMotions(() => ({ ...LISTENING }));
       setters.setLastLine(null);
       break;
@@ -57,6 +71,10 @@ export function applyStageDirection(setters: StageRuntimeSetters, d: StageDirect
       setters.setExpressions((prev) => ({
         ...prev,
         [d.slot]: d.tag as ExpressionTag,
+      }));
+      setters.setExpressionIntensities((prev) => ({
+        ...prev,
+        [d.slot]: d.intensity ?? 2,
       }));
       break;
     case 'motion':

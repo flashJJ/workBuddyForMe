@@ -61,6 +61,15 @@ export class WebAudioPlayer implements AudioPlayer {
     return this.ctx;
   }
 
+  /** 用户手势内同步解锁 AudioContext（自动播放策略） */
+  unlock(): void {
+    try {
+      this.ensureCtx();
+    } catch {
+      /* 浏览器不支持 Web Audio */
+    }
+  }
+
   async play(frame: VoiceAudioFrame): Promise<void> {
     if (!frame.audio) return;
     const ctx = this.ensureCtx();

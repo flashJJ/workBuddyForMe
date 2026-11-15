@@ -14,6 +14,10 @@ export type StageSlot = (typeof STAGE_SLOTS)[number];
 export const STAGE_MOTION_GROUPS = ['listening', 'thinking', 'working', 'idle'] as const;
 export type StageMotionGroup = (typeof STAGE_MOTION_GROUPS)[number];
 
+/** 表情强度：1 轻 / 2 中 / 3 强（仅 VRM 的 KK morph 组合使用，Live2D 忽略） */
+export const STAGE_EXPRESSION_INTENSITIES = [1, 2, 3] as const;
+export type StageExpressionIntensity = (typeof STAGE_EXPRESSION_INTENSITIES)[number];
+
 // ---------------------------------------------------------------------------
 // cast（M1 mock cast 使用；M2 由 agent run 适配器产出）
 // ---------------------------------------------------------------------------
@@ -44,7 +48,13 @@ export const stageDirectionSchema = z.discriminatedUnion('t', [
     text: z.string().max(2000),
     seq: z.number().int().min(0),
   }),
-  z.object({ t: z.literal('expression'), slot: z.enum(STAGE_SLOTS), tag: z.string().max(40) }),
+  z.object({
+    t: z.literal('expression'),
+    slot: z.enum(STAGE_SLOTS),
+    tag: z.string().max(40),
+    /** 缺省 2；非 VRM 后端忽略 */
+    intensity: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  }),
   z.object({
     t: z.literal('motion'),
     slot: z.enum(STAGE_SLOTS),

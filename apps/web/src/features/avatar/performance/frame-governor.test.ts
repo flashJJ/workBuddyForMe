@@ -5,12 +5,19 @@ import {
   shouldRenderFrame,
 } from './frame-governor';
 
-describe('帧率三档', () => {
-  it('档位 → 目标帧率（hidden 暂停）', () => {
+describe('帧率四档', () => {
+  it('档位 → 目标帧率（hidden 暂停 / slow 8fps）', () => {
     expect(frameRateForMode('hidden')).toBe(0);
+    expect(frameRateForMode('slow')).toBe(8);
     expect(frameRateForMode('idle')).toBe(30);
     expect(frameRateForMode('interact')).toBe(60);
     expect(FRAME_INTERVAL_BY_MODE.hidden).toBe(0);
+  });
+
+  it('slow 至少每 125ms 渲染一帧，保证画布不被清空', () => {
+    expect(shouldRenderFrame(126, 0, 'slow')).toBe(true);
+    expect(shouldRenderFrame(126, 125, 'slow')).toBe(false);
+    expect(shouldRenderFrame(250, 125, 'slow')).toBe(true);
   });
 
   it('hidden 永不渲染（即使已过很久）', () => {

@@ -30,6 +30,7 @@ function makePlayback(speaking: boolean): VoicePlayback {
     cancel: vi.fn(),
     waitDrained: vi.fn(() => Promise.resolve()),
     getLevel: vi.fn(() => 0),
+    unlock: vi.fn(),
     getGate: vi.fn(() => ({ speaking, inCooldown: false })),
     subscribeLevel: vi.fn(() => () => undefined),
     voiceState: speaking ? 'speaking' : 'idle',

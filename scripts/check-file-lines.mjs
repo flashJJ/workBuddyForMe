@@ -42,10 +42,13 @@ const IGNORED_DIR_NAMES = new Set([
 ]);
 const INCLUDE_EXTENSIONS = new Set(['.ts', '.tsx']);
 const WHITELIST_NAME = '.lines-whitelist.json';
+// 打包前归集的 standalone 副本（prepare-server 产物），不属于手写源码
+const DESKTOP_RESOURCES_DIR = join(ROOT, 'apps', 'desktop', 'resources');
 
 /** 递归收集待检查文件 */
 function collectFiles(dir, acc = []) {
   if (!existsSync(dir)) return acc;
+  if (dir === DESKTOP_RESOURCES_DIR) return acc;
   for (const entry of readdirSync(dir)) {
     if (IGNORED_DIR_NAMES.has(entry)) continue;
     const full = join(dir, entry);

@@ -26,6 +26,17 @@ const nextConfig = {
   },
   // 工作区 TS 源码包在 Next 编译管线中转译
   transpilePackages: ['@wbfm/shared', '@wbfm/config', '@wbfm/database', '@wbfm/ai', '@wbfm/core'],
+  // 三席 VRM 各 25MB 左右：允许浏览器缓存，二次进入剧场不再重新下载
+  async headers() {
+    return [
+      {
+        source: '/vrm/models/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
+        ],
+      },
+    ];
+  },
   experimental: {
     // Windows 页面文件有限时降低构建 worker 并发，避免 spawn UNKNOWN / OOM
     cpus: 2,

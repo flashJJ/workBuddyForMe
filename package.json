@@ -1,6 +1,6 @@
 {
   "name": "workbuddy-for-me",
-  "version": "2.35.0",
+  "version": "3.0.0",
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "description": "WorkBuddyForMe - 类 WorkBuddy 的私人 AI 平台（Next.js 全栈 + Electron）",
@@ -29,6 +29,7 @@
     "check:structure": "node scripts/check-structure.mjs",
     "check:cycles": "node scripts/check-cycles.mjs",
     "check:family": "node scripts/avatar/validate-family.mjs",
+    "check:scenes": "pnpm --filter @wbfm/web exec vitest run src/features/avatar/script/scenes",
     "props:build": "node scripts/avatar/generate-props.mjs",
     "perf:pet-longrun": "node scripts/perf/pet-longrun.mjs",
     "check:ascii": "node scripts/check-ascii-width.mjs",

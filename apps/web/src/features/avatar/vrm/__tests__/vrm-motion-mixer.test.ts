@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
-import { MotionMixer } from './vrm-motion-mixer';
-import type { MotionPoolEntry } from '../motion/motion-segments';
+import { MotionMixer } from '../vrm-motion-mixer';
+import type { MotionPoolEntry } from '../../motion/motion-segments';
 
 /**
  * 无头 mixer 段调度测试：three 的 AnimationMixer 只操作 Object3D，不需要 WebGL，

@@ -126,3 +126,19 @@ export function clampSceneZoom(zoom: number): number {
 export function clampRatio(value: number): number {
   return Math.min(0.95, Math.max(0.05, Number(value.toFixed(4))));
 }
+
+/** 角色面对面朝向的最大偏转（弧度，约 19.5°） */
+export const STAGE_FACING_MAX_YAW = 0.34;
+
+/**
+ * 按同台角色 x 坐标计算整体朝向：面向其他人的重心。
+ * 左侧角色略微右转、右侧角色略微左转，中间角色保持正向；
+ * 拖拽改变相对位置后自动重算。x/others 均为舞台百分比（0–100）。
+ */
+export function stageFacingYaw(xPct: number, others: number[]): number {
+  if (others.length === 0) return 0;
+  const target = others.reduce((sum, value) => sum + value, 0) / others.length;
+  const dx = target - xPct;
+  if (Math.abs(dx) < 6) return 0;
+  return Math.max(-STAGE_FACING_MAX_YAW, Math.min(STAGE_FACING_MAX_YAW, dx * 0.012));
+}

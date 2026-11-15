@@ -12,6 +12,7 @@ export type SettingsSectionId =
   | 'avatar'
   | 'motion'
   | 'voice'
+  | 'music'
   | 'emotion'
   | 'events'
   | 'tools'
@@ -30,6 +31,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionMeta[] = [
   { id: 'avatar', labelKey: 'settings.sections.avatar' },
   { id: 'motion', labelKey: 'settings.sections.motion' },
   { id: 'voice', labelKey: 'settings.sections.voice' },
+  { id: 'music', labelKey: 'settings.sections.music' },
   { id: 'emotion', labelKey: 'settings.sections.emotion' },
   { id: 'events', labelKey: 'settings.sections.events' },
   { id: 'tools', labelKey: 'settings.sections.tools' },
@@ -70,6 +72,7 @@ const PANEL_LIST = [
   p('motion-import', 'motion', 'motionImport', ['vrma', '动作', '导入', 'motion', 'animation', 'import']),
   p('motion-list', 'motion', 'motionList', ['动作库', 'motion', 'animation', '预览', '列表']),
   p('voice-preference', 'voice', 'voicePreference', ['voice', '语音', '声线', 'tts', '语速', '朗读']),
+  p('music-library', 'music', 'musicLibrary', ['music', '音乐', '背景音乐', 'bgm', '主题曲', '导入歌曲', '氛围']),
   p('work-signal', 'voice', 'workSignal', ['work', '工作', '状态', '感知', '深夜', 'idle']),
   p('emotion', 'emotion', 'emotion', ['emotion', '情绪', '心情', '互动', '勿扰', 'quiet hours']),
   p('relationship', 'emotion', 'relationship', ['relationship', '关系', '等级', '称呼', '亲密度']),

@@ -75,6 +75,19 @@ function Live2DLicenseNotice() {
   );
 }
 
+/** v3.0 M5：原创角色与二创包合规声明（两个渲染分支共用） */
+function ComplianceNotice() {
+  const { t } = useI18n();
+  return (
+    <div className="space-y-1 border-t pt-3 text-xs text-muted-foreground" data-testid="about-compliance">
+      <p className="font-medium text-foreground">{t('about.compliance.title')}</p>
+      <p>{t('about.compliance.character')}</p>
+      <p>{t('about.compliance.disclaimer')}</p>
+      <p>{t('about.compliance.pack')}</p>
+    </div>
+  );
+}
+
 /** v1.2 M5：关于面板快捷入口（重放向导 / 快捷键浮层 / 帮助中心锚点），两个渲染分支共用 */
 function AboutQuickLinks() {
   const { t } = useI18n();
@@ -140,6 +153,7 @@ export function AboutPanel() {
         <SecretRotationButton />
         <TtfvPanel />
         <Live2DLicenseNotice />
+        <ComplianceNotice />
       </section>
     );
   }
@@ -256,6 +270,7 @@ export function AboutPanel() {
       )}
 
       <Live2DLicenseNotice />
+      <ComplianceNotice />
     </section>
   );
 }

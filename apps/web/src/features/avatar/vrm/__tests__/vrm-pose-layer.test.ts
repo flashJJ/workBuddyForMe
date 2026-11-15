@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import { describe, expect, it } from 'vitest';
-import { VrmPoseLayer, type NormalizedBoneRef } from './vrm-pose-layer';
+import { VrmPoseLayer, type NormalizedBoneRef } from '../vrm-pose-layer';
 
 /** 只用到 scene 的最小 VRM 替身（构造函数只读 scene.scale 与 lookAt） */
 function makeVrm(baseRotationY = Math.PI): { vrm: VRM; scene: THREE.Object3D } {

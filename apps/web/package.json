@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/web",
-  "version": "2.35.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -66,6 +66,7 @@
     "eslint-config-next": "^15.5.28",
     "jsdom": "^26.1.0",
     "postcss": "^8.4.47",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.9.0",
     "vitest": "^3.2.7"

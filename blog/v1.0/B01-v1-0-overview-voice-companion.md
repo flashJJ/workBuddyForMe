@@ -30,20 +30,17 @@ v1.0 要回答的就是这三件事：**全离线语音、有形象、伴身桌�
 
 ## 全景一张图
 
-```text
-麦克风（web 端）                          扬声器
-  │ 16k 单声道 PCM                          ▲ 音频帧串行队列
-  ▼                                        │（音量 RMS → 口型）
-POST 语音识别接口（multipart WAV）         SSE voice_audio 帧
-  │ SenseVoice 本地（int8）                 ▲
-  ▼                                        │
-识别文本 → 既有对话编排（记忆/技能/工具/流程全部复用）
-                 │ 文本增量 delta
-                 ▼
-           语音旁路：切句 → 清洗 → Kokoro（fp32 本地，角色绑定音色）
-                 │
-                 ▼ SSE voice_state：thinking → speaking → idle
-          Live2D（主窗右栏 / 桌宠小窗）：表情同源、口型、待机动作
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "14px"}, "flowchart": {"wrappingWidth": 600, "htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 30}}}%%
+flowchart LR
+  MIC["麦克风（web 端）<br/>16k 单声道 PCM"] --> ASR["POST 语音识别接口<br/>multipart WAV"]
+  ASR --> LOCAL["SenseVoice 本地 int8"]
+  LOCAL --> TEXT["识别文本 → 既有对话编排<br/>记忆 / 技能 / 工具 / 流程全部复用"]
+  TEXT -->|"文本增量 delta"| TTS["语音旁路<br/>切句 → 清洗 → Kokoro fp32 角色音色"]
+  TTS --> SSE["SSE voice_audio 帧<br/>voice_state：thinking → speaking → idle"]
+  SSE --> SPK["扬声器<br/>音频帧串行队列"]
+  SSE --> L2D["Live2D（主窗右栏 / 桌宠小窗）<br/>表情同源、口型、待机动作"]
+  SPK -->|"音量 RMS → 口型"| L2D
 ```
 
 关键在于中间那行「既有对话编排」：语音不是另起炉灶的新通道，而是挂在原有对话流上的一个旁路。

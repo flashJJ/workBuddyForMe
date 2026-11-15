@@ -6,6 +6,7 @@ import { useToast } from '@/components/common/toast';
 import type {
   StageCastMember,
   StageDirection,
+  StageExpressionIntensity,
   StageMotionGroup,
   StageScenePayload,
   StageSlot,
@@ -23,8 +24,8 @@ import type { StagePowerMode } from './stage-toolbar';
 const FOCUS_CYCLE: StageSlot[] = ['left', 'center', 'right'];
 const CONTROLS_FADE_MS = 2600;
 
-/** mock=本地演示（M1）；run=真实协作 run（M2）；meeting=多助手会议（M3），后两者只读驱动 */
-export type StageMode = 'mock' | 'run' | 'meeting';
+/** mock=本地演示（M1）；run=真实协作 run（M2）；meeting=多助手会议（M3）；theater=内置小剧场（M4） */
+export type StageMode = 'mock' | 'run' | 'meeting' | 'theater';
 export type StageRunStatus = 'connecting' | 'running' | 'done' | 'failed';
 
 export interface StageLine {
@@ -39,6 +40,8 @@ export interface StageController {
   cast: StageCastMember[];
   focus: StageSlot | null;
   expressions: Record<StageSlot, ExpressionTag>;
+  /** 表情强度（1 轻 / 2 中 / 3 强）；VRM 使用，Live2D 忽略 */
+  expressionIntensities: Record<StageSlot, StageExpressionIntensity>;
   motions: Record<StageSlot, StageMotionGroup>;
   speech: Record<StageSlot, string | null>;
   /** run 模式最近一句台词（散焦后对话框仍挂住，直到下一句） */
@@ -52,8 +55,6 @@ export interface StageController {
   autoDegraded: boolean;
   uiHidden: boolean;
   controlsVisible: boolean;
-  snapshots: Record<string, string>;
-  setSnapshot: (modelId: string, dataUrl: string) => void;
   nextSpeaker: () => void;
   /** 说一句台词；传 slot 可指定角色（点击角色时用），返回实际发言的槽位与文本 */
   sayLine: (slot?: StageSlot) => StageLine | null;
@@ -85,6 +86,14 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     right: 'neutral',
     farRight: 'neutral',
   });
+  const [expressionIntensities, setExpressionIntensities] = React.useState<
+    Record<StageSlot, StageExpressionIntensity>
+  >({
+    left: 2,
+    center: 2,
+    right: 2,
+    farRight: 2,
+  });
   const [motions, setMotions] = React.useState<Record<StageSlot, StageMotionGroup>>({
     left: 'idle',
     center: 'idle',
@@ -104,7 +113,6 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
   const [powerMode, setPowerModeState] = React.useState<StagePowerMode>('live');
   const [uiHidden, setUiHidden] = React.useState(false);
   const [controlsVisible, setControlsVisible] = React.useState(true);
-  const [snapshots, setSnapshots] = React.useState<Record<string, string>>({});
   const [autoDegraded, setAutoDegraded] = React.useState(false);
   const fadeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -149,6 +157,7 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
           setCast,
           setFocus,
           setExpressions,
+          setExpressionIntensities,
           setSpeech,
           setMotions,
           setLastLine,
@@ -165,6 +174,7 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     const next = FOCUS_CYCLE[(idx + 1) % FOCUS_CYCLE.length]!;
     setFocus(next);
     setExpressions((prev) => ({ ...prev, [next]: 'joy' }));
+    setExpressionIntensities((prev) => ({ ...prev, [next]: 2 }));
   }, []);
 
   const sayLine = React.useCallback((target?: StageSlot): StageLine | null => {
@@ -196,6 +206,7 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
       const nextTag = MOCK_EXPRESSIONS[(idx + 1) % MOCK_EXPRESSIONS.length]!;
       return { ...prev, [slot]: nextTag };
     });
+    setExpressionIntensities((prev) => ({ ...prev, [slot]: 2 }));
   }, []);
 
   const defocus = React.useCallback(() => setFocus(null), []);
@@ -219,10 +230,6 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
 
   const zoomSceneBy = React.useCallback((delta: number) => {
     setPayloadState((prev) => ({ ...prev, sceneZoom: clampSceneZoom(prev.sceneZoom + delta) }));
-  }, []);
-
-  const setSnapshot = React.useCallback((modelId: string, dataUrl: string) => {
-    setSnapshots((prev) => (prev[modelId] === dataUrl ? prev : { ...prev, [modelId]: dataUrl }));
   }, []);
 
   const levelReader = React.useCallback(
@@ -256,6 +263,7 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     cast,
     focus,
     expressions,
+    expressionIntensities,
     motions,
     speech,
     lastLine,
@@ -267,8 +275,6 @@ export function useStageController(mode: StageMode = 'mock'): StageController & 
     autoDegraded,
     uiHidden,
     controlsVisible,
-    snapshots,
-    setSnapshot,
     nextSpeaker,
     sayLine,
     clearSpeech,
