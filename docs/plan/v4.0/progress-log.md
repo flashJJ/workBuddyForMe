@@ -11,7 +11,7 @@
 | M1 依赖拓扑 | ✅ 完成（coreVersion、环检测、依赖顺序、健康报告） | 2026-11-15 |
 | M2 动效契约抽包 | ✅ 完成（`@wbfm/motion`：契约、内容、默认快照） | 2026-11-15 |
 | M3 motion-pack | ✅ 完成（kind、payload schema、effect、样例包） | 2026-11-15 |
-| M4 内容刷新 | 待开始 | — |
+| M4 内容刷新 | ✅ 完成（聚合启用内容、快照版本、会话级读取） | 2026-11-15 |
 | M5 发布校验 | 待开始 | — |
 | M6 收尾 | 待开始 | — |
 
@@ -71,5 +71,18 @@
 - 测试：payload 合法/非法、重复、内置冲突 2 项；安装→停用→再启用→卸载生命周期 1 项；注册表 4 项。
 - 结果：motion-pack 复用现有 ZIP/校验和/签名/升级/回滚链路，不新增数据库表。
 - 下一步：M4 聚合启用内容并刷新运行时快照。
+
+### 2026-11-15 M4 内容刷新
+
+- 新增 `packages/core/src/services/media/motion-content-service.ts`：
+  - `mergeMotionContent`：默认内容打底，按已启用 `motion-pack` 顺序合并 poses/motions/behaviors；同类型重复 id 拒绝；`version` 为 `packs:<sha256 前 12 位>`，排序后计算保证稳定；
+  - `createMotionContentService`：读取已启用能力行，按包目录解析 payload，实时聚合；无内容包时返回默认快照同一引用。
+- 新增 `GET /api/motion-content`（nodejs 运行时、强制动态），返回当前快照。
+- 新增 `useMotionContent`：挂载时拉取一次，3 秒超时回落默认内容；返回 `ready` 供会话初始化等待。
+- `VrmCanvas` 等待内容就绪后创建 `VrmSession`，并把快照经 session → controller → pose layer 透传到 `VrmAnimationRuntime`；场景坐标不变。
+- 测试：聚合服务 3 项（默认同引用、启用/停用合并、跨包冲突）；web VRM/动效 48 文件 273 项通过。
+- 门禁：`vrm-controller.ts` 与 `vrm-pose-layer.ts` 压至 300 行内；`pnpm check` 全绿。
+- 结果：安装/停用 `motion-pack` 后不重启应用，下一次打开舞台/桌宠即使用新快照；当前会话保持旧快照，不热替换。
+- 下一步：M5 发布校验（`SHA256SUMS` 与 `build-info.json`）。
 
 

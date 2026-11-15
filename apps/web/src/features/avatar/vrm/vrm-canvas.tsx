@@ -8,6 +8,8 @@ import type { FrameMode } from '../performance/frame-governor';
 import type { AvatarScreenRect } from '../performance/screen-rect';
 import { createVrmSession, type VrmSession } from './session/vrm-session';
 import { VrmController, type VrmControllerLike } from './vrm-controller';
+import { DEFAULT_MOTION_CONTENT, type MotionContent } from '../animation';
+import { useMotionContent } from '../animation/content/use-motion-content';
 
 export type { VrmControllerLike };
 export type { VRM } from '@pixiv/three-vrm';
@@ -83,6 +85,8 @@ export function VrmCanvas({
   'data-testid': testId,
 }: VrmCanvasProps) {
   const { t } = useI18n();
+  const { content: motionContent, ready: contentReady } = useMotionContent();
+  const motionContentRef = React.useRef<MotionContent>(DEFAULT_MOTION_CONTENT);
   const hostRef = React.useRef<HTMLDivElement | null>(null);
   const sessionRef = React.useRef<VrmSession | null>(null);
   const petSizeRef = React.useRef<'sm' | 'md' | 'lg'>(petSize ?? 'md');
@@ -109,6 +113,7 @@ export function VrmCanvas({
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => { speakingRef.current = speaking; }, [speaking]);
+  React.useEffect(() => { motionContentRef.current = motionContent; }, [motionContent]);
   React.useEffect(() => { getLevelRef.current = getLevel; }, [getLevel]);
   // 表情按 prop 变化下发：不能每帧写回基线，否则事件演出会被立刻覆盖
   React.useEffect(() => {
@@ -160,6 +165,7 @@ export function VrmCanvas({
 
   // 运行时只建一次：换模型走下面的 loadModel，不重建 renderer/canvas
   React.useEffect(() => {
+    if (!contentReady) return;
     const host = hostRef.current;
     if (!host) return;
     const session = createVrmSession({
@@ -179,6 +185,7 @@ export function VrmCanvas({
         stageFacing: stageFacingRef.current,
         chibi: chibiRef.current,
         builtinIdleOnly: builtinIdleRef.current,
+        motionContent: motionContentRef.current,
       }),
       onController: (controller) => {
         controllerRefInternal.current = controller;
@@ -206,13 +213,13 @@ export function VrmCanvas({
       sessionRef.current = null;
       session.dispose();
     };
-  }, []);
+  }, [contentReady]);
 
   // 模型切换（含首次）：同一 session 内热替换
   React.useEffect(() => {
-    if (!fileRef) return;
+    if (!contentReady || !fileRef) return;
     void sessionRef.current?.loadModel(fileRef);
-  }, [fileRef]);
+  }, [fileRef, contentReady]);
 
   const pointerClass = interactive ? '' : 'pointer-events-none';
   return (

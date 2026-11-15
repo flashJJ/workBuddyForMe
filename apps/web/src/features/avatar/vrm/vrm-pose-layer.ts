@@ -1,12 +1,6 @@
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
-import {
-  GAZE_IDLE_RESET_MS,
-  GAZE_SMOOTH,
-  normalizeGaze,
-  rigPitchSign,
-  smoothDamp,
-} from '../performance/gaze';
+import { GAZE_IDLE_RESET_MS, GAZE_SMOOTH, normalizeGaze, rigPitchSign, smoothDamp } from '../performance/gaze';
 import { GestureState, type ProceduralGestureKind } from '../performance/gesture';
 import { TurnState } from '../performance/turn';
 import type { NormalizedBoneRef } from '../pose/bones';
@@ -19,6 +13,7 @@ import {
   applySpineYaw,
 } from '../pose/head-overlay';
 import { VrmAnimationRuntime } from '../animation/adapters/vrm';
+import type { MotionContent } from '../animation';
 import { collectBehaviorClaims, type BehaviorClaim } from '../animation/frame/behavior-claims';
 import { maskIncludes } from '../animation/mask';
 import { reapplyPalms } from '../animation/arms/solver';
@@ -80,7 +75,12 @@ export class VrmPoseLayer {
   private breathePhase = 0;
   /** 舞台相对位置朝向（左右角色向内微转） */
   private facingYaw = 0; private facingCurrent = 0;
-  constructor(vrm: VRM, normBones: Map<string, NormalizedBoneRef>) {
+  constructor(
+    vrm: VRM,
+    normBones: Map<string, NormalizedBoneRef>,
+    /** v4.0 M4：会话内容快照；缺省使用内置内容 */
+    content?: MotionContent,
+  ) {
     this.vrm = vrm;
     this.normBones = normBones;
     this.baseSceneRotationY = vrm.scene.rotation.y; // rotateVRM0 的 π 必须先记录
@@ -88,7 +88,7 @@ export class VrmPoseLayer {
     const headBone = normBones.get('head');
     this.pitchSign = headBone ? rigPitchSign(headBone.node) : 1;
     this.lastGazeAt = performance.now();
-    this.anim = new VrmAnimationRuntime(normBones);
+    this.anim = new VrmAnimationRuntime(normBones, content);
     this.anim.captureBase();
     this.idleOverlay = new VrmIdleOverlay(this.anim); this.scriptMotionOverlay = new VrmScriptMotionOverlay(this.anim);
     this.liveliness = new VrmLiveliness(normBones, this.anim, DEFAULT_LIVELINESS);

@@ -18,6 +18,7 @@ import type { VrmControllerLike } from './session/vrm-controller-like';
 import { applyChibi, groundFeet } from './chibi/apply-chibi';
 import { VrmFrameLedger } from './overlay/vrm-frame-ledger';
 import { VrmPropLayer } from './props/vrm-prop-layer';
+import type { MotionContent } from '../animation';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
 export type { VrmControllerLike } from './session/vrm-controller-like';
@@ -71,6 +72,8 @@ export class VrmController implements VrmControllerLike {
     /** 动作池（内置 + 已导入 VRMA）；空数组/undefined 时退回模型内嵌 clip 或程序化姿态 */
     motionPool?: MotionPoolEntry[] | null,
     rotationConfig?: MotionRotationConfig | null,
+    /** v4.0 M4：本次会话的动效内容快照；缺省使用内置表 */
+    motionContent?: MotionContent,
   ) {
     this.vrm = vrm;
     this.scene = scene;
@@ -89,7 +92,7 @@ export class VrmController implements VrmControllerLike {
       if (node) normBones.set(name, { name, node, baseQuat: node.quaternion.clone() });
     }
 
-    this.pose = new VrmPoseLayer(vrm, normBones);
+    this.pose = new VrmPoseLayer(vrm, normBones, motionContent);
     this.frames = new VrmFrameLedger(this.pose);
     this.face = new VrmFaceLayer(vrm);
     this.tail = new VrmTailLayer(vrm);
@@ -271,8 +274,6 @@ export class VrmController implements VrmControllerLike {
     if (propHold && this.frames.allows('prop:hold')) this.pose.applyPropHold(propHold.pose); this.frames.commit(performance.now());
     // --- Step 5.5: 环境微行为（眨眼/点头/歪头/瞥视），避免待机像摆件 ---
     this.ambient.tick(performance.now(), !this.sleeping && !this.faceAway && !this.mixer.hasGesture && this.interaction.currentPhase === 'idle');
-
-
 
     // --- Step 6: vrm.update → normalized → raw → 场景 + SpringBone ---
     // normalized bone 在 Step 4 已写好；vrm.update 同步到 raw、应用到 mesh 并驱动 SpringBone
