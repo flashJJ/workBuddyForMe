@@ -71,11 +71,16 @@ export function usePetCompanion(args: PetCompanionArgs): void {
   const handle = React.useCallback(async (action: PetQuickAction) => {
     const a = argsRef.current;
     if (action === 'play-eat-rice') {
-      a.script.playScene('moment.eat-rice');
+      // 剧本不可用（Live2D / 导演未就绪）时退回本地台词，避免菜单点了没反应
+      if (!a.script.playScene('moment.eat-rice')) {
+        a.showLine(a.t(pickPetLine('eat-rice', Math.random())), 3200);
+      }
       return;
     }
     if (action === 'play-called-fat') {
-      a.script.playScene('moment.called-fat');
+      if (!a.script.playScene('moment.called-fat')) {
+        a.showLine(a.t(pickPetLine('called-fat', Math.random())), 3200);
+      }
       return;
     }
     const v = voiceRef.current;

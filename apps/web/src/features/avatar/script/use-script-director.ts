@@ -74,7 +74,13 @@ export interface ScriptControllerHandle {
 }
 
 export interface UseScriptDirectorOptions {
+  /** 是否创建导演：开启后可在生产包手动播放内置场戏（右键菜单） */
   enabled: boolean;
+  /**
+   * 是否让导演接管普通交互触发（身体/头部点击等）。
+   * 默认跟随 enabled；显式 false 时只保留手动 playScene，旧 Resolver 链路不变。
+   */
+  triggersEnabled?: boolean;
   getController: () => ScriptControllerHandle | null;
   showSubtitle: (key: MessageKey, durationMs?: number) => void;
   speakText?: (text: string, tts: boolean) => void;
@@ -213,6 +219,8 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
   const playEvent = React.useCallback(
     (event: InteractionEvent, ctx: ScriptCueContext): boolean => {
       if (!optionsRef.current.enabled) return false;
+      // 未开启触发接管时，普通交互继续走旧 Resolver；手动 playScene 不受影响
+      if (optionsRef.current.triggersEnabled === false) return false;
       const director = directorRef.current;
       if (!director) return false;
       const trigger = eventTriggerKey(event);

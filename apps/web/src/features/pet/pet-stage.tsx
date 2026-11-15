@@ -125,7 +125,10 @@ export function PetStage({
   // v3.0 T0.7：剧本开关（仅 VRM；关闭时完全走旧 Resolver/ActionExecutor）
   const decisionExtrasRef = React.useRef<TriggerDecisionExtras>({ work: 'unknown', recentProps: [], recentThemes: [], usedTags: [], recentSceneIds: [], sceneMeta: {} });
   const script = useScriptDirector({
-    enabled: PET_SCRIPT_ENABLED && isVrmAvatarId(modelId),
+    // 导演常驻 VRM：右键菜单的内置场戏不依赖 WBFM_PET_SCRIPT；
+    // 普通触发是否交给剧本仍由构建期开关控制
+    enabled: isVrmAvatarId(modelId),
+    triggersEnabled: PET_SCRIPT_ENABLED,
     getController: () => controllerRef.current, extraScenes: generated.scenes,
     decisionContext: () => decisionExtrasRef.current,
     showSubtitle: (key, ms) => { if (!linesEnabled) return; showLine(t(key), ms ?? 3200); },

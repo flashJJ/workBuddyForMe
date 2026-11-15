@@ -20,7 +20,7 @@ function cueCtx(): ScriptCueContext {
   };
 }
 
-function setup(enabled = true, strict = false, withBehavior = false) {
+function setup(enabled = true, strict = false, withBehavior = false, triggersEnabled?: boolean) {
   const calls: string[] = [];
   const subtitles: MessageKey[] = [];
   const controller: ScriptControllerHandle = {
@@ -52,6 +52,7 @@ function setup(enabled = true, strict = false, withBehavior = false) {
     () =>
       useScriptDirector({
         enabled,
+        triggersEnabled,
         getController: () => controller,
         showSubtitle: (key) => subtitles.push(key),
       }),
@@ -94,6 +95,26 @@ describe('useScriptDirector（T0.7 开关接线）', () => {
     });
     expect(handled).toBe(false);
     expect(calls).toEqual([]);
+  });
+
+  it('关闭触发接管时普通事件走旧链，但仍可手动播放场戏', () => {
+    const { result, calls } = setup(true, false, false, false);
+    let handled = true;
+    act(() => {
+      handled = result.current.playEvent(
+        { kind: 'touch', region: 'head', gesture: 'tap' },
+        cueCtx(),
+      );
+    });
+    expect(handled).toBe(false);
+    expect(calls).toEqual([]);
+
+    let played = false;
+    act(() => {
+      played = result.current.playScene('moment.eat-rice');
+    });
+    expect(played).toBe(true);
+    expect(calls).toEqual(['expression:joy']);
   });
 
   it('StrictMode 双重 effect 后仍能播放（Director 不被复用为已 dispose 实例）', () => {
