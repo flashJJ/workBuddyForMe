@@ -1,0 +1,62 @@
+{
+  "name": "@wbfm/motion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./contracts": {
+      "types": "./src/contracts.ts",
+      "development": "./src/contracts.ts",
+      "import": "./dist/contracts.mjs",
+      "require": "./dist/contracts.cjs"
+    },
+    "./poses": {
+      "types": "./src/poses/index.ts",
+      "development": "./src/poses/index.ts",
+      "import": "./dist/poses.mjs",
+      "require": "./dist/poses.cjs"
+    },
+    "./motions": {
+      "types": "./src/motions/index.ts",
+      "development": "./src/motions/index.ts",
+      "import": "./dist/motions.mjs",
+      "require": "./dist/motions.cjs"
+    },
+    "./behaviors": {
+      "types": "./src/behaviors/index.ts",
+      "development": "./src/behaviors/index.ts",
+      "import": "./dist/behaviors.mjs",
+      "require": "./dist/behaviors.cjs"
+    },
+    "./content": {
+      "types": "./src/content.ts",
+      "development": "./src/content.ts",
+      "import": "./dist/content.mjs",
+      "require": "./dist/content.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "test:unit": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@wbfm/shared": "workspace:*"
+  }
+}

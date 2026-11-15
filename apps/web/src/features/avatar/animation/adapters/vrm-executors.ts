@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { aimBone } from '../../performance/arm-relax';
 import type { NormalizedBoneRef } from '../../pose/bones';
-import { FINGER_SEGMENTS, HAND_RIGHT_CUP_HOLD, HAND_SHAPES, type FingerName } from '../poses/hands';
+import { FINGER_SEGMENTS, HAND_RIGHT_CUP_HOLD, HAND_SHAPES, type FingerName } from '@wbfm/motion/poses';
 import type { PoseDefinition } from '../contracts';
 import { applyPose } from '../pose';
 import { aimEatCycle, aimStretchCycle } from './vrm-arm-cycles';

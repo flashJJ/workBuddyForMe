@@ -32,6 +32,7 @@
     "@wbfm/config": "workspace:*",
     "@wbfm/core": "workspace:*",
     "@wbfm/database": "workspace:*",
+    "@wbfm/motion": "workspace:*",
     "@wbfm/shared": "workspace:*",
     "@wbfm/voice": "workspace:*",
     "@xyflow/react": "^12.12.0",
