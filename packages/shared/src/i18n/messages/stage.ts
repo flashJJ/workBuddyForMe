@@ -83,8 +83,8 @@ export const zhStage = {
     smirk: '坏笑',
   },
   power: {
-    live: '全 Live2D（高性能）',
-    portrait: '省电档（仅发言者 Live2D）',
+    live: '全渲染（高性能）',
+    portrait: '省电档（仅发言者）',
     degraded: '检测到持续卡顿，已自动切换省电档',
     autoDegraded: '帧率偏低，已自动切换省电档',
     restore: '恢复全量',

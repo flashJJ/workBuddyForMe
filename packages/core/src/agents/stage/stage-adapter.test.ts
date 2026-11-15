@@ -40,9 +40,9 @@ describe('v1.9 M2 stage-adapter 纯映射', () => {
   it('开场 cast：三角色固定左规划/中执行/右审查，形象回落默认模型', () => {
     const members = createAgentStageCast();
     expect(members.map((m) => [m.slot, m.refId, m.avatarModelId])).toEqual([
-      ['left', 'planner', 'hiyori'],
-      ['center', 'executor', 'haru'],
-      ['right', 'reviewer', 'mao'],
+      ['left', 'planner', 'vrm:builtin:rankaluli'],
+      ['center', 'executor', 'vrm:builtin:xuetuan'],
+      ['right', 'reviewer', 'vrm:builtin:feibi'],
     ]);
     // 场景 cast 覆盖优先
     const overridden = createAgentStageCast({ left: 'mark' });
