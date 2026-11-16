@@ -12,6 +12,7 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
@@ -124,7 +125,19 @@ export function MusicMiniPlayer() {
           {player.loop === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
         </button>
         <div className="ml-1 flex flex-1 items-center gap-1.5">
-          <Volume2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <button
+            type="button"
+            aria-label={player.muted ? t('music.player.unmute') : t('music.player.mute')}
+            data-testid="music-mute"
+            onClick={player.toggleMuted}
+            className="rounded p-0.5 text-muted-foreground hover:bg-accent"
+          >
+            {player.muted ? (
+              <VolumeX className="h-3.5 w-3.5" />
+            ) : (
+              <Volume2 className="h-3.5 w-3.5" />
+            )}
+          </button>
           <input
             type="range"
             min={0}

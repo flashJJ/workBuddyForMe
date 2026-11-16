@@ -16,8 +16,17 @@ import {
   listImportedMusic,
   saveImportedMusic,
 } from './music-storage';
-import { MUSIC_STORAGE_KEYS, isAudioFile, readMusicSetting, writeMusicSetting } from './music-persistence';
+import {
+  MUSIC_SESSION_KEYS,
+  MUSIC_STORAGE_KEYS,
+  isAudioFile,
+  readMusicSessionSetting,
+  readMusicSetting,
+  writeMusicSessionSetting,
+  writeMusicSetting,
+} from './music-persistence';
 import { useMusicSource } from './music-source';
+import { audioDirector, useAudioDirector } from '../audio';
 
 /** 播放错误：空曲库 / 待生成 / 内置文件缺失 / 自动播放拦截 / 解码失败 */
 export type MusicError = 'empty' | 'pending' | 'missing' | 'blocked' | 'decode';
@@ -32,6 +41,9 @@ export interface MusicPlayerState {
   duration: number;
   error: MusicError | null;
   importing: boolean;
+  /** v4.2：全局静音来自 AudioDirector，剧场按钮共享同一状态 */
+  muted: boolean;
+  toggleMuted: () => void;
   playTrack: (id: string) => void;
   toggle: () => void;
   next: () => void;
@@ -59,6 +71,40 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = React.useState(0);
   const [error, setError] = React.useState<MusicError | null>(null);
   const [importing, setImporting] = React.useState(false);
+  const audioState = useAudioDirector();
+  const volumeRef = React.useRef(volume);
+  const playingRef = React.useRef(playing);
+  volumeRef.current = volume;
+  playingRef.current = playing;
+
+  // v4.2：注册音乐 sink；音量由导演系数 × 本地音量计算
+  React.useEffect(() => {
+    const unregister = audioDirector.registerSink('music', {
+      setGain(gain) {
+        if (audioRef.current) audioRef.current.volume = clampMusicVolume(volumeRef.current * gain);
+      },
+      setSuspended(suspended) {
+        const audio = audioRef.current;
+        if (!audio) return;
+        if (suspended) {
+          audio.pause();
+          return;
+        }
+        if (playingRef.current) void audio.play().catch(() => undefined);
+      },
+    });
+    const unregisterUnlock = audioDirector.registerUnlock(() => {
+      const audio = audioRef.current;
+      if (audio && playingRef.current && audio.paused) void audio.play().catch(() => undefined);
+    });
+    audioDirector.setBackground('music');
+    return () => {
+      unregister();
+      unregisterUnlock();
+      audioDirector.setBackground(null);
+      audioRef.current?.pause();
+    };
+  }, []);
 
   const tracks = React.useMemo(() => mergeMusicTracks(imported), [imported]);
   const current = tracks.find((track) => track.id === currentId) ?? null;
@@ -76,6 +122,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     if (savedLoop === 'all' || savedLoop === 'one' || savedLoop === 'off') setLoop(savedLoop);
     const savedTrack = readMusicSetting(MUSIC_STORAGE_KEYS.track);
     if (savedTrack) setCurrentId(savedTrack);
+    // v4.2：舞台路由卸载后回到主窗，恢复上一轮播放意图
+    if (readMusicSessionSetting(MUSIC_SESSION_KEYS.playing) === '1') setPlaying(true);
     void refreshLibrary();
   }, [refreshLibrary]);
 
@@ -88,6 +136,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (mounted && currentId) writeMusicSetting(MUSIC_STORAGE_KEYS.track, currentId);
   }, [currentId, mounted]);
+  React.useEffect(() => {
+    if (mounted) writeMusicSessionSetting(MUSIC_SESSION_KEYS.playing, playing ? '1' : '0');
+  }, [playing, mounted]);
 
   React.useEffect(() => {
     setTime(0);
@@ -102,8 +153,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [missing]);
 
   React.useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume, src]);
+    if (audioRef.current) {
+      audioRef.current.volume = clampMusicVolume(volume * audioDirector.gainFor('music'));
+    }
+  }, [volume, src, audioState.muted, audioState.voiceActive]);
 
   React.useEffect(() => {
     const audio = audioRef.current;
@@ -249,6 +302,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     duration,
     error,
     importing,
+    muted: audioState.muted,
+    toggleMuted: () => audioDirector.toggleMuted(),
     playTrack,
     toggle,
     next,
