@@ -874,3 +874,20 @@
     animation: none;
   }
 }
+
+/* ── v4.4 整屏背景：统一玻璃表面 ──
+   透明度与模糊只在这里定义；侧边栏、页面头部、内容卡片与页内搜索共用同一组参数。
+   仅在 data-main-background="window" 下生效，聊天模式保持不透明。 */
+[data-main-background='window'] {
+  --app-glass-alpha: 0.72;
+  --app-glass-blur: 14px;
+}
+[data-main-background='window'] main .bg-card,
+[data-main-background='window'] .app-glass-surface {
+  background-color: hsl(var(--card) / var(--app-glass-alpha));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur));
+  backdrop-filter: blur(var(--app-glass-blur));
+}
+[data-main-background='window'] main .bg-background {
+  background-color: hsl(var(--background) / var(--app-glass-alpha));
+}

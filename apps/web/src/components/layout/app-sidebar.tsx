@@ -7,21 +7,14 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { DemoModeBadge } from './demo-mode-badge';
 import { NAV_ITEMS } from './nav-config';
-import { useMainBackgroundWindowMode } from '@/features/background';
 
 /** 应用侧边栏：品牌区 + 模块导航 + 主题切换 */
 export function AppSidebar() {
   const pathname = usePathname();
   const { t } = useI18n();
-  const windowMode = useMainBackgroundWindowMode();
 
   return (
-    <aside
-      className={cn(
-        'flex h-full w-14 shrink-0 flex-col border-r md:w-56',
-        windowMode ? 'bg-card/70 backdrop-blur-xl' : 'bg-card',
-      )}
-    >
+    <aside className="app-glass-surface flex h-full w-14 shrink-0 flex-col border-r bg-card md:w-56">
       <div className="px-2 py-4 md:px-5">
         <p className="hidden text-base font-semibold tracking-tight md:block">{t('common.appName')}</p>
         <p className="hidden text-xs text-muted-foreground md:block">{t('common.brandTagline')}</p>

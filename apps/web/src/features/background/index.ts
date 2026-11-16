@@ -1,7 +1,7 @@
 /** v4.4 M4：背景与壁纸渲染域入口 */
 export { BackgroundLayer } from './background-layer';
 export { MainBackground } from './main-background';
-export { MainBackgroundModeProvider, useMainBackgroundWindowMode } from './main-background-mode';
+export { MainBackgroundModeProvider } from './main-background-mode';
 export { PetBackground } from './pet-background';
 export { PetFrameOverlay } from './pet-frame';
 export { StageBackground } from './stage-background';

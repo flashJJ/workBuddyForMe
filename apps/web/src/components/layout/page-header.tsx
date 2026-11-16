@@ -1,8 +1,5 @@
-'use client';
-
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { useMainBackgroundWindowMode } from '@/features/background';
 
 interface PageHeaderProps {
   title: string;
@@ -14,12 +11,10 @@ interface PageHeaderProps {
 
 /** 页面统一头部：标题、说明与右侧操作区，置于 PageShell 顶部全宽展示 */
 export function PageHeader({ title, description, actions, icon, className }: PageHeaderProps) {
-  const windowMode = useMainBackgroundWindowMode();
   return (
     <header
       className={cn(
-        'flex flex-wrap items-start justify-between gap-3 border-b px-6 py-4',
-        windowMode ? 'bg-card/60 backdrop-blur-xl' : 'bg-card',
+        'flex flex-wrap items-start justify-between gap-3 border-b bg-card px-6 py-4',
         className,
       )}
     >
