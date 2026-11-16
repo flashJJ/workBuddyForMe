@@ -2,9 +2,10 @@ import { strToU8 } from 'fflate';
 import { ApiError } from '@wbfm/shared/errors';
 import type { CapabilityKind } from '@wbfm/shared/schemas';
 import { buildSampleScenePack } from './samples/scene-pack';
+import { buildSamplePropPack } from './samples/prop-pack';
 import { buildSampleZip, type SamplePackFile } from './samples/zip';
 
-/** v2.11：八类示例/模板包（下载与测试共用） */
+/** v2.11：九类示例/模板包（下载与测试共用） */
 
 /** 生成示例技能包（保留旧名，兼容既有测试/下载） */
 export function buildSampleSkillPack(): Uint8Array {
@@ -187,7 +188,7 @@ function sampleMotionPackPayload(): Uint8Array {
   return strToU8(JSON.stringify(payload, null, 2));
 }
 
-/** 生成示例包：八类均返回 ZIP；mcp 为模板包，pet-action 需注入 VRMA */
+/** 生成示例包：九类均返回 ZIP；mcp 为模板包，pet-action 需注入 VRMA */
 export function buildSamplePack(
   kind: CapabilityKind,
   options: { motionAsset?: Uint8Array } = {},
@@ -269,5 +270,6 @@ export function buildSamplePack(
     );
   }
   if (kind === 'scene-pack') return buildSampleScenePack();
+  if (kind === 'prop-pack') return buildSamplePropPack();
   return sampleMcpTemplate();
 }

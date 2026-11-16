@@ -50,3 +50,16 @@ pnpm check:assets
 - 安装包检查默认读取 `E:\builds\archive`，可用 `--archive-dir` 或 `WBFM_ARCHIVE_DIR` 覆盖；目录不存在时跳过，不影响干净检出。
 - 贴图分类按图片名启发式判断，未命名图片按颜色贴图处理；后续可在 B 阶段补材质级分类。
 - 本阶段只做扫描与门槛，不自动压缩、不重排 morph、不修改 VRM 文件。
+
+## 5. 内容包资源预算（v4.3 M3）
+
+道具包资源随包安装，位于用户数据目录而非仓库，因此由安装启用与资源路由执行，不进入 `check:assets`：
+
+| 项 | 上限 | 执行点 |
+|---|---|---|
+| 单个 GLB | 5MB | 启用 effect + 资源路由 |
+| 整包资源合计 | 20MB | 启用 effect |
+| `payload/prop-pack.json` | 64KB | 能力包导入 |
+
+常量真源：[`packages/shared/src/schemas/prop/prop-pack.ts`](../../../packages/shared/src/schemas/prop/prop-pack.ts)。
+超出预算整包拒绝启用；路径越界或读取未声明文件由资源路由拒绝。

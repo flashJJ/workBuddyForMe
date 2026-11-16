@@ -10,7 +10,7 @@
 | M0 方案与归档 | ✅ 完成（方案/tasks 落盘，候选 08 转正，三处索引已更新） | 2026-11-16 |
 | M1 资产预算 | ✅ 完成（`check:assets`、3 模型 22.29MB、morph 快照、安装包 264.61MB） | 2026-11-16 |
 | M2 场景包 | ✅ 完成（scene-pack kind、样例包、内容快照、桌宠 extraScenes；19 项测试通过） | 2026-11-16 |
-| M3 道具包 | ⏳ 待开始 | — |
+| M3 道具包 | ✅ 完成（prop-pack、样例 GLB、内容快照、资源路由；20 项 core 测试通过） | 2026-11-16 |
 | M4 音频设备 | ⏳ 待开始 | — |
 | M5 平台元数据 | ⏳ 待开始 | — |
 | M6 收尾 | ⏳ 待开始 | — |
@@ -30,6 +30,10 @@
 | D9 | 2026-11-16 | payload schema 独立到 `schemas/script/scene-pack.ts` | `capability.ts` 已接近 300 行门禁，脚本域更内聚 | 无 |
 | D10 | 2026-11-16 | 跨包同 id 在聚合层 fail-closed | 与 `mergeMotionContent` 一致，避免不确定覆盖 | 冲突时停用其一 |
 | D11 | 2026-11-16 | 场景包不进入 `gen.*` 主动播放轮换 | 主动播放依赖生成场景元数据，包场景只走触发与手动播放 | 需要时另加元数据 |
+| D12 | 2026-11-16 | 道具资源随包放 `payload/`，经 `/api/prop-assets` 流式读取 | 不写 `public/`，安装/卸载不污染构建产物 | 无 |
+| D13 | 2026-11-16 | 道具 id 强制 `pack.` 前缀，许可必填 | 与内置 8 个道具隔离；缺少许可直接拒绝 | 无 |
+| D14 | 2026-11-16 | 单文件 5MB、合计 20MB、entry 64KB | 道具远小于模型，防止包内塞大资产 | 按真实使用再调 |
+| D15 | 2026-11-16 | 运行时注册表用 getter，不重建渲染 session | 内容到达晚于 controller 创建；已挂载道具不热替换 | 无 |
 
 ## 工作日志
 
@@ -58,4 +62,14 @@
 - web：新增 `GET /api/scene-content`、`useSceneContent`；`useScriptDirector` 新增 `packScenes`，与生成场景一起校验后进入触发索引；主动播放轮换仍只用生成场景。
 - 测试：新增 effect 与内容快照测试，样例包安装/停用/启停/卸载链路通过；`pnpm check` 全绿。
 - 说明：小剧场 `/stage` 与既有能力包行为零变化；安装/停用后下一次挂载生效，不做热替换。
+
+### 2026-11-16 M3 道具包
+
+- 规格：新增 `spec-m3-prop-pack.md`；资源随包放 `payload/`，id 强制 `pack.` 前缀。
+- shared：新增 `schemas/prop/prop-pack.ts`，定义 kind / 许可 / 几何参数与 5MB、20MB 预算常量；能力包增加 `prop-pack`、`prop:pack`、`payload/prop-pack.json`。
+- core：新增 `effects/prop-pack/` 读取与资源校验（存在、路径、单文件/合计预算）；entry 上限 64KB；新增 `services/media/prop-content/` 聚合已启用包并只读 payload 声明资源。
+- 样例：`buildSamplePack('prop-pack')` 内含程序化生成的 1KB 立方体 GLB（`pack.sample.cube`），已用 three GLTFLoader 验证可加载。
+- web：新增 `GET /api/prop-content` 与 `GET /api/prop-assets?pack=&file=`；`usePropContent` 合并内置 + 包内道具；`VrmPropLayer` / `VrmCueAdapter` / 剧本校验共用动态注册表，内容到达无需重建 session。
+- 验证：core 能力 70 项、web 渲染/适配/导演 32 项全部通过；`pnpm check` 全绿。
+- 说明：已挂载道具不热替换；停用后下一次挂载或下一次 cue 生效。
 

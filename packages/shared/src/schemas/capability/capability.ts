@@ -9,8 +9,8 @@ import { RUN_EVIDENCE_CHAINS } from '../work/report';
  *
  * 口径：ZIP 根目录固定 `wbfm-capability.json` + `payload/**`；
  * 清单声明 kind/permissions/entry/checksums，安装侧 fail-closed 校验；
- * v4.3 起八类可执行：skill / mcp / workflow / pet-action / event-script /
- * report-widget / motion-pack / scene-pack。
+ * v4.3 起九类可执行：skill / mcp / workflow / pet-action / event-script /
+ * report-widget / motion-pack / scene-pack / prop-pack。
  */
 
 export const CAPABILITY_KINDS = [
@@ -22,6 +22,7 @@ export const CAPABILITY_KINDS = [
   'report-widget',
   'motion-pack',
   'scene-pack',
+  'prop-pack',
 ] as const;
 export type CapabilityKind = (typeof CAPABILITY_KINDS)[number];
 
@@ -34,6 +35,7 @@ export const CAPABILITY_PERMISSIONS = [
   'report:widget',
   'motion:pack',
   'scene:pack',
+  'prop:pack',
 ] as const;
 export type CapabilityPermission = (typeof CAPABILITY_PERMISSIONS)[number];
 
@@ -138,6 +140,7 @@ export const CAPABILITY_REQUIRED_PERMISSION: Record<CapabilityKind, CapabilityPe
   'report-widget': 'report:widget',
   'motion-pack': 'motion:pack',
   'scene-pack': 'scene:pack',
+  'prop-pack': 'prop:pack',
 };
 
 /** 当前已接入 effect 的 kind（其余安装时明确拒绝） */
@@ -150,6 +153,7 @@ export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = [
   'report-widget',
   'motion-pack',
   'scene-pack',
+  'prop-pack',
 ];
 
 /** v2.17：能力目录来源与安装策略（目录只收录内置精选包与 MCP 预置） */
@@ -189,6 +193,7 @@ export const CAPABILITY_ENTRY_BY_KIND: Record<CapabilityKind, string> = {
   'report-widget': 'payload/widget.json',
   'motion-pack': 'payload/motion-pack.json',
   'scene-pack': 'payload/scene-pack.json',
+  'prop-pack': 'payload/prop-pack.json',
 };
 
 /** v2.11：workflow 能力包 payload */

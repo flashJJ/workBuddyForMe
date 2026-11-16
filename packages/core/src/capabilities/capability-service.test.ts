@@ -207,6 +207,7 @@ describe('v2.10 能力包服务', () => {
       'report-widget',
       'motion-pack',
       'scene-pack',
+      'prop-pack',
     ] as const) {
       expect(service.sample(kind).byteLength).toBeGreaterThan(0);
     }

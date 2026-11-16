@@ -109,4 +109,25 @@ describe('VrmCueAdapter prop cue（S3/S4）', () => {
     ]);
     director.dispose();
   });
+
+  it('v4.3：动态注册表道具可 attach，场景结束自动清理', () => {
+    const controller = new PropController();
+    const adapter = new VrmCueAdapter({
+      controller,
+      getProps: () => ({
+        'pack.test.cube': {
+          id: 'pack.test.cube',
+          url: '/api/prop-assets?pack=x&file=y',
+          kind: 'hand',
+          license: 'CC0-1.0',
+          contact: 0.03,
+        },
+      }),
+    });
+
+    adapter.execute(entry({ kind: 'prop', prop: 'pack.test.cube', action: 'attach' }), () => 0);
+    expect(controller.hand).toEqual([{ id: 'pack.test.cube', on: true }]);
+    adapter.end('test.scene', 'complete');
+    expect(controller.hand.at(-1)).toEqual({ id: 'pack.test.cube', on: false });
+  });
 });

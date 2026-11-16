@@ -32,11 +32,13 @@
 
 ## M3 道具包
 
-- [ ] T3.1 `prop-pack` kind、payload schema 与资源预算
-- [ ] T3.2 安装/停用 effect 与内容快照刷新
-- [ ] T3.3 路径越界、缺失资源、未声明许可的拒绝测试
-- [ ] T3.4 样例道具包与舞台可见性测试
-- [ ] T3.5 提交 `feat(v4.3): prop-pack 道具包与资产预算联动`
+> 详细规格：[spec-m3-prop-pack.md](./spec-m3-prop-pack.md)。资源随包、以 `pack.` 前缀隔离。
+
+- [x] T3.1 shared：`prop-pack` kind、`prop:pack` 权限、`PACKET` entry 与 payload schema；单文件 5MB / 合计 20MB 常量
+- [x] T3.2 core：`prop-pack` effect 校验资源存在/路径/预算，注册 handler；entry 64KB
+- [x] T3.3 拒绝测试：空包、前缀、重复 id、缺许可、缺失资源、路径越界、超大资源
+- [x] T3.4 样例道具包、内容快照与资源路由；web 动态注册表接入渲染与剧本白名单
+- [x] T3.5 提交 `feat(v4.3): prop-pack 道具包与资产预算联动`
 
 ## M4 音频设备
 

@@ -4,10 +4,11 @@
  * 当前 GLB 为项目自建占位资产（CC0-1.0），由
  * `scripts/avatar/generate-props.mjs` 生成；替换外部 CC0 GLB 时保持文件名与原点约定即可。
  */
+import type { PropPackKind, PropPackLicense } from '@wbfm/shared/schemas';
 import type { PropAnimationId } from './prop-animation';
 
-export type PropLicense = 'CC0-1.0' | 'CC-BY-4.0';
-export type PropKind = 'hand' | 'stage';
+export type PropLicense = PropPackLicense;
+export type PropKind = PropPackKind;
 
 export interface PropSpec {
   id: string;
@@ -37,7 +38,10 @@ export interface PropSpec {
 const PROP_HOLD = 'pose.prop-hold';
 const CC0 = 'CC0-1.0' as const;
 
-export const PROPS: Readonly<Record<string, PropSpec>> = {
+/** v4.3 M3：内置道具与包内道具共用同一注册表结构 */
+export type PropRegistry = Readonly<Record<string, PropSpec>>;
+
+export const PROPS: PropRegistry = {
   teacup: {
     id: 'teacup',
     url: '/props/teacup.glb',

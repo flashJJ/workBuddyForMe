@@ -14,6 +14,7 @@ import { loadMotionPool, loadRotationConfig } from '../vrm-motion-loader';
 import { createCanvasFit } from '../vrm-fit';
 import { installVrmDebugProbe, removeVrmDebugProbe, type VrmDebugProbe } from '../vrm-debug';
 import { VrmController } from '../vrm-controller';
+import type { PropRegistry } from '../props/prop-manifest';
 import { releaseVrmModel } from './release-model';
 
 export interface VrmSessionRuntime {
@@ -35,6 +36,8 @@ export interface VrmSessionRuntime {
   builtinIdleOnly: boolean;
   /** v4.0 M4：本次会话的动效内容快照（默认 + 已启用内容包） */
   motionContent: MotionContent;
+  /** v4.3 M3：本次会话的道具注册表（内置 + 已启用道具包） */
+  propRegistry: PropRegistry;
 }
 
 export interface VrmSessionDeps {
@@ -241,6 +244,7 @@ export function createVrmSession(deps: VrmSessionDeps): VrmSession {
         poolEntries,
         rotation,
         deps.getRuntime().motionContent,
+        () => deps.getRuntime().propRegistry,
       );
       applyRuntime(controller);
       // 展示面不需要待机余兴（踮脚/插兜/抱臂），并固定一个自然站姿

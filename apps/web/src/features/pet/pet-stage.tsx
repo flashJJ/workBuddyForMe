@@ -7,7 +7,7 @@ import {
   PET_SCRIPT_ENABLED,
   ScriptDebugPanel,
   useGeneratedScripts,
-  usePetProactivePlayback, useSceneContent,
+  usePetProactivePlayback, useSceneContent, usePropContent,
   useScriptDirector,
   useAvatarChibi,
   type TriggerDecisionExtras,
@@ -91,7 +91,7 @@ export function PetStage({
   const sleep = usePetSleep(voiceState); const sleeping = sleep.sleeping;
   // v3.5：久无交互背对 / 点击或说话转回
   const faceAway = usePetFaceAway(voiceState);
-  const onModelRect = usePetHitProxy(bridge); const generated = useGeneratedScripts(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId)); const scenePacks = useSceneContent(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId));
+  const onModelRect = usePetHitProxy(bridge); const generated = useGeneratedScripts(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId)); const scenePacks = useSceneContent(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId)); const propContent = usePropContent();
   const onScriptPanelRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect(rect, bridge), [bridge]);
   const [line, setLine] = React.useState<string>(''); const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -130,7 +130,7 @@ export function PetStage({
     // 普通触发是否交给剧本仍由构建期开关控制
     enabled: isVrmAvatarId(modelId),
     triggersEnabled: PET_SCRIPT_ENABLED,
-    getController: () => controllerRef.current, extraScenes: generated.scenes, packScenes: scenePacks.scenes,
+    getController: () => controllerRef.current, extraScenes: generated.scenes, packScenes: scenePacks.scenes, props: propContent.props,
     decisionContext: () => decisionExtrasRef.current,
     showSubtitle: (key, ms) => { if (!linesEnabled) return; showLine(t(key), ms ?? 3200); },
   });

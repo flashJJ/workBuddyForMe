@@ -3,7 +3,7 @@ import type { VRM } from '@pixiv/three-vrm';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { applyPropAnimation } from './prop-animation-apply';
 import type { PropAnimationId } from './prop-animation';
-import { PROPS, type PropSpec } from './prop-manifest';
+import { PROPS, type PropRegistry, type PropSpec } from './prop-manifest';
 
 /**
  * 道具层（S2 手持 / S4 场景）：
@@ -72,6 +72,7 @@ export class VrmPropLayer {
   private readonly loaded = new Map<string, THREE.Object3D>();
   private readonly loading = new Map<string, Promise<THREE.Object3D>>();
   private readonly loader: PropAssetLoader;
+  private readonly getProps: () => PropRegistry;
   private disposed = false;
 
   /**
@@ -82,9 +83,10 @@ export class VrmPropLayer {
     private readonly vrm: VRM,
     private readonly stage: THREE.Object3D,
     private readonly prepare?: () => void,
-    loader?: PropAssetLoader,
+    loader?: PropAssetLoader, getProps?: () => PropRegistry,
   ) {
     this.loader = loader ?? new GltfPropLoader();
+    this.getProps = getProps ?? (() => PROPS);
   }
 
   get hold(): PropHold | null {
@@ -101,7 +103,7 @@ export class VrmPropLayer {
 
   /** 手持道具：加载并挂到 rightHand raw bone */
   async attach(id: string): Promise<boolean> {
-    const spec = PROPS[id];
+    const spec = this.getProps()[id];
     if (!spec || spec.kind !== 'hand') return false;
     if (this.attached.has(id) || this.requested.has(id)) return true;
 
@@ -121,7 +123,7 @@ export class VrmPropLayer {
 
   /** 场景道具：加载并挂到渲染场景根节点 */
   async show(id: string): Promise<boolean> {
-    const spec = PROPS[id];
+    const spec = this.getProps()[id];
     if (!spec || spec.kind !== 'stage') return false;
     if (this.attached.has(id)) return true;
 

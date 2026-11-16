@@ -17,7 +17,7 @@ import { NORM_BONE_NAMES } from '../pose/bones';
 import type { VrmControllerLike } from './session/vrm-controller-like';
 import { applyChibi, groundFeet } from './chibi/apply-chibi';
 import { VrmFrameLedger } from './overlay/vrm-frame-ledger';
-import { VrmPropLayer } from './props/vrm-prop-layer';
+import { VrmPropLayer } from './props/vrm-prop-layer'; import type { PropRegistry } from './props/prop-manifest';
 import type { MotionContent } from '../animation';
 
 export type { MotionRotationConfig } from './vrm-motion-mixer';
@@ -73,7 +73,7 @@ export class VrmController implements VrmControllerLike {
     motionPool?: MotionPoolEntry[] | null,
     rotationConfig?: MotionRotationConfig | null,
     /** v4.0 M4：本次会话的动效内容快照；缺省使用内置表 */
-    motionContent?: MotionContent,
+    motionContent?: MotionContent, propRegistry?: () => PropRegistry,
   ) {
     this.vrm = vrm;
     this.scene = scene;
@@ -96,7 +96,7 @@ export class VrmController implements VrmControllerLike {
     this.frames = new VrmFrameLedger(this.pose);
     this.face = new VrmFaceLayer(vrm);
     this.tail = new VrmTailLayer(vrm);
-    this.mixer = new MotionMixer(vrm, gltfAnimations, motionPool, rotationConfig); this.props = new VrmPropLayer(vrm, scene, () => this.pose.applyPropHold('pose.prop-hold'));
+    this.mixer = new MotionMixer(vrm, gltfAnimations, motionPool, rotationConfig); this.props = new VrmPropLayer(vrm, scene, () => this.pose.applyPropHold('pose.prop-hold'), undefined, propRegistry);
   }
 
   // ======= VrmControllerLike 公开方法 =======

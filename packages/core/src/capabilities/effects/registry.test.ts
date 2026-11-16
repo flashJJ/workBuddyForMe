@@ -10,7 +10,7 @@ import {
 
 /** v3.1 M1：注册表允许内核之外的新 kind 走同一套 enable/disable/uninstall */
 const CUSTOM_KIND = 'demo-pack' as CapabilityKind;
-const UNKNOWN_KIND = 'prop-pack' as CapabilityKind;
+const UNKNOWN_KIND = 'future-pack' as CapabilityKind;
 const manifest = { id: 'com.test.scene', kind: CUSTOM_KIND } as unknown as CapabilityManifest;
 const deps = {} as CapabilityEffectDeps;
 const enable = vi.fn(() => 'effect-ref');
@@ -35,7 +35,7 @@ describe('能力 effect handler 注册表（v3.1 S1）', () => {
 
   it('未注册 kind：启用报错，停用与卸载保持静默', () => {
     const unknown = { ...manifest, kind: UNKNOWN_KIND } as CapabilityManifest;
-    expect(() => enableCapabilityEffect(unknown, '/packs/prop', deps)).toThrow(/prop-pack/);
+    expect(() => enableCapabilityEffect(unknown, '/packs/future', deps)).toThrow(/future-pack/);
     expect(() => disableCapabilityEffect(unknown, 'ref', deps)).not.toThrow();
     expect(() => uninstallCapabilityEffect(unknown, 'ref', deps)).not.toThrow();
   });
