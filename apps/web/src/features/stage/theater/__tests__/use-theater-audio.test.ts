@@ -4,30 +4,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Mock } from 'vitest';
 import { findTheaterEpisode } from '../theater-script';
 import { useTheaterAudio } from '../use-theater-audio';
+import { audioDirector } from '../../../audio';
 
 interface FakeBgm {
   start: Mock;
   stop: Mock;
-  setDucked: Mock;
-  setMuted: Mock;
+  setGain: Mock;
   setMood: Mock;
   dispose: Mock;
 }
 
 const bgmState = vi.hoisted(() => ({ created: [] as FakeBgm[], startResult: true }));
-const sfxState = vi.hoisted(() => ({ play: vi.fn(async () => undefined), mute: vi.fn() }));
+const sfxState = vi.hoisted(() => ({ play: vi.fn(async () => undefined) }));
 
 vi.mock('../theater-sfx', () => ({
   playTheaterSfx: sfxState.play,
-  setTheaterSfxMuted: sfxState.mute,
+  unlockTheaterSfx: vi.fn(),
 }));
 
 vi.mock('../theater-bgm', () => ({
   TheaterBgm: class {
     start = vi.fn(async () => bgmState.startResult);
     stop = vi.fn();
-    setDucked = vi.fn();
-    setMuted = vi.fn();
+    setGain = vi.fn();
     setMood = vi.fn();
     dispose = vi.fn();
     constructor() {
@@ -84,7 +83,8 @@ beforeEach(() => {
   bgmState.created.length = 0;
   bgmState.startResult = true;
   sfxState.play.mockClear();
-  sfxState.mute.mockClear();
+  window.localStorage.clear();
+  audioDirector.setMuted(false);
 });
 
 afterEach(() => {
@@ -92,18 +92,12 @@ afterEach(() => {
 });
 
 describe('剧场音频编排（S5）', () => {
-  it('就绪且播放时启动 BGM、合成当前句，说话时闪避', async () => {
-    const { voice, bgm, rerender } = setup();
+  it('就绪且播放时启动 BGM、合成当前句', async () => {
+    const { voice, bgm } = setup();
     await flush();
 
     expect(bgm().start).toHaveBeenCalledTimes(1);
     expect(voice.speak).toHaveBeenCalledWith(LINE.text, SPEAKER);
-
-    rerender({ playing: true, speaking: true, index: 0 });
-    expect(bgm().setDucked).toHaveBeenLastCalledWith(true);
-
-    rerender({ playing: true, speaking: false, index: 0 });
-    expect(bgm().setDucked).toHaveBeenLastCalledWith(false);
   });
 
   it('开场幕布音一次、换句一声提示音，静音后不再播放', async () => {
@@ -117,7 +111,7 @@ describe('剧场音频编排（S5）', () => {
     expect(sfxState.play).toHaveBeenCalledTimes(2);
 
     act(() => result.current.toggleBgm());
-    expect(sfxState.mute).toHaveBeenLastCalledWith(true);
+    expect(result.current.bgmMuted).toBe(true);
 
     rerender({ playing: true, speaking: false, index: 2 });
     expect(sfxState.play).toHaveBeenCalledTimes(2);
@@ -178,21 +172,14 @@ describe('剧场音频编排（S5）', () => {
 
     act(() => result.current.toggleBgm());
     expect(result.current.bgmMuted).toBe(true);
-    expect(bgm().stop).toHaveBeenCalled();
 
     act(() => result.current.toggleBgm());
     expect(result.current.bgmMuted).toBe(false);
   });
 
-  it('首次手势解锁音频，切后台停声、回前台补播', async () => {
+  it('切后台停声、回前台补播', async () => {
     const { voice, bgm } = setup();
     await flush();
-
-    act(() => {
-      window.dispatchEvent(new Event('pointerdown'));
-    });
-    expect(voice.unlock).toHaveBeenCalled();
-    expect(bgm().start).toHaveBeenCalledTimes(2);
 
     let hidden = true;
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });

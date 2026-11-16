@@ -5,7 +5,8 @@ import type { StageVoice } from '../voice/use-stage-voice';
 import type { TheaterEpisode, TheaterLine } from './theater-script';
 import { theaterGenreAt, theaterMoodAt } from './theater-script';
 import { TheaterBgm } from './theater-bgm';
-import { playTheaterSfx, setTheaterSfxMuted } from './theater-sfx';
+import { playTheaterSfx, unlockTheaterSfx } from './theater-sfx';
+import { audioDirector, useAudioDirector } from '../../audio';
 
 export interface TheaterAudioState {
   bgmMuted: boolean;
@@ -33,20 +34,26 @@ export function useTheaterAudio(args: {
   const { enabled, playing, ready, episode, line, index, voice } = args;
   const speak = voice?.speak;
   const stop = voice?.stop;
-  const unlock = voice?.unlock;
-  const speaking = Boolean(voice?.speaking);
   const bgmRef = React.useRef<TheaterBgm | null>(null);
   const sfxStartedRef = React.useRef(false);
   const sfxLineRef = React.useRef<number | null>(null);
   const mood = theaterMoodAt(episode, index);
   const genre = theaterGenreAt(episode, index);
-  const [muted, setMuted] = React.useState(false);
+  const { muted } = useAudioDirector();
   const [blocked, setBlocked] = React.useState(false);
 
   React.useEffect(() => {
     const bgm = new TheaterBgm();
     bgmRef.current = bgm;
+    const unregister = audioDirector.registerSink('theater-bgm', {
+      setGain: (gain) => bgm.setGain(gain),
+    });
+    const unregisterUnlock = audioDirector.registerUnlock(unlockTheaterSfx);
+    audioDirector.setBackground('theater-bgm');
     return () => {
+      unregister();
+      unregisterUnlock();
+      audioDirector.setBackground(null);
       bgm.dispose();
       bgmRef.current = null;
     };
@@ -61,20 +68,13 @@ export function useTheaterAudio(args: {
     bgmRef.current?.setMood(mood);
   }, [mood]);
 
-  // 进入/暂停/静音：BGM 跟随演出状态
+  // 进入/暂停：BGM 跟随演出状态；静音由导演统一压到 0
   React.useEffect(() => {
-    if (enabled && playing && ready && !muted) startBgm();
+    if (enabled && playing && ready) startBgm();
     else bgmRef.current?.stop();
-  }, [enabled, playing, ready, muted, startBgm]);
-
-  React.useEffect(() => {
-    bgmRef.current?.setDucked(speaking);
-  }, [speaking]);
+  }, [enabled, playing, ready, startBgm]);
 
   // 短音效：开场幕布一次，之后每次换句一声轻提示；静音与 BGM 同步
-  React.useEffect(() => {
-    setTheaterSfxMuted(muted);
-  }, [muted]);
 
   React.useEffect(() => {
     if (!enabled) {
@@ -105,21 +105,6 @@ export function useTheaterAudio(args: {
     void speak(line.text, member?.avatarModelId ?? '');
   }, [enabled, playing, ready, index, episode, line.slot, line.text, speak, stop]);
 
-  // 首次手势解锁语音与 BGM（无手势时 Chrome 会把首句静音）
-  React.useEffect(() => {
-    if (!enabled) return;
-    const onGesture = () => {
-      unlock?.();
-      startBgm();
-    };
-    window.addEventListener('pointerdown', onGesture, { once: true });
-    window.addEventListener('keydown', onGesture, { once: true });
-    return () => {
-      window.removeEventListener('pointerdown', onGesture);
-      window.removeEventListener('keydown', onGesture);
-    };
-  }, [enabled, unlock, startBgm]);
-
   // 切后台停声；回前台恢复 BGM，并补播当前句（时间线会重新计时）
   React.useEffect(() => {
     if (!enabled) return;
@@ -144,11 +129,7 @@ export function useTheaterAudio(args: {
       startBgm();
       return;
     }
-    setMuted((prev) => {
-      const next = !prev;
-      if (!next) startBgm();
-      return next;
-    });
+    audioDirector.toggleMuted();
   }, [blocked, startBgm]);
 
   return { bgmMuted: muted, audioBlocked: blocked, toggleBgm };

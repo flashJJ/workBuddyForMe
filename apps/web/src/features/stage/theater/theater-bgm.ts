@@ -14,7 +14,6 @@ const TRACKS: Record<TheaterMusicMood, string> = {
 };
 
 const BASE_VOLUME = 0.3;
-const DUCK_RATIO = 0.35;
 const DUCK_FADE_MS = 120;
 const FADE_MS = 800;
 const FADE_STEP_MS = 40;
@@ -28,8 +27,8 @@ export class TheaterBgm {
   private fadeTimer: ReturnType<typeof setInterval> | null = null;
   private mood: TheaterMusicMood = 'warm';
   private running = false;
-  private muted = false;
-  private ducked = false;
+  /** v4.2：AudioDirector 给的有效系数（mute / duck 已算好） */
+  private gain = 1;
 
   /** 启动/恢复背景乐；返回 false 表示被浏览器自动播放策略拦截 */
   async start(): Promise<boolean> {
@@ -62,9 +61,11 @@ export class TheaterBgm {
     });
   }
 
-  setMuted(muted: boolean): void {
-    this.muted = muted;
-    this.fadeTo(this.targetVolume());
+  setGain(gain: number): void {
+    const next = clampVolume(gain);
+    if (this.gain === next) return;
+    this.gain = next;
+    if (this.running) this.fadeTo(this.targetVolume(), undefined, DUCK_FADE_MS);
   }
 
   /** 切换配乐情绪：运行中淡出旧曲、换源后再淡入；未运行时只记录，下次 start 生效 */
@@ -82,11 +83,10 @@ export class TheaterBgm {
     });
   }
 
-  /** 说话时把 BGM 压到 35%，避免盖住台词 */
-  setDucked(ducked: boolean): void {
-    if (this.ducked === ducked) return;
-    this.ducked = ducked;
-    if (this.running) this.fadeTo(this.targetVolume(), undefined, DUCK_FADE_MS);
+  /** 运行态 × 导演系数 → 目标音量 */
+  private targetVolume(): number {
+    if (!this.running) return 0;
+    return BASE_VOLUME * this.gain;
   }
 
   dispose(): void {
@@ -115,12 +115,6 @@ export class TheaterBgm {
     if (!el) return;
     el.src = TRACKS[this.mood];
     el.volume = 0;
-  }
-
-  /** 运行态 × 静音 × 闪避 → 目标音量 */
-  private targetVolume(): number {
-    if (!this.running || this.muted) return 0;
-    return BASE_VOLUME * (this.ducked ? DUCK_RATIO : 1);
   }
 
   /** 唯一改音量入口：线性渐变到目标值，结束后可执行一次收尾 */

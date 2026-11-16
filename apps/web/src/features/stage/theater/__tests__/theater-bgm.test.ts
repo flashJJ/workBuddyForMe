@@ -75,7 +75,7 @@ describe('剧场 BGM（CC0 曲目）', () => {
     bgm.dispose();
   });
 
-  it('静音与说话闪避只改音量：0.3 / 0.35 / 停止归零', async () => {
+  it('导演系数只改音量：1 / 0.35 / 0 / 停止归零', async () => {
     const bgm = new TheaterBgm();
     await bgm.start();
     vi.advanceTimersByTime(900);
@@ -83,18 +83,18 @@ describe('剧场 BGM（CC0 曲目）', () => {
     expect(el.src).toContain('theme-warm.mp3');
     expect(el.volume).toBeCloseTo(0.3);
 
-    bgm.setDucked(true);
+    bgm.setGain(0.35);
     vi.advanceTimersByTime(200);
     expect(el.volume).toBeCloseTo(0.105);
-    bgm.setDucked(false);
+    bgm.setGain(1);
     vi.advanceTimersByTime(200);
     expect(el.volume).toBeCloseTo(0.3);
 
-    bgm.setMuted(true);
-    vi.advanceTimersByTime(900);
+    bgm.setGain(0);
+    vi.advanceTimersByTime(200);
     expect(el.volume).toBe(0);
-    bgm.setMuted(false);
-    vi.advanceTimersByTime(900);
+    bgm.setGain(1);
+    vi.advanceTimersByTime(200);
     expect(el.volume).toBeCloseTo(0.3);
 
     bgm.stop();
