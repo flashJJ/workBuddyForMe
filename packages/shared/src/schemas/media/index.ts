@@ -6,3 +6,4 @@ export * from './motion-selection';
 export * from './browser';
 export * from './computer';
 export * from './stage';
+export * from './background';

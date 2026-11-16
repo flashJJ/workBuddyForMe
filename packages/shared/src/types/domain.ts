@@ -279,6 +279,7 @@ export interface AppSettings
   workIdlePacing?: 'quiet' | 'standard' | 'lively';
   /** v2.17：联网搜索（缺省关闭；仅影响 web_search 工具） */ searchSettings?: SearchSettings;
   /** v2.28：记忆审计保留期（30/90/180；0=永久；缺省 90） */ memoryEventRetentionDays?: number;
+  /** v4.4 M1：背景与壁纸（main/stage/pet 三作用域；主窗口含聊天/整屏互斥模式） */ background?: import('../schemas/media/background').BackgroundSettingsUpdate;
 }
 /** v1.8 M4：音色收藏条目（形状随 settings 持久化） */
 export interface VoiceFavorite {

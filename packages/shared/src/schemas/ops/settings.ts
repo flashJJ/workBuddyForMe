@@ -16,6 +16,7 @@ import {
 import { ACTION_CHAIN_IDS } from '../interaction/interaction-chains';
 import { isValidTriggerKey } from '../interaction/interaction-graph';
 import { motionMoodSchema } from '../media/motion-asset';
+import { backgroundSettingsUpdateSchema } from '../media/background';
 import {
   CAPABILITY_SIGNATURE_POLICIES,
   CAPABILITY_TRUSTED_KEYS_MAX,
@@ -162,6 +163,8 @@ export const settingsUpdateSchema = z.object({
   workSoundApproval: z.boolean().optional(),
   workReduceMotion: z.boolean().optional(),
   workIdlePacing: z.enum(['quiet', 'standard', 'lively']).optional(),
+  // v4.4 M1：背景与壁纸（main/stage/pet 三作用域；主窗口含聊天/整屏互斥模式）
+  background: backgroundSettingsUpdateSchema.optional(),
   // v2.11 外部代理（本地 CLI；默认关，命令为空时不注册提供方）
   subagentCliEnabled: z.boolean().optional(),
   subagentCliCommand: z.string().trim().max(500).optional(),

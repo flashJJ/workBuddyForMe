@@ -45,11 +45,12 @@ export interface BackgroundSettings {
 
 | id | 类型 | 文件 | 预算 |
 |---|---|---|---|
-| `wallpaper.rainy-room` | video | `public/backgrounds/rainy-room.mp4` | ≤10MB，720p，H.264 |
-| `wallpaper.dusk` | image | `public/backgrounds/dusk.webp` | ≤1MB |
-| `wallpaper.morning` | image | `public/backgrounds/morning.webp` | ≤1MB |
+| `wallpaper.rainy-room` | video | `public/backgrounds/rainy-room.mp4` | ≤10MB，720p，H.264（当前 6.42MB） |
+| `wallpaper.dusk` | 程序化渐变 | 无文件 | 0MB |
+| `wallpaper.morning` | 程序化渐变 | 无文件 | 0MB |
 | `none` | — | — | 透明/主题底色 |
 
+- 两张静态壁纸先用程序化渐变（黄昏/清晨），避免角色图与 VRM 叠加；后续可替换为真实照片。
 - 新增 `scripts/assets/background-budget.json`，由 `check:assets` 校验单文件与总量。
 
 ## 3. 本地文件（仅桌面端）
