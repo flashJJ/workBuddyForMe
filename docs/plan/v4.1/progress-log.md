@@ -1,0 +1,103 @@
+# v4.1 进度与决策留痕
+
+> 用途：记录 v4.1 每次推进的「做了什么、为什么、结果、下一步」。
+> 关联：[v4.1 方案](./README.md) · [Spec](./spec.md) · [Tasks](./tasks.md)。
+
+## 当前状态
+
+| 里程碑 | 状态 | 最近更新 |
+|---|---|---|
+| M0 方案与归档 | ✅ 完成（方案/Spec/Tasks 落盘，07/11 转正，三处索引已更新） | 2026-11-15 |
+| M1 打分契约下沉 | ✅ 完成（shared/script 契约、权重可选末参、历史 50） | 2026-11-15 |
+| M2 评测与质量卡 | ✅ 完成（回放/矩阵/指标、eval 脚本、质量 API 与只读卡） | 2026-11-15 |
+| M3 性能门禁 | ✅ 完成（p50/长任务/资源采样、短跑门禁、3 分钟冒烟 PASS） | 2026-11-15 |
+| M4 收尾 | ✅ 完成（`pnpm check` 与全量测试全绿，基线归档） | 2026-11-15 |
+
+## 决策日志
+
+| 编号 | 日期 | 决策 | 原因 | 待复核 |
+|---|---|---|---|---|
+| D1 | 2026-11-15 | 候选 07 只做离线回放 + 场景矩阵，不做在线 A/B | 单机单用户样本不足，A/B 分流会污染决策链路 | 若未来有多用户样本再评估 |
+| D2 | 2026-11-15 | 候选 11 做 4h 基线归档 + 10 分钟本地短跑门禁，不接工蜂 CI | 工蜂无 CI；机器差异大，只做相对基线 | 若引入 CI 固定机型再改 |
+| D3 | 2026-11-15 | 打分与排序契约下沉 `@wbfm/shared/script`，web 保留 shim | 离线脚本必须复用同一打分器；shim 保证现有 import 与测试零改动 | 无 |
+| D4 | 2026-11-15 | 决策历史上限 20 → 50，设置页仍展示 5 | 回放需要更长窗口；展示区不变避免干扰 | 若回放仍不足再评估 100 |
+| D5 | 2026-11-15 | 「门控拒绝原因」用预算/勿扰/未播快照表达，不新增运行时计数 | 保持决策链路零改动，避免为评测引入埋点 | 若需要逐次拒绝率再单独设计 |
+| D6 | 2026-11-15 | 性能阈值用相对基线：p50 ×1.2+2ms、p95 ×1.25+3ms、堆 +48MB、资源 +4 | 绝对帧率受机器与软件渲染影响 | 基线稳定两版后可收紧 |
+| D7 | 2026-11-15 | 模型热替换由假 bridge 回调驱动；小剧场进出用 dev-only `__perfNav` | 不侵入业务；生产不安装 | 若后续有正式场景切换 API 再替换 |
+
+## 工作日志
+
+### 2026-11-15 M0 方案与 Spec
+
+- 新增 `docs/plan/v4.1/README.md`：范围 07A+B、11A+B；非目标含在线 A/B、绝对帧率、CI 接入。
+- 新增 `docs/plan/v4.1/spec.md`：记录现状依据、模块签名、文件清单、验证命令与已决问题。
+- 新增 `docs/plan/v4.1/tasks.md`：M0–M4 可勾选任务。
+- 候选 07/11 已移入 `docs/roadmap/scheduled/`，三处索引已更新。
+
+### 2026-11-15 M1 打分契约下沉与历史扩展
+
+- 新增 `packages/shared/src/script/{types,score,select,index}.ts`：Utility 打分、候选提取与确定性排序原样迁移；`scoreCandidate`/排序函数增加可选 `weights` 末参，默认值不变。
+- `packages/shared/package.json` 增加 `./script` 子路径；根 barrel 补充导出；web `utility/{types,score,select}.ts` 改为 re-export，`index.ts` 与 `trigger.ts` 未改。
+- `PET_SCRIPT_DECISION_LIMITS.maxStored` 20 → 50，设置页仍展示 5 条；中英提示同步。
+- 验证：shared 42 文件 390 项通过、`tsc --noEmit` 通过；web Utility 12 项零改动通过；web `tsc --noEmit` 通过。
+- 结果：离线评测与线上共用同一打分器，现有 import 与测试无需修改。
+- 下一步：M2 评测纯函数、脚本与质量卡。
+
+### 2026-11-15 M2 评测纯函数、脚本与质量卡
+
+- 新增 `packages/shared/src/script/eval/{types,matrix,replay,metrics}.ts`：12 组固定上下文、候选快照转换、矩阵与排名差异、离线回放（基础维度重算 + 记录去重/偏好增量）、质量指标汇总。
+- 新增 `scripts/eval/companion-report.mjs` 与 `companion-fixtures.json`：只读 SQLite，读取五个 settings 键，输出回放/矩阵/指标/门控报告；根命令 `eval:companion`。
+- 新增 `GET /api/pet/script/quality` 与 `createPetScriptServer(...).quality()`：聚合决策、生成队列、播放预算与勿扰状态，复用 shared 统计。
+- 新增 `ScriptQuality` 只读卡，挂载在 AI 日常剧情面板；中英文案与三态测试（有数据/空/接口失败）。
+- 验证：shared 7 文件 50 项（i18n + script）通过；settings/script 3 文件 6 项通过；web `tsc --noEmit` 通过。
+- 本地报告：3 条决策可回放 2、缺失 1，均值差 0.09；12 组矩阵 × 7 个生成候选；权重覆盖可输出 22 处排名变化。
+- 下一步：M3 性能采样增强与短跑门禁。
+
+### 2026-11-15 M3 性能采样与短跑门禁
+
+- `pet-longrun.mjs`：新增 rAF p50、长任务计数/最大时长、`__vrmDebug.resources()` 快照与 `--summary-out` 归档；原参数与 JSONL 字段保持兼容。
+- 新增 `scripts/perf/perf-budget.mjs`：待机 → 主动播放 → 模型热替换 → 小剧场进出四段场景；基线含硬件指纹、分辨率与模型；阈值按 p50 ×1.2+2ms、p95 ×1.25+3ms、堆 +48MB、资源 +4、错误 0。
+- 新增 dev-only `PerfNavDebug`（`window.__perfNav`），根布局挂载；生产不安装。
+- 3 分钟冒烟（SwiftShader）：基线 p95 1.757ms、堆峰值 227.9MB、资源峰值 24/56/6；复跑 p95 1.613ms、堆 202.2MB、资源末值 20/48/5，7 项全 PASS。
+- `pet-longrun` 3 分钟冒烟：p50 0.025ms、p95 1.725ms、长任务 2 次（最大 87ms）、资源末值 24/56/6，`--summary-out` 正常落盘。
+- 下一步：M4 全量测试、门禁与收尾。
+
+### 2026-11-15 M4 收尾
+
+- `pnpm check` 全绿（typecheck、lint、行数、结构、循环、ASCII）。
+- 全量测试：9 个包 724 个测试文件 4133 项通过（core 1637、web 1408、shared 400、database 283、desktop 218、ai 86、voice 85、config 14、motion 2）。
+- 归档 `docs/perf/baseline-v4.1.json`：Intel Core Ultra 9 275HX / 24 核 / 31.4GB / win32 x64；480×640；模型 xuetuan ↔ rankaluli；SwiftShader。
+- 文档：v4.1 状态改为开发完成待发布，roadmap 与 scheduled 索引同步；`docs/eval/companion-report.json` 入库（不含聊天正文与本地绝对路径）。
+- 结果：v4.1 开发完成，零数据库迁移；发布动作（版本号、安装包、tag）留待用户确认。
+- 遗留：4h 长跑命令已写入 tasks.md，待人工执行后归档 `docs/perf/v4.1-longrun.json`。
+
+### 2026-11-16 发布物料草稿与博客
+
+- 新增 `docs/plan/v4.1/release-notes.md` 与 `version-summary.md` 草稿：交付、变化、门禁、限制、物料清单、下版本衔接；4h 与安装包数字留待回填。
+- 新增 `docs/plan/v4.1/blog-outline.md`：10 篇结构与写作顺序。
+- 新增 `blog/v4.1/` 10 篇：B01 总览、B02 打分下沉、B03 历史窗口、B04 离线回放、B05 场景矩阵、B06 质量卡、B07 长跑采样、B08 相对基线门禁、B09 场景驱动、B10 复盘；每篇 90–118 行。
+- 更新 `blog/README.md` 系列表与 roadmap 博客索引；脱敏检查无产品名、包名、本地路径与版本号残留。
+- 下一步：4h 长跑结束后回填发布文档与进度日志，再进入版本号与安装包流程。
+
+### 2026-11-16 4h 长跑归档
+
+- 运行 240.2 分钟、49 组采样（每 5 分钟采样 10 秒），归档 `docs/perf/v4.1-longrun.json`；原始 JSONL 在 `.tmp/v4.1-longrun.jsonl`。
+- 结果：p50 0.008ms、p95 2.092ms（最大 2.6ms）、长任务 1 次（109ms）、堆 141.1 → 141.1MB（峰值 168.8MB）、资源从 24/56/6 经 34/56/8 升至 38/56/9 后稳定 55 分钟、页面错误 0。
+- 判读：纹理稳定，几何/程序台阶对应剧本道具与动作加载，末段无继续增长；按当前口径未见线性泄漏。
+- 回填：发布说明 §4/§6、版本总结 §3/§6、博客 B07 §9 与 tasks 人工项。
+- 重启后检查：长跑汇总与原始 JSONL 均完整；两处无关文件曾被重复 BOM 污染，已恢复；其余 `git status` 差异为索引 stat 缓存，刷新后无内容变化。
+
+### 2026-11-16 发布收尾
+
+- 版本号升至 `4.1.0`（commit `ae5d3566`），`sync-version:check` 通过；`pnpm check` 与全量 9 包 724 文件 4133 项测试全绿。
+- `pnpm release:win` 产出 `WorkBuddyForMe-Setup-4.1.0.exe` 264.61 MB（277,465,478 字节），归档 `E:\builds\archive\v4.1.0`。
+- 复核：`node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.1.0` 输出「校验通过 3 个产物（4.1.0）」；安装包 SHA256 `f0f1ccc8ccf011c23aff347b0ef4b26d302d4d7eb6c906cd672470be3f63951d`；build-info 记录 commit `ae5d3566`、branch `feat/v4.1-quality-gates`、构建时间 2026-11-16T01:27:14Z。
+- 发布文档回填安装包、校验和与复核结果；合入 main、打 tag `v4.1.0`，仅推送工蜂 `tencent`。
+- 结果：v4.1.0 可分发；真机截图（设置页质量卡、v4.0 内容包安装页与舞台动效菜单）仍待补。
+
+
+
+
+
+
+

@@ -20,7 +20,8 @@ const SOURCE_LABELS: Record<PetScriptDecisionRecord['source'], MessageKey> = {
   ambient: 'settings.script.decisions.sources.ambient',
 };
 
-const REASON_LABELS: Record<PetScriptDecisionReasonCode, MessageKey> = {
+/** 理由码 → 文案；质量卡复用同一份映射 */
+export const SCRIPT_REASON_LABELS: Record<PetScriptDecisionReasonCode, MessageKey> = {
   'hour:late-night': 'settings.script.decisions.reasons.lateNight',
   'hour:work-hours': 'settings.script.decisions.reasons.workHours',
   'mood:calm': 'settings.script.decisions.reasons.moodCalm',
@@ -90,7 +91,7 @@ export function ScriptDecisions() {
                     key={reason.code}
                     className="rounded-full bg-background px-1.5 py-0.5"
                   >
-                    {t(REASON_LABELS[reason.code])}
+                    {t(SCRIPT_REASON_LABELS[reason.code])}
                     {reason.delta > 0 ? '+' : ''}
                     {reason.delta.toFixed(2)}
                   </span>

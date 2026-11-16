@@ -2,9 +2,15 @@ import { resolveChatTargetForModelId } from '@wbfm/core/chat';
 import { createMotionContentService } from '@wbfm/core/services';
 import type { SecretCipher } from '@wbfm/core/secrets';
 import { PET_SCRIPT_DECISION_LIMITS, type PetScriptDecisionReport } from '@wbfm/shared/schemas';
+import {
+  attachGate,
+  summarizeDecisions,
+  type CompanionQualityReport,
+} from '@wbfm/shared/script';
 import { createMemoryRepository, createSettingsRepository, type DatabaseInstance } from '@wbfm/database';
 import {
   createPetScriptScheduler,
+  isQuietHour,
   PET_SCRIPT_SCHEDULE_KEY,
   type QuietHours,
   type ScheduleState,
@@ -176,5 +182,25 @@ export function createPetScriptServer(deps: PetScriptServerDeps) {
     },
   };
 
-  return { generator, scheduler, journal, playback, decisions };
+  /** v4.1：只读质量汇总（最近决策 + 门控快照；不读聊天正文） */
+  function quality(limit: number = PET_SCRIPT_DECISION_LIMITS.maxStored): CompanionQualityReport {
+    const window = Math.min(
+      PET_SCRIPT_DECISION_LIMITS.maxStored,
+      Math.max(1, Math.floor(limit)),
+    );
+    const recent = decisions.list(window);
+    const generated = generator.list();
+    const current = playback.summary();
+    const played = new Set(current.playedSceneIds);
+    const quiet = deps.quietHours?.() ?? null;
+    return attachGate(summarizeDecisions(recent, window), {
+      perDay: current.perDay,
+      playsToday: current.playsToday,
+      budgetRemaining: Math.max(0, current.perDay - current.playsToday),
+      unplayedScenes: generated.scenes.filter((scene) => !played.has(scene.id)).length,
+      quietHoursActive: isQuietHour(new Date().getHours(), quiet),
+    });
+  }
+
+  return { generator, scheduler, journal, playback, decisions, quality };
 }

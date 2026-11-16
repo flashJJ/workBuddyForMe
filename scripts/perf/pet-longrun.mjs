@@ -1,13 +1,16 @@
 /**
  * 桌宠 4h 长稳采样（T0.9）：与 T1.9 同口径。
  *
- * 每 5 分钟采样 10s：rAF 回调耗时（avg/p95/max）、WebGL clear 次数、JS 堆、DOM 节点数；
- * 结果逐行追加到 JSONL，结束时打印汇总。页面必须已开启剧本引擎
+ * 每 5 分钟采样 10s：rAF 回调耗时（avg/p50/p95/max）、长任务、WebGL clear 次数、
+ * JS 堆、DOM 节点数与 GPU 资源计数；结果逐行追加到 JSONL，结束时打印汇总。
+ * `--summary-out <path>` 额外写一份含汇总与采样的 JSON，供版本归档引用。
+ * 页面必须已开启剧本引擎
  * （`WBFM_PET_SCRIPT=1` 启动的 dev server 或对应构建），否则直接报错退出。
  *
  * 用法：
  *   node scripts/perf/pet-longrun.mjs --url http://127.0.0.1:3003/pet?model=vrm%3Abuiltin%3Axuetuan
  *   node scripts/perf/pet-longrun.mjs --duration-min 10 --interval-min 1 --sample-ms 5000
+ *   node scripts/perf/pet-longrun.mjs --summary-out .tmp/longrun-summary.json
  */
 
 import fs from 'node:fs';
@@ -24,6 +27,7 @@ function parseArgs(argv) {
     durationMin: 240,
     intervalMin: 5,
     sampleMs: 10_000,
+    summaryOut: null,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -32,6 +36,7 @@ function parseArgs(argv) {
     else if (arg === '--duration-min') args.durationMin = Number(argv[(i += 1)]);
     else if (arg === '--interval-min') args.intervalMin = Number(argv[(i += 1)]);
     else if (arg === '--sample-ms') args.sampleMs = Number(argv[(i += 1)]);
+    else if (arg === '--summary-out') args.summaryOut = path.resolve(argv[(i += 1)]);
     else if (arg.startsWith('--')) throw new Error(`未知参数: ${arg}`);
   }
   return args;
@@ -42,6 +47,8 @@ async function samplePage(page, sampleMs) {
   return page.evaluate(async (ms) => {
     const durations = window.__perfRafDurations ?? [];
     durations.length = 0;
+    const longTasks = window.__perfLongTasks ?? [];
+    longTasks.length = 0;
     const start = performance.now();
     let frames = 0;
     await new Promise((resolve) => {
@@ -62,8 +69,12 @@ async function samplePage(page, sampleMs) {
       rafAvgMs: Number(
         (sorted.reduce((sum, value) => sum + value, 0) / Math.max(1, sorted.length)).toFixed(3),
       ),
+      rafP50Ms: Number(at(0.5).toFixed(3)),
       rafP95Ms: Number(at(0.95).toFixed(3)),
       rafMaxMs: Number((sorted[sorted.length - 1] ?? 0).toFixed(3)),
+      longTasks: longTasks.length,
+      longTaskMaxMs: Number((Math.max(0, ...longTasks)).toFixed(3)),
+      resources: window.__vrmDebug?.resources?.() ?? null,
       glClears: window.__perfGlClears ?? 0,
       glDraws: window.__perfGlDraws ?? 0,
       heapMB: memory ? Number((memory.usedJSHeapSize / 1024 / 1024).toFixed(1)) : null,
@@ -80,18 +91,30 @@ function percentile(values, q) {
 
 function summarize(samples, startedAt) {
   const fps = samples.map((sample) => sample.fps);
+  const rafP50 = samples.map((sample) => sample.rafP50Ms);
   const rafP95 = samples.map((sample) => sample.rafP95Ms);
   const heaps = samples.map((sample) => sample.heapMB).filter((value) => value !== null);
+  const resources = samples.map((sample) => sample.resources).filter(Boolean);
+  const maxOf = (key) =>
+    resources.length ? Math.max(...resources.map((item) => item[key] ?? 0)) : null;
   return {
     minutes: Number(((Date.now() - startedAt) / 60_000).toFixed(1)),
     samples: samples.length,
+    renderer: 'swiftshader',
     fpsMin: Math.min(...fps),
     fpsMax: Math.max(...fps),
+    rafP50AvgMs: Number((rafP50.reduce((sum, value) => sum + value, 0) / Math.max(1, rafP50.length)).toFixed(3)),
     rafP95AvgMs: Number((rafP95.reduce((sum, value) => sum + value, 0) / Math.max(1, rafP95.length)).toFixed(3)),
     rafP95MaxMs: Math.max(...rafP95),
+    longTasksTotal: samples.reduce((sum, sample) => sum + (sample.longTasks ?? 0), 0),
+    longTaskMaxMs: Math.max(0, ...samples.map((sample) => sample.longTaskMaxMs ?? 0)),
     heapStartMB: heaps[0] ?? null,
     heapEndMB: heaps[heaps.length - 1] ?? null,
     heapPeakMB: heaps.length ? Math.max(...heaps) : null,
+    resourcesPeak: resources.length
+      ? { geometries: maxOf('geometries'), textures: maxOf('textures'), programs: maxOf('programs') }
+      : null,
+    resourcesEnd: resources[resources.length - 1] ?? null,
     errors: samples.reduce((sum, sample) => sum + sample.errors, 0),
   };
 }
@@ -121,6 +144,17 @@ async function main() {
     window.__perfGlDraws = 0;
     window.__perfErrors = 0;
     window.__perfRafDurations = [];
+    window.__perfLongTasks = [];
+    try {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          window.__perfLongTasks.push(entry.duration);
+          if (window.__perfLongTasks.length > 4000) window.__perfLongTasks.splice(0, 1000);
+        }
+      }).observe({ type: 'longtask', buffered: true });
+    } catch {
+      // 浏览器不支持 longtask 时保持空数组
+    }
     window.addEventListener('error', () => {
       window.__perfErrors += 1;
     });
@@ -210,6 +244,14 @@ async function main() {
 
   const summary = { ...summarize(samples, startedAt), pageErrors, url: args.url };
   fs.appendFileSync(args.out, `${JSON.stringify({ summary })}\n`);
+  if (args.summaryOut) {
+    fs.mkdirSync(path.dirname(args.summaryOut), { recursive: true });
+    fs.writeFileSync(
+      args.summaryOut,
+      `${JSON.stringify({ version: 'v4.1', at: new Date().toISOString(), args, summary, samples }, null, 2)}\n`,
+    );
+    console.log(`汇总报告: ${path.relative(ROOT, args.summaryOut)}`);
+  }
   console.log('汇总:', JSON.stringify(summary));
   console.log(`原始数据: ${path.relative(ROOT, args.out)}`);
   await browser.close();
