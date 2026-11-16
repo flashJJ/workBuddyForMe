@@ -50,6 +50,6 @@
 - [x] T4.3 回填 progress-log 状态表、决策日志与工作日志
 - [x] T4.4 提交 `docs(v4.1): 质量门禁收尾与基线归档`
 
-> 后续人工执行（不属于本次开发范围）：4h 长跑
-> `node scripts/perf/pet-longrun.mjs --duration-min 240 --summary-out docs/perf/v4.1-longrun.json`，
-> 结果用于发布说明引用 p50/p95、堆漂移与资源峰值。
+> 4h 长跑（已完成，2026-11-16）：`docs/perf/v4.1-longrun.json`，240.2 分钟 49 组；
+> p50 0.008ms、p95 2.092ms、长任务 1 次（109ms）、堆峰值 168.8MB、资源末值 38/56/9、页面错误 0；
+> 资源在 125m/185m 两级台阶后稳定 55 分钟，按当前口径未见线性泄漏。
