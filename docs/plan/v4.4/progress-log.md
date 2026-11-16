@@ -7,13 +7,13 @@
 
 | 里程碑 | 状态 | 日期 |
 |---|---|---|
-| M0 方案与转正 | 🚧 进行中 | 2026-11-17 |
-| M1 背景模型与内置素材 | 🚧 进行中 | 2026-11-17 |
+| M0 方案与转正 | ✅ 完成 | 2026-11-17 |
+| M1 背景模型与内置素材 | ✅ 完成（媒体预算表待补） | 2026-11-17 |
 | M2 本地图片/视频 | ✅ 完成（渲染层回退在 M4） | 2026-11-17 |
 | M3 `wallpaper-pack` | ✅ 完成 | 2026-11-17 |
 | M4 渲染接线 | ✅ 完成 | 2026-11-17 |
 | M5 设置页 | ✅ 完成 | 2026-11-17 |
-| M6 收尾 | 待开始 | — |
+| M6 收尾 | 🚧 进行中（待真机验证） | 2026-11-17 |
 
 ## 记录
 
@@ -98,3 +98,12 @@
 - 背景层同步内缩 7px 并裁圆角，视频/图片与画框对齐；无背景时保持透明、不渲染画框。
 - 层级 z-15：盖住角色画布，低于字幕（z-20）与右键菜单（z-50）；`pointer-events-none` 不影响穿透。
 - 验证：背景 6 项测试、web typecheck、eslint、行数门禁通过。
+
+### 2026-11-17 M6 收尾
+
+- 门禁修复：背景域 `hooks/` 子目录化（直接文件 13→10）；`ResolvedBackground` 定义移到 `builtin.ts`，消除 `builtin ↔ resolve` 类型循环；对外导出不变。
+- 验证：结构门禁、相关 24 个测试文件 123 项、web typecheck 通过后，`pnpm check` 全绿；全量测试 9 包 745 文件 4218 项通过。
+- 构建：web standalone → desktop tsup → prepare-server → electron-builder（临时 `electron-builder.local.yml` 复用本地 Electron 45.0.0 运行时，构建后删除）。
+- 安装包：`WorkBuddyForMe-Setup-4.4.0.exe` 272.32MB（285,549,902 字节），较 v4.3.0 增加 7.48MB；归档 `E:\builds\archive\v4.4.0`；SHA256 `87829daa…8953d4`；`release-manifest --check` 通过 3 个产物。
+- 文档：新增 `release-notes.md`、`version-summary.md`，博客 `blog/v4.4/` 10 篇并登记索引。
+- 待办：真机验证通过后合并 main、打 tag `v4.4.0` 并推送工蜂。

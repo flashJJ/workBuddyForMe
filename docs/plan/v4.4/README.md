@@ -4,7 +4,7 @@
 > 分支：`feat/v4.4-background-and-wallpaper`
 > 口径：复用现有能力包管道；背景只做展示资源，不执行代码；桌面端支持本地文件，Web 只用内置背景。
 > 来源：[候选 12 背景与壁纸](../../roadmap/scheduled/v4.4-12-background-wallpaper-video.md)。
-> 状态：🚧 开发中。
+> 状态：安装包已归档，待真机验证后发布 tag。
 
 ## 1. 背景
 

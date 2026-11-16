@@ -130,9 +130,11 @@ v4.0 把能力包管道接通、v4.2 把音频状态收拢，但剩余事项仍�
 v4.3 收口了内容包与资产预算，但环境氛围仍缺配置：舞台只有剧集内置背景，聊天主界面与整屏没有背景层，桌宠窗固定透明，用户自有图片与循环视频没有入口。v4.4 把背景做成可配置、可分发的资源：内置视频 + 壁纸、桌面端本地图片/视频、`wallpaper-pack` 能力包；舞台与小剧场、主窗口（聊天与整屏互斥）、桌宠窗三处独立配置。视频仅 MP4/H.264，桌面端单文件 ≤50MB，Web 只用内置背景，零数据库迁移。
 
 - 方案：[v4.4 方案](../plan/v4.4/README.md) · [Spec](../plan/v4.4/spec.md) · [Tasks](../plan/v4.4/tasks.md) · [进度](../plan/v4.4/progress-log.md)
+- 发布说明：[v4.4 release-notes](../plan/v4.4/release-notes.md) · [版本总结](../plan/v4.4/version-summary.md)
+- 博客：[blog/v4.4](../../blog/v4.4/) 10 篇
 - 来源方案：[v4.4-12](scheduled/v4.4-12-background-wallpaper-video.md)
 - 分支：`feat/v4.4-background-and-wallpaper`
-- 状态：🚧 M0 方案与转正
+- 状态：🚧 安装包已归档，待真机验证后打 tag
 
 ## ✅ 已发布：v4.1 陪伴质量可回放、性能预算可门禁
 
