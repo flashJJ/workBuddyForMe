@@ -75,18 +75,31 @@ export function BackgroundSettingsPanel() {
   const patch = (next: ScopePatch) =>
     setDraft((prev) => ({ ...prev, [scope]: { ...prev[scope], ...next } }));
 
+  /** 设置按顶层字段整体替换：每次保存提交三作用域完整配置，避免局部 patch 冲掉 source/fit/dim */
+  const composeScope = (target: Scope): ScopePatch => {
+    const merged = mergeBackgroundConfig(target, settings?.background?.[target]);
+    if (target !== 'main') return merged;
+    const modeValue = settings?.background?.main?.mode;
+    return modeValue ? { ...merged, mode: modeValue } : merged;
+  };
+
+  const buildBackground = (patches: Partial<Record<Scope, ScopePatch>>) => ({
+    main: { ...composeScope('main'), ...patches.main },
+    stage: { ...composeScope('stage'), ...patches.stage },
+    pet: { ...composeScope('pet'), ...patches.pet },
+  });
+
   const save = () => {
-    update.mutate({ background: { ...settings?.background, ...draft } });
+    update.mutate({ background: buildBackground(draft) });
     setDraft({});
   };
 
   const reset = () => {
     const defaults = DEFAULT_BACKGROUND_SETTINGS[scope];
     update.mutate({
-      background: {
-        ...settings?.background,
+      background: buildBackground({
         [scope]: { source: defaults.source, fit: defaults.fit, dim: defaults.dim, blur: defaults.blur },
-      },
+      }),
     });
     setDraft((prev) => ({ ...prev, [scope]: {} }));
   };
@@ -244,12 +257,12 @@ export function BackgroundSettingsPanel() {
             <span className="text-muted-foreground">{t('background.dim')}</span>
             <span>{Math.round(config.dim * 100)}%</span>
           </label>
-          <input type="range" min={0} max={0.8} step={0.05} value={config.dim} className="w-full" onChange={(event) => patch({ dim: Number(event.target.value) })} />
+          <input type="range" min={0} max={0.8} step={0.05} value={config.dim} className="w-full" data-testid="background-dim" onChange={(event) => patch({ dim: Number(event.target.value) })} />
           <label className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">{t('background.blur')}</span>
             <span>{config.blur}px</span>
           </label>
-          <input type="range" min={0} max={20} step={1} value={config.blur} className="w-full" onChange={(event) => patch({ blur: Number(event.target.value) })} />
+          <input type="range" min={0} max={20} step={1} value={config.blur} className="w-full" data-testid="background-blur" onChange={(event) => patch({ blur: Number(event.target.value) })} />
         </div>
       </div>
 

@@ -6,27 +6,29 @@ import { OnboardingHost } from '@/features/onboarding';
 import { ReunionSignalHost } from '@/features/avatar';
 import { DeepLinkHost } from '@/features/navigation';
 import { MusicMiniPlayer, MusicProvider } from '@/features/music';
-import { MainBackground } from '@/features/background';
+import { MainBackground, MainBackgroundModeProvider } from '@/features/background';
 
 /** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K）+ 快捷键浮层（Ctrl+/）+ 首启向导 */
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <MusicProvider>
-      <div className="relative isolate flex h-screen overflow-hidden">
-        <MainBackground />
-        {/* 键盘用户首站：视觉隐藏，聚焦时显现 */}
-        <SkipLink />
-        <AppSidebar />
-        <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto outline-none">
-          {children}
-        </main>
-        <CommandPaletteHost />
-        <ShortcutsHost />
-        <OnboardingHost />
-        <ReunionSignalHost />
-        <DeepLinkHost />
-      </div>
-      <MusicMiniPlayer />
-    </MusicProvider>
+    <MainBackgroundModeProvider>
+      <MusicProvider>
+        <div className="relative isolate flex h-screen overflow-hidden">
+          <MainBackground />
+          {/* 键盘用户首站：视觉隐藏，聚焦时显现 */}
+          <SkipLink />
+          <AppSidebar />
+          <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto outline-none">
+            {children}
+          </main>
+          <CommandPaletteHost />
+          <ShortcutsHost />
+          <OnboardingHost />
+          <ReunionSignalHost />
+          <DeepLinkHost />
+        </div>
+        <MusicMiniPlayer />
+      </MusicProvider>
+    </MainBackgroundModeProvider>
   );
 }

@@ -10,6 +10,7 @@ import { useProviders, useSettings } from '@/lib/hooks/provider';
 import { PanelVisibilityGate } from '@/lib/ui/panel-visibility';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
+import { useMainBackgroundWindowMode } from '@/features/background';
 import { ProviderCard } from '../providers/provider-card';
 import { ProviderFormDialog } from '../providers/provider-form-dialog';
 import {
@@ -42,6 +43,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
   const [query, setQuery] = React.useState('');
   const [highlight, setHighlight] = React.useState<string | null>(null);
   const shortcuts = useSettingsShortcuts();
+  const windowMode = useMainBackgroundWindowMode();
   // 水合门控：供应商查询态在 SSR 与客户端首帧不一致，直接据此切结构会水合失配（React #418/#422）。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -168,7 +170,12 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         {/* 左侧：设置主内容 */}
         <div className="min-w-0 flex-1 space-y-8">
           {/* 页内搜索：按标题 / 描述 / 中英别名过滤面板 */}
-          <div className="sticky top-0 z-10 space-y-2 bg-background/95 py-2 backdrop-blur">
+          <div
+            className={cn(
+              'sticky top-0 z-10 space-y-2 py-2 backdrop-blur',
+              windowMode ? 'bg-background/40' : 'bg-background/95',
+            )}
+          >
             <div className="flex items-center gap-2">
               <input
                 id="settings-search"
@@ -178,7 +185,10 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
                 placeholder={t('settings.registry.search.placeholder')}
                 aria-label={t('settings.registry.search.label')}
                 data-testid="settings-search"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
+                className={cn(
+                  'w-full rounded-md border px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground',
+                  windowMode ? 'bg-background/60 backdrop-blur' : 'bg-background',
+                )}
               />
               {searching && (
                 <button
