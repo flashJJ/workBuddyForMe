@@ -3,7 +3,7 @@
 > 主题：把剩余规划一次收口：内容可安装、资产有预算、平台元数据可读。
 > 分支：`feat/v4.3-content-and-assets`
 > 口径：复用现有能力包管道；只做声明式内容，不做任意代码插件；P0 必达，P1/P2 可延后。
-> 来源：[候选 08 资产体积预算](../roadmap/scheduled/v4.3-08-asset-size-budget.md)、[v4.0 方案](../v4.0/README.md) §2.3、[v4.2 方案](../v4.2/README.md) §2.3。
+> 来源：[候选 08 资产体积预算](../../roadmap/scheduled/v4.3-08-asset-size-budget.md)、[v4.0 方案](../v4.0/README.md) §2.3、[v4.2 方案](../v4.2/README.md) §2.3。
 > 状态：🧪 4.3.0 安装包已构建，待真机验证。
 
 ## 1. 背景
