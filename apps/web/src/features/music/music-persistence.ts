@@ -5,6 +5,11 @@ export const MUSIC_STORAGE_KEYS = {
   loop: 'wbfm.music.loop',
 } as const;
 
+/** 会话级播放意图：舞台路由卸载后回到主窗恢复播放 */
+export const MUSIC_SESSION_KEYS = {
+  playing: 'wbfm.music.playing',
+} as const;
+
 export function readMusicSetting(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
@@ -16,6 +21,22 @@ export function readMusicSetting(key: string): string | null {
 export function writeMusicSetting(key: string, value: string): void {
   try {
     window.localStorage.setItem(key, value);
+  } catch {
+    /* 隐私模式忽略 */
+  }
+}
+
+export function readMusicSessionSetting(key: string): string | null {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeMusicSessionSetting(key: string, value: string): void {
+  try {
+    window.sessionStorage.setItem(key, value);
   } catch {
     /* 隐私模式忽略 */
   }

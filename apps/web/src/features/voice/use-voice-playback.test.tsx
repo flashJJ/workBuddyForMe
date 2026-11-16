@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useVoicePlayback } from './use-voice-playback';
 import { WebAudioPlayer } from './web-audio-player';
+import { audioDirector } from '../audio';
 
 describe('useVoicePlayback', () => {
   it('StrictMode 挂载→清理→重挂后，入队的语音帧仍会被播放（回归：渲染期单例被 dispose 永久拒帧）', async () => {
@@ -26,6 +27,47 @@ describe('useVoicePlayback', () => {
     });
 
     expect(playSpy).toHaveBeenCalledTimes(1);
+    playSpy.mockRestore();
+  });
+
+  it('语音播放期间向导演上报活跃，结束后恢复背景乐', async () => {
+    let release: (() => void) | null = null;
+    const playSpy = vi
+      .spyOn(WebAudioPlayer.prototype, 'play')
+      .mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      );
+    const music = { setGain: vi.fn() };
+    const unregister = audioDirector.registerSink('music', music);
+    audioDirector.setMuted(false);
+
+    const { result } = renderHook(() => useVoicePlayback());
+    await act(async () => {
+      result.current.enqueue({
+        fragment: '你好',
+        spoken: '你好',
+        audio: 'wav',
+        sampleRate: 44100,
+        final: true,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(audioDirector.getSnapshot().voiceActive).toBe(true);
+    expect(music.setGain).toHaveBeenLastCalledWith(0.35);
+
+    await act(async () => {
+      release?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(audioDirector.getSnapshot().voiceActive).toBe(false);
+    expect(music.setGain).toHaveBeenLastCalledWith(1);
+    unregister();
     playSpy.mockRestore();
   });
 });

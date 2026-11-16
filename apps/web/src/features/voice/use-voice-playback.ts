@@ -5,6 +5,7 @@ import type { SsePayloadMap } from '@wbfm/shared/api';
 import { AudioPlaybackQueue, type VoiceState } from './audio-playback-queue';
 import { WebAudioPlayer } from './web-audio-player';
 import type { VadGate } from './vad/vad-detector';
+import { audioDirector } from '../audio';
 
 /**
  * 停播后回声门控冷却时长：屏蔽扬声器/音频管线尾音。
@@ -39,6 +40,7 @@ export interface VoicePlayback {
 /** 语音播放：AudioContext + 单写者队列；卸载时自动清理 */
 export function useVoicePlayback(): VoicePlayback {
   const [voiceState, setVoiceState] = React.useState<VoiceState>('idle');
+  const sourceId = React.useId();
   const queueRef = React.useRef<AudioPlaybackQueue | null>(null);
   // 门控读数在音频帧回调中被查询，必须用 ref 避免闭包过期
   const speakingRef = React.useRef(false);
@@ -66,15 +68,20 @@ export function useVoicePlayback(): VoicePlayback {
           if (speakingRef.current) lastIdleAtRef.current = Date.now();
           speakingRef.current = false;
         }
+        // v4.2：语音活跃上报给音频导演，统一 duck 背景乐
+        audioDirector.setVoiceActive(sourceId, s === 'speaking');
         setVoiceState(s);
       },
     );
     queueRef.current = queue;
+    const unregisterUnlock = audioDirector.registerUnlock(() => queue.unlock());
     return () => {
+      unregisterUnlock();
+      audioDirector.setVoiceActive(sourceId, false);
       queue.dispose();
       queueRef.current = null;
     };
-  }, []);
+  }, [sourceId]);
 
   const enqueue = React.useCallback((frame: SsePayloadMap['voice_audio']) => {
     queueRef.current?.enqueue(frame);

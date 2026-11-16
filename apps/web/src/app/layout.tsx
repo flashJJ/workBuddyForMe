@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AppProviders } from './providers';
 import { PerfNavDebug } from './perf-nav-debug';
+import { AudioUnlockListener } from './audio-unlock';
 import { themeInitScript } from '@/components/theme/theme-provider';
 import { languageInitScript } from '@/lib/i18n/i18n-context';
 import './globals.css';
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <AppProviders>{children}</AppProviders>
         <PerfNavDebug />
+        <AudioUnlockListener />
       </body>
     </html>
   );

@@ -16,8 +16,11 @@ import {
   listImportedMusic,
   saveImportedMusic,
 } from './music-storage';
-import { MUSIC_STORAGE_KEYS, isAudioFile, readMusicSetting, writeMusicSetting } from './music-persistence';
+import { isAudioFile } from './music-persistence';
 import { useMusicSource } from './music-source';
+import { useMusicAudioSink } from './use-music-audio-sink';
+import { useMusicPreferences } from './use-music-preferences';
+import { audioDirector, useAudioDirector } from '../audio';
 
 /** 播放错误：空曲库 / 待生成 / 内置文件缺失 / 自动播放拦截 / 解码失败 */
 export type MusicError = 'empty' | 'pending' | 'missing' | 'blocked' | 'decode';
@@ -32,6 +35,9 @@ export interface MusicPlayerState {
   duration: number;
   error: MusicError | null;
   importing: boolean;
+  /** v4.2：全局静音来自 AudioDirector，剧场按钮共享同一状态 */
+  muted: boolean;
+  toggleMuted: () => void;
   playTrack: (id: string) => void;
   toggle: () => void;
   next: () => void;
@@ -49,7 +55,6 @@ const MusicPlayerContext = React.createContext<MusicPlayerState | null>(null);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const [mounted, setMounted] = React.useState(false);
   const [imported, setImported] = React.useState<MusicTrack[]>([]);
   const [currentId, setCurrentId] = React.useState<string | null>(null);
   const [playing, setPlaying] = React.useState(false);
@@ -59,6 +64,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = React.useState(0);
   const [error, setError] = React.useState<MusicError | null>(null);
   const [importing, setImporting] = React.useState(false);
+  const audioState = useAudioDirector();
+  useMusicAudioSink(audioRef, volume, playing);
 
   const tracks = React.useMemo(() => mergeMusicTracks(imported), [imported]);
   const current = tracks.find((track) => track.id === currentId) ?? null;
@@ -68,26 +75,17 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setImported(await listImportedMusic());
   }, []);
 
-  React.useEffect(() => {
-    setMounted(true);
-    const savedVolume = readMusicSetting(MUSIC_STORAGE_KEYS.volume);
-    if (savedVolume !== null) setVolumeState(clampMusicVolume(Number(savedVolume)));
-    const savedLoop = readMusicSetting(MUSIC_STORAGE_KEYS.loop);
-    if (savedLoop === 'all' || savedLoop === 'one' || savedLoop === 'off') setLoop(savedLoop);
-    const savedTrack = readMusicSetting(MUSIC_STORAGE_KEYS.track);
-    if (savedTrack) setCurrentId(savedTrack);
-    void refreshLibrary();
-  }, [refreshLibrary]);
-
-  React.useEffect(() => {
-    if (mounted) writeMusicSetting(MUSIC_STORAGE_KEYS.volume, String(volume));
-  }, [volume, mounted]);
-  React.useEffect(() => {
-    if (mounted) writeMusicSetting(MUSIC_STORAGE_KEYS.loop, loop);
-  }, [loop, mounted]);
-  React.useEffect(() => {
-    if (mounted && currentId) writeMusicSetting(MUSIC_STORAGE_KEYS.track, currentId);
-  }, [currentId, mounted]);
+  useMusicPreferences({
+    volume,
+    loop,
+    currentId,
+    playing,
+    setVolume: setVolumeState,
+    setLoop,
+    setCurrentId,
+    setPlaying,
+    refreshLibrary,
+  });
 
   React.useEffect(() => {
     setTime(0);
@@ -102,8 +100,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, [missing]);
 
   React.useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume, src]);
+    if (audioRef.current) {
+      audioRef.current.volume = clampMusicVolume(volume * audioDirector.gainFor('music'));
+    }
+  }, [volume, src, audioState.muted, audioState.voiceActive]);
 
   React.useEffect(() => {
     const audio = audioRef.current;
@@ -249,6 +249,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     duration,
     error,
     importing,
+    muted: audioState.muted,
+    toggleMuted: () => audioDirector.toggleMuted(),
     playTrack,
     toggle,
     next,
