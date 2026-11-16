@@ -13,7 +13,7 @@
 | M3 道具包 | ✅ 完成（prop-pack、样例 GLB、内容快照、资源路由；20 项 core 测试通过） | 2026-11-16 |
 | M4 音频设备 | ✅ 完成（输出设备偏好、四 sink 接入、设置面板；160 项相关测试通过） | 2026-11-16 |
 | M5 平台元数据 | ✅ 完成（ToolDescriptor 适配、provider 协议能力徽章；184+5 项测试通过） | 2026-11-16 |
-| M6 收尾 | ⏳ 待开始 | — |
+| M6 收尾 | 🧪 测试/门禁/安装包/文档完成；待真机验证后合并与 tag | 2026-11-16 |
 
 ## 决策日志
 
@@ -98,4 +98,13 @@
 - web：工具调试台改用 `permissions` / `inputSchema`；流程编辑器构造统一描述符；供应商卡片新增流式/工具调用/视觉/向量只读徽章与说明。
 - 测试：工具与 provider 回归 184 项、web 工具/流程 18 项、供应商路由 5 项通过；`pnpm check` 全绿。
 - 说明：provider 能力是协议级声明，不代表单个模型；不参与模型选择或自动路由。
+
+### 2026-11-16 M6 收尾
+
+- 版本：root / web / desktop / shared version 同步到 `4.3.0`，提交 `chore(release): 4.3.0` 后再构建。
+- 测试：9 包 736 个测试文件 4180 项通过；web 282/1433、core 270/1657、database 75/283、shared 46/402、desktop 33/218、ai 16/86、voice 9/85、config 4/14、motion 1/2。
+- 门禁：`pnpm check` 全绿；`check:assets` 三席 22.29MB / 25MB，13 条非阻断警告；零数据库迁移，`LATEST_SCHEMA_VERSION = 51`。
+- 发布物料：`release-notes.md`、`version-summary.md`、`blog/v4.3/` 10 篇与路线图索引已落盘。
+- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.76MB（277,622,869 字节），SHA256 `3f075e3f…ab576db`；归档于 `E:\builds\archive\v4.3.0`，`release-manifest --check` 校验通过 3 个产物。
+- 待办：安装包真机验证；通过后合并 main、打 tag `v4.3.0` 并推送工蜂。
 
