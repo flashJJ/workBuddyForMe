@@ -13,6 +13,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 import {
   BackgroundLayer,
+  BUILTIN_GALLERY_ITEMS,
   mergeBackgroundConfig,
   resolveBackground,
   useBackgroundFiles,
@@ -168,6 +169,15 @@ export function BackgroundSettingsPanel() {
               {t(`background.source.${item.key}`)}
             </option>
           ))}
+          {BUILTIN_GALLERY_ITEMS.length > 0 && (
+            <optgroup label={t('background.source.gallery')}>
+              {BUILTIN_GALLERY_ITEMS.map((item) => (
+                <option key={item.id} value={`builtin:${item.id}`}>
+                  {item.label}
+                </option>
+              ))}
+            </optgroup>
+          )}
           {files.length > 0 && (
             <optgroup label={t('background.source.files')}>
               {files.map((file) => (

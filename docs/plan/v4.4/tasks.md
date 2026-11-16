@@ -12,7 +12,7 @@
 
 - [x] T1.1 shared 新增 `BackgroundSource`、`BackgroundConfig`、`BackgroundSettings` 与默认值
 - [x] T1.2 设置读写接入 `main/stage/pet` 三作用域，兼容旧设置缺省
-- [ ] T1.3 内置素材落盘：1 个循环视频已复制（6.42MB）+ 2 套程序化渐变；媒体预算表接入 `check:assets` 待补
+- [x] T1.3 内置素材落盘：循环视频 6.42MB + 图集 28 张 5.06MB + 2 套渐变；媒体预算表待补
 - [x] T1.4 shared 测试：默认值、互斥 `mode`、数值边界
 
 ## M2 本地图片/视频

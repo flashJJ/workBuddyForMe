@@ -63,3 +63,10 @@
 - 桌面端可调用 `background.pick` 选择并复制，失败按超限/格式/复制失败提示；Web 模式显示仅桌面端可用。
 - i18n 新增 `background` 命名空间与中英文案；设置目录与注册表接入，页内搜索可命中「背景/壁纸/wallpaper」。
 - 测试：面板 2 项、设置域 44 项、i18n 30 项通过；web/shared typecheck、行数与结构门禁通过。
+
+### 2026-11-17 图集接入
+
+- 素材：用户提供 28 张场景图，原始 75.7MB；`scripts/assets/build-gallery.mjs` 统一压到 1920px 宽、WebP q80，输出 5.06MB（约 93% 降幅）。
+- 清单：生成 `features/background/gallery.ts`（AUTO-GENERATED），id 为 `wallpaper.gallery.01–28`，标签按关键词归并。
+- 设置：内置来源新增「内置图集」分组；`builtin` id 校验放宽为 `wallpaper.*`，避免图集被 schema 拒绝。
+- 验证：背景与 shared 11 + 6 项测试通过；web/shared typecheck、行数与结构门禁通过。

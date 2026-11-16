@@ -20,6 +20,7 @@ export const zhBackground = {
     morning: '清晨（内置渐变）',
     files: '本地文件',
     packs: '壁纸包',
+    gallery: '内置图集',
   },
   fit: {
     label: '铺放方式',
@@ -62,6 +63,7 @@ export const enBackground = {
     morning: 'Morning (built-in gradient)',
     files: 'Local files',
     packs: 'Wallpaper packs',
+    gallery: 'Built-in gallery',
   },
   fit: {
     label: 'Fit',

@@ -32,9 +32,11 @@ export const BACKGROUND_DIM_MAX = 1;
 export const BACKGROUND_BLUR_MAX = 20;
 
 const sourceIdSchema = z.string().trim().min(1).max(120);
+/** 内置 id：none、固定内置项或生成图集（wallpaper.gallery.NN） */
+const builtinIdSchema = z.string().trim().regex(/^(none|wallpaper\.[a-z0-9][a-z0-9._-]*)$/);
 
 export const backgroundSourceSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('builtin'), id: z.enum(BUILTIN_BACKGROUND_IDS) }),
+  z.object({ kind: z.literal('builtin'), id: builtinIdSchema }),
   z.object({ kind: z.literal('image'), id: sourceIdSchema }),
   z.object({ kind: z.literal('video'), id: sourceIdSchema }),
 ]);
