@@ -118,3 +118,9 @@
 - 验证：desktop 类型检查与 218 项测试通过；web 类型检查、shared 402 项测试、行数门禁与 eslint 通过。
 - 安装包：修复与多选均进入 4.3.0 最终构建，重新归档并回填校验和。
 
+### 2026-11-17 发布
+
+- 合并：`feat/v4.3-content-and-assets` → `main`，打 tag `v4.3.0`，推送工蜂 `tencent`。
+- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.84MB，SHA256 `5542f907…9e61f0`，归档于 `E:\builds\archive\v4.3.0`。
+- 下一版本：v4.4 背景与壁纸（候选 12，含 `wallpaper-pack`）。
+
