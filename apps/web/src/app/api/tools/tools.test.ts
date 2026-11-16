@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '@wbfm/core/secrets';
-import { type DebugToolInfo } from '@wbfm/core/tools';
+import { type ToolDescriptor } from '@wbfm/shared/schemas';
 import {
   __buildContainerForTest,
   __setContainerForTest,
@@ -195,11 +195,12 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
     expect((await res.json()).data.ok).toBe(true);
   });
 
-  it('debug：GET 列出全部内置工具（含 source/permission/description/parameters）', async () => {
+  it('debug：GET 列出全部内置工具（含 source/permissions/description/inputSchema）', async () => {
     const res = await listDebugTools(new Request('http://x'));
     expect(res.status).toBe(200);
     const list = (await res.json()).data;
-    expect(list.map((t: DebugToolInfo) => t.name).sort()).toEqual([
+    const builtin = list.filter((t: ToolDescriptor) => t.source === 'builtin');
+    expect(builtin.map((t: ToolDescriptor) => t.name).sort()).toEqual([
       'app_launch',
       'artifact_write',
       'browser_click',
@@ -227,11 +228,14 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'window_focus',
       'window_list',
     ]);
-    for (const t of list) {
+    for (const t of builtin) {
       expect(t.source).toBe('builtin');
       expect(t.description).toBeTruthy();
-      expect(t.parameters).toBeTypeOf('object');
+      expect(t.inputSchema).toBeTypeOf('object');
+      expect(t.permissions.length).toBeGreaterThan(0);
     }
+    // 已发布流程也进入统一描述符列表（来源 flow）
+    expect(list.some((t: ToolDescriptor) => t.source === 'flow')).toBe(true);
   });
 
   it('debug：POST 执行 current_time 返回结构化结果（ok=true）', async () => {

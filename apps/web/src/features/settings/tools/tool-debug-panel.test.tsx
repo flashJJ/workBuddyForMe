@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DebugToolInfo } from '@wbfm/core/tools';
+import type { ToolDescriptor } from '@wbfm/shared/schemas';
 import { renderWithProviders } from '@/test/render';
 import { ToolDebugPanel } from './tool-debug-panel';
 
@@ -13,13 +13,15 @@ function ok(data: unknown, status = 200) {
   });
 }
 
-function makeTool(partial: Partial<DebugToolInfo> & { name: string }): DebugToolInfo {
+function makeTool(partial: Partial<ToolDescriptor> & { name: string }): ToolDescriptor {
   return {
     name: partial.name,
     source: partial.source ?? 'builtin',
-    permission: partial.permission ?? 'read',
     description: partial.description ?? `${partial.name} 工具`,
-    parameters: partial.parameters ?? { type: 'object', properties: {} },
+    inputSchema: partial.inputSchema ?? { type: 'object', properties: {} },
+    permissions: partial.permissions ?? ['read'],
+    readOnly: partial.readOnly ?? true,
+    alwaysConfirm: partial.alwaysConfirm ?? false,
   };
 }
 
@@ -38,7 +40,7 @@ describe('工具调试台面板（v0.6 M4）', () => {
   it('列表加载后默认选第一个工具；执行后展示结果', async () => {
     // GET /api/tools/debug 返回 2 个工具
     fetchMock.mockResolvedValueOnce(
-      ok([makeTool({ name: 'current_time' }), makeTool({ name: 'fetch_webpage', permission: 'danger' })]),
+      ok([makeTool({ name: 'current_time' }), makeTool({ name: 'fetch_webpage', permissions: ['danger'] })]),
     );
     // POST /api/tools/debug 执行结果
     fetchMock.mockResolvedValueOnce(

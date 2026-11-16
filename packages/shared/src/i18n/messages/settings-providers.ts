@@ -14,6 +14,14 @@ export const zhSettingsProviders = {
   keyLabel: 'Key：{key}',
   keyNotConfigured: '未配置',
   enableProviderAria: '启用 {name}',
+  providerCapabilities: '协议能力',
+  capabilitiesHint: '按协议声明，不代表每个模型都支持；只读展示，不参与模型路由。',
+  capabilities: {
+    stream: '流式',
+    tools: '工具调用',
+    vision: '视觉',
+    embedding: '向量',
+  },
   form: {
     editTitle: '编辑供应商',
     description: '支持 OpenAI 兼容云服务，或本地 Ollama 模型。',
@@ -71,6 +79,15 @@ export const enSettingsProviders = {
   keyLabel: 'Key: {key}',
   keyNotConfigured: 'Not configured',
   enableProviderAria: 'Enable {name}',
+  providerCapabilities: 'Protocol capabilities',
+  capabilitiesHint:
+    'Declared per protocol, not per model. Read-only and not used for model routing.',
+  capabilities: {
+    stream: 'Streaming',
+    tools: 'Tool calling',
+    vision: 'Vision',
+    embedding: 'Embedding',
+  },
   form: {
     editTitle: 'Edit provider',
     description: 'Supports OpenAI-compatible cloud services or a local Ollama model.',

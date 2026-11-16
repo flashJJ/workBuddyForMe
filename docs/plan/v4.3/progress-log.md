@@ -12,7 +12,7 @@
 | M2 场景包 | ✅ 完成（scene-pack kind、样例包、内容快照、桌宠 extraScenes；19 项测试通过） | 2026-11-16 |
 | M3 道具包 | ✅ 完成（prop-pack、样例 GLB、内容快照、资源路由；20 项 core 测试通过） | 2026-11-16 |
 | M4 音频设备 | ✅ 完成（输出设备偏好、四 sink 接入、设置面板；160 项相关测试通过） | 2026-11-16 |
-| M5 平台元数据 | ⏳ 待开始 | — |
+| M5 平台元数据 | ✅ 完成（ToolDescriptor 适配、provider 协议能力徽章；184+5 项测试通过） | 2026-11-16 |
 | M6 收尾 | ⏳ 待开始 | — |
 
 ## 决策日志
@@ -38,6 +38,9 @@
 | D17 | 2026-11-16 | `applySinkId` 首次失败后回退 `''` | 覆盖设备拔出/权限变化，保证仍有声音 | 无 |
 | D18 | 2026-11-16 | 设置面板才枚举设备，并监听 `devicechange` | 枚举需要权限/手势，不在桌宠启动路径调用 | 无 |
 | D19 | 2026-11-16 | 语音 sink 的 `setGain` 保持 no-op | 既有行为是 BGM 静音不影响语音，只加设备路由 | 无 |
+| D20 | 2026-11-16 | 工具描述符统一为 name/description/inputSchema/source/permissions/readOnly/alwaysConfirm | 消除 parameters/permission 两套命名；执行侧不改 | 无 |
+| D21 | 2026-11-16 | 调试列表纳入已发布流程工具 | `resolveTool` 已支持 flow；只读列表补齐来源 | 无 |
+| D22 | 2026-11-16 | provider 能力按协议静态声明，不落库不路由 | 避免迁移与行为变化，只做只读展示 | 后续需要按模型声明时再扩展 |
 
 ## 工作日志
 
@@ -86,4 +89,13 @@
 - 测试：`applySinkId` 支持/回退/不支持、导演注册与广播、设备枚举有/无 `mediaDevices`；audio + theater + voice + music + settings 共 160 项通过。
 - 验证：`pnpm check` 全绿。
 - 说明：设备切换不重建播放器；切换失败时 sink 自动回退默认，不抛出到 UI。
+
+### 2026-11-16 M5 平台元数据
+
+- 规格：新增 `spec-m5-platform-metadata.md`；只统一只读描述符，不改执行、权限与路由。
+- shared：新增 `schemas/tool/tool.ts` 与 `ToolDescriptor`；`PERMISSION_LEVELS`、`PROVIDER_CAPABILITY_KEYS`、`PROVIDER_PROTOCOL_CAPABILITIES` 落入常量。
+- core：新增 `tools/descriptor/` 适配内置、流程与 MCP 工具；`listDebugTools()` 返回统一描述符并纳入已发布流程工具；`toToolDefinitions` 与执行器未改。
+- web：工具调试台改用 `permissions` / `inputSchema`；流程编辑器构造统一描述符；供应商卡片新增流式/工具调用/视觉/向量只读徽章与说明。
+- 测试：工具与 provider 回归 184 项、web 工具/流程 18 项、供应商路由 5 项通过；`pnpm check` 全绿。
+- 说明：provider 能力是协议级声明，不代表单个模型；不参与模型选择或自动路由。
 

@@ -13,6 +13,7 @@ export * from './flow';
 export * from './interaction';
 export * from './script';
 export * from './prop';
+export * from './tool';
 export * from './emotion';
 export * from './media';
 export * from './ops';

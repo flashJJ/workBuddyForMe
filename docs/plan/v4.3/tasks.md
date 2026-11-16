@@ -52,10 +52,12 @@
 
 ## M5 平台元数据
 
-- [ ] T5.1 工具描述符统一 schema 与适配层
-- [ ] T5.2 provider 能力元数据与只读展示
-- [ ] T5.3 回归：工具调用与模型路由零变化
-- [ ] T5.4 提交 `feat(v4.3): 工具描述符与 provider 能力元数据`
+> 详细规格：[spec-m5-platform-metadata.md](./spec-m5-platform-metadata.md)。只读元数据，不改执行与路由。
+
+- [x] T5.1 shared `ToolDescriptor` + core 适配层；调试列表统一为 `inputSchema` / `permissions`
+- [x] T5.2 provider 协议能力常量与设置页只读徽章
+- [x] T5.3 回归：工具/供应商测试通过，`toToolDefinitions` 与路由零变化
+- [x] T5.4 提交 `feat(v4.3): 工具描述符与 provider 能力元数据`
 
 ## M6 收尾
 

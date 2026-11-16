@@ -93,16 +93,17 @@ describe('工具运行时白名单', () => {
     for (const info of list) {
       expect(info.source).toBe('builtin');
       expect(info.description).toBeTruthy();
-      expect(info.parameters).toBeTypeOf('object');
+      expect(info.inputSchema).toBeTypeOf('object');
+      expect(info.permissions.length).toBeGreaterThan(0);
     }
     // fetch_webpage 标 danger；screen_snapshot 标 read
     const fetch = list.find((t) => t.name === 'fetch_webpage');
-    expect(fetch?.permission).toBe('danger');
+    expect(fetch?.permissions).toEqual(['danger']);
     const snapshot = list.find((t) => t.name === 'screen_snapshot');
-    expect(snapshot?.permission).toBe('read');
+    expect(snapshot?.permissions).toEqual(['read']);
     // M2 键鼠 danger；窗口列举 read
-    expect(list.find((t) => t.name === 'mouse_click')?.permission).toBe('danger');
-    expect(list.find((t) => t.name === 'window_list')?.permission).toBe('read');
+    expect(list.find((t) => t.name === 'mouse_click')?.permissions).toEqual(['danger']);
+    expect(list.find((t) => t.name === 'window_list')?.permissions).toEqual(['read']);
   });
 
   it('createDebugToolContext 不绑知识库，retrieve 返回空数组', async () => {

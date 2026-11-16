@@ -3,6 +3,21 @@
 export const PROVIDER_PROTOCOLS = ['openai-compatible', 'ollama'] as const;
 export type ProviderProtocol = (typeof PROVIDER_PROTOCOLS)[number];
 
+/** v4.3 M5：provider 协议级能力元数据；只读展示，不参与模型路由 */
+export const PROVIDER_CAPABILITY_KEYS = ['stream', 'tools', 'vision', 'embedding'] as const;
+export type ProviderCapabilityKey = (typeof PROVIDER_CAPABILITY_KEYS)[number];
+
+export const PROVIDER_PROTOCOL_CAPABILITIES: Record<
+  ProviderProtocol,
+  Record<ProviderCapabilityKey, boolean>
+> = {
+  'openai-compatible': { stream: true, tools: true, vision: true, embedding: true },
+  ollama: { stream: true, tools: true, vision: true, embedding: true },
+};
+
+/** v4.3 M5：工具权限分级（与 shared/types 的 PermissionLevel 同源） */
+export const PERMISSION_LEVELS = ['read', 'write', 'danger'] as const;
+
 /** vision = 图片视觉理解（v0.3）；chat/embedding/vision 可叠加在同一模型上 */
 export const MODEL_CAPABILITIES = ['chat', 'embedding', 'vision'] as const;
 export type ModelCapability = (typeof MODEL_CAPABILITIES)[number];

@@ -1,5 +1,5 @@
-import type { Assistant, PermissionLevel } from '@wbfm/shared/types';
-import { parseFlowToolName } from '@wbfm/shared/schemas';
+import type { Assistant } from '@wbfm/shared/types';
+import { parseFlowToolName, type ToolDescriptor } from '@wbfm/shared/schemas';
 import { ARTIFACT_MAX_PER_TURN, ARTIFACT_TURN_MAX_BYTES } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../services/base/deps';
 import { createRetrievalService, DEFAULT_RETRIEVAL_TOP_K } from '../retrieval/retrieval-service';
@@ -22,6 +22,7 @@ import { createInputTools } from './computer/input-tools';
 import { createWindowTools } from './computer/window-tools';
 import { createBrowserTools } from './computer/browser-tools';
 import { createComputerChannelClient } from '../computer/channel-client';
+import { describeMcpTool, describeTool } from './descriptor';
 
 /** 全部内置工具（默认全部关闭，由助手白名单开启） */
 const ALL_TOOLS: Record<string, Tool> = {
@@ -57,15 +58,7 @@ export interface ResolvedTool {
   source: string;
 }
 
-/** v0.6 M4：调试台展示的工具元数据（聚合内置 + MCP） */
-export interface DebugToolInfo {
-  name: string;
-  source: string;
-  permission: PermissionLevel;
-  description: string;
-  parameters: Record<string, unknown>;
-}
-
+/** v0.6 M4：调试台展示的工具元数据（v4.3 M5 统一为 ToolDescriptor） */
 export interface ToolRuntime {
   /** 按助手白名单构造可用工具映射；模型不支持工具时返回空映射 */
   buildTools(assistant: Assistant, supportsTools: boolean): ToolMap;
@@ -77,8 +70,8 @@ export interface ToolRuntime {
   ): ToolContext;
   /** v0.6 M4：解析工具名 → { tool, source }；内置查表，MCP 走注册表 */
   resolveTool(name: string): ResolvedTool | null;
-  /** v0.6 M4：聚合全部可调试工具（内置 + 已连接 MCP），调试台用 */
-  listDebugTools(): DebugToolInfo[];
+  /** v0.6 M4：聚合全部可调试工具（内置 + MCP + 已发布流程），调试台用 */
+  listDebugTools(): ToolDescriptor[];
   /** v0.6 M4：调试台用空 retrieve 上下文（不绑知识库） */
   createDebugToolContext(signal?: AbortSignal): ToolContext;
 }
@@ -111,29 +104,18 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
     resolveTool,
 
     listDebugTools() {
-      const list: DebugToolInfo[] = [];
-      // 内置工具
-      for (const [name, tool] of Object.entries(ALL_TOOLS)) {
-        list.push({
-          name,
-          source: 'builtin',
-          permission: tool.permission ?? 'read',
-          description: tool.description,
-          parameters: tool.parameters,
-        });
+      const list: ToolDescriptor[] = [];
+      for (const tool of Object.values(ALL_TOOLS)) {
+        list.push(describeTool(tool));
       }
       // MCP 工具（仅已连接服务器的）
       const mcpRegistry = deps.mcp;
       if (mcpRegistry) {
-        for (const info of mcpRegistry.getTools()) {
-          list.push({
-            name: info.qualifiedName,
-            source: `mcp:${info.serverName}`,
-            permission: 'read',
-            description: info.description || 'MCP 工具',
-            parameters: info.inputSchema,
-          });
-        }
+        for (const info of mcpRegistry.getTools()) list.push(describeMcpTool(info));
+      }
+      // 已发布流程作为工具注入（与 buildTools 的 flowToolLister 同源）
+      for (const tool of deps.flowToolLister?.() ?? []) {
+        list.push(describeTool(tool, 'flow'));
       }
       return list;
     },

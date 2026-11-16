@@ -2,6 +2,12 @@
 
 import * as React from 'react';
 import type { Provider } from '@wbfm/shared/types';
+import type { MessageKey } from '@wbfm/shared/i18n';
+import {
+  PROVIDER_CAPABILITY_KEYS,
+  PROVIDER_PROTOCOL_CAPABILITIES,
+  type ProviderCapabilityKey,
+} from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/common/toast';
@@ -23,12 +29,20 @@ type TestState =
   | { status: 'unverified'; message: string }
   | { status: 'error'; message: string };
 
+const PROVIDER_CAPABILITY_LABELS: Record<ProviderCapabilityKey, MessageKey> = {
+  stream: 'settingsProviders.capabilities.stream',
+  tools: 'settingsProviders.capabilities.tools',
+  vision: 'settingsProviders.capabilities.vision',
+  embedding: 'settingsProviders.capabilities.embedding',
+};
+
 export function ProviderCard({ provider, onEdit }: Props) {
   const { t } = useI18n();
   const mutations = useProviderMutations();
   const toast = useToast();
   const confirm = useConfirm();
   const [testState, setTestState] = React.useState<TestState>({ status: 'idle' });
+  const capabilities = PROVIDER_PROTOCOL_CAPABILITIES[provider.protocol];
 
   const toggleEnabled = async (enabled: boolean) => {
     try {
@@ -99,6 +113,17 @@ export function ProviderCard({ provider, onEdit }: Props) {
               key: provider.apiKeyMasked ?? t('settingsProviders.keyNotConfigured'),
             })}
           </p>
+          <div
+            className="flex flex-wrap items-center gap-1"
+            title={t('settingsProviders.capabilitiesHint')}
+            data-testid={`provider-capabilities-${provider.id}`}
+          >
+            {PROVIDER_CAPABILITY_KEYS.filter((key) => capabilities[key]).map((key) => (
+              <Badge key={key} variant="outline">
+                {t(PROVIDER_CAPABILITY_LABELS[key])}
+              </Badge>
+            ))}
+          </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
           <label className="mr-1 flex items-center gap-1 text-xs text-muted-foreground">

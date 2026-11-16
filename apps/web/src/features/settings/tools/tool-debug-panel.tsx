@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { DebugToolInfo, ToolResult } from '@wbfm/core/tools';
+import type { ToolResult } from '@wbfm/core/tools';
+import type { ToolDescriptor } from '@wbfm/shared/schemas';
 import type { MessageKey, MessageVars } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -98,7 +99,7 @@ export function ToolDebugPanel() {
               data-testid="tool-debug-select"
             >
               {Object.entries(
-                tools.reduce<Record<string, DebugToolInfo[]>>((acc, item) => {
+                tools.reduce<Record<string, ToolDescriptor[]>>((acc, item) => {
                   (acc[item.source] ??= []).push(item);
                   return acc;
                 }, {}),
@@ -120,15 +121,15 @@ export function ToolDebugPanel() {
                 <Badge variant={sourceBadgeVariant(currentTool.source)}>
                   {currentTool.source}
                 </Badge>
-                <Badge variant={currentTool.permission === 'danger' ? 'danger' : 'default'}>
-                  {currentTool.permission}
+                <Badge variant={currentTool.permissions.includes('danger') ? 'danger' : 'default'}>
+                  {currentTool.permissions.join(' / ')}
                 </Badge>
               </div>
               <p className="mt-1 text-muted-foreground">{currentTool.description}</p>
               <details className="mt-1">
                 <summary className="cursor-pointer text-muted-foreground">{t('toolDebug.argsSchema')}</summary>
                 <pre className="mt-1 max-h-48 overflow-auto rounded bg-muted/40 p-2 text-[11px]">
-                  {JSON.stringify(currentTool.parameters, null, 2)}
+                  {JSON.stringify(currentTool.inputSchema, null, 2)}
                 </pre>
               </details>
             </div>
