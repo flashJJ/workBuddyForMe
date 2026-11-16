@@ -2,6 +2,7 @@
 export { BackgroundLayer } from './background-layer';
 export { MainBackground } from './main-background';
 export { PetBackground } from './pet-background';
+export { PetFrameOverlay } from './pet-frame';
 export { StageBackground } from './stage-background';
 export { useBackground } from './use-background';
 export { useBackgroundFiles } from './use-background-files';

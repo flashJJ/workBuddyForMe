@@ -41,7 +41,7 @@ import { usePetFrameMode } from './stage/use-pet-frame-mode';
 import { usePetSleep } from './stage/use-pet-sleep';
 import { reportPetUiRect, usePetHitProxy } from './stage/hit-proxy';
 import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
-import { PetBackground } from '@/features/background';
+import { PetBackground, PetFrameOverlay } from '@/features/background';
 import { usePetAmbientTalk } from './stage/use-pet-ambient-talk';
 import { usePetFaceAway } from './stage/use-pet-face-away';
 import { usePetPointerGaze } from './stage/use-pet-pointer-gaze';
@@ -281,7 +281,7 @@ export function PetStage({
           onFrame={script.onFrame}
         />
       </div>
-
+      <PetFrameOverlay />
       <PetHitBody bridge={bridge} controllerRef={controllerRef} resolveAndDispatch={resolveAndDispatch} />
       <PetHitHead bridge={bridge} controllerRef={controllerRef} resolveAndDispatch={resolveAndDispatch} focusPath={workView.primary?.deepLink} />
       <PetWorkBubble
