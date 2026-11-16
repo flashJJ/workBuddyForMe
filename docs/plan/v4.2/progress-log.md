@@ -9,10 +9,10 @@
 |---|---|---|
 | M0 方案与归档 | ✅ 完成（方案/tasks 落盘，候选 10 转正，三处索引已更新） | 2026-11-16 |
 | M1 音频内核 | ✅ 完成（AudioDirector、sink、duck、背景互斥、解锁、7 项单测） | 2026-11-16 |
-| M2 全局音乐 | ⏳ 待开始 | — |
-| M3 小剧场 | ⏳ 待开始 | — |
-| M4 语音与解锁 | ⏳ 待开始 | — |
-| M5 收尾 | ⏳ 待开始 | — |
+| M2 全局音乐 | ✅ 完成（sink、静音、会话播放意图、偏好 hook） | 2026-11-16 |
+| M3 小剧场 | ✅ 完成（BGM sink、SFX 限流、静音同步） | 2026-11-16 |
+| M4 语音与解锁 | ✅ 完成（语音活跃上报、根布局统一解锁） | 2026-11-16 |
+| M5 收尾 | ✅ 完成（响度登记、728 文件 4147 项测试、检查全绿） | 2026-11-16 |
 
 ## 决策日志
 
@@ -33,3 +33,36 @@
 - 新增 `docs/plan/v4.2/tasks.md`：M0–M5 可勾选任务。
 - 调研现状：全局音乐 `music-player.tsx`、剧场 `theater-bgm.ts` / `use-theater-audio.ts` / `theater-sfx.ts`、语音 `audio-playback-queue.ts` / `web-audio-player.ts`。
 - 待执行：候选 10 转正与三处索引更新。
+
+### 2026-11-16 M1 音频内核
+
+- 新增 `features/audio/{types,constants,director,use-audio-director,index}.ts`：音轨类型、duck 0.35、音效上限 2、mute/语音来源 Set/背景互斥/解锁回调。
+- 新增 8 项测试（含静音持久化），覆盖注册注销、duc、背景互斥、音效限流与解锁失败隔离。
+- 结果：`pnpm --filter @wbfm/web exec vitest run src/features/audio` 8 项通过，web typecheck 通过。
+
+### 2026-11-16 M2 全局音乐
+
+- `MusicProvider` 注册 `music` sink；有效音量 = 本地音量 × 导演 gain；静音读取 `wbfm.audio.muted`。
+- 迷你播放器新增静音按钮；播放意图写 `sessionStorage`，舞台返回后恢复。
+- 拆分 `use-music-audio-sink.ts` 与 `use-music-preferences.ts`，`music-player.tsx` 从 345 行降至 292 行。
+- 验证：music/audio 测试 20 项通过，web typecheck 通过。
+
+### 2026-11-16 M3 小剧场
+
+- `TheaterBgm` 改为 `setGain(gain)`，删除本地 mute/duck；`useTheaterAudio` 注册 `theater-bgm` sink 并共享全局静音。
+- `theater-sfx` 去掉模块级静音，改用导演 `tryPlaySfx/endSfx`，同时最多 2 个。
+- 验证：theater 测试 70 项通过（含并发限流与静音）。
+
+### 2026-11-16 M4 语音与解锁
+
+- `useVoicePlayback` 用 `useId` 作为来源 id 上报 `setVoiceActive`，语音结束自动恢复背景乐。
+- 新增根布局 `AudioUnlockListener`，首次 pointerdown/keydown 调用导演解锁，并移除剧场重复手势监听。
+- 音乐、剧场音效、语音队列分别注册解锁回调。
+- 验证：语音 duck 与解锁测试通过；全量定向 73 项通过。
+
+### 2026-11-16 M5 收尾
+
+- 内置 11 首曲目登记 `loudnessLufs: -16`，新增单测锁定；导入曲目不受影响。
+- `pnpm check` 全绿；全量 9 包 728 文件 4147 项测试通过（web 280 文件 1422 项）。
+- 结果：v4.2 开发完成，零数据库迁移；发布动作待用户确认。
+

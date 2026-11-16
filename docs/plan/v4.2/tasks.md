@@ -22,31 +22,31 @@
 
 ## M2 全局音乐
 
-- [ ] T2.1 `MusicProvider` 注册 `music` sink，音量 = 基础音量 × 导演 gain
-- [ ] T2.2 静音开关接入迷你播放器，状态读写 `wbfm.audio.muted`
-- [ ] T2.3 播放意图写 `sessionStorage`，舞台返回后恢复
-- [ ] T2.4 更新音乐测试：sink 音量、静音、恢复意图
-- [ ] T2.5 提交 `feat(v4.2): 全局音乐接入音频导演`
+- [x] T2.1 `MusicProvider` 注册 `music` sink，音量 = 基础音量 × 导演 gain
+- [x] T2.2 静音开关接入迷你播放器，状态读写 `wbfm.audio.muted`
+- [x] T2.3 播放意图写 `sessionStorage`，舞台返回后恢复
+- [x] T2.4 更新音乐测试：sink 音量、静音、恢复意图
+- [x] T2.5 提交 `feat(v4.2): 全局音乐接入音频导演`
 
 ## M3 小剧场
 
-- [ ] T3.1 `TheaterBgm` 改为 `setGain(gain)`，删除本地 muted/ducked
-- [ ] T3.2 `useTheaterAudio` 注册 `theater-bgm` sink，静音按钮改调导演
-- [ ] T3.3 `theater-sfx` 共用导演静音并限制同时 2 个
-- [ ] T3.4 更新剧场音频测试
-- [ ] T3.5 提交 `feat(v4.2): 剧场 BGM 与音效接入音频导演`
+- [x] T3.1 `TheaterBgm` 改为 `setGain(gain)`，删除本地 muted/ducked
+- [x] T3.2 `useTheaterAudio` 注册 `theater-bgm` sink，静音按钮改调导演
+- [x] T3.3 `theater-sfx` 共用导演静音并限制同时 2 个
+- [x] T3.4 更新剧场音频测试
+- [x] T3.5 提交 `feat(v4.2): 剧场 BGM 与音效接入音频导演`
 
 ## M4 语音与解锁
 
-- [ ] T4.1 语音播放 hook 上报 `setVoiceActive(sourceId, active)`
-- [ ] T4.2 新增根布局 `AudioUnlockListener`，首次手势调用 `audioDirector.unlock()`
-- [ ] T4.3 移除剧场与语音的重复手势监听，保留解锁回调注册
-- [ ] T4.4 新增语音 duck 与解锁测试
-- [ ] T4.5 提交 `feat(v4.2): 统一语音 duck 与首次手势解锁`
+- [x] T4.1 语音播放 hook 上报 `setVoiceActive(sourceId, active)`
+- [x] T4.2 新增根布局 `AudioUnlockListener`，首次手势调用 `audioDirector.unlock()`
+- [x] T4.3 移除剧场与语音的重复手势监听，保留解锁回调注册
+- [x] T4.4 新增语音 duck 与解锁测试
+- [x] T4.5 提交 `feat(v4.2): 统一语音 duck 与首次手势解锁`
 
 ## M5 收尾
 
-- [ ] T5.1 `MusicTrack` 增加 `loudnessLufs`，内置曲目标 -16 并加单测
-- [ ] T5.2 运行 `pnpm check` 与全量测试
-- [ ] T5.3 回填进度日志与验收结果
-- [ ] T5.4 提交 `docs(v4.2): 音频导演收尾`
+- [x] T5.1 `MusicTrack` 增加 `loudnessLufs`，内置曲目标 -16 并加单测
+- [x] T5.2 运行 `pnpm check` 与全量测试
+- [x] T5.3 回填进度日志与验收结果
+- [x] T5.4 提交 `docs(v4.2): 音频导演收尾`
