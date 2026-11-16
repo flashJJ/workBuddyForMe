@@ -1,7 +1,7 @@
 'use client';
 
 import { BackgroundLayer } from './background-layer';
-import { useBackground } from './use-background';
+import { useBackground } from './hooks/use-background';
 
 /**
  * v4.4 M4：桌宠窗独立背景；默认 none，保持窗口透明。

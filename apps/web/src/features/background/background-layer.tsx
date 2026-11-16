@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import type { BackgroundView } from './use-background';
+import type { BackgroundView } from './hooks/use-background';
 
 interface BackgroundLayerProps {
   view: BackgroundView;

@@ -1,5 +1,11 @@
-import type { ResolvedBackground } from './resolve';
 import { GALLERY_BACKGROUND_ITEMS } from './gallery';
+
+/** v4.4 M4：解析后的背景呈现形态（内置清单与解析器共用，定义在此避免循环引用） */
+export type ResolvedBackground =
+  | { kind: 'none' }
+  | { kind: 'gradient'; gradient: string }
+  | { kind: 'image'; url: string }
+  | { kind: 'video'; url: string };
 
 /** v4.4 M4：内置背景清单（视频随安装包，静态壁纸为程序化渐变） */
 const STATIC_BUILTINS: Record<string, ResolvedBackground> = {

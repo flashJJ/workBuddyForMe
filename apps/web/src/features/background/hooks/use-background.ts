@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { BackgroundScope } from '@wbfm/shared/schemas';
 import { useSettings } from '@/lib/hooks/provider';
-import { mergeBackgroundConfig, resolveBackground, type ResolvedBackground } from './resolve';
+import { mergeBackgroundConfig, resolveBackground, type ResolvedBackground } from '../resolve';
 import { useBackgroundFiles } from './use-background-files';
 import { useWallpaperContent } from './use-wallpaper-content';
 

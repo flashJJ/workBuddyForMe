@@ -6,7 +6,7 @@ import {
   type BackgroundSource,
   type BackgroundScope,
 } from '@wbfm/shared/schemas';
-import { BUILTIN_BACKGROUNDS, BUILTIN_FALLBACK, NONE_BACKGROUND } from './builtin';
+import { BUILTIN_BACKGROUNDS, BUILTIN_FALLBACK, NONE_BACKGROUND, type ResolvedBackground } from './builtin';
 
 /** v4.4 M4：背景设置归一化与资源解析（纯函数，便于测试） */
 
@@ -17,11 +17,7 @@ export interface BackgroundResolveContext {
   fallback?: boolean;
 }
 
-export type ResolvedBackground =
-  | { kind: 'none' }
-  | { kind: 'gradient'; gradient: string }
-  | { kind: 'image'; url: string }
-  | { kind: 'video'; url: string };
+export type { ResolvedBackground };
 
 export function mergeBackgroundConfig(
   scope: BackgroundScope,

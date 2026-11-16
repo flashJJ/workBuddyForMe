@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { BackgroundLayer } from './background-layer';
-import { useBackground } from './use-background';
+import { useBackground } from './hooks/use-background';
 
 interface StageBackgroundProps {
   /** 未配置背景时保留的原有剧集背景层 */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useBackground } from './use-background';
+import { useBackground } from './hooks/use-background';
 
 /** 画框宽度（与背景内缩保持一致） */
 export const PET_FRAME_PADDING = 7;

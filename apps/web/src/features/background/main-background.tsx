@@ -1,7 +1,7 @@
 'use client';
 
 import { BackgroundLayer } from './background-layer';
-import { useBackground } from './use-background';
+import { useBackground } from './hooks/use-background';
 
 /** v4.4 M4：主窗口背景；聊天模式只铺内容区，整屏模式铺满窗口 */
 export function MainBackground() {
