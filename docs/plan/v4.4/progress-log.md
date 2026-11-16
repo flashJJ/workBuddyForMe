@@ -104,6 +104,13 @@
 - 门禁修复：背景域 `hooks/` 子目录化（直接文件 13→10）；`ResolvedBackground` 定义移到 `builtin.ts`，消除 `builtin ↔ resolve` 类型循环；对外导出不变。
 - 验证：结构门禁、相关 24 个测试文件 123 项、web typecheck 通过后，`pnpm check` 全绿；全量测试 9 包 745 文件 4218 项通过。
 - 构建：web standalone → desktop tsup → prepare-server → electron-builder（临时 `electron-builder.local.yml` 复用本地 Electron 45.0.0 运行时，构建后删除）。
-- 安装包：`WorkBuddyForMe-Setup-4.4.0.exe` 272.32MB（285,549,902 字节），较 v4.3.0 增加 7.48MB；归档 `E:\builds\archive\v4.4.0`；SHA256 `87829daa…8953d4`；`release-manifest --check` 通过 3 个产物。
+- 安装包（初版）：`WorkBuddyForMe-Setup-4.4.0.exe` 272.32MB（285,549,902 字节），归档 `E:\builds\archive\v4.4.0`；`release-manifest --check` 通过 3 个产物。
 - 文档：新增 `release-notes.md`、`version-summary.md`，博客 `blog/v4.4/` 10 篇并登记索引。
+
+### 2026-11-17 真机验证修复与重打包
+
+- 问题 1：先保存来源、再只调模糊保存后背景变回默认。根因是设置写入按顶层字段整体替换 `background`，而面板第二次只提交当前作用域的局部 patch，`source/fit/dim` 被冲掉；改为每次保存提交三个作用域的完整配置，并保留主窗口 `mode`。
+- 问题 2：整屏模式下侧边栏、页面头部与页内搜索不透明，背景无法贯通。新增 `MainBackgroundModeProvider`，整屏模式下侧边栏 `bg-card/70`、页面头部 `bg-card/60`、设置搜索区 `bg-background/40` 均加 `backdrop-blur`；聊天模式保持不透明。
+- 回归：新增“二次保存保留已选源”测试；web 全量 285 文件 1445 项、全量测试 745 文件 4219 项通过；`pnpm check` 全绿。
+- 重打包：安装包 272.35MB（285,583,644 字节），SHA256 `27fd91c3…bc5dd91`；commit `a8c9b868`；`release-manifest --check` 通过 3 个产物。
 - 待办：真机验证通过后合并 main、打 tag `v4.4.0` 并推送工蜂。

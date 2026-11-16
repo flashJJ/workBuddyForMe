@@ -52,13 +52,13 @@ v4.4 把背景变成一等能力：
 
 ## 4. 数据与验证
 
-- 全量测试：9 包 745 文件 4218 项通过（web 285/1444、core 272/1664、database 75/283、shared 48/413、desktop 35/227、ai 16/86、voice 9/85、config 4/14、motion 1/2）。
+- 全量测试：9 包 745 文件 4219 项通过（web 285/1445、core 272/1664、database 75/283、shared 48/413、desktop 35/227、ai 16/86、voice 9/85、config 4/14、motion 1/2）。
 - `pnpm check`：typecheck、lint、行数、结构、循环依赖、ASCII、资产全部通过。
 - 素材体积：
   - 图集 28 张：75.7MB → 5.06MB（1920px WebP q80，约 93% 降幅）；
   - 主窗循环视频 3 个：16.21MB → 1.52MB（30fps、H.264 CRF23、去音轨）；
   - 桌宠背景：2 个视频 5.8MB → 0.58MB，3 张图 4.06MB → 121KB。
-- 安装包：`WorkBuddyForMe-Setup-4.4.0.exe` 272.32MB（285,549,902 字节），预算 300MB 内；较 v4.3.0 增加 7.48MB。
+- 安装包：`WorkBuddyForMe-Setup-4.4.0.exe` 272.35MB（285,583,644 字节），预算 300MB 内；较 v4.3.0 增加 7.51MB。
 - 数据库：零迁移；备份 schema 不变。
 
 ## 5. 已知限制
