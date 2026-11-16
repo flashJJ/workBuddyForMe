@@ -10,7 +10,7 @@
 | M0 方案与转正 | 🚧 进行中 | 2026-11-17 |
 | M1 背景模型与内置素材 | 🚧 进行中 | 2026-11-17 |
 | M2 本地图片/视频 | ✅ 完成（渲染层回退在 M4） | 2026-11-17 |
-| M3 `wallpaper-pack` | 待开始 | — |
+| M3 `wallpaper-pack` | ✅ 完成 | 2026-11-17 |
 | M4 渲染接线 | 待开始 | — |
 | M5 设置页 | 待开始 | — |
 | M6 收尾 | 待开始 | — |
@@ -38,3 +38,11 @@
 - web：新增 `GET /api/backgrounds/[id]`，按 uuid + 白名单扩展名校验后读取 `<dataRoot>/backgrounds`，缺失 404。
 - 测试：desktop 背景 9 项、web 路由 3 项通过；desktop 全量 227 项、shared/desktop typecheck、行数与结构门禁通过。
 - 说明：渲染层的缺失回退与视频暂停策略在 M4 接入。
+
+### 2026-11-17 M3 `wallpaper-pack`
+
+- shared：新增 `wallpaper-pack` payload 契约（1–10 个背景、`wallpaper.` 前缀、图片/视频与扩展名匹配、CC0/CC-BY 白名单、单文件 50MB / 合计 200MB）；能力类型、权限 `wallpaper:pack`、固定 entry 与中英文案同步。
+- core：新增 effect `effects/wallpaper-pack/`（payload 解析、路径越界、资源存在与预算校验、启停）与 `services/media/wallpaper-content/`（按启用行聚合、冲突 fail-closed、`wallpapers:<sha256>` 快照、受控资源读取）。
+- web：新增 `/api/wallpaper-content` 与 `/api/wallpaper-assets`。
+- 样例：`buildSampleWallpaperPack()` 带 1 张 1x1 PNG（CC0）。
+- 测试：shared 5 项、core 壁纸包 4 项 + 快照 3 项通过；core/shared/web typecheck、行数与结构门禁通过。

@@ -46,6 +46,7 @@ import {
 import { disableMotionPack, enableMotionPack } from './motion-pack';
 import { disableScenePack, enableScenePack } from './scene-pack';
 import { disablePropPack, enablePropPack } from './prop-pack';
+import { disableWallpaperPack, enableWallpaperPack } from './wallpaper-pack';
 
 /** v2.11：能力 effect 依赖；v4.0 七类 */
 export interface CapabilityEffectDeps {
@@ -134,6 +135,10 @@ const BUILTIN_EFFECT_HANDLERS: Record<CapabilityKind, CapabilityEffectHandler> =
   'prop-pack': {
     enable: (manifest, packDir) => enablePropPack(manifest, packDir),
     disable: () => disablePropPack(),
+  },
+  'wallpaper-pack': {
+    enable: (manifest, packDir) => enableWallpaperPack(manifest, packDir),
+    disable: () => disableWallpaperPack(),
   },
 };
 

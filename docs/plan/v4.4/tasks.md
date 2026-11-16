@@ -24,11 +24,11 @@
 
 ## M3 `wallpaper-pack`
 
-- [ ] T3.1 shared `wallpaper-pack` payload schema 与预算常量
-- [ ] T3.2 core effect：payload 读取、资源存在/路径/许可校验、启停
-- [ ] T3.3 core 内容服务：按启用行聚合背景源与快照版本
-- [ ] T3.4 web API：`/api/wallpaper-content` 与包内资源只读路由
-- [ ] T3.5 样例壁纸包与安装/停用链路测试
+- [x] T3.1 shared `wallpaper-pack` payload schema 与预算常量
+- [x] T3.2 core effect：payload 读取、资源存在/路径/许可校验、启停
+- [x] T3.3 core 内容服务：按启用行聚合背景源与快照版本
+- [x] T3.4 web API：`/api/wallpaper-content` 与包内资源只读路由
+- [x] T3.5 样例壁纸包与安装/停用链路测试
 
 ## M4 渲染接线
 

@@ -11,6 +11,7 @@ import { RUN_EVIDENCE_CHAINS } from '../work/report';
  * 清单声明 kind/permissions/entry/checksums，安装侧 fail-closed 校验；
  * v4.3 起九类可执行：skill / mcp / workflow / pet-action / event-script /
  * report-widget / motion-pack / scene-pack / prop-pack。
+ * v4.4 增加 wallpaper-pack。
  */
 
 export const CAPABILITY_KINDS = [
@@ -23,6 +24,7 @@ export const CAPABILITY_KINDS = [
   'motion-pack',
   'scene-pack',
   'prop-pack',
+  'wallpaper-pack',
 ] as const;
 export type CapabilityKind = (typeof CAPABILITY_KINDS)[number];
 
@@ -36,6 +38,7 @@ export const CAPABILITY_PERMISSIONS = [
   'motion:pack',
   'scene:pack',
   'prop:pack',
+  'wallpaper:pack',
 ] as const;
 export type CapabilityPermission = (typeof CAPABILITY_PERMISSIONS)[number];
 
@@ -141,6 +144,7 @@ export const CAPABILITY_REQUIRED_PERMISSION: Record<CapabilityKind, CapabilityPe
   'motion-pack': 'motion:pack',
   'scene-pack': 'scene:pack',
   'prop-pack': 'prop:pack',
+  'wallpaper-pack': 'wallpaper:pack',
 };
 
 /** 当前已接入 effect 的 kind（其余安装时明确拒绝） */
@@ -154,6 +158,7 @@ export const CAPABILITY_SUPPORTED_KINDS: CapabilityKind[] = [
   'motion-pack',
   'scene-pack',
   'prop-pack',
+  'wallpaper-pack',
 ];
 
 /** v2.17：能力目录来源与安装策略（目录只收录内置精选包与 MCP 预置） */
@@ -194,6 +199,7 @@ export const CAPABILITY_ENTRY_BY_KIND: Record<CapabilityKind, string> = {
   'motion-pack': 'payload/motion-pack.json',
   'scene-pack': 'payload/scene-pack.json',
   'prop-pack': 'payload/prop-pack.json',
+  'wallpaper-pack': 'payload/wallpaper-pack.json',
 };
 
 /** v2.11：workflow 能力包 payload */

@@ -98,3 +98,5 @@ export const DEFAULT_BACKGROUND_SETTINGS: Record<BackgroundScope, BackgroundConf
 export function isChatMode(mode: BackgroundMainMode | undefined): boolean {
   return mode !== 'window';
 }
+
+export * from './wallpaper-pack';
