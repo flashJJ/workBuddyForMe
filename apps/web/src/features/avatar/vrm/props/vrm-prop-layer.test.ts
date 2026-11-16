@@ -160,4 +160,22 @@ describe('VrmPropLayer（S2 GLB 道具）', () => {
     flipLayer.update(1680);
     expect(cover.rotation.y).toBeLessThan(-0.5);
   });
+
+  it('v4.3：注入包内道具注册表后可加载并挂场景', async () => {
+    const { vrm, stage } = makeVrm();
+    const { loader, created } = stubLoader();
+    const layer = new VrmPropLayer(vrm, stage, undefined, loader, () => ({
+      'pack.test.cube': {
+        id: 'pack.test.cube',
+        url: '/api/prop-assets?pack=x&file=y',
+        kind: 'stage',
+        license: 'CC0-1.0',
+        position: [0.1, 0, 0.2],
+      },
+    }));
+
+    await expect(layer.show('pack.test.cube')).resolves.toBe(true);
+    expect(stage.children).toContain(created[0]);
+    expect(created[0]?.position.x).toBeCloseTo(0.1);
+  });
 });

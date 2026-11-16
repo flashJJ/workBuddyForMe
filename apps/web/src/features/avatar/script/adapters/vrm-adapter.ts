@@ -16,7 +16,7 @@ import {
 } from '@wbfm/shared/schemas';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { LOOK_DIRECTIONS } from '../../animation';
-import { PROPS } from '../../vrm/props/prop-manifest';
+import { PROPS, type PropRegistry } from '../../vrm/props/prop-manifest';
 import type { CueLogEntry, CueSink, SceneEndReason } from '../director';
 
 /** 适配器实际用到的最小控制器能力（VrmController 结构兼容） */
@@ -81,6 +81,8 @@ export interface VrmCueAdapterOptions {
   getPointer?: () => { x: number; y: number } | null;
   /** 覆盖/扩展内置 pose 预设 */
   presets?: Readonly<Record<string, PosePresetActions>>;
+  /** v4.3 M3：内置 + 包内道具注册表；缺省使用内置道具 */
+  getProps?: () => PropRegistry | undefined;
 }
 
 export class VrmCueAdapter implements CueSink {
@@ -101,10 +103,11 @@ export class VrmCueAdapter implements CueSink {
     const props = this.propScenes.get(sceneId);
     if (props) {
       this.propScenes.delete(sceneId);
+      const registry = this.options.getProps?.() ?? PROPS;
       for (const id of props) {
         // 另一个场景仍在使用同一道具时不抢卸
         if ([...this.propScenes.values()].some((set) => set.has(id))) continue;
-        const spec = PROPS[id];
+        const spec = registry[id];
         if (spec?.kind === 'stage') void this.options.controller.showProp?.(id, false);
         else void this.options.controller.attachProp?.(id, false);
       }
@@ -212,7 +215,7 @@ export class VrmCueAdapter implements CueSink {
 
   /** S3/S4：手持道具 attach/detach，场景道具 show/hide；动作与 kind 必须匹配 */
   private prop(id: string, action: ScriptPropAction, sceneId: string): void {
-    const spec = PROPS[id];
+    const spec = (this.options.getProps?.() ?? PROPS)[id];
     if (!spec) {
       console.warn('[VrmCueAdapter] 未登记道具，跳过:', id);
       return;

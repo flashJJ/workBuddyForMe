@@ -117,6 +117,8 @@ const ENTRY_SIZE_LIMITS: Partial<Record<CapabilityKind, number>> = {
   workflow: 256 * 1024,
   'pet-action': 32 * 1024,
   'motion-pack': 256 * 1024,
+  'scene-pack': 512 * 1024,
+  'prop-pack': 64 * 1024,
 };
 
 const MOTION_MAX_BYTES = 10 * 1024 * 1024;

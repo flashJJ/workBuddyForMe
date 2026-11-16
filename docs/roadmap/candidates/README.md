@@ -16,7 +16,7 @@
 
 | 编号 | 候选 | 状态 | 说明 |
 |---|---|---|---|
-| 08 | [资产体积预算](./08-asset-size-budget.md) | 待评审 | 模型/贴图/morph 语义与安装包体积纳入可执行门槛 |
+| [12](./12-background-wallpaper-video.md) | 背景与壁纸：内置背景、图片壁纸、循环视频与 `wallpaper-pack` | 未排期 | 舞台/聊天主界面/主窗口整屏共用一套配置（聊天与整屏互斥切换），桌宠窗独立；7 项决策已定 |
 
 ## 已排期版本
 
@@ -26,7 +26,9 @@
 
 10（统一音频导演 B）已排期 v4.2，移至 [v4.2-10](../scheduled/v4.2-10-audio-director.md)，正式方案见 [v4.2 方案](../../plan/v4.2/README.md)。
 
-v4.0 平台化一期范围：S5 依赖拓扑、06 B 内部 motion 包、`motion-pack`、S6 内容刷新与发布校验。剩余候选为资产体积（08），可插空排期。
+08（资产体积预算 A+B）已排期 v4.3，移至 [v4.3-08](../scheduled/v4.3-08-asset-size-budget.md)，正式方案见 [v4.3 方案](../../plan/v4.3/README.md)。未排期候选见候选 12。
+
+v4.0 平台化一期范围：S5 依赖拓扑、06 B 内部 motion 包、`motion-pack`、S6 内容刷新与发布校验。
 
 
 候选 02「数据可带走：备份补全、恢复预检与空间清理」已排期 v2.32，移至 [v2.32-02](../scheduled/v2.32-02-data-portability-and-storage.md)，正式方案见 [v2.32 方案](../../plan/v2.32/README.md)。候选 01「记忆图关系边与空闲整理」已排期 v2.31，移至 [v2.31-01](../scheduled/v2.31-01-memory-graph-and-consolidation.md)，社区聚类（方案 B）永久关闭。v2.30 已合入 main 为「能力补齐：能力可见、审批可读与内容包/产物收口」，候选 03 已移至 [v2.30-03](../scheduled/v2.30-03-capability-and-content-pack-completion.md)。v2.29 已发布为「文档可信：存量重解析、质量标记与低质收口」，候选 04 已移至 [v2.29-04](../scheduled/v2.29-04-document-quality.md)。v2.28 已随 v2.29.0 交付为「记忆可管：统计前端、审计轮转与约束撤销」，候选 02 已移至 [v2.28-01](../scheduled/v2.28-01-memory-observability-and-governance.md)。v2.27 已立项为「引用角标、来源定位与回合运行摘要」，来源方案见 [v2.27-01](../scheduled/v2.27-01-citation-and-turn-summary.md)。Lancer 借鉴分析已排期并归档为 [v2.20-01](../scheduled/v2.20-01-lancer-borrowing-analysis.md)，拆分到 [v2.20 方案](../../plan/v2.20/README.md)（P0+P1）与 [v2.21 方案](../../plan/v2.21/README.md)（P2）；自由分支的来源方案见 [v2.21-01](../scheduled/v2.21-01-free-branch-sessions.md)。

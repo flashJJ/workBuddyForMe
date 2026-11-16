@@ -27,6 +27,7 @@ import { enOnboarding } from './messages/onboarding';
 import { enHelp } from './messages/help';
 import { enFlowEditor } from './messages/flow-editor-en';
 import { enVoice } from './messages/voice-en';
+import { enAudio } from './messages/audio-en';
 import { enPet } from './messages/pet';
 import { enAvatar } from './messages/avatar';
 import { enFlowExecution } from './messages/flow-execution';
@@ -98,6 +99,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   help: enHelp,
   flowEditor: enFlowEditor,
   voice: enVoice,
+  audio: enAudio,
   pet: enPet,
   avatar: enAvatar,
   flowExecution: enFlowExecution,

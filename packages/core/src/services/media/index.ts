@@ -3,6 +3,7 @@ export * from './glb';
 export * from './motion-content-service';
 export * from './motion-service';
 export * from './motion-sniff';
+export * from './prop-content';
 export * from './stage-scene-service';
 export * from './vrm-avatar-service';
 export * from './vrm-sniff';

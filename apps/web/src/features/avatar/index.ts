@@ -31,6 +31,9 @@ export {
   type ScriptDirectorHandle,
 } from './script/use-script-director';
 export { useGeneratedScripts, type GeneratedScriptsState } from './script/generation/client';
+export { useSceneContent } from './script/content/use-scene-content';
+export { usePropContent } from './vrm/props/use-prop-content';
+export type { PropRegistry } from './vrm/props/prop-manifest';
 export type { TriggerDecisionExtras } from './script/utility';
 export {
   usePetProactivePlayback,

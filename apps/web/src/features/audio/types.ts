@@ -11,6 +11,8 @@ export interface AudioSink {
   setGain(gain: number): void;
   /** 背景互斥：true 时暂停发声，但不销毁播放器 */
   setSuspended?(suspended: boolean): void;
+  /** v4.3 M4：输出设备偏好；不支持或失败时 sink 自行回退默认 */
+  setOutputDevice?(deviceId: string | null): void;
 }
 
 export interface AudioDirectorSnapshot {
@@ -18,6 +20,8 @@ export interface AudioDirectorSnapshot {
   voiceActive: boolean;
   background: AudioBackgroundKind | null;
   unlocked: boolean;
+  /** v4.3 M4：输出设备偏好；null = 系统默认 */
+  outputDevice: string | null;
 }
 
 export type AudioDirectorListener = (snapshot: AudioDirectorSnapshot) => void;

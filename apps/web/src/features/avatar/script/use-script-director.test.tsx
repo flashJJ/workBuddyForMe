@@ -223,4 +223,76 @@ describe('useScriptDirector（T0.7 开关接线）', () => {
     expect(played).toBe(true);
     expect(calls).toContain('squash');
   });
+
+  it('packScenes 进入触发键索引：场景包场景也能被真实事件触发', () => {
+    const calls: string[] = [];
+    const controller: ScriptControllerHandle = {
+      playSquash: () => calls.push('squash'),
+      flashExpression: (tag) => calls.push(`expression:${tag}`),
+    };
+    const packed: Scene = {
+      id: 'pack.test.dynamic',
+      triggers: ['touch::body::tap'],
+      priority: 1,
+      cooldownMs: 0,
+      interrupt: 'all',
+      beats: [{ at: 0, cue: { kind: 'pose', preset: 'squash' } }],
+    };
+    const { result } = renderHook(() =>
+      useScriptDirector({
+        enabled: true,
+        getController: () => controller,
+        showSubtitle: () => undefined,
+        packScenes: [packed],
+      }),
+    );
+
+    let played = false;
+    act(() => {
+      played = result.current.playEvent({ kind: 'touch', region: 'body', gesture: 'tap' }, cueCtx());
+    });
+    expect(played).toBe(true);
+    expect(calls).toContain('squash');
+  });
+
+  it('props 注册包内道具后，prop cue 不再被校验丢弃', () => {
+    const calls: string[] = [];
+    const controller: ScriptControllerHandle = {
+      flashExpression: (tag) => calls.push(`expression:${tag}`),
+      attachProp: async (id, on) => {
+        calls.push(`prop:${id}:${String(on)}`);
+        return true;
+      },
+    };
+    const packed: Scene = {
+      id: 'pack.test.prop-scene',
+      triggers: [],
+      priority: 1,
+      cooldownMs: 0,
+      interrupt: 'all',
+      beats: [{ at: 0, cue: { kind: 'prop', prop: 'pack.test.cube', action: 'attach' } }],
+    };
+    const { result } = renderHook(() =>
+      useScriptDirector({
+        enabled: true,
+        getController: () => controller,
+        showSubtitle: () => undefined,
+        packScenes: [packed],
+        props: {
+          'pack.test.cube': {
+            id: 'pack.test.cube',
+            url: '/api/prop-assets?pack=x&file=y',
+            kind: 'hand' as const,
+            license: 'CC0-1.0' as const,
+            contact: 0.03,
+          },
+        },
+      }),
+    );
+
+    act(() => {
+      expect(result.current.playScene('pack.test.prop-scene')).toBe(true);
+    });
+    expect(calls).toContain('prop:pack.test.cube:true');
+  });
 });

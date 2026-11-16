@@ -21,7 +21,7 @@ export interface StageManagerDeps {
   boot: WindowBootInfo | null;
   userDataDir: string;
   getMainWindow: () => BrowserWindow | null;
-  petManager: Pick<PetManager, 'isOpen' | 'close' | 'open'>;
+  petManager: Pick<PetManager, 'isOpen' | 'close' | 'open' | 'modelId'>;
 }
 
 export class StageManager {
@@ -29,6 +29,8 @@ export class StageManager {
   private quitting = false;
   /** 因开舞台而临时关掉的桌宠，舞台关闭后恢复 */
   private petWasOpen = false;
+  /** 临时关闭前的桌宠模型：避免恢复时丢模型回落默认 Live2D */
+  private petModelId: string | null = null;
 
   constructor(private readonly deps: StageManagerDeps) {}
 
@@ -48,7 +50,10 @@ export class StageManager {
     }
     // 互斥：桌宠存活先记录并关闭（pet 自身会持久化几何）
     this.petWasOpen = this.deps.petManager.isOpen();
-    if (this.petWasOpen) await this.deps.petManager.close();
+    if (this.petWasOpen) {
+      this.petModelId = this.deps.petManager.modelId;
+      await this.deps.petManager.close();
+    }
 
     const state = loadStageState(this.deps.userDataDir);
     this.win = createStageWindow(this.deps.boot, state.fullscreen, state.bounds, target);
@@ -141,7 +146,9 @@ export class StageManager {
     // 互斥恢复：因舞台临时关闭的桌宠，舞台退出后原样唤回
     if (!this.quitting && this.petWasOpen) {
       this.petWasOpen = false;
-      void this.deps.petManager.open();
+      const modelId = this.petModelId ?? undefined;
+      this.petModelId = null;
+      void this.deps.petManager.open(modelId);
     }
   }
 

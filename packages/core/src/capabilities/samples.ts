@@ -1,35 +1,11 @@
-import { createHash } from 'node:crypto';
-import { strToU8, zipSync } from 'fflate';
+import { strToU8 } from 'fflate';
 import { ApiError } from '@wbfm/shared/errors';
-import type { CapabilityKind, CapabilityManifest } from '@wbfm/shared/schemas';
-import { CAPABILITY_MANIFEST_FILE } from './manifest';
+import type { CapabilityKind } from '@wbfm/shared/schemas';
+import { buildSampleScenePack } from './samples/scene-pack';
+import { buildSamplePropPack } from './samples/prop-pack';
+import { buildSampleZip, type SamplePackFile } from './samples/zip';
 
-/** v2.11：六类示例/模板包（下载与测试共用） */
-
-function sha256(bytes: Uint8Array): string {
-  return createHash('sha256').update(bytes).digest('hex');
-}
-
-interface SamplePackFile {
-  path: string;
-  bytes: Uint8Array;
-}
-
-function buildPack(
-  manifest: Omit<CapabilityManifest, 'checksums'>,
-  files: SamplePackFile[],
-): Uint8Array {
-  const zipFiles: Record<string, Uint8Array> = {};
-  const checksums: Record<string, string> = {};
-  for (const file of files) {
-    zipFiles[file.path] = file.bytes;
-    checksums[file.path] = sha256(file.bytes);
-  }
-  zipFiles[CAPABILITY_MANIFEST_FILE] = strToU8(
-    JSON.stringify({ ...manifest, checksums }, null, 2),
-  );
-  return zipSync(zipFiles);
-}
+/** v2.11：九类示例/模板包（下载与测试共用） */
 
 /** 生成示例技能包（保留旧名，兼容既有测试/下载） */
 export function buildSampleSkillPack(): Uint8Array {
@@ -50,7 +26,7 @@ export function buildSampleSkillPack(): Uint8Array {
       { title: '现在几点', userQuery: '现在几点？', expectedBehavior: '调用 current_time 后回答' },
     ],
   };
-  return buildPack(
+  return buildSampleZip(
     {
       id: 'com.wbfm.sample.capability-demo',
       version: '1.0.0',
@@ -184,7 +160,7 @@ function sampleMcpTemplate(): Uint8Array {
     '补齐清单 checksums 后重新打包安装。',
     '模板包不会自动连接，直接安装会因端点缺失被拒绝（422）。',
   ].join('\n');
-  return buildPack(
+  return buildSampleZip(
     {
       id: 'com.example.sample.mcp-template',
       version: '1.0.0',
@@ -212,14 +188,14 @@ function sampleMotionPackPayload(): Uint8Array {
   return strToU8(JSON.stringify(payload, null, 2));
 }
 
-/** 生成示例包：七类均返回 ZIP；mcp 为模板包，pet-action 需注入 VRMA */
+/** 生成示例包：九类均返回 ZIP；mcp 为模板包，pet-action 需注入 VRMA */
 export function buildSamplePack(
   kind: CapabilityKind,
   options: { motionAsset?: Uint8Array } = {},
 ): Uint8Array {
   if (kind === 'skill') return buildSampleSkillPack();
   if (kind === 'workflow') {
-    return buildPack(
+    return buildSampleZip(
       {
         id: 'com.example.sample.workflow',
         version: '1.0.0',
@@ -234,7 +210,7 @@ export function buildSamplePack(
     );
   }
   if (kind === 'pet-action') {
-    return buildPack(
+    return buildSampleZip(
       {
         id: 'com.example.sample.pet-action',
         version: '1.0.0',
@@ -249,7 +225,7 @@ export function buildSamplePack(
     );
   }
   if (kind === 'event-script') {
-    return buildPack(
+    return buildSampleZip(
       {
         id: 'com.example.sample.event-script',
         version: '1.0.0',
@@ -264,7 +240,7 @@ export function buildSamplePack(
     );
   }
   if (kind === 'report-widget') {
-    return buildPack(
+    return buildSampleZip(
       {
         id: 'com.example.sample.report-widget',
         version: '1.0.0',
@@ -279,7 +255,7 @@ export function buildSamplePack(
     );
   }
   if (kind === 'motion-pack') {
-    return buildPack(
+    return buildSampleZip(
       {
         id: 'com.example.sample.motion-pack',
         version: '1.0.0',
@@ -293,5 +269,7 @@ export function buildSamplePack(
       [{ path: 'payload/motion-pack.json', bytes: sampleMotionPackPayload() }],
     );
   }
+  if (kind === 'scene-pack') return buildSampleScenePack();
+  if (kind === 'prop-pack') return buildSamplePropPack();
   return sampleMcpTemplate();
 }

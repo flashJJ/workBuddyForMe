@@ -54,12 +54,13 @@ export function useVoicePlayback(): VoicePlayback {
   // 无报错）。effect 内创建可让重挂周期拿到全新实例；播放器构造本身惰性，
   // 不触碰 AudioContext，SSR/首渲安全（enqueue 等均有 null 守卫）。
   React.useEffect(() => {
+    const player = new WebAudioPlayer({
+      onLevel: (level) => {
+        for (const sink of levelSinksRef.current) sink(level);
+      },
+    });
     const queue = new AudioPlaybackQueue(
-      new WebAudioPlayer({
-        onLevel: (level) => {
-          for (const sink of levelSinksRef.current) sink(level);
-        },
-      }),
+      player,
       (s) => {
         if (s === 'speaking') {
           speakingRef.current = true;
@@ -74,8 +75,13 @@ export function useVoicePlayback(): VoicePlayback {
       },
     );
     queueRef.current = queue;
+    const unregisterSink = audioDirector.registerSink('voice', {
+      setGain: () => undefined,
+      setOutputDevice: (deviceId) => player.setOutputDevice(deviceId),
+    });
     const unregisterUnlock = audioDirector.registerUnlock(() => queue.unlock());
     return () => {
+      unregisterSink();
       unregisterUnlock();
       audioDirector.setVoiceActive(sourceId, false);
       queue.dispose();

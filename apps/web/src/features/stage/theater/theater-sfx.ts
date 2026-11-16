@@ -1,7 +1,7 @@
 'use client';
 
 import type { TheaterGenre } from './episodes/types';
-import { audioDirector } from '../../audio';
+import { applySinkId, audioDirector, type SinkIdTarget } from '../../audio';
 
 /**
  * 剧场短音效：WebAudio 合成，不引入外部音频素材。
@@ -29,8 +29,15 @@ function ensureContext(): AudioContext | null {
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return null;
     context = new Ctor();
+    void applySinkId(context as unknown as SinkIdTarget, audioDirector.getOutputDevice());
   }
   return context;
+}
+
+/** v4.3 M4：上下文未创建时无需处理，首次创建会读取导演当前偏好 */
+export function setTheaterSfxOutputDevice(deviceId: string | null): void {
+  if (!context) return;
+  void applySinkId(context as unknown as SinkIdTarget, deviceId);
 }
 
 /** v4.2：首次用户手势统一解锁；失败时下一次手势再试 */

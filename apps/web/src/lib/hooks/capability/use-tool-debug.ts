@@ -2,15 +2,16 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVisibleQuery } from '@/lib/ui/panel-visibility';
-import type { DebugToolInfo, ToolResult } from '@wbfm/core/tools';
+import type { ToolResult } from '@wbfm/core/tools';
+import type { ToolDescriptor } from '@wbfm/shared/schemas';
 import { apiGet, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 
-/** 调试台可用工具列表（内置 + 已连接 MCP） */
+/** 调试台可用工具列表（内置 + 已连接 MCP + 已发布流程） */
 export function useToolDebugList() {
   return useVisibleQuery({
     queryKey: QUERY_KEYS.toolDebug,
-    queryFn: () => apiGet<DebugToolInfo[]>(API.toolDebug),
+    queryFn: () => apiGet<ToolDescriptor[]>(API.toolDebug),
   });
 }
 

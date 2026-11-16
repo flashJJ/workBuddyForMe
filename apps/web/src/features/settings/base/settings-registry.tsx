@@ -23,6 +23,7 @@ import { AboutPanel } from '../storage/about-panel';
 import { HelpCenterPanel } from '@/features/help-center';
 import { VoicePreferencePanel } from '@/features/voice';
 import { MusicLibraryPanel } from '@/features/music';
+import { AudioOutputPanel } from '@/features/audio';
 import { KnowledgeRetrievalPanel } from '../storage/knowledge-retrieval-panel';
 import { EmotionPanel } from '../dialog/emotion-panel';
 import { InteractionGraphPanel } from '../dialog/interaction-graph-panel';
@@ -62,6 +63,7 @@ const PANEL_RENDERERS: Record<SettingsPanelId, PanelRenderer> = {
   'motion-import': () => <MotionImportSection />,
   'motion-list': () => <MotionList />,
   'voice-preference': () => <VoicePreferencePanel />,
+  'audio-output': () => <AudioOutputPanel />,
   'music-library': () => <MusicLibraryPanel />,
   'work-signal': () => <WorkSignalPanel />,
   emotion: () => <EmotionPanel />,

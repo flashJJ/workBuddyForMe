@@ -1,5 +1,6 @@
 /** @域 barrel 工具运行时/内置工具/熔断（v1.1 M2 域子路径化） */
-export { createToolRuntime, type ToolRuntime, type ResolvedTool, type DebugToolInfo } from './tool-runtime';
+export { createToolRuntime, type ToolRuntime, type ResolvedTool } from './tool-runtime';
+export { describeMcpTool, describeTool } from './descriptor';
 export {
   executeToolCall,
   executeCall,

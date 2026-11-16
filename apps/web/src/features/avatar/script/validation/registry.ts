@@ -14,7 +14,7 @@ import {
   SCRIPT_LOOK_TARGETS,
 } from '@wbfm/shared/schemas';
 import { DEFAULT_MOTION_CONTENT, type MotionContent } from '../../animation';
-import { PROPS } from '../../vrm/props/prop-manifest';
+import { PROPS, type PropRegistry } from '../../vrm/props/prop-manifest';
 import { BUILTIN_POSE_PRESETS } from '../adapters/vrm-adapter';
 
 export interface ScriptPropPrimitive {
@@ -42,6 +42,7 @@ export interface ScriptPrimitiveCatalog {
 /** v3.1：从内容快照派生白名单；默认快照 = 内置静态表 */
 export function createScriptPrimitives(
   content: MotionContent = DEFAULT_MOTION_CONTENT,
+  props: PropRegistry = PROPS,
 ): ScriptPrimitiveCatalog {
   return {
     poses: content.poses.map((pose) => pose.id),
@@ -52,7 +53,7 @@ export function createScriptPrimitives(
     gestures: [...SCRIPT_GESTURES],
     lookTargets: [...SCRIPT_LOOK_TARGETS],
     linePools: Object.keys(PET_LINE_POOLS),
-    props: Object.entries(PROPS).map(([id, spec]) => ({ id, kind: spec.kind })),
+    props: Object.entries(props).map(([id, spec]) => ({ id, kind: spec.kind })),
   };
 }
 
@@ -74,8 +75,9 @@ export interface ScriptPrimitiveSets {
 export function createScriptPrimitiveSets(
   extraPresets: readonly string[] = [],
   content?: MotionContent,
+  props: PropRegistry = PROPS,
 ): ScriptPrimitiveSets {
-  const catalog = content ? createScriptPrimitives(content) : SCRIPT_PRIMITIVES;
+  const catalog = content || props !== PROPS ? createScriptPrimitives(content, props) : SCRIPT_PRIMITIVES;
   return {
     poses: new Set(catalog.poses),
     presets: new Set([...catalog.posePresets, ...extraPresets]),

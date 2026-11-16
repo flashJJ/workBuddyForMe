@@ -15,6 +15,7 @@
  */
 import { BEAT_MAX_MS, type Cue, type Scene } from '@wbfm/shared/schemas';
 import type { MotionContent } from '../../animation';
+import type { PropRegistry } from '../../vrm/props/prop-manifest';
 import { createScriptPrimitiveSets, type ScriptPrimitiveSets } from './registry';
 
 const DEFAULT_PRIMITIVES = createScriptPrimitiveSets();
@@ -29,6 +30,8 @@ export interface ValidateSceneOptions {
   presets?: readonly string[];
   /** v4.0：按会话内容快照校验；缺省使用内置内容 */
   content?: MotionContent;
+  /** v4.3 M3：内置 + 包内道具注册表；缺省使用内置道具 */
+  props?: PropRegistry;
 }
 
 export interface SceneValidationResult {
@@ -38,8 +41,8 @@ export interface SceneValidationResult {
 }
 
 function primitivesFor(options?: ValidateSceneOptions): ScriptPrimitiveSets {
-  if (!options?.content && !options?.presets?.length) return DEFAULT_PRIMITIVES;
-  return createScriptPrimitiveSets(options?.presets ?? [], options?.content);
+  if (!options?.content && !options?.presets?.length && !options?.props) return DEFAULT_PRIMITIVES;
+  return createScriptPrimitiveSets(options?.presets ?? [], options?.content, options?.props);
 }
 
 /** 可选数值的 0..max 校验；undefined 表示未设置，直接通过 */

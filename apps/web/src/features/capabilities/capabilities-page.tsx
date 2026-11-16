@@ -21,7 +21,7 @@ import { CapabilityUpgradeDialog } from './capability-upgrade-dialog';
 export function CapabilitiesPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const [file, setFile] = React.useState<File | null>(null);
+  const [files, setFiles] = React.useState<File[]>([]);
   const [error, setError] = React.useState<string | null>(null);
   const [kindFilter, setKindFilter] = React.useState<'all' | CapabilityKind>('all');
   const [sampleKind, setSampleKind] = React.useState<CapabilityKind>('skill');
@@ -52,14 +52,23 @@ export function CapabilitiesPage() {
   };
 
   const install = useMutation({
-    mutationFn: (selected: File) => {
-      const form = new FormData();
-      form.append('file', selected);
-      return apiUpload<CapabilityView>(API.capabilityInstall, form);
+    mutationFn: async (selected: File[]) => {
+      // 多选按顺序逐个上传：服务端仍是单包安装接口，失败不阻塞后续文件
+      const failed: string[] = [];
+      for (const item of selected) {
+        const form = new FormData();
+        form.append('file', item);
+        try {
+          await apiUpload<CapabilityView>(API.capabilityInstall, form);
+        } catch {
+          failed.push(item.name);
+        }
+      }
+      return { total: selected.length, failed };
     },
-    onSuccess: () => {
-      setError(null);
-      setFile(null);
+    onSuccess: ({ failed }) => {
+      setError(failed.length > 0 ? t('capabilities.installPartial', { failed: failed.join('、') }) : null);
+      setFiles([]);
       invalidate();
     },
     onError: () => setError(t('capabilities.installFailed')),
@@ -182,21 +191,24 @@ export function CapabilitiesPage() {
         <input
           type="file"
           accept=".zip,application/zip"
+          multiple
           data-testid="capability-file-input"
           className="text-xs"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
         />
         <Button
           size="sm"
           data-testid="capability-install-button"
-          disabled={!file || install.isPending}
+          disabled={files.length === 0 || install.isPending}
           onClick={() => {
-            if (file) install.mutate(file);
+            if (files.length > 0) install.mutate(files);
           }}
         >
           {install.isPending ? t('capabilities.installing') : t('capabilities.install')}
         </Button>
-        <span className="text-xs text-muted-foreground">{t('capabilities.uploadHint')}</span>
+        <span className="text-xs text-muted-foreground">
+          {files.length > 0 ? t('capabilities.selected', { count: files.length }) : t('capabilities.uploadHint')}
+        </span>
       </section>
 
       <CapabilityHealthBanner

@@ -10,6 +10,8 @@ import { createVrmSession, type VrmSession } from './session/vrm-session';
 import { VrmController, type VrmControllerLike } from './vrm-controller';
 import { DEFAULT_MOTION_CONTENT, type MotionContent } from '../animation';
 import { useMotionContent } from '../animation/content/use-motion-content';
+import { usePropContent } from './props/use-prop-content';
+import type { PropRegistry } from './props/prop-manifest';
 
 export type { VrmControllerLike };
 export type { VRM } from '@pixiv/three-vrm';
@@ -86,7 +88,9 @@ export function VrmCanvas({
 }: VrmCanvasProps) {
   const { t } = useI18n();
   const { content: motionContent, ready: contentReady } = useMotionContent();
+  const { props: propRegistry } = usePropContent();
   const motionContentRef = React.useRef<MotionContent>(DEFAULT_MOTION_CONTENT);
+  const propRegistryRef = React.useRef<PropRegistry>(propRegistry);
   const hostRef = React.useRef<HTMLDivElement | null>(null);
   const sessionRef = React.useRef<VrmSession | null>(null);
   const petSizeRef = React.useRef<'sm' | 'md' | 'lg'>(petSize ?? 'md');
@@ -114,6 +118,7 @@ export function VrmCanvas({
 
   React.useEffect(() => { speakingRef.current = speaking; }, [speaking]);
   React.useEffect(() => { motionContentRef.current = motionContent; }, [motionContent]);
+  React.useEffect(() => { propRegistryRef.current = propRegistry; }, [propRegistry]);
   React.useEffect(() => { getLevelRef.current = getLevel; }, [getLevel]);
   // 表情按 prop 变化下发：不能每帧写回基线，否则事件演出会被立刻覆盖
   React.useEffect(() => {
@@ -186,6 +191,7 @@ export function VrmCanvas({
         chibi: chibiRef.current,
         builtinIdleOnly: builtinIdleRef.current,
         motionContent: motionContentRef.current,
+        propRegistry: propRegistryRef.current,
       }),
       onController: (controller) => {
         controllerRefInternal.current = controller;

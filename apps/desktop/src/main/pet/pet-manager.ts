@@ -64,6 +64,8 @@ export class PetManager {
   }
 
   isOpen(): boolean { return Boolean(this.win && !this.win.isDestroyed()); }
+  /** 当前展示模型（归一后）；舞台退出恢复桌宠时用于还原原模型 */
+  get modelId(): string { return this.currentModelId; }
 
   /** 打开桌宠；同模型幂等，不同模型原位静默换模型（不唤主窗、不重复广播） */
   async open(modelId?: string): Promise<boolean> {

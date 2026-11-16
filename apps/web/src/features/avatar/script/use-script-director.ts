@@ -35,6 +35,7 @@ import { createSceneRegistry } from './registry';
 import { BUILT_IN_SCENES } from './scenes';
 import { validateScenes } from './validation/validate';
 import { useMotionContent } from '../animation';
+import type { PropRegistry } from '../vrm/props/prop-manifest';
 
 export const PET_SCRIPT_ENABLED = process.env.NEXT_PUBLIC_WBFM_PET_SCRIPT === '1';
 
@@ -88,6 +89,10 @@ export interface UseScriptDirectorOptions {
   getPointer?: () => { x: number; y: number } | null;
   /** P8.3：生成场景（服务端已校验；这里再走一次白名单） */
   extraScenes?: readonly Scene[];
+  /** v4.3 M2：场景包场景，与生成场景一起校验后进入触发索引 */
+  packScenes?: readonly Scene[];
+  /** v4.3 M3：内置 + 包内道具注册表 */
+  props?: PropRegistry;
   /** M3 Utility：触发候选排序所需的粗粒度状态（工作信号/最近道具） */
   decisionContext?: () => TriggerDecisionExtras;
 }
@@ -149,6 +154,7 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
       showSubtitle: (key, ms) => optionsRef.current.showSubtitle(key, ms),
       speakText: (text, tts) => optionsRef.current.speakText?.(text, tts),
       getPointer: () => optionsRef.current.getPointer?.() ?? null,
+      getProps: () => optionsRef.current.props,
     });
   }, []);
 
@@ -156,12 +162,13 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
     const result = validateScenes([
       ...BUILT_IN_SCENES,
       ...(options.extraScenes ?? []),
-    ], { content });
+      ...(options.packScenes ?? []),
+    ], { content, props: options.props });
     if (process.env.NODE_ENV !== 'production' && result.dropped.length > 0) {
       console.warn('[ScriptDirector] 已丢弃非法 cue:', result.dropped);
     }
     return result.scenes;
-  }, [options.extraScenes, content]);
+  }, [options.extraScenes, options.packScenes, options.props, content]);
   /** 触发键索引跟随动态场景重建（生成场景也能被真实事件触发） */
   const registry = React.useMemo(() => createSceneRegistry(scenes), [scenes]);
 
