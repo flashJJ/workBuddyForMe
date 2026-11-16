@@ -12,7 +12,7 @@
 |---|---|
 | M0 | v4.3 方案、Spec、Tasks 与进度日志落盘；候选 08 转正并更新三处路线图索引 |
 | M1 | 新增 `check:assets`：GLB/贴图/morph 快照/安装包体积扫描；预算表与 13 条警告基线 |
-| M2 | 新增 `scene-pack`：声明式 Scene/Beat/Cue、`pack.` 命名空间、样例包、内容快照与桌宠触发索引 |
+| M2 | 新增 `scene-pack`：声明式 Scene/Beat/Cue、`pack.` 命名空间、样例包、内容快照与桌宠触发索引；样例含道具展示场景 |
 | M3 | 新增 `prop-pack`：包内 GLB 资源、路径与预算校验、资源路由、运行时道具注册表 |
 | M4 | AudioDirector 输出设备偏好；music/theater-bgm/sfx/voice 四个 sink 接入 `setSinkId` 与默认回退 |
 | M5 | 统一 `ToolDescriptor`；内置/MCP/流程工具共用适配层；provider 协议能力只读徽章 |
@@ -23,6 +23,7 @@
 - 设置页「语音」分组新增「音频输出」：可选择系统默认或具体扬声器/耳机；设备拔出或切换失败时自动回退默认。
 - 安装 `scene-pack` 后，包内场景进入桌宠剧本触发索引；调试面板可手动播放，停用后下一次挂载消失。
 - 安装 `prop-pack` 后，包内 GLB 道具可被场景 `prop` cue 引用，挂到角色手部或舞台；停用后下一次 cue 不再可见。
+- 样例场景包新增 `pack.sample.cube-showcase`：同时安装两个样例包后，抬手触发可看到示例立方体出现并在 3 秒后收起。
 - 供应商卡片新增协议能力徽章：流式、工具调用、视觉、向量；只读展示，不参与模型路由。
 - 工具调试台列表字段统一为 `inputSchema` / `permissions`，并纳入已发布流程工具。
 
@@ -55,13 +56,13 @@
 
 | 项目 | 值 |
 |---|---|
-| 安装包 | `WorkBuddyForMe-Setup-4.3.0.exe` 264.76 MB（277,622,869 字节） |
-| 安装包 SHA256 | `3f075e3f70a39c4b84e0406532b7f8fb7b1424d44941a419faa8519caab576db` |
-| blockmap SHA256 | `5d36c0e1ed5d2d474fcb44986daa329df1ec942cbedb6d09432aedf1bf1102f4` |
-| latest.yml SHA256 | `703753e44117dce78a5fb34d62cc9bf2e57c84cae1026f86b37726b1f00432fe` |
+| 安装包 | `WorkBuddyForMe-Setup-4.3.0.exe` 264.88 MB（277,742,426 字节） |
+| 安装包 SHA256 | `7733e1110ddf13c5dfa7563f42558551e5f9421db5d8baec630b35fbf18a7bd3` |
+| blockmap SHA256 | `961ae70a0ed8b531c9e873423427ae7786bc7b0ea23471841bc70a61ee6a709e` |
+| latest.yml SHA256 | `06de07eb2a6cf058e21ad88ca02bc181d389726cbb8f7c7650ab6a5ab5b7e209` |
 | 归档目录 | `E:\builds\archive\v4.3.0` |
-| build-info | commit `2e7f2188`、branch `feat/v4.3-content-and-assets`、构建时间 `2026-11-16T14:31:16Z` |
-| 体积对比 | 较 v4.2.0（源码发布，无安装包）不可比；较 v4.1.0 264.61MB 增加 0.15MB（157,391 字节） |
+| build-info | commit `4852916c`、branch `feat/v4.3-content-and-assets`、构建时间 `2026-11-16T15:14:04Z` |
+| 体积对比 | 较 v4.2.0（源码发布，无安装包）不可比；较 v4.1.0 264.61MB 增加 0.26MB（276,948 字节） |
 
 ## 7. 更新公告
 
@@ -71,7 +72,7 @@
 
 | 物料 | 状态 | 要点 |
 |---|---|---|
-| 发布说明（本文） | 完成 | 安装包数据待回填 |
+| 发布说明（本文） | 完成 | 安装包数据已按最终构建回填 |
 | 版本总结 | 完成 | [version-summary.md](./version-summary.md) |
 | 技术博客 | 完成 | `blog/v4.3/` 10 篇 |
 | 资产预算表 | 完成 | [assets-budget.md](./assets-budget.md) |

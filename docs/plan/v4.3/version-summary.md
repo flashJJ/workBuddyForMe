@@ -57,7 +57,7 @@ AudioDirector 单点持有 `outputDevice`；`applySinkId` 首次失败后回退�
 - 全量测试：9 包 736 文件 4180 项通过；
 - `pnpm check`：typecheck、lint、行数、结构、循环依赖、ASCII、资产全部通过；
 - 资产：xuetuan 9.28MB / feibi 7.01MB / rankaluli 6.00MB；三席 118 morph / 49 骨骼；
-- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.76MB（277,622,869 字节），较 v4.1.0 增加 0.15MB；SHA256 `3f075e3f…ab576db`；
+- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.88MB（277,742,426 字节），较 v4.1.0 增加 0.26MB；SHA256 `7733e111…8a7bd3`；
 - 数据库：零迁移；备份 schema 不变。
 
 ## 5. 已知限制

@@ -105,6 +105,8 @@
 - 测试：9 包 736 个测试文件 4180 项通过；web 282/1433、core 270/1657、database 75/283、shared 46/402、desktop 33/218、ai 16/86、voice 9/85、config 4/14、motion 1/2。
 - 门禁：`pnpm check` 全绿；`check:assets` 三席 22.29MB / 25MB，13 条非阻断警告；零数据库迁移，`LATEST_SCHEMA_VERSION = 51`。
 - 发布物料：`release-notes.md`、`version-summary.md`、`blog/v4.3/` 10 篇与路线图索引已落盘。
-- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.76MB（277,622,869 字节），SHA256 `3f075e3f…ab576db`；归档于 `E:\builds\archive\v4.3.0`，`release-manifest --check` 校验通过 3 个产物。
+- 真机验证路径：样例场景包补充 `pack.sample.cube-showcase`（抬手触发，展示 3 秒示例立方体）；需与样例道具包同时安装。
+- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.88MB（277,742,426 字节），SHA256 `7733e111…8a7bd3`；归档于 `E:\builds\archive\v4.3.0`，`release-manifest --check` 校验通过 3 个产物。
+- 重建说明：首次构建后补充 `pack.sample.cube-showcase`，二次构建因 Electron 下载超时，改用本地 `node_modules/electron/dist`（45.0.0）打包后覆盖归档；build-info commit `4852916c`、构建时间 `2026-11-16T15:14:04Z`。
 - 待办：安装包真机验证；通过后合并 main、打 tag `v4.3.0` 并推送工蜂。
 
