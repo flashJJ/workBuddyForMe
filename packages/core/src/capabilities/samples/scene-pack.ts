@@ -19,6 +19,17 @@ function sampleScenePackPayload(): Uint8Array {
           { at: 2400, cue: { kind: 'expression', tag: 'neutral', holdMs: 800 } },
         ],
       },
+      {
+        id: 'pack.sample.cube-showcase',
+        triggers: [],
+        priority: 1,
+        cooldownMs: 10_000,
+        interrupt: 'all',
+        beats: [
+          { at: 0, cue: { kind: 'prop', prop: 'pack.sample.cube', action: 'show' } },
+          { at: 3000, cue: { kind: 'prop', prop: 'pack.sample.cube', action: 'hide' } },
+        ],
+      },
     ],
   };
   return strToU8(JSON.stringify(payload, null, 2));
