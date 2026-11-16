@@ -64,7 +64,6 @@ export class PetManager {
   }
 
   isOpen(): boolean { return Boolean(this.win && !this.win.isDestroyed()); }
-
   /** 当前展示模型（归一后）；舞台退出恢复桌宠时用于还原原模型 */
   get modelId(): string { return this.currentModelId; }
 
