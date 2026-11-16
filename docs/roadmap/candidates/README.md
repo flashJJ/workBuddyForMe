@@ -16,7 +16,7 @@
 
 | 编号 | 候选 | 状态 | 说明 |
 |---|---|---|---|
-| [12](./12-background-wallpaper-video.md) | 背景与壁纸：内置背景、图片壁纸、循环视频与 `wallpaper-pack` | 未排期 | 舞台/聊天主界面/主窗口整屏共用一套配置（聊天与整屏互斥切换），桌宠窗独立；7 项决策已定 |
+| — | 暂无未排期候选 | — | 候选 12 已排期 v4.4 |
 
 ## 已排期版本
 
@@ -26,7 +26,7 @@
 
 10（统一音频导演 B）已排期 v4.2，移至 [v4.2-10](../scheduled/v4.2-10-audio-director.md)，正式方案见 [v4.2 方案](../../plan/v4.2/README.md)。
 
-08（资产体积预算 A+B）已排期 v4.3，移至 [v4.3-08](../scheduled/v4.3-08-asset-size-budget.md)，正式方案见 [v4.3 方案](../../plan/v4.3/README.md)。未排期候选见候选 12。
+08（资产体积预算 A+B）已排期 v4.3，移至 [v4.3-08](../scheduled/v4.3-08-asset-size-budget.md)，正式方案见 [v4.3 方案](../../plan/v4.3/README.md)。12（背景与壁纸）已排期 v4.4，移至 [v4.4-12](../scheduled/v4.4-12-background-wallpaper-video.md)，正式方案见 [v4.4 方案](../../plan/v4.4/README.md)。当前无未排期候选。
 
 v4.0 平台化一期范围：S5 依赖拓扑、06 B 内部 motion 包、`motion-pack`、S6 内容刷新与发布校验。
 
