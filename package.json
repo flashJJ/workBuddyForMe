@@ -37,6 +37,7 @@
     "check:perf": "node scripts/perf/perf-budget.mjs",
     "perf:baseline": "node scripts/perf/perf-budget.mjs --write-baseline",
     "check:ascii": "node scripts/check-ascii-width.mjs",
+    "check:assets": "node scripts/assets/check-assets.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "sync-version:check": "node scripts/sync-version.mjs --check",
     "eval:memory": "node scripts/eval/eval-memory.mjs",
@@ -44,7 +45,7 @@
     "eval:companion": "pnpm --filter @wbfm/shared build && node scripts/eval/companion-report.mjs",
     "eval:agent": "node scripts/eval/eval-agent.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
-    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:ascii"
+    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:ascii && pnpm check:assets"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

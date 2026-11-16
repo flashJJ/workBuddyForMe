@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "models": {
+    "feibi.vrm": {
+      "morphCount": 118,
+      "signature": "405347bdb1c469ca2c7333fd77e9f145e7e8927a6870eb5cb1a6b6ad40966dce",
+      "boneCount": 49
+    },
+    "rankaluli.vrm": {
+      "morphCount": 118,
+      "signature": "405347bdb1c469ca2c7333fd77e9f145e7e8927a6870eb5cb1a6b6ad40966dce",
+      "boneCount": 49
+    },
+    "xuetuan.vrm": {
+      "morphCount": 118,
+      "signature": "405347bdb1c469ca2c7333fd77e9f145e7e8927a6870eb5cb1a6b6ad40966dce",
+      "boneCount": 49
+    }
+  }
+}

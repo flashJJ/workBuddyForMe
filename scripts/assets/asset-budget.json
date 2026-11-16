@@ -1,0 +1,18 @@
+{
+  "models": {
+    "maxFileMb": 25,
+    "maxTotalMb": 25
+  },
+  "textures": {
+    "colorMaxSize": 4096,
+    "colorTargetSize": 2048,
+    "dataMaxSize": 4096,
+    "dataTargetSize": 1024,
+    "colorFormats": ["image/webp", "image/png", "image/jpeg"],
+    "dataFormats": ["image/webp", "image/png", "image/jpeg"],
+    "preferredFormat": "image/webp"
+  },
+  "installer": {
+    "maxMb": 300
+  }
+}

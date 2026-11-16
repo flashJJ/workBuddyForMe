@@ -13,12 +13,12 @@
 
 ## M1 资产预算
 
-- [ ] T1.1 预算表 `docs/plan/v4.3/assets-budget.md`：模型、贴图、morph、安装包
-- [ ] T1.2 `scripts/assets/check-assets.mjs`：扫描模型/贴图/morph 快照并输出超限清单
-- [ ] T1.3 morph 语义快照与三席回归检查
-- [ ] T1.4 安装包体积对比报告（读取归档产物；无包时跳过）
-- [ ] T1.5 `package.json` 增加 `check:assets`，接入 `pnpm check`
-- [ ] T1.6 提交 `feat(v4.3): 资产体积预算与检查脚本`
+- [x] T1.1 预算表 `docs/plan/v4.3/assets-budget.md`：模型、贴图、morph、安装包
+- [x] T1.2 `scripts/assets/check-assets.mjs`：扫描模型/贴图/morph 快照并输出超限清单
+- [x] T1.3 morph 语义快照与三席回归检查
+- [x] T1.4 安装包体积对比报告（读取归档产物；无包时跳过）
+- [x] T1.5 `package.json` 增加 `check:assets`，接入 `pnpm check`
+- [x] T1.6 提交 `feat(v4.3): 资产体积预算与检查脚本`
 
 ## M2 场景包
 
