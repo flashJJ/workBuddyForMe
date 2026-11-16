@@ -72,6 +72,7 @@ const PANEL_LIST = [
   p('motion-import', 'motion', 'motionImport', ['vrma', '动作', '导入', 'motion', 'animation', 'import']),
   p('motion-list', 'motion', 'motionList', ['动作库', 'motion', 'animation', '预览', '列表']),
   p('voice-preference', 'voice', 'voicePreference', ['voice', '语音', '声线', 'tts', '语速', '朗读']),
+  p('audio-output', 'voice', 'audioOutput', ['audio', '音频', '输出', '设备', 'device', 'speaker', '扬声器', 'sink']),
   p('music-library', 'music', 'musicLibrary', ['music', '音乐', '背景音乐', 'bgm', '主题曲', '导入歌曲', '氛围']),
   p('work-signal', 'voice', 'workSignal', ['work', '工作', '状态', '感知', '深夜', 'idle']),
   p('emotion', 'emotion', 'emotion', ['emotion', '情绪', '心情', '互动', '勿扰', 'quiet hours']),

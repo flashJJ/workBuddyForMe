@@ -5,7 +5,7 @@ import type { StageVoice } from '../voice/use-stage-voice';
 import type { TheaterEpisode, TheaterLine } from './theater-script';
 import { theaterGenreAt, theaterMoodAt } from './theater-script';
 import { TheaterBgm } from './theater-bgm';
-import { playTheaterSfx, unlockTheaterSfx } from './theater-sfx';
+import { playTheaterSfx, setTheaterSfxOutputDevice, unlockTheaterSfx } from './theater-sfx';
 import { audioDirector, useAudioDirector } from '../../audio';
 
 export interface TheaterAudioState {
@@ -47,11 +47,17 @@ export function useTheaterAudio(args: {
     bgmRef.current = bgm;
     const unregister = audioDirector.registerSink('theater-bgm', {
       setGain: (gain) => bgm.setGain(gain),
+      setOutputDevice: (deviceId) => bgm.setOutputDevice(deviceId),
+    });
+    const unregisterSfx = audioDirector.registerSink('sfx', {
+      setGain: () => undefined,
+      setOutputDevice: setTheaterSfxOutputDevice,
     });
     const unregisterUnlock = audioDirector.registerUnlock(unlockTheaterSfx);
     audioDirector.setBackground('theater-bgm');
     return () => {
       unregister();
+      unregisterSfx();
       unregisterUnlock();
       audioDirector.setBackground(null);
       bgm.dispose();

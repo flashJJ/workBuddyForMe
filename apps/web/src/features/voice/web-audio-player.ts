@@ -1,5 +1,6 @@
 import type { AudioPlayer } from './audio-playback-queue';
 import type { VoiceAudioFrame } from './audio-playback-queue';
+import { applySinkId, type SinkIdTarget } from '../audio';
 
 /**
  * 基于 AudioContext 的顺序播放器（浏览器侧）。
@@ -22,6 +23,8 @@ export class WebAudioPlayer implements AudioPlayer {
   private levelData: Uint8Array<ArrayBuffer> | null = null;
   private active: Set<AudioBufferSourceNode> = new Set();
   private readonly onLevel?: (level: number) => void;
+  /** v4.3 M4：输出设备偏好；AudioContext 惰性创建后补应用 */
+  private outputDevice: string | null = null;
 
   constructor(options: WebAudioPlayerOptions = {}) {
     this.onLevel = options.onLevel;
@@ -34,6 +37,9 @@ export class WebAudioPlayer implements AudioPlayer {
         (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!Ctor) throw new Error('当前浏览器不支持 Web Audio');
       this.ctx = new Ctor();
+      if (this.outputDevice) {
+        void applySinkId(this.ctx as unknown as SinkIdTarget, this.outputDevice);
+      }
       // Analyser 直通 destination：只做旁路分析，不改变音量/音色
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 512;
@@ -89,6 +95,13 @@ export class WebAudioPlayer implements AudioPlayer {
       };
       source.start();
     });
+  }
+
+  /** v4.3 M4：切换 AudioContext 输出设备；不支持时静默忽略 */
+  setOutputDevice(deviceId: string | null): void {
+    this.outputDevice = deviceId;
+    if (!this.ctx) return;
+    void applySinkId(this.ctx as unknown as SinkIdTarget, deviceId);
   }
 
   /** 当前播放电平 RMS（0~1）；无活动声源时为 0 */

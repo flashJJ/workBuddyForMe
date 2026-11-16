@@ -20,6 +20,7 @@ const sfxState = vi.hoisted(() => ({ play: vi.fn(async () => undefined) }));
 vi.mock('../theater-sfx', () => ({
   playTheaterSfx: sfxState.play,
   unlockTheaterSfx: vi.fn(),
+  setTheaterSfxOutputDevice: vi.fn(),
 }));
 
 vi.mock('../theater-bgm', () => ({
@@ -27,6 +28,7 @@ vi.mock('../theater-bgm', () => ({
     start = vi.fn(async () => bgmState.startResult);
     stop = vi.fn();
     setGain = vi.fn();
+    setOutputDevice = vi.fn();
     setMood = vi.fn();
     dispose = vi.fn();
     constructor() {

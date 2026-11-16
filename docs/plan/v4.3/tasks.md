@@ -42,11 +42,13 @@
 
 ## M4 音频设备
 
-- [ ] T4.1 AudioDirector 增加输出设备偏好与 `setOutputDevice`
-- [ ] T4.2 支持 `setSinkId` 的 sink 适配与默认回退
-- [ ] T4.3 设置页设备选择与 `wbfm.audio.output` 持久化
-- [ ] T4.4 测试：支持、不支持、设备消失三种路径
-- [ ] T4.5 提交 `feat(v4.3): 音频输出设备选择`
+> 详细规格：[spec-m4-audio-output.md](./spec-m4-audio-output.md)。偏好由 AudioDirector 单点持有。
+
+- [x] T4.1 AudioDirector 增加输出设备偏好、`setOutputDevice` 与快照字段
+- [x] T4.2 `applySinkId` 回退工具；music / theater-bgm / sfx / voice 四个 sink 接入
+- [x] T4.3 设置页「音频输出」面板与 `wbfm.audio.output` 持久化、跨窗口 storage 同步
+- [x] T4.4 测试：支持、设备消失回退、不支持三条路径
+- [x] T4.5 提交 `feat(v4.3): 音频输出设备选择`
 
 ## M5 平台元数据
 

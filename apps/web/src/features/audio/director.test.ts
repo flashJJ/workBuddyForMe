@@ -113,4 +113,25 @@ describe('v4.2 AudioDirector', () => {
     director.setMuted(false);
     expect(music.state.gain).toBe(0);
   });
+
+  it('输出设备：注册即应用、切换广播、空白归一化为默认', () => {
+    const director = new AudioDirector();
+    const devices: Array<string | null> = [];
+    const music = {
+      setGain() {},
+      setOutputDevice(deviceId: string | null) {
+        devices.push(deviceId);
+      },
+    };
+    director.setOutputDevice('speaker-1');
+    expect(director.getOutputDevice()).toBe('speaker-1');
+    expect(director.getSnapshot().outputDevice).toBe('speaker-1');
+
+    director.registerSink('music', music);
+    expect(devices).toEqual(['speaker-1']);
+
+    director.setOutputDevice('  ');
+    expect(devices).toEqual(['speaker-1', null]);
+    expect(director.getSnapshot().outputDevice).toBeNull();
+  });
 });

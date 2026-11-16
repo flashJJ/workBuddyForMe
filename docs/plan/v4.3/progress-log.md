@@ -11,7 +11,7 @@
 | M1 资产预算 | ✅ 完成（`check:assets`、3 模型 22.29MB、morph 快照、安装包 264.61MB） | 2026-11-16 |
 | M2 场景包 | ✅ 完成（scene-pack kind、样例包、内容快照、桌宠 extraScenes；19 项测试通过） | 2026-11-16 |
 | M3 道具包 | ✅ 完成（prop-pack、样例 GLB、内容快照、资源路由；20 项 core 测试通过） | 2026-11-16 |
-| M4 音频设备 | ⏳ 待开始 | — |
+| M4 音频设备 | ✅ 完成（输出设备偏好、四 sink 接入、设置面板；160 项相关测试通过） | 2026-11-16 |
 | M5 平台元数据 | ⏳ 待开始 | — |
 | M6 收尾 | ⏳ 待开始 | — |
 
@@ -34,6 +34,10 @@
 | D13 | 2026-11-16 | 道具 id 强制 `pack.` 前缀，许可必填 | 与内置 8 个道具隔离；缺少许可直接拒绝 | 无 |
 | D14 | 2026-11-16 | 单文件 5MB、合计 20MB、entry 64KB | 道具远小于模型，防止包内塞大资产 | 按真实使用再调 |
 | D15 | 2026-11-16 | 运行时注册表用 getter，不重建渲染 session | 内容到达晚于 controller 创建；已挂载道具不热替换 | 无 |
+| D16 | 2026-11-16 | 输出设备偏好由 AudioDirector 单点持有，`null` = 默认 | 与 mute/duck 同源，sink 只执行不决策 | 无 |
+| D17 | 2026-11-16 | `applySinkId` 首次失败后回退 `''` | 覆盖设备拔出/权限变化，保证仍有声音 | 无 |
+| D18 | 2026-11-16 | 设置面板才枚举设备，并监听 `devicechange` | 枚举需要权限/手势，不在桌宠启动路径调用 | 无 |
+| D19 | 2026-11-16 | 语音 sink 的 `setGain` 保持 no-op | 既有行为是 BGM 静音不影响语音，只加设备路由 | 无 |
 
 ## 工作日志
 
@@ -72,4 +76,14 @@
 - web：新增 `GET /api/prop-content` 与 `GET /api/prop-assets?pack=&file=`；`usePropContent` 合并内置 + 包内道具；`VrmPropLayer` / `VrmCueAdapter` / 剧本校验共用动态注册表，内容到达无需重建 session。
 - 验证：core 能力 70 项、web 渲染/适配/导演 32 项全部通过；`pnpm check` 全绿。
 - 说明：已挂载道具不热替换；停用后下一次挂载或下一次 cue 生效。
+
+### 2026-11-16 M4 音频输出设备
+
+- 规格：新增 `spec-m4-audio-output.md`；设备偏好单点放在 AudioDirector，`null` 表示系统默认。
+- audio：新增 `output-device.ts`（`applySinkId` 首次失败回退默认、偏好读写与归一化）；导演快照增加 `outputDevice`，注册 sink 即应用，切换广播，并监听 `storage` 跨窗口同步。
+- sinks：music 用 HTMLAudioElement、theater-bgm 保存偏好并在元素创建后应用、theater-sfx 在 AudioContext 创建时读取导演偏好、voice 的 WebAudioPlayer 增加设备切换；四者均不支持时静默。
+- 设置：新增 `useAudioOutputDevices`（枚举 `audiooutput` + `devicechange` 刷新）与「音频输出」面板，注册到语音分组；新增 `audio` i18n 命名空间。
+- 测试：`applySinkId` 支持/回退/不支持、导演注册与广播、设备枚举有/无 `mediaDevices`；audio + theater + voice + music + settings 共 160 项通过。
+- 验证：`pnpm check` 全绿。
+- 说明：设备切换不重建播放器；切换失败时 sink 自动回退默认，不抛出到 UI。
 

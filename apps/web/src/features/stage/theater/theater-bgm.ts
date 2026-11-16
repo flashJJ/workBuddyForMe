@@ -1,6 +1,7 @@
 'use client';
 
 import type { TheaterMusicMood } from './episodes/types';
+import { applySinkId, type SinkIdTarget } from '../../audio';
 
 /**
  * 剧场背景乐：复用内置的 CC0 曲目（来源与作者见 ASSETS-LICENSE.md）。
@@ -29,6 +30,8 @@ export class TheaterBgm {
   private running = false;
   /** v4.2：AudioDirector 给的有效系数（mute / duck 已算好） */
   private gain = 1;
+  /** v4.3 M4：输出设备偏好（null = 默认） */
+  private outputDevice: string | null = null;
 
   /** 启动/恢复背景乐；返回 false 表示被浏览器自动播放策略拦截 */
   async start(): Promise<boolean> {
@@ -66,6 +69,16 @@ export class TheaterBgm {
     if (this.gain === next) return;
     this.gain = next;
     if (this.running) this.fadeTo(this.targetVolume(), undefined, DUCK_FADE_MS);
+  }
+
+  /** v4.3 M4：元素未创建时先记录，ensure 后补应用 */
+  setOutputDevice(deviceId: string | null): void {
+    this.outputDevice = deviceId;
+    this.applyOutputDevice();
+  }
+
+  private applyOutputDevice(): void {
+    void applySinkId(this.el as unknown as SinkIdTarget | null, this.outputDevice);
   }
 
   /** 切换配乐情绪：运行中淡出旧曲、换源后再淡入；未运行时只记录，下次 start 生效 */
@@ -107,6 +120,7 @@ export class TheaterBgm {
     el.preload = 'auto';
     el.volume = 0;
     this.el = el;
+    if (this.outputDevice) this.applyOutputDevice();
     return el;
   }
 

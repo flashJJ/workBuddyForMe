@@ -1,8 +1,14 @@
 import {
   AUDIO_DUCK_RATIO,
   AUDIO_MUTED_STORAGE_KEY,
+  AUDIO_OUTPUT_STORAGE_KEY,
   AUDIO_SFX_MAX_CONCURRENT,
 } from './constants';
+import {
+  normalizeOutputDevice,
+  readOutputDevicePreference,
+  writeOutputDevicePreference,
+} from './output-device';
 import type {
   AudioBackgroundKind,
   AudioDirectorListener,
@@ -24,6 +30,7 @@ export class AudioDirector {
   private voiceSources = new Set<string>();
   private listeners = new Set<AudioDirectorListener>();
   private mutedValue = false;
+  private outputDeviceValue: string | null = null;
   private backgroundValue: AudioBackgroundKind | null = null;
   private unlockedValue = false;
   private sfxActive = 0;
@@ -31,7 +38,11 @@ export class AudioDirector {
 
   constructor() {
     this.mutedValue = readMutedPreference();
+    this.outputDeviceValue = readOutputDevicePreference();
     this.snapshot = this.buildSnapshot();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', this.handleStorage);
+    }
   }
 
   getSnapshot = (): AudioDirectorSnapshot => this.snapshot;
@@ -61,12 +72,27 @@ export class AudioDirector {
     this.setMuted(!this.mutedValue);
   }
 
+  /** v4.3 M4：输出设备偏好；null = 系统默认 */
+  getOutputDevice(): string | null {
+    return this.outputDeviceValue;
+  }
+
+  setOutputDevice(deviceId: string | null): void {
+    const next = normalizeOutputDevice(deviceId);
+    if (this.outputDeviceValue === next) return;
+    this.outputDeviceValue = next;
+    writeOutputDevicePreference(next);
+    this.applyOutputDevice();
+    this.emit();
+  }
+
   registerSink(kind: AudioTrackKind, sink: AudioSink): () => void {
     const set = this.sinks.get(kind) ?? new Set<AudioSink>();
     set.add(sink);
     this.sinks.set(kind, set);
     sink.setGain(this.gainFor(kind));
     sink.setSuspended?.(this.isSuspended(kind));
+    sink.setOutputDevice?.(this.outputDeviceValue);
     return () => {
       const current = this.sinks.get(kind);
       current?.delete(sink);
@@ -154,12 +180,29 @@ export class AudioDirector {
     }
   }
 
+  private applyOutputDevice(): void {
+    for (const sinks of this.sinks.values()) {
+      for (const sink of sinks) sink.setOutputDevice?.(this.outputDeviceValue);
+    }
+  }
+
+  /** 跨窗口同步：设置页改设备后，桌宠/舞台窗即时跟随 */
+  private handleStorage = (event: StorageEvent): void => {
+    if (event.key !== AUDIO_OUTPUT_STORAGE_KEY) return;
+    const next = normalizeOutputDevice(event.newValue);
+    if (this.outputDeviceValue === next) return;
+    this.outputDeviceValue = next;
+    this.applyOutputDevice();
+    this.emit();
+  };
+
   private buildSnapshot(): AudioDirectorSnapshot {
     return {
       muted: this.mutedValue,
       voiceActive: this.voiceSources.size > 0,
       background: this.backgroundValue,
       unlocked: this.unlockedValue,
+      outputDevice: this.outputDeviceValue,
     };
   }
 

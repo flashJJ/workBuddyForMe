@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { audioDirector } from '../audio';
+import { applySinkId, audioDirector, type SinkIdTarget } from '../audio';
 import { clampMusicVolume } from './music-tracks';
 
 /**
@@ -32,6 +32,9 @@ export function useMusicAudioSink(
           return;
         }
         if (playingRef.current) void el.play().catch(() => undefined);
+      },
+      setOutputDevice(deviceId) {
+        void applySinkId(audioRef.current as unknown as SinkIdTarget | null, deviceId);
       },
     });
     const unregisterUnlock = audioDirector.registerUnlock(() => {
