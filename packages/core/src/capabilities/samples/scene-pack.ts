@@ -21,7 +21,7 @@ function sampleScenePackPayload(): Uint8Array {
       },
       {
         id: 'pack.sample.cube-showcase',
-        triggers: [],
+        triggers: ['touch::raised::tap'],
         priority: 1,
         cooldownMs: 10_000,
         interrupt: 'all',
