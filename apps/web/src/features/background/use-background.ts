@@ -18,7 +18,7 @@ export interface BackgroundView {
 /** v4.4 M4：按作用域读取设置、用户文件与壁纸包，解析成可渲染背景 */
 export function useBackground(scope: BackgroundScope): BackgroundView {
   const { data: settings } = useSettings();
-  const files = useBackgroundFiles();
+  const { files } = useBackgroundFiles();
   const { wallpapers } = useWallpaperContent();
   const update = settings?.background?.[scope];
 

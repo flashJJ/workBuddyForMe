@@ -67,6 +67,7 @@ const PANEL_LIST = [
   p('providers', 'base', 'providers', ['provider', '供应商', '模型', 'api', 'key', '接口']),
   p('defaults', 'base', 'defaults', ['default', '默认', '主题', 'theme', '数据目录', 'data dir']),
   p('appearance', 'appearance', 'appearance', ['theme', '主题', '外观', '深色', '浅色', 'dark', 'light', '配色']),
+  p('background', 'appearance', 'background', ['background', '背景', '壁纸', 'wallpaper', 'video', '视频', '舞台', '桌宠', 'pet']),
   p('avatar-import', 'avatar', 'avatarImport', ['vrm', '模型', '导入', 'import', '形象', 'avatar']),
   p('avatar-list', 'avatar', 'avatarList', ['vrm', '形象', '角色模型', 'avatar', '切换', '模型列表']),
   p('motion-import', 'motion', 'motionImport', ['vrma', '动作', '导入', 'motion', 'animation', 'import']),

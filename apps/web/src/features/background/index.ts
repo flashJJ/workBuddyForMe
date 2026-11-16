@@ -4,5 +4,7 @@ export { MainBackground } from './main-background';
 export { PetBackground } from './pet-background';
 export { StageBackground } from './stage-background';
 export { useBackground } from './use-background';
+export { useBackgroundFiles } from './use-background-files';
+export { useWallpaperContent } from './use-wallpaper-content';
 export { resolveBackground, mergeBackgroundConfig } from './resolve';
 export type { ResolvedBackground } from './resolve';

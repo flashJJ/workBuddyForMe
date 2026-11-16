@@ -25,20 +25,28 @@ export function BackgroundLayer({ view, className, testId }: BackgroundLayerProp
     if (kind !== 'video') return;
     const video = videoRef.current;
     if (!video) return;
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const media =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : null;
     const apply = () => {
-      if (media.matches || document.visibilityState !== 'visible') {
+      if ((media?.matches ?? false) || document.visibilityState !== 'visible') {
         video.pause();
         return;
       }
-      void video.play().catch(() => undefined);
+      try {
+        const played = video.play();
+        if (played && typeof played.catch === 'function') played.catch(() => undefined);
+      } catch {
+        // jsdom 等不支持媒体播放的环境：静默忽略
+      }
     };
     apply();
     document.addEventListener('visibilitychange', apply);
-    media.addEventListener('change', apply);
+    media?.addEventListener('change', apply);
     return () => {
       document.removeEventListener('visibilitychange', apply);
-      media.removeEventListener('change', apply);
+      media?.removeEventListener('change', apply);
     };
   }, [kind, videoUrl]);
 

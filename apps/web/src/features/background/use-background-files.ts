@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { WbfmBackgroundFile } from '@wbfm/shared/background';
 
 /** v4.4 M4：读取桌面端已复制的背景；纯 Web 环境返回空列表 */
-export function useBackgroundFiles(): readonly WbfmBackgroundFile[] {
+export function useBackgroundFiles(): {
+  files: readonly WbfmBackgroundFile[];
+  reload: () => void;
+} {
   const [files, setFiles] = useState<WbfmBackgroundFile[]>([]);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     const bridge = typeof window === 'undefined' ? undefined : window.wbfm?.background;
@@ -20,7 +24,8 @@ export function useBackgroundFiles(): readonly WbfmBackgroundFile[] {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tick]);
 
-  return files;
+  const reload = useCallback(() => setTick((value) => value + 1), []);
+  return { files, reload };
 }
