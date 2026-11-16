@@ -5,6 +5,11 @@ import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 import type { WbfmAwarenessBridge } from '@wbfm/shared/awareness';
 import type { WbfmDialogBridge } from '@wbfm/shared/dialog';
+import type {
+  WbfmBackgroundBridge,
+  WbfmBackgroundFile,
+  WbfmBackgroundPickResult,
+} from '@wbfm/shared/background';
 import type { WbfmSearchBridge } from '@wbfm/shared/search';
 
 /**
@@ -146,6 +151,16 @@ const search: WbfmSearchBridge = {
   deploySearxng: (port?: number) => ipcRenderer.invoke('search:deploy-searxng', port),
 };
 
+/**
+ * v4.4 M2 背景文件桥：选择/列表/删除，仅主窗可用；
+ * 真实路径不出主进程，渲染层只拿 id 与元数据。
+ */
+const background: WbfmBackgroundBridge = {
+  pick: () => ipcRenderer.invoke('background:pick') as Promise<WbfmBackgroundPickResult>,
+  list: () => ipcRenderer.invoke('background:list') as Promise<WbfmBackgroundFile[]>,
+  remove: (id) => ipcRenderer.invoke('background:remove', id) as Promise<boolean>,
+};
+
 contextBridge.exposeInMainWorld('wbfm', {
   token,
   baseUrl,
@@ -159,5 +174,6 @@ contextBridge.exposeInMainWorld('wbfm', {
   awareness,
   appLinks,
   dialog,
+  background,
   search,
 });

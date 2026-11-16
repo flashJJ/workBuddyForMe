@@ -4,6 +4,7 @@ import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
 import type { WbfmAwarenessBridge } from '@wbfm/shared/awareness';
 import type { WbfmDialogBridge } from '@wbfm/shared/dialog';
+import type { WbfmBackgroundBridge } from '@wbfm/shared/background';
 import type { WbfmSearchBridge } from '@wbfm/shared/search';
 
 /**
@@ -37,6 +38,8 @@ declare global {
       appLinks?: { onOpen: (cb: (path: string) => void) => () => void };
       /** v2.11 桌面目录选择桥（外部代理 cwd） */
       dialog?: WbfmDialogBridge;
+      /** v4.4 M2 背景图片/视频桥（选择/列表/删除；仅桌面端） */
+      background?: WbfmBackgroundBridge;
       /** 联网搜索桥：一键部署本机 SearXNG（仅桌面端存在） */
       search?: WbfmSearchBridge;
     };

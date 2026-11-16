@@ -20,6 +20,8 @@ export * from './notify';
 export * from './work-signal';
 // v2.11 桌面目录选择桥（外部代理 cwd）
 export * from './dialog';
+// v4.4 M2 桌面背景文件桥（选择/列表/删除）
+export * from './bridges/background';
 // v2.0 M3 系统事件感知桥（powerMonitor ↔ renderer）
 export * from './awareness';
 export * from './command';

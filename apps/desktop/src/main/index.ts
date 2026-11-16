@@ -24,7 +24,7 @@ import {
 if (process.env.WBFM_DEV) {
   app.commandLine.appendSwitch('remote-debugging-port', process.env.WBFM_DEBUG_PORT ?? '42338');
 }
-import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir } from './config';
+import { DEV_SERVER_URL, resolveServerPath, resolveUserDataDir, resolveDataRoot } from './config';
 import { installAppMenu } from './menu';
 import { startCipherServer, type CipherEndpoint } from './cipher-server';
 import { startComputerControl, type ComputerControl } from './computer/control-bootstrap';
@@ -39,6 +39,7 @@ import { installUpdater } from './updater-bootstrap';
 import { registerGlobalShortcuts } from './global-shortcuts';
 import { registerNotifyIpc } from './notify-ipc';
 import { registerDialogIpc } from './dialog-ipc';
+import { registerBackgroundIpc } from './background/background-ipc';
 import { registerSearchIpc } from './search/search-ipc';
 import { registerAwarenessIpc } from './awareness/awareness-ipc';
 
@@ -111,6 +112,11 @@ async function start(): Promise<void> {
   registerNotifyIpc(ipcMain);
   // v2.11：外部代理工作目录选择（单通道）
   registerDialogIpc(ipcMain);
+  // v4.4 M2：背景图片/视频选择与受控副本（与托管服务共用 dataRoot）
+  registerBackgroundIpc(ipcMain, {
+    dir: join(resolveDataRoot(app.getPath('userData')), 'backgrounds'),
+    fromMain: (sender) => sender === mainWindow?.webContents,
+  });
   // 联网搜索：一键用本机 Docker 拉起 SearXNG（配置目录落 userData/searxng）
   registerSearchIpc(ipcMain, { dataDir: join(app.getPath('userData'), 'searxng') });
   // v2.0 M3：系统事件感知（默认关闭，渲染端按授权设置显式武装；广播给所有窗口）

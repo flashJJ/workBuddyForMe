@@ -9,7 +9,7 @@
 |---|---|---|
 | M0 方案与转正 | 🚧 进行中 | 2026-11-17 |
 | M1 背景模型与内置素材 | 🚧 进行中 | 2026-11-17 |
-| M2 本地图片/视频 | 待开始 | — |
+| M2 本地图片/视频 | ✅ 完成（渲染层回退在 M4） | 2026-11-17 |
 | M3 `wallpaper-pack` | 待开始 | — |
 | M4 渲染接线 | 待开始 | — |
 | M5 设置页 | 待开始 | — |
@@ -29,3 +29,12 @@
 - 测试：`background.test.ts` 6 项通过；shared typecheck 通过。
 - 内置：`public/backgrounds/rainy-room.mp4` 已落盘（6.42MB，来自雨夜客厅循环）；`wallpaper.dusk` / `wallpaper.morning` 先用程序化渐变，避免角色图与 VRM 叠加。
 - 待补：`check:assets` 媒体预算表与视频体积校验。
+
+### 2026-11-17 M2 本地图片/视频
+
+- shared：新增 `bridges/background.ts`（`WbfmBackgroundBridge`、id 规则与内容类型映射），补齐 `./background` 子路径导出。
+- desktop：新增 `main/background/`，选择后复制到 `<dataRoot>/backgrounds`；扩展名白名单、图片 20MB / 视频 50MB 上限、magic 嗅探、uuid 命名、列表与删除；仅主窗可调用。
+- preload：暴露 `window.wbfm.background`；web 类型声明同步。
+- web：新增 `GET /api/backgrounds/[id]`，按 uuid + 白名单扩展名校验后读取 `<dataRoot>/backgrounds`，缺失 404。
+- 测试：desktop 背景 9 项、web 路由 3 项通过；desktop 全量 227 项、shared/desktop typecheck、行数与结构门禁通过。
+- 说明：渲染层的缺失回退与视频暂停策略在 M4 接入。

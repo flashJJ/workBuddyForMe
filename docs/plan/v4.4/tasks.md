@@ -17,10 +17,10 @@
 
 ## M2 本地图片/视频
 
-- [ ] T2.1 桌面 IPC：`background:pick/list/remove`，复制到 `userData/backgrounds`
-- [ ] T2.2 扩展名白名单、大小上限、内容嗅探与 uuid 命名
-- [ ] T2.3 受控读取路由/协议与路径校验；缺失回退内置
-- [ ] T2.4 desktop 测试：超限、非法类型、路径穿越、删除与列表
+- [x] T2.1 桌面 IPC：`background:pick/list/remove`，复制到 `userData/backgrounds`
+- [x] T2.2 扩展名白名单、大小上限、内容嗅探与 uuid 命名
+- [x] T2.3 受控读取路由/协议与路径校验；缺失回退内置
+- [x] T2.4 desktop 测试：超限、非法类型、路径穿越、删除与列表
 
 ## M3 `wallpaper-pack`
 
