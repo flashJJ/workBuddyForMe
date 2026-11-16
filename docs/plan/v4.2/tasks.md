@@ -13,12 +13,12 @@
 
 ## M1 音频内核
 
-- [ ] T1.1 新增 `features/audio/types.ts`：音轨类型、优先级、sink、快照
-- [ ] T1.2 新增 `features/audio/constants.ts`：duck 0.35、音效上限 2、存储键
-- [ ] T1.3 新增 `features/audio/director.ts`：注册/注销、mute、语音来源 Set、背景互斥、解锁回调、订阅
-- [ ] T1.4 新增 `features/audio/use-audio-director.ts`：`useSyncExternalStore` 订阅
-- [ ] T1.5 新增 `features/audio/index.ts` 与 director 单测
-- [ ] T1.6 提交 `feat(v4.2): 音频导演内核`
+- [x] T1.1 新增 `features/audio/types.ts`：音轨类型、优先级、sink、快照
+- [x] T1.2 新增 `features/audio/constants.ts`：duck 0.35、音效上限 2、存储键
+- [x] T1.3 新增 `features/audio/director.ts`：注册/注销、mute、语音来源 Set、背景互斥、解锁回调、订阅
+- [x] T1.4 新增 `features/audio/use-audio-director.ts`：`useSyncExternalStore` 订阅
+- [x] T1.5 新增 `features/audio/index.ts` 与 director 单测
+- [x] T1.6 提交 `feat(v4.2): 音频导演内核`
 
 ## M2 全局音乐
 
