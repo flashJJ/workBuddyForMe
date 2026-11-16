@@ -24,6 +24,7 @@
 - 安装 `scene-pack` 后，包内场景进入桌宠剧本触发索引；调试面板可手动播放，停用后下一次挂载消失。
 - 安装 `prop-pack` 后，包内 GLB 道具可被场景 `prop` cue 引用，挂到角色手部或舞台；停用后下一次 cue 不再可见。
 - 样例场景包新增 `pack.sample.cube-showcase`：同时安装两个样例包后，抬手触发可看到示例立方体出现并在 3 秒后收起。
+- 能力包页支持多选 ZIP 一次导入：按顺序逐个安装，单个失败不影响其余文件，并列出失败文件名。
 - 供应商卡片新增协议能力徽章：流式、工具调用、视觉、向量；只读展示，不参与模型路由。
 - 工具调试台列表字段统一为 `inputSchema` / `permissions`，并纳入已发布流程工具。
 
@@ -56,13 +57,13 @@
 
 | 项目 | 值 |
 |---|---|
-| 安装包 | `WorkBuddyForMe-Setup-4.3.0.exe` 264.88 MB（277,742,581 字节） |
-| 安装包 SHA256 | `7129f2a886656218603f4664a039327b9168d04b9a9d093da25af7384a437fac` |
-| blockmap SHA256 | `8d108a55f87bda6a8e7a74d9bd82f49096c5fcaa131919fe13c8006a8f352301` |
-| latest.yml SHA256 | `1a8081f33fbc4183da01ba9cff8549c640a08d01ef841b0fc4c70633aba043af` |
+| 安装包 | `WorkBuddyForMe-Setup-4.3.0.exe` 264.84 MB（277,705,065 字节） |
+| 安装包 SHA256 | `5542f907489d7b19e7e7a253d9353c4410b471a92aff444d46e16c88f49e61f0` |
+| blockmap SHA256 | `7a49508263547e40b013875336a5748a0d481e875151bd8537743a804334f152` |
+| latest.yml SHA256 | `c1240d83373c159ba55c9c1b07927b3b269098793ad806f69cac6acd240b35a9` |
 | 归档目录 | `E:\builds\archive\v4.3.0` |
-| build-info | commit `ca9d63df`、branch `feat/v4.3-content-and-assets`、构建时间 `2026-11-16T16:18:42Z` |
-| 体积对比 | 较 v4.2.0（源码发布，无安装包）不可比；较 v4.1.0 264.61MB 增加 0.26MB（277,103 字节） |
+| build-info | commit `93d3799d`、branch `feat/v4.3-content-and-assets`、构建时间 `2026-11-16T16:52:13Z` |
+| 体积对比 | 较 v4.2.0（源码发布，无安装包）不可比；较 v4.1.0 264.61MB 增加 0.23MB（239,587 字节） |
 
 ## 7. 更新公告
 

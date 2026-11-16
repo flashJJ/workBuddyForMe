@@ -107,7 +107,14 @@
 - 补跑：样例场景两次提交（`114c4990`、`4852916c`）后重跑 `pnpm check` 全绿，`check:assets` 读到的安装包为 264.88MB / 300MB；core 能力测试 74 项通过。
 - 发布物料：`release-notes.md`、`version-summary.md`、`blog/v4.3/` 10 篇与路线图索引已落盘。
 - 真机验证路径：样例场景包补充 `pack.sample.cube-showcase`（抬手触发，展示 3 秒示例立方体）；需与样例道具包同时安装。
-- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.88MB（277,742,581 字节），SHA256 `7129f2a8…a437fac`；归档于 `E:\builds\archive\v4.3.0`，`release-manifest --check` 校验通过 3 个产物。
-- 重建说明：首次构建后补充 `pack.sample.cube-showcase`，二次构建因 Electron 下载超时，改用本地 `node_modules/electron/dist`（45.0.0）打包；真机排查发现舞台退出恢复桌宠丢失模型（回落 Live2D），修复后第三次构建并覆盖归档；build-info commit `ca9d63df`、构建时间 `2026-11-16T16:18:42Z`。
+- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.84MB（277,705,065 字节），SHA256 `5542f907…9e61f0`；归档于 `E:\builds\archive\v4.3.0`，`release-manifest --check` 校验通过 3 个产物。
+- 重建说明：首次构建后补充 `pack.sample.cube-showcase`，二次构建因 Electron 下载超时改用本地 `node_modules/electron/dist`（45.0.0）；真机反馈修复舞台退出模型丢失与能力包多选后，以 `93d3799d` 重新构建并覆盖归档，build-info 构建时间 `2026-11-16T16:52:13Z`。
 - 待办：安装包真机验证；通过后合并 main、打 tag `v4.3.0` 并推送工蜂。
+
+### 2026-11-17 真机反馈修复
+
+- 修复：舞台退出恢复桌宠时未带模型，导致 VRM 回落默认 Live2D；现在临时关闭前记住当前模型并在恢复时传回（`ca9d63df`）。
+- 改进：能力包页支持多选 ZIP 批量导入，按顺序逐个安装；失败文件单独汇总提示，不影响其余包（`93d3799d`）。
+- 验证：desktop 类型检查与 218 项测试通过；web 类型检查、shared 402 项测试、行数门禁与 eslint 通过。
+- 安装包：修复与多选均进入 4.3.0 最终构建，重新归档并回填校验和。
 
