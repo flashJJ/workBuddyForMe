@@ -7,5 +7,5 @@ export { useBackground } from './use-background';
 export { useBackgroundFiles } from './use-background-files';
 export { useWallpaperContent } from './use-wallpaper-content';
 export { resolveBackground, mergeBackgroundConfig } from './resolve';
-export { BUILTIN_GALLERY_ITEMS } from './builtin';
+export { BUILTIN_GALLERY_ITEMS, BUILTIN_PET_ITEMS } from './builtin';
 export type { ResolvedBackground } from './resolve';

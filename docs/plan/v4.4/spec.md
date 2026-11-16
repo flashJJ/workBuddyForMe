@@ -49,6 +49,8 @@ export interface BackgroundSettings {
 | `wallpaper.dusk` | 程序化渐变 | 无文件 | 0MB |
 | `wallpaper.morning` | 程序化渐变 | 无文件 | 0MB |
 | `wallpaper.gallery.01–28` | image | `public/backgrounds/gallery/gallery-NN.webp` | 28 张合计 5.06MB，1920px 宽、WebP q80 |
+| `wallpaper.pet.deepsea-loop` / `night-desk-loop` | video | `public/backgrounds/pet/*-loop.mp4` | 480×854、30fps、CRF22，合计 0.58MB |
+| `wallpaper.pet.deepsea` / `night-desk` / `rain-platform` | image | `public/backgrounds/pet/*.webp` | 810×1440 WebP q80，合计 121KB |
 | `none` | — | — | 透明/主题底色 |
 
 - 渐变壁纸与图集并存；图集由 `scripts/assets/build-gallery.mjs` 从用户原图压缩生成。

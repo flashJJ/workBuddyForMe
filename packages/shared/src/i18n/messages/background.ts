@@ -21,6 +21,7 @@ export const zhBackground = {
     files: '本地文件',
     packs: '壁纸包',
     gallery: '内置图集',
+    pet: '桌宠背景',
   },
   fit: {
     label: '铺放方式',
@@ -64,6 +65,7 @@ export const enBackground = {
     files: 'Local files',
     packs: 'Wallpaper packs',
     gallery: 'Built-in gallery',
+    pet: 'Pet backgrounds',
   },
   fit: {
     label: 'Fit',
