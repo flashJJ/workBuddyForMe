@@ -44,6 +44,7 @@ import {
   type ReportWidgetEffectDeps,
 } from './report-widget';
 import { disableMotionPack, enableMotionPack } from './motion-pack';
+import { disableScenePack, enableScenePack } from './scene-pack';
 
 /** v2.11：能力 effect 依赖；v4.0 七类 */
 export interface CapabilityEffectDeps {
@@ -124,6 +125,10 @@ const BUILTIN_EFFECT_HANDLERS: Record<CapabilityKind, CapabilityEffectHandler> =
   'motion-pack': {
     enable: (manifest, packDir) => enableMotionPack(manifest, packDir),
     disable: () => disableMotionPack(),
+  },
+  'scene-pack': {
+    enable: (manifest, packDir) => enableScenePack(manifest, packDir),
+    disable: () => disableScenePack(),
   },
 };
 

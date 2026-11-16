@@ -8,5 +8,6 @@ export * from './settings';
 export * from './task';
 export * from './permission';
 export * from './media';
+export * from './script';
 export * from './mod-pack';
 export * from './base';

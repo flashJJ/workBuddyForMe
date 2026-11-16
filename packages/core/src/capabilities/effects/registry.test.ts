@@ -9,7 +9,7 @@ import {
 } from './index';
 
 /** v3.1 M1：注册表允许内核之外的新 kind 走同一套 enable/disable/uninstall */
-const CUSTOM_KIND = 'scene-pack' as CapabilityKind;
+const CUSTOM_KIND = 'demo-pack' as CapabilityKind;
 const UNKNOWN_KIND = 'prop-pack' as CapabilityKind;
 const manifest = { id: 'com.test.scene', kind: CUSTOM_KIND } as unknown as CapabilityManifest;
 const deps = {} as CapabilityEffectDeps;

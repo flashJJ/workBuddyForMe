@@ -22,11 +22,13 @@
 
 ## M2 场景包
 
-- [ ] T2.1 `shared/schemas/capability` 增加 `scene-pack` kind 与 payload schema
-- [ ] T2.2 `core/capabilities/effects/scene-pack.ts`：安装/启用/停用/升级
-- [ ] T2.3 样例场景包与剧本 lint/golden
-- [ ] T2.4 舞台读取内容快照并展示新场景
-- [ ] T2.5 提交 `feat(v4.3): scene-pack 声明式场景包`
+> 详细规格：[spec.md](./spec.md)。目标模型为共享 `Scene`（宠物剧本），不接小剧场。
+
+- [x] T2.1 shared：`CAPABILITY_KINDS` 增加 `scene-pack`、权限 `scene:pack`、entry `payload/scene-pack.json`；新增 `schemas/script/scene-pack.ts`（`pack.` 前缀、1–50 场、包内去重）
+- [x] T2.2 core：`capabilities/effects/scene-pack.ts` 读取/校验 payload，注册 effect handler；`manifest.ts` 增加 512KB entry 上限
+- [x] T2.3 样例场景包：`buildSamplePack('scene-pack')` + effect/golden 测试（空包、前缀、重复、beats 乱序拒绝）
+- [x] T2.4 内容快照与舞台接线：`services/script/scene-content-service.ts`、`GET /api/scene-content`、`useSceneContent`、`pet-stage` 合并 `extraScenes`
+- [x] T2.5 提交 `feat(v4.3): scene-pack 声明式场景包`
 
 ## M3 道具包
 

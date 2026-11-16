@@ -9,7 +9,7 @@
 |---|---|---|
 | M0 方案与归档 | ✅ 完成（方案/tasks 落盘，候选 08 转正，三处索引已更新） | 2026-11-16 |
 | M1 资产预算 | ✅ 完成（`check:assets`、3 模型 22.29MB、morph 快照、安装包 264.61MB） | 2026-11-16 |
-| M2 场景包 | ⏳ 待开始 | — |
+| M2 场景包 | ✅ 完成（scene-pack kind、样例包、内容快照、桌宠 extraScenes；19 项测试通过） | 2026-11-16 |
 | M3 道具包 | ⏳ 待开始 | — |
 | M4 音频设备 | ⏳ 待开始 | — |
 | M5 平台元数据 | ⏳ 待开始 | — |
@@ -25,6 +25,11 @@
 | D4 | 2026-11-16 | 音频设备选择只做偏好与回退 | `setSinkId` 平台差异大，不能影响启动与播放 | 真机验证后决定是否默认展示 |
 | D5 | 2026-11-16 | 工具描述符/provider 元数据只读展示 | 统一字段不能改变调用与路由，否则回归面过大 | 若需要路由，另开版本 |
 | D6 | 2026-11-16 | P2 音频全图/自动响度/统一队列不承诺 | 需要重构播放器生命周期，不适合与内容包同版 | v4.4 评估 |
+| D7 | 2026-11-16 | 场景包复用共享 `Scene`，不接小剧场 | `Scene` 已有校验与 `extraScenes` 注入口；小剧场无动态包链路 | 若需要剧场包，另开 kind |
+| D8 | 2026-11-16 | 场景 id 强制 `pack.` 前缀 | 与内置 `touch/moment/ambient/state/pool/gen` 命名空间结构性隔离 | 无 |
+| D9 | 2026-11-16 | payload schema 独立到 `schemas/script/scene-pack.ts` | `capability.ts` 已接近 300 行门禁，脚本域更内聚 | 无 |
+| D10 | 2026-11-16 | 跨包同 id 在聚合层 fail-closed | 与 `mergeMotionContent` 一致，避免不确定覆盖 | 冲突时停用其一 |
+| D11 | 2026-11-16 | 场景包不进入 `gen.*` 主动播放轮换 | 主动播放依赖生成场景元数据，包场景只走触发与手动播放 | 需要时另加元数据 |
 
 ## 工作日志
 
@@ -34,3 +39,23 @@
 - 新增 `tasks.md` 与 `progress-log.md`。
 - 候选 08 转为 `docs/roadmap/scheduled/v4.3-08-asset-size-budget.md`。
 - 三处索引已更新；当前无未排期候选。
+
+### 2026-11-16 M1 资产预算
+
+- 新增 `scripts/assets/check-assets.mjs` 与 `lib/{glb,image-size}.mjs`：扫描 VRM/GLB 体积、贴图格式与尺寸、morph 有序签名、骨骼数与归档安装包。
+- 预算表：单模型 25MB、内置合计 25MB、安装包 300MB；贴图硬上限 4096，目标颜色 2048 / 数据 1024，目标格式 WebP。
+- 新增 `scripts/assets/asset-budget.json` 与 `morph-snapshots.json`；`package.json` 增加 `check:assets` 并接入 `pnpm check`。
+- 扫描结果：3 个模型合计 22.29MB；150 张贴图；13 条警告（3 张 4096 颜色贴图、10 张 PNG/JPEG 未转 WebP）；安装包最新 v4.1.0 264.61MB。
+- 验证：`pnpm check:assets` PASS；`pnpm check:family` 三席 49 骨骼 / 118 morph / 18 binds 全过；`pnpm check` 全绿。
+- 说明：本里程碑只扫描与设门槛，不自动压缩、不重排 morph。
+
+### 2026-11-16 M2 场景包
+
+- 规格：新增 `spec.md`，确定场景包复用共享 `Scene`，不接小剧场；场景 id 强制 `pack.` 前缀。
+- shared：`CAPABILITY_KINDS` 增加 `scene-pack`，权限 `scene:pack`，entry `payload/scene-pack.json`；新增 `schemas/script/scene-pack.ts`（1–50 场、包内去重、前缀校验）。
+- core：新增 `effects/scene-pack.ts` 与 handler；entry 上限 512KB；新增 `services/script/scene-content-service.ts` 聚合已启用包，版本为 `packs:<sha256>`。
+- 样例：`buildSamplePack('scene-pack')` 生成 `pack.sample.raised-greeting`（`touch::raised::tap`），覆盖表情、手势、语音与恢复。
+- web：新增 `GET /api/scene-content`、`useSceneContent`；`useScriptDirector` 新增 `packScenes`，与生成场景一起校验后进入触发索引；主动播放轮换仍只用生成场景。
+- 测试：新增 effect 与内容快照测试，样例包安装/停用/启停/卸载链路通过；`pnpm check` 全绿。
+- 说明：小剧场 `/stage` 与既有能力包行为零变化；安装/停用后下一次挂载生效，不做热替换。
+

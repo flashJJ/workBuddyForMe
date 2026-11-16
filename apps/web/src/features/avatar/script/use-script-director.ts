@@ -88,6 +88,8 @@ export interface UseScriptDirectorOptions {
   getPointer?: () => { x: number; y: number } | null;
   /** P8.3：生成场景（服务端已校验；这里再走一次白名单） */
   extraScenes?: readonly Scene[];
+  /** v4.3 M2：场景包场景，与生成场景一起校验后进入触发索引 */
+  packScenes?: readonly Scene[];
   /** M3 Utility：触发候选排序所需的粗粒度状态（工作信号/最近道具） */
   decisionContext?: () => TriggerDecisionExtras;
 }
@@ -156,12 +158,13 @@ export function useScriptDirector(options: UseScriptDirectorOptions): ScriptDire
     const result = validateScenes([
       ...BUILT_IN_SCENES,
       ...(options.extraScenes ?? []),
+      ...(options.packScenes ?? []),
     ], { content });
     if (process.env.NODE_ENV !== 'production' && result.dropped.length > 0) {
       console.warn('[ScriptDirector] 已丢弃非法 cue:', result.dropped);
     }
     return result.scenes;
-  }, [options.extraScenes, content]);
+  }, [options.extraScenes, options.packScenes, content]);
   /** 触发键索引跟随动态场景重建（生成场景也能被真实事件触发） */
   const registry = React.useMemo(() => createSceneRegistry(scenes), [scenes]);
 

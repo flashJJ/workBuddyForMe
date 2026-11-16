@@ -5,3 +5,4 @@ export * from './decision';
 export * from './generated';
 export * from './presets';
 export * from './scene';
+export * from './scene-pack';

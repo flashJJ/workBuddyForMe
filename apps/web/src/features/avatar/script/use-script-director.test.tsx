@@ -223,4 +223,35 @@ describe('useScriptDirector（T0.7 开关接线）', () => {
     expect(played).toBe(true);
     expect(calls).toContain('squash');
   });
+
+  it('packScenes 进入触发键索引：场景包场景也能被真实事件触发', () => {
+    const calls: string[] = [];
+    const controller: ScriptControllerHandle = {
+      playSquash: () => calls.push('squash'),
+      flashExpression: (tag) => calls.push(`expression:${tag}`),
+    };
+    const packed: Scene = {
+      id: 'pack.test.dynamic',
+      triggers: ['touch::body::tap'],
+      priority: 1,
+      cooldownMs: 0,
+      interrupt: 'all',
+      beats: [{ at: 0, cue: { kind: 'pose', preset: 'squash' } }],
+    };
+    const { result } = renderHook(() =>
+      useScriptDirector({
+        enabled: true,
+        getController: () => controller,
+        showSubtitle: () => undefined,
+        packScenes: [packed],
+      }),
+    );
+
+    let played = false;
+    act(() => {
+      played = result.current.playEvent({ kind: 'touch', region: 'body', gesture: 'tap' }, cueCtx());
+    });
+    expect(played).toBe(true);
+    expect(calls).toContain('squash');
+  });
 });
