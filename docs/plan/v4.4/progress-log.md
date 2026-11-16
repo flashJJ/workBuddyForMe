@@ -112,5 +112,6 @@
 - 问题 1：先保存来源、再只调模糊保存后背景变回默认。根因是设置写入按顶层字段整体替换 `background`，而面板第二次只提交当前作用域的局部 patch，`source/fit/dim` 被冲掉；改为每次保存提交三个作用域的完整配置，并保留主窗口 `mode`。
 - 问题 2：整屏模式下侧边栏、页面头部与页内搜索不透明，背景无法贯通。新增 `MainBackgroundModeProvider`，整屏模式下侧边栏 `bg-card/70`、页面头部 `bg-card/60`、设置搜索区 `bg-background/40` 均加 `backdrop-blur`；聊天模式保持不透明。
 - 回归：新增“二次保存保留已选源”测试；web 全量 285 文件 1445 项、全量测试 745 文件 4219 项通过；`pnpm check` 全绿。
-- 重打包：安装包 272.35MB（285,583,644 字节），SHA256 `27fd91c3…bc5dd91`；commit `a8c9b868`；`release-manifest --check` 通过 3 个产物。
+- 样式统一（同轮真机反馈）：整屏背景模式改为单一开关 `data-main-background="window"`；侧边栏、页面头部、内容卡片与页内搜索共用 `globals.css` 中的同一组玻璃参数（alpha 0.72 / blur 14px），不再各组件各写一套透明类。
+- 重打包：安装包 272.37MB（285,598,054 字节），SHA256 `ffe65ea6…18a804`；commit `1a22d129`；`release-manifest --check` 通过 3 个产物。
 - 待办：真机验证通过后合并 main、打 tag `v4.4.0` 并推送工蜂。

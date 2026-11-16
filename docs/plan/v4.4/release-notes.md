@@ -40,7 +40,7 @@
 
 - 全量测试：9 个包 745 个测试文件 4219 项通过。
   - web 285 文件 1445 项；core 272 文件 1664 项；database 75 文件 283 项；shared 48 文件 413 项；desktop 35 文件 227 项；ai 16 文件 86 项；voice 9 文件 85 项；config 4 文件 14 项；motion 1 文件 2 项。
-- 真机验证修复：背景二次保存只发局部 patch 会冲掉已选来源（改为每次提交三作用域完整配置）；整屏模式下侧边栏、页面头部与页内搜索改为半透明毛玻璃，背景可贯通全窗。
+- 真机验证修复：背景二次保存只发局部 patch 会冲掉已选来源（改为每次提交三作用域完整配置）；整屏模式下侧边栏、页面头部、内容卡片与页内搜索统一为同一组玻璃表面参数（透明度/模糊集中在 `globals.css` 的 `data-main-background="window"` 规则）。
 - `pnpm check`：typecheck、lint、行数、结构、循环依赖、ASCII、资产检查全部通过。
 - 新增门禁回归：背景域 hooks 移入子目录（直接文件 13→10）；`builtin.ts ↔ resolve.ts` 类型循环依赖已消除。
 - 迁移：零数据库迁移。
@@ -57,18 +57,18 @@
 
 | 项目 | 值 |
 |---|---|
-| 安装包 | `WorkBuddyForMe-Setup-4.4.0.exe` 272.35 MB（285,583,644 字节） |
-| 安装包 SHA256 | `27fd91c3c112bef1699b03d8ce4c8d5f6bd4695dc84350617a90df4cfbc5dd91` |
-| blockmap SHA256 | `a5a8a14cf877d57cf88a0d25edc071606f2212074ab5970283622c7c78b49c75` |
-| latest.yml SHA256 | `ded4ecf5a762ace92c7f2f8b1c3cf6467d037ebc93e53d84bb56ca4ce9ad3c34` |
+| 安装包 | `WorkBuddyForMe-Setup-4.4.0.exe` 272.37 MB（285,598,054 字节） |
+| 安装包 SHA256 | `ffe65ea6768a7a8abfe86e1eb4526fbeb849a37e13912cf2b223281ede18a804` |
+| blockmap SHA256 | `cdf902e35e3b372d946c45eab1bbbc97cc94fe1399721e46f6cea0014ef8930e` |
+| latest.yml SHA256 | `f1f4a0eaae7973ccf3a6a0c485ae70ba294efaeeaec5ca9b572f6b9ed6c9b4ac` |
 | 归档目录 | `E:\builds\archive\v4.4.0` |
-| build-info | commit `a8c9b868`、branch `feat/v4.4-background-and-wallpaper`、构建时间 `2026-11-16T20:52:11Z` |
-| 体积对比 | 较 v4.3.0 264.84MB 增加 7.51MB（7,878,579 字节），仍在 300MB 预算内 |
+| build-info | commit `1a22d129`、branch `feat/v4.4-background-and-wallpaper`、构建时间 `2026-11-16T21:05:24Z` |
+| 体积对比 | 较 v4.3.0 264.84MB 增加 7.53MB（7,892,989 字节），仍在 300MB 预算内 |
 | 校验复核 | `node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.4.0` 输出「校验通过 3 个产物（4.4.0）」 |
 
 ## 7. 更新公告
 
-本版把背景与壁纸做成可配置的一等能力：舞台、主窗口与桌宠窗可以各自选择内置素材、本地图片/视频或能力包壁纸，视频静音循环并在窗口隐藏时暂停。素材统一压缩后入包，安装包 272.35MB，仍在 300MB 预算内；没有数据库迁移，升级后首次启动无需额外操作。
+本版把背景与壁纸做成可配置的一等能力：舞台、主窗口与桌宠窗可以各自选择内置素材、本地图片/视频或能力包壁纸，视频静音循环并在窗口隐藏时暂停。整屏模式下的侧边栏、头部、内容卡片与搜索统一为同一套玻璃表面样式。素材统一压缩后入包，安装包 272.37MB，仍在 300MB 预算内；没有数据库迁移，升级后首次启动无需额外操作。
 
 ## 8. 发布物料清单
 
