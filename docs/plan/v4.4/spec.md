@@ -45,7 +45,9 @@ export interface BackgroundSettings {
 
 | id | 类型 | 文件 | 预算 |
 |---|---|---|---|
-| `wallpaper.rainy-room` | video | `public/backgrounds/rainy-room.mp4` | ≤10MB，720p，H.264（当前 6.42MB） |
+| `wallpaper.rainy-room` | video | `public/backgrounds/rainy-room.mp4` | 1280×720、30fps、CRF23，0.50MB |
+| `wallpaper.main.office-night-loop` | video | `public/backgrounds/office-night-loop.mp4` | 854×480、30fps、CRF23，0.67MB |
+| `wallpaper.main.forest-camp-loop` | video | `public/backgrounds/forest-camp-loop.mp4` | 854×480、30fps、CRF23，0.35MB |
 | `wallpaper.dusk` | 程序化渐变 | 无文件 | 0MB |
 | `wallpaper.morning` | 程序化渐变 | 无文件 | 0MB |
 | `wallpaper.gallery.01–28` | image | `public/backgrounds/gallery/gallery-NN.webp` | 28 张合计 5.06MB，1920px 宽、WebP q80 |

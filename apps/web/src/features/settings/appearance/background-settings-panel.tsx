@@ -14,6 +14,7 @@ import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 import {
   BackgroundLayer,
   BUILTIN_GALLERY_ITEMS,
+  BUILTIN_MAIN_VIDEO_ITEMS,
   BUILTIN_PET_ITEMS,
   mergeBackgroundConfig,
   resolveBackground,
@@ -182,6 +183,15 @@ export function BackgroundSettingsPanel() {
           {BUILTIN_PET_ITEMS.length > 0 && (
             <optgroup label={t('background.source.pet')}>
               {BUILTIN_PET_ITEMS.map((item) => (
+                <option key={item.id} value={`builtin:${item.id}`}>
+                  {item.label}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {BUILTIN_MAIN_VIDEO_ITEMS.length > 0 && (
+            <optgroup label={t('background.source.mainVideos')}>
+              {BUILTIN_MAIN_VIDEO_ITEMS.map((item) => (
                 <option key={item.id} value={`builtin:${item.id}`}>
                   {item.label}
                 </option>

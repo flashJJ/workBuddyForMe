@@ -34,6 +34,12 @@ export const BUILTIN_PET_ITEMS: readonly BuiltinPetBackgroundItem[] = [
   { id: 'wallpaper.pet.rain-platform', url: '/backgrounds/pet/rain-platform.webp', label: '雨夜站台（静态）', kind: 'image' },
 ];
 
+/** v4.4 M6：主窗口专用循环视频（16:9，30fps） */
+export const BUILTIN_MAIN_VIDEO_ITEMS: readonly BuiltinPetBackgroundItem[] = [
+  { id: 'wallpaper.main.office-night-loop', url: '/backgrounds/office-night-loop.mp4', label: '深夜办公室（循环视频）', kind: 'video' },
+  { id: 'wallpaper.main.forest-camp-loop', url: '/backgrounds/forest-camp-loop.mp4', label: '森林露营（循环视频）', kind: 'video' },
+];
+
 export const BUILTIN_BACKGROUNDS: Record<string, ResolvedBackground> = {
   ...STATIC_BUILTINS,
   ...Object.fromEntries(
@@ -41,6 +47,9 @@ export const BUILTIN_BACKGROUNDS: Record<string, ResolvedBackground> = {
   ),
   ...Object.fromEntries(
     BUILTIN_PET_ITEMS.map((item) => [item.id, { kind: item.kind, url: item.url }]),
+  ),
+  ...Object.fromEntries(
+    BUILTIN_MAIN_VIDEO_ITEMS.map((item) => [item.id, { kind: item.kind, url: item.url }]),
   ),
 };
 
