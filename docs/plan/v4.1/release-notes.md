@@ -1,10 +1,10 @@
-# WorkBuddyForMe v4.1.0 发布说明（草稿）
+# WorkBuddyForMe v4.1.0 发布说明
 
-> 版本：4.1.0（待发布）
+> 版本：4.1.0（2026-11-16）
 > 主题：陪伴质量可回放、性能预算可门禁
 > 范围：M0 方案与归档 → M1 打分契约下沉 → M2 评测与质量卡 → M3 性能采样与短跑门禁 → M4 收尾
 > 说明：零数据库迁移，`LATEST_SCHEMA_VERSION = 51` 与备份 schema 均不变。
-> 状态：4h 长跑已回填；安装包数据待回填。
+> 状态：✅ 已发布；安装包已归档并复核。
 
 ## 1. 本版交付
 
@@ -63,8 +63,9 @@
 | 技术博客 | 完成 | 10 篇已归档至 `blog/v4.1/`：总览、打分下沉、历史扩展、离线回放、场景矩阵、质量卡、长跑采样、短跑门禁、基线阈值、复盘 |
 | 性能长跑 | 完成 | [v4.1-longrun.json](../../perf/v4.1-longrun.json)：240.2 分钟 49 组；p95 2.092ms、堆峰值 168.8MB、资源末值 38/56/9 |
 | 性能基线 | 完成 | [baseline-v4.1.json](../../perf/baseline-v4.1.json)：Intel Core Ultra 9 275HX / 24 核 / 31.4GB / win32 x64；480×640；xuetuan ↔ rankaluli |
-| 安装包 | 待生成 | `pnpm release:win` 后归档 `E:\builds\archive\v4.1.0` |
-| 校验和 | 待生成 | 安装包 / blockmap / latest.yml 的 `SHA256SUMS.txt` 与 `build-info.json` |
+| 安装包 | 完成 | `WorkBuddyForMe-Setup-4.1.0.exe` 264.61 MB（277,465,478 字节）；归档于 `E:\builds\archive\v4.1.0`，同目录含 blockmap / latest.yml / SHA256SUMS.txt / build-info.json |
+| 校验和 | 完成 | 安装包 `f0f1ccc8…f63951d`；blockmap `6704e188…d7c792`；latest.yml `2d1f29b3…b9aadc44`；`build-info.json` 记录 commit `ae5d3566`、branch `feat/v4.1-quality-gates`、构建时间 2026-11-16T01:27:14Z |
+| 校验和复核 | 已通过 | `node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.1.0` 输出「校验通过 3 个产物（4.1.0）」 |
 | 更新公告 | 草稿 | 见 §7 |
 | 截图 | 待补 | 设置页陪伴质量卡；v4.0 遗留的内容包安装页、舞台动效菜单 |
 
@@ -78,4 +79,4 @@
 node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.1.0
 ```
 
-预期输出「校验通过 3 个产物（4.1.0）」；安装包哈希与 `build-info.json` 的 commit / 构建时间在归档后回填本节。
+预期输出「校验通过 3 个产物（4.1.0）」；安装包 SHA256 为 `f0f1ccc8ccf011c23aff347b0ef4b26d302d4d7eb6c906cd672470be3f63951d`，`build-info.json` 记录 commit `ae5d3566` 与构建时间 2026-11-16T01:27:14Z。

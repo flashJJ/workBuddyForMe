@@ -87,6 +87,15 @@
 - 回填：发布说明 §4/§6、版本总结 §3/§6、博客 B07 §9 与 tasks 人工项。
 - 重启后检查：长跑汇总与原始 JSONL 均完整；两处无关文件曾被重复 BOM 污染，已恢复；其余 `git status` 差异为索引 stat 缓存，刷新后无内容变化。
 
+### 2026-11-16 发布收尾
+
+- 版本号升至 `4.1.0`（commit `ae5d3566`），`sync-version:check` 通过；`pnpm check` 与全量 9 包 724 文件 4133 项测试全绿。
+- `pnpm release:win` 产出 `WorkBuddyForMe-Setup-4.1.0.exe` 264.61 MB（277,465,478 字节），归档 `E:\builds\archive\v4.1.0`。
+- 复核：`node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.1.0` 输出「校验通过 3 个产物（4.1.0）」；安装包 SHA256 `f0f1ccc8ccf011c23aff347b0ef4b26d302d4d7eb6c906cd672470be3f63951d`；build-info 记录 commit `ae5d3566`、branch `feat/v4.1-quality-gates`、构建时间 2026-11-16T01:27:14Z。
+- 发布文档回填安装包、校验和与复核结果；合入 main、打 tag `v4.1.0`，仅推送工蜂 `tencent`。
+- 结果：v4.1.0 可分发；真机截图（设置页质量卡、v4.0 内容包安装页与舞台动效菜单）仍待补。
+
+
 
 
 
