@@ -125,14 +125,16 @@ v3.0 把主动播放做成 Utility 打分与理由码，但调权重后的排序
 - 非目标：在线 A/B、绝对帧率、工蜂 CI 接入、运行时拒绝计数、资产体积（08）与音频导演（10）
 - 博客：[blog/v4.1](../../blog/v4.1/) 10 篇
 
-## ✅ 开发完成待发布：v4.2 统一音频导演
+## ✅ 已发布：v4.2 统一音频导演
 
 全局音乐、剧场 BGM、语音与音效目前各管一套播放器和静音状态，靠舞台路由卸载避免叠音，语音说话时只有剧场 BGM 会 duck。v4.2 引入浏览器侧 AudioDirector 单例：音轨类型 `music` / `theater-bgm` / `voice` / `sfx`，优先级 voice > theater-bgm > music > sfx；语音期间背景乐压到 35%，全局静音在音乐与剧场之间同步，首次手势统一解锁；舞台进出用 `sessionStorage` 恢复播放意图。不做 WebAudio 全图、设备选择与曲库自动响度测量。
 
-- 方案：[v4.2 方案](../plan/v4.2/README.md) · [Tasks](../plan/v4.2/tasks.md) · [进度](../plan/v4.2/progress-log.md)
+- 方案：[v4.2 方案](../plan/v4.2/README.md) · [Tasks](../plan/v4.2/tasks.md) · [进度](../plan/v4.2/progress-log.md) · [发布说明](../plan/v4.2/release-notes.md) · [版本总结](../plan/v4.2/version-summary.md)
 - 来源方案：[v4.2-10](scheduled/v4.2-10-audio-director.md)
 - 分支：`feat/v4.2-audio-director`
-- 状态：✅ 开发完成待发布；零数据库迁移，`LATEST_SCHEMA_VERSION = 51`
+- 状态：✅ 已发布 `v4.2.0`（2026-11-16，源码发布，不含 exe）；零数据库迁移，`LATEST_SCHEMA_VERSION = 51`
+- 验证：9 包 728 文件 4147 项通过；`pnpm check` 全绿；按发布决定不构建 exe 安装包
+- 博客：[blog/v4.2](../../blog/v4.2/) 10 篇
 
 ## ✅ 已发布：v3.1.0 可插拔前置——能力/provider 注册表与动效内容注入
 
