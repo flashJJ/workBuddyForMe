@@ -37,6 +37,10 @@ describe('背景音乐曲库与播放顺序', () => {
     expect(BUILTIN_TRACKS.every((track) => track.license === 'cc0')).toBe(true);
   });
 
+  it('内置曲目全部登记 -16 LUFS 响度基线', () => {
+    expect(BUILTIN_TRACKS.every((track) => track.loudnessLufs === -16)).toBe(true);
+  });
+
   it('主题曲在自己组内轮播，氛围音乐走整个曲库', () => {
     const theme = BUILTIN_TRACKS.find((track) => track.group === 'theme')!;
     const atmosphere = BUILTIN_TRACKS.find((track) => track.id === 'theme-warm')!;

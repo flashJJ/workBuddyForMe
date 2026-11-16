@@ -26,6 +26,8 @@ export interface MusicTrack {
   source: MusicSource;
   group?: MusicGroup;
   license?: MusicLicense;
+  /** v4.2：曲库入库响度基线；内置曲目统一 -16 LUFS，运行时只做相对音量 */
+  loudnessLufs?: number;
   /** 槽位待补文件（不展示播放错误，直接标记待生成） */
   pending?: boolean;
   /** 内置曲目的静态地址 */
@@ -50,6 +52,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'theme',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-song-1.mp3',
   },
   {
@@ -60,6 +63,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'theme',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-song-2.mp3',
   },
   {
@@ -70,6 +74,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'theme',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-song-3.mp3',
   },
   {
@@ -80,6 +85,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-warm.mp3',
   },
   {
@@ -90,6 +96,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-warm-romance.mp3',
   },
   {
@@ -100,6 +107,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-calm.mp3',
   },
   {
@@ -110,6 +118,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-playful.mp3',
   },
   {
@@ -120,6 +129,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-playful-burst.mp3',
   },
   {
@@ -130,6 +140,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-melancholy.mp3',
   },
   {
@@ -140,6 +151,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-tense.mp3',
   },
   {
@@ -150,6 +162,7 @@ export const BUILTIN_TRACKS: readonly MusicTrack[] = [
     source: 'builtin',
     group: 'atmosphere',
     license: 'cc0',
+    loudnessLufs: -16,
     src: '/audio/music/theme-focus.mp3',
   },
 ];
