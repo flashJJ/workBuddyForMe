@@ -107,7 +107,7 @@
 - 补跑：样例场景两次提交（`114c4990`、`4852916c`）后重跑 `pnpm check` 全绿，`check:assets` 读到的安装包为 264.88MB / 300MB；core 能力测试 74 项通过。
 - 发布物料：`release-notes.md`、`version-summary.md`、`blog/v4.3/` 10 篇与路线图索引已落盘。
 - 真机验证路径：样例场景包补充 `pack.sample.cube-showcase`（抬手触发，展示 3 秒示例立方体）；需与样例道具包同时安装。
-- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.88MB（277,742,426 字节），SHA256 `7733e111…8a7bd3`；归档于 `E:\builds\archive\v4.3.0`，`release-manifest --check` 校验通过 3 个产物。
-- 重建说明：首次构建后补充 `pack.sample.cube-showcase`，二次构建因 Electron 下载超时，改用本地 `node_modules/electron/dist`（45.0.0）打包后覆盖归档；build-info commit `4852916c`、构建时间 `2026-11-16T15:14:04Z`。
+- 安装包：`WorkBuddyForMe-Setup-4.3.0.exe` 264.88MB（277,742,581 字节），SHA256 `7129f2a8…a437fac`；归档于 `E:\builds\archive\v4.3.0`，`release-manifest --check` 校验通过 3 个产物。
+- 重建说明：首次构建后补充 `pack.sample.cube-showcase`，二次构建因 Electron 下载超时，改用本地 `node_modules/electron/dist`（45.0.0）打包；真机排查发现舞台退出恢复桌宠丢失模型（回落 Live2D），修复后第三次构建并覆盖归档；build-info commit `ca9d63df`、构建时间 `2026-11-16T16:18:42Z`。
 - 待办：安装包真机验证；通过后合并 main、打 tag `v4.3.0` 并推送工蜂。
 

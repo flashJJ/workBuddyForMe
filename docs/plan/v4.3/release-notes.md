@@ -56,13 +56,13 @@
 
 | 项目 | 值 |
 |---|---|
-| 安装包 | `WorkBuddyForMe-Setup-4.3.0.exe` 264.88 MB（277,742,426 字节） |
-| 安装包 SHA256 | `7733e1110ddf13c5dfa7563f42558551e5f9421db5d8baec630b35fbf18a7bd3` |
-| blockmap SHA256 | `961ae70a0ed8b531c9e873423427ae7786bc7b0ea23471841bc70a61ee6a709e` |
-| latest.yml SHA256 | `06de07eb2a6cf058e21ad88ca02bc181d389726cbb8f7c7650ab6a5ab5b7e209` |
+| 安装包 | `WorkBuddyForMe-Setup-4.3.0.exe` 264.88 MB（277,742,581 字节） |
+| 安装包 SHA256 | `7129f2a886656218603f4664a039327b9168d04b9a9d093da25af7384a437fac` |
+| blockmap SHA256 | `8d108a55f87bda6a8e7a74d9bd82f49096c5fcaa131919fe13c8006a8f352301` |
+| latest.yml SHA256 | `1a8081f33fbc4183da01ba9cff8549c640a08d01ef841b0fc4c70633aba043af` |
 | 归档目录 | `E:\builds\archive\v4.3.0` |
-| build-info | commit `4852916c`、branch `feat/v4.3-content-and-assets`、构建时间 `2026-11-16T15:14:04Z` |
-| 体积对比 | 较 v4.2.0（源码发布，无安装包）不可比；较 v4.1.0 264.61MB 增加 0.26MB（276,948 字节） |
+| build-info | commit `ca9d63df`、branch `feat/v4.3-content-and-assets`、构建时间 `2026-11-16T16:18:42Z` |
+| 体积对比 | 较 v4.2.0（源码发布，无安装包）不可比；较 v4.1.0 264.61MB 增加 0.26MB（277,103 字节） |
 
 ## 7. 更新公告
 
