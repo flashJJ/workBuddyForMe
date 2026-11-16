@@ -11,7 +11,7 @@
 | M1 背景模型与内置素材 | 🚧 进行中 | 2026-11-17 |
 | M2 本地图片/视频 | ✅ 完成（渲染层回退在 M4） | 2026-11-17 |
 | M3 `wallpaper-pack` | ✅ 完成 | 2026-11-17 |
-| M4 渲染接线 | 待开始 | — |
+| M4 渲染接线 | ✅ 完成 | 2026-11-17 |
 | M5 设置页 | 待开始 | — |
 | M6 收尾 | 待开始 | — |
 
@@ -46,3 +46,12 @@
 - web：新增 `/api/wallpaper-content` 与 `/api/wallpaper-assets`。
 - 样例：`buildSampleWallpaperPack()` 带 1 张 1x1 PNG（CC0）。
 - 测试：shared 5 项、core 壁纸包 4 项 + 快照 3 项通过；core/shared/web typecheck、行数与结构门禁通过。
+
+### 2026-11-17 M4 渲染接线
+
+- 新增 `features/background/`：解析纯函数、设置/文件/壁纸包 hook、视频暂停与 dim/blur 渲染层，以及主窗口/桌宠/舞台三个适配组件。
+- 舞台：配置为 `none` 时继续使用剧集 `StageBackgroundLayer` 与 `TheaterBackdrop`；配置后接管底层。
+- 主窗口：聊天模式只铺内容区，整屏模式铺满窗口；由同一 `mode` 互斥切换。
+- 桌宠：独立作用域，默认 `none` 保持透明；命中区与点击穿透未改。
+- 解析规则：本地文件优先于包内资源；缺失时主窗口/舞台回退内置视频，桌宠保持透明。
+- 测试：背景解析 6 项通过；舞台/桌宠/背景相关 121 项通过；web typecheck、行数与结构门禁通过。

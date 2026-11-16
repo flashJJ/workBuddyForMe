@@ -90,7 +90,8 @@ export const DEFAULT_PET_BACKGROUND: BackgroundConfig = {
 
 export const DEFAULT_BACKGROUND_SETTINGS: Record<BackgroundScope, BackgroundConfig> = {
   main: DEFAULT_BACKGROUND_CONFIG,
-  stage: DEFAULT_BACKGROUND_CONFIG,
+  // 舞台保持原有剧集背景；用户显式选择后才接管底层
+  stage: { ...DEFAULT_BACKGROUND_CONFIG, source: { kind: 'builtin', id: 'none' }, dim: 0 },
   pet: DEFAULT_PET_BACKGROUND,
 };
 

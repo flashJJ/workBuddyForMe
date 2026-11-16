@@ -37,7 +37,7 @@ export interface BackgroundSettings {
 }
 ```
 
-- 默认：`main`/`stage` 为 `builtin:wallpaper.rainy-room`，`pet` 为 `builtin:none`；
+- 默认：`main` 为 `builtin:wallpaper.rainy-room`；`stage` 为 `builtin:none`（沿用剧集背景）；`pet` 为 `builtin:none`（保持透明）；
 - `mode` 只允许出现在 `main`，聊天与整屏共用同一 `source`；
 - 所有字段进入既有设置 JSON，零数据库迁移。
 

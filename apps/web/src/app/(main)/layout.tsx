@@ -6,12 +6,14 @@ import { OnboardingHost } from '@/features/onboarding';
 import { ReunionSignalHost } from '@/features/avatar';
 import { DeepLinkHost } from '@/features/navigation';
 import { MusicMiniPlayer, MusicProvider } from '@/features/music';
+import { MainBackground } from '@/features/background';
 
 /** 主工作区布局：侧边栏 + 内容区 + 命令面板（Ctrl+K）+ 快捷键浮层（Ctrl+/）+ 首启向导 */
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <MusicProvider>
-      <div className="relative flex h-screen overflow-hidden">
+      <div className="relative isolate flex h-screen overflow-hidden">
+        <MainBackground />
         {/* 键盘用户首站：视觉隐藏，聚焦时显现 */}
         <SkipLink />
         <AppSidebar />

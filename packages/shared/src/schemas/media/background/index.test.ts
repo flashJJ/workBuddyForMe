@@ -8,15 +8,12 @@ import {
 } from './index';
 
 describe('v4.4 背景设置契约', () => {
-  it('默认值：主窗口与舞台使用雨夜内置背景，桌宠保持透明', () => {
+  it('默认值：主窗口使用雨夜内置背景，舞台沿用剧集背景，桌宠保持透明', () => {
     expect(DEFAULT_BACKGROUND_SETTINGS.main.source).toEqual({
       kind: 'builtin',
       id: 'wallpaper.rainy-room',
     });
-    expect(DEFAULT_BACKGROUND_SETTINGS.stage.source).toEqual({
-      kind: 'builtin',
-      id: 'wallpaper.rainy-room',
-    });
+    expect(DEFAULT_BACKGROUND_SETTINGS.stage.source).toEqual({ kind: 'builtin', id: 'none' });
     expect(DEFAULT_PET_BACKGROUND.source).toEqual({ kind: 'builtin', id: 'none' });
     expect(DEFAULT_PET_BACKGROUND.dim).toBe(0);
   });
