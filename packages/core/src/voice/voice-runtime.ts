@@ -5,7 +5,8 @@ import {
   VOICE_MODELS,
   getVoiceModelSpec,
   downloadVoiceModel,
-  findMissingFiles,
+  findFileIssues,
+  HF_MIRROR_BASE,
   decodePcm16Wav,
   resampleLinear,
   ASR_SAMPLE_RATE,
@@ -26,13 +27,13 @@ import {
 } from '@wbfm/shared/schemas';
 import { readVoiceSettings } from './voice-settings';
 import { getModelDir, getVoiceModelsRoot } from './model-paths';
+import { readModelStatus } from './voice-model-status';
 import {
   asrConfigKey,
   buildAsrEngineConfig,
   buildTtsEngineConfig,
   ttsConfigKey,
 } from './voice-engine-config';
-import { listMissingModelFiles } from './voice-model-files';
 import { readVrmVoiceOverride } from './voice-avatar-override';
 import { SynthesisCache, synthesisCacheKey } from './synthesis-cache';
 import type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime-types';
@@ -65,6 +66,20 @@ export class VoiceRuntime {
     return createVoiceModelRepository(this.db);
   }
 
+  /** 磁盘已齐备时清掉旧的 error/downloading 持久状态；DB 未就绪时静默跳过 */
+  private syncReadyStatus(kind: VoiceModelKind, spec: VoiceModelSpec, missing: string[]): void {
+    if (missing.length > 0 || this.jobs.has(kind)) return;
+    try {
+      const repo = this.voiceModels();
+      const persisted = repo.get(kind, spec.id);
+      if (persisted && persisted.status !== 'ready') {
+        repo.markReady(kind, spec.id, spec.totalBytes);
+      }
+    } catch {
+      // 测试或启动早期 DB 未就绪：磁盘状态仍可返回，不阻塞状态接口
+    }
+  }
+
   /** 当前设置选中的 TTS 模型规格（melo 单声低延迟 / kokoro 多角色）；可显式指定 */
   private ttsSpec(ttsModel?: VoiceSettings['ttsModel']): VoiceModelSpec {
     return getVoiceModelSpec('tts', ttsModel ?? this.settings.ttsModel);
@@ -72,46 +87,12 @@ export class VoiceRuntime {
 
   /** 检查模型文件齐备性（以磁盘为准，DB 状态仅作展示补充）；路由 GET models/status 调用 */
   async getModelStatus(): Promise<VoiceModelFileStatus> {
-    const settings = this.settings;
-    const checked = await Promise.all(
-      (['asr', 'tts'] as const).map(async (kind) => {
-        const list = kind === 'asr' ? [VOICE_MODELS.asr] : TTS_MODEL_SPECS;
-        return [kind, listMissingModelFiles(list, settings, kind)] as const;
-      }),
-    );
-    const asrMissing = checked.find(([k]) => k === 'asr')?.[1] ?? [];
-    const ttsMissingAll = checked.find(([k]) => k === 'tts')?.[1] ?? [];
-    const activeSpec = this.ttsSpec();
-    const ttsModels = TTS_MODEL_SPECS.map((spec) => {
-      const prefix = `${spec.id}/`;
-      const ownMissing = ttsMissingAll
-        .filter((p) => p.startsWith(prefix))
-        .map((p) => p.slice(prefix.length));
-      return {
-        model: spec.engine ?? 'melo',
-        label: spec.label,
-        totalBytes: spec.totalBytes,
-        ready: ownMissing.length === 0,
-        missing: ownMissing,
-      };
+    return readModelStatus({
+      settings: this.settings,
+      ttsSpecs: TTS_MODEL_SPECS,
+      activeSpec: this.ttsSpec(),
+      syncReady: (kind, spec, missing) => this.syncReadyStatus(kind, spec, missing),
     });
-    return {
-      asrReady: asrMissing.length === 0,
-      // 仅当前选中模型要求就绪；另一套缺失不阻塞朗读
-      ttsReady: ttsModels.find((m) => m.model === activeSpec.engine)?.ready ?? false,
-      asrMissing,
-      ttsMissing: ttsModels.find((m) => m.model === activeSpec.engine)?.missing ?? [],
-      asrTotalBytes: VOICE_MODELS.asr.totalBytes,
-      ttsTotalBytes: activeSpec.totalBytes,
-      ttsModels: ttsModels.map(({ model, label, totalBytes, ready, missing }) => ({
-        model,
-        label,
-        totalBytes,
-        ready,
-        missing,
-      })),
-      activeTtsModel: activeSpec.engine ?? 'melo',
-    };
   }
 
   /** 下载进度（含 DB 持久状态与当前任务实时进度）；tts 可指定模型 */
@@ -145,7 +126,7 @@ export class VoiceRuntime {
     void downloadVoiceModel({
       spec,
       targetRoot: getVoiceModelsRoot(settings),
-      mirror: !settings.modelMirrorBase || settings.modelMirrorBase.includes('hf-mirror'),
+      mirrorBase: settings.modelMirrorBase || HF_MIRROR_BASE,
       signal: controller.signal,
       onProgress: (p) => {
         job.lastProgress = p;
@@ -153,14 +134,17 @@ export class VoiceRuntime {
       },
     })
       .then(async () => {
-        const missing = await findMissingFiles(spec, async (rel) => {
+        const issues = await findFileIssues(spec, async (rel) => {
           try {
             return fs.statSync(`${getModelDir(settings, kind, spec.id)}/${rel}`).size;
           } catch {
             return null;
           }
         });
-        if (missing.length > 0) throw new Error(`下载后校验缺失：${missing.join(', ')}`);
+        const details: string[] = [];
+        if (issues.missing.length > 0) details.push(`缺失: ${issues.missing.join(', ')}`);
+        if (issues.sizeMismatch.length > 0) details.push(`大小不符: ${issues.sizeMismatch.join(', ')}`);
+        if (details.length > 0) throw new Error(`下载后校验失败：${details.join('；')}`);
         repo.markReady(kind, spec.id, spec.totalBytes);
         // 下载完成立即后台预热；失败静默，不阻塞下载任务收尾
         if (kind === 'tts') void this.prewarmTts(true);

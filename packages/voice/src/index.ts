@@ -53,9 +53,12 @@ export {
   getVoiceModelSpec,
   modelFileUrl,
   findMissingFiles,
+  findFileIssues,
+  HF_MIRROR_BASE,
   type VoiceModelKind,
   type VoiceModelSpec,
   type VoiceModelFile,
+  type VoiceModelFileIssues,
   type TtsEngineId,
 } from './models/manifest';
 export {

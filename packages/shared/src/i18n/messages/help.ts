@@ -26,7 +26,7 @@ export const zhHelp = {
     },
     voice: {
       q: '语音模型下载慢或失败？',
-      a: '- 语音识别约 228MB、语音合成约 190MB，国内网络建议配置镜像（`hf-mirror.com`）。\n- 下载中断后重新点击下载会跳过已完成的文件断点续传。\n- Windows 打包态语音验证需确认数据根指向真实模型目录（开发与打包的密钥体系不互通，属正常现象）。\n- 模型就绪后，使用输入框旁麦克风按钮发起语音对话。',
+      a: '- 语音识别约 228MB；语音合成 MeloTTS 约 190MB，Kokoro 多角色约 394MB（377 个文件）。国内网络建议配置镜像（`hf-mirror.com`）。\n- 下载中断后重新点击下载会跳过已完成的文件，并从 .part 断点续传。\n- Windows 打包态语音验证需确认数据根指向真实模型目录（开发与打包的密钥体系不互通，属正常现象）。\n- 模型就绪后，使用输入框旁麦克风按钮发起语音对话。',
     },
     data: {
       q: '我的数据存在哪里？如何备份？',
@@ -74,7 +74,7 @@ export const enHelp = {
     },
     voice: {
       q: 'Voice model downloads are slow or failing?',
-      a: '- Recognition is about 228MB and synthesis about 190MB. On constrained networks configure a mirror (`hf-mirror.com`).\n- Restarting a download resumes from completed files.\n- On Windows packaged builds, point the data root to the real model directory; dev and packaged key stores differ by design.\n- Once models are ready, use the microphone button next to the composer.',
+      a: '- Recognition is about 228MB; synthesis is about 190MB for MeloTTS and about 394MB for Kokoro (377 files). On constrained networks configure a mirror (`hf-mirror.com`).\n- Restarting a download skips completed files and resumes from the `.part` offset.\n- On Windows packaged builds, point the data root to the real model directory; dev and packaged key stores differ by design.\n- Once models are ready, use the microphone button next to the composer.',
     },
     data: {
       q: 'Where is my data stored and how do I back it up?',

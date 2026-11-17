@@ -19,6 +19,8 @@
     "release:win": "pnpm dist:win && pnpm archive:win",
     "release:manifest": "node scripts/release-manifest.mjs",
     "release:verify": "node scripts/release-manifest.mjs --check",
+    "voice:manifest:check": "node scripts/voice/sync-kokoro-manifest.mjs --check",
+    "voice:manifest:sync": "node scripts/voice/sync-kokoro-manifest.mjs --write",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "lint:boundaries": "eslint . --ext .ts,.tsx",
