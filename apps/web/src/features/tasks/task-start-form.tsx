@@ -109,7 +109,7 @@ export function TaskStartForm({
   };
 
   return (
-    <section className="border-b bg-card/50 px-6 py-4">
+    <section className="border-b bg-ui-card px-6 py-4">
       <div className="grid gap-3 lg:grid-cols-[260px_200px_minmax(0,1fr)_auto]">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">{t('tasks.conversationLabel')}</label>
@@ -184,7 +184,7 @@ export function TaskStartForm({
               value={workspacePath}
               onChange={(e) => setWorkspacePath(e.target.value)}
               placeholder={t('tasks.governance.workspacePlaceholder')}
-              className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-xs"
+              className="h-9 min-w-0 flex-1 rounded-md border bg-ui-control px-3 text-xs"
               aria-label={t('tasks.governance.workspaceAria')}
             />
             {typeof window !== 'undefined' && window.wbfm?.dialog?.pickDirectory ? (

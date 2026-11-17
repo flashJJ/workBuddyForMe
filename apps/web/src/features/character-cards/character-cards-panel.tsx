@@ -33,7 +33,7 @@ function CardRow({
   const isBuiltin = card.source === 'builtin';
   return (
     <li
-      className="flex items-start justify-between gap-3 rounded-md border p-3"
+      className="flex items-start justify-between gap-3 rounded-md border bg-ui-row p-3"
       data-testid={`character-card-row-${card.id}`}
     >
       <div className="min-w-0 space-y-0.5">
@@ -152,7 +152,7 @@ export function CharacterCardsPanel({ autoCreate = false }: { autoCreate?: boole
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="character-cards-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="character-cards-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3>{t('characterCards.title')}</h3>

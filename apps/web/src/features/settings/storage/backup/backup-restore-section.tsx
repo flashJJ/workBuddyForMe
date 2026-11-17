@@ -166,7 +166,7 @@ export function BackupRestoreSection() {
   };
 
   return (
-    <div className="space-y-3 rounded-md border p-3" data-testid="backup-restore">
+    <div className="space-y-3 rounded-md border bg-ui-row p-3" data-testid="backup-restore">
       <Label>{t('settingsBackup.restoreTitle')}</Label>
       <input
         ref={fileInputRef}

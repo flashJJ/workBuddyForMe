@@ -162,7 +162,7 @@ export function TimelinePage() {
               <button
                 key={event.id}
                 type="button"
-                className="flex w-full flex-col gap-1 rounded-lg border bg-card p-3 text-left hover:bg-muted"
+                className="flex w-full flex-col gap-1 rounded-lg border bg-ui-card p-3 text-left hover:bg-muted"
                 onClick={() => openTimeline(event.scope, event.scopeId)}
               >
                 <span className="flex flex-wrap items-center gap-2 text-sm">
@@ -194,7 +194,7 @@ export function TimelinePage() {
           ) : (
             <ul className="space-y-2">
               {items.map((item) => (
-                <li key={item.id} className="rounded-lg border bg-card p-3">
+                <li key={item.id} className="rounded-lg border bg-ui-card p-3">
                   <div className="flex flex-wrap items-center gap-2 text-sm">
                     <Badge variant="outline">#{item.seq}</Badge>
                     <span className="font-medium">{item.label}</span>

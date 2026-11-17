@@ -71,7 +71,7 @@ function LaneShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('min-w-0 overflow-hidden rounded border bg-background px-2 py-1.5', active && 'ring-1 ring-info/50')}>
+    <div className={cn('min-w-0 overflow-hidden rounded border bg-ui-row px-2 py-1.5', active && 'ring-1 ring-info/50')}>
       <div className="flex items-center gap-1.5">
         <span className={cn('shrink-0', tone)}>{icon}</span>
         <span className="truncate text-[11px] font-medium">{title}</span>

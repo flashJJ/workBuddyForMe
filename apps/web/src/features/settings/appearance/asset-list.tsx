@@ -51,7 +51,7 @@ export function AssetList({
   React.useEffect(() => setMounted(true), []);
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid={testId}>
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid={testId}>
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-medium">{t(sectionTitleKey)}</h4>
         {mounted && headerExtra}
@@ -68,7 +68,7 @@ export function AssetList({
           {rows.map((row) => (
             <li
               key={row.key}
-              className="flex items-center justify-between rounded border p-2 text-xs"
+              className="flex items-center justify-between rounded border bg-ui-row p-2 text-xs"
               data-testid={row.testId}
             >
               <div>

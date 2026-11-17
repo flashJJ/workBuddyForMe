@@ -62,7 +62,7 @@ export function MusicLibraryPanel() {
       <li
         key={track.id}
         data-testid={`music-track-${track.id}`}
-        className="flex items-center gap-2 rounded-md border px-2.5 py-2"
+        className="flex items-center gap-2 rounded-md border bg-ui-row px-2.5 py-2"
       >
         <button
           type="button"
@@ -123,7 +123,7 @@ export function MusicLibraryPanel() {
   };
 
   return (
-    <section className="space-y-4" data-testid="music-library-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="music-library-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-medium">

@@ -11,6 +11,7 @@ import { StageDialogBox } from './stage-dialog-box';
 import { StageToolbar } from './stage-toolbar';
 import { StageMotionMenu } from './motion/stage-motion-menu';
 import { StageLive2dLayer, type StageLive2dActor } from './live2d';
+import { StageBackground } from '@/features/background';
 import { computeActorLayout, meetingPosition, stageFacingYaw } from './stage-layout';
 import { useStageController, type StageMode } from './use-stage-controller';
 import { useStageRun } from './use-stage-run';
@@ -145,9 +146,7 @@ export function StageRoot() {
       data-run-status={c.runStatus ?? undefined}
       onWheel={onRootWheel}
     >
-      <StageBackgroundLayer background={c.payload.background} />
-      {mode === 'theater' && <TheaterBackdrop variant={theaterBackdropAt(episode, theater.index)} focus={c.focus} slots={c.payload.slots} />}
-
+      <StageBackground fallback={<><StageBackgroundLayer background={c.payload.background} />{mode === 'theater' && <TheaterBackdrop variant={theaterBackdropAt(episode, theater.index)} focus={c.focus} slots={c.payload.slots} />}</>} />
       {/* 2D 暖光层（不做三维光照） */}
       <div
         className="pointer-events-none absolute inset-0 z-[5]"

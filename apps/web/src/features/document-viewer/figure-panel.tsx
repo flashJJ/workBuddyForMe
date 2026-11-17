@@ -67,7 +67,7 @@ export function FigurePanel({ documentId, figures, visionAvailable }: Props) {
             return (
               <div
                 key={figure.blockId}
-                className="rounded-md border px-3 py-2"
+                className="rounded-md border bg-ui-row px-3 py-2"
                 data-testid="figure-item"
                 data-block-id={figure.blockId}
               >

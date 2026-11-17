@@ -164,7 +164,7 @@ export function McpPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="mcp-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="mcp-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium">{t('settingsMcp.mcp.title')}</h3>
@@ -204,7 +204,7 @@ export function McpPanel() {
           {servers.map((server) => (
             <li
               key={server.id}
-              className="flex items-center justify-between gap-3 rounded-md border p-3"
+              className="flex items-center justify-between gap-3 rounded-md border bg-ui-row p-3"
               data-testid="mcp-server-item"
             >
               <div className="min-w-0 space-y-1">

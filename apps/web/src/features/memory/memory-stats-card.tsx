@@ -179,7 +179,7 @@ function StatsBody({
         {metrics.map((metric) => (
           <div
             key={metric.key}
-            className="rounded-md bg-background/60 px-2 py-1.5"
+            className="rounded-md bg-ui-row px-2 py-1.5"
             data-testid={`memory-stat-${metric.key}`}
           >
             <dt className="text-xs text-muted-foreground">{metric.label}</dt>

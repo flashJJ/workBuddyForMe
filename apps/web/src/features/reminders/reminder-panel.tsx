@@ -57,7 +57,7 @@ export function ReminderPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="reminder-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="reminder-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium">{t('reminders.title')}</h3>
@@ -79,7 +79,7 @@ export function ReminderPanel() {
           (reminders ?? []).map((reminder) => (
             <li
               key={reminder.id}
-              className="flex items-center gap-3 rounded-md border px-3 py-2"
+              className="flex items-center gap-3 rounded-md border bg-ui-row px-3 py-2"
               data-testid={`reminder-row-${reminder.id}`}
             >
               <input

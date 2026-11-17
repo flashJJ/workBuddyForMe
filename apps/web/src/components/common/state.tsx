@@ -31,7 +31,7 @@ interface EmptyStateProps {
 /** 空数据占位，支持传入引导动作（如“去配置模型”按钮） */
 export function EmptyState({ title, description, action, icon }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-ui-card px-6 py-12 text-center">
       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
         {icon ?? <Inbox className="h-5 w-5" />}
       </div>
@@ -63,7 +63,7 @@ export function ErrorState({
 }) {
   const { t } = useI18n();
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border bg-ui-card px-6 py-10 text-center">
       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive/10 text-destructive">
         <AlertTriangle className="h-5 w-5" aria-hidden="true" />
       </div>

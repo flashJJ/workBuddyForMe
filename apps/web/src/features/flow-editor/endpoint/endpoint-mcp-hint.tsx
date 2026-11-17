@@ -39,12 +39,12 @@ export function EndpointMcpHint({ baseUrl, tokenRevealed }: { baseUrl: string; t
       <p className="font-medium text-foreground">{t('flowEditor.endpoint.mcpHint.title')}</p>
       <div>
         <p className="text-muted-foreground">{t('flowEditor.endpoint.mcpHint.http')}</p>
-        <pre className="mt-1 overflow-x-auto rounded bg-background p-2 text-[10px]">{httpConfig}</pre>
+        <pre className="mt-1 overflow-x-auto rounded bg-ui-control p-2 text-[10px]">{httpConfig}</pre>
       </div>
       {mcp?.nodeBin && mcp?.bin ? (
         <div>
           <p className="text-muted-foreground">{t('flowEditor.endpoint.mcpHint.stdio')}</p>
-          <pre className="mt-1 overflow-x-auto rounded bg-background p-2 text-[10px]">{JSON.stringify(
+          <pre className="mt-1 overflow-x-auto rounded bg-ui-control p-2 text-[10px]">{JSON.stringify(
             {
               command: mcp.nodeBin,
               args: [mcp.bin],

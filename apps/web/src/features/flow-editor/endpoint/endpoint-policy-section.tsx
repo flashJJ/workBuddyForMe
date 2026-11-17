@@ -30,7 +30,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
   };
 
   return (
-    <div className="rounded-md border p-2.5 text-[11px] leading-relaxed text-muted-foreground">
+    <div className="rounded-md border bg-ui-row p-2.5 text-[11px] leading-relaxed text-muted-foreground">
       <p className="font-medium text-foreground">{t('flowEditor.endpoint.policy.title')}</p>
       <p className="mt-1">
         {t('flowEditor.endpoint.policy.description')}
@@ -58,7 +58,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
         </label>
       </div>
       {dangerNodes.length > 0 && (
-        <div className="mt-2 rounded bg-background p-2">
+        <div className="mt-2 rounded bg-ui-control p-2">
           <p className="text-warning">
             {t('flowEditor.endpoint.policy.dangerCount', { count: dangerNodes.length })}
           </p>

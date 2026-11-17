@@ -41,7 +41,7 @@ export function PermissionPanel() {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold">{t('settingsMcp.permission.title')}</h2>
@@ -66,7 +66,7 @@ export function PermissionPanel() {
           {(permissions as ToolPermission[]).map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-md border bg-ui-row px-3 py-2 text-sm"
             >
               <div className="min-w-0 flex-1 space-y-0.5">
                 <div className="flex items-center gap-2 font-medium">

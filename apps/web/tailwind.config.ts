@@ -57,6 +57,15 @@ const config: Config = {
           2: 'hsl(var(--surface-2))',
           3: 'hsl(var(--surface-3))',
         },
+        // v4.4 表面层级：L1 canvas/chrome → L5 overlay，透明度逐级升高
+        ui: {
+          canvas: 'var(--ui-canvas)',
+          chrome: 'var(--ui-chrome)',
+          card: 'var(--ui-card)',
+          row: 'var(--ui-row)',
+          control: 'var(--ui-control)',
+          overlay: 'var(--ui-overlay)',
+        },
       },
       boxShadow: {
         // v2.23 三档阴影，取值见 globals.css 主题块

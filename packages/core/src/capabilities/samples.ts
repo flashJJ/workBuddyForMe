@@ -3,6 +3,7 @@ import { ApiError } from '@wbfm/shared/errors';
 import type { CapabilityKind } from '@wbfm/shared/schemas';
 import { buildSampleScenePack } from './samples/scene-pack';
 import { buildSamplePropPack } from './samples/prop-pack';
+import { buildSampleWallpaperPack } from './samples/wallpaper-pack';
 import { buildSampleZip, type SamplePackFile } from './samples/zip';
 
 /** v2.11：九类示例/模板包（下载与测试共用） */
@@ -271,5 +272,6 @@ export function buildSamplePack(
   }
   if (kind === 'scene-pack') return buildSampleScenePack();
   if (kind === 'prop-pack') return buildSamplePropPack();
+  if (kind === 'wallpaper-pack') return buildSampleWallpaperPack();
   return sampleMcpTemplate();
 }

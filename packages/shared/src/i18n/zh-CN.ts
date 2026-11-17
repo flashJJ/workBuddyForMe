@@ -27,6 +27,7 @@ import { zhHelp } from './messages/help';
 import { zhFlowEditor } from './messages/flow-editor';
 import { zhVoice } from './messages/voice';
 import { zhAudio } from './messages/audio';
+import { zhBackground } from './messages/background';
 import { zhPet } from './messages/pet';
 import { zhAvatar } from './messages/avatar';
 import { zhFlowExecution } from './messages/flow-execution';
@@ -100,6 +101,7 @@ export const zhCN = {
   flowEditor: zhFlowEditor,
   voice: zhVoice,
   audio: zhAudio,
+  background: zhBackground,
   pet: zhPet,
   avatar: zhAvatar,
   flowExecution: zhFlowExecution,

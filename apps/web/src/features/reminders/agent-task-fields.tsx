@@ -22,7 +22,7 @@ const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
   full_access: 'tasks.governance.modes.full_access',
 };
 
-const INPUT = 'h-9 w-full rounded-md border bg-background px-2 text-sm';
+const INPUT = 'h-9 w-full rounded-md border bg-ui-control px-2 text-sm';
 
 export interface AgentTaskFieldsValue {
   goal: string;
@@ -64,7 +64,7 @@ export function AgentTaskFields({ assistantId, value, onChange }: Props) {
           data-testid="reminder-agent-goal"
           placeholder={t('reminders.agentGoalPlaceholder')}
           onChange={(event) => onChange({ goal: event.target.value })}
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+          className="w-full rounded-md border bg-ui-control px-2 py-1.5 text-sm"
         />
       </label>
 

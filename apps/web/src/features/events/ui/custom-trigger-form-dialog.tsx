@@ -138,7 +138,7 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
     }
   };
 
-  const selectCls = 'rounded-md border bg-background px-2 py-1.5 text-sm';
+  const selectCls = 'rounded-md border bg-ui-control px-2 py-1.5 text-sm';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,7 +195,7 @@ export function CustomTriggerFormDialog({ open, onOpenChange, trigger, defaultAs
               data-testid="custom-trigger-phrases"
               placeholder={t('customTriggers.phrasesPlaceholder')}
               onChange={(e) => update({ phrasesText: e.target.value })}
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+              className="w-full rounded-md border bg-ui-control px-2 py-1.5 text-sm"
             />
             <p className="text-[11px] text-muted-foreground">{t('customTriggers.phrasesHint')}</p>
           </label>

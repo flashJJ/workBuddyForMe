@@ -141,7 +141,7 @@ export function AssetImportSection<TMeta, TResponse>({
   const prefix = config.testIdPrefix;
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid={`${prefix}-import-section`}>
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid={`${prefix}-import-section`}>
       <div>
         <h4 className="text-sm font-medium">{t(key('importTitle'))}</h4>
         <p className="mt-1 text-xs text-muted-foreground">{t(key('importHint'))}</p>
@@ -164,7 +164,7 @@ export function AssetImportSection<TMeta, TResponse>({
         </label>
 
         {meta && (
-          <div className="space-y-1 rounded border p-2 text-xs">
+          <div className="space-y-1 rounded border bg-ui-row p-2 text-xs">
             <div className="font-medium">{t(key('metaTitle'))}</div>
             {config.renderMeta(meta)}
           </div>
@@ -172,7 +172,7 @@ export function AssetImportSection<TMeta, TResponse>({
 
         {file && config.extraFields && config.extraFields.length > 0 && (
           <div
-            className="space-y-2 rounded border p-2 text-xs"
+            className="space-y-2 rounded border bg-ui-row p-2 text-xs"
             data-testid={`${prefix}-extra-fields`}
           >
             {config.extraFields.map((field) => (
@@ -180,7 +180,7 @@ export function AssetImportSection<TMeta, TResponse>({
                 <span className="text-muted-foreground">{t(field.labelKey)}</span>
                 {field.kind === 'select' ? (
                   <SimpleSelect
-                    className="rounded-md border text-xs"
+                    className="rounded-md border bg-ui-control text-xs"
                     data-testid={`${prefix}-${field.name}`}
                     value={extras[field.name] ?? ''}
                     onValueChange={(v) =>
@@ -196,7 +196,7 @@ export function AssetImportSection<TMeta, TResponse>({
                 ) : (
                   <input
                     type="text"
-                    className="w-40 rounded-md border px-2 py-1 text-xs"
+                    className="w-40 rounded-md border bg-ui-control px-2 py-1 text-xs"
                     data-testid={`${prefix}-${field.name}`}
                     placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
                     value={extras[field.name] ?? ''}
@@ -211,7 +211,7 @@ export function AssetImportSection<TMeta, TResponse>({
         )}
 
         {file && (
-          <div className="space-y-2 rounded border p-2">
+          <div className="space-y-2 rounded border bg-ui-row p-2">
             <div className="text-xs font-medium">{t(key('disclaimerTitle'))}</div>
             <p className="text-xs text-muted-foreground">{t(key('disclaimerText'))}</p>
             <label className="flex items-center gap-2">

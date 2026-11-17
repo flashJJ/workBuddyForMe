@@ -14,7 +14,7 @@ export function AppSidebar() {
   const { t } = useI18n();
 
   return (
-    <aside className="flex h-full w-14 shrink-0 flex-col border-r bg-card md:w-56">
+    <aside className="app-glass-surface flex h-full w-14 shrink-0 flex-col border-r bg-ui-card md:w-56">
       <div className="px-2 py-4 md:px-5">
         <p className="hidden text-base font-semibold tracking-tight md:block">{t('common.appName')}</p>
         <p className="hidden text-xs text-muted-foreground md:block">{t('common.brandTagline')}</p>
@@ -33,7 +33,7 @@ export function AppSidebar() {
                 'flex items-center justify-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors md:justify-start md:px-3',
                 active
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                  : 'text-foreground/80 hover:bg-accent hover:text-accent-foreground',
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />

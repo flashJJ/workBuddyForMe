@@ -69,7 +69,7 @@ export function ToolDebugPanel() {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4">
       <div>
         <h2 className="text-base font-semibold">{t('toolDebug.title')}</h2>
         <p className="text-sm text-muted-foreground">
@@ -80,7 +80,7 @@ export function ToolDebugPanel() {
       {mounted && isLoading && <Spinner />}
 
       {mounted && !isLoading && tools && tools.length === 0 && (
-        <p className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+        <p className="rounded-md border bg-ui-row p-3 text-sm text-muted-foreground">
           {t('toolDebug.empty')}
         </p>
       )}
@@ -95,7 +95,7 @@ export function ToolDebugPanel() {
               id="tool-debug-select"
               value={selected}
               onValueChange={(v) => setSelected(v)}
-              className="w-full rounded-md border bg-background text-sm"
+              className="w-full rounded-md border bg-ui-control text-sm"
               data-testid="tool-debug-select"
             >
               {Object.entries(
@@ -141,7 +141,7 @@ export function ToolDebugPanel() {
               value={argsText}
               onChange={(e) => setArgsText(e.target.value)}
               rows={6}
-              className="w-full rounded-md border bg-background px-3 py-2 font-mono text-xs"
+              className="w-full rounded-md border bg-ui-control px-3 py-2 font-mono text-xs"
               data-testid="tool-debug-args"
               placeholder='{"url": "https://example.com"}'
             />

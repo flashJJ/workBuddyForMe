@@ -72,7 +72,7 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col gap-3">
       {/* 头部：议题/状态/控制 */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-ui-card p-3">
         <Link
           href="/meetings"
           className="rounded p-1 text-muted-foreground hover:bg-accent"
@@ -95,7 +95,7 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
           {meeting.mode === 'auto' ? ` · ${t('meeting.room.autoRound', { used: meeting.autoRounds, max: 8 })}` : ''}
         </span>
         <div className="ml-auto flex items-center gap-1">
-          <div className="flex overflow-hidden rounded border" role="group" aria-label="schedule">
+          <div className="flex overflow-hidden rounded border bg-ui-control" role="group" aria-label="schedule">
             {MODE_ORDER.map((mode) => (
               <button
                 key={mode}
@@ -149,7 +149,7 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
 
       <div className="flex min-h-0 flex-1 gap-3">
         {/* 成员席 */}
-        <aside className="w-48 shrink-0 overflow-y-auto rounded-lg border bg-card p-3">
+        <aside className="w-48 shrink-0 overflow-y-auto rounded-lg border bg-ui-card p-3">
           <p className="mb-2 text-xs font-medium text-muted-foreground">{t('meeting.room.members')}</p>
           <ul className="space-y-1" data-testid="meeting-members">
             {members.map((member) => (
@@ -169,7 +169,7 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
         {/* 转录 */}
         <div
           ref={transcriptRef}
-          className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg border bg-card p-4"
+          className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg border bg-ui-card p-4"
           data-testid="meeting-transcript"
         >
           {messages.map((message) => (
@@ -214,9 +214,9 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
 
       {/* 输入区：manual @ 点名；all/auto 一键触发整轮 */}
       {active && (
-        <div className="flex items-center gap-2 rounded-lg border bg-card p-2">
+        <div className="flex items-center gap-2 rounded-lg border bg-ui-card p-2">
         <input
-          className="min-w-0 flex-1 rounded border bg-background px-3 py-2 text-sm"
+          className="min-w-0 flex-1 rounded border bg-ui-control px-3 py-2 text-sm"
           aria-label="meeting-input"
           data-testid="meeting-input"
           value={draft}

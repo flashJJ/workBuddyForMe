@@ -28,7 +28,7 @@ export function SearchCredentialField({
 }: Props) {
   const { t } = useI18n();
   return (
-    <div className="space-y-2 rounded-md border border-dashed p-3">
+    <div className="space-y-2 rounded-md border border-dashed bg-ui-row p-3">
       <label className="flex flex-col gap-1 text-xs text-muted-foreground">
         {t(
           provider === 'brave'

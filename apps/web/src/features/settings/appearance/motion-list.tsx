@@ -86,7 +86,7 @@ export function MotionList() {
       }
       beforeList={
         <>
-          <div className="space-y-2 rounded border p-2 text-xs" data-testid="motion-rotation">
+          <div className="space-y-2 rounded border bg-ui-row p-2 text-xs" data-testid="motion-rotation">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -118,7 +118,7 @@ export function MotionList() {
           </div>
 
           <div
-            className="flex items-center justify-between rounded border p-2 text-xs"
+            className="flex items-center justify-between rounded border bg-ui-row p-2 text-xs"
             data-testid="motion-builtin-row"
           >
             <div>

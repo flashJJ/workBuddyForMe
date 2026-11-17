@@ -77,7 +77,7 @@ export function ApprovalsPage() {
           {approvals.map((approval) => (
             <li
               key={approval.id}
-              className="space-y-2 rounded-lg border bg-card p-4"
+              className="space-y-2 rounded-lg border bg-ui-card p-4"
               data-testid={`approval-${approval.id}`}
             >
               <div className="flex flex-wrap items-center gap-2">

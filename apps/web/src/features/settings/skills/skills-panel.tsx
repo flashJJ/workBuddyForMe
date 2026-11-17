@@ -84,7 +84,7 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
   };
 
   return (
-    <li className="space-y-2 rounded-md border p-3" data-testid="skill-item">
+    <li className="space-y-2 rounded-md border bg-ui-row p-3" data-testid="skill-item">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -182,7 +182,7 @@ export function SkillsPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="skills-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="skills-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium">{t('settingsMcp.skills.title')}</h3>

@@ -98,7 +98,7 @@ export function KnowledgeBaseFormDialog({ open, onOpenChange, knowledgeBase }: P
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isEdit && (
-            <div className="space-y-1.5 rounded-md border bg-muted/30 p-3">
+            <div className="space-y-1.5 rounded-md border bg-ui-row p-3">
               <Label htmlFor="kb-template">{t('knowledge.form.templateLabel')}</Label>
               <SimpleSelect id="kb-template" value="" onValueChange={applyTemplate}>
                 <option value="">{t('knowledge.form.templateBlank')}</option>

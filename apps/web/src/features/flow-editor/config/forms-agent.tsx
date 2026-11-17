@@ -176,7 +176,7 @@ function ScopeChip({
         'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
         active
           ? 'border-teal-500/60 bg-teal-500/10 text-teal-700 dark:text-teal-300'
-          : 'bg-background text-muted-foreground hover:border-primary/50',
+          : 'bg-ui-control text-muted-foreground hover:border-primary/50',
       )}
     >
       {icon}

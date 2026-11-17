@@ -17,7 +17,7 @@ export function NodePalette({ onAdd }: { onAdd: (type: FlowNodeType) => void }) 
   };
 
   return (
-    <aside className="flex w-52 shrink-0 flex-col gap-2 overflow-y-auto border-r bg-card/40 p-3">
+    <aside className="flex w-52 shrink-0 flex-col gap-2 overflow-y-auto border-r bg-ui-card p-3">
       <p className="px-1 text-xs font-medium text-muted-foreground">{t('flowEditor.palette.title')}</p>
       {PALETTE_TYPES.map((type) => {
         const meta = NODE_META[type];
@@ -29,7 +29,7 @@ export function NodePalette({ onAdd }: { onAdd: (type: FlowNodeType) => void }) 
             onClick={() => onAdd(type)}
             title={t('flowEditor.palette.dragHint')}
             className={cn(
-              'group cursor-grab rounded-md border bg-background p-2.5 transition-colors',
+              'group cursor-grab rounded-md border bg-ui-control p-2.5 transition-colors',
               'hover:border-primary/60 hover:bg-accent/50 active:cursor-grabbing',
             )}
           >

@@ -154,7 +154,7 @@ function HeaderActions({
               role="menu"
               aria-label={t('common.actions.more')}
               data-testid="chat-header-more-panel"
-              className="absolute right-0 top-full z-40 mt-1 w-52 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+              className="absolute right-0 top-full z-40 mt-1 w-52 rounded-md border bg-ui-overlay p-1 text-popover-foreground shadow-md"
             >
               <RunGraphLauncher kind="conversation" id={conversationId} menuItem />
               <BranchLauncher conversationId={conversationId} menuItem />
@@ -181,7 +181,7 @@ export function ChatHeader({
 }: Props) {
   return (
     <>
-      <header className="flex items-center justify-between gap-4 border-b px-4 py-2.5">
+      <header className="flex items-center justify-between gap-4 border-b bg-ui-card px-4 py-2.5">
         <div className="flex min-w-0 flex-col gap-1.5">
           <AssistantSwitcher
             assistants={assistants}

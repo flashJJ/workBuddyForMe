@@ -80,7 +80,7 @@ export function ConditionForm({ nodeId, config, nodes, patch }: NodeConfigFormPr
         {rules.map((rule, i) => {
           const noRight = OPS.find((o) => o.value === rule.op)?.noRight;
           return (
-            <div key={i} className="rounded-md border p-2">
+            <div key={i} className="rounded-md border bg-ui-row p-2">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-muted-foreground">
                   {t('flowEditor.form.condition.ruleIndex', { index: i + 1 })}

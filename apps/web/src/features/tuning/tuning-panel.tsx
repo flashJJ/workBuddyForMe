@@ -79,7 +79,7 @@ export function TuningPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="tuning-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="tuning-panel">
       <div>
         <h3 className="font-medium">{t('tuning.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('tuning.description')}</p>
@@ -118,7 +118,7 @@ export function TuningPanel() {
           />
 
           {/* 常用区 */}
-          <div className="space-y-3 rounded-md border p-3" data-testid="tuning-common">
+          <div className="space-y-3 rounded-md border bg-ui-row p-3" data-testid="tuning-common">
             <h4 className="text-sm font-medium">{t('tuning.common.title')}</h4>
             <NumberField
               id="tuning-temperature"
@@ -136,7 +136,7 @@ export function TuningPanel() {
           </div>
 
           {/* 高级区 */}
-          <div className="rounded-md border">
+          <div className="rounded-md border bg-ui-row">
             <Button
               type="button"
               variant="ghost"
@@ -175,7 +175,7 @@ export function TuningPanel() {
                     />
                   </div>
                 </div>
-                <label className="flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm">
+                <label className="flex cursor-pointer items-start gap-2 rounded-md border bg-ui-row p-3 text-sm">
                   <input
                     type="checkbox"
                     className="mt-0.5 h-4 w-4"

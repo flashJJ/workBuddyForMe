@@ -97,6 +97,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./background": {
+      "types": "./src/bridges/background.ts",
+      "development": "./src/bridges/background.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
     "./search": {
       "types": "./src/bridges/search.ts",
       "development": "./src/bridges/search.ts",

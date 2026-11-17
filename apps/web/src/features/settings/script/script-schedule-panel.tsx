@@ -142,7 +142,7 @@ export function ScriptSchedulePanel() {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="script-schedule-panel">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="script-schedule-panel">
       <div>
         <h3 className="font-medium">{t('settings.script.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('settings.script.description')}</p>
@@ -171,7 +171,7 @@ export function ScriptSchedulePanel() {
             disabled={saving}
             onChange={(event) => void save({ perDay: Number(event.target.value) })}
             data-testid="script-schedule-per-day"
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-8 rounded-md border border-input bg-ui-control px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
           >
             {PER_DAY_OPTIONS.map((value) => (
               <option key={value} value={value}>
@@ -196,7 +196,7 @@ export function ScriptSchedulePanel() {
             void saveRetention(value === 'forever' ? null : Number(value));
           }}
           data-testid="journal-retention"
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-8 rounded-md border border-input bg-ui-control px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
         >
           {PET_SCRIPT_JOURNAL_RETENTION_OPTIONS.map((days) => (
             <option key={days} value={days}>
@@ -224,7 +224,7 @@ export function ScriptSchedulePanel() {
               disabled={saving}
               onChange={(event) => void savePlayback({ perDay: Number(event.target.value) })}
               data-testid="playback-per-day"
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-8 rounded-md border border-input bg-ui-control px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
             >
               {PLAYBACK_PER_DAY_OPTIONS.map((value) => (
                 <option key={value} value={value}>
@@ -246,7 +246,7 @@ export function ScriptSchedulePanel() {
               disabled={saving}
               onChange={(event) => void savePlayback({ idleMinutes: Number(event.target.value) })}
               data-testid="playback-idle"
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-8 rounded-md border border-input bg-ui-control px-2 text-sm text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
             >
               {PLAYBACK_IDLE_OPTIONS.map((value) => (
                 <option key={value} value={value}>

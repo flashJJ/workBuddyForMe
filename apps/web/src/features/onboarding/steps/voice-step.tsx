@@ -64,7 +64,7 @@ export function VoiceStep() {
         <p className="text-xs text-muted-foreground">{t('onboarding.voice.sizeHint')}</p>
       </div>
 
-      <div className="space-y-2 rounded-md border p-3">
+      <div className="space-y-2 rounded-md border bg-ui-row p-3">
         <ProgressRow
           label={t('onboarding.voice.downloadAsr')}
           ratio={asr.ratio}

@@ -95,7 +95,7 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
   };
 
   return (
-    <section className="flex h-80 shrink-0 flex-col border-t bg-card">
+    <section className="flex h-80 shrink-0 flex-col border-t bg-ui-card">
       <header className="flex items-center gap-2 border-b px-4 py-2">
         <p className="text-sm font-semibold">{t('flowExecution.title')}</p>
         <RunStatusBadge kind="flow" status={live.phase} />

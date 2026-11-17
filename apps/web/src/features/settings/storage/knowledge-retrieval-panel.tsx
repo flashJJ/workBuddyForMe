@@ -90,7 +90,7 @@ export function KnowledgeRetrievalPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="retrieval-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="retrieval-panel">
       <div className="space-y-1">
         <h3 className="font-medium">{t('settings.retrieval.title')}</h3>
         <p className="text-xs text-muted-foreground">{t('settings.retrieval.description')}</p>
@@ -204,7 +204,7 @@ export function KnowledgeRetrievalPanel() {
             disabled={!compileLlm}
             onValueChange={(v) => setCompileModelId(v)}
             data-testid="retrieval-compile-model"
-            className="h-9 w-full rounded-md border bg-background text-sm disabled:opacity-50"
+            className="h-9 w-full rounded-md border bg-ui-control text-sm disabled:opacity-50"
           >
             <option value="">{t('settings.retrieval.compileModelDefault')}</option>
             {chatModels.map((model) => (

@@ -21,7 +21,7 @@ export function InstalledScriptsSection() {
           {data.map((script) => (
             <li
               key={script.id}
-              className="flex flex-wrap items-center gap-2 rounded-md border bg-background/60 p-2"
+              className="flex flex-wrap items-center gap-2 rounded-md border bg-ui-row p-2"
               data-testid={`installed-script-${script.id}`}
             >
               <span className="text-xs font-medium">{script.definition.title ?? script.id}</span>

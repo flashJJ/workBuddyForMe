@@ -66,7 +66,7 @@ export function VoiceDownloadGuide() {
   };
 
   return (
-    <div className="space-y-2.5 rounded-md border p-3" data-testid="voice-download-guide">
+    <div className="space-y-2.5 rounded-md border bg-ui-row p-3" data-testid="voice-download-guide">
       <p className="text-sm font-medium">{t('voice.quickStart.download.title')}</p>
       <p className="text-xs text-muted-foreground" data-testid="voice-quickstart-size">
         {t('voice.quickStart.download.costLine', { size: formatBytes(totalBytes) })}

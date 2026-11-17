@@ -33,7 +33,7 @@ function relationKey(value: number): MessageKey {
 
 function StateRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-md bg-muted/60 px-3 py-1.5 text-sm">
+    <div className="flex items-center justify-between rounded-md bg-ui-row px-3 py-1.5 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
     </div>
@@ -122,7 +122,7 @@ export function EmotionDetailView({ assistantId }: { assistantId: string }) {
           {t('settings.emotion.eventsTitle')}
         </div>
         {events.length === 0 ? (
-          <p className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          <p className="rounded-md bg-ui-row px-3 py-2 text-xs text-muted-foreground">
             {t('settings.emotion.eventsEmpty')}
           </p>
         ) : (
@@ -130,7 +130,7 @@ export function EmotionDetailView({ assistantId }: { assistantId: string }) {
             {events.map((event) => (
               <li
                 key={event.id}
-                className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-1.5 text-xs"
+                className="flex items-center justify-between gap-2 rounded-md border bg-ui-card px-3 py-1.5 text-xs"
               >
                 <span className="flex items-center gap-1.5">
                   <span className="font-medium">

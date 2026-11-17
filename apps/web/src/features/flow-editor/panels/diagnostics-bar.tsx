@@ -30,7 +30,7 @@ export function DiagnosticsBar({ diagnostics, nodes, onSelectNode, onClose }: Di
   };
 
   return (
-    <div className="absolute bottom-3 left-3 z-10 max-h-44 w-96 overflow-y-auto rounded-lg border bg-card/95 shadow-lg backdrop-blur">
+    <div className="absolute bottom-3 left-3 z-10 max-h-44 w-96 overflow-y-auto rounded-lg border bg-ui-overlay shadow-lg backdrop-blur">
       <div className="flex items-center gap-1.5 border-b px-3 py-1.5 text-xs font-medium">
         <AlertTriangle className="h-3.5 w-3.5 text-warning" />
         {t('flowEditor.diagnostics.title', { count: diagnostics.length })}

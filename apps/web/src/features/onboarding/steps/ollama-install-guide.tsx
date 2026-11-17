@@ -16,7 +16,7 @@ export function OllamaInstallGuide({ errorMsg }: { errorMsg: string }) {
         {t('onboarding.provider.installWingetLead')}
       </p>
       <pre
-        className="overflow-x-auto rounded bg-background p-2 font-mono"
+        className="overflow-x-auto rounded bg-ui-row p-2 font-mono"
         data-testid="ob-ollama-winget"
       >
         {t('onboarding.provider.installWinget')}
@@ -28,7 +28,7 @@ export function OllamaInstallGuide({ errorMsg }: { errorMsg: string }) {
         </a>
         {t('onboarding.provider.installMid')}
       </p>
-      <pre className="overflow-x-auto rounded bg-background p-2 font-mono">
+      <pre className="overflow-x-auto rounded bg-ui-row p-2 font-mono">
         {t('onboarding.provider.pullCommand')}
       </pre>
       <p className="text-muted-foreground">{t('onboarding.provider.installTail')}</p>

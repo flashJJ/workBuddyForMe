@@ -9,6 +9,7 @@ import {
 import { DemoModePanel } from '../providers/demo-mode-panel';
 import { DefaultsPanel } from '../providers/defaults-panel';
 import { AppearancePanel } from '../appearance/appearance-panel';
+import { BackgroundSettingsPanel } from '../appearance/background-settings-panel';
 import { McpPanel } from '../mcp/mcp-panel';
 import { PermissionPanel } from '../tools/permission-panel';
 import { ToolBreakerPanel } from '../tools/tool-breaker-panel';
@@ -58,6 +59,7 @@ const PANEL_RENDERERS: Record<SettingsPanelId, PanelRenderer> = {
   providers: ({ providers }) => providers,
   defaults: () => <DefaultsPanel />,
   appearance: () => <AppearancePanel />,
+  background: () => <BackgroundSettingsPanel />,
   'avatar-import': () => <VrmImportSection />,
   'avatar-list': () => <VrmAvatarList />,
   'motion-import': () => <MotionImportSection />,

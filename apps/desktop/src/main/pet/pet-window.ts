@@ -20,9 +20,9 @@ import type { WindowBootInfo } from '../window';
 import { loadWithDevRetry } from '../wait-for-server';
 import { clampIntoDisplay, type PetState } from './pet-state';
 
-/** 桌宠窗固定尺寸（DIP）：宽度紧贴角色，高度留出拎起时头顶空间 */
-export const PET_WINDOW_WIDTH = 260;
-export const PET_WINDOW_HEIGHT = 400;
+/** 桌宠窗固定尺寸（DIP）：9:16 竖屏，便于生成同比例背景图/视频；高度留出拎起空间 */
+export const PET_WINDOW_WIDTH = 270;
+export const PET_WINDOW_HEIGHT = 480;
 
 /**
  * 命中盒（DIP 坐标，与 Web 端 pet-bridge.ts PET_HIT 同一套比例）。

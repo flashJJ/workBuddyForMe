@@ -76,10 +76,10 @@ export function MeetingsPage() {
     >
       <div className="mx-auto max-w-4xl space-y-5">
         {/* 创建会议 */}
-        <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="meeting-create">
+        <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="meeting-create">
           <h2 className="text-sm font-medium">{t('meeting.create.heading')}</h2>
           <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border bg-ui-control px-3 py-2 text-sm"
             aria-label={t('meeting.create.topic')}
             data-testid="meeting-topic"
             maxLength={200}
@@ -113,7 +113,7 @@ export function MeetingsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex overflow-hidden rounded-md border" role="group" aria-label={t('meeting.create.mode')}>
+            <div className="flex overflow-hidden rounded-md border bg-ui-control" role="group" aria-label={t('meeting.create.mode')}>
               {(['manual', 'all', 'auto'] as MeetingMode[]).map((m) => (
                 <button
                   key={m}
@@ -155,7 +155,7 @@ export function MeetingsPage() {
               <Link
                 key={meeting.id}
                 href={`/meetings/${meeting.id}`}
-                className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm hover:bg-accent"
+                className="flex items-center gap-3 rounded-lg border bg-ui-card p-3 text-sm hover:bg-accent"
                 data-meeting-id={meeting.id}
               >
                 <span className="min-w-0 flex-1 truncate font-medium">{meeting.topic}</span>

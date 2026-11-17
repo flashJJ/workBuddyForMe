@@ -233,7 +233,7 @@ export function Composer({
         <textarea
           ref={textareaRef}
           aria-label={t('chat.composer.messageInputAria')}
-          className="max-h-40 min-h-[44px] flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          className="max-h-40 min-h-[44px] flex-1 resize-none rounded-md border bg-ui-control px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           rows={2}
           value={value}
           disabled={disabled}

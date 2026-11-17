@@ -50,7 +50,7 @@ export function BranchEdge({
         <span
           className={cn(
             'pointer-events-none absolute rounded px-1.5 py-0.5 text-[10px] font-medium',
-            'bg-background border',
+            'bg-ui-control border',
           )}
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,

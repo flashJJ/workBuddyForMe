@@ -36,7 +36,7 @@ export function StartForm({ config, patch }: NodeConfigFormProps) {
       <Field label={t('flowEditor.form.start.inputsLabel')} hint={t('flowEditor.form.start.inputsHint')}>
         <div className="flex flex-col gap-2">
           {inputs.map((field, i) => (
-            <div key={i} className="rounded-md border p-2">
+            <div key={i} className="rounded-md border bg-ui-row p-2">
               <div className="flex items-center gap-2">
                 <Input
                   value={field.name}

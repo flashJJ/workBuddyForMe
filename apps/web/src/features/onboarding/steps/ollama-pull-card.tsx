@@ -37,7 +37,7 @@ export function OllamaPullCard({
   }, [state.status, onPulled]);
 
   return (
-    <div className="space-y-1.5 rounded border p-2" data-testid={`ob-ollama-pull-${model.modelId}`}>
+    <div className="space-y-1.5 rounded border bg-ui-row p-2" data-testid={`ob-ollama-pull-${model.modelId}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <span className="font-mono text-xs">{model.modelId}</span>

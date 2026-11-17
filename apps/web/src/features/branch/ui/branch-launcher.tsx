@@ -53,7 +53,7 @@ export function BranchLauncher({
             aria-label={t('branch.close')}
             onClick={() => setOpen(false)}
           />
-          <div className="relative z-10 flex h-full w-[min(440px,92vw)] flex-col border-l bg-background shadow-xl">
+          <div className="relative z-10 flex h-full w-[min(440px,92vw)] flex-col border-l bg-ui-overlay shadow-xl">
             <BranchPanel conversationId={conversationId} onClose={() => setOpen(false)} />
           </div>
         </div>

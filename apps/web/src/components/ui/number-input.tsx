@@ -97,7 +97,7 @@ export function NumberInput({
   return (
     <div
       className={cn(
-        'inline-flex h-9 w-fit items-stretch rounded-md border border-input bg-background shadow-sm',
+        'inline-flex h-9 w-fit items-stretch rounded-md border border-input bg-ui-control shadow-sm',
         'focus-within:ring-2 focus-within:ring-ring',
         disabled && 'cursor-not-allowed opacity-50',
         className,

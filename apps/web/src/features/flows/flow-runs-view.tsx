@@ -79,10 +79,10 @@ export function FlowRunsView() {
         }
       />
 
-      <div className="flex items-center gap-2 border-b bg-card px-6 py-2.5 text-xs">
+      <div className="flex items-center gap-2 border-b bg-ui-card px-6 py-2.5 text-xs">
         <span className="text-muted-foreground">{t('flows.runs.source')}</span>
         <SimpleSelect
-          className="h-8 rounded-md border bg-background px-2"
+          className="h-8 rounded-md border bg-ui-control px-2"
           value={trigger}
           onValueChange={(v) => setTrigger(v)}
         >
@@ -94,7 +94,7 @@ export function FlowRunsView() {
         </SimpleSelect>
         <span className="ml-2 text-muted-foreground">{t('common.words.status')}</span>
         <SimpleSelect
-          className="h-8 rounded-md border bg-background px-2"
+          className="h-8 rounded-md border bg-ui-control px-2"
           value={status}
           onValueChange={(v) => setStatus(v)}
         >

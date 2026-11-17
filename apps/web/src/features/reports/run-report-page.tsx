@@ -75,7 +75,7 @@ export function RunReportPage() {
     >
       <p className="mb-4 text-[11px] text-muted-foreground">{t('reports.timeHint')}</p>
 
-      <div className="mb-4 flex flex-wrap items-end gap-2">
+      <div className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border bg-ui-card px-4 py-3">
         <Input
           type="date"
           className="h-9 w-40"
@@ -162,9 +162,9 @@ export function RunReportPage() {
           {data.totals.total === 0 ? (
             <EmptyState title={t('reports.empty')} description="" />
           ) : (
-            <div className="overflow-hidden rounded-lg border">
+            <div className="overflow-hidden rounded-lg border bg-ui-card">
               <table className="w-full text-sm" data-testid="run-report-table">
-                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                <thead className="bg-ui-row text-xs text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 text-left">{t('reports.table.chain')}</th>
                     <th className="px-3 py-2 text-right">{t('reports.table.total')}</th>
@@ -208,7 +208,7 @@ export function RunReportPage() {
                   row.failures.map((failure) => (
                     <li
                       key={`${row.chain}-${failure.code}`}
-                      className="rounded-full border bg-muted/40 px-2.5 py-1 text-xs"
+                      className="rounded-full border bg-ui-row px-2.5 py-1 text-xs"
                     >
                       {t(CHAIN_LABEL_KEYS[row.chain])} · {failure.code} × {failure.count}
                     </li>
@@ -225,7 +225,7 @@ export function RunReportPage() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-card p-3">
+    <div className="rounded-lg border bg-ui-card p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold">{value}</p>
     </div>

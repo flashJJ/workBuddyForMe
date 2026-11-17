@@ -156,7 +156,7 @@ export function StorageCleanupPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="storage-cleanup-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="storage-cleanup-panel">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-medium">{t('settingsBackup.storage.title')}</h3>
         <Button type="button" variant="outline" size="sm" onClick={() => void loadUsage()} disabled={loadingUsage}>
@@ -168,7 +168,7 @@ export function StorageCleanupPanel() {
       {loadingUsage && <p className="text-sm text-muted-foreground">{t('settingsBackup.storage.loading')}</p>}
       {usageError && <p className="text-sm text-destructive">{t('settingsBackup.storage.failed')}</p>}
       {usage && (
-        <div className="rounded-md border p-2 text-xs">
+        <div className="rounded-md border bg-ui-row p-2 text-xs">
           <div className="flex justify-between border-b pb-1 font-medium">
             <span>{t('settingsBackup.storage.total')}</span>
             <span>{formatBytes(usage.totalBytes)}</span>
@@ -187,7 +187,7 @@ export function StorageCleanupPanel() {
         </div>
       )}
 
-      <div className="space-y-2 rounded-md border p-3">
+      <div className="space-y-2 rounded-md border bg-ui-row p-3">
         <p className="text-sm font-medium">{t('settingsBackup.storage.orphansTitle')}</p>
         <p className="text-xs text-muted-foreground">{t('settingsBackup.storage.orphansHint')}</p>
         <div className="flex flex-wrap items-center gap-2">
@@ -221,7 +221,7 @@ export function StorageCleanupPanel() {
         </div>
       </div>
 
-      <div className="space-y-2 rounded-md border p-3">
+      <div className="space-y-2 rounded-md border bg-ui-row p-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium">{t('settingsBackup.storage.trashTitle')}</p>
           <Button type="button" variant="outline" size="sm" onClick={() => void purge()} disabled={trash.length === 0}>

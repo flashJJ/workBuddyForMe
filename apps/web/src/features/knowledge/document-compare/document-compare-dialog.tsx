@@ -86,7 +86,7 @@ export function DocumentCompareDialog({ documents, open, onOpenChange }: Props) 
         </DialogHeader>
 
         {usable.length < 2 ? (
-          <p className="rounded-md border bg-muted/40 px-3 py-4 text-sm text-muted-foreground">
+          <p className="rounded-md border bg-ui-row px-3 py-4 text-sm text-muted-foreground">
             {t('knowledgeCompare.needTwo')}
           </p>
         ) : (
@@ -95,7 +95,7 @@ export function DocumentCompareDialog({ documents, open, onOpenChange }: Props) 
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">{t('knowledgeCompare.left')}</span>
                 <select
-                  className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  className="h-9 w-full rounded-md border bg-ui-control px-2 text-sm"
                   data-testid="compare-left"
                   aria-label={t('knowledgeCompare.left')}
                   value={leftId}
@@ -111,7 +111,7 @@ export function DocumentCompareDialog({ documents, open, onOpenChange }: Props) 
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">{t('knowledgeCompare.right')}</span>
                 <select
-                  className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  className="h-9 w-full rounded-md border bg-ui-control px-2 text-sm"
                   data-testid="compare-right"
                   aria-label={t('knowledgeCompare.right')}
                   value={rightId}
@@ -131,7 +131,7 @@ export function DocumentCompareDialog({ documents, open, onOpenChange }: Props) 
             <label className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{t('knowledgeCompare.format')}</span>
               <select
-                className="h-8 rounded-md border bg-background px-2 text-xs"
+                className="h-8 rounded-md border bg-ui-control px-2 text-xs"
                 data-testid="compare-format"
                 aria-label={t('knowledgeCompare.format')}
                 value={format}
@@ -148,7 +148,7 @@ export function DocumentCompareDialog({ documents, open, onOpenChange }: Props) 
 
             {result && (
               <div className="space-y-3" data-testid="compare-result">
-                <div className="rounded-md border bg-muted/30 p-3 text-xs">
+                <div className="rounded-md border bg-ui-row p-3 text-xs">
                   <p className="font-medium">{result.artifact.title}</p>
                   <p className="mt-1 text-muted-foreground">
                     {t('knowledgeCompare.summarySections', {
@@ -192,7 +192,7 @@ export function DocumentCompareDialog({ documents, open, onOpenChange }: Props) 
                 </div>
                 {format === 'md' ? (
                   <pre
-                    className="max-h-64 overflow-auto whitespace-pre-wrap rounded-md border bg-background p-3 text-xs"
+                    className="max-h-64 overflow-auto whitespace-pre-wrap rounded-md border bg-ui-control p-3 text-xs"
                     data-testid="compare-markdown-preview"
                   >
                     {result.content}
@@ -201,7 +201,7 @@ export function DocumentCompareDialog({ documents, open, onOpenChange }: Props) 
                   <iframe
                     title={t('knowledgeCompare.previewTitle')}
                     src={artifactUrl}
-                    className="h-72 w-full rounded-md border bg-background"
+                    className="h-72 w-full rounded-md border bg-ui-control"
                     data-testid="compare-html-preview"
                   />
                 )}

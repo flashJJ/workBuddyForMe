@@ -149,7 +149,7 @@ export function DocumentList({ kbId, documents, loading }: {
           {t('knowledge.documents.reparseSummary', { count: pendingCount })}
         </p>
       )}
-      <ul className="divide-y rounded-lg border" data-testid="document-list">
+      <ul className="divide-y rounded-lg border bg-ui-card" data-testid="document-list">
         {documents.map((document) => {
           const failure = failureReason(document);
           return (

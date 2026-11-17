@@ -31,7 +31,7 @@ export function CapabilityHealthBanner({
 
   return (
     <section
-      className="space-y-3 rounded-lg border border-dashed p-4"
+      className="space-y-3 rounded-lg border border-dashed bg-ui-card p-4"
       data-testid="capability-health-banner"
     >
       <div className="flex flex-wrap items-center gap-2">

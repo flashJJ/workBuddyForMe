@@ -100,7 +100,7 @@ export function EmotionPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="emotion-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="emotion-panel">
       <div>
         <h3 className="font-medium">{t('settings.emotion.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('settings.emotion.description')}</p>
@@ -158,7 +158,7 @@ export function EmotionPanel() {
           <label className="flex items-center gap-1.5">
             {t('settings.emotion.doNotDisturbStart')}
             <SimpleSelect
-              className="h-8 rounded-md border bg-background text-sm"
+              className="h-8 rounded-md border bg-ui-control text-sm"
               data-testid="dnd-start-hour"
               value={String(dndStart)}
               onValueChange={(v) => void changeDndHour('start', Number(v))}
@@ -171,7 +171,7 @@ export function EmotionPanel() {
           <label className="flex items-center gap-1.5">
             {t('settings.emotion.doNotDisturbEnd')}
             <SimpleSelect
-              className="h-8 rounded-md border bg-background text-sm"
+              className="h-8 rounded-md border bg-ui-control text-sm"
               data-testid="dnd-end-hour"
               value={String(dndEnd)}
               onValueChange={(v) => void changeDndHour('end', Number(v))}
@@ -194,7 +194,7 @@ export function EmotionPanel() {
             {hydrated && assistants && assistants.length > 0 ? (
               <SimpleSelect
                 id="emotion-assistant-select"
-                className="h-9 w-full rounded-md border bg-background text-sm"
+                className="h-9 w-full rounded-md border bg-ui-control text-sm"
                 value={selectedId}
                 onValueChange={(v) => setSelectedId(v)}
               >

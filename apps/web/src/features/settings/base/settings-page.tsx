@@ -168,7 +168,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
         {/* 左侧：设置主内容 */}
         <div className="min-w-0 flex-1 space-y-8">
           {/* 页内搜索：按标题 / 描述 / 中英别名过滤面板 */}
-          <div className="sticky top-0 z-10 space-y-2 bg-background/95 py-2 backdrop-blur">
+          <div className="sticky top-0 z-10 space-y-2 rounded-lg border bg-ui-card p-4 backdrop-blur">
             <div className="flex items-center gap-2">
               <input
                 id="settings-search"
@@ -178,7 +178,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
                 placeholder={t('settings.registry.search.placeholder')}
                 aria-label={t('settings.registry.search.label')}
                 data-testid="settings-search"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
+                className="w-full rounded-lg border bg-ui-control px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
               />
               {searching && (
                 <button

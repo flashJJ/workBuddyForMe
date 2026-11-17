@@ -64,7 +64,7 @@ export function TtsPreview(props: { ready: boolean; speakerId: number }) {
       <div className="flex gap-2">
         <input
           id="tts-preview-text"
-          className="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
+          className="h-9 flex-1 rounded-md border bg-ui-control px-3 text-sm"
           value={text}
           maxLength={200}
           onChange={(e) => setText(e.target.value)}

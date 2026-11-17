@@ -47,7 +47,7 @@ function NodeShell({ id, type, config, selected, children }: ShellProps) {
   return (
     <div
       className={cn(
-        'w-52 rounded-lg border bg-card px-3 py-2.5 text-left shadow-sm transition-shadow',
+        'w-52 rounded-lg border bg-ui-card px-3 py-2.5 text-left shadow-sm transition-shadow',
         selected && 'border-primary ring-1 ring-primary',
         hasError && 'border-destructive border-dashed ring-1 ring-destructive/60',
         hasWarning && 'border-warning border-dashed',

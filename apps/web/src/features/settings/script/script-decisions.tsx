@@ -73,7 +73,7 @@ export function ScriptDecisions() {
           {decisions.map((record) => (
             <li
               key={`${record.at}-${record.sceneId}`}
-              className="rounded-md border bg-muted/20 px-2.5 py-2 text-xs"
+              className="rounded-md border bg-ui-row px-2.5 py-2 text-xs"
               data-testid="script-decision-item"
             >
               <div className="flex items-center justify-between gap-2">
@@ -89,7 +89,7 @@ export function ScriptDecisions() {
                 {record.reasons.map((reason) => (
                   <span
                     key={reason.code}
-                    className="rounded-full bg-background px-1.5 py-0.5"
+                    className="rounded-full bg-ui-row px-1.5 py-0.5"
                   >
                     {t(SCRIPT_REASON_LABELS[reason.code])}
                     {reason.delta > 0 ? '+' : ''}

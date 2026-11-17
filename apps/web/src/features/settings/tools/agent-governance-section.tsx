@@ -13,9 +13,9 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 
-const INPUT = 'h-9 w-full rounded-md border bg-background px-2 text-sm';
+const INPUT = 'h-9 w-full rounded-md border bg-ui-control px-2 text-sm';
 const AREA =
-  'min-h-20 w-full rounded-md border bg-background p-2 font-mono text-xs placeholder:text-muted-foreground/70';
+  'min-h-20 w-full rounded-md border bg-ui-control p-2 font-mono text-xs placeholder:text-muted-foreground/70';
 
 const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
   confirm_each: 'tasks.governance.modes.confirm_each',
@@ -111,7 +111,7 @@ export function AgentGovernanceSection() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="agent-governance">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="agent-governance">
       <div>
         <h3 className="text-sm font-semibold">{t('tasks.governance.policy.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -136,7 +136,7 @@ export function AgentGovernanceSection() {
 
         <div className="flex flex-col gap-1 text-xs text-muted-foreground">
           {t('tasks.governance.policy.unattended')}
-          <div className="flex flex-wrap gap-3 rounded-md border px-3 py-2">
+          <div className="flex flex-wrap gap-3 rounded-md border bg-ui-row px-3 py-2">
             {AGENT_UNATTENDED_MODES.map((mode) => (
               <label key={mode} className="flex items-center gap-1 text-foreground">
                 <input

@@ -53,7 +53,7 @@ export function EventUsageStats() {
       <div className="flex items-center justify-between gap-3">
         <h4 className="text-sm font-medium">{t('eventStats.title')}</h4>
         <SimpleSelect
-          className="rounded-md border bg-background px-2 py-1 text-xs"
+          className="rounded-md border bg-ui-row px-2 py-1 text-xs"
           value={assistantId}
           aria-label={t('eventStats.selectAssistant')}
           data-testid="event-usage-assistant"
@@ -74,15 +74,15 @@ export function EventUsageStats() {
       {assistantId && (
         <div className="space-y-1">
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-md border py-1.5">
+            <div className="rounded-md border bg-ui-row py-1.5">
               <div className="text-sm font-medium tabular-nums">{stats?.played ?? 0}</div>
               <div className="text-[10px] text-muted-foreground">{t('eventStats.played')}</div>
             </div>
-            <div className="rounded-md border py-1.5">
+            <div className="rounded-md border bg-ui-row py-1.5">
               <div className="text-sm font-medium tabular-nums">{percent(stats?.acceptRate ?? null)}</div>
               <div className="text-[10px] text-muted-foreground">{t('eventStats.acceptRate')}</div>
             </div>
-            <div className="rounded-md border py-1.5">
+            <div className="rounded-md border bg-ui-row py-1.5">
               <div className="text-sm font-medium tabular-nums">
                 {percent(stats?.interruptRate ?? null)}
               </div>

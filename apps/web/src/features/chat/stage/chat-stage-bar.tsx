@@ -181,7 +181,7 @@ export function ChatStageBar({
                 'shrink-0 rounded-full border px-2.5 py-1 text-xs transition-colors',
                 plan.activeStep === index
                   ? 'border-primary bg-primary text-primary-foreground'
-                  : 'bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground',
+                  : 'bg-ui-control text-muted-foreground hover:border-primary/50 hover:text-foreground',
               )}
             >
               {index + 1}. {step.title}

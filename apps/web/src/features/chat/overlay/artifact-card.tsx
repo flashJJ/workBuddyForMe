@@ -100,7 +100,7 @@ export function ArtifactCard({ artifact }: { artifact: ArtifactRef }) {
 
   return (
     <div
-      className="rounded-md border bg-background p-2 text-xs"
+      className="rounded-md border bg-ui-row p-2 text-xs"
       data-testid="artifact-card"
       data-artifact-id={artifact.attachmentId}
     >

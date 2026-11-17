@@ -874,3 +874,46 @@
     animation: none;
   }
 }
+
+/* ── v4.4 整屏表面层级：L1→L5 透明度逐级升高，L5 实色 ──
+   参考 Fluent Acrylic / Radix Themes panelBackground / Material elevation overlay：
+   层级越高越实，既保留背景层次，也保证内容可读；组件只选层级，不写 alpha。 */
+:root,
+:root[data-theme='moonwhite'],
+:root[data-theme='sakura'] {
+  --ui-canvas: hsl(var(--background) / 0.50);
+  --ui-chrome: hsl(var(--card) / 0.52);
+  --ui-card: hsl(var(--card) / 0.64);
+  --ui-row: hsl(var(--card) / 0.76);
+  --ui-control: hsl(var(--background) / 0.90);
+  --ui-overlay: hsl(var(--popover));
+}
+.dark,
+:root[data-theme='nocturne-gold'] {
+  --ui-canvas: hsl(var(--background) / 0.54);
+  --ui-chrome: hsl(var(--card) / 0.56);
+  --ui-card: hsl(var(--card) / 0.68);
+  --ui-row: hsl(var(--card) / 0.80);
+  --ui-control: hsl(var(--background) / 0.92);
+  --ui-overlay: hsl(var(--popover));
+}
+/* 表面不做 backdrop 模糊：模糊只由背景层 blur 参数驱动，避免用户未选模糊却整体发虚 */
+[data-main-background='window'] .app-workspace-glass {
+  background-color: var(--ui-canvas);
+}
+[data-main-background='window'] .app-glass-surface {
+  background-color: var(--ui-chrome);
+}
+/* 系统关闭透明效果 / 低配回退：退回实色，不再叠模糊（对齐 Fluent Acrylic 的降级策略） */
+@media (prefers-reduced-transparency: reduce) {
+  [data-main-background='window'] .app-workspace-glass {
+    background-color: hsl(var(--background));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  [data-main-background='window'] .app-glass-surface {
+    background-color: hsl(var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

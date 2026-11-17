@@ -73,7 +73,7 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
 
   return (
     <div className="space-y-3" data-testid="relationship-level-view">
-      <div className="rounded-md bg-muted/60 px-3 py-2">
+      <div className="rounded-md bg-ui-row px-3 py-2">
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-xs text-muted-foreground">
             {t('settings.relationship.current')}
@@ -103,7 +103,7 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
           return (
             <li
               key={lv}
-              className="rounded-md border bg-card px-3 py-2 text-xs"
+              className="rounded-md border bg-ui-card px-3 py-2 text-xs"
               data-testid={`relationship-level-row-${lv}`}
             >
               <div className="flex items-center justify-between gap-2">
@@ -154,7 +154,7 @@ export function RelationshipLevelView({ assistantId }: { assistantId: string }) 
               <li
                 key={def.key}
                 data-testid={`relationship-milestone-row-${milestoneI18nKey(def.key)}`}
-                className="flex items-center justify-between gap-2 rounded border bg-card px-2.5 py-1.5 text-xs"
+                className="flex items-center justify-between gap-2 rounded border bg-ui-card px-2.5 py-1.5 text-xs"
               >
                 <span className={achieved ? 'font-medium' : 'text-muted-foreground'}>
                   {t(`relationship.milestones.${milestoneI18nKey(def.key)}` as MessageKey)}

@@ -42,7 +42,7 @@ export function ToolBreakerPanel() {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold">{t('settingsMcp.breaker.title')}</h2>
@@ -70,7 +70,7 @@ export function ToolBreakerPanel() {
             return (
               <div
                 key={b.name}
-                className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-md border bg-ui-row px-3 py-2 text-sm"
                 data-testid={`breaker-${b.name}`}
               >
                 <div className="min-w-0 flex-1 space-y-0.5">

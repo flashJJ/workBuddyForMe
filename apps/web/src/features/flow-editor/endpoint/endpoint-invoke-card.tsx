@@ -73,7 +73,7 @@ export function EndpointInvokeCard({
           </div>
         </div>
       )}
-      <pre className="mt-1.5 overflow-x-auto rounded bg-background p-2 text-[10px] leading-snug text-muted-foreground">
+      <pre className="mt-1.5 overflow-x-auto rounded bg-ui-control p-2 text-[10px] leading-snug text-muted-foreground">
 {curlExample}
       </pre>
     </div>

@@ -62,7 +62,7 @@ export function AssistantToolsField({
   }, [mcpTools]);
 
   return (
-    <fieldset className="space-y-2 rounded-md border p-3">
+    <fieldset className="space-y-2 rounded-md border bg-ui-row p-3">
       <legend className="px-1 text-xs font-medium text-muted-foreground">
         {t('assistants.tools.legend')}
       </legend>

@@ -110,7 +110,7 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
           onClick={() => onOpenChange(false)}
         />
         <DialogPrimitive.Content
-          className="fixed left-1/2 top-[20%] z-[71] w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border bg-background shadow-2xl"
+          className="fixed left-1/2 top-[20%] z-[71] w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border bg-ui-overlay shadow-2xl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           {/* sr-only 标题：满足 Radix Dialog 的 a11y 名称要求，读屏可播报 */}

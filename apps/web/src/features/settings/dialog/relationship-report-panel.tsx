@@ -11,7 +11,7 @@ export function RelationshipReportPanel() {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="relationship-report-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="relationship-report-panel">
       <h3 className="font-medium">{t('relationshipReport.title')}</h3>
       <p className="text-xs text-muted-foreground">{t('relationshipReport.description')}</p>
       <div>

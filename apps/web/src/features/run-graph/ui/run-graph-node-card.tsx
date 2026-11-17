@@ -38,7 +38,7 @@ export function RunGraphNodeCard({
         data-kind={node.kind}
         data-status={node.status}
         className={cn(
-          'w-full rounded-md border bg-card px-2.5 py-2 text-left transition-colors hover:bg-accent/40',
+          'w-full rounded-md border bg-ui-card px-2.5 py-2 text-left transition-colors hover:bg-accent/40',
           selected && 'ring-2 ring-ring',
           node.status === 'failed' && 'border-destructive/40',
         )}

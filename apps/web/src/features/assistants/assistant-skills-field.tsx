@@ -29,7 +29,7 @@ export function AssistantSkillsField({ value, onChange }: Props) {
   };
 
   return (
-    <fieldset className="space-y-2 rounded-md border p-3" data-testid="assistant-skills-field">
+    <fieldset className="space-y-2 rounded-md border bg-ui-row p-3" data-testid="assistant-skills-field">
       <legend className="px-1 text-xs font-medium text-muted-foreground">
         {t('assistants.skills.legend')}
       </legend>

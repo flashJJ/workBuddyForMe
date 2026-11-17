@@ -13,7 +13,7 @@ export function ModPackPanel() {
   const [importOpen, setImportOpen] = React.useState(false);
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="mod-pack-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="mod-pack-panel">
       <h3 className="font-medium">{t('modPack.title')}</h3>
       <p className="text-xs text-muted-foreground">{t('modPack.description')}</p>
       <div className="flex flex-wrap gap-2">

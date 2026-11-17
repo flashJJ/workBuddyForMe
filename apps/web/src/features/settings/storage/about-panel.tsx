@@ -145,7 +145,7 @@ export function AboutPanel() {
   // 无桥（纯浏览器/SSR）：仅渲染提示，避免页面布局空洞
   if (!bridge || !status) {
     return (
-      <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="about-panel">
+      <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="about-panel">
         <h3 className="font-medium">{t('about.title')}</h3>
         <p className="text-xs text-muted-foreground">{t('about.desktopOnly')}</p>
         <AboutQuickLinks />
@@ -191,7 +191,7 @@ export function AboutPanel() {
   const downloaded = status.status.state === 'downloaded';
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="about-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="about-panel">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-medium">{t('about.title')}</h3>
       </div>

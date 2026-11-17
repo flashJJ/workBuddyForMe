@@ -20,7 +20,7 @@ export function EventSubtitleBubble({ text }: EventSubtitleBubbleProps) {
       data-testid="event-subtitle-bubble"
       role="status"
     >
-      <div className="max-w-full rounded-lg border bg-background/85 px-2.5 py-1.5 text-xs leading-snug text-foreground shadow-sm backdrop-blur-sm">
+      <div className="max-w-full rounded-lg border bg-ui-overlay px-2.5 py-1.5 text-xs leading-snug text-foreground shadow-sm backdrop-blur-sm">
         <span className="line-clamp-2 break-words">{text}</span>
       </div>
     </div>

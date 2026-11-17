@@ -104,7 +104,7 @@ export function ContentPackSection({ compact = false }: { compact?: boolean }) {
       {data.map((pack) => (
         <div
           key={pack.id}
-          className="space-y-1.5 rounded-md border border-dashed p-2.5"
+          className="space-y-1.5 rounded-md border border-dashed bg-ui-row p-2.5"
           data-testid={`content-pack-${pack.id}`}
         >
           <div className="flex items-start justify-between gap-2">

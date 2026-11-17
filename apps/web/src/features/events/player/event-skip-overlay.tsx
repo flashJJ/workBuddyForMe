@@ -20,7 +20,7 @@ export function EventSkipOverlay({ onSkip }: { onSkip: () => void }) {
       className="absolute inset-0 z-30 cursor-pointer bg-transparent"
     >
       <span className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
-        <span className="rounded-full border border-border/50 bg-background/80 px-2.5 py-1 text-[11px] text-muted-foreground shadow-sm backdrop-blur-sm">
+        <span className="rounded-full border border-border/50 bg-ui-overlay px-2.5 py-1 text-[11px] text-muted-foreground shadow-sm backdrop-blur-sm">
           {t('event.ui.skip')} · Esc
         </span>
       </span>

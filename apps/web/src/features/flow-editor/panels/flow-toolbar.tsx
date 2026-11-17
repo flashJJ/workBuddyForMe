@@ -57,7 +57,7 @@ export function FlowToolbar({
           });
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-4">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-ui-card px-4">
       <Button asChild variant="ghost" size="icon" className="h-8 w-8" title={t('flowEditor.toolbar.backToList')}>
         <Link href="/flows">
           <ArrowLeft className="h-4 w-4" />

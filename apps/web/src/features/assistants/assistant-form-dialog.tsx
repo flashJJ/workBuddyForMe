@@ -192,7 +192,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
             <Label>{t('assistants.form.kbLabel')}</Label>
             {knowledgeBases && knowledgeBases.length > 0 ? (
               <div
-                className="space-y-1 rounded-md border p-2.5"
+                className="space-y-1 rounded-md border bg-ui-row p-2.5"
                 role="group"
                 aria-label={t('assistants.form.kbLabel')}
               >

@@ -41,6 +41,7 @@ import { usePetFrameMode } from './stage/use-pet-frame-mode';
 import { usePetSleep } from './stage/use-pet-sleep';
 import { reportPetUiRect, usePetHitProxy } from './stage/hit-proxy';
 import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
+import { PetBackground, PetFrameOverlay } from '@/features/background';
 import { usePetAmbientTalk } from './stage/use-pet-ambient-talk';
 import { usePetFaceAway } from './stage/use-pet-face-away';
 import { usePetPointerGaze } from './stage/use-pet-pointer-gaze';
@@ -259,10 +260,9 @@ export function PetStage({
 
   // 全域视线跟随 + 指针重新进入窗口的节流久别信号（实现见 use-pet-pointer-gaze）
   usePetPointerGaze({ controllerRef, enabled: linesEnabled && emotionEnabled });
-
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-transparent">
-      <div className="absolute inset-0">
+      <div className="absolute inset-0"><PetBackground />
         <AvatarCanvasRouter
           modelId={modelId}
           expression={expression}
@@ -281,7 +281,7 @@ export function PetStage({
           onFrame={script.onFrame}
         />
       </div>
-
+      <PetFrameOverlay />
       <PetHitBody bridge={bridge} controllerRef={controllerRef} resolveAndDispatch={resolveAndDispatch} />
       <PetHitHead bridge={bridge} controllerRef={controllerRef} resolveAndDispatch={resolveAndDispatch} focusPath={workView.primary?.deepLink} />
       <PetWorkBubble

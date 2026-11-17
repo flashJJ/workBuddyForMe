@@ -103,7 +103,7 @@ export function SkillVersionsPanel({ skill }: { skill: SkillInfo }) {
   const canDelete = (active: boolean) => !active && data.versions.length > 1;
 
   return (
-    <div className="space-y-2 rounded-md border bg-muted/30 p-2" data-testid="skill-versions">
+    <div className="space-y-2 rounded-md border bg-ui-row p-2" data-testid="skill-versions">
       <p className="text-xs text-muted-foreground" data-testid="skill-versions-total">
         {t('settingsMcp.skills.versions.total', {
           count: String(data.versions.length),

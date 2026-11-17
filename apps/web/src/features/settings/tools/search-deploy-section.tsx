@@ -93,7 +93,7 @@ export function SearxngDeploySection({
   };
 
   return (
-    <div className="space-y-2 rounded-md border border-dashed p-3">
+    <div className="space-y-2 rounded-md border border-dashed bg-ui-row p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm">{t('settings.search.deployTitle')}</p>
