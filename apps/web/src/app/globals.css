@@ -882,15 +882,15 @@
 :root,
 :root[data-theme='moonwhite'],
 :root[data-theme='sakura'] {
-  --glass-blur: 20px;
-  --glass-workspace-alpha: 0.5;
-  --glass-chrome-alpha: 0.55;
+  --glass-blur: 24px;
+  --glass-workspace-alpha: 0.82;
+  --glass-chrome-alpha: 0.78;
 }
 .dark,
 :root[data-theme='nocturne-gold'] {
-  --glass-blur: 20px;
-  --glass-workspace-alpha: 0.6;
-  --glass-chrome-alpha: 0.65;
+  --glass-blur: 24px;
+  --glass-workspace-alpha: 0.86;
+  --glass-chrome-alpha: 0.82;
 }
 [data-main-background='window'] .app-workspace-glass {
   background-color: hsl(var(--background) / var(--glass-workspace-alpha));
@@ -901,6 +901,10 @@
   background-color: hsl(var(--card) / var(--glass-chrome-alpha));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
+}
+/* 只有边框的内容框 / 列表容器补实色卡面：条目不再直接落在玻璃上，保证可读性 */
+[data-main-background='window'] main :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not([class*='bg-']) {
+  background-color: hsl(var(--card));
 }
 /* 系统关闭透明效果 / 低配回退：退回实色，不再叠模糊（对齐 Fluent Acrylic 的降级策略） */
 @media (prefers-reduced-transparency: reduce) {
