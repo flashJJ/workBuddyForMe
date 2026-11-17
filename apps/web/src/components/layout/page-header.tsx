@@ -14,7 +14,7 @@ export function PageHeader({ title, description, actions, icon, className }: Pag
   return (
     <header
       className={cn(
-        'app-glass-surface flex flex-wrap items-start justify-between gap-3 border-b bg-card px-6 py-4',
+        'flex flex-wrap items-start justify-between gap-3 border-b bg-card px-6 py-4',
         className,
       )}
     >

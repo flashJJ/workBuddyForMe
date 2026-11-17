@@ -181,7 +181,7 @@ export function ChatHeader({
 }: Props) {
   return (
     <>
-      <header className="app-glass-surface flex items-center justify-between gap-4 border-b px-4 py-2.5">
+      <header className="flex items-center justify-between gap-4 border-b px-4 py-2.5">
         <div className="flex min-w-0 flex-col gap-1.5">
           <AssistantSwitcher
             assistants={assistants}

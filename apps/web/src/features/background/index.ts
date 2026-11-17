@@ -2,6 +2,7 @@
 export { BackgroundLayer } from './background-layer';
 export { MainBackground } from './main-background';
 export { MainBackgroundModeProvider } from './main-background-mode';
+export { MainWorkspaceGlass } from './main-workspace-glass';
 export { PetBackground } from './pet-background';
 export { PetFrameOverlay } from './pet-frame';
 export { StageBackground } from './stage-background';
