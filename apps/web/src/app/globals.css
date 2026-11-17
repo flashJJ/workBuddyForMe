@@ -875,39 +875,80 @@
   }
 }
 
-/* ── v4.4 整屏背景：统一玻璃表面 ──
-   透明度与模糊只在这里定义；侧边栏、页面头部、内容卡片、页内搜索与无底色组件
-   共用同一套参数。仅在 data-main-background="window" 下生效，聊天模式保持不透明。 */
-[data-main-background='window'] {
-  --app-glass-alpha: 0.5;
-  --app-glass-blur: 14px;
-  --app-canvas-alpha: 0.28;
-  --app-control-alpha: 0.6;
-  --app-muted-alpha: 0.35;
+/* ── v4.4 整屏背景：玻璃材质令牌 ──
+   参考 Radix Themes 的 panelBackground、Fluent 的 Acrylic 与 Material 的 elevation overlay：
+   透明度不散落在组件里，而是收敛为「明暗两套语义层级 + 单一应用层」。
+   层级：canvas（页面底）< surface（卡片/面板）< chrome（侧边栏/头部/悬浮条）< control（控件）。
+   命名主题只继承明暗两套，不再逐主题调 alpha，避免换主题就漂移。 */
+:root,
+:root[data-theme='moonwhite'],
+:root[data-theme='sakura'] {
+  --glass-blur: 14px;
+  --glass-canvas-alpha: 0.24;
+  --glass-surface-alpha: 0.34;
+  --glass-chrome-alpha: 0.44;
+  --glass-control-alpha: 0.5;
+  --glass-muted-alpha: 0.18;
+}
+.dark,
+:root[data-theme='nocturne-gold'] {
+  --glass-blur: 14px;
+  --glass-canvas-alpha: 0.34;
+  --glass-surface-alpha: 0.42;
+  --glass-chrome-alpha: 0.52;
+  --glass-control-alpha: 0.6;
+  --glass-muted-alpha: 0.26;
 }
 /* 内容画布：兜住没有底色的组件（模板卡、分组标题、右侧导航等），不再直接压在视频上 */
 [data-main-background='window'] main {
-  background-color: hsl(var(--background) / var(--app-canvas-alpha));
+  background-color: hsl(var(--background) / var(--glass-canvas-alpha));
 }
-[data-main-background='window'] main .bg-card,
-[data-main-background='window'] main [class*='bg-card/'],
-[data-main-background='window'] main [class*='bg-surface-'],
-[data-main-background='window'] .app-glass-surface {
-  background-color: hsl(var(--card) / var(--app-glass-alpha));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur));
-  backdrop-filter: blur(var(--app-glass-blur));
+[data-main-background='window'] main .bg-card:not(.app-glass-surface),
+[data-main-background='window'] main [class*='bg-card/']:not(.app-glass-surface),
+[data-main-background='window'] main [class*='bg-surface-']:not(.app-glass-surface) {
+  background-color: hsl(var(--card) / var(--glass-surface-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 /* 只有边框、没有底色的卡片（空态、模板卡、虚线入口等）补同一层玻璃，避免“有的透有的不透” */
-[data-main-background='window'] main :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not([class*='bg-']) {
-  background-color: hsl(var(--card) / var(--app-glass-alpha));
-  -webkit-backdrop-filter: blur(var(--app-glass-blur));
-  backdrop-filter: blur(var(--app-glass-blur));
+[data-main-background='window'] main :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not([class*='bg-']):not(.app-glass-surface) {
+  background-color: hsl(var(--card) / var(--glass-surface-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+/* chrome：侧边栏、页面头部、设置搜索、聊天顶栏、迷你播放器（组件只加类，不写 alpha） */
+[data-main-background='window'] .app-glass-surface {
+  background-color: hsl(var(--card) / var(--glass-chrome-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 [data-main-background='window'] main .bg-background,
 [data-main-background='window'] main [class*='bg-background/'] {
-  background-color: hsl(var(--background) / var(--app-control-alpha));
+  background-color: hsl(var(--background) / var(--glass-control-alpha));
 }
 /* 次级面（聊天气泡、进度槽、小胶囊）统一为半透明灰，避免整块实色压住背景 */
 [data-main-background='window'] main [class~='bg-muted'] {
-  background-color: hsl(var(--muted) / var(--app-muted-alpha));
+  background-color: hsl(var(--muted) / var(--glass-muted-alpha));
+}
+/* 系统关闭透明效果 / 低配回退：退回实色，不再叠模糊（对齐 Fluent Acrylic 的降级策略） */
+@media (prefers-reduced-transparency: reduce) {
+  [data-main-background='window'] main {
+    background-color: hsl(var(--background));
+  }
+  [data-main-background='window'] main .bg-card,
+  [data-main-background='window'] main [class*='bg-card/'],
+  [data-main-background='window'] main [class*='bg-surface-'],
+  [data-main-background='window'] main :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not([class*='bg-']),
+  [data-main-background='window'] .app-glass-surface {
+    background-color: hsl(var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  [data-main-background='window'] main .bg-background,
+  [data-main-background='window'] main [class*='bg-background/'] {
+    background-color: hsl(var(--background));
+  }
+  [data-main-background='window'] main [class~='bg-muted'] {
+    background-color: hsl(var(--muted));
+  }
 }
