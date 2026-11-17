@@ -84,6 +84,7 @@ export interface SplashController {
   onExited(cb: () => void): () => void;
   onSkip(cb: () => void): () => void;
   onClosedByUser(cb: () => void): void;
+  onShown(cb: () => void): void;
 }
 
 export interface CreateSplashOptions {
@@ -102,6 +103,7 @@ export function createBootSplash(options: CreateSplashOptions): SplashController
   const exitedHandlers = new Set<() => void>();
   const skipHandlers = new Set<() => void>();
   const closedHandlers = new Set<() => void>();
+  const shownHandlers = new Set<() => void>();
   let mode: BootMode | null = null;
   let lastPhase: BootPhaseId | null = null;
   let lastPhaseEvent: BootPhaseEvent | null = null;
@@ -151,7 +153,9 @@ export function createBootSplash(options: CreateSplashOptions): SplashController
   ipcMain.on('boot:skip', onSkip);
 
   win.once('ready-to-show', () => {
-    if (!disposed) win.showInactive();
+    if (disposed) return;
+    win.showInactive();
+    for (const handler of shownHandlers) handler();
   });
   win.webContents.once('did-finish-load', () => {
     pageReady = true;
@@ -216,6 +220,9 @@ export function createBootSplash(options: CreateSplashOptions): SplashController
     onClosedByUser(cb) {
       closedHandlers.add(cb);
     },
+    onShown(cb) {
+      shownHandlers.add(cb);
+    },
   };
 }
 
@@ -235,5 +242,6 @@ function createNoopSplash(): SplashController {
       return () => {};
     },
     onClosedByUser() {},
+    onShown() {},
   };
 }

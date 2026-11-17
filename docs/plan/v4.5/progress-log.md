@@ -47,3 +47,13 @@
 - SHA256：`41e02c20927af8d6ec3533aa6198a04686fb0d0ccacca5a9e999c10b83ff5622`。
 - 归档：`E:\builds\archive\v4.5.0`，含 `SHA256SUMS.txt`、`build-info.json`、`latest.yml`、blockmap；`release-manifest --check` 校验 3 个产物通过。
 - 构建方式：本地 `electronDist` + NSIS x64，未签名（无证书），未发布。
+
+### 4.5.1 修复：覆盖安装后首启动画不展示
+
+- 现场数据：`%APPDATA%\@wbfm\desktop\boot-timing.log` 首条 `mode=full`，`session-cleared 220ms`、`server-healthy 19127ms`、`main-ready 21458ms`；第二条 `mode=compact`、`main-ready 1558ms`。说明首次完整片实际跑了，但被安装器自动拉起/安装完成页挡住，用户随后手动启动时已进入精简模式。
+- 根因：`last-version = 4.5.0` 在首启开始时就写入，安装器自动拉起把「首启」消费掉；用户可见的第一次手动启动变成 compact。
+- 修复：
+  - 新增 `intro-seen-version`，只在启动画面真正 `show` 且主窗 reveal 后写入；首启是否播完整片由它决定，`last-version` 只负责 session 缓存清理。
+  - NSIS `runAfterFinish: false`：覆盖安装完成后不自动拉起，避免安装器窗口挡住 640×360 启动画面。
+  - 启动画面 `onShown` 门控：HTML 加载失败时不会误写 `intro-seen-version`。
+- 版本：4.5.1。验证：splash 单测 20 项通过；`last-version` 已存在但 `intro-seen-version` 缺失的用例明确返回 `full`。

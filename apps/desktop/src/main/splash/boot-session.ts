@@ -22,6 +22,8 @@ export interface CreateBootSessionOptions {
   version: string;
   locale: string;
   icon?: string;
+  /** 主窗真正显示后调用；用于写 intro-seen-version */
+  onRevealed?: () => void;
 }
 
 export interface BootSession {
@@ -52,6 +54,7 @@ export function createBootSession(options: CreateBootSessionOptions): BootSessio
   let mainWindow: BrowserWindow | null = null;
   let mainReady = false;
   let revealed = false;
+  let splashShown = false;
   let intro: 'full' | 'compact' = 'compact';
 
   if (enabled) {
@@ -62,6 +65,9 @@ export function createBootSession(options: CreateBootSessionOptions): BootSessio
         preload: resolveSplashPreloadPath(),
         icon: options.icon,
       },
+    });
+    splash.onShown(() => {
+      splashShown = true;
     });
     splash.onClosedByUser(() => {
       if (mainReady && mainWindow) mainWindow.show();
@@ -106,6 +112,7 @@ export function createBootSession(options: CreateBootSessionOptions): BootSessio
         splash?.close();
         splash = null;
         writeTiming();
+        if (splashShown) options.onRevealed?.();
       });
       win.once('ready-to-show', () => {
         mainReady = true;

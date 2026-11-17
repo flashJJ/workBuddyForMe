@@ -25,8 +25,10 @@
 
 | 模式 | 触发 | 行为 |
 |---|---|---|
-| `compact` | 日常启动 | 只播 SVG 日常分镜；主窗 `ready-to-show` 即退场，最小可见 500ms |
-| `full` | 首次安装或 `last-version` ≠ 当前版本 | 播 8s《潮汐开门》；主窗后台就绪后继续到片尾或 9s 总上限；可跳过 |
+| `compact` | `intro-seen-version` = 当前版本 | 只播 SVG 日常分镜；主窗 `ready-to-show` 即退场，最小可见 500ms |
+| `full` | 首次安装，或 `intro-seen-version` ≠ 当前版本 | 播 8s《潮汐开门》；主窗后台就绪后继续到片尾或 9s 总上限；可跳过 |
+
+`last-version` 只负责升级后的 session 缓存清理；`intro-seen-version` 只在启动画面真正显示并 reveal 后写入，避免安装器自动拉起、窗口被挡住或用户提前退出时把首启动画「消费」掉。
 
 同一份 `cinema.mp4` 另存为 `apps/web/public/backgrounds/tidal-door.mp4`，在背景设置里作为主窗口视频壁纸 `wallpaper.main.tidal-door` 复用；不再提供独立回放入口。
 

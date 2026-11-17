@@ -55,6 +55,7 @@
 ## M4 验收与发布
 
 - [x] 安装包构建与归档（`E:\builds\archive\v4.5.0`，273.22 MB）
+- [x] 覆盖安装后首启动画不展示修复（`intro-seen-version` + `runAfterFinish: false`，4.5.1）
 - [x] `pnpm check` + 全量测试
 - [ ] 打包态真机：冷启动/热启动/覆盖升级
 - [ ] 150% DPI、高对比、减少动态、中英双语

@@ -42,7 +42,11 @@ import { registerBackgroundIpc } from './background/background-ipc';
 import { registerSearchIpc } from './search/search-ipc';
 import { registerAwarenessIpc } from './awareness/awareness-ipc';
 import { createBootSession, type BootSession } from './splash/boot-session';
-import { clearSessionIfVersionChanged } from './splash/session-reset';
+import {
+  clearSessionIfVersionChanged,
+  resolveIntroMode,
+  writeIntroSeen,
+} from './splash/session-reset';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
 
@@ -122,18 +126,18 @@ async function start(): Promise<void> {
     version: app.getVersion(),
     locale: app.getLocale(),
     icon: resolveWindowIcon(app.isPackaged),
+    onRevealed: () => writeIntroSeen(app.getPath('userData'), app.getVersion()),
   });
   bootSession.mark('app-ready');
   bootSession.mark('splash-created');
 
-  let upgraded = true;
   if (!isDev) {
-    upgraded = await clearSessionIfVersionChanged(app.getPath('userData'), app.getVersion());
+    await clearSessionIfVersionChanged(app.getPath('userData'), app.getVersion());
     bootSession.mark('session-cleared');
   }
   const intro = isDev
     ? (process.env.WBFM_SPLASH_FULL === '1' ? 'full' : 'compact')
-    : (upgraded ? 'full' : 'compact');
+    : resolveIntroMode(app.getPath('userData'), app.getVersion());
   bootSession.setIntro(intro);
 
   console.error('[wbfm] boot: isDev=', isDev, 'serverPath=', isDev ? '(dev)' : resolveServerPath());

@@ -61,6 +61,9 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
+  # 覆盖安装后不自动拉起：安装器完成页会挡住 640x360 启动画面，
+  # 用户容易误以为「没有动画」；安装完成后由用户手动启动。
+  runAfterFinish: false
   # 安装器/卸载器/侧栏品牌图（由 scripts/gen-icons.py 生成）
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
