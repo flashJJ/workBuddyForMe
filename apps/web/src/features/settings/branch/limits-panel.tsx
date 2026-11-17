@@ -53,7 +53,7 @@ export function BranchLimitsPanel() {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border p-3" data-testid="branch-limits-panel">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-3" data-testid="branch-limits-panel">
       <div>
         <h3 className="text-sm font-medium">{t('branch.limits.title')}</h3>
         <p className="text-xs text-muted-foreground">{t('branch.limits.description')}</p>

@@ -80,7 +80,7 @@ export function CapabilityTrustSection() {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border p-4" data-testid="capability-trust-section">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="capability-trust-section">
       <div>
         <h2 className="text-sm font-medium">{t('settings.capabilityTrust.title')}</h2>
         <p className="mt-1 text-xs text-muted-foreground">{t('settings.capabilityTrust.hint')}</p>

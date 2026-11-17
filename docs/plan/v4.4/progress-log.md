@@ -139,3 +139,10 @@
 - 门禁口径：只统计不带状态前缀的 `bg-card/background/surface/popover`；`bg-muted/accent/secondary` 归为独立状态/装饰层，不进入层级。
 - 独立体系：媒体遮罩（黑/白 alpha）、沉浸式舞台、透明窗气泡、文档语义色、内容预览白底均登记为独立体系，原因见 `surface-system.md` §3.1 与 `surface-registry.md` §9。
 - 验证：web typecheck、全量 `pnpm check` 通过；相关模块测试通过。
+
+### 2026-11-17 表面层级补漏（无卡壳面板）
+
+- 真机发现音乐曲库等设置子区仍全透明：这类面板本身没有渲染卡壳，迁移只替换已有 `bg-card` 会漏掉。
+- 补齐：`music-library-panel`、`branch-limits-panel`、`capability-trust-section` 增加 L2 卡壳 `rounded-lg border bg-ui-card p-4`。
+- 规则：注册为独立设置面板的组件必须自带 L2 卡壳，或复用 `AssetList`/`AssetImportSection` 等已带卡壳的包装组件。
+- 验证：web typecheck、表面门禁 0 处、设置/音乐 15 文件 51 项测试通过。

@@ -165,5 +165,6 @@ features/reminders 11，features/knowledge 10，components/ui 8，features/tasks
 | 背景媒体 | `features/background/**` 的压暗层 | 白名单 | 媒体效果，不是 UI 表面 |
 | 调试页 | `app/spike/**` | 白名单 | 非产品界面 |
 | 内容预览 | `features/chat/overlay/artifact-card.tsx` 的 `bg-white` | 白名单 | iframe/文档预览需要固定白底 |
+| 无卡壳面板 | `music-library-panel`、`branch-limits-panel`、`capability-trust-section` | 归入层级体系 L2 | 组件本身没有渲染卡壳，迁移只替换已有类会漏；已补 `bg-ui-card`，并写入“面板必须自带 L2 卡壳”规则 |
 
 门禁不统计 `hover:`/`focus:`/`data-*:` 等状态前缀，也不统计 `bg-muted`/`bg-accent`/`bg-secondary`。
