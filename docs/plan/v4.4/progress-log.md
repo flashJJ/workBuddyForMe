@@ -115,3 +115,11 @@
 - 样式统一（同轮真机反馈）：整屏背景模式改为单一开关 `data-main-background="window"`；侧边栏、页面头部、内容卡片与页内搜索共用 `globals.css` 中的同一组玻璃参数（alpha 0.72 / blur 14px），不再各组件各写一套透明类。
 - 重打包：安装包 272.37MB（285,598,054 字节），SHA256 `ffe65ea6…18a804`；commit `1a22d129`；`release-manifest --check` 通过 3 个产物。
 - 待办：真机验证通过后合并 main、打 tag `v4.4.0` 并推送工蜂。
+
+### 2026-11-17 表面层级治理 S1
+
+- 方案与登记：新增 `surface-system.md`（L0–L5 层级、token、门禁、迁移顺序）与 `surface-registry.md`（全局/共享组件/各模块初版登记）。
+- 层级改为渐进透明度：L1 工作区/侧栏 0.66/0.60 + 模糊，L2 卡片 0.86，L3 行 0.92，L4 控件 0.96，L5 弹层实色；明暗两套，命名主题只继承。
+- 新增 `--ui-canvas/chrome/card/row/control/overlay` 与 Tailwind `ui.*` 映射；工作区、侧栏、边框内容框先用 token。
+- 新增 `scripts/check-surfaces.mjs` 与 `scripts/.surfaces-baseline.json`（330 处 / 170 文件），纳入 `pnpm check`；存量只降不升。
+- 后续：S2 共享基座 → S3 首批模块 → S4 其余模块 → S5 基线清零。

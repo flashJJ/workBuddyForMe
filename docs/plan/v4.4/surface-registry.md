@@ -1,19 +1,19 @@
 # 表面层级登记表（Surface Registry）
 
 > 配套方案：[surface-system.md](./surface-system.md)
-> 状态：初版登记（待评审）。`当前类` 为抽样结果，迁移时以实际文件为准。
-> 规则：L2 及以下不使用透明底；只有 L1 允许 `backdrop-filter`。
+> 状态：初版登记（S1 已完成 token 与门禁；S2+ 迁移待开始）。`当前类` 为抽样结果，迁移时以实际文件为准。
+> 规则：L1 玻璃 + 模糊；L2–L5 透明度逐级升高，L5 实色，均不使用模糊。
 
 ## 1. 层级定义
 
 | 层级 | Token | 说明 | 默认底色 |
 |---|---|---|---|
-| L0 | `--ui-canvas`（背景自身） | 壁纸/视频/渐变 | 由背景解析器决定 |
-| L1 | `bg-ui-canvas` / `bg-ui-chrome` | 工作区玻璃、侧边栏、浮动播放器 | 半透明 + 模糊 |
-| L2 | `bg-ui-card` | 页面头部、面板、卡片、列表容器、内容框 | 实色卡面 |
-| L3 | `bg-ui-row` | 列表行、字段组、嵌套子块 | 实色或 muted |
-| L4 | `bg-ui-control` | 按钮、输入、下拉、开关、滑杆、标签页 | 实色控件 |
-| L5 | `bg-ui-overlay` | 对话框、菜单、Toast、命令面板 | 实色弹层 |
+| L0 | 背景自身 | 壁纸/视频/渐变 | 由背景解析器决定 |
+| L1 | `bg-ui-canvas` / `bg-ui-chrome` | 工作区玻璃、侧边栏、浮动播放器 | 0.66 / 0.60 + 模糊（最透） |
+| L2 | `bg-ui-card` | 页面头部、面板、卡片、列表容器、内容框 | 0.86 弱透明，无模糊 |
+| L3 | `bg-ui-row` | 列表行、字段组、嵌套子块 | 0.92 更实 |
+| L4 | `bg-ui-control` | 按钮、输入、下拉、开关、滑杆、标签页 | 0.96 接近实色 |
+| L5 | `bg-ui-overlay` | 对话框、菜单、Toast、命令面板 | 实色 |
 
 ## 2. 全局布局
 
@@ -110,7 +110,14 @@
 
 ## 6. 扫描统计（当前）
 
-按模块统计表面类出现次数（不含测试文件）：
+`check:surfaces` 门禁口径（card / background / surface / popover / muted，不含测试与白名单）：**330 处 / 170 个文件**，按模块 Top 8：
+
+```text
+features/settings 119，features/chat 25，features/flow-editor 22，features/meetings 18，
+features/reminders 11，features/knowledge 10，components/ui 8，features/tasks 8
+```
+
+按模块的细分统计（不含测试文件，含 accent 等状态色）：
 
 | 模块 | 合计 | card | background | muted | surface | popover | accent |
 |---|---:|---:|---:|---:|---:|---:|---:|

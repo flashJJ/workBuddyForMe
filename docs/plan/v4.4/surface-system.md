@@ -21,7 +21,7 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 
 1. 建立 L0–L5 六级表面层级，每个组件都能登记到唯一层级；
 2. 每级只对应一个语义 token，组件不再直接写 `bg-card/xx` 这类局部透明度；
-3. 玻璃（半透明 + 模糊）只在 L1（工作区/侧栏）出现，L2 及以下全部实色；
+3. 玻璃（半透明 + 模糊）只在 L1 出现；L2–L5 透明度逐级升高，L5 为实色，保留层级感；
 4. 主题只分「明/暗」两套 token 值，命名主题不再逐套调透明度；
 5. 新增 `check:surfaces` 门禁，冻结存量、阻止新增裸表面类；
 6. 形成可维护的登记表，后续新增页面按表登记即可。
@@ -38,17 +38,17 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 | 层级 | 名称 | 用途 | 是否透明 | 典型组件 |
 |---|---|---|---|---|
 | L0 | Backdrop | 壁纸/视频背景 | 背景本身 | `BackgroundLayer` |
-| L1 | Workspace / Chrome | 主工作区玻璃、侧边栏、浮动播放器 | 是（唯一允许玻璃的层级） | `MainWorkspaceGlass`、`AppSidebar`、`MusicMiniPlayer` |
-| L2 | Panel / Card | 页面头部、设置面板、卡片、列表容器、内容框 | 否（实色） | `PageHeader`、`Card`、`EmptyState`、`document-list` |
-| L3 | Row / Sub-panel | 列表行、字段组、嵌套子块、次级面 | 否（实色或主题 muted） | 任务行、交互图行、证据块 |
-| L4 | Control | 按钮、输入、下拉、开关、滑杆、标签页 | 否 | `Button`、`Input`、`Select`、`Slider` |
-| L5 | Overlay | 对话框、下拉菜单、Toast、命令面板 | 否 | `Dialog`、`Popover`、`Toast` |
+| L1 | Workspace / Chrome | 主工作区玻璃、侧边栏、浮动播放器 | 是：玻璃 + 模糊（最透） | `MainWorkspaceGlass`、`AppSidebar`、`MusicMiniPlayer` |
+| L2 | Panel / Card | 页面头部、设置面板、卡片、列表容器、内容框 | 弱透明，无模糊 | `PageHeader`、`Card`、`EmptyState`、`document-list` |
+| L3 | Row / Sub-panel | 列表行、字段组、嵌套子块、次级面 | 更实，无模糊 | 任务行、交互图行、证据块 |
+| L4 | Control | 按钮、输入、下拉、开关、滑杆、标签页 | 接近实色 | `Button`、`Input`、`Select`、`Slider` |
+| L5 | Overlay | 对话框、下拉菜单、Toast、命令面板 | 实色 | `Dialog`、`Popover`、`Toast` |
 
 规则：
 
 - **同一层级只有一个底色 token**，组件不得再叠 alpha；
-- 只有 L1 使用 `backdrop-filter`；
-- L2 及以下不使用透明底，必要时用 `muted` 表达次级权重；
+- 只有 L1 使用 `backdrop-filter`；L2–L5 只提升底色 alpha，不再叠模糊；
+- L2–L5 透明度逐级升高，L5 必须实色；层级越高越实，保留层次感；
 - 弹层统一实色，保证可读性，不随整屏背景变化；
 - 悬浮/hover/选中态属于状态色，不新增层级。
 
@@ -57,19 +57,20 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 新增语义 token（完整颜色值，直接作为 Tailwind 颜色使用）：
 
 ```css
---ui-canvas: hsl(var(--background) / 0.82); /* L0/L1 工作区 */
---ui-chrome: hsl(var(--card) / 0.78);       /* L1 侧栏/浮动条 */
---ui-card: hsl(var(--card));                /* L2 面板/卡片/列表容器 */
---ui-row: hsl(var(--muted) / 0.35);         /* L3 次级行/子块 */
---ui-control: hsl(var(--background));       /* L4 控件 */
---ui-overlay: hsl(var(--popover));          /* L5 弹层 */
+--ui-canvas: hsl(var(--background) / 0.66); /* L1 工作区（最透） */
+--ui-chrome: hsl(var(--card) / 0.60);       /* L1 侧栏/浮动条 */
+--ui-card: hsl(var(--card) / 0.86);         /* L2 面板/卡片/列表容器 */
+--ui-row: hsl(var(--card) / 0.92);          /* L3 次级行/子块 */
+--ui-control: hsl(var(--background) / 0.96);/* L4 控件 */
+--ui-overlay: hsl(var(--popover));          /* L5 弹层（实色） */
 ```
 
 - 明/暗两套值，命名主题只继承：
-  - 亮色（stellar light、moonwhite、sakura）：canvas 0.82 / chrome 0.78；
-  - 暗色（stellar dark、nocturne-gold）：canvas 0.86 / chrome 0.82；
+  - 亮色（stellar light、moonwhite、sakura）：canvas 0.66 / chrome 0.60 / card 0.86 / row 0.92 / control 0.96；
+  - 暗色（stellar dark、nocturne-gold）：canvas 0.72 / chrome 0.66 / card 0.90 / row 0.94 / control 0.97；
+- L1 才允许 `backdrop-filter`（24px），L2–L5 不叠模糊；
 - 聊天模式（非整屏）下 L1 退化为实色，由 `[data-main-background='chat']` 覆盖；
-- `prefers-reduced-transparency: reduce` 时 L1 全部退化为实色并移除模糊；
+- `prefers-reduced-transparency: reduce` 时全层级退化为实色并移除模糊；
 - Tailwind 配置新增 `ui.canvas/chrome/card/row/control/overlay`，组件只允许使用 `bg-ui-*`。
 
 ## 5. 登记表
@@ -119,7 +120,7 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 | 阶段 | 内容 | 验收 |
 |---|---|---|
 | S0 | 方案、层级、token 命名、登记表、扫描脚本 | 本文与登记表评审通过 |
-| S1 | 主题 token 与 Tailwind `ui.*`；兼容层（旧类临时映射）；门禁基线 | `pnpm check` 通过，页面无视觉变化 |
+| S1 | 主题 token 与 Tailwind `ui.*`；渐进透明度材质；门禁基线 | ✅ 已完成：六个 token、`check:surfaces`（330 处 / 170 文件基线） |
 | S2 | 共享基座：Card、Button、Input、Select、Dialog、EmptyState、Toast、Badge | 组件库内无裸表面类 |
 | S3 | 布局与首批模块：Sidebar、PageHeader、Settings、Knowledge、Reports、Assistants | 整屏/聊天 × 明暗截图通过 |
 | S4 | 其余模块：Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer | 全模块截图通过 |
@@ -132,7 +133,7 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 - 页面：设置、知识库、运行报告、助手、对话、任务、能力包、日常回眸；
 - 检查项：
   - 同层级底色一致；
-  - L2 及以下不透出壁纸；
+  - L2–L5 逐级更实，L5 完全实色；L2 及以下不叠模糊；
   - 列表/内容框有明确卡面；
   - 文字对比度不低于现有基线；
   - 关闭系统透明效果后全部为实色。

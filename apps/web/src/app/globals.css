@@ -875,36 +875,43 @@
   }
 }
 
-/* ── v4.4 整屏背景：单层 Acrylic 材质 ──
+/* ── v4.4 整屏表面层级：L1→L5 透明度逐级升高，L5 实色 ──
    参考 Fluent Acrylic / Radix Themes panelBackground / Material elevation overlay：
-   背景只透一层——侧边栏 chrome 与内容工作区 workspace；
-   卡片、控件、气泡保持主题实色，避免多层半透明叠加造成“这透那不透”和主题亮度漂移。 */
+   层级越高越实，既保留背景层次，也保证内容可读；组件只选层级，不写 alpha。 */
 :root,
 :root[data-theme='moonwhite'],
 :root[data-theme='sakura'] {
   --glass-blur: 24px;
-  --glass-workspace-alpha: 0.82;
-  --glass-chrome-alpha: 0.78;
+  --ui-canvas: hsl(var(--background) / 0.66);
+  --ui-chrome: hsl(var(--card) / 0.6);
+  --ui-card: hsl(var(--card) / 0.86);
+  --ui-row: hsl(var(--card) / 0.92);
+  --ui-control: hsl(var(--background) / 0.96);
+  --ui-overlay: hsl(var(--popover));
 }
 .dark,
 :root[data-theme='nocturne-gold'] {
   --glass-blur: 24px;
-  --glass-workspace-alpha: 0.86;
-  --glass-chrome-alpha: 0.82;
+  --ui-canvas: hsl(var(--background) / 0.72);
+  --ui-chrome: hsl(var(--card) / 0.66);
+  --ui-card: hsl(var(--card) / 0.9);
+  --ui-row: hsl(var(--card) / 0.94);
+  --ui-control: hsl(var(--background) / 0.97);
+  --ui-overlay: hsl(var(--popover));
 }
 [data-main-background='window'] .app-workspace-glass {
-  background-color: hsl(var(--background) / var(--glass-workspace-alpha));
+  background-color: var(--ui-canvas);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
 }
 [data-main-background='window'] .app-glass-surface {
-  background-color: hsl(var(--card) / var(--glass-chrome-alpha));
+  background-color: var(--ui-chrome);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
 }
-/* 只有边框的内容框 / 列表容器补实色卡面：条目不再直接落在玻璃上，保证可读性 */
+/* 只有边框的内容框 / 列表容器补 L2 卡面：条目不再直接落在玻璃上，保证可读性 */
 [data-main-background='window'] main :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not([class*='bg-']) {
-  background-color: hsl(var(--card));
+  background-color: var(--ui-card);
 }
 /* 系统关闭透明效果 / 低配回退：退回实色，不再叠模糊（对齐 Fluent Acrylic 的降级策略） */
 @media (prefers-reduced-transparency: reduce) {
@@ -917,5 +924,8 @@
     background-color: hsl(var(--card));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+  [data-main-background='window'] main :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not([class*='bg-']) {
+    background-color: hsl(var(--card));
   }
 }
