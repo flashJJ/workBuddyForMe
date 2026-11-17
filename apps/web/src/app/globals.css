@@ -879,10 +879,11 @@
    透明度与模糊只在这里定义；侧边栏、页面头部、内容卡片、页内搜索与无底色组件
    共用同一套参数。仅在 data-main-background="window" 下生效，聊天模式保持不透明。 */
 [data-main-background='window'] {
-  --app-glass-alpha: 0.55;
+  --app-glass-alpha: 0.5;
   --app-glass-blur: 14px;
-  --app-canvas-alpha: 0.25;
-  --app-control-alpha: 0.65;
+  --app-canvas-alpha: 0.28;
+  --app-control-alpha: 0.6;
+  --app-muted-alpha: 0.35;
 }
 /* 内容画布：兜住没有底色的组件（模板卡、分组标题、右侧导航等），不再直接压在视频上 */
 [data-main-background='window'] main {
@@ -890,7 +891,14 @@
 }
 [data-main-background='window'] main .bg-card,
 [data-main-background='window'] main [class*='bg-card/'],
+[data-main-background='window'] main [class*='bg-surface-'],
 [data-main-background='window'] .app-glass-surface {
+  background-color: hsl(var(--card) / var(--app-glass-alpha));
+  -webkit-backdrop-filter: blur(var(--app-glass-blur));
+  backdrop-filter: blur(var(--app-glass-blur));
+}
+/* 只有边框、没有底色的卡片（空态、模板卡、虚线入口等）补同一层玻璃，避免“有的透有的不透” */
+[data-main-background='window'] main :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).border:not([class*='bg-']) {
   background-color: hsl(var(--card) / var(--app-glass-alpha));
   -webkit-backdrop-filter: blur(var(--app-glass-blur));
   backdrop-filter: blur(var(--app-glass-blur));
@@ -898,4 +906,8 @@
 [data-main-background='window'] main .bg-background,
 [data-main-background='window'] main [class*='bg-background/'] {
   background-color: hsl(var(--background) / var(--app-control-alpha));
+}
+/* 次级面（聊天气泡、进度槽、小胶囊）统一为半透明灰，避免整块实色压住背景 */
+[data-main-background='window'] main [class~='bg-muted'] {
+  background-color: hsl(var(--muted) / var(--app-muted-alpha));
 }
