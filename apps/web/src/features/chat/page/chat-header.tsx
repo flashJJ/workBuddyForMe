@@ -154,7 +154,7 @@ function HeaderActions({
               role="menu"
               aria-label={t('common.actions.more')}
               data-testid="chat-header-more-panel"
-              className="absolute right-0 top-full z-40 mt-1 w-52 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+              className="absolute right-0 top-full z-40 mt-1 w-52 rounded-md border bg-ui-overlay p-1 text-popover-foreground shadow-md"
             >
               <RunGraphLauncher kind="conversation" id={conversationId} menuItem />
               <BranchLauncher conversationId={conversationId} menuItem />

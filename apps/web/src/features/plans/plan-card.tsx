@@ -60,7 +60,7 @@ export function PlanCard({ plan, actions }: { plan: WorkPlanView; actions: PlanC
   };
 
   return (
-    <div className="space-y-3 rounded-lg border bg-card p-4" data-testid={`plan-${plan.id}`}>
+    <div className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid={`plan-${plan.id}`}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={STATUS_VARIANT[plan.status]}>{t(`plans.status.${plan.status}`)}</Badge>
         <span className="text-sm font-medium">{plan.title}</span>

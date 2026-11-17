@@ -50,7 +50,7 @@ export function AgentRunCard({
   const outcome = toOutcome('agent', state.status);
   return (
     <div
-      className="min-w-0 overflow-hidden rounded-lg border bg-card text-xs shadow-sm"
+      className="min-w-0 overflow-hidden rounded-lg border bg-ui-card text-xs shadow-sm"
       data-testid="agent-run-card"
       data-status={state.status}
     >

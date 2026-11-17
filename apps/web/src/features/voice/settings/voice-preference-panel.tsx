@@ -146,7 +146,7 @@ function StorageSection() {
         <Label htmlFor="voice-models-dir">{t('voice.storage.dirLabel')}</Label>
         <input
           id="voice-models-dir"
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+          className="h-9 w-full rounded-md border bg-ui-control px-3 text-sm"
           placeholder={t('voice.storage.dirPlaceholder')}
           value={modelsDir}
           onChange={(e) => setModelsDir(e.target.value)}
@@ -185,7 +185,7 @@ export function VoicePreferencePanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="voice-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="voice-panel">
       <div>
         <h3 className="font-medium">{t('voice.section.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">

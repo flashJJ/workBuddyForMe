@@ -131,7 +131,7 @@ export function RunGraphPanel({
 
   return (
     <section
-      className={cn('flex min-h-0 flex-col rounded-lg border bg-card', className)}
+      className={cn('flex min-h-0 flex-col rounded-lg border bg-ui-card', className)}
       data-testid="run-graph-panel"
       data-root-kind={kind}
       data-live={live ? '1' : '0'}

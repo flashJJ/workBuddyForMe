@@ -42,7 +42,7 @@ export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, spea
   if (collapsed) {
     return (
       <aside
-        className="hidden w-9 shrink-0 flex-col items-center border-l bg-background py-2 lg:flex"
+        className="hidden w-9 shrink-0 flex-col items-center border-l bg-ui-overlay py-2 lg:flex"
         data-testid="avatar-rail"
         data-collapsed="true"
       >
@@ -62,7 +62,7 @@ export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, spea
 
   return (
     <aside
-      className="relative hidden w-64 shrink-0 border-l bg-background lg:block xl:w-72"
+      className="relative hidden w-64 shrink-0 border-l bg-ui-overlay lg:block xl:w-72"
       data-testid="avatar-rail"
       data-collapsed="false"
     >
@@ -72,7 +72,7 @@ export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, spea
         aria-label={t('chat.avatarRail.collapse')}
         title={t('chat.avatarRail.collapse')}
         data-testid="avatar-rail-toggle"
-        className="absolute right-2 top-2 z-10 rounded-md border bg-background/80 p-1 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
+        className="absolute right-2 top-2 z-10 rounded-md border bg-ui-overlay p-1 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
       >
         <PanelRightClose className="h-3.5 w-3.5" />
       </button>

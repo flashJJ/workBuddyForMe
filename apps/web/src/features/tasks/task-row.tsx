@@ -45,7 +45,7 @@ export function TaskRow({
   );
 
   return (
-    <li className="min-w-0 overflow-hidden rounded-lg border bg-card">
+    <li className="min-w-0 overflow-hidden rounded-lg border bg-ui-card">
       <button
         type="button"
         onClick={onToggle}

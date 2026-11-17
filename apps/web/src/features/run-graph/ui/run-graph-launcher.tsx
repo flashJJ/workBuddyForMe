@@ -56,7 +56,7 @@ export function RunGraphLauncher({
             aria-label={t('runGraph.close')}
             onClick={() => setOpen(false)}
           />
-          <div className="relative z-10 flex h-full w-[min(420px,92vw)] flex-col border-l bg-background shadow-xl">
+          <div className="relative z-10 flex h-full w-[min(420px,92vw)] flex-col border-l bg-ui-overlay shadow-xl">
             <RunGraphPanel
               kind={kind}
               id={id}

@@ -16,7 +16,7 @@ export function HelpCenterPanel() {
     <section
       id={HELP_CENTER_ANCHOR}
       data-testid="help-center"
-      className="space-y-4 rounded-lg border bg-card p-4 scroll-mt-6"
+      className="space-y-4 rounded-lg border bg-ui-card p-4 scroll-mt-6"
     >
       <div className="space-y-1">
         <h3 className="font-medium">{t('help.title')}</h3>

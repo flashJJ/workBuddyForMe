@@ -38,7 +38,7 @@ export function ConfigPanel({ node, nodes, onChangeConfig, onDelete, onClose }: 
   };
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l bg-card/40">
+    <aside className="flex w-80 shrink-0 flex-col border-l bg-ui-card">
       <div className="flex items-center gap-2 border-b px-4 py-3">
         <meta.icon className={`h-4 w-4 ${meta.accent}`} />
         <div className="flex-1">

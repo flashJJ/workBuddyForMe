@@ -55,7 +55,7 @@ export function EventPreviewMenu({ busy = false, onPreview }: EventPreviewMenuPr
             onClick={close}
           />
           <div
-            className="absolute right-0 z-50 mt-1 max-h-72 w-48 overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+            className="absolute right-0 z-50 mt-1 max-h-72 w-48 overflow-y-auto rounded-md border bg-ui-overlay p-1 text-popover-foreground shadow-md"
             data-testid="event-preview-menu"
           >
             {BUILT_IN_EVENTS.map((def) => (

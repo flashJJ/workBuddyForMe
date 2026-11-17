@@ -57,7 +57,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
     return (
       <div className="w-full space-y-2" data-testid="user-edit">
         <textarea
-          className="w-full resize-y rounded-md border bg-background p-2 text-sm"
+          className="w-full resize-y rounded-md border bg-ui-control p-2 text-sm"
           rows={Math.min(8, Math.max(2, draft.split('\n').length))}
           value={draft}
           autoFocus

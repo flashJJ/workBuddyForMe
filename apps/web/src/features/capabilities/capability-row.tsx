@@ -31,7 +31,7 @@ export function CapabilityRow({
   return (
     <li
       data-testid={`capability-${capability.id}`}
-      className="space-y-2 rounded-lg border bg-card p-4"
+      className="space-y-2 rounded-lg border bg-ui-card p-4"
     >
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={capability.status === 'enabled' ? 'success' : 'outline'}>

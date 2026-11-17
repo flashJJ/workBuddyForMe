@@ -127,7 +127,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
           <label className="block space-y-1">
             <span className="text-sm font-medium">{t('reminders.assistantLabel')}</span>
             <SimpleSelect
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm disabled:opacity-60"
+              className="w-full rounded-md border bg-ui-control px-2 py-1.5 text-sm disabled:opacity-60"
               value={form.assistantId}
               disabled={Boolean(reminder)}
               data-testid="reminder-assistant"
@@ -208,7 +208,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
                 required
                 data-testid="reminder-time"
                 onChange={(e) => update({ time: e.target.value })}
-                className="block rounded-md border bg-background px-2 py-1.5 text-sm"
+                className="block rounded-md border bg-ui-control px-2 py-1.5 text-sm"
               />
             </label>
             {form.kind === 'weekly' && (
@@ -218,7 +218,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
                   value={String(form.weekday)}
                   data-testid="reminder-weekday"
                   onValueChange={(v) => update({ weekday: Number(v) })}
-                  className="block rounded-md border bg-background px-2 py-1.5 text-sm"
+                  className="block rounded-md border bg-ui-control px-2 py-1.5 text-sm"
                 >
                   {WEEKDAY_ORDER.map((day) => (
                     <option key={day} value={day}>
@@ -237,7 +237,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
                   required
                   data-testid="reminder-date"
                   onChange={(e) => update({ atDate: e.target.value })}
-                  className="block rounded-md border bg-background px-2 py-1.5 text-sm"
+                  className="block rounded-md border bg-ui-control px-2 py-1.5 text-sm"
                 />
               </label>
             )}
@@ -253,7 +253,7 @@ export function ReminderFormDialog({ open, onOpenChange, reminder, defaultAssist
               data-testid="reminder-text"
               placeholder={t('reminders.textPlaceholder')}
               onChange={(e) => update({ text: e.target.value })}
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+              className="w-full rounded-md border bg-ui-control px-2 py-1.5 text-sm"
             />
           </label>
 

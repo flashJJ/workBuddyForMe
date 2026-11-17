@@ -107,7 +107,7 @@ export function MeetingConclusionPanel({
 
   return (
     <section
-      className="flex max-h-[46vh] shrink-0 flex-col gap-3 overflow-y-auto rounded-lg border bg-card p-3"
+      className="flex max-h-[46vh] shrink-0 flex-col gap-3 overflow-y-auto rounded-lg border bg-ui-card p-3"
       data-testid="meeting-conclusion-panel"
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -162,7 +162,7 @@ export function MeetingConclusionPanel({
           <label className="block text-xs font-medium text-muted-foreground">
             {t('meeting.conclusion.summary')}
             <textarea
-              className="mt-1 min-h-20 w-full rounded border bg-background p-2 text-sm"
+              className="mt-1 min-h-20 w-full rounded border bg-ui-control p-2 text-sm"
               value={summary}
               onChange={(event) => setSummary(event.target.value)}
             />
@@ -170,7 +170,7 @@ export function MeetingConclusionPanel({
           <label className="block text-xs font-medium text-muted-foreground">
             {t('meeting.conclusion.decisions')}
             <textarea
-              className="mt-1 min-h-16 w-full rounded border bg-background p-2 text-sm"
+              className="mt-1 min-h-16 w-full rounded border bg-ui-control p-2 text-sm"
               value={decisions}
               placeholder={t('meeting.conclusion.noDecisions')}
               onChange={(event) => setDecisions(event.target.value)}
@@ -179,7 +179,7 @@ export function MeetingConclusionPanel({
           <label className="block text-xs font-medium text-muted-foreground">
             {t('meeting.conclusion.openQuestions')}
             <textarea
-              className="mt-1 min-h-16 w-full rounded border bg-background p-2 text-sm"
+              className="mt-1 min-h-16 w-full rounded border bg-ui-control p-2 text-sm"
               value={questions}
               placeholder={t('meeting.conclusion.noOpenQuestions')}
               onChange={(event) => setQuestions(event.target.value)}

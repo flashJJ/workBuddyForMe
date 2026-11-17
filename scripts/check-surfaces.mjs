@@ -18,12 +18,13 @@ const srcDir = path.join(root, 'apps', 'web', 'src');
 const baselinePath = path.join(root, 'scripts', '.surfaces-baseline.json');
 
 const PATTERNS = [
-  { name: 'card', re: /bg-card(?:\/\d+)?/g },
-  { name: 'background', re: /bg-background(?:\/\d+)?/g },
-  { name: 'surface', re: /bg-surface-\d(?:\/\d+)?/g },
-  { name: 'popover', re: /bg-popover(?:\/\d+)?/g },
-  { name: 'muted', re: /bg-muted(?:\/\d+)?/g },
+  { name: 'card', re: /^bg-card(?:\/\d+)?$/ },
+  { name: 'background', re: /^bg-background(?:\/\d+)?$/ },
+  { name: 'surface', re: /^bg-surface-\d(?:\/\d+)?$/ },
+  { name: 'popover', re: /^bg-popover(?:\/\d+)?$/ },
 ];
+/** 独立状态/装饰色：muted/accent/secondary 不进入表面层级（权重低于结构层级） */
+const STATE_TOKENS = [/^bg-muted(?:\/\d+)?$/, /^bg-accent(?:\/\d+)?$/, /^bg-secondary(?:\/\d+)?$/];
 
 const IGNORE_DIRS = new Set(['node_modules', '.next']);
 /** 白名单：特殊渲染场景，原因必须写清，避免“为了过门禁而白名单” */
@@ -61,6 +62,18 @@ function moduleOf(rel) {
   return parts[0] ?? 'other';
 }
 
+function countSurfaces(text) {
+  let count = 0;
+  // 只统计“基础类名”；hover:/focus:/data-[...]: 等交互状态和 muted/accent 装饰色不计入层级
+  for (const raw of text.match(/[^\s"'`]+/g) ?? []) {
+    const token = raw.replace(/[),;\]}]+$/, '');
+    if (token.includes(':')) continue;
+    if (STATE_TOKENS.some((re) => re.test(token))) continue;
+    if (PATTERNS.some(({ re }) => re.test(token))) count += 1;
+  }
+  return count;
+}
+
 function scan() {
   const files = {};
   const modules = {};
@@ -68,12 +81,7 @@ function scan() {
   for (const full of walk(srcDir)) {
     const rel = path.relative(srcDir, full).replaceAll('\\', '/');
     if (isWhitelisted(rel)) continue;
-    const text = fs.readFileSync(full, 'utf8');
-    let count = 0;
-    for (const { re } of PATTERNS) {
-      const matches = text.match(re);
-      if (matches) count += matches.length;
-    }
+    const count = countSurfaces(fs.readFileSync(full, 'utf8'));
     if (count === 0) continue;
     files[rel] = count;
     const mod = moduleOf(rel);

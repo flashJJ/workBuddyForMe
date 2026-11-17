@@ -35,7 +35,7 @@ function formatTime(ms: number, locale: Language): string {
 function JournalRow({ item, locale }: { item: PetScriptJournalItem; locale: Language }) {
   const { t } = useI18n();
   return (
-    <li className="rounded-xl border bg-card p-4">
+    <li className="rounded-xl border bg-ui-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{item.title}</p>

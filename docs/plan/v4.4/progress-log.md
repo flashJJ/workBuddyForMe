@@ -131,3 +131,11 @@
 - 列表/内容框：文档列表、上传拖拽区、报告筛选栏、模板卡补 L2 卡面。
 - 门禁：`check:surfaces` 基线 330 → 232 处，settings 119 → 48；剩余集中在 chat、flow-editor、meetings 等 S4 模块。
 - 验证：web typecheck 通过；设置/知识库/报告/助手 20 个测试文件 62 项通过。
+
+### 2026-11-17 表面层级治理 S4/S5
+
+- S4：Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer 等剩余模块完成 `bg-ui-*` 迁移；浮动面板/抽屉/诊断条统一 L5 overlay。
+- S5：移除“仅边框自动补卡面”的兼容规则，改为显式 token；`check:surfaces` 基线从 232 降到 0，白名单仅保留舞台、桌宠、背景媒体与调试页。
+- 门禁口径：只统计不带状态前缀的 `bg-card/background/surface/popover`；`bg-muted/accent/secondary` 归为独立状态/装饰层，不进入层级。
+- 独立体系：媒体遮罩（黑/白 alpha）、沉浸式舞台、透明窗气泡、文档语义色、内容预览白底均登记为独立体系，原因见 `surface-system.md` §3.1 与 `surface-registry.md` §9。
+- 验证：web typecheck、全量 `pnpm check` 通过；相关模块测试通过。

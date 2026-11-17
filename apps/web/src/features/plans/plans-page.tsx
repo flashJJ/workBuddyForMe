@@ -127,7 +127,7 @@ export function PlansPage() {
       ) : (
         <>
           {/* 目标 */}
-          <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="plans-goals">
+          <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="plans-goals">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium">{t('plans.goals')}</h2>
               {activeGoal && (
@@ -253,7 +253,7 @@ export function PlansPage() {
               <p className="text-xs text-muted-foreground">{t('plans.todoEmpty')}</p>
             ) : (
               todos.map((todo) => (
-                <div key={todo.id} className="rounded-lg border bg-card p-3">
+                <div key={todo.id} className="rounded-lg border bg-ui-card p-3">
                   <div className="flex items-center gap-2">
                     <Badge variant={STATUS_VARIANT[todo.status]}>
                       {t(`plans.status.${todo.status}`)}

@@ -52,6 +52,23 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 - 弹层统一实色，保证可读性，不随整屏背景变化；
 - 悬浮/hover/选中态属于状态色，不新增层级。
 
+### 3.1 独立体系与豁免决策
+
+层级体系只覆盖“承担页面结构的表面”。以下四类不进入 L0–L5，避免为了统一而破坏语义或对比度：
+
+| 类别 | 例子 | 决策 | 原因 |
+|---|---|---|---|
+| 状态/品牌色 | `bg-primary`、`bg-destructive`、`bg-success`、`bg-warning`、`bg-info`、`bg-accent`、`bg-secondary`、`bg-muted` | 独立状态层，允许存在 | 权重低于结构层级；用于选中、警告、装饰、进度槽，不承担页面结构 |
+| 媒体遮罩 | `bg-black/45`、`bg-white/10`、`bg-gradient-*`、`bg-black` 压暗 | 独立遮罩层 | 必须跨任意壁纸保持固定对比，属于呈现语境，不是主题表面 |
+| 透明窗/沉浸式 | 桌宠气泡 `bg-background/85`、舞台 `bg-black/55`、`bg-white/[0.03]` | 独立体系，文件白名单 | 呈现语境不同：透明窗无工作区、舞台是深色沉浸层；套层级会降低可读性 |
+| 内容语义色 | 文档查看器 `bg-amber-50`、`bg-sky-50`、`bg-rose-50` | 独立内容语义 | 颜色表达表格/图表/标注含义，与界面层级无关 |
+
+门禁口径同步调整：
+
+- `check:surfaces` 只统计 `bg-card`、`bg-background`、`bg-surface-*`、`bg-popover` 且不带 `hover:`/`focus:` 等状态前缀的基础类；
+- `bg-muted`、`bg-accent`、`bg-secondary` 等状态/装饰色不计入层级；
+- 舞台、桌宠、背景媒体、调试页按文件白名单登记并写明原因。
+
 ## 4. Token 契约
 
 新增语义 token（完整颜色值，直接作为 Tailwind 颜色使用）：
@@ -123,8 +140,8 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 | S1 | 主题 token 与 Tailwind `ui.*`；渐进透明度材质；门禁基线 | ✅ 已完成：六个 token、`check:surfaces`（330 处 / 170 文件基线） |
 | S2 | 共享基座：Card、Button、Input、Select、Dialog、EmptyState、Toast、Badge | ✅ 已完成 |
 | S3 | 布局与首批模块：Sidebar、PageHeader、Settings、Knowledge、Reports、Assistants | ✅ 已完成：门禁 330 → 232 处（settings 119 → 48） |
-| S4 | 其余模块：Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer | 全模块截图通过 |
-| S5 | 移除兼容层、清零基线、更新文档与博客 | `check:surfaces` 零违例 |
+| S4 | 其余模块：Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer | ✅ 已完成 |
+| S5 | 移除兼容层、清零基线、更新文档与博客 | ✅ 已完成：基线 0 处；白名单与独立体系已登记 |
 
 ## 8. 验证矩阵
 

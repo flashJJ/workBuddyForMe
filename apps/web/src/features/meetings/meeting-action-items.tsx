@@ -115,7 +115,7 @@ export function MeetingActionItems({ items, members, onCreate, onUpdate, onToRem
       {adding && (
         <div className="space-y-2 rounded-md border bg-muted/30 p-2">
           <input
-            className="w-full rounded border bg-background px-2 py-1 text-sm"
+            className="w-full rounded border bg-ui-control px-2 py-1 text-sm"
             placeholder={t('meeting.conclusion.itemPlaceholder')}
             aria-label={t('meeting.conclusion.itemPlaceholder')}
             value={content}
@@ -138,7 +138,7 @@ export function MeetingActionItems({ items, members, onCreate, onUpdate, onToRem
             </SimpleSelect>
             <input
               type="datetime-local"
-              className="rounded border bg-background px-2 py-1 text-xs"
+              className="rounded border bg-ui-control px-2 py-1 text-xs"
               aria-label={t('meeting.conclusion.due')}
               value={due}
               onChange={(event) => setDue(event.target.value)}

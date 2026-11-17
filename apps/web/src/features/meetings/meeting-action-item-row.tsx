@@ -153,7 +153,7 @@ export function MeetingActionItemRow({
           {editing ? (
             <div className="space-y-2">
               <input
-                className="w-full rounded border bg-background px-2 py-1 text-sm"
+                className="w-full rounded border bg-ui-control px-2 py-1 text-sm"
                 value={content}
                 aria-label={t('meeting.conclusion.itemPlaceholder')}
                 onChange={(event) => setContent(event.target.value)}
@@ -175,7 +175,7 @@ export function MeetingActionItemRow({
                 </SimpleSelect>
                 <input
                   type="datetime-local"
-                  className="rounded border bg-background px-2 py-1 text-xs"
+                  className="rounded border bg-ui-control px-2 py-1 text-xs"
                   value={due}
                   aria-label={t('meeting.conclusion.due')}
                   onChange={(event) => setDue(event.target.value)}

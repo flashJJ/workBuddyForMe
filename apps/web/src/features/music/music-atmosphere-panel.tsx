@@ -41,7 +41,7 @@ export function MusicAtmospherePanel() {
   };
 
   return (
-    <section className="space-y-2 rounded-lg border bg-card p-3" data-testid="music-atmosphere-panel">
+    <section className="space-y-2 rounded-lg border bg-ui-card p-3" data-testid="music-atmosphere-panel">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h4 className="flex items-center gap-1.5 text-xs font-medium">

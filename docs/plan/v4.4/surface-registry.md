@@ -1,7 +1,7 @@
 # 表面层级登记表（Surface Registry）
 
 > 配套方案：[surface-system.md](./surface-system.md)
-> 状态：S1–S3 已完成（token/门禁 + 共享基座 + 设置/知识库/报告/助手），下表 `状态` 保留初版登记，迁移进度见 §8。
+> 状态：S1–S5 已完成（token/门禁 + 全模块迁移 + 基线清零），独立体系与豁免见 §9。
 > 规则：L1 玻璃 + 模糊；L2–L5 透明度逐级升高，L5 实色，均不使用模糊。
 
 ## 1. 层级定义
@@ -150,5 +150,20 @@ features/reminders 11，features/knowledge 10，components/ui 8，features/tasks
 | S1 | token、Tailwind `ui.*`、`check:surfaces` | ✅ 基线 330 处 / 170 文件 |
 | S2 | Card、Button（outline）、Input、Textarea、NumberInput、Select、Dialog、Toast、EmptyState、ErrorState | ✅ 已切 `bg-ui-*` |
 | S3 | Sidebar、PageHeader、Settings、Knowledge、Reports、Assistants、模板卡 | ✅ 完成；基线 330 → 232 处，settings 119 → 48 |
-| S4 | Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer | 待开始 |
-| S5 | 兼容层移除、基线清零、文档与博客 | 待开始 |
+| S4 | Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer | ✅ 完成；结构表面全部切 `bg-ui-*` |
+| S5 | 兼容层移除、基线清零、文档与博客 | ✅ 完成；基线 0 处 |
+
+## 9. 独立体系与豁免登记
+
+| 类别 | 代表位置 | 决策 | 原因 |
+|---|---|---|---|
+| 状态/装饰色 | `bg-muted`、`bg-accent`、`bg-secondary`、`bg-primary/10` | 独立状态层 | 权重低于结构层级，用于选中/装饰/进度，不承载页面结构 |
+| 状态语义色 | `bg-destructive`、`bg-success`、`bg-warning`、`bg-info`、`bg-amber-50` 等 | 独立语义色 | 表达状态或内容含义，不随表面层级变化 |
+| 媒体遮罩 | `bg-black/45`、`bg-white/10`、`bg-gradient-*`、`bg-black` 压暗 | 独立遮罩层 | 需跨任意壁纸保持固定对比，属于呈现语境 |
+| 透明窗 | `features/pet/**` 气泡 `bg-background/85~88` | 白名单 | 桌宠透明窗没有工作区，层级体系不适用 |
+| 沉浸式舞台 | `features/stage/**` 的 `bg-black/*`、`bg-white/*` | 白名单 | 深色沉浸层，套主题表面会降低对比 |
+| 背景媒体 | `features/background/**` 的压暗层 | 白名单 | 媒体效果，不是 UI 表面 |
+| 调试页 | `app/spike/**` | 白名单 | 非产品界面 |
+| 内容预览 | `features/chat/overlay/artifact-card.tsx` 的 `bg-white` | 白名单 | iframe/文档预览需要固定白底 |
+
+门禁不统计 `hover:`/`focus:`/`data-*:` 等状态前缀，也不统计 `bg-muted`/`bg-accent`/`bg-secondary`。

@@ -129,7 +129,7 @@ export function BackupPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="backup-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="backup-panel">
       <h3 className="font-medium">{t('settingsBackup.title')}</h3>
       <p className="text-xs text-muted-foreground">
         {t('settingsBackup.descriptionLead')}

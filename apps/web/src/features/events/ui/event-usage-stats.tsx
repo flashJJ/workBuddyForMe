@@ -53,7 +53,7 @@ export function EventUsageStats() {
       <div className="flex items-center justify-between gap-3">
         <h4 className="text-sm font-medium">{t('eventStats.title')}</h4>
         <SimpleSelect
-          className="rounded-md border bg-background px-2 py-1 text-xs"
+          className="rounded-md border bg-ui-row px-2 py-1 text-xs"
           value={assistantId}
           aria-label={t('eventStats.selectAssistant')}
           data-testid="event-usage-assistant"

@@ -57,4 +57,4 @@
 - [x] T7.2 六个语义 token、Tailwind `ui.*` 与 `check:surfaces` 基线（330 处 / 170 文件）
 - [x] T7.3 共享基座迁移（Card/Button/Input/Select/Dialog/EmptyState/Toast）
 - [x] T7.4 首批模块迁移（设置/知识库/运行报告/助手）
-- [ ] T7.5 其余模块迁移、基线清零与文档回填
+- [x] T7.5 其余模块迁移、基线清零与文档回填

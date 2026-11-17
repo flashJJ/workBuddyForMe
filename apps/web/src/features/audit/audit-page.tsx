@@ -95,7 +95,7 @@ function buildPath(filters: Filters): string {
 function EventRow({ event }: { event: AuditEventView }) {
   const { t } = useI18n();
   return (
-    <li className="space-y-2 rounded-lg border bg-card p-4" data-testid={`audit-event-${event.seq}`}>
+    <li className="space-y-2 rounded-lg border bg-ui-card p-4" data-testid={`audit-event-${event.seq}`}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline">#{event.seq}</Badge>
         <Badge variant={event.actor === 'system' ? 'default' : 'info'}>
@@ -232,7 +232,7 @@ export function AuditPage() {
         </div>
       )}
 
-      <div className="grid gap-2 rounded-lg border bg-card p-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-2 rounded-lg border bg-ui-card p-3 sm:grid-cols-2 lg:grid-cols-5">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           {t('audit.filters.kind')}
           <SimpleSelect value={draft.kind} onValueChange={(value) => patch({ kind: value })}>
@@ -247,7 +247,7 @@ export function AuditPage() {
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           {t('audit.filters.runId')}
           <input
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            className="h-9 w-full rounded-md border bg-ui-control px-2 text-sm"
             value={draft.runId}
             placeholder={t('audit.filters.runPlaceholder')}
             onChange={(event) => patch({ runId: event.target.value })}
@@ -257,7 +257,7 @@ export function AuditPage() {
           {t('audit.filters.from')}
           <input
             type="datetime-local"
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            className="h-9 w-full rounded-md border bg-ui-control px-2 text-sm"
             value={draft.from}
             onChange={(event) => patch({ from: event.target.value })}
           />
@@ -266,7 +266,7 @@ export function AuditPage() {
           {t('audit.filters.to')}
           <input
             type="datetime-local"
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            className="h-9 w-full rounded-md border bg-ui-control px-2 text-sm"
             value={draft.to}
             onChange={(event) => patch({ to: event.target.value })}
           />

@@ -79,7 +79,7 @@ export function TuningPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="tuning-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="tuning-panel">
       <div>
         <h3 className="font-medium">{t('tuning.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('tuning.description')}</p>

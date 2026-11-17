@@ -11,7 +11,7 @@ export function AudioOutputPanel() {
   const missing = !!selected && !devices.some((device) => device.deviceId === selected);
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="audio-output-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="audio-output-panel">
       <div>
         <h3 className="font-medium">{t('audio.output.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('audio.output.description')}</p>
@@ -24,7 +24,7 @@ export function AudioOutputPanel() {
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground">{t('audio.output.device')}</span>
             <select
-              className="h-9 rounded-md border bg-background px-2 text-sm"
+              className="h-9 rounded-md border bg-ui-control px-2 text-sm"
               data-testid="audio-output-select"
               value={selected ?? ''}
               disabled={loading}

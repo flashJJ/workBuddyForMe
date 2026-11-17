@@ -117,7 +117,7 @@ export function MessageList({
                 key={prompt}
                 type="button"
                 onClick={() => onUsePrompt?.(prompt)}
-                className="rounded-xl border bg-surface-2 px-3 py-3 text-left text-xs leading-relaxed text-muted-foreground shadow-1 transition-[color,background-color,border-color,box-shadow,transform] duration-fast ease-out-quint hover:-translate-y-0.5 hover:border-primary/40 hover:text-foreground hover:shadow-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="rounded-xl border bg-ui-row px-3 py-3 text-left text-xs leading-relaxed text-muted-foreground shadow-1 transition-[color,background-color,border-color,box-shadow,transform] duration-fast ease-out-quint hover:-translate-y-0.5 hover:border-primary/40 hover:text-foreground hover:shadow-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {prompt}
               </button>
@@ -169,7 +169,7 @@ export function MessageList({
         <button
           type="button"
           onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
-          className="absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border bg-surface-3 px-3 py-1.5 text-xs text-muted-foreground shadow-2 transition-colors duration-fast ease-out-quint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border bg-ui-overlay px-3 py-1.5 text-xs text-muted-foreground shadow-2 transition-colors duration-fast ease-out-quint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           data-testid="scroll-to-bottom"
         >
           <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />

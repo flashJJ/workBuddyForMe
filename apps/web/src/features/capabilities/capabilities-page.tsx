@@ -138,7 +138,7 @@ export function CapabilitiesPage() {
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <select
-                className="h-9 rounded-md border bg-background px-2 text-sm"
+                className="h-9 rounded-md border bg-ui-control px-2 text-sm"
                 data-testid="capability-sample-kind"
                 aria-label={t('capabilities.sample')}
                 value={sampleKind}
