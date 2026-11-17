@@ -200,6 +200,7 @@ v3.0.0 发布验证：舞台 + 场景 + 设置存储单测 62 项与 `check:scen
 - [Electron 桌面外壳](docs/modules/electron-shell.md)
 - 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
 - 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [v4.0 方案](docs/plan/v4.0/README.md) ｜ [v4.0.0 发布说明](docs/plan/v4.0/release-notes.md) ｜ [v3.1 方案](docs/plan/v3.1/README.md)
+- 影视与 IP：[摸鱼事务所影视类方案](docs/film/README.md) ｜ [即梦循环背景视频](docs/film/01-jimeng-loop-background.md) ｜ [Master 固定卡通形象](docs/film/03-master-character.md) ｜ [开机动画选型](docs/film/08-boot-animation.md)
 - 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](docs/learn/desktop-pet-implementation.md)
 
 ## 许可
