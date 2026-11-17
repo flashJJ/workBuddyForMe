@@ -162,7 +162,7 @@ export function RunReportPage() {
           {data.totals.total === 0 ? (
             <EmptyState title={t('reports.empty')} description="" />
           ) : (
-            <div className="overflow-hidden rounded-lg border">
+            <div className="overflow-hidden rounded-lg border bg-ui-card">
               <table className="w-full text-sm" data-testid="run-report-table">
                 <thead className="bg-ui-row text-xs text-muted-foreground">
                   <tr>

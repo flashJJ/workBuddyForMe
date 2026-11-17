@@ -136,7 +136,7 @@ export function ArtifactPackPanel() {
           {overLimit && (
             <p className="text-xs text-destructive">{t('settingsBackup.artifacts.overLimit')}</p>
           )}
-          <ul className="max-h-64 space-y-1 overflow-y-auto rounded-md border p-2">
+          <ul className="max-h-64 space-y-1 overflow-y-auto rounded-md border bg-ui-row p-2">
             {items.map((item) => (
               <li key={item.id}>
                 <label className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-muted/50">

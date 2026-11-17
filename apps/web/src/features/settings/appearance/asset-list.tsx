@@ -68,7 +68,7 @@ export function AssetList({
           {rows.map((row) => (
             <li
               key={row.key}
-              className="flex items-center justify-between rounded border p-2 text-xs"
+              className="flex items-center justify-between rounded border bg-ui-row p-2 text-xs"
               data-testid={row.testId}
             >
               <div>

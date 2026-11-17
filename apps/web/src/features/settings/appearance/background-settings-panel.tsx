@@ -232,7 +232,7 @@ export function BackgroundSettingsPanel() {
         </select>
       </label>
 
-      <div className="relative h-32 overflow-hidden rounded-md border">
+      <div className="relative h-32 overflow-hidden rounded-md border bg-ui-row">
         <BackgroundLayer
           view={{ resolved, fit: config.fit, dim: config.dim, blur: config.blur }}
           className="absolute inset-0"

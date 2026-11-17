@@ -95,7 +95,7 @@ export function MeetingRoom({ meetingId }: { meetingId: string }) {
           {meeting.mode === 'auto' ? ` · ${t('meeting.room.autoRound', { used: meeting.autoRounds, max: 8 })}` : ''}
         </span>
         <div className="ml-auto flex items-center gap-1">
-          <div className="flex overflow-hidden rounded border" role="group" aria-label="schedule">
+          <div className="flex overflow-hidden rounded border bg-ui-control" role="group" aria-label="schedule">
             {MODE_ORDER.map((mode) => (
               <button
                 key={mode}

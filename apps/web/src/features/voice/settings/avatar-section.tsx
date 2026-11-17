@@ -85,7 +85,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
   );
 
   return (
-    <div className="space-y-3 rounded-md border p-3" data-testid="voice-avatar-section">
+    <div className="space-y-3 rounded-md border bg-ui-row p-3" data-testid="voice-avatar-section">
       <p className="text-sm font-medium">{t('voice.avatar.title')}</p>
       <label
         className="flex cursor-pointer items-start justify-between gap-3"

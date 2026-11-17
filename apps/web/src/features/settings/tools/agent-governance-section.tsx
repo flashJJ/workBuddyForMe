@@ -136,7 +136,7 @@ export function AgentGovernanceSection() {
 
         <div className="flex flex-col gap-1 text-xs text-muted-foreground">
           {t('tasks.governance.policy.unattended')}
-          <div className="flex flex-wrap gap-3 rounded-md border px-3 py-2">
+          <div className="flex flex-wrap gap-3 rounded-md border bg-ui-row px-3 py-2">
             {AGENT_UNATTENDED_MODES.map((mode) => (
               <label key={mode} className="flex items-center gap-1 text-foreground">
                 <input

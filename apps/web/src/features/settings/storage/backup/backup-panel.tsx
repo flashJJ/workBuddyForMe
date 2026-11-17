@@ -138,7 +138,7 @@ export function BackupPanel() {
       </p>
 
       {/* 导出区域 */}
-      <div className="space-y-3 rounded-md border p-3">
+      <div className="space-y-3 rounded-md border bg-ui-row p-3">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <label className="flex cursor-pointer items-center gap-2">
@@ -213,7 +213,7 @@ export function BackupPanel() {
             </label>
           ))}
         </div>
-        <div className="space-y-2 rounded-md border border-dashed p-2">
+        <div className="space-y-2 rounded-md border border-dashed bg-ui-row p-2">
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"

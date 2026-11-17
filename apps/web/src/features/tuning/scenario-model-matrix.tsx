@@ -78,7 +78,7 @@ export function ScenarioModelMatrix({ assistant, defaultChatModelId, chatModels,
         <h4 className="text-sm font-medium">{t('tuning.matrix.title')}</h4>
         <p className="mt-0.5 text-xs text-muted-foreground">{t('tuning.matrix.description')}</p>
       </div>
-      <div className="divide-y rounded-md border">
+      <div className="divide-y rounded-md border bg-ui-row">
         <div className="px-3">
           <MatrixRow
             rowKey="chat"

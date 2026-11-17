@@ -11,7 +11,7 @@ interface Props {
 export function AssistantExpressionField({ checked, onChange }: Props) {
   const { t } = useI18n();
   return (
-    <label className="flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm">
+    <label className="flex cursor-pointer items-start gap-2 rounded-md border bg-ui-row p-3 text-sm">
       <input
         type="checkbox"
         className="mt-0.5 h-4 w-4"

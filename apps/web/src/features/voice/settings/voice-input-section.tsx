@@ -66,7 +66,7 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
   };
 
   return (
-    <div className="space-y-3 rounded-md border p-3" data-testid="voice-input-section">
+    <div className="space-y-3 rounded-md border bg-ui-row p-3" data-testid="voice-input-section">
       <div className="space-y-1.5">
         <p className="text-sm font-medium">{t('voice.input.title')}</p>
         <div className="inline-flex rounded-md border p-0.5" role="group" aria-label={t('voice.input.title')}>
@@ -106,7 +106,7 @@ export function VoiceInputSection({ settings, asrReady, onPatch }: VoiceInputSec
           <div className="space-y-1.5">
             <Label>{t('voice.input.profileLabel')}</Label>
             <div
-              className="inline-flex rounded-md border p-0.5"
+              className="inline-flex rounded-md border bg-ui-control p-0.5"
               role="group"
               aria-label={t('voice.input.profileLabel')}
             >

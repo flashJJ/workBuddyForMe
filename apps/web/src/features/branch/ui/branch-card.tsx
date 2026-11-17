@@ -31,7 +31,7 @@ export function BranchCard({ branch, actions }: { branch: ConversationBranch; ac
   const evidence = branch.evidence;
 
   return (
-    <div className="rounded-md border p-2.5 text-xs space-y-1.5" data-testid={`branch-card-${branch.id}`}>
+    <div className="rounded-md border bg-ui-row p-2.5 text-xs space-y-1.5" data-testid={`branch-card-${branch.id}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium break-words">{branch.title}</p>
         <Badge variant={BRANCH_STATUS_TONE[branch.status]}>{t(statusLabelKey(branch.status))}</Badge>

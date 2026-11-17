@@ -62,7 +62,7 @@ export function MusicLibraryPanel() {
       <li
         key={track.id}
         data-testid={`music-track-${track.id}`}
-        className="flex items-center gap-2 rounded-md border px-2.5 py-2"
+        className="flex items-center gap-2 rounded-md border bg-ui-row px-2.5 py-2"
       >
         <button
           type="button"

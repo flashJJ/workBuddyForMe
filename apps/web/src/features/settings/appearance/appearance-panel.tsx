@@ -12,7 +12,7 @@ function ThemeSwatch({ def }: { def: ThemeDefinition }) {
   const { preview } = def;
   return (
     <div
-      className="relative h-14 overflow-hidden rounded-md border"
+      className="relative h-14 overflow-hidden rounded-md border bg-ui-row"
       style={{ backgroundColor: preview.background }}
       aria-hidden="true"
     >

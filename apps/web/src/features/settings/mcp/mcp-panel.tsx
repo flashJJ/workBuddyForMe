@@ -204,7 +204,7 @@ export function McpPanel() {
           {servers.map((server) => (
             <li
               key={server.id}
-              className="flex items-center justify-between gap-3 rounded-md border p-3"
+              className="flex items-center justify-between gap-3 rounded-md border bg-ui-row p-3"
               data-testid="mcp-server-item"
             >
               <div className="min-w-0 space-y-1">

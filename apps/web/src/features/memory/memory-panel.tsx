@@ -41,7 +41,7 @@ function MemoryRow({
   return (
     <div
       data-testid="memory-item"
-      className="flex items-start gap-3 rounded-lg border p-3"
+      className="flex items-start gap-3 rounded-lg border bg-ui-row p-3"
     >
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">

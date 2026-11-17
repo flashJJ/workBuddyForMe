@@ -84,7 +84,7 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
   };
 
   return (
-    <li className="space-y-2 rounded-md border p-3" data-testid="skill-item">
+    <li className="space-y-2 rounded-md border bg-ui-row p-3" data-testid="skill-item">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">

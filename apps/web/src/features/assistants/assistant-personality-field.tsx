@@ -59,7 +59,7 @@ export function AssistantPersonalityField({ values, onChange }: AssistantPersona
   const { t } = useI18n();
 
   return (
-    <div className="space-y-2 rounded-md border p-2.5" data-testid="assistant-personality">
+    <div className="space-y-2 rounded-md border bg-ui-row p-2.5" data-testid="assistant-personality">
       <div className="space-y-0.5">
         <Label text={t('assistants.form.personalityLabel')} />
         <p className="text-[11px] text-muted-foreground">

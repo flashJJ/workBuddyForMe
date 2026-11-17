@@ -122,7 +122,7 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
   const { t } = useI18n();
   return (
     <div className="space-y-4" data-testid="voice-engine-params">
-      <div className="space-y-3 rounded-md border p-3">
+      <div className="space-y-3 rounded-md border bg-ui-row p-3">
         <p className="text-sm font-medium">{t('voice.engine.ttsTitle')}</p>
         <ToggleRow
           id="tts-enabled"
@@ -182,7 +182,7 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         />
       </div>
 
-      <div className="space-y-3 rounded-md border p-3">
+      <div className="space-y-3 rounded-md border bg-ui-row p-3">
         <p className="text-sm font-medium">{t('voice.engine.asrTitle')}</p>
         <ToggleRow
           id="asr-enabled"

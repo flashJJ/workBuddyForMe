@@ -85,7 +85,7 @@ export function McpCatalog({ servers, oauthStatuses, onManual, onAuthorize }: Pr
     : null;
 
   return (
-    <section className="space-y-3 rounded-lg border p-3" data-testid="mcp-catalog">
+    <section className="space-y-3 rounded-lg border bg-ui-row p-3" data-testid="mcp-catalog">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h4 className="text-sm font-medium">{t('settingsMcp.mcp.catalog.title')}</h4>

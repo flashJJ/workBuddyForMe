@@ -166,5 +166,7 @@ features/reminders 11，features/knowledge 10，components/ui 8，features/tasks
 | 调试页 | `app/spike/**` | 白名单 | 非产品界面 |
 | 内容预览 | `features/chat/overlay/artifact-card.tsx` 的 `bg-white` | 白名单 | iframe/文档预览需要固定白底 |
 | 无卡壳面板 | `music-library-panel`、`branch-limits-panel`、`capability-trust-section` | 归入层级体系 L2 | 组件本身没有渲染卡壳，迁移只替换已有类会漏；已补 `bg-ui-card`，并写入“面板必须自带 L2 卡壳”规则 |
+| 边框分组块 | 设置、MCP、技能、备份、存储清理、语音、调优等 `rounded border p-*` 子块 | 归入层级体系 L3 | 不是独立体系；此前无底色，现统一补 `bg-ui-row` |
+| 状态徽章/胶囊 | `rounded border px-1.5` 的目录标签、附件提示等 | 独立状态/装饰层 | 权重低，不作为结构容器；保留无底色或用 `bg-muted` |
 
 门禁不统计 `hover:`/`focus:`/`data-*:` 等状态前缀，也不统计 `bg-muted`/`bg-accent`/`bg-secondary`。

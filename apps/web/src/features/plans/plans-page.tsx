@@ -226,7 +226,7 @@ export function PlansPage() {
                 />
               ))
             )}
-            <div className="space-y-2 rounded-lg border border-dashed p-4">
+            <div className="space-y-2 rounded-lg border border-dashed bg-ui-card p-4">
               <Input
                 value={planTitle}
                 placeholder={t('plans.planTitlePlaceholder')}

@@ -133,7 +133,7 @@ function StorageSection() {
   };
 
   return (
-    <div className="space-y-3 rounded-md border p-3" data-testid="voice-storage-section">
+    <div className="space-y-3 rounded-md border bg-ui-row p-3" data-testid="voice-storage-section">
       <p className="text-sm font-medium">{t('voice.storage.title')}</p>
       <div className="space-y-1.5">
         <Label htmlFor="voice-mirror">{t('voice.storage.mirrorLabel')}</Label>
@@ -236,7 +236,7 @@ export function VoicePreferencePanel() {
       {mounted && settings && <ProactiveSection settings={settings} onPatch={patch} />}
 
       {mounted && (
-        <div className="space-y-2 rounded-md border p-3" data-testid="voice-device-section">
+        <div className="space-y-2 rounded-md border bg-ui-row p-3" data-testid="voice-device-section">
           <p className="text-sm font-medium">{t('voice.section.deviceTest')}</p>
           <MicSelfTest />
         </div>

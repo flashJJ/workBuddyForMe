@@ -30,7 +30,7 @@ export function EndpointPolicySection({ policy, dangerNodes, onChange }: Endpoin
   };
 
   return (
-    <div className="rounded-md border p-2.5 text-[11px] leading-relaxed text-muted-foreground">
+    <div className="rounded-md border bg-ui-row p-2.5 text-[11px] leading-relaxed text-muted-foreground">
       <p className="font-medium text-foreground">{t('flowEditor.endpoint.policy.title')}</p>
       <p className="mt-1">
         {t('flowEditor.endpoint.policy.description')}

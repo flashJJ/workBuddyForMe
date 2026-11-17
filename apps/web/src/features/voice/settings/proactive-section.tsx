@@ -29,7 +29,7 @@ export function ProactiveSection({ settings, onPatch }: Props) {
   const visualOutlet = settings.avatarEnabled || settings.petEnabled;
 
   return (
-    <div className="space-y-3 rounded-md border p-3" data-testid="voice-proactive-section">
+    <div className="space-y-3 rounded-md border bg-ui-row p-3" data-testid="voice-proactive-section">
       <p className="text-sm font-medium">{t('voice.proactive.title')}</p>
       <ToggleRow
         id="proactive-enabled"

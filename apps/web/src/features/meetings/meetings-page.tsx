@@ -113,7 +113,7 @@ export function MeetingsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex overflow-hidden rounded-md border" role="group" aria-label={t('meeting.create.mode')}>
+            <div className="flex overflow-hidden rounded-md border bg-ui-control" role="group" aria-label={t('meeting.create.mode')}>
               {(['manual', 'all', 'auto'] as MeetingMode[]).map((m) => (
                 <button
                   key={m}

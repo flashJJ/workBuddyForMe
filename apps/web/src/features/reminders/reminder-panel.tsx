@@ -79,7 +79,7 @@ export function ReminderPanel() {
           (reminders ?? []).map((reminder) => (
             <li
               key={reminder.id}
-              className="flex items-center gap-3 rounded-md border px-3 py-2"
+              className="flex items-center gap-3 rounded-md border bg-ui-row px-3 py-2"
               data-testid={`reminder-row-${reminder.id}`}
             >
               <input

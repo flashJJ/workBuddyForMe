@@ -16,7 +16,7 @@ function dimensionLabel(t: ReturnType<typeof useI18n>['t'], dimension: ClaimDime
 function ConflictCard({ item }: { item: ConflictItem }) {
   const { t } = useI18n();
   return (
-    <li className="rounded-md border p-3 text-xs" data-testid="conflict-item">
+    <li className="rounded-md border bg-ui-row p-3 text-xs" data-testid="conflict-item">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <Badge variant="info">{dimensionLabel(t, item.dimension)}</Badge>
         <span className="font-medium">{item.entityName}</span>
@@ -53,7 +53,7 @@ function ConflictCard({ item }: { item: ConflictItem }) {
 function DuplicateCard({ pair }: { pair: DuplicatePair }) {
   const { t } = useI18n();
   return (
-    <li className="rounded-md border p-3 text-xs" data-testid="duplicate-item">
+    <li className="rounded-md border bg-ui-row p-3 text-xs" data-testid="duplicate-item">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         {pair.reasons.map((reason) => (
           <Badge key={reason} variant="info">

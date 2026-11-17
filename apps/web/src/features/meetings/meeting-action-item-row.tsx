@@ -134,7 +134,7 @@ export function MeetingActionItemRow({
 
   return (
     <div
-      className={`rounded-md border p-2 text-sm ${cancelled ? 'opacity-60' : ''}`}
+      className={`rounded-md border bg-ui-row p-2 text-sm ${cancelled ? 'opacity-60' : ''}`}
       data-testid="meeting-action-item"
       data-status={item.status}
     >

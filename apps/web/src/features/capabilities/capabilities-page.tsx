@@ -187,7 +187,7 @@ export function CapabilitiesPage() {
         ))}
       </div>
 
-      <section className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed p-4">
+      <section className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed bg-ui-card p-4">
         <input
           type="file"
           accept=".zip,application/zip"

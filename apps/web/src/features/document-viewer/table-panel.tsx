@@ -43,12 +43,12 @@ function TableCard({ table, focus }: { table: Table; focus: DocumentViewerFocus 
   return (
     <article
       ref={targeted ? ref : undefined}
-      className={`rounded-md border px-3 py-2 ${targeted ? 'border-amber-400 ring-1 ring-amber-300' : ''}`}
+      className={`rounded-md border bg-ui-row px-3 py-2 ${targeted ? 'border-amber-400 ring-1 ring-amber-300' : ''}`}
       data-testid="structure-table"
       data-table-no={table.tableNo}
     >
       <div className="mb-1 flex items-center gap-2">
-        <span className="rounded border px-1.5 py-0.5 text-[11px] font-medium">
+        <span className="rounded border bg-ui-row px-1.5 py-0.5 text-[11px] font-medium">
           {t('documentViewer.tableNo', { no: String(table.tableNo) })}
         </span>
         {table.caption && <span className="truncate text-xs">{table.caption}</span>}

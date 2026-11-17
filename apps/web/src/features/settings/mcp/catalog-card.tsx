@@ -126,7 +126,7 @@ export function CatalogCard({
           {entry.note && <p className="text-[11px] text-muted-foreground">{entry.note}</p>}
 
           {selected && (entry.fields?.length ?? 0) > 0 && (
-            <div className="space-y-2 rounded-md border border-dashed p-2">
+            <div className="space-y-2 rounded-md border border-dashed bg-ui-row p-2">
               {entry.fields!.map((field) => (
                 <label
                   key={field.token}

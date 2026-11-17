@@ -103,7 +103,7 @@ export function FlowVersionsButton({ workflow }: { workflow: WorkflowView }) {
                 {versions.data.map((version) => (
                   <li
                     key={version.id}
-                    className="flex items-center justify-between gap-3 rounded-md border p-2"
+                    className="flex items-center justify-between gap-3 rounded-md border bg-ui-row p-2"
                     data-testid="flow-version-item"
                   >
                     <div className="min-w-0 space-y-0.5">

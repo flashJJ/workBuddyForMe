@@ -33,7 +33,7 @@ function CardRow({
   const isBuiltin = card.source === 'builtin';
   return (
     <li
-      className="flex items-start justify-between gap-3 rounded-md border p-3"
+      className="flex items-start justify-between gap-3 rounded-md border bg-ui-row p-3"
       data-testid={`character-card-row-${card.id}`}
     >
       <div className="min-w-0 space-y-0.5">

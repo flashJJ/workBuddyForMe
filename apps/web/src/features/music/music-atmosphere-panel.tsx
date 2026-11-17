@@ -64,7 +64,7 @@ export function MusicAtmospherePanel() {
         {MUSIC_ATMOSPHERES.map((item) => (
           <details
             key={item.id}
-            className="rounded-md border px-2.5 py-2"
+            className="rounded-md border bg-ui-row px-2.5 py-2"
             data-testid={`music-atmosphere-${item.id}`}
           >
             <summary className="flex cursor-pointer items-center justify-between gap-2 text-xs">

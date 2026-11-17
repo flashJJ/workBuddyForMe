@@ -84,7 +84,7 @@ export function CatalogEnableDialog({ open, onOpenChange, serverNames }: Props) 
             {(assistants ?? []).map((assistant) => (
               <label
                 key={assistant.id}
-                className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm"
+                className="flex cursor-pointer items-center gap-2 rounded-md border bg-ui-row p-2 text-sm"
               >
                 <input
                   type="checkbox"
