@@ -150,9 +150,9 @@ export const TOOL_BREAKER_FAILURE_THRESHOLD = 3;
 /** v0.6 M4：熔断冷却时间（5 分钟后半开重试） */
 export const TOOL_BREAKER_COOLDOWN_MS = 5 * 60_000;
 /**
- * 网页抓取单页字节上限：默认 2MB（GitHub/文档站常见 0.5–1.5MB，
- * 原 200KB 会把正常页面误判为失败），设置页可按 KB 覆盖。
+ * 网页抓取单页字节上限：默认 8MB（GitHub/文档站常见 0.5–1.5MB，
+ * 部分文档站可达数 MB；原 200KB 会把正常页面误判为失败），设置页可按 KB 覆盖。
  */
-export const WEB_FETCH_MAX_BYTES_DEFAULT = 2 * 1024 * 1024;
+export const WEB_FETCH_MAX_BYTES_DEFAULT = 8 * 1024 * 1024;
 export const WEB_FETCH_MAX_BYTES_MIN = 200 * 1024;
 export const WEB_FETCH_MAX_BYTES_MAX = 8 * 1024 * 1024;

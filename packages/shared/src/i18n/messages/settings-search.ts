@@ -38,7 +38,7 @@ export const zhSettingsSearch = {
     maxResults: '每次结果数',
     fetchMaxKb: '单页抓取上限（KB）',
     fetchMaxHint:
-      'fetch_webpage 单页读取上限，默认 2048KB（2MB），范围 200–8192KB；超出时只解析页面前部内容。',
+      'fetch_webpage 单页读取上限，默认 8192KB（8MB），范围 200–8192KB；超出时只解析页面前部内容。',
     save: '保存',
     saving: '保存中…',
     saved: '搜索设置已保存',
@@ -91,7 +91,7 @@ export const enSettingsSearch = {
     maxResults: 'Results per search',
     fetchMaxKb: 'Fetch limit per page (KB)',
     fetchMaxHint:
-      'Max bytes read per page for fetch_webpage. Default 2048 KB (2 MB), range 200–8192 KB; larger pages are partially parsed.',
+      'Max bytes read per page for fetch_webpage. Default 8192 KB (8 MB), range 200–8192 KB; larger pages are partially parsed.',
     save: 'Save',
     saving: 'Saving…',
     saved: 'Search settings saved',
