@@ -180,4 +180,12 @@
 - 修复：为 3 个主窗口视频与 2 个桌宠视频生成首帧封面（`public/backgrounds/**/*.jpg`，19–68KB），`ResolvedBackground.video` 增加可选 `poster`；`BackgroundLayer` 设置 `poster` 并在 `onError` 时按 1s/2s/4s 重试 3 次（`video.load()` 会重新拉取视频与封面）。
 - 效果：慢加载时先显示封面，视频就绪后无缝接上；服务未就绪或请求失败也有兜底画面，不再白底。
 - 验证：web typecheck、背景解析测试 6 项、`check:assets`、`check:surfaces` 通过；限速重载实测封面请求 200。
+
+### 2026-11-17 v4.4 重打包（0740bcd2）
+
+- 全量测试：9 包 745 文件 4219 项通过；`pnpm check`、`check:assets`、`check:surfaces` 全绿。
+- 重打包：安装包 272.57MB（285,808,523 字节），SHA256 `da3cd2de…cbda0c`；commit `0740bcd2`，构建时间 `2026-11-17T06:14:40Z`。
+- 归档：`E:\builds\archive\v4.4.0`；blockmap `ffc90225…`、latest.yml `11bac047…`；`release-manifest --check` 通过 3 个产物。
+- 体积：新增 5 张首帧封面共约 0.2MB，较上一构建 +0.20MB，仍在 300MB 预算内。
+- 待真机验证通过后再合并 main、打 tag `v4.4.0` 并推工蜂 `tencent`。
 - 验证：web typecheck 通过；待真机确认对比度与观感。

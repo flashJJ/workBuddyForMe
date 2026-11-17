@@ -58,18 +58,18 @@
 
 | 项目 | 值 |
 |---|---|
-| 安装包 | `WorkBuddyForMe-Setup-4.4.0.exe` 272.37 MB（285,598,054 字节） |
-| 安装包 SHA256 | `ffe65ea6768a7a8abfe86e1eb4526fbeb849a37e13912cf2b223281ede18a804` |
-| blockmap SHA256 | `cdf902e35e3b372d946c45eab1bbbc97cc94fe1399721e46f6cea0014ef8930e` |
-| latest.yml SHA256 | `f1f4a0eaae7973ccf3a6a0c485ae70ba294efaeeaec5ca9b572f6b9ed6c9b4ac` |
+| 安装包 | `WorkBuddyForMe-Setup-4.4.0.exe` 272.57 MB（285,808,523 字节） |
+| 安装包 SHA256 | `da3cd2de8ae9042fb2998c65e2cd0d6ef7d06b788df0a457a35052d52ccbda0c` |
+| blockmap SHA256 | `ffc902250552aabc324a31bef9781f38716853901d44e581d95185a842730900` |
+| latest.yml SHA256 | `11bac04724e0c1f7267ab8ff193edc2116f1e45d37de28bf2dcda9aa0cc8a411` |
 | 归档目录 | `E:\builds\archive\v4.4.0` |
-| build-info | commit `1a22d129`、branch `feat/v4.4-background-and-wallpaper`、构建时间 `2026-11-16T21:05:24Z` |
-| 体积对比 | 较 v4.3.0 264.84MB 增加 7.53MB（7,892,989 字节），仍在 300MB 预算内 |
+| build-info | commit `0740bcd2`、branch `feat/v4.4-background-and-wallpaper`、构建时间 `2026-11-17T06:14:40Z` |
+| 体积对比 | 较 v4.3.0 264.84MB 增加 7.73MB（8,103,458 字节），仍在 300MB 预算内 |
 | 校验复核 | `node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.4.0` 输出「校验通过 3 个产物（4.4.0）」 |
 
 ## 7. 更新公告
 
-本版把背景与壁纸做成可配置的一等能力：舞台、主窗口与桌宠窗可以各自选择内置素材、本地图片/视频或能力包壁纸，视频静音循环并在窗口隐藏时暂停。整屏模式下的侧边栏、头部、内容卡片与搜索统一为同一套玻璃表面样式。素材统一压缩后入包，安装包 272.37MB，仍在 300MB 预算内；没有数据库迁移，升级后首次启动无需额外操作。
+本版把背景与壁纸做成可配置的一等能力：舞台、主窗口与桌宠窗可以各自选择内置素材、本地图片/视频或能力包壁纸，视频静音循环并在窗口隐藏时暂停。整屏模式下的侧边栏、头部、内容卡片与搜索统一为同一套半透明表面样式（不做背景模糊，模糊只由背景参数控制）。素材统一压缩后入包，安装包 272.57MB，仍在 300MB 预算内；没有数据库迁移，升级后首次启动无需额外操作。
 
 ## 8. 发布物料清单
 
