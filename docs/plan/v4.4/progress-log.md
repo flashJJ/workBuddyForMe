@@ -146,3 +146,9 @@
 - 补齐：`music-library-panel`、`branch-limits-panel`、`capability-trust-section` 增加 L2 卡壳 `rounded-lg border bg-ui-card p-4`。
 - 规则：注册为独立设置面板的组件必须自带 L2 卡壳，或复用 `AssetList`/`AssetImportSection` 等已带卡壳的包装组件。
 - 验证：web typecheck、表面门禁 0 处、设置/音乐 15 文件 51 项测试通过。
+
+### 2026-11-17 对话形象栏顶部重叠修复
+
+- 形象栏收起按钮原为 `absolute right-2 top-2`，与 `AvatarHost` 头部的试运行按钮、状态角标重叠。
+- 改为 `headerAction` 插槽参与头部正常布局，按钮使用 `bg-ui-control`；收起态不受影响。
+- 验证：web typecheck 通过；形象/对话 116 文件 681 项测试通过。

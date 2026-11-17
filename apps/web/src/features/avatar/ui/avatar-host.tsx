@@ -34,6 +34,8 @@ interface AvatarHostProps {
   onPreview: (eventId: string) => PreviewResult | 'missing';
   /** 2s 内第 3 次摸头（进入保护态）时触发 ev.touch.shy */
   onHeadTouchStreak: () => void;
+  /** 头部右侧附加操作（如形象栏收起按钮），参与正常布局避免与状态角标重叠 */
+  headerAction?: React.ReactNode;
 }
 
 /**
@@ -52,6 +54,7 @@ export function AvatarHost({
   onEventSkip,
   onPreview,
   onHeadTouchStreak,
+  headerAction,
 }: AvatarHostProps) {
   const { t } = useI18n();
   // v3.0 P4：Q 版比例（与桌宠共用同一设置项）
@@ -82,6 +85,7 @@ export function AvatarHost({
                 ? t('avatar.state.idle')
                 : expression}
           </span>
+          {headerAction}
         </div>
       </div>
       <div className="relative min-h-0 flex-1 overflow-hidden">

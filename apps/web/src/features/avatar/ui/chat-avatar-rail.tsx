@@ -66,16 +66,6 @@ export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, spea
       data-testid="avatar-rail"
       data-collapsed="false"
     >
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={t('chat.avatarRail.collapse')}
-        title={t('chat.avatarRail.collapse')}
-        data-testid="avatar-rail-toggle"
-        className="absolute right-2 top-2 z-10 rounded-md border bg-ui-overlay p-1 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <PanelRightClose className="h-3.5 w-3.5" />
-      </button>
       <AvatarHost
         modelId={modelId}
         expression={expression}
@@ -88,6 +78,18 @@ export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, spea
         onEventSkip={eventStage.skip}
         onPreview={eventStage.previewBuiltIn}
         onHeadTouchStreak={eventStage.onHeadTouchStreak}
+        headerAction={
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={t('chat.avatarRail.collapse')}
+            title={t('chat.avatarRail.collapse')}
+            data-testid="avatar-rail-toggle"
+            className="rounded-md border bg-ui-control p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <PanelRightClose className="h-3.5 w-3.5" />
+          </button>
+        }
       />
     </aside>
   );
