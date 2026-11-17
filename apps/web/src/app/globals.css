@@ -368,6 +368,8 @@
   min-width: 100%;
   border-collapse: collapse;
   font-size: 0.85em;
+  /* 表格自身必须有实色底：奇数行没有 tr 背景，透明会露出页面壁纸 */
+  background-color: hsl(var(--card));
 }
 
 .markdown-body thead {
@@ -382,7 +384,11 @@
   vertical-align: top;
 }
 
-/* 斑马纹：偶数行浅底，长表格横向扫读不串行 */
+/* 斑马纹：奇数行白底、偶数行浅蓝底；两行都必须是实色 */
+.markdown-body tbody tr {
+  background-color: hsl(var(--card));
+}
+
 .markdown-body tbody tr:nth-child(even) {
   background-color: hsl(var(--muted));
 }
