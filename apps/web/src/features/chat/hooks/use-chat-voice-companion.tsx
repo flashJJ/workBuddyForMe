@@ -91,7 +91,12 @@ export function useChatVoiceCompanion({
     ttsReady: !!voiceModelStatus?.ttsReady,
     hasVisualOutlet: !!voiceSettings?.avatarEnabled || !!voiceSettings?.petEnabled,
     hasChatModel,
-    busy: session.streaming || handsfree.voiceState !== 'idle',
+    // speaking 不放进 busy：主动轮的 TTS 自己也会进入 speaking，不能因此自我中断
+    busy:
+      session.streaming ||
+      handsfree.voiceState === 'listening' ||
+      handsfree.voiceState === 'thinking',
+    speaking: handsfree.voiceState === 'speaking',
     onAudio: voiceBridge.onAudio,
     onCancelPlayback: voiceBridge.cancelPlayback,
   });

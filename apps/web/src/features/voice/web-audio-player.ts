@@ -22,6 +22,8 @@ export class WebAudioPlayer implements AudioPlayer {
   private analyser: AnalyserNode | null = null;
   private levelData: Uint8Array<ArrayBuffer> | null = null;
   private active: Set<AudioBufferSourceNode> = new Set();
+  /** 取消代际：decodeAudioData 期间被 cancel 的帧不得再启动声源 */
+  private epoch = 0;
   private readonly onLevel?: (level: number) => void;
   /** v4.3 M4：输出设备偏好；AudioContext 惰性创建后补应用 */
   private outputDevice: string | null = null;
@@ -79,11 +81,14 @@ export class WebAudioPlayer implements AudioPlayer {
   async play(frame: VoiceAudioFrame): Promise<void> {
     if (!frame.audio) return;
     const ctx = this.ensureCtx();
+    const epoch = this.epoch;
     const bytes = base64ToBytes(frame.audio);
     const buffer = await ctx.decodeAudioData(
       // bytes 为定长分配，其底层 buffer 即完整 WAV
       bytes.buffer as ArrayBuffer,
     );
+    // 解码期间发生 cancel：旧帧不能再启动，否则会与新一轮语音重叠
+    if (epoch !== this.epoch) return;
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.analyser!);
@@ -117,6 +122,7 @@ export class WebAudioPlayer implements AudioPlayer {
   }
 
   cancelAll(): void {
+    this.epoch += 1;
     for (const source of this.active) {
       try {
         source.onended = null;

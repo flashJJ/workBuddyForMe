@@ -25,8 +25,10 @@ interface UseProactiveChatArgs {
   hasVisualOutlet: boolean;
   /** 已配置可用对话模型 */
   hasChatModel: boolean;
-  /** 正常对话轮次或语音播放进行中（主动轮绝不与之并发） */
+  /** 正常对话轮次或聆听/思考中（主动轮绝不与之并发） */
   busy: boolean;
+  /** 当前有语音在播（含主动轮自己的 TTS）：只重置空闲计时，不触发自我中断 */
+  speaking?: boolean;
   /** 语音帧出口（入播放队列 + 桌宠中继），与正常对话同一路径 */
   onAudio: (frame: VoiceAudioFrame) => void;
   /** 中断主动轮时同步停掉未播完的 TTS */
@@ -121,11 +123,17 @@ export function useProactiveChat(args: UseProactiveChatArgs): UseProactiveChatRe
     };
   }, [armed]);
 
-  // 正常轮次开始/语音播放占用：立即中止主动轮；轮次起止都刷新空闲计时
+  // 正常轮次开始/聆听思考：立即中止主动轮；轮次起止都刷新空闲计时。
+  // speaking 单独处理：主动轮自己的 TTS 也会进入 speaking，不能因此 abort 自己。
   React.useEffect(() => {
     lastActivityRef.current = Date.now();
     if (args.busy) abortActive(true);
   }, [args.busy, abortActive]);
+
+  React.useEffect(() => {
+    // speaking 的进入与结束都重新计空闲：说完后至少再等一个完整阈值
+    lastActivityRef.current = Date.now();
+  }, [args.speaking]);
 
   // 卸载清理
   React.useEffect(() => () => controllerRef.current?.abort(), []);
@@ -135,6 +143,7 @@ export function useProactiveChat(args: UseProactiveChatArgs): UseProactiveChatRe
     if (
       inFlightRef.current ||
       a.busy ||
+      a.speaking ||
       !a.hasChatModel ||
       !a.hasVisualOutlet ||
       !a.voiceSettings?.proactiveEnabled
@@ -243,7 +252,7 @@ export function useProactiveChat(args: UseProactiveChatArgs): UseProactiveChatRe
     if (!armed) return;
     lastActivityRef.current = Date.now();
     const timer = window.setInterval(() => {
-      if (argsRef.current.busy || inFlightRef.current) return;
+      if (argsRef.current.busy || argsRef.current.speaking || inFlightRef.current) return;
       const idleMs = (voiceSettings?.proactiveIdleSeconds ?? 300) * 1000;
       if (Date.now() - lastActivityRef.current < idleMs) return;
       // L3 低频闸门：成功说过话的轮次才计数（每小时上限 + 最小间隔）
