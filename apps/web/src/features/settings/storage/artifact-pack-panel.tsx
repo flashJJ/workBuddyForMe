@@ -102,7 +102,7 @@ export function ArtifactPackPanel() {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="artifact-pack-panel">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="artifact-pack-panel">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-medium">{t('settingsBackup.artifacts.title')}</h3>
         <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>

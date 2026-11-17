@@ -11,8 +11,8 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 
-const INPUT = 'h-9 w-full rounded-md border bg-background px-2 text-sm';
-const PEM = 'h-28 w-full rounded-md border bg-background p-2 font-mono text-xs';
+const INPUT = 'h-9 w-full rounded-md border bg-ui-control px-2 text-sm';
+const PEM = 'h-28 w-full rounded-md border bg-ui-control p-2 font-mono text-xs';
 const POLICY_KEY = {
   off: 'settings.capabilityTrust.policyOff',
   warn: 'settings.capabilityTrust.policyWarn',
@@ -113,7 +113,7 @@ export function CapabilityTrustSection() {
           {keys.map((key) => (
             <li
               key={key.id}
-              className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/20 p-2 text-xs"
+              className="flex flex-wrap items-center gap-2 rounded-md border bg-ui-row p-2 text-xs"
             >
               <Badge variant="outline">{key.id}</Badge>
               <span className="font-medium">{key.label}</span>

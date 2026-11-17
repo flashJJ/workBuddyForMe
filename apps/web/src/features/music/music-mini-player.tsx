@@ -32,7 +32,7 @@ export function MusicMiniPlayer() {
         aria-label={t('music.player.expand')}
         data-testid="music-mini-player"
         onClick={() => setCollapsed(false)}
-        className="app-glass-surface fixed bottom-4 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-card text-primary shadow-lg"
+        className="app-glass-surface fixed bottom-4 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-ui-card text-primary shadow-lg"
       >
         <Music2 className="h-4 w-4" />
       </button>
@@ -61,7 +61,7 @@ export function MusicMiniPlayer() {
     <section
       data-testid="music-mini-player"
       aria-label={t('music.player.title')}
-      className="app-glass-surface fixed bottom-4 right-4 z-40 w-[min(22rem,calc(100vw-2rem))] rounded-xl border bg-card/95 p-3 shadow-xl backdrop-blur"
+      className="app-glass-surface fixed bottom-4 right-4 z-40 w-[min(22rem,calc(100vw-2rem))] rounded-xl border bg-ui-card p-3 shadow-xl backdrop-blur"
     >
       <div className="flex items-center gap-2">
         <Music2 className="h-4 w-4 shrink-0 text-primary" />

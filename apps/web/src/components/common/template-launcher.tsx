@@ -23,7 +23,7 @@ export function TemplateLauncher({ count, children, defaultOpen = false, testId 
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="rounded-md border border-dashed" data-testid={testId}>
+    <section className="rounded-md border border-dashed bg-ui-card" data-testid={testId}>
       <button
         type="button"
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground"

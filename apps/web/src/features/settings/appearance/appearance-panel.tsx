@@ -117,7 +117,7 @@ export function AppearancePanel() {
   const { theme, themeId, setTheme, setThemeId } = useTheme();
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="appearance-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="appearance-panel">
       <div>
         <h3 className="font-medium">{t('settings.appearance.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('settings.appearance.description')}</p>

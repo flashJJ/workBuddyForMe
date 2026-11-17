@@ -123,3 +123,11 @@
 - 新增 `--ui-canvas/chrome/card/row/control/overlay` 与 Tailwind `ui.*` 映射；工作区、侧栏、边框内容框先用 token。
 - 新增 `scripts/check-surfaces.mjs` 与 `scripts/.surfaces-baseline.json`（330 处 / 170 文件），纳入 `pnpm check`；存量只降不升。
 - 后续：S2 共享基座 → S3 首批模块 → S4 其余模块 → S5 基线清零。
+
+### 2026-11-17 表面层级治理 S2/S3
+
+- S2：Card、Button（outline）、Input、Textarea、NumberInput、Select、Dialog、Toast、EmptyState、ErrorState 切换到 `bg-ui-card/control/overlay`。
+- S3：侧边栏、页面头部、聊天顶栏、迷你播放器、设置全模块、知识库、运行报告、助手与模板卡完成迁移；设置面板 `bg-card` → `bg-ui-card`，字段组/子块 → `bg-ui-row`，控件 → `bg-ui-control`。
+- 列表/内容框：文档列表、上传拖拽区、报告筛选栏、模板卡补 L2 卡面。
+- 门禁：`check:surfaces` 基线 330 → 232 处，settings 119 → 48；剩余集中在 chat、flow-editor、meetings 等 S4 模块。
+- 验证：web typecheck 通过；设置/知识库/报告/助手 20 个测试文件 62 项通过。

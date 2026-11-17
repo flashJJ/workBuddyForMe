@@ -96,7 +96,7 @@ export function ProviderCard({ provider, onEdit }: Props) {
   };
 
   return (
-    <section className="rounded-lg border bg-card p-4" data-testid={`provider-card-${provider.id}`}>
+    <section className="rounded-lg border bg-ui-card p-4" data-testid={`provider-card-${provider.id}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">

@@ -104,7 +104,7 @@ export function InteractionGraphPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="interaction-graph-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="interaction-graph-panel">
       <div>
         <h3 className="font-medium">{t('settingsGraph.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('settingsGraph.description')}</p>
@@ -121,7 +121,7 @@ export function InteractionGraphPanel() {
             return (
               <div
                 key={entry.id}
-                className="flex flex-wrap items-center gap-2 rounded-md border bg-background/60 p-3"
+                className="flex flex-wrap items-center gap-2 rounded-md border bg-ui-row p-3"
                 data-testid={`graph-builtin-${entry.id}`}
               >
                 <label className="flex items-center gap-1.5 text-xs">

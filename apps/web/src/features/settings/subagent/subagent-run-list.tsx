@@ -67,7 +67,7 @@ export function SubagentRunList({
           <li
             key={run.id}
             data-testid={`subagent-run-${run.id}`}
-            className={`space-y-1 rounded-md border bg-background/60 p-3 ${
+            className={`space-y-1 rounded-md border bg-ui-row p-3 ${
               highlightId === run.id ? 'ring-2 ring-primary' : ''
             }`}
           >

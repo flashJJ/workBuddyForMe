@@ -41,7 +41,7 @@ export function DemoModePanel() {
   };
 
   return (
-    <section className="rounded-lg border bg-card p-4" data-testid="demo-mode-panel">
+    <section className="rounded-lg border bg-ui-card p-4" data-testid="demo-mode-panel">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h3 className="font-medium">{t('settings.demoMode.title')}</h3>

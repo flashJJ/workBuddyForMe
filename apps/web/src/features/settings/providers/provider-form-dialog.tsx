@@ -187,7 +187,7 @@ export function ProviderFormDialog({ open, onOpenChange, provider }: Props) {
             </div>
           )}
           {isOllama && (
-            <p className="rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">
+            <p className="rounded-md bg-ui-row p-2 text-xs text-muted-foreground">
               {t('settingsProviders.form.ollamaHintLead')}
               <a
                 href="https://ollama.com/download"

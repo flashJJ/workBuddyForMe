@@ -132,7 +132,7 @@ export function BackgroundSettingsPanel() {
   const localFile = config.source.kind === 'builtin' ? null : files.find((file) => file.id === config.source.id);
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="background-settings-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="background-settings-panel">
       <div>
         <h3 className="font-medium">{t('background.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('background.description')}</p>
@@ -160,7 +160,7 @@ export function BackgroundSettingsPanel() {
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground">{t('background.mode.label')}</span>
           <select
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            className="h-9 rounded-md border bg-ui-control px-2 text-sm"
             data-testid="background-mode"
             value={mode ?? 'chat'}
             onChange={(event) => patch({ mode: event.target.value as 'chat' | 'window' })}
@@ -174,7 +174,7 @@ export function BackgroundSettingsPanel() {
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-muted-foreground">{t('background.source.label')}</span>
         <select
-          className="h-9 rounded-md border bg-background px-2 text-sm"
+          className="h-9 rounded-md border bg-ui-control px-2 text-sm"
           data-testid="background-source"
           value={sourceValue(config.source)}
           onChange={(event) => patch({ source: parseSource(event.target.value) })}
@@ -244,7 +244,7 @@ export function BackgroundSettingsPanel() {
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground">{t('background.fit.label')}</span>
           <select
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            className="h-9 rounded-md border bg-ui-control px-2 text-sm"
             value={config.fit}
             onChange={(event) => patch({ fit: event.target.value as 'cover' | 'contain' })}
           >

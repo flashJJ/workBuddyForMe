@@ -55,7 +55,7 @@ export function ScriptQuality() {
           </p>
           <dl className="grid grid-cols-2 gap-2 text-xs">
             {STATS.map((stat) => (
-              <div key={stat.field} className="rounded-md border bg-muted/20 px-2.5 py-2">
+              <div key={stat.field} className="rounded-md border bg-ui-row px-2.5 py-2">
                 <dt className="text-muted-foreground">{t(stat.label)}</dt>
                 <dd className="mt-0.5 font-medium" data-testid={`script-quality-${stat.field}`}>
                   {percent(report[stat.field])}

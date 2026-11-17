@@ -51,7 +51,7 @@ export function UploadDropzone({ kbId }: Props) {
     <div
       data-testid="upload-dropzone"
       data-dragging={dragging}
-      className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors ${
+      className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed bg-ui-card px-4 py-8 text-center transition-colors ${
         dragging ? 'border-primary bg-primary/5' : 'hover:bg-accent/50'
       }`}
       onClick={() => inputRef.current?.click()}

@@ -121,8 +121,8 @@ v4.4 背景能力上线后，整屏模式下暴露出一类反复出现的问题
 |---|---|---|
 | S0 | 方案、层级、token 命名、登记表、扫描脚本 | 本文与登记表评审通过 |
 | S1 | 主题 token 与 Tailwind `ui.*`；渐进透明度材质；门禁基线 | ✅ 已完成：六个 token、`check:surfaces`（330 处 / 170 文件基线） |
-| S2 | 共享基座：Card、Button、Input、Select、Dialog、EmptyState、Toast、Badge | 组件库内无裸表面类 |
-| S3 | 布局与首批模块：Sidebar、PageHeader、Settings、Knowledge、Reports、Assistants | 整屏/聊天 × 明暗截图通过 |
+| S2 | 共享基座：Card、Button、Input、Select、Dialog、EmptyState、Toast、Badge | ✅ 已完成 |
+| S3 | 布局与首批模块：Sidebar、PageHeader、Settings、Knowledge、Reports、Assistants | ✅ 已完成：门禁 330 → 232 处（settings 119 → 48） |
 | S4 | 其余模块：Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer | 全模块截图通过 |
 | S5 | 移除兼容层、清零基线、更新文档与博客 | `check:surfaces` 零违例 |
 

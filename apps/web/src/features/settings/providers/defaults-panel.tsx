@@ -42,7 +42,7 @@ function DataDirField() {
           readOnly
           value={dataDir}
           aria-label={t('settings.defaults.dataDir')}
-          className="h-9 flex-1 truncate rounded-md border bg-muted px-3 text-sm text-muted-foreground"
+          className="h-9 flex-1 truncate rounded-md border bg-ui-control px-3 text-sm text-muted-foreground"
         />
         <Button type="button" variant="outline" size="sm" onClick={() => void copy()}>
           {t('common.actions.copy')}
@@ -85,7 +85,7 @@ export function DefaultsPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="defaults-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="defaults-panel">
       <h3 className="font-medium">{t('settings.defaults.title')}</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">

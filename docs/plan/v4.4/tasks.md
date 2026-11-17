@@ -55,6 +55,6 @@
 
 - [x] T7.1 方案、L0–L5 层级模型与登记表（`surface-system.md` / `surface-registry.md`）
 - [x] T7.2 六个语义 token、Tailwind `ui.*` 与 `check:surfaces` 基线（330 处 / 170 文件）
-- [ ] T7.3 共享基座迁移（Card/Button/Input/Select/Dialog/EmptyState/Toast）
-- [ ] T7.4 首批模块迁移（设置/知识库/运行报告/助手）
+- [x] T7.3 共享基座迁移（Card/Button/Input/Select/Dialog/EmptyState/Toast）
+- [x] T7.4 首批模块迁移（设置/知识库/运行报告/助手）
 - [ ] T7.5 其余模块迁移、基线清零与文档回填

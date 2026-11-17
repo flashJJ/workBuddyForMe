@@ -51,7 +51,7 @@ export function AssetList({
   React.useEffect(() => setMounted(true), []);
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid={testId}>
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid={testId}>
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-medium">{t(sectionTitleKey)}</h4>
         {mounted && headerExtra}

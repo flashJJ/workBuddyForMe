@@ -164,7 +164,7 @@ export function McpPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="mcp-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="mcp-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium">{t('settingsMcp.mcp.title')}</h3>

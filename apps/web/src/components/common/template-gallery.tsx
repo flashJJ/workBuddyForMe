@@ -48,7 +48,7 @@ export function TemplateGallery({ groups, onStart, compact, testId }: Props) {
             {group.items.map((item) => (
               <li
                 key={item.id}
-                className="flex flex-col gap-1.5 rounded-md border p-2.5"
+                className="flex flex-col gap-1.5 rounded-md border bg-ui-card p-2.5"
                 data-testid={`${testId}-card-${item.id}`}
               >
                 <div className="flex items-start justify-between gap-2">

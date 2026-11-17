@@ -65,7 +65,7 @@ export function CatalogCard({
     <li
       data-testid={`mcp-catalog-${entry.id}`}
       className={`rounded-md border p-3 transition-colors ${
-        selected ? 'border-primary/50 bg-primary/5' : 'bg-background'
+        selected ? 'border-primary/50 bg-primary/5' : 'bg-ui-row'
       }`}
     >
       <div className="flex items-start gap-2">
@@ -137,7 +137,7 @@ export function CatalogCard({
                     <input
                       type={field.kind === 'secret' ? 'password' : 'text'}
                       autoComplete="off"
-                      className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+                      className="h-8 w-full rounded-md border bg-ui-control px-2 text-sm"
                       value={values[field.token] ?? ''}
                       placeholder={field.placeholder}
                       onChange={(event) =>

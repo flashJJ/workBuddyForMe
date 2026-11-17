@@ -13,9 +13,9 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
 
-const INPUT = 'h-9 w-full rounded-md border bg-background px-2 text-sm';
+const INPUT = 'h-9 w-full rounded-md border bg-ui-control px-2 text-sm';
 const AREA =
-  'min-h-20 w-full rounded-md border bg-background p-2 font-mono text-xs placeholder:text-muted-foreground/70';
+  'min-h-20 w-full rounded-md border bg-ui-control p-2 font-mono text-xs placeholder:text-muted-foreground/70';
 
 const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
   confirm_each: 'tasks.governance.modes.confirm_each',
@@ -111,7 +111,7 @@ export function AgentGovernanceSection() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="agent-governance">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="agent-governance">
       <div>
         <h3 className="text-sm font-semibold">{t('tasks.governance.policy.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">

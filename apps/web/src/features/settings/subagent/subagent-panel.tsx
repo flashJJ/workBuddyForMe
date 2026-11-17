@@ -43,8 +43,8 @@ function draftOf(settings: AppSettings | undefined): Draft {
   };
 }
 
-const INPUT = 'h-9 w-full rounded-md border bg-background px-2 text-sm';
-const TEXTAREA = 'w-full rounded-md border bg-background p-2 text-sm';
+const INPUT = 'h-9 w-full rounded-md border bg-ui-control px-2 text-sm';
+const TEXTAREA = 'w-full rounded-md border bg-ui-control p-2 text-sm';
 
 /** v2.11：外部代理（本地 CLI）配置、提供方、发起运行与记录 */
 export function SubagentPanel({ highlightRunId }: { highlightRunId?: string }) {
@@ -109,7 +109,7 @@ export function SubagentPanel({ highlightRunId }: { highlightRunId?: string }) {
   const providerList = providers.data?.providers ?? [];
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="subagent-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="subagent-panel">
       <div>
         <h3 className="font-medium">{t('subagent.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('subagent.description')}</p>

@@ -42,7 +42,7 @@ export function AssistantCard({
 
   return (
     <article
-      className="flex flex-col gap-3 rounded-lg border bg-card p-4"
+      className="flex flex-col gap-3 rounded-lg border bg-ui-card p-4"
       data-testid={`assistant-card-${assistant.id}`}
     >
       <div className="flex items-start justify-between gap-3">

@@ -141,7 +141,7 @@ export function AssetImportSection<TMeta, TResponse>({
   const prefix = config.testIdPrefix;
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid={`${prefix}-import-section`}>
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid={`${prefix}-import-section`}>
       <div>
         <h4 className="text-sm font-medium">{t(key('importTitle'))}</h4>
         <p className="mt-1 text-xs text-muted-foreground">{t(key('importHint'))}</p>

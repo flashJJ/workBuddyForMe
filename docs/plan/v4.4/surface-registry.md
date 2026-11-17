@@ -1,7 +1,7 @@
 # 表面层级登记表（Surface Registry）
 
 > 配套方案：[surface-system.md](./surface-system.md)
-> 状态：初版登记（S1 已完成 token 与门禁；S2+ 迁移待开始）。`当前类` 为抽样结果，迁移时以实际文件为准。
+> 状态：S1–S3 已完成（token/门禁 + 共享基座 + 设置/知识库/报告/助手），下表 `状态` 保留初版登记，迁移进度见 §8。
 > 规则：L1 玻璃 + 模糊；L2–L5 透明度逐级升高，L5 实色，均不使用模糊。
 
 ## 1. 层级定义
@@ -139,6 +139,16 @@ features/reminders 11，features/knowledge 10，components/ui 8，features/tasks
 
 1. 登记表中每个 L2 及以下组件都有唯一 token；
 2. 业务代码不再出现 `bg-card/xx`、`bg-background/xx`、`bg-surface-*/xx`；
-3. 整屏模式下 L2 及以下不透出壁纸；
+3. 整屏模式下 L2–L5 逐级更实，L5 实色；L2 及以下不叠模糊；
 4. 明/暗主题、五个主题组合的截图检查通过；
 5. `check:surfaces` 存量基线只降不升。
+
+## 8. 迁移进度
+
+| 阶段 | 范围 | 结果 |
+|---|---|---|
+| S1 | token、Tailwind `ui.*`、`check:surfaces` | ✅ 基线 330 处 / 170 文件 |
+| S2 | Card、Button（outline）、Input、Textarea、NumberInput、Select、Dialog、Toast、EmptyState、ErrorState | ✅ 已切 `bg-ui-*` |
+| S3 | Sidebar、PageHeader、Settings、Knowledge、Reports、Assistants、模板卡 | ✅ 完成；基线 330 → 232 处，settings 119 → 48 |
+| S4 | Chat、Tasks、Plans、Meetings、Audit、Timeline、Flows、Flow Editor、Voice、Music、Journal、Approvals、Document Viewer | 待开始 |
+| S5 | 兼容层移除、基线清零、文档与博客 | 待开始 |

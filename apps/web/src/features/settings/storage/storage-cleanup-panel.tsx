@@ -156,7 +156,7 @@ export function StorageCleanupPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="storage-cleanup-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="storage-cleanup-panel">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-medium">{t('settingsBackup.storage.title')}</h3>
         <Button type="button" variant="outline" size="sm" onClick={() => void loadUsage()} disabled={loadingUsage}>

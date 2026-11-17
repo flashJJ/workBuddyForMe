@@ -47,7 +47,7 @@ export function RelationshipPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="relationship-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="relationship-panel">
       <div>
         <h3 className="font-medium">{t('settings.relationship.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -80,7 +80,7 @@ export function RelationshipPanel() {
             {hydrated && assistants && assistants.length > 0 ? (
               <SimpleSelect
                 id="relationship-assistant-select"
-                className="h-9 w-full rounded-md border bg-background text-sm"
+                className="h-9 w-full rounded-md border bg-ui-control text-sm"
                 value={selectedId}
                 onValueChange={(v) => setSelectedId(v)}
               >

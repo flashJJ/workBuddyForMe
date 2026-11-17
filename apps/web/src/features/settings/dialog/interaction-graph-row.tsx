@@ -16,7 +16,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { SimpleSelect } from '@/components/ui/simple-select';
 
-const SELECT = 'h-8 rounded-md border bg-background text-sm';
+const SELECT = 'h-8 rounded-md border bg-ui-control text-sm';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -52,7 +52,7 @@ export function InteractionGraphRow({ entry, index, onChange, onRemove }: Props)
     patch({ condition: { ...condition, ...next } });
 
   return (
-    <div className="space-y-2 rounded-md border bg-background/60 p-3" data-testid={`graph-row-${index}`}>
+    <div className="space-y-2 rounded-md border bg-ui-row p-3" data-testid={`graph-row-${index}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground">{t('settingsGraph.triggerKey')}</span>
         <SimpleSelect

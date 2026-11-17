@@ -182,7 +182,7 @@ export function SkillsPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="skills-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="skills-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium">{t('settingsMcp.skills.title')}</h3>

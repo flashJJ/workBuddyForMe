@@ -92,7 +92,7 @@ export function EventPanel() {
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4" data-testid="event-panel">
+    <section className="space-y-4 rounded-lg border bg-ui-card p-4" data-testid="event-panel">
       <div>
         <h3 className="font-medium">{t('settings.events.title')}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{t('settings.events.description')}</p>

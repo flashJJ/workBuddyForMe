@@ -39,7 +39,7 @@ function KnowledgeBaseNav({
 }) {
   const { t } = useI18n();
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r bg-muted/30" data-testid="kb-sidebar">
+    <aside className="flex w-64 shrink-0 flex-col border-r bg-ui-card" data-testid="kb-sidebar">
       <div className="space-y-2 p-3">
         <Button type="button" className="w-full" size="sm" onClick={onCreate}>
           {t('knowledge.createKb')}

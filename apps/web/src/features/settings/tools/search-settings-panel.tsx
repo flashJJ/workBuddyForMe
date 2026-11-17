@@ -119,7 +119,7 @@ export function SearchSettingsPanel() {
   if (isLoading) return <Spinner />;
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4" data-testid="search-settings-panel">
+    <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="search-settings-panel">
       <div>
         <h2 className="font-medium">{t('settings.search.title')}</h2>
         <p className="text-xs text-muted-foreground">{t('settings.search.description')}</p>
