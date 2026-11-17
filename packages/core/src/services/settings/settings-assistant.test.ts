@@ -103,6 +103,8 @@ describe('settings / assistants 服务（TR-13.1）', () => {
         maxResults: 5,
         timeoutMs: 10_000,
         allowPrivateEndpoint: false,
+        // 单页抓取默认 2MB
+        fetchMaxBytes: 2_097_152,
       },
       // v2.28：审计事件默认保留 90 天
       memoryEventRetentionDays: 90,

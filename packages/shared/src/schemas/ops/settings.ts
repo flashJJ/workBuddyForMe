@@ -12,6 +12,9 @@ import {
   SEARCH_MAX_RESULTS_MAX,
   SEARCH_TIMEOUT_MIN_MS,
   SEARCH_TIMEOUT_MAX_MS,
+  WEB_FETCH_MAX_BYTES_DEFAULT,
+  WEB_FETCH_MAX_BYTES_MIN,
+  WEB_FETCH_MAX_BYTES_MAX,
 } from '../../constants/index';
 import { ACTION_CHAIN_IDS } from '../interaction/interaction-chains';
 import { isValidTriggerKey } from '../interaction/interaction-graph';
@@ -86,6 +89,13 @@ export const searchSettingsSchema = z.object({
     .max(SEARCH_TIMEOUT_MAX_MS)
     .default(10_000),
   allowPrivateEndpoint: z.boolean().default(false),
+  /** 单页抓取上限（字节）；老配置缺省时由 resolveSearchSettings 回落默认值 */
+  fetchMaxBytes: z
+    .number()
+    .int()
+    .min(WEB_FETCH_MAX_BYTES_MIN)
+    .max(WEB_FETCH_MAX_BYTES_MAX)
+    .default(WEB_FETCH_MAX_BYTES_DEFAULT),
 });
 export type SearchSettingsInput = z.infer<typeof searchSettingsSchema>;
 

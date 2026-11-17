@@ -66,7 +66,7 @@ export interface ToolRuntime {
   createContext(
     assistant: Assistant,
     signal?: AbortSignal,
-    opts?: { visionCapable?: boolean; conversationId?: string },
+    opts?: { visionCapable?: boolean; conversationId?: string; webFetchMaxBytes?: number },
   ): ToolContext;
   /** v0.6 M4：解析工具名 → { tool, source }；内置查表，MCP 走注册表 */
   resolveTool(name: string): ResolvedTool | null;
@@ -198,6 +198,7 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         signal,
         knowledgeBaseIds: assistant.knowledgeBaseIds,
         visionCapable: opts?.visionCapable ?? false,
+        ...(opts?.webFetchMaxBytes ? { webFetchMaxBytes: opts.webFetchMaxBytes } : {}),
         ...(conversationId ? { conversationId } : {}),
         ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
         ...(deps.search ? { searchWeb: deps.search.search } : {}),

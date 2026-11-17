@@ -9,6 +9,7 @@ import {
   FETCH_DEGRADE_THRESHOLD,
   degradedFetchResult,
   fetchUrlOf,
+  shouldCountBreakerFailure,
   shouldDegradeFetch,
 } from './fetch-degrade';
 import { mergeCitations, safeParseArgs, unknownToolResult } from '../orchestrator/orchestrator-helpers';
@@ -180,8 +181,9 @@ export async function* runToolCallLoop(
       }
     }
 
-    // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过
-    breaker?.recordResult(name, result.ok);
+    // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过；
+    // 确定性失败（页面过大/4xx 等）不计入，避免误锁整个工具
+    breaker?.recordResult(name, result.ok, shouldCountBreakerFailure(name, result));
 
     // v1.1 双视图：完整 result.output 不进模型——入模前经中央压缩层产出预算视图；
     // trace 只标 compacted 与 token 账（result/output 对象本身不被改写，UI 卡片看 summary）

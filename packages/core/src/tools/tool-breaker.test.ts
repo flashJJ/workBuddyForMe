@@ -111,4 +111,12 @@ describe('工具熔断器', () => {
     breaker.recordResult('t', false);
     expect(breaker.isTripped('t')).toBe(true);
   });
+
+  it('countAsFailure=false：确定性失败不累加、不触发熔断', () => {
+    const breaker = createToolBreaker({ threshold: 1, cooldownMs: 1_000, now: () => 0 });
+    breaker.recordResult('fetch_webpage', false, false);
+    breaker.recordResult('fetch_webpage', false, false);
+    expect(breaker.isTripped('fetch_webpage')).toBe(false);
+    expect(breaker.listTripped()).toHaveLength(0);
+  });
 });

@@ -6,6 +6,9 @@ import {
   SEARCH_TIMEOUT_MIN_MS,
   SEARCH_TIMEOUT_MAX_MS,
   SEARCH_TIMEOUT_DEFAULT_MS,
+  WEB_FETCH_MAX_BYTES_MIN,
+  WEB_FETCH_MAX_BYTES_MAX,
+  WEB_FETCH_MAX_BYTES_DEFAULT,
 } from '@wbfm/shared/constants';
 import type { SearchSettings } from '@wbfm/shared/types';
 
@@ -33,6 +36,14 @@ export function resolveSearchSettings(value: unknown): SearchSettings {
         ? clamp(Math.trunc(raw.timeoutMs), SEARCH_TIMEOUT_MIN_MS, SEARCH_TIMEOUT_MAX_MS)
         : SEARCH_TIMEOUT_DEFAULT_MS,
     allowPrivateEndpoint: raw.allowPrivateEndpoint === true,
+    fetchMaxBytes:
+      typeof raw.fetchMaxBytes === 'number' && Number.isFinite(raw.fetchMaxBytes)
+        ? clamp(
+            Math.trunc(raw.fetchMaxBytes),
+            WEB_FETCH_MAX_BYTES_MIN,
+            WEB_FETCH_MAX_BYTES_MAX,
+          )
+        : WEB_FETCH_MAX_BYTES_DEFAULT,
   };
 }
 

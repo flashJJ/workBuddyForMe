@@ -36,6 +36,9 @@ export const zhSettingsSearch = {
       '当前网络下候选搜索引擎均不可用，已保留全部引擎；网络恢复后重新部署即可自动收窄。',
     allowPrivate: '允许内网地址（仅自建 SearXNG）',
     maxResults: '每次结果数',
+    fetchMaxKb: '单页抓取上限（KB）',
+    fetchMaxHint:
+      'fetch_webpage 单页读取上限，默认 2048KB（2MB），范围 200–8192KB；超出时只解析页面前部内容。',
     save: '保存',
     saving: '保存中…',
     saved: '搜索设置已保存',
@@ -86,6 +89,9 @@ export const enSettingsSearch = {
       'No candidate engines responded on this network; all engines stay enabled. Redeploy once the network recovers.',
     allowPrivate: 'Allow private network endpoint (self-hosted SearXNG only)',
     maxResults: 'Results per search',
+    fetchMaxKb: 'Fetch limit per page (KB)',
+    fetchMaxHint:
+      'Max bytes read per page for fetch_webpage. Default 2048 KB (2 MB), range 200–8192 KB; larger pages are partially parsed.',
     save: 'Save',
     saving: 'Saving…',
     saved: 'Search settings saved',

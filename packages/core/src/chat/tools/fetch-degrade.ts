@@ -20,6 +20,20 @@ export function shouldDegradeFetch(result: ToolResult): boolean {
   return RETRYABLE_RE.test(`${result.output} ${result.summary}`);
 }
 
+/** 可恢复失败特征：只有这类失败才计入工具熔断，避免确定性失败锁死工具 */
+const TRANSIENT_BREAKER_RE =
+  /超时|timeout|连接|network|fetch failed|ECONN|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|HTTP 5\d\d|HTTP 429|限流|rate limit|服务(?:不可用|异常)/i;
+
+/**
+ * 熔断计数判定：成功恒计数（用于清零）；fetch_webpage 的确定性失败
+ * （页面过大、4xx、SSRF、内容类型不支持等）不计入，重试不会变好。
+ */
+export function shouldCountBreakerFailure(toolName: string, result: ToolResult): boolean {
+  if (result.ok) return true;
+  if (toolName !== 'fetch_webpage') return true;
+  return TRANSIENT_BREAKER_RE.test(`${result.output} ${result.summary}`);
+}
+
 /** 达到上限后的跳过结果：告诉模型改用已获搜索摘要成文 */
 export function degradedFetchResult(url: string): ToolResult {
   return {
