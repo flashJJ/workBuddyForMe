@@ -8,10 +8,10 @@ import {
 } from './index';
 
 describe('v4.4 背景设置契约', () => {
-  it('默认值：主窗口使用雨夜内置背景，舞台沿用剧集背景，桌宠保持透明', () => {
+  it('默认值：主窗口使用森林露营内置背景，舞台沿用剧集背景，桌宠保持透明', () => {
     expect(DEFAULT_BACKGROUND_SETTINGS.main.source).toEqual({
       kind: 'builtin',
-      id: 'wallpaper.rainy-room',
+      id: 'wallpaper.main.forest-camp-loop',
     });
     expect(DEFAULT_BACKGROUND_SETTINGS.stage.source).toEqual({ kind: 'builtin', id: 'none' });
     expect(DEFAULT_PET_BACKGROUND.source).toEqual({ kind: 'builtin', id: 'none' });
@@ -54,8 +54,8 @@ describe('v4.4 背景设置契约', () => {
     expect(parsed.background?.main?.mode).toBe('chat');
   });
 
-  it('聊天模式缺省即 true', () => {
-    expect(isChatMode(undefined)).toBe(true);
+  it('主窗口模式缺省即整屏', () => {
+    expect(isChatMode(undefined)).toBe(false);
     expect(isChatMode('chat')).toBe(true);
     expect(isChatMode('window')).toBe(false);
   });

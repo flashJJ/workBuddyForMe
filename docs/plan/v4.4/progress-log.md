@@ -158,3 +158,26 @@
 - 第二轮排查：扫描“有圆角/边框但无底色”的容器，发现设置、MCP、技能、备份、存储清理、语音、调优等 L3 分组块未显式给底色。
 - 处理：统一补 `bg-ui-row`；分段控件补 `bg-ui-control`；状态徽章/附件提示保留无底色，登记为独立装饰层。
 - 验证：web typecheck、表面门禁 0 处；设置/语音/音乐/知识库/会议 33 文件 144 项测试通过。
+
+### 2026-11-17 背景默认值与来源分组
+
+- 主窗口模式缺省改为整屏：`isChatMode(undefined) === false`，`MainBackground`、`MainBackgroundModeProvider`、`MainWorkspaceGlass` 与设置面板统一走该判断；仅显式保存 `mode: 'chat'` 才收窄到内容区。
+- 默认背景改为「森林露营」循环视频（shared 默认配置 + web 回退内置背景）；桌宠/舞台仍默认 `none`。
+- 内置来源分组：新增「纯色 / 无色」分组（无背景、黄昏、清晨）；「雨夜小客厅」移入「主窗口背景」视频组，旧 id 仍可解析。
+- 模糊口径：移除 `.app-workspace-glass` / `.app-glass-surface` 的 `backdrop-filter: blur(24px)`，L1 alpha 上调（亮 0.78/0.72，暗 0.82/0.76）。修复“切换背景后未选模糊却整体发虚”，模糊只由 `BackgroundLayer` 的 `blur` 参数驱动。
+- 验证：shared/web typecheck、背景契约/解析/设置面板测试 9 项通过，`pnpm check` 全量通过（含 check:surfaces 0 处）。
+
+### 2026-11-17 背景发虚定位与表面透明度下调
+
+- 定位：CDP 实测整屏模式下工作区/侧栏 `backdrop-filter: none`、背景层 `filter: none`（blur=0），不存在“组件模糊压到底层”；发虚来自内置视频仅 854×480，在 1696px 窗口 + 1.5 DPR 下放大约 3 倍，叠 L1 白色蒙层后观感更软。
+- 决策：不做视频重采样，改为降低白色蒙层。L1 先降到 0.30/0.34，真机反馈侧栏文字对比度偏低后回调到 **0.50/0.52**（暗色 0.54/0.56）；L2/L3/L4 同步下调为 0.64/0.76/0.90（暗色 0.68/0.80/0.92），仍保持逐级更实的层级差。
+- 内部形象栏实色排查：`ChatAvatarRail` 之前用 L5 `bg-ui-overlay`（纯白），属层级误归；改为 `app-glass-surface bg-ui-card`，整屏模式随 L1 透出壁纸，聊天模式仍保持近实色。桌宠 `pet` 作用域只作用于桌面桌宠窗，与内部形象栏无关。
+- 侧栏文字：未选中导航项由 `text-muted-foreground` 提深为 `text-foreground/80`，在 0.5 蒙层上恢复可读，不动透明度。
+
+### 2026-11-17 背景慢加载兜底（poster + 重试）
+
+- 复现：CDP 限速重载（2s 延迟 / 120KB/s）时，视频尚未出帧，背景层透明，加上 0.5 白色蒙层后整窗发白；若请求失败则一直无壁纸。
+- 修复：为 3 个主窗口视频与 2 个桌宠视频生成首帧封面（`public/backgrounds/**/*.jpg`，19–68KB），`ResolvedBackground.video` 增加可选 `poster`；`BackgroundLayer` 设置 `poster` 并在 `onError` 时按 1s/2s/4s 重试 3 次（`video.load()` 会重新拉取视频与封面）。
+- 效果：慢加载时先显示封面，视频就绪后无缝接上；服务未就绪或请求失败也有兜底画面，不再白底。
+- 验证：web typecheck、背景解析测试 6 项、`check:assets`、`check:surfaces` 通过；限速重载实测封面请求 200。
+- 验证：web typecheck 通过；待真机确认对比度与观感。

@@ -18,8 +18,36 @@ interface BackgroundLayerProps {
 export function BackgroundLayer({ view, className, testId }: BackgroundLayerProps) {
   const { resolved, fit, dim, blur } = view;
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const retryRef = React.useRef(0);
+  const retryTimerRef = React.useRef<number | null>(null);
   const kind = resolved.kind;
   const videoUrl = resolved.kind === 'video' ? resolved.url : '';
+
+  // 换源时重置重试计数；卸载时清理定时器
+  React.useEffect(() => {
+    retryRef.current = 0;
+    return () => {
+      if (retryTimerRef.current !== null) {
+        window.clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
+  }, [videoUrl]);
+
+  /**
+   * v4.4：视频加载失败（服务未就绪/慢加载）时按 1s/2s/4s 重试 3 次。
+   * 重试期间保留 poster 首帧，避免出现“没有壁纸”的白底。
+   */
+  const handleVideoError = () => {
+    const video = videoRef.current;
+    if (!video || retryRef.current >= 3) return;
+    const delay = 1000 * 2 ** retryRef.current;
+    retryRef.current += 1;
+    retryTimerRef.current = window.setTimeout(() => {
+      retryTimerRef.current = null;
+      video.load();
+    }, delay);
+  };
 
   React.useEffect(() => {
     if (kind !== 'video') return;
@@ -74,12 +102,14 @@ export function BackgroundLayer({ view, className, testId }: BackgroundLayerProp
         <video
           ref={videoRef}
           src={resolved.url}
+          poster={resolved.poster}
           className={cn('h-full w-full', fit === 'cover' ? 'object-cover' : 'object-contain')}
           muted
           loop
           playsInline
           autoPlay
           preload="metadata"
+          onError={handleVideoError}
         />
       )}
       {dim > 0 && <div className="absolute inset-0 bg-black" style={{ opacity: dim }} />}

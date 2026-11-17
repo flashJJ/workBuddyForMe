@@ -25,6 +25,8 @@ export const BUILTIN_BACKGROUND_IDS = [
   'wallpaper.rainy-room',
   'wallpaper.dusk',
   'wallpaper.morning',
+  'wallpaper.main.forest-camp-loop',
+  'wallpaper.main.office-night-loop',
 ] as const;
 export type BuiltinBackgroundId = (typeof BUILTIN_BACKGROUND_IDS)[number];
 
@@ -77,7 +79,7 @@ export const backgroundSettingsUpdateSchema = z.object({
 export type BackgroundSettingsUpdate = z.infer<typeof backgroundSettingsUpdateSchema>;
 
 export const DEFAULT_BACKGROUND_CONFIG: BackgroundConfig = {
-  source: { kind: 'builtin', id: 'wallpaper.rainy-room' },
+  source: { kind: 'builtin', id: 'wallpaper.main.forest-camp-loop' },
   fit: 'cover',
   dim: 0.15,
   blur: 0,
@@ -97,9 +99,9 @@ export const DEFAULT_BACKGROUND_SETTINGS: Record<BackgroundScope, BackgroundConf
   pet: DEFAULT_PET_BACKGROUND,
 };
 
-/** 是否为主窗口的聊天模式（缺省聊天） */
+/** 是否为主窗口的聊天模式（缺省整屏） */
 export function isChatMode(mode: BackgroundMainMode | undefined): boolean {
-  return mode !== 'window';
+  return mode === 'chat';
 }
 
 export * from './wallpaper-pack';

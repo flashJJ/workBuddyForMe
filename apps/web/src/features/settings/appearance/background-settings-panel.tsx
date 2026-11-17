@@ -27,9 +27,9 @@ type ScopePatch = BackgroundConfigUpdate & { mode?: 'chat' | 'window' };
 
 const SCOPES: Scope[] = ['main', 'stage', 'pet'];
 
+/** 纯色/无色分类：内置渐变与无背景 */
 const BUILTIN_OPTIONS = [
   { id: 'none', key: 'none' },
-  { id: 'wallpaper.rainy-room', key: 'rainyRoom' },
   { id: 'wallpaper.dusk', key: 'dusk' },
   { id: 'wallpaper.morning', key: 'morning' },
 ] as const;
@@ -162,7 +162,7 @@ export function BackgroundSettingsPanel() {
           <select
             className="h-9 rounded-md border bg-ui-control px-2 text-sm"
             data-testid="background-mode"
-            value={mode ?? 'chat'}
+            value={mode ?? 'window'}
             onChange={(event) => patch({ mode: event.target.value as 'chat' | 'window' })}
           >
             <option value="chat">{t('background.mode.chat')}</option>
@@ -179,11 +179,13 @@ export function BackgroundSettingsPanel() {
           value={sourceValue(config.source)}
           onChange={(event) => patch({ source: parseSource(event.target.value) })}
         >
-          {BUILTIN_OPTIONS.map((item) => (
-            <option key={item.id} value={`builtin:${item.id}`}>
-              {t(`background.source.${item.key}`)}
-            </option>
-          ))}
+          <optgroup label={t('background.source.solid')}>
+            {BUILTIN_OPTIONS.map((item) => (
+              <option key={item.id} value={`builtin:${item.id}`}>
+                {t(`background.source.${item.key}`)}
+              </option>
+            ))}
+          </optgroup>
           {BUILTIN_GALLERY_ITEMS.length > 0 && (
             <optgroup label={t('background.source.gallery')}>
               {BUILTIN_GALLERY_ITEMS.map((item) => (

@@ -22,7 +22,7 @@ describe('v4.4 M4 背景解析', () => {
   it('默认值按作用域合并', () => {
     expect(mergeBackgroundConfig('main').source).toEqual({
       kind: 'builtin',
-      id: 'wallpaper.rainy-room',
+      id: 'wallpaper.main.forest-camp-loop',
     });
     expect(mergeBackgroundConfig('stage').source).toEqual({ kind: 'builtin', id: 'none' });
     expect(mergeBackgroundConfig('pet').source).toEqual({ kind: 'builtin', id: 'none' });
@@ -33,6 +33,7 @@ describe('v4.4 M4 背景解析', () => {
     expect(resolveBackground(config({ kind: 'builtin', id: 'wallpaper.rainy-room' }), { files: [], wallpapers: [] })).toEqual({
       kind: 'video',
       url: '/backgrounds/rainy-room.mp4',
+      poster: '/backgrounds/rainy-room.jpg',
     });
     expect(resolveBackground(config({ kind: 'builtin', id: 'wallpaper.dusk' }), { files: [], wallpapers: [] }).kind).toBe(
       'gradient',
@@ -57,7 +58,11 @@ describe('v4.4 M4 背景解析', () => {
   it('资源缺失回退：非桌宠回退内置，桌宠保持透明', () => {
     expect(
       resolveBackground(config({ kind: 'image', id: 'missing' }), { files: [], wallpapers: [] }),
-    ).toEqual({ kind: 'video', url: '/backgrounds/rainy-room.mp4' });
+    ).toEqual({
+      kind: 'video',
+      url: '/backgrounds/forest-camp-loop.mp4',
+      poster: '/backgrounds/forest-camp-loop.jpg',
+    });
     expect(
       resolveBackground(config({ kind: 'image', id: 'missing' }), {
         files: [],

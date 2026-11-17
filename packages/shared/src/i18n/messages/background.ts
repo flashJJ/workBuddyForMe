@@ -14,6 +14,7 @@ export const zhBackground = {
   },
   source: {
     label: '背景来源',
+    solid: '纯色 / 无色',
     none: '无（透明或主题底色）',
     rainyRoom: '雨夜小客厅（内置视频）',
     dusk: '黄昏（内置渐变）',
@@ -59,6 +60,7 @@ export const enBackground = {
   },
   source: {
     label: 'Source',
+    solid: 'Solid / none',
     none: 'None (transparent or theme background)',
     rainyRoom: 'Rainy room (built-in video)',
     dusk: 'Dusk (built-in gradient)',

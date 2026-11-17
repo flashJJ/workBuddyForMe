@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { isChatMode } from '@wbfm/shared/schemas';
 import { useSettings } from '@/lib/hooks/provider';
 
 /**
@@ -11,7 +12,7 @@ import { useSettings } from '@/lib/hooks/provider';
  */
 export function MainBackgroundModeProvider({ children }: { children: React.ReactNode }) {
   const { data } = useSettings();
-  const windowMode = data?.background?.main?.mode === 'window';
+  const windowMode = !isChatMode(data?.background?.main?.mode);
   return (
     <div className="contents" data-main-background={windowMode ? 'window' : 'chat'}>
       {children}

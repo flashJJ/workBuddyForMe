@@ -42,7 +42,7 @@ export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, spea
   if (collapsed) {
     return (
       <aside
-        className="hidden w-9 shrink-0 flex-col items-center border-l bg-ui-overlay py-2 lg:flex"
+        className="app-glass-surface hidden w-9 shrink-0 flex-col items-center border-l bg-ui-card py-2 lg:flex"
         data-testid="avatar-rail"
         data-collapsed="true"
       >
@@ -62,7 +62,7 @@ export function ChatAvatarRail({ modelId, expression, eventStage, getLevel, spea
 
   return (
     <aside
-      className="relative hidden w-64 shrink-0 border-l bg-ui-overlay lg:block xl:w-72"
+      className="app-glass-surface relative hidden w-64 shrink-0 border-l bg-ui-card lg:block xl:w-72"
       data-testid="avatar-rail"
       data-collapsed="false"
     >

@@ -1,16 +1,17 @@
 'use client';
 
+import { isChatMode } from '@wbfm/shared/schemas';
 import { useSettings } from '@/lib/hooks/provider';
 
 /**
  * v4.4：整屏模式的单层工作区材质。
  *
- * 只有这一层做半透明 + 模糊，内容卡片保持主题实色；
- * 避免每个卡片各透一层，导致同页亮度/主题不一致。
+ * 只有这一层做半透明（不做模糊），内容卡片按层级 token 叠加；
+ * 模糊只由背景层的 blur 参数控制，避免未选模糊却整体发虚。
  */
 export function MainWorkspaceGlass() {
   const { data } = useSettings();
-  if (data?.background?.main?.mode !== 'window') return null;
+  if (isChatMode(data?.background?.main?.mode)) return null;
   return (
     <div
       aria-hidden
