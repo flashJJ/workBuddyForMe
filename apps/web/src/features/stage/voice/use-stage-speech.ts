@@ -39,7 +39,11 @@ export function useStageSpeech({ mode, cast, sayLine, clearSpeech }: Options): S
       const member = cast.find((m) => m.slot === line.slot);
       const fallbackMs = Math.min(12000, Math.max(1600, line.text.length * 200));
       void (async () => {
-        const result = await voice.speak(line.text, member?.avatarModelId ?? '');
+        const result = await voice.speak(
+          line.text,
+          member?.avatarModelId ?? '',
+          member?.voicePreference?.speakerSid,
+        );
         if (result === 'failed') {
           toast.error(t('voice.readAloud.unavailable'));
           await new Promise((resolve) => setTimeout(resolve, fallbackMs));

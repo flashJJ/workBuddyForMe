@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { getAvatarSpeakerId } from '@wbfm/shared/schemas';
+import { resolveAvatarVoice } from '@wbfm/shared/schemas';
 import { withManagedHeaders } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
 import { wavToVoiceFrame } from '@/features/events/ui';
@@ -13,8 +13,15 @@ const TTS_TEXT_MAX = 1800;
 export type StageSpeakResult = 'played' | 'failed' | 'canceled';
 
 export interface StageVoice {
-  /** 合成并播放一句台词；返回是否真的播完（模型缺失/网络失败为 failed） */
-  speak: (text: string, avatarModelId: string) => Promise<StageSpeakResult>;
+  /**
+   * 合成并播放一句台词；返回是否真的播完（模型缺失/网络失败为 failed）。
+   * speakerSid 为 cast 的显式声线偏好，缺省/越界时按 avatarModelId 解析。
+   */
+  speak: (
+    text: string,
+    avatarModelId: string,
+    speakerSid?: number | null,
+  ) => Promise<StageSpeakResult>;
   stop: () => void;
   /** 用户手势内同步解锁音频上下文（首句自动播放策略） */
   unlock: () => void;
@@ -38,13 +45,18 @@ export function useStageVoice(): StageVoice {
   }, [cancel]);
 
   const speak = React.useCallback(
-    async (text: string, avatarModelId: string): Promise<StageSpeakResult> => {
+    async (
+      text: string,
+      avatarModelId: string,
+      speakerSid?: number | null,
+    ): Promise<StageSpeakResult> => {
       stop();
       const clean = text.trim().slice(0, TTS_TEXT_MAX);
       if (!clean) return 'failed';
       const controller = new AbortController();
       abortRef.current = controller;
       try {
+        const voice = resolveAvatarVoice(avatarModelId, { speakerSid });
         const response = await fetch(
           API.voiceTts,
           withManagedHeaders({
@@ -52,7 +64,7 @@ export function useStageVoice(): StageVoice {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
               text: clean,
-              speakerId: getAvatarSpeakerId(avatarModelId),
+              speakerId: voice.sid,
             }),
             signal: controller.signal,
           }),

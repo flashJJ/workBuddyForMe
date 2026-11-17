@@ -7,6 +7,7 @@ import {
   SUPPORTED_AVATAR_MODEL_IDS,
   getAvatarSpeakerId,
   parseVrmAvatarId,
+  resolveAvatarVoice,
   voiceSettingsUpdateSchema,
   voiceTtsRequestSchema,
 } from '../../index';
@@ -58,6 +59,48 @@ describe('内置 VRM', () => {
       expect(model.assetPath.startsWith('/vrm/models/')).toBe(true);
       expect(BUILTIN_VRM_TTS_VOICES[model.fileRef]).toBeDefined();
     }
+  });
+});
+
+describe('resolveAvatarVoice', () => {
+  it('内置 VRM 命中专用表并标记来源', () => {
+    expect(resolveAvatarVoice('vrm:builtin:xuetuan')).toMatchObject({
+      sid: 18,
+      voice: 'zf_026',
+      source: 'builtin-vrm',
+    });
+    expect(resolveAvatarVoice('vrm:builtin:rankaluli')).toMatchObject({ sid: 32, source: 'builtin-vrm' });
+    expect(resolveAvatarVoice('vrm:builtin:feibi')).toMatchObject({ sid: 3, source: 'builtin-vrm' });
+  });
+
+  it('内置 Live2D 命中角色表并标记来源', () => {
+    expect(resolveAvatarVoice('mark')).toMatchObject({ sid: 58, voice: 'zm_009', source: 'live2d' });
+  });
+
+  it('导入/未知 VRM 回落默认角色', () => {
+    const fallback = AVATAR_TTS_VOICES[DEFAULT_AVATAR_MODEL_ID];
+    expect(resolveAvatarVoice('vrm:vrm-123.vrm')).toMatchObject({
+      sid: fallback.sid,
+      voice: fallback.voice,
+      source: 'default',
+    });
+    expect(resolveAvatarVoice(null)).toMatchObject({ sid: fallback.sid, source: 'default' });
+  });
+
+  it('用户绑定优先于内置表，越界绑定被忽略', () => {
+    expect(resolveAvatarVoice('vrm:vrm-123.vrm', { speakerSid: 58 })).toMatchObject({
+      sid: 58,
+      voice: 'custom',
+      gender: 'male',
+      source: 'override',
+    });
+    expect(resolveAvatarVoice('vrm:builtin:xuetuan', { speakerSid: 103 })).toMatchObject({
+      sid: 18,
+      source: 'builtin-vrm',
+    });
+    expect(resolveAvatarVoice('vrm:vrm-123.vrm', { speakerSid: null })).toMatchObject({
+      source: 'default',
+    });
   });
 });
 
