@@ -11,7 +11,7 @@
 | M1 一致性 | 完成 | 2026-11-17 |
 | M2 导入 VRM 绑定 | 完成 | 2026-11-18 |
 | M3 加载提效 | 完成 | 2026-11-18 |
-| M4 验收与发布 | 待开始 | — |
+| M4 验收与发布 | 发布物料完成，待真机听感 | 2026-11-18 |
 
 ## 记录
 
@@ -55,3 +55,13 @@
 - `prewarmTts(force)`：失败不再永久缓存；`invalidateTts` 清空预热与合成缓存；模型/线程/目录变化后后台重新预热；TTS 下载完成自动预热。
 - 新增 `SynthesisCache`：key = 模型|sid|速度|文本，64 条 / 80 字 / 200 万 PCM 样本三重上限；命中返回副本，引擎重建/失效时清空。
 - 测试：voice 引擎 15 项、core 语音运行时与缓存 18 项通过；新增改语速不重建、缓存命中、预热失败重试、invalidate 重建用例。
+
+### 2026-11-18 M4 验收与发布
+
+- 全量测试：9 包 751 文件 4258 项通过；`pnpm check` 全绿。
+- 版本：4.6.0（root/apps/web/apps/desktop/shared version 同步）。
+- 打包：Web standalone + desktop tsup + prepare-server + electron-builder（本地 electronDist，NSIS x64），安装包归档 `E:\builds\archive\v4.6.0`。
+- 安装包：286,499,963 字节（273.23MB），SHA256 `e333ac9e6978202affa6df1c3213e181c8ca6c3176c6b678c0137f374a87f3fb`；manifest 3 个产物通过。
+- 打包态烟测：`win-unpacked` 以临时 userData 启动，`user_version=52`，`vrm_avatars` 含 `voice_sid`。
+- 发布物料：release-notes、version-summary、`blog/v4.6/` 7 篇、blog/roadmap 索引。
+- 遗留：真机听感矩阵（内置/导入切换、绑定持久化、Melo/Kokoro、语速、重启）待人工验收；通过后合入 main 并打 tag `v4.6.0`。

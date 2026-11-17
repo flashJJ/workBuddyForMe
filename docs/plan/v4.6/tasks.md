@@ -38,7 +38,8 @@
 
 ## M4 验收与发布
 
-- [ ] 全量测试与 `pnpm check`
-- [ ] 真机：内置/导入 VRM 切换、绑定持久化、Melo/Kokoro 切换、语速修改
-- [ ] 安装包构建归档
-- [ ] release-notes、version-summary、blog
+- [x] 全量测试与 `pnpm check`
+- [x] 打包态启动与 v052 迁移烟测（临时 userData）
+- [ ] 真机听感：内置/导入 VRM 切换、绑定持久化、Melo/Kokoro 切换、语速修改
+- [x] 安装包构建归档（`E:\builds\archive\v4.6.0`）
+- [x] release-notes、version-summary、blog
