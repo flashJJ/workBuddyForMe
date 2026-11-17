@@ -38,3 +38,12 @@
   - 为排除路径因素，把安装产物复制到本地 `release/v44-baseline` 复测：日常 mainVisible 15367ms、chat 15522ms，仍在 15s 量级。
 - 对比口径注意：v4.4 是已安装的 4.4.0 产物，v4.5 是本地 `release/win-unpacked`；两侧体积同为约 864MB，但 v4.4 的 15s 明显高于 v2.6 历史 5.6s，说明该安装产物的构建批次本身存在差异，不能当作纯代码差异。v4.5 日常 2.3s 是当前同机可复现值。
 - 下一步：真机安装/覆盖升级、150% DPI 与 reduced-motion 手测。
+
+### 提交与安装包（2026-11-17）
+
+- 功能提交：`007a994c feat(v4.5): 启动画面、首启短片与视频壁纸`，版本 4.5.0，零数据库迁移（`LATEST_SCHEMA_VERSION = 51`）。
+- 构建时 HEAD：`2f00b1bf`（另一条 `docs(film)` 工作线在该时点提交；不含代码差异）。
+- 安装包：`E:\builds\archive\v4.5.0\WorkBuddyForMe-Setup-4.5.0.exe` 273.22 MB（286,492,630 bytes）。
+- SHA256：`41e02c20927af8d6ec3533aa6198a04686fb0d0ccacca5a9e999c10b83ff5622`。
+- 归档：`E:\builds\archive\v4.5.0`，含 `SHA256SUMS.txt`、`build-info.json`、`latest.yml`、blockmap；`release-manifest --check` 校验 3 个产物通过。
+- 构建方式：本地 `electronDist` + NSIS x64，未签名（无证书），未发布。
