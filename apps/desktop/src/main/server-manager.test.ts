@@ -53,6 +53,8 @@ describe('server-manager 生命周期（TR-30.1）', () => {
       return child;
     });
     const waitImpl = vi.fn(async () => undefined);
+    const onForked = vi.fn();
+    const onHealthy = vi.fn();
 
     const server = await startManagedServer({
       userDataDir,
@@ -61,11 +63,15 @@ describe('server-manager 生命周期（TR-30.1）', () => {
       forkImpl,
       waitImpl,
       portPicker: async () => 51999,
+      onForked,
+      onHealthy,
     });
 
     expect(server.url).toBe('http://127.0.0.1:51999');
     expect(server.token).toMatch(/^[0-9a-f]{48}$/);
     expect(waitImpl).toHaveBeenCalledWith(server.url, server.token, expect.objectContaining({ timeoutMs: 30000 }));
+    expect(onForked).toHaveBeenCalledTimes(1);
+    expect(onHealthy).toHaveBeenCalledTimes(1);
 
     const options = forkImpl.mock.calls[0]?.[2] as ForkOptions;
     expect(options.env?.PORT).toBe('51999');

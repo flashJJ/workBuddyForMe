@@ -26,6 +26,11 @@ describe('v4.4 背景设置契约', () => {
     });
     expect(parsed.main?.mode).toBe('window');
     expect(parsed.stage?.fit).toBe('contain');
+    expect(
+      backgroundSettingsUpdateSchema.parse({
+        main: { source: { kind: 'builtin', id: 'wallpaper.main.tidal-door' } },
+      }).main?.source,
+    ).toEqual({ kind: 'builtin', id: 'wallpaper.main.tidal-door' });
   });
 
   it('拒绝未知内置 id 与越界数值', () => {

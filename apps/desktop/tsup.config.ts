@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: 'src/main/index.ts',
     'preload/index': 'src/preload/index.ts',
+    'preload/splash': 'src/preload/splash.ts',
   },
   format: ['cjs'],
   platform: 'node',

@@ -51,6 +51,7 @@ export const BUILTIN_MAIN_VIDEO_ITEMS: readonly BuiltinPetBackgroundItem[] = [
   { id: 'wallpaper.rainy-room', url: '/backgrounds/rainy-room.mp4', poster: '/backgrounds/rainy-room.jpg', label: '雨夜小客厅（循环视频）', kind: 'video' },
   { id: 'wallpaper.main.office-night-loop', url: '/backgrounds/office-night-loop.mp4', poster: '/backgrounds/office-night-loop.jpg', label: '深夜办公室（循环视频）', kind: 'video' },
   { id: 'wallpaper.main.forest-camp-loop', url: '/backgrounds/forest-camp-loop.mp4', poster: '/backgrounds/forest-camp-loop.jpg', label: '森林露营（循环视频）', kind: 'video' },
+  { id: 'wallpaper.main.tidal-door', url: '/backgrounds/tidal-door.mp4', poster: '/backgrounds/tidal-door.jpg', label: '潮汐开门（开机动画）', kind: 'video' },
 ];
 
 export const BUILTIN_BACKGROUNDS: Record<string, ResolvedBackground> = {

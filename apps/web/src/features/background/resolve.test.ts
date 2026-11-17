@@ -38,6 +38,16 @@ describe('v4.4 M4 背景解析', () => {
     expect(resolveBackground(config({ kind: 'builtin', id: 'wallpaper.dusk' }), { files: [], wallpapers: [] }).kind).toBe(
       'gradient',
     );
+    expect(
+      resolveBackground(config({ kind: 'builtin', id: 'wallpaper.main.tidal-door' }), {
+        files: [],
+        wallpapers: [],
+      }),
+    ).toEqual({
+      kind: 'video',
+      url: '/backgrounds/tidal-door.mp4',
+      poster: '/backgrounds/tidal-door.jpg',
+    });
   });
 
   it('本地文件优先于同名包内资源', () => {

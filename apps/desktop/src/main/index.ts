@@ -6,7 +6,7 @@
  * updater-bootstrap / global-shortcuts / computer/control-bootstrap。
  */
 import { randomBytes } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   app,
@@ -16,7 +16,6 @@ import {
   ipcMain,
   powerMonitor,
   safeStorage,
-  session,
 } from 'electron';
 
 // Dev 调试：暴露 CDP 端口让 electron-mcp-server / Puppeteer 能连进来
@@ -29,7 +28,7 @@ import { installAppMenu } from './menu';
 import { startCipherServer, type CipherEndpoint } from './cipher-server';
 import { startComputerControl, type ComputerControl } from './computer/control-bootstrap';
 import { startManagedServer, type ManagedServer } from './server-manager';
-import { captureWindowState, createMainWindow, type WindowBootInfo } from './window';
+import { captureWindowState, createMainWindow, resolveWindowIcon, type WindowBootInfo } from './window';
 import { saveWindowState } from './window-state';
 import { PetManager } from './pet/pet-manager';
 import { createAppPetManager } from './pet/pet-bootstrap';
@@ -42,6 +41,12 @@ import { registerDialogIpc } from './dialog-ipc';
 import { registerBackgroundIpc } from './background/background-ipc';
 import { registerSearchIpc } from './search/search-ipc';
 import { registerAwarenessIpc } from './awareness/awareness-ipc';
+import { createBootSession, type BootSession } from './splash/boot-session';
+import {
+  clearSessionIfVersionChanged,
+  resolveIntroMode,
+  writeIntroSeen,
+} from './splash/session-reset';
 
 const isDev = !app.isPackaged || process.env.WBFM_DEV === '1';
 
@@ -60,6 +65,8 @@ let petManager: PetManager | null = null;
 let stageManager: StageManager | null = null;
 /** v2.23 桌面常驻托盘：桌宠驻留时提供可见入口与「彻底退出」 */
 let appTray: AppTray | null = null;
+/** v4.5 启动画面会话（窗口、阶段、交接与耗时日志） */
+let bootSession: BootSession | null = null;
 
 // 单实例锁：重复启动聚焦到已有窗口
 const gotLock = app.requestSingleInstanceLock();
@@ -67,15 +74,22 @@ if (!gotLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (!mainWindow) return;
+    if (!mainWindow) {
+      bootSession?.focus();
+      return;
+    }
     // M4：桌宠存活时主窗可能只是被隐藏（非最小化），focus 不会自动 show
     if (!mainWindow.isVisible()) mainWindow.show();
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
   });
 
-  app.whenReady().then(start).catch((error) => {
+  app.whenReady().then(start).catch(async (error) => {
     console.error('桌面端启动失败', error);
+    await bootSession?.fail({
+      message: error instanceof Error ? error.message : String(error),
+      logPath: join(app.getPath('userData'), 'startup-error.log'),
+    });
     reportStartupFailure(error);
     app.quit();
   });
@@ -84,6 +98,9 @@ if (!gotLock) {
     // v2.23：先撤托盘，避免退出过程中残留图标
     appTray?.destroy();
     appTray = null;
+    // v4.5：启动画面先关，避免遮挡错误弹窗
+    bootSession?.dispose();
+    bootSession = null;
     // M4 伴身：退出前置位（拦截主窗关闭的 hide 语义放行）+ 立即销毁桌宠窗
     petManager?.prepareQuit();
     // v1.9：舞台窗几何持久化后立即销毁
@@ -97,10 +114,31 @@ if (!gotLock) {
 }
 
 async function start(): Promise<void> {
-  // 打包态：版本变更时清 Electron session，防止升级后旧 bundle 的 JS/CSS 缓存
-  // 继续命中新托管服务（表现为前端打 v1.x 古董端点 /api/voice/avatar-model，后端 404）。
-  // 必须 await：旧版异步清理与建窗并发，升级后首启可能仍命中旧 bundle 缓存
-  if (app.isPackaged) await clearSessionIfVersionChanged();
+  // e2e 专用：让 Playwright 先完成 attach，再创建首个窗口；生产不设此变量
+  const splashDelayMs = Number(process.env.WBFM_SPLASH_DELAY_MS ?? 0);
+  if (Number.isFinite(splashDelayMs) && splashDelayMs > 0) {
+    await new Promise((resolve) => setTimeout(resolve, splashDelayMs));
+  }
+  // v4.5：最先创建启动画面；不 await 它的加载，托管服务紧随其后并行启动
+  bootSession = createBootSession({
+    isDev,
+    userDataDir: app.getPath('userData'),
+    version: app.getVersion(),
+    locale: app.getLocale(),
+    icon: resolveWindowIcon(app.isPackaged),
+    onRevealed: () => writeIntroSeen(app.getPath('userData'), app.getVersion()),
+  });
+  bootSession.mark('app-ready');
+  bootSession.mark('splash-created');
+
+  if (!isDev) {
+    await clearSessionIfVersionChanged(app.getPath('userData'), app.getVersion());
+    bootSession.mark('session-cleared');
+  }
+  const intro = isDev
+    ? (process.env.WBFM_SPLASH_FULL === '1' ? 'full' : 'compact')
+    : resolveIntroMode(app.getPath('userData'), app.getVersion());
+  bootSession.setIntro(intro);
 
   console.error('[wbfm] boot: isDev=', isDev, 'serverPath=', isDev ? '(dev)' : resolveServerPath());
   installAppMenu(isDev);
@@ -171,12 +209,22 @@ async function startManagedStack(): Promise<WindowBootInfo | null> {
   }
   try {
     cipherEndpoint = await startCipherServer(randomBytes(24).toString('hex'));
+    bootSession?.mark('cipher-ready');
+    bootSession?.phase('cipher-ready');
     console.error('[wbfm] cipher 桥就绪:', cipherEndpoint.url);
     managedServer = await startManagedServer({
       userDataDir: app.getPath('userData'),
       serverPath: resolveServerPath(),
       cipher: { url: cipherEndpoint.url, token: cipherEndpoint.token },
       appVersion: app.getVersion(),
+      onForked: () => {
+        bootSession?.mark('server-forked');
+        bootSession?.phase('server-forked');
+      },
+      onHealthy: () => {
+        bootSession?.mark('server-healthy');
+        bootSession?.phase('server-healthy');
+      },
     });
     console.error('[wbfm] 托管服务就绪:', managedServer.url);
     return { url: managedServer.url, token: managedServer.token };
@@ -188,7 +236,9 @@ async function startManagedStack(): Promise<WindowBootInfo | null> {
 
 async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
   const url = boot?.url ?? DEV_SERVER_URL;
-  mainWindow = createMainWindow(app.getPath('userData'), url, boot);
+  mainWindow = createMainWindow(app.getPath('userData'), url, boot, {
+    deferShow: bootSession?.enabled ?? false,
+  });
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -196,6 +246,7 @@ async function createWindow(boot: WindowBootInfo | null = null): Promise<void> {
   mainWindow.on('close', (event) => {
     petManager?.handleMainClose(event);
   });
+  bootSession?.attachMainWindow(mainWindow);
 
   // 开发态默认不自动开 DevTools：独立（detach）窗口在 Windows 上会与主窗口
   // 竞争键盘焦点，偶发造成页面输入框「有光标但打不出字」（需重开窗口才恢复）。
@@ -226,43 +277,6 @@ app.on('will-quit', async (event) => {
     app.exit(0);
   }
 });
-
-/**
- * 记录上一次启动的 app.getVersion()；若本次不同则清 defaultSession 的所有存储
- * （localStorage / sessionStorage / cacheStorage / HTTP cache），防止升级后旧前端
- * bundle（Service Worker / 静态资源哈希命中）继续请求新托管服务里已删除的端点。
- * 清理完成后才写标记；失败则留旧标记，下次启动重试。写入位置：userData/last-version。
- */
-async function clearSessionIfVersionChanged(): Promise<void> {
-  const markerPath = join(app.getPath('userData'), 'last-version');
-  const current = app.getVersion();
-  let last: string | null = null;
-  try {
-    if (existsSync(markerPath)) {
-      last = readFileSync(markerPath, 'utf8').trim();
-    }
-  } catch {
-    last = null;
-  }
-
-  if (last !== null && last !== current) {
-    console.warn('[wbfm] 版本变更 detected:', last, '→', current, '，清理 session storage');
-    try {
-      await session.defaultSession.clearStorageData({
-        storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage', 'filesystem', 'shadercache'],
-      });
-    } catch (err) {
-      console.error('[wbfm] clearStorageData 失败（下次启动重试）:', err);
-      return;
-    }
-  }
-
-  try {
-    writeFileSync(markerPath, current, 'utf8');
-  } catch {
-    // userData 不可写时静默降级；下次启动会再试
-  }
-}
 
 /**
  * 启动失败兜底：打包态没有控制台，任何 throw（密钥链不可用、托管服务 30s 未就绪、

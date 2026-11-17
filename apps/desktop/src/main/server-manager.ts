@@ -20,6 +20,9 @@ export interface StartServerOptions {
   cipher: CipherRef;
   /** 应用版本（主进程 app.getVersion()）；注入给托管服务供 health/system API 读取 */
   appVersion?: string;
+  /** v4.5：启动画面阶段打点 */
+  onForked?: () => void;
+  onHealthy?: () => void;
   /** 测试注入 */
   forkImpl?: ForkFn;
   waitImpl?: typeof waitForServer;
@@ -88,7 +91,9 @@ export async function startManagedServer(options: StartServerOptions): Promise<M
     console.error(`[server] 子进程退出 code=${code} signal=${signal}`);
   });
 
+  options.onForked?.();
   await doWait(url, token, { timeoutMs: HEALTH_TIMEOUT_MS, intervalMs: HEALTH_INTERVAL_MS });
+  options.onHealthy?.();
 
   return {
     url,

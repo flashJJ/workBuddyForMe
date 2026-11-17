@@ -67,16 +67,25 @@ export function resolveWindowIcon(isPackaged: boolean): string | undefined {
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
+export interface CreateMainWindowOptions {
+  /** v4.5：启动画面存在时由主进程协调 show，避免抢在 splash 前面 */
+  deferShow?: boolean;
+}
+
 /** 创建主窗口并加载目标地址；外链交系统浏览器 */
-export function createMainWindow(userDataDir: string, url: string, boot: WindowBootInfo | null): BrowserWindow {
+export function createMainWindow(
+  userDataDir: string,
+  url: string,
+  boot: WindowBootInfo | null,
+  options: CreateMainWindowOptions = {},
+): BrowserWindow {
   const win = new BrowserWindow({
     ...buildWindowOptions(userDataDir, boot),
     icon: resolveWindowIcon(app.isPackaged),
   });
 
   win.once('ready-to-show', () => {
-    if (loadWindowState(userDataDir).maximized) win.maximize();
-    win.show();
+    if (!options.deferShow) revealMainWindow(win, userDataDir);
   });
 
   win.webContents.setWindowOpenHandler(({ url: target }) => {
@@ -90,6 +99,13 @@ export function createMainWindow(userDataDir: string, url: string, boot: WindowB
   if (app.isPackaged) void win.loadURL(url);
   else loadWithDevRetry(win, url);
   return win;
+}
+
+/** 按持久化状态最大化并显示；启动画面存在时由 boot-session 在主窗就绪后调用 */
+export function revealMainWindow(win: BrowserWindow, userDataDir: string): void {
+  if (win.isDestroyed()) return;
+  if (loadWindowState(userDataDir).maximized) win.maximize();
+  win.show();
 }
 
 /** 采集当前窗口几何用于退出前持久化 */
