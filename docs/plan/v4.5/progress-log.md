@@ -66,3 +66,5 @@
 - 归档：`E:\builds\archive\v4.5.1`，含 `SHA256SUMS.txt`、`build-info.json`、`latest.yml`、blockmap；`release-manifest --check` 校验 3 个产物通过。
 - 覆盖升级实测：临时 userData 预置 `last-version=4.5.0`、无 `intro-seen-version`，启动 4.5.1 后 `boot-timing` 为 `mode:"full"`（`server-healthy 14445ms`、`main-ready 17472ms`），reveal 后写入 `intro-seen-version=4.5.1`，主窗 `http://127.0.0.1:<port>/chat`。
 - 安装体验变化：`runAfterFinish:false`，安装完成后不再自动拉起应用；需手动启动才能看到首启完整片。
+- 发布物料：补 `release-notes.md`、`version-summary.md` 与 `blog/v4.5/` 7 篇技术博客；`blog/README.md` 与路线图索引同步。
+- 遗留验收：真机冷/热/覆盖升级、150% DPI、高对比、减少动态、中英双语；通过后合并 main 并打 tag `v4.5.1`。
