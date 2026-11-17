@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -21,7 +21,15 @@ describe('v030 vrm_avatars', () => {
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const cols = db.prepare('PRAGMA table_info(vrm_avatars)').all() as Array<{ name: string }>;
-    expect(cols.map((c) => c.name)).toEqual(['id', 'name', 'file_ref', 'byte_length', 'meta_json', 'created_at']);
+    expect(cols.map((c) => c.name)).toEqual([
+      'id',
+      'name',
+      'file_ref',
+      'byte_length',
+      'meta_json',
+      'created_at',
+      'voice_sid',
+    ]);
     const modTable = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='mod_installs'",
     ).get();

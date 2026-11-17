@@ -49,6 +49,39 @@ export const BUILTIN_VRM_TTS_VOICES: Readonly<Record<string, AvatarTtsVoice>> = 
   'builtin:feibi': { sid: 3, voice: 'zf_001', gender: 'female' },
 };
 
+/** 导入 VRM 声线选择项：分组展示用，不伪造未知音色名 */
+export interface KokoroVoiceOption extends AvatarTtsVoice {
+  group: 'english' | 'zh-female' | 'zh-male';
+}
+
+/**
+ * Kokoro 103 音色表（sid 0–102）。
+ * 官方音色名按 sid 顺序推导：0–2 英文、3–57 zf_001–zf_055、58–102 zm_009–zm_053。
+ * 若后续官方表调整，以试听与模型输出为准；这里的 label 只用于选择器展示。
+ */
+export const KOKORO_VOICE_OPTIONS: readonly KokoroVoiceOption[] = Array.from(
+  { length: 103 },
+  (_, sid): KokoroVoiceOption => {
+    if (sid === 0) return { sid, voice: 'af_maple', gender: 'female', group: 'english' };
+    if (sid === 1) return { sid, voice: 'af_sol', gender: 'female', group: 'english' };
+    if (sid === 2) return { sid, voice: 'bf_vale', gender: 'female', group: 'english' };
+    if (sid <= 57) {
+      return {
+        sid,
+        voice: `zf_${String(sid - 2).padStart(3, '0')}`,
+        gender: 'female',
+        group: 'zh-female',
+      };
+    }
+    return {
+      sid,
+      voice: `zm_${String(sid - 49).padStart(3, '0')}`,
+      gender: 'male',
+      group: 'zh-male',
+    };
+  },
+);
+
 /** 声线来源：用户绑定 / 内置 VRM / 内置 Live2D / 默认回落 */
 export type AvatarVoiceSource = 'override' | 'builtin-vrm' | 'live2d' | 'default';
 

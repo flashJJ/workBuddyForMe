@@ -24,7 +24,11 @@ vi.mock('@wbfm/voice', async (importOriginal) => ({
 
 import { VoiceRuntime } from './voice-runtime';
 
-function makeRuntime(avatarModelId = 'mark', ttsModel: 'melo' | 'kokoro' = 'kokoro') {
+function makeRuntime(
+  avatarModelId = 'mark',
+  ttsModel: 'melo' | 'kokoro' = 'kokoro',
+  db: DatabaseInstance = {} as DatabaseInstance,
+) {
   const settings = {
     ...DEFAULT_VOICE_SETTINGS,
     avatarModelId,
@@ -34,7 +38,7 @@ function makeRuntime(avatarModelId = 'mark', ttsModel: 'melo' | 'kokoro' = 'koko
   const settingsRepo = {
     getJson: vi.fn(() => settings),
   } as unknown as SettingsRepository;
-  const runtime = new VoiceRuntime({} as DatabaseInstance, settingsRepo);
+  const runtime = new VoiceRuntime(db, settingsRepo);
   return { runtime, settings };
 }
 
@@ -67,6 +71,22 @@ describe('VoiceRuntime 角色声线解析', () => {
     const { runtime } = makeRuntime('mark');
     await runtime.synthesize('试听', 18);
     expect(h.synth).toHaveBeenCalledWith('试听', { speakerId: 18 });
+  });
+
+  it('导入 VRM 读取数据库绑定值；未绑定时回落默认角色', async () => {
+    const db = {
+      prepare: vi.fn(() => ({ get: vi.fn(() => ({ voice_sid: 58 })) })),
+    } as unknown as DatabaseInstance;
+    const { runtime } = makeRuntime('vrm:vrm-imported.vrm', 'kokoro', db);
+    await runtime.synthesize('导入模型');
+    expect(h.synth).toHaveBeenCalledWith('导入模型', { speakerId: 58 });
+
+    const unboundDb = {
+      prepare: vi.fn(() => ({ get: vi.fn(() => ({ voice_sid: null })) })),
+    } as unknown as DatabaseInstance;
+    const { runtime: fallback } = makeRuntime('vrm:vrm-imported.vrm', 'kokoro', unboundDb);
+    await fallback.synthesize('未绑定');
+    expect(h.synth).toHaveBeenLastCalledWith('未绑定', { speakerId: 3 });
   });
 
   it('引擎以 Kokoro 配置长驻创建（voices/espeak/双词典/中文 fst），且只创建一次', async () => {

@@ -63,6 +63,7 @@ describe('v2.0 M5 备份恢复（events 轨：modInstalls + vrmAvatars 引用）
       },
     });
     insertVrmRow(srcDb, 'vrm-abc.vrm', '我的 VRM');
+    srcDb.prepare('UPDATE vrm_avatars SET voice_sid = 18 WHERE file_ref = ?').run('vrm-abc.vrm');
 
     const { archive, manifest } = await exportBackup(
       { db: srcDb, cipher: createWebCipher() },
@@ -82,14 +83,23 @@ describe('v2.0 M5 备份恢复（events 轨：modInstalls + vrmAvatars 引用）
     expect(installs).toHaveLength(1);
     expect(installs[0]?.packId).toBe('p_demo-pack');
     expect(installs[0]?.summary.stageBackgroundFileRefs).toEqual(['bg-1.png']);
-    const vrm = dstDb.prepare('SELECT id, name, file_ref, byte_length FROM vrm_avatars').all() as Array<{
+    const vrm = dstDb
+      .prepare('SELECT id, name, file_ref, byte_length, voice_sid FROM vrm_avatars')
+      .all() as Array<{
       id: string;
       name: string;
       file_ref: string;
       byte_length: number;
+      voice_sid: number | null;
     }>;
     expect(vrm).toEqual([
-      { id: 'id-vrm-abc.vrm', name: '我的 VRM', file_ref: 'vrm-abc.vrm', byte_length: 1024 },
+      {
+        id: 'id-vrm-abc.vrm',
+        name: '我的 VRM',
+        file_ref: 'vrm-abc.vrm',
+        byte_length: 1024,
+        voice_sid: 18,
+      },
     ]);
     expect(result.warnings.some((w) => w.includes('vrm-abc.vrm'))).toBe(true);
 

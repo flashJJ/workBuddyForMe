@@ -16,6 +16,7 @@ interface VrmAvatarRow {
   byte_length: number;
   meta_json: string;
   created_at: string;
+  voice_sid: number | null;
 }
 
 function rowToAvatar(row: VrmAvatarRow): VrmAvatar {
@@ -25,8 +26,15 @@ function rowToAvatar(row: VrmAvatarRow): VrmAvatar {
     fileRef: row.file_ref,
     byteLength: row.byte_length,
     meta: JSON.parse(row.meta_json) as VrmMeta,
+    voiceSid: row.voice_sid ?? null,
     createdAt: row.created_at,
   };
+}
+
+function assertVoiceSid(voiceSid: number | null): void {
+  if (voiceSid !== null && (!Number.isInteger(voiceSid) || voiceSid < 0 || voiceSid > 102)) {
+    throw ApiError.validation('声线 sid 必须在 0-102 之间');
+  }
 }
 
 export function createVrmAvatarService(db: Database) {
@@ -34,17 +42,25 @@ export function createVrmAvatarService(db: Database) {
   mkdirSync(dir, { recursive: true });
 
   const insertStmt = db.prepare(`
-    INSERT INTO vrm_avatars (id, name, file_ref, byte_length, meta_json)
-    VALUES (@id, @name, @file_ref, @byte_length, @meta_json)
+    INSERT INTO vrm_avatars (id, name, file_ref, byte_length, meta_json, voice_sid)
+    VALUES (@id, @name, @file_ref, @byte_length, @meta_json, @voice_sid)
   `);
   const listStmt = db.prepare('SELECT * FROM vrm_avatars ORDER BY created_at DESC');
   const getStmt = db.prepare('SELECT * FROM vrm_avatars WHERE id = ?');
   const getByRefStmt = db.prepare('SELECT * FROM vrm_avatars WHERE file_ref = ?');
   const deleteStmt = db.prepare('DELETE FROM vrm_avatars WHERE id = ?');
+  const updateVoiceStmt = db.prepare('UPDATE vrm_avatars SET voice_sid = ? WHERE id = ?');
 
   return {
     /** 上传导入：双校验 + 落盘 + 落库 */
-    importAvatar(input: { filename: string; buffer: Uint8Array; name?: string }): VrmAvatar {
+    importAvatar(input: {
+      filename: string;
+      buffer: Uint8Array;
+      name?: string;
+      voiceSid?: number | null;
+    }): VrmAvatar {
+      const voiceSid = input.voiceSid ?? null;
+      assertVoiceSid(voiceSid);
       if (!input.filename.toLowerCase().endsWith('.vrm')) {
         throw ApiError.validation('仅支持 .vrm 文件');
       }
@@ -76,6 +92,7 @@ export function createVrmAvatarService(db: Database) {
         file_ref: fileRef,
         byte_length: input.buffer.byteLength,
         meta_json: JSON.stringify(meta),
+        voice_sid: voiceSid,
       });
       return {
         id,
@@ -83,6 +100,7 @@ export function createVrmAvatarService(db: Database) {
         fileRef,
         byteLength: input.buffer.byteLength,
         meta,
+        voiceSid,
         createdAt: new Date().toISOString(),
       };
     },
@@ -100,6 +118,16 @@ export function createVrmAvatarService(db: Database) {
     getByFileRef(fileRef: string): VrmAvatar | null {
       const row = getByRefStmt.get(fileRef) as VrmAvatarRow | undefined;
       return row ? rowToAvatar(row) : null;
+    },
+
+    /** 绑定/解绑导入 VRM 的声线（null=跟随默认角色） */
+    setVoiceSid(id: string, voiceSid: number | null): VrmAvatar {
+      assertVoiceSid(voiceSid);
+      const result = updateVoiceStmt.run(voiceSid, id);
+      if (result.changes === 0) throw ApiError.notFound('VRM 形象', id);
+      const avatar = this.get(id);
+      if (!avatar) throw ApiError.notFound('VRM 形象', id);
+      return avatar;
     },
 
     /** 删除记录并回收文件 */

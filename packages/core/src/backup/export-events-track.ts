@@ -34,6 +34,7 @@ interface RawVrmRow {
   byte_length: number;
   meta_json: string;
   created_at: string;
+  voice_sid: number | null;
 }
 
 /** vrmAvatars 备份条目：元数据引用形态（与 VrmAvatar 同形，不带字节） */
@@ -43,6 +44,8 @@ export interface BackupVrmAvatarEntry {
   fileRef: string;
   byteLength: number;
   meta: unknown;
+  /** v4.6：用户绑定的声线；旧备份缺省 null */
+  voiceSid?: number | null;
   createdAt: string;
 }
 
@@ -57,7 +60,7 @@ function readVrmAvatarRefs(db: DatabaseInstance): BackupVrmAvatarEntry[] {
   // 不经过 VrmAvatarService（其构造会 mkdir 数据目录）。
   const rows = db
     .prepare(
-      `SELECT id, name, file_ref, byte_length, meta_json, created_at
+      `SELECT id, name, file_ref, byte_length, meta_json, created_at, voice_sid
          FROM vrm_avatars ORDER BY created_at DESC`,
     )
     .all() as RawVrmRow[];
@@ -74,6 +77,7 @@ function readVrmAvatarRefs(db: DatabaseInstance): BackupVrmAvatarEntry[] {
       fileRef: row.file_ref,
       byteLength: row.byte_length,
       meta,
+      voiceSid: row.voice_sid ?? null,
       createdAt: row.created_at,
     };
   });

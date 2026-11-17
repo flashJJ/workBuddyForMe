@@ -140,6 +140,7 @@ export {
   DEFAULT_AVATAR_MODEL_ID,
   AVATAR_TTS_VOICES,
   BUILTIN_VRM_TTS_VOICES,
+  KOKORO_VOICE_OPTIONS,
   resolveAvatarVoice,
   getAvatarSpeakerId,
 } from './voice/profiles';
@@ -149,6 +150,7 @@ export type {
   AvatarVoiceSource,
   ResolvedAvatarVoice,
   AvatarVoiceOverride,
+  KokoroVoiceOption,
 } from './voice/profiles';
 
 // M4：VRM 形象 id 以 vrm: 为前缀，不在内置列表中

@@ -73,8 +73,8 @@ export function restoreVrmAvatars(db: DatabaseInstance, entries: unknown[]): Ref
   const counts: RefRestoreCounts = { imported: 0, skipped: 0, importedRefs: [] };
   const insert = db.prepare(
     `INSERT OR IGNORE INTO vrm_avatars
-       (id, name, file_ref, byte_length, meta_json, created_at)
-     VALUES (@id, @name, @fileRef, @byteLength, @metaJson, @createdAt)`,
+       (id, name, file_ref, byte_length, meta_json, voice_sid, created_at)
+     VALUES (@id, @name, @fileRef, @byteLength, @metaJson, @voiceSid, @createdAt)`,
   );
   for (const raw of entries) {
     const parsed = vrmAvatarSchema.safeParse(raw);
@@ -89,6 +89,7 @@ export function restoreVrmAvatars(db: DatabaseInstance, entries: unknown[]): Ref
         fileRef: parsed.data.fileRef,
         byteLength: parsed.data.byteLength,
         metaJson: JSON.stringify(parsed.data.meta ?? {}),
+        voiceSid: parsed.data.voiceSid ?? null,
         createdAt: parsed.data.createdAt,
       });
       if (result.changes > 0) {

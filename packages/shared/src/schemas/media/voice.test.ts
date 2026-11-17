@@ -4,12 +4,15 @@ import {
   BUILTIN_VRM_TTS_VOICES,
   DEFAULT_AVATAR_MODEL_ID,
   DEFAULT_VOICE_SETTINGS,
+  KOKORO_VOICE_OPTIONS,
   SUPPORTED_AVATAR_MODEL_IDS,
   getAvatarSpeakerId,
   parseVrmAvatarId,
   resolveAvatarVoice,
   voiceSettingsUpdateSchema,
   voiceTtsRequestSchema,
+  vrmAvatarSchema,
+  vrmAvatarVoiceUpdateSchema,
 } from '../../index';
 import { BUILTIN_VRM_FILE_REF, BUILTIN_VRM_MODEL_ID, BUILTIN_VRM_MODELS } from '../../constants';
 
@@ -44,6 +47,17 @@ describe('AVATAR_TTS_VOICES 角色声线绑定', () => {
     expect(AVATAR_TTS_VOICES.mark).toMatchObject({ sid: 58, voice: 'zm_009' });
     expect(AVATAR_TTS_VOICES.mao).toMatchObject({ sid: 32, voice: 'zf_049' });
     expect(AVATAR_TTS_VOICES.wanko).toMatchObject({ sid: 59, voice: 'zm_010' });
+  });
+});
+
+describe('KOKORO_VOICE_OPTIONS', () => {
+  it('覆盖 103 个音色，中文男女声首尾与官方 sid 对齐', () => {
+    expect(KOKORO_VOICE_OPTIONS).toHaveLength(103);
+    const bySid = new Map(KOKORO_VOICE_OPTIONS.map((option) => [option.sid, option]));
+    expect(bySid.get(3)?.voice).toBe('zf_001');
+    expect(bySid.get(57)?.voice).toBe('zf_055');
+    expect(bySid.get(58)).toMatchObject({ voice: 'zm_009', gender: 'male' });
+    expect(bySid.get(102)?.voice).toBe('zm_053');
   });
 });
 
@@ -140,5 +154,25 @@ describe('sid 契约边界', () => {
   it('单句合成请求接受 sid 102、拒绝 103', () => {
     expect(voiceTtsRequestSchema.safeParse({ text: 'x', speakerId: 102 }).success).toBe(true);
     expect(voiceTtsRequestSchema.safeParse({ text: 'x', speakerId: -1 }).success).toBe(false);
+  });
+
+  it('导入 VRM 声线绑定接受 0–102 与 null，拒绝越界/额外字段', () => {
+    expect(vrmAvatarVoiceUpdateSchema.safeParse({ voiceSid: 0 }).success).toBe(true);
+    expect(vrmAvatarVoiceUpdateSchema.safeParse({ voiceSid: 102 }).success).toBe(true);
+    expect(vrmAvatarVoiceUpdateSchema.safeParse({ voiceSid: null }).success).toBe(true);
+    expect(vrmAvatarVoiceUpdateSchema.safeParse({ voiceSid: 103 }).success).toBe(false);
+    expect(vrmAvatarVoiceUpdateSchema.safeParse({ voiceSid: 3, extra: true }).success).toBe(false);
+  });
+
+  it('旧备份缺少 voiceSid 时按 null 读取', () => {
+    const parsed = vrmAvatarSchema.parse({
+      id: 'a1',
+      name: '旧模型',
+      fileRef: 'vrm-old.vrm',
+      byteLength: 1,
+      meta: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    expect(parsed.voiceSid).toBeNull();
   });
 });

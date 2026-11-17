@@ -9,7 +9,7 @@
 |---|---|---|
 | M0 方案与分支 | 完成 | 2026-11-17 |
 | M1 一致性 | 完成 | 2026-11-17 |
-| M2 导入 VRM 绑定 | 待开始 | — |
+| M2 导入 VRM 绑定 | 完成 | 2026-11-18 |
 | M3 加载提效 | 待开始 | — |
 | M4 验收与发布 | 待开始 | — |
 
@@ -36,3 +36,14 @@
 - 设置页：`AvatarSection` 改用统一解析，内置雪团/冉卡露丽/菲比的展示与「角色试听」不再回落 Haru。
 - 舞台：`StageVoice.speak` 增加可选 `speakerSid`；`useStageSpeech` 与 `useTheaterAudio` 传入 cast 的 `voicePreference.speakerSid`，显式偏好优先。
 - 测试：shared `voice.test.ts` 16 项通过（新增解析顺序/覆盖/越界）；web 剧场音频 7 项通过；shared/web typecheck 通过。
+
+### 2026-11-18 M2 导入 VRM 声线绑定
+
+- 迁移 `v052`：`vrm_avatars` 新增可空 `voice_sid INTEGER`；旧库/旧备份为 NULL，行为不变；表缺失的测试夹具安全跳过。
+- 契约：`vrmAvatarSchema.voiceSid` 缺省 null（旧备份可解析）；新增 `vrmAvatarVoiceUpdateSchema`（0–102 或 null，strict）。
+- 服务：`VrmAvatarService.setVoiceSid`（越界/不存在拒绝）；`importAvatar` 支持初始 `voiceSid`。
+- API：`PATCH /api/vrm-avatars/:id`，返回更新后的完整形象。
+- 合成：`VoiceRuntime.synthesize` 对导入 VRM 读取 `voice_sid`，未绑定回落默认；内置 VRM/Live2D 不查库。
+- UI：已导入 VRM 列表增加声线选择（跟随默认 + 103 音色分组）与试听；设置页形象区读取绑定值显示真实 sid。
+- 备份：导出/恢复携带 `voiceSid`，旧备份缺省 null。
+- 测试：database 全量 76 文件 285 项通过（含 v052 迁移/v030 列断言）；core 定向 25 项、shared 19 项通过；`pnpm check` 全绿。

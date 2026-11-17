@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import {
+  parseVrmAvatarId,
   resolveAvatarVoice,
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
@@ -54,7 +55,9 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
 
   // 统一解析：内置 VRM / Live2D / 导入 VRM 回落都由同一函数决定，
   // 避免这里用 Live2D 注册表反查导致任何 VRM 都显示成 Haru。
-  const voice = resolveAvatarVoice(modelId);
+  const fileRef = parseVrmAvatarId(modelId);
+  const imported = fileRef ? vrmAvatars.find((item) => item.fileRef === fileRef) : undefined;
+  const voice = resolveAvatarVoice(modelId, { speakerSid: imported?.voiceSid ?? null });
   const petBridge = React.useMemo(() => getPetBridge(), []);
   const petOpen = usePetOpenState();
 
@@ -165,7 +168,10 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
               <>
                 <p className="text-xs text-muted-foreground">
                   {t('voice.avatar.voiceBinding', {
-                    voice: voice.voice,
+                    voice:
+                      voice.voice === 'custom'
+                        ? t('voice.avatar.customVoice')
+                        : voice.voice,
                     gender: voice.gender === 'female' ? t('voice.avatar.femaleVoice') : t('voice.avatar.maleVoice'),
                     sid: voice.sid,
                   })}

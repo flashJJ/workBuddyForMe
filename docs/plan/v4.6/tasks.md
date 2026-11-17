@@ -20,13 +20,13 @@
 
 ## M2 导入 VRM 绑定
 
-- [ ] 迁移 `v052`：`vrm_avatars.voice_sid`
-- [ ] `vrmAvatarSchema.voiceSid` 与 `vrmAvatarVoiceUpdateSchema`
-- [ ] `VrmAvatarService.setVoiceSid` + 导入可选 voiceSid
-- [ ] `PATCH /api/vrm-avatars/:id`
-- [ ] 已导入 VRM 列表增加声线选择与试听
-- [ ] 服务端合成读取绑定值（未绑定回落默认）
-- [ ] core/web 定向测试
+- [x] 迁移 `v052`：`vrm_avatars.voice_sid`
+- [x] `vrmAvatarSchema.voiceSid` 与 `vrmAvatarVoiceUpdateSchema`
+- [x] `VrmAvatarService.setVoiceSid` + 导入可选 voiceSid
+- [x] `PATCH /api/vrm-avatars/:id`
+- [x] 已导入 VRM 列表增加声线选择与试听
+- [x] 服务端合成读取绑定值（未绑定回落默认）
+- [x] core/web 定向测试
 
 ## M3 加载提效
 

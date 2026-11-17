@@ -21,6 +21,8 @@ import {
 } from '@wbfm/database';
 import {
   getAvatarSpeakerId,
+  parseVrmAvatarId,
+  type AvatarVoiceOverride,
   type VoiceModelFileStatus,
   type VoiceSettings,
 } from '@wbfm/shared/schemas';
@@ -189,8 +191,27 @@ export class VoiceRuntime {
     const engine = await this.ensureTts();
     // MeloTTS 为单说话人模型，sid 无意义；Kokoro 才按角色绑定声线
     const spec = this.ttsSpec();
-    const sid = spec.engine === 'melo' ? 0 : speakerId ?? getAvatarSpeakerId(this.settings.avatarModelId);
+    const avatarModelId = this.settings.avatarModelId;
+    const sid =
+      spec.engine === 'melo'
+        ? 0
+        : speakerId ?? getAvatarSpeakerId(avatarModelId, this.readVrmVoiceOverride(avatarModelId));
     return engine.synthesize(text, { speakerId: sid });
+  }
+
+  /** 导入 VRM 的用户绑定；内置 VRM/Live2D 不查库，缺省或异常均回落到默认解析 */
+  private readVrmVoiceOverride(avatarModelId: string): AvatarVoiceOverride | undefined {
+    const fileRef = parseVrmAvatarId(avatarModelId);
+    if (!fileRef || fileRef.startsWith('builtin:')) return undefined;
+    try {
+      const row = this.db
+        .prepare('SELECT voice_sid FROM vrm_avatars WHERE file_ref = ?')
+        .get(fileRef) as { voice_sid: number | null } | undefined;
+      return row && row.voice_sid !== null ? { speakerSid: row.voice_sid } : undefined;
+    } catch {
+      // 迁移前/表缺失时按未绑定处理，不影响朗读
+      return undefined;
+    }
   }
 
   /**

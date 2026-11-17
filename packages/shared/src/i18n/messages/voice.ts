@@ -101,6 +101,15 @@ export const zhVoice = {
     synthFailed: '合成失败（HTTP {status}）',
     playbackFailed: '试听播放失败',
   },
+  vrmVoice: {
+    label: '声线',
+    followDefault: '跟随默认（Haru · sid 3）',
+    englishGroup: '英文音色',
+    chineseFemaleGroup: '中文女声',
+    chineseMaleGroup: '中文男声',
+    hint: '仅 Kokoro 多角色引擎生效；MeloTTS 为单声线。',
+    saveFailed: '声线保存失败',
+  },
   avatar: {
     previewText: '你好，这是当前角色绑定声线的试听，所有语音都在本机合成。',
     previewButton: '试听声线',
@@ -113,6 +122,7 @@ export const zhVoice = {
     voiceBinding: '绑定声线：Kokoro {voice}（{gender}，sid {sid}/102）· 对话朗读自动使用该声线',
     femaleVoice: '中文女声',
     maleVoice: '中文男声',
+    customVoice: '自定义声线',
     modelsNote: '均为 Live2D 官方样本角色（免费素材许可，仅内置不可导入外部模型）；切换后即时生效',
     resourceNote:
       '形象资源（约 0.7–4.8MB 贴图/模型 + Cubism 渲染库，gzip 约 157KB）仅在开启后按需加载，' +
