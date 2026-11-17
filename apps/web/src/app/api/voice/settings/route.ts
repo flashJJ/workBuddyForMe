@@ -17,14 +17,17 @@ export const GET = defineRoute(({ services }) => {
 export const PUT = defineRoute(async ({ request, services }) => {
   const patch = parseBody(voiceSettingsUpdateSchema, await readJsonBody(request));
   const next = patchVoiceSettings(createSettingsRepository(services.db), patch);
+  const runtime = getVoiceRuntime();
+  // ttsSpeed 是逐句参数：不使引擎失效，下一次合成直接生效
   if (
     patch.ttsModel !== undefined ||
     patch.ttsSpeakerId !== undefined ||
-    patch.ttsSpeed !== undefined ||
     patch.ttsNumThreads !== undefined ||
     patch.modelsDir !== undefined
   ) {
-    getVoiceRuntime().invalidateTts();
+    runtime.invalidateTts();
+    // 模型/线程/目录变化后后台重新预热；失败静默，首次朗读仍会重试
+    void runtime.prewarmTts(true);
   }
   if (patch.asrNumThreads !== undefined || patch.modelsDir !== undefined) {
     getVoiceRuntime().invalidateAsr();

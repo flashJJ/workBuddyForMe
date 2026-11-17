@@ -52,6 +52,12 @@ describe('WorkerTtsEngine（真实 worker 线程 + 假原生模块）', () => {
     const result = await engine.synthesize('你好', { speakerId: 2 });
     expect(Array.from(result.samples)).toEqual([2, 1.5, 2]);
     expect(result.sampleRate).toBe(24000);
+
+    const faster = await engine.synthesize('快一点', { speakerId: 2, speed: 0.8 });
+    const fasterSamples = Array.from(faster.samples);
+    expect(fasterSamples[0]).toBe(2);
+    expect(fasterSamples[1]).toBeCloseTo(0.8);
+    expect(fasterSamples[2]).toBe(3);
     await engine.dispose();
   });
 

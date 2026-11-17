@@ -1,6 +1,8 @@
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
+import { parseBody, readJsonBody } from '@/lib/server/validation';
 import { ApiError } from '@wbfm/shared/errors';
+import { vrmAvatarVoiceUpdateSchema } from '@wbfm/shared/schemas';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,6 +13,13 @@ type Params = { id: string };
 export const GET = defineRoute<Params>(({ services, params }) => {
   const avatar = services.vrmAvatars.get(params.id);
   if (!avatar) throw ApiError.notFound('VRM 形象', params.id);
+  return jsonOk({ avatar });
+});
+
+/** PATCH /api/vrm-avatars/:id — 绑定/解绑 Kokoro 声线（null=跟随默认） */
+export const PATCH = defineRoute<Params>(async ({ request, services, params }) => {
+  const input = parseBody(vrmAvatarVoiceUpdateSchema, await readJsonBody(request));
+  const avatar = services.vrmAvatars.setVoiceSid(params.id, input.voiceSid);
   return jsonOk({ avatar });
 });
 

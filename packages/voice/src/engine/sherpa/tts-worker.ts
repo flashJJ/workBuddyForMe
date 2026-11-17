@@ -138,7 +138,13 @@ export class WorkerTtsEngine implements TtsEngine {
     return new Promise<TtsResult>((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
       try {
-        this.worker.postMessage({ type: 'synth', id, text: trimmed, sid, speed: this.speed });
+        this.worker.postMessage({
+        type: 'synth',
+        id,
+        text: trimmed,
+        sid,
+        speed: opts?.speed ?? this.speed,
+      });
       } catch (error) {
         this.pending.delete(id);
         reject(new VoiceEngineError('tts', `TTS worker 通信失败：${(error as Error).message}`));

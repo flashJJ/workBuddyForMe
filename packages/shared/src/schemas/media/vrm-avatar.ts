@@ -41,9 +41,22 @@ export const vrmAvatarSchema = z.object({
   byteLength: z.number().int().min(1),
   /** 内嵌 meta 许可信息 */
   meta: vrmMetaSchema,
+  /**
+   * 用户绑定的 Kokoro 声线 sid（0–102）；null=未绑定，按默认角色回落。
+   * 旧备份缺少该字段时按 null 读取，保持升级前行为。
+   */
+  voiceSid: z.number().int().min(0).max(102).nullable().default(null),
   createdAt: z.string().datetime(),
 });
 export type VrmAvatar = z.infer<typeof vrmAvatarSchema>;
+
+/** PATCH /api/vrm-avatars/:id 的声线绑定载荷 */
+export const vrmAvatarVoiceUpdateSchema = z
+  .object({
+    voiceSid: z.number().int().min(0).max(102).nullable(),
+  })
+  .strict();
+export type VrmAvatarVoiceUpdate = z.infer<typeof vrmAvatarVoiceUpdateSchema>;
 
 /** POST /api/vrm-avatars 上传响应 */
 export const vrmAvatarUploadResponseSchema = z.object({

@@ -50,6 +50,7 @@ import { migrateV048 } from './v048-memory-event-rollup';
 import { migrateV049 } from './v049-document-parse-version';
 import { migrateV050 } from './v050-memory-edges';
 import { migrateV051 } from './v051-attachment-refs';
+import { migrateV052 } from './v052-vrm-voice';
 
 interface Migration {
   version: number;
@@ -276,6 +277,7 @@ const MIGRATIONS: Migration[] = [
   { version: 49, description: 'v2.29 P0: documents.parse_version + 已有结构块元数据回填', up: migrateV049 },
   { version: 50, description: 'v2.31 P0: memory_edges 关系边表（纯加法）', up: migrateV050 },
   { version: 51, description: 'v2.33 P1: attachment_refs 附件引用计数表 + 消息删除触发器（纯加法）', up: migrateV051 },
+  { version: 52, description: 'v4.6 M2: vrm_avatars.voice_sid 导入 VRM 声线绑定（可空列）', up: migrateV052 },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

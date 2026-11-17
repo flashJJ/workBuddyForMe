@@ -101,6 +101,15 @@ export const enVoice = {
     synthFailed: 'Synthesis failed (HTTP {status})',
     playbackFailed: 'Failed to play the preview',
   },
+  vrmVoice: {
+    label: 'Voice',
+    followDefault: 'Follow default (Haru · sid 3)',
+    englishGroup: 'English voices',
+    chineseFemaleGroup: 'Chinese female voices',
+    chineseMaleGroup: 'Chinese male voices',
+    hint: 'Only effective with the Kokoro multi-voice engine; MeloTTS has a single voice.',
+    saveFailed: 'Failed to save voice binding',
+  },
   avatar: {
     previewText: 'Hi, this is a preview of the voice bound to the current character. All speech is synthesized locally.',
     previewButton: 'Preview voice',
@@ -113,6 +122,7 @@ export const enVoice = {
     voiceBinding: 'Bound voice: Kokoro {voice} ({gender}, sid {sid}/102) · Chat readout uses this voice automatically',
     femaleVoice: 'Chinese female voice',
     maleVoice: 'Chinese male voice',
+    customVoice: 'custom voice',
     modelsNote: 'All are official Live2D sample characters (free material license, built-in only, no external imports); changes take effect immediately',
     resourceNote:
       'Avatar assets (~0.7–4.8MB textures/models + Cubism runtime, ~157KB gzip) load on demand only when enabled; ' +

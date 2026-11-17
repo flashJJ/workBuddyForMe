@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import {
-  AVATAR_TTS_VOICES,
+  parseVrmAvatarId,
+  resolveAvatarVoice,
   type VoiceSettings,
   type VoiceSettingsUpdateInput,
 } from '@wbfm/shared/schemas';
 import { BUILTIN_VRM_MODELS } from '@wbfm/shared/constants';
 import type { MessageKey } from '@wbfm/shared/i18n';
-import { AVATAR_MODEL_LIST, getAvatarModel } from '@/features/avatar';
+import { AVATAR_MODEL_LIST } from '@/features/avatar';
 import { getPetBridge } from '@/features/pet/bridge';
 import { usePetOpenState } from '@/features/pet/bridge';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -52,8 +53,11 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
   });
   const vrmAvatars = vrmData?.avatars ?? [];
 
-  const model = getAvatarModel(modelId);
-  const voice = AVATAR_TTS_VOICES[model.id as keyof typeof AVATAR_TTS_VOICES] ?? AVATAR_TTS_VOICES.haru;
+  // 统一解析：内置 VRM / Live2D / 导入 VRM 回落都由同一函数决定，
+  // 避免这里用 Live2D 注册表反查导致任何 VRM 都显示成 Haru。
+  const fileRef = parseVrmAvatarId(modelId);
+  const imported = fileRef ? vrmAvatars.find((item) => item.fileRef === fileRef) : undefined;
+  const voice = resolveAvatarVoice(modelId, { speakerSid: imported?.voiceSid ?? null });
   const petBridge = React.useMemo(() => getPetBridge(), []);
   const petOpen = usePetOpenState();
 
@@ -164,7 +168,10 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
               <>
                 <p className="text-xs text-muted-foreground">
                   {t('voice.avatar.voiceBinding', {
-                    voice: voice.voice,
+                    voice:
+                      voice.voice === 'custom'
+                        ? t('voice.avatar.customVoice')
+                        : voice.voice,
                     gender: voice.gender === 'female' ? t('voice.avatar.femaleVoice') : t('voice.avatar.maleVoice'),
                     sid: voice.sid,
                   })}

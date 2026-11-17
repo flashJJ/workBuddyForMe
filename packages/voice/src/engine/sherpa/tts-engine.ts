@@ -125,7 +125,7 @@ export class SherpaTtsEngine implements TtsEngine {
     const audio = this.native.generate({
       text: trimmed,
       sid,
-      speed: this.speed,
+      speed: opts?.speed ?? this.speed,
     });
     return { samples: audio.samples, sampleRate: audio.sampleRate ?? this.native.sampleRate };
   }

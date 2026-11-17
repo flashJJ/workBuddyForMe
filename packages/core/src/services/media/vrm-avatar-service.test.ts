@@ -23,8 +23,32 @@ describe('vrm-avatar-service', () => {
     expect(avatar.id).toBeTruthy();
     expect(avatar.fileRef).toMatch(/^vrm-/);
     expect(avatar.name).toBe('test');
+    expect(avatar.voiceSid).toBeNull();
     const read = svc.readFile(avatar.fileRef);
     expect(read.byteLength).toBe(buffer.byteLength);
+  });
+
+  it('导入时可带初始声线，并可单独更新/解绑', () => {
+    const avatar = svc.importAvatar({
+      filename: 'voice.vrm',
+      buffer: buildFakeVrm(),
+      voiceSid: 18,
+    });
+    expect(avatar.voiceSid).toBe(18);
+
+    expect(svc.setVoiceSid(avatar.id, 58).voiceSid).toBe(58);
+    expect(svc.get(avatar.id)?.voiceSid).toBe(58);
+    expect(svc.setVoiceSid(avatar.id, null).voiceSid).toBeNull();
+  });
+
+  it('声线越界与不存在的记录拒绝更新', () => {
+    const avatar = svc.importAvatar({ filename: 'voice.vrm', buffer: buildFakeVrm() });
+    expect(() => svc.setVoiceSid(avatar.id, 103)).toThrow(/0-102/);
+    expect(() => svc.setVoiceSid(avatar.id, -1)).toThrow(/0-102/);
+    expect(() => svc.importAvatar({ filename: 'v.vrm', buffer: buildFakeVrm(), voiceSid: 200 })).toThrow(
+      /0-102/,
+    );
+    expect(() => svc.setVoiceSid('not-exist', 3)).toThrow(/not-exist|不存在/);
   });
 
   it('非 .vrm 扩展拒绝', () => {

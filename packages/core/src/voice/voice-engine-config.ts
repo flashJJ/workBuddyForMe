@@ -9,9 +9,12 @@ import type { VoiceSettings } from '@wbfm/shared/schemas';
  * sid 逐句传入不进 TTS 键（见 voice-runtime 的 synthesize）。
  */
 
-/** TTS 引擎缓存键：含模型（melo/kokoro 配置不同）、模型目录、速度、线程数 */
+/**
+ * TTS 引擎缓存键：模型（melo/kokoro 配置不同）、模型目录、线程数。
+ * 速度是逐句合成参数，不进缓存键——改语速不再重建模型。
+ */
 export function ttsConfigKey(spec: VoiceModelSpec, modelDir: string, s: VoiceSettings): string {
-  return [spec.id, modelDir, s.ttsSpeed, s.ttsNumThreads].join('|');
+  return [spec.id, modelDir, s.ttsNumThreads].join('|');
 }
 
 /** ASR 引擎缓存键：模型目录 + 推理线程数 */

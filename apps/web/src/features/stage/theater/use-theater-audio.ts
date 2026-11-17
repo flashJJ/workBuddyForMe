@@ -108,7 +108,7 @@ export function useTheaterAudio(args: {
       return;
     }
     const member = episode.cast.find((m) => m.slot === line.slot);
-    void speak(line.text, member?.avatarModelId ?? '');
+    void speak(line.text, member?.avatarModelId ?? '', member?.voicePreference?.speakerSid);
   }, [enabled, playing, ready, index, episode, line.slot, line.text, speak, stop]);
 
   // 切后台停声；回前台恢复 BGM，并补播当前句（时间线会重新计时）
@@ -123,7 +123,7 @@ export function useTheaterAudio(args: {
       if (!playing || !ready) return;
       if (!muted) startBgm();
       const member = episode.cast.find((m) => m.slot === line.slot);
-      void speak?.(line.text, member?.avatarModelId ?? '');
+      void speak?.(line.text, member?.avatarModelId ?? '', member?.voicePreference?.speakerSid);
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);

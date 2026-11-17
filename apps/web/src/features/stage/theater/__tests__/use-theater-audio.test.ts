@@ -39,7 +39,9 @@ vi.mock('../theater-bgm', () => ({
 
 const EPISODE = findTheaterEpisode();
 const LINE = EPISODE.lines[0]!;
-const SPEAKER = 'vrm:builtin:xuetuan';
+const SPEAKER_MEMBER = EPISODE.cast.find((member) => member.slot === LINE.slot);
+const SPEAKER = SPEAKER_MEMBER?.avatarModelId ?? '';
+const SPEAKER_SID = SPEAKER_MEMBER?.voicePreference?.speakerSid ?? null;
 
 function makeVoice() {
   return {
@@ -99,7 +101,7 @@ describe('剧场音频编排（S5）', () => {
     await flush();
 
     expect(bgm().start).toHaveBeenCalledTimes(1);
-    expect(voice.speak).toHaveBeenCalledWith(LINE.text, SPEAKER);
+    expect(voice.speak).toHaveBeenCalledWith(LINE.text, SPEAKER, SPEAKER_SID);
   });
 
   it('开场幕布音一次、换句一声提示音，静音后不再播放', async () => {
