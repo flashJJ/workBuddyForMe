@@ -21,8 +21,6 @@ import {
 } from '@wbfm/database';
 import {
   getAvatarSpeakerId,
-  parseVrmAvatarId,
-  type AvatarVoiceOverride,
   type VoiceModelFileStatus,
   type VoiceSettings,
 } from '@wbfm/shared/schemas';
@@ -35,15 +33,15 @@ import {
   ttsConfigKey,
 } from './voice-engine-config';
 import { listMissingModelFiles } from './voice-model-files';
+import { readVrmVoiceOverride } from './voice-avatar-override';
+import { SynthesisCache, synthesisCacheKey } from './synthesis-cache';
 import type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime-types';
 
 const TTS_MODEL_SPECS: VoiceModelSpec[] = VOICE_MODELS.tts;
 
 /**
- * 进程内语音运行时（v1.1 M3 从 apps/web 下沉 core/voice 域，逻辑零改动）：
- * 模型就绪检查、后台下载任务、TTS/ASR 引擎单例。
- *
- * 引擎长驻（模型加载耗时）；配置签名变化（目录/sid/线程/速度）时惰性重建。
+ * 进程内语音运行时：模型状态、下载任务、TTS/ASR 引擎单例与短句缓存。
+ * 引擎长驻；模型/目录/线程变化时重建，sid 与语速逐句传入。
  */
 export class VoiceRuntime {
   private ttsEngine: TtsEngine | null = null;
@@ -51,6 +49,7 @@ export class VoiceRuntime {
   private asrEngine: AsrEngine | null = null;
   private asrConfigKey = '';
   private prewarmJob: Promise<boolean> | null = null;
+  private readonly synthesisCache = new SynthesisCache();
   private readonly jobs = new Map<VoiceModelKind, DownloadJob>();
 
   constructor(
@@ -163,6 +162,8 @@ export class VoiceRuntime {
         });
         if (missing.length > 0) throw new Error(`下载后校验缺失：${missing.join(', ')}`);
         repo.markReady(kind, spec.id, spec.totalBytes);
+        // 下载完成立即后台预热；失败静默，不阻塞下载任务收尾
+        if (kind === 'tts') void this.prewarmTts(true);
       })
       .catch((error: unknown) => {
         if ((error as Error).name !== 'AbortError') {
@@ -182,36 +183,26 @@ export class VoiceRuntime {
     if (job?.specId === spec.id) job.controller.abort();
   }
 
-  /**
-   * 单句合成（路由/试听/对话桥）。
-   * sid 解析：调用方显式指定（如请求 voice.speakerId 或角色试听）→ 当前角色绑定
-   * （settings.avatarModelId → AVATAR_TTS_VOICES）→ 引擎默认（兜底 ttsSpeakerId）。
-   */
-  async synthesize(text: string, speakerId?: number): Promise<SynthResult> {
-    const engine = await this.ensureTts();
-    // MeloTTS 为单说话人模型，sid 无意义；Kokoro 才按角色绑定声线
-    const spec = this.ttsSpec();
-    const avatarModelId = this.settings.avatarModelId;
+  /** 单句合成：显式 sid → 角色绑定（含导入 VRM）→ 默认；短句命中缓存。 */
+  async synthesize(text: string, speakerId?: number, speed?: number): Promise<SynthResult> {
+    const settings = this.settings;
+    const spec = this.ttsSpec(settings.ttsModel);
+    const avatarModelId = settings.avatarModelId;
     const sid =
       spec.engine === 'melo'
         ? 0
-        : speakerId ?? getAvatarSpeakerId(avatarModelId, this.readVrmVoiceOverride(avatarModelId));
-    return engine.synthesize(text, { speakerId: sid });
-  }
+        : speakerId ?? getAvatarSpeakerId(avatarModelId, readVrmVoiceOverride(this.db, avatarModelId));
+    const synthSpeed = speed ?? settings.ttsSpeed;
 
-  /** 导入 VRM 的用户绑定；内置 VRM/Live2D 不查库，缺省或异常均回落到默认解析 */
-  private readVrmVoiceOverride(avatarModelId: string): AvatarVoiceOverride | undefined {
-    const fileRef = parseVrmAvatarId(avatarModelId);
-    if (!fileRef || fileRef.startsWith('builtin:')) return undefined;
-    try {
-      const row = this.db
-        .prepare('SELECT voice_sid FROM vrm_avatars WHERE file_ref = ?')
-        .get(fileRef) as { voice_sid: number | null } | undefined;
-      return row && row.voice_sid !== null ? { speakerSid: row.voice_sid } : undefined;
-    } catch {
-      // 迁移前/表缺失时按未绑定处理，不影响朗读
-      return undefined;
-    }
+    // 短句优先命中缓存：与引擎加载无关，试听/问候/剧场重复句可零合成返回
+    const cacheKey = synthesisCacheKey(spec.id, sid, synthSpeed, text);
+    const cached = this.synthesisCache.get(cacheKey);
+    if (cached) return cached;
+
+    const engine = await this.ensureTts();
+    const result = await engine.synthesize(text, { speakerId: sid, speed: synthSpeed });
+    this.synthesisCache.set(cacheKey, result, text);
+    return result;
   }
 
   /**
@@ -242,15 +233,23 @@ export class VoiceRuntime {
       config: buildTtsEngineConfig(spec, modelDir, s),
     });
     this.ttsConfigKey = key;
+    this.synthesisCache.clear();
     return this.ttsEngine;
   }
 
   /**
    * 启动预热：在服务就绪时提前拉起 worker 与模型，避免第一句朗读额外背模型加载耗时。
    * 模型未下载时静默跳过；预热失败不抛出（首次朗读会再试并给出真实错误）。
+   * force=true 用于模型下载完成/切换模型后重新预热；失败结果不永久缓存，下次可重试。
    */
-  prewarmTts(): Promise<boolean> {
-    this.prewarmJob ??= this.doPrewarmTts();
+  prewarmTts(force = false): Promise<boolean> {
+    if (force) this.prewarmJob = null;
+    if (!this.prewarmJob) {
+      this.prewarmJob = this.doPrewarmTts().then((ok) => {
+        if (!ok) this.prewarmJob = null;
+        return ok;
+      });
+    }
     return this.prewarmJob;
   }
 
@@ -271,9 +270,11 @@ export class VoiceRuntime {
     }
   }
 
-  /** 设置变更后让引擎下次调用时按新配置重建 */
+  /** 设置变更后让引擎下次调用时按新配置重建，并清空预热与短句缓存 */
   invalidateTts(): void {
     this.ttsConfigKey = '';
+    this.prewarmJob = null;
+    this.synthesisCache.clear();
   }
 
   invalidateAsr(): void {

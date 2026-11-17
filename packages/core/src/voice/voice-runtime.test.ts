@@ -54,23 +54,23 @@ describe('VoiceRuntime 角色声线解析', () => {
   it('未显式传 sid：按当前 avatarModelId 的绑定声线合成（Mark → 58）', async () => {
     const { runtime } = makeRuntime('mark');
     await runtime.synthesize('你好，我是马克。');
-    expect(h.synth).toHaveBeenCalledWith('你好，我是马克。', { speakerId: 58 });
+    expect(h.synth).toHaveBeenCalledWith('你好，我是马克。', { speakerId: 58, speed: 1 });
   });
 
   it('切换角色后按新绑定合成（Mao → 32，Haru → 3）', async () => {
     const { runtime: mao } = makeRuntime('mao');
     await mao.synthesize('魔法时间');
-    expect(h.synth).toHaveBeenLastCalledWith('魔法时间', { speakerId: 32 });
+    expect(h.synth).toHaveBeenLastCalledWith('魔法时间', { speakerId: 32, speed: 1 });
 
     const { runtime: haru } = makeRuntime('haru');
     await haru.synthesize('你好');
-    expect(h.synth).toHaveBeenLastCalledWith('你好', { speakerId: 3 });
+    expect(h.synth).toHaveBeenLastCalledWith('你好', { speakerId: 3, speed: 1 });
   });
 
   it('调用方显式 sid（请求 voice.speakerId / 试听）优先于角色绑定', async () => {
     const { runtime } = makeRuntime('mark');
     await runtime.synthesize('试听', 18);
-    expect(h.synth).toHaveBeenCalledWith('试听', { speakerId: 18 });
+    expect(h.synth).toHaveBeenCalledWith('试听', { speakerId: 18, speed: 1 });
   });
 
   it('导入 VRM 读取数据库绑定值；未绑定时回落默认角色', async () => {
@@ -79,14 +79,32 @@ describe('VoiceRuntime 角色声线解析', () => {
     } as unknown as DatabaseInstance;
     const { runtime } = makeRuntime('vrm:vrm-imported.vrm', 'kokoro', db);
     await runtime.synthesize('导入模型');
-    expect(h.synth).toHaveBeenCalledWith('导入模型', { speakerId: 58 });
+    expect(h.synth).toHaveBeenCalledWith('导入模型', { speakerId: 58, speed: 1 });
 
     const unboundDb = {
       prepare: vi.fn(() => ({ get: vi.fn(() => ({ voice_sid: null })) })),
     } as unknown as DatabaseInstance;
     const { runtime: fallback } = makeRuntime('vrm:vrm-imported.vrm', 'kokoro', unboundDb);
     await fallback.synthesize('未绑定');
-    expect(h.synth).toHaveBeenLastCalledWith('未绑定', { speakerId: 3 });
+    expect(h.synth).toHaveBeenLastCalledWith('未绑定', { speakerId: 3, speed: 1 });
+  });
+
+  it('改语速不重建引擎，下一句按新速度合成', async () => {
+    const { runtime, settings } = makeRuntime('haru', 'kokoro');
+    await runtime.synthesize('第一句');
+    settings.ttsSpeed = 1.5;
+    await runtime.synthesize('第二句');
+
+    expect(h.create).toHaveBeenCalledTimes(1);
+    expect(h.synth).toHaveBeenLastCalledWith('第二句', { speakerId: 3, speed: 1.5 });
+  });
+
+  it('相同短句命中缓存，不重复调用引擎', async () => {
+    const { runtime } = makeRuntime('haru', 'kokoro');
+    await runtime.synthesize('重复短句');
+    await runtime.synthesize('重复短句');
+
+    expect(h.synth).toHaveBeenCalledTimes(1);
   });
 
   it('引擎以 Kokoro 配置长驻创建（voices/espeak/双词典/中文 fst），且只创建一次', async () => {
@@ -136,11 +154,21 @@ describe('VoiceRuntime 启动预热', () => {
     expect(h.create).not.toHaveBeenCalled();
   });
 
-  it('预热失败不抛出（首次朗读再试）', async () => {
+  it('预热失败不抛出，且下一次预热可重试', async () => {
     h.create.mockRejectedValueOnce(new Error('worker boom'));
     const { runtime } = makeRuntime('haru', 'kokoro');
     await expect(runtime.prewarmTts()).resolves.toBe(false);
-    await expect(runtime.synthesize('你好')).resolves.toBeDefined();
+    await expect(runtime.prewarmTts()).resolves.toBe(true);
+    expect(h.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('invalidateTts 后重新预热会重建引擎', async () => {
+    const { runtime } = makeRuntime('haru', 'kokoro');
+    await expect(runtime.prewarmTts()).resolves.toBe(true);
+    runtime.invalidateTts();
+    await expect(runtime.prewarmTts()).resolves.toBe(true);
+
+    expect(h.create).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -171,7 +199,7 @@ describe('VoiceRuntime MeloTTS 单声引擎', () => {
   it('MeloTTS 单说话人：调用方显式 sid 也强制为 0（角色绑定不生效）', async () => {
     const { runtime } = makeRuntime('mark', 'melo');
     await runtime.synthesize('你好，我是马克。', 58);
-    expect(h.synth).toHaveBeenCalledWith('你好，我是马克。', { speakerId: 0 });
+    expect(h.synth).toHaveBeenCalledWith('你好，我是马克。', { speakerId: 0, speed: 1 });
   });
 
   it('切换 ttsModel 并 invalidate 后：dispose 旧引擎并按新模型重建', async () => {
@@ -191,6 +219,6 @@ describe('VoiceRuntime MeloTTS 单声引擎', () => {
     };
     expect(second.spec.id).toBe('vits-melo-tts-zh_en');
     expect(second.config.kokoro).toBeUndefined();
-    expect(h.synth).toHaveBeenLastCalledWith('melo 句', { speakerId: 0 });
+    expect(h.synth).toHaveBeenLastCalledWith('melo 句', { speakerId: 0, speed: 1 });
   });
 });

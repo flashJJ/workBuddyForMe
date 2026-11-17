@@ -56,9 +56,11 @@ export interface TtsEngineConfig {
   };
 }
 
-/** 单次合成选项：可逐句切换说话人（多说话人 TTS 按角色配音） */
+/** 单次合成选项：可逐句切换说话人与语速（多说话人 TTS 按角色配音） */
 export interface TtsSynthOptions {
   speakerId?: number;
+  /** 逐句语速；缺省用引擎构造时的默认值 */
+  speed?: number;
 }
 
 /** 语音识别引擎接口（离线/在线实现共同遵守）。 */

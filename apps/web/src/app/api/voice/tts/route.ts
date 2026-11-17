@@ -17,7 +17,11 @@ export const POST = defineRoute(async ({ request }) => {
   try {
     const runtime = getVoiceRuntime();
     // speakerId 缺省时 runtime 按当前角色绑定声线合成（设置页角色试听显式传入）
-    const { samples, sampleRate } = await runtime.synthesize(input.text, input.speakerId);
+    const { samples, sampleRate } = await runtime.synthesize(
+      input.text,
+      input.speakerId,
+      input.speed,
+    );
     const wav = encodePcm16Wav(samples, sampleRate);
     return new Response(new Uint8Array(wav), {
       headers: {

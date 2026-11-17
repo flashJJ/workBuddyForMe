@@ -30,11 +30,11 @@
 
 ## M3 加载提效
 
-- [ ] `TtsSynthOptions.speed` 与 worker/inline 逐句使用
-- [ ] `ttsConfigKey` 移除 `ttsSpeed`；设置更新不再因语速重建
-- [ ] `prewarmTts` 失效/重试；模型下载与切换后重新预热
-- [ ] 短句 LRU（64 条、≤80 字、引擎重建清空）
-- [ ] voice 包定向测试
+- [x] `TtsSynthOptions.speed` 与 worker/inline 逐句使用
+- [x] `ttsConfigKey` 移除 `ttsSpeed`；设置更新不再因语速重建
+- [x] `prewarmTts` 失效/重试；模型下载与切换后重新预热
+- [x] 短句 LRU（64 条、≤80 字、引擎重建清空）
+- [x] voice 包定向测试
 
 ## M4 验收与发布
 

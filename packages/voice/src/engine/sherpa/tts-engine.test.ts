@@ -200,5 +200,7 @@ describe('SherpaTtsEngine（Kokoro 多说话人）', () => {
     expect(native.generate).toHaveBeenLastCalledWith({ text: '晴', sid: 3, speed: 1 });
     await engine.synthesize('越界', { speakerId: 999 });
     expect(native.generate).toHaveBeenLastCalledWith({ text: '越界', sid: 3, speed: 1 });
+    await engine.synthesize('快一点', { speed: 1.5 });
+    expect(native.generate).toHaveBeenLastCalledWith({ text: '快一点', sid: 3, speed: 1.5 });
   });
 });
