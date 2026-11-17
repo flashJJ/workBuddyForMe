@@ -16,6 +16,8 @@ export interface NumberInputProps {
   /** 允许清空：清空并失焦后回调 onClear（可选值字段用） */
   allowEmpty?: boolean;
   onClear?: () => void;
+  /** 千分位展示（仅展示层；输入仍只接受数字，回调为纯数字） */
+  groupThousands?: boolean;
   id?: string;
   className?: string;
   disabled?: boolean;
@@ -29,6 +31,44 @@ const clamp = (value: number, min?: number, max?: number): number => {
   if (max !== undefined) next = Math.min(max, next);
   return next;
 };
+
+/** 只保留数字与前导负号；groupThousands 时插入千分位 */
+function formatDraft(raw: string, groupThousands: boolean): string {
+  const negative = raw.trimStart().startsWith('-');
+  const digits = raw.replace(/[^\d]/g, '');
+  if (digits === '') return negative ? '-' : '';
+  const body = groupThousands ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : digits;
+  return negative ? `-${body}` : body;
+}
+
+/** 提交前去掉千分位，避免 Number('1,000') 得到 NaN */
+function parseDraft(raw: string): number {
+  return Number(raw.replace(/,/g, '').trim());
+}
+
+/** 光标前有几个有效字符（数字或前导负号），用于格式化后还原光标 */
+function countValueChars(text: string, upTo: number): number {
+  let count = 0;
+  for (let i = 0; i < upTo && i < text.length; i += 1) {
+    const ch = text[i]!;
+    if (ch === '-' ? i === 0 : /\d/.test(ch)) count += 1;
+  }
+  return count;
+}
+
+/** 把光标放到第 count 个有效字符之后 */
+function caretAfterValueChars(text: string, count: number): number {
+  if (count <= 0) return 0;
+  let seen = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i]!;
+    if (ch === '-' ? i === 0 : /\d/.test(ch)) {
+      seen += 1;
+      if (seen >= count) return i + 1;
+    }
+  }
+  return text.length;
+}
 
 /**
  * v2.3 统一数值输入：减号 / 输入框 / 加号三件套，带 min/max 钳制。
@@ -45,6 +85,7 @@ export function NumberInput({
   step = 1,
   allowEmpty,
   onClear,
+  groupThousands = false,
   id,
   className,
   disabled,
@@ -52,10 +93,27 @@ export function NumberInput({
   'data-testid': testId,
 }: NumberInputProps) {
   const i18n = useI18nOptional();
-  const [draft, setDraft] = React.useState<string>(value === null ? '' : String(value));
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const pendingCaretRef = React.useRef<number | null>(null);
+  const formatValue = React.useCallback(
+    (next: number | null): string => {
+      if (next === null) return '';
+      return groupThousands ? formatDraft(String(next), true) : String(next);
+    },
+    [groupThousands],
+  );
+  const [draft, setDraft] = React.useState<string>(formatValue(value));
 
   // 外部值变化（含钳制后的回写）同步到草稿
-  React.useEffect(() => setDraft(value === null ? '' : String(value)), [value]);
+  React.useEffect(() => setDraft(formatValue(value)), [value, formatValue]);
+
+  // 千分位格式化会改变字符位置，渲染后按数字个数还原光标
+  React.useLayoutEffect(() => {
+    const pending = pendingCaretRef.current;
+    if (pending === null) return;
+    pendingCaretRef.current = null;
+    inputRef.current?.setSelectionRange(pending, pending);
+  });
 
   const commit = (raw: string) => {
     if (raw.trim() === '') {
@@ -64,16 +122,16 @@ export function NumberInput({
         onClear?.();
         return;
       }
-      setDraft(value === null ? '' : String(value)); // 不允许清空：回退当前值
+      setDraft(formatValue(value)); // 不允许清空：回退当前值
       return;
     }
-    const parsed = Number(raw);
+    const parsed = parseDraft(raw);
     if (Number.isNaN(parsed)) {
-      setDraft(value === null ? '' : String(value)); // 非法输入回退当前值，不上报 NaN
+      setDraft(formatValue(value)); // 非法输入回退当前值，不上报 NaN
       return;
     }
     const next = clamp(parsed, min, max);
-    setDraft(String(next));
+    setDraft(formatValue(next));
     if (next !== value) onValueChange(next);
   };
 
@@ -82,15 +140,16 @@ export function NumberInput({
     const base = value ?? (min ?? 0) - step;
     const next = clamp(base + direction * step, min, max);
     if (next !== value) onValueChange(next);
-    setDraft(String(next));
+    setDraft(formatValue(next));
   };
 
   const atMin = min !== undefined && value !== null && value <= min;
   const atMax = max !== undefined && value !== null && value >= max;
 
-  // 按钮定宽 + 输入框定宽：整体尺寸自持（w-fit），调用方无需再传宽度。
+  // 按钮定宽 + 输入框按内容自适应宽度：整体尺寸自持（w-fit），调用方无需再传宽度。
   // 早期版本把宽度交给调用方（如 w-20），两侧按钮吃掉全部空间后数字被裁成看不见，
   // 表现为「点加减没反应」——故此处把输入框宽度固定下来，保证数字始终可读。
+  // 千分位与大数值（如 1,000,000）需要随内容增长，否则末位会被裁掉。
   const buttonClass =
     'flex w-7 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40';
 
@@ -114,6 +173,7 @@ export function NumberInput({
         <Minus className="h-3.5 w-3.5" />
       </button>
       <input
+        ref={inputRef}
         id={id}
         role="spinbutton"
         inputMode="numeric"
@@ -123,7 +183,17 @@ export function NumberInput({
         aria-valuemax={max}
         value={draft}
         disabled={disabled}
-        onChange={(event) => setDraft(event.target.value)}
+        style={{ width: `${Math.max(2, draft.length) + 1}ch` }}
+        onChange={(event) => {
+          const raw = event.target.value;
+          const caret = event.target.selectionStart ?? raw.length;
+          const next = formatDraft(raw, groupThousands);
+          pendingCaretRef.current = caretAfterValueChars(
+            next,
+            countValueChars(raw, caret),
+          );
+          setDraft(next);
+        }}
         onBlur={(event) => commit(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter') {
@@ -132,7 +202,7 @@ export function NumberInput({
           }
         }}
         className={cn(
-          'w-14 shrink-0 border-x border-input bg-transparent px-1 text-center text-sm',
+          'min-w-14 shrink-0 border-x border-input bg-transparent px-1 text-center text-sm',
           'focus-visible:outline-none',
         )}
       />

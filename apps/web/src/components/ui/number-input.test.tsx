@@ -87,4 +87,27 @@ describe('NumberInput 数值输入', () => {
     await user.click(screen.getByLabelText('增加'));
     expect(onValueChange).toHaveBeenCalledWith(1);
   });
+
+  it('groupThousands：展示千分位，输入只留数字，回调仍为纯数字', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(
+      <NumberInput
+        value={1000000}
+        groupThousands
+        onValueChange={onValueChange}
+        aria-label="上下文长度"
+      />,
+    );
+
+    const input = screen.getByRole('spinbutton');
+    expect(input).toHaveValue('1,000,000');
+
+    await user.clear(input);
+    await user.type(input, '2a000000');
+    expect(input).toHaveValue('2,000,000');
+
+    await user.tab();
+    expect(onValueChange).toHaveBeenCalledWith(2000000);
+  });
 });
