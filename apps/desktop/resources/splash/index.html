@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' file:; style-src 'self' file:; img-src 'self' data: file:; media-src 'self' file:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'"
+    />
+    <meta name="color-scheme" content="dark" />
+    <title>WorkBuddyForMe · 启动中</title>
+    <link rel="stylesheet" href="splash.css" />
+  </head>
+  <body>
+    <main id="stage" data-mode="compact" data-phase="prepare">
+      <div class="backdrop" aria-hidden="true"></div>
+
+      <svg id="brand" class="brand" viewBox="0 0 640 360" aria-hidden="true">
+        <defs>
+          <radialGradient id="haloGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.38" />
+            <stop offset="55%" stop-color="#5B3FD6" stop-opacity="0.14" />
+            <stop offset="100%" stop-color="#0F1115" stop-opacity="0" />
+          </radialGradient>
+          <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#B45CFF" />
+            <stop offset="55%" stop-color="#7C5CFF" />
+            <stop offset="100%" stop-color="#5A46D8" />
+          </linearGradient>
+          <linearGradient id="cardGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#7C5CFF" />
+            <stop offset="100%" stop-color="#4AA3FF" />
+          </linearGradient>
+        </defs>
+
+        <circle id="halo" cx="320" cy="152" r="142" fill="url(#haloGrad)" />
+
+        <g id="links" fill="none" stroke="#8A74FF" stroke-width="2" stroke-linecap="round">
+          <path id="link-a" d="M 272 192 C 232 204, 200 212, 174 220" />
+          <path id="link-b" d="M 320 204 C 320 220, 320 232, 320 240" />
+          <path id="link-c" d="M 368 192 C 408 204, 440 212, 466 220" />
+        </g>
+
+        <g id="cards">
+          <g id="card-chat" transform="translate(0 -18)">
+            <rect class="card-glow" x="100" y="218" width="80" height="58" rx="14" />
+            <rect class="card" x="100" y="218" width="80" height="58" rx="14" />
+            <path class="icon" d="M 120 236 h 40 a 6 6 0 0 1 6 6 v 14 a 6 6 0 0 1 -6 6 h -22 l -10 8 v -8 h -8 a 6 6 0 0 1 -6 -6 v -14 a 6 6 0 0 1 6 -6 z" />
+          </g>
+          <g id="card-screen" transform="translate(0 -18)">
+            <rect class="card-glow" x="280" y="254" width="80" height="58" rx="14" />
+            <rect class="card" x="280" y="254" width="80" height="58" rx="14" />
+            <rect class="icon-stroke" x="298" y="270" width="44" height="26" rx="4" />
+            <path class="icon-stroke" d="M 314 300 h 12 M 320 296 v 4" />
+          </g>
+          <g id="card-check" transform="translate(0 -18)">
+            <rect class="card-glow" x="460" y="218" width="80" height="58" rx="14" />
+            <rect class="card" x="460" y="218" width="80" height="58" rx="14" />
+            <circle class="icon-stroke" cx="500" cy="247" r="15" />
+            <path class="icon-stroke check" d="M 492 247 l 6 6 l 11 -12" />
+          </g>
+        </g>
+
+        <g id="mascot">
+          <ellipse class="shadow" cx="320" cy="226" rx="56" ry="10" />
+          <path class="ahoge" d="M 320 92 C 318 78, 328 70, 338 72" />
+          <ellipse class="body" cx="320" cy="152" rx="64" ry="60" />
+          <ellipse class="shine" cx="298" cy="126" rx="20" ry="13" />
+          <rect class="eye" x="298" y="146" width="9" height="18" rx="4.5" />
+          <rect class="eye" x="333" y="146" width="9" height="18" rx="4.5" />
+          <path class="smile" d="M 309 171 Q 320 180 331 171" />
+          <circle class="cheek" cx="290" cy="166" r="5" />
+          <circle class="cheek" cx="350" cy="166" r="5" />
+        </g>
+
+        <ellipse id="ring" cx="320" cy="162" rx="100" ry="38" />
+      </svg>
+
+      <video id="cinema" class="cinema" muted playsinline preload="none" poster="poster.webp"></video>
+
+      <div class="overlay">
+        <p class="brand-name">WorkBuddyForMe</p>
+        <p id="phase-text" class="phase" role="status" aria-live="polite"></p>
+        <p id="slow-text" class="slow" hidden></p>
+        <p id="version" class="version"></p>
+      </div>
+
+      <button id="skip" class="skip" type="button" hidden></button>
+
+      <section id="error" class="error" hidden>
+        <h1 id="error-title"></h1>
+        <p id="error-message"></p>
+        <p id="error-hint"></p>
+      </section>
+    </main>
+    <script src="splash.js"></script>
+  </body>
+</html>

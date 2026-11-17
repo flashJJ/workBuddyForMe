@@ -2,6 +2,7 @@ import { copyFileSync, existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, _electron, type ElectronApplication, type Page } from '@playwright/test';
+import { waitForMainWindow } from './helpers/main-window';
 
 /**
  * M4 伴身桌宠窗 E2E（pack:dir 生产构建产物上启动，与 smoke 同套降级约定）：
@@ -66,7 +67,7 @@ test.beforeAll(async () => {
       ...(useOfficialElectron ? { WBFM_SERVER_PATH: packagedServerPath } : {}),
     } as Record<string, string>,
   });
-  mainPage = await electronApp.firstWindow();
+  mainPage = await waitForMainWindow(electronApp);
   await mainPage.waitForLoadState('domcontentloaded');
   await expect(mainPage).toHaveTitle('WorkBuddyForMe', { timeout: 90_000 });
 });

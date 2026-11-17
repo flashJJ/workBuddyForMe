@@ -27,6 +27,7 @@ export const BUILTIN_BACKGROUND_IDS = [
   'wallpaper.morning',
   'wallpaper.main.forest-camp-loop',
   'wallpaper.main.office-night-loop',
+  'wallpaper.main.tidal-door',
 ] as const;
 export type BuiltinBackgroundId = (typeof BUILTIN_BACKGROUND_IDS)[number];
 

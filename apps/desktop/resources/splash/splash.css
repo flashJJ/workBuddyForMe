@@ -1,0 +1,403 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --deep: #171326;
+  --text: #e8e6f2;
+  --muted: #a8a3bd;
+  --accent: #7c5cff;
+  --cool: #4aa3ff;
+  --warm: #ff8a3d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body {
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+#stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.backdrop {
+  position: absolute;
+  inset: -25%;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(124, 92, 255, 0.22), transparent 42%),
+    radial-gradient(circle at 18% 82%, rgba(74, 163, 255, 0.12), transparent 38%),
+    radial-gradient(circle at 84% 20%, rgba(180, 92, 255, 0.1), transparent 34%),
+    var(--bg);
+  opacity: 0.9;
+  animation: breathe 6s ease-in-out infinite;
+}
+
+.brand {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 220ms ease;
+}
+
+body[data-view="video"] .brand {
+  opacity: 0;
+}
+
+#halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: halo 4.2s ease-in-out infinite;
+}
+
+#mascot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.body {
+  fill: url(#bodyGrad);
+}
+
+.eye {
+  fill: #171326;
+}
+
+.smile,
+.ahoge {
+  fill: none;
+  stroke: #171326;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.shine {
+  fill: #ffffff;
+  opacity: 0.16;
+}
+
+.shadow {
+  fill: #000000;
+  opacity: 0.28;
+}
+
+.cheek {
+  fill: var(--warm);
+  opacity: 0.45;
+}
+
+#links path {
+  stroke-dasharray: 150;
+  stroke-dashoffset: 150;
+  animation: draw 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#link-b {
+  animation-delay: 60ms;
+}
+
+#link-c {
+  animation-delay: 120ms;
+}
+
+#cards g {
+  opacity: 0.5;
+  transition: opacity 220ms ease;
+}
+
+.card {
+  fill: rgba(23, 19, 38, 0.92);
+  stroke: #6a5acd;
+  stroke-width: 1;
+  stroke-opacity: 0.45;
+}
+
+.card-glow {
+  fill: url(#cardGrad);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.icon {
+  fill: #8f86b8;
+  transition: fill 220ms ease;
+}
+
+.icon-stroke {
+  fill: none;
+  stroke: #8f86b8;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 220ms ease;
+}
+
+#stage[data-phase="prepare"] #card-chat,
+#stage[data-phase="server"] #card-chat,
+#stage[data-phase="server"] #card-screen,
+#stage[data-phase="workspace"] #card-chat,
+#stage[data-phase="workspace"] #card-screen,
+#stage[data-phase="workspace"] #card-check {
+  opacity: 1;
+}
+
+#stage[data-phase="prepare"] #card-chat .card-glow,
+#stage[data-phase="server"] #card-screen .card-glow,
+#stage[data-phase="workspace"] #card-check .card-glow {
+  opacity: 0.22;
+}
+
+#stage[data-phase="prepare"] #card-chat .icon,
+#stage[data-phase="server"] #card-screen .icon-stroke,
+#stage[data-phase="workspace"] #card-check .icon-stroke {
+  fill: #d9d2ff;
+  stroke: #d9d2ff;
+}
+
+#ring {
+  fill: none;
+  stroke: var(--cool);
+  stroke-width: 1.5;
+  stroke-opacity: 0.18;
+  stroke-dasharray: 4 10;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin 14s linear infinite;
+}
+
+#stage[data-phase="workspace"] #ring {
+  stroke-opacity: 0.4;
+}
+
+.cinema {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+body[data-view="video"] .cinema {
+  opacity: 1;
+}
+
+.overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 24px;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.65);
+  z-index: 3;
+}
+
+.phase {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.brand-name {
+  margin: 0 0 2px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.72;
+}
+
+.slow {
+  margin: 0;
+  font-size: 11px;
+  color: #ffb27a;
+}
+
+.version {
+  margin: 0;
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.65;
+}
+
+.skip {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 4;
+  padding: 5px 12px;
+  border: 1px solid rgba(232, 230, 242, 0.22);
+  border-radius: 999px;
+  background: rgba(23, 19, 38, 0.62);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.skip:hover,
+.skip:focus-visible {
+  color: var(--text);
+  border-color: rgba(232, 230, 242, 0.5);
+  outline: none;
+}
+
+.error {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px;
+  background: rgba(15, 17, 21, 0.94);
+  text-align: center;
+}
+
+.error h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffb27a;
+}
+
+.error p {
+  margin: 0;
+  max-width: 520px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.error #error-hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+body.leaving #stage {
+  animation: leave 220ms ease forwards;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes halo {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  #mascot,
+  #links path,
+  #cards g {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .cinema {
+    display: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .card,
+  .card-glow,
+  #ring {
+    stroke: CanvasText;
+  }
+
+  .phase,
+  .version,
+  .slow,
+  .skip,
+  .error p,
+  .error h1 {
+    color: CanvasText;
+  }
+}

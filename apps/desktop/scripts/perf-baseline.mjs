@@ -1,4 +1,6 @@
 // v2.6 M5 P1-3：桌面性能基线（启动 → 首窗 → 首页可交互 → 空闲内存）
+// v4.5：同一临时数据根跑两次——首次安装（完整片）与日常启动（精简版），
+// 避免把 8s 首启仪式误当成日常启动回退。
 // 依赖已存在的 pack:dir 产物；不重新打包。
 // 用法：
 //   pnpm --filter @wbfm/desktop pack:dir
@@ -49,41 +51,53 @@ function electronHost() {
   return host;
 }
 
-const dataRoot = mkdtempSync(path.join(tmpdir(), 'wbfm-perf-data-'));
-const userData = mkdtempSync(path.join(tmpdir(), 'wbfm-perf-user-'));
-const t0 = performance.now();
-const app = await _electron.launch({
-  executablePath: useOfficial ? electronHost() : packagedExe,
-  args: useOfficial ? [asarPath] : [],
-  timeout: 120_000,
-  env: {
-    ...process.env,
-    WBFM_DATA_ROOT: dataRoot,
-    WBFM_USER_DATA_DIR: userData,
-    ...(useOfficial ? { WBFM_SERVER_PATH: packagedServerPath } : {}),
-  },
-});
-const launchMs = performance.now() - t0;
-const page = await app.firstWindow();
-const windowMs = performance.now() - t0;
-await page.waitForLoadState('domcontentloaded');
-const domContentLoadedMs = performance.now() - t0;
-
-let chatVisibleMs = null;
-try {
-  const skip = page.getByRole('button', { name: /跳过|Skip/ });
-  if (await skip.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await skip.click();
-  }
-  await page.getByTestId('chat-page').waitFor({ state: 'visible', timeout: 90_000 });
-  chatVisibleMs = performance.now() - t0;
-} catch {
-  chatVisibleMs = null;
+function isSplashUrl(url) {
+  return url.includes('/splash/') || url.includes('splash\\index.html');
 }
 
-async function memorySnapshot() {
-  const metrics = await app.evaluate(({ app }) =>
-    app.getAppMetrics().map((metric) => ({
+async function waitForPage(app, predicate, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const hit = app.windows().find((page) => {
+      try {
+        return predicate(page);
+      } catch {
+        return false;
+      }
+    });
+    if (hit) return hit;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('page not found');
+}
+
+async function waitForMainVisible(app, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const visible = await app.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find(
+        (candidate) => !candidate.webContents.getURL().includes('/splash/'),
+      );
+      return Boolean(win && win.isVisible());
+    });
+    if (visible) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
+}
+
+async function waitForNoSplash(app, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!app.windows().some((page) => isSplashUrl(page.url()))) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
+}
+
+async function memorySnapshot(app) {
+  const metrics = await app.evaluate(({ app: electronApp }) =>
+    electronApp.getAppMetrics().map((metric) => ({
       pid: metric.pid,
       type: metric.type,
       workingSetSizeKb: metric.memory?.workingSetSize ?? 0,
@@ -92,31 +106,102 @@ async function memorySnapshot() {
   );
   const workingSetMb = metrics.reduce((sum, item) => sum + item.workingSetSizeKb, 0) / 1024;
   const peakWorkingSetMb = metrics.reduce((sum, item) => sum + item.peakWorkingSetSizeKb, 0) / 1024;
-  return { workingSetMb: Math.round(workingSetMb), peakWorkingSetMb: Math.round(peakWorkingSetMb), processes: metrics };
+  return {
+    workingSetMb: Math.round(workingSetMb),
+    peakWorkingSetMb: Math.round(peakWorkingSetMb),
+    processes: metrics.length,
+  };
 }
 
-const early = await memorySnapshot();
-await page.waitForTimeout(Math.max(5, idleSeconds) * 1000);
-const late = await memorySnapshot();
+async function measureRun({ label, dataRoot, userData }) {
+  const t0 = performance.now();
+  const app = await _electron.launch({
+    executablePath: useOfficial ? electronHost() : packagedExe,
+    args: useOfficial ? [asarPath] : [],
+    timeout: 120_000,
+    env: {
+      ...process.env,
+      WBFM_DATA_ROOT: dataRoot,
+      WBFM_USER_DATA_DIR: userData,
+      ...(useOfficial ? { WBFM_SERVER_PATH: packagedServerPath } : {}),
+    },
+  });
+  const launchMs = Math.round(performance.now() - t0);
+
+  let splashVisibleMs = null;
+  try {
+    await waitForPage(app, (page) => isSplashUrl(page.url()), 15_000);
+    splashVisibleMs = Math.round(performance.now() - t0);
+  } catch {
+    splashVisibleMs = null;
+  }
+
+  const page = await waitForPage(
+    app,
+    (candidate) => !isSplashUrl(candidate.url()) && candidate.url().startsWith('http'),
+    120_000,
+  );
+  const mainPageMs = Math.round(performance.now() - t0);
+  const mainVisibleMs = (await waitForMainVisible(app, 120_000))
+    ? Math.round(performance.now() - t0)
+    : null;
+  await page.waitForLoadState('domcontentloaded');
+  const domContentLoadedMs = Math.round(performance.now() - t0);
+
+  let chatVisibleMs = null;
+  try {
+    const skip = page.getByRole('button', { name: /跳过|Skip/ });
+    if (await skip.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await skip.click();
+    }
+    await page.getByTestId('chat-page').waitFor({ state: 'visible', timeout: 90_000 });
+    chatVisibleMs = Math.round(performance.now() - t0);
+  } catch {
+    chatVisibleMs = null;
+  }
+  const splashClosedMs = (await waitForNoSplash(app, 15_000))
+    ? Math.round(performance.now() - t0)
+    : null;
+
+  const early = await memorySnapshot(app);
+  await page.waitForTimeout(Math.max(5, idleSeconds) * 1000);
+  const late = await memorySnapshot(app);
+  await app.close();
+
+  return {
+    label,
+    timings: {
+      launchMs,
+      splashVisibleMs,
+      mainPageMs,
+      mainVisibleMs,
+      domContentLoadedMs,
+      chatVisibleMs,
+      splashClosedMs,
+    },
+    memory: {
+      earlyWorkingSetMb: early.workingSetMb,
+      lateWorkingSetMb: late.workingSetMb,
+      peakWorkingSetMb: late.peakWorkingSetMb,
+      deltaMb: late.workingSetMb - early.workingSetMb,
+      processes: late.processes,
+    },
+  };
+}
+
+const dataRoot = mkdtempSync(path.join(tmpdir(), 'wbfm-perf-data-'));
+const userData = mkdtempSync(path.join(tmpdir(), 'wbfm-perf-user-'));
+
+const firstRun = await measureRun({ label: 'firstRun', dataRoot, userData });
+const daily = await measureRun({ label: 'daily', dataRoot, userData });
 
 const result = {
   measuredAt: new Date().toISOString(),
   mode: useOfficial ? `official-electron + app.asar (${path.basename(releaseDir)})` : 'packaged exe',
   idleSeconds,
-  timings: {
-    launchMs: Math.round(launchMs),
-    firstWindowMs: Math.round(windowMs),
-    domContentLoadedMs: Math.round(domContentLoadedMs),
-    chatVisibleMs: chatVisibleMs === null ? null : Math.round(chatVisibleMs),
-  },
-  memory: {
-    earlyWorkingSetMb: early.workingSetMb,
-    lateWorkingSetMb: late.workingSetMb,
-    peakWorkingSetMb: late.peakWorkingSetMb,
-    deltaMb: late.workingSetMb - early.workingSetMb,
-    processes: late.processes.length,
-  },
+  runs: { firstRun, daily },
+  timings: daily.timings,
+  memory: daily.memory,
 };
 
 console.log(JSON.stringify(result, null, 2));
-await app.close();

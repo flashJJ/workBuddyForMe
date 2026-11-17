@@ -2,6 +2,7 @@ import { copyFileSync, existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, _electron, type ElectronApplication, type Page } from '@playwright/test';
+import { waitForMainWindow } from './helpers/main-window';
 
 /**
  * Electron 冒烟（TR-35.1）：在 pack:dir 生产构建产物上启动，
@@ -60,7 +61,7 @@ test.beforeAll(async () => {
       ...(useOfficialElectron ? { WBFM_SERVER_PATH: packagedServerPath } : {}),
     } as Record<string, string>,
   });
-  page = await electronApp.firstWindow();
+  page = await waitForMainWindow(electronApp);
   await page.waitForLoadState('domcontentloaded');
   // 全新数据根会异步弹出首次使用向导，遮罩会拦截侧栏导航点击；等它出现后跳过
   const onboardingSkip = page.getByRole('button', { name: /跳过|Skip/ });

@@ -40,6 +40,9 @@ extraResources:
   # 窗口运行时图标（BrowserWindow icon，打包态 resources/icon.ico）
   - from: build/icon.ico
     to: icon.ico
+  # v4.5 启动画面（本地 HTML/CSS/JS + 首启视频）
+  - from: resources/splash
+    to: splash
 
 asar: true
 asarUnpack:
