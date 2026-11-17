@@ -57,3 +57,12 @@
   - NSIS `runAfterFinish: false`：覆盖安装完成后不自动拉起，避免安装器窗口挡住 640×360 启动画面。
   - 启动画面 `onShown` 门控：HTML 加载失败时不会误写 `intro-seen-version`。
 - 版本：4.5.1。验证：splash 单测 20 项通过；`last-version` 已存在但 `intro-seen-version` 缺失的用例明确返回 `full`。
+
+### 4.5.1 安装包（2026-11-17）
+
+- 修复提交：`275c2c2f fix(v4.5): 覆盖安装后补播首启动画`，版本 4.5.1。
+- 安装包：`E:\builds\archive\v4.5.1\WorkBuddyForMe-Setup-4.5.1.exe` 273.22 MB（286,493,155 bytes）。
+- SHA256：`c5dc07acaecc1fd1e3b047e183e9b18210a4f94815b38d97630cf114717acefd`。
+- 归档：`E:\builds\archive\v4.5.1`，含 `SHA256SUMS.txt`、`build-info.json`、`latest.yml`、blockmap；`release-manifest --check` 校验 3 个产物通过。
+- 覆盖升级实测：临时 userData 预置 `last-version=4.5.0`、无 `intro-seen-version`，启动 4.5.1 后 `boot-timing` 为 `mode:"full"`（`server-healthy 14445ms`、`main-ready 17472ms`），reveal 后写入 `intro-seen-version=4.5.1`，主窗 `http://127.0.0.1:<port>/chat`。
+- 安装体验变化：`runAfterFinish:false`，安装完成后不再自动拉起应用；需手动启动才能看到首启完整片。
