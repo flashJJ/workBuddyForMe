@@ -28,6 +28,7 @@ function params(over: Record<string, unknown> = {}) {
         model: { contextWindow: 20_000, modelId: 'm', capabilities: [] },
         provider: {
           chatStream: async function* () {
+            yield* [];
             throw new Error('summary offline');
           },
         },
