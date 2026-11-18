@@ -439,7 +439,19 @@ flowchart TB
 - 是否需要「按会话固定 PolicySet」能力，还是每次请求动态决定。
 - 离线 A/B 是否纳入门禁，或只作为人工分析工具。
 
-## 12. 参考资料
+## 12. v4.7 收尾记录
+
+> 结论：v4.7 任务侧开发收尾（P0/P1/P2 全部完成），等待合并与发布验收。
+
+| 项 | 内容 |
+|---|---|
+| 分支 | `feat/v4.7-agent-task` |
+| 提交 | `a9c74a29` P0 上下文注入与历史压缩；`500ac36f` 窗口自适应预算；`373a41b3` P1 计划确认与中断续跑；`8d59de90` P2 任务记忆与 per-role 观测；`f5e4f6e1` 文档 |
+| 门禁 | `pnpm typecheck`、`pnpm check:lines`、`pnpm check:ascii` 通过；core 24 项、web 11 项定向测试通过 |
+| 未做 | 并行/DAG（保持预研）；上下文快照与压缩回放（转 v4.9）；发布物料（release notes/tag）待验收后补 |
+| 下一版本 | v4.8 对话侧智能调控，见 [v4.8 计划](../v4.8/00-context-intelligence-plan.md) |
+
+## 13. 参考资料
 
 - LangGraph Persistence: https://docs.langchain.com/oss/python/langgraph/persistence
 - LangGraph Interrupts: https://docs.langchain.com/oss/python/langgraph/interrupts
