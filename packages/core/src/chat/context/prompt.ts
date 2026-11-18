@@ -181,7 +181,7 @@ export function buildChatMessages(
   // 安全窗口：字符粗估相对真实 tokenizer 普遍低估（尤其中文/JSON/代码），
   // 按 0.9 系数收缩，所有区块（含 RAG）都在这个窗口内做账，杜绝超长请求打到上游。
   const usableWindow = Math.floor(budget.contextWindow * CONTEXT_BUDGET_SAFETY_RATIO);
-  const reserveTokens = resolveReserveTokens(budget.lastCompletionTokens);
+  const reserveTokens = resolveReserveTokens(budget.lastCompletionTokens, budget.contextWindow);
   // v2.26 P1 分层预算；v4.8 按意图策略覆盖（缺省保持 50/25/10 原文/摘要/记忆）
   const plan = budget.plan ?? null;
   const middle = plan ? splitMiddleQuota(plan.quotas.middle) : null;

@@ -77,7 +77,7 @@ function assembledHistoryCount(contextWindow: number, history: Message[]): numbe
  * 该窗口下 42 条一定放得下、43 条放不下——消息成本随角色浮动，搜索比算术反推稳。
  */
 function smallWindowFor42(history50: Message[]): number {
-  let lo = 2048;
+  let lo = 512;
   let hi = 100_000;
   while (lo < hi) {
     const mid = Math.floor((lo + hi + 1) / 2);

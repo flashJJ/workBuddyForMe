@@ -1,8 +1,6 @@
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   CONTEXT_QUOTA_FACTS,
-  CONTEXT_BUDGET_SAFETY_RATIO,
-  CONTEXT_PREFLIGHT_TRIGGER_RATIO,
   HISTORY_MESSAGE_SAFETY_CAP,
 } from '@wbfm/shared/constants';
 import type { Assistant, Citation, Conversation, ToolTraceEntry } from '@wbfm/shared/types';
@@ -17,10 +15,10 @@ import type { MemoryService } from '../../memory/memory-service';
 import { formatConstraintBlock, formatMemoryBlock, safeRecallEvent } from '../../memory/turn-memory';
 import { buildConversationFactsBlock } from './conversation-facts-block';
 import { buildImageMap } from './multimodal';
-import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap, runPostTurnCompaction } from './turn-context';
-import { estimateTokens } from './context-budget';
+import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap } from './turn-context';
+import { needsSkillTrim } from './context-budget';
 import { buildContextPlan } from './context-plan';
-import { resolvePreflightTrigger } from './preflight-trigger';
+import { maybePreflightCompact } from './preflight-compaction';
 import { resolveToolMessageBudget } from './context-budget';
 import type { OrchestratorEvent, RagContext } from '../base/types';
 import type { ResolvedChatTarget } from './model-resolver';
@@ -121,42 +119,21 @@ export async function* prepareTurnContext(
 
   const conversation = conversations.get(conversationId);
   // v4.8：预判压缩——历史超 85% 水位先折叠，避免本轮撞墙后只能硬截断
-  let activeConversation = conversation;
-  let historyEstimate = 0;
-  const estimateHistory = (): number =>
-    conversations
-      .recentMessagesAfter(conversationId, activeConversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
-      .reduce((sum, message) => sum + estimateTokens(message.content), 0);
-  historyEstimate = estimateHistory();
-  const usableWindow = Math.floor(
-    (target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET) * CONTEXT_BUDGET_SAFETY_RATIO,
-  );
-  if (
-    appSettings.contextPreflightCompactEnabled !== false &&
-    intent.kind !== 'chitchat' &&
-    historyEstimate > usableWindow * CONTEXT_PREFLIGHT_TRIGGER_RATIO
-  ) {
-    await runPostTurnCompaction({
-      conversations,
-      attachments,
-      conversation: activeConversation,
-      assistant,
-      target,
-      toolDefs: [],
-      lastCompletionTokens:
-        conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
-      signal,
-      traceParent,
-      events: deps.events,
-      trigger: resolvePreflightTrigger(
-        deps.events,
-        conversationId,
-        target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
-      ),
-    });
-    activeConversation = conversations.get(conversationId);
-    historyEstimate = estimateHistory();
-  }
+  const preflight = await maybePreflightCompact({
+    deps,
+    conversations,
+    attachments,
+    assistant,
+    target,
+    conversation,
+    conversationId,
+    intent,
+    enabled: appSettings.contextPreflightCompactEnabled !== false,
+    signal,
+    traceParent,
+  });
+  const activeConversation = preflight.conversation;
+  const historyEstimate = preflight.historyEstimate;
   const fetchedHistory = conversations
     .recentMessagesAfter(conversationId, activeConversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
     .filter((m) => m.id !== assistantMessageId);
@@ -234,26 +211,36 @@ export async function* prepareTurnContext(
     contextWindow: target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     estimatedHistoryTokens: historyEstimate,
   });
-  const { messages: outgoing, stats: budgetStats } = buildTurnMessages({
-    assistant,
-    history,
-    rag: retrieved ?? null,
-    images: imageMap,
-    contextWindow: target.model.contextWindow,
-    toolDefs,
-    lastCompletionTokens:
-      conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
-    summary: activeConversation.summary,
-    memoryBlock,
-    constraintBlock,
-    factsBlock,
-    skillBlock: combinedBlock,
-    emotionBlock,
-    card,
-    globalAppendPrompt,
-    cardNickname,
-    plan,
-  });
+  const lastCompletionTokens = conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null;
+  const build = (map: ToolMap, defs: ToolDefinition[], skillPrompt: string | null) =>
+    buildTurnMessages({
+      assistant,
+      history,
+      rag: retrieved ?? null,
+      images: imageMap,
+      contextWindow: target.model.contextWindow,
+      toolDefs: defs,
+      lastCompletionTokens,
+      summary: activeConversation.summary,
+      memoryBlock,
+      constraintBlock,
+      factsBlock,
+      skillBlock: skillPrompt,
+      emotionBlock,
+      card,
+      globalAppendPrompt,
+      cardNickname,
+      plan,
+    });
+  let built = build(toolMap, toolDefs, combinedBlock);
+  let activeToolMap = toolMap;
+  // v4.8.1：小窗口下原文预算被技能块/技能工具挤到下限以下时，先裁技能再装一次
+  if (needsSkillTrim(built.stats)) {
+    const coreMap = runtime.buildTools(assistant, target.provider.supportsTools);
+    activeToolMap = coreMap;
+    built = build(coreMap, toToolDefinitions([...coreMap.values()]), planBlock || null);
+  }
+  const { messages: outgoing, stats: budgetStats } = built;
   if (budgetStats) {
     await recordBudgetSpan(budgetStats, traceParent);
     // v4.8：本地上下文快照（只存 token 统计，不存正文）
@@ -286,8 +273,8 @@ export async function* prepareTurnContext(
 
   return {
     conversation: activeConversation,
-    toolMap,
-    toolDefs,
+    toolMap: activeToolMap,
+    toolDefs: toToolDefinitions([...activeToolMap.values()]),
     outgoing,
     toolCtx,
     emotionEnabled,

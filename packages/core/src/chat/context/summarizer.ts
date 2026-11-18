@@ -3,7 +3,9 @@ import {
   COMPACTION_MIN_KEEP_MESSAGES,
   COMPACTION_TRIGGER_RATIO,
   CONTEXT_QUOTA_HISTORY,
+  DEFAULT_CONTEXT_TOKEN_BUDGET,
   MEMORY_BLOCK_RESERVE_TOKENS,
+  SMALL_CONTEXT_WINDOW_TOKENS,
   SUMMARY_BLOCK_RESERVE_TOKENS,
 } from '@wbfm/shared/constants';
 import { type Message } from '@wbfm/shared/types';
@@ -93,46 +95,9 @@ export function planCompaction(input: CompactionPlanInput): CompactionPlan | nul
   return foldCount >= 1 ? { foldCount, historyBudget, totalTokens } : null;
 }
 
-const SUMMARY_SYSTEM_INSTRUCTION =
-  '你是对话摘要助手。把给定的早期对话压缩为结构化中文摘要，供后续对话参考。\n' +
-  '只输出一个 JSON 对象，不要解释、不要代码块，格式：\n' +
-  '{"summary":"...","facts":[{"key":"...","value":"...","unit":null,"validFrom":null}],' +
-  '"decisions":["..."],"open_loops":["..."]}\n' +
-  '要求：\n' +
-  '1. summary 保留：用户身份与称呼、明确的偏好/约定、已做决定、待办与未解决问题、关键事实与结论；\n' +
-  '2. facts 只放稳定可复用的事实，key 用稳定的英文小写下划线键（如 residence_city、budget），' +
-  '同一主体的属性复用同一 key；unit/validFrom 缺失填 null；\n' +
-  '3. decisions 记录已经确定的决定，open_loops 记录尚未解决的问题；\n' +
-  '4. 原文出现的数字、日期、金额必须原样保留在 summary 或 facts 中；\n' +
-  '5. 已有摘要时做增量合并：保留旧摘要中仍有效的要点，补充/更新新对话内容；\n' +
-  '6. 删除寒暄、重复内容、与长期上下文无关的临时细节。';
+import { buildSummaryMessages, transcriptLine } from './summary-prompt';
 
-/** 单条消息转摘要用文本行（图片消息无可摘要文本） */
-function transcriptLine(message: Message): string {
-  const role = message.role === 'user' ? '用户' : '助手';
-  const content = message.content.trim();
-  return `${role}：${content || '（图片/附件消息）'}`;
-}
-
-/**
- * 构造摘要请求：旧摘要（若有）+ 待折叠转写。
- * 温度由调用方固定为 0。
- */
-export function buildSummaryMessages(
-  previousSummary: string | null,
-  folded: Message[],
-): ChatMessage[] {
-  const transcript = folded.map(transcriptLine).join('\n');
-  const userParts = [
-    previousSummary ? `【已有摘要】\n${previousSummary}` : '',
-    `【需要合并的早期对话】\n${transcript}`,
-    '请输出合并后的最新摘要。',
-  ].filter(Boolean);
-  return [
-    { role: 'system', content: SUMMARY_SYSTEM_INSTRUCTION },
-    { role: 'user', content: userParts.join('\n\n') },
-  ];
-}
+export { buildSummaryMessages } from './summary-prompt';
 
 /** 去除模型偶尔包裹的代码块围栏与多余空白 */
 export function normalizeSummary(raw: string): string {
@@ -199,13 +164,56 @@ async function requestSummary(
 }
 
 /**
+ * 纯文本摘要请求（小窗口退化路径）：不解析 JSON、不做保真重试。
+ * 空结果抛错，由编排器吞掉并降级为纯截断。
+ */
+async function requestPlainSummary(
+  input: SummarizeInput,
+  traceName: string,
+): Promise<string> {
+  const messages = buildSummaryMessages(input.previousSummary, input.folded, true);
+  return traceAsync(
+    {
+      name: traceName,
+      runType: 'llm',
+      parent: input.traceParent ?? null,
+      inputs: { foldedMessages: input.folded.length, plain: true },
+    },
+    async () => {
+      const stream = input.target.provider.chatStream({
+        model: input.target.model.modelId,
+        messages,
+        temperature: 0,
+        signal: input.signal,
+      });
+      let raw = '';
+      for await (const chunk of stream) raw += chunk.delta;
+      const text = normalizeSummary(raw);
+      if (!text) throw new Error('对话摘要结果为空');
+      return text;
+    },
+    (value) => ({ summaryLength: value.length }),
+  );
+}
+
+/**
  * 结构化摘要：JSON 载荷 + 数字/日期保真校验。
  * 缺失时重试一次；仍缺失则把含关键数字的原文片段追加到摘要末尾。
  * 网络/空结果抛错，由编排器吞掉降级为纯截断。
+ * v4.8.1：小窗口模型跳过结构化抽取（7B 级模型容易编造事实），直接走纯文本摘要。
  */
 export async function summarizeConversationStructured(
   input: SummarizeInput,
 ): Promise<StructuredSummary> {
+  const window = input.target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET;
+  if (window < SMALL_CONTEXT_WINDOW_TOKENS) {
+    const summary = await requestPlainSummary(input, 'conversation_summarize_plain');
+    return {
+      payload: { summary, facts: [], decisions: [], openLoops: [] },
+      retried: false,
+      fidelityMissing: [],
+    };
+  }
   const source = input.folded.map(transcriptLine).join('\n');
   let payload = await requestSummary(input, [], 'conversation_summarize');
   let fidelity = checkSummaryFidelity(payload, source);

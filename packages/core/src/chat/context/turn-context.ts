@@ -159,7 +159,10 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
     contextWindow: target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     personaTokens: estimateTokens(assistant.systemPrompt),
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
-    reserveTokens: resolveReserveTokens(params.lastCompletionTokens),
+    reserveTokens: resolveReserveTokens(
+      params.lastCompletionTokens,
+      target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+    ),
     memoryEnabled: assistant.memoryEnabled,
     force: params.force,
   });

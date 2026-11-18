@@ -1,5 +1,12 @@
 import type { ChatMessage } from '@wbfm/ai';
-import { OUTPUT_RESERVE_TOKENS } from '@wbfm/shared/constants';
+import {
+  DEFAULT_CONTEXT_TOKEN_BUDGET,
+  MIN_HISTORY_BUDGET_TOKENS,
+  OUTPUT_RESERVE_MAX_WINDOW_RATIO,
+  OUTPUT_RESERVE_MIN_TOKENS,
+  OUTPUT_RESERVE_RATIO,
+  OUTPUT_RESERVE_TOKENS,
+} from '@wbfm/shared/constants';
 
 /** 用上次真实 completion 校准预留时的加成余量 */
 const OUTPUT_RESERVE_MARGIN = 128;
@@ -20,11 +27,25 @@ export function resolveToolMessageBudget(contextWindow: number): number {
   );
 }
 
-/** 输出预留：优先用上次真实 completion 校准，否则默认预留 */
-export function resolveReserveTokens(lastCompletionTokens: number | null): number {
-  return lastCompletionTokens != null
-    ? Math.max(OUTPUT_RESERVE_TOKENS, lastCompletionTokens + OUTPUT_RESERVE_MARGIN)
-    : OUTPUT_RESERVE_TOKENS;
+/**
+ * 输出预留：按窗口比例化（15%，钳在 512–2048），优先用上次真实 completion 校准。
+ * v4.8.1：小窗口（4K）下固定 2048 会吃掉一半窗口，导致原文预算为 0。
+ */
+export function resolveReserveTokens(
+  lastCompletionTokens: number | null,
+  contextWindow: number = DEFAULT_CONTEXT_TOKEN_BUDGET,
+): number {
+  const base = Math.max(
+    OUTPUT_RESERVE_MIN_TOKENS,
+    Math.min(OUTPUT_RESERVE_TOKENS, Math.floor(contextWindow * OUTPUT_RESERVE_RATIO)),
+  );
+  if (lastCompletionTokens == null) return base;
+  const calibrated = lastCompletionTokens + OUTPUT_RESERVE_MARGIN;
+  const ceiling = Math.max(
+    base,
+    Math.floor(contextWindow * OUTPUT_RESERVE_MAX_WINDOW_RATIO),
+  );
+  return Math.min(Math.max(base, calibrated), ceiling);
 }
 
 /**
@@ -94,6 +115,14 @@ export interface HistoryBudgetStats {
   truncated: boolean;
 }
 
+/**
+ * v4.8.1：原文预算被固定块（人设/摘要/技能/工具）挤到下限以下时，
+ * 装配侧可先裁剪技能提示块与技能工具声明再重装一次。
+ */
+export function needsSkillTrim(stats: Pick<HistoryBudgetStats, 'historyBudget'> | null): boolean {
+  return stats != null && stats.historyBudget < MIN_HISTORY_BUDGET_TOKENS;
+}
+
 export interface AssembleHistoryInput {
   /** 时间正序的历史消息；最后一条为本轮用户消息，恒保留不裁剪 */
   history: ChatMessage[];
@@ -124,7 +153,7 @@ export function assembleHistoryWithinBudget(
   input: AssembleHistoryInput,
 ): AssembleHistoryResult {
   const { history, contextWindow, systemTokens, toolsTokens, lastCompletionTokens } = input;
-  const reserveTokens = resolveReserveTokens(lastCompletionTokens);
+  const reserveTokens = resolveReserveTokens(lastCompletionTokens, contextWindow);
   const available = Math.max(
     0,
     contextWindow - systemTokens - toolsTokens - reserveTokens,
