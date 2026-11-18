@@ -14,7 +14,8 @@ import type { AvatarScreenRect } from '@/features/avatar';
 let latestProxy: PetHitProxy | null = null;
 /** 模型包围盒（最近一次 onModelRect）与 dev UI 区域（脚本面板等） */
 let latestModelRect: AvatarScreenRect | null = null;
-let latestUiRect: PetUiRect | null = null;
+/** 多个 UI 面板各自上报（动效菜单 / 剧本调试面板），不能互相覆盖 */
+const latestUiRects = new Map<string, PetUiRect>();
 let lastProxyKey = '';
 
 /** dev UI 区域（窗口 CSS 像素）；悬停时也要退出穿透，否则窗口处于穿透态点不到面板 */
@@ -49,7 +50,7 @@ function uiPolygon(rect: PetUiRect, viewport: { width: number; height: number })
 export function buildPetHitProxy(
   rect: AvatarScreenRect,
   viewport: { width: number; height: number },
-  uiRect?: PetUiRect | null,
+  uiRect?: PetUiRect | readonly PetUiRect[] | null,
 ): PetHitProxy | null {
   if (!(rect.width > 0) || !(rect.height > 0)) return null;
   if (!(viewport.width > 0) || !(viewport.height > 0)) return null;
@@ -81,8 +82,16 @@ export function buildPetHitProxy(
       ],
     },
   ];
-  const ui = uiRect ? uiPolygon(uiRect, viewport) : null;
-  if (ui) polygons.push(ui);
+  const uiRects: readonly PetUiRect[] =
+    uiRect == null
+      ? []
+      : Array.isArray(uiRect)
+        ? (uiRect as readonly PetUiRect[])
+        : [uiRect as PetUiRect];
+  for (const rect of uiRects) {
+    const ui = uiPolygon(rect, viewport);
+    if (ui) polygons.push(ui);
+  }
   return { version: 1, polygons };
 }
 
@@ -102,7 +111,7 @@ function pushProxy(bridge: WbfmPetBridge | null): void {
     ? buildPetHitProxy(
         latestModelRect,
         { width: window.innerWidth, height: window.innerHeight },
-        latestUiRect,
+        [...latestUiRects.values()],
       )
     : null;
   const key = proxy ? JSON.stringify(proxy) : 'null';
@@ -128,8 +137,13 @@ export function usePetHitProxy(
   );
 }
 
-/** dev UI 面板位置上报（如剧本调试面板）；传 null 表示卸载/隐藏 */
-export function reportPetUiRect(rect: PetUiRect | null, bridge: WbfmPetBridge | null): void {
-  latestUiRect = rect;
+/** UI 面板位置上报（动效菜单/剧本调试面板）；id 区分面板，传 null 表示卸载/隐藏 */
+export function reportPetUiRect(
+  id: string,
+  rect: PetUiRect | null,
+  bridge: WbfmPetBridge | null,
+): void {
+  if (rect) latestUiRects.set(id, rect);
+  else latestUiRects.delete(id);
   pushProxy(bridge);
 }

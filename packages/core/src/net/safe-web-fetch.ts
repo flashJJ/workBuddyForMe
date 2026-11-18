@@ -1,10 +1,33 @@
 import { Buffer } from 'node:buffer';
+import { WEB_FETCH_MAX_BYTES_DEFAULT } from '@wbfm/shared/constants';
 import { assertSafeUrlLiteral, resolveAndAssertHost, SsrfBlockedError } from '../tools/ssrf-guard';
 
 /** 公开网页抓取的统一安全常量：fetch_webpage 工具与网页剪藏共用，禁止分叉 */
 export const WEB_FETCH_TIMEOUT_MS = 8_000;
-export const WEB_FETCH_MAX_BYTES = 200 * 1024;
+/** 默认单页上限；调用方可通过 options.maxBytes 覆盖（设置页可调） */
+export const WEB_FETCH_MAX_BYTES = WEB_FETCH_MAX_BYTES_DEFAULT;
 export const WEB_FETCH_MAX_REDIRECTS = 3;
+
+export interface WebFetchOptions {
+  /** 单页读取字节上限，缺省 2MB */
+  maxBytes?: number;
+  /** 超限策略：throw=直接失败（剪藏，避免入库半篇）；truncate=截取前 N 字节继续解析（对话工具） */
+  onOverflow?: 'throw' | 'truncate';
+}
+
+export interface BoundedReadResult {
+  html: string;
+  truncated: boolean;
+}
+
+/** 上限的人类可读文案（KB/MB），用于错误与证据说明 */
+export function formatByteLimit(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    const mb = bytes / (1024 * 1024);
+    return `${Number.isInteger(mb) ? mb : mb.toFixed(1)}MB`;
+  }
+  return `${Math.round(bytes / 1024)}KB`;
+}
 
 /** 每一跳重定向都重新做协议+IP 校验，防止 302 跳到 http://127.0.1/metadata */
 export async function assertEveryHop(urlString: string): Promise<URL> {
@@ -40,8 +63,14 @@ export async function followRedirects(
   throw new Error('重定向超过 3 跳');
 }
 
-/** 有界读取响应体：超过 200KB 拒绝，仅 html/plain（含带 charset 的 content-type） */
-export async function readBoundedText(response: Response, signal: AbortSignal): Promise<string> {
+/** 有界读取响应体：超过上限按策略失败或截取，仅 html/plain（含带 charset 的 content-type） */
+export async function readBoundedText(
+  response: Response,
+  signal: AbortSignal,
+  options: WebFetchOptions = {},
+): Promise<BoundedReadResult> {
+  const maxBytes = options.maxBytes ?? WEB_FETCH_MAX_BYTES;
+  const onOverflow = options.onOverflow ?? 'throw';
   const contentType = response.headers.get('content-type') ?? '';
   if (contentType && !/text\/html|text\/plain|charset=/i.test(contentType)) {
     throw new Error(`不支持的内容类型：${contentType.split(';')[0]}`);
@@ -54,27 +83,43 @@ export async function readBoundedText(response: Response, signal: AbortSignal): 
     const { done, value } = await reader.read();
     if (done) break;
     if (value) {
+      if (total + value.byteLength > maxBytes) {
+        if (onOverflow === 'throw') {
+          await reader.cancel().catch(() => undefined);
+          throw new Error(`页面超过 ${formatByteLimit(maxBytes)} 上限`);
+        }
+        const allowed = maxBytes - total;
+        if (allowed > 0) chunks.push(value.subarray(0, allowed));
+        await reader.cancel().catch(() => undefined);
+        return {
+          html: Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8'),
+          truncated: true,
+        };
+      }
       total += value.byteLength;
-      if (total > WEB_FETCH_MAX_BYTES) throw new Error('页面超过 200KB 上限');
       chunks.push(value);
     }
     if (signal.aborted) throw new Error('读取被中断');
   }
-  return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8');
+  return {
+    html: Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8'),
+    truncated: false,
+  };
 }
 
 /** 抓取入口：URL 校验 → 8s 超时 → 逐跳复检 → 有界读取，返回 HTML 文本 */
 export async function safeFetchWebPage(
   urlString: string,
   signal?: AbortSignal,
-): Promise<{ url: URL; response: Response; html: string }> {
+  options: WebFetchOptions = {},
+): Promise<{ url: URL; response: Response; html: string; truncated: boolean }> {
   const initial = await assertEveryHop(urlString);
   const timeout = AbortSignal.timeout(WEB_FETCH_TIMEOUT_MS);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
   const { response, finalUrl } = await followRedirects(initial, combined);
   if (!response.ok) throw new Error(`抓取失败：HTTP ${response.status}`);
-  const html = await readBoundedText(response, combined);
-  return { url: finalUrl, response, html };
+  const { html, truncated } = await readBoundedText(response, combined, options);
+  return { url: finalUrl, response, html, truncated };
 }
 
 export { SsrfBlockedError };

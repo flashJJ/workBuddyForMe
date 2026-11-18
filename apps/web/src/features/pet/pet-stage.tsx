@@ -93,9 +93,9 @@ export function PetStage({
   // v3.5：久无交互背对 / 点击或说话转回
   const faceAway = usePetFaceAway(voiceState);
   const onModelRect = usePetHitProxy(bridge); const generated = useGeneratedScripts(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId)); const scenePacks = useSceneContent(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId)); const propContent = usePropContent();
-  const onScriptPanelRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect(rect, bridge), [bridge]);
+  const onScriptPanelRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect('script-panel', rect, bridge), [bridge]);
+  const onMotionMenuRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect('motion-menu', rect, bridge), [bridge]);
   const [line, setLine] = React.useState<string>(''); const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const showLine = React.useCallback((text: string, durationMs: number) => {
     setLine(text);
     if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
@@ -293,7 +293,7 @@ export function PetStage({
       />
       {/* 字幕气泡：本地短句（摸头/久别）优先于语音中继字幕 */}
       <PetSubtitleBubble text={line || subtitle} voiceState={voiceState} shifted={workVisible} />
-      <PetMotionMenu controllerRef={controllerRef} />{process.env.NEXT_PUBLIC_WBFM_MOTION_PREVIEW === '1' && <MotionPreviewOverlay controllerRef={controllerRef} />}
+      <PetMotionMenu controllerRef={controllerRef} onRectChange={onMotionMenuRect} />{process.env.NEXT_PUBLIC_WBFM_MOTION_PREVIEW === '1' && <MotionPreviewOverlay controllerRef={controllerRef} />}
       {PET_SCRIPT_ENABLED && <ScriptDebugPanel onRectChange={onScriptPanelRect} onGenerate={generated.generate} generating={generated.loading} generationMessage={generated.message} usage={generated.usage} story={generated.story} schedule={generated.schedule} onToggleSchedule={generated.toggleSchedule} />}
     </div>
   );

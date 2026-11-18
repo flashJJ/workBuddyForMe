@@ -84,6 +84,18 @@ describe('fetch_webpage 工具', () => {
     expect(result.evidence?.limitations?.[0]).toContain('HTTP 404');
   });
 
+  it('超过抓取上限时截取前部内容继续解析，不判失败', async () => {
+    const body = `<html><body><article><p>${'你好'.repeat(2000)}</p></article></body></html>`;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(htmlResponse(body)));
+    const result = await executeToolCall(
+      fetchWebpageTool,
+      { url: 'http://8.8.8.8/big' },
+      { ...ctx, webFetchMaxBytes: 1024 },
+    );
+    expect(result.ok).toBe(true);
+    expect(result.evidence?.limitations?.join(' ')).toContain('截取前部');
+  });
+
   it('缺少 url 参数：参数错误回灌', async () => {
     const result = await executeToolCall(fetchWebpageTool, {}, ctx);
     expect(result.ok).toBe(false);

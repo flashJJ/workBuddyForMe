@@ -30,6 +30,14 @@ describe('buildPetHitProxy（模型包围盒 → 命中轮廓）', () => {
     expect(points).not.toContainEqual([0, 1]);
   });
 
+  it('多个 UI 面板都并入命中轮廓（动效菜单 + 剧本面板互不覆盖）', () => {
+    const proxy = buildPetHitProxy({ x: 26, y: 34, width: 208, height: 306 }, viewport, [
+      { x: 4, y: 300, width: 120, height: 32 },
+      { x: 190, y: 4, width: 64, height: 40 },
+    ]);
+    expect(proxy?.polygons.map((polygon) => polygon.id)).toEqual(['body', 'ui', 'ui']);
+  });
+
   it('越界包围盒夹紧到 0..1；退化尺寸返回 null', () => {
     const proxy = buildPetHitProxy({ x: -50, y: -20, width: 400, height: 400 }, viewport);
     expect(proxy).not.toBeNull();

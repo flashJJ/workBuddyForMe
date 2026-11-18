@@ -9,6 +9,7 @@ const BASE: SearchSettings = {
   maxResults: 2,
   timeoutMs: 5_000,
   allowPrivateEndpoint: false,
+  fetchMaxBytes: 8 * 1024 * 1024,
 };
 
 describe('Brave / Tavily 搜索适配器', () => {

@@ -38,6 +38,8 @@ export interface ToolContext {
   conversationId?: string;
   /** v2.13 M5：任务运行 id（隔离网页会话按运行分区） */
   runId?: string;
+  /** 单页抓取字节上限（设置页可调；缺省 2MB） */
+  webFetchMaxBytes?: number;
   /** v2.13 M5：当前策略域名规则（desktop 在重定向时复核） */
   policyDomains?: { allow: string[]; deny: string[] };
   /** v2.13 M5：工具侧治理事件（浏览器导航被拒等） */

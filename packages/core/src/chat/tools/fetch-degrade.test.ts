@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { degradedFetchResult, fetchUrlOf, shouldDegradeFetch } from './fetch-degrade';
+import {
+  degradedFetchResult,
+  fetchUrlOf,
+  shouldCountBreakerFailure,
+  shouldDegradeFetch,
+} from './fetch-degrade';
 
 describe('fetch 抓取降级判定（v2.27）', () => {
   it('网络/超时/页面过大属于可降级失败', () => {
@@ -39,5 +44,20 @@ describe('fetch 抓取降级判定（v2.27）', () => {
     expect(fetchUrlOf({ url: '' })).toBeNull();
     expect(fetchUrlOf({ url: 42 })).toBeNull();
     expect(fetchUrlOf(null)).toBeNull();
+  });
+
+  it('熔断计数只统计可恢复失败', () => {
+    const failed = (output: string, summary = '抓取失败') => ({ ok: false, output, summary });
+    // 确定性失败：不计入
+    expect(shouldCountBreakerFailure('fetch_webpage', failed('抓取失败：页面超过 2MB 上限'))).toBe(false);
+    expect(shouldCountBreakerFailure('fetch_webpage', failed('抓取失败：HTTP 404', 'HTTP 404'))).toBe(false);
+    expect(shouldCountBreakerFailure('fetch_webpage', failed('抓取失败：不支持的内容类型'))).toBe(false);
+    // 可恢复失败：计入
+    expect(shouldCountBreakerFailure('fetch_webpage', failed('抓取失败：fetch failed'))).toBe(true);
+    expect(shouldCountBreakerFailure('fetch_webpage', failed('抓取失败：请求超时'))).toBe(true);
+    expect(shouldCountBreakerFailure('fetch_webpage', failed('抓取失败：HTTP 502', 'HTTP 502'))).toBe(true);
+    // 其他工具维持原行为；成功恒计数（用于清零）
+    expect(shouldCountBreakerFailure('mcp:x:y', failed('boom'))).toBe(true);
+    expect(shouldCountBreakerFailure('fetch_webpage', { ok: true, output: 'ok', summary: 'ok' })).toBe(true);
   });
 });

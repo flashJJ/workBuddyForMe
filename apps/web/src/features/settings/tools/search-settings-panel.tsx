@@ -7,6 +7,9 @@ import {
   SEARCH_MAX_RESULTS_MAX,
   SEARCH_MAX_RESULTS_MIN,
   SEARCH_PUBLIC_INSTANCES,
+  WEB_FETCH_MAX_BYTES_DEFAULT,
+  WEB_FETCH_MAX_BYTES_MIN,
+  WEB_FETCH_MAX_BYTES_MAX,
 } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +29,7 @@ const FALLBACK: SearchSettings = {
   maxResults: 5,
   timeoutMs: 10_000,
   allowPrivateEndpoint: false,
+  fetchMaxBytes: WEB_FETCH_MAX_BYTES_DEFAULT,
 };
 
 type KeyProvider = 'brave' | 'tavily';
@@ -153,6 +157,23 @@ export function SearchSettingsPanel() {
             />
           </label>
         )}
+      </div>
+
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          {t('settings.search.fetchMaxKb')}
+          <NumberInput
+            value={Math.round(form.fetchMaxBytes / 1024)}
+            min={Math.round(WEB_FETCH_MAX_BYTES_MIN / 1024)}
+            max={Math.round(WEB_FETCH_MAX_BYTES_MAX / 1024)}
+            step={256}
+            groupThousands
+            onValueChange={(kb) =>
+              setForm((prev) => ({ ...prev, fetchMaxBytes: kb * 1024 }))
+            }
+          />
+        </label>
+        <p className="text-xs text-muted-foreground">{t('settings.search.fetchMaxHint')}</p>
       </div>
 
       {keyProvider && (

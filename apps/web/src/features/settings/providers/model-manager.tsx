@@ -28,10 +28,10 @@ const CAPABILITY_LABEL_KEYS: Record<ModelCapability, MessageKey> = {
   vision: 'settingsProviders.models.capabilityVision',
 };
 
-/** 上下文长度展示：1024 的整数倍显示为 K，否则原值 */
+/** 上下文长度展示：1024 的整数倍显示为 K，否则按千分位原值 */
 function formatContext(tokens: number | null): string | null {
   if (!tokens || tokens <= 0) return null;
-  return tokens % 1024 === 0 ? `${tokens / 1024}K` : String(tokens);
+  return tokens % 1024 === 0 ? `${tokens / 1024}K` : tokens.toLocaleString('en-US');
 }
 
 interface AddFormState {
@@ -250,6 +250,7 @@ export function ModelManager({ provider }: { provider: Provider }) {
             className="h-8"
             min={1}
             allowEmpty
+            groupThousands
             value={form.contextWindow === '' ? null : Number(form.contextWindow)}
             onValueChange={(v) => setForm((p) => ({ ...p, contextWindow: String(v) }))}
             onClear={() => setForm((p) => ({ ...p, contextWindow: '' }))}

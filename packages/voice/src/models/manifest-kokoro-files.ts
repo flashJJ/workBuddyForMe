@@ -1,4 +1,5 @@
 // 自动生成（HF tree API）：Kokoro 中英多说话人 TTS 文件清单。
+// 2026-11-17 复核：model.onnx / lexicon-zh.txt 上游大小已变化，按 hf-mirror Content-Length 更新。
 // 大文件带精确字节校验；espeak-ng-data/dict 小文件 size=0 仅校验存在性。
 // 生成依据：csukuangfj/kokoro-multi-lang-v1_1 @ 2026-10。
 import type { VoiceModelFile } from "./manifest";
@@ -374,11 +375,11 @@ export const KOKORO_FILES: VoiceModelFile[] = [
   { path: 'espeak-ng-data/voices/!v/zac', size: 0 },
   { path: 'espeak-ng-data/yue_dict', size: 0 },
   { path: 'lexicon-gb-en.txt', size: 6366635 },
-  { path: 'lexicon-us-en.txt', size: 5956885 },
-  { path: 'lexicon-zh.txt', size: 2119465 },
-  { path: 'model.onnx', size: 325631784 },
+  { path: 'lexicon-us-en.txt', size: 5956885, sha256: '7daaab53a181be9885b853a8582bf1838186317e5dadacbcef9c426d6fa0da14' },
+  { path: 'lexicon-zh.txt', size: 2120131, sha256: 'fea060803db3e59193987f1a3436f56917bda09f3b3595b6588e46ae60cebf93' },
+  { path: 'model.onnx', size: 325561476, sha256: '99db0bc8fd0c5033d249fe922db16768b71b4a6b26cfd93d206fbf66c76efb5f' },
   { path: 'number-zh.fst', size: 64482 },
   { path: 'phone-zh.fst', size: 88630 },
   { path: 'tokens.txt', size: 1111 },
-  { path: 'voices.bin', size: 53790720 },
+  { path: 'voices.bin', size: 53790720, sha256: 'e64a5a581d8c2a350d848f51c3121657cd83aa07ed6109172177345874a7244c' },
 ];

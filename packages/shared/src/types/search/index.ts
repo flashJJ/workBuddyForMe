@@ -9,6 +9,8 @@ export interface SearchSettings {
   timeoutMs: number;
   /** 自建 SearXNG 允许内网地址；默认 false */
   allowPrivateEndpoint: boolean;
+  /** 单页抓取字节上限（fetch_webpage 与网页剪藏共用），默认 2MB */
+  fetchMaxBytes: number;
 }
 
 export interface WebSearchInput {

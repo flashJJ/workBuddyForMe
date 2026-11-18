@@ -30,6 +30,55 @@ describe('useVoicePlayback', () => {
     playSpy.mockRestore();
   });
 
+  it('解码期间 cancel：迟到的旧音频不得再启动（避免与新语音重叠）', async () => {
+    let resolveDecode: ((buffer: AudioBuffer) => void) | null = null;
+    const decodePromise = new Promise<AudioBuffer>((resolve) => {
+      resolveDecode = resolve;
+    });
+    const starts: Array<ReturnType<typeof vi.fn>> = [];
+    class FakeAudioContext {
+      state = 'running';
+      destination = {};
+      decodeAudioData = vi.fn(() => decodePromise);
+      createBufferSource = vi.fn(() => {
+        const start = vi.fn();
+        starts.push(start);
+        return {
+          buffer: null,
+          connect: vi.fn(),
+          start,
+          stop: vi.fn(),
+          onended: null,
+        };
+      });
+      createAnalyser = vi.fn(() => ({
+        fftSize: 0,
+        smoothingTimeConstant: 0,
+        connect: vi.fn(),
+        getByteTimeDomainData: vi.fn(),
+      }));
+      createScriptProcessor = vi.fn(() => ({ connect: vi.fn(), onaudioprocess: null }));
+      createGain = vi.fn(() => ({ gain: { value: 0 }, connect: vi.fn() }));
+      resume = vi.fn();
+    }
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+
+    const player = new WebAudioPlayer();
+    const playing = player.play({
+      fragment: '旧语音',
+      spoken: '旧语音',
+      audio: 'AA==',
+      sampleRate: 24000,
+      final: false,
+    });
+    player.cancelAll();
+    resolveDecode!({} as AudioBuffer);
+    await playing;
+
+    expect(starts).toHaveLength(0);
+    vi.unstubAllGlobals();
+  });
+
   it('语音播放期间向导演上报活跃，结束后恢复背景乐', async () => {
     let release: (() => void) | null = null;
     const playSpy = vi

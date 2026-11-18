@@ -38,7 +38,7 @@ export interface ToolBreaker {
   /** 是否处于熔断（应跳过执行）。cooldown 到期会自动转 half-open 并返回 false */
   isTripped(name: string): boolean;
   /** 记录一次执行结果：成功重置；失败累加或重新熔断 */
-  recordResult(name: string, ok: boolean): void;
+  recordResult(name: string, ok: boolean, countAsFailure?: boolean): void;
   /** 手动重置单个工具（管理面板用） */
   reset(name: string): void;
   /** 列出所有非 closed 工具快照 */
@@ -72,7 +72,7 @@ export function createToolBreaker(options: ToolBreakerOptions = {}): ToolBreaker
     return true;
   }
 
-  function recordResult(name: string, ok: boolean): void {
+  function recordResult(name: string, ok: boolean, countAsFailure = true): void {
     const entry = getEntry(name);
     if (ok) {
       entry.failures = 0;
@@ -80,6 +80,9 @@ export function createToolBreaker(options: ToolBreakerOptions = {}): ToolBreaker
       entry.trippedAt = null;
       return;
     }
+    // 确定性失败（页面过大 / 4xx / 参数错误等）重试也不会成功，
+    // 不计入熔断，避免连续几篇大页面把整个工具锁 5 分钟。
+    if (!countAsFailure) return;
     if (entry.status === 'half-open') {
       // 半开失败：立即重新熔断并重新计时
       entry.failures = threshold;

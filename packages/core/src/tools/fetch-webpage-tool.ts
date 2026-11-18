@@ -34,7 +34,11 @@ export const fetchWebpageTool: Tool = {
     }
     let fetched: Awaited<ReturnType<typeof safeFetchWebPage>>;
     try {
-      fetched = await safeFetchWebPage(parsed.data.url, ctx.signal);
+      // 对话场景超限时截取前 N 字节继续解析（剪藏路径仍保持硬失败）
+      fetched = await safeFetchWebPage(parsed.data.url, ctx.signal, {
+        ...(ctx.webFetchMaxBytes ? { maxBytes: ctx.webFetchMaxBytes } : {}),
+        onOverflow: 'truncate',
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const httpStatus = /HTTP (\d{3})/.exec(message)?.[1];
@@ -50,7 +54,7 @@ export const fetchWebpageTool: Tool = {
         },
       };
     }
-    const { url, html, response } = fetched;
+    const { url, html, response, truncated } = fetched;
     const text = extractMainContent(html);
     if (!text) {
       return {
@@ -66,6 +70,9 @@ export const fetchWebpageTool: Tool = {
       };
     }
     const clipped = text.length > OUTPUT_MAX_CHARS ? text.slice(0, OUTPUT_MAX_CHARS) : text;
+    const limitations: string[] = [];
+    if (truncated) limitations.push('页面超过抓取上限，已截取前部内容解析');
+    if (text.length > OUTPUT_MAX_CHARS) limitations.push(`输出截断至 ${OUTPUT_MAX_CHARS} 字符`);
     return {
       ok: true,
       output: `网页 ${parsed.data.url} 正文（来源 ${url.hostname}，约 ${text.length} 字符）：\n\n${clipped}`,
@@ -73,9 +80,7 @@ export const fetchWebpageTool: Tool = {
       evidence: {
         source: url.href,
         coverage: `HTTP ${response.status} · 正文 ${text.length} 字符`,
-        ...(text.length > OUTPUT_MAX_CHARS
-          ? { limitations: [`输出截断至 ${OUTPUT_MAX_CHARS} 字符`] }
-          : {}),
+        ...(limitations.length > 0 ? { limitations } : {}),
         capturedAt: new Date().toISOString(),
       },
     };

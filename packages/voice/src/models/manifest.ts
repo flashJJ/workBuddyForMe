@@ -13,6 +13,8 @@ export interface VoiceModelFile {
   path: string;
   /** 期望字节数（0 表示不校验大小，如未来加入的小文本文件） */
   size: number;
+  /** LFS 大文件的 SHA256（小文件可省略，仅做 size 校验） */
+  sha256?: string;
 }
 
 export type VoiceModelKind = 'asr' | 'tts';
@@ -28,13 +30,17 @@ export interface VoiceModelSpec {
   engine?: TtsEngineId;
   /** HuggingFace 仓库（resolve 基址由镜像设置拼接） */
   hfRepo: string;
+  /** 固定 revision（commit sha）；缺省 main，仅用于未固定的旧模型 */
+  revision?: string;
   files: VoiceModelFile[];
   /** 总字节数（files.size 求和的缓存） */
   totalBytes: number;
 }
 
-const HF_BASE = 'https://huggingface.co';
-const HF_MIRROR_BASE = 'https://hf-mirror.com';
+export const HF_BASE = 'https://huggingface.co';
+export const HF_MIRROR_BASE = 'https://hf-mirror.com';
+/** Kokoro 当前固定 revision；升级模型时同步更新 manifest 快照 */
+export const KOKORO_REVISION = '423bfb9ccd6a66115a76602a9630ffea265ae176';
 
 const ASR_SENSEVOICE: VoiceModelSpec = {
   kind: 'asr',
@@ -84,6 +90,7 @@ const TTS_KOKORO_ZH_EN: VoiceModelSpec = {
   id: 'kokoro-multi-lang-v1_1',
   label: 'Kokoro 多角色声线（103 音色）',
   hfRepo: 'csukuangfj/kokoro-multi-lang-v1_1',
+  revision: KOKORO_REVISION,
   files: KOKORO_FILES,
   totalBytes: 0,
 };
@@ -112,26 +119,61 @@ export function getVoiceModelSpec(
   return entry;
 }
 
-/** 拼接某个模型文件的下载地址（默认走国内镜像）。 */
-export function modelFileUrl(spec: VoiceModelSpec, file: VoiceModelFile, mirror = true): string {
-  const base = mirror ? HF_MIRROR_BASE : HF_BASE;
-  return `${base}/${spec.hfRepo}/resolve/main/${file.path}`;
+/** 拼接某个模型文件的下载地址（默认走国内镜像；revision 固定时不会跟随 main）。 */
+export function modelFileUrl(
+  spec: VoiceModelSpec,
+  file: VoiceModelFile,
+  mirrorBase: string = HF_MIRROR_BASE,
+): string {
+  const base = mirrorBase.replace(/\/+$/, '');
+  const revision = spec.revision ?? 'main';
+  return `${base}/${spec.hfRepo}/resolve/${revision}/${file.path}`;
+}
+
+export type VoiceModelFileIssueKind = 'missing' | 'sizeMismatch' | 'hashMismatch';
+
+export interface VoiceModelFileIssues {
+  missing: string[];
+  sizeMismatch: string[];
+  hashMismatch: string[];
 }
 
 /**
- * 校验模型目录内文件是否齐备（纯 IO 无关：把 stat 函数注入，方便测试）。
- * 返回缺失/大小不符的文件路径列表；空数组 = 就绪。
+ * 结构化校验：缺失 / 大小不符 / 哈希不符。
+ * hash 可选：状态轮询只传 stat（快）；下载完成后可传 hash（准）。
  */
+export async function findFileIssues(
+  spec: VoiceModelSpec,
+  stat: (relPath: string) => Promise<number | null>,
+  hash?: (relPath: string) => Promise<string | null>,
+): Promise<VoiceModelFileIssues> {
+  const issues: VoiceModelFileIssues = { missing: [], sizeMismatch: [], hashMismatch: [] };
+  for (const file of spec.files) {
+    const size = await stat(file.path);
+    if (size === null) {
+      issues.missing.push(file.path);
+      continue;
+    }
+    if (file.size > 0 && size !== file.size) {
+      issues.sizeMismatch.push(file.path);
+      continue;
+    }
+    if (file.sha256 && hash) {
+      const actual = await hash(file.path);
+      if (!actual || actual.toLowerCase() !== file.sha256.toLowerCase()) {
+        issues.hashMismatch.push(file.path);
+      }
+    }
+  }
+  return issues;
+}
+
+/** 兼容旧调用：只返回缺失/大小不符的路径（状态轮询用）。 */
 export async function findMissingFiles(
   spec: VoiceModelSpec,
   stat: (relPath: string) => Promise<number | null>,
 ): Promise<string[]> {
-  const missing: string[] = [];
-  for (const file of spec.files) {
-    const size = await stat(file.path);
-    if (size === null || (file.size > 0 && size !== file.size)) {
-      missing.push(file.path);
-    }
-  }
-  return missing;
+  const issues = await findFileIssues(spec, stat);
+  const flagged = new Set([...issues.missing, ...issues.sizeMismatch]);
+  return spec.files.filter((file) => flagged.has(file.path)).map((file) => file.path);
 }

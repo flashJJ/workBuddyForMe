@@ -89,7 +89,7 @@ export const zhOnboarding = {
   voice: {
     heading: '语音对话（可选）',
     lead: '启用后可按住说话并听到语音回复。语音模型在首次使用时下载到本机。',
-    sizeHint: '语音识别约 228MB，语音合成约 190MB；可只下载其一，也可稍后在设置中下载。',
+    sizeHint: '语音识别约 228MB；语音合成 MeloTTS 约 190MB / Kokoro 约 394MB；可只下载其一，也可稍后在设置中下载。',
     downloadAsr: '下载语音识别模型',
     downloadTts: '下载语音合成模型',
     downloadBoth: '两个都下载',
@@ -210,7 +210,7 @@ export const enOnboarding = {
   voice: {
     heading: 'Voice conversation (optional)',
     lead: 'Enable push-to-talk and spoken replies. Voice models are downloaded to this machine on first use.',
-    sizeHint: 'Speech recognition is about 228MB and speech synthesis about 190MB. You can download just one, or do it later in Settings.',
+    sizeHint: 'Speech recognition is about 228MB; speech synthesis is about 190MB for MeloTTS or about 394MB for Kokoro. You can download just one, or do it later in Settings.',
     downloadAsr: 'Download speech recognition',
     downloadTts: 'Download speech synthesis',
     downloadBoth: 'Download both',

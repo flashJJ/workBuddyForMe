@@ -206,6 +206,7 @@ export async function* prepareTurnContext(
   const toolCtx = runtime.createContext(assistant, signal, {
     visionCapable: target.model.capabilities.includes('vision'),
     conversationId,
+    webFetchMaxBytes: appSettings.searchSettings?.fetchMaxBytes,
   });
   // v1.1：工具结果入模预算按本轮模型窗口装配下发（压缩器不读全局状态）
   const toolMessageBudgetTokens = resolveToolMessageBudget(
