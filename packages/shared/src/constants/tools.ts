@@ -155,4 +155,4 @@ export const TOOL_BREAKER_COOLDOWN_MS = 5 * 60_000;
  */
 export const WEB_FETCH_MAX_BYTES_DEFAULT = 8 * 1024 * 1024;
 export const WEB_FETCH_MAX_BYTES_MIN = 200 * 1024;
-export const WEB_FETCH_MAX_BYTES_MAX = 8 * 1024 * 1024;
+export const WEB_FETCH_MAX_BYTES_MAX = 16 * 1024 * 1024;
