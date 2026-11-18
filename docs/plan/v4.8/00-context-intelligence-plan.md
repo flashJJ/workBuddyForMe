@@ -1,6 +1,6 @@
 # 对话上下文智能调控（v4.8）：调研与实施计划
 
-> 状态：规划中（待 §8 决策点拍板后冻结契约）
+> 状态：开发中（M0–M4 已落地；M5 事件与时间线已接入，专用面板待补）
 > 前置：v4.7 任务侧 P0/P1/P2 已完成（见 [v4.7 计划](../v4.7/00-agent-task-research-plan.md)）
 > 一句话：把对话侧已有的「摘要 + 预算 + 记忆」从零散能力收成一套按意图分配上下文的 Controller，并把压缩从「撞墙后折叠」升级为「事件化、可回溯、可预判」。
 
@@ -207,3 +207,19 @@ flowchart LR
 - OpenHands SDK 论文（Context Window Management）: https://arxiv.org/html/2511.03690v2
 - LangChain Deep Agents 上下文工程: https://www.langchain.com/blog/context-engineering-deep-agents-remember
 - Letta / MemGPT 记忆分层: https://www.aiwiki.ai/wiki/letta
+
+## 10. 实施记录（第一批）
+
+| 里程碑 | 状态 | 落点 |
+|---|---|---|
+| M0 契约 | 完成 | `shared/schemas/chat/context-intelligence.ts`；`constants/chat.ts` 阈值；settings `contextPreflightCompactEnabled` |
+| M1 意图路由 | 完成 | `core/chat/context/turn-intent.ts`（规则 + 可插拔分类器端口）；`turn_intent` 事件 |
+| M2 混合装配 | 完成 | `core/chat/context/context-plan.ts`；`prompt.ts` 按意图覆盖 tail/middle/memory/evidence 配额 |
+| M3 压缩事件化 | 完成 | `context_condensed`（threshold/preflight、降级事件）；装配前 85% 预判压缩；设置页可关 |
+| M4 记忆治理 | 完成 | `core/memory/intent-memory.ts`：记住写事实、忘掉软归档（可恢复、写审计） |
+| M5 观测 | 部分 | `context_snapshot` 事件 + 事件时间线标签；专用上下文构成面板待后续 |
+
+已知边界：
+- `user_explicit` / `model_change` 触发已建模但尚未接入 UI 入口。
+- 意图分类器目前只提供端口与超时回退，未绑定具体小模型；默认纯规则。
+- 预判压缩会增加一次摘要调用，仅历史超 85% 水位触发，可在调优中心关闭。

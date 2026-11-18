@@ -10,11 +10,11 @@ import { runAlwaysRetrieval } from '../turns/retrieve-turn';
 import { prepareUserTurn } from '../context/turn-preparation';
 import { runProviderTurnWithToolFallback, type ProviderTurn } from '../tools/tool-runner';
 import { runToolCallLoop } from '../tools/tool-call-loop';
-import { createProactiveTurn, type StreamProactiveInput } from '../turns/proactive-turn';
+import { createProactiveTurn } from '../turns/proactive-turn';
 import { tryReminderTurn } from '../turns/reminder-turn';
 import { createEmotionGate } from '../turns/emotion-gate';
 import type { OrchestratorEvent, StreamChatInput } from '../base/types';
-import { createFetchDegradeTracker, normalizeFailure } from './orchestrator-helpers';
+import { createFetchDegradeTracker, buildDoneData, normalizeFailure } from './orchestrator-helpers';
 import { synthesizeFinalAnswer } from './round-synthesis';
 import { createToolRuntime } from '../../tools/tool-runtime';
 import { createMemoryService } from '../../memory/memory-service';
@@ -24,6 +24,8 @@ import { stripEmotionSignalBlock, type EmotionSignal } from '@wbfm/shared/schema
 import { prepareTurnContext, type PreparedTurnContext } from '../context/turn-context-assembly';
 import { schedulePostTurnJobs } from '../turns/post-turn-schedule';
 import { writeRealtimeConstraints } from '../../memory/turn-memory';
+import { runIntentStage } from './intent-stage';
+import { createBackgroundJobRegistry } from './background-jobs';
 
 export function createChatOrchestrator(deps: ServiceDeps) {
   const assistants = createAssistantsService(deps);
@@ -32,19 +34,12 @@ export function createChatOrchestrator(deps: ServiceDeps) {
   const runtime = createToolRuntime(deps);
   const memory = createMemoryService(deps);
   const emotion = createEmotionService(deps);
-  const streamProactiveTurn = createProactiveTurn(deps);
   // done 之后异步执行的旁路任务（摘要/记忆）；不阻塞响应，但保留句柄供测试与优雅关闭等待
-  const backgroundJobs = new Set<Promise<unknown>>();
-  const scheduleBackgroundJob = (job: Promise<unknown>): void => {
-    backgroundJobs.add(job);
-    void job.finally(() => backgroundJobs.delete(job));
-  };
+  const backgroundJobs = createBackgroundJobRegistry();
 
   return {
     /** 等待全部在途的回合后台任务完成（测试/优雅关闭用；对话响应本身不等待） */
-    waitForBackgroundJobs: async (): Promise<void> => {
-      await Promise.allSettled([...backgroundJobs]);
-    },
+    waitForBackgroundJobs: backgroundJobs.wait,
     ...createEmotionGate(emotion),
     async *streamChat(input: StreamChatInput): AsyncGenerator<OrchestratorEvent> {
       const assistant = assistants.get(input.assistantId);
@@ -95,6 +90,19 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         return;
       }
 
+      // v4.8：意图识别与显式记忆意图（记住/忘掉）在检索与装配前完成
+      const { intent, notices: intentNotices } = await runIntentStage({
+        deps,
+        assistant,
+        memory,
+        conversationId,
+        sourceMessageId: assistantMessage.id,
+        userContent,
+        hasImages: (input.attachments?.length ?? 0) > 0,
+        applyMemory: !input.regenerate,
+        signal: input.signal,
+      });
+
       // LangSmith 顶层 span：一次完整对话（含模型多轮 + 工具 + RAG）聚成一棵树
       const turnTrace: TraceHandle | null = await startRun({
         name: 'chat-turn',
@@ -137,6 +145,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           assistantMessageId: assistantMessage.id,
           userContent,
           retrieved,
+          intent,
           signal: input.signal,
           traceParent: turnTrace,
           target,
@@ -236,12 +245,8 @@ export function createChatOrchestrator(deps: ServiceDeps) {
 
         // v1.6：成功回合的情绪解析（尾块剥离/弱模型保底/写状态与流水），异常不影响正文
         const recordedEmotion = recordTurnEmotion({
-          enabled: emotionEnabled,
-          rawContent: full,
-          userContent,
-          assistantId: assistant.id,
-          messageId: assistantMessage.id,
-          record: emotion.record,
+          enabled: emotionEnabled, rawContent: full, userContent, assistantId: assistant.id,
+          messageId: assistantMessage.id, record: emotion.record,
         });
         if (recordedEmotion) full = recordedEmotion.content;
         const resolvedEmotion: EmotionSignal | undefined = recordedEmotion?.signal;
@@ -255,28 +260,27 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         // v2.28 P1：实时约束在 done 前同步写入，本轮即可内联提示与撤销
         const memoryNotices = assistant.memoryEnabled
           ? await writeRealtimeConstraints({ memory, userContent, conversationId: conversation.id,
-              assistantId: assistant.id, sourceMessageId: assistantMessage.id })
+            assistantId: assistant.id, sourceMessageId: assistantMessage.id })
           : [];
 
         // 先把 done 交给用户：回答已完整落库，旁路任务（摘要/记忆抽取）绝不阻塞 done。
         yield {
           event: 'done',
-          data: {
-            content: full, usage,
+          data: buildDoneData({
+            content: full, usage, notices: [...intentNotices, ...memoryNotices],
             ...(resolvedEmotion ? { emotion: resolvedEmotion } : {}),
-            ...(memoryNotices.length > 0 ? { memoryNotices } : {}),
-          },
+          }),
         };
 
         // 后台任务 fire-and-forget：独立 signal，超时兜底；失败内部均已静默。
         schedulePostTurnJobs({
-          schedule: scheduleBackgroundJob,
+          schedule: backgroundJobs.schedule,
           aborted: Boolean(input.signal?.aborted),
           jobs: {
             conversations, attachments, conversation, assistant, target, toolDefs,
             lastCompletionTokens: usage?.completionTokens ?? null, memory, userContent,
             assistantContent: full, sourceMessageId: assistantMessage.id,
-            workPlans: deps.workPlans, toolTrace: trace,
+            workPlans: deps.workPlans, toolTrace: trace, events: deps.events,
           },
         });
       } finally {
@@ -288,11 +292,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
     },
 
     /** F8 主动说话：轻量 skip-history 轮（不落库/无工具/RAG） */
-    async *streamProactive(
-      input: StreamProactiveInput,
-    ): AsyncGenerator<OrchestratorEvent> {
-      yield* streamProactiveTurn(input);
-    },
+    streamProactive: createProactiveTurn(deps),
   };
 }
 

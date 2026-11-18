@@ -2,6 +2,7 @@
 export * from './assistant';
 export * from './conversation';
 export * from './context';
+export * from './context-intelligence';
 export * from './message';
 export * from './memory';
 export * from './relationship';

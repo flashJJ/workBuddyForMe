@@ -1,10 +1,13 @@
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   CONTEXT_QUOTA_FACTS,
+  CONTEXT_BUDGET_SAFETY_RATIO,
+  CONTEXT_PREFLIGHT_TRIGGER_RATIO,
   HISTORY_MESSAGE_SAFETY_CAP,
 } from '@wbfm/shared/constants';
 import type { Assistant, Citation, Conversation, ToolTraceEntry } from '@wbfm/shared/types';
 import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
+import type { TurnIntent } from '@wbfm/shared/schemas';
 import type { ChatMessage, ToolDefinition, TraceHandle } from '@wbfm/ai';
 import { createCharacterCardRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../../services/base/deps';
@@ -14,7 +17,9 @@ import type { MemoryService } from '../../memory/memory-service';
 import { formatConstraintBlock, formatMemoryBlock, safeRecallEvent } from '../../memory/turn-memory';
 import { buildConversationFactsBlock } from './conversation-facts-block';
 import { buildImageMap } from './multimodal';
-import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap } from './turn-context';
+import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap, runPostTurnCompaction } from './turn-context';
+import { estimateTokens } from './context-budget';
+import { buildContextPlan } from './context-plan';
 import { resolveToolMessageBudget } from './context-budget';
 import type { OrchestratorEvent, RagContext } from '../base/types';
 import type { ResolvedChatTarget } from './model-resolver';
@@ -45,6 +50,8 @@ export interface PrepareTurnContextParams {
   assistantMessageId: string;
   userContent: string;
   retrieved: RagContext | null;
+  /** v4.8：本轮意图（由编排器规则识别，装配据此分配块配额） */
+  intent: TurnIntent;
   signal?: AbortSignal;
   traceParent: TraceHandle | null;
   target: ResolvedChatTarget;
@@ -87,6 +94,7 @@ export async function* prepareTurnContext(
     assistantMessageId,
     userContent,
     retrieved,
+    intent,
     signal,
     traceParent,
     target,
@@ -111,8 +119,41 @@ export async function* prepareTurnContext(
   const globalAppendPrompt = resolveGlobalAppendPrompt(appSettings);
 
   const conversation = conversations.get(conversationId);
+  // v4.8：预判压缩——历史超 85% 水位先折叠，避免本轮撞墙后只能硬截断
+  let activeConversation = conversation;
+  let historyEstimate = 0;
+  const estimateHistory = (): number =>
+    conversations
+      .recentMessagesAfter(conversationId, activeConversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
+      .reduce((sum, message) => sum + estimateTokens(message.content), 0);
+  historyEstimate = estimateHistory();
+  const usableWindow = Math.floor(
+    (target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET) * CONTEXT_BUDGET_SAFETY_RATIO,
+  );
+  if (
+    appSettings.contextPreflightCompactEnabled !== false &&
+    intent.kind !== 'chitchat' &&
+    historyEstimate > usableWindow * CONTEXT_PREFLIGHT_TRIGGER_RATIO
+  ) {
+    await runPostTurnCompaction({
+      conversations,
+      attachments,
+      conversation: activeConversation,
+      assistant,
+      target,
+      toolDefs: [],
+      lastCompletionTokens:
+        conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
+      signal,
+      traceParent,
+      events: deps.events,
+      trigger: 'preflight',
+    });
+    activeConversation = conversations.get(conversationId);
+    historyEstimate = estimateHistory();
+  }
   const fetchedHistory = conversations
-    .recentMessagesAfter(conversationId, conversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
+    .recentMessagesAfter(conversationId, activeConversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
     .filter((m) => m.id !== assistantMessageId);
   // v1.8 M3：先条数钳制（2–50，服务端为准），再交 token 预算双保险裁剪
   const history = applyContextMessageCap(fetchedHistory, appSettings.contextMessageCount);
@@ -182,6 +223,12 @@ export async function* prepareTurnContext(
   // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
   const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools);
   const toolDefs = toToolDefinitions([...toolMap.values()]);
+  // v4.8：意图 → 块配额（低置信度回落默认，保持旧行为）
+  const plan = buildContextPlan({
+    intent,
+    contextWindow: target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+    estimatedHistoryTokens: historyEstimate,
+  });
   const { messages: outgoing, stats: budgetStats } = buildTurnMessages({
     assistant,
     history,
@@ -191,7 +238,7 @@ export async function* prepareTurnContext(
     toolDefs,
     lastCompletionTokens:
       conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null,
-    summary: conversation.summary,
+    summary: activeConversation.summary,
     memoryBlock,
     constraintBlock,
     factsBlock,
@@ -200,8 +247,25 @@ export async function* prepareTurnContext(
     card,
     globalAppendPrompt,
     cardNickname,
+    plan,
   });
-  if (budgetStats) await recordBudgetSpan(budgetStats, traceParent);
+  if (budgetStats) {
+    await recordBudgetSpan(budgetStats, traceParent);
+    // v4.8：本地上下文快照（只存 token 统计，不存正文）
+    deps.events?.recordChat(conversationId, 'context_snapshot', {
+      intent,
+      contextWindow: target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+      usableWindow: budgetStats.contextWindow,
+      systemTokens: budgetStats.systemTokens,
+      toolsTokens: budgetStats.toolsTokens,
+      reserveTokens: budgetStats.reserveTokens,
+      historyBudget: budgetStats.historyBudget,
+      historyTokens: budgetStats.estimatedHistoryTokens,
+      keptMessages: budgetStats.keptMessages,
+      droppedMessages: budgetStats.droppedMessages,
+      truncated: budgetStats.truncated,
+    });
+  }
   // v0.7 M1：向工具上下文透传视觉能力（screen_snapshot 据此决定是否携带截图图片）
   const toolCtx = runtime.createContext(assistant, signal, {
     visionCapable: target.model.capabilities.includes('vision'),
@@ -216,7 +280,7 @@ export async function* prepareTurnContext(
   const citations = retrieved?.citations ?? [];
 
   return {
-    conversation,
+    conversation: activeConversation,
     toolMap,
     toolDefs,
     outgoing,

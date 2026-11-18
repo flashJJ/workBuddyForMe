@@ -8,6 +8,7 @@ import {
 } from '@wbfm/shared/constants';
 import type { Assistant, Message } from '@wbfm/shared/types';
 import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
+import type { ContextPlan } from '@wbfm/shared/schemas';
 import type { ChatMessage } from '@wbfm/ai';
 import type { RagContext } from '../base/types';
 import type { ResolvedImage } from '../../services/assistant/attachment-service';
@@ -22,6 +23,7 @@ import {
   type HistoryBudgetStats,
 } from './context-budget';
 import { toAiContent } from './multimodal';
+import { splitMiddleQuota } from './context-plan';
 
 /**
  * v1.0 M3：表情指令片段（仅助手开启 expressionEnabled 时注入）。
@@ -146,6 +148,8 @@ export interface ChatBudgetOptions {
   globalAppendPrompt?: string | null;
   /** v2.0：关系等级已解锁的用户称呼（未解锁不传，组装闸门在调用侧） */
   cardNickname?: string | null;
+  /** v4.8：按意图分配的上下文块配额；缺省保持旧 50/25/10 分层 */
+  plan?: ContextPlan | null;
 }
 
 /**
@@ -178,10 +182,13 @@ export function buildChatMessages(
   // 按 0.9 系数收缩，所有区块（含 RAG）都在这个窗口内做账，杜绝超长请求打到上游。
   const usableWindow = Math.floor(budget.contextWindow * CONTEXT_BUDGET_SAFETY_RATIO);
   const reserveTokens = resolveReserveTokens(budget.lastCompletionTokens);
-  // v2.26 P1 分层预算：摘要 25% / 事实 10% / 记忆 10%（含硬约束）/ 原文 50%
-  const summaryCap = Math.floor(usableWindow * CONTEXT_QUOTA_SUMMARY);
-  const factsCap = Math.floor(usableWindow * CONTEXT_QUOTA_FACTS);
-  const memoryCap = Math.floor(usableWindow * CONTEXT_QUOTA_MEMORY);
+  // v2.26 P1 分层预算；v4.8 按意图策略覆盖（缺省保持 50/25/10 原文/摘要/记忆）
+  const plan = budget.plan ?? null;
+  const middle = plan ? splitMiddleQuota(plan.quotas.middle) : null;
+  const summaryCap = Math.floor(usableWindow * (middle?.summary ?? CONTEXT_QUOTA_SUMMARY));
+  const factsCap = Math.floor(usableWindow * (middle?.facts ?? CONTEXT_QUOTA_FACTS));
+  const memoryCap = Math.floor(usableWindow * (plan?.quotas.memory ?? CONTEXT_QUOTA_MEMORY));
+  const historyCap = Math.floor(usableWindow * (plan?.quotas.tail ?? CONTEXT_QUOTA_HISTORY));
   const constraintBlock = truncateToTokens(
     budget.constraintBlock ?? '',
     Math.floor(memoryCap / 2),
@@ -223,7 +230,10 @@ export function buildChatMessages(
     userLastTokens -
     estimateTokens(RAG_INTRO) -
     PER_MESSAGE_STRUCTURE_TOKENS;
-  const effectiveRag = fitRagToBudget(rag, ragCapacity);
+  // v4.8：知识/任务意图给证据块显式上限；evidence=1 时沿用剩余空间（旧行为）
+  const evidenceCap =
+    plan && plan.quotas.evidence < 1 ? Math.floor(usableWindow * plan.quotas.evidence) : ragCapacity;
+  const effectiveRag = fitRagToBudget(rag, Math.min(ragCapacity, evidenceCap));
 
   const systemPrompt = buildSystemPrompt(
     assistant,
@@ -244,7 +254,7 @@ export function buildChatMessages(
     systemTokens: systemPrompt ? estimateTokens(systemPrompt) : 0,
     toolsTokens: budget.toolsTokens,
     lastCompletionTokens: budget.lastCompletionTokens,
-    historyTokenCap: Math.floor(usableWindow * CONTEXT_QUOTA_HISTORY),
+    historyTokenCap: historyCap,
   });
   return { messages: [...prefix, ...kept], stats };
 }

@@ -60,6 +60,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   contextMessageCount: DEFAULT_CONTEXT_MESSAGES,
   globalAppendPrompt: '',
   globalAppendPromptEnabled: false,
+  // v4.8：装配前预判压缩默认开（仅历史超 85% 水位触发）
+  contextPreflightCompactEnabled: true,
   // v2.4 M1：演示模式默认关（用户可一键开启；开启即内置 demo 供应商与 mock 模型）
   demoModeEnabled: false,
   // v2.4 M1 T7：TTFV 里程碑缺省为空（首次启动/模型就绪/首答时由 recordMilestone 首写）

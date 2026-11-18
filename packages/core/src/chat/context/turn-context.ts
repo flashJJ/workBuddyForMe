@@ -1,6 +1,8 @@
 import { DEFAULT_CONTEXT_TOKEN_BUDGET, HISTORY_MESSAGE_SAFETY_CAP, CONTEXT_MESSAGES_MIN, CONTEXT_MESSAGES_MAX, DEFAULT_CONTEXT_MESSAGES } from '@wbfm/shared/constants';
 import { type Assistant, type Conversation, type Message } from '@wbfm/shared/types';
 import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
+import type { ContextPlan, CondensationTrigger } from '@wbfm/shared/schemas';
+import type { SessionLogService } from '../../session-log/session-log-service';
 import {
   traceAsync,
   type ChatMessage,
@@ -12,6 +14,7 @@ import type { AttachmentService, ResolvedImage } from '../../services/assistant/
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import { buildChatMessages } from './prompt';
 import {
+  estimateMessageTokens,
   estimateTokens,
   resolveReserveTokens,
   type HistoryBudgetStats,
@@ -49,6 +52,8 @@ export interface TurnMessageParams {
   globalAppendPrompt?: string | null;
   /** v2.0：关系等级已解锁的用户称呼（未解锁不传） */
   cardNickname?: string | null;
+  /** v4.8：意图上下文配额 */
+  plan?: ContextPlan | null;
 }
 
 /**
@@ -90,6 +95,7 @@ export function buildTurnMessages(params: TurnMessageParams): {
     card,
     globalAppendPrompt: globalAppendPrompt ?? null,
     cardNickname: cardNickname ?? null,
+    plan: params.plan ?? null,
   });
 }
 
@@ -106,7 +112,7 @@ export async function recordBudgetSpan(
 
 export interface CompactionParams {
   conversations: ConversationService;
-  attachments: AttachmentService;
+  attachments: Pick<AttachmentService, 'loadImages'>;
   conversation: Conversation;
   assistant: Assistant;
   target: ResolvedChatTarget;
@@ -115,6 +121,10 @@ export interface CompactionParams {
   lastCompletionTokens: number | null;
   signal?: AbortSignal;
   traceParent: TraceHandle | null;
+  /** v4.8：事件日志（记录 context_condensed；缺省不落事件） */
+  events?: SessionLogService;
+  /** v4.8：压缩触发原因 */
+  trigger?: CondensationTrigger;
 }
 
 export interface CompactionResult {
@@ -178,6 +188,23 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
       `[wbfm] 会话事实落库失败：${error instanceof Error ? error.message : String(error)}`,
     );
   }
+  // v4.8：压缩事件化——摘要投影仍写 conversations，事件作为可回溯真源
+  const kept = mapped.slice(plan.foldCount);
+  const afterTokens =
+    kept.reduce((sum, message) => sum + estimateMessageTokens(message), 0) +
+    estimateTokens(summary);
+  params.events?.recordChat(conversation.id, 'context_condensed', {
+    trigger: params.trigger ?? 'threshold',
+    foldedMessageIds: folded.map((message) => message.id),
+    summary,
+    facts: structured.payload.facts.map((fact) => ({ key: fact.key, value: fact.value })),
+    decisions: structured.payload.decisions,
+    openLoops: structured.payload.openLoops,
+    beforeTokens: plan.totalTokens,
+    afterTokens,
+    fidelityMissing: structured.fidelityMissing,
+    degraded: false,
+  });
   return { compactedTurns: plan.foldCount, summary };
 }
 
@@ -197,6 +224,21 @@ export async function runPostTurnCompaction(
         error instanceof Error ? error.message : String(error)
       }`,
     );
+    // v4.8：失败也留一条降级事件，便于回放「当时为什么没压成」
+    if (!params.signal?.aborted) {
+      params.events?.recordChat(params.conversation.id, 'context_condensed', {
+        trigger: params.trigger ?? 'threshold',
+        foldedMessageIds: [],
+        summary: '',
+        facts: [],
+        decisions: [],
+        openLoops: [],
+        beforeTokens: 0,
+        afterTokens: 0,
+        fidelityMissing: [],
+        degraded: true,
+      });
+    }
     return null;
   }
 }

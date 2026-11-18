@@ -75,6 +75,16 @@ export const CONTEXT_QUOTA_SUMMARY = 0.25;
 export const CONTEXT_QUOTA_FACTS = 0.1;
 export const CONTEXT_QUOTA_MEMORY = 0.1;
 
+/**
+ * v4.8 对话意图识别：
+ * 低于该置信度不改变现有装配策略（只加资源，不减资源，避免误判导致漏检索）。
+ */
+export const INTENT_LOW_CONFIDENCE = 0.6;
+/** 可选小模型分类器超时；超时/未配置时回退纯规则 */
+export const INTENT_CLASSIFIER_TIMEOUT_MS = 800;
+/** 预判压缩水位：历史估算占可用窗口比例超过该值时，先压缩再请求 */
+export const CONTEXT_PREFLIGHT_TRIGGER_RATIO = 0.85;
+
 /** 单会话结构化事实保留上限（按 kind 分组后按更新时间截断） */
 export const CONVERSATION_FACT_MAX_ITEMS = 30;
 /** 工作记忆检查点 TTL（分钟）：任务无推进则自动过期归档 */

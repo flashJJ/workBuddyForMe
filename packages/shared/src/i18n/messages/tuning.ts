@@ -27,6 +27,8 @@ export const zhTuning = {
     contextCount: '上下文条数（2–50）',
     contextCountHint: '每轮最多携带最近多少条历史；先按条数裁剪，再按模型窗口做 token 裁剪。',
     contextCountValue: '{count} 条',
+    preflightCompact: '装配前预判压缩',
+    preflightCompactHint: '历史上下文接近饱和时先压缩再请求，避免撞墙后硬截断；会多一次摘要调用。',
   },
   // 高级区
   advanced: {
@@ -81,6 +83,9 @@ export const enTuning = {
     contextCountHint:
       'At most this many recent messages per turn. Count clipping runs first, then token-budget clipping for the model window.',
     contextCountValue: '{count} messages',
+    preflightCompact: 'Preflight compaction',
+    preflightCompactHint:
+      'Compact before the request when history nears saturation, instead of hard-truncating at the limit; costs one extra summarization call.',
   },
   advanced: {
     title: 'Advanced',
