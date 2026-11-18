@@ -72,6 +72,7 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
     active.set(runId, { abort });
     runs.startRun(runId);
 
+    let hasBaselineSnapshot = false;
     const toolContext = {
       signal,
       knowledgeBaseIds: [] as string[],
@@ -92,13 +93,17 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
       replayTargetId: params.replayTargetId,
       context: {
         resolveChatTarget: ({ modelId }) => resolveChatTargetForModelId(deps, modelId ?? null),
-        recordContextSnapshot: (payload) =>
+        recordContextSnapshot: (payload) => {
+          // v4.10：首条基线必写，之后仅在截断时追加，控制事件量
+          if (hasBaselineSnapshot && !payload.truncated) return;
+          hasBaselineSnapshot = true;
           deps.events?.record({
             scope: 'flow',
             scopeId: runId,
             type: 'context_scene_snapshot',
             payload,
-          }),
+          });
+        },
         retrieve: (query, knowledgeBaseId, topK) =>
           retrieval.retrieve({ knowledgeBaseId, query, topK }),
         resolveTool: async (name) => runtime.resolveTool(name)?.tool ?? null,

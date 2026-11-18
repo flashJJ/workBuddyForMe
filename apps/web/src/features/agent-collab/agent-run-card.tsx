@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
 import { toOutcome } from '@/lib/runs/run-outcome';
 import { getStageBridge } from '@/features/stage/bridge';
+import { SceneSnapshotPanel, summarizeSceneSnapshots } from '@/features/context-snapshots';
 import { cn } from '@/lib/utils';
 import { AgentHandoffTimeline } from './agent-handoff-timeline';
 import { AgentRounds } from './agent-rounds';
@@ -50,6 +51,10 @@ export function AgentRunCard({
   const sys = useSystemText();
   const terminal = state.status !== 'connecting' && state.status !== 'running';
   const outcome = toOutcome('agent', state.status);
+  const snapshotSummary = React.useMemo(
+    () => summarizeSceneSnapshots(state.contextSnapshots.map((value) => ({ value }))),
+    [state.contextSnapshots],
+  );
   return (
     <div
       className="min-w-0 overflow-hidden rounded-lg border bg-ui-card text-xs shadow-sm"
@@ -81,6 +86,7 @@ export function AgentRunCard({
 
       <div className={cn('space-y-2 px-3', compact ? 'py-2' : 'py-2.5')}>
         <BudgetBar state={state} />
+        <SceneSnapshotPanel summary={snapshotSummary} compact />
         <AgentHandoffTimeline handoffs={state.handoffs} />
         {state.pendingConfirm && (
           <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] text-warning">

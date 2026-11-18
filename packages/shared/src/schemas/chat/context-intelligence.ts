@@ -113,6 +113,12 @@ export const sceneContextSnapshotPayloadSchema = z.object({
   reserveTokens: z.number().int().nonnegative(),
   budgetTokens: z.number().int().nonnegative(),
   promptTokens: z.number().int().nonnegative(),
+  /** v4.10：system 消息占用（截断后终值）；旧事件缺省 */
+  systemTokens: z.number().int().nonnegative().optional(),
+  /** v4.10：非 system 消息占用；旧事件缺省 */
+  inputTokens: z.number().int().nonnegative().optional(),
+  /** v4.10：最终消息条数；旧事件缺省 */
+  messageCount: z.number().int().nonnegative().optional(),
   truncatedMessages: z.number().int().nonnegative(),
   droppedMessages: z.number().int().nonnegative(),
   truncated: z.boolean(),

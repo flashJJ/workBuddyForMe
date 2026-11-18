@@ -11,6 +11,7 @@ import type {
   ExecutorOutcome,
   ReviewVerdict,
   ReviewVerdictPayload,
+  SceneContextSnapshotPayload,
   SubtaskSpec,
 } from '@wbfm/shared/schemas';
 import type { SseEvent, SsePayloadMap } from '@wbfm/shared/api';
@@ -75,6 +76,8 @@ export interface AgentCardState {
   pendingConfirm: SsePayloadMap['agent_tool_confirm'] | null;
   /** v4.7 P1：待确认的计划预览（只读）；null=无待确认计划 */
   pendingPlan: SsePayloadMap['agent_plan_preview'] | null;
+  /** v4.10：本次运行最近 24 条场景上下文快照（实时帧） */
+  contextSnapshots: SceneContextSnapshotPayload[];
 }
 
 /** 消息/时间线上挂载协作卡的映射值 */
@@ -96,6 +99,7 @@ export function initAgentCard(budget: AgentBudget): AgentCardState {
     errorMessage: null,
     pendingConfirm: null,
     pendingPlan: null,
+    contextSnapshots: [],
   };
 }
 
@@ -231,6 +235,11 @@ export function reduceAgentFrame(state: AgentCardState, frame: AgentStreamFrame)
       return { ...state, pendingConfirm: frame.data };
     case 'agent_plan_preview':
       return { ...state, pendingPlan: frame.data };
+    case 'context_scene_snapshot':
+      return {
+        ...state,
+        contextSnapshots: [...state.contextSnapshots, frame.data].slice(-24),
+      };
     case 'done':
       return {
         ...state,

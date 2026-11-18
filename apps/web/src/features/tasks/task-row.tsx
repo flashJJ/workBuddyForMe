@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
 import { formatDurationMs, runElapsedMs, taskOutcome } from '@/lib/runs/run-outcome';
 import { useTaskEvents } from '@/lib/hooks/tasks';
+import { SceneSnapshotPanel, useSceneSnapshots } from '@/features/context-snapshots';
 import { TaskControlBar } from './task-control-bar';
 import { TaskGovernanceSummary } from './task-governance-summary';
 import { TaskTimeline } from './task-timeline';
@@ -39,6 +40,10 @@ export function TaskRow({
   const displayRun = live.run ?? task;
   const steps = live.steps.length > 0 ? live.steps : [];
   const isActive = displayRun.status === 'running' || displayRun.status === 'paused';
+  const contextSnapshots = useSceneSnapshots('task', expanded ? task.id : null, {
+    enabled: expanded,
+    refetchInterval: expanded && isActive ? 5_000 : false,
+  });
   const outcome = taskOutcome(displayRun.status, displayRun.stopReason);
   const duration = formatDurationMs(
     runElapsedMs(displayRun.createdAt, displayRun.finishedAt, Date.now()),
@@ -76,6 +81,10 @@ export function TaskRow({
       {expanded && (
         <div className="min-w-0 space-y-3 border-t px-4 py-3">
           <TaskGovernanceSummary task={displayRun} />
+          <SceneSnapshotPanel summary={contextSnapshots.summary} compact />
+          {contextSnapshots.isError && (
+            <p className="text-xs text-warning">{t('contextInsights.error')}</p>
+          )}
           {live.status === 'error' && (
             <p className="flex items-center gap-2 text-xs text-warning">
               <AlertTriangle className="h-3 w-3" />

@@ -7,6 +7,7 @@ import { llmNodeHandler } from './llm';
 function context(
   snapshots: SceneContextSnapshotPayload[],
   onMessages?: (messages: unknown) => void,
+  withRecorder = true,
 ): FlowExecutionContext {
   const provider = {
     chatStream: async function* (params: { messages: unknown }) {
@@ -23,12 +24,17 @@ function context(
       provider,
       model: { modelId: 'flow-model', contextWindow: 4096 },
     }),
-    recordContextSnapshot: (payload: SceneContextSnapshotPayload) => snapshots.push(payload),
+    ...(withRecorder
+      ? {
+          recordContextSnapshot: (payload: SceneContextSnapshotPayload) =>
+            snapshots.push(payload),
+        }
+      : {}),
   } as unknown as FlowExecutionContext;
 }
 
 describe('flow llm 节点（v4.9 提示词预算）', () => {
-  it('短提示词不写快照，消息保持原样', async () => {
+  it('短提示词每次装配上报快照，消息保持原样', async () => {
     const snapshots: SceneContextSnapshotPayload[] = [];
     let seen: unknown;
     const result = await llmNodeHandler.run(
@@ -38,11 +44,20 @@ describe('flow llm 节点（v4.9 提示词预算）', () => {
       }),
     );
     expect(result.text).toBe('节点输出');
-    expect(snapshots).toHaveLength(0);
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0]?.truncated).toBe(false);
     expect(seen).toEqual([
       { role: 'system', content: '系统' },
       { role: 'user', content: '你好' },
     ]);
+  });
+
+  it('未配置快照回调时只装配、不抛错', async () => {
+    const result = await llmNodeHandler.run(
+      { user: '你好' },
+      context([], undefined, false),
+    );
+    expect(result.text).toBe('节点输出');
   });
 
   it('超窗提示词头尾截断，并写 flow 场景快照', async () => {

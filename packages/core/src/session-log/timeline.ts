@@ -115,10 +115,16 @@ function detailFor(event: SessionEventView): string {
     );
   }
   if (event.type === 'context_scene_snapshot') {
-    return compact(
-      `budget=${String(field(payload, 'budgetTokens') ?? '')}, prompt=${String(field(payload, 'promptTokens') ?? '')}, ` +
-        `truncated=${String(field(payload, 'truncated') ?? '')}`,
-    );
+    const systemTokens = field(payload, 'systemTokens');
+    const inputTokens = field(payload, 'inputTokens');
+    const parts = [
+      `budget=${String(field(payload, 'budgetTokens') ?? '')}`,
+      `prompt=${String(field(payload, 'promptTokens') ?? '')}`,
+      ...(typeof systemTokens === 'number' ? [`system=${systemTokens}`] : []),
+      ...(typeof inputTokens === 'number' ? [`input=${inputTokens}`] : []),
+      `truncated=${String(field(payload, 'truncated') ?? '')}`,
+    ];
+    return compact(parts.join(', '));
   }
   return compact(payload);
 }

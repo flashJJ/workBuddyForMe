@@ -24,6 +24,21 @@ describe('fitPromptMessages（单次提示词预算）', () => {
     expect(result.stats.role).toBe('planner');
     expect(result.stats.truncated).toBe(false);
     expect(result.stats.promptTokens).toBeLessThanOrEqual(result.stats.budgetTokens);
+    expect(result.stats.messageCount).toBe(2);
+    expect(result.stats.systemTokens).toBeGreaterThan(0);
+    expect((result.stats.systemTokens ?? 0) + (result.stats.inputTokens ?? 0)).toBe(
+      result.stats.promptTokens,
+    );
+  });
+
+  it('空消息列表输出零值统计', () => {
+    const result = fitPromptMessages([], { contextWindow: 4096, scene: 'flow_node' });
+    expect(result.messages).toEqual([]);
+    expect(result.stats.promptTokens).toBe(0);
+    expect(result.stats.systemTokens).toBe(0);
+    expect(result.stats.inputTokens).toBe(0);
+    expect(result.stats.messageCount).toBe(0);
+    expect(result.stats.truncated).toBe(false);
   });
 
   it('超预算时保留头尾并插入省略标记', () => {
@@ -42,6 +57,9 @@ describe('fitPromptMessages（单次提示词预算）', () => {
     expect(content).toContain(tail);
     expect(content).toContain('上下文已截断');
     expect(result.stats.promptTokens).toBeLessThanOrEqual(result.stats.budgetTokens + 16);
+    expect(result.stats.messageCount).toBe(1);
+    expect(result.stats.systemTokens).toBe(0);
+    expect(result.stats.inputTokens).toBe(result.stats.promptTokens);
   });
 
   it('system 过大时优先截断 system，保留当前用户问题', () => {

@@ -209,6 +209,11 @@ export function fitPromptMessages(
 
   promptTokens = truncateLargest(working, budgetTokens, truncatedIndices);
 
+  const systemTokens = working.reduce(
+    (sum, message) =>
+      message.role === 'system' ? sum + estimateMessageTokens(message) : sum,
+    0,
+  );
   const stats: SceneContextSnapshotPayload = {
     scene: options.scene,
     ...(options.role ? { role: options.role } : {}),
@@ -217,6 +222,9 @@ export function fitPromptMessages(
     reserveTokens,
     budgetTokens,
     promptTokens,
+    systemTokens,
+    inputTokens: Math.max(0, promptTokens - systemTokens),
+    messageCount: working.length,
     truncatedMessages: truncatedIndices.size,
     droppedMessages,
     truncated: truncatedIndices.size > 0 || droppedMessages > 0,

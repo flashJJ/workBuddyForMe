@@ -59,4 +59,21 @@ describe('projectTimeline（v4.8 上下文事件）', () => {
     expect(item?.label).toBe('上下文快照：collab_plan');
     expect(item?.detail).toBe('budget=3008, prompt=2870, truncated=false');
   });
+
+  it('v4.10 场景快照展示 system/input 占用', () => {
+    const [item] = projectTimeline([
+      event('context_scene_snapshot', {
+        scene: 'collab_plan',
+        role: 'planner',
+        budgetTokens: 3008,
+        promptTokens: 2870,
+        systemTokens: 870,
+        inputTokens: 2000,
+        truncated: false,
+      }),
+    ]);
+    expect(item?.detail).toBe(
+      'budget=3008, prompt=2870, system=870, input=2000, truncated=false',
+    );
+  });
 });

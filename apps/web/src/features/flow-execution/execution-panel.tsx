@@ -12,6 +12,7 @@ import { API } from '@/lib/api/endpoints';
 import { useFlowRunAction, type FlowLiveState } from '@/lib/hooks/flows';
 import type { SsePayloadMap } from '@wbfm/shared/api';
 import { ToolConfirmDialog } from '@/features/chat/overlay';
+import { SceneSnapshotPanel, useSceneSnapshots } from '@/features/context-snapshots';
 import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
 import { ExecutionTimeline } from './execution-timeline';
 import { WaitingCard } from './waiting-card';
@@ -30,6 +31,9 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
   const toast = useToast();
   const terminal = live.phase === 'succeeded' || live.phase === 'failed' || live.phase === 'cancelled';
   const waitingNode = live.waitingNodeId ? nodes.find((n) => n.id === live.waitingNodeId) : null;
+  const contextSnapshots = useSceneSnapshots('flow', runId, {
+    refetchInterval: terminal ? false : 5_000,
+  });
 
   // v1.4：agent 节点内 Executor 的桌面工具门控帧（最新一条未决策且运行未结束时弹窗）
   const [resolvedGates, setResolvedGates] = React.useState<ReadonlySet<string>>(new Set());
@@ -133,6 +137,11 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
             onSubmitHuman={submitHuman}
             onToolConfirm={submitTool}
           />
+        )}
+        {contextSnapshots.summary.entries.length > 0 && (
+          <div className="mx-4 mb-2">
+            <SceneSnapshotPanel summary={contextSnapshots.summary} compact />
+          </div>
         )}
         <ExecutionTimeline events={live.events} nodes={nodes} />
         {live.phase === 'succeeded' && (

@@ -37,12 +37,12 @@ export const llmNodeHandler: FlowNodeHandler<LlmNodeConfig, LlmNodeOutputs> = {
         : []),
       { role: 'user' as const, content: user },
     ];
-    // v4.9：单节点提示词安全上限；未超窗口时逐字不变，截断时写 flow 场景快照
+    // v4.9：单节点提示词安全上限；v4.10：每次装配上报统计，由执行器决定是否落库
     const fitted = fitPromptMessages(messages, {
       contextWindow: model.contextWindow,
       scene: 'flow_node',
     });
-    if (fitted.stats.truncated) ctx.recordContextSnapshot?.(fitted.stats);
+    ctx.recordContextSnapshot?.(fitted.stats);
 
     let text = '';
     let usage: TokenUsage | undefined;
