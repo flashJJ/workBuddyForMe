@@ -66,6 +66,9 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       compileModelId: null,
       contextMessageCount: 20,
       contextPreflightCompactEnabled: true,
+      // v4.8：小模型意图识别默认关、跟随默认模型
+      intentClassifierEnabled: false,
+      intentClassifierModelId: null,
       globalAppendPrompt: '',
       globalAppendPromptEnabled: false,
       // v2.4 M1：演示模式缺省关

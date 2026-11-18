@@ -80,8 +80,8 @@ export const CONTEXT_QUOTA_MEMORY = 0.1;
  * 低于该置信度不改变现有装配策略（只加资源，不减资源，避免误判导致漏检索）。
  */
 export const INTENT_LOW_CONFIDENCE = 0.6;
-/** 可选小模型分类器超时；超时/未配置时回退纯规则 */
-export const INTENT_CLASSIFIER_TIMEOUT_MS = 800;
+/** 可选小模型分类器超时；超时/未配置时回退纯规则（本地小模型冷启动留余量） */
+export const INTENT_CLASSIFIER_TIMEOUT_MS = 2_500;
 /** 预判压缩水位：历史估算占可用窗口比例超过该值时，先压缩再请求 */
 export const CONTEXT_PREFLIGHT_TRIGGER_RATIO = 0.85;
 

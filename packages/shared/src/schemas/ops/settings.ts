@@ -161,6 +161,9 @@ export const settingsUpdateSchema = z.object({
   contextMessageCount: z.number().int().min(CONTEXT_MESSAGES_MIN).max(CONTEXT_MESSAGES_MAX).optional(),
   // v4.8：装配前预判压缩（历史超水位先压缩；缺省 true）
   contextPreflightCompactEnabled: z.boolean().optional(),
+  // v4.8：小模型意图识别（缺省 false；modelId=null 跟随默认对话模型）
+  intentClassifierEnabled: z.boolean().optional(),
+  intentClassifierModelId: z.string().trim().min(1).nullable().optional(),
   // v1.8 M3：全局追加提示词（固定注入在角色卡之后、情绪段之前；空串=无内容）
   globalAppendPrompt: z.string().max(GLOBAL_APPEND_PROMPT_MAX).optional(),
   /** v1.8 M3：全局追加开关（内容为空时开关无效；缺省 false） */

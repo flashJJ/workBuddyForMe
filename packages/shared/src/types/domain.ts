@@ -19,6 +19,7 @@ import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { SubagentCliSettingsFields } from './subagent-settings';
 import type { CapabilitySignatureSettingsFields } from './capability-settings';
 import type { AgentGovernanceSettingsFields } from './agent-settings';
+import type { ChatContextSettingsFields } from './chat-context-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction/interaction-graph';
 import type { ToolTraceEntry } from './tool';
 import type { StagePlan } from './stage-plan';
@@ -201,7 +202,7 @@ export interface AppSettings
     LocalModeSettingsFields,
     SubagentCliSettingsFields,
     CapabilitySignatureSettingsFields,
-    AgentGovernanceSettingsFields {
+    AgentGovernanceSettingsFields, ChatContextSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;
@@ -256,7 +257,6 @@ export interface AppSettings
   // v1.7 事件三字段经 EventSettingsFields 交叉引入（见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;
-  /** v4.8：预判压缩（历史超 85% 先压缩；缺省 true） */ contextPreflightCompactEnabled?: boolean;
   /** v1.8 M3：全局追加提示词（角色卡之后、情绪段之前；空串=无） */
   globalAppendPrompt?: string;
   /** v1.8 M3：全局追加开关（内容为空时无效；缺省 false） */

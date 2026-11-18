@@ -1,8 +1,10 @@
 import type { Assistant, MemoryNotice } from '@wbfm/shared/types';
 import type { TurnIntent } from '@wbfm/shared/schemas';
+import { INTENT_CLASSIFIER_TIMEOUT_MS } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../../services/base/deps';
 import type { MemoryService } from '../../memory/memory-service';
-import { detectTurnIntent } from '../context/turn-intent';
+import { classifyTurnIntent } from '../context/turn-intent';
+import { createIntentClassifier } from '../context/intent-classifier';
 import { applyMemoryIntent } from '../../memory/intent-memory';
 
 /**
@@ -29,11 +31,15 @@ export interface IntentStageResult {
 }
 
 export async function runIntentStage(params: IntentStageParams): Promise<IntentStageResult> {
-  const intent = detectTurnIntent({
-    text: params.userContent,
-    hasImages: params.hasImages,
-    knowledgeBound: params.assistant.knowledgeBaseIds.length > 0,
-  });
+  const intent = await classifyTurnIntent(
+    {
+      text: params.userContent,
+      hasImages: params.hasImages,
+      knowledgeBound: params.assistant.knowledgeBaseIds.length > 0,
+    },
+    createIntentClassifier(params.deps),
+    INTENT_CLASSIFIER_TIMEOUT_MS,
+  );
   params.deps.events?.recordChat(params.conversationId, 'turn_intent', intent);
   const notices =
     params.assistant.memoryEnabled && params.applyMemory !== false

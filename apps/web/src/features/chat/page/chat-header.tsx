@@ -9,6 +9,7 @@ import { useSkills } from '@/lib/hooks/capability';
 import { AssistantSwitcher } from '../sidebar/assistant-switcher';
 import { PlanChip } from '@/features/plans/chip';
 import { RunGraphLauncher } from '@/features/run-graph';
+import { ContextInsightsLauncher } from '@/features/chat/context-insights';
 import { BranchLauncher, BranchOriginBanner } from '@/features/branch';
 
 interface Props {
@@ -157,6 +158,7 @@ function HeaderActions({
               className="absolute right-0 top-full z-40 mt-1 w-52 rounded-md border bg-ui-overlay p-1 text-popover-foreground shadow-md"
             >
               <RunGraphLauncher kind="conversation" id={conversationId} menuItem />
+              <ContextInsightsLauncher conversationId={conversationId} menuItem />
               <BranchLauncher conversationId={conversationId} menuItem />
               <p className="mt-1 border-t px-2 pb-1 pt-2 text-[10px] leading-snug text-muted-foreground">
                 {t('chat.localPrivateStreaming')}

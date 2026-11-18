@@ -112,7 +112,7 @@ export function detectTurnIntent(input: TurnIntentInput): TurnIntent {
 }
 
 /** 可插拔小模型分类器端口（未配置时调用方不传，纯规则零成本） */
-export type IntentClassifier = (text: string) => Promise<TurnIntent | null>;
+export type IntentClassifier = (text: string, signal?: AbortSignal) => Promise<TurnIntent | null>;
 
 /**
  * 异步识别：规则置信度足够时不再调用分类器；否则在超时内取分类器结果。
@@ -125,17 +125,22 @@ export async function classifyTurnIntent(
 ): Promise<TurnIntent> {
   const ruled = detectTurnIntent(input);
   if (!classifier || ruled.confidence >= INTENT_LOW_CONFIDENCE) return ruled;
+  const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const timeout = new Promise<null>((resolve) => {
-      timer = setTimeout(() => resolve(null), timeoutMs);
+      timer = setTimeout(() => {
+        controller.abort();
+        resolve(null);
+      }, timeoutMs);
     });
-    const classified = await Promise.race([classifier(input.text), timeout]);
+    const classified = await Promise.race([classifier(input.text, controller.signal), timeout]);
     if (!classified || classified.confidence < INTENT_LOW_CONFIDENCE) return ruled;
     return { ...classified, source: 'classifier' };
   } catch {
     return ruled;
   } finally {
     if (timer) clearTimeout(timer);
+    controller.abort();
   }
 }
