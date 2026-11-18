@@ -9,7 +9,7 @@ import { useSkills } from '@/lib/hooks/capability';
 import { AssistantSwitcher } from '../sidebar/assistant-switcher';
 import { PlanChip } from '@/features/plans/chip';
 import { RunGraphLauncher } from '@/features/run-graph';
-import { ContextInsightsLauncher } from '@/features/chat/context-insights';
+import { ContextInsightsLauncher } from '../context-insights';
 import { BranchLauncher, BranchOriginBanner } from '@/features/branch';
 
 interface Props {

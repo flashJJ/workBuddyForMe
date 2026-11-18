@@ -1,7 +1,8 @@
 import type { DatabaseInstance } from '@wbfm/database';
 import type { AgentBudget, AgentPlanDecision, AgentRunView } from '@wbfm/shared/schemas';
 import type { AgentNodeInnerEvent } from '@wbfm/shared/types';
-import type { AgentClients, AgentRunEvent } from '../index';
+import type { AgentClients } from './runner-types';
+import type { AgentRunEvent } from './agent-runner';
 import type { AgentRoleKey } from '../clients/role-models';
 
 /** v2.8：协作运行服务契约外迁（拆分守行数门禁） */

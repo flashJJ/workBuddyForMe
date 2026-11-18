@@ -10,7 +10,8 @@ import { createRunControls } from './agent-run-controls';
 import { createRunEventBus, tapRunEvents, type RunEventBus } from '../runtime/run-event-bus';
 import { createSignalTapBus } from '../runtime/signal-tap';
 import { PendingObserverRegistry } from '../runtime/observer-registry';
-import type { AgentClients, AgentRunEvent } from '../index';
+import type { AgentClients } from './runner-types';
+import type { AgentRunEvent } from './agent-runner';
 import type {
   AgentClientOverrides,
   AgentRunService,
