@@ -17,6 +17,11 @@ beforeEach(() => {
 
 afterEach(() => {
   try {
+    fs.rmSync(path.join(root, '..', 'outside.png'), { force: true });
+  } catch {
+    // 越界用例的临时文件可能不存在
+  }
+  try {
     fs.rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
   } catch {
     // Windows 偶发句柄占用
@@ -54,7 +59,8 @@ describe('v4.4 M3 wallpaper-pack effect', () => {
   });
 
   it('资源路径越界时拒绝启用', () => {
-    writePack('payload/../../../outside.png');
+    // 越界到临时目录父级即可触发校验；不要写到文件系统根，避免 Linux 非 root 用户 EACCES
+    writePack('payload/../../outside.png');
     expect(() => enableWallpaperPack(manifest, root)).toThrow();
   });
 
