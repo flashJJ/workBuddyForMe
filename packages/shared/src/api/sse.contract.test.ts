@@ -71,8 +71,8 @@ describe('SSE 契约一致性', () => {
   });
 
   it('SseEvent<> 覆盖全部线上事件名（数量对账）', () => {
-    // 与 PAYLOAD_KEY_TABLE/常量同源；显式数量锁住 25 个事件，新增必须显式更新
-    expect(Object.keys(PAYLOAD_KEY_TABLE)).toHaveLength(25);
-    expect(Object.values(SSE_EVENT)).toHaveLength(25);
+    // 与 PAYLOAD_KEY_TABLE/常量同源；显式数量锁住 26 个事件，新增必须显式更新
+    expect(Object.keys(PAYLOAD_KEY_TABLE)).toHaveLength(26);
+    expect(Object.values(SSE_EVENT)).toHaveLength(26);
   });
 });

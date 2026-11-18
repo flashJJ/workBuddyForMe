@@ -32,13 +32,25 @@ const clamp = (value: number, min?: number, max?: number): number => {
   return next;
 };
 
-/** 只保留数字与前导负号；groupThousands 时插入千分位 */
-function formatDraft(raw: string, groupThousands: boolean): string {
+/** 只保留数字、前导负号与最多一个小数点；groupThousands 时仅对整数部分插入千分位 */
+function formatDraft(raw: string, groupThousands: boolean, allowDecimal: boolean): string {
   const negative = raw.trimStart().startsWith('-');
-  const digits = raw.replace(/[^\d]/g, '');
-  if (digits === '') return negative ? '-' : '';
-  const body = groupThousands ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : digits;
-  return negative ? `-${body}` : body;
+  let cleaned = raw.replace(/[^\d.]/g, '');
+  if (!allowDecimal) {
+    cleaned = cleaned.replace(/\./g, '');
+  } else {
+    const dot = cleaned.indexOf('.');
+    if (dot >= 0) {
+      cleaned = `${cleaned.slice(0, dot + 1)}${cleaned.slice(dot + 1).replace(/\./g, '')}`;
+    }
+  }
+  const [integerPart = '', ...rest] = cleaned.split('.');
+  const decimals = allowDecimal && cleaned.includes('.') ? `.${rest.join('')}` : '';
+  if (integerPart === '' && decimals === '') return negative ? '-' : '';
+  const body = groupThousands
+    ? integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    : integerPart;
+  return `${negative ? '-' : ''}${body || '0'}${decimals}`;
 }
 
 /** 提交前去掉千分位，避免 Number('1,000') 得到 NaN */
@@ -51,7 +63,7 @@ function countValueChars(text: string, upTo: number): number {
   let count = 0;
   for (let i = 0; i < upTo && i < text.length; i += 1) {
     const ch = text[i]!;
-    if (ch === '-' ? i === 0 : /\d/.test(ch)) count += 1;
+    if (ch === '-' ? i === 0 : /[\d.]/.test(ch)) count += 1;
   }
   return count;
 }
@@ -62,7 +74,7 @@ function caretAfterValueChars(text: string, count: number): number {
   let seen = 0;
   for (let i = 0; i < text.length; i += 1) {
     const ch = text[i]!;
-    if (ch === '-' ? i === 0 : /\d/.test(ch)) {
+    if (ch === '-' ? i === 0 : /[\d.]/.test(ch)) {
       seen += 1;
       if (seen >= count) return i + 1;
     }
@@ -95,10 +107,12 @@ export function NumberInput({
   const i18n = useI18nOptional();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const pendingCaretRef = React.useRef<number | null>(null);
+  const allowDecimal = !Number.isInteger(step);
+  const stepPrecision = allowDecimal ? (String(step).split('.')[1] ?? '').length : 0;
   const formatValue = React.useCallback(
     (next: number | null): string => {
       if (next === null) return '';
-      return groupThousands ? formatDraft(String(next), true) : String(next);
+      return groupThousands ? formatDraft(String(next), true, true) : String(next);
     },
     [groupThousands],
   );
@@ -138,7 +152,8 @@ export function NumberInput({
   const stepBy = (direction: 1 | -1) => {
     // 未设置时以最小值为起点（加号先落在下限，避免越过 min）
     const base = value ?? (min ?? 0) - step;
-    const next = clamp(base + direction * step, min, max);
+    const stepped = Number((base + direction * step).toFixed(stepPrecision));
+    const next = clamp(stepped, min, max);
     if (next !== value) onValueChange(next);
     setDraft(formatValue(next));
   };
@@ -176,7 +191,7 @@ export function NumberInput({
         ref={inputRef}
         id={id}
         role="spinbutton"
-        inputMode="numeric"
+        inputMode={allowDecimal ? 'decimal' : 'numeric'}
         aria-label={ariaLabel}
         aria-valuenow={value ?? undefined}
         aria-valuemin={min}
@@ -187,7 +202,7 @@ export function NumberInput({
         onChange={(event) => {
           const raw = event.target.value;
           const caret = event.target.selectionStart ?? raw.length;
-          const next = formatDraft(raw, groupThousands);
+          const next = formatDraft(raw, groupThousands, allowDecimal);
           pendingCaretRef.current = caretAfterValueChars(
             next,
             countValueChars(raw, caret),

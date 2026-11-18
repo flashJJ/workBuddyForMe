@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -25,11 +25,10 @@ const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
 
 function walk(dir: string, acc: string[] = []): string[] {
   if (!existsSync(dir)) return acc;
-  for (const entry of readdirSync(dir)) {
-    if (IGNORED_DIRS.has(entry)) continue;
-    const full = join(dir, entry);
-    const stat = statSync(full);
-    if (stat.isDirectory()) walk(full, acc);
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (IGNORED_DIRS.has(entry.name)) continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, acc);
     else if (SOURCE_EXT.has(full.slice(full.lastIndexOf('.')))) acc.push(full);
   }
   return acc;

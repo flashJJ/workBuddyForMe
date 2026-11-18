@@ -88,6 +88,38 @@ describe('NumberInput 数值输入', () => {
     expect(onValueChange).toHaveBeenCalledWith(1);
   });
 
+  it('小数步进：输入 0.7 失焦后回传 0.7 并保留小数点', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(
+      <NumberInput
+        value={1}
+        step={0.1}
+        min={0}
+        max={2}
+        onValueChange={onValueChange}
+        aria-label="Temperature"
+      />,
+    );
+
+    const input = screen.getByRole('spinbutton');
+    await user.clear(input);
+    await user.type(input, '0.7');
+    await user.tab();
+
+    expect(onValueChange).toHaveBeenCalledWith(0.7);
+    expect(input).toHaveValue('0.7');
+  });
+
+  it('小数步进：加号按步长进位且不产生浮点尾数', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<NumberInput value={0.7} step={0.1} max={2} onValueChange={onValueChange} />);
+
+    await user.click(screen.getByLabelText('增加'));
+    expect(onValueChange).toHaveBeenCalledWith(0.8);
+  });
+
   it('groupThousands：展示千分位，输入只留数字，回调仍为纯数字', async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();
