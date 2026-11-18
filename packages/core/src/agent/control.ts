@@ -90,4 +90,6 @@ export interface TaskLoopParams {
   subtaskAcceptance?: string[];
   /** 已授权知识库名称（与 knowledgeBaseIds 对应，提示词展示用） */
   knowledgeBaseNames?: string[];
+  /** v4.7：会话上下文块（注入每个决策回合） */
+  contextBlock?: string;
 }

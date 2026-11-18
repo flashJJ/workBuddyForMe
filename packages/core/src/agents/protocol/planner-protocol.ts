@@ -57,6 +57,8 @@ export interface PlannerPromptInput {
   availableToolScopes: string[];
   /** 助手/节点绑定的全部知识库（提示模型选择回填；空数组=无知识库） */
   knowledgeBaseHints?: Array<{ id: string; name: string }>;
+  /** v4.7：会话上下文块（近期对话/摘要/事实/记忆/计划） */
+  contextBlock?: string;
 }
 
 function formatHistory(history: PlannerHistoryEntry[]): string {
@@ -93,6 +95,9 @@ export function buildAgentPlannerMessages(input: PlannerPromptInput): ChatMessag
       : '助手未绑定知识库（knowledgeBaseId 给 null）';
   const text = [
     `【用户目标】${toModelText(input.goal)}`,
+    ...(input.contextBlock?.trim()
+      ? [`【会话上下文】\n${input.contextBlock.trim()}`]
+      : []),
     `【可用工具域】${input.availableToolScopes.join('、') || '（无可用工具，仅能基于已有信息作答）'}`,
     `【知识库】${kbLine}`,
     `【历史交接】\n${formatHistory(input.history)}`,

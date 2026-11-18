@@ -121,6 +121,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
                 history,
                 availableToolScopes: input.availableToolScopes ?? [],
                 knowledgeBaseHints: input.knowledgeBaseHints ?? [],
+                ...(input.contextBlock ? { contextBlock: input.contextBlock } : {}),
               },
               signal,
             ),
@@ -159,6 +160,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
               subtask: currentSubtask,
               round: budget.round,
               emitGateConfirm: (frame) => gateMailbox.post(frame),
+              ...(input.contextBlock ? { contextBlock: input.contextBlock } : {}),
             },
             signal,
           )

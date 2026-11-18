@@ -1,7 +1,7 @@
 import type { ChatMessage, TokenUsage } from '@wbfm/ai';
-import type { TaskStepView } from '@wbfm/shared/schemas';
 import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 import { toModelText } from '../i18n/system-text';
+import { condenseStepHistory } from './step-condenser';
 import type { TaskObservation, TaskPlanDecision, TaskPlanner, TaskPlannerInput } from './types';
 
 /** 决策输出解析失败（循环记为一次失败步，模型可据历史自我纠错） */
@@ -12,8 +12,6 @@ export class PlannerParseError extends Error {
   }
 }
 
-/** 注入决策上下文的历史步数上限（防爆 token） */
-const HISTORY_STEP_CAP = 12;
 
 export const TASK_PLANNER_SYSTEM_PROMPT = `你是一个桌面任务 Agent 的决策器。根据任务目标、当前屏幕观察与历史步骤，决定下一步动作。
 
@@ -49,35 +47,18 @@ export const TOOL_PLANNER_SYSTEM_PROMPT = `你是一个工具型任务 Agent 的
 - unfinished 只列真实边界（资料缺失/工具不可达），全部完成时给空数组或省略
 - 同一动作连续失败时换路径，不要原样重试`;
 
-function parseStepResultJson(step: TaskStepView): { summary?: string } {
-  if (!step.resultJson) return {};
-  try {
-    return JSON.parse(step.resultJson) as { summary?: string };
-  } catch {
-    return {};
-  }
-}
 
-function formatStepDigest(step: TaskStepView): string {
-  const head = `#${step.stepIndex} [${step.kind}]${step.toolName ? ` ${step.toolName}` : ''}`;
-  // 模型边界：reason/error 可能是系统消息标记，固定解码为中文再喂模型
-  const tail = step.status === 'failed' ? `失败：${toModelText(step.error)}` : step.status;
-  const reason = step.reason ? `（${toModelText(step.reason)}）` : '';
-  // 成功动作补结果摘要（如「命中 6 个片段：教育背景」）：完整正文在当前观察，历史只留线索
-  const resultSummary =
-    step.kind === 'action' && step.status === 'completed'
-      ? parseStepResultJson(step).summary?.slice(0, 200)
-      : undefined;
-  return `${head}${reason} → ${tail}${resultSummary ? `：${resultSummary}` : ''}`;
-}
-
-/** 组装决策消息：system 协议 + user（目标/子任务/工具/历史/观察文本 + 可选截图） */
+/** 组装决策消息：system 协议 + user（目标/会话上下文/子任务/工具/历史/观察文本 + 可选截图） */
 export function buildPlannerMessages(input: TaskPlannerInput): ChatMessage[] {
-  const recent = input.steps.slice(-HISTORY_STEP_CAP);
-  const history = recent.length > 0 ? recent.map(formatStepDigest).join('\n') : '（暂无）';
+  const history = condenseStepHistory(input.steps);
   const mode = input.observeMode ?? 'screen';
   const observation: TaskObservation | null = input.observation;
   const blocks = [`【任务目标】${toModelText(input.goal)}`];
+  // v4.7：会话上下文（近期对话/摘要/事实/记忆/计划），由协作入口一次性装配下发
+  if (input.contextBlock?.trim()) {
+    blocks.push(`【会话上下文】\n${input.contextBlock.trim()}`);
+  }
+
   // 协作子任务单/授权知识库/工具目录/预算：两种观察模式都需要——
   // screen 模式若缺这些，模型看到与知识任务无关的桌面截图会误判「页面与任务无关」直接 fail
   if (input.subtask?.brief) blocks.push(`【子任务具体要求】${toModelText(input.subtask.brief)}`);

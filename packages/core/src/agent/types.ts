@@ -54,6 +54,11 @@ export interface TaskPlannerInput {
   toolCatalog?: string[];
   /** 本任务步数上限（提示词展示预算，引导模型及时收尾，避免耗尽步数仍未产出） */
   maxSteps?: number;
+  /**
+   * v4.7：会话上下文块（近期对话/摘要/事实/记忆/计划），
+   * 由协作入口一次性装配，注入每个决策回合，避免任务从零开始。
+   */
+  contextBlock?: string;
 }
 
 export interface TaskPlanner {

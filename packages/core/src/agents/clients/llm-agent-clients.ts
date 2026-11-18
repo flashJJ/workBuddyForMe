@@ -50,6 +50,7 @@ export function createLlmPlannerClient(target: ResolvedChatTarget): PlannerClien
         history: input.history,
         availableToolScopes: input.availableToolScopes,
         knowledgeBaseHints: input.knowledgeBaseHints ?? [],
+        ...(input.contextBlock ? { contextBlock: input.contextBlock } : {}),
       });
       const { content, usage } = await collectStream(target, messages, signal);
       const parsed = parsePlan(content);

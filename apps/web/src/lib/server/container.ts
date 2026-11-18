@@ -1,6 +1,5 @@
 import {
-  initDatabase,
-  createEventUsageRepository,
+  initDatabase, createEventUsageRepository,
   createKnowledgeRepository,
   createWorkflowRepository,
   createWorkflowEndpointRepository,
@@ -36,7 +35,7 @@ import { createMilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService, createSubagentProviderRegistry } from '@wbfm/core/agents';
 import { createMeetingClosureService, createMeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
-import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
+import { createAgentClientsProvider, createAgentPlanContextResolver, createAgentTaskContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
@@ -147,6 +146,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     db,
     clientsProvider: createAgentClientsProvider(agentClientsFactory),
     resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
+    resolveTaskContext: createAgentTaskContextResolver(agentClientsFactory),
     onEvent: (run, event) => {
       workSignals.ingestAgent(run, event);
       sessionLog.record({

@@ -69,6 +69,17 @@ describe('buildPlannerMessages', () => {
     expect(parts[1]?.image_url?.url).toBe('data:image/png;base64,Qk==');
   });
 
+  it('v4.7：注入会话上下文块（任务不再从零开始）', () => {
+    const messages = buildPlannerMessages({
+      ...base,
+      contextBlock: '【会话摘要】\n用户在准备转岗，目标是大模型应用方向。',
+    });
+    const text = messages[1]?.content as string;
+    expect(text).toContain('【会话上下文】');
+    expect(text).toContain('目标是大模型应用方向');
+    expect(text.indexOf('【任务目标】')).toBeLessThan(text.indexOf('【会话上下文】'));
+  });
+
   it('tool 模式注入子任务要求/验收标准/授权知识库/工具用途说明', () => {
     const messages = buildPlannerMessages({
       goal: '帮我规划下职业发展。',

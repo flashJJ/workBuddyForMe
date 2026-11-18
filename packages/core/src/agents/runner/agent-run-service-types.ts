@@ -24,6 +24,12 @@ export type AgentPlanContextResolver = (run: AgentRunView) => {
   knowledgeBaseHints: Array<{ id: string; name: string }>;
 };
 
+/**
+ * v4.7 任务上下文端口：按会话装配近期对话/摘要/事实/记忆/计划，
+ * 返回 null 表示无可用上下文（不注入）。实现方自行控制预算与失败降级。
+ */
+export type AgentTaskContextResolver = (run: AgentRunView) => Promise<string | null>;
+
 export interface AgentRunStartParams {
   /** 已由 POST /api/agent/runs 预建（status=running）的运行记录 */
   run: AgentRunView;
@@ -99,6 +105,8 @@ export interface AgentRunServiceDeps {
   db: DatabaseInstance;
   clientsProvider?: AgentClientsProvider;
   resolvePlanContext?: AgentPlanContextResolver;
+  /** v4.7：会话上下文装配端口（对话任务模式注入 Planner/Executor） */
+  resolveTaskContext?: AgentTaskContextResolver;
   /** v2.7：工作信号回调（每帧广播前；不影响 owner/observer 语义） */
   onEvent?: (run: AgentRunView, event: AgentRunEvent) => void;
   /** v2.8：终态回调（完成回投；服务端持有时只调用一次） */

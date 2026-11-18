@@ -158,6 +158,7 @@ export function createExecutorAdapter(params: CreateExecutorAdapterParams): Exec
         subtaskBrief: subtask.brief,
         subtaskAcceptance: subtask.acceptance,
         knowledgeBaseNames,
+        ...(input.contextBlock ? { contextBlock: input.contextBlock } : {}),
         retrieve: async (query, topK, retrieveSignal) =>
           knowledgeBaseIds.length > 0
             ? retrieval.retrieveMany({

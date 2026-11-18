@@ -3,6 +3,7 @@ import type { Assistant } from '@wbfm/shared/types';
 import { createLlmPlanner } from '@wbfm/core/agent';
 import { resolveChatTargetForModelId } from '@wbfm/core/chat';
 import {
+  buildTaskContextBlock,
   createExecutorAdapter,
   createLlmPlannerClient,
   createLlmReviewerClient,
@@ -12,6 +13,7 @@ import {
   type AgentClientsProvider,
   type AgentPlanContextResolver,
   type AgentRoleKey,
+  type AgentTaskContextResolver,
 } from '@wbfm/core/agents';
 import type { ServiceDeps } from '@wbfm/core/services';
 import type { ToolRuntime } from '@wbfm/core/tools';
@@ -71,6 +73,21 @@ export function createAgentPlanContextResolver(
       availableToolScopes: assistant ? deriveToolScopes(assistant.enabledTools) : [],
       knowledgeBaseHints,
     };
+  };
+}
+
+/** v4.7：任务上下文（会话近期对话/摘要/事实/记忆/计划）装配，随 run 一次性计算 */
+export function createAgentTaskContextResolver(
+  factory: AgentClientsFactoryDeps,
+): AgentTaskContextResolver {
+  return (run) => {
+    const assistant = run.assistantId ? factory.assistants.get(run.assistantId) : null;
+    return buildTaskContextBlock(factory.deps, {
+      conversationId: run.conversationId,
+      goal: run.goal,
+      assistantId: run.assistantId,
+      memoryEnabled: assistant?.memoryEnabled ?? false,
+    });
   };
 }
 
