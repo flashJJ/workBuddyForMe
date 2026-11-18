@@ -20,6 +20,7 @@ import { buildImageMap } from './multimodal';
 import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap, runPostTurnCompaction } from './turn-context';
 import { estimateTokens } from './context-budget';
 import { buildContextPlan } from './context-plan';
+import { resolvePreflightTrigger } from './preflight-trigger';
 import { resolveToolMessageBudget } from './context-budget';
 import type { OrchestratorEvent, RagContext } from '../base/types';
 import type { ResolvedChatTarget } from './model-resolver';
@@ -147,7 +148,11 @@ export async function* prepareTurnContext(
       signal,
       traceParent,
       events: deps.events,
-      trigger: 'preflight',
+      trigger: resolvePreflightTrigger(
+        deps.events,
+        conversationId,
+        target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+      ),
     });
     activeConversation = conversations.get(conversationId);
     historyEstimate = estimateHistory();

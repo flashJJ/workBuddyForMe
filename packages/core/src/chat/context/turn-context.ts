@@ -125,6 +125,8 @@ export interface CompactionParams {
   events?: SessionLogService;
   /** v4.8：压缩触发原因 */
   trigger?: CondensationTrigger;
+  /** v4.8：用户显式压缩——跳过水位阈值 */
+  force?: boolean;
 }
 
 export interface CompactionResult {
@@ -158,6 +160,7 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
     reserveTokens: resolveReserveTokens(params.lastCompletionTokens),
     memoryEnabled: assistant.memoryEnabled,
+    force: params.force,
   });
   if (!plan) return { compactedTurns: 0, summary: null };
 

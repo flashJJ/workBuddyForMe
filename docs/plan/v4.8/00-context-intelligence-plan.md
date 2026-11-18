@@ -1,6 +1,6 @@
 # 对话上下文智能调控（v4.8）：调研与实施计划
 
-> 状态：开发中（M0–M5 已完成；接口与面板可验收）
+> 状态：开发完成（M0–M5；待验收与评测门禁）
 > 前置：v4.7 任务侧 P0/P1/P2 已完成（见 [v4.7 计划](../v4.7/00-agent-task-research-plan.md)）
 > 一句话：把对话侧已有的「摘要 + 预算 + 记忆」从零散能力收成一套按意图分配上下文的 Controller，并把压缩从「撞墙后折叠」升级为「事件化、可回溯、可预判」。
 
@@ -215,12 +215,12 @@ flowchart LR
 | M0 契约 | 完成 | `shared/schemas/chat/context-intelligence.ts`；`constants/chat.ts` 阈值；settings `contextPreflightCompactEnabled` |
 | M1 意图路由 | 完成 | `core/chat/context/turn-intent.ts`（规则 + 可插拔分类器）；`intent-classifier.ts` 小模型绑定与 JSON 解析；`turn_intent` 事件 |
 | M2 混合装配 | 完成 | `core/chat/context/context-plan.ts`；`prompt.ts` 按意图覆盖 tail/middle/memory/evidence 配额 |
-| M3 压缩事件化 | 完成 | `context_condensed`（threshold/preflight、降级事件）；装配前 85% 预判压缩；设置页可关 |
+| M3 压缩事件化 | 完成 | `context_condensed`（threshold/preflight/model_change/user_explicit、降级事件）；装配前 85% 预判压缩；面板「立即压缩」；设置页可关 |
 | M4 记忆治理 | 完成 | `core/memory/intent-memory.ts`：记住写事实、忘掉软归档（可恢复、写审计） |
 | M5 观测 | 完成 | `context_snapshot` 事件 + 事件时间线标签；对话顶栏「上下文面板」展示意图/配额/压缩历史 |
 
 已知边界：
-- `user_explicit` / `model_change` 触发已建模但尚未接入 UI 入口。
+- 评测脚本 `eval-agent.mjs` 尚未新增上下文专项用例，指标门禁留到验收阶段接入。
 - 意图分类器默认关闭；在调优中心开启并绑定模型后才调用，超时 2.5 秒回退规则。
 - 预判压缩会增加一次摘要调用，仅历史超 85% 水位触发，可在调优中心关闭。
 - 面板读取 `/api/events`（最多 500 条）做客户端汇总，不做独立索引表。

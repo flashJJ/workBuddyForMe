@@ -28,7 +28,7 @@ import {
   recoverInterruptedRunJobs,
   type ServiceDeps,
 } from '@wbfm/core/services';
-import { createChatOrchestrator } from '@wbfm/core/chat';
+import { createChatOrchestrator, createContextCompactionService } from '@wbfm/core/chat';
 import { createCapabilityServiceForApp } from './capability-wiring';
 import { createSubagentRunsForApp } from './subagent-wiring';
 import { createMilestoneService } from '@wbfm/core/emotion';
@@ -255,7 +255,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     assistants,
     characterCards: createCharacterCardService(deps),
     stageScenes,
-    conversations: createConversationService(deps),
+    conversations: createConversationService(deps), contextCompaction: createContextCompactionService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),
     knowledgeBases,

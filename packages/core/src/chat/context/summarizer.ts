@@ -31,6 +31,8 @@ export interface CompactionPlanInput {
   reserveTokens: number;
   /** 助手开启长期记忆时为记忆块额外预留预算（默认关，兼容旧调用） */
   memoryEnabled?: boolean;
+  /** v4.8：用户显式触发——跳过阈值，折叠最旧约 60% 消息 */
+  force?: boolean;
 }
 
 export interface CompactionPlan {
@@ -65,6 +67,14 @@ export function planCompaction(input: CompactionPlanInput): CompactionPlan | nul
 
   const costs = input.history.map(estimateMessageTokens);
   const totalTokens = costs.reduce((sum, cost) => sum + cost, 0);
+  if (input.force) {
+    const keep = Math.max(
+      COMPACTION_MIN_KEEP_MESSAGES,
+      Math.ceil(input.history.length * 0.4),
+    );
+    const foldCount = input.history.length - keep;
+    return foldCount >= 1 ? { foldCount, historyBudget, totalTokens } : null;
+  }
   if (totalTokens <= historyBudget * COMPACTION_TRIGGER_RATIO) return null;
 
   // 从新到旧累计逐字后缀，达到预算保留比例即止

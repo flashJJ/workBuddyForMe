@@ -8,4 +8,6 @@ export * from './summarizer';
 export * from './turn-context';
 export * from './turn-context-assembly';
 export * from './turn-preparation';
+export * from './manual-compaction';
+export * from './preflight-trigger';
 export * from './voice';

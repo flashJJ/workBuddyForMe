@@ -1,6 +1,7 @@
 'use client';
 
-import { RefreshCw, X } from 'lucide-react';
+import * as React from 'react';
+import { RefreshCw, Shrink, X } from 'lucide-react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import type {
   CondensationTrigger,
@@ -9,6 +10,9 @@ import type {
 } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
+import { useToast } from '@/components/common/toast';
+import { apiPost } from '@/lib/api/client';
+import { API } from '@/lib/api/endpoints';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useContextInsights } from './use-context-insights';
 
@@ -69,15 +73,50 @@ export function ContextInsightsPanel({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const toast = useToast();
   const { insights, isLoading, isError, refetch } = useContextInsights(conversationId);
+  const [compacting, setCompacting] = React.useState(false);
   const { intent, snapshot, compactions } = insights;
   const empty = !intent && !snapshot && compactions.length === 0;
+
+  const compactNow = async () => {
+    if (!conversationId || compacting) return;
+    setCompacting(true);
+    try {
+      const result = await apiPost<{ compactedTurns: number }>(
+        API.conversationCompact(conversationId),
+      );
+      toast.success(
+        result.compactedTurns > 0
+          ? t('contextInsights.manualCompactDone', { count: result.compactedTurns })
+          : t('contextInsights.manualCompactNone'),
+      );
+      refetch();
+    } catch {
+      toast.error(t('contextInsights.manualCompactFailed'));
+    } finally {
+      setCompacting(false);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col bg-ui-overlay" data-testid="context-insights-panel">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <h3 className="text-sm font-medium">{t('contextInsights.title')}</h3>
         <div className="ml-auto flex items-center gap-1">
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            disabled={!conversationId || compacting}
+            aria-label={t('contextInsights.manualCompact')}
+            title={t('contextInsights.manualCompact')}
+            onClick={() => void compactNow()}
+            data-testid="context-insights-compact"
+          >
+            <Shrink className="h-3.5 w-3.5" />
+          </Button>
           <Button
             type="button"
             size="icon"

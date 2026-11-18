@@ -105,6 +105,8 @@ export const API = {
   // v2.9 事件日志 / 检索 / 导出
   events: (scope: string, scopeId: string, after?: number) =>
     `/api/events?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}${after ? `&after=${after}` : ''}`,
+  /** v4.8：会话上下文立即压缩 */
+  conversationCompact: (id: string) => `/api/conversations/${encodeURIComponent(id)}/compact`,
   search: (q: string, scope?: string) =>
     `/api/search?q=${encodeURIComponent(q)}${scope ? `&scope=${encodeURIComponent(scope)}` : ''}`,
   exportSession: (scope: string, scopeId: string, redact = true) =>

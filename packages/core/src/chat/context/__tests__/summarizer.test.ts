@@ -89,6 +89,19 @@ describe('planCompaction（压缩决策）', () => {
     ).toBeNull();
   });
 
+  it('用户显式压缩：未达阈值也折叠最旧约 60%', () => {
+    const history = Array.from({ length: 8 }, () => msg('abcd'));
+    const plan = planCompaction({
+      history,
+      contextWindow: 10000,
+      personaTokens: 0,
+      toolsTokens: 0,
+      reserveTokens: 0,
+      force: true,
+    });
+    expect(plan?.foldCount).toBe(4);
+  });
+
   it('超阈值时折叠最旧消息，保留至少 4 条最近消息', () => {
     // 8 条 × 5 token = 40；预算 30 → 触发阈值 21；保留目标 15（3 条），硬底 4 条 → 折叠 4 条
     const history = Array.from({ length: 8 }, () => msg('abcd'));
