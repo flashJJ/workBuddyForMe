@@ -146,6 +146,13 @@ export const agentHandoffPayloadSchema = z
     verdict: z.enum(REVIEW_VERDICTS).optional(),
     reviewNotes: z.string().trim().max(AGENT_LIMITS.REVIEW_NOTES_MAX).optional(),
     acceptanceResults: reviewVerdictSchema.shape.acceptanceResults.optional(),
+    /** v4.7 P2：本角色本次调用的 token 用量（观测用；旧数据缺省） */
+    usage: z
+      .object({
+        promptTokens: z.number().int().nonnegative(),
+        completionTokens: z.number().int().nonnegative(),
+      })
+      .optional(),
   })
   .refine(
     (v) => Boolean(v.subtask) || Boolean(v.outcome) || Boolean(v.verdict),

@@ -4,6 +4,7 @@ import {
   createWorkPlanRepository,
 } from '@wbfm/database';
 import type { AgentRunView, SubagentRunView, TaskRunView } from '@wbfm/shared/schemas';
+import { recordAgentRunMemory } from './task-memory';
 import { createSettingsService } from '../services/settings/settings-service';
 import { createConversationService } from '../services/assistant/conversation-service';
 import type { ServiceDeps } from '../services/base/deps';
@@ -170,6 +171,8 @@ export function createRunCompletionService(deps: ServiceDeps) {
         run.conversationId ?? '',
         agentText(run, lang()),
       );
+      // v4.7 P2：任务级记忆沉淀（失败不阻断回投）
+      void recordAgentRunMemory(deps, run).catch(() => undefined);
     },
 
     /** v2.11：外部代理终态回投（幂等键 run_id + kind='subagent'） */

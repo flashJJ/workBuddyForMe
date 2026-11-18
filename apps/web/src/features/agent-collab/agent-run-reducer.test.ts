@@ -23,7 +23,10 @@ const f = {
         handoff: {
           id: 'h1', runId: 'r1', roundNo: round, seq: 1, fromRole: 'planner', toRole: 'executor',
           createdAt: 't',
-          payload: { subtask: { title: '查证', brief: '查清制度', acceptance: ['a1'], toolScopes: ['knowledge'] } },
+          payload: {
+            subtask: { title: '查证', brief: '查清制度', acceptance: ['a1'], toolScopes: ['knowledge'] },
+            usage: { promptTokens: 10, completionTokens: 5 },
+          },
         },
       },
     }) as AgentStreamFrame,
@@ -94,6 +97,8 @@ describe('agent-run-reducer（M4 泳道卡片状态纯函数）', () => {
     expect(round.review?.verdict).toBe('approve');
     expect(round.activePhase).toBeNull();
     expect(s.activeRole).toBeNull();
+    // v4.7 P2：交接条目携带该角色本次 token 用量（prompt + completion）
+    expect(s.handoffs[0]!.tokens).toBe(15);
   });
 
   it('返工：第二轮追加同组，不覆盖首轮', () => {

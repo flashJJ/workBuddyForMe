@@ -54,6 +54,8 @@ export interface AgentHandoffEntry {
   /** 子任务标题 / 交付摘要 / 审查意见 */
   summary: string;
   verdict?: ReviewVerdict;
+  /** v4.7 P2：该角色本次调用的 token 用量（旧数据缺省） */
+  tokens?: number;
 }
 
 export interface AgentCardState {
@@ -126,6 +128,7 @@ function toHandoffEntry(handoff: AgentHandoffView): AgentHandoffEntry {
     from: handoff.fromRole,
     to: handoff.toRole,
     at: handoff.createdAt,
+    ...(p.usage ? { tokens: p.usage.promptTokens + p.usage.completionTokens } : {}),
   };
   if (p.subtask) return { ...base, kind: 'subtask', summary: p.subtask.title };
   if (p.outcome) return { ...base, kind: 'outcome', summary: p.outcome.summary };

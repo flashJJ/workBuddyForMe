@@ -16,6 +16,8 @@ export const zhAgents = {
   handoff: {
     title: '交接记录',
     durationTitle: '距上次交接 {duration}',
+    tokens: '{tokens} tok',
+    tokensTitle: '本角色本次调用 tokens：{tokens}',
   },
   phase: {
     planning: '规划中',

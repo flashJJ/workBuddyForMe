@@ -33,6 +33,7 @@ describe('AgentHandoffTimeline（v2.27 P2-M5）', () => {
         to: 'reviewer',
         kind: 'outcome',
         summary: '年假 15 天',
+        tokens: 30,
         at: '2026-01-01T00:00:01.500Z',
       }),
       entry({
@@ -56,5 +57,7 @@ describe('AgentHandoffTimeline（v2.27 P2-M5）', () => {
     expect(screen.getByText('+1.5s')).toBeTruthy();
     expect(screen.getByText('+1m 5s')).toBeTruthy();
     expect(screen.getByText('通过')).toBeTruthy();
+    // v4.7 P2：有 usage 的交接展示 token 用量，缺省不渲染
+    expect(screen.getByText('30 tok')).toBeTruthy();
   });
 });

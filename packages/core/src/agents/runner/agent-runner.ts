@@ -1,7 +1,4 @@
 ﻿import type {
-  AgentHandoffPayload,
-  AgentHandoffView,
-  AgentRole,
   AgentRunView,
   ReviewVerdictPayload,
 } from '@wbfm/shared/schemas';
@@ -30,6 +27,7 @@ import { GateMailbox, MAILBOX_DONE } from '../runtime/gate-mailbox';
 import { needsPlanReview } from '../runtime/plan-review';
 import { createCheckpointWriter } from './runner-checkpoint';
 import { createRunEventEmitter } from './runner-events';
+import { createHandoffRecorder } from './runner-handoff';
 import { reviewPlanIfNeeded } from './runner-plan-gate';
 import { sys } from '../../i18n/system-text';
 import type {
@@ -77,12 +75,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
     const signal = input.signal;
     const isAborted = () => signal?.aborted === true;
     const evt = createRunEventEmitter(repo, runId);
-    const recordHandoff = (
-      round: number,
-      fromRole: AgentRole,
-      toRole: AgentRole | 'user',
-      payload: AgentHandoffPayload,
-    ): AgentHandoffView => repo.addHandoff({ runId, roundNo: round, fromRole, toRole, payload });
+    const recordHandoff = createHandoffRecorder(repo, runId);
     const checkpoint = checkpoints
       ? createCheckpointWriter(checkpoints, runId, () => toUsage(budget))
       : null;
@@ -126,9 +119,13 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
           yield evt.budget(budget);
         }
         if (exceededReason(budget, runRow.budget)) break;
-        const planHandoff = await recordHandoff(budget.round, 'planner', 'executor', {
-          subtask: currentSubtask,
-        });
+        const planHandoff = await recordHandoff(
+          budget.round,
+          'planner',
+          'executor',
+          { subtask: currentSubtask },
+          plan.degraded ? undefined : plan.value.usage,
+        );
         yield { event: 'agent_handoff', data: { runId, handoff: planHandoff } };
         supervisor = transition(supervisor, { type: 'plan_produced' }).state;
         checkpoint?.save('executing', currentSubtask);
@@ -183,9 +180,13 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         repo.addTokens(runId, exec.usage);
         yield evt.budget(budget);
         outcome = exec.outcome;
-        const execHandoff = await recordHandoff(budget.round, 'executor', 'reviewer', {
-          outcome: exec.outcome,
-        });
+        const execHandoff = await recordHandoff(
+          budget.round,
+          'executor',
+          'reviewer',
+          { outcome: exec.outcome },
+          exec.usage,
+        );
         yield { event: 'agent_handoff', data: { runId, handoff: execHandoff } };
         checkpoint?.save('reviewing', currentSubtask, exec.outcome);
         supervisor = transition(supervisor, { type: 'execution_finished' }).state;
@@ -219,6 +220,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
             reviewNotes: verdict.reviewNotes,
             acceptanceResults: verdict.acceptanceResults,
           },
+          review.degraded ? undefined : review.value.usage,
         );
         yield { event: 'agent_handoff', data: { runId, handoff: reviewHandoff } };
         yield { event: 'agent_review', data: { runId, round: budget.round, review: verdict } };

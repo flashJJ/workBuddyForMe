@@ -16,6 +16,8 @@ export const enAgents = {
   handoff: {
     title: 'Handoffs',
     durationTitle: 'Since last handoff: {duration}',
+    tokens: '{tokens} tok',
+    tokensTitle: 'Tokens for this call: {tokens}',
   },
   phase: {
     planning: 'Planning',

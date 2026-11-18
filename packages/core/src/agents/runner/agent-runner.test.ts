@@ -60,6 +60,12 @@ describe('agent-runner-service 协作五场景', () => {
     expect(run.finalOutcome?.summary).toBe('交付结论');
     expect(run.totalTokens).toBe(15 + 30 + 12);
     expect(repo.listHandoffs(run.id)).toHaveLength(3);
+    // v4.7 P2 观测：每个角色的 token 用量随交接落库
+    expect(repo.listHandoffs(run.id).map((handoff) => handoff.payload.usage)).toEqual([
+      { promptTokens: 10, completionTokens: 5 },
+      { promptTokens: 20, completionTokens: 10 },
+      { promptTokens: 8, completionTokens: 4 },
+    ]);
     expect(clients.planCalls).toBe(1);
     expect(clients.execCalls).toBe(1);
     expect(clients.reviewCalls).toBe(1);
