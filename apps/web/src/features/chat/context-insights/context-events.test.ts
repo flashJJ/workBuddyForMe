@@ -64,4 +64,18 @@ describe('summarizeContextEvents（v4.8 上下文面板）', () => {
     ]);
     expect(data).toEqual({ intent: null, snapshot: null, compactions: [] });
   });
+
+  it('真机超限载荷（保真项 38 条 / 摘要超长）先裁剪再展示', () => {
+    const data = summarizeContextEvents([
+      item('context_condensed', {
+        ...condensed,
+        trigger: 'model_change',
+        summary: 'x'.repeat(9_000),
+        fidelityMissing: Array.from({ length: 38 }, (_, i) => `f${i}`),
+      }),
+    ]);
+    expect(data.compactions).toHaveLength(1);
+    expect(data.compactions[0]!.value.summary).toHaveLength(8_000);
+    expect(data.compactions[0]!.value.fidelityMissing).toHaveLength(20);
+  });
 });

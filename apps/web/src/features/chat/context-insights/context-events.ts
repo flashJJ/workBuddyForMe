@@ -25,6 +25,29 @@ export interface ContextInsightsData {
 
 const COMPACTION_LIMIT = 20;
 
+/** 旧事件可能超契约上限（如 fidelityMissing 38 条）；先宽松裁剪再校验，避免整条丢弃 */
+function normalizeCondensed(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') return payload;
+  const source = payload as Record<string, unknown>;
+  const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+  const text = (value: unknown, max: number): unknown =>
+    typeof value === 'string' ? value.slice(0, max) : value;
+  return {
+    ...source,
+    summary: text(source.summary, 8000),
+    foldedMessageIds: list(source.foldedMessageIds).slice(0, 500),
+    facts: list(source.facts)
+      .slice(0, 20)
+      .map((fact) => {
+        const item = (fact ?? {}) as Record<string, unknown>;
+        return { key: text(item.key, 80), value: text(item.value, 400) };
+      }),
+    decisions: list(source.decisions).slice(0, 10).map((item) => text(item, 300)),
+    openLoops: list(source.openLoops).slice(0, 10).map((item) => text(item, 300)),
+    fidelityMissing: list(source.fidelityMissing).slice(0, 20),
+  };
+}
+
 export function summarizeContextEvents(
   items: readonly ContextEventItem[],
 ): ContextInsightsData {
@@ -44,7 +67,7 @@ export function summarizeContextEvents(
       continue;
     }
     if (item.type === 'context_condensed') {
-      const parsed = contextCondensedPayloadSchema.safeParse(item.payload);
+      const parsed = contextCondensedPayloadSchema.safeParse(normalizeCondensed(item.payload));
       if (parsed.success) compactions.push({ id: item.id, value: parsed.data, at: item.at });
     }
   }

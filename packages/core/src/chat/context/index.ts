@@ -1,4 +1,5 @@
 /** @域 barrel context：v2.16 子能力集中入口（纯 re-export） */
+export * from './condensed-payload';
 export * from './context-budget';
 export * from './model-resolver';
 export * from './multimodal';

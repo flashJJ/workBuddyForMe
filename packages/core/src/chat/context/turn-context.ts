@@ -23,6 +23,7 @@ import type { ResolvedChatTarget } from './model-resolver';
 import { buildImageMap } from './multimodal';
 import { toAiContent } from './multimodal';
 import { planCompaction, summarizeConversationStructured } from './summarizer';
+import { clipCondensedPayload } from './condensed-payload';
 
 export interface TurnMessageParams {
   assistant: Assistant;
@@ -196,18 +197,22 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
   const afterTokens =
     kept.reduce((sum, message) => sum + estimateMessageTokens(message), 0) +
     estimateTokens(summary);
-  params.events?.recordChat(conversation.id, 'context_condensed', {
-    trigger: params.trigger ?? 'threshold',
-    foldedMessageIds: folded.map((message) => message.id),
-    summary,
-    facts: structured.payload.facts.map((fact) => ({ key: fact.key, value: fact.value })),
-    decisions: structured.payload.decisions,
-    openLoops: structured.payload.openLoops,
-    beforeTokens: plan.totalTokens,
-    afterTokens,
-    fidelityMissing: structured.fidelityMissing,
-    degraded: false,
-  });
+  params.events?.recordChat(
+    conversation.id,
+    'context_condensed',
+    clipCondensedPayload({
+      trigger: params.trigger ?? 'threshold',
+      foldedMessageIds: folded.map((message) => message.id),
+      summary,
+      facts: structured.payload.facts.map((fact) => ({ key: fact.key, value: fact.value })),
+      decisions: structured.payload.decisions,
+      openLoops: structured.payload.openLoops,
+      beforeTokens: plan.totalTokens,
+      afterTokens,
+      fidelityMissing: structured.fidelityMissing,
+      degraded: false,
+    }),
+  );
   return { compactedTurns: plan.foldCount, summary };
 }
 
