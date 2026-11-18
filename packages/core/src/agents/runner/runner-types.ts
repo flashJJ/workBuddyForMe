@@ -4,6 +4,7 @@ import type {
   AgentRunView,
   ExecutorOutcome,
   ReviewVerdictPayload,
+  SceneContextSnapshotPayload,
   SubtaskSpec,
 } from '@wbfm/shared/schemas';
 import type { AgentRunRepository, TaskRunCheckpointRepository } from '@wbfm/database';
@@ -33,14 +34,14 @@ export interface PlannerClient {
       contextBlock?: string;
     },
     signal?: AbortSignal,
-  ): Promise<{ subtask: SubtaskSpec; usage: RoleModelUsage }>;
+  ): Promise<{ subtask: SubtaskSpec; usage: RoleModelUsage; contextStats?: SceneContextSnapshotPayload }>;
 }
 
 export interface ReviewerClient {
   review(
     input: { goal: string; subtask: SubtaskSpec; outcome: ExecutorOutcome; round: number },
     signal?: AbortSignal,
-  ): Promise<{ review: ReviewVerdictPayload; usage: RoleModelUsage }>;
+  ): Promise<{ review: ReviewVerdictPayload; usage: RoleModelUsage; contextStats?: SceneContextSnapshotPayload }>;
 }
 
 export interface ExecutorClient {
@@ -59,7 +60,12 @@ export interface ExecutorClient {
       contextBlock?: string;
     },
     signal?: AbortSignal,
-  ): Promise<{ outcome: ExecutorOutcome; usage: RoleModelUsage; steps: number }>;
+  ): Promise<{
+    outcome: ExecutorOutcome;
+    usage: RoleModelUsage;
+    steps: number;
+    contextStats?: SceneContextSnapshotPayload | null;
+  }>;
 }
 
 export interface AgentClients {

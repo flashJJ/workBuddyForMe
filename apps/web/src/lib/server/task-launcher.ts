@@ -1,9 +1,12 @@
 import { ApiError } from '@wbfm/shared/errors';
-import { TASK_MAX_STEPS } from '@wbfm/shared/constants';
+import { TASK_MAX_STEPS, resolveClampedBudget } from '@wbfm/shared/constants';
 import { createLlmPlanner, type TaskPlanner } from '@wbfm/core/agent';
+import { buildTaskContextBlock } from '@wbfm/core/agents';
+import { buildSceneSnapshot, estimateTokens, recordSceneSnapshot } from '@wbfm/core/context';
 import { resolveChatTarget } from '@wbfm/core/chat';
+import type { ServiceDeps } from '@wbfm/core/services';
 import type { ServiceContainer } from './container';
-import type { TaskRunView } from '@wbfm/shared/schemas';
+import type { SceneContextSnapshotPayload, TaskRunView } from '@wbfm/shared/schemas';
 
 /**
  * v0.7 M3-4b 任务启动辅助：
@@ -39,13 +42,28 @@ export interface TaskLaunchArtifacts {
   planner: TaskPlanner;
   allowedTools: string[];
   visionCapable: boolean;
+  /** v4.9：启动时一次性装配的会话上下文（无会话/装配失败时省略） */
+  contextBlock?: string;
 }
 
-/** 由 run 反查会话/助手/模型，构造 planner + 工具白名单 + 视觉能力 */
-export function resolveTaskLaunchArtifacts(
+/** v4.9：任务决策器快照节流——首条必写，之后仅在发生截断时补写 */
+export function createTaskSnapshotWriter(
+  record: (payload: SceneContextSnapshotPayload) => void,
+): (stats: SceneContextSnapshotPayload) => void {
+  let emitted = false;
+  let wasTruncated = false;
+  return (stats) => {
+    if (!emitted || (stats.truncated && !wasTruncated)) record(stats);
+    emitted = true;
+    wasTruncated = stats.truncated;
+  };
+}
+
+/** 由 run 反查会话/助手/模型，构造 planner + 工具白名单 + 视觉能力 + 会话上下文 */
+export async function resolveTaskLaunchArtifacts(
   services: ServiceContainer,
   run: TaskRunView,
-): TaskLaunchArtifacts {
+): Promise<TaskLaunchArtifacts> {
   const conversation = services.conversations.get(run.conversationId);
   const assistant = services.assistants.get(conversation.assistantId);
   const target = resolveChatTarget(
@@ -60,10 +78,45 @@ export function resolveTaskLaunchArtifacts(
   }
   // 助手已启用的工具 + 内置桌面能力；去重保序
   const merged = new Set<string>([...assistant.enabledTools, ...COMPUTER_BUILTIN_TOOLS]);
+  // v4.9：快照/上下文装配只需要最小依赖子集，避免把整个容器当 ServiceDeps 传递
+  const taskDeps: ServiceDeps = {
+    db: services.db,
+    cipher: services.cipher,
+    events: services.sessionLog,
+    workPlans: services.workPlans,
+  };
+  // 首条决策写快照；之后仅在发生截断时补写，控制任务事件量
+  const onContextStats = createTaskSnapshotWriter((payload) =>
+    recordSceneSnapshot(taskDeps, { scope: 'task', scopeId: run.id, payload }),
+  );
+  const planner = createLlmPlanner(target, {
+    scene: 'task_step',
+    onContextStats,
+  });
+  const contextBlock = await buildTaskContextBlock(taskDeps, {
+    conversationId: run.conversationId,
+    goal: run.goal,
+    assistantId: conversation.assistantId,
+    memoryEnabled: assistant.memoryEnabled,
+    contextWindow: target.model.contextWindow,
+  }).catch(() => null);
+  if (contextBlock) {
+    recordSceneSnapshot(taskDeps, {
+      scope: 'task',
+      scopeId: run.id,
+      payload: buildSceneSnapshot({
+        scene: 'task_start',
+        contextWindow: target.model.contextWindow,
+        promptTokens: estimateTokens(contextBlock),
+        budgetTokens: resolveClampedBudget(target.model.contextWindow, 'contextBlock'),
+      }),
+    });
+  }
   return {
-    planner: createLlmPlanner(target),
+    planner,
     allowedTools: [...merged],
     visionCapable,
+    ...(contextBlock ? { contextBlock } : {}),
   };
 }
 

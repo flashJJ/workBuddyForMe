@@ -1,5 +1,7 @@
 import type { ChatMessage, TokenUsage } from '@wbfm/ai';
+import type { SceneContextSnapshotPayload } from '@wbfm/shared/schemas';
 import type { ResolvedChatTarget } from '../chat/context/model-resolver';
+import { fitPromptMessages } from '../context/prompt-budget';
 import { toModelText } from '../i18n/system-text';
 import { condenseStepHistory, resolveStepHistoryBudget } from './step-condenser';
 import type { TaskObservation, TaskPlanDecision, TaskPlanner, TaskPlannerInput } from './types';
@@ -154,23 +156,38 @@ export function parseDecision(content: string): TaskPlanDecision {
   };
 }
 
+export interface LlmPlannerOptions {
+  onUsage?: (usage: TokenUsage) => void;
+  /** v4.9：提示词场景（协作 Executor / 桌面任务） */
+  scene?: 'task_step' | 'collab_exec';
+  /** v4.9：每次决策后回调装配统计（由调用方决定是否写快照/节流） */
+  onContextStats?: (stats: SceneContextSnapshotPayload) => void;
+}
+
 /**
  * 生产决策器：调用对话模型产出决策 JSON。
  * temperature 固定 0（决策求稳）；maxTokens 限制输出长度（JSON 很小）。
  * v1.4：onUsage 可选回调，Executor 适配器据此累计角色 token 账。
+ * v4.9：先按场景预算装配，再发请求；统计经 onContextStats 回调。
  */
 export function createLlmPlanner(
   target: ResolvedChatTarget,
-  options: { onUsage?: (usage: TokenUsage) => void } = {},
+  options: LlmPlannerOptions = {},
 ): TaskPlanner {
   // 本地小模型（Ollama 4096 档）必须按窗口缩历史预算，云端大窗口才用满 1.2k
   const historyBudgetTokens = resolveStepHistoryBudget(target.model.contextWindow);
+  const scene = options.scene ?? 'task_step';
   return {
     async decide(input, signal) {
+      const fitted = fitPromptMessages(
+        buildPlannerMessages({ ...input, historyBudgetTokens }),
+        { contextWindow: target.model.contextWindow, scene, role: 'executor' },
+      );
+      options.onContextStats?.(fitted.stats);
       let content = '';
       const stream = target.provider.chatStream({
         model: target.model.modelId,
-        messages: buildPlannerMessages({ ...input, historyBudgetTokens }),
+        messages: fitted.messages,
         temperature: 0,
         maxTokens: 1024,
         ...(signal ? { signal } : {}),

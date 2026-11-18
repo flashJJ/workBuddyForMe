@@ -1,4 +1,5 @@
 import type { ServiceDeps } from '../../services/base/deps';
+import { resolveClampedBudget } from '@wbfm/shared/constants';
 import { createConversationService } from '../../services/assistant/conversation-service';
 import { createMemoryService } from '../../memory/memory-service';
 import { formatConstraintBlock, formatMemoryBlock } from '../../memory/turn-memory';
@@ -18,11 +19,11 @@ import { toModelText } from '../../i18n/system-text';
  * 保证摘要/事实这类高密度信息优先保留。
  */
 
-/** 注入的任务上下文 token 预算上限（字符粗估） */
+/** 注入的任务上下文 token 预算上限（字符粗估）；保留导出供旧调用方引用 */
 export const TASK_CONTEXT_BUDGET_TOKENS = 2_000;
 /** 小窗口模型下的任务上下文下限 */
 export const TASK_CONTEXT_MIN_TOKENS = 320;
-/** 任务上下文占模型上下文窗口的比例 */
+/** 任务上下文占模型上下文窗口的比例（已收敛到 CONTEXT_BUDGET_PRESETS） */
 export const TASK_CONTEXT_WINDOW_RATIO = 0.15;
 /** 近期对话注入条数（含用户与助手消息） */
 export const TASK_CONTEXT_RECENT_MESSAGES = 6;
@@ -31,15 +32,11 @@ const MESSAGE_CLIP_CHARS = 400;
 
 /**
  * 按模型窗口解析任务上下文预算：
- * 云端 1M/128K 用满 2k；本地 7B（Ollama 4096 num_ctx、架构 32K）按比例收敛，
- * 避免系统提示+工具目录+上下文块把 4096 窗口顶穿。
+ * v4.9 起统一走场景预算预设（contextBlock 15% / 320–2000），
+ * 避免任务上下文与步骤历史各自维护一套比例。
  */
 export function resolveTaskContextBudget(contextWindow: number | null | undefined): number {
-  if (!contextWindow || contextWindow <= 0) return TASK_CONTEXT_BUDGET_TOKENS;
-  return Math.max(
-    TASK_CONTEXT_MIN_TOKENS,
-    Math.min(TASK_CONTEXT_BUDGET_TOKENS, Math.floor(contextWindow * TASK_CONTEXT_WINDOW_RATIO)),
-  );
+  return resolveClampedBudget(contextWindow, 'contextBlock');
 }
 
 export interface BuildTaskContextParams {

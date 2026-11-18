@@ -54,15 +54,38 @@ export function scriptedClients(script: {
   verdicts: Array<ReviewVerdictPayload | { throw: Error }>;
   outcomes?: ExecutorOutcome[];
   execFails?: number;
+  /** v4.9：三角色返回值附带上下文装配统计（快照事件断言用） */
+  withContextStats?: boolean;
 }): AgentClients & { planCalls: number; reviewCalls: number; execCalls: number } {
   const state = { planCalls: 0, reviewCalls: 0, execCalls: 0 };
+  const stats = (scene: 'collab_plan' | 'collab_exec' | 'collab_review', role: 'planner' | 'executor' | 'reviewer') =>
+    script.withContextStats
+      ? {
+          contextStats: {
+            scene,
+            role,
+            contextWindow: 4096,
+            usableWindow: 3686,
+            reserveTokens: 614,
+            budgetTokens: 3008,
+            promptTokens: 1000,
+            truncatedMessages: 0,
+            droppedMessages: 0,
+            truncated: false,
+          },
+        }
+      : {};
   const clients = {
     planner: {
       async plan() {
         const i = state.planCalls++;
         const item = script.plans[i] ?? script.plans[script.plans.length - 1]!;
         if ('throw' in item) throw item.throw;
-        return { subtask: item, usage: { promptTokens: 10, completionTokens: 5 } };
+        return {
+          subtask: item,
+          usage: { promptTokens: 10, completionTokens: 5 },
+          ...stats('collab_plan', 'planner'),
+        };
       },
     },
     executor: {
@@ -70,7 +93,12 @@ export function scriptedClients(script: {
         state.execCalls++;
         if (script.execFails && state.execCalls <= script.execFails) throw new Error('执行器故障');
         const o = script.outcomes?.[state.execCalls - 1] ?? outcome();
-        return { outcome: o, usage: { promptTokens: 20, completionTokens: 10 }, steps: 2 };
+        return {
+          outcome: o,
+          usage: { promptTokens: 20, completionTokens: 10 },
+          steps: 2,
+          ...stats('collab_exec', 'executor'),
+        };
       },
     },
     reviewer: {
@@ -78,7 +106,11 @@ export function scriptedClients(script: {
         const i = state.reviewCalls++;
         const item = script.verdicts[i] ?? script.verdicts[script.verdicts.length - 1]!;
         if ('throw' in item) throw item.throw;
-        return { review: item, usage: { promptTokens: 8, completionTokens: 4 } };
+        return {
+          review: item,
+          usage: { promptTokens: 8, completionTokens: 4 },
+          ...stats('collab_review', 'reviewer'),
+        };
       },
     },
     get planCalls() { return state.planCalls; },

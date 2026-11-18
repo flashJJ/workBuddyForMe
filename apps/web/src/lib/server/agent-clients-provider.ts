@@ -1,4 +1,4 @@
-import type { AgentRunView } from '@wbfm/shared/schemas';
+import type { AgentRunView, SceneContextSnapshotPayload } from '@wbfm/shared/schemas';
 import type { Assistant } from '@wbfm/shared/types';
 import { createLlmPlanner } from '@wbfm/core/agent';
 import { resolveChatTargetForModelId } from '@wbfm/core/chat';
@@ -82,17 +82,19 @@ export function createAgentTaskContextResolver(
 ): AgentTaskContextResolver {
   return (run) => {
     const assistant = run.assistantId ? factory.assistants.get(run.assistantId) : null;
-    // 任务上下文预算随执行模型窗口收敛：本地 4096/32K 与云端长上下文不同档
-    let contextWindow: number | null = null;
-    try {
-      const target = resolveChatTargetForModelId(
-        factory.deps,
-        assistant?.executorModelId ?? assistant?.modelId ?? null,
-      );
-      contextWindow = target.model.contextWindow;
-    } catch {
-      /* 未配置默认模型时按兜底预算 */
-    }
+    // v4.9：上下文块同时供 Planner/Executor 使用，按三角色模型窗口的最小值装配，
+    // 避免 Planner 绑定更小窗口模型时被执行模型的预算顶穿。
+    const windows = ROLE_KEYS.map((role) => {
+      try {
+        return resolveChatTargetForModelId(
+          factory.deps,
+          assistant?.[ROLE_FIELD[role]] ?? assistant?.modelId ?? null,
+        ).model.contextWindow;
+      } catch {
+        return null;
+      }
+    }).filter((value): value is number => typeof value === 'number' && value > 0);
+    const contextWindow = windows.length > 0 ? Math.min(...windows) : null;
     return buildTaskContextBlock(factory.deps, {
       conversationId: run.conversationId,
       goal: run.goal,
@@ -131,13 +133,28 @@ export function createAgentClientsProvider(factory: AgentClientsFactoryDeps): Ag
       resolvePlanner: () => {
         // 用量对象由 planner onUsage 就地累计，适配器在本轮结束时读账
         const usage = { promptTokens: 0, completionTokens: 0 };
+        let contextStats: SceneContextSnapshotPayload | null = null;
         const planner = createLlmPlanner(executorTarget, {
+          scene: 'collab_exec',
           onUsage: (u) => {
             usage.promptTokens = u.promptTokens;
             usage.completionTokens = u.completionTokens;
           },
+          onContextStats: (stats) => {
+            // 只保留最坏一次，避免把逐步变大的提示词都写成事件
+            if (!contextStats || stats.promptTokens > contextStats.promptTokens) {
+              contextStats = stats;
+            }
+          },
         });
-        return { planner, usage, visionCapable: targetHasVision(executorTarget) };
+        return {
+          planner,
+          usage,
+          visionCapable: targetHasVision(executorTarget),
+          get contextStats() {
+            return contextStats;
+          },
+        };
       },
     });
 

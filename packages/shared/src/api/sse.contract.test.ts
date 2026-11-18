@@ -47,6 +47,7 @@ const PAYLOAD_KEY_TABLE = {
   agent_delta: 1,
   agent_tool_confirm: 1,
   agent_plan_preview: 1,
+  context_scene_snapshot: 1,
   meeting_turn: 1,
   meeting_delta: 1,
   meeting_message: 1,

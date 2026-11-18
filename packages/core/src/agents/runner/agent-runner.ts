@@ -44,6 +44,7 @@ export type AgentRunEvent = SseEvent<
   | 'agent_budget'
   | 'agent_tool_confirm'
   | 'agent_plan_preview'
+  | 'context_scene_snapshot'
   | 'done'
   | 'error'
 >;
@@ -51,7 +52,6 @@ export type AgentRunEvent = SseEvent<
 function missingRun(runId: string): never {
   throw new Error(sys('agentTrace.run.notFound', { id: runId }));
 }
-
 /**
  * 协作运行器：驱动 supervisor 状态机跑完规划-执行-审查轮次，全程落库 + 事件流。
  * 角色客户端全部注入（M1 测试 mock，M2 真实模型/task-loop）；
@@ -92,7 +92,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
 
         // ---- 规划（连续失败 → 原目标直派降级） ----
         yield evt.phase('planning', 'planner', budget.round);
-        const plan = await callWithFallback(
+        const plan = await callWithFallback<Awaited<ReturnType<AgentClients['planner']['plan']>>>(
           'planner',
           () =>
             clients.planner.plan(
@@ -113,6 +113,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
           signal,
         );
         const currentSubtask = plan.value.subtask;
+        if (plan.value.contextStats) yield evt.snapshot('planner', plan.value.contextStats);
         if (!plan.degraded) {
           budget = consume(budget, plan.value.usage);
           repo.addTokens(runId, plan.value.usage);
@@ -176,6 +177,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         const execResult = await execSettled;
         if ('error' in execResult) throw execResult.error;
         const exec = execResult.value;
+        if (exec.contextStats) yield evt.snapshot('executor', exec.contextStats);
         budget = consume(budget, { ...exec.usage, steps: exec.steps });
         repo.addTokens(runId, exec.usage);
         yield evt.budget(budget);
@@ -194,7 +196,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
 
         // ---- 审查（连续失败 → 标注自动通过降级） ----
         yield evt.phase('reviewing', 'reviewer', budget.round);
-        const review = await callWithFallback(
+        const review = await callWithFallback<Awaited<ReturnType<AgentClients['reviewer']['review']>>>(
           'reviewer',
           () =>
             clients.reviewer.review(
@@ -211,6 +213,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
           yield evt.budget(budget);
         }
         const verdict: ReviewVerdictPayload = review.value.review;
+        if (review.value.contextStats) yield evt.snapshot('reviewer', review.value.contextStats);
         const reviewHandoff = await recordHandoff(
           budget.round,
           'reviewer',

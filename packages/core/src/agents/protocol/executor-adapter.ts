@@ -1,5 +1,5 @@
 import { createKnowledgeRepository, createTaskRunRepository } from '@wbfm/database';
-import type { AgentRunView, SubtaskSpec } from '@wbfm/shared/schemas';
+import type { AgentRunView, SceneContextSnapshotPayload, SubtaskSpec } from '@wbfm/shared/schemas';
 import type { ServiceDeps } from '../../services/base/deps';
 import type { ToolRuntime } from '../../tools/tool-runtime';
 import type { TaskPlanner } from '../../agent/types';
@@ -39,6 +39,8 @@ export interface ExecutorPlannerResolution {
   usage: { promptTokens: number; completionTokens: number };
   /** screen 模式必须为 true（视觉门控在生产侧解析模型能力） */
   visionCapable: boolean;
+  /** v4.9：本轮决策器最坏一次上下文装配统计（缺省不写快照） */
+  contextStats?: SceneContextSnapshotPayload | null;
 }
 
 export interface CreateExecutorAdapterParams {
@@ -199,6 +201,7 @@ export function createExecutorAdapter(params: CreateExecutorAdapterParams): Exec
           completionTokens: resolution.usage.completionTokens,
         },
         steps: steps.filter((s) => s.kind === 'action').length,
+        contextStats: resolution.contextStats ?? null,
       };
     },
   };

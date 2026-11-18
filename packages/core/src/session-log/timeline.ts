@@ -71,6 +71,8 @@ function labelFor(event: SessionEventView): string {
       return `上下文压缩：${String(field(payload, 'trigger') ?? '')}`;
     case 'context_snapshot':
       return '上下文快照';
+    case 'context_scene_snapshot':
+      return `上下文快照：${String(field(payload, 'scene') ?? '')}`;
     default:
       return event.type;
   }
@@ -110,6 +112,12 @@ function detailFor(event: SessionEventView): string {
     return compact(
       `window=${String(field(payload, 'contextWindow') ?? '')}, kept=${String(field(payload, 'keptMessages') ?? '')}, ` +
         `dropped=${String(field(payload, 'droppedMessages') ?? '')}`,
+    );
+  }
+  if (event.type === 'context_scene_snapshot') {
+    return compact(
+      `budget=${String(field(payload, 'budgetTokens') ?? '')}, prompt=${String(field(payload, 'promptTokens') ?? '')}, ` +
+        `truncated=${String(field(payload, 'truncated') ?? '')}`,
     );
   }
   return compact(payload);

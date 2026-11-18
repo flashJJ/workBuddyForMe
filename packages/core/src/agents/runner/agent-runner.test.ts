@@ -71,6 +71,27 @@ describe('agent-runner-service 协作五场景', () => {
     expect(clients.reviewCalls).toBe(1);
   });
 
+  it('v4.9：三角色各发一条上下文场景快照事件', async () => {
+    const clients = scriptedClients({
+      plans: [subtask('首轮')],
+      verdicts: [verdict('approve')],
+      withContextStats: true,
+    });
+    const repo = createAgentRunRepository(db);
+    const events = await collect(createAgentRunner({ repo, clients }).run(startInput));
+    const snapshots = events.filter(
+      (e): e is Extract<AgentRunEvent, { event: 'context_scene_snapshot' }> =>
+        e.event === 'context_scene_snapshot',
+    );
+    expect(snapshots.map((e) => e.data.role)).toEqual(['planner', 'executor', 'reviewer']);
+    expect(new Set(snapshots.map((e) => e.data.scene))).toEqual(
+      new Set(['collab_plan', 'collab_exec', 'collab_review']),
+    );
+    const run = repo.list()[0]!;
+    expect(snapshots.every((e) => e.data.runId === run.id)).toBe(true);
+    expect(snapshots.every((e) => e.data.promptTokens <= e.data.budgetTokens)).toBe(true);
+  });
+
   it('场景②返工一次后通过：第二轮 planner 重派、2 轮交接、共 5 条交接', async () => {
     const clients = scriptedClients({
       plans: [subtask('第一版'), subtask('修订版')],

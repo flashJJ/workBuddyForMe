@@ -204,8 +204,7 @@ describe('buildPlannerMessages', () => {
 });
 
 describe('createLlmPlanner', () => {
-  it('经 provider chatStream 收集增量并解析决策', async () => {
-    const provider: ChatProvider = {
+  it('经 provider chatStream 收集增量并解析决策', async () => {    const provider: ChatProvider = {
       supportsTools: true,
       async testConnection() {},
       async listModels() { return []; },
@@ -226,5 +225,44 @@ describe('createLlmPlanner', () => {
     const decision = await planner.decide({ goal: 'g', steps: [], observation: null, allowedTools: [] });
     expect(decision.action).toBe('done');
     expect(decision.message).toBe('搞定');
+  });
+
+  it('v4.9：超窗提示词被头尾截断，并回调装配统计', async () => {
+    const stats: Array<{ scene: string; truncated: boolean; promptTokens: number; budgetTokens: number }> = [];
+    let userContent = '';
+    const provider: ChatProvider = {
+      supportsTools: true,
+      async testConnection() {},
+      async listModels() { return []; },
+      chatStream(params) {
+        userContent = params.messages[1]?.content as string;
+        return (async function* () {
+          yield { delta: '{"action":"done","reason":"ok","message":"完成"}' };
+        })();
+      },
+      async embed() {
+        throw new Error('unused');
+      },
+    };
+    const target = {
+      provider,
+      model: { modelId: 'qwen', contextWindow: 4096 } as ProviderModel,
+    } as ResolvedChatTarget;
+    const planner = createLlmPlanner(target, {
+      scene: 'task_step',
+      onContextStats: (value) => stats.push(value),
+    });
+    const decision = await planner.decide({
+      goal: `超长目标${'背景资料'.repeat(6000)}`,
+      steps: [],
+      observation: null,
+      allowedTools: [],
+    });
+    expect(decision.action).toBe('done');
+    expect(stats).toHaveLength(1);
+    expect(stats[0]?.scene).toBe('task_step');
+    expect(stats[0]?.truncated).toBe(true);
+    expect(userContent).toContain('上下文已截断');
+    expect(stats[0]!.promptTokens).toBeLessThanOrEqual(stats[0]!.budgetTokens + 16);
   });
 });

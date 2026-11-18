@@ -126,9 +126,9 @@ function setup(options: SetupOptions = {}) {
 }
 
 describe('定时 Agent 触发（v2.13 M4）', () => {
-  it('创建 queued 运行并后台启动，写 scheduled_run_started', () => {
+  it('创建 queued 运行并后台启动，写 scheduled_run_started', async () => {
     const { db, audit, runner, runs, started } = setup();
-    const result = runner.start({
+    const result = await runner.start({
       task: task(agentPayload()),
       scheduledAt: '2026-10-31T01:00:00.000Z',
     });
@@ -143,9 +143,9 @@ describe('定时 Agent 触发（v2.13 M4）', () => {
     db.close();
   });
 
-  it('模式不在无人值守白名单：拒绝启动并写 unattended_blocked', () => {
+  it('模式不在无人值守白名单：拒绝启动并写 unattended_blocked', async () => {
     const { db, audit, runner, runs } = setup();
-    const result = runner.start({
+    const result = await runner.start({
       task: task(agentPayload({ permissionMode: 'full_access' })),
       scheduledAt: '2026-10-31T01:00:00.000Z',
     });
@@ -155,9 +155,9 @@ describe('定时 Agent 触发（v2.13 M4）', () => {
     db.close();
   });
 
-  it('同任务存在未结束运行：SKIPPED_ACTIVE_RUN', () => {
+  it('同任务存在未结束运行：SKIPPED_ACTIVE_RUN', async () => {
     const { db, runner, runs } = setup({ initialRuns: [activeRun({})] });
-    const result = runner.start({
+    const result = await runner.start({
       task: task(agentPayload()),
       scheduledAt: '2026-10-31T01:00:00.000Z',
     });
@@ -166,18 +166,18 @@ describe('定时 Agent 触发（v2.13 M4）', () => {
     db.close();
   });
 
-  it('并发上限：MAX_CONCURRENT_RUNS', () => {
+  it('并发上限：MAX_CONCURRENT_RUNS', async () => {
     const { db, runner } = setup({
       policy: {
         unattended: { allowedModes: ['confirm_each'], maxConcurrentRuns: 1 },
       },
     });
-    const first = runner.start({
+    const first = await runner.start({
       task: task(agentPayload(), 's1'),
       scheduledAt: '2026-10-31T01:00:00.000Z',
     });
     expect(first.status).toBe('started');
-    const second = runner.start({
+    const second = await runner.start({
       task: task(agentPayload(), 's2'),
       scheduledAt: '2026-10-31T01:00:00.000Z',
     });
@@ -185,13 +185,13 @@ describe('定时 Agent 触发（v2.13 M4）', () => {
     db.close();
   });
 
-  it('启动失败：运行标记 failed 并写 scheduled_run_finished', () => {
+  it('启动失败：运行标记 failed 并写 scheduled_run_finished', async () => {
     const { db, audit, runner, runs } = setup({
       launch: () => {
         throw new Error('模型不具备视觉能力');
       },
     });
-    const result = runner.start({
+    const result = await runner.start({
       task: task(agentPayload()),
       scheduledAt: '2026-10-31T01:00:00.000Z',
     });

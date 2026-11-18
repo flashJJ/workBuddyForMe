@@ -1,4 +1,5 @@
 import type { TaskStepView } from '@wbfm/shared/schemas';
+import { resolveClampedBudget } from '@wbfm/shared/constants';
 import { estimateTokens } from '../chat/context/context-budget';
 import { toModelText } from '../i18n/system-text';
 
@@ -22,15 +23,11 @@ export const STEP_HISTORY_KEEP_FIRST = 2;
 
 /**
  * 按模型窗口解析历史步骤预算：
- * 本地小模型（如 Ollama num_ctx=4096）不能用云端 1.2k 的固定配额，
- * 否则系统提示+工具目录+观察一起会顶穿窗口；未知窗口沿用默认预算。
+ * v4.9 起统一走场景预算预设（stepHistory 12% / 320–1200），
+ * 与任务上下文块共用同一套上下限公式。
  */
 export function resolveStepHistoryBudget(contextWindow: number | null | undefined): number {
-  if (!contextWindow || contextWindow <= 0) return STEP_HISTORY_BUDGET_TOKENS;
-  return Math.max(
-    STEP_HISTORY_MIN_TOKENS,
-    Math.min(STEP_HISTORY_BUDGET_TOKENS, Math.floor(contextWindow * STEP_HISTORY_WINDOW_RATIO)),
-  );
+  return resolveClampedBudget(contextWindow, 'stepHistory');
 }
 
 export interface CondenseStepHistoryOptions {

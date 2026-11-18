@@ -27,6 +27,7 @@ export type AgentStreamFrame =
   | SseEvent<'agent_budget'>
   | SseEvent<'agent_tool_confirm'>
   | SseEvent<'agent_plan_preview'>
+  | SseEvent<'context_scene_snapshot'>
   | SseEvent<'done'>
   | SseEvent<'error'>;
 

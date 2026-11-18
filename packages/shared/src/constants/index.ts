@@ -4,6 +4,7 @@ export * from './enums';
 export * from './model-capabilities';
 export * from './keyboard-shortcuts';
 export * from './chat';
+export * from './context-scenes';
 export * from './memory';
 export * from './tools';
 export * from './task';

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CONTEXT_SCENES } from '../../constants/context-scenes';
 
 /**
  * v4.8 对话上下文智能调控契约：
@@ -99,3 +100,21 @@ export const contextSnapshotPayloadSchema = z.object({
   truncated: z.boolean(),
 });
 export type ContextSnapshotPayload = z.infer<typeof contextSnapshotPayloadSchema>;
+
+/** v4.9：非对话域的上下文装配快照（协作 / 桌面任务 / Flow） */
+export const CONTEXT_SCENE_ROLES = ['planner', 'executor', 'reviewer'] as const;
+export type ContextSceneRole = (typeof CONTEXT_SCENE_ROLES)[number];
+
+export const sceneContextSnapshotPayloadSchema = z.object({
+  scene: z.enum(CONTEXT_SCENES),
+  role: z.enum(CONTEXT_SCENE_ROLES).optional(),
+  contextWindow: z.number().int().positive(),
+  usableWindow: z.number().int().nonnegative(),
+  reserveTokens: z.number().int().nonnegative(),
+  budgetTokens: z.number().int().nonnegative(),
+  promptTokens: z.number().int().nonnegative(),
+  truncatedMessages: z.number().int().nonnegative(),
+  droppedMessages: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+});
+export type SceneContextSnapshotPayload = z.infer<typeof sceneContextSnapshotPayloadSchema>;

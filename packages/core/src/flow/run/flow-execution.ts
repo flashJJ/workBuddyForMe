@@ -92,6 +92,13 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
       replayTargetId: params.replayTargetId,
       context: {
         resolveChatTarget: ({ modelId }) => resolveChatTargetForModelId(deps, modelId ?? null),
+        recordContextSnapshot: (payload) =>
+          deps.events?.record({
+            scope: 'flow',
+            scopeId: runId,
+            type: 'context_scene_snapshot',
+            payload,
+          }),
         retrieve: (query, knowledgeBaseId, topK) =>
           retrieval.retrieve({ knowledgeBaseId, query, topK }),
         resolveTool: async (name) => runtime.resolveTool(name)?.tool ?? null,

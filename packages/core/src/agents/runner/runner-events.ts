@@ -1,5 +1,10 @@
 import type { TokenUsage } from '@wbfm/shared/api';
-import type { AgentPhase, AgentRole, AgentRunView } from '@wbfm/shared/schemas';
+import type {
+  AgentPhase,
+  AgentRole,
+  AgentRunView,
+  SceneContextSnapshotPayload,
+} from '@wbfm/shared/schemas';
 import { toUsage, type BudgetState } from '../runtime/budget';
 
 /**
@@ -25,6 +30,13 @@ export function createRunEventEmitter(repo: { getById(id: string): AgentRunView 
     },
     done(summary: string) {
       return { event: 'done' as const, data: { content: summary, usage: usage() } };
+    },
+    /** v4.9：角色上下文装配快照（协作泳道/时间线可读） */
+    snapshot(role: 'planner' | 'executor' | 'reviewer', stats: SceneContextSnapshotPayload) {
+      return {
+        event: 'context_scene_snapshot' as const,
+        data: { ...stats, runId, role },
+      };
     },
   };
 }

@@ -33,7 +33,7 @@ function parseSince(request: Request): number | undefined {
  * - 终态：回放已落库步骤 + run_finished 后关闭。
  * 同一运行可被多个观察者订阅；不再返回 409。
  */
-export const GET = defineRoute(({ request, params, services }) => {
+export const GET = defineRoute(async ({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
   const repo = createTaskRunRepository(services.db);
   const run = repo.getRun(id);
@@ -54,13 +54,15 @@ export const GET = defineRoute(({ request, params, services }) => {
     return replayTerminalRun(latest, repo.listSteps(id));
   }
 
-  // queued：解析 launch 依赖（assistant/model/vision），失败抛 422
-  const { planner, allowedTools, visionCapable } = resolveTaskLaunchArtifacts(services, run);
+  // queued：解析 launch 依赖（assistant/model/vision/会话上下文），失败抛 422
+  const { planner, allowedTools, visionCapable, contextBlock } =
+    await resolveTaskLaunchArtifacts(services, run);
   const events = services.taskRunner.start({
     run,
     planner,
     allowedTools,
     visionCapable,
+    ...(contextBlock ? { contextBlock } : {}),
   });
   return sseResponse(events);
 });

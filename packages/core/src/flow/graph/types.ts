@@ -5,6 +5,7 @@ import type {
   FlowEdge,
   FlowNode,
   FlowNodeType,
+  SceneContextSnapshotPayload,
 } from '@wbfm/shared/schemas';
 import type {
   FlowEventPayload,
@@ -106,6 +107,9 @@ export interface FlowExecutionContext {
   requestToolConfirmation?(req: FlowToolConfirmationRequest): Promise<boolean>;
   /** 人工节点挂起等待（非交互环境返回 approved:false） */
   requestHuman?(nodeId: string, config: Record<string, unknown>): Promise<FlowHumanDecision>;
+
+  /** v4.9：LLM 节点发生提示词截断时写场景快照（scope=flow / scopeId=runId） */
+  recordContextSnapshot?(payload: SceneContextSnapshotPayload): void;
 
   /**
    * v1.4 agent 节点：发起一次三角色协作（由 agent-run-service 提供）。
