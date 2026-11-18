@@ -1,0 +1,55 @@
+{
+  "note": "v4.8 对话上下文智能调控评测种子；需以 WBFM_MOCK_AI=1 启动的 server（默认 3200）。reminder 意图不走本链路：v1.7 M5 的「提醒我」本地解析会在意图阶段前短路，故用 clarify 覆盖。",
+  "quotaTolerance": 0.04,
+  "intentCases": [
+    {
+      "id": "intent-chitchat",
+      "text": "嗨，晚上好呀",
+      "expectKind": "chitchat",
+      "expectTail": 0.5
+    },
+    {
+      "id": "intent-knowledge",
+      "text": "RAG 的定义是什么？",
+      "expectKind": "knowledge",
+      "expectTail": 0.35
+    },
+    {
+      "id": "intent-follow-up",
+      "text": "那它和微调有什么区别",
+      "expectKind": "follow_up",
+      "expectTail": 0.6
+    },
+    {
+      "id": "intent-clarify",
+      "text": "没听懂，你刚才说什么",
+      "expectKind": "clarify",
+      "expectTail": 0.55
+    }
+  ],
+  "memoryKeyword": "青鸟计划",
+  "memoryCases": [
+    {
+      "id": "memory-remember",
+      "text": "记住：我的项目代号是青鸟计划",
+      "expectKind": "memory_write",
+      "expectMemory": "present"
+    },
+    {
+      "id": "memory-forget",
+      "text": "忘记：我的项目代号是青鸟计划",
+      "expectKind": "memory_write",
+      "expectMemory": "absent"
+    }
+  ],
+  "longTurns": [
+    "项目代号青鸟计划，第一周的目标是把资料整理成三份文档：需求说明、接口清单和部署手册。部署手册里记录了服务器地址 10.0.8.21，端口 8443，负责人是老陈。我们约定所有对外接口都要在文档里标注版本号和变更日期，避免上线后找不到依据。第一周结束时，三份文档都过了内部评审，需求说明里还补了三条非功能约束：可用性不低于 99.5%，单次请求响应不超过 800 毫秒，日志保留 30 天。",
+    "第二周我们确定了接口版本 v2.3，超时时间 8000 毫秒，重试次数 3 次，退避策略是指数退避。缓存文件放在 data/cache/bird-2026.json，每天凌晨两点刷新一次。为了避免缓存击穿，读取失败时先返回上一次的快照，并记录一条 warn 日志。接口清单里新增了两个字段：requestId 和 traceId，都由网关统一注入，业务代码只负责透传，不参与生成。",
+    "第三周补了监控：错误率阈值 2.5%，连续两次采样超阈值才告警，告警发到值班群；同时把构建脚本从 make 换成了 pnpm，产物目录 dist/bird-plan。监控面板上新增了三个指标：请求量、P95 延迟、错误率，按分钟聚合，保留 14 天。我们还给部署手册补了一节回滚流程：先切流量到旧版本，再回退数据库迁移脚本，最后在群里同步结论。",
+    "第四周做验收：一共 12 个用例，通过 11 个，唯一失败的是文件导出超时，已记录在 issues/2026-11/bird-export.md，计划下周修复。验收记录里写明了复现步骤、影响范围和临时规避方案：导出改走异步任务，前端轮询结果地址。剩下三个待办是补充导出用例、把告警阈值写进值班手册、以及请老陈复核回滚流程。"
+  ],
+  "compaction": {
+    "minFolded": 1,
+    "maxHistoryRatio": 0.75
+  }
+}

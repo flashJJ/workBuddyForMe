@@ -1,6 +1,6 @@
 # 对话上下文智能调控（v4.8）：调研与实施计划
 
-> 状态：开发完成（M0–M5；待验收与评测门禁）
+> 状态：开发完成（M0–M5，含上下文评测门禁；待真机体验验收）
 > 前置：v4.7 任务侧 P0/P1/P2 已完成（见 [v4.7 计划](../v4.7/00-agent-task-research-plan.md)）
 > 一句话：把对话侧已有的「摘要 + 预算 + 记忆」从零散能力收成一套按意图分配上下文的 Controller，并把压缩从「撞墙后折叠」升级为「事件化、可回溯、可预判」。
 
@@ -155,11 +155,14 @@ flowchart LR
 
 - 轻量快照：`context_snapshot` 事件只存块 token 统计、丢弃条数、condensation 事件 id，不存正文。
 - 会话详情面板：上下文构成（各块 token/占比）、压缩历史（触发原因、前后 token）、意图标签。
-- 离线评测扩展 [eval-agent.mjs](file:///e:/code/traeWork/workBuddyForMe/scripts/eval/eval-agent.mjs)：
-  - 跨轮追问：能引用上一轮约束/结论。
-  - 长对话：压缩后关键数字/URL/文件名仍可引用。
-  - 意图路由：标注集准确率与回退率。
-  - 成本：平均 token/轮、压缩触发次数、预判压缩命中率。
+- 离线评测新增 [eval-context.mjs](file:///e:/code/traeWork/workBuddyForMe/scripts/eval/eval-context.mjs)（golden：`context-golden.json`）：
+  - 聊天域与协作域分离：`eval-agent.mjs` 驱动 `/api/agent/runs`，上下文策略在其内部是另一套装配，
+    混入会把两套语义搅在一起；沿用 `eval-memory` / `eval-proactive` 的按域拆分。
+  - 意图路由：4 条确定性规则用例，断言 `turn_intent.kind` 与原文 TAIL 配额（`historyBudget/usableWindow`）。
+  - 记忆治理：记住后 active 可见、忘掉后 active 不可见。
+  - 压缩：用户显式压缩事件（trigger/降级/折叠 id 恰为最早消息/前后 token）+ 压缩后原文配额收敛。
+  - 成本：全部快照的预算不变量（各块之和 ≤ 可用窗口）。
+  - 已知边界：mock 模型不回放历史语义，「压缩后仍能引用具体数字/URL」留真机体验验收。
 
 ## 5. 里程碑与验收
 
@@ -217,10 +220,10 @@ flowchart LR
 | M2 混合装配 | 完成 | `core/chat/context/context-plan.ts`；`prompt.ts` 按意图覆盖 tail/middle/memory/evidence 配额 |
 | M3 压缩事件化 | 完成 | `context_condensed`（threshold/preflight/model_change/user_explicit、降级事件）；装配前 85% 预判压缩；面板「立即压缩」；设置页可关 |
 | M4 记忆治理 | 完成 | `core/memory/intent-memory.ts`：记住写事实、忘掉软归档（可恢复、写审计） |
-| M5 观测 | 完成 | `context_snapshot` 事件 + 事件时间线标签；对话顶栏「上下文面板」展示意图/配额/压缩历史 |
+| M5 观测 | 完成 | `context_snapshot` 事件 + 事件时间线标签；对话顶栏「上下文面板」展示意图/配额/压缩历史；`scripts/eval/eval-context.mjs` + `context-golden.json`（9 用例，`pnpm eval:context`） |
 
 已知边界：
-- 评测脚本 `eval-agent.mjs` 尚未新增上下文专项用例，指标门禁留到验收阶段接入。
+- 评测脚本做结构化断言（意图/配额/事件/预算/折叠范围）；mock 模型不回放历史语义，「压缩后仍能引用具体数字/URL」留真机体验验收。
 - 意图分类器默认关闭；在调优中心开启并绑定模型后才调用，超时 2.5 秒回退规则。
 - 预判压缩会增加一次摘要调用，仅历史超 85% 水位触发，可在调优中心关闭。
 - 面板读取 `/api/events`（最多 500 条）做客户端汇总，不做独立索引表。
