@@ -59,6 +59,8 @@ export interface TaskPlannerInput {
    * 由协作入口一次性装配，注入每个决策回合，避免任务从零开始。
    */
   contextBlock?: string;
+  /** v4.7：历史步骤预算（按执行模型窗口解析；缺省用固定 1.2k） */
+  historyBudgetTokens?: number;
 }
 
 export interface TaskPlanner {

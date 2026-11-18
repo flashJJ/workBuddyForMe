@@ -11,10 +11,27 @@ import { toModelText } from '../i18n/system-text';
 
 /** 历史步骤入模 token 预算（按字符粗估） */
 export const STEP_HISTORY_BUDGET_TOKENS = 1200;
+/** 小窗口模型下的历史预算下限（保证首部+最近步仍有线索） */
+export const STEP_HISTORY_MIN_TOKENS = 320;
+/** 历史预算占模型上下文窗口的比例（与任务上下文各自独立配额） */
+export const STEP_HISTORY_WINDOW_RATIO = 0.12;
 /** 最近步骤逐条保留数 */
 export const STEP_HISTORY_KEEP_RECENT = 8;
 /** 首部步骤逐条保留数（任务目标/首个观察） */
 export const STEP_HISTORY_KEEP_FIRST = 2;
+
+/**
+ * 按模型窗口解析历史步骤预算：
+ * 本地小模型（如 Ollama num_ctx=4096）不能用云端 1.2k 的固定配额，
+ * 否则系统提示+工具目录+观察一起会顶穿窗口；未知窗口沿用默认预算。
+ */
+export function resolveStepHistoryBudget(contextWindow: number | null | undefined): number {
+  if (!contextWindow || contextWindow <= 0) return STEP_HISTORY_BUDGET_TOKENS;
+  return Math.max(
+    STEP_HISTORY_MIN_TOKENS,
+    Math.min(STEP_HISTORY_BUDGET_TOKENS, Math.floor(contextWindow * STEP_HISTORY_WINDOW_RATIO)),
+  );
+}
 
 export interface CondenseStepHistoryOptions {
   budgetTokens?: number;

@@ -3,6 +3,7 @@ import type { TaskStepView } from '@wbfm/shared/schemas';
 import {
   condenseStepHistory,
   formatStepDigest,
+  resolveStepHistoryBudget,
   STEP_HISTORY_KEEP_RECENT,
 } from './step-condenser';
 
@@ -71,6 +72,21 @@ describe('condenseStepHistory（v4.7 任务历史 Condenser）', () => {
     );
     expect(text).toContain('失败：检索词不能为空');
     expect(text).toContain('https://example.com/a');
+  });
+});
+
+describe('resolveStepHistoryBudget（按模型窗口收敛）', () => {
+  it('本地 4096 档按 12% 收敛，不用云端固定 1200', () => {
+    expect(resolveStepHistoryBudget(4096)).toBe(491);
+  });
+  it('7B 架构 32K 用满默认预算', () => {
+    expect(resolveStepHistoryBudget(32768)).toBe(1200);
+  });
+  it('未知窗口沿用默认预算', () => {
+    expect(resolveStepHistoryBudget(null)).toBe(1200);
+  });
+  it('极小窗口保留下限，避免历史被完全裁空', () => {
+    expect(resolveStepHistoryBudget(1000)).toBe(320);
   });
 });
 

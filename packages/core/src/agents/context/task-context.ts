@@ -18,12 +18,29 @@ import { toModelText } from '../../i18n/system-text';
  * 保证摘要/事实这类高密度信息优先保留。
  */
 
-/** 注入的任务上下文 token 预算（字符粗估） */
+/** 注入的任务上下文 token 预算上限（字符粗估） */
 export const TASK_CONTEXT_BUDGET_TOKENS = 2_000;
+/** 小窗口模型下的任务上下文下限 */
+export const TASK_CONTEXT_MIN_TOKENS = 320;
+/** 任务上下文占模型上下文窗口的比例 */
+export const TASK_CONTEXT_WINDOW_RATIO = 0.15;
 /** 近期对话注入条数（含用户与助手消息） */
 export const TASK_CONTEXT_RECENT_MESSAGES = 6;
 /** 单条消息在上下文块内的最大字符数 */
 const MESSAGE_CLIP_CHARS = 400;
+
+/**
+ * 按模型窗口解析任务上下文预算：
+ * 云端 1M/128K 用满 2k；本地 7B（Ollama 4096 num_ctx、架构 32K）按比例收敛，
+ * 避免系统提示+工具目录+上下文块把 4096 窗口顶穿。
+ */
+export function resolveTaskContextBudget(contextWindow: number | null | undefined): number {
+  if (!contextWindow || contextWindow <= 0) return TASK_CONTEXT_BUDGET_TOKENS;
+  return Math.max(
+    TASK_CONTEXT_MIN_TOKENS,
+    Math.min(TASK_CONTEXT_BUDGET_TOKENS, Math.floor(contextWindow * TASK_CONTEXT_WINDOW_RATIO)),
+  );
+}
 
 export interface BuildTaskContextParams {
   conversationId: string | null;
@@ -31,6 +48,8 @@ export interface BuildTaskContextParams {
   assistantId: string | null;
   /** 助手是否开启长期记忆召回（沿用对话侧开关） */
   memoryEnabled?: boolean;
+  /** 执行模型上下文窗口（null=未知，用默认预算；小模型按比例收敛） */
+  contextWindow?: number | null;
   budgetTokens?: number;
   signal?: AbortSignal;
 }
@@ -65,7 +84,7 @@ export async function buildTaskContextBlock(
   }
 
   const blocks: string[] = [];
-  const budget = params.budgetTokens ?? TASK_CONTEXT_BUDGET_TOKENS;
+  const budget = params.budgetTokens ?? resolveTaskContextBudget(params.contextWindow);
 
   // 1) 会话递归摘要（最高密度）
   const summary = conversation.summary?.trim();

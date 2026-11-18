@@ -1,7 +1,7 @@
 import type { ChatMessage, TokenUsage } from '@wbfm/ai';
 import type { ResolvedChatTarget } from '../chat/context/model-resolver';
 import { toModelText } from '../i18n/system-text';
-import { condenseStepHistory } from './step-condenser';
+import { condenseStepHistory, resolveStepHistoryBudget } from './step-condenser';
 import type { TaskObservation, TaskPlanDecision, TaskPlanner, TaskPlannerInput } from './types';
 
 /** 决策输出解析失败（循环记为一次失败步，模型可据历史自我纠错） */
@@ -50,7 +50,9 @@ export const TOOL_PLANNER_SYSTEM_PROMPT = `你是一个工具型任务 Agent 的
 
 /** 组装决策消息：system 协议 + user（目标/会话上下文/子任务/工具/历史/观察文本 + 可选截图） */
 export function buildPlannerMessages(input: TaskPlannerInput): ChatMessage[] {
-  const history = condenseStepHistory(input.steps);
+  const history = condenseStepHistory(input.steps, {
+    ...(input.historyBudgetTokens ? { budgetTokens: input.historyBudgetTokens } : {}),
+  });
   const mode = input.observeMode ?? 'screen';
   const observation: TaskObservation | null = input.observation;
   const blocks = [`【任务目标】${toModelText(input.goal)}`];
@@ -161,12 +163,14 @@ export function createLlmPlanner(
   target: ResolvedChatTarget,
   options: { onUsage?: (usage: TokenUsage) => void } = {},
 ): TaskPlanner {
+  // 本地小模型（Ollama 4096 档）必须按窗口缩历史预算，云端大窗口才用满 1.2k
+  const historyBudgetTokens = resolveStepHistoryBudget(target.model.contextWindow);
   return {
     async decide(input, signal) {
       let content = '';
       const stream = target.provider.chatStream({
         model: target.model.modelId,
-        messages: buildPlannerMessages(input),
+        messages: buildPlannerMessages({ ...input, historyBudgetTokens }),
         temperature: 0,
         maxTokens: 1024,
         ...(signal ? { signal } : {}),

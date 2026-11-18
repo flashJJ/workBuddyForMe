@@ -82,11 +82,23 @@ export function createAgentTaskContextResolver(
 ): AgentTaskContextResolver {
   return (run) => {
     const assistant = run.assistantId ? factory.assistants.get(run.assistantId) : null;
+    // 任务上下文预算随执行模型窗口收敛：本地 4096/32K 与云端长上下文不同档
+    let contextWindow: number | null = null;
+    try {
+      const target = resolveChatTargetForModelId(
+        factory.deps,
+        assistant?.executorModelId ?? assistant?.modelId ?? null,
+      );
+      contextWindow = target.model.contextWindow;
+    } catch {
+      /* 未配置默认模型时按兜底预算 */
+    }
     return buildTaskContextBlock(factory.deps, {
       conversationId: run.conversationId,
       goal: run.goal,
       assistantId: run.assistantId,
       memoryEnabled: assistant?.memoryEnabled ?? false,
+      contextWindow,
     });
   };
 }

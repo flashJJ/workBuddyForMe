@@ -2,7 +2,21 @@
 import { createConversationRepository, createMessageRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../../services/base/deps';
 import { createTestDb, type TestDb } from '../runner/agent-run-test-harness';
-import { buildTaskContextBlock } from './task-context';
+import { buildTaskContextBlock, resolveTaskContextBudget } from './task-context';
+
+describe('resolveTaskContextBudget（按模型窗口收敛）', () => {
+  it('本地 4096 档按 15% 收敛，避免顶穿 Ollama 默认窗口', () => {
+    expect(resolveTaskContextBudget(4096)).toBe(614);
+  });
+  it('7B 架构 32K 与云端长上下文用满上限 2k', () => {
+    expect(resolveTaskContextBudget(32768)).toBe(2000);
+    expect(resolveTaskContextBudget(1_000_000)).toBe(2000);
+  });
+  it('未知窗口用默认 2k；极小窗口保留下限', () => {
+    expect(resolveTaskContextBudget(null)).toBe(2000);
+    expect(resolveTaskContextBudget(1000)).toBe(320);
+  });
+});
 
 describe('buildTaskContextBlock（v4.7 任务上下文装配）', () => {
   let testDb: TestDb;
@@ -85,6 +99,35 @@ describe('buildTaskContextBlock（v4.7 任务上下文装配）', () => {
     });
     expect(block).toContain('【会话摘要】');
     expect(block).toContain('关键结论');
+  });
+
+  it('按执行模型窗口收敛：本地 4096 装配结果短于长上下文模型', async () => {
+    const conversations = createConversationRepository(testDb.db);
+    const conversation = conversations.create({ assistantId: 'a1', title: 't' });
+    conversations.updateSummary(conversation.id, `关键约束：${'细节'.repeat(3000)}`, 0);
+    const messages = createMessageRepository(testDb.db);
+    messages.add({
+      conversationId: conversation.id,
+      role: 'user',
+      status: 'completed',
+      content: '背景'.repeat(600),
+    });
+
+    const small = await buildTaskContextBlock(deps, {
+      conversationId: conversation.id,
+      goal: 'g',
+      assistantId: 'a1',
+      contextWindow: 4096,
+    });
+    const large = await buildTaskContextBlock(deps, {
+      conversationId: conversation.id,
+      goal: 'g',
+      assistantId: 'a1',
+      contextWindow: 32768,
+    });
+    expect(small).toBeTruthy();
+    expect(large).toBeTruthy();
+    expect(small!.length).toBeLessThan(large!.length);
   });
 });
 
