@@ -27,6 +27,16 @@ export const zhTuning = {
     contextCount: '上下文条数（2–50）',
     contextCountHint: '每轮最多携带最近多少条历史；先按条数裁剪，再按模型窗口做 token 裁剪。',
     contextCountValue: '{count} 条',
+    preflightCompact: '装配前预判压缩',
+    preflightCompactHint: '历史上下文接近饱和时先压缩再请求，避免撞墙后硬截断；会多一次摘要调用。',
+  },
+  intent: {
+    title: '小模型意图识别',
+    description: '规则无法确定意图时，用所选模型补充分类；关闭时零额外调用。',
+    enabled: '启用意图识别模型',
+    model: '意图识别模型',
+    followDefault: '跟随默认对话模型',
+    timeoutHint: '仅低置信度轮次调用；超时 2.5 秒自动回退规则。',
   },
   // 高级区
   advanced: {
@@ -81,6 +91,18 @@ export const enTuning = {
     contextCountHint:
       'At most this many recent messages per turn. Count clipping runs first, then token-budget clipping for the model window.',
     contextCountValue: '{count} messages',
+    preflightCompact: 'Preflight compaction',
+    preflightCompactHint:
+      'Compact before the request when history nears saturation, instead of hard-truncating at the limit; costs one extra summarization call.',
+  },
+  intent: {
+    title: 'Small-model intent classifier',
+    description:
+      'When rules are unsure, ask the selected model to classify the intent. Off means zero extra calls.',
+    enabled: 'Enable intent classifier',
+    model: 'Intent model',
+    followDefault: 'Follow default chat model',
+    timeoutHint: 'Only called on low-confidence turns; falls back to rules after 2.5s.',
   },
   advanced: {
     title: 'Advanced',

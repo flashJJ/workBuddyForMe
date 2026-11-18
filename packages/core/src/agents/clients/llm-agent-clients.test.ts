@@ -48,6 +48,9 @@ describe('LLM 协作角色客户端（T2.4 通道接线）', () => {
     expect(result.subtask).toMatchObject({ title: '查年假', brief: '在制度库查明年假天数' });
     expect(result.subtask.acceptance).toEqual(['给出天数']);
     expect(result.usage).toEqual({ promptTokens: 40, completionTokens: 10 });
+    expect(result.contextStats?.scene).toBe('collab_plan');
+    expect(result.contextStats?.role).toBe('planner');
+    expect(result.contextStats?.truncated).toBe(false);
 
     const bad = createLlmPlannerClient(fakeTarget([delta('我不会输出 JSON')]));
     await expect(
@@ -62,6 +65,8 @@ describe('LLM 协作角色客户端（T2.4 通道接线）', () => {
     const result = await ok.review({ goal: '年假', subtask, outcome, round: 0 }, undefined);
     expect(result.review.verdict).toBe('approve');
     expect(result.usage).toEqual({ promptTokens: 40, completionTokens: 10 });
+    expect(result.contextStats?.scene).toBe('collab_review');
+    expect(result.contextStats?.role).toBe('reviewer');
 
     const invalid = createLlmReviewerClient(
       fakeTarget([delta(JSON.stringify({ verdict: 'revise', acceptanceResults: [] }))]),

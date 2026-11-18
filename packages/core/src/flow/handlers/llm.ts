@@ -1,5 +1,6 @@
 import type { TokenUsage } from '@wbfm/ai';
 import type { FlowNodeHandler } from '../graph/types';
+import { fitPromptMessages } from '../../context/prompt-budget';
 
 /**
  * llm 节点：一次性（非逐 token）调用对话模型，累积完整文本。
@@ -36,12 +37,18 @@ export const llmNodeHandler: FlowNodeHandler<LlmNodeConfig, LlmNodeOutputs> = {
         : []),
       { role: 'user' as const, content: user },
     ];
+    // v4.9：单节点提示词安全上限；v4.10：每次装配上报统计，由执行器决定是否落库
+    const fitted = fitPromptMessages(messages, {
+      contextWindow: model.contextWindow,
+      scene: 'flow_node',
+    });
+    ctx.recordContextSnapshot?.(fitted.stats);
 
     let text = '';
     let usage: TokenUsage | undefined;
     for await (const chunk of provider.chatStream({
       model: model.modelId,
-      messages,
+      messages: fitted.messages,
       ...(config.temperature !== undefined ? { temperature: config.temperature } : {}),
       ...(config.topP !== undefined ? { topP: config.topP } : {}),
       ...(config.maxTokens !== undefined ? { maxTokens: config.maxTokens } : {}),

@@ -40,7 +40,11 @@ describe('v2.26 P1 压缩产物：结构化事实落库与注入', () => {
   });
 
   it('facts / decisions / open_loops 写入 conversation_facts，并记录来源消息', async () => {
-    const { conversationId, assistantId } = seedLongConversation(db, cipher);
+    // 窗口 ≥ 小窗口阈值才走结构化摘要（<8192 会退化为纯文本）
+    const { conversationId, assistantId } = seedLongConversation(db, cipher, {
+      contextWindow: 12_000,
+      rounds: 24,
+    });
     fetchMock
       .mockResolvedValueOnce(sseResponse(sse('本轮回答')))
       .mockResolvedValueOnce(
@@ -71,7 +75,10 @@ describe('v2.26 P1 压缩产物：结构化事实落库与注入', () => {
   });
 
   it('下一轮 system 注入事实块，且位于摘要之前', async () => {
-    const { conversationId, assistantId } = seedLongConversation(db, cipher);
+    const { conversationId, assistantId } = seedLongConversation(db, cipher, {
+      contextWindow: 12_000,
+      rounds: 24,
+    });
     const structured = {
       summary: '早期摘要内容',
       facts: [{ key: 'budget', value: '5000', unit: '元', validFrom: null }],
@@ -80,9 +87,10 @@ describe('v2.26 P1 压缩产物：结构化事实落库与注入', () => {
     };
     fetchMock
       .mockResolvedValueOnce(sseResponse(sse('本轮回答')))
+      // 首版 + 数字保真重试各一次：重试返回同一结构化载荷，保证事实不被纯文本覆盖
       .mockResolvedValueOnce(sseResponse(sseJson(structured)))
-      .mockResolvedValueOnce(sseResponse(sse('次轮回答')))
-      .mockResolvedValueOnce(sseResponse(sseJson({ ...structured, summary: '更新后的摘要' })));
+      .mockResolvedValueOnce(sseResponse(sseJson(structured)))
+      .mockResolvedValueOnce(sseResponse(sse('次轮回答')));
 
     const orchestrator = createChatOrchestrator({ db, cipher });
     await drain(orchestrator.streamChat({ assistantId, conversationId, content: '第一问' }));

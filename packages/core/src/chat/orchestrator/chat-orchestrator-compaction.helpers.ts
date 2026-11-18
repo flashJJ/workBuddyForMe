@@ -30,7 +30,9 @@ export async function drain(generator: AsyncGenerator<OrchestratorEvent>) {
 export function seedLongConversation(
   db: DatabaseInstance,
   cipher: SecretCipher,
+  options: { contextWindow?: number; rounds?: number } = {},
 ): { conversationId: string; assistantId: string } {
+  const { contextWindow = 3000, rounds = 6 } = options;
   const providers = createProviderRepository(db);
   const models = createModelRepository(db);
   const provider = providers.create({
@@ -46,7 +48,7 @@ export function seedLongConversation(
     modelId: 'gpt-test',
     displayName: '小窗口模型',
     capabilities: ['chat'],
-    contextWindow: 3000,
+    contextWindow,
   });
   // 压缩用例隔离 v1.6 情绪：关闭情绪总开关，避免情绪固定块改变预算装配条数
   createSettingsService({ db, cipher }).update({
@@ -60,7 +62,7 @@ export function seedLongConversation(
   const convRepo = createConversationRepository(db);
   const msgRepo = createMessageRepository(db);
   const conv = convRepo.create({ assistantId: assistant.id });
-  for (let i = 0; i < 6; i += 1) {
+  for (let i = 0; i < rounds; i += 1) {
     msgRepo.add({
       conversationId: conv.id,
       role: 'user',

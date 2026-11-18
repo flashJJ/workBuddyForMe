@@ -1,6 +1,5 @@
 import {
-  initDatabase,
-  createEventUsageRepository,
+  initDatabase, createEventUsageRepository,
   createKnowledgeRepository,
   createWorkflowRepository,
   createWorkflowEndpointRepository,
@@ -29,14 +28,14 @@ import {
   recoverInterruptedRunJobs,
   type ServiceDeps,
 } from '@wbfm/core/services';
-import { createChatOrchestrator } from '@wbfm/core/chat';
+import { createChatOrchestrator, createContextCompactionService } from '@wbfm/core/chat';
 import { createCapabilityServiceForApp } from './capability-wiring';
 import { createSubagentRunsForApp } from './subagent-wiring';
 import { createMilestoneService } from '@wbfm/core/emotion';
 import { createAgentRunService, createSubagentProviderRegistry } from '@wbfm/core/agents';
 import { createMeetingClosureService, createMeetingService } from '@wbfm/core/meeting';
 import { createMeetingDeps } from './meeting-provider';
-import { createAgentClientsProvider, createAgentPlanContextResolver } from './agent-clients-provider';
+import { createAgentClientsProvider, createAgentPlanContextResolver, createAgentTaskContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
@@ -144,9 +143,10 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const knowledgeBases = createKnowledgeService(deps);
   const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
   const agentRuns = createAgentRunService({
-    db,
-    clientsProvider: createAgentClientsProvider(agentClientsFactory),
+    db, clientsProvider: createAgentClientsProvider(agentClientsFactory),
     resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
+    resolveTaskContext: createAgentTaskContextResolver(agentClientsFactory),
+    planReviewEnabled: () => settingsService.get().agentPlanReviewEnabled !== false,
     onEvent: (run, event) => {
       workSignals.ingestAgent(run, event);
       sessionLog.record({
@@ -255,7 +255,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     assistants,
     characterCards: createCharacterCardService(deps),
     stageScenes,
-    conversations: createConversationService(deps),
+    conversations: createConversationService(deps), contextCompaction: createContextCompactionService(deps),
     orchestrator: createChatOrchestrator(deps),
     ingestion: createIngestionPipeline(deps),
     knowledgeBases,

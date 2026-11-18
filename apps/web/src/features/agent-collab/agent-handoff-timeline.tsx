@@ -81,6 +81,14 @@ function HandoffRow({ handoff, previousAt }: { handoff: AgentHandoffEntry; previ
             +{duration}
           </span>
         )}
+        {handoff.tokens != null && (
+          <span
+            className="font-mono text-[10px] text-muted-foreground"
+            title={t('agents.handoff.tokensTitle', { tokens: handoff.tokens })}
+          >
+            {t('agents.handoff.tokens', { tokens: handoff.tokens })}
+          </span>
+        )}
         {handoff.verdict && (
           <Badge
             variant={VERDICT_STYLE[handoff.verdict].variant}

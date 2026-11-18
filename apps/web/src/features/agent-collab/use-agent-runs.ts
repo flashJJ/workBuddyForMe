@@ -41,5 +41,23 @@ export function useAgentRunMutations() {
         void qc.invalidateQueries({ queryKey: QUERY_KEYS.agentRuns });
       },
     }),
+    /** v4.7 P1：只读计划预览决策（批准/拒绝） */
+    decidePlan: useMutation({
+      mutationFn: (input: { id: string; decision: 'approve' | 'reject'; note?: string }) =>
+        apiPost<{ id: string; decision: string }>(API.agentRunPlan(input.id), {
+          decision: input.decision,
+          ...(input.note ? { note: input.note } : {}),
+        }),
+      onSuccess: () => {
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.agentRuns });
+      },
+    }),
+    /** v4.7 P1：从可续跑检查点继续（新建 run，服务端持有执行） */
+    resume: useMutation({
+      mutationFn: (id: string) => apiPost<AgentRunView>(API.agentRunResume(id), {}),
+      onSuccess: () => {
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.agentRuns });
+      },
+    }),
   };
 }

@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from '@wbfm/database';
-import type { AgentBudget, AgentRunView } from '@wbfm/shared/schemas';
+import type { AgentBudget, AgentPlanDecision, AgentRunView } from '@wbfm/shared/schemas';
 import type { AgentNodeInnerEvent } from '@wbfm/shared/types';
 import type { AgentClients, AgentRunEvent } from '../index';
 import type { AgentRoleKey } from '../clients/role-models';
@@ -23,6 +23,12 @@ export type AgentPlanContextResolver = (run: AgentRunView) => {
   availableToolScopes: string[];
   knowledgeBaseHints: Array<{ id: string; name: string }>;
 };
+
+/**
+ * v4.7 任务上下文端口：按会话装配近期对话/摘要/事实/记忆/计划，
+ * 返回 null 表示无可用上下文（不注入）。实现方自行控制预算与失败降级。
+ */
+export type AgentTaskContextResolver = (run: AgentRunView) => Promise<string | null>;
 
 export interface AgentRunStartParams {
   /** 已由 POST /api/agent/runs 预建（status=running）的运行记录 */
@@ -73,6 +79,13 @@ export interface AgentRunService {
   ): Promise<{ runId: string; events: AsyncGenerator<AgentNodeInnerEvent, AgentRunView> }>;
   /** 急停：活跃→abort；running 未订阅→直接收敛 cancelled；均返回 true；不存在 404；终态 409 */
   cancel(runId: string): boolean;
+  /** v4.7 P1：提交计划决策（批准/拒绝）；无待确认计划 409，不存在 404 */
+  resolvePlan(runId: string, decision: AgentPlanDecision): boolean;
+  /**
+   * v4.7 P1：从可续跑检查点续跑——新建 run（沿用目标/会话，预算取剩余），
+   * 服务端持有执行；返回新 run。源 run 非中断收敛/无检查点：409。
+   */
+  resume(runId: string): Promise<AgentRunView>;
   /** 急停全部活跃协作（急停热键复用）；返回中断数量 */
   stopAll(): number;
   isActive(runId: string): boolean;
@@ -99,6 +112,10 @@ export interface AgentRunServiceDeps {
   db: DatabaseInstance;
   clientsProvider?: AgentClientsProvider;
   resolvePlanContext?: AgentPlanContextResolver;
+  /** v4.7：会话上下文装配端口（对话任务模式注入 Planner/Executor） */
+  resolveTaskContext?: AgentTaskContextResolver;
+  /** v4.7 P1：计划确认全局开关（缺省 true；仅对 needsPlanReview 的复杂任务生效） */
+  planReviewEnabled?: (run: AgentRunView) => boolean;
   /** v2.7：工作信号回调（每帧广播前；不影响 owner/observer 语义） */
   onEvent?: (run: AgentRunView, event: AgentRunEvent) => void;
   /** v2.8：终态回调（完成回投；服务端持有时只调用一次） */

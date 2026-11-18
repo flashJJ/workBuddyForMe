@@ -43,6 +43,7 @@ import { zhEventM5 } from './messages/event-m5';
 import { zhCharacterCards } from './messages/character-cards';
 import { zhTemplates } from './messages/templates';
 import { zhTuning } from './messages/tuning';
+import { zhContextInsights } from './messages/context-insights';
 import { zhStage } from './messages/stage';
 import { zhMeeting } from './messages/meeting';
 import { zhRelationship } from './messages/relationship';
@@ -85,6 +86,7 @@ export const zhCN = {
   characterCards: zhCharacterCards,
   templates: zhTemplates,
   tuning: zhTuning,
+  contextInsights: zhContextInsights,
   stage: zhStage,
   meeting: zhMeeting,
   knowledge: zhKnowledge,

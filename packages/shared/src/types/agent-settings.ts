@@ -6,4 +6,6 @@ import type { AgentPolicy } from '../schemas/agent/agent-policy';
  */
 export interface AgentGovernanceSettingsFields {
   agentPolicy?: AgentPolicy;
+  /** v4.7 P1：复杂任务执行前计划确认（缺省 true；关闭后直接执行） */
+  agentPlanReviewEnabled?: boolean;
 }

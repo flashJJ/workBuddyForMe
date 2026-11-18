@@ -37,6 +37,8 @@ export interface TaskStartParams {
   knowledgeBaseIds?: string[];
   retrieve?: TaskLoopParams['retrieve'];
   observeMode?: 'screen' | 'tool';
+  /** v4.9：启动时装配的会话上下文块（桌面任务注入决策提示词） */
+  contextBlock?: string;
 }
 
 export interface TaskRunnerService {
@@ -155,6 +157,7 @@ export function createTaskRunnerService(
           : {}),
         ...(params.retrieve ? { retrieve: params.retrieve } : {}),
         ...(params.observeMode ? { observeMode: params.observeMode } : {}),
+        ...(params.contextBlock ? { contextBlock: params.contextBlock } : {}),
       });
       entry.done = (async () => {
         try {

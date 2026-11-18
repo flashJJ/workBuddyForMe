@@ -24,6 +24,7 @@ export const enAgentTrace = {
   run: {
     rejected: 'The review verdict terminated the task',
     cancelled: 'Cancelled by user',
+    planRejected: 'The user rejected the execution plan',
     notFound: 'Collaboration run not found: {id}',
   },
   terminal: {

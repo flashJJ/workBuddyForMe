@@ -105,6 +105,8 @@ export const API = {
   // v2.9 事件日志 / 检索 / 导出
   events: (scope: string, scopeId: string, after?: number) =>
     `/api/events?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}${after ? `&after=${after}` : ''}`,
+  /** v4.8：会话上下文立即压缩 */
+  conversationCompact: (id: string) => `/api/conversations/${encodeURIComponent(id)}/compact`,
   search: (q: string, scope?: string) =>
     `/api/search?q=${encodeURIComponent(q)}${scope ? `&scope=${encodeURIComponent(scope)}` : ''}`,
   exportSession: (scope: string, scopeId: string, redact = true) =>
@@ -192,6 +194,8 @@ export const API = {
   agentRunEvents: (id: string, observe = false) =>
     `/api/agent/runs/${id}/events${observe ? '?observe=1' : ''}`,
   agentRunCancel: (id: string) => `/api/agent/runs/${id}/cancel`,
+  agentRunPlan: (id: string) => `/api/agent/runs/${id}/plan`,
+  agentRunResume: (id: string) => `/api/agent/runs/${id}/resume`,
   // v1.9 M3 多助手会议
   meetings: '/api/meetings',
   meeting: (id: string) => `/api/meetings/${id}`,

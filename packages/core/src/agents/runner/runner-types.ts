@@ -1,11 +1,13 @@
 import type {
   AgentBudget,
+  AgentPlanDecision,
   AgentRunView,
   ExecutorOutcome,
   ReviewVerdictPayload,
+  SceneContextSnapshotPayload,
   SubtaskSpec,
 } from '@wbfm/shared/schemas';
-import type { AgentRunRepository } from '@wbfm/database';
+import type { AgentRunRepository, TaskRunCheckpointRepository } from '@wbfm/database';
 import type { ExecutorGateFrame } from '../runtime/gate-mailbox';
 
 /**
@@ -28,16 +30,18 @@ export interface PlannerClient {
       availableToolScopes: string[];
       /** 助手/节点绑定的全部知识库（planner 可在子任务单回填其中一个 id；空数组=无知识库） */
       knowledgeBaseHints: Array<{ id: string; name: string }>;
+      /** v4.7：会话上下文块（近期对话/摘要/事实/记忆/计划） */
+      contextBlock?: string;
     },
     signal?: AbortSignal,
-  ): Promise<{ subtask: SubtaskSpec; usage: RoleModelUsage }>;
+  ): Promise<{ subtask: SubtaskSpec; usage: RoleModelUsage; contextStats?: SceneContextSnapshotPayload }>;
 }
 
 export interface ReviewerClient {
   review(
     input: { goal: string; subtask: SubtaskSpec; outcome: ExecutorOutcome; round: number },
     signal?: AbortSignal,
-  ): Promise<{ review: ReviewVerdictPayload; usage: RoleModelUsage }>;
+  ): Promise<{ review: ReviewVerdictPayload; usage: RoleModelUsage; contextStats?: SceneContextSnapshotPayload }>;
 }
 
 export interface ExecutorClient {
@@ -52,9 +56,16 @@ export interface ExecutorClient {
        * 决策由全局 confirmations 经 POST /api/tools/confirm 解决，执行侧自动放行/拒绝。
        */
       emitGateConfirm?: (frame: ExecutorGateFrame) => void;
+      /** v4.7：会话上下文块（注入执行回合决策） */
+      contextBlock?: string;
     },
     signal?: AbortSignal,
-  ): Promise<{ outcome: ExecutorOutcome; usage: RoleModelUsage; steps: number }>;
+  ): Promise<{
+    outcome: ExecutorOutcome;
+    usage: RoleModelUsage;
+    steps: number;
+    contextStats?: SceneContextSnapshotPayload | null;
+  }>;
 }
 
 export interface AgentClients {
@@ -83,12 +94,20 @@ export interface StartAgentRunInput {
   availableToolScopes?: string[];
   /** 绑定知识库提示（助手/节点的多库集合；空数组=无知识库） */
   knowledgeBaseHints?: Array<{ id: string; name: string }>;
+  /** v4.7：会话上下文块（由服务层按会话装配，注入 Planner 与 Executor） */
+  contextBlock?: string;
+  /** v4.7 P1：是否对复杂任务先出只读计划预览（全局开关） */
+  planReview?: boolean;
+  /** v4.7 P1：等待用户批准/拒绝计划；缺省视为批准（Flow/无人值守入口） */
+  awaitPlanApproval?: (subtask: SubtaskSpec, round: number) => Promise<AgentPlanDecision['decision']>;
   signal?: AbortSignal;
 }
 
 export interface AgentRunnerDeps {
   repo: AgentRunRepository;
   clients: AgentClients;
+  /** v4.7 P1：检查点仓储（缺省不落检查点，测试/Flow 可省略） */
+  checkpoints?: TaskRunCheckpointRepository;
 }
 
 export type { AgentRunView };

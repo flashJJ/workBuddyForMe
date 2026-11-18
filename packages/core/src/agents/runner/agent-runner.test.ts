@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createAgentRunRepository, createDatabase, type DatabaseInstance } from '@wbfm/database';
+import { createAgentRunRepository, createDatabase, createTaskRunCheckpointRepository, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createAgentRunner, type AgentClients, type AgentRunEvent } from '../index';
 import { toModelTexts } from '../../i18n/system-text';
@@ -60,9 +60,36 @@ describe('agent-runner-service 协作五场景', () => {
     expect(run.finalOutcome?.summary).toBe('交付结论');
     expect(run.totalTokens).toBe(15 + 30 + 12);
     expect(repo.listHandoffs(run.id)).toHaveLength(3);
+    // v4.7 P2 观测：每个角色的 token 用量随交接落库
+    expect(repo.listHandoffs(run.id).map((handoff) => handoff.payload.usage)).toEqual([
+      { promptTokens: 10, completionTokens: 5 },
+      { promptTokens: 20, completionTokens: 10 },
+      { promptTokens: 8, completionTokens: 4 },
+    ]);
     expect(clients.planCalls).toBe(1);
     expect(clients.execCalls).toBe(1);
     expect(clients.reviewCalls).toBe(1);
+  });
+
+  it('v4.9：三角色各发一条上下文场景快照事件', async () => {
+    const clients = scriptedClients({
+      plans: [subtask('首轮')],
+      verdicts: [verdict('approve')],
+      withContextStats: true,
+    });
+    const repo = createAgentRunRepository(db);
+    const events = await collect(createAgentRunner({ repo, clients }).run(startInput));
+    const snapshots = events.filter(
+      (e): e is Extract<AgentRunEvent, { event: 'context_scene_snapshot' }> =>
+        e.event === 'context_scene_snapshot',
+    );
+    expect(snapshots.map((e) => e.data.role)).toEqual(['planner', 'executor', 'reviewer']);
+    expect(new Set(snapshots.map((e) => e.data.scene))).toEqual(
+      new Set(['collab_plan', 'collab_exec', 'collab_review']),
+    );
+    const run = repo.list()[0]!;
+    expect(snapshots.every((e) => e.data.runId === run.id)).toBe(true);
+    expect(snapshots.every((e) => e.data.promptTokens <= e.data.budgetTokens)).toBe(true);
   });
 
   it('场景②返工一次后通过：第二轮 planner 重派、2 轮交接、共 5 条交接', async () => {
@@ -191,5 +218,72 @@ describe('agent-runner-service 协作五场景', () => {
     expect(run.errorCode).toBe('AGENT_REJECTED');
     expect(run.errorMessage).toContain('资料不存在');
     expect(run.finalOutcome?.summary).toBe('交付结论');
+  });
+
+  it('v4.7 P1：复杂任务先出计划预览，拒绝后不执行', async () => {
+    const clients = scriptedClients({
+      plans: [{ ...subtask('复杂计划'), acceptance: ['a', 'b', 'c'] }],
+      verdicts: [verdict('approve')],
+    });
+    const repo = createAgentRunRepository(db);
+    const events = await collect(
+      createAgentRunner({ repo, clients }).run({
+        ...startInput,
+        planReview: true,
+        awaitPlanApproval: async () => 'reject',
+      }),
+    );
+    expect(events.some((event) => event.event === 'agent_plan_preview')).toBe(true);
+    expect(clients.execCalls).toBe(0);
+    const run = repo.list()[0]!;
+    expect(run.status).toBe('cancelled');
+    expect(run.errorCode).toBe('AGENT_PLAN_REJECTED');
+  });
+
+  it('v4.7 P1：计划批准后继续执行，简单任务不弹预览', async () => {
+    const complex = scriptedClients({
+      plans: [{ ...subtask('复杂计划'), acceptance: ['a', 'b', 'c'] }],
+      verdicts: [verdict('approve')],
+    });
+    const repo = createAgentRunRepository(db);
+    let asked = 0;
+    const events = await collect(
+      createAgentRunner({ repo, clients: complex }).run({
+        ...startInput,
+        planReview: true,
+        awaitPlanApproval: async () => {
+          asked += 1;
+          return 'approve';
+        },
+      }),
+    );
+    expect(asked).toBe(1);
+    expect(events.some((event) => event.event === 'agent_plan_preview')).toBe(true);
+    expect(repo.list()[0]!.status).toBe('done');
+
+    const simple = scriptedClients({ plans: [subtask('简单')], verdicts: [verdict('approve')] });
+    const simpleRepo = createAgentRunRepository(db);
+    await collect(
+      createAgentRunner({ repo: simpleRepo, clients: simple }).run({
+        ...startInput,
+        planReview: true,
+        awaitPlanApproval: async () => {
+          throw new Error('简单任务不应询问计划');
+        },
+      }),
+    );
+    expect(simpleRepo.list()[0]!.status).toBe('done');
+  });
+
+  it('v4.7 P1：运行时写检查点，终态后标记不可续跑', async () => {
+    const clients = scriptedClients({ plans: [subtask()], verdicts: [verdict('approve')] });
+    const repo = createAgentRunRepository(db);
+    const checkpoints = createTaskRunCheckpointRepository(db);
+    await collect(createAgentRunner({ repo, clients, checkpoints }).run(startInput));
+    const run = repo.list()[0]!;
+    const checkpoint = checkpoints.getByRunId(run.id)!;
+    expect(checkpoint.phase).toBe('reviewing');
+    expect(checkpoint.resumable).toBe(false);
+    expect(repo.getById(run.id)?.resumable).toBe(false);
   });
 });

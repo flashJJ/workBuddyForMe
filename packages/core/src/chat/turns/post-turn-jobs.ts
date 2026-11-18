@@ -5,6 +5,7 @@ import type { AttachmentService } from '../../services/assistant/attachment-serv
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import type { MemoryService } from '../../memory/memory-service';
 import type { WorkPlanService } from '../../work-plan';
+import type { SessionLogService } from '../../session-log/session-log-service';
 import type { ResolvedChatTarget } from '../context/model-resolver';
 import { runPostTurnCompaction } from '../context/turn-context';
 import { runPostTurnMemory } from '../../memory/turn-memory';
@@ -29,6 +30,8 @@ export interface PostTurnJobsParams {
   workPlans?: WorkPlanService;
   /** v2.26 P1：本轮工具执行轨迹（检查点记录最近工具结果摘要） */
   toolTrace?: readonly ToolTraceEntry[];
+  /** v4.8：压缩事件落库（缺省不落） */
+  events?: SessionLogService;
   signal?: AbortSignal;
   traceParent: TraceHandle | null;
 }
@@ -79,6 +82,8 @@ export async function runPostTurnJobs(params: PostTurnJobsParams): Promise<void>
     lastCompletionTokens: params.lastCompletionTokens,
     signal: params.signal,
     traceParent: params.traceParent,
+    events: params.events,
+    trigger: 'threshold',
   });
   // v2.26 P1：无论长期记忆是否开启，每轮都刷新工作记忆检查点
   if (params.workPlans) {

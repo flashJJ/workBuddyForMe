@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Ban, ChevronRight, Loader2, Users } from 'lucide-react';
+import { Ban, ChevronRight, Loader2, Play, Users } from 'lucide-react';
 import type { AgentRunStatus, AgentRunView } from '@wbfm/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
@@ -121,6 +121,16 @@ function AgentRunRow({
     }
   };
 
+  // v4.7 P1：中断收敛且有检查点 → 新建 run 续跑（服务端持有执行）
+  const resume = async () => {
+    try {
+      await mutations.resume.mutateAsync(run.id);
+      toast.success(t('agents.tasks.resumeStarted'));
+    } catch (error) {
+      toast.error(errorText(error, t, { fallback: 'agents.tasks.loadFailed' }));
+    }
+  };
+
   return (
     <li className="min-w-0 overflow-hidden rounded-lg border bg-ui-card">
       <div className="flex min-w-0 items-center gap-3 px-4 py-3">
@@ -144,6 +154,22 @@ function AgentRunRow({
           </span>
           <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{run.id.slice(0, 8)}</span>
         </button>
+        {!active && run.resumable && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void resume()}
+            disabled={mutations.resume.isPending}
+          >
+            {mutations.resume.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+            {mutations.resume.isPending ? t('agents.tasks.resuming') : t('agents.tasks.resume')}
+          </Button>
+        )}
         {active && (
           <Button
             type="button"

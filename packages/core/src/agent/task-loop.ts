@@ -139,8 +139,8 @@ export async function* runTaskLoop(
           observeMode,
           ...(subtaskContext ? { subtask: subtaskContext } : {}),
           ...(params.knowledgeBaseNames?.length ? { knowledgeBaseNames: params.knowledgeBaseNames } : {}),
-          toolCatalog,
-          maxSteps: state.run.maxSteps,
+          toolCatalog, maxSteps: state.run.maxSteps,
+          ...(params.contextBlock ? { contextBlock: params.contextBlock } : {}),
         },
         signal,
       );

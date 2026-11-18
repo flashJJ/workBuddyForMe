@@ -33,6 +33,19 @@ export const POST = defineRoute(async ({ request, services }) => {
     assistantId = conversation.assistantId;
   }
   services.assistants.get(assistantId);
+  // v4.7：任务模式的用户消息落 messages 表（此前只在 live + agent_runs.goal），
+  // 保证任务结束后会话历史完整；同一内容紧邻重发（重新生成）不重复落库。
+  if (input.conversationId) {
+    const last = services.conversations.recentMessages(input.conversationId, 1)[0];
+    const duplicated = last?.role === 'user' && last.content.trim() === input.goal.trim();
+    if (!duplicated) {
+      services.conversations.appendMessage({
+        conversationId: input.conversationId,
+        role: 'user',
+        content: input.goal,
+      });
+    }
+  }
   const repo = createAgentRunRepository(services.db);
   const run = repo.create({
     assistantId,

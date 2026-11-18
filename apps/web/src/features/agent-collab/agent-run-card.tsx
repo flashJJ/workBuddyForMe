@@ -2,15 +2,18 @@
 
 import * as React from 'react';
 import { Ban, CheckCircle2, MonitorPlay, ShieldQuestion, TriangleAlert, Users, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { FailureHint } from '@/components/common/failure-hint';
 import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSystemText } from '@/lib/i18n/use-system-text';
 import { toOutcome } from '@/lib/runs/run-outcome';
 import { getStageBridge } from '@/features/stage/bridge';
+import { SceneSnapshotPanel, summarizeSceneSnapshots } from '@/features/context-snapshots';
 import { cn } from '@/lib/utils';
 import { AgentHandoffTimeline } from './agent-handoff-timeline';
 import { AgentRounds } from './agent-rounds';
+import { useAgentRunMutations } from './use-agent-runs';
 import type { AgentCardState, AgentCardStatus } from './agent-run-reducer';
 
 /**
@@ -48,6 +51,10 @@ export function AgentRunCard({
   const sys = useSystemText();
   const terminal = state.status !== 'connecting' && state.status !== 'running';
   const outcome = toOutcome('agent', state.status);
+  const snapshotSummary = React.useMemo(
+    () => summarizeSceneSnapshots(state.contextSnapshots.map((value) => ({ value }))),
+    [state.contextSnapshots],
+  );
   return (
     <div
       className="min-w-0 overflow-hidden rounded-lg border bg-ui-card text-xs shadow-sm"
@@ -79,6 +86,7 @@ export function AgentRunCard({
 
       <div className={cn('space-y-2 px-3', compact ? 'py-2' : 'py-2.5')}>
         <BudgetBar state={state} />
+        <SceneSnapshotPanel summary={snapshotSummary} compact />
         <AgentHandoffTimeline handoffs={state.handoffs} />
         {state.pendingConfirm && (
           <div className="flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] text-warning">
@@ -86,12 +94,76 @@ export function AgentRunCard({
             {t('agents.confirm.waiting')}
           </div>
         )}
+        {state.pendingPlan && <PlanPreview runId={runId} plan={state.pendingPlan} />}
         <AgentRounds rounds={state.rounds} />
         {showSummary && state.summary && (
           <p className="min-w-0 whitespace-pre-wrap break-words rounded-md bg-muted/50 p-2 text-[11px] leading-relaxed">{sys(state.summary)}</p>
         )}
         {terminal && <TerminalBanner status={state.status} exceeded={state.status === 'budget_exceeded'} />}
         <FailureHint outcome={outcome} rawError={state.errorMessage} />
+      </div>
+    </div>
+  );
+}
+
+/** v4.7 P1：只读计划预览（批准/拒绝后协作继续或终止） */
+function PlanPreview({
+  runId,
+  plan,
+}: {
+  runId: string;
+  plan: NonNullable<AgentCardState['pendingPlan']>;
+}) {
+  const { t } = useI18n();
+  const { decidePlan } = useAgentRunMutations();
+  const busy = decidePlan.isPending;
+  const subtask = plan.subtask;
+  return (
+    <div className="space-y-1.5 rounded-md border border-teal-500/40 bg-teal-500/5 p-2" data-testid="agent-plan-preview">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-teal-700 dark:text-teal-400">
+        <ShieldQuestion className="h-3.5 w-3.5 shrink-0" />
+        {t('agents.plan.title')}
+      </div>
+      <p className="text-[11px] text-muted-foreground">{t('agents.plan.waiting')}</p>
+      <div className="rounded bg-ui-card/70 p-1.5">
+        <p className="text-[11px] font-medium">{subtask.title}</p>
+        <p className="mt-0.5 whitespace-pre-wrap break-words text-[10px] text-muted-foreground">{subtask.brief}</p>
+      </div>
+      <div>
+        <p className="text-[10px] font-medium text-muted-foreground">{t('agents.plan.acceptance')}</p>
+        <ul className="ml-4 list-disc text-[10px] text-muted-foreground">
+          {subtask.acceptance.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
+      {subtask.toolScopes && subtask.toolScopes.length > 0 && (
+        <p className="text-[10px] text-muted-foreground">
+          {t('agents.plan.tools')}：{subtask.toolScopes.join('、')}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          className="h-7 px-2 text-[11px]"
+          disabled={busy}
+          data-testid="agent-plan-approve"
+          onClick={() => decidePlan.mutate({ id: runId, decision: 'approve' })}
+        >
+          <CheckCircle2 className="mr-1 h-3 w-3" />
+          {busy ? t('agents.plan.approving') : t('agents.plan.approve')}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-[11px]"
+          disabled={busy}
+          data-testid="agent-plan-reject"
+          onClick={() => decidePlan.mutate({ id: runId, decision: 'reject' })}
+        >
+          <XCircle className="mr-1 h-3 w-3" />
+          {t('agents.plan.reject')}
+        </Button>
       </div>
     </div>
   );

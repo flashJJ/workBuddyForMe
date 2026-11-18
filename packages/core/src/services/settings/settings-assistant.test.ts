@@ -65,6 +65,10 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       compileWithLlm: false,
       compileModelId: null,
       contextMessageCount: 20,
+      contextPreflightCompactEnabled: true,
+      // v4.8：小模型意图识别默认关、跟随默认模型
+      intentClassifierEnabled: false,
+      intentClassifierModelId: null,
       globalAppendPrompt: '',
       globalAppendPromptEnabled: false,
       // v2.4 M1：演示模式缺省关
@@ -96,6 +100,8 @@ describe('settings / assistants 服务（TR-13.1）', () => {
       capabilityTrustedKeys: [],
       // v2.13：治理策略默认每次确认、无人值守白名单不含 full_access
       agentPolicy: expect.objectContaining({ version: 1, defaultMode: 'confirm_each' }),
+      // v4.7 P1：复杂任务默认先确认计划
+      agentPlanReviewEnabled: true,
       // v2.17：联网搜索默认关闭
       searchSettings: {
         provider: 'none',

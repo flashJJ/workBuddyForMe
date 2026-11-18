@@ -1,4 +1,7 @@
 import type { ResolvedChatTarget } from '../../chat/context/model-resolver';
+import type { ChatMessage } from '@wbfm/ai';
+import type { SceneContextSnapshotPayload } from '@wbfm/shared/schemas';
+import { fitPromptMessages } from '../../context/prompt-budget';
 import {
   buildAgentPlannerMessages,
   parsePlan,
@@ -19,14 +22,25 @@ import type { PlannerClient, ReviewerClient, RoleModelUsage } from '../runner/ru
 
 async function collectStream(
   target: ResolvedChatTarget,
-  messages: Parameters<ResolvedChatTarget['provider']['chatStream']>[0]['messages'],
-  signal?: AbortSignal,
-): Promise<{ content: string; usage: RoleModelUsage }> {
+  messages: ChatMessage[],
+  signal: AbortSignal | undefined,
+  scene: 'collab_plan' | 'collab_review',
+  role: 'planner' | 'reviewer',
+): Promise<{
+  content: string;
+  usage: RoleModelUsage;
+  contextStats: SceneContextSnapshotPayload;
+}> {
+  const fitted = fitPromptMessages(messages, {
+    contextWindow: target.model.contextWindow,
+    scene,
+    role,
+  });
   let content = '';
   const usage: RoleModelUsage = { promptTokens: 0, completionTokens: 0 };
   const stream = target.provider.chatStream({
     model: target.model.modelId,
-    messages,
+    messages: fitted.messages,
     temperature: 0,
     maxTokens: 1024,
     ...(signal ? { signal } : {}),
@@ -38,7 +52,7 @@ async function collectStream(
       usage.completionTokens = chunk.usage.completionTokens;
     }
   }
-  return { content, usage };
+  return { content, usage, contextStats: fitted.stats };
 }
 
 /** Planner：子任务单 JSON 解析失败 → PlannerProtocolError（runner 计 1 次协议失败） */
@@ -50,13 +64,20 @@ export function createLlmPlannerClient(target: ResolvedChatTarget): PlannerClien
         history: input.history,
         availableToolScopes: input.availableToolScopes,
         knowledgeBaseHints: input.knowledgeBaseHints ?? [],
+        ...(input.contextBlock ? { contextBlock: input.contextBlock } : {}),
       });
-      const { content, usage } = await collectStream(target, messages, signal);
+      const { content, usage, contextStats } = await collectStream(
+        target,
+        messages,
+        signal,
+        'collab_plan',
+        'planner',
+      );
       const parsed = parsePlan(content);
       if (!parsed.ok) {
         throw new PlannerProtocolError(parsed.error, 'Planner 输出未通过协议校验', parsed.issues);
       }
-      return { subtask: parsed.subtask, usage };
+      return { subtask: parsed.subtask, usage, contextStats };
     },
   };
 }
@@ -66,12 +87,18 @@ export function createLlmReviewerClient(target: ResolvedChatTarget): ReviewerCli
   return {
     async review(input, signal) {
       const messages = buildReviewMessages(input);
-      const { content, usage } = await collectStream(target, messages, signal);
+      const { content, usage, contextStats } = await collectStream(
+        target,
+        messages,
+        signal,
+        'collab_review',
+        'reviewer',
+      );
       const parsed = parseVerdict(content);
       if (!parsed.ok) {
         throw new ReviewerProtocolError(parsed.error, 'Reviewer 输出未通过协议校验', parsed.issues);
       }
-      return { review: parsed.review, usage };
+      return { review: parsed.review, usage, contextStats };
     },
   };
 }

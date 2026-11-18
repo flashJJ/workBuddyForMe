@@ -159,6 +159,11 @@ export const settingsUpdateSchema = z.object({
   systemEventAwarenessEnabled: z.boolean().optional(),
   // v1.8 M3：上下文条数（服务端钳制 2–50；先条数裁剪再 token 预算裁剪）
   contextMessageCount: z.number().int().min(CONTEXT_MESSAGES_MIN).max(CONTEXT_MESSAGES_MAX).optional(),
+  // v4.8：装配前预判压缩（历史超水位先压缩；缺省 true）
+  contextPreflightCompactEnabled: z.boolean().optional(),
+  // v4.8：小模型意图识别（缺省 false；modelId=null 跟随默认对话模型）
+  intentClassifierEnabled: z.boolean().optional(),
+  intentClassifierModelId: z.string().trim().min(1).nullable().optional(),
   // v1.8 M3：全局追加提示词（固定注入在角色卡之后、情绪段之前；空串=无内容）
   globalAppendPrompt: z.string().max(GLOBAL_APPEND_PROMPT_MAX).optional(),
   /** v1.8 M3：全局追加开关（内容为空时开关无效；缺省 false） */
@@ -206,6 +211,8 @@ export const settingsUpdateSchema = z.object({
     .optional(),
   // v2.13 Agent 治理策略（deny wins；读取时由 core 钳制）
   agentPolicy: agentPolicySchema.optional(),
+  // v4.7 P1：复杂任务执行前计划确认（缺省 true）
+  agentPlanReviewEnabled: z.boolean().optional(),
   // v2.17 联网搜索（缺省关闭；endpoint 在 core 读取时做 SSRF 校验）
   searchSettings: searchSettingsSchema.optional(),
   // v2.28 记忆审计保留期（30/90/180 天或 0=永久；缺省 90）

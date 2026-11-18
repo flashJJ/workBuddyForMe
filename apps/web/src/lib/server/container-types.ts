@@ -21,7 +21,7 @@ import type {
   createTaskRunnerService,
   createVrmAvatarService,
 } from '@wbfm/core/services';
-import type { createChatOrchestrator } from '@wbfm/core/chat';
+import type { createChatOrchestrator, createContextCompactionService } from '@wbfm/core/chat';
 import type { createBranchService } from '@wbfm/core/branch';
 import type { createMilestoneService } from '@wbfm/core/emotion';
 import type { createAgentRunService } from '@wbfm/core/agents';
@@ -70,6 +70,8 @@ export interface ServiceContainer {
   characterCards: ReturnType<typeof createCharacterCardService>;
   stageScenes: ReturnType<typeof createStageSceneService>;
   conversations: ReturnType<typeof createConversationService>;
+  /** v4.8：用户显式压缩（上下文面板） */
+  contextCompaction: ReturnType<typeof createContextCompactionService>;
   orchestrator: ReturnType<typeof createChatOrchestrator>;
   ingestion: ReturnType<typeof createIngestionPipeline>;
   knowledgeBases: ReturnType<typeof createKnowledgeService>;

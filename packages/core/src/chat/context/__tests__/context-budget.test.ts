@@ -5,6 +5,8 @@ import {
   TOOL_MESSAGE_BUDGET_FLOOR,
   estimateMessageTokens,
   estimateTokens,
+  needsSkillTrim,
+  resolveReserveTokens,
   resolveToolMessageBudget,
   truncateToTokens,
   assembleHistoryWithinBudget,
@@ -97,28 +99,29 @@ describe('assembleHistoryWithinBudget（历史按 token 预算从新到旧装配
   });
 
   it('超预算时丢弃最旧消息，保留最近连续后缀', () => {
-    // 3 条 × 6 token（5 字符 + 开销 4），预算 15：最后 2 条装入（12 ≤ 15），最旧 1 条被裁
-    const history = [asciiMsg('old-1'), asciiMsg('mid-2'), asciiMsg('new-3')];
+    // 窗口 2000 → 预留 512，历史预算 1488；6 条 × 300 token → 只能保留最近 4 条
+    const history = Array.from({ length: 6 }, () => asciiMsg('x'.repeat(1184)));
     const { kept, stats } = assembleHistoryWithinBudget({
       history,
-      contextWindow: 15 + 2048,
+      contextWindow: 2000,
       systemTokens: 0,
       toolsTokens: 0,
       lastCompletionTokens: null,
     });
-    expect(kept.map((m) => m.content)).toEqual(['mid-2', 'new-3']);
-    expect(stats.historyBudget).toBe(15);
-    expect(stats.keptMessages).toBe(2);
-    expect(stats.droppedMessages).toBe(1);
-    expect(stats.estimatedHistoryTokens).toBe(12);
+    expect(stats.reserveTokens).toBe(512);
+    expect(stats.historyBudget).toBe(1488);
+    expect(kept).toHaveLength(4);
+    expect(stats.keptMessages).toBe(4);
+    expect(stats.droppedMessages).toBe(2);
+    expect(stats.estimatedHistoryTokens).toBe(1200);
     expect(stats.truncated).toBe(true);
   });
 
   it('本轮用户消息恒保留：即使单独超预算也不丢失', () => {
-    const oversized = 'x'.repeat(2000); // ≈500 token
+    const oversized = 'x'.repeat(2000); // ≈500 token，超过 288 的历史预算
     const { kept, stats } = assembleHistoryWithinBudget({
       history: [asciiMsg(oversized)],
-      contextWindow: 15 + 2048,
+      contextWindow: 800,
       systemTokens: 0,
       toolsTokens: 0,
       lastCompletionTokens: null,
@@ -132,13 +135,14 @@ describe('assembleHistoryWithinBudget（历史按 token 预算从新到旧装配
     const history = [asciiMsg(ASCII_10)];
     const { kept, stats } = assembleHistoryWithinBudget({
       history,
-      contextWindow: 2048 + 100,
+      contextWindow: 15_000,
       systemTokens: 60,
       toolsTokens: 30,
       lastCompletionTokens: null,
     });
-    // 预算 = 2148 − 60 − 30 − 2048 = 10 < 7？否：10 ≥ 7，仍可装入 1 条
-    expect(stats.historyBudget).toBe(10);
+    // 预算 = 15000 − 60 − 30 − 2048（窗口足够大时预留仍为默认上限）
+    expect(stats.reserveTokens).toBe(2048);
+    expect(stats.historyBudget).toBe(15_000 - 60 - 30 - 2048);
     expect(kept).toHaveLength(1);
   });
 
@@ -146,9 +150,9 @@ describe('assembleHistoryWithinBudget（历史按 token 预算从新到旧装配
     const history = [asciiMsg('old'), asciiMsg('new')];
     const { kept, stats } = assembleHistoryWithinBudget({
       history,
-      contextWindow: 2048 + 50,
-      systemTokens: 40,
-      toolsTokens: 20,
+      contextWindow: 3000,
+      systemTokens: 2000,
+      toolsTokens: 500,
       lastCompletionTokens: null,
     });
     expect(stats.historyBudget).toBe(0);
@@ -156,7 +160,7 @@ describe('assembleHistoryWithinBudget（历史按 token 预算从新到旧装配
     expect(stats.truncated).toBe(true);
   });
 
-  it('上次真实 completion 校准输出预留：max(默认, 真实+128)', () => {
+  it('上次真实 completion 校准输出预留，但受窗口 40% 上限约束', () => {
     const { stats } = assembleHistoryWithinBudget({
       history: [asciiMsg(ASCII_10)],
       contextWindow: 5200,
@@ -164,11 +168,12 @@ describe('assembleHistoryWithinBudget（历史按 token 预算从新到旧装配
       toolsTokens: 0,
       lastCompletionTokens: 3000,
     });
-    expect(stats.reserveTokens).toBe(3128);
-    expect(stats.historyBudget).toBe(5200 - 3128);
+    // 基准预留 780，校准值 3128，上限 2080
+    expect(stats.reserveTokens).toBe(2080);
+    expect(stats.historyBudget).toBe(5200 - 2080);
   });
 
-  it('上次 completion 低于默认预留时仍用默认值', () => {
+  it('上次 completion 低于按窗口比例化的预留时用基准值', () => {
     const { stats } = assembleHistoryWithinBudget({
       history: [asciiMsg(ASCII_10)],
       contextWindow: 5200,
@@ -176,7 +181,28 @@ describe('assembleHistoryWithinBudget（历史按 token 预算从新到旧装配
       toolsTokens: 0,
       lastCompletionTokens: 100,
     });
-    expect(stats.reserveTokens).toBe(2048);
+    expect(stats.reserveTokens).toBe(780);
+  });
+});
+
+describe('resolveReserveTokens（v4.8.1 预留按窗口比例化）', () => {
+  it('小窗口按 15% 收缩，不小于 512', () => {
+    expect(resolveReserveTokens(null, 4096)).toBe(614);
+    expect(resolveReserveTokens(null, 1024)).toBe(512);
+  });
+
+  it('常规窗口 15% 与默认上限取小', () => {
+    expect(resolveReserveTokens(null, 8192)).toBe(1228);
+    expect(resolveReserveTokens(null, 32_000)).toBe(2048);
+    expect(resolveReserveTokens(null, 1_048_576)).toBe(2048);
+  });
+});
+
+describe('needsSkillTrim（小窗口裁剪技能块的门槛）', () => {
+  it('原文预算低于下限才裁剪', () => {
+    expect(needsSkillTrim(null)).toBe(false);
+    expect(needsSkillTrim({ historyBudget: 511 })).toBe(true);
+    expect(needsSkillTrim({ historyBudget: 512 })).toBe(false);
   });
 });
 

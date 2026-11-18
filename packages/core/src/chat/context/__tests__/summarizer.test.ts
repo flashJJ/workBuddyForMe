@@ -8,6 +8,7 @@ import {
   normalizeSummary,
   planCompaction,
   summarizeConversation,
+  summarizeConversationStructured,
 } from '../summarizer';
 
 /** 4 个 ASCII 字符 → 1 token，加每条消息固定开销 4 = 5 token */
@@ -41,7 +42,7 @@ async function* fakeStream(chunks: string[]): AsyncGenerator<ChatChunk> {
   for (const delta of chunks) yield { delta };
 }
 
-function targetWith(chunks: string[]) {
+function targetWith(chunks: string[], contextWindow?: number) {
   const calls: ChatParams[] = [];
   const provider = {
     chatStream: vi.fn((params: ChatParams) => {
@@ -51,7 +52,7 @@ function targetWith(chunks: string[]) {
   };
   const target = {
     provider,
-    model: { modelId: 'summary-model' },
+    model: { modelId: 'summary-model', contextWindow },
   } as unknown as ResolvedChatTarget;
   return { target, calls };
 }
@@ -87,6 +88,19 @@ describe('planCompaction（压缩决策）', () => {
     expect(
       planCompaction({ history, contextWindow: 1000 + 512, personaTokens: 0, toolsTokens: 0, reserveTokens: 0 }),
     ).toBeNull();
+  });
+
+  it('用户显式压缩：未达阈值也折叠最旧约 60%', () => {
+    const history = Array.from({ length: 8 }, () => msg('abcd'));
+    const plan = planCompaction({
+      history,
+      contextWindow: 10000,
+      personaTokens: 0,
+      toolsTokens: 0,
+      reserveTokens: 0,
+      force: true,
+    });
+    expect(plan?.foldCount).toBe(4);
   });
 
   it('超阈值时折叠最旧消息，保留至少 4 条最近消息', () => {
@@ -183,5 +197,23 @@ describe('summarizeConversation', () => {
     await expect(
       summarizeConversation({ target, previousSummary: null, folded: [domainMessage('user', 'x')] }),
     ).rejects.toThrow('摘要结果为空');
+  });
+});
+
+describe('summarizeConversationStructured（v4.8.1 小窗口纯文本摘要）', () => {
+  it('窗口 < 8192 时不要求 JSON，不抽事实、不做保真重试', async () => {
+    const { target, calls } = targetWith(['项目代号青鸟，端口 8443，负责人老陈。'], 4096);
+    const result = await summarizeConversationStructured({
+      target,
+      previousSummary: null,
+      folded: [domainMessage('user', '项目代号青鸟，端口 8443，负责人老陈。')],
+    });
+    expect(result.payload.summary).toContain('8443');
+    expect(result.payload.facts).toEqual([]);
+    expect(result.fidelityMissing).toEqual([]);
+    expect(result.retried).toBe(false);
+    expect(calls).toHaveLength(1);
+    expect(String(calls[0]!.messages[0]!.content)).toContain('只输出摘要正文');
+    expect(String(calls[0]!.messages[0]!.content)).not.toContain('"facts"');
   });
 });

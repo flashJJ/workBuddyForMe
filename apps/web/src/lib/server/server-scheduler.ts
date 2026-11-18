@@ -83,7 +83,9 @@ export async function runServerSchedulerTick(services: ServiceContainer): Promis
     markFired: (id, nowMs) => services.schedules.markFired(id, nowMs),
     deliver: (due) => {
       const task = services.schedules.get(due.id);
-      startScheduledAgentTask(services, task, due.scheduledAt);
+      void startScheduledAgentTask(services, task, due.scheduledAt).catch((error) =>
+        console.warn('[scheduler] agent_task 启动失败', error),
+      );
     },
     onWarn: (code, detail) => console.warn(`[scheduler] ${code}`, detail),
   });

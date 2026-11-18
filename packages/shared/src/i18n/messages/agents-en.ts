@@ -16,6 +16,8 @@ export const enAgents = {
   handoff: {
     title: 'Handoffs',
     durationTitle: 'Since last handoff: {duration}',
+    tokens: '{tokens} tok',
+    tokensTitle: 'Tokens for this call: {tokens}',
   },
   phase: {
     planning: 'Planning',
@@ -65,6 +67,18 @@ export const enAgents = {
     origin: 'Collaboration task · initiated by Executor',
     waiting: 'Waiting for tool authorization; the collaboration resumes once allowed',
   },
+  plan: {
+    title: 'Execution plan needs approval',
+    waiting: 'Approve the plan to start execution',
+    goal: 'Task',
+    brief: 'Brief',
+    acceptance: 'Acceptance criteria',
+    tools: 'Tool scopes',
+    approve: 'Approve',
+    reject: 'Reject',
+    approving: 'Submitting…',
+    rejected: 'Plan rejected; the task was terminated',
+  },
   errors: {
     streamConnectFailed: 'Failed to connect to the collaboration event stream',
     networkInterrupted: 'Network connection interrupted',
@@ -82,5 +96,8 @@ export const enAgents = {
     loadFailed: 'Failed to load',
     cancel: 'Stop',
     cancelling: 'Stopping…',
+    resume: 'Resume',
+    resuming: 'Resuming…',
+    resumeStarted: 'Resume run created',
   },
 };

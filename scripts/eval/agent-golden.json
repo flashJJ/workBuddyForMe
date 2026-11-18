@@ -21,6 +21,7 @@
       "category": "knowledge",
       "goal": "查证差旅报销住宿费上限每晚多少元 [conclusion:住宿费上限每晚500元]",
       "expect": { "status": "done", "evidenceDoc": "报销管理制度.txt", "toolCalls": ["knowledge_search"], "summaryContains": "500" },
+      "checkContextSnapshot": true,
       "breaksWith": ["knowledge"]
     },
     {

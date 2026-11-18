@@ -153,6 +153,36 @@ function checkExpectations(run, handoffs, expect) {
   return reasons;
 }
 
+/** v4.9：协作角色上下文快照断言（agent scope） */
+async function checkContextSnapshots(baseUrl, runId) {
+  const response = await api(baseUrl, `/api/events?scope=agent&scopeId=${encodeURIComponent(runId)}&limit=500`);
+  const events = response.events ?? [];
+  const snapshots = events.filter((event) => event.type === 'context_scene_snapshot');
+  const reasons = [];
+  if (snapshots.length === 0) return ['未产生 context_scene_snapshot 事件'];
+  const roles = new Set(snapshots.map((event) => event.payload?.role));
+  if (!roles.has('planner')) reasons.push('快照缺少 planner 角色');
+  if (!roles.has('executor')) reasons.push('快照缺少 executor 角色');
+  for (const event of snapshots) {
+    const payload = event.payload ?? {};
+    if (
+      typeof payload.promptTokens !== 'number' ||
+      typeof payload.budgetTokens !== 'number' ||
+      payload.promptTokens > payload.budgetTokens
+    ) {
+      reasons.push(`快照预算不变量失败：prompt=${payload.promptTokens} budget=${payload.budgetTokens}`);
+    }
+    if (
+      typeof payload.usableWindow === 'number' &&
+      typeof payload.contextWindow === 'number' &&
+      payload.usableWindow > payload.contextWindow
+    ) {
+      reasons.push(`快照窗口不变量失败：usable=${payload.usableWindow} window=${payload.contextWindow}`);
+    }
+  }
+  return reasons;
+}
+
 async function runCase(baseUrl, assistantId, testCase, sw) {
   const conversation = await api(baseUrl, '/api/conversations', {
     method: 'POST',
@@ -169,7 +199,11 @@ async function runCase(baseUrl, assistantId, testCase, sw) {
   const run = await api(baseUrl, '/api/agent/runs', { method: 'POST', body: JSON.stringify(body) });
   await consumeAgentEvents(baseUrl, run.id, { cancelAfterFirstEvent: Boolean(testCase.cancelAfterFirstEvent) });
   const detail = await api(baseUrl, `/api/agent/runs/${run.id}`);
-  return checkExpectations(detail.run, detail.handoffs, testCase.expect ?? {});
+  const reasons = checkExpectations(detail.run, detail.handoffs, testCase.expect ?? {});
+  if (sw === 'none' && testCase.checkContextSnapshot) {
+    reasons.push(...(await checkContextSnapshots(baseUrl, run.id)));
+  }
+  return reasons;
 }
 
 async function main() {

@@ -12,10 +12,9 @@ import { SimpleSelect } from '@/components/ui/simple-select';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/provider';
+import { ListField } from './list-field';
 
 const INPUT = 'h-9 w-full rounded-md border bg-ui-control px-2 text-sm';
-const AREA =
-  'min-h-20 w-full rounded-md border bg-ui-control p-2 font-mono text-xs placeholder:text-muted-foreground/70';
 
 const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
   confirm_each: 'tasks.governance.modes.confirm_each',
@@ -33,37 +32,6 @@ const MODES: AgentPermissionMode[] = [
   'full_access',
 ];
 
-function lines(values: string[]): string {
-  return values.join('\n');
-}
-
-function fromLines(value: string): string[] {
-  return value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function ListField(props: {
-  label: string;
-  value: string[];
-  onChange: (next: string[]) => void;
-  /** 示例占位：告诉用户每行该写什么，避免空白框无从下手 */
-  placeholder?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-      {props.label}
-      <textarea
-        className={AREA}
-        placeholder={props.placeholder}
-        value={lines(props.value)}
-        onChange={(event) => props.onChange(fromLines(event.target.value))}
-      />
-    </label>
-  );
-}
-
 /** v2.13 M2：Agent 治理策略（settings JSON；deny wins） */
 export function AgentGovernanceSection() {
   const { t } = useI18n();
@@ -71,9 +39,11 @@ export function AgentGovernanceSection() {
   const { data: settings } = useSettings();
   const update = useUpdateSettings();
   const [policy, setPolicy] = React.useState<AgentPolicy>(DEFAULT_AGENT_POLICY);
+  const [planReview, setPlanReview] = React.useState(true);
 
   React.useEffect(() => {
     if (settings?.agentPolicy) setPolicy(settings.agentPolicy);
+    if (settings) setPlanReview(settings.agentPlanReviewEnabled !== false);
   }, [settings]);
 
   const patch = (next: Partial<AgentPolicy>) => setPolicy((current) => ({ ...current, ...next }));
@@ -102,7 +72,7 @@ export function AgentGovernanceSection() {
 
   const save = () => {
     update.mutate(
-      { agentPolicy: policy },
+      { agentPolicy: policy, agentPlanReviewEnabled: planReview },
       {
         onSuccess: () => toast.success(t('tasks.governance.policy.saved')),
         onError: () => toast.error(t('tasks.governance.policy.saveFailed')),
@@ -118,6 +88,21 @@ export function AgentGovernanceSection() {
           {t('tasks.governance.policy.description')}
         </p>
       </div>
+
+      <label className="flex items-start gap-2 rounded-md border bg-ui-row px-3 py-2 text-xs">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={planReview}
+          onChange={(event) => setPlanReview(event.target.checked)}
+        />
+        <span>
+          <span className="font-medium text-foreground">{t('tasks.governance.policy.planReview')}</span>
+          <span className="mt-0.5 block text-muted-foreground">
+            {t('tasks.governance.policy.planReviewHint')}
+          </span>
+        </span>
+      </label>
 
       <div className="grid gap-3 md:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">

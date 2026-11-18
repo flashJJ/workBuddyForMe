@@ -19,6 +19,7 @@ import type { LocalModeSettingsFields } from './local-mode-settings';
 import type { SubagentCliSettingsFields } from './subagent-settings';
 import type { CapabilitySignatureSettingsFields } from './capability-settings';
 import type { AgentGovernanceSettingsFields } from './agent-settings';
+import type { ChatContextSettingsFields } from './chat-context-settings';
 import type { InteractionGraphEntry } from '../schemas/interaction/interaction-graph';
 import type { ToolTraceEntry } from './tool';
 import type { StagePlan } from './stage-plan';
@@ -201,7 +202,7 @@ export interface AppSettings
     LocalModeSettingsFields,
     SubagentCliSettingsFields,
     CapabilitySignatureSettingsFields,
-    AgentGovernanceSettingsFields {
+    AgentGovernanceSettingsFields, ChatContextSettingsFields {
   defaultChatModelId: string | null;
   defaultEmbeddingModelId: string | null;
   theme: Theme;
@@ -252,9 +253,8 @@ export interface AppSettings
    * 停用某触发键的全部条目后该交互不再有动作（「查不到返回空」）。
    */
   interactionGraphDisabledEntryIds?: string[];
-  // v2.4 M1 演示模式开关与 T7 TTFV 里程碑经 LocalModeSettingsFields 交叉引入
-  // （定义见 ./local-mode-settings）
-  // v1.7 事件三字段经 EventSettingsFields 交叉引入（定义见 ../events/event-settings）
+  // v2.4 M1 演示模式/T7 TTFV 经 LocalModeSettingsFields 交叉引入（见 ./local-mode-settings）；
+  // v1.7 事件三字段经 EventSettingsFields 交叉引入（见 ../events/event-settings）
   /** v1.8 M3：上下文条数 2–50（缺省 DEFAULT_CONTEXT_MESSAGES=20；服务端钳制） */
   contextMessageCount?: number;
   /** v1.8 M3：全局追加提示词（角色卡之后、情绪段之前；空串=无） */

@@ -65,6 +65,14 @@ function labelFor(event: SessionEventView): string {
       return '协作失败';
     case 'budget_exceeded':
       return '协作预算耗尽';
+    case 'turn_intent':
+      return `意图：${String(field(payload, 'kind') ?? 'unknown')}`;
+    case 'context_condensed':
+      return `上下文压缩：${String(field(payload, 'trigger') ?? '')}`;
+    case 'context_snapshot':
+      return '上下文快照';
+    case 'context_scene_snapshot':
+      return `上下文快照：${String(field(payload, 'scene') ?? '')}`;
     default:
       return event.type;
   }
@@ -87,6 +95,36 @@ function detailFor(event: SessionEventView): string {
   if (event.type === 'agent_handoff') {
     const handoff = field(payload, 'handoff') ?? payload;
     return compact(`${String(field(handoff, 'fromRole') ?? '')} → ${String(field(handoff, 'toRole') ?? '')}`);
+  }
+  if (event.type === 'turn_intent') {
+    return compact(
+      `confidence=${String(field(payload, 'confidence') ?? '')} signals=${compact(field(payload, 'signals'))}`,
+    );
+  }
+  if (event.type === 'context_condensed') {
+    const folded = field(payload, 'foldedMessageIds') as unknown[] | undefined;
+    return compact(
+      `${String(field(payload, 'beforeTokens') ?? '')} → ${String(field(payload, 'afterTokens') ?? '')} tokens, ` +
+        `folded=${folded?.length ?? 0}${field(payload, 'degraded') ? ', degraded' : ''}`,
+    );
+  }
+  if (event.type === 'context_snapshot') {
+    return compact(
+      `window=${String(field(payload, 'contextWindow') ?? '')}, kept=${String(field(payload, 'keptMessages') ?? '')}, ` +
+        `dropped=${String(field(payload, 'droppedMessages') ?? '')}`,
+    );
+  }
+  if (event.type === 'context_scene_snapshot') {
+    const systemTokens = field(payload, 'systemTokens');
+    const inputTokens = field(payload, 'inputTokens');
+    const parts = [
+      `budget=${String(field(payload, 'budgetTokens') ?? '')}`,
+      `prompt=${String(field(payload, 'promptTokens') ?? '')}`,
+      ...(typeof systemTokens === 'number' ? [`system=${systemTokens}`] : []),
+      ...(typeof inputTokens === 'number' ? [`input=${inputTokens}`] : []),
+      `truncated=${String(field(payload, 'truncated') ?? '')}`,
+    ];
+    return compact(parts.join(', '));
   }
   return compact(payload);
 }

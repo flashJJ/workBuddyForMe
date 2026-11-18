@@ -146,6 +146,13 @@ export const agentHandoffPayloadSchema = z
     verdict: z.enum(REVIEW_VERDICTS).optional(),
     reviewNotes: z.string().trim().max(AGENT_LIMITS.REVIEW_NOTES_MAX).optional(),
     acceptanceResults: reviewVerdictSchema.shape.acceptanceResults.optional(),
+    /** v4.7 P2：本角色本次调用的 token 用量（观测用；旧数据缺省） */
+    usage: z
+      .object({
+        promptTokens: z.number().int().nonnegative(),
+        completionTokens: z.number().int().nonnegative(),
+      })
+      .optional(),
   })
   .refine(
     (v) => Boolean(v.subtask) || Boolean(v.outcome) || Boolean(v.verdict),
@@ -185,6 +192,14 @@ export const agentRunCreateSchema = z.object({
 });
 export type AgentRunCreateInput = z.infer<typeof agentRunCreateSchema>;
 
+/** v4.7 P1：计划确认决策（只读预览后批准/拒绝） */
+export const agentPlanDecisionSchema = z.object({
+  decision: z.enum(['approve', 'reject']),
+  /** 拒绝理由（审计与回投；批准可省略） */
+  note: z.string().trim().max(500).optional(),
+});
+export type AgentPlanDecision = z.infer<typeof agentPlanDecisionSchema>;
+
 /** 协作运行视图（列表/详情/SSE 终态） */
 export interface AgentRunView {
   id: string;
@@ -202,6 +217,10 @@ export interface AgentRunView {
   totalTokens: number;
   errorCode: string | null;
   errorMessage: string | null;
+  /** v4.7 P1：由中断前的检查点续跑而来（新 run 指向旧 run） */
+  resumedFromRunId?: string | null;
+  /** v4.7 P1：存在可续跑检查点（仅中断收敛的运行会置 true） */
+  resumable?: boolean;
   createdAt: string;
   updatedAt: string;
 }

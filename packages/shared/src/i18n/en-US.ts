@@ -44,6 +44,7 @@ import { enEventM5 } from './messages/event-m5-en';
 import { enCharacterCards } from './messages/character-cards';
 import { enTemplates } from './messages/templates';
 import { enTuning } from './messages/tuning';
+import { enContextInsights } from './messages/context-insights';
 import { enStage } from './messages/stage-en';
 import { enMeeting } from './messages/meeting-en';
 import { enRelationship } from './messages/relationship';
@@ -85,6 +86,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   characterCards: enCharacterCards,
   templates: enTemplates,
   tuning: enTuning,
+  contextInsights: enContextInsights,
   stage: enStage,
   meeting: enMeeting,
   knowledge: enKnowledge,

@@ -1,5 +1,7 @@
 import { ApiError } from '@wbfm/shared/errors';
-import { type Citation } from '@wbfm/shared/types';
+import { type Citation, type MemoryNotice } from '@wbfm/shared/types';
+import type { EmotionSignal } from '@wbfm/shared/schemas';
+import type { SsePayloadMap, TokenUsage } from '@wbfm/shared/api';
 import { ProviderError, type ChatMessage, type ToolCall } from '@wbfm/ai';
 import { parseToolArgs } from '../../tools/tool-executor';
 import type { ToolResult } from '../../tools/types';
@@ -14,6 +16,22 @@ export function normalizeFailure(error: unknown): { code: string; message: strin
   if (error instanceof ApiError) return { code: error.code, message: error.message };
   if (error instanceof ProviderError) return { code: error.code, message: error.message };
   return { code: 'INTERNAL_ERROR', message: '对话生成失败，请稍后重试' };
+}
+
+/** v4.8：done 帧统一构造（记忆提示去重截断，情绪段可选） */
+export function buildDoneData(input: {
+  content: string;
+  usage: TokenUsage | null;
+  emotion?: EmotionSignal;
+  notices?: MemoryNotice[];
+}): SsePayloadMap['done'] {
+  const notices = input.notices?.slice(0, 3) ?? [];
+  return {
+    content: input.content,
+    usage: input.usage,
+    ...(input.emotion ? { emotion: input.emotion } : {}),
+    ...(notices.length > 0 ? { memoryNotices: notices } : {}),
+  };
 }
 
 /** v2.27：引用去重键——文档/片段/静态层/表格坐标/网页地址共同定位一条来源 */

@@ -16,6 +16,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { NumberField } from '@/components/ui/number-field';
 import { ScenarioModelMatrix } from './scenario-model-matrix';
 import { GlobalAppendSection } from './global-append-section';
+import { IntentClassifierSection } from './intent-classifier-section';
 
 type AssistantPatch = Parameters<ReturnType<typeof useAssistantMutations>['update']['mutateAsync']>[0]['body'];
 
@@ -211,6 +212,7 @@ export function TuningPanel() {
           </div>
 
           <GlobalAppendSection />
+          <IntentClassifierSection chatModels={chatModels} />
         </>
       )}
     </section>

@@ -11,6 +11,7 @@ import type {
   ExecutorOutcome,
   ReviewVerdict,
   ReviewVerdictPayload,
+  SceneContextSnapshotPayload,
   SubtaskSpec,
 } from '@wbfm/shared/schemas';
 import type { SseEvent, SsePayloadMap } from '@wbfm/shared/api';
@@ -26,6 +27,8 @@ export type AgentStreamFrame =
   | SseEvent<'agent_review'>
   | SseEvent<'agent_budget'>
   | SseEvent<'agent_tool_confirm'>
+  | SseEvent<'agent_plan_preview'>
+  | SseEvent<'context_scene_snapshot'>
   | SseEvent<'done'>
   | SseEvent<'error'>;
 
@@ -53,6 +56,8 @@ export interface AgentHandoffEntry {
   /** 子任务标题 / 交付摘要 / 审查意见 */
   summary: string;
   verdict?: ReviewVerdict;
+  /** v4.7 P2：该角色本次调用的 token 用量（旧数据缺省） */
+  tokens?: number;
 }
 
 export interface AgentCardState {
@@ -69,6 +74,10 @@ export interface AgentCardState {
   errorMessage: string | null;
   /** 当前待授权工具（write/danger HITL）；null=无弹窗 */
   pendingConfirm: SsePayloadMap['agent_tool_confirm'] | null;
+  /** v4.7 P1：待确认的计划预览（只读）；null=无待确认计划 */
+  pendingPlan: SsePayloadMap['agent_plan_preview'] | null;
+  /** v4.10：本次运行最近 24 条场景上下文快照（实时帧） */
+  contextSnapshots: SceneContextSnapshotPayload[];
 }
 
 /** 消息/时间线上挂载协作卡的映射值 */
@@ -89,6 +98,8 @@ export function initAgentCard(budget: AgentBudget): AgentCardState {
     summary: '',
     errorMessage: null,
     pendingConfirm: null,
+    pendingPlan: null,
+    contextSnapshots: [],
   };
 }
 
@@ -122,6 +133,7 @@ function toHandoffEntry(handoff: AgentHandoffView): AgentHandoffEntry {
     from: handoff.fromRole,
     to: handoff.toRole,
     at: handoff.createdAt,
+    ...(p.usage ? { tokens: p.usage.promptTokens + p.usage.completionTokens } : {}),
   };
   if (p.subtask) return { ...base, kind: 'subtask', summary: p.subtask.title };
   if (p.outcome) return { ...base, kind: 'outcome', summary: p.outcome.summary };
@@ -176,6 +188,7 @@ export function mergeRunView(state: AgentCardState, run: AgentRunView): AgentCar
     ...(run.finalOutcome ? { summary: run.finalOutcome.summary || state.summary } : {}),
     ...(run.errorMessage ? { errorMessage: run.errorMessage } : {}),
     pendingConfirm: null,
+    pendingPlan: null,
     usage: {
       round: run.roundNo,
       steps: 0,
@@ -220,11 +233,19 @@ export function reduceAgentFrame(state: AgentCardState, frame: AgentStreamFrame)
       return { ...state, usage: frame.data.usage };
     case 'agent_tool_confirm':
       return { ...state, pendingConfirm: frame.data };
+    case 'agent_plan_preview':
+      return { ...state, pendingPlan: frame.data };
+    case 'context_scene_snapshot':
+      return {
+        ...state,
+        contextSnapshots: [...state.contextSnapshots, frame.data].slice(-24),
+      };
     case 'done':
       return {
         ...state,
         summary: frame.data.content || state.summary,
         pendingConfirm: null,
+        pendingPlan: null,
       };
     case 'error':
       return {
@@ -234,6 +255,7 @@ export function reduceAgentFrame(state: AgentCardState, frame: AgentStreamFrame)
         activePhase: null,
         errorMessage: frame.data.message,
         pendingConfirm: null,
+        pendingPlan: null,
       };
     default:
       return state;

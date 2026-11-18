@@ -23,7 +23,10 @@ const f = {
         handoff: {
           id: 'h1', runId: 'r1', roundNo: round, seq: 1, fromRole: 'planner', toRole: 'executor',
           createdAt: 't',
-          payload: { subtask: { title: '查证', brief: '查清制度', acceptance: ['a1'], toolScopes: ['knowledge'] } },
+          payload: {
+            subtask: { title: '查证', brief: '查清制度', acceptance: ['a1'], toolScopes: ['knowledge'] },
+            usage: { promptTokens: 10, completionTokens: 5 },
+          },
         },
       },
     }) as AgentStreamFrame,
@@ -44,6 +47,32 @@ const f = {
             },
           },
         },
+      },
+    }) as AgentStreamFrame,
+  snapshot: (
+    role: 'planner' | 'executor' | 'reviewer',
+    promptTokens = 100,
+    truncated = false,
+  ): AgentStreamFrame =>
+    ({
+      event: 'context_scene_snapshot',
+      data: {
+        runId: 'r1',
+        scene:
+          role === 'planner'
+            ? 'collab_plan'
+            : role === 'executor'
+              ? 'collab_exec'
+              : 'collab_review',
+        role,
+        contextWindow: 4096,
+        usableWindow: 3686,
+        reserveTokens: 614,
+        budgetTokens: 3008,
+        promptTokens,
+        truncatedMessages: truncated ? 1 : 0,
+        droppedMessages: 0,
+        truncated,
       },
     }) as AgentStreamFrame,
   reviewHandoff: (round: number, verdict: 'approve' | 'revise' | 'reject', note?: string): AgentStreamFrame =>
@@ -94,6 +123,8 @@ describe('agent-run-reducer（M4 泳道卡片状态纯函数）', () => {
     expect(round.review?.verdict).toBe('approve');
     expect(round.activePhase).toBeNull();
     expect(s.activeRole).toBeNull();
+    // v4.7 P2：交接条目携带该角色本次 token 用量（prompt + completion）
+    expect(s.handoffs[0]!.tokens).toBe(15);
   });
 
   it('返工：第二轮追加同组，不覆盖首轮', () => {
@@ -183,6 +214,25 @@ describe('agent-run-reducer（M4 泳道卡片状态纯函数）', () => {
     s = reduceAgentFrame(s, f.planHandoff(0));
     s = reduceAgentFrame(s, f.planHandoff(0));
     expect(s.handoffs).toHaveLength(1);
+  });
+
+  it('v4.10 快照帧：按到达顺序追加，初始为空', () => {
+    let s = initAgentCard(BUDGET);
+    expect(s.contextSnapshots).toEqual([]);
+    s = reduceAgentFrame(s, f.snapshot('planner', 466));
+    s = reduceAgentFrame(s, f.snapshot('executor', 586, true));
+    expect(s.contextSnapshots.map((item) => item.role)).toEqual(['planner', 'executor']);
+    expect(s.contextSnapshots[1]?.truncated).toBe(true);
+  });
+
+  it('v4.10 快照帧：最多保留最近 24 条', () => {
+    let s = initAgentCard(BUDGET);
+    for (let index = 0; index < 30; index += 1) {
+      s = reduceAgentFrame(s, f.snapshot('executor', index));
+    }
+    expect(s.contextSnapshots).toHaveLength(24);
+    expect(s.contextSnapshots[0]?.promptTokens).toBe(6);
+    expect(s.contextSnapshots[23]?.promptTokens).toBe(29);
   });
 
   it('cardFromRun：终态 handoffs 回放构图', () => {

@@ -1,8 +1,9 @@
-import type { AgentRunView } from '@wbfm/shared/schemas';
+import type { AgentRunView, SceneContextSnapshotPayload } from '@wbfm/shared/schemas';
 import type { Assistant } from '@wbfm/shared/types';
 import { createLlmPlanner } from '@wbfm/core/agent';
 import { resolveChatTargetForModelId } from '@wbfm/core/chat';
 import {
+  buildTaskContextBlock,
   createExecutorAdapter,
   createLlmPlannerClient,
   createLlmReviewerClient,
@@ -12,6 +13,7 @@ import {
   type AgentClientsProvider,
   type AgentPlanContextResolver,
   type AgentRoleKey,
+  type AgentTaskContextResolver,
 } from '@wbfm/core/agents';
 import type { ServiceDeps } from '@wbfm/core/services';
 import type { ToolRuntime } from '@wbfm/core/tools';
@@ -74,6 +76,35 @@ export function createAgentPlanContextResolver(
   };
 }
 
+/** v4.7：任务上下文（会话近期对话/摘要/事实/记忆/计划）装配，随 run 一次性计算 */
+export function createAgentTaskContextResolver(
+  factory: AgentClientsFactoryDeps,
+): AgentTaskContextResolver {
+  return (run) => {
+    const assistant = run.assistantId ? factory.assistants.get(run.assistantId) : null;
+    // v4.9：上下文块同时供 Planner/Executor 使用，按三角色模型窗口的最小值装配，
+    // 避免 Planner 绑定更小窗口模型时被执行模型的预算顶穿。
+    const windows = ROLE_KEYS.map((role) => {
+      try {
+        return resolveChatTargetForModelId(
+          factory.deps,
+          assistant?.[ROLE_FIELD[role]] ?? assistant?.modelId ?? null,
+        ).model.contextWindow;
+      } catch {
+        return null;
+      }
+    }).filter((value): value is number => typeof value === 'number' && value > 0);
+    const contextWindow = windows.length > 0 ? Math.min(...windows) : null;
+    return buildTaskContextBlock(factory.deps, {
+      conversationId: run.conversationId,
+      goal: run.goal,
+      assistantId: run.assistantId,
+      memoryEnabled: assistant?.memoryEnabled ?? false,
+      contextWindow,
+    });
+  };
+}
+
 export function createAgentClientsProvider(factory: AgentClientsFactoryDeps): AgentClientsProvider {
   return ({ run, overrides }) => {
     const assistant: Assistant | null = run.assistantId
@@ -102,13 +133,28 @@ export function createAgentClientsProvider(factory: AgentClientsFactoryDeps): Ag
       resolvePlanner: () => {
         // 用量对象由 planner onUsage 就地累计，适配器在本轮结束时读账
         const usage = { promptTokens: 0, completionTokens: 0 };
+        let contextStats: SceneContextSnapshotPayload | null = null;
         const planner = createLlmPlanner(executorTarget, {
+          scene: 'collab_exec',
           onUsage: (u) => {
             usage.promptTokens = u.promptTokens;
             usage.completionTokens = u.completionTokens;
           },
+          onContextStats: (stats) => {
+            // 只保留最坏一次，避免把逐步变大的提示词都写成事件
+            if (!contextStats || stats.promptTokens > contextStats.promptTokens) {
+              contextStats = stats;
+            }
+          },
         });
-        return { planner, usage, visionCapable: targetHasVision(executorTarget) };
+        return {
+          planner,
+          usage,
+          visionCapable: targetHasVision(executorTarget),
+          get contextStats() {
+            return contextStats;
+          },
+        };
       },
     });
 

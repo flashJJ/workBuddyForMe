@@ -41,6 +41,21 @@ export const CONTEXT_MESSAGES_MAX = 50;
 export const GLOBAL_APPEND_PROMPT_MAX = 2000;
 /** 为模型回答预留的输出 token（无上次真实 usage 时使用） */
 export const OUTPUT_RESERVE_TOKENS = 2048;
+/**
+ * v4.8.1：输出预留按窗口比例化——小窗口（如本地 4K）下固定 2048 会吃掉一半窗口，
+ * 导致原文预算为 0。实际预留 = clamp(窗口 × 15%, 512, 2048)。
+ */
+export const OUTPUT_RESERVE_RATIO = 0.15;
+export const OUTPUT_RESERVE_MIN_TOKENS = 512;
+/** 上次 completion 校准预留时的硬上限（占窗口比例），避免长回答吃光历史 */
+export const OUTPUT_RESERVE_MAX_WINDOW_RATIO = 0.4;
+/**
+ * v4.8.1：小窗口阈值。窗口低于该值时按预算退化——
+ * 技能提示/技能工具声明可裁剪，摘要退回纯文本（不做结构化抽取与保真重试）。
+ */
+export const SMALL_CONTEXT_WINDOW_TOKENS = 8192;
+/** 裁剪技能块后仍希望留出的最小原文预算 */
+export const MIN_HISTORY_BUDGET_TOKENS = 512;
 
 /**
  * 回合后旁路任务（对话摘要压缩 + 长期记忆提取）的整体超时。
@@ -74,6 +89,16 @@ export const CONTEXT_QUOTA_HISTORY = 0.5;
 export const CONTEXT_QUOTA_SUMMARY = 0.25;
 export const CONTEXT_QUOTA_FACTS = 0.1;
 export const CONTEXT_QUOTA_MEMORY = 0.1;
+
+/**
+ * v4.8 对话意图识别：
+ * 低于该置信度不改变现有装配策略（只加资源，不减资源，避免误判导致漏检索）。
+ */
+export const INTENT_LOW_CONFIDENCE = 0.6;
+/** 可选小模型分类器超时；超时/未配置时回退纯规则（本地小模型冷启动留余量） */
+export const INTENT_CLASSIFIER_TIMEOUT_MS = 2_500;
+/** 预判压缩水位：历史估算占可用窗口比例超过该值时，先压缩再请求 */
+export const CONTEXT_PREFLIGHT_TRIGGER_RATIO = 0.85;
 
 /** 单会话结构化事实保留上限（按 kind 分组后按更新时间截断） */
 export const CONVERSATION_FACT_MAX_ITEMS = 30;

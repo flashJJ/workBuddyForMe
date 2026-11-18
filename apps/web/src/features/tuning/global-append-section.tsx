@@ -17,6 +17,7 @@ export function GlobalAppendSection() {
   const updateSettings = useUpdateSettings();
   const [text, setText] = React.useState('');
   const [count, setCount] = React.useState(20);
+  const [preflight, setPreflight] = React.useState(true);
   // 乐观开关：受控勾选框直绑服务端数据时，PUT→失效→重拉窗口内点击会被 React
   // 回弹为原态（Playwright check 报「点击未改变状态」），故本地先翻值，失败回落
   const [enabledOverride, setEnabledOverride] = React.useState<boolean | null>(null);
@@ -24,7 +25,8 @@ export function GlobalAppendSection() {
   React.useEffect(() => {
     setText(settings?.globalAppendPrompt ?? '');
     setCount(settings?.contextMessageCount ?? 20);
-  }, [settings?.globalAppendPrompt, settings?.contextMessageCount]);
+    setPreflight(settings?.contextPreflightCompactEnabled !== false);
+  }, [settings?.globalAppendPrompt, settings?.contextMessageCount, settings?.contextPreflightCompactEnabled]);
 
   // 服务端真值到达后清除本地覆盖（成功回灌同值；失败时由回滚逻辑即时复位）
   React.useEffect(() => {
@@ -73,6 +75,26 @@ export function GlobalAppendSection() {
           </span>
         </div>
         <p className="text-[11px] text-muted-foreground">{t('tuning.common.contextCountHint')}</p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4"
+            data-testid="tuning-preflight-compact"
+            checked={preflight}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setPreflight(next);
+              void save({ contextPreflightCompactEnabled: next });
+            }}
+          />
+          {t('tuning.common.preflightCompact')}
+        </label>
+        <p className="text-[11px] text-muted-foreground">
+          {t('tuning.common.preflightCompactHint')}
+        </p>
       </div>
 
       <div className="space-y-1.5">

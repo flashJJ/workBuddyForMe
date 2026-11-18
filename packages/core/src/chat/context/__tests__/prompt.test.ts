@@ -192,9 +192,9 @@ function totalEstimatedTokens(messages: ChatMessage[]): number {
 
 describe('buildChatMessages RAG 预算硬限长（Ollama 4096 窗口场景）', () => {
   const question = '我想学 AI，但是完全没有代码基础，学什么好？';
-  // 4 段纯中文长片段（每段 900 字 ≈ 600 估算 token），总量远超 4096
+  // 4 段纯中文长片段（每段 2100 字 ≈ 1400 估算 token），总量远超 4096
   const longChunks = Array.from({ length: 4 }, () => ({
-    content: '资'.repeat(900),
+    content: '资'.repeat(2100),
   }));
   const baseAssistant = makeAssistant({ expressionEnabled: false });
 
@@ -226,7 +226,7 @@ describe('buildChatMessages RAG 预算硬限长（Ollama 4096 窗口场景）', 
       [textMsg('user', question)],
       makeRag(longChunks),
       undefined,
-      { contextWindow: 1024, toolsTokens: 0, lastCompletionTokens: null },
+      { contextWindow: 600, toolsTokens: 0, lastCompletionTokens: null },
     );
     const sys = messages[0]!.content as string;
     expect(sys).not.toContain('【参考资料】');

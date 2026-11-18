@@ -69,6 +69,17 @@ describe('buildPlannerMessages', () => {
     expect(parts[1]?.image_url?.url).toBe('data:image/png;base64,Qk==');
   });
 
+  it('v4.7：注入会话上下文块（任务不再从零开始）', () => {
+    const messages = buildPlannerMessages({
+      ...base,
+      contextBlock: '【会话摘要】\n用户在准备转岗，目标是大模型应用方向。',
+    });
+    const text = messages[1]?.content as string;
+    expect(text).toContain('【会话上下文】');
+    expect(text).toContain('目标是大模型应用方向');
+    expect(text.indexOf('【任务目标】')).toBeLessThan(text.indexOf('【会话上下文】'));
+  });
+
   it('tool 模式注入子任务要求/验收标准/授权知识库/工具用途说明', () => {
     const messages = buildPlannerMessages({
       goal: '帮我规划下职业发展。',
@@ -193,8 +204,7 @@ describe('buildPlannerMessages', () => {
 });
 
 describe('createLlmPlanner', () => {
-  it('经 provider chatStream 收集增量并解析决策', async () => {
-    const provider: ChatProvider = {
+  it('经 provider chatStream 收集增量并解析决策', async () => {    const provider: ChatProvider = {
       supportsTools: true,
       async testConnection() {},
       async listModels() { return []; },
@@ -215,5 +225,44 @@ describe('createLlmPlanner', () => {
     const decision = await planner.decide({ goal: 'g', steps: [], observation: null, allowedTools: [] });
     expect(decision.action).toBe('done');
     expect(decision.message).toBe('搞定');
+  });
+
+  it('v4.9：超窗提示词被头尾截断，并回调装配统计', async () => {
+    const stats: Array<{ scene: string; truncated: boolean; promptTokens: number; budgetTokens: number }> = [];
+    let userContent = '';
+    const provider: ChatProvider = {
+      supportsTools: true,
+      async testConnection() {},
+      async listModels() { return []; },
+      chatStream(params) {
+        userContent = params.messages[1]?.content as string;
+        return (async function* () {
+          yield { delta: '{"action":"done","reason":"ok","message":"完成"}' };
+        })();
+      },
+      async embed() {
+        throw new Error('unused');
+      },
+    };
+    const target = {
+      provider,
+      model: { modelId: 'qwen', contextWindow: 4096 } as ProviderModel,
+    } as ResolvedChatTarget;
+    const planner = createLlmPlanner(target, {
+      scene: 'task_step',
+      onContextStats: (value) => stats.push(value),
+    });
+    const decision = await planner.decide({
+      goal: `超长目标${'背景资料'.repeat(6000)}`,
+      steps: [],
+      observation: null,
+      allowedTools: [],
+    });
+    expect(decision.action).toBe('done');
+    expect(stats).toHaveLength(1);
+    expect(stats[0]?.scene).toBe('task_step');
+    expect(stats[0]?.truncated).toBe(true);
+    expect(userContent).toContain('上下文已截断');
+    expect(stats[0]!.promptTokens).toBeLessThanOrEqual(stats[0]!.budgetTokens + 16);
   });
 });

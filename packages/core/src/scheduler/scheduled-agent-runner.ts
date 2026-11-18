@@ -38,7 +38,7 @@ export interface TaskStarterLike {
 export interface ScheduledAgentRunnerDeps {
   repo: Pick<TaskRunRepository, 'listNonTerminalRuns' | 'createRun' | 'updateRunStatus'>;
   starter: TaskStarterLike;
-  launch: (run: TaskRunView) => TaskLaunchArtifacts;
+  launch: (run: TaskRunView) => TaskLaunchArtifacts | Promise<TaskLaunchArtifacts>;
   policy?: AgentPolicy;
   audit?: AuditService;
   now?: () => number;
@@ -87,7 +87,7 @@ export function createScheduledAgentRunner(deps: ScheduledAgentRunnerDeps) {
   };
 
   return {
-    start(input: StartScheduledAgentInput): ScheduledAgentStartResult {
+    async start(input: StartScheduledAgentInput): Promise<ScheduledAgentStartResult> {
       const { task } = input;
       if (!isScheduledAgentTask(task.payload)) {
         blocked(task, 'INVALID_PAYLOAD', '定时任务不是 agent_task');
@@ -143,7 +143,7 @@ export function createScheduledAgentRunner(deps: ScheduledAgentRunnerDeps) {
       });
 
       try {
-        const artifacts = deps.launch(run);
+        const artifacts = await deps.launch(run);
         deps.starter.start({ run, ...artifacts });
         auditCritical(deps.audit, {
           kind: 'scheduled_run_started',
