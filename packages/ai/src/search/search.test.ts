@@ -8,6 +8,7 @@ const SETTINGS = {
   maxResults: 5,
   timeoutMs: 5000,
   allowPrivateEndpoint: false,
+  fetchMaxBytes: 8 * 1024 * 1024,
 };
 
 describe('search providers', () => {
