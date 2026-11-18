@@ -1,7 +1,12 @@
-import { createAgentRunRepository } from '@wbfm/database';
+﻿import {
+  createAgentRunRepository,
+  createTaskRunCheckpointRepository,
+} from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
 import { AGENT_BUDGET_DEFAULTS, type AgentRunView } from '@wbfm/shared/schemas';
 import { createAgentRunner } from './agent-runner';
+import { createPlanGateRegistry, createRunContextExtras } from './agent-run-context';
+import { createRunControls } from './agent-run-controls';
 import { createRunEventBus, tapRunEvents, type RunEventBus } from '../runtime/run-event-bus';
 import { createSignalTapBus } from '../runtime/signal-tap';
 import { PendingObserverRegistry } from '../runtime/observer-registry';
@@ -46,19 +51,29 @@ function withCleanup<T, R>(
   runId: string,
   active: Map<string, ActiveEntry>,
   gen: AsyncGenerator<T, R>,
+  onCleanup?: () => void,
 ): AsyncGenerator<T, R> {
   return (async function* () {
     try {
       return yield* gen;
     } finally {
       active.delete(runId);
+      onCleanup?.();
     }
   })();
 }
 
 export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunService {
   const repo = createAgentRunRepository(deps.db);
+  const checkpoints = createTaskRunCheckpointRepository(deps.db);
   const active = new Map<string, ActiveEntry>();
+  const planGates = createPlanGateRegistry();
+  const extras = createRunContextExtras(deps, checkpoints);
+  const controls = createRunControls({
+    repo,
+    checkpoints,
+    resolvePlanGate: (runId, decision) => planGates.resolve(runId, decision),
+  });
   /** 先开窗等 owner 的舞台观察者队列（原子挂接，不丢第一帧） */
   const pendingObservers = new PendingObserverRegistry<RunEventBus<AgentRunEvent>>();
 
@@ -99,7 +114,10 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
     gen: AsyncGenerator<AgentRunEvent>,
   ) {
     const onEvent = deps.onEvent ? (event: AgentRunEvent) => deps.onEvent?.(run, event) : undefined;
-    return withCleanup(run.id, active, tapRunEvents(createSignalTapBus(bus, onEvent), gen));
+    const inner = withCleanup(run.id, active, tapRunEvents(createSignalTapBus(bus, onEvent), gen), () =>
+      planGates.release(run.id),
+    );
+    return inner;
   }
 
   /** 组装 runner 并接上观察总线 + 注销清理 */
@@ -110,9 +128,11 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       availableToolScopes?: string[];
       knowledgeBaseHints?: { id: string; name: string }[];
       contextBlock?: string;
+      /** Flow/无人值守入口显式关闭计划确认（无交互面） */
+      planReview?: boolean;
     },
   ) {
-    const gen = createAgentRunner({ repo, clients: prepared.clients }).run({
+    const gen = createAgentRunner({ repo, clients: prepared.clients, checkpoints }).run({
       runId: run.id,
       assistantId: run.assistantId,
       goal: run.goal,
@@ -124,25 +144,10 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       ...(extra.availableToolScopes ? { availableToolScopes: extra.availableToolScopes } : {}),
       ...(extra.knowledgeBaseHints ? { knowledgeBaseHints: extra.knowledgeBaseHints } : {}),
       ...(extra.contextBlock ? { contextBlock: extra.contextBlock } : {}),
+      planReview: extra.planReview ?? (deps.planReviewEnabled ? deps.planReviewEnabled(run) : true),
+      awaitPlanApproval: () => planGates.await(run.id),
     });
     return own(run, prepared.bus, gen);
-  }
-
-  /** v4.7：会话上下文装配失败不阻断任务（最差退回「无上下文」） */
-  async function resolveTaskContext(run: AgentRunView): Promise<string | null> {
-    if (!run.conversationId || !deps.resolveTaskContext) return null;
-    try {
-      return await deps.resolveTaskContext(run);
-    } catch {
-      return null;
-    }
-  }
-
-  /** 启动时一次性装配规划上下文 + 会话上下文（顺序固定，便于缓存/审计） */
-  async function startExtras(run: AgentRunView) {
-    const planContext = deps.resolvePlanContext?.(run) ?? {};
-    const contextBlock = await resolveTaskContext(run);
-    return { ...planContext, ...(contextBlock ? { contextBlock } : {}) };
   }
 
   return {
@@ -154,7 +159,7 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
         throw ApiError.conflict(`协作已终态（${run.status}），不能再次启动`);
       }
       const prepared = await prepare({ run, clientSignal: params.clientSignal });
-      return launch(run, prepared, await startExtras(run));
+      return launch(run, prepared, await extras.resolve(run));
     },
 
     async startOwned(params) {
@@ -171,7 +176,7 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
         deps.ownerId ?? 'process',
         new Date(Date.now() + 90_000).toISOString(),
       );
-      const gen = launch(run, prepared, await startExtras(run));
+      const gen = launch(run, prepared, await extras.resolve(run));
       void (async () => {
         try {
           for await (const _event of gen) {
@@ -221,8 +226,18 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       const events = launch(run, prepared, {
         availableToolScopes: params.toolScopes,
         knowledgeBaseHints: params.knowledgeBaseIds.map((id) => ({ id, name: id })),
+        // Flow 节点无交互面：计划确认一律跳过，避免无人应答挂死
+        planReview: false,
       });
       return { runId: run.id, events };
+    },
+
+    resolvePlan(runId, decision) {
+      return controls.resolvePlan(runId, decision);
+    },
+
+    resume(runId) {
+      return controls.resume(runId, (run) => this.startOwned({ run }));
     },
 
     cancel(runId) {

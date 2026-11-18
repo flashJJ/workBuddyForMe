@@ -55,6 +55,8 @@ export const zhTasks = {
     policy: {
       title: 'Agent 治理策略',
       description: 'deny 永远优先；策略保存在设置 JSON，随设置备份迁移。',
+      planReview: '复杂任务先确认计划',
+      planReviewHint: '含桌面操作、验收标准 ≥3 条或说明较长的任务，执行前先展示只读计划预览。',
       defaultMode: '默认模式',
       unattended: '无人值守允许的模式',
       unattendedHint: '完全放行不进入无人值守白名单。',
@@ -180,6 +182,9 @@ export const enTasks = {
     policy: {
       title: 'Agent governance policy',
       description: 'Deny always wins; the policy is stored in settings JSON and travels with backups.',
+      planReview: 'Confirm plan for complex tasks',
+      planReviewHint:
+        'Tasks with desktop actions, 3+ acceptance criteria, or a long brief show a read-only plan preview before execution.',
       defaultMode: 'Default mode',
       unattended: 'Unattended allowed modes',
       unattendedHint: 'Full access is never allowed for unattended runs.',

@@ -12,6 +12,7 @@ import type {
   AgentPhase,
   AgentRole,
   ReviewVerdictPayload,
+  SubtaskSpec,
 } from '../schemas/agent/agent';
 
 /**
@@ -60,6 +61,8 @@ export const SSE_EVENT = {
   AGENT_DELTA: 'agent_delta',
   /** v1.4 M4：协作 Executor 调用 write/danger 工具前的人工授权请求（HITL；决策回 POST /api/tools/confirm） */
   AGENT_TOOL_CONFIRM: 'agent_tool_confirm',
+  /** v4.7 P1：复杂任务的只读计划预览（等待用户批准/拒绝后继续） */
+  AGENT_PLAN_PREVIEW: 'agent_plan_preview',
   /** v1.9 M3：会议模式（本轮发言序列/流式台词/落库消息/状态机） */
   MEETING_TURN: 'meeting_turn',
   MEETING_DELTA: 'meeting_delta',
@@ -172,6 +175,12 @@ export type SsePayloadMap = {
     permission: PermissionLevel;
     argsSummary: string;
     taskScope: string;
+  };
+  /** v4.7 P1：计划预览（只读；客户端回 POST /api/agent/runs/:id/plan 批准或拒绝） */
+  agent_plan_preview: {
+    runId: string;
+    round: number;
+    subtask: SubtaskSpec;
   };
   /** v1.9 M3：一轮发言开始（按服务端校验后的顺序串行，舞台 focus 序列） */
   meeting_turn: {

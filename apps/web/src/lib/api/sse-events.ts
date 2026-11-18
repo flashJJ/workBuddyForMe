@@ -24,6 +24,7 @@ export type WebStreamSseEvent = SseEvent<
   | 'agent_budget'
   | 'agent_delta'
   | 'agent_tool_confirm'
+  | 'agent_plan_preview'
   | 'meeting_turn'
   | 'meeting_delta'
   | 'meeting_message'

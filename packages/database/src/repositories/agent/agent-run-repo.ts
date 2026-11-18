@@ -33,6 +33,8 @@ export interface AgentRunCreateFields {
   assistantId: string;
   goal: string;
   budget?: Partial<AgentBudget>;
+  /** v4.7 P1：续跑来源运行（新 run 指回中断 run） */
+  resumedFromRunId?: string | null;
 }
 
 export interface AgentHandoffAddFields {
@@ -76,8 +78,9 @@ export function createAgentRunRepository(db: DatabaseInstance) {
       db.prepare(
         `INSERT INTO agent_runs(
            id, conversation_id, flow_run_id, node_execution_id, assistant_id, goal,
-           status, round_no, max_rounds, max_steps, max_total_tokens, created_at, updated_at
-         ) VALUES(?, ?, ?, ?, ?, ?, 'running', 0, ?, ?, ?, ?, ?)`,
+           status, round_no, max_rounds, max_steps, max_total_tokens,
+           resumed_from_run_id, created_at, updated_at
+         ) VALUES(?, ?, ?, ?, ?, ?, 'running', 0, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         fields.conversationId ?? null,
@@ -88,6 +91,7 @@ export function createAgentRunRepository(db: DatabaseInstance) {
         budget.maxRounds,
         budget.maxSteps,
         budget.maxTotalTokens,
+        fields.resumedFromRunId ?? null,
         now,
         now,
       );
@@ -95,23 +99,35 @@ export function createAgentRunRepository(db: DatabaseInstance) {
     },
 
     getById(id: string): AgentRunView | null {
-      const row = db.prepare(`SELECT * FROM agent_runs WHERE id=?`).get(id) as
-        | AgentRunRow
-        | undefined;
+      const row = db
+        .prepare(
+          `SELECT r.*, CASE WHEN EXISTS(
+             SELECT 1 FROM task_run_checkpoints c WHERE c.agent_run_id=r.id AND c.resumable=1
+           ) THEN 1 ELSE 0 END AS resumable
+           FROM agent_runs r WHERE r.id=?`,
+        )
+        .get(id) as AgentRunRow | undefined;
       return row ? mapAgentRun(row) : null;
     },
 
     /** 任务中心列表（按创建时间倒序）；conversationId 可选过滤 */
     list(filter: { conversationId?: string | null; limit?: number } = {}): AgentRunView[] {
       const limit = Math.min(filter.limit ?? 100, 200);
+      const resumable = `CASE WHEN EXISTS(
+        SELECT 1 FROM task_run_checkpoints c WHERE c.agent_run_id=r.id AND c.resumable=1
+      ) THEN 1 ELSE 0 END AS resumable`;
       const rows = filter.conversationId
         ? (db
             .prepare(
-              `SELECT * FROM agent_runs WHERE conversation_id=? ORDER BY created_at DESC, rowid DESC LIMIT ?`,
+              `SELECT r.*, ${resumable} FROM agent_runs r
+               WHERE r.conversation_id=? ORDER BY r.created_at DESC, r.rowid DESC LIMIT ?`,
             )
             .all(filter.conversationId, limit) as AgentRunRow[])
         : (db
-            .prepare(`SELECT * FROM agent_runs ORDER BY created_at DESC, rowid DESC LIMIT ?`)
+            .prepare(
+              `SELECT r.*, ${resumable} FROM agent_runs r
+               ORDER BY r.created_at DESC, r.rowid DESC LIMIT ?`,
+            )
             .all(limit) as AgentRunRow[]);
       return rows.map(mapAgentRun);
     },
@@ -119,7 +135,12 @@ export function createAgentRunRepository(db: DatabaseInstance) {
     /** v2.8：列出 running 运行（重启恢复扫描用） */
     listRunning(): AgentRunView[] {
       const rows = db
-        .prepare(`SELECT * FROM agent_runs WHERE status='running' ORDER BY created_at ASC`)
+        .prepare(
+          `SELECT r.*, CASE WHEN EXISTS(
+             SELECT 1 FROM task_run_checkpoints c WHERE c.agent_run_id=r.id AND c.resumable=1
+           ) THEN 1 ELSE 0 END AS resumable
+           FROM agent_runs r WHERE r.status='running' ORDER BY r.created_at ASC`,
+        )
         .all() as AgentRunRow[];
       return rows.map(mapAgentRun);
     },

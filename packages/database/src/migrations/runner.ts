@@ -51,6 +51,7 @@ import { migrateV049 } from './v049-document-parse-version';
 import { migrateV050 } from './v050-memory-edges';
 import { migrateV051 } from './v051-attachment-refs';
 import { migrateV052 } from './v052-vrm-voice';
+import { migrateV053 } from './v053-task-run-checkpoints';
 
 interface Migration {
   version: number;
@@ -278,6 +279,11 @@ const MIGRATIONS: Migration[] = [
   { version: 50, description: 'v2.31 P0: memory_edges 关系边表（纯加法）', up: migrateV050 },
   { version: 51, description: 'v2.33 P1: attachment_refs 附件引用计数表 + 消息删除触发器（纯加法）', up: migrateV051 },
   { version: 52, description: 'v4.6 M2: vrm_avatars.voice_sid 导入 VRM 声线绑定（可空列）', up: migrateV052 },
+  {
+    version: 53,
+    description: 'v4.7 P1: task_run_checkpoints + agent_runs.resumed_from_run_id（续跑检查点）',
+    up: migrateV053,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

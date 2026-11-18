@@ -207,6 +207,7 @@ export type AgentNodeInnerEvent = SseEvent<
   | 'agent_review'
   | 'agent_budget'
   | 'agent_tool_confirm'
+  | 'agent_plan_preview'
   | 'done'
   | 'error'
 >;

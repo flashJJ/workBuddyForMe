@@ -26,6 +26,7 @@ export type AgentStreamFrame =
   | SseEvent<'agent_review'>
   | SseEvent<'agent_budget'>
   | SseEvent<'agent_tool_confirm'>
+  | SseEvent<'agent_plan_preview'>
   | SseEvent<'done'>
   | SseEvent<'error'>;
 
@@ -69,6 +70,8 @@ export interface AgentCardState {
   errorMessage: string | null;
   /** 当前待授权工具（write/danger HITL）；null=无弹窗 */
   pendingConfirm: SsePayloadMap['agent_tool_confirm'] | null;
+  /** v4.7 P1：待确认的计划预览（只读）；null=无待确认计划 */
+  pendingPlan: SsePayloadMap['agent_plan_preview'] | null;
 }
 
 /** 消息/时间线上挂载协作卡的映射值 */
@@ -89,6 +92,7 @@ export function initAgentCard(budget: AgentBudget): AgentCardState {
     summary: '',
     errorMessage: null,
     pendingConfirm: null,
+    pendingPlan: null,
   };
 }
 
@@ -176,6 +180,7 @@ export function mergeRunView(state: AgentCardState, run: AgentRunView): AgentCar
     ...(run.finalOutcome ? { summary: run.finalOutcome.summary || state.summary } : {}),
     ...(run.errorMessage ? { errorMessage: run.errorMessage } : {}),
     pendingConfirm: null,
+    pendingPlan: null,
     usage: {
       round: run.roundNo,
       steps: 0,
@@ -220,11 +225,14 @@ export function reduceAgentFrame(state: AgentCardState, frame: AgentStreamFrame)
       return { ...state, usage: frame.data.usage };
     case 'agent_tool_confirm':
       return { ...state, pendingConfirm: frame.data };
+    case 'agent_plan_preview':
+      return { ...state, pendingPlan: frame.data };
     case 'done':
       return {
         ...state,
         summary: frame.data.content || state.summary,
         pendingConfirm: null,
+        pendingPlan: null,
       };
     case 'error':
       return {
@@ -234,6 +242,7 @@ export function reduceAgentFrame(state: AgentCardState, frame: AgentStreamFrame)
         activePhase: null,
         errorMessage: frame.data.message,
         pendingConfirm: null,
+        pendingPlan: null,
       };
     default:
       return state;

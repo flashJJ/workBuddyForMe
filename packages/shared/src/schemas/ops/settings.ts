@@ -206,6 +206,8 @@ export const settingsUpdateSchema = z.object({
     .optional(),
   // v2.13 Agent 治理策略（deny wins；读取时由 core 钳制）
   agentPolicy: agentPolicySchema.optional(),
+  // v4.7 P1：复杂任务执行前计划确认（缺省 true）
+  agentPlanReviewEnabled: z.boolean().optional(),
   // v2.17 联网搜索（缺省关闭；endpoint 在 core 读取时做 SSRF 校验）
   searchSettings: searchSettingsSchema.optional(),
   // v2.28 记忆审计保留期（30/90/180 天或 0=永久；缺省 90）

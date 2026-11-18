@@ -1,8 +1,6 @@
-import type { TokenUsage } from '@wbfm/shared/api';
-import type {
+﻿import type {
   AgentHandoffPayload,
   AgentHandoffView,
-  AgentPhase,
   AgentRole,
   AgentRunView,
   ReviewVerdictPayload,
@@ -14,7 +12,6 @@ import {
   createBudgetState,
   exceededReason,
   toUsage,
-  type BudgetState,
 } from '../runtime/budget';
 import {
   createSupervisorState,
@@ -30,6 +27,10 @@ import {
   withBudgetNote,
 } from './runner-fallbacks';
 import { GateMailbox, MAILBOX_DONE } from '../runtime/gate-mailbox';
+import { needsPlanReview } from '../runtime/plan-review';
+import { createCheckpointWriter } from './runner-checkpoint';
+import { createRunEventEmitter } from './runner-events';
+import { reviewPlanIfNeeded } from './runner-plan-gate';
 import { sys } from '../../i18n/system-text';
 import type {
   AgentClients,
@@ -44,19 +45,10 @@ export type AgentRunEvent = SseEvent<
   | 'agent_review'
   | 'agent_budget'
   | 'agent_tool_confirm'
+  | 'agent_plan_preview'
   | 'done'
   | 'error'
 >;
-
-/** 带协议级容错的角色调用实现在 runner-fallbacks.ts（行数门禁外迁） */
-
-function tokenUsage(run: AgentRunView): TokenUsage {
-  return {
-    promptTokens: run.promptTokens,
-    completionTokens: run.completionTokens,
-    totalTokens: run.totalTokens,
-  };
-}
 
 function missingRun(runId: string): never {
   throw new Error(sys('agentTrace.run.notFound', { id: runId }));
@@ -68,7 +60,7 @@ function missingRun(runId: string): never {
  * runner 不做提示词装配与 JSON 解析（纯协议在 planner/reviewer-protocol）。
  */
 export function createAgentRunner(deps: AgentRunnerDeps) {
-  const { repo, clients } = deps;
+  const { repo, clients, checkpoints } = deps;
 
   async function* run(input: StartAgentRunInput): AsyncGenerator<AgentRunEvent, AgentRunView> {
     const runRow = input.runId
@@ -84,21 +76,16 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
     const runId = runRow.id;
     const signal = input.signal;
     const isAborted = () => signal?.aborted === true;
-
-    const evtPhase = (phaseName: AgentPhase, role: AgentRole | null, round: number): AgentRunEvent =>
-      ({ event: 'agent_phase', data: { runId, phase: phaseName, role, round } });
-    const evtBudget = (state: BudgetState): AgentRunEvent =>
-      ({ event: 'agent_budget', data: { runId, usage: toUsage(state) } });
-    const emitDone = (summary: string): AgentRunEvent => ({
-      event: 'done',
-      data: { content: summary, usage: tokenUsage(repo.getById(runId)!) },
-    });
+    const evt = createRunEventEmitter(repo, runId);
     const recordHandoff = (
       round: number,
       fromRole: AgentRole,
       toRole: AgentRole | 'user',
       payload: AgentHandoffPayload,
     ): AgentHandoffView => repo.addHandoff({ runId, roundNo: round, fromRole, toRole, payload });
+    const checkpoint = checkpoints
+      ? createCheckpointWriter(checkpoints, runId, () => toUsage(budget))
+      : null;
 
     let budget = createBudgetState();
     let supervisor = createSupervisorState();
@@ -111,7 +98,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         if (isAborted()) throw new Error('aborted');
 
         // ---- 规划（连续失败 → 原目标直派降级） ----
-        yield evtPhase('planning', 'planner', budget.round);
+        yield evt.phase('planning', 'planner', budget.round);
         const plan = await callWithFallback(
           'planner',
           () =>
@@ -136,7 +123,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         if (!plan.degraded) {
           budget = consume(budget, plan.value.usage);
           repo.addTokens(runId, plan.value.usage);
-          yield evtBudget(budget);
+          yield evt.budget(budget);
         }
         if (exceededReason(budget, runRow.budget)) break;
         const planHandoff = await recordHandoff(budget.round, 'planner', 'executor', {
@@ -144,9 +131,25 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         });
         yield { event: 'agent_handoff', data: { runId, handoff: planHandoff } };
         supervisor = transition(supervisor, { type: 'plan_produced' }).state;
+        checkpoint?.save('executing', currentSubtask);
+
+        if (input.planReview && budget.round === 0 && needsPlanReview(currentSubtask)) {
+          const rejected = yield* reviewPlanIfNeeded({
+            repo,
+            runId,
+            round: budget.round,
+            subtask: currentSubtask,
+            ...(input.awaitPlanApproval ? { awaitPlanApproval: input.awaitPlanApproval } : {}),
+          });
+          if (rejected) {
+            checkpoint?.seal();
+            yield { event: 'done', data: { content: '', usage: evt.usage() } };
+            return rejected;
+          }
+        }
 
         // ---- 执行 ----
-        yield evtPhase('executing', 'executor', budget.round);
+        yield evt.phase('executing', 'executor', budget.round);
         // M4：executor 内 task-loop 的 HITL 门控帧经邮箱竞速取出并下发，
         // 保证授权弹窗先于决策到达客户端（帧下发后决策由全局 confirmations 异步解决）
         const gateMailbox = new GateMailbox();
@@ -178,17 +181,18 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         const exec = execResult.value;
         budget = consume(budget, { ...exec.usage, steps: exec.steps });
         repo.addTokens(runId, exec.usage);
-        yield evtBudget(budget);
+        yield evt.budget(budget);
         outcome = exec.outcome;
         const execHandoff = await recordHandoff(budget.round, 'executor', 'reviewer', {
           outcome: exec.outcome,
         });
         yield { event: 'agent_handoff', data: { runId, handoff: execHandoff } };
+        checkpoint?.save('reviewing', currentSubtask, exec.outcome);
         supervisor = transition(supervisor, { type: 'execution_finished' }).state;
         if (exceededReason(budget, runRow.budget)) break;
 
         // ---- 审查（连续失败 → 标注自动通过降级） ----
-        yield evtPhase('reviewing', 'reviewer', budget.round);
+        yield evt.phase('reviewing', 'reviewer', budget.round);
         const review = await callWithFallback(
           'reviewer',
           () =>
@@ -203,7 +207,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         if (!review.degraded) {
           budget = consume(budget, review.value.usage);
           repo.addTokens(runId, review.value.usage);
-          yield evtBudget(budget);
+          yield evt.budget(budget);
         }
         const verdict: ReviewVerdictPayload = review.value.review;
         const reviewHandoff = await recordHandoff(
@@ -230,15 +234,17 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         if (!isTerminal(supervisor)) {
           budget = advanceRound(budget);
           repo.setRound(runId, budget.round);
-          yield evtBudget(budget);
+          checkpoint?.save('planning');
+          yield evt.budget(budget);
         }
       }
 
       // ---- 终态：approved=done；reject=failed；预算触顶=budget_exceeded（交付最佳结果） ----
-      yield evtPhase(supervisor.phase, null, budget.round);
+      yield evt.phase(supervisor.phase, null, budget.round);
       if (supervisor.phase === 'done') {
+        checkpoint?.seal();
         repo.finalize(runId, { status: 'done', finalOutcome: outcome });
-        yield emitDone(outcome?.summary ?? '');
+        yield evt.done(outcome?.summary ?? '');
         return repo.getById(runId)!;
       }
 
@@ -246,6 +252,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
       if (terminalReason === 'budget_exceeded' || limit) {
         const reasonKind = (limit?.kind ?? 'rounds') as 'rounds' | 'steps' | 'tokens';
         const delivered = outcome ? withBudgetNote(outcome, reasonKind) : null;
+        checkpoint?.seal();
         repo.finalize(runId, {
           status: 'budget_exceeded',
           finalOutcome: delivered,
@@ -254,11 +261,12 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
             kind: sys(`agentTrace.budget.kind.${reasonKind}`),
           }),
         });
-        yield emitDone(delivered?.summary ?? '');
+        yield evt.done(delivered?.summary ?? '');
         return repo.getById(runId)!;
       }
 
       const last = history[history.length - 1];
+      checkpoint?.seal();
       repo.finalize(runId, {
         status: 'failed',
         finalOutcome: outcome,
@@ -266,9 +274,10 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         // 模型自写的审查意见原样入库（自由文本）；缺意见时用系统兜底标记
         errorMessage: last?.review.reviewNotes || sys('agentTrace.run.rejected'),
       });
-      yield emitDone(outcome?.summary ?? '');
+      yield evt.done(outcome?.summary ?? '');
       return repo.getById(runId)!;
     } catch (error) {
+      checkpoint?.seal();
       if (isAborted()) {
         repo.finalize(runId, { status: 'cancelled', errorCode: 'AGENT_CANCELLED', errorMessage: sys('agentTrace.run.cancelled') });
       } else {
@@ -277,7 +286,7 @@ export function createAgentRunner(deps: AgentRunnerDeps) {
         yield { event: 'error', data: { code: 'AGENT_RUN_FAILED', message } };
       }
       const stopped = repo.getById(runId)!;
-      yield { event: 'done', data: { content: stopped.finalOutcome?.summary ?? '', usage: tokenUsage(stopped) } };
+      yield { event: 'done', data: { content: stopped.finalOutcome?.summary ?? '', usage: evt.usage() } };
       return stopped;
     }
   }

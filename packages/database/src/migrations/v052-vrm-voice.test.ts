@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 import { migrateV052 } from './v052-vrm-voice';
@@ -18,9 +18,9 @@ describe('v052 vrm_avatars.voice_sid', () => {
     const db = createV51Database();
     const result = applyMigrations(db);
 
-    expect(result.applied).toEqual([52]);
+    expect(result.applied).toEqual([52, 53]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(52);
+    expect(LATEST_SCHEMA_VERSION).toBe(53);
 
     const columns = db.prepare('PRAGMA table_info(vrm_avatars)').all() as Array<{ name: string }>;
     expect(columns.map((column) => column.name)).toContain('voice_sid');

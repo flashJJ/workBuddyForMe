@@ -86,6 +86,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   capabilityTrustedKeys: [],
   // v2.13：默认每次确认；无人值守白名单不含 full_access
   agentPolicy: DEFAULT_AGENT_POLICY,
+  // v4.7 P1：复杂任务默认先出只读计划预览
+  agentPlanReviewEnabled: true,
   // v2.17：联网搜索默认关闭（P0 无 Key，用户显式选择 SearXNG 后启用）
   searchSettings: DEFAULT_SEARCH_SETTINGS,
   // v2.28：记忆审计默认保留 90 天（0=永久，需用户显式选择）

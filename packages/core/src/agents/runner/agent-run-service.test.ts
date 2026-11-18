@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { createAgentRunRepository, type DatabaseInstance } from '@wbfm/database';
+import { createAgentRunRepository, createTaskRunCheckpointRepository, type DatabaseInstance } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
 import { createAgentRunService, type AgentClientsProvider } from '../index';
 import {
@@ -119,6 +119,34 @@ describe('agent-run-service 运行管理', () => {
     expect(repo.getById(run.id)!.status).toBe('cancelled');
     // 终态后再取消 → 409（状态机非法转移）
     expect(() => service.cancel(run.id)).toThrow(/已终态/);
+  });
+
+  it('v4.7 P1 resume：中断且有检查点才允许续跑，新 run 记录来源与剩余预算', async () => {
+    const repo = createAgentRunRepository(db);
+    const checkpoints = createTaskRunCheckpointRepository(db);
+    const service = createAgentRunService({ db, clientsProvider: provider });
+    const run = repo.create({ assistantId: 'a', goal: 'G' });
+    repo.addTokens(run.id, { promptTokens: 30_000 });
+    repo.finalize(run.id, { status: 'cancelled', errorCode: 'INTERRUPTED' });
+
+    await expect(service.resume(run.id)).rejects.toThrow(/检查点/);
+
+    checkpoints.upsert({
+      agentRunId: run.id,
+      roundNo: 0,
+      phase: 'executing',
+      subtask: { title: '已规划', brief: '说明', acceptance: ['标准'] },
+      usage: { round: 0, steps: 2, promptTokens: 30_000, completionTokens: 0, totalTokens: 30_000 },
+    });
+    const resumed = await service.resume(run.id);
+    for (let i = 0; i < 100 && service.isActive(resumed.id); i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(service.isActive(resumed.id)).toBe(false);
+    expect(repo.getById(resumed.id)?.status).not.toBe('running');
+    expect(resumed.resumedFromRunId).toBe(run.id);
+    expect(resumed.budget.maxTotalTokens).toBe(repo.getById(run.id)!.budget.maxTotalTokens - 30_000);
+    expect(checkpoints.getByRunId(run.id)!.resumable).toBe(false);
   });
 
   it('stopAll：一次性急停全部活跃协作并返回数量', async () => {

@@ -30,6 +30,9 @@ export interface AgentRunRow {
   total_tokens: number;
   error_code: string | null;
   error_message: string | null;
+  resumed_from_run_id?: string | null;
+  /** EXISTS 子查询结果（1=存在可续跑检查点） */
+  resumable?: number;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +77,8 @@ export function mapAgentRun(row: AgentRunRow): AgentRunView {
     totalTokens: row.total_tokens,
     errorCode: row.error_code,
     errorMessage: row.error_message,
+    resumedFromRunId: row.resumed_from_run_id ?? null,
+    resumable: row.resumable === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

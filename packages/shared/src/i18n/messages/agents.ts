@@ -65,6 +65,18 @@ export const zhAgents = {
     origin: '协作任务 · Executor 发起',
     waiting: '等待工具授权，授权后协作继续',
   },
+  plan: {
+    title: '执行计划待确认',
+    waiting: '请先确认计划，确认后开始执行',
+    goal: '任务',
+    brief: '执行说明',
+    acceptance: '验收标准',
+    tools: '工具域',
+    approve: '批准执行',
+    reject: '拒绝',
+    approving: '提交中…',
+    rejected: '计划已拒绝，任务终止',
+  },
   errors: {
     streamConnectFailed: '协作事件流连接失败',
     networkInterrupted: '网络连接中断',
@@ -82,5 +94,8 @@ export const zhAgents = {
     loadFailed: '加载失败',
     cancel: '急停',
     cancelling: '急停中…',
+    resume: '继续运行',
+    resuming: '续跑中…',
+    resumeStarted: '已创建续跑任务',
   },
 };

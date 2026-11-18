@@ -26,6 +26,7 @@ export const zhAgentTrace = {
   run: {
     rejected: '审查裁决终止任务',
     cancelled: '用户取消',
+    planRejected: '用户拒绝执行计划',
     notFound: '协作运行不存在：{id}',
   },
   terminal: {

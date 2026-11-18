@@ -1,11 +1,12 @@
 import type {
   AgentBudget,
+  AgentPlanDecision,
   AgentRunView,
   ExecutorOutcome,
   ReviewVerdictPayload,
   SubtaskSpec,
 } from '@wbfm/shared/schemas';
-import type { AgentRunRepository } from '@wbfm/database';
+import type { AgentRunRepository, TaskRunCheckpointRepository } from '@wbfm/database';
 import type { ExecutorGateFrame } from '../runtime/gate-mailbox';
 
 /**
@@ -89,12 +90,18 @@ export interface StartAgentRunInput {
   knowledgeBaseHints?: Array<{ id: string; name: string }>;
   /** v4.7：会话上下文块（由服务层按会话装配，注入 Planner 与 Executor） */
   contextBlock?: string;
+  /** v4.7 P1：是否对复杂任务先出只读计划预览（全局开关） */
+  planReview?: boolean;
+  /** v4.7 P1：等待用户批准/拒绝计划；缺省视为批准（Flow/无人值守入口） */
+  awaitPlanApproval?: (subtask: SubtaskSpec, round: number) => Promise<AgentPlanDecision['decision']>;
   signal?: AbortSignal;
 }
 
 export interface AgentRunnerDeps {
   repo: AgentRunRepository;
   clients: AgentClients;
+  /** v4.7 P1：检查点仓储（缺省不落检查点，测试/Flow 可省略） */
+  checkpoints?: TaskRunCheckpointRepository;
 }
 
 export type { AgentRunView };

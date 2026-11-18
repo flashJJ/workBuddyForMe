@@ -143,10 +143,10 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const knowledgeBases = createKnowledgeService(deps);
   const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
   const agentRuns = createAgentRunService({
-    db,
-    clientsProvider: createAgentClientsProvider(agentClientsFactory),
+    db, clientsProvider: createAgentClientsProvider(agentClientsFactory),
     resolvePlanContext: createAgentPlanContextResolver(agentClientsFactory),
     resolveTaskContext: createAgentTaskContextResolver(agentClientsFactory),
+    planReviewEnabled: () => settingsService.get().agentPlanReviewEnabled !== false,
     onEvent: (run, event) => {
       workSignals.ingestAgent(run, event);
       sessionLog.record({

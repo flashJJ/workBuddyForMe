@@ -192,6 +192,8 @@ export const API = {
   agentRunEvents: (id: string, observe = false) =>
     `/api/agent/runs/${id}/events${observe ? '?observe=1' : ''}`,
   agentRunCancel: (id: string) => `/api/agent/runs/${id}/cancel`,
+  agentRunPlan: (id: string) => `/api/agent/runs/${id}/plan`,
+  agentRunResume: (id: string) => `/api/agent/runs/${id}/resume`,
   // v1.9 M3 多助手会议
   meetings: '/api/meetings',
   meeting: (id: string) => `/api/meetings/${id}`,
