@@ -51,6 +51,7 @@
     "eval:agent": "node scripts/eval/eval-agent.mjs",
     "eval:agent:server": "node scripts/eval/with-server.mjs --script=scripts/eval/eval-agent.mjs",
     "eval:acceptance": "node scripts/acceptance/run.mjs",
+    "eval:acceptance:report": "node scripts/acceptance/run.mjs --out=test-results/acceptance-v4.11.json",
     "eval:context": "node scripts/eval/eval-context.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
     "eval:tools": "node scripts/eval/tool-eval.mjs",
