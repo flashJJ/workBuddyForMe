@@ -19,15 +19,15 @@ describe('分享文本脱敏 sanitizeShareText', () => {
   });
 
   it('Windows 数据根路径被替换', () => {
-    const out = sanitizeShareText('文件位于 C:\\Users\\aa707\\.workbuddy-for-me\\attachments\\x.png');
-    expect(out).not.toContain('aa707');
+    const out = sanitizeShareText('文件位于 C:\\Users\\alice\\.workbuddy-for-me\\attachments\\x.png');
+    expect(out).not.toContain('alice');
     expect(out).toContain(REDACTED);
   });
 
   it('具体 dataRoot 路径（正斜杠变体）被替换', () => {
-    const root = 'C:\\Users\\aa707\\.workbuddy-for-me';
+    const root = 'C:\\Users\\alice\\.workbuddy-for-me';
     const out = sanitizeShareText(`路径 ${root}/db/wbfm.sqlite`, root);
-    expect(out).not.toContain('aa707');
+    expect(out).not.toContain('alice');
   });
 
   it('macOS/Linux 路径与波浪号路径被替换', () => {
@@ -50,7 +50,7 @@ describe('sanitizeSnapshot 深度脱敏', () => {
   it('content/parts/toolTrace/citations 全部递归脱敏', () => {
     const snap: ConversationSnapshot = {
       conversationId: 'c1',
-      title: 'C:\\Users\\aa707\\.workbuddy-for-me 数据目录',
+      title: 'C:\\Users\\alice\\.workbuddy-for-me 数据目录',
       assistantName: '助手',
       exportedAt: '2025-01-01T00:00:00Z',
       appVersion: '0.4.0',
@@ -67,17 +67,17 @@ describe('sanitizeSnapshot 深度脱敏', () => {
             },
           ],
           citations: [
-            { documentId: 'd1', documentName: 'C:\\Users\\aa707\\.workbuddy-for-me\\f.md', ordinal: 1 },
+            { documentId: 'd1', documentName: 'C:\\Users\\alice\\.workbuddy-for-me\\f.md', ordinal: 1 },
           ],
         },
       ],
     };
-    const out = sanitizeSnapshot(snap, 'C:\\Users\\aa707\\.workbuddy-for-me');
-    expect(out.title).not.toContain('aa707');
+    const out = sanitizeSnapshot(snap, 'C:\\Users\\alice\\.workbuddy-for-me');
+    expect(out.title).not.toContain('alice');
     expect(out.messages[0]!.content).toBe(REDACTED);
     expect(out.messages[0]!.parts[0]).toEqual({ type: 'text', text: `Bearer ${REDACTED}` });
     expect(out.messages[0]!.toolTrace[0]!.resultSummary).toContain(REDACTED);
-    expect(out.messages[0]!.citations[0]!.documentName).not.toContain('aa707');
+    expect(out.messages[0]!.citations[0]!.documentName).not.toContain('alice');
   });
 
   it('图片 data URL 不被改动', () => {

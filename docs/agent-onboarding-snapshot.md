@@ -16,13 +16,13 @@ WorkBuddyForMe：本地优先的私人 AI 桌面平台。Next.js 15 全栈 Web +
 | 项 | 值 |
 |---|---|
 | 版本 | 4.4.0（已合 main、已打 tag `v4.4.0`、已推工蜂） |
-| 安装包 | `E:\builds\archive\v4.4.0\WorkBuddyForMe-Setup-4.4.0.exe` 272.57MB |
+| 安装包 | `<构建归档>\v4.4.0\WorkBuddyForMe-Setup-4.4.0.exe` 272.57MB |
 | SHA256 | `da3cd2de8ae9042fb2998c65e2cd0d6ef7d06b788df0a457a35052d52ccbda0c` |
 | 构建 commit | `0740bcd2`（build-info.json 记录 branch/commit/builtAt） |
 | 数据库 | 零迁移，`LATEST_SCHEMA_VERSION = 51` |
 | 测试基线 | 9 包 745 文件 4219 项通过 |
 
-远端纪律：**只推工蜂 `tencent`**（`https://git.code.tencent.com/flashcoming/workBuddyForMe.git`），`origin`（GitHub）不作为本阶段发布目标，不要推。
+远端纪律：内部镜像与 GitHub 均可推送，具体地址与账号不在此记录；发布前确认目标远端与标签。
 
 当前未提交（与本版无关，勿顺手提交）：`README.md` 的影视入口链接、未跟踪的 `docs/film/`。
 
@@ -56,7 +56,7 @@ tests/          e2e（Playwright）与跨包测试夹具
 | `pnpm --filter @wbfm/web typecheck` | 单包类型检查 |
 | `pnpm --filter @wbfm/web exec vitest run src/features/xxx` | Web 定向测试（**必须**在 `apps/web` 目录跑，根目录跑会解析不到 `@/` 别名） |
 | `pnpm build:web` / `pnpm build` | Web 生产构建 / 全仓构建 |
-| `pnpm archive:win` | 把 `apps/desktop/release` 产物归档到 `E:\builds\archive\vX.Y.Z` |
+| `pnpm archive:win` | 把 `apps/desktop/release` 产物归档到 `<构建归档>\vX.Y.Z` |
 | `node scripts/release-manifest.mjs --check --dir <归档目录>` | 复算 3 个产物哈希 |
 
 端口：Web dev 42337、Electron CDP 42338、E2E 42339。
@@ -81,7 +81,7 @@ pnpm exec electron-builder --win --x64 --publish never --config electron-builder
 # 4) 归档 + 校验
 cd ..\..
 pnpm archive:win
-node scripts/release-manifest.mjs --check --dir E:\builds\archive\v4.4.0
+node scripts/release-manifest.mjs --check --dir <构建归档>\v4.4.0
 ```
 
 注意：

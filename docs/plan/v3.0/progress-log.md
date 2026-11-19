@@ -199,7 +199,7 @@
 
 ### 2026-11-12 邻家大姐兔耳娘精简
 
-- 输入：`C:\Users\aa707\Documents\3D模型\邻家大姐兔耳娘.vrm`（61.0MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
+- 输入：`C:\Users\<用户名>\Documents\3D模型\邻家大姐兔耳娘.vrm`（61.0MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
 - 处理：`scripts/avatar/compress-vrm.mjs` → `AI模型精简版/邻家大姐兔耳娘_精简.vrm`，删除 1298 个全零 morph 属性。
 - 校验：POSITION 哈希 0 差异；13 表情绑定一致；49 humanoid、118 morph；targetNames 11/11。
 - 结果：61.0MB → 25.8MB。
@@ -207,7 +207,7 @@
 
 ### 2026-11-12 邻家大姐精简
 
-- 输入：`C:\Users\aa707\Documents\3D模型\邻家大姐.vrm`（58.4MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
+- 输入：`C:\Users\<用户名>\Documents\3D模型\邻家大姐.vrm`（58.4MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
 - 处理：`scripts/avatar/compress-vrm.mjs` → `AI模型精简版/邻家大姐_精简.vrm`，删除 1298 个全零 morph 属性。
 - 校验：POSITION 哈希 0 差异；13 表情绑定一致；49 humanoid、118 morph；targetNames 11/11。
 - 结果：58.4MB → 25.9MB。
@@ -215,7 +215,7 @@
 
 ### 2026-11-12 大明星精简
 
-- 输入：`C:\Users\aa707\Documents\3D模型\原生\大明星.vrm`（72.8MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
+- 输入：`C:\Users\<用户名>\Documents\3D模型\原生\大明星.vrm`（72.8MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
 - 处理：`scripts/avatar/compress-vrm.mjs` → `AI模型精简版/大明星_精简.vrm`，删除 1298 个全零 morph 属性。
 - 校验：POSITION 哈希 0 差异；13 表情绑定一致；49 humanoid、118 morph；targetNames 11/11。
 - 结果：72.8MB → 33.5MB。
@@ -223,7 +223,7 @@
 
 ### 2026-11-12 不穿裤子精简
 
-- 输入：`C:\Users\aa707\Documents\3D模型\不穿裤子.vrm`（54.7MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
+- 输入：`C:\Users\<用户名>\Documents\3D模型\不穿裤子.vrm`（54.7MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
 - 处理：`scripts/avatar/compress-vrm.mjs` → `AI模型精简版/不穿裤子_精简.vrm`，删除 1298 个全零 morph 属性。
 - 校验：POSITION 哈希 0 差异；13 表情绑定一致；49 humanoid、118 morph；targetNames 11/11。
 - 结果：54.7MB → 29.1MB。
@@ -231,7 +231,7 @@
 
 ### 2026-11-12 运动健将精简
 
-- 输入：`C:\Users\aa707\Documents\3D模型\运动健将.vrm`（58.7MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
+- 输入：`C:\Users\<用户名>\Documents\3D模型\运动健将.vrm`（58.7MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
 - 处理：`scripts/avatar/compress-vrm.mjs` → `AI模型精简版/运动健将_精简.vrm`，删除 1298 个全零 morph 属性。
 - 校验：POSITION 哈希 0 差异；13 表情绑定一致；49 humanoid、118 morph；targetNames 11/11。
 - 结果：58.7MB → 24.9MB。
@@ -239,7 +239,7 @@
 
 ### 2026-11-12 泥白色野蛮女友精简
 
-- 输入：`C:\Users\aa707\Documents\3D模型\泥白色野蛮女友.vrm`（53.2MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
+- 输入：`C:\Users\<用户名>\Documents\3D模型\泥白色野蛮女友.vrm`（53.2MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
 - 处理：`scripts/avatar/compress-vrm.mjs` → `AI模型精简版/泥白色野蛮女友_精简.vrm`，删除 1298 个全零 morph 属性。
 - 校验：POSITION 哈希 0 差异；13 表情绑定一致；49 humanoid、118 morph；targetNames 11/11。
 - 结果：53.2MB → 25.3MB。
@@ -247,7 +247,7 @@
 
 ### 2026-11-12 泥色短裙精简
 
-- 输入：`C:\Users\aa707\Documents\3D模型\泥色短裙.vrm`（49.3MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
+- 输入：`C:\Users\<用户名>\Documents\3D模型\泥色短裙.vrm`（49.3MB，VRM0、49 骨骼、118 morph、11 个 morph primitive）。
 - 处理：`node scripts/avatar/compress-vrm.mjs` → `AI模型精简版/泥色短裙_精简.vrm`，删除 1298 个全零 morph 属性。
 - 校验：POSITION accessor 哈希 0 差异；13 表情绑定一致；49 humanoid、118 morph 不变；11/11 primitive 保留 `targetNames`。
 - 结果：49.3MB → 30.8MB。
@@ -279,7 +279,7 @@
 
 ### 2026-11-12 原生 VRM 批量精简（第二批）
 
-- 来源：`C:\Users\aa707\Documents\3D模型\原生`（内衣红发 / 短黑发 / 红发 / 红发黑丝 / 金发）。
+- 来源：`C:\Users\<用户名>\Documents\3D模型\原生`（内衣红发 / 短黑发 / 红发 / 红发黑丝 / 金发）。
 - 处理：`node scripts/avatar/compress-vrm.mjs` 逐条精简 → `AI模型精简版/<名>_精简.vrm`；每个模型删除 1298 个全零 morph 属性（11 primitive × 118 target）。
 - 结果（48.2/77.3/46.3/54.4/49.6 MB → 31.3/30.9/31.9/33.4/26.7 MB）：
   - 118 morph、11 个 morph primitive、49 humanoid 骨骼保持不变；
@@ -308,7 +308,7 @@
 - 模型：小白鲸、海豚、鲨鱼、水母、企鹅、海獭；原始 39.6–46.6MB。
 - 骨架：6/6 与雪团一致（49 humanoid、父级 0 差异、rest 四元数 0° 差、比例 RMS 0.015–0.09）。
 - 面部：6/6 为 118 morph、11 个面部 primitive、18 个 VRM 表情绑定索引一致；缺 `targetNames`。
-- 精简：删除 118 个全零 morph NORMAL（约 14.34MB/模型）；输出 24.98–32.24MB 到 `C:\Users\aa707\Documents\3D模型\AI模型精简版`。
+- 精简：删除 118 个全零 morph NORMAL（约 14.34MB/模型）；输出 24.98–32.24MB 到 `C:\Users\<用户名>\Documents\3D模型\AI模型精简版`。
 - 补齐：118 个 `targetNames` 按雪团顺序写入；POSITION 哈希一致；0 orphan / 0 NORMAL target。
 - binding：`animeart-v1.binding.json`（家族级，standardExpressions + channels + reservedChannels）；fingerprint 记录 6 个模型。
 - 遗留：海豚/企鹅仍 >20MB（贴图/材质）；100 个非标准 morph 语义顺序需抽查；测试模型许可未改。
