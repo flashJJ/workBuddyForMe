@@ -1,117 +1,117 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import {
+  HttpResponse,
+  delay,
+  http,
+  setupMsw,
+  type JsonBodyType,
+} from '../testing/msw';
 import { ProviderError } from '../errors/provider-error';
 import { fetchJson } from './fetch-with-retry';
 
-function jsonResponse(status: number, body: unknown = {}): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
+/**
+ * v4.11 P1-1：本文件已从 `vi.stubGlobal('fetch')` 迁移到 MSW handler。
+ * 重试退避使用真实计时（约 0.4–1.2s/次），避免 fake timers 与 MSW 拦截器互相干扰。
+ */
+const URL = 'https://x/v1/test';
+
+const server = setupMsw();
+let calls: Array<{ headers: Headers; body: string | null }> = [];
+let steps: Array<() => Response | Promise<Response>> = [];
+let cursor = 0;
+
+function respond(next: Array<() => Response | Promise<Response>>): void {
+  calls = [];
+  steps = next;
+  cursor = 0;
+  server.use(
+    http.all(URL, async ({ request }) => {
+      calls.push({ headers: request.headers, body: await request.clone().text() });
+      const step = steps[Math.min(cursor, steps.length - 1)]!;
+      cursor += 1;
+      return step();
+    }),
+  );
 }
 
-describe('fetchJson 超时/重试/归一化', () => {
-  let fetchMock: ReturnType<typeof vi.fn>;
+function json(status: number, body: JsonBodyType = {}): Response {
+  return HttpResponse.json(body, { status });
+}
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
-
+describe('fetchJson 超时/重试/归一化（MSW）', () => {
   it('成功请求注入鉴权头并序列化 body', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true }));
-    const response = await fetchJson('https://x/v1/test', {
+    respond([() => json(200, { ok: true })]);
+    const response = await fetchJson(URL, {
+      method: 'POST',
       apiKey: 'sk-secret',
       body: { a: 1 },
       maxRetries: 0,
     });
+
     expect(response.status).toBe(200);
-    const [, init] = fetchMock.mock.calls[0]!;
-    expect(init.headers.get('Authorization')).toBe('Bearer sk-secret');
-    expect(JSON.parse(init.body)).toEqual({ a: 1 });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.headers.get('authorization')).toBe('Bearer sk-secret');
+    expect(JSON.parse(calls[0]!.body!)).toEqual({ a: 1 });
   });
 
   it('5xx 指数退避重试，第三次成功', async () => {
-    fetchMock
-      .mockResolvedValueOnce(jsonResponse(503))
-      .mockResolvedValueOnce(jsonResponse(502))
-      .mockResolvedValueOnce(jsonResponse(200));
-    const promise = fetchJson('https://x/v1/test', { maxRetries: 2 });
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(await promise).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-  });
+    respond([() => json(503), () => json(502), () => json(200)]);
+    const response = await fetchJson(URL, { maxRetries: 2 });
+    expect(response.status).toBe(200);
+    expect(calls).toHaveLength(3);
+  }, 10_000);
 
   it('5xx 重试耗尽后抛归一化错误（retriable）', async () => {
-    fetchMock.mockImplementation(() => jsonResponse(500, { error: { message: '挂了' } }));
-    const promise = fetchJson('https://x/v1/test', { maxRetries: 2 });
-    const expectation = expect(promise).rejects.toMatchObject({
+    respond([() => json(500, { error: { message: '挂了' } })]);
+    await expect(fetchJson(URL, { maxRetries: 2 })).rejects.toMatchObject({
       name: 'ProviderError',
       code: 'PROVIDER_ERROR',
       status: 500,
       retriable: true,
       providerMessage: '挂了',
-    });
-    await vi.advanceTimersByTimeAsync(5000);
-    await expectation;
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-  });
+    } satisfies Partial<ProviderError>);
+    expect(calls).toHaveLength(3);
+  }, 10_000);
 
   it('4xx 不重试，立即失败', async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse(401, { error: { message: 'invalid api key' } }),
-    );
-    await expect(fetchJson('https://x/v1/test', { maxRetries: 2 })).rejects.toMatchObject({
+    respond([() => json(401, { error: { message: 'invalid api key' } })]);
+    await expect(fetchJson(URL, { maxRetries: 2 })).rejects.toMatchObject({
       status: 401,
       retriable: false,
       providerMessage: 'invalid api key',
     } satisfies Partial<ProviderError>);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(calls).toHaveLength(1);
   });
 
-  it('连接错误（TypeError）重试后恢复', async () => {
-    fetchMock
-      .mockRejectedValueOnce(new TypeError('fetch failed'))
-      .mockResolvedValueOnce(jsonResponse(200));
-    const promise = fetchJson('https://x/v1/test', { maxRetries: 1 });
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(await promise).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
+  it('连接错误（网络失败）重试后恢复', async () => {
+    respond([() => HttpResponse.error(), () => json(200)]);
+    const response = await fetchJson(URL, { maxRetries: 1 });
+    expect(response.status).toBe(200);
+    expect(calls).toHaveLength(2);
+  }, 10_000);
 
   it('连接错误持续失败：归一化为不可达错误', async () => {
-    fetchMock.mockRejectedValue(new TypeError('fetch failed'));
-    const promise = fetchJson('https://x/v1/test', { maxRetries: 0 });
-    await expect(promise).rejects.toMatchObject({ code: 'PROVIDER_ERROR' });
+    respond([() => HttpResponse.error()]);
+    await expect(fetchJson(URL, { maxRetries: 0 })).rejects.toMatchObject({
+      code: 'PROVIDER_ERROR',
+    } satisfies Partial<ProviderError>);
   });
 
   it('超时触发 abort 并归一化', async () => {
-    fetchMock.mockImplementation(
-      (_url: string, init: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          init.signal!.addEventListener('abort', () => {
-            reject(new DOMException('The operation was aborted', 'AbortError'));
-          });
-        }),
-    );
-    const promise = fetchJson('https://x/v1/test', { timeoutMs: 20, maxRetries: 0 });
-    const expectation = expect(promise).rejects.toMatchObject({ code: 'PROVIDER_TIMEOUT' });
-    await vi.advanceTimersByTimeAsync(50);
-    await expectation;
+    respond([async () => {
+      await delay('infinite');
+      return json(200);
+    }]);
+    await expect(
+      fetchJson(URL, { timeoutMs: 20, maxRetries: 0 }),
+    ).rejects.toMatchObject({ code: 'PROVIDER_TIMEOUT' });
   });
 
   it('外部信号已取消：透传取消错误且不重试', async () => {
-    fetchMock.mockRejectedValue(new DOMException('aborted', 'AbortError'));
+    respond([() => json(200)]);
     await expect(
-      fetchJson('https://x/v1/test', { maxRetries: 2, signal: AbortSignal.abort() }),
+      fetchJson(URL, { maxRetries: 2, signal: AbortSignal.abort() }),
     ).rejects.toMatchObject({ name: 'AbortError' });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(calls.length).toBeLessThanOrEqual(1);
   });
 });

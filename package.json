@@ -32,6 +32,7 @@
     "check:lines": "node scripts/check-file-lines.mjs",
     "check:structure": "node scripts/check-structure.mjs",
     "check:cycles": "node scripts/check-cycles.mjs",
+    "check:msw": "node scripts/check-msw.mjs",
     "test:contracts": "pnpm --filter @wbfm/core exec vitest run src/tools/contract",
     "check:family": "node scripts/avatar/validate-family.mjs",
     "check:scenes": "pnpm --filter @wbfm/web exec vitest run src/features/avatar/script/scenes",
@@ -52,7 +53,7 @@
     "eval:acceptance": "node scripts/acceptance/run.mjs",
     "eval:context": "node scripts/eval/eval-context.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
-    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:ascii && pnpm check:assets && pnpm check:surfaces"
+    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:msw && pnpm check:ascii && pnpm check:assets && pnpm check:surfaces"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
@@ -63,6 +64,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "3.10.1",
     "eslint-plugin-import": "2.32.0",
+    "msw": "^3.0.7",
     "prettier": "^3.4.0",
     "promptfoo": "^0.125.1",
     "tsup": "^8.5.0",

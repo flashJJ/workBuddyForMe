@@ -12,6 +12,11 @@
             "development": "./src/index.ts",
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
+        },
+        "./testing/msw": {
+            "types": "./src/testing/msw.ts",
+            "development": "./src/testing/msw.ts",
+            "default": "./src/testing/msw.ts"
         }
     },
     "files": [

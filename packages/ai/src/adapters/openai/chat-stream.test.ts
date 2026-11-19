@@ -1,11 +1,18 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { HttpResponse, http, setupMsw } from '../../testing/msw';
 import { createOpenAiCompatibleAdapter, type ProviderConnection } from '../../index';
 
+/**
+ * v4.11 P1-1：本文件已从 `vi.stubGlobal('fetch')` 迁移到 MSW handler。
+ * 第二个用例用 handler 的 request.signal 验证客户端 abort 会传到上游。
+ */
 const CONNECTION: ProviderConnection = {
   protocol: 'openai-compatible',
   baseUrl: 'https://api.x.com/v1/',
   apiKey: 'sk-test',
 };
+
+const ENDPOINT = 'https://api.x.com/v1/chat/completions';
 
 const SSE_FIXTURE =
   'data: {"choices":[{"delta":{"content":"你好，"}}]}\n\n' +
@@ -20,17 +27,19 @@ async function collect<T>(iterable: AsyncIterable<T>): Promise<T[]> {
   return result;
 }
 
-describe('OpenAI 兼容 chatStream（TR-10.1）', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
+const server = setupMsw();
+let lastBody: Record<string, unknown> | null = null;
 
+describe('OpenAI 兼容 chatStream（MSW）', () => {
   it('增量拼接、[DONE] 收尾、usage 提取、请求体正确', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(SSE_FIXTURE, { headers: { 'content-type': 'text/event-stream' } }),
+    server.use(
+      http.post(ENDPOINT, async ({ request }) => {
+        lastBody = (await request.json()) as Record<string, unknown>;
+        return new HttpResponse(SSE_FIXTURE, {
+          headers: { 'content-type': 'text/event-stream' },
+        });
+      }),
     );
-    vi.stubGlobal('fetch', fetchMock);
     const adapter = createOpenAiCompatibleAdapter(CONNECTION);
 
     const chunks = await collect(
@@ -41,18 +50,13 @@ describe('OpenAI 兼容 chatStream（TR-10.1）', () => {
       }),
     );
 
-    const text = chunks.map((c) => c.delta).join('');
-    expect(text).toBe('你好，世界');
+    expect(chunks.map((chunk) => chunk.delta).join('')).toBe('你好，世界');
     expect(chunks.at(-1)!.usage).toEqual({
       promptTokens: 5,
       completionTokens: 3,
       totalTokens: 8,
     });
-
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('https://api.x.com/v1/chat/completions');
-    const body = JSON.parse(init.body as string);
-    expect(body).toMatchObject({
+    expect(lastBody).toMatchObject({
       model: 'gpt-x',
       stream: true,
       stream_options: { include_usage: true },
@@ -62,21 +66,18 @@ describe('OpenAI 兼容 chatStream（TR-10.1）', () => {
 
   it('abort 后上游请求信号被触发且流终止', async () => {
     const encoder = new TextEncoder();
-    const signalHolder: { signal?: AbortSignal } = {};
+    const upstreamSignal: { value?: AbortSignal } = {};
     let pullArmed = false;
 
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(
-          encoder.encode('data: {"choices":[{"delta":{"content":"首字"}}]}\n\n'),
-        );
+        controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"首字"}}]}\n\n'));
       },
       pull(controller) {
         if (pullArmed) return;
         pullArmed = true;
-        const signal = signalHolder.signal!;
+        const signal = upstreamSignal.value!;
         const fail = () => controller.error(new DOMException('aborted', 'AbortError'));
-        // 消费者可能在 pull 注册监听前就已 abort，需立即检查
         if (signal.aborted) {
           fail();
           return;
@@ -84,13 +85,13 @@ describe('OpenAI 兼容 chatStream（TR-10.1）', () => {
         signal.addEventListener('abort', fail, { once: true });
       },
     });
-    const fetchMock = vi.fn().mockImplementation((_url: string, init: RequestInit) => {
-      signalHolder.signal = init.signal!;
-      return Promise.resolve(
-        new Response(body, { headers: { 'content-type': 'text/event-stream' } }),
-      );
-    });
-    vi.stubGlobal('fetch', fetchMock);
+
+    server.use(
+      http.post(ENDPOINT, ({ request }) => {
+        upstreamSignal.value = request.signal;
+        return new HttpResponse(body, { headers: { 'content-type': 'text/event-stream' } });
+      }),
+    );
 
     const external = new AbortController();
     const adapter = createOpenAiCompatibleAdapter(CONNECTION);
@@ -103,6 +104,6 @@ describe('OpenAI 兼容 chatStream（TR-10.1）', () => {
 
     external.abort();
     await expect(iterator.next()).rejects.toMatchObject({ name: 'AbortError' });
-    expect(signalHolder.signal!.aborted).toBe(true);
+    expect(upstreamSignal.value!.aborted).toBe(true);
   });
 });

@@ -20,6 +20,7 @@
 | `pnpm check:scenes` | 剧本跨场景 lint + cue 时间线 golden 快照 |
 | `pnpm check:structure` | 目录直接文件预算、多文件入口与公开面检查 |
 | `pnpm check:cycles` | 循环依赖检查（存量基线冻结） |
+| `pnpm check:msw` | 测试网络 mock 门禁：阻止新增 `vi.stubGlobal('fetch')`，存量基线渐进收敛 |
 | `pnpm check:ascii` | Markdown 框图宽度检查（中文对齐） |
 | `pnpm sync-version` / `pnpm sync-version:check` | 同步 / 校验 root 版本到各包与 `version.ts` |
 | `pnpm test:unit` | 全仓单元测试（覆盖率阈值阻断） |
@@ -124,6 +125,13 @@ packages/shared, config → 不依赖任何业务包
 
 - `mock-chat`：流式回显；system 含【参考资料】时基于检索片段作答；消息命中「长回答/详细说说」输出约 3.5 秒长文本，供「中途停止」场景操作。
 - `mock-embed`：64 维多热编码（FNV-1a hash + 中文 2-gram），L2 归一化，共享 token 文本相似——驱动真实 top-k 检索链路。
+
+### 网络 mock（MSW，v4.11 P1-1）
+
+- 新增测试统一用 `@wbfm/ai/testing/msw`：`setupMsw([http.get(...)])` 自动注册 listen/reset/close，`onUnhandledFrame: 'error'` 保证未声明的出网立即失败。
+- handler 内直接记录请求体、头与调用次数；SSE 用 `new HttpResponse(stream)`，abort 可通过 handler 的 `request.signal` 验证。
+- 存量 `vi.stubGlobal('fetch')` 冻结在 `scripts/.msw-baseline.json`；`pnpm check:msw` 阻止新增，迁移后用 `node scripts/check-msw.mjs --update` 下调基线。
+- 已迁移样例：`fetch-with-retry.test.ts`（HTTP 重试）、`openai/chat-stream.test.ts`（SSE + abort）、`fetch-webpage-tool.test.ts`（抓取/重定向/缓存）。
 
 ### Windows Smart App Control 注意事项
 

@@ -496,7 +496,7 @@ R7（`read_fetched` 自动注入）在契约测试中显式断言：启用 `fetc
 
 ### 13.4 尚未开始
 
-P1-1（MSW 收敛）、P1-4（三档窗口全链路）、P1-5（promptfoo 工具评测）与 P2 未开始。
+P1-4（三档窗口全链路）、P1-5（promptfoo 工具评测）与 P2 未开始。
 
 ---
 
@@ -523,3 +523,41 @@ P1-1（MSW 收敛）、P1-4（三档窗口全链路）、P1-5（promptfoo 工具
 ### 14.3 既有 flaky（与本次改动无关）
 
 `computer-input.spec.ts` 的两条用例在本机冷启动下互有波动：一次是 `computer-channel.json` 超过 15s 未出现，另一次是记事本 UIA 内容等待 5s 超时；单独复跑时失败用例会互换，属于既有用例的冷启动/桌面环境抖动，本次未改动。
+
+---
+
+## 15. P1 落地记录：MSW 收敛（P1-1）
+
+### 15.1 交付
+
+| 项 | 落点 |
+|---|---|
+| MSW 依赖 | 根 `devDependencies` 增加 `msw@^3` |
+| 共享底座 | `packages/ai/src/testing/msw.ts`，通过 `@wbfm/ai/testing/msw` 子路径导出 |
+| 生命周期 | `setupMsw([...handlers])` 自动 listen / resetHandlers / close，`onUnhandledFrame: 'error'` 阻止未声明出网 |
+| 门禁 | `scripts/check-msw.mjs` + `scripts/.msw-baseline.json`，已接入 `pnpm check`（`check:msw`） |
+
+已迁移（3 个文件，均为 `vi.stubGlobal('fetch')` → handler）：
+
+- `packages/ai/src/http/fetch-with-retry.test.ts`：超时、重试、4xx/5xx、网络失败；
+- `packages/ai/src/adapters/openai/chat-stream.test.ts`：SSE 增量与 abort（handler 的 `request.signal` 验证上游取消）；
+- `packages/core/src/tools/fetch-webpage-tool.test.ts`：抓取、302 逐跳 SSRF、JSON、404、超限截断、回合缓存。
+
+### 15.2 门禁语义
+
+- 基线记录每个文件的 `stubGlobal('fetch')` 次数（当前 85 个文件）；
+- 任意文件次数上涨 → 失败；下降允许，迁移后用 `node scripts/check-msw.mjs --update` 下调基线；
+- 注释里的示例写法会被剥离，不误报。
+
+### 15.3 验证
+
+| 项 | 结果 |
+|---|---|
+| 反向验证：临时新增 `stubGlobal('fetch')` | 门禁失败，错误信息指出文件与 `0 → 1` |
+| `pnpm --filter @wbfm/ai test` | 17 文件 / 92 用例通过 |
+| `pnpm --filter @wbfm/core test` | 298 文件 / 1806 用例通过 |
+| ai / core typecheck、lint | 通过（仅既有 warning） |
+
+### 15.4 已知限制
+
+MSW 会重建 Request，`request.redirect` 固定为 `follow`，无法断言原始 `redirect: 'manual'`；该行为已由「302 跳到内网在第二跳被拦截」用例覆盖。SSE 的 `ReadableStream` 与客户端 abort 均可正常验证。
