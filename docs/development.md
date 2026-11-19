@@ -41,6 +41,10 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 |---|---|
 | `WBFM_DATA_ROOT` | 覆盖数据根目录（默认 `~/.workbuddy-for-me`） |
 | `WBFM_MOCK_AI` | 置 `1` 时注入进程内 Mock 供应商（`mock-chat` / `mock-embed`，伪语义检索），无需真实模型服务 |
+| `WBFM_MOCK_SCENARIO` | 场景化 mock 剧本 JSON 路径（仅 `WBFM_MOCK_AI=1` 生效；消息含 `[scenario:名称]` 时按轮下发工具调用） |
+| `WBFM_FETCH_ALLOW_PRIVATE` | 置 `1` 放行回环/私网抓取（仅 Fake Web 验收进程使用；生产禁止设置） |
+| `WBFM_FIXTURE_PORT` / `WBFM_ACCEPTANCE_PORT` / `WBFM_EVAL_PORT` | Fake Web、自动验收、eval 包装器的端口覆盖 |
+| `WBFM_E2E_FIXTURE_PORT` | Playwright E2E 的 Fake Web 端口（默认 43102，配置与规格共用） |
 | `WBFM_SERVER_MANAGED` | `1` 启用托管模式令牌守卫（Electron 主进程注入） |
 | `WBFM_TOKEN` | 托管模式访问令牌（启动时随机生成） |
 | `WBFM_SERVER_PATH` | 覆盖 standalone server.js 路径（Electron 冒烟降级场景使用） |
@@ -103,7 +107,16 @@ packages/shared, config → 不依赖任何业务包
 - **单元测试**（`pnpm test:unit`）：config/database/ai/core statements ≥70%（Vitest 阈值阻断）；mock 边界为 fetch（供应商）、时间、数据根；不允许真实出网。
 - **集成测试**（`apps/web/src/app/api/integration.test.ts`）：`mkdtempSync` 临时数据根 + 内存 SQLite + `__buildContainerForTest` 注入容器，路由 handler 直调 `new Request(...)`；覆盖级联删除、SSE 上游失败落库、错误码矩阵一致性等跨层行为。
 - **Web E2E**（`tests/e2e/critical-path.spec.ts`，`pnpm test:e2e`）：Playwright 启动 next dev（端口 42339，`WBFM_MOCK_AI=1` + 临时数据根，`reuseExistingServer: !CI`），5 个串行场景：供应商/模型配置 → 流式对话与中途停止 → 知识库上传索引 → RAG 带引用问答 → 四模块导航。
+- **Web E2E · 联网路径**（`tests/e2e/web-network-v411.spec.ts`）：Playwright 同时启动 Fake Web（端口 43102）并把场景剧本注入服务进程；覆盖三页并发抓取、零人工确认、工具时间线 3 次成功、请求到达跨度 <150ms。
 - **Electron 冒烟**（`apps/desktop/e2e/smoke.spec.ts`，`pnpm test:e2e:desktop`）：`run-e2e.mjs` 串行执行 web build → desktop build → prepare-server（归集 standalone）→ electron-builder --dir → Playwright `_electron.launch`；断言窗口渲染、四模块导航、webPreferences 安全基线（contextIsolation/sandbox/no nodeIntegration）、托管令牌 401/200。
+- **契约快照**（`pnpm test:contracts`）：`packages/core/src/tools/contract/tool-contracts.test.ts` 序列化每个内置工具的 `permission / alwaysConfirm / required`，并守护 `DEFAULT_AGENT_POLICY` 与 `RESEARCH_DEPTH_PRESETS`；权限或预算常量变更必须显式更新快照。
+- **离线自动验收**（`pnpm eval:acceptance`）：`scripts/acceptance/run.mjs` 起 Fake Web（`scripts/fixtures/web/server.mjs`）+ 真实 Next 服务（`WBFM_MOCK_AI=1` + `WBFM_MOCK_SCENARIO` + `WBFM_FETCH_ALLOW_PRIVATE=1`），按 `tests/scenarios/*.json` 剧本逐案跑真实对话链路；断言人工确认次数、工具并发、缓存命中、旧结果折叠、溢出重试。
+
+### 场景化 mock 与 Fake Web（v4.11 P0）
+
+- 剧本只编排「模型的决策」：`turns[].toolCalls / delayMs / error`，编排、权限、预算、抓取全部走真实代码。终稿里的 `{{toolState}}` 会展开为模型实际看到的工具消息清单（含是否被折叠），用于断言语境预算是否生效。
+- Fake Web 提供 `/simple` `/large` `/slow` `/redirect` `/json` `/empty` `/404` 与 `/__stats`（请求计数与到达时间），并发断言优先看请求到达跨度，绝对时延只配慢响应 + 宽阈值。
+- 既有 eval 脚本用 `scripts/eval/with-server.mjs` 自动起服务，CI 里通过 `pnpm eval:agent:server` 运行。
 
 ### Mock 供应商
 
@@ -116,6 +129,13 @@ packages/shared, config → 不依赖任何业务包
 
 SAC 开启时，electron-builder 重打包产生的未签名 exe（hash 每次变化）会被系统 Application Control 拦截。`run-e2e.mjs` 自动检测该状态并降级：复制官方签名 `electron.exe` 为 `WbfmElectronHost.exe`（字节不变，SAC 放行）加载打包产物 `app.asar`，`WBFM_SERVER_PATH` 指向打包内 standalone server——生产链路（fork server / cipher 桥 / 令牌守卫）验证等价。关闭 SAC 不可逆，如需验证真实 exe 请自行在系统安全中心操作。
 
+## 提交与远端
+
+- **日常开发**：每个提交推送到工蜂 `tencent`（`git push tencent main`）。`main` 的上游已设为 `tencent/main`，直接 `git push` 即走工蜂。
+- **GitHub `origin`**：只在大版本发布时推送，与 tag / Release 同步；日常不推。
+- 大版本发布前先确认工蜂与 GitHub 的 `main` 指向同一提交，再打 tag 并推送 `origin`。
+
+
 ## CI 工作流
 
 `.github/workflows/ci.yml`（ubuntu-latest，Node 版本读 `.nvmrc`）：
@@ -123,8 +143,9 @@ SAC 开启时，electron-builder 重打包产生的未签名 exe（hash 每次�
 1. `pnpm install --frozen-lockfile`
 2. `pnpm check`（lint + typecheck + 300 行门禁）
 3. `pnpm test:unit` → `pnpm test:integration`
-4. `pnpm build:web` → `playwright install --with-deps chromium` → `pnpm test:e2e`
-5. 失败时上传 `apps/web/test-results` 与 `playwright-report` 产物
+4. `pnpm build:web` → `pnpm eval:acceptance` → `pnpm eval:agent:server`
+5. `playwright install --with-deps chromium` → `pnpm test:e2e`
+6. 失败时上传 `apps/web/test-results` 与 `playwright-report` 产物
 
 Electron 冒烟需 Windows 环境（better-sqlite3 原生重编译 + electron-builder），质量 CI 未纳入，本机执行 `pnpm test:e2e:desktop`。
 
