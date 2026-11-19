@@ -496,4 +496,30 @@ R7（`read_fetched` 自动注入）在契约测试中显式断言：启用 `fetc
 
 ### 13.4 尚未开始
 
-P1-1（MSW 收敛）、P1-3（Electron 联网冒烟）、P1-4（三档窗口全链路）、P1-5（promptfoo 工具评测）与 P2 未开始。
+P1-1（MSW 收敛）、P1-4（三档窗口全链路）、P1-5（promptfoo 工具评测）与 P2 未开始。
+
+---
+
+## 14. P1 落地记录：Electron 联网冒烟（P1-3）
+
+### 14.1 交付
+
+| 项 | 落点 |
+|---|---|
+| 桌面 Fixture 服务 | `apps/desktop/playwright.config.ts` 增加 Fake Web（端口 43103），并生成替换 `{{FIXTURE}}` 的场景文件 |
+| 共享常量 | `apps/desktop/e2e/network-fixture.ts` |
+| 联网冒烟规格 | `apps/desktop/e2e/network.spec.ts` |
+
+规格在打包后的 Electron + 托管 server 上运行，`_electron.launch` 注入 `WBFM_MOCK_AI` / `WBFM_MOCK_SCENARIO` / `WBFM_FETCH_ALLOW_PRIVATE`，子进程通过 `...process.env` 继承。断言与 Web E2E 同源：零确认、3 次 `fetch_webpage` 全部成功、探针 `"count":3`、Fake Web 请求到达跨度 <150ms。
+
+### 14.2 验证
+
+| 项 | 结果 |
+|---|---|
+| `apps/desktop` typecheck（含 e2e tsconfig） | 通过 |
+| `playwright test network`（打包产物） | 1 passed（10.9s） |
+| `pnpm --filter @wbfm/desktop test:e2e` 全量 | 12/13 通过；联网冒烟通过 |
+
+### 14.3 既有 flaky（与本次改动无关）
+
+`computer-input.spec.ts` 的两条用例在本机冷启动下互有波动：一次是 `computer-channel.json` 超过 15s 未出现，另一次是记事本 UIA 内容等待 5s 超时；单独复跑时失败用例会互换，属于既有用例的冷启动/桌面环境抖动，本次未改动。
