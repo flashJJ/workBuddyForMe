@@ -78,8 +78,10 @@ export function ReadAloudButton({ messages, ttsReady, speakerId, playback, conve
         const frame = wavToVoiceFrame(await response.arrayBuffer(), chunk);
         if (!frame) throw new Error('tts-invalid-wav');
         queue.enqueue(frame);
-        await queue.waitDrained(controller.signal);
+        // 不逐块等待播完：短句合成较快，后续块边播边合成，首句出声后不会出现长静音
       }
+      // 全部入队后等待播完，期间按钮保持「停止」态
+      await queue.waitDrained(controller.signal);
     } catch {
       if (!controller.signal.aborted) toast.error(t('voice.readAloud.failed'));
     } finally {

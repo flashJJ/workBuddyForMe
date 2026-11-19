@@ -66,10 +66,11 @@ describe('朗读文本抽取（read-aloud-text）', () => {
     expect(latestAssistantSpeech([message('user', '你好')])).toBeNull();
   });
 
-  it('按句切块且不超过接口上限，超长单句硬切', () => {
-    const chunks = splitSpeechChunks('第一句。第二句！' + '长'.repeat(READ_ALOUD_CHUNK_MAX + 50));
-    expect(chunks[0]).toBe('第一句。 第二句！');
-    expect(chunks.slice(1).every((chunk) => chunk.length <= READ_ALOUD_CHUNK_MAX)).toBe(true);
-    expect(chunks.slice(1).join('').length).toBe(READ_ALOUD_CHUNK_MAX + 50);
+  it('按 TTS 短句粒度切块（≤40 字），超长无标点段落硬切', () => {
+    const longRun = '长'.repeat(READ_ALOUD_CHUNK_MAX + 50);
+    const chunks = splitSpeechChunks('第一句。第二句！' + longRun);
+    expect(chunks.every((chunk) => chunk.length <= READ_ALOUD_CHUNK_MAX)).toBe(true);
+    expect(chunks[0]).toContain('第一句。第二句！');
+    expect(chunks.join('')).toBe('第一句。第二句！' + longRun);
   });
 });
