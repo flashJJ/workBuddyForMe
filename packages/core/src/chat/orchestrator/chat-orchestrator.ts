@@ -150,8 +150,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           traceParent: turnTrace,
           target,
         });
-        const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace } =
-          prepared;
+        const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace, researchDepth, contextWindow } = prepared;
         let citations = prepared.citations;
         const fetchDegrade = createFetchDegradeTracker();
         const emotionEnabled = prepared.emotionEnabled;
@@ -201,6 +200,8 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               outgoing,
               citations,
               toolMessageBudgetTokens,
+              contextWindow,
+              researchDepth,
               fetchFailures: fetchDegrade.failures,
               signal: input.signal,
               onAbort: () => {

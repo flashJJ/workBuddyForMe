@@ -1,8 +1,9 @@
 import type { TokenUsage } from '@wbfm/shared/api';
-import { startRun, type ChatMessage, type TraceHandle, type ToolCall, type ToolDefinition } from '@wbfm/ai';
+import { isContextOverflowError, startRun, type ChatMessage, type TraceHandle, type ToolCall, type ToolDefinition } from '@wbfm/ai';
 import type { Assistant } from '@wbfm/shared/types';
 import type { ResolvedChatTarget } from '../context/model-resolver';
 import type { OrchestratorEvent } from '../base/types';
+import { shrinkMessagesForOverflow } from '../context/window/shrink-messages';
 
 export interface ProviderTurn {
   /** 本轮文本产出（工具轮通常为空，最终轮为回答正文） */
@@ -91,18 +92,22 @@ export function isToolsUnsupportedError(error: unknown): boolean {
 }
 
 /**
- * 带降级的模型轮次：端点支持工具（supportsTools=true）不代表具体模型支持
- * （如 qwen2.5vl）。上游 400 拒绝工具声明时（发生在流打开前，无已产出增量），
- * 去掉工具声明重试一次——模型将直接基于检索上下文/对话回答。
+ * 带降级的模型轮次：
+ * 1. 上下文超限（窗口估值偏大/历史过长）：按 user 边界缩一半重试一次；
+ * 2. 端点声明支持工具但具体模型拒绝工具：去掉工具声明重试一次。
+ * 两者都发生在流打开前，不会重复产出正文。
  */
 export async function* runProviderTurnWithToolFallback(
   params: TurnParams,
 ): AsyncGenerator<OrchestratorEvent, ProviderTurn> {
-  if (params.tools.length === 0) return yield* runProviderTurn(params);
   try {
     return yield* runProviderTurn(params);
   } catch (error) {
-    if (!isToolsUnsupportedError(error)) throw error;
+    if (isContextOverflowError(error)) {
+      const shrunk = shrinkMessagesForOverflow(params.messages);
+      if (shrunk) return yield* runProviderTurn({ ...params, messages: shrunk });
+    }
+    if (params.tools.length === 0 || !isToolsUnsupportedError(error)) throw error;
     return yield* runProviderTurn({ ...params, tools: [] });
   }
 }

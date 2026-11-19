@@ -7,8 +7,8 @@
 
 /**
  * POST 一个 SSE 流并收集事件。
- * @returns {Promise<{content:string, events:Array<{event:string,data:any}>, error:string|null, usage:any}>}
- *   content = 全部 delta 拼接；events = 按序全部事件；error = error 帧消息；usage = done 帧 token
+ * @returns {Promise<{content:string, events:Array<{event:string,data:any,at:number}>, error:string|null, usage:any}>}
+ *   content = 全部 delta 拼接；events = 按序全部事件（at 为本地到达毫秒时间戳）；error = error 帧消息；usage = done 帧 token
  */
 export async function streamChat(baseUrl, path, body, init = {}) {
   const response = await fetch(`${baseUrl}${path}`, {
@@ -34,7 +34,7 @@ export async function streamChat(baseUrl, path, body, init = {}) {
     const dataLine = lines.find((line) => line.startsWith('data:'));
     if (!eventName || !dataLine) return;
     const data = JSON.parse(dataLine.slice(5).trim());
-    events.push({ event: eventName, data });
+    events.push({ event: eventName, data, at: Date.now() });
     if (eventName === 'delta') content += data.content;
     if (eventName === 'done') usage = data.usage ?? null;
     if (eventName === 'error') error = data.message ?? data.code;

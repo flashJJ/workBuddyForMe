@@ -14,7 +14,11 @@ export {
 export { parseSse, type SseEvent } from './http/sse-parser';
 export { backoffDelayMs, sleep } from './http/backoff';
 export { withTimeout, type LinkedSignal } from './http/timeout-signal';
-export { normalizeHttpError, extractErrorMessage } from './http/error-normalize';
+export {
+  normalizeHttpError,
+  extractErrorMessage,
+  isContextOverflowError,
+} from './http/error-normalize';
 
 // 适配器与注册中心
 export {
@@ -23,6 +27,17 @@ export {
   type ProviderFactory,
 } from './registry';
 export { createMockProvider, MOCK_CHAT_MODEL, MOCK_EMBED_MODEL } from './mock-provider';
+export {
+  createScenarioRuntime,
+  toolStateProbe,
+  scenarioRound,
+  DEFAULT_SCENARIO_TRIGGER,
+  type MockScenarioFile,
+  type MockScenarioCase,
+  type MockScenarioTurn,
+  type MockScenarioToolCall,
+  type MockScenarioRuntime,
+} from './mock-scenario';
 export { mockAgentProtocol } from './mock-agent-protocol';
 export { createOpenAiCompatibleAdapter } from './adapters/openai/adapter';
 export { openAiChatStream } from './adapters/openai/chat-stream';

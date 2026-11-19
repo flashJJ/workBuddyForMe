@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { extractMainContent, htmlToText } from './html-extractor';
+import {
+  extractMainContent,
+  extractPageOutline,
+  extractPageTitle,
+  htmlToText,
+} from './html-extractor';
 
 describe('html-extractor', () => {
   describe('htmlToText', () => {
@@ -55,6 +60,14 @@ describe('html-extractor', () => {
       expect(text).not.toContain('菜单');
     });
 
+    it('无 article/main 且段落充足时优先段落，避免推荐位混入', () => {
+      const paragraphs = `<p>${'这是一段真正的正文内容。'.repeat(30)}</p><p>第二段正文</p>`;
+      const html = `<body><div>推荐阅读 热门文章 广告位 相关链接</div>${paragraphs}</body>`;
+      const text = extractMainContent(html);
+      expect(text).toContain('第二段正文');
+      expect(text).not.toContain('推荐阅读');
+    });
+
     it('多个 article 块拼接（博客列表页）', () => {
       const html =
         '<body>' +
@@ -99,6 +112,19 @@ describe('html-extractor', () => {
       const text = extractMainContent(html);
       expect(text).toContain('散落文本');
       expect(text).toContain('另一段');
+    });
+  });
+
+  describe('v4.11 分层抓取辅助', () => {
+    it('抽取 h1–h3 作为提纲，按层级缩进并去重', () => {
+      const html =
+        '<body><h1>总标题</h1><h2>第一节</h2><h3>细节</h3><h1>总标题</h1><footer><h2>页脚</h2></footer></body>';
+      expect(extractPageOutline(html)).toEqual(['总标题', '  第一节', '    细节']);
+    });
+
+    it('页面标题去标签与实体', () => {
+      expect(extractPageTitle('<title>示例 &amp; 文档</title>')).toBe('示例 & 文档');
+      expect(extractPageTitle('<p>无标题</p>')).toBeNull();
     });
   });
 });

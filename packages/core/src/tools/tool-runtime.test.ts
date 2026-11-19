@@ -24,7 +24,7 @@ describe('工具运行时白名单', () => {
       assistantWith(['current_time', 'fetch_webpage']),
       true,
     );
-    expect([...map.keys()].sort()).toEqual(['current_time', 'fetch_webpage']);
+    expect([...map.keys()].sort()).toEqual(['current_time', 'fetch_webpage', 'read_fetched']);
   });
 
   it('模型不支持工具调用时一律返回空映射', () => {
@@ -60,7 +60,7 @@ describe('工具运行时白名单', () => {
     expect(typeof ctx.retrieve).toBe('function');
   });
 
-  it('listDebugTools 返回 26 个内置工具，每个含 source/permission/description/parameters', () => {
+  it('listDebugTools 返回 27 个内置工具，每个含 source/permission/description/parameters', () => {
     const list = runtime.listDebugTools();
     expect(list.map((t) => t.name).sort()).toEqual([
       'app_launch',
@@ -83,6 +83,7 @@ describe('工具运行时白名单', () => {
       'mouse_click',
       'mouse_move',
       'mouse_scroll',
+      'read_fetched',
       'screen_snapshot',
       'todo_write',
       'uia_list',
@@ -96,9 +97,9 @@ describe('工具运行时白名单', () => {
       expect(info.inputSchema).toBeTypeOf('object');
       expect(info.permissions.length).toBeGreaterThan(0);
     }
-    // fetch_webpage 标 danger；screen_snapshot 标 read
+    // fetch_webpage 与 web_search 同为 read；screen_snapshot 标 read
     const fetch = list.find((t) => t.name === 'fetch_webpage');
-    expect(fetch?.permissions).toEqual(['danger']);
+    expect(fetch?.permissions).toEqual(['read']);
     const snapshot = list.find((t) => t.name === 'screen_snapshot');
     expect(snapshot?.permissions).toEqual(['read']);
     // M2 键鼠 danger；窗口列举 read
@@ -267,5 +268,18 @@ describe('工具运行时第三来源：flow 工具（v0.8 M1）', () => {
     const map = runtimeWithFlow.buildTools(assistantWith(['flow:wf-123']), true);
     expect([...map.keys()]).toEqual(['flow:wf-123']);
     expect(toToolDefinitions([...map.values()])[0]?.function.name).toBe('flow:wf-123');
+  });
+
+  it('includeFlows=false（轻量回合）不下发已发布流程工具', () => {
+    const runtimeWithFlows = createToolRuntime({
+      ...deps,
+      flowToolLister: () => [flowTool],
+    });
+    const full = runtimeWithFlows.buildTools(assistantWith(['current_time']), true);
+    expect([...full.keys()].sort()).toEqual(['current_time', 'flow:wf-123']);
+    const lean = runtimeWithFlows.buildTools(assistantWith(['current_time']), true, {
+      includeFlows: false,
+    });
+    expect([...lean.keys()]).toEqual(['current_time']);
   });
 });

@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`工具契约快照 > 内置工具的权限/确认/必填参数与快照一致 1`] = `
+[
+  "app_launch|permission=danger|alwaysConfirm=false|required=target",
+  "artifact_write|permission=write|alwaysConfirm=false|required=title,filename,format,content",
+  "browser_click|permission=danger|alwaysConfirm=false|required=",
+  "browser_close|permission=read|alwaysConfirm=false|required=",
+  "browser_open|permission=danger|alwaysConfirm=false|required=url",
+  "browser_read|permission=read|alwaysConfirm=false|required=",
+  "browser_snapshot|permission=read|alwaysConfirm=false|required=",
+  "browser_type|permission=danger|alwaysConfirm=false|required=value",
+  "capability_install|permission=write|alwaysConfirm=true|required=catalogId",
+  "capability_list|permission=read|alwaysConfirm=false|required=",
+  "capability_search|permission=read|alwaysConfirm=false|required=query",
+  "current_time|permission=read|alwaysConfirm=false|required=",
+  "diagram_render|permission=write|alwaysConfirm=false|required=type,title,data",
+  "fetch_webpage|permission=read|alwaysConfirm=false|required=url",
+  "keyboard_press|permission=danger|alwaysConfirm=false|required=keys",
+  "keyboard_type|permission=danger|alwaysConfirm=false|required=text",
+  "knowledge_search|permission=read|alwaysConfirm=false|required=query",
+  "mouse_click|permission=danger|alwaysConfirm=false|required=x,y",
+  "mouse_move|permission=danger|alwaysConfirm=false|required=x,y",
+  "mouse_scroll|permission=danger|alwaysConfirm=false|required=",
+  "read_fetched|permission=read|alwaysConfirm=false|required=url",
+  "screen_snapshot|permission=read|alwaysConfirm=false|required=",
+  "todo_write|permission=read|alwaysConfirm=false|required=todos",
+  "uia_list|permission=read|alwaysConfirm=false|required=",
+  "web_search|permission=read|alwaysConfirm=false|required=query",
+  "window_focus|permission=read|alwaysConfirm=false|required=",
+  "window_list|permission=read|alwaysConfirm=false|required=",
+]
+`;

@@ -41,6 +41,16 @@ jobs:
       - name: 构建 Web（next build，供 E2E playwright 用 next start 启动）
         run: pnpm build:web
 
+      - name: 自动验收（Fake Web + 场景化 mock，离线全链路）
+        run: pnpm eval:acceptance
+        env:
+          WBFM_ACCEPTANCE_PORT: "42341"
+
+      - name: 多智能体协作回归（eval:agent，自动起 mock 服务）
+        run: pnpm eval:agent:server
+        env:
+          WBFM_EVAL_PORT: "42340"
+
       - name: 安装 Playwright Chromium 并执行 Web 关键路径 E2E
         run: |
           pnpm --filter @wbfm/web exec playwright install --with-deps chromium

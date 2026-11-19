@@ -1,0 +1,55 @@
+{
+  "triggerPrefix": "[scenario:",
+  "scenarios": {
+    "fetch-concurrent": {
+      "turns": [
+        {
+          "toolCalls": [
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/slow?ms=300&page=a" } },
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/slow?ms=300&page=b" } },
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/slow?ms=300&page=c" } }
+          ]
+        },
+        { "content": "抓取完成。观测：{{toolState}}" }
+      ]
+    },
+    "fetch-cache": {
+      "turns": [
+        {
+          "toolCalls": [
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/large?chars=40000" } }
+          ]
+        },
+        {
+          "toolCalls": [
+            { "name": "read_fetched", "args": { "url": "{{FIXTURE}}/large?chars=40000", "offset": 200 } }
+          ]
+        },
+        { "content": "续读完成。观测：{{toolState}}" }
+      ]
+    },
+    "fetch-fold": {
+      "turns": [
+        {
+          "toolCalls": [
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/large?chars=40000&page=1" } },
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/large?chars=40000&page=2" } },
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/large?chars=40000&page=3" } },
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/large?chars=40000&page=4" } },
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/large?chars=40000&page=5" } },
+            { "name": "fetch_webpage", "args": { "url": "{{FIXTURE}}/large?chars=40000&page=6" } }
+          ]
+        },
+        { "content": "折叠检查。观测：{{toolState}}" }
+      ]
+    },
+    "overflow-retry": {
+      "turns": [
+        {
+          "error": { "type": "context_overflow" },
+          "content": "溢出缩容后完成。观测：{{toolState}}"
+        }
+      ]
+    }
+  }
+}

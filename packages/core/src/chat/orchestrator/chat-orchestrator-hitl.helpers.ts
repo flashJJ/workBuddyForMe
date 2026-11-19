@@ -15,8 +15,8 @@ import { createSettingsService } from '../../services/settings/settings-service'
 import type { createPendingConfirmations } from '../../services/task/pending-confirmations';
 import type { OrchestratorEvent } from '../base/types';
 
-/** 触发 fetch_webpage（danger）工具调用；URL 用回环地址：SSRF 守卫同步拦截，工具执行零网络 */
-export function fetchToolCallSse(): string {
+/** 触发 artifact_write（write）工具调用；测试环境未装配产物服务，执行为零副作用失败结果 */
+export function dangerToolCallSse(): string {
   const head = {
     choices: [
       {
@@ -26,7 +26,7 @@ export function fetchToolCallSse(): string {
               index: 0,
               id: 'call-hitl',
               type: 'function',
-              function: { name: 'fetch_webpage', arguments: '' },
+              function: { name: 'artifact_write', arguments: '' },
             },
           ],
         },
@@ -37,7 +37,14 @@ export function fetchToolCallSse(): string {
     choices: [
       {
         delta: {
-          tool_calls: [{ index: 0, function: { arguments: '{"url":"http://127.0.0.1/"}' } }],
+          tool_calls: [
+            {
+              index: 0,
+              function: {
+                arguments: '{"title":"t","filename":"a.md","format":"md","content":"x"}',
+              },
+            },
+          ],
         },
         finish_reason: 'tool_calls',
       },
@@ -109,7 +116,7 @@ export function setupHitlFixture(): HitlFixture {
   createSettingsService({ db, cipher }).update({ defaultChatModelId: model.id });
   const assistants = createAssistantsService({ db, cipher });
   const assistant = assistants.list()[0]!;
-  assistants.update(assistant.id, { memoryEnabled: false, enabledTools: ['fetch_webpage'] });
+  assistants.update(assistant.id, { memoryEnabled: false, enabledTools: ['artifact_write'] });
   return { db, cipher, fetchMock, assistantId: assistant.id };
 }
 
@@ -122,7 +129,7 @@ export function teardownHitlFixture(db: DatabaseInstance): void {
 export function mockTwoRounds(fetchMock: ReturnType<typeof vi.fn>, finalText: string): void {
   fetchMock
     .mockImplementationOnce(
-      () => new Response(fetchToolCallSse(), { headers: { 'content-type': 'text/event-stream' } }),
+      () => new Response(dangerToolCallSse(), { headers: { 'content-type': 'text/event-stream' } }),
     )
     .mockImplementationOnce(
       () => new Response(answerSse(finalText), { headers: { 'content-type': 'text/event-stream' } }),

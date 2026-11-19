@@ -57,6 +57,10 @@ test.describe('M5 首启体验', () => {
   });
 
   test('演示模式：不填 Key 一键开启即可首答，徽标常显且可关闭无残留', async ({ page }) => {
+    // 本用例会触发向导/设置页/API 的首次编译；本机冷启动 dev server 时，
+    // 演示模式 PUT 可能排在路由编译后面 10s+。标记 slow 并放宽关键断言，
+    // 避免把 dev 编译延迟误判为产品失败（CI 用 next start，不受影响）。
+    test.slow();
     // 从首启态开始（复用旧 dev server 时也能确定性复现）
     await page.request.put('/api/settings', {
       data: { hasOnboarded: false, demoModeEnabled: false },
@@ -72,7 +76,7 @@ test.describe('M5 首启体验', () => {
     await page.getByTestId('ob-tab-demo').click();
     await expect(page.getByTestId('onboarding-demo')).toBeVisible();
     await page.getByTestId('ob-demo-enable').click();
-    await expect(page.getByTestId('ob-demo-ready')).toBeVisible();
+    await expect(page.getByTestId('ob-demo-ready')).toBeVisible({ timeout: 60_000 });
 
     // T5 首字延迟自检：演示模式（mock，无外网）应给出人话结论 + 「换一个来源」出口
     await expect(page.getByTestId('ob-latency-conclusion')).toContainText('预计首字约');
@@ -102,7 +106,7 @@ test.describe('M5 首启体验', () => {
     await expect(page.getByTestId('about-ttfv-value')).toContainText('首答用时');
     await expect(page.getByTestId('about-ttfv-model-ready')).not.toHaveText('—');
     await page.getByTestId('demo-mode-toggle').click();
-    await expect(page.getByTestId('demo-mode-on')).toBeHidden();
+    await expect(page.getByTestId('demo-mode-on')).toBeHidden({ timeout: 60_000 });
     await expect(page.getByTestId('demo-mode-badge')).toBeHidden();
 
     // 无残留：demo 供应商已删；demoModeEnabled=false 且默认对话模型已清空

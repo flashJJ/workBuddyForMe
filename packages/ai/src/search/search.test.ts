@@ -9,6 +9,7 @@ const SETTINGS = {
   timeoutMs: 5000,
   allowPrivateEndpoint: false,
   fetchMaxBytes: 8 * 1024 * 1024,
+  researchDepth: 'standard' as const,
 };
 
 describe('search providers', () => {

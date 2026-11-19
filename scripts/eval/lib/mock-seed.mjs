@@ -7,8 +7,10 @@ import { api } from './http.mjs';
 
 /**
  * @returns {Promise<{providerId:string, chatModelId:string, embedModelId:string, assistantId:string}>}
+ * @param {{chatContextWindow?:number|null}} [options] 验收场景可显式声明模型窗口，
+ *   使预算/折叠链路按真实窗口运行（缺省沿用 mock 的 null → 生效窗口回落 8K）
  */
-export async function ensureMockStack(baseUrl) {
+export async function ensureMockStack(baseUrl, options = {}) {
   // 供应商：已存在同名则复用
   const providers = await api(baseUrl, '/api/providers');
   let provider = providers.find((p) => p.name === 'eval-mock');
@@ -33,7 +35,13 @@ export async function ensureMockStack(baseUrl) {
     if (existing) return existing;
     const created = await api(baseUrl, `/api/providers/${provider.id}/models`, {
       method: 'POST',
-      body: JSON.stringify({ modelId, capabilities }),
+      body: JSON.stringify({
+        modelId,
+        capabilities,
+        ...(options.chatContextWindow && modelId === 'mock-chat'
+          ? { contextWindow: options.chatContextWindow }
+          : {}),
+      }),
     });
     byModelId.set(modelId, created);
     return created;

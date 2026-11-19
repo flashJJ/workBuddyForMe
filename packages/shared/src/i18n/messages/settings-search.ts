@@ -36,6 +36,12 @@ export const zhSettingsSearch = {
       '当前网络下候选搜索引擎均不可用，已保留全部引擎；网络恢复后重新部署即可自动收窄。',
     allowPrivate: '允许内网地址（仅自建 SearXNG）',
     maxResults: '每次结果数',
+    researchDepth: '检索深度',
+    depthFrugal: '节省（3 页 / 2 次搜索）',
+    depthStandard: '标准（6 页 / 4 次搜索）',
+    depthDeep: '深度（12 页 / 8 次搜索）',
+    researchDepthHint:
+      '深度越高，单轮可抓取的页面与工具结果 token 预算越大；模型窗口较小时会自动按比例收敛。超预算时优先压缩较早的网页正文，而不是拒绝新抓取。',
     fetchMaxKb: '单页抓取上限（KB）',
     fetchMaxHint:
       'fetch_webpage 单页读取上限，默认 8192KB（8MB），范围 200–16384KB；超出时只解析页面前部内容。',
@@ -89,6 +95,12 @@ export const enSettingsSearch = {
       'No candidate engines responded on this network; all engines stay enabled. Redeploy once the network recovers.',
     allowPrivate: 'Allow private network endpoint (self-hosted SearXNG only)',
     maxResults: 'Results per search',
+    researchDepth: 'Research depth',
+    depthFrugal: 'Frugal (3 pages / 2 searches)',
+    depthStandard: 'Standard (6 pages / 4 searches)',
+    depthDeep: 'Deep (12 pages / 8 searches)',
+    researchDepthHint:
+      'Higher depth allows more pages and a larger token budget for tool results per turn. Small context windows scale down automatically; when over budget, earlier page text is compressed instead of rejecting new fetches.',
     fetchMaxKb: 'Fetch limit per page (KB)',
     fetchMaxHint:
       'Max bytes read per page for fetch_webpage. Default 8192 KB (8 MB), range 200–16384 KB; larger pages are partially parsed.',

@@ -13,6 +13,15 @@ export class SsrfBlockedError extends Error {
   }
 }
 
+/**
+ * v4.11 P0：验收夹具专用放行开关。
+ * 只有测试/验收进程（scripts/acceptance）会设置；生产不设置时行为完全不变。
+ * 仅跳过私网/回环判定，协议白名单与逐跳重定向复检仍然生效。
+ */
+export function isPrivateFetchAllowed(): boolean {
+  return process.env.WBFM_FETCH_ALLOW_PRIVATE === '1';
+}
+
 /** 把 IPv4 点分字符串转为无符号 32 位整数；非法返回 null */
 export function ipv4ToInt(ip: string): number | null {
   const parts = ip.split('.');
@@ -145,6 +154,7 @@ export function assertSafeUrlLiteral(urlString: string): URL {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new SsrfBlockedError(`仅允许 http/https 协议：${url.protocol}`);
   }
+  if (isPrivateFetchAllowed()) return url;
   const host = url.hostname.replace(/^\[|\]$/g, '');
   const ipCheck = isBlockedIp(host);
   // 字面量能被解析为合法 IP 且未拦截才放行；解析失败说明是域名，交给 DNS 阶段
@@ -156,6 +166,7 @@ export function assertSafeUrlLiteral(urlString: string): URL {
 
 /** DNS 解析域名并断言所有解析结果均为公网地址（防 DNS rebinding 的解析时校验） */
 export async function resolveAndAssertHost(hostname: string): Promise<void> {
+  if (isPrivateFetchAllowed()) return;
   const records = await dns.lookup(hostname, { all: true });
   if (records.length === 0) throw new SsrfBlockedError(`域名解析无结果：${hostname}`);
   for (const record of records) {

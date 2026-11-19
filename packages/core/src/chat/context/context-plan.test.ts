@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TurnIntent } from '@wbfm/shared/schemas';
-import { buildContextPlan, hasEvidenceCap, splitMiddleQuota } from './context-plan';
+import { buildContextPlan, hasEvidenceCap, isLeanTurn, splitMiddleQuota } from './context-plan';
 
 function intent(over: Partial<TurnIntent> = {}): TurnIntent {
   return {
@@ -50,5 +50,24 @@ describe('buildContextPlan（v4.8 意图配额）', () => {
     const split = splitMiddleQuota(0.35);
     expect(split.summary + split.facts).toBeCloseTo(0.35);
     expect(split.summary).toBeGreaterThan(split.facts);
+  });
+});
+
+describe('isLeanTurn（轻量回合裁剪）', () => {
+  it('高置信度寒暄/澄清走轻量回合', () => {
+    expect(isLeanTurn(intent({ kind: 'chitchat', confidence: 0.8 }))).toBe(true);
+    expect(isLeanTurn(intent({ kind: 'clarify', confidence: 0.8 }))).toBe(true);
+  });
+
+  it('低置信度回落不裁剪（避免误判丢能力）', () => {
+    expect(
+      isLeanTurn(intent({ kind: 'chitchat', source: 'fallback', confidence: 0.3 })),
+    ).toBe(false);
+  });
+
+  it('知识问答/工具任务等不裁剪', () => {
+    expect(isLeanTurn(intent({ kind: 'knowledge', confidence: 0.9 }))).toBe(false);
+    expect(isLeanTurn(intent({ kind: 'tool_task', confidence: 0.9 }))).toBe(false);
+    expect(isLeanTurn(intent({ kind: 'follow_up', confidence: 0.9 }))).toBe(false);
   });
 });

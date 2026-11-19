@@ -156,3 +156,37 @@ export const TOOL_BREAKER_COOLDOWN_MS = 5 * 60_000;
 export const WEB_FETCH_MAX_BYTES_DEFAULT = 8 * 1024 * 1024;
 export const WEB_FETCH_MAX_BYTES_MIN = 200 * 1024;
 export const WEB_FETCH_MAX_BYTES_MAX = 16 * 1024 * 1024;
+
+/**
+ * v4.11 联网检索深度：工具结果预算按模型窗口比例缩放，档位决定比例与页数上限。
+ * 不再使用固定字符数当闸门——那与模型容量、真实 token 成本脱钩。
+ */
+export const RESEARCH_DEPTH_MODES = ['frugal', 'standard', 'deep'] as const;
+export type ResearchDepth = (typeof RESEARCH_DEPTH_MODES)[number];
+export const RESEARCH_DEPTH_DEFAULT: ResearchDepth = 'standard';
+
+export interface ResearchDepthPreset {
+  /** 工具结果总预算占可用窗口（contextWindow × 0.9）的比例 */
+  toolResultRatio: number;
+  maxWebSearch: number;
+  maxFetch: number;
+  /** 单页输出字符上限（首块） */
+  perPageChars: number;
+}
+
+export const RESEARCH_DEPTH_PRESETS: Record<ResearchDepth, ResearchDepthPreset> = {
+  frugal: { toolResultRatio: 0.08, maxWebSearch: 2, maxFetch: 3, perPageChars: 8_000 },
+  standard: { toolResultRatio: 0.15, maxWebSearch: 4, maxFetch: 6, perPageChars: 12_000 },
+  deep: { toolResultRatio: 0.3, maxWebSearch: 8, maxFetch: 12, perPageChars: 16_000 },
+};
+
+/** 工具结果 token 预算绝对上限：1M 窗口下也不无限放大成本 */
+export const TOOL_RESULT_TOKEN_CAP = 200_000;
+/** 硬保险丝倍数：累计超过预算 ×3 才拒绝新的联网调用（防护 MCP 巨量输出） */
+export const TOOL_RESULT_HARD_MULTIPLIER = 3;
+
+/** 回合级网页缓存上限：单页字符数与页数（LRU） */
+export const WEB_PAGE_CACHE_MAX_CHARS = 200_000;
+export const WEB_PAGE_CACHE_MAX_PAGES = 12;
+/** 分层抓取首块默认字符数（未配置档位时） */
+export const WEB_FETCH_FIRST_CHUNK_CHARS = 8_000;

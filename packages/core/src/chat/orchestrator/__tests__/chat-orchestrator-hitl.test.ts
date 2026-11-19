@@ -44,7 +44,7 @@ describe('HITL 工具确认：拒绝路径（v0.6 M2）', () => {
     ]);
     expect(events[1]).toMatchObject({
       event: 'tool_confirmation_required',
-      data: { callId: 'call-hitl', tool: 'fetch_webpage', permission: 'danger' },
+      data: { callId: 'call-hitl', tool: 'artifact_write', permission: 'write' },
     });
     expect(events[2]).toMatchObject({
       event: 'tool',

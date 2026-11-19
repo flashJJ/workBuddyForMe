@@ -9,6 +9,8 @@ import {
   WEB_FETCH_MAX_BYTES_MIN,
   WEB_FETCH_MAX_BYTES_MAX,
   WEB_FETCH_MAX_BYTES_DEFAULT,
+  RESEARCH_DEPTH_MODES,
+  RESEARCH_DEPTH_DEFAULT,
 } from '@wbfm/shared/constants';
 import type { SearchSettings } from '@wbfm/shared/types';
 
@@ -44,6 +46,11 @@ export function resolveSearchSettings(value: unknown): SearchSettings {
             WEB_FETCH_MAX_BYTES_MAX,
           )
         : WEB_FETCH_MAX_BYTES_DEFAULT,
+    researchDepth:
+      typeof raw.researchDepth === 'string' &&
+      (RESEARCH_DEPTH_MODES as readonly string[]).includes(raw.researchDepth)
+        ? (raw.researchDepth as SearchSettings['researchDepth'])
+        : RESEARCH_DEPTH_DEFAULT,
   };
 }
 

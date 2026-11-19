@@ -1,7 +1,6 @@
 import {
   CONTEXT_BUDGET_SAFETY_RATIO,
   CONTEXT_PREFLIGHT_TRIGGER_RATIO,
-  DEFAULT_CONTEXT_TOKEN_BUDGET,
   HISTORY_MESSAGE_SAFETY_CAP,
 } from '@wbfm/shared/constants';
 import type { Assistant, Conversation } from '@wbfm/shared/types';
@@ -11,6 +10,7 @@ import type { ServiceDeps } from '../../services/base/deps';
 import type { AttachmentService } from '../../services/assistant/attachment-service';
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import type { ResolvedChatTarget } from './model-resolver';
+import { resolveEffectiveContextWindow } from './window/effective-window';
 import { estimateTokens } from './context-budget';
 import { resolvePreflightTrigger } from './preflight-trigger';
 import { runPostTurnCompaction } from './turn-context';
@@ -51,9 +51,8 @@ export async function maybePreflightCompact(
 
   let active = params.conversation;
   let historyEstimate = estimate(active.summaryTurns);
-  const usableWindow = Math.floor(
-    (target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET) * CONTEXT_BUDGET_SAFETY_RATIO,
-  );
+  const effectiveWindow = resolveEffectiveContextWindow(target.model).effective;
+  const usableWindow = Math.floor(effectiveWindow * CONTEXT_BUDGET_SAFETY_RATIO);
   if (
     params.enabled &&
     intent.kind !== 'chitchat' &&
@@ -74,7 +73,7 @@ export async function maybePreflightCompact(
       trigger: resolvePreflightTrigger(
         deps.events,
         conversationId,
-        target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+        effectiveWindow,
       ),
     });
     active = conversations.get(conversationId);

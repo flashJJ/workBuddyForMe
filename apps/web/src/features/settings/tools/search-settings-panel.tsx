@@ -30,6 +30,7 @@ const FALLBACK: SearchSettings = {
   timeoutMs: 10_000,
   allowPrivateEndpoint: false,
   fetchMaxBytes: WEB_FETCH_MAX_BYTES_DEFAULT,
+  researchDepth: 'standard',
 };
 
 type KeyProvider = 'brave' | 'tavily';
@@ -157,7 +158,17 @@ export function SearchSettingsPanel() {
             />
           </label>
         )}
+
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          {t('settings.search.researchDepth')}
+          <SimpleSelect value={form.researchDepth} onValueChange={(value) => setForm((prev) => ({ ...prev, researchDepth: value as SearchSettings['researchDepth'] }))}>
+            <option value="frugal">{t('settings.search.depthFrugal')}</option>
+            <option value="standard">{t('settings.search.depthStandard')}</option>
+            <option value="deep">{t('settings.search.depthDeep')}</option>
+          </SimpleSelect>
+        </label>
       </div>
+      <p className="text-xs text-muted-foreground">{t('settings.search.researchDepthHint')}</p>
 
       <div className="space-y-1">
         <label className="flex items-center gap-2 text-xs text-muted-foreground">

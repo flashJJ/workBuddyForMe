@@ -111,6 +111,8 @@ describe('settings / assistants 服务（TR-13.1）', () => {
         allowPrivateEndpoint: false,
         // 单页抓取默认 8MB
         fetchMaxBytes: 8_388_608,
+        // v4.11：检索深度默认标准档
+        researchDepth: 'standard',
       },
       // v2.28：审计事件默认保留 90 天
       memoryEventRetentionDays: 90,

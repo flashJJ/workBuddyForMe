@@ -9,7 +9,16 @@ import type { ToolRuntime } from '../../tools/tool-runtime';
 import type { RetrievalService } from '../../retrieval/retrieval-service';
 import type { WorkflowRunRepository } from '@wbfm/database';
 import { executeToolCall } from '../../tools/tool-executor';
+import {
+  createToolTurnBudget,
+  recordToolBudgetUsage,
+  toolBudgetExceeded,
+} from '../../tools/budget/turn-budget';
 import { resolveChatTargetForModelId } from '../../chat/context/model-resolver';
+import { resolveEffectiveContextWindow } from '../../chat/context/window/effective-window';
+import { createSettingsService } from '../../services/settings/settings-service';
+import { DEFAULT_CONTEXT_TOKEN_BUDGET, RESEARCH_DEPTH_DEFAULT, type ResearchDepth } from '@wbfm/shared/constants';
+import type { CachedWebPage } from '../../tools/types';
 import type { AgentRunService } from '../../agents/index';
 import type { CompiledFlow, FlowExecutionContext } from '../graph/types';
 import { runFlow } from '../engine/engine';
@@ -59,6 +68,23 @@ export interface FlowExecutor {
 const humanKey = (runId: string, nodeId: string) => `${runId}:human:${nodeId}`;
 const toolKey = (runId: string, nodeId: string) => `${runId}:tool:${nodeId}`;
 
+/** v4.11：流程内工具预算同样按默认对话模型的窗口与检索深度解析 */
+function resolveFlowBudgetScope(deps: ServiceDeps): { contextWindow: number; depth: ResearchDepth } {
+  let contextWindow = DEFAULT_CONTEXT_TOKEN_BUDGET;
+  try {
+    contextWindow = resolveEffectiveContextWindow(resolveChatTargetForModelId(deps, null).model).effective;
+  } catch {
+    // 未配置默认模型：用兜底窗口
+  }
+  let depth: ResearchDepth = RESEARCH_DEPTH_DEFAULT;
+  try {
+    depth = createSettingsService(deps).get().searchSettings?.researchDepth ?? RESEARCH_DEPTH_DEFAULT;
+  } catch {
+    // 设置不可读：标准档
+  }
+  return { contextWindow, depth };
+}
+
 export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor {
   const { deps, runtime, runs, waiters, retrieval, active, agentRuns } = executorDeps;
 
@@ -73,10 +99,15 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
     runs.startRun(runId);
 
     let hasBaselineSnapshot = false;
+    // v4.11：流程内工具同样受单次运行的联网预算约束（对话里常把整条流程当一个工具调用）
+    const scope = resolveFlowBudgetScope(deps);
+    const toolBudget = createToolTurnBudget(scope.contextWindow, scope.depth);
     const toolContext = {
       signal,
       knowledgeBaseIds: [] as string[],
       visionCapable: false,
+      // v4.11：流程运行内共享网页缓存，read_fetched 可续读
+      webCache: new Map<string, CachedWebPage>(),
       retrieve: (query: string, topK: number) =>
         retrieval.retrieveMany({ knowledgeBaseIds: [], query, topK }),
     };
@@ -107,7 +138,14 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
         retrieve: (query, knowledgeBaseId, topK) =>
           retrieval.retrieve({ knowledgeBaseId, query, topK }),
         resolveTool: async (name) => runtime.resolveTool(name)?.tool ?? null,
-        executeTool: (tool, args) => executeToolCall(tool, args, toolContext),
+        executeTool: (tool, args) => {
+          const denial = toolBudgetExceeded(toolBudget, tool.name);
+          if (denial) return Promise.resolve(denial);
+          return executeToolCall(tool, args, toolContext).then((result) => {
+            recordToolBudgetUsage(toolBudget, result.output);
+            return result;
+          });
+        },
         // v0.9：api/mcp 用创建 run 时固化的端点策略快照裁决（纯函数，不读 DB/不挂起）
         ...(unattendedPolicy
           ? {

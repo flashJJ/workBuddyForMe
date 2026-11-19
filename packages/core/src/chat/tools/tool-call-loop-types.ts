@@ -1,5 +1,6 @@
 import type { ChatMessage, ToolCall, TraceHandle } from '@wbfm/ai';
 import type { Citation, ToolTraceEntry } from '@wbfm/shared/types';
+import type { ResearchDepth } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../../services/base/deps';
 import type { ToolContext, ToolMap } from '../../tools/types';
 import type { ToolRuntime } from '../../tools/tool-runtime';
@@ -26,6 +27,9 @@ export interface ToolCallLoopParams {
   signal?: AbortSignal;
   /** v1.1：每条工具消息的入模 token 预算（context-budget 装配时下发） */
   toolMessageBudgetTokens: number;
+  /** v4.11：本轮生效窗口与检索深度（决定工具结果 token 预算与页数上限） */
+  contextWindow?: number;
+  researchDepth?: ResearchDepth;
   /**
    * v2.27：本轮 fetch_webpage 各 URL 的连续失败计数（跨工具轮共享，由编排器创建）。
    * 缺省时仅在本次循环内计数。

@@ -3,6 +3,7 @@ import { DEMO_PROVIDER_ID } from '@wbfm/shared/constants';
 import { createMockProvider, createProvider, ProviderError, type ChatProvider } from '@wbfm/ai';
 import type { DatabaseInstance, ProviderRecord } from '@wbfm/database';
 import type { SecretCipher } from '../../secrets/cipher';
+import { loadMockScenarioFromEnv } from './mock-scenario-loader';
 
 /**
  * 取出供应商记录并解密 Key 到内存，构造可用适配器。
@@ -14,7 +15,8 @@ export function buildProvider(
   provider: ProviderRecord,
 ): ChatProvider {
   if (process.env.WBFM_MOCK_AI === '1' || provider.id === DEMO_PROVIDER_ID) {
-    return createMockProvider();
+    const scenario = loadMockScenarioFromEnv();
+    return createMockProvider(scenario ? { scenario } : {});
   }
   const row = db
     .prepare(`SELECT api_key_cipher FROM providers WHERE id = ?`)

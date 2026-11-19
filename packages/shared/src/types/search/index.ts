@@ -1,4 +1,4 @@
-import type { SearchProviderKind } from '../../constants';
+import type { ResearchDepth, SearchProviderKind } from '../../constants';
 
 /** v2.17：联网搜索设置（settings JSON 持久化；P0 无 Key，先支持 SearXNG / mock） */
 export interface SearchSettings {
@@ -11,6 +11,8 @@ export interface SearchSettings {
   allowPrivateEndpoint: boolean;
   /** 单页抓取字节上限（fetch_webpage 与网页剪藏共用），默认 2MB */
   fetchMaxBytes: number;
+  /** v4.11：检索深度（决定单轮抓取页数与工具结果 token 预算） */
+  researchDepth: ResearchDepth;
 }
 
 export interface WebSearchInput {

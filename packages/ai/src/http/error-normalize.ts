@@ -20,8 +20,16 @@ export function extractErrorMessage(bodyText: string): string | undefined {
 /** 上游上下文窗口超限的错误特征（Ollama/本地服务常见） */
 const CONTEXT_OVERFLOW_RE = /exceed(?:s|_)?_?(?:the_)?context|context size|maximum context|context_length_exceeded/i;
 
-/** 非 2xx 响应归一化为 ProviderError（4xx 不重试，5xx 可重试） */
-export function normalizeHttpError(status: number, bodyText: string, scope: string): ProviderError {
+/** 是否为上下文窗口超限错误（供上层自动缩上下文后重试一次） */
+export function isContextOverflowError(error: unknown): boolean {
+  if (error instanceof ProviderError) {
+    return CONTEXT_OVERFLOW_RE.test(`${error.providerMessage ?? ''} ${error.message}`);
+  }
+  if (error instanceof Error) return CONTEXT_OVERFLOW_RE.test(error.message);
+  return false;
+}
+
+/** 非 2xx 响应归一化为 ProviderError（4xx 不重试，5xx 可重试） */export function normalizeHttpError(status: number, bodyText: string, scope: string): ProviderError {
   const providerMessage = extractErrorMessage(bodyText);
   const retriable = status >= 500 && status < 600;
   const overflowHint =

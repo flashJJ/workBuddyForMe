@@ -11,6 +11,7 @@ import { sleep } from './http/backoff';
 import { mockAgentProtocol } from './mock-agent-protocol';
 import { mockMeetingConclusion } from './mock-meeting-conclusion';
 import { mockMeetingProtocol } from './mock-meeting-protocol';
+import { createScenarioRuntime, type MockScenarioFile } from './mock-scenario';
 
 /** mock 向量维度：64 维多热编码，共享 token 的文本相似度高，足以驱动真实 top-k 检索 */
 const EMBED_DIMENSION = 64;
@@ -129,7 +130,8 @@ function toolCallChunk(call: ToolCall): ChatChunk {
  * chatStream 回显用户问题/参考资料，embed 用确定性伪语义向量驱动真实检索链路；
  * supportsTools=true：时间类提问且授权了 current_time 时，走一次完整工具循环。
  */
-export function createMockProvider(): ChatProvider {
+export function createMockProvider(options: { scenario?: MockScenarioFile } = {}): ChatProvider {
+  const scenario = options.scenario ? createScenarioRuntime(options.scenario) : null;
   return {
     supportsTools: true,
 
@@ -150,6 +152,9 @@ export function createMockProvider(): ChatProvider {
       const userText = messageText(user?.content ?? '');
       const imageCount = countImages(user?.content ?? '');
       const reference = extractReference(messageText(system?.content ?? ''));
+
+      // v4.11 P0：场景脚本（[scenario:名称]）优先于其它剧本，未命中时返回 false 继续
+      if (scenario && (yield* scenario.reply(params, userText))) return;
 
       // v1.4 M5：多智能体角色协议（planner/reviewer/executor 决策器）确定性 JSON 回放
       const agentReply = mockAgentProtocol({ messages: params.messages });

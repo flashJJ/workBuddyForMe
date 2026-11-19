@@ -20,6 +20,7 @@ import {
   type HistoryBudgetStats,
 } from './context-budget';
 import type { ResolvedChatTarget } from './model-resolver';
+import { resolveEffectiveContextWindow } from './window/effective-window';
 import { buildImageMap } from './multimodal';
 import { toAiContent } from './multimodal';
 import { planCompaction, summarizeConversationStructured } from './summarizer';
@@ -154,14 +155,15 @@ export async function compactIfNeeded(params: CompactionParams): Promise<Compact
     (message): ChatMessage => ({ role: message.role, content: toAiContent(message, imageMap) }),
   );
 
+  const effectiveWindow = resolveEffectiveContextWindow(target.model).effective;
   const plan = planCompaction({
     history: mapped,
-    contextWindow: target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+    contextWindow: effectiveWindow,
     personaTokens: estimateTokens(assistant.systemPrompt),
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
     reserveTokens: resolveReserveTokens(
       params.lastCompletionTokens,
-      target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+      effectiveWindow,
     ),
     memoryEnabled: assistant.memoryEnabled,
     force: params.force,

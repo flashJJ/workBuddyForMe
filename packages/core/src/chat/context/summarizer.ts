@@ -3,7 +3,6 @@ import {
   COMPACTION_MIN_KEEP_MESSAGES,
   COMPACTION_TRIGGER_RATIO,
   CONTEXT_QUOTA_HISTORY,
-  DEFAULT_CONTEXT_TOKEN_BUDGET,
   MEMORY_BLOCK_RESERVE_TOKENS,
   SMALL_CONTEXT_WINDOW_TOKENS,
   SUMMARY_BLOCK_RESERVE_TOKENS,
@@ -22,6 +21,7 @@ import {
   collectSourceSnippets,
 } from './summary-fidelity';
 import type { ResolvedChatTarget } from './model-resolver';
+import { resolveEffectiveContextWindow } from './window/effective-window';
 
 export interface CompactionPlanInput {
   /** 未折叠历史（时间正序，含刚完成的本轮回答），已映射为 ChatMessage */
@@ -205,7 +205,7 @@ async function requestPlainSummary(
 export async function summarizeConversationStructured(
   input: SummarizeInput,
 ): Promise<StructuredSummary> {
-  const window = input.target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET;
+  const window = resolveEffectiveContextWindow(input.target.model).effective;
   if (window < SMALL_CONTEXT_WINDOW_TOKENS) {
     const summary = await requestPlainSummary(input, 'conversation_summarize_plain');
     return {

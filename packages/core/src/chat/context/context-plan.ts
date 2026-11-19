@@ -52,6 +52,18 @@ export function hasEvidenceCap(plan: ContextPlan | null | undefined): boolean {
   return plan != null && plan.quotas.evidence < 1;
 }
 
+/** 轻量回合阈值：高置信度的寒暄/澄清不需要技能提示词与已发布工作流声明 */
+export const LEAN_INTENT_MIN_CONFIDENCE = 0.7;
+
+/**
+ * 轻量回合判定：只裁剪「注入型内容」（技能提示词 + 已发布流程工具声明），
+ * 不减少检索、记忆召回与助手显式启用的工具——避免误判导致能力缺失。
+ */
+export function isLeanTurn(intent: TurnIntent): boolean {
+  if (intent.confidence < LEAN_INTENT_MIN_CONFIDENCE) return false;
+  return intent.kind === 'chitchat' || intent.kind === 'clarify';
+}
+
 /** 中段配额拆分：摘要约 71%，结构化事实约 29%（与旧 25/10 同源） */
 export function splitMiddleQuota(middle: number): { summary: number; facts: number } {
   return { summary: middle * 0.71, facts: middle * 0.29 };

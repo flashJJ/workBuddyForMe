@@ -1,271 +1,155 @@
-import { traceAsync } from '@wbfm/ai';
-import type { ToolSubstep } from '@wbfm/shared/types';
-import { createAttachmentService } from '../../services/assistant/attachment-service';
-import type { ToolContext, ToolResult } from '../../tools/types';
-import { executeCall, summarizeArgs } from '../../tools/tool-executor';
-import { compactToolOutput, normalizeToolSource } from '../../tools/tool-result-compact';
-import { gateToolPermission } from './tool-permission-gate';
-import {
-  FETCH_DEGRADE_THRESHOLD,
-  degradedFetchResult,
-  fetchUrlOf,
-  shouldCountBreakerFailure,
-  shouldDegradeFetch,
-} from './fetch-degrade';
-import { mergeCitations, safeParseArgs, unknownToolResult } from '../orchestrator/orchestrator-helpers';
+import { traceAsync, type ToolCall } from '@wbfm/ai';
+import type { Citation, ToolSubstep } from '@wbfm/shared/types';
+import type { ToolContext } from '../../tools/types';
+import { executeCall } from '../../tools/tool-executor';
+import { createToolTurnBudget, type ToolTurnBudget } from '../../tools/budget/turn-budget';
 import { createSubstepQueue } from '../turns/substep-queue';
 import type { OrchestratorEvent } from '../base/types';
 import type { ToolCallLoopOutcome, ToolCallLoopParams } from './tool-call-loop-types';
+import { takeParallelRun } from './loop/parallel-batch';
 import {
-  buildBreakerTripOutput,
-  buildToolEndData,
-  buildToolTraceEntry,
-  snapshotSubsteps,
-} from './tool-call-loop-events';
+  finalizeToolCall,
+  prepareToolCall,
+  type ReadyToolCall,
+  type ToolStepContext,
+} from './loop/tool-call-step';
 
 export type { ToolCallLoopOutcome, ToolCallLoopParams } from './tool-call-loop-types';
 
 /**
+ * 单轮预算挂在 toolCtx 上：toolCtx 每轮对话创建一次，跨多个工具轮次共享，
+ * 轮次结束随对象一起回收（WeakMap 不阻止 GC）。
+ */
+const turnBudgets = new WeakMap<ToolContext, ToolTurnBudget>();
+
+type StepOutcome = { aborted: boolean; citations: Citation[] };
+
+/** 单次调用：门控 → 执行（含 flow 子步骤流）→ 收尾 */
+async function* runSingleCall(
+  ctx: ToolStepContext,
+  call: ToolCall,
+  citations: Citation[],
+): AsyncGenerator<OrchestratorEvent, StepOutcome> {
+  const prepared = yield* prepareToolCall(ctx, call);
+  if (prepared.kind !== 'ready') return { aborted: prepared.kind === 'abort', citations };
+  if (prepared.immediate) {
+    return yield* finalizeToolCall({ ...ctx, prepared, result: prepared.immediate, substeps: [], citations });
+  }
+
+  // v0.8：flow 工具执行中逐节点推进子步骤，经队列转成 tool/substep SSE 事件。
+  // 入队的是回调时刻的快照（run 内可能同步连发多条，避免 yield 时数组已被整体推进）。
+  const substeps: ToolSubstep[] = [];
+  const queue = createSubstepQueue<ToolSubstep[]>();
+  const callToolCtx: ToolContext = {
+    ...ctx.toolCtx,
+    onSubstep: (substep) => {
+      const index = substeps.findIndex((item) => item.id === substep.id);
+      if (index >= 0) substeps[index] = substep;
+      else substeps.push(substep);
+      queue.push([...substeps]);
+    },
+  };
+  const execution = traceAsync(
+    {
+      name: `tool:${prepared.call.function.name}`,
+      runType: 'tool',
+      parent: ctx.turnTrace,
+      inputs: { callId: prepared.call.id, arguments: prepared.args, argsSummary: prepared.argsSummary },
+      metadata: { tool: prepared.call.function.name, source: prepared.source, permission: prepared.permission },
+    },
+    () => executeCall(prepared.tool!, prepared.call, callToolCtx),
+    (value) => ({ ok: value.ok, summary: value.summary, durationMs: Date.now() - prepared.startedAt }),
+  ).finally(() => queue.close());
+
+  for (;;) {
+    const item = await queue.next();
+    if (item.done) break;
+    yield { event: 'tool', data: { phase: 'substep', callId: prepared.call.id, substeps: item.value } };
+  }
+  const result = await execution;
+  return yield* finalizeToolCall({ ...ctx, prepared, result, substeps, citations });
+}
+
+/** 同轮联网批量：逐个门控后并发执行，再按原顺序收尾回灌（模型看到的顺序不变） */
+async function* runParallelBatch(
+  ctx: ToolStepContext,
+  run: ToolCall[],
+  citations: Citation[],
+): AsyncGenerator<OrchestratorEvent, StepOutcome> {
+  const ready: ReadyToolCall[] = [];
+  for (const call of run) {
+    const prepared = yield* prepareToolCall(ctx, call);
+    if (prepared.kind === 'abort') return { aborted: true, citations };
+    if (prepared.kind === 'ready') ready.push(prepared);
+  }
+  const results = await Promise.all(
+    ready.map((prepared) =>
+      prepared.immediate
+        ? Promise.resolve(prepared.immediate)
+        : executeCall(prepared.tool!, prepared.call, ctx.toolCtx),
+    ),
+  );
+  for (let index = 0; index < ready.length; index += 1) {
+    const outcome = yield* finalizeToolCall({
+      ...ctx,
+      prepared: ready[index]!,
+      result: results[index]!,
+      substeps: [],
+      citations,
+    });
+    citations = outcome.citations;
+    if (outcome.aborted) return { aborted: true, citations };
+  }
+  return { aborted: false, citations };
+}
+
+/**
  * 单轮工具调用循环：权限门控（HITL）→ 执行 → 追踪/事件 → 回灌出站消息。
+ * 同一轮内连续的联网只读调用并发执行（最多 3 个），其余仍按顺序执行。
  * 中断时在首个 await 后同步收尾（onAbort），已产出片段不丢。
  */
 export async function* runToolCallLoop(
   params: ToolCallLoopParams,
 ): AsyncGenerator<OrchestratorEvent, ToolCallLoopOutcome> {
-  const {
-    calls,
-    toolMap,
-    toolCtx,
-    deps,
-    runtime,
-    assistantId,
-    turnTrace,
-    trace,
-    outgoing,
-    signal,
-    onAbort,
-  } = params;
+  const budget = turnBudgets.get(params.toolCtx) ?? createToolTurnBudget(
+    params.contextWindow,
+    params.researchDepth,
+  );
+  turnBudgets.set(params.toolCtx, budget);
+
+  const ctx: ToolStepContext = {
+    toolCtx: params.toolCtx,
+    toolMap: params.toolMap,
+    deps: params.deps,
+    runtime: params.runtime,
+    assistantId: params.assistantId,
+    turnTrace: params.turnTrace,
+    trace: params.trace,
+    outgoing: params.outgoing,
+    toolMessageBudgetTokens: params.toolMessageBudgetTokens,
+    fetchFailures: params.fetchFailures ?? new Map<string, number>(),
+    degradedFetchUrls: [],
+    budget,
+    ...(params.signal ? { signal: params.signal } : {}),
+    ...(params.taskScope ? { taskScope: params.taskScope } : {}),
+    ...(params.approvalContext ? { approvalContext: params.approvalContext } : {}),
+  };
+
   let citations = params.citations;
-  const fetchFailures = params.fetchFailures ?? new Map<string, number>();
-  const degradedFetchUrls: string[] = [];
-
-  for (const call of calls) {
-    const name = call.function.name;
-    const parsedArgs = safeParseArgs(call);
-    const argsSummary = summarizeArgs(name, parsedArgs);
-    // v2.30：能力安装审批带上目录快照（来源/版本/effects/新增工具）
-    const confirmationDetails = (() => {
-      if (name !== 'capability_install' || !toolCtx.listCapabilities) return undefined;
-      const catalogId = (parsedArgs as { catalogId?: unknown }).catalogId;
-      if (typeof catalogId !== 'string') return undefined;
-      const item = toolCtx.listCapabilities().find((candidate) => candidate.id === catalogId);
-      if (!item) return undefined;
-      return {
-        catalogId: item.id,
-        name: item.name,
-        kind: item.kind,
-        version: item.version,
-        source: item.source,
-        installStrategy: item.installStrategy,
-        ...(item.signatureStatus ? { signatureStatus: item.signatureStatus } : {}),
-        permissions: item.permissions,
-        effects: item.effects,
-        toolNames: item.toolNames,
-      };
-    })();
-    // v2.27：同一链接连续失败达上限后，本轮后续调用直接跳过，不再发网络请求
-    const fetchUrl = name === 'fetch_webpage' ? fetchUrlOf(parsedArgs) : null;
-    const skipFetch =
-      fetchUrl !== null && (fetchFailures.get(fetchUrl) ?? 0) >= FETCH_DEGRADE_THRESHOLD;
-    const tool = toolMap.get(name);
-    // v0.6 M4：解析来源与权限（toolMap 可能不含该工具——未知工具名走 unknownToolResult）
-    const resolved = runtime.resolveTool(name);
-    const source = resolved?.source ?? 'unknown';
-    const permission = resolved?.tool.permission ?? 'read';
-
-    // v0.6 M2 权限门控：write/danger 未授权时 HITL 挂起-恢复或拒绝
-    const gate = yield* gateToolPermission({
-      deps,
-      tool,
-      toolName: name,
-      callId: call.id,
-      argsSummary,
-      args: parsedArgs,
-      assistantId,
-      taskScope: params.taskScope,
-      signal,
-      source,
-      permission,
-      ...(confirmationDetails ? { details: confirmationDetails } : {}),
-      ...(params.approvalContext ? { approvalContext: params.approvalContext } : {}),
-    });
-    if (gate.denied) {
-      trace.push(gate.traceEntry!);
-      outgoing.push(gate.toolMessage!);
-      if (signal?.aborted) {
-        onAbort();
-        return { aborted: true, citations, degradedFetchUrls };
-      }
-      continue; // 跳过本次工具调用，继续下一个 call
+  let index = 0;
+  while (index < params.calls.length) {
+    const run = takeParallelRun(params.calls, index);
+    const outcome =
+      run.length > 0
+        ? yield* runParallelBatch(ctx, run, citations)
+        : yield* runSingleCall(ctx, params.calls[index]!, citations);
+    citations = outcome.citations;
+    if (outcome.aborted) {
+      params.onAbort();
+      return { aborted: true, citations, degradedFetchUrls: ctx.degradedFetchUrls };
     }
-    // 放行（含 read 工具与已授权 write/danger）：落到下方正常执行路径
-
-    // v0.6 M4 熔断检查：连续失败的工具短期跳过执行，cooldown 到期自动半开重试
-    const breaker = deps.breakers;
-    if (breaker?.isTripped(name)) {
-      const tripped = buildBreakerTripOutput({ call, name, argsSummary, source, permission });
-      trace.push(tripped.traceEntry);
-      yield { event: 'tool', data: tripped.data };
-      outgoing.push(tripped.message);
-      continue;
-    }
-
-    yield {
-      event: 'tool',
-      data: { phase: 'start', callId: call.id, tool: name, argsSummary, source, permission },
-    };
-
-    const startedAt = Date.now();
-    const substeps: ToolSubstep[] = [];
-    let result: ToolResult;
-    if (skipFetch && fetchUrl) {
-      result = degradedFetchResult(fetchUrl);
-    } else if (tool) {
-      // v0.8：flow 工具执行中逐节点推进子步骤，经队列转成 tool/substep SSE 事件。
-      // 入队的是回调时刻的快照（run 内可能同步连发多条，避免 yield 时数组已被整体推进）。
-      const queue = createSubstepQueue<ToolSubstep[]>();
-      const callToolCtx: ToolContext = {
-        ...toolCtx,
-        onSubstep: (substep) => {
-          const idx = substeps.findIndex((s) => s.id === substep.id);
-          if (idx >= 0) substeps[idx] = substep;
-          else substeps.push(substep);
-          queue.push([...substeps]);
-        },
-      };
-      const execution = traceAsync(
-        {
-          name: `tool:${name}`,
-          runType: 'tool',
-          parent: turnTrace,
-          inputs: { callId: call.id, arguments: safeParseArgs(call), argsSummary },
-          metadata: { tool: name, source, permission },
-        },
-        () => executeCall(tool, call, callToolCtx),
-        (value) => ({ ok: value.ok, summary: value.summary, durationMs: Date.now() - startedAt }),
-      ).finally(() => queue.close());
-
-      for (;;) {
-        const item = await queue.next();
-        if (item.done) break;
-        yield { event: 'tool', data: { phase: 'substep', callId: call.id, substeps: item.value } };
-      }
-      result = await execution;
-    } else {
-      result = unknownToolResult(call.function.name);
-    }
-    const durationMs = Date.now() - startedAt;
-    const substepSnapshot = snapshotSubsteps(substeps);
-
-    // v2.27：抓取失败计数与降级标记——成功清零；连续失败达上限后本轮不再重试
-    if (fetchUrl) {
-      if (result.ok) {
-        fetchFailures.delete(fetchUrl);
-      } else if (!skipFetch && shouldDegradeFetch(result)) {
-        const failures = (fetchFailures.get(fetchUrl) ?? 0) + 1;
-        fetchFailures.set(fetchUrl, failures);
-        if (failures >= FETCH_DEGRADE_THRESHOLD) result = { ...result, degraded: true };
-      }
-      if (result.degraded && !degradedFetchUrls.includes(fetchUrl)) {
-        degradedFetchUrls.push(fetchUrl);
-      }
-    }
-
-    // v0.6 M4 熔断：记录本次执行结果，连续失败达阈值则下次自动跳过；
-    // 确定性失败（页面过大/4xx 等）不计入，避免误锁整个工具
-    breaker?.recordResult(name, result.ok, shouldCountBreakerFailure(name, result));
-
-    // v1.1 双视图：完整 result.output 不进模型——入模前经中央压缩层产出预算视图；
-    // trace 只标 compacted 与 token 账（result/output 对象本身不被改写，UI 卡片看 summary）
-    const compaction = result.ok
-      ? compactToolOutput(result.output, {
-          maxTokens: params.toolMessageBudgetTokens,
-          source: normalizeToolSource(source),
-          toolName: name,
-        })
-      : null;
-
-    trace.push(
-      buildToolTraceEntry({
-        call,
-        name,
-        argsSummary,
-        result,
-        durationMs,
-        startedAt,
-        source,
-        permission,
-        substepSnapshot,
-        compaction,
-      }),
-    );
-    yield {
-      event: 'tool',
-      data: buildToolEndData({
-        call,
-        name,
-        result,
-        durationMs,
-        source,
-        permission,
-        substepSnapshot,
-      }),
-    };
-
-    citations = mergeCitations(citations, result.citations);
-    if (result.citations?.length) {
-      yield { event: 'citations', data: { citations } };
-    }
-
-    // v0.7 M1：图片结果（如屏幕截图）落盘为附件，并合成 user 消息注入视觉上下文
-    // （outgoing 仅为 wire 消息列表，不落库，合成消息无污染）
-    if (result.ok && result.images?.length) {
-      const attachments = createAttachmentService(deps);
-      for (const image of result.images) {
-        try {
-          attachments.save({
-            filename: `${name}-${Date.now()}.png`,
-            mimeType: image.mimeType,
-            buffer: Buffer.from(image.dataBase64, 'base64'),
-          });
-        } catch (error) {
-          // 落盘失败不阻断：图片仍可经 wire 注入本轮对话
-          console.error(`[tool] 图片附件落盘失败（${name}）:`, error);
-        }
-      }
-      outgoing.push({
-        role: 'user',
-        content: [
-          { type: 'text', text: `[工具 ${name} 返回的图片]` },
-          ...result.images.map((image) => ({
-            type: 'image_url' as const,
-            image_url: { url: `data:${image.mimeType};base64,${image.dataBase64}` },
-          })),
-        ],
-      });
-    }
-    outgoing.push({
-      role: 'tool',
-      content: compaction ? compaction.text : result.output,
-      toolCallId: call.id,
-      name: call.function.name,
-    });
-
-    if (signal?.aborted) {
-      onAbort();
-      return { aborted: true, citations, degradedFetchUrls };
-    }
+    index += run.length > 0 ? run.length : 1;
   }
 
-  return { aborted: false, citations, degradedFetchUrls };
+  return { aborted: false, citations, degradedFetchUrls: ctx.degradedFetchUrls };
 }

@@ -1,6 +1,6 @@
 ﻿import { afterEach, describe, expect, it, vi } from 'vitest';
 import { executeToolCall } from './tool-executor';
-import type { ToolContext } from './types';
+import type { CachedWebPage, ToolContext } from './types';
 import { fetchWebpageTool } from './fetch-webpage-tool';
 
 const ctx: ToolContext = { knowledgeBaseIds: [], retrieve: async () => [] };
@@ -122,5 +122,30 @@ describe('fetch_webpage 工具', () => {
     const result = await executeToolCall(fetchWebpageTool, {}, ctx);
     expect(result.ok).toBe(false);
     expect(result.output).toContain('参数错误');
+  });
+
+  it('v4.11：同一 URL 第二次抓取命中回合缓存，不再发网络请求', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(htmlResponse('<article><p>你好世界</p></article>'));
+    vi.stubGlobal('fetch', fetchMock);
+    const webCache = new Map<string, CachedWebPage>();
+    const withCache = { ...ctx, webCache };
+
+    const first = await executeToolCall(
+      fetchWebpageTool,
+      { url: 'http://8.8.8.8/news' },
+      withCache,
+    );
+    expect(first.ok).toBe(true);
+    expect(webCache.size).toBe(1);
+
+    const second = await executeToolCall(
+      fetchWebpageTool,
+      { url: 'http://8.8.8.8/news', offset: 2 },
+      withCache,
+    );
+    expect(second.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

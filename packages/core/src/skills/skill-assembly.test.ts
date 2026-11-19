@@ -22,6 +22,7 @@ function skill(name: string, overrides: Partial<SkillManifest> = {}): EnabledSki
 const ASSISTANT = {
   systemPrompt: '人设',
   enabledTools: ['current_time'],
+  knowledgeBaseIds: ['kb-1'],
 } as Assistant;
 
 describe('skill-assembly（v0.6 M3）', () => {
@@ -70,6 +71,15 @@ describe('skill-assembly（v0.6 M3）', () => {
     ]);
     // 原助手对象不被修改
     expect(ASSISTANT.enabledTools).toEqual(['current_time']);
+  });
+
+  it('mergeSkillAllowedTools：未绑定知识库时过滤 knowledge_search（其余工具照常并入）', () => {
+    const noKb = { ...ASSISTANT, knowledgeBaseIds: [] } as Assistant;
+    const merged = mergeSkillAllowedTools(noKb, [
+      skill('s1', { allowedTools: ['knowledge_search', 'current_time'] }),
+      skill('s2', { allowedTools: ['fetch_webpage'] }),
+    ]);
+    expect(merged.enabledTools).toEqual(['current_time', 'fetch_webpage']);
   });
 });
 

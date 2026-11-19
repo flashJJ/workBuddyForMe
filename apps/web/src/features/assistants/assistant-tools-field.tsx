@@ -86,11 +86,37 @@ export function AssistantToolsField({
           </label>
         );
       })}
-      {mcpGroups.map(([serverName, tools]) => (
+      {mcpGroups.map(([serverName, tools]) => {
+        const selectedCount = tools.filter((tool) =>
+          enabledTools.includes(tool.qualifiedName),
+        ).length;
+        const allSelected = selectedCount === tools.length;
+        const toggleAll = () => {
+          const shouldEnable = !allSelected;
+          for (const tool of tools) {
+            const has = enabledTools.includes(tool.qualifiedName);
+            if (shouldEnable !== has) onToggleTool(tool.qualifiedName);
+          }
+        };
+        return (
         <div key={serverName} className="space-y-2 border-t pt-2">
-          <p className="text-xs font-medium text-muted-foreground">
-            {t('assistants.tools.mcpGroup', { name: serverName })}
-          </p>
+          <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={allSelected}
+              onChange={toggleAll}
+              aria-label={t('assistants.tools.mcpSelectAll', { name: serverName })}
+              data-testid={`mcp-select-all-${serverName}`}
+            />
+            <span>{t('assistants.tools.mcpGroup', { name: serverName })}</span>
+            <span className="font-normal">
+              {t('assistants.tools.mcpSelected', {
+                selected: selectedCount,
+                total: tools.length,
+              })}
+            </span>
+          </label>
           {tools.map((tool) => (
             <label key={tool.qualifiedName} className="flex cursor-pointer items-start gap-2 text-sm">
               <input
@@ -108,7 +134,8 @@ export function AssistantToolsField({
             </label>
           ))}
         </div>
-      ))}
+        );
+      })}
       {hasKnowledgeBases && (
         <label className="flex cursor-pointer items-center gap-2 border-t pt-2 text-sm">
           <input

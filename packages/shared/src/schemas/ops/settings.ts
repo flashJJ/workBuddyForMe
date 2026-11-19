@@ -15,6 +15,8 @@ import {
   WEB_FETCH_MAX_BYTES_DEFAULT,
   WEB_FETCH_MAX_BYTES_MIN,
   WEB_FETCH_MAX_BYTES_MAX,
+  RESEARCH_DEPTH_MODES,
+  RESEARCH_DEPTH_DEFAULT,
 } from '../../constants/index';
 import { ACTION_CHAIN_IDS } from '../interaction/interaction-chains';
 import { isValidTriggerKey } from '../interaction/interaction-graph';
@@ -96,6 +98,8 @@ export const searchSettingsSchema = z.object({
     .min(WEB_FETCH_MAX_BYTES_MIN)
     .max(WEB_FETCH_MAX_BYTES_MAX)
     .default(WEB_FETCH_MAX_BYTES_DEFAULT),
+  /** v4.11：检索深度（缺省 standard；非法值由 resolveSearchSettings 回落） */
+  researchDepth: z.enum(RESEARCH_DEPTH_MODES).default(RESEARCH_DEPTH_DEFAULT),
 });
 export type SearchSettingsInput = z.infer<typeof searchSettingsSchema>;
 

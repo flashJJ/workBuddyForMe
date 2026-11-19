@@ -16,6 +16,17 @@ import type {
   CapabilityInventoryItem,
 } from '../capabilities/catalog/types';
 
+/** v4.11：回合级已抓取页面（分层抓取：fetch_webpage 写入，read_fetched 读取） */
+export interface CachedWebPage {
+  url: string;
+  title: string | null;
+  text: string;
+  outline: string[];
+  /** 抓取时是否因字节上限被截断 */
+  truncated: boolean;
+  fetchedAt: number;
+}
+
 /** 工具执行时可使用的能力（由编排器按本轮对话注入） */
 export interface ToolContext {
   signal?: AbortSignal;
@@ -29,6 +40,10 @@ export interface ToolContext {
   ) => Promise<RetrievedChunk[]>;
   /** v0.7 M1：本轮对话模型是否具备视觉能力（screen_snapshot 据此决定是否携带图片） */
   visionCapable?: boolean;
+  /** v4.11：回合级网页缓存（read_fetched 依赖；缺省时工具明确返回不可用） */
+  webCache?: Map<string, CachedWebPage>;
+  /** v4.11：单页首块正文长度（字符），由检索深度档位下发 */
+  webFetchFirstChunkChars?: number;
   /**
    * v0.8：工具内部子步骤进度回调（flow 工具逐节点执行时上报，对话 SSE 实时展示）。
    * 同一子步骤 id 会先 running 后 ok/error/skipped。

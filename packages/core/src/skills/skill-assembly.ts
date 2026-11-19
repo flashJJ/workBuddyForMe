@@ -41,7 +41,12 @@ export function pickAssistantSkills(skills: EnabledSkill[], wanted: string[]): E
  * 与助手白名单相互独立，停用技能即回收对应工具，不产生交叉心智负担。
  */
 export function mergeSkillAllowedTools(assistant: Assistant, skills: EnabledSkill[]): Assistant {
-  const skillTools = skills.flatMap((skill) => skill.manifest.allowedTools);
+  const hasKnowledgeBase = assistant.knowledgeBaseIds.length > 0;
+  const skillTools = skills
+    .flatMap((skill) => skill.manifest.allowedTools)
+    // 未绑定知识库时 knowledge_search 必然返回「未绑定知识库」，
+    // 技能预绑定不应把它暴露给模型，避免白耗工具轮次。
+    .filter((tool) => tool !== 'knowledge_search' || hasKnowledgeBase);
   if (skillTools.length === 0) return assistant;
   return {
     ...assistant,

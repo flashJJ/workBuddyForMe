@@ -1,7 +1,8 @@
 import {
-  DEFAULT_CONTEXT_TOKEN_BUDGET,
   CONTEXT_QUOTA_FACTS,
   HISTORY_MESSAGE_SAFETY_CAP,
+  RESEARCH_DEPTH_DEFAULT,
+  type ResearchDepth,
 } from '@wbfm/shared/constants';
 import type { Assistant, Citation, Conversation, ToolTraceEntry } from '@wbfm/shared/types';
 import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
@@ -17,9 +18,11 @@ import { buildConversationFactsBlock } from './conversation-facts-block';
 import { buildImageMap } from './multimodal';
 import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap } from './turn-context';
 import { needsSkillTrim } from './context-budget';
-import { buildContextPlan } from './context-plan';
+import { buildContextPlan, isLeanTurn } from './context-plan';
+import { resolveEffectiveContextWindow } from './window/effective-window';
 import { maybePreflightCompact } from './preflight-compaction';
 import { resolveToolMessageBudget } from './context-budget';
+import { resolveToolTurnLimits } from '../../tools/budget/turn-budget';
 import type { OrchestratorEvent, RagContext } from '../base/types';
 import type { ResolvedChatTarget } from './model-resolver';
 import type { ToolRuntime } from '../../tools/tool-runtime';
@@ -69,6 +72,9 @@ export interface PreparedTurnContext {
   emotionEnabled: boolean;
   /** v1.1：每条工具消息的入模 token 预算（context-budget 装配时下发） */
   toolMessageBudgetTokens: number;
+  /** v4.11：本轮生效的检索深度（工具结果预算按档位缩放） */
+  researchDepth: ResearchDepth;
+  contextWindow: number;
   /** 工具调用追踪（交由工具循环 push 条目） */
   trace: ToolTraceEntry[];
   citations: Citation[];
@@ -104,6 +110,9 @@ export async function* prepareTurnContext(
   // 助手 expressionEnabled 同时为真，且情绪服务已注入时才注入情绪段。
   // v1.8 M3：同一处读上下文条数与全局追加（管线参数与系统级追加）。
   const appSettings = createSettingsService(deps).get();
+  // v4.11：生效窗口与检索深度决定工具结果预算
+  const contextWindow = resolveEffectiveContextWindow(target.model).effective;
+  const researchDepth: ResearchDepth = appSettings.searchSettings?.researchDepth ?? RESEARCH_DEPTH_DEFAULT;
   const emotionEnabled =
     emotion !== undefined &&
     assistant.expressionEnabled &&
@@ -166,7 +175,7 @@ export async function* prepareTurnContext(
       buildConversationFactsBlock(
         conversations.listFacts(conversationId),
         Math.floor(
-          (target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET) * CONTEXT_QUOTA_FACTS,
+          contextWindow * CONTEXT_QUOTA_FACTS,
         ),
       ),
     ]
@@ -175,11 +184,12 @@ export async function* prepareTurnContext(
 
   // v0.6 M3：启用技能——提示词模板注入 system；预绑定工具与助手白名单取并集
   // v2.4 M4：助手级勾选优先（空数组=跟随全局全部启用技能）
-  const enabledSkills = pickAssistantSkills(
-    deps.skills?.getEnabledSkills() ?? [],
-    assistant.skillNames,
-  );
-  const skillBlock = buildSkillPromptBlock(enabledSkills);
+  // 轻量回合（高置信寒暄/澄清）：不注入技能提示词与流程工具声明，降低首字前缀
+  const lean = isLeanTurn(intent);
+  const enabledSkills = lean
+    ? []
+    : pickAssistantSkills(deps.skills?.getEnabledSkills() ?? [], assistant.skillNames);
+  const skillBlock = lean ? null : buildSkillPromptBlock(enabledSkills);
   // v2.8：当前目标 / 计划 / 待办折叠进 system（未批准计划标注待评审）
   const planBlock = deps.workPlans ? buildPlanPromptBlock(deps.workPlans.activeContext(conversationId)) : '';
   const combinedBlock =
@@ -203,12 +213,14 @@ export async function* prepareTurnContext(
       : null;
 
   // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
-  const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools);
+  const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools, {
+    includeFlows: !lean,
+  });
   const toolDefs = toToolDefinitions([...toolMap.values()]);
   // v4.8：意图 → 块配额（低置信度回落默认，保持旧行为）
   const plan = buildContextPlan({
     intent,
-    contextWindow: target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+    contextWindow,
     estimatedHistoryTokens: historyEstimate,
   });
   const lastCompletionTokens = conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null;
@@ -218,7 +230,7 @@ export async function* prepareTurnContext(
       history,
       rag: retrieved ?? null,
       images: imageMap,
-      contextWindow: target.model.contextWindow,
+      contextWindow,
       toolDefs: defs,
       lastCompletionTokens,
       summary: activeConversation.summary,
@@ -236,7 +248,9 @@ export async function* prepareTurnContext(
   let activeToolMap = toolMap;
   // v4.8.1：小窗口下原文预算被技能块/技能工具挤到下限以下时，先裁技能再装一次
   if (needsSkillTrim(built.stats)) {
-    const coreMap = runtime.buildTools(assistant, target.provider.supportsTools);
+    const coreMap = runtime.buildTools(assistant, target.provider.supportsTools, {
+      includeFlows: !lean,
+    });
     activeToolMap = coreMap;
     built = build(coreMap, toToolDefinitions([...coreMap.values()]), planBlock || null);
   }
@@ -246,7 +260,7 @@ export async function* prepareTurnContext(
     // v4.8：本地上下文快照（只存 token 统计，不存正文）
     deps.events?.recordChat(conversationId, 'context_snapshot', {
       intent,
-      contextWindow: target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+      contextWindow,
       usableWindow: budgetStats.contextWindow,
       systemTokens: budgetStats.systemTokens,
       toolsTokens: budgetStats.toolsTokens,
@@ -263,11 +277,11 @@ export async function* prepareTurnContext(
     visionCapable: target.model.capabilities.includes('vision'),
     conversationId,
     webFetchMaxBytes: appSettings.searchSettings?.fetchMaxBytes,
+    // v4.11：首块正文长度跟随检索深度（read_fetched 续读也用同一尺寸）
+    webFetchFirstChunkChars: resolveToolTurnLimits(contextWindow, researchDepth).perPageChars,
   });
   // v1.1：工具结果入模预算按本轮模型窗口装配下发（压缩器不读全局状态）
-  const toolMessageBudgetTokens = resolveToolMessageBudget(
-    target.model.contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
-  );
+  const toolMessageBudgetTokens = resolveToolMessageBudget(contextWindow);
   const trace: ToolTraceEntry[] = [];
   const citations = retrieved?.citations ?? [];
 
@@ -279,7 +293,8 @@ export async function* prepareTurnContext(
     toolCtx,
     emotionEnabled,
     toolMessageBudgetTokens,
+    researchDepth,
+    contextWindow,
     trace,
     citations,
-  };
-}
+  };}

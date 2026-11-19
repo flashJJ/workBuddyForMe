@@ -25,9 +25,9 @@ describe('HITL 工具确认：放行路径（v0.6 M2）', () => {
     teardownHitlFixture(fixture.db);
   });
 
-  it('confirmations 允许：工具真实执行（SSRF 拦截属执行结果而非授权拦截）', async () => {
+  it('confirmations 允许：工具真实执行（产物服务缺失属执行结果而非授权拦截）', async () => {
     const { db, cipher, fetchMock, assistantId } = fixture;
-    mockTwoRounds(fetchMock, '这个地址访问不了。');
+    mockTwoRounds(fetchMock, '这个操作在当前环境做不了。');
     const confirmations = createPendingConfirmations();
     const deps: ServiceDeps = {
       db,
@@ -36,12 +36,12 @@ describe('HITL 工具确认：放行路径（v0.6 M2）', () => {
       confirmations,
     };
     const events = await drainWithDecision(
-      createChatOrchestrator(deps).streamChat({ assistantId, content: '帮我看看这个网页' }),
+      createChatOrchestrator(deps).streamChat({ assistantId, content: '帮我保存一份' }),
       confirmations,
       'allow',
     );
 
-    // 允许后走正常执行路径：tool start → tool end（SSRF 拦截报错），随后第二轮回答
+    // 允许后走正常执行路径：tool start → tool end（未装配产物服务），随后第二轮回答
     expect(events.map((e) => e.event)).toEqual([
       'meta',
       'tool_confirmation_required',
@@ -52,30 +52,30 @@ describe('HITL 工具确认：放行路径（v0.6 M2）', () => {
     ]);
     expect(events[2]).toMatchObject({
       event: 'tool',
-      data: { phase: 'start', callId: 'call-hitl', tool: 'fetch_webpage' },
+      data: { phase: 'start', callId: 'call-hitl', tool: 'artifact_write' },
     });
     expect(events[3]).toMatchObject({
       event: 'tool',
       data: { phase: 'end', callId: 'call-hitl', status: 'error' },
     });
-    // 执行结果是工具真实输出（SSRF 拦截文案），不是授权拒绝文案
+    // 执行结果是工具真实输出（产物服务缺失），不是授权拒绝文案
     const endData = events[3]!.data as { resultSummary: string };
     expect(endData.resultSummary).not.toContain('用户拒绝');
     const secondBody = JSON.parse((fetchMock.mock.calls[1]![1] as RequestInit).body as string);
-    expect(String(secondBody.messages.at(-1)!.content)).toContain('抓取失败');
+    expect(String(secondBody.messages.at(-1)!.content)).toContain('产物保存不可用');
   });
 
   it('已授权（grantPermission）：不触发确认事件，工具直接执行', async () => {
     const { db, cipher, fetchMock, assistantId } = fixture;
-    mockTwoRounds(fetchMock, '这个地址访问不了。');
+    mockTwoRounds(fetchMock, '这个操作在当前环境做不了。');
     const permissions = createPermissionService({ db, cipher });
-    permissions.grantPermission('fetch_webpage', `assistant:${assistantId}`, 'allow');
+    permissions.grantPermission('artifact_write', `assistant:${assistantId}`, 'allow');
     const confirmations = createPendingConfirmations();
     const deps: ServiceDeps = { db, cipher, permissions, confirmations };
     const events: OrchestratorEvent[] = [];
     for await (const event of createChatOrchestrator(deps).streamChat({
       assistantId,
-      content: '帮我看看这个网页',
+      content: '帮我保存一份',
     })) {
       events.push(event);
     }

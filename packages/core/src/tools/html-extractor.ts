@@ -52,13 +52,19 @@ function collectBlocks(html: string, tag: string): string {
   return combined;
 }
 
-/** 选取正文块：article → main → body → 整段清洗结果 */
+/** 选取正文块：article → main → body（优先段落）→ 整段清洗结果 */
 function pickMainBlock(cleaned: string): string {
   const article = collectBlocks(cleaned, 'article');
   if (article) return article;
   const main = collectBlocks(cleaned, 'main');
   if (main) return main;
   const body = collectBlocks(cleaned, 'body');
+  if (body) {
+    // 语义标签缺失时，正文通常由 <p> 承载；导航/推荐位多为链接与短 div。
+    // 段落总长足够时优先段落，避免把整页推荐位混进“正文”。
+    const paragraphs = collectBlocks(body, 'p');
+    if (paragraphs.replace(/\s+/g, '').length >= 200) return paragraphs;
+  }
   return body || cleaned;
 }
 
@@ -69,4 +75,35 @@ export function extractMainContent(html: string): string {
   const text = htmlToText(block);
   if (text) return text;
   return htmlToText(cleaned);
+}
+
+/** 页面标题：<title> 去标签与实体，超长截断 */
+export function extractPageTitle(html: string): string | null {
+  const match = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+  if (!match?.[1]) return null;
+  const text = htmlToText(`<p>${match[1]}</p>`).replace(/\s+/g, ' ').trim();
+  return text ? text.slice(0, 160) : null;
+}
+
+const OUTLINE_MAX_ITEMS = 12;
+const OUTLINE_MAX_LABEL = 120;
+
+/**
+ * v4.11 分层抓取：抽取 h1–h3 作为页面提纲，帮助模型决定读哪一段，
+ * 不必把整页正文一次塞进上下文。
+ */
+export function extractPageOutline(html: string, limit = OUTLINE_MAX_ITEMS): string[] {
+  const cleaned = stripTagBlocks(html, NOISE_TAGS);
+  const re = /<h([1-3])\b[^>]*>([\s\S]*?)<\/h\1>/gi;
+  const seen = new Set<string>();
+  const items: string[] = [];
+  let match: RegExpExecArray | null;
+  while (items.length < limit && (match = re.exec(cleaned)) !== null) {
+    const text = htmlToText(`<p>${match[2]}</p>`).replace(/\s+/g, ' ').trim();
+    if (text.length < 2 || text.length > OUTLINE_MAX_LABEL || seen.has(text)) continue;
+    seen.add(text);
+    const indent = '  '.repeat(Number(match[1]) - 1);
+    items.push(`${indent}${text}`);
+  }
+  return items;
 }

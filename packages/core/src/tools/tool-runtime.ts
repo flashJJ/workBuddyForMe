@@ -17,6 +17,7 @@ import {
 import { artifactWriteTool } from './artifact/artifact-write-tool';
 import { diagramRenderTool } from './diagram/diagram-render-tool';
 import { fetchWebpageTool } from './fetch-webpage-tool';
+import { readFetchedTool } from './web/read-fetched-tool';
 import { screenSnapshotTool } from './computer/screen-snapshot-tool';
 import { createInputTools } from './computer/input-tools';
 import { createWindowTools } from './computer/window-tools';
@@ -30,6 +31,7 @@ const ALL_TOOLS: Record<string, Tool> = {
   knowledge_search: knowledgeSearchTool,
   web_search: webSearchTool,
   fetch_webpage: fetchWebpageTool,
+  read_fetched: readFetchedTool,
   screen_snapshot: screenSnapshotTool,
   todo_write: todoWriteTool,
   // v2.17 M4：能力目录检索与安装代理
@@ -61,12 +63,22 @@ export interface ResolvedTool {
 /** v0.6 M4：调试台展示的工具元数据（v4.3 M5 统一为 ToolDescriptor） */
 export interface ToolRuntime {
   /** 按助手白名单构造可用工具映射；模型不支持工具时返回空映射 */
-  buildTools(assistant: Assistant, supportsTools: boolean): ToolMap;
+  buildTools(
+    assistant: Assistant,
+    supportsTools: boolean,
+    options?: { includeFlows?: boolean },
+  ): ToolMap;
   /** 构造工具执行上下文（绑定库与检索回调） */
   createContext(
     assistant: Assistant,
     signal?: AbortSignal,
-    opts?: { visionCapable?: boolean; conversationId?: string; webFetchMaxBytes?: number },
+    opts?: {
+      visionCapable?: boolean;
+      conversationId?: string;
+      webFetchMaxBytes?: number;
+      /** v4.11：首块正文长度（检索深度档位） */
+      webFetchFirstChunkChars?: number;
+    },
   ): ToolContext;
   /** v0.6 M4：解析工具名 → { tool, source }；内置查表，MCP 走注册表 */
   resolveTool(name: string): ResolvedTool | null;
@@ -131,16 +143,23 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
       };
     },
 
-    buildTools(assistant, supportsTools) {
+    buildTools(assistant, supportsTools, options) {
       if (!supportsTools || assistant.enabledTools.length === 0) return new Map();
       const map = new Map<string, Tool>();
       for (const name of assistant.enabledTools) {
         const resolved = resolveTool(name);
         if (resolved) map.set(name, resolved.tool);
       }
-      // v0.8 M3：已发布流程自动作为工具注入对话（白名单不感知 flow:<id>，不覆盖显式项）
-      for (const tool of deps.flowToolLister?.() ?? []) {
-        if (!map.has(tool.name)) map.set(tool.name, tool);
+      // v4.11：已发布流程自动作为工具注入对话（白名单不感知 flow:<id>，不覆盖显式项）
+      // 轻量回合（寒暄/澄清）可按需关闭，减少工具声明对首字延迟的影响
+      if (options?.includeFlows !== false) {
+        for (const tool of deps.flowToolLister?.() ?? []) {
+          if (!map.has(tool.name)) map.set(tool.name, tool);
+        }
+      }
+      // v4.11：分层抓取的续读工具随 fetch_webpage 自动注入，无需用户在助手设置里勾选
+      if (map.has('fetch_webpage') && !map.has('read_fetched')) {
+        map.set('read_fetched', readFetchedTool);
       }
       return map;
     },
@@ -198,7 +217,12 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         signal,
         knowledgeBaseIds: assistant.knowledgeBaseIds,
         visionCapable: opts?.visionCapable ?? false,
+        // v4.11：回合级网页缓存供 read_fetched 续读
+        webCache: new Map(),
         ...(opts?.webFetchMaxBytes ? { webFetchMaxBytes: opts.webFetchMaxBytes } : {}),
+        ...(opts?.webFetchFirstChunkChars
+          ? { webFetchFirstChunkChars: opts.webFetchFirstChunkChars }
+          : {}),
         ...(conversationId ? { conversationId } : {}),
         ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
         ...(deps.search ? { searchWeb: deps.search.search } : {}),
