@@ -647,6 +647,9 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v4.8 | 对话有策略：意图路由、按意图装配、压缩事件化与记忆意图 | ✅ 随 v4.10.0 批量发布 | [方案](../plan/v4.8/README.md) · [总结](../plan/v4.8/version-summary.md) | — | [blog/v4.8](../../blog/v4.8/) 7 篇 | 随 `v4.10.0` |
 | v4.9 | 统一上下文控制器：场景预算、提示词装包与跨域快照 | ✅ 随 v4.10.0 批量发布 | [方案](../plan/v4.9/README.md) · [总结](../plan/v4.9/version-summary.md) | — | [blog/v4.9](../../blog/v4.9/) 7 篇 | 随 `v4.10.0` |
 | v4.10 | 上下文可见：跨场景快照面板、截断解释与构成拆分 | ✅ 已打 tag `v4.10.0`（Release 待转正） | [方案](../plan/v4.10/README.md) · [总结](../plan/v4.10/version-summary.md) · [发行说明](v4.10.0-release-notes.md) | — | [blog/v4.10](../../blog/v4.10/) 7 篇 | `v4.10.0` |
+| v4.11 | 联网有预算：抓取权限、并发、分层返回与上下文窗口 | ✅ 已完成（未打 tag） | [方案](../plan/v4.11/00-tool-budget-and-fetch-harness-plan.md) · [验收方案](../plan/v4.11/01-automated-acceptance-and-ai-testing-plan.md) | — | [blog/v4.11](../../blog/v4.11/) 7 篇 | — |
+| v4.12 | 接线与意图可观测：hintApplied、草稿建议与按状态清空记忆 | ✅ 已完成（未打 tag） | [方案](../plan/v4.12/00-wiring-and-intent-observability-plan.md) | — | [blog/v4.12](../../blog/v4.12/) 7 篇 | — |
+| v4.13 | 代码健康度：产物导出、热点拆分、目录收敛与门禁补强 | ✅ 已完成（未打 tag） | [方案](../plan/v4.13/00-code-health-refactor-plan.md) | — | [blog/v4.13](../../blog/v4.13/) 7 篇 | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
