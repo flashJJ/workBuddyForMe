@@ -10,8 +10,8 @@ import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { ApiError } from '@wbfm/shared/errors';
 import { isEncryptedArchive, openArchive, sealArchive } from '../portability/archive-cipher';
-import { exportBackup } from '../export';
-import { precheckBackup } from '../restore-precheck';
+import { exportBackup } from '../export/export';
+import { precheckBackup } from '../restore/restore-precheck';
 import { createWebCipher } from '../../secrets/cipher';
 
 const PASSWORD = 'correct-horse-8';

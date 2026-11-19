@@ -17,7 +17,7 @@ import { createIngestionPipeline } from './ingestion-pipeline';
 
 // OCR 文本提取在 runner/extract 单测中已覆盖，此处只验证管线状态写入
 const extractDocumentText = vi.fn();
-vi.mock('./extract-with-ocr', () => ({
+vi.mock('./ocr/extract-with-ocr', () => ({
   extractDocumentText: (...args: unknown[]) => extractDocumentText(...args),
 }));
 

@@ -6,11 +6,11 @@ import { createDatabase, createConversationBranchRepository, createConversationR
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../../secrets/cipher';
 import { ensureSeedData } from '../../services/base/seed';
-import { exportBackup } from '../export';
-import { restoreBackup } from '../restore';
+import { exportBackup } from '../export/export';
+import { restoreBackup } from '../restore/restore';
 import { restoreBranches } from '../branches/restore-branches';
 import { restoreBranchEvents } from '../branches/restore-branch-events';
-import { packGzipArchive } from '../restore.helpers';
+import { packGzipArchive } from '../restore/restore.helpers';
 
 function seedBranches(db: DatabaseInstance) {
   ensureSeedData(db);

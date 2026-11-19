@@ -1,11 +1,11 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { OCR_TEXT_DENSITY_THRESHOLD } from '@wbfm/shared/constants';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import type { DocumentKind } from './types';
-import { readDocx } from './office/read-docx';
-import { readXlsx } from './office/read-xlsx';
-import { readPptx } from './office/read-pptx';
-import { LEGACY_OFFICE_EXTENSIONS, rejectLegacyOffice } from './office/office-error';
+import type { DocumentKind } from '../types';
+import { readDocx } from '../office/read-docx';
+import { readXlsx } from '../office/read-xlsx';
+import { readPptx } from '../office/read-pptx';
+import { LEGACY_OFFICE_EXTENSIONS, rejectLegacyOffice } from '../office/office-error';
 
 const EXTENSION_KIND: Record<string, DocumentKind> = {
   '.txt': 'txt',

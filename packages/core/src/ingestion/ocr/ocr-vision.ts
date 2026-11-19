@@ -1,5 +1,5 @@
 import type { ChatContentPart } from '@wbfm/ai';
-import type { ResolvedVisionTarget } from './vision-target';
+import type { ResolvedVisionTarget } from '../vision-target';
 
 /**
  * 视觉模型 OCR（v0.4 优先引擎）：PDF 页位图 → data URL → 视觉模型逐字识别。

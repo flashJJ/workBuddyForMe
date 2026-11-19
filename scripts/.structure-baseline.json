@@ -7,8 +7,8 @@
     { "path": "packages/shared/src/i18n/messages", "reason": "i18n 词条字典，按语言文件组织" }
   ],
   "legacyDirs": [
-    { "path": "packages/core/src/backup", "count": 31, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
-    { "path": "packages/core/src/ingestion", "count": 27, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
+    { "path": "packages/core/src/backup", "count": 3, "reason": "v4.13 拆 export/ 与 restore/ 子域后直接文件仅 3；到期 v4.15 复核" },
+    { "path": "packages/core/src/ingestion", "count": 8, "reason": "v4.13 拆 parse/ chunk/ ocr/ 后直接文件 8；到期 v4.15 复核" },
     { "path": "packages/core/src/knowledge", "count": 27, "reason": "v2.16 M5 冻结现状；P1 候补分区" },
     { "path": "apps/desktop/src/main", "count": 25, "reason": "v2.16 M5 冻结现状；桌面主进程 P1 候补" },
     { "path": "packages/core/src/emotion", "count": 25, "reason": "v2.16 M5 冻结现状；P1 候补分区" },

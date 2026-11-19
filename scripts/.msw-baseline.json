@@ -73,7 +73,7 @@
   "packages/core/src/chat/orchestrator/__tests__/chat-orchestrator.test.ts": 1,
   "packages/core/src/chat/turns/proactive-turn.test.ts": 1,
   "packages/core/src/emotion/emotion-turn-integration.test.ts": 1,
-  "packages/core/src/ingestion/fetch-article.test.ts": 4,
+  "packages/core/src/ingestion/parse/fetch-article.test.ts": 4,
   "packages/core/src/ingestion/ingestion-auto-compile.test.ts": 1,
   "packages/core/src/ingestion/ingestion-ocr-status.test.ts": 1,
   "packages/core/src/ingestion/ingestion-pipeline.test.ts": 1,

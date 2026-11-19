@@ -8,7 +8,7 @@ import type { BackupProgressEvent } from '@wbfm/shared/backup';
 import { getDataRoot } from '@wbfm/config';
 import { createScheduledTaskRepository } from '@wbfm/database';
 import { computeNextRunMs } from '../../scheduler/next-run';
-import type { SkillStateEntry } from '../restore-ops';
+import type { SkillStateEntry } from '../restore/restore-ops';
 
 /** 技能轨归档负载：skills_state 行 + 各技能文件夹的 skill.json 原文 */
 export interface SkillsTrackPayload {

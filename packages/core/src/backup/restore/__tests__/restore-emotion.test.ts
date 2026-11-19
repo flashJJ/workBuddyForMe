@@ -11,10 +11,10 @@ import {
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createDefaultEmotionState } from '@wbfm/shared/schemas';
-import { exportBackup } from './export';
-import { restoreBackup, precheckBackup } from './restore';
-import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/base/seed';
+import { exportBackup } from '../../export/export';
+import { restoreBackup, precheckBackup } from '../restore';
+import { createWebCipher } from '../../../secrets/cipher';
+import { ensureSeedData } from '../../../services/base/seed';
 
 describe('备份恢复 · emotion 轨（v1.6）', () => {
   let srcDb: DatabaseInstance;
@@ -130,7 +130,7 @@ describe('备份恢复 · emotion 轨（v1.6）', () => {
 
   it('损坏 JSON：恢复抛出 VALIDATION_ERROR', async () => {
     ensureSeedData(srcDb);
-    const { packTarGz } = await import('./export-archive');
+    const { packTarGz } = await import('../../export/export-archive');
     const { backupManifestSchema, CURRENT_BACKUP_SCHEMA_VERSION } = await import(
       '@wbfm/shared/backup'
     );

@@ -8,15 +8,15 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { setDataRootForTest, resetDataRootForTest } from '@wbfm/config';
-import { createWebCipher } from '../secrets/cipher';
-import { exportBackup } from './export';
-import { precheckBackup, restoreBackup } from './restore';
+import { createWebCipher } from '../../../secrets/cipher';
+import { exportBackup } from '../../export/export';
+import { precheckBackup, restoreBackup } from '../restore';
 import {
   readModInstallsPayload,
   readVrmAvatarsPayload,
   restoreModInstalls,
   restoreVrmAvatars,
-} from './restore-mod-installs';
+} from '../tracks/restore-mod-installs';
 
 function insertVrmRow(
   db: DatabaseInstance,

@@ -4,11 +4,11 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance, createSettingsRepository, createAttachmentRepository, createKnowledgeRepository, createDocumentRepository, createConversationRepository, createMessageRepository, createChunkRepository, createSkillStateRepository } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { exportBackup } from './export';
-import { restoreBackup, precheckBackup } from './restore';
-import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/base/seed';
-import { seedConversationWithMessages, seedConversation, seedIndexedKnowledge, seedKnowledgeBase, seedDarkThemeSetting, seedMixedSettings, seedAttachment, seedSkillFixture, packManifestArchive } from './restore.helpers';
+import { exportBackup } from '../../export/export';
+import { restoreBackup, precheckBackup } from '../restore';
+import { createWebCipher } from '../../../secrets/cipher';
+import { ensureSeedData } from '../../../services/base/seed';
+import { seedConversationWithMessages, seedConversation, seedIndexedKnowledge, seedKnowledgeBase, seedDarkThemeSetting, seedMixedSettings, seedAttachment, seedSkillFixture, packManifestArchive } from '../restore.helpers';
 
 describe('备份恢复（M1）', () => {
   let srcDb: DatabaseInstance;

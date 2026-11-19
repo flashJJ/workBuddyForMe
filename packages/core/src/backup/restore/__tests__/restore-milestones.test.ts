@@ -9,14 +9,14 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { setDataRootForTest, resetDataRootForTest } from '@wbfm/config';
-import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/base/seed';
-import { exportBackup } from './export';
-import { precheckBackup, restoreBackup } from './restore';
+import { createWebCipher } from '../../../secrets/cipher';
+import { ensureSeedData } from '../../../services/base/seed';
+import { exportBackup } from '../../export/export';
+import { precheckBackup, restoreBackup } from '../restore';
 import {
   readRelationshipMilestonesPayload,
   restoreRelationshipMilestones,
-} from './restore-milestones';
+} from '../tracks/restore-milestones';
 
 function customAssistant(db: DatabaseInstance, id: string): void {
   createAssistantRepository(db).create({

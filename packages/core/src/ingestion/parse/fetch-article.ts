@@ -1,7 +1,7 @@
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 import { ApiError } from '@wbfm/shared/errors';
-import { safeFetchWebPage, SsrfBlockedError } from '../net/safe-web-fetch';
+import { safeFetchWebPage, SsrfBlockedError } from '../../net/safe-web-fetch';
 
 export interface ClippedArticle {
   /** 规范化后的最终来源 URL（去跟踪参数/fragment，重定向后落点） */

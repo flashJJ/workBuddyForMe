@@ -12,7 +12,7 @@ const resolveVisionTarget = vi.hoisted(() => vi.fn());
 const renderPdfPagesToPng = vi.hoisted(() => vi.fn());
 
 vi.mock('../../ingestion/vision-target', () => ({ resolveVisionTarget }));
-vi.mock('../../ingestion/pdf-render', () => ({ renderPdfPagesToPng }));
+vi.mock('../../ingestion/parse/pdf-render', () => ({ renderPdfPagesToPng }));
 
 const DOCUMENT: DocumentRecord = {
   id: 'd1',

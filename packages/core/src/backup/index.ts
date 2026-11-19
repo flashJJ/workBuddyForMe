@@ -5,14 +5,14 @@ export {
   BACKUP_MAX_ARCHIVE_BYTES,
   type BackupExportOptions,
   type BackupExportResult,
-} from './export';
+} from './export/export';
 export {
   restoreBackup,
   precheckBackup,
   type BackupRestoreOptions,
   type BackupRestoreResult,
-} from './restore';
-export { packEntries, packTarGz, type TarPayloadEntry } from './export-archive';
+} from './restore/restore';
+export { packEntries, packTarGz, type TarPayloadEntry } from './export/export-archive';
 export {
   readBackupHistory,
   readRestoreChain,

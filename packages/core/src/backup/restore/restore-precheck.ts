@@ -10,8 +10,8 @@ import {
 } from '@wbfm/shared/backup';
 import { extractArchiveFull } from './restore-archive';
 import { hasRedactedPlaceholder } from './restore-track-select';
-import { buildPrecheckVerification } from './portability/restore-verification';
-import { chainInfoFromManifest } from './portability/chain/chain-info';
+import { buildPrecheckVerification } from '../portability/restore-verification';
+import { chainInfoFromManifest } from '../portability/chain/chain-info';
 
 /**
  * 预检查：先于正式恢复调用，告知兼容性与将导入多少条目。

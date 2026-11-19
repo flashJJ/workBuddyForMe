@@ -14,8 +14,8 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { exportBackup } from '../export';
-import { restoreBackup } from '../restore';
+import { exportBackup } from '../export/export';
+import { restoreBackup } from '../restore/restore';
 import { createWebCipher } from '../../secrets/cipher';
 import { ensureSeedData } from '../../services/base/seed';
 

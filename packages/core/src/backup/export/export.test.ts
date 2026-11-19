@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { exportBackup, sanitizeSettings, BACKUP_MAX_ARCHIVE_BYTES } from './export';
-import { createWebCipher } from '../secrets/cipher';
+import { createWebCipher } from '../../secrets/cipher';
 import {
   createConversationRepository,
   createMessageRepository,
@@ -80,7 +80,7 @@ describe('备份导出（M1）', () => {
   });
 
   it('有对话+知识库：内容完整序列化', { timeout: 15000 }, async () => {
-    const { ensureSeedData } = await import('../services/base/seed');
+    const { ensureSeedData } = await import('../../services/base/seed');
     ensureSeedData(db);
     const convRepo = createConversationRepository(db);
     const msgRepo = createMessageRepository(db);
@@ -202,7 +202,7 @@ describe('备份导出（M1）', () => {
   });
 
   it('tasks 轨：task_runs + task_steps 全量序列化（v0.7 M4）', async () => {
-    const { ensureSeedData } = await import('../services/base/seed');
+    const { ensureSeedData } = await import('../../services/base/seed');
     ensureSeedData(db);
     const convRepo = createConversationRepository(db);
     const taskRepo = createTaskRunRepository(db);

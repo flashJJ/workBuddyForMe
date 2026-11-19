@@ -12,9 +12,9 @@ import {
 } from '@wbfm/database';
 import { resolveDataPath } from '@wbfm/config';
 import type { ServiceDeps } from '../base/deps';
-import { detectKind } from '../../ingestion/read-document';
+import { detectKind } from '../../ingestion/parse/read-document';
 import { createIngestionPipeline } from '../../ingestion/ingestion-pipeline';
-import { fetchArticle, normalizeClipUrl, toClipError } from '../../ingestion/fetch-article';
+import { fetchArticle, normalizeClipUrl, toClipError } from '../../ingestion/parse/fetch-article';
 import { resolveVisionTarget } from '../../ingestion/vision-target';
 import type { IngestResult } from '../../ingestion/types';
 import { summarizeDocumentFigure } from './document-figure-service';

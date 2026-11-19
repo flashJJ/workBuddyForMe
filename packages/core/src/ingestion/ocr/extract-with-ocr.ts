@@ -1,5 +1,5 @@
 import type { OcrEngine } from '@wbfm/shared/constants';
-import type { ServiceDeps } from '../services/base/deps';
+import type { ServiceDeps } from '../../services/base/deps';
 import {
   detectKind,
   isImagePdf,
@@ -7,7 +7,7 @@ import {
   pageNeedsOcr,
   readDocumentText,
   readPdfPageItems,
-} from './read-document';
+} from '../parse/read-document';
 import { runPdfOcr } from './ocr-runner';
 import {
   buildPdfDocument,
@@ -16,12 +16,12 @@ import {
   parsePagedTextDocument,
   toStructuredText,
   type ParsedDocument,
-} from './structure';
+} from '../structure/index';
 import {
   assemblePagedText,
   assemblePlainText,
   type StructuredText,
-} from './text-structure';
+} from '../parse/text-structure';
 
 export interface ExtractDocumentResult {
   /** 最终用于分片的纯文本 */

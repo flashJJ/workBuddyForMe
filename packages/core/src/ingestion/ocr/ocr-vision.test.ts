@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatChunk, ChatProvider } from '@wbfm/ai';
 import { recognizePageWithVision } from './ocr-vision';
-import type { ResolvedVisionTarget } from './vision-target';
+import type { ResolvedVisionTarget } from '../vision-target';
 
 function targetWithChunks(chunks: ChatChunk[]): ResolvedVisionTarget {
   async function* stream() {

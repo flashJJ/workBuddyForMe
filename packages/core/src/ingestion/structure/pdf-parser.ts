@@ -1,4 +1,4 @@
-import type { PdfPageItems } from '../read-document';
+import type { PdfPageItems } from '../parse/read-document';
 import { assembleDocument } from './assembler';
 import type { BlockSegment, ParsedDocument } from './types';
 

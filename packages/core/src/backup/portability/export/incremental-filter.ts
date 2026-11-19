@@ -4,8 +4,8 @@
  * 无法解析的负载按原样保留（解密/损坏由恢复端统一报错）。
  */
 import type { BackupManifest } from '@wbfm/shared/backup';
-import type { TaskTrackEntry } from '../../export-tasks-track';
-import type { EventsTrackManifest } from '../../export-events-track';
+import type { TaskTrackEntry } from '../../export/export-tasks-track';
+import type { EventsTrackManifest } from '../../export/export-events-track';
 import type { AgentHandoffTrackEntry, AgentRunTrackEntry } from '../export-agent-runs';
 
 type EventsManifest = NonNullable<BackupManifest['tracks']['events']>;

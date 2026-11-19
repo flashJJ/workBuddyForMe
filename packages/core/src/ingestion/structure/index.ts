@@ -1,5 +1,5 @@
 import { ApiError } from '@wbfm/shared/errors';
-import { detectKind, readPdfPageItems } from '../read-document';
+import { detectKind, readPdfPageItems } from '../parse/read-document';
 import { readPptx } from '../office/read-pptx';
 import { readXlsx } from '../office/read-xlsx';
 import { parseDocxDocument, parseOfficeText } from './office-parser';

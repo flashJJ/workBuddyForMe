@@ -6,7 +6,7 @@ import {
   normalizeClipUrl,
   toClipError,
 } from './fetch-article';
-import { SsrfBlockedError } from '../net/safe-web-fetch';
+import { SsrfBlockedError } from '../../net/safe-web-fetch';
 
 const PUBLIC_IP = '8.8.8.8'; // 公网 IP 字面量，跳过 DNS，配合 fetch stub 零真实网络
 

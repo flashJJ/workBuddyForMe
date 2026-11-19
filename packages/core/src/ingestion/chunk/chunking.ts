@@ -1,4 +1,4 @@
-import type { ChunkOptions, ChunkSlice } from './types';
+import type { ChunkOptions, ChunkSlice } from '../types';
 
 interface Atom {
   text: string;

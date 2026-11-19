@@ -6,7 +6,7 @@ import {
   backupManifestSchema,
   type BackupManifest,
 } from '@wbfm/shared/backup';
-import type { ServiceDeps } from '../services/base/deps';
+import type { ServiceDeps } from '../../services/base/deps';
 import {
   createConversationBranchRepository,
   createStagePlanRepository,
@@ -15,25 +15,25 @@ import {
   createEmotionStateRepository,
   createEmotionEventRepository,
 } from '@wbfm/database';
-import { filterBranchEvents, serializeBranchEvents } from './portability/export/export-branch-events';
-import { serializeConversationsTrack } from './portability/export/export-conversations';
-import { serializeKnowledgeTrack } from './portability/export/export-knowledge';
-import { filterEmotionFile, filterEventsFiles, eventsTotal, filterTasksFiles } from './portability/export/incremental-filter';
+import { filterBranchEvents, serializeBranchEvents } from '../portability/export/export-branch-events';
+import { serializeConversationsTrack } from '../portability/export/export-conversations';
+import { serializeKnowledgeTrack } from '../portability/export/export-knowledge';
+import { filterEmotionFile, filterEventsFiles, eventsTotal, filterTasksFiles } from '../portability/export/incremental-filter';
 import { serializeTasksTrack } from './export-tasks-track';
-import { serializeAgentRunsTrack, serializeAgentHandoffsTrack } from './portability/export-agent-runs';
-import { serializeAttachmentsTrack } from './portability/export/export-attachments';
-import { createExportReporter, payloadBytes } from './portability/export/export-report';
+import { serializeAgentRunsTrack, serializeAgentHandoffsTrack } from '../portability/export-agent-runs';
+import { serializeAttachmentsTrack } from '../portability/export/export-attachments';
+import { createExportReporter, payloadBytes } from '../portability/export/export-report';
 import { serializeEventsTrack } from './export-events-track';
-import { getAppVersion } from './app-version';
+import { getAppVersion } from '../app-version';
 import { ApiError } from '@wbfm/shared/errors';
 import { getDataRoot } from '@wbfm/config';
 import { packTarGz } from './export-archive';
-import { sealArchive } from './portability/archive-cipher';
-import { chainInfoFromManifest } from './portability/chain/chain-info';
-import { appendBackupHistory, requireIncrementalParent } from './portability/chain/backup-registry';
+import { sealArchive } from '../portability/archive-cipher';
+import { chainInfoFromManifest } from '../portability/chain/chain-info';
+import { appendBackupHistory, requireIncrementalParent } from '../portability/chain/backup-registry';
 import { sanitizeSettings } from './export-sanitize';
-import { BACKUP_MAX_ARCHIVE_BYTES } from './export-types';
-import type { BackupExportOptions, BackupExportResult } from './export-types';
+import { BACKUP_MAX_ARCHIVE_BYTES } from '../export-types';
+import type { BackupExportOptions, BackupExportResult } from '../export-types';
 
 // 既有域 barrel 导出名原位保留（实现已拆至 kebab-case 纯函数模块，exportBackup 主流程不变）
 export { sanitizeSettings };

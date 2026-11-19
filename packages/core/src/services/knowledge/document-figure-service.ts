@@ -2,7 +2,7 @@ import type { ChatContentPart } from '@wbfm/ai';
 import { ApiError } from '@wbfm/shared/errors';
 import type { DocumentRecord } from '@wbfm/shared/types';
 import type { StoredDocumentBlock } from '@wbfm/database';
-import { renderPdfPagesToPng } from '../../ingestion/pdf-render';
+import { renderPdfPagesToPng } from '../../ingestion/parse/pdf-render';
 import { resolveVisionTarget } from '../../ingestion/vision-target';
 import type { ServiceDeps } from '../base/deps';
 

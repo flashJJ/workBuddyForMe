@@ -1,5 +1,5 @@
 import { LOW_CONFIDENCE_TABLE_THRESHOLD } from '@wbfm/shared/constants';
-import type { StructuredText } from '../text-structure';
+import type { StructuredText } from '../parse/text-structure';
 import type {
   BlockSegment,
   DocumentBlock,

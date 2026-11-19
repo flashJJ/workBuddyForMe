@@ -14,9 +14,9 @@ import {
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../../secrets/cipher';
 import { ensureSeedData } from '../../services/base/seed';
-import { exportBackup } from '../export';
-import { extractArchiveFull } from '../restore-archive';
-import { restoreBackup } from '../restore';
+import { exportBackup } from '../export/export';
+import { extractArchiveFull } from '../restore/restore-archive';
+import { restoreBackup } from '../restore/restore';
 import { readBackupHistory } from '../portability/chain/backup-registry';
 
 let db: DatabaseInstance;

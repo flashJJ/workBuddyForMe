@@ -7,9 +7,9 @@ import {
   OCR_VISION_SCALE,
   type OcrEngine,
 } from '@wbfm/shared/constants';
-import type { ServiceDeps } from '../services/base/deps';
-import { pageNeedsOcr } from './read-document';
-import { renderPdfPagesToPng } from './pdf-render';
+import type { ServiceDeps } from '../../services/base/deps';
+import { pageNeedsOcr } from '../parse/read-document';
+import { renderPdfPagesToPng } from '../parse/pdf-render';
 import { recognizePageWithVision } from './ocr-vision';
 import { createTesseractSession } from './ocr-tesseract';
 import {
@@ -17,7 +17,7 @@ import {
   OcrFailedError,
   OCR_GUIDANCE_MESSAGE,
 } from './ocr-errors';
-import { resolveVisionTarget } from './vision-target';
+import { resolveVisionTarget } from '../vision-target';
 
 export interface OcrRunResult {
   /** 合并文字层页与 OCR 页后的全文 */

@@ -108,4 +108,5 @@
 | Batch 2 | `memory-service` 300→220、`memory-repo` 295→190；新增 `lifecycle/ops/`（清理/新建/编辑/统计）与 `memory-search-repo` | 完成 |
 | Batch 3 | `use-chat-session` 294→181；拆 `hooks/stream/`（SSE 处理器 + 回合编排），`chat-page` 仅装配 | 完成 |
 | Batch 4 | `endpoints.ts` 293→60 的 barrel；拆 `endpoints/{chat,knowledge,system,work}.ts`，移除行数白名单 | 完成 |
-| Batch 5–6 | 见上 | 待排期 |
+| Batch 5 | `backup` 31→3（`export/`、`restore/{tracks,__tests__}`）；`ingestion` 27→8（`parse/`、`chunk/`、`ocr/`）；baseline 下调 | 完成 |
+| Batch 6 | 见上 | 待排期 |

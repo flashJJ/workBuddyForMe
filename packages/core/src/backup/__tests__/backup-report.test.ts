@@ -14,12 +14,12 @@ import {
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '../../secrets/cipher';
 import { ensureSeedData } from '../../services/base/seed';
-import { exportBackup } from '../export';
-import { packTarGz } from '../export-archive';
-import { extractArchiveFull } from '../restore-archive';
-import { precheckBackup } from '../restore-precheck';
-import { restoreBackup } from '../restore';
-import { seedAttachment } from '../restore.helpers';
+import { exportBackup } from '../export/export';
+import { packTarGz } from '../export/export-archive';
+import { extractArchiveFull } from '../restore/restore-archive';
+import { precheckBackup } from '../restore/restore-precheck';
+import { restoreBackup } from '../restore/restore';
+import { seedAttachment } from '../restore/restore.helpers';
 
 let db: DatabaseInstance;
 let tempRoot: string;

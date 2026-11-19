@@ -23,7 +23,7 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import type { BackupManifest } from '@wbfm/shared/backup';
-import { computeNextRunMs } from '../scheduler/next-run';
+import { computeNextRunMs } from '../../scheduler/next-run';
 
 export type EventsTrackManifest = NonNullable<BackupManifest['tracks']['events']>;
 

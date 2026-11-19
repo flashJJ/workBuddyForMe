@@ -1,5 +1,5 @@
 import { LOW_CONFIDENCE_TABLE_THRESHOLD } from '@wbfm/shared/constants';
-import { chunkText } from '../chunking';
+import { chunkText } from '../chunk/chunking';
 import type { ChunkOptions, ChunkSlice } from '../types';
 import { renderMarkdownTable } from './assembler';
 import type { DocumentBlock, DocumentBlockKind, ParsedDocument } from './types';

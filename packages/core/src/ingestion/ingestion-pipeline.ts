@@ -15,17 +15,17 @@ import {
 } from '@wbfm/database';
 import { getCompileQueueService } from '../knowledge/compile-queue-service';
 import type { ServiceDeps } from '../services/base/deps';
-import { chunkDocument } from './structure';
+import { chunkDocument } from './structure/index';
 import { resolveEmbeddingTarget } from './embedding-target';
-import { extractDocumentText } from './extract-with-ocr';
+import { extractDocumentText } from './ocr/extract-with-ocr';
 import {
   fallbackParsedDocument,
   type ParsedDocument,
-} from './structure';
+} from './structure/index';
 import {
   assemblePlainText,
   type StructuredText,
-} from './text-structure';
+} from './parse/text-structure';
 import type { IngestInput, IngestResult } from './types';
 
 const ERROR_EMBEDDING_MISSING = '未配置可用的 embedding 模型，请先在设置中绑定向量模型';

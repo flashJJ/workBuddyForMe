@@ -3,55 +3,55 @@ import {
   type BackupTrack,
   type BackupProgressEvent,
 } from '@wbfm/shared/backup';
-import type { ServiceDeps } from '../services/base/deps';
+import type { ServiceDeps } from '../../services/base/deps';
 import { ApiError } from '@wbfm/shared/errors';
 import { restoreSettings, restoreKnowledge, restoreConversationsTrack, restoreAttachmentsMeta, restoreSkillsState } from './restore-ops';
-import { restoreTasks, type TaskTrackEntry } from './portability/restore-tasks-track';
-import type { SkillsTrackPayload } from './portability/restore-post-write';
-import { finishRestore } from './portability/chain/restore-finish';
+import { restoreTasks, type TaskTrackEntry } from '../portability/restore-tasks-track';
+import type { SkillsTrackPayload } from '../portability/restore-post-write';
+import { finishRestore } from '../portability/chain/restore-finish';
 // v2.34：核对与收尾合并到 restore-finish（差异只告警）
-import { chainInfoFromManifest } from './portability/chain/chain-info';
+import { chainInfoFromManifest } from '../portability/chain/chain-info';
 import {
   assertIncrementalPredecessor,
-} from './portability/chain/backup-registry';
+} from '../portability/chain/backup-registry';
 import {
   backfillTaskAgentRunIds,
   readAgentHandoffsPayload,
   readAgentRunsPayload,
   restoreAgentHandoffs,
   restoreAgentRuns,
-} from './portability/restore-agent-runs';
-import { emptyCounts, type BackupRestoreResult } from './export-types';
-import { restoreEmotionStates, readEmotionTrackPayload } from './restore-emotion';
-import { restoreEventsTrack, readEventsTrackPayload } from './restore-events';
-import { readV19TrackPayloads, restoreV19TrackData, v19TrackTotal } from './restore-meetings';
+} from '../portability/restore-agent-runs';
+import { emptyCounts, type BackupRestoreResult } from '../export-types';
+import { restoreEmotionStates, readEmotionTrackPayload } from './tracks/restore-emotion';
+import { restoreEventsTrack, readEventsTrackPayload } from './tracks/restore-events';
+import { readV19TrackPayloads, restoreV19TrackData, v19TrackTotal } from './tracks/restore-meetings';
 import {
   readProvenancePayloads,
   restoreProvenance,
   provenanceTotal,
-} from './restore-provenance';
+} from './tracks/restore-provenance';
 import {
   readRelationshipMilestonesPayload,
   restoreRelationshipMilestones,
-} from './restore-milestones';
+} from './tracks/restore-milestones';
 import {
   readModInstallsPayload,
   readVrmAvatarsPayload,
   restoreModInstalls,
   restoreVrmAvatars,
-} from './restore-mod-installs';
+} from './tracks/restore-mod-installs';
 import {
   nullifyDanglingCardRefs,
   readCardsTrackPayload,
   restoreCharacterCards,
-} from './restore-cards';
+} from './tracks/restore-cards';
 import {
   readAttachmentRefsPayload,
   restoreAttachmentRefs,
-} from './portability/restore-attachment-refs';
+} from '../portability/restore-attachment-refs';
 import { determineTracks } from './restore-track-select';
 import { extractArchiveFull } from './restore-archive';
-import { ensureSeedData } from '../services/base/seed';
+import { ensureSeedData } from '../../services/base/seed';
 
 export interface BackupRestoreOptions {
   /** 指定恢复轨道；不传则恢复 manifest 中有数据的全部轨道 */
@@ -62,7 +62,7 @@ export interface BackupRestoreOptions {
   onProgress?: (ev: BackupProgressEvent) => void;
 }
 
-export type { BackupRestoreResult } from './export-types';
+export type { BackupRestoreResult } from '../export-types';
 
 /** 正式恢复：事务包裹 DB 写入，附件二进制在事务外落盘 */
 export async function restoreBackup(

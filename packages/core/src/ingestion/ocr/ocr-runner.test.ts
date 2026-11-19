@@ -14,12 +14,12 @@ vi.mock('@wbfm/shared/constants', async (importOriginal) => {
 });
 
 const renderPdfPagesToPng = vi.fn();
-vi.mock('./pdf-render', () => ({
+vi.mock('../parse/pdf-render', () => ({
   renderPdfPagesToPng: (...args: unknown[]) => renderPdfPagesToPng(...args),
 }));
 
 const resolveVisionTarget = vi.fn();
-vi.mock('./vision-target', () => ({
+vi.mock('../vision-target', () => ({
   resolveVisionTarget: (...args: unknown[]) => resolveVisionTarget(...args),
 }));
 

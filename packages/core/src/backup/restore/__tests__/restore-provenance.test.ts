@@ -11,11 +11,11 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { exportBackup } from './export';
-import { precheckBackup, restoreBackup } from './restore';
-import { restoreProvenance } from './restore-provenance';
-import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/base/seed';
+import { exportBackup } from '../../export/export';
+import { precheckBackup, restoreBackup } from '../restore';
+import { restoreProvenance } from '../tracks/restore-provenance';
+import { createWebCipher } from '../../../secrets/cipher';
+import { ensureSeedData } from '../../../services/base/seed';
 
 describe('v2.6 备份恢复（events 轨：记忆 + 会议结论 + 行动项）', () => {
   let srcDb: DatabaseInstance;

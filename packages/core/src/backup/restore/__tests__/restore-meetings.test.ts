@@ -11,14 +11,14 @@ import {
 } from '@wbfm/database';
 import type { StageScenePayload } from '@wbfm/shared/schemas';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
-import { exportBackup } from './export';
-import { precheckBackup, restoreBackup } from './restore';
+import { exportBackup } from '../../export/export';
+import { precheckBackup, restoreBackup } from '../restore';
 import {
   readV19TrackPayloads,
   restoreV19TrackData,
-} from './restore-meetings';
-import { createWebCipher } from '../secrets/cipher';
-import { ensureSeedData } from '../services/base/seed';
+} from '../tracks/restore-meetings';
+import { createWebCipher } from '../../../secrets/cipher';
+import { ensureSeedData } from '../../../services/base/seed';
 
 const SCENE_PAYLOAD: StageScenePayload = {
   background: { type: 'solid', color: '#101826', brightness: 1, blur: 0 },
