@@ -453,7 +453,7 @@ R7（`read_fetched` 自动注入）在契约测试中显式断言：启用 `fetc
 - `fetch-fold` 需要 128K 窗口才能放行 6 页；验收脚本通过 `ensureMockStack({ chatContextWindow: 128000 })` 显式声明，未改动全局默认。
 - `WBFM_FETCH_ALLOW_PRIVATE=1` 是仅测试进程使用的放行开关，只跳过私网判定，协议白名单与重定向逐跳复检仍然生效。
 - Windows 下 Next 子进程退出后临时数据目录偶发占用，清理失败只告警、不影响用例结论。
-- P1 已完成（记录见 §13–§17）；P2（trace 回放、MCP/Skill 巡检）尚未开始。
+- P1 已完成（记录见 §13–§17）；P2-1 trace 回放已完成（§18），其余 P2 尚未开始。
 
 ---
 
@@ -496,7 +496,7 @@ R7（`read_fetched` 自动注入）在契约测试中显式断言：启用 `fetc
 
 ### 13.4 尚未开始
 
-P2 未开始（P1-4 三档窗口全链路见 §17）。
+P2-1 trace 回放已完成（§18）；其余 P2 未开始。
 
 ---
 
@@ -641,3 +641,48 @@ MSW 会重建 Request，`request.redirect` 固定为 `follow`，无法断言原�
 - `budget-8k` 失败：`/large` 请求数 6（期望 3）、预算拒绝 0 次（期望 3）、第二条未折叠；
 - `budget-1m` 失败：出现折叠，且工具结果被二次截断；
 - 128K 三条用例不受影响，证明断言定位到了窗口缩放差异而非环境抖动。
+
+---
+
+## 18. P2 落地记录：trace → scenario 回放（P2-1）
+
+### 18.1 交付
+
+| 项 | 落点 |
+|---|---|
+| 转换脚本 | `scripts/acceptance/trace-to-scenario.mjs`：会话消息 → 场景 + 可判定预期 |
+| 回放入口 | `scripts/acceptance/run.mjs --replay=<file>`；声明式断言在 `scripts/acceptance/cases.mjs#createReplayCheck` |
+| 场景格式 | `{ turns, replay: { message, tier, enabledTools, expect } }`，与内置场景同文件共存 |
+
+转换规则：
+
+- 工具参数：`fetch_webpage` 的 `argsSummary` 就是 URL，`web_search` / `knowledge_search` 是 query，其余工具 `JSON.parse(argsSummary)`；
+- 回环地址统一重写为 `{{FIXTURE}}`，生成物直接对接验收栈；
+- 轮次：`startedAt` 相差 ≤50ms 的调用聚为同一模型轮次（并发批）；
+- trace 含非 `read` 工具时直接拒绝：离线回放无人可确认，避免生成必然挂起的用例；
+- 摘要被裁剪（以 `…` 结尾）时拒绝生成，避免半成品场景。
+
+### 18.2 一条真实失败变用例
+
+```bash
+# 1. 从真实会话生成回放文件（服务需可访问 /api/conversations/:id/messages）
+node scripts/acceptance/trace-to-scenario.mjs \
+  --base-url=http://127.0.0.1:3200 --conversation-id=<id> --name=trace-xxx
+
+# 2. 自动起 Fake Web + Next 回放，断言工具顺序/失败工具/探针条数/零确认
+node scripts/acceptance/run.mjs --replay=tests/scenarios/trace-replay.json --only=trace-xxx
+```
+
+### 18.3 验证
+
+| 项 | 结果 |
+|---|---|
+| 离线夹具转换 | 生成 2 轮场景（fetch → read_fetched，URL 已重写为 `{{FIXTURE}}`）；回放 1/1 通过 |
+| 真实会话（`fetch-cache`）转换 | 生成 `trace-live-cache`；回放 1/1 通过 |
+| `pnpm check` | 通过 |
+
+### 18.4 已知边界
+
+- 只支持只读工具；write/danger 工具需先配置 allow 授权，当前版本直接拒绝转换。
+- trace 不记录模型轮次与完整参数：轮次靠开始时间聚类，参数靠 `argsSummary` 还原（超过 120 字符被裁剪即拒绝）。
+- 回放复现的是「工具决策序列 + 系统行为」，不还原模型自然语言推理；断言取工具顺序、失败工具名、探针条数等确定性指标。

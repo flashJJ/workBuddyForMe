@@ -158,6 +158,34 @@ export const CASES = [
   },
 ];
 
+/**
+ * v4.11 P2-1：把 trace 还原出的可判定预期转成 check。
+ * 只断言确定性指标，避免把一次环境抖动固化成回归。
+ * @param {{toolOrder?:string[], failedTools?:string[], approvals?:number, probeCount?:number}} expect
+ */
+export function createReplayCheck(expect = {}) {
+  return ({ result }) => {
+    const turn = analyzeTurn(result.events);
+    const probe = parseProbe(result.content);
+    const failedNames = turn.failed.map((item) => item.tool);
+    const checks = [
+      expectTrue(!result.error, `无错误帧${result.error ? `（${result.error}）` : ''}`),
+      expectEqual(turn.toolOrder, expect.toolOrder ?? [], '工具顺序'),
+      expectEqual(failedNames, expect.failedTools ?? [], '失败工具'),
+      expectEqual(turn.approvals, expect.approvals ?? 0, '人工确认次数'),
+    ];
+    if (typeof expect.probeCount === 'number') {
+      checks.push(
+        expectTrue(
+          probe?.count === expect.probeCount,
+          `模型看到 ${expect.probeCount} 条工具结果（实际 ${probe?.count ?? 'null'}）`,
+        ),
+      );
+    }
+    return collect(checks);
+  };
+}
+
 export async function fetchStats(fixtureUrl) {
   const response = await fetch(`${fixtureUrl}/__stats`);
   return response.json();

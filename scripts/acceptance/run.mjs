@@ -14,13 +14,13 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { api } from '../eval/lib/http.mjs';
 import { ensureMockStack, ensureWindowTiers } from '../eval/lib/mock-seed.mjs';
 import { streamChat } from '../eval/lib/sse-client.mjs';
 import { printSummary, summarize, writeReport } from '../eval/lib/report.mjs';
-import { CASES, fetchStats, resetFixture } from './cases.mjs';
+import { CASES, createReplayCheck, fetchStats, resetFixture } from './cases.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
@@ -43,6 +43,7 @@ function readArgs(argv) {
     fixturePort: Number(process.env.WBFM_FIXTURE_PORT ?? 43101),
     out: '',
     only: '',
+    replay: '',
     keep: false,
   };
   for (const arg of argv.slice(2)) {
@@ -52,6 +53,7 @@ function readArgs(argv) {
     else if (arg.startsWith('--fixture-port=')) args.fixturePort = Number(arg.slice('--fixture-port='.length));
     else if (arg.startsWith('--out=')) args.out = arg.slice('--out='.length);
     else if (arg.startsWith('--only=')) args.only = arg.slice('--only='.length);
+    else if (arg.startsWith('--replay=')) args.replay = arg.slice('--replay='.length);
   }
   return args;
 }
@@ -106,12 +108,37 @@ function stopLogged(entry) {
   });
 }
 
-function buildScenario(workDir, fixtureUrl) {
-  const template = readFileSync(TEMPLATE, 'utf-8');
-  const resolved = template.replaceAll('{{FIXTURE}}', fixtureUrl);
+function buildScenario(workDir, fixtureUrl, replayPath) {
+  const template = JSON.parse(readFileSync(TEMPLATE, 'utf-8'));
+  if (replayPath) {
+    const replay = JSON.parse(readFileSync(replayPath, 'utf-8'));
+    // 回放场景覆盖同名内置场景，其余保持模板原样
+    Object.assign(template.scenarios, replay.scenarios ?? {});
+  }
+  const resolved = JSON.stringify(template, null, 2).replaceAll('{{FIXTURE}}', fixtureUrl);
   const path = join(workDir, 'scenario.json');
   writeFileSync(path, resolved, 'utf-8');
   return path;
+}
+
+/** 相对路径按工作区根目录解析，绝对路径原样使用 */
+function resolvePath(path) {
+  return isAbsolute(path) ? path : join(ROOT, path);
+}
+
+/** P2-1：把 trace 生成的回放文件转成与 CASES 同形的用例 */
+function loadReplayCases(replayPath) {
+  const file = JSON.parse(readFileSync(replayPath, 'utf-8'));
+  return Object.entries(file.scenarios ?? {}).map(([name, scenario]) => {
+    const replay = scenario.replay ?? {};
+    return {
+      id: name,
+      tier: replay.tier ?? '128k',
+      message: `[scenario:${name}] ${replay.message ?? 'trace 回放'}`,
+      enabledTools: replay.enabledTools ?? [],
+      check: createReplayCheck(replay.expect ?? {}),
+    };
+  });
 }
 
 async function runCase({ baseUrl, fixtureUrl, assistantId, testCase }) {
@@ -143,7 +170,8 @@ async function main() {
   const baseUrl = `http://127.0.0.1:${args.port}`;
   const fixtureUrl = `http://127.0.0.1:${args.fixturePort}`;
   const workDir = mkdtempSync(join(tmpdir(), 'wbfm-acceptance-'));
-  const scenarioPath = buildScenario(workDir, fixtureUrl);
+  const replayPath = args.replay ? resolvePath(args.replay) : '';
+  const scenarioPath = buildScenario(workDir, fixtureUrl, replayPath);
   let fixture = null;
   let server = null;
 
@@ -178,14 +206,23 @@ async function main() {
         .join(' ')}`,
     );
 
-    console.log(`\n开始验收：${CASES.length} 个场景\n`);
+    const allCases = replayPath ? loadReplayCases(replayPath) : CASES;
+    if (replayPath) console.log(`回放模式：${replayPath}`);
+    console.log(`\n开始验收：${allCases.length} 个场景\n`);
     const results = [];
-    const selected = args.only ? CASES.filter((item) => item.id === args.only) : CASES;
+    const selected = args.only ? allCases.filter((item) => item.id === args.only) : allCases;
     for (const testCase of selected) {
       const tier = tiers[testCase.tier ?? '128k'];
       let result;
       try {
         if (!tier) throw new Error(`用例 ${testCase.id} 指定的窗口档位不存在：${testCase.tier}`);
+        // 回放场景按 trace 还原启用工具；内置用例沿用档位助手的默认工具集
+        if (testCase.enabledTools?.length) {
+          await api(baseUrl, `/api/assistants/${tier.assistantId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ enabledTools: testCase.enabledTools }),
+          });
+        }
         result = await runCase({
           baseUrl,
           fixtureUrl,
