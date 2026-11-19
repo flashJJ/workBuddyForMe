@@ -2,32 +2,23 @@
 
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Citation, Message } from '@wbfm/shared/types';
-import type { RecalledMemoryPayload, SsePayloadMap } from '@wbfm/shared/api';
+import type { Message } from '@wbfm/shared/types';
+import type { RecalledMemoryPayload } from '@wbfm/shared/api';
 import { useMessages } from '@/lib/hooks/chat';
 import { QUERY_KEYS } from '@/lib/api/endpoints';
 import { useChatStream } from '@/lib/hooks/chat';
 import { useAgentTaskTurn } from './use-agent-task-turn';
 import type { AgentCardEntry } from '@/features/agent-collab';
-import {
-  applyToolSubsteps,
-  applyToolTraceEnd,
-  applyToolTraceStart,
-  patchLastAssistantMessage,
-} from '../base/live-message-utils';
+import { patchLastAssistantMessage } from '../base/live-message-utils';
 import type { ChatSession, ChatSessionVoice, PendingToolConfirmation } from '../types/chat-session.types';
 import { useStreamFrame } from './use-stream-frame';
 import { useChatLiveGraph } from './use-chat-live-graph';
+import { useChatTurn } from './stream';
 
 import {
   appendAssistantDelta,
-  buildStreamInput,
   buildTurnMessages,
-  completedPatch,
-  applyMemoryNotices,
-  confirmationFromPayload,
   applyMessageFeedback,
-  markStreamingAssistantStopped,
   pendingMessage,
   useToolConfirmation,
 } from './use-chat-session-helpers';
@@ -40,6 +31,7 @@ export type { AgentCardEntry };
 /**
  * 对话会话状态：历史消息来自 React Query，流式期间用本地 live 列表接管；
  * 新会话由后端创建后通过 onConversationCreated 回传 conversationId。
+ * v4.13：SSE 处理器与普通回合编排分别下沉到 use-chat-stream-handlers / use-chat-turn。
  */
 export function useChatSession(
   assistantId: string,
@@ -122,107 +114,32 @@ export function useChatSession(
 
   const baseMessages = live ?? historyQuery.data ?? [];
 
-  const runTurn = React.useCallback(
-    (options: { content: string; regenerate: boolean; attachments?: string[] }) => {
-      const { content, regenerate, attachments = [] } = options;
-      startTiming();
-      setRecalledMemories([]);
-      setPendingConfirmation(null);
-      const assistantMessage: Message = {
-        ...pendingMessage('assistant', ''),
-        status: 'streaming',
-      };
-
-      setLive((prev) =>
-        buildTurnMessages(prev ?? historyQuery.data ?? [], assistantMessage, {
-          content,
-          regenerate,
-          attachments,
-        }),
-      );
-
-      const handlers = {
-        onMeta: (data: SsePayloadMap['meta']) => {
-          liveGraph.start(data);
-          patchLastAssistant({ id: data.messageId, conversationId: data.conversationId });
-          if (!conversationId && !regenerate) onConversationCreated(data.conversationId);
-        },
-        onDelta: (data: SsePayloadMap['delta']) => {
-          markFirstToken();
-          queueDelta(data.content);
-        },
-        onCitations: (data: SsePayloadMap['citations']) => {
-          const citations: Citation[] = data.citations;
-          patchLastAssistant({ citations });
-        },
-        onMemories: (data: SsePayloadMap['memories']) => {
-          setRecalledMemories(data.memories);
-        },
-        onTool: (data: SsePayloadMap['tool']) => {
-          liveGraph.tool(data);
-          if (data.phase === 'start') {
-            setLive((prev) => applyToolTraceStart(prev, data));
-            return;
-          }
-          if (data.phase === 'substep') {
-            // v0.8：flow 工具逐节点进度
-            setLive((prev) => applyToolSubsteps(prev, data));
-            return;
-          }
-          // end：用 start 阶段记录的 startedAt 保留真实开始时间
-          setLive((prev) => applyToolTraceEnd(prev, data));
-        },
-        onToolConfirmationRequired: (data: SsePayloadMap['tool_confirmation_required']) => {
-          // 编排器已挂起等待决策；弹窗由页面渲染
-          setPendingConfirmation(confirmationFromPayload(data));
-        },
-        onVoiceAudio: (data: SsePayloadMap['voice_audio']) => voice?.onAudio?.(data),
-        onVoiceState: (data: SsePayloadMap['voice_state']) => voice?.onVoiceState?.(data),
-        onDone: (data: SsePayloadMap['done']) => {
-          liveGraph.complete(data);
-          flushPendingDelta();
-          settleTiming();
-          setPendingConfirmation(null);
-          patchLastAssistant(completedPatch(data));
-          setLive((prev) => applyMemoryNotices(prev, data.memoryNotices));
-          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
-          void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
-          // v4.12：本轮意图与提示状态已落事件，通知上下文面板刷新
-          void queryClient.invalidateQueries({ queryKey: ['events', 'chat'] });
-        },
-        onError: (data: SsePayloadMap['error']) => {
-          liveGraph.fail(data);
-          flushPendingDelta();
-          settleTiming();
-          setPendingConfirmation(null);
-          patchLastAssistant({ status: 'error', errorCode: data.code, errorMessage: data.message });
-          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
-          void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
-          void queryClient.invalidateQueries({ queryKey: ['events', 'chat'] });
-        },
-      };
-
-      void streamSend(
-        buildStreamInput({
-          assistantId,
-          conversationId,
-          content,
-          attachments,
-          regenerate,
-          ttsEnabled: voice?.ttsEnabled ?? false,
-        }),
-        handlers,
-      );
+  const { send, retry, stop } = useChatTurn({
+    assistantId,
+    conversationId,
+    historyMessages: historyQuery.data ?? [],
+    live,
+    setLive,
+    setRecalledMemories,
+    setPendingConfirmation,
+    onConversationCreated,
+    queryClient,
+    streamSend,
+    streamStop,
+    streaming,
+    voice,
+    taskTurn,
+    liveGraph,
+    patchLastAssistant,
+    timing: {
+      startTiming,
+      markFirstToken,
+      queueDelta,
+      flushPendingDelta,
+      settleTiming,
+      resetStream,
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [assistantId, conversationId, historyQuery.data, onConversationCreated, queryClient, streamSend, voice, startTiming, markFirstToken, queueDelta, flushPendingDelta, settleTiming],
-  );
-
-  const send = React.useCallback(
-    (content: string, attachmentIds?: string[]) =>
-      runTurn({ content, regenerate: false, attachments: attachmentIds }),
-    [runTurn],
-  );
+  });
 
   /** v1.4 任务模式：委托 useAgentTaskTurn（建会话→建行→协作 SSE→终态对账） */
   const sendTask = React.useCallback((content: string, options?: { regenerate?: boolean }) => {
@@ -230,36 +147,6 @@ export function useChatSession(
     resetStream();
     return taskTurn.start(content, options);
   }, [taskTurn, resetStream]);
-
-  const retry = React.useCallback(() => {
-    if (streaming) return;
-    const source = live ?? historyQuery.data ?? [];
-    const lastUser = [...source].reverse().find((m) => m.role === 'user');
-    if (!lastUser || !conversationId) return;
-    const lastAssistant = [...source].reverse().find((m) => m.role === 'assistant');
-    // v1.4 任务模式：用户消息不落 messages 表（仅 live+agent_runs），普通 regenerate
-    // 会报「没有可重新生成的用户消息」；挂着协作卡的失败回复直接重新发起协作
-    if (lastAssistant && taskTurn.agentCards[lastAssistant.id]) {
-      resetStream();
-      void taskTurn.start(lastUser.content, { regenerate: true });
-      return;
-    }
-    runTurn({ content: lastUser.content, regenerate: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runTurn, streaming, live, historyQuery.data, conversationId, taskTurn, resetStream]);
-
-  /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
-  const stop = React.useCallback(() => {
-    liveGraph.stop();
-    streamStop();
-    taskTurn.stop();
-    flushPendingDelta();
-    settleTiming();
-    voice?.cancelPlayback?.();
-    setPendingConfirmation(null);
-    setLive((prev) => markStreamingAssistantStopped(prev));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [streamStop, taskTurn, voice, flushPendingDelta, settleTiming]);
 
   const applyFeedback = React.useCallback(
     (messageId: string, feedback: Message['feedback'], feedbackAt: string | null) => {

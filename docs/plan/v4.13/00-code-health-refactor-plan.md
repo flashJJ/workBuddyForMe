@@ -106,4 +106,5 @@
 | Batch 0 | `build:web` 构建告警消失；`next start` 健康检查 200；验收 6/6 | 完成 |
 | Batch 1 | `turn-context-assembly` 289→220；`chat/context` 直接文件 26→12；拆 `assembly/`、`intent/`、`compression/` 子域 | 完成 |
 | Batch 2 | `memory-service` 300→220、`memory-repo` 295→190；新增 `lifecycle/ops/`（清理/新建/编辑/统计）与 `memory-search-repo` | 完成 |
-| Batch 3–6 | 见上 | 待排期 |
+| Batch 3 | `use-chat-session` 294→181；拆 `hooks/stream/`（SSE 处理器 + 回合编排），`chat-page` 仅装配 | 完成 |
+| Batch 4–6 | 见上 | 待排期 |
