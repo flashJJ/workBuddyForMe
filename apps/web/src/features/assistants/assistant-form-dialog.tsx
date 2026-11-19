@@ -105,7 +105,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(errorText(error, t, { fallback: 'toast.saveFailed' }));
+      toast.error(errorText(error, t, { fallback: 'toast.saveFailed', withDetail: true }));
     } finally {
       setSubmitting(false);
     }
