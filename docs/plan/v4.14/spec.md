@@ -1,6 +1,6 @@
 # v4.14 桌宠动作接线与视觉巡检选型（含 docs 版本地图）
 
-> 状态：待评审（2026-11-19）
+> 状态：已批准（2026-11-19）
 > 上游：[v4.13 代码健康度重构计划](../v4.13/00-code-health-refactor-plan.md)
 > 关联：[开发与测试指南](../../development.md)、[v0.7 playwright-mcp 评估](../../roadmap/v0.7-playwright-mcp-eval.md)
 
