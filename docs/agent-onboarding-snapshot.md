@@ -1,7 +1,7 @@
-# 智能体上手快照（2026-11-17 / v4.4.0）
+# 智能体上手快照（2026-11-20 / v4.15.0）
 
 > 用途：新窗口的智能体在 5 分钟内建立项目心智模型。先读本文件，再按 §11 打开对应文档。
-> 生成时的基线：`main` = `2a7f7c3b`（merge: v4.4.0 发布收尾），tag `v4.4.0`，工作分支 `feat/v4.4-background-and-wallpaper`。
+> 生成时的基线：`main` = `030fd5c6`（chore(release): 发布 v4.15.0），tag `v4.15.0`，工作分支 `main`。
 
 ## 1. 项目定位
 
@@ -15,16 +15,14 @@ WorkBuddyForMe：本地优先的私人 AI 桌面平台。Next.js 15 全栈 Web +
 
 | 项 | 值 |
 |---|---|
-| 版本 | 4.4.0（已合 main、已打 tag `v4.4.0`、已推工蜂） |
-| 安装包 | `<构建归档>\v4.4.0\WorkBuddyForMe-Setup-4.4.0.exe` 272.57MB |
-| SHA256 | `da3cd2de8ae9042fb2998c65e2cd0d6ef7d06b788df0a457a35052d52ccbda0c` |
-| 构建 commit | `0740bcd2`（build-info.json 记录 branch/commit/builtAt） |
-| 数据库 | 零迁移，`LATEST_SCHEMA_VERSION = 51` |
-| 测试基线 | 9 包 745 文件 4219 项通过 |
+| 版本 | 4.15.0（已合 main、已打 tag `v4.15.0`、已发布） |
+| 安装包 | `WorkBuddyForMe-Setup-4.15.0.exe`，270,056,914 字节（约 257.5 MB） |
+| SHA256 | `5411a97138adcfeeffda2c2b426b103710983c9f8888e46087f066328acb3258` |
+| 构建 commit | `030fd5c6`（build-info.json 记录 branch/commit/builtAt） |
+| 数据库 | 零迁移，`LATEST_SCHEMA_VERSION = 53` |
+| 测试基线 | `pnpm check` 全绿；shared / web / desktop 全量单测通过（数量以 `pnpm test:unit` 实时输出为准） |
 
 远端纪律：内部镜像与 GitHub 均可推送，具体地址与账号不在此记录；发布前确认目标远端与标签。
-
-当前未提交（与本版无关，勿顺手提交）：`README.md` 的影视入口链接、未跟踪的 `docs/film/`。
 
 ## 3. 仓库结构
 
@@ -41,7 +39,7 @@ packages/motion 动效内容包运行时
 scripts/        门禁、资产、打包、归档、评测脚本
 docs/plan/vX.Y/ 版本方案（README/spec/tasks/progress-log/release-notes/version-summary）
 docs/roadmap/   路线图、候选与已排期方案
-blog/vX.Y/      每版 10 篇技术博客
+blog/vX.Y/      每版 7 篇左右技术博客（早期版本 10 篇）
 tests/          e2e（Playwright）与跨包测试夹具
 ```
 
@@ -51,7 +49,8 @@ tests/          e2e（Playwright）与跨包测试夹具
 |---|---|
 | `pnpm dev:web` | Next dev，127.0.0.1:42337 |
 | `pnpm dev:desktop` | Electron 开发态（依赖 Next dev；CDP 42338） |
-| `pnpm check` | 全量门禁：typecheck + lint + lines + structure + cycles + ascii + assets + surfaces |
+| `pnpm check` | 全量门禁：typecheck + lint + lines + structure + cycles + msw + ascii + assets + surfaces |
+| `pnpm test:e2e:visual` | 视觉巡检截图（默认跳过，需显式开关；基线只在固定 Linux 环境生成） |
 | `pnpm test` | Turbo 全仓测试（含覆盖率阈值） |
 | `pnpm --filter @wbfm/web typecheck` | 单包类型检查 |
 | `pnpm --filter @wbfm/web exec vitest run src/features/xxx` | Web 定向测试（**必须**在 `apps/web` 目录跑，根目录跑会解析不到 `@/` 别名） |
@@ -81,7 +80,7 @@ pnpm exec electron-builder --win --x64 --publish never --config electron-builder
 # 4) 归档 + 校验
 cd ..\..
 pnpm archive:win
-node scripts/release-manifest.mjs --check --dir <构建归档>\v4.4.0
+node scripts/release-manifest.mjs --check --dir <构建归档>\v4.15.0
 ```
 
 注意：
@@ -106,8 +105,8 @@ node scripts/release-manifest.mjs --check --dir <构建归档>\v4.4.0
 1. 从最新 main 切 `feat/vX.Y-<slug>`。
 2. 先写 `docs/plan/vX.Y/`：README（目标/非目标）→ spec（契约）→ tasks（里程碑勾选）→ progress-log（边做边记）。
 3. 按里程碑开发，每个里程碑跑 typecheck + 定向测试；完成后全量 `pnpm check` + `pnpm test`。
-4. 补 release-notes、version-summary、`blog/vX.Y/B01–B10`，回填安装包体积/哈希/commit。
-5. 真机安装验证通过后：`git merge --no-ff` 到 main → `git tag -a vX.Y.Z` → `git push tencent main` + `git push tencent vX.Y.Z`。
+4. 补 release-notes、version-summary、`blog/vX.Y/B01–B07`（篇数以版本实际技术点为准），回填安装包体积/哈希/commit。
+5. 真机安装验证通过后：`git merge --no-ff` 到 main → `git tag -a vX.Y.Z` → `git push tencent main` + `git push tencent vX.Y.Z`；再推 `origin` 的 main 与 tag 触发 GitHub Release workflow（Draft 需人工核对安装包、`latest.yml` 与 blockmap 后转正）。
 6. 未验证前不合 main、不打 tag。
 
 ## 8. 关键架构与约定
@@ -147,11 +146,11 @@ node scripts/release-manifest.mjs --check --dir <构建归档>\v4.4.0
 
 - 零依赖自研，`packages/shared/src/i18n/messages/*` 为唯一文案源；中英双语，命名空间按模块划分。
 
-## 9. v4.4 本轮改动摘要（便于理解现状）
+## 9. v4.15 本轮改动摘要（便于理解现状）
 
-- 主窗口缺省整屏；默认背景森林露营；雨夜小客厅归入「主窗口背景」；新增「纯色 / 无色」分组。
-- 移除表面层 24px backdrop 模糊，L1 透明度改为 0.50/0.52；侧栏未选中文字 `text-foreground/80`；对话页形象栏从 L5 实色改为 L1 半透明。
-- 内置视频补首帧 `poster` + 失败重试，修复慢加载/服务未就绪时白底无壁纸。
+- 删除两个不可达的动作变体（触发场景 / 发起聊天），执行器守卫下移，字幕不再依赖表现控制器。
+- 桌宠右键新增「聊两句」：聚焦主窗并预填草稿，只传白名单语义键，不自动发送。
+- 视觉巡检 L1：设置页基础区、记忆面板、上下文洞察面板接入截图基线；CI 首月非阻断并上传差异产物。
 
 ## 10. 已知坑
 
@@ -162,7 +161,7 @@ node scripts/release-manifest.mjs --check --dir <构建归档>\v4.4.0
 5. **设置保存**是顶层替换，不要只提交局部 `background`。
 6. **SSR/水合**：依赖查询数据切换 DOM 结构的面板要加 `mounted` 门控（参见 `tuning-panel.tsx` 等）。
 7. **视频请求失败**不会自动无限恢复：重试 3 次后停在封面，刷新恢复；这是有意的降级。
-8. **README/docs/film 未提交**属于另一条工作线，不要合并进版本提交。
+8. **视觉基线只在固定 Linux 环境生成**；本地 Windows 快照提交后会让 CI 比对失真。
 9. `check:surfaces` 目前基线 0，任何新增裸表面类都会让门禁失败。
 10. 中文文档里的 ASCII 框图容易错位，优先 Mermaid。
 
@@ -172,8 +171,8 @@ node scripts/release-manifest.mjs --check --dir <构建归档>\v4.4.0
 |---|---|
 | 开发/测试/环境变量 | `docs/development.md` |
 | 路线图与版本索引 | `docs/roadmap/README.md` |
-| 当前版本方案 | `docs/plan/v4.4/README.md`、`spec.md`、`tasks.md`、`progress-log.md` |
-| 发布说明 | `docs/plan/v4.4/release-notes.md`、`version-summary.md` |
+| 当前版本方案 | `docs/plan/v4.15/spec.md`、`tasks.md` |
+| 发布说明 | `docs/roadmap/v4.15.0-release-notes.md` |
 | 表面体系 | `docs/plan/v4.4/surface-system.md`、`surface-registry.md` |
 | 背景契约 | `packages/shared/src/schemas/media/background/index.ts` |
 | 背景渲染 | `apps/web/src/features/background/*` |
@@ -184,7 +183,7 @@ node scripts/release-manifest.mjs --check --dir <构建归档>\v4.4.0
 
 ## 12. 新窗口起步清单
 
-1. 读本文件 §2 确认基线，再读 `docs/plan/v4.4/progress-log.md` 末尾三条。
+1. 读本文件 §2 确认基线，再读 `docs/plan/v4.15/tasks.md` 与 `docs/roadmap/v4.15.0-release-notes.md`。
 2. 跑一次 `pnpm check` 确认环境干净（约 1–2 分钟）。
 3. 若要改 UI：先查 `surface-registry.md`，只选 token，不写裸表面类。
 4. 若要改背景：先读 §8.3，注意三作用域完整提交与 `isChatMode` 缺省整屏。

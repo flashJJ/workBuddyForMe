@@ -2,16 +2,14 @@
 
 本地优先的**私人 AI 工作台 + 桌面陪伴角色**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v4.0.0**（2026-11-15）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
-> 本版主线：能力依赖拓扑 + 内部动效包 + `motion-pack` 内容包 + 会话快照刷新 + 发布校验，详见 [v4.0.0 发布说明](docs/plan/v4.0/release-notes.md)。
+> 当前版本：**v4.15.0**（2026-11-20）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 本版主线：动作契约收口 + 桌宠发起聊天 + 视觉巡检 L1，详见 [v4.15.0 发布说明](docs/roadmap/v4.15.0-release-notes.md)。
 
-## v4.0.0 平台化一期
+## v4.15.0 动作契约收口与陪伴入口
 
-- **依赖拓扑**：manifest 增加 `coreVersion`；安装/启用/升级统一执行缺依赖、版本不匹配与环检测，依赖序稳定可复现。
-- **动效内部包**：契约、默认内容与 payload schema 抽到纯数据包，web 保留兼容入口，默认 golden 零差异。
-- **内容包**：新增 `motion-pack` 能力类型，复用现有 ZIP / 校验和 / 签名 / 升级 / 回滚；坏包整包拒绝。
-- **会话快照**：安装/停用后不重启应用，下一次打开桌宠、主窗或舞台读取新内容；当前会话保持旧快照。
-- **发布校验**：归档产物生成 `SHA256SUMS.txt` 与 `build-info.json`，可复算、可回溯 commit；零数据库迁移。
+- **动作契约收口**：删除两个从未被任何动作链引用的动作变体，执行器与录制器同步收敛；字幕不再依赖表现控制器，模型未加载时也能显示。
+- **桌宠发起聊天**：右键菜单「聊两句」聚焦主窗并预填草稿，通过白名单语义键跨进程传递，不自动发送、不绕过聊天门控。
+- **视觉巡检 L1**：设置页基础区、记忆面板、上下文洞察面板接入 Playwright 截图基线；固定 Linux 环境生成，CI 首月非阻断并上传差异产物。
 
 ## 功能
 
@@ -19,6 +17,7 @@
 
 - 多供应商、多模型接入；SSE 流式输出、Markdown / 代码高亮、中途停止与友好错误提示。
 - 工具调用全程可观测，支持 HITL 授权、熔断与超时门控；工具循环 ≤ 5 轮。
+- 联网工具按预算与权限门控：并发、分层抓取与上下文窗口缩放；意图分类结果与草稿建议可在对话中查看。
 - 助手预设：系统提示、角色卡、温度 / topP / maxTokens、模型与知识库绑定、工具 / 技能白名单。
 - 分支会话：从任意消息派生，八态状态机；并发 / 深度 / 会话树 Token 预算上限、终态回传、失败重试与归档。
 - 对话中断或连接断开时，已生成内容保留并落库，不丢失部分结果。
@@ -56,6 +55,7 @@
 - Utility 决策：按时段 / 心情 / 关系 / 工作信号 / 打扰成本选场，主动播放有预算与去重，决策理由可在设置页回看。
 - 舞台小剧场：`/stage?stage=play` 三席 VRM 轮播；剧情分享卡叠加今日数据导出 PNG；桌面截图走原生保存框。
 - 提醒与事件触发、不打扰开关（静音 / 隐藏 / 关闭主动说话即时生效）。
+- 桌宠右键可发起聊天：问候 / 求安慰 / 陪我玩，主窗聚焦并预填草稿，发送仍由用户决定。
 - 本地语音输入与朗读（sherpa-onnx，离线）；语音模型按需下载，雪团声线走 kokoro。
 
 ### 设置、数据与安全
@@ -83,7 +83,7 @@ pnpm + Turborepo monorepo：
 
 ```text
 apps/
-  web/        Next.js 全栈应用（页面 + 219 个 API Route Handlers）
+  web/        Next.js 全栈应用（页面 + 230 个 API Route Handlers）
   desktop/    Electron 主进程、preload、打包
 packages/
   shared/     领域类型 / Zod schema / 错误码
@@ -179,10 +179,11 @@ pnpm check:ascii          # 文档框图宽度检查
 pnpm test:unit            # 单元测试（覆盖率阈值阻断）
 pnpm test:integration     # Web API 集成测试
 pnpm test:e2e             # Web 关键路径 E2E
+pnpm test:e2e:visual      # 视觉巡检截图（默认跳过，需显式开关）
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v3.0.0 发布验证：舞台 + 场景 + 设置存储单测 62 项与 `check:scenes` 37 项通过；typecheck、lint（8 包 0 error）与行数 / 结构 / 循环 / ASCII 门禁全绿。真机验证 `/stage?stage=play` 三席 VRM 轮播、句间控制、分享卡数据与 PNG 导出均正常，零数据库迁移。详见 [v3.0.0 发布说明](docs/plan/v3.0/release-notes.md)。
+v4.15.0 发布验证：`pnpm check` 全绿（类型、lint、行数、结构、循环、MSW、ASCII、资产与 surface 门禁），shared / web / desktop 全量单测通过；Release workflow 构建 Windows NSIS 安装包并产出可更新元数据。详见 [v4.15.0 发布说明](docs/roadmap/v4.15.0-release-notes.md)。
 
 ## 数据与隐私
 
@@ -199,7 +200,7 @@ v3.0.0 发布验证：舞台 + 场景 + 设置存储单测 62 项与 `check:scen
 - [开发与测试指南](docs/development.md)
 - [Electron 桌面外壳](docs/modules/electron-shell.md)
 - 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
-- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [方案与版本归档（按大版本）](docs/plan/README.md) ｜ [v4.0 方案](docs/plan/v4.0/README.md) ｜ [v4.0.0 发布说明](docs/plan/v4.0/release-notes.md) ｜ [v3.1 方案](docs/plan/v3.1/README.md)
+- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [方案与版本归档（按大版本）](docs/plan/README.md) ｜ [v4.15 方案](docs/plan/v4.15/spec.md) ｜ [v4.15.0 发布说明](docs/roadmap/v4.15.0-release-notes.md) ｜ [v4.15 博客](blog/v4.15/)
 - 影视与 IP：[摸鱼事务所影视类方案](docs/film/README.md) ｜ [即梦循环背景视频](docs/film/01-jimeng-loop-background.md) ｜ [Master 固定卡通形象](docs/film/03-master-character.md) ｜ [开机动画选型](docs/film/08-boot-animation.md)
 - 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](docs/learn/desktop-pet-implementation.md)
 

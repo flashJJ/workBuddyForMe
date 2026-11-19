@@ -83,7 +83,7 @@ SSE 流中产生的上游错误不中断 HTTP 200，而是以 `error` 事件下�
 
 除非另行说明：请求体均为 JSON；`{id}` 为路径参数（字符串，非空）；列接口按创建时间/约定排序返回数组。
 
-> 本文覆盖核心对话 / 知识库与 v3.0 剧本引擎接口；Flow、MCP、会议、备份、语音等其余能力以 `apps/web/src/app/api/**/route.ts` 为准（当前共 219 个 Route Handler）。
+> 本文覆盖核心对话 / 知识库与 v3.0 剧本引擎接口；Flow、MCP、会议、备份、语音等其余能力以 `apps/web/src/app/api/**/route.ts` 为准（当前共 230 个 Route Handler）。
 
 ## 3. SSE 事件协议（POST /api/chat/stream）
 
