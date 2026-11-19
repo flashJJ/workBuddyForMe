@@ -30,13 +30,28 @@ export async function waitForHydrated(page: Page): Promise<void> {
  */
 
 /**
- * v2.16：设置页按 4 个分组可见区触发查询（锚点固定存在，面板数据按需到达）。
+ * v2.16：设置页按分组可见区触发查询（锚点固定存在，面板数据按需到达）。
  * 断言分组内数据 / 与默认隐藏控件交互前，先把该分组锚点滚入视口；
  * 仅调整等待方式，不改产品结构与文案。
+ *
+ * 分组 id 必须与 `apps/web/src/lib/settings/catalog.ts` 的 SETTINGS_SECTIONS 保持一致；
+ * v3.0 起旧的 dialog 分组已拆分为 avatar / motion / voice / emotion / events。
  */
 export async function revealSettingsSection(
   page: Page,
-  section: 'appearance' | 'dialog' | 'tools' | 'data',
+  section:
+    | 'base'
+    | 'appearance'
+    | 'avatar'
+    | 'motion'
+    | 'voice'
+    | 'music'
+    | 'emotion'
+    | 'events'
+    | 'tools'
+    | 'agents'
+    | 'data'
+    | 'about',
 ): Promise<void> {
   // 先等整页水合：SSR 的锚点会在水合时被替换，直接 scroll 可能命中已脱离 DOM 的旧节点。
   await waitForHydrated(page);

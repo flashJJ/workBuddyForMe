@@ -72,7 +72,7 @@ test.describe.serial('M3 Live2D 形象', () => {
       )
       .then((r) => r.json());
     await page.goto('/settings');
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
     await expect(page.getByTestId('avatar-enabled')).toBeVisible();
     await page.getByTestId('avatar-enabled').check();
     const payload = (await putPromise) as { success: boolean; data?: { avatarEnabled?: boolean } };
@@ -110,7 +110,7 @@ test.describe.serial('M3 Live2D 形象', () => {
       )
       .then((r) => r.json());
     await page.goto('/settings');
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
     await page.getByTestId('avatar-enabled').uncheck();
     await expect(page.getByTestId('avatar-enabled')).not.toBeChecked();
     // 等待关闭落库后再导航，避免 PUT 被路由切换中断（与 ④/⑦ 同一等待口径）
@@ -125,7 +125,7 @@ test.describe.serial('M3 Live2D 形象', () => {
   test('⑦ M3.5 多形象：选择器列出 5 套官方角色，切换后加载对应模型并持久化', async ({ page }) => {
     // 重新开启形象（⑥ 已关闭）：先注册并消费开关自身的 PUT，避免与切模型 PUT 串台
     await page.goto('/settings');
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
     const enablePut = page
       .waitForResponse(
         (r) => r.url().includes('/api/voice/settings') && r.request().method() === 'PUT',
@@ -162,7 +162,7 @@ test.describe.serial('M3 Live2D 形象', () => {
     // 本段断言的是 Kokoro 绑定契约，故先显式切回 Kokoro 再校验。
     await page.request.put('/api/voice/settings', { data: { ttsModel: 'kokoro' } });
     await page.reload();
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
     // e2e 临时数据根无 TTS 模型，试听按钮渲染但禁用
     const voiceRow = page.getByTestId('avatar-voice-row');
     await expect(voiceRow).toContainText('zf_026');
@@ -193,7 +193,7 @@ test.describe.serial('M3 Live2D 形象', () => {
 
   test('⑧ 纯浏览器无桌宠桥：桌宠开关不渲染，裸访 /pet 回落 /chat', async ({ page }) => {
     await page.goto('/settings');
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
     await expect(page.getByTestId('avatar-enabled')).toBeVisible();
     // 无 Electron preload → 桌宠区整块不出现
     await expect(page.getByTestId('pet-enabled-row')).toHaveCount(0);

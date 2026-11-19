@@ -180,7 +180,7 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
 
   test('② 设置面板：开启语音输入并切到免手模式（PUT 落库）', async ({ page }) => {
     await page.goto('/settings');
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
     await page.getByLabel(/启用语音输入/).check();
     expect(voiceSettings.asrEnabled).toBe(true);
 

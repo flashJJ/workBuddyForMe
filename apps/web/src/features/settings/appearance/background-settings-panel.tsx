@@ -259,12 +259,12 @@ export function BackgroundSettingsPanel() {
             <span className="text-muted-foreground">{t('background.dim')}</span>
             <span>{Math.round(config.dim * 100)}%</span>
           </label>
-          <input type="range" min={0} max={0.8} step={0.05} value={config.dim} className="w-full" data-testid="background-dim" onChange={(event) => patch({ dim: Number(event.target.value) })} />
+          <input type="range" min={0} max={0.8} step={0.05} value={config.dim} aria-label={t('background.dim')} className="w-full" data-testid="background-dim" onChange={(event) => patch({ dim: Number(event.target.value) })} />
           <label className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">{t('background.blur')}</span>
             <span>{config.blur}px</span>
           </label>
-          <input type="range" min={0} max={20} step={1} value={config.blur} className="w-full" data-testid="background-blur" onChange={(event) => patch({ blur: Number(event.target.value) })} />
+          <input type="range" min={0} max={20} step={1} value={config.blur} aria-label={t('background.blur')} className="w-full" data-testid="background-blur" onChange={(event) => patch({ blur: Number(event.target.value) })} />
         </div>
       </div>
 

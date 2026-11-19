@@ -143,7 +143,7 @@ test.describe.serial('v2.4 一键开启语音对话', () => {
   test('② 未就绪：体积预估 + 下载引导 + 一键下载 + 可取消（A1/A4）', async ({ page }) => {
     await page.goto('/settings');
     await waitForHydrated(page);
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
 
     const quick = page.getByTestId('voice-quickstart-settings');
     await expect(quick).toBeVisible();
@@ -193,7 +193,7 @@ test.describe.serial('v2.4 一键开启语音对话', () => {
     phase = 'ready';
     await page.goto('/settings');
     await waitForHydrated(page);
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
 
     // ③ 已把 inputMode 置为 vad：此处直接校验默认档位与折叠态
     await expect(page.getByTestId('voice-input-mode-vad')).toHaveAttribute('aria-pressed', 'true');
@@ -210,7 +210,7 @@ test.describe.serial('v2.4 一键开启语音对话', () => {
     phase = 'ready';
     await page.goto('/settings');
     await waitForHydrated(page);
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
 
     const start = page.getByTestId('voice-quickstart-settings').getByTestId('voice-quickstart-button');
     await expect(start).toHaveAttribute('data-ready', 'true');

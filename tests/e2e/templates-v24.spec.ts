@@ -105,7 +105,7 @@ test.describe('v2.4 模板可触达', () => {
   test('技能：模板入口一键启用（先停用再启用）', async ({ page }) => {
     await page.goto('/settings');
     await waitForHydrated(page);
-    await revealSettingsSection(page, 'tools');
+    await revealSettingsSection(page, 'agents');
 
     const panel = page.getByTestId('skills-panel');
     await expect(panel).toBeVisible();

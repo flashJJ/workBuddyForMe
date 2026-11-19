@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   ChevronDown,
   Music2,
@@ -23,7 +24,11 @@ import { useMusicPlayer } from './music-player';
 export function MusicMiniPlayer() {
   const { t, locale } = useI18n();
   const player = useMusicPlayer();
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
+
+  // 对话页与会议页底部是全宽输入区，浮层会遮住发送按钮；这两页不展示播放条。
+  if (pathname === '/chat' || pathname.startsWith('/meetings')) return null;
 
   if (collapsed) {
     return (

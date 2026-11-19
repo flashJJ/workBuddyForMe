@@ -120,7 +120,7 @@ test.describe.serial('M2 语音输入（ASR）', () => {
 
   test('② 语音面板：模型就绪后可开启语音输入', async ({ page }) => {
     await page.goto('/settings');
-    await revealSettingsSection(page, 'dialog');
+    await revealSettingsSection(page, 'voice');
     const panel = page.getByTestId('voice-panel');
     await expect(panel).toBeVisible();
     await expect(page.getByTestId('voice-model-card-asr')).toContainText('已就绪');
