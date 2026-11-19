@@ -50,6 +50,8 @@ export interface BuildPromptOptions {
   card?: ParsedCharacterCard | null;
   /** 固定位于身份卡之后、情绪段之前 */
   globalAppendPrompt?: string | null;
+  /** v4.11：高置信意图的行为倾向，位于全局追加之后、情绪段之前（只加引导） */
+  intentHintBlock?: string | null;
   /**
    * v2.0：当前关系等级已解锁的用户称呼（由组装侧经闸门计算后传入）。
    * 仅在 card 存在时随身份卡段落注入；未解锁/无卡为 null，不产生任何称呼文本。
@@ -68,7 +70,7 @@ export interface BuildPromptOptions {
 
 /**
  * 组装系统提示词，固定段落顺序（v2.26 P1 契约）：
- * 系统层（表情指令）→ 身份卡/旧人设 → 全局追加 → 情绪
+ * 系统层（表情指令）→ 身份卡/旧人设 → 全局追加 → 意图倾向 → 情绪
  * → 硬约束 → 结构化事实 → 摘要 → 长效记忆 → 技能 → RAG。
  */
 export function buildSystemPrompt(
@@ -94,6 +96,8 @@ export function buildSystemPrompt(
   if (options.globalAppendPrompt?.trim()) {
     parts.push(`【全局追加】\n${options.globalAppendPrompt.trim()}`);
   }
+  // v4.11：高置信意图的行为倾向（只加引导，不删工具/检索）
+  if (options.intentHintBlock?.trim()) parts.push(options.intentHintBlock.trim());
   // v2.0 M2：共同经历软引用（主动搭话；无把握不提的纪律在区块文案内约束）
   if (options.relationshipMemoryBlock?.trim()) {
     parts.push(options.relationshipMemoryBlock.trim());
@@ -146,6 +150,8 @@ export interface ChatBudgetOptions {
   card?: ParsedCharacterCard | null;
   /** v1.8 M3 预埋：全局追加提示词 */
   globalAppendPrompt?: string | null;
+  /** v4.11：高置信意图的行为倾向（system 固定段，计入预算） */
+  intentHintBlock?: string | null;
   /** v2.0：关系等级已解锁的用户称呼（未解锁不传，组装闸门在调用侧） */
   cardNickname?: string | null;
   /** v4.8：按意图分配的上下文块配额；缺省保持旧 50/25/10 分层 */
@@ -202,6 +208,7 @@ export function buildChatMessages(
   const promptOptions: BuildPromptOptions = {
     card: budget.card ?? null,
     globalAppendPrompt: budget.globalAppendPrompt ?? null,
+    intentHintBlock: budget.intentHintBlock ?? null,
     cardNickname: budget.cardNickname ?? null,
     constraintBlock: constraintBlock || null,
     factsBlock: factsBlock || null,

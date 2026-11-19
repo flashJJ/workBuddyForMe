@@ -13,6 +13,7 @@ import type { RagContext } from '../base/types';
 import type { AttachmentService, ResolvedImage } from '../../services/assistant/attachment-service';
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import { buildChatMessages } from './prompt';
+import { buildIntentHintBlock } from './context-plan';
 import {
   estimateMessageTokens,
   estimateTokens,
@@ -52,6 +53,8 @@ export interface TurnMessageParams {
   card: ParsedCharacterCard | null;
   /** v1.8 M3：全局追加提示词（开关开且非空才传；固定在身份卡之后、情绪段之前） */
   globalAppendPrompt?: string | null;
+  /** v4.11：高置信意图的行为倾向（只加引导，不删工具/检索） */
+  intentHintBlock?: string | null;
   /** v2.0：关系等级已解锁的用户称呼（未解锁不传） */
   cardNickname?: string | null;
   /** v4.8：意图上下文配额 */
@@ -84,6 +87,10 @@ export function buildTurnMessages(params: TurnMessageParams): {
   const { assistant, history, rag, images, contextWindow, toolDefs, lastCompletionTokens,
     summary, memoryBlock, constraintBlock, factsBlock, skillBlock, emotionBlock, card,
     globalAppendPrompt, cardNickname } = params;
+  const plan = params.plan ?? null;
+  // v4.11：高置信意图 → 主智能体行为提示（显式覆盖优先，否则从 ContextPlan 推导）
+  const intentHintBlock =
+    params.intentHintBlock ?? (plan ? buildIntentHintBlock(plan.intent) : null);
   return buildChatMessages(assistant, history, rag, images, {
     contextWindow: contextWindow ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
     toolsTokens: toolDefs.length ? estimateTokens(JSON.stringify(toolDefs)) : 0,
@@ -96,8 +103,9 @@ export function buildTurnMessages(params: TurnMessageParams): {
     emotionBlock,
     card,
     globalAppendPrompt: globalAppendPrompt ?? null,
+    intentHintBlock,
     cardNickname: cardNickname ?? null,
-    plan: params.plan ?? null,
+    plan,
   });
 }
 

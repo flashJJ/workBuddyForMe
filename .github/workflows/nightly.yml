@@ -1,0 +1,53 @@
+name: Nightly Acceptance
+
+# v4.11 P2-3：夜间全链路巡检（非阻断）。
+# 只跑确定性验收：L2 离线全链路 + 工具链路评测；MCP/Midscene 视觉巡检仍需人工执行。
+on:
+  schedule:
+    # 每天 18:00 UTC（Asia/Shanghai 02:00）
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance-nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm（读取 packageManager 字段）
+        uses: pnpm/action-setup@v4
+
+      - name: 安装 Node（读取 .nvmrc）
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建 Web（生产模式验收）
+        run: pnpm build:web
+
+      - name: 离线全链路验收（并发/缓存/折叠/溢出 + 8K/128K/1M）
+        run: node scripts/acceptance/run.mjs --mode=start --out=test-results/acceptance-v4.11.json
+        env:
+          WBFM_ACCEPTANCE_PORT: "42341"
+
+      - name: 工具链路评测（promptfoo + 场景化 mock）
+        run: pnpm eval:tools
+        env:
+          PROMPTFOO_DISABLE_TELEMETRY: "1"
+
+      - name: 上传夜间验收报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-nightly
+          path: test-results
+          if-no-files-found: ignore

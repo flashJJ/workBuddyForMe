@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { TurnIntent } from '@wbfm/shared/schemas';
-import { buildContextPlan, hasEvidenceCap, isLeanTurn, splitMiddleQuota } from './context-plan';
+import {
+  buildContextPlan,
+  buildIntentHintBlock,
+  hasEvidenceCap,
+  INTENT_HINT_MIN_CONFIDENCE,
+  isLeanTurn,
+  splitMiddleQuota,
+} from './context-plan';
 
 function intent(over: Partial<TurnIntent> = {}): TurnIntent {
   return {
@@ -69,5 +76,25 @@ describe('isLeanTurn（轻量回合裁剪）', () => {
     expect(isLeanTurn(intent({ kind: 'knowledge', confidence: 0.9 }))).toBe(false);
     expect(isLeanTurn(intent({ kind: 'tool_task', confidence: 0.9 }))).toBe(false);
     expect(isLeanTurn(intent({ kind: 'follow_up', confidence: 0.9 }))).toBe(false);
+  });
+});
+
+describe('buildIntentHintBlock（v4.11 意图 → 主智能体提示）', () => {
+  it('高置信任务/知识/追问/澄清各注入一条行为提示', () => {
+    for (const kind of ['tool_task', 'knowledge', 'follow_up', 'clarify'] as const) {
+      expect(buildIntentHintBlock(intent({ kind }))).toContain('【本轮倾向】');
+    }
+  });
+
+  it('寒暄/记忆写入/提醒不注入，避免过度约束自然对话', () => {
+    for (const kind of ['chitchat', 'memory_write', 'reminder'] as const) {
+      expect(buildIntentHintBlock(intent({ kind }))).toBeNull();
+    }
+  });
+
+  it('低置信度与 fallback 不注入', () => {
+    expect(buildIntentHintBlock(intent({ confidence: INTENT_HINT_MIN_CONFIDENCE }))).toContain('【本轮倾向】');
+    expect(buildIntentHintBlock(intent({ confidence: INTENT_HINT_MIN_CONFIDENCE - 0.01 }))).toBeNull();
+    expect(buildIntentHintBlock(intent({ confidence: 0.99, source: 'fallback' }))).toBeNull();
   });
 });

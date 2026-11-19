@@ -122,3 +122,55 @@ describe('v1.8 M3 上下文条数钳制', () => {
     expect(assembledHistoryCount(100_000, history)).toBe(50);
   });
 });
+
+describe('v4.11 意图提示进入 system', () => {
+  it('传入 intentHintBlock 时随系统消息下发', () => {
+    const { messages } = buildTurnMessages({
+      assistant: makeAssistant() as never,
+      history: [makeHistory(1)[0]!],
+      rag: null,
+      images: new Map(),
+      contextWindow: 100_000,
+      toolDefs: [],
+      lastCompletionTokens: null,
+      summary: null,
+      memoryBlock: null,
+      skillBlock: null,
+      emotionBlock: null,
+      card: null,
+      intentHintBlock: '【本轮倾向】任务执行',
+    });
+    expect(messages[0]?.role).toBe('system');
+    expect(String(messages[0]?.content)).toContain('【本轮倾向】任务执行');
+  });
+
+  it('未显式传 intentHintBlock 时从 plan.intent 推导', () => {
+    const { messages } = buildTurnMessages({
+      assistant: makeAssistant() as never,
+      history: [makeHistory(1)[0]!],
+      rag: null,
+      images: new Map(),
+      contextWindow: 100_000,
+      toolDefs: [],
+      lastCompletionTokens: null,
+      summary: null,
+      memoryBlock: null,
+      skillBlock: null,
+      emotionBlock: null,
+      card: null,
+      plan: {
+        intent: {
+          kind: 'knowledge',
+          confidence: 0.9,
+          signals: ['knowledge-question'],
+          suggestedTaskMode: false,
+          source: 'rule',
+        },
+        quotas: { tail: 0.35, middle: 0.25, memory: 0.1, evidence: 0.4 },
+        clipOrder: ['middle', 'memory', 'evidence', 'tail'],
+        preflightCompact: false,
+      },
+    });
+    expect(String(messages[0]?.content)).toContain('【本轮倾向】知识问答');
+  });
+});

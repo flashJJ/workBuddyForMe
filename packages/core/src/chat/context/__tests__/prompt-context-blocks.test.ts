@@ -77,6 +77,30 @@ describe('v2.26 P1 上下文注入顺序与配额', () => {
     expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
   });
 
+  it('高置信意图提示：位于全局追加之后、硬约束之前', () => {
+    const prompt = buildSystemPrompt(
+      makeAssistant(),
+      makeRag(),
+      null,
+      null,
+      null,
+      null,
+      {
+        globalAppendPrompt: '全局附加规则',
+        intentHintBlock: '【本轮倾向】任务执行',
+        constraintBlock: '【硬约束】\n- 对花生过敏',
+      },
+    );
+    const indexes = [
+      prompt.indexOf('简洁的助手'),
+      prompt.indexOf('【全局追加】'),
+      prompt.indexOf('【本轮倾向】'),
+      prompt.indexOf('【硬约束】'),
+    ];
+    expect(indexes.every((index) => index >= 0)).toBe(true);
+    expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
+  });
+
   it('空白区块不注入', () => {
     const prompt = buildSystemPrompt(makeAssistant(), null, null, null, null, null, {
       constraintBlock: '   ',
