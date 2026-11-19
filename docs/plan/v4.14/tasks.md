@@ -10,7 +10,7 @@
 - [x] T3 新增 `docs/plan/README.md`：按 v0 / v1 / v2 / v3 / v4 分组，列出全部顶层子目录链接与跨版本专题
 - [x] T4 `README.md`「文档」章节增加 `[方案与版本归档（按大版本）](docs/plan/README.md)`
 - [x] T5 校验：`docs/plan` 子目录集合与索引集合一致；索引内链接全部存在
-- [ ] T6 `pnpm check` 通过；提交并推送 `tencent`
+- [x] T6 `pnpm check` 通过；提交并推送 `tencent`
 
 ## v4.15 候选（需另行确认）
 
