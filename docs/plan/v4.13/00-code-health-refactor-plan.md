@@ -107,4 +107,5 @@
 | Batch 1 | `turn-context-assembly` 289→220；`chat/context` 直接文件 26→12；拆 `assembly/`、`intent/`、`compression/` 子域 | 完成 |
 | Batch 2 | `memory-service` 300→220、`memory-repo` 295→190；新增 `lifecycle/ops/`（清理/新建/编辑/统计）与 `memory-search-repo` | 完成 |
 | Batch 3 | `use-chat-session` 294→181；拆 `hooks/stream/`（SSE 处理器 + 回合编排），`chat-page` 仅装配 | 完成 |
-| Batch 4–6 | 见上 | 待排期 |
+| Batch 4 | `endpoints.ts` 293→60 的 barrel；拆 `endpoints/{chat,knowledge,system,work}.ts`，移除行数白名单 | 完成 |
+| Batch 5–6 | 见上 | 待排期 |
