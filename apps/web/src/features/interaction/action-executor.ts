@@ -84,7 +84,8 @@ export class ActionExecutor {
         break;
 
       case 'chat.request':
-        // M0 不实现
+        // v4.12：仍未实现，显式告警便于定位「配置了但没反应」
+        console.warn('[ActionExecutor] chat.request not yet implemented:', action.prompt);
         break;
     }
   }

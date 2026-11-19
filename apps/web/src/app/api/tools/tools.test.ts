@@ -221,6 +221,7 @@ describe('工具确认与权限管理路由（v0.6 M2）', () => {
       'mouse_click',
       'mouse_move',
       'mouse_scroll',
+      'read_fetched',
       'screen_snapshot',
       'todo_write',
       'uia_list',

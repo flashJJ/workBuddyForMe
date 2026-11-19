@@ -193,6 +193,30 @@ describe('长期记忆管理面板（M4）', () => {
     expect((call![1] as RequestInit).method).toBe('POST');
   });
 
+  it('v4.12 清空已归档：只发送 status=archived', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === '/api/memories/stats') {
+        return ok({ ...EMPTY_STATS, total: 3, active: 1, archived: 2 });
+      }
+      if (url === '/api/memories/clear') return ok({ removed: 2 });
+      return ok([makeMemory({ id: '1', content: '记忆' })]);
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<MemoryPanel />);
+
+    const clearArchived = await screen.findByTestId('memory-clear-archived');
+    await waitFor(() => expect(clearArchived).toBeEnabled());
+    await user.click(clearArchived);
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('清空已归档记忆');
+    await user.click(within(dialog).getByRole('button', { name: '清空已归档' }));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/memories/clear', expect.anything()),
+    );
+    const call = fetchMock.mock.calls.find((c) => c[0] === '/api/memories/clear');
+    expect(JSON.parse((call![1] as RequestInit).body as string)).toEqual({ status: 'archived' });
+  });
+
   it('v2.6 溯源：来源消息链接、召回次数与来源未知降级', async () => {
     mockFetch(() =>
       ok([

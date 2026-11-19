@@ -45,6 +45,8 @@ export const zhChat = {
     placeholderVision: '输入消息或粘贴/拖入图片，Enter 发送',
     pasteNeedsVision: '当前模型不支持图片理解，请切换到视觉模型后再粘贴截图',
     pasteBlockedTaskMode: '任务模式暂不支持图片附件，请退出任务模式后再试',
+    taskModeSuggestion: '这轮看起来像任务，建议用任务模式发送。',
+    taskModeSuggestionAction: '切到任务模式',
   },
   /** v2.4 M5：流式进度与首字延迟（阈值复用 P0-1 自检口径） */
   stream: {
@@ -191,6 +193,8 @@ export const enChat = {
     placeholderVision: 'Type a message or paste/drop images, Enter to send',
     pasteNeedsVision: 'This model cannot understand images. Switch to a vision model before pasting screenshots.',
     pasteBlockedTaskMode: 'Task mode does not accept image attachments. Exit task mode and try again.',
+    taskModeSuggestion: 'This looks like a task. Consider sending it in task mode.',
+    taskModeSuggestionAction: 'Switch to task mode',
   },
   /** v2.4 M5: streaming progress and first-token latency (same tiers as the P0-1 self-check) */
   stream: {

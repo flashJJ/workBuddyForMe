@@ -1,111 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
-import { useMemories, useMemoryMutations } from '@/lib/hooks/assistant';
+import { useMemories, useMemoryMutations, useMemoryStats } from '@/lib/hooks/assistant';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import {
-  MEMORY_KIND_BADGE,
-  MEMORY_KIND_LABELS,
-  MEMORY_KIND_OPTIONS,
-  MEMORY_STATUS_LABELS,
-  formatMemoryDate,
-  memorySourceHref,
-} from './memory-labels';
+import { MEMORY_KIND_OPTIONS, MEMORY_STATUS_LABELS } from './memory-labels';
 import { MemoryFormDialog } from './memory-form-dialog';
 import { MemoryStatsCard } from './memory-stats-card';
+import { MemoryRow } from './memory-row';
 
 type StatusFilter = '' | MemoryStatus;
-
-function MemoryRow({
-  memory,
-  onEdit,
-  onDelete,
-  deleting,
-}: {
-  memory: Memory;
-  onEdit: () => void;
-  onDelete: () => void;
-  deleting: boolean;
-}) {
-  const { t, locale } = useI18n();
-  const sourceHref = memorySourceHref(memory);
-  return (
-    <div
-      data-testid="memory-item"
-      className="flex items-start gap-3 rounded-lg border bg-ui-row p-3"
-    >
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={MEMORY_KIND_BADGE[memory.kind]}>
-            {t(MEMORY_KIND_LABELS[memory.kind])}
-          </Badge>
-          {memory.status !== 'active' && (
-            <Badge variant="outline">{t(MEMORY_STATUS_LABELS[memory.status])}</Badge>
-          )}
-          {memory.pinned && <Badge variant="warning">{t('memory.pinned')}</Badge>}
-          <span className="text-xs text-muted-foreground">
-            {t('memory.importanceLine', {
-              importance: memory.importance.toFixed(1),
-              date: formatMemoryDate(memory.updatedAt, locale),
-            })}
-          </span>
-        </div>
-        <p className="break-words text-sm">{memory.content}</p>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>
-            {memory.recallCount > 0
-              ? t('memory.recallCount', { count: memory.recallCount })
-              : t('memory.neverRecalled')}
-          </span>
-          {memory.lastAccessedAt && (
-            <span>
-              {t('memory.lastRecalledAt', {
-                date: formatMemoryDate(memory.lastAccessedAt, locale),
-              })}
-            </span>
-          )}
-          {sourceHref ? (
-            <Link
-              href={sourceHref}
-              className="text-teal-600 hover:underline dark:text-teal-400"
-              data-testid="memory-source-link"
-            >
-              {memory.sourceMessageId
-                ? t('memory.openSourceMessage')
-                : t('memory.openSourceConversation')}
-            </Link>
-          ) : (
-            <span data-testid="memory-source-unknown">{t('memory.sourceUnknown')}</span>
-          )}
-        </div>
-      </div>
-      <div className="flex shrink-0 gap-1">
-        <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
-          {t('common.actions.edit')}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          data-testid="memory-delete"
-          disabled={deleting}
-          onClick={onDelete}
-        >
-          {t('common.actions.delete')}
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 /** 设置页：长期记忆库管理（搜索/筛选/增改删/清空） */
 export function MemoryPanel() {
@@ -127,6 +37,8 @@ export function MemoryPanel() {
     ...(to ? { to } : {}),
   };
   const { data: memories, isLoading, isError, refetch } = useMemories(filter);
+  const { data: stats } = useMemoryStats();
+  const archivedCount = stats?.archived ?? 0;
   const mutations = useMemoryMutations();
   const toast = useToast();
   const confirm = useConfirm();
@@ -175,7 +87,26 @@ export function MemoryPanel() {
       return;
     }
     try {
-      const result = await mutations.clear.mutateAsync();
+      const result = await mutations.clear.mutateAsync({});
+      toast.success(t('memory.cleared', { count: result.removed }));
+    } catch {
+      toast.error(t('memory.clearFailed'));
+    }
+  };
+
+  const clearArchived = async () => {
+    if (
+      !(await confirm({
+        title: t('memory.clearArchivedTitle'),
+        description: t('memory.clearArchivedConfirm'),
+        confirmText: t('memory.clearArchivedConfirmText'),
+        danger: true,
+      }))
+    ) {
+      return;
+    }
+    try {
+      const result = await mutations.clear.mutateAsync({ status: 'archived' });
       toast.success(t('memory.cleared', { count: result.removed }));
     } catch {
       toast.error(t('memory.clearFailed'));
@@ -194,6 +125,17 @@ export function MemoryPanel() {
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="sm" onClick={openCreate}>
             {t('memory.add')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="memory-clear-archived"
+            disabled={archivedCount === 0 || mutations.clear.isPending}
+            title={archivedCount === 0 ? t('memory.clearArchivedNone') : undefined}
+            onClick={() => void clearArchived()}
+          >
+            {t('memory.clearArchived')}
           </Button>
           <Button
             type="button"

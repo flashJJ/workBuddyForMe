@@ -6,11 +6,14 @@ import { parseBody, readJsonBody } from '@/lib/server/validation';
 export const dynamic = 'force-dynamic';
 
 /**
- * 物理清空全部记忆（主表 + memories_vec）。
- * 危险操作：UI 必须二次确认；当前不支持按范围清空，请求体仅为向前兼容预留。
+ * 物理清空记忆（主表 + memories_vec + 边 + 审计事件）。
+ * v4.12：请求体可带 status 只清某一状态（如 archived）；缺省清空全部。
+ * 危险操作：UI 必须二次确认。
  */
 export const POST = defineRoute(async ({ request, services }) => {
-  parseBody(memoryClearSchema, await readJsonBody(request));
-  const removed = services.memories.clearAll();
+  const input = parseBody(memoryClearSchema, await readJsonBody(request));
+  const removed = input.status
+    ? services.memories.clearByStatus(input.status)
+    : services.memories.clearAll();
   return jsonOk({ removed });
 });

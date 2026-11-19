@@ -242,6 +242,20 @@ export function createMemoryService(deps: ServiceDeps) {
     });
     return tx();
   }
+  function clearByStatus(status: MemoryStatus): number {
+    const ids = repo.listIdsByStatus(status);
+    if (ids.length === 0) return 0;
+    const tx = deps.db.transaction(() => {
+      for (const id of ids) {
+        edgeRepo.deleteForMemory(String(id));
+        deleteMemoryFts(deps.db, id);
+        if (getMemoryVectorDimension(deps.db) !== null) deleteMemoryVector(deps.db, id);
+      }
+      repo.deleteEventsByStatus(status);
+      return repo.deleteByStatus(status);
+    });
+    return tx();
+  }
 
   /** P2 遗忘策略：decay_score 分档 + TTL 到期软归档，具体逻辑在 memory-decay.ts */
   function runDecay(options: DecayOptions = {}): DecayResult {
@@ -273,6 +287,7 @@ export function createMemoryService(deps: ServiceDeps) {
     update,
     remove,
     clearAll,
+    clearByStatus,
     runDecay,
     runEventRollup,
     consolidate,

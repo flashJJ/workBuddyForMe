@@ -19,6 +19,7 @@
 | F6 | `event.fire` / `chat.request` 动作为空实现 | `action-executor.ts:81-88`；v2.1 文档已标注未实现 | 互动图配置了也不生效 | P2 |
 | F7 | 部分 API 常量无消费 | `API.modPackInstalls`、`API.spill` 等 | 死代码/误导 | P2 |
 | F8 | 视觉巡检仍为人工 | `.github/workflows/nightly.yml` 只跑确定性验收 | MCP/Midscene 需凭据，非阻断 | P2 |
+| F9 | 工具 debug 列表测试漂移 | `tools.test.ts` 期望 25 个内置工具，实际已含 `read_fetched` 共 26 个 | 全量 web 测试失败 | P0（已修复） |
 
 排除的误报：`intentClassifierModelId` 在 schema 中已是 `.nullable()`；`turn_intent`、`context_snapshot`、`context_condensed` 均已有面板消费；`skillVersions`、`branches` 等常量虽未直接出现，但通过 hooks/QUERY_KEYS 使用。
 
@@ -43,10 +44,10 @@
 | P2 | API 常量清理 | 删除确认无消费的常量，或补上入口 |
 | P2 | 视觉巡检 | 有模型凭据后再接 Playwright MCP / Midscene，不阻断 |
 
-## 4. P3 实验项（不承诺）
+## 4. P3 实验项
 
-- 发送前意图建议：对草稿文本先跑规则/小模型，命中 `tool_task` 时在发送按钮旁提示「用任务模式发送」。
-- 意图分类质量面板：最近 20 轮分布、fallback 率、分类器命中率，帮助判断是否值得开启小模型。
+- 发送前意图建议：**已完成**。规则意图纯函数下沉 `@wbfm/shared/schemas`，输入区按草稿实时判断 `suggestedTaskMode`，显示「这轮看起来像任务」+ 一键切换；不自动切换。
+- 意图分类质量面板：最近 20 轮分布、fallback 率、分类器命中率，帮助判断是否值得开启小模型（未做）。
 
 ## 5. 验收
 
@@ -67,4 +68,18 @@
 | 过期注释 | `apps/web/src/lib/templates/starter-templates.ts` | 完成 |
 | 测试 | `context-events.test.ts` + shared/core/web 现有测试 | 完成 |
 | mod 包导入历史 | `apps/web/src/features/settings/storage/mod-pack-panel.tsx` | 完成（P1） |
-| 记忆清空按状态 | `memory-clear` 后端仍为全量，保留 P1 | 待做 |
+| 记忆清空按状态 | `memory-service.ts#clearByStatus` + `/api/memories/clear` + 面板按钮 | 完成（P1） |
+| 发送前任务建议 | `packages/shared/src/schemas/chat/turn-intent.ts` + `composer.tsx` | 完成（P3） |
+| API 常量清理 | `endpoints.ts` 移除 `spill`；work signal 改用 `API.workSignals` | 完成（P2） |
+| 空实现告警 | `action-executor.ts` 的 `chat.request` 显式 warn | 完成（P2） |
+
+## 7. 测试能力更新
+
+| 层 | 新增覆盖 |
+|---|---|
+| shared | `intent/turn-intent.test.ts`：任务建议、fallback、记忆命令 |
+| core | `memory/__tests__/memory-clear-status.test.ts`：`clearByStatus` 只清指定状态 |
+| core | `orchestrator/__tests__/intent-stage.test.ts`：`hintApplied` 记录真/假两态 |
+| web API | `memories.test.ts`：按状态清空只删 archived；`tools.test.ts` 补 `read_fetched` 修复存量漂移 |
+| web UI | `memory-panel.test.tsx`：清空已归档只发 `status=archived`；`composer.test.tsx`：发送前任务建议与一键切换 |
+| 可观测性 | `context-events.test.ts`：`suggestedTaskMode` / `hintApplied` 保留 |

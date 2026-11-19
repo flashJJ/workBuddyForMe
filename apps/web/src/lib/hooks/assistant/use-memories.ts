@@ -82,8 +82,15 @@ export function useMemoryMutations() {
       onSuccess: invalidate,
     }),
     clear: useMutation({
-      mutationFn: () => apiPost<{ removed: number }>(API.memoryClear, {}),
-      onSuccess: invalidate,
+      mutationFn: (input: { status?: MemoryStatus } = {}) =>
+        apiPost<{ removed: number }>(
+          API.memoryClear,
+          input.status ? { status: input.status } : {},
+        ),
+      onSuccess: () => {
+        invalidate();
+        void qc.invalidateQueries({ queryKey: QUERY_KEYS.memoryStats });
+      },
     }),
   };
 }

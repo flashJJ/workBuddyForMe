@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/render';
 import { Composer } from './composer';
@@ -204,6 +204,25 @@ describe('输入区 Composer（TR-27.1）', () => {
 
     await user.click(toggle);
     expect(onTaskModeChange).toHaveBeenCalledWith(false);
+  });
+
+  it('v4.12 发送前任务建议：长任务文本提示，点击切到任务模式', async () => {
+    const onTaskModeChange = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Composer
+        streaming={false}
+        onTaskModeChange={onTaskModeChange}
+        onSend={() => undefined}
+        onStop={() => undefined}
+      />,
+    );
+
+    await user.type(screen.getByLabelText('消息输入框'), '帮我整理这三份文档，然后导出报告');
+    const suggestion = await screen.findByTestId('task-mode-suggestion');
+    expect(suggestion).toHaveTextContent('这轮看起来像任务');
+    await user.click(within(suggestion).getByRole('button', { name: '切到任务模式' }));
+    expect(onTaskModeChange).toHaveBeenCalledWith(true);
   });
 
   afterEach(() => vi.unstubAllGlobals());

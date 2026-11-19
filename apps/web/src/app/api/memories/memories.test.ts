@@ -109,4 +109,21 @@ describe('记忆库管理路由（M4）', () => {
     const empty = await listMemories(new Request('http://x'));
     expect((await empty.json()).data).toEqual([]);
   });
+
+  it('v4.12：按状态清空只删除 archived', async () => {
+    await createMemory(jsonRequest({ kind: 'fact', content: '保留' }));
+    const archived = await createMemory(jsonRequest({ kind: 'event', content: '归档' }));
+    const archivedId = (await archived.json()).data.id;
+    await PATCH(jsonRequest({ status: 'archived' }, 'PATCH'), idParams(archivedId));
+
+    const result = await clearAll(jsonRequest({ status: 'archived' }));
+    expect(result.status).toBe(200);
+    expect((await result.json()).data).toEqual({ removed: 1 });
+
+    const rest = (await (await listMemories(new Request('http://x'))).json()).data as Array<{
+      content: string;
+    }>;
+    expect(rest).toHaveLength(1);
+    expect(rest[0]!.content).toBe('保留');
+  });
 });

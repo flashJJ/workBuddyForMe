@@ -258,6 +258,29 @@ export function createMemoryRepository(db: DatabaseInstance) {
       })();
     },
 
+    /** v4.12：按状态列出 id（供服务层清理边/FTS/向量） */
+    listIdsByStatus(status: MemoryStatus): number[] {
+      const rows = db
+        .prepare(`SELECT id FROM memories WHERE status = ?`)
+        .all(status) as Array<{ id: number }>;
+      return rows.map((row) => row.id);
+    },
+
+    /** v4.12：按状态删除审计事件（须在删除主表前调用） */
+    deleteEventsByStatus(status: MemoryStatus): number {
+      return db
+        .prepare(
+          `DELETE FROM memory_events
+             WHERE memory_id IN (SELECT id FROM memories WHERE status = ?)`,
+        )
+        .run(status).changes;
+    },
+
+    /** v4.12：按状态物理删除主表（边/FTS/向量由服务层同事务清理） */
+    deleteByStatus(status: MemoryStatus): number {
+      return db.prepare(`DELETE FROM memories WHERE status = ?`).run(status).changes;
+    },
+
     count(status?: MemoryStatus): number {
       const row = status
         ? (db

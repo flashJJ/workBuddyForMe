@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { detectTurnIntent } from '@wbfm/shared/schemas';
 import { MAX_CHAT_ATTACHMENTS } from '@wbfm/shared/constants';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -101,6 +102,12 @@ export function Composer({
     !attachments.uploading &&
     (Boolean(value.trim()) || attachments.items.length > 0);
 
+  // v4.12：发送前规则意图建议（纯本地、零模型调用；只建议不自动切换）
+  const suggestTaskMode = React.useMemo(
+    () => !taskMode && value.trim().length > 0 && detectTurnIntent({ text: value }).suggestedTaskMode,
+    [taskMode, value],
+  );
+
   const submit = () => {
     if (!canSend) return;
     onSend(
@@ -173,6 +180,21 @@ export function Composer({
           <AttachmentPreviews items={attachments.items} onRemove={attachments.remove} />
         </div>
       )}
+      {suggestTaskMode && onTaskModeChange ? (
+        <p
+          className="mx-auto w-full max-w-3xl pb-1 text-[11px] text-muted-foreground"
+          data-testid="task-mode-suggestion"
+        >
+          {t('chat.composer.taskModeSuggestion')}{' '}
+          <button
+            type="button"
+            className="font-medium text-primary hover:underline"
+            onClick={() => onTaskModeChange(true)}
+          >
+            {t('chat.composer.taskModeSuggestionAction')}
+          </button>
+        </p>
+      ) : null}
       {taskMode && (
         <p
           className="mx-auto w-full max-w-3xl pb-1 text-[11px] text-teal-600 dark:text-teal-400"

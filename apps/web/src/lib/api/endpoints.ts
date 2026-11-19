@@ -111,7 +111,6 @@ export const API = {
     `/api/search?q=${encodeURIComponent(q)}${scope ? `&scope=${encodeURIComponent(scope)}` : ''}`,
   exportSession: (scope: string, scopeId: string, redact = true) =>
     `/api/export/session?scope=${encodeURIComponent(scope)}&scopeId=${encodeURIComponent(scopeId)}&redact=${redact ? '1' : '0'}`,
-  spill: (hash: string) => `/api/spills/${encodeURIComponent(hash)}`,
   chatStream: '/api/chat/stream',
   chatProactive: '/api/chat/proactive',
   knowledgeBases: '/api/knowledge-bases',

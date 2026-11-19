@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { WorkSignalSnapshot } from '@wbfm/shared';
+import { API } from '@/lib/api/endpoints';
 
 export interface WorkSignalState {
   snapshot: WorkSignalSnapshot | null;
@@ -10,7 +11,7 @@ export interface WorkSignalState {
 
 function streamUrl(): string {
   const base = typeof window !== 'undefined' ? window.wbfm?.baseUrl ?? '' : '';
-  return `${base.replace(/\/$/, '')}/api/work-signals/stream`;
+  return `${base.replace(/\/$/, '')}${API.workSignals}/stream`;
 }
 
 function authHeaders(): HeadersInit {
