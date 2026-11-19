@@ -27,8 +27,6 @@
     "test:unit": "vitest run --coverage"
   },
   "dependencies": {
-    "@wbfm/shared": "workspace:*",
-    "sherpa-onnx-node": "^1.13.8",
-    "zod": "^3.23.8"
+    "sherpa-onnx-node": "^1.13.8"
   }
 }

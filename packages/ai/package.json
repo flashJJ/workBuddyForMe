@@ -32,8 +32,6 @@
         "test:unit": "vitest run --coverage"
     },
     "dependencies": {
-        "@wbfm/config": "workspace:*",
-        "@wbfm/shared": "workspace:*",
-        "langsmith": "^0.10.4"
+        "@wbfm/shared": "workspace:*"
     }
 }

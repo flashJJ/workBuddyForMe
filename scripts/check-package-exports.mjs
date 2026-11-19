@@ -29,6 +29,21 @@ const checks = [
     subpath: './api',
     names: ['SSE_EVENT'],
   },
+  {
+    pkgDir: 'packages/core',
+    subpath: './event-client',
+    names: ['EventRunner', 'EventDirector', 'evaluateEventConditions'],
+  },
+  {
+    pkgDir: 'packages/core',
+    subpath: './stage-client',
+    names: ['adaptStageFrame', 'createAgentStageCast'],
+  },
+  {
+    pkgDir: 'packages/core',
+    subpath: './relationship-client',
+    names: ['levelFromScore', 'isRelationshipUnlocked'],
+  },
 ];
 
 for (const check of checks) {

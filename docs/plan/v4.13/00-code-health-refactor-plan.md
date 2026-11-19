@@ -77,12 +77,13 @@
 - `packages/core/src/ingestion` 27 → `parse/`、`chunk/`、`ocr/`。
 - 每次更新 `scripts/.structure-baseline.json` 的 count 与 reason，过期版本统一改为实际版本。
 
-### Batch 6：测试与门禁补强（P2）
+### Batch 6：测试与门禁补强（P2，已完成）
 
-- 新增构建告警门禁：`pnpm build:web` 日志出现 `Attempted import error` 即失败（或由 `check:exports` 覆盖同类问题）。
-- 一次性 `knip`/`ts-prune` 审计，删除确认无消费的导出与依赖；初期不做阻断门禁。
-- 测试运行预算：web 全量 < 3 分钟；超出再按域拆 vitest project。
-- 子路径导出冒烟扩展到 `@wbfm/core/event-client` 等纯逻辑入口。
+- CI 新增构建告警门禁：`pnpm build:web` 输出 tee 到 `build-web.log`，命中 `Attempted import error` 即失败。
+- 子路径导出冒烟从 3 个扩到 6 个：新增 `@wbfm/core/{event-client,stage-client,relationship-client}` 纯逻辑入口。
+- 一次性 `knip@6.45.1` 审计：删除源码零引用的 9 个依赖（web 的 4 个未用 radix、ai 的 `@wbfm/config`/`langsmith`、config 的 `@wbfm/shared`、voice 的 `@wbfm/shared`/`zod`）；`@axe-core/playwright`、`sharp`、`prettier` 分别由根 E2E / 资源脚本 / 格式化链消费，保留。
+- knip 的「未使用文件」多数为构建脚本、public 静态资源与 `check:structure` 要求的结构性 barrel，不作为死代码删除。
+- 测试预算实测：web 291 文件 / 66.6s；core 300 文件 / 28.3s；shared 49 文件 / 3.7s，均在预算内。
 
 ## 3. 验收口径
 
@@ -91,6 +92,8 @@
 - `pnpm check:exports` 通过。
 - core / shared / web 全量单测通过；`pnpm eval:acceptance` 6/6。
 - 结构 baseline 无增长，且至少有 2 个 legacy 目录计数下降。
+
+> v4.13 收尾实测（2026-11-19）：行数预警 134（初始 136，未达 ≤120，与「不清零存量」非目标一致）；`build:web` 0 个 `Attempted import error`；`check:exports` 6/6；core 300 / shared 49 / web 291 文件单测通过；`pnpm check` 通过。
 
 ## 4. 非目标
 
@@ -109,4 +112,4 @@
 | Batch 3 | `use-chat-session` 294→181；拆 `hooks/stream/`（SSE 处理器 + 回合编排），`chat-page` 仅装配 | 完成 |
 | Batch 4 | `endpoints.ts` 293→60 的 barrel；拆 `endpoints/{chat,knowledge,system,work}.ts`，移除行数白名单 | 完成 |
 | Batch 5 | `backup` 31→3（`export/`、`restore/{tracks,__tests__}`）；`ingestion` 27→8（`parse/`、`chunk/`、`ocr/`）；baseline 下调 | 完成 |
-| Batch 6 | 见上 | 待排期 |
+| Batch 6 | CI 构建告警门禁；`check:exports` 扩到 6 个子路径；knip 审计删 9 个未用依赖；web 全量 66.6s | 完成 |
