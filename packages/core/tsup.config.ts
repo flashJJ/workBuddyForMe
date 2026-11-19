@@ -12,6 +12,9 @@ export default defineConfig({
     'event-client': 'src/event/client.ts',
     'stage-client': 'src/agents/stage/stage-client.ts',
     'relationship-client': 'src/emotion/relationship-client.ts',
+    // v4.13：context 是对话/任务/Flow 共用的轻量预算域，独立入口避免聚合进根 barrel
+    // 后与 chat/context 形成运行期循环（next start 健康检查 500）。
+    context: 'src/context/index.ts',
   },
   format: ['esm', 'cjs'],
   sourcemap: true,

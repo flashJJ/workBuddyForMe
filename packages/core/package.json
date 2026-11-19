@@ -52,8 +52,8 @@
         "./context": {
             "types": "./src/context/index.ts",
             "development": "./src/context/index.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.cjs"
+            "import": "./dist/context.mjs",
+            "require": "./dist/context.cjs"
         },
         "./branch": {
             "types": "./src/branch/index.ts",

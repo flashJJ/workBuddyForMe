@@ -41,6 +41,9 @@ jobs:
       - name: 构建 Web（next build，供 E2E playwright 用 next start 启动）
         run: pnpm build:web
 
+      - name: 包导出冒烟（生产条件子路径符号）
+        run: pnpm check:exports
+
       - name: 自动验收（Fake Web + 场景化 mock，离线全链路）
         run: pnpm eval:acceptance
         env:

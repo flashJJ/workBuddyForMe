@@ -125,6 +125,7 @@ packages/shared, config → 不依赖任何业务包
 - **契约快照**（`pnpm test:contracts`）：`packages/core/src/tools/contract/tool-contracts.test.ts` 序列化每个内置工具的 `permission / alwaysConfirm / required`，并守护 `DEFAULT_AGENT_POLICY` 与 `RESEARCH_DEPTH_PRESETS`；权限或预算常量变更必须显式更新快照。
 - **离线自动验收**（`pnpm eval:acceptance`）：`scripts/acceptance/run.mjs` 起 Fake Web（`scripts/fixtures/web/server.mjs`）+ 真实 Next 服务（`WBFM_MOCK_AI=1` + `WBFM_MOCK_SCENARIO` + `WBFM_FETCH_ALLOW_PRIVATE=1`），按 `tests/scenarios/*.json` 剧本逐案跑真实对话链路；断言人工确认次数、工具并发、缓存命中、旧结果折叠、溢出重试，以及 8K / 128K / 1M 三档窗口的预算与硬保险丝。
 - **trace 回放**（v4.11 P2-1）：`node scripts/acceptance/trace-to-scenario.mjs --base-url=<url> --conversation-id=<id>` 把真实回合的工具轨迹还原为场景与可判定预期，再用 `node scripts/acceptance/run.mjs --replay=<file>` 回放；断言工具顺序、失败工具、探针条数与零确认。
+- **包导出冒烟**（v4.13）：`pnpm check:exports` 在 build 后按 `exports.import` 加载真实产物，断言 `@wbfm/core/context` 等子路径的关键符号存在，防止根 barrel 漏聚合在 next start/standalone 中变成运行期 undefined。
 
 ### 场景化 mock 与 Fake Web（v4.11 P0）
 
