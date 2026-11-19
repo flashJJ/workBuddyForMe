@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import type { Conversation } from '@wbfm/shared/types';
+import type { PetChatPromptKey } from '@wbfm/shared/pet';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -28,6 +30,14 @@ import { ChatSetupGuide } from './chat-setup-guide';
 import { RecalledMemoriesBar } from '../overlay/recalled-memories-bar';
 import { useChatDeepLink } from '../hooks/use-chat-deep-link';
 import { ChatStageBar, useChatModelView } from '../stage';
+import { getPetBridge } from '@/features/pet/bridge';
+
+/** v4.15：桌宠「聊两句」语义键 → 草稿文案（只预填，不发送） */
+const PET_CHAT_PROMPT_MESSAGE: Record<PetChatPromptKey, MessageKey> = {
+  greet: 'pet.chat.greet',
+  comfort: 'pet.chat.comfort',
+  play: 'pet.chat.play',
+};
 
 export function ChatPage({
   deepLinkConversationId = null,
@@ -54,6 +64,16 @@ export function ChatPage({
   const [composerFocus, setComposerFocus] = React.useState(0);
   // v2.25：PTT 识别先入草稿再润色，点发送才发出（免手 VAD 不经过这里）
   const voiceDraft = useVoiceDraft({ draft, onChange: setDraft, requestFocus: () => setComposerFocus((v) => v + 1) });
+
+  // v4.15：桌宠右键「聊两句」→ 只预填草稿并聚焦输入区，是否发送由用户决定
+  React.useEffect(() => {
+    const bridge = getPetBridge();
+    if (!bridge) return;
+    return bridge.onChatRequest((key) => {
+      setDraft(t(PET_CHAT_PROMPT_MESSAGE[key]));
+      setComposerFocus((v) => v + 1);
+    });
+  }, [t]);
 
   React.useEffect(() => {
     if (!assistantId && assistants && assistants.length > 0) {

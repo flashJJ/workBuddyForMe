@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:unit": "vitest run --coverage",
     "test:integration": "vitest run integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:visual": "playwright test visual-v415"
   },
   "dependencies": {
     "@pixiv/three-vrm": "^3.5.5",

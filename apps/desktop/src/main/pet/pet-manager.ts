@@ -23,6 +23,7 @@ import { PetCompanionSettingsStore, showDefaultPetContextMenu } from './pet-menu
 import { registerPetIpc, type IpcMainLike } from './pet-ipc';
 import type { PetManagerDeps, PetWindowLike } from './pet-types';
 import { OPEN_CHANGED_CHANNEL, PERFORMANCE_CHANNEL, DEFAULT_MODEL, MODEL_CHANGED_CHANNEL, QUICK_ACTION_CHANNEL } from './pet-constants';
+import { requestPetChat } from './chat';
 import { PetModelSwitcher } from './switch/pet-model-switch';
 import { createPetMotionControllers } from './motion/pet-motion';
 
@@ -181,6 +182,7 @@ export class PetManager {
     main.focus();
     if (path && path.startsWith('/') && !main.isDestroyed?.()) main.webContents.send('app:deep-link', path);
   }
+
   /** 主窗中继的语音表现事件：净化后单窗转发；桌宠未开直接丢弃 */
   relayPerformance(raw: unknown): void {
     const win = this.win;
@@ -231,12 +233,8 @@ export class PetManager {
         relayPerformance: (raw) => this.relayPerformance(raw),
         confirmModel: (modelId) => this.confirmModel(modelId),
       },
-      { fromMain: (s) => this.fromMain(s), fromPet: (s) => s === this.win?.webContents },
+      { fromMain: (s) => s === this.deps.getMainWindow()?.webContents, fromPet: (s) => s === this.win?.webContents },
     );
-  }
-
-  private fromMain(sender: unknown): boolean {
-    return sender === this.deps.getMainWindow()?.webContents;
   }
 
   private readCursor(): CursorPoint {
@@ -251,6 +249,7 @@ export class PetManager {
       focusMain: (path) => this.focusMain(path),
       toggleClickThrough: () => this.setClickThrough(!this.state.clickThrough),
       quickAction: (action: PetQuickAction) => win.webContents.send(QUICK_ACTION_CHANNEL, action),
+      requestChat: (key) => requestPetChat(key, () => this.focusMain('/chat'), () => this.deps.getMainWindow()),
       hide: () => void this.close(),
     });
   }

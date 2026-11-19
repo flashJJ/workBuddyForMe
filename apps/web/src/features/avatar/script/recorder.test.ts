@@ -52,11 +52,6 @@ describe('observeAction（动作 → 观测 cue）', () => {
     ];
     for (const [action, expected] of cases) expect(observeAction(action)).toEqual(expected);
   });
-
-  it('空实现动作不进入黄金日志', () => {
-    expect(observeAction({ type: 'event.fire', sceneId: 'scene.x' })).toBeNull();
-    expect(observeAction({ type: 'chat.request', prompt: 'hi' })).toBeNull();
-  });
 });
 
 describe('CueRecorder（fake clock 相对时间轴）', () => {

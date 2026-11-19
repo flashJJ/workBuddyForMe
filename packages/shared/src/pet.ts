@@ -8,7 +8,6 @@
  *
  * 仅类型 + 一个纯函数，无运行时依赖（模型白名单为 voice schema 的 const 数组）。
  */
-import { DEFAULT_AVATAR_MODEL_ID, SUPPORTED_AVATAR_MODEL_IDS } from './schemas/media/voice';
 import { EXPRESSION_TAGS, type ExpressionTag } from './schemas/emotion/expression';
 import { MOTION_MOODS, type MotionMood } from './schemas/media/motion-asset';
 import {
@@ -24,6 +23,16 @@ import {
 } from './schemas/interaction/interaction-events';
 import { RELATIONSHIP_LEVEL_NAMES, type RelationshipLevel } from './schemas/chat/relationship-level';
 import { RELATIONSHIP_LEVEL_MAX } from './constants/relationship';
+import type { PetChatPromptKey, PetQuickAction } from './schemas/pet';
+
+export {
+  PET_CHAT_PROMPT_KEYS,
+  PET_CHAT_REQUEST_CHANNEL,
+  PET_QUICK_ACTIONS,
+  isPetChatPromptKey,
+  normalizeAvatarModelId,
+} from './schemas/pet';
+export type { PetChatPromptKey, PetQuickAction } from './schemas/pet';
 
 /** 桌宠表现状态机（与语音状态机取值对齐） */
 export type PetVoiceState = 'idle' | 'listening' | 'thinking' | 'speaking';
@@ -69,15 +78,6 @@ export const PET_HIT_PROXY_MAX_POLYGONS = 4;
 export const PET_HIT_PROXY_MAX_POINTS = 32;
 
 const HIT_POLYGON_IDS = new Set<string>(['head', 'body', 'tail', 'ui']);
-
-/** v3.0 M1：桌宠右键菜单快捷动作（主进程 → 桌宠渲染层执行） */
-export const PET_QUICK_ACTIONS = [
-  'toggle-mute',
-  'toggle-proactive',
-  'play-eat-rice',
-  'play-called-fat',
-] as const;
-export type PetQuickAction = (typeof PET_QUICK_ACTIONS)[number];
 
 /** 桌宠窗上报的伴身设置（右键菜单勾选态；主进程只缓存） */
 export interface PetCompanionSettings { muted: boolean; proactive: boolean }
@@ -126,16 +126,8 @@ export interface WbfmPetBridge {
   onPerformance(cb: (event: PetPerformanceEvent) => void): () => void;
   /** 主窗：订阅桌宠开关状态（用于主窗形象栏让位），返回取消订阅 */
   onOpenChange(cb: (open: boolean) => void): () => void;
-}
-
-/** 模型 id 白名单归一：未知/空值回落默认 haru（与 web 端 getAvatarModel 同语义）。
- * v2.0 额外放行 `vrm:` 前缀的动态 VRM avatar 文件 id（每个导入的用户 VRM 都是独立 fileRef，
- * 白名单里无法预先枚举；web 端 getAvatarModel 与 isVrmAvatarId 也用同样前缀约定）。 */
-export function normalizeAvatarModelId(id: unknown): string {
-  if (typeof id !== 'string') return DEFAULT_AVATAR_MODEL_ID;
-  if ((SUPPORTED_AVATAR_MODEL_IDS as readonly string[]).includes(id)) return id;
-  if (id.startsWith('vrm:')) return id;
-  return DEFAULT_AVATAR_MODEL_ID;
+  /** 主窗：订阅桌宠「聊两句」语义键（只预填草稿，不自动发送），返回取消订阅 */
+  onChatRequest(cb: (key: PetChatPromptKey) => void): () => void;
 }
 
 const PET_VOICE_STATES = ['idle', 'listening', 'thinking', 'speaking'] as const;

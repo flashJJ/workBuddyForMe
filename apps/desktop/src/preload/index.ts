@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { WbfmPetBridge } from '@wbfm/shared/pet';
+import {
+  isPetChatPromptKey,
+  PET_CHAT_REQUEST_CHANNEL,
+  type WbfmPetBridge,
+} from '@wbfm/shared/pet';
 import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
@@ -94,6 +98,10 @@ const pet: WbfmPetBridge = {
   onPerformance: (cb) =>
     subscribe('pet:performance', (payload) => cb(payload as Parameters<typeof cb>[0])),
   onOpenChange: (cb) => subscribe('pet:open-changed', (payload) => cb(Boolean(payload))),
+  onChatRequest: (cb) =>
+    subscribe(PET_CHAT_REQUEST_CHANNEL, (payload) => {
+      if (isPetChatPromptKey(payload)) cb(payload);
+    }),
 };
 
 /**

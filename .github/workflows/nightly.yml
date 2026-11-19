@@ -44,6 +44,24 @@ jobs:
         env:
           PROMPTFOO_DISABLE_TELEMETRY: "1"
 
+      - name: 视觉巡检 L1（基线比对，非阻断）
+        continue-on-error: true
+        run: |
+          pnpm --filter @wbfm/web exec playwright install --with-deps chromium
+          pnpm test:e2e:visual
+        env:
+          WBFM_VISUAL: "1"
+
+      - name: 上传视觉巡检差异
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff-nightly
+          path: |
+            tests/e2e/visual-v415.spec.ts-snapshots
+            apps/web/test-results
+          if-no-files-found: ignore
+
       - name: 上传夜间验收报告
         if: always()
         uses: actions/upload-artifact@v4

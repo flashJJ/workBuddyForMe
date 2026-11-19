@@ -8,6 +8,11 @@ export const zhPet = {
     listening: '聆听中…',
     thinking: '思考中…',
   },
+  chat: {
+    greet: '今天过得怎么样？',
+    comfort: '陪我放松一下吧。',
+    play: '我们来玩个游戏？',
+  },
   work: {
     idle: '空闲',
     thinking: '思考中…',
@@ -59,6 +64,11 @@ export const enPet = {
   subtitle: {
     listening: 'Listening…',
     thinking: 'Thinking…',
+  },
+  chat: {
+    greet: 'How has your day been?',
+    comfort: 'Help me unwind a little?',
+    play: "Let's play a game?",
   },
   work: {
     idle: 'Idle',

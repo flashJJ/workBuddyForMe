@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { SUPPORTED_AVATAR_MODEL_IDS } from './schemas/media/voice';
 import {
+  PET_CHAT_PROMPT_KEYS,
   PET_SUBTITLE_MAX,
+  isPetChatPromptKey,
   normalizeAvatarModelId,
   isPointInPetHitProxy,
   pointInPolygon,
@@ -205,5 +207,19 @@ describe('PetHitProxy 命中轮廓', () => {
     const poly = { id: 'body', points: square };
     const got = sanitizePetHitProxy({ version: 1, polygons: [poly, poly, poly, poly, poly] });
     expect(got?.polygons).toHaveLength(4);
+  });
+});
+
+describe('v4.15 桌宠发起聊天语义键', () => {
+  it('只放行白名单内的键', () => {
+    for (const key of PET_CHAT_PROMPT_KEYS) expect(isPetChatPromptKey(key)).toBe(true);
+  });
+
+  it('自由文本/非字符串/未知键一律拒绝', () => {
+    expect(isPetChatPromptKey('你好，随便聊聊')).toBe(false);
+    expect(isPetChatPromptKey('unknown')).toBe(false);
+    expect(isPetChatPromptKey(42)).toBe(false);
+    expect(isPetChatPromptKey(null)).toBe(false);
+    expect(isPetChatPromptKey(undefined)).toBe(false);
   });
 });

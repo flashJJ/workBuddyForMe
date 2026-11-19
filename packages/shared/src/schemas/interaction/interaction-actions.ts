@@ -17,9 +17,7 @@ export type InteractionAction =
   | { type: 'controller.tap'; intensity?: number }
   | { type: 'controller.setExpression'; tag: ExpressionTag; durationMs?: number }
   | { type: 'subtitle.show'; i18nKey: MessageKey; durationMs?: number }
-  | { type: 'subtitle.pick'; pool: PetLinePoolId; durationMs?: number }
-  | { type: 'chat.request'; prompt: string }
-  | { type: 'event.fire'; sceneId: string };
+  | { type: 'subtitle.pick'; pool: PetLinePoolId; durationMs?: number };
 
 /** 三段式 InteractionState.kind */
 export type InteractionKind = 'head-touch' | 'body-touch' | 'raised' | 'pinch';

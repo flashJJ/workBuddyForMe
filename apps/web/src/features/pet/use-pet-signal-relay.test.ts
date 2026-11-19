@@ -28,6 +28,7 @@ function makePetBridge(): WbfmPetBridge & { relayPerformance: ReturnType<typeof 
     relayPerformance: vi.fn(),
     onPerformance: vi.fn(() => () => undefined),
     onOpenChange: vi.fn(() => () => undefined),
+    onChatRequest: vi.fn(() => () => undefined),
     onModelChange: vi.fn(() => () => undefined),
     confirmModel: vi.fn(),
     onQuickAction: vi.fn(() => () => undefined),

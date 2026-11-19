@@ -3,7 +3,6 @@
  *
  * 把 ActionExecutor 实际执行的动作归一到「可观察 cue」，用可注入时钟打相对时间戳；
  * T0.5 起用同一层观测单元比对「旧链式行为」与「新 Scene 剧本」，允许 16ms 时间容差。
- * 只记录有表现语义的动作：event.fire / chat.request 在旧 executor 中本就是空实现，故跳过。
  */
 
 import type {
@@ -50,9 +49,6 @@ export function observeAction(action: InteractionAction): ObservedCue | null {
       return { kind: 'line', pool: action.pool, durationMs: action.durationMs };
     case 'subtitle.show':
       return { kind: 'subtitle', i18nKey: action.i18nKey, durationMs: action.durationMs };
-    case 'event.fire':
-    case 'chat.request':
-      return null;
   }
 }
 

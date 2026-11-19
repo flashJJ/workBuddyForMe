@@ -42,6 +42,16 @@ export class ActionExecutor {
   }
 
   private exec(action: InteractionAction): void {
+    if (action.type === 'subtitle.show') {
+      this.deps.showSubtitle?.(action.i18nKey, action.durationMs);
+      return;
+    }
+
+    if (action.type === 'subtitle.pick') {
+      this.deps.showSubtitle?.(pickPetLine(action.pool), action.durationMs);
+      return;
+    }
+
     const c = this.deps.controllerRef.current;
     if (!c) return;
 
@@ -68,24 +78,6 @@ export class ActionExecutor {
 
       case 'controller.setExpression':
         c.setExpression?.(action.tag);
-        break;
-
-      case 'subtitle.show':
-        this.deps.showSubtitle?.(action.i18nKey, action.durationMs);
-        break;
-
-      case 'subtitle.pick':
-        this.deps.showSubtitle?.(pickPetLine(action.pool), action.durationMs);
-        break;
-
-      case 'event.fire':
-        // M0 暂不桥 EventDirector，直接跳过（M2 实现）
-        console.warn('[ActionExecutor] event.fire not yet implemented:', action.sceneId);
-        break;
-
-      case 'chat.request':
-        // v4.12：仍未实现，显式告警便于定位「配置了但没反应」
-        console.warn('[ActionExecutor] chat.request not yet implemented:', action.prompt);
         break;
     }
   }

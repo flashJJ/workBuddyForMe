@@ -10,7 +10,7 @@
  * popup({}) 无主窗口时菜单可能不显示或立即消失。
  */
 import { Menu, type BrowserWindow } from 'electron';
-import type { PetCompanionSettings, PetQuickAction } from '@wbfm/shared/pet';
+import type { PetChatPromptKey, PetCompanionSettings, PetQuickAction } from '@wbfm/shared/pet';
 
 /**
  * 右键菜单勾选态缓存：只接受完整的布尔字段，非法上报直接忽略。
@@ -41,6 +41,8 @@ export interface PetContextMenuActions {
   toggleClickThrough(): void;
   /** v3.0 M1：静音 / 主动说话 / 干饭 / 炸毛（由渲染层执行并回报台词） */
   quickAction(action: PetQuickAction): void;
+  /** v4.15：唤回主窗到对话页并下发语义键（主窗只预填草稿，不自动发送） */
+  requestChat(key: PetChatPromptKey): void;
   hide(): void;
 }
 
@@ -57,6 +59,14 @@ export type ShowPetContextMenu = (
 export const showDefaultPetContextMenu: ShowPetContextMenu = (win, actions) => {
   const menu = Menu.buildFromTemplate([
     { label: '回到主窗口', click: () => actions.focusMain() },
+    {
+      label: '聊两句',
+      submenu: [
+        { label: '问候一下', click: () => actions.requestChat('greet') },
+        { label: '求安慰', click: () => actions.requestChat('comfort') },
+        { label: '陪我玩', click: () => actions.requestChat('play') },
+      ],
+    },
     {
       label: '设置：AI 日常剧情',
       click: () => actions.focusMain('/settings#panel-script-schedule'),

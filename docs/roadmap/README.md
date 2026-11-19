@@ -650,6 +650,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v4.11 | 联网有预算：抓取权限、并发、分层返回与上下文窗口 | ✅ 已完成（未打 tag） | [方案](../plan/v4.11/00-tool-budget-and-fetch-harness-plan.md) · [验收方案](../plan/v4.11/01-automated-acceptance-and-ai-testing-plan.md) | — | [blog/v4.11](../../blog/v4.11/) 7 篇 | — |
 | v4.12 | 接线与意图可观测：hintApplied、草稿建议与按状态清空记忆 | ✅ 已完成（未打 tag） | [方案](../plan/v4.12/00-wiring-and-intent-observability-plan.md) | — | [blog/v4.12](../../blog/v4.12/) 7 篇 | — |
 | v4.13 | 代码健康度：产物导出、热点拆分、目录收敛与门禁补强 | ✅ 已完成（未打 tag） | [方案](../plan/v4.13/00-code-health-refactor-plan.md) | — | [blog/v4.13](../../blog/v4.13/) 7 篇 | — |
+| v4.15 | 动作契约收口、桌宠发起聊天与视觉巡检 L1 | ✅ 已完成（未打 tag） | [方案](../plan/v4.15/spec.md) · [任务](../plan/v4.15/tasks.md) | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
