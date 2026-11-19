@@ -54,10 +54,12 @@ export async function waitForServer(url: string, token: string, options: WaitOpt
  * dev 兜底：dev server 重启/未就绪时窗口会停在 ERR_CONNECTION_REFUSED 错误页。
  * 主框架加载失败后延迟重载，最多 attempts 次；成功加载后恢复额度。
  * 生产态由 waitForServer 保证服务就绪，不使用本函数。
+ *
+ * 默认 60 次 × 1.5s ≈ 90s：覆盖 Next dev 内存守护重启 + 冷编译的窗口期。
  */
 export function loadWithDevRetry(win: BrowserWindow, url: string, options: LoadRetryOptions = {}): void {
-  const maxAttempts = options.attempts ?? 5;
-  const delayMs = options.delayMs ?? 1_000;
+  const maxAttempts = options.attempts ?? 60;
+  const delayMs = options.delayMs ?? 1_500;
   let remaining = maxAttempts;
   let timer: ReturnType<typeof setTimeout> | null = null;
 

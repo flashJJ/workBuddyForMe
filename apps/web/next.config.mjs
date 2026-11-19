@@ -40,6 +40,9 @@ const nextConfig = {
   experimental: {
     // Windows 页面文件有限时降低构建 worker 并发，避免 spawn UNKNOWN / OOM
     cpus: 2,
+    // 本项目路由/共享模块多，dev 期 webpack 缓存会持续膨胀（实测可达数 GB）；
+    // 该开关用更保守的缓存策略换取更低内存，仅影响 dev，不影响产物。
+    webpackMemoryOptimizations: true,
   },
   // Next 15：服务端原生/带二进制资源/自带 worker 的包保持外部 require，
   // 避免 bundler 篡改内部相对路径（pdfjs-dist 的 pdf.worker.mjs 依赖；
