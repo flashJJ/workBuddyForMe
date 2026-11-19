@@ -1,0 +1,36 @@
+[
+  {
+    "id": "fetch-concurrent",
+    "scenario": "fetch-concurrent",
+    "prompt": "请并发抓取三个页面，并汇总你拿到的内容。",
+    "expectedTools": ["fetch_webpage", "fetch_webpage", "fetch_webpage"],
+    "realExpectedTools": ["fetch_webpage"],
+    "expectedProbeCount": 3,
+    "expectFolded": false
+  },
+  {
+    "id": "fetch-cache",
+    "scenario": "fetch-cache",
+    "prompt": "先抓取一个长页面，再读取它的后续段落。",
+    "expectedTools": ["fetch_webpage", "read_fetched"],
+    "realExpectedTools": ["fetch_webpage"],
+    "expectedProbeCount": 2,
+    "expectFolded": false
+  },
+  {
+    "id": "fetch-fold",
+    "scenario": "fetch-fold",
+    "prompt": "连续抓取六个长页面，并检查上下文预算是否生效。",
+    "expectedTools": [
+      "fetch_webpage",
+      "fetch_webpage",
+      "fetch_webpage",
+      "fetch_webpage",
+      "fetch_webpage",
+      "fetch_webpage"
+    ],
+    "realExpectedTools": ["fetch_webpage"],
+    "expectedProbeCount": 6,
+    "expectFolded": true
+  }
+]

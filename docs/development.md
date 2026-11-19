@@ -27,6 +27,9 @@
 | `pnpm test:integration` | Web API 集成测试全集（内存库 + 路由直调） |
 | `pnpm test:e2e` | Web 关键路径 E2E（Playwright + Mock 供应商） |
 | `pnpm test:e2e:desktop` | Electron 冒烟（构建 → 归集 → pack:dir → 启动断言） |
+| `pnpm eval:acceptance` | 离线全链路自动验收（Fake Web + 场景化 mock） |
+| `pnpm eval:tools` | 工具链路评测（promptfoo；mock 自动起服务，real 需指定 base-url/assistant-id） |
+| `pnpm eval:agent:server` | 多智能体协作回归（自动起 mock 服务） |
 
 > 端口约定：Web dev **42337**、Electron CDP **42338**、E2E **42339**（避开 3000 与 Windows 动态端口段）；可分别用 `WBFM_DEV_PORT` / `WBFM_DEBUG_PORT` / `WBFM_E2E_PORT` 覆盖。
 > 剧本引擎（Director / 行为场戏 / `__petDebug`）需要构建期开关：`$env:WBFM_PET_SCRIPT='1'; pnpm dev:desktop`。

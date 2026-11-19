@@ -496,7 +496,7 @@ R7（`read_fetched` 自动注入）在契约测试中显式断言：启用 `fetc
 
 ### 13.4 尚未开始
 
-P1-4（三档窗口全链路）、P1-5（promptfoo 工具评测）与 P2 未开始。
+P1-4（三档窗口全链路）与 P2 未开始。
 
 ---
 
@@ -561,3 +561,47 @@ P1-4（三档窗口全链路）、P1-5（promptfoo 工具评测）与 P2 未开�
 ### 15.4 已知限制
 
 MSW 会重建 Request，`request.redirect` 固定为 `follow`，无法断言原始 `redirect: 'manual'`；该行为已由「302 跳到内网在第二跳被拦截」用例覆盖。SSE 的 `ReadableStream` 与客户端 abort 均可正常验证。
+
+---
+
+## 16. P1 落地记录：工具链路评测（P1-5）
+
+### 16.1 交付
+
+| 项 | 落点 |
+|---|---|
+| 评测 provider | `tests/eval/promptfoo/tools-provider.mjs`：驱动真实 `/api/chat/stream`，采集工具序列/确认/失败/探针 |
+| 用例 | `tests/eval/promptfoo/tool-cases.json`（并发、缓存续读、六页折叠） |
+| promptfoo 配置 | `tests/eval/promptfoo/tools.yaml` |
+| 一键入口 | `scripts/eval/tool-eval.mjs`（mock 自动起 Fake Web + Next；real 透传外部服务） |
+| 命令 / CI | `pnpm eval:tools`；CI 在 `eval:acceptance` 之后运行 |
+
+### 16.2 mock 与真实模型双跑
+
+- **mock（默认，CI 必跑）**：provider 按 `caseId` 给用户消息加 `[scenario:...]` 前缀，模型窗口 128K，工具序列与探针可精确断言；验证的是「评测链路 + 系统行为」。
+- **real（手动）**：只发自然语言 prompt，由真实模型自行决定工具：
+  `node scripts/eval/tool-eval.mjs --mode=real --base-url=http://127.0.0.1:3200 --assistant-id=<id>`
+  断言自动降级为「包含期望工具 + 至少 1 条工具结果 + 零确认」。
+
+### 16.3 指标
+
+| metric | 判定 |
+|---|---|
+| `tool_selection_accuracy` | mock 精确序列；real 包含期望工具 |
+| `hitl_free` | 确认弹窗次数 = 0 |
+| `tool_success` | 失败工具数 = 0 |
+| `evidence_groundedness` | mock 探针条数精确；real ≥1 |
+| `context_budget_folding` | mock 首条折叠、末条完整 |
+| `probe_visible` | mock 终稿包含 `{{toolState}}` 探针 |
+
+### 16.4 验证
+
+| 项 | 结果 |
+|---|---|
+| `pnpm eval:tools`（mock，dev） | 3/3 通过，24s，21,815 tokens |
+| promptfoo JS 断言读取 `context.providerResponse.metadata` | 生效（工具序列/确认/探针均参与判定） |
+
+### 16.5 已知边界
+
+- mock 模式的工具选择由场景脚本决定，衡量的是系统对决策的反应与断言有效性；模型决策质量要看 real 模式。
+- real 模式需要未设置 `WBFM_MOCK_AI` 的服务、绑定 `fetch_webpage` 的助手；若使用夹具地址，还需 `WBFM_FETCH_ALLOW_PRIVATE=1` 并启动 Fake Web，否则改用公开 URL。

@@ -46,6 +46,11 @@ jobs:
         env:
           WBFM_ACCEPTANCE_PORT: "42341"
 
+      - name: 工具链路评测（promptfoo + 场景化 mock）
+        run: pnpm eval:tools
+        env:
+          WBFM_TOOL_EVAL_PORT: "42342"
+
       - name: 多智能体协作回归（eval:agent，自动起 mock 服务）
         run: pnpm eval:agent:server
         env:

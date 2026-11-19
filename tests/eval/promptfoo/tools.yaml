@@ -1,0 +1,79 @@
+description: v4.11 工具链路评测（mock 场景 / 真实模型同一套断言）
+prompts:
+  - "{{prompt}}"
+providers:
+  - id: file://tools-provider.mjs
+    label: wbfm-tool-eval
+
+deriveMetrics: true
+
+tests:
+  - description: 三页并发抓取：工具选择正确、零确认、探针可见
+    vars:
+      caseId: fetch-concurrent
+      prompt: 请并发抓取三个页面，并汇总你拿到的内容。
+    assert:
+      - type: javascript
+        metric: tool_selection_accuracy
+        value: |
+          (() => { const m = context.providerResponse.metadata; const expected = m.mode === 'mock' ? m.expectedTools : m.realExpectedTools; return m.mode === 'mock' ? JSON.stringify(m.toolOrder) === JSON.stringify(expected) : expected.every((t) => m.toolOrder.includes(t)); })()
+      - type: javascript
+        metric: hitl_free
+        value: context.providerResponse.metadata.approvals === 0
+      - type: javascript
+        metric: tool_success
+        value: context.providerResponse.metadata.failed.length === 0
+      - type: javascript
+        metric: evidence_groundedness
+        value: |
+          (() => { const m = context.providerResponse.metadata; return m.mode === 'mock' ? m.probe?.count === m.expectedProbeCount : (m.probe?.count ?? 0) >= 1; })()
+      - type: javascript
+        metric: probe_visible
+        value: context.providerResponse.metadata.mode !== 'mock' || output.includes('"count"')
+
+  - description: 抓取后续读：缓存命中且不重复抓取
+    vars:
+      caseId: fetch-cache
+      prompt: 先抓取一个长页面，再读取它的后续段落。
+    assert:
+      - type: javascript
+        metric: tool_selection_accuracy
+        value: |
+          (() => { const m = context.providerResponse.metadata; const expected = m.mode === 'mock' ? m.expectedTools : m.realExpectedTools; return m.mode === 'mock' ? JSON.stringify(m.toolOrder) === JSON.stringify(expected) : expected.every((t) => m.toolOrder.includes(t)); })()
+      - type: javascript
+        metric: hitl_free
+        value: context.providerResponse.metadata.approvals === 0
+      - type: javascript
+        metric: tool_success
+        value: context.providerResponse.metadata.failed.length === 0
+      - type: javascript
+        metric: evidence_groundedness
+        value: |
+          (() => { const m = context.providerResponse.metadata; return m.mode === 'mock' ? m.probe?.count === m.expectedProbeCount : (m.probe?.count ?? 0) >= 1; })()
+      - type: javascript
+        metric: probe_visible
+        value: context.providerResponse.metadata.mode !== 'mock' || output.includes('"count"')
+
+  - description: 六页折叠：最早结果折叠、最新结果完整
+    vars:
+      caseId: fetch-fold
+      prompt: 连续抓取六个长页面，并检查上下文预算是否生效。
+    assert:
+      - type: javascript
+        metric: tool_selection_accuracy
+        value: |
+          (() => { const m = context.providerResponse.metadata; const expected = m.mode === 'mock' ? m.expectedTools : m.realExpectedTools; return m.mode === 'mock' ? JSON.stringify(m.toolOrder) === JSON.stringify(expected) : expected.every((t) => m.toolOrder.includes(t)); })()
+      - type: javascript
+        metric: hitl_free
+        value: context.providerResponse.metadata.approvals === 0
+      - type: javascript
+        metric: tool_success
+        value: context.providerResponse.metadata.failed.length === 0
+      - type: javascript
+        metric: context_budget_folding
+        value: |
+          (() => { const m = context.providerResponse.metadata; if (m.mode !== 'mock' || !m.expectFolded) return true; const tools = m.probe?.tools ?? []; return tools[0]?.folded === true && tools.at(-1)?.folded === false; })()
+      - type: javascript
+        metric: evidence_groundedness
+        value: |
+          (() => { const m = context.providerResponse.metadata; return m.mode === 'mock' ? m.probe?.count === m.expectedProbeCount : (m.probe?.count ?? 0) >= 1; })()

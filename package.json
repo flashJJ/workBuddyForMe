@@ -53,6 +53,7 @@
     "eval:acceptance": "node scripts/acceptance/run.mjs",
     "eval:context": "node scripts/eval/eval-context.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
+    "eval:tools": "node scripts/eval/tool-eval.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:msw && pnpm check:ascii && pnpm check:assets && pnpm check:surfaces"
   },
   "devDependencies": {
