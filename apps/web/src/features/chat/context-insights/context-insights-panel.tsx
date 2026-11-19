@@ -168,6 +168,20 @@ export function ContextInsightsPanel({
                 {t('contextInsights.signals', { signals: intent.value.signals.join('、') })}
               </p>
             ) : null}
+            {intent.value.suggestedTaskMode ? (
+              <p className="mt-0.5 text-[11px] text-muted-foreground" data-testid="context-insight-task-mode">
+                {t('contextInsights.taskModeSuggestion')}
+              </p>
+            ) : null}
+            {typeof intent.value.hintApplied === 'boolean' ? (
+              <p className="mt-0.5 text-[11px] text-muted-foreground" data-testid="context-insight-hint">
+                {t(
+                  intent.value.hintApplied
+                    ? 'contextInsights.hintApplied'
+                    : 'contextInsights.hintSkipped',
+                )}
+              </p>
+            ) : null}
           </section>
         ) : null}
 

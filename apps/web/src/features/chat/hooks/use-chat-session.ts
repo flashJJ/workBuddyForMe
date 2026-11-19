@@ -187,6 +187,8 @@ export function useChatSession(
           setLive((prev) => applyMemoryNotices(prev, data.memoryNotices));
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
           void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
+          // v4.12：本轮意图与提示状态已落事件，通知上下文面板刷新
+          void queryClient.invalidateQueries({ queryKey: ['events', 'chat'] });
         },
         onError: (data: SsePayloadMap['error']) => {
           liveGraph.fail(data);
@@ -196,6 +198,7 @@ export function useChatSession(
           patchLastAssistant({ status: 'error', errorCode: data.code, errorMessage: data.message });
           void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
           void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
+          void queryClient.invalidateQueries({ queryKey: ['events', 'chat'] });
         },
       };
 

@@ -4,6 +4,13 @@ export const zhModPack = {
   description: '在好友之间分享自建角色卡与舞台场景。包内只含 JSON 与图片，不含模型、语音等二进制；VRM 形象仅带引用，需对方自行准备。',
   exportOpen: '导出内容包',
   importOpen: '导入内容包',
+  history: {
+    title: '最近导入',
+    empty: '尚无导入记录',
+    failed: '导入记录加载失败',
+    item: 'v{version} · {time}',
+    counts: '{cards} 卡 · {scenes} 场景 · {backgrounds} 背景',
+  },
   export: {
     title: '导出 .wbfm-pack',
     packName: '包名称',
@@ -52,6 +59,13 @@ export const enModPack = {
   description: 'Share self-made character cards and stage scenes with friends. Packs contain only JSON and images — no model or voice binaries. VRM avatars travel as references only and must be supplied by the recipient.',
   exportOpen: 'Export pack',
   importOpen: 'Import pack',
+  history: {
+    title: 'Recent imports',
+    empty: 'No imports yet',
+    failed: 'Failed to load import history',
+    item: 'v{version} · {time}',
+    counts: '{cards} cards · {scenes} scenes · {backgrounds} backgrounds',
+  },
   export: {
     title: 'Export .wbfm-pack',
     packName: 'Pack name',

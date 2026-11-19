@@ -78,4 +78,18 @@ describe('summarizeContextEvents（v4.8 上下文面板）', () => {
     expect(data.compactions[0]!.value.summary).toHaveLength(8_000);
     expect(data.compactions[0]!.value.fidelityMissing).toHaveLength(20);
   });
+
+  it('保留任务模式建议与主智能体提示状态（v4.12）', () => {
+    const data = summarizeContextEvents([
+      item('turn_intent', {
+        ...intent,
+        kind: 'tool_task',
+        confidence: 0.9,
+        suggestedTaskMode: true,
+        hintApplied: true,
+      }),
+    ]);
+    expect(data.intent?.value.suggestedTaskMode).toBe(true);
+    expect(data.intent?.value.hintApplied).toBe(true);
+  });
 });

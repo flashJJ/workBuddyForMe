@@ -71,6 +71,7 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 - **识别**：v4.8 规则意图（零模型成本）+ 可选小模型分类器；输出 `TurnIntent { kind, confidence, signals, suggestedTaskMode, source }`，7 类：`chitchat / knowledge / follow_up / tool_task / clarify / memory_write / reminder`。低置信度或分类器超时一律回落 `fallback`，不影响主链路。
 - **既有用途**：按意图分配上下文块配额（`ContextPlan`）、高置信寒暄/澄清走轻量回合（不注入技能提示词与流程工具声明）、显式记忆命令先于召回执行、预判压缩；标签落 `turn_intent` 事件，上下文面板可见。
 - **v4.11 延伸到主智能体**：高置信度（`≥0.7` 且非 `fallback`）时，在 system 的「全局追加」之后注入一行 `【本轮倾向】`，提示任务执行/知识问答/追问/澄清的行为重点。它**只加引导，不删工具、不降检索**；寒暄、记忆写入、提醒不注入，避免过度约束自然对话。
+- **可观测**（v4.12）：`turn_intent` 事件记录 `hintApplied` 与 `suggestedTaskMode`；上下文面板显示「主智能体提示：已注入/未注入」与「建议任务模式（不自动切换）」，每轮结束自动刷新。
 - **调试**：对话内查 `turn_intent` 事件或上下文面板「最近意图」；误判排查优先看 `signals` 与 `confidence`，不要通过加工具/加检索掩盖意图问题。
 
 ## 包发布形态（exports 条件）

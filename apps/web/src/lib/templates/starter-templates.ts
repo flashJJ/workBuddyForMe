@@ -191,8 +191,8 @@ export interface AssistantPresetBinding {
   /** 绑定知识库 id（预填到新建表单，可选） */
   knowledgeBaseId?: string;
   /**
-   * 绑定技能 name。助手表单暂未支持「助手级技能」（P1-2 补齐），
-   * 故当前仅登记、不落到表单；file-search 依赖 MCP filesystem，不作默认绑定。
+   * 绑定技能 name（v2.4 M4 起助手表单已支持助手级技能；空数组=跟随全局）。
+   * file-search 依赖 MCP filesystem，不作默认绑定。
    */
   skillNames: string[];
 }

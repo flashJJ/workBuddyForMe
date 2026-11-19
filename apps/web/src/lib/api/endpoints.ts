@@ -261,6 +261,7 @@ export const QUERY_KEYS = {
   messages: (conversationId: string) => ['messages', conversationId] as const,
   knowledgeBases: ['knowledge-bases'] as const,
   contentPacks: ['content-packs'] as const,
+  modPackInstalls: ['mod-pack-installs'] as const,
   documents: (kbId: string) => ['documents', kbId] as const,
   documentStructure: (documentId: string) => ['document-structure', documentId] as const,
   kbGovernance: (kbId: string) => ['kb-governance', kbId] as const,

@@ -30,6 +30,8 @@ export const turnIntentSchema = z.object({
   signals: z.array(z.string().trim().min(1).max(32)).max(8),
   /** 是否建议进入任务模式（只建议，不自动切换） */
   suggestedTaskMode: z.boolean(),
+  /** v4.12：本轮是否向主智能体注入了意图提示（观测用；旧数据缺省） */
+  hintApplied: z.boolean().optional(),
   source: z.enum(TURN_INTENT_SOURCES),
 });
 export type TurnIntent = z.infer<typeof turnIntentSchema>;

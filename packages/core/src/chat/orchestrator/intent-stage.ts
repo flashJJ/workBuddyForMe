@@ -4,6 +4,7 @@ import { INTENT_CLASSIFIER_TIMEOUT_MS } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../../services/base/deps';
 import type { MemoryService } from '../../memory/memory-service';
 import { classifyTurnIntent } from '../context/turn-intent';
+import { buildIntentHintBlock } from '../context/context-plan';
 import { createIntentClassifier } from '../context/intent-classifier';
 import { applyMemoryIntent } from '../../memory/intent-memory';
 
@@ -40,7 +41,12 @@ export async function runIntentStage(params: IntentStageParams): Promise<IntentS
     createIntentClassifier(params.deps),
     INTENT_CLASSIFIER_TIMEOUT_MS,
   );
-  params.deps.events?.recordChat(params.conversationId, 'turn_intent', intent);
+  // v4.12：记录本轮是否真的向主智能体注入了行为提示，供上下文面板核对
+  const recorded: TurnIntent = {
+    ...intent,
+    hintApplied: buildIntentHintBlock(intent) !== null,
+  };
+  params.deps.events?.recordChat(params.conversationId, 'turn_intent', recorded);
   const notices =
     params.assistant.memoryEnabled && params.applyMemory !== false
       ? await applyMemoryIntent({
@@ -52,5 +58,5 @@ export async function runIntentStage(params: IntentStageParams): Promise<IntentS
         signal: params.signal,
       })
     : [];
-  return { intent, notices };
+  return { intent: recorded, notices };
 }
