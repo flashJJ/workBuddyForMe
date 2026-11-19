@@ -9,14 +9,7 @@ import {
 import {
   createMemoryEdgeRepository,
   createMemoryRepository,
-  deleteAllMemoryFts,
-  deleteAllMemoryVectors,
-  deleteMemoryFts,
-  deleteMemoryVector,
-  ensureMemoryVectorTable,
   getMemoryVectorDimension,
-  upsertMemoryFts,
-  upsertMemoryVector,
   type MemoryListFilter,
   type MemoryRepository,
 } from '@wbfm/database';
@@ -24,13 +17,21 @@ import { traceAsync } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/base/deps';
 import type { ExtractedMemory } from './extractor';
 import { createMemoryPersister, createMemoryRecall } from './lifecycle';
+import {
+  clearAllMemories,
+  clearMemoriesByStatus,
+  createManualMemory,
+  readLifecycleStats,
+  removeMemory,
+  runLifecycleEventRollup,
+  updateMemory,
+} from './lifecycle/ops';
+import type {
+  MemoryEventRollupOptions,
+  MemoryEventRollupResult,
+} from './lifecycle/memory-event-rollup';
 import { runMemoryConsolidation } from './graph';
 import { createMemoryStats } from './lifecycle/memory-stats';
-import {
-  runMemoryEventRollup,
-  type MemoryEventRollupOptions,
-  type MemoryEventRollupResult,
-} from './lifecycle/memory-event-rollup';
 import { runMemoryDecay, type DecayOptions, type DecayResult } from './memory-decay';
 import { embedTexts } from './memory-embedding';
 import { buildSameSourceEdges } from './graph';
@@ -163,121 +164,45 @@ export function createMemoryService(deps: ServiceDeps) {
   }
 
   /** M4 管理页：手工新建（全局作用域，不参与自动去重合并） */
-  async function createManual(input: ManualMemoryInput, signal?: AbortSignal): Promise<Memory> {
-    const memory = repo.add({
-      kind: input.kind,
-      content: input.content,
-      importance: input.importance,
-      sourceConversationId: null,
-      scope: 'global',
-      source: 'manual',
-      subjectKey: input.subjectKey ?? null,
-    });
-    upsertMemoryFts(deps.db, { id: Number(memory.id), content: memory.content });
-    repo.recordEvent(Number(memory.id), 'create', null, memory, 'user');
-    const embedded = await embedTexts(deps, [input.content], signal);
-    if (embedded) {
-      ensureMemoryVectorTable(deps.db, embedded.dimension);
-      upsertMemoryVector(deps.db, { id: Number(memory.id), vector: embedded.vectors[0]! });
-    }
-    return memory;
-  }
+  const createManual = (input: ManualMemoryInput, signal?: AbortSignal): Promise<Memory> =>
+    createManualMemory({ deps, repo }, input, signal);
 
-  async function update(
+  const update = (
     id: string,
     fields: { kind?: MemoryKind; content?: string; importance?: number; status?: MemoryStatus },
     signal?: AbortSignal,
-  ): Promise<Memory | null> {
-    const existing = repo.findById(id);
-    if (!existing) return null;
-    const memory = repo.update(id, fields);
-    if (!memory) return null;
-    if (fields.content && fields.content !== existing.content) {
-      upsertMemoryFts(deps.db, { id: Number(id), content: memory.content });
-      const embedded = await embedTexts(deps, [fields.content], signal);
-      if (embedded) {
-        ensureMemoryVectorTable(deps.db, embedded.dimension);
-        upsertMemoryVector(deps.db, { id: Number(id), vector: embedded.vectors[0]! });
-      }
-    }
-    if (fields.status && fields.status !== existing.status) {
-      repo.recordEvent(Number(id), fields.status === 'archived' ? 'archive' : 'restore', existing, memory, 'user');
-    } else {
-      repo.recordEvent(Number(id), 'update', existing, memory, 'user');
-    }
-    return memory;
-  }
+  ): Promise<Memory | null> => updateMemory({ deps, repo }, id, fields, signal);
 
-  function list(filter: MemoryListFilter = {}): Memory[] {
-    return repo.list(filter);
-  }
-
-  function get(id: string): Memory | null {
-    return repo.findById(id);
-  }
+  const list = (filter: MemoryListFilter = {}): Memory[] => repo.list(filter);
+  const get = (id: string): Memory | null => repo.findById(id);
 
   function remove(id: string): boolean {
-    const existing = repo.findById(id);
-    if (!existing) return false;
-    const tx = deps.db.transaction(() => {
-      edgeRepo.deleteForMemory(id);
-      repo.recordEvent(Number(id), 'delete', existing, null, 'user');
-      return repo.delete(id);
-    });
-    const existed = tx();
-    if (existed) {
-      deleteMemoryFts(deps.db, Number(id));
-      if (getMemoryVectorDimension(deps.db) !== null) deleteMemoryVector(deps.db, Number(id));
-    }
-    return existed;
+    return removeMemory({ deps, repo, edgeRepo }, id);
   }
 
   /** 物理清空记忆库、向量与全文索引（二次确认由 UI 负责） */
   function clearAll(): number {
-    const tx = deps.db.transaction(() => {
-      deleteAllMemoryFts(deps.db);
-      edgeRepo.deleteAll();
-      if (getMemoryVectorDimension(deps.db) !== null) deleteAllMemoryVectors(deps.db);
-      return repo.deleteAll();
-    });
-    return tx();
+    return clearAllMemories({ deps, repo, edgeRepo });
   }
   function clearByStatus(status: MemoryStatus): number {
-    const ids = repo.listIdsByStatus(status);
-    if (ids.length === 0) return 0;
-    const tx = deps.db.transaction(() => {
-      for (const id of ids) {
-        edgeRepo.deleteForMemory(String(id));
-        deleteMemoryFts(deps.db, id);
-        if (getMemoryVectorDimension(deps.db) !== null) deleteMemoryVector(deps.db, id);
-      }
-      repo.deleteEventsByStatus(status);
-      return repo.deleteByStatus(status);
-    });
-    return tx();
+    return clearMemoriesByStatus({ deps, repo, edgeRepo }, status);
   }
 
   /** P2 遗忘策略：decay_score 分档 + TTL 到期软归档，具体逻辑在 memory-decay.ts */
-  function runDecay(options: DecayOptions = {}): DecayResult {
-    return runMemoryDecay(deps.db, repo, options);
-  }
+  const runDecay = (options: DecayOptions = {}): DecayResult =>
+    runMemoryDecay(deps.db, repo, options);
 
   /** P2 线上计数：零召回率 / superseded 比例 / 用户纠正次数 */
-  function getStats(): MemoryLifecycleStats {
-    return stats.read();
-  }
+  const getStats = (): MemoryLifecycleStats => readLifecycleStats(stats);
 
   /** v2.28 P1：审计事件轮转（保留期外聚合计数并删除原文） */
-  function runEventRollup(
-    options: MemoryEventRollupOptions = {},
-  ): MemoryEventRollupResult {
-    return runMemoryEventRollup(deps.db, options);
+  function runEventRollup(options: MemoryEventRollupOptions = {}): MemoryEventRollupResult {
+    return runLifecycleEventRollup(deps, options);
   }
 
   /** v2.31 P1：空闲整理（同义主体归一、重复内容归档、悬空边清理） */
-  function consolidate(options: { now?: Date; limit?: number } = {}): MemoryConsolidateSummary {
-    return runMemoryConsolidation(deps.db, repo, edgeRepo, options);
-  }
+  const consolidate = (options: { now?: Date; limit?: number } = {}): MemoryConsolidateSummary =>
+    runMemoryConsolidation(deps.db, repo, edgeRepo, options);
 
   return {
     rememberCandidates,
