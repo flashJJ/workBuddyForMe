@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { api } from '../eval/lib/http.mjs';
-import { ensureMockStack } from '../eval/lib/mock-seed.mjs';
+import { ensureMockStack, ensureWindowTiers } from '../eval/lib/mock-seed.mjs';
 import { streamChat } from '../eval/lib/sse-client.mjs';
 import { printSummary, summarize, writeReport } from '../eval/lib/report.mjs';
 import { CASES, fetchStats, resetFixture } from './cases.mjs';
@@ -25,6 +25,16 @@ import { CASES, fetchStats, resetFixture } from './cases.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
 const TEMPLATE = join(ROOT, 'tests', 'scenarios', 'v4.11-tool-harness.json');
+
+/**
+ * v4.11 P1-4：三档生效窗口。同一剧本在不同窗口下应呈现不同的预算/折叠行为，
+ * 128K 档复用 `ensureMockStack` 创建的 mock-chat 记录。
+ */
+const WINDOW_TIERS = [
+  { key: '8k', modelId: 'mock-chat-8k', contextWindow: 8_192 },
+  { key: '128k', modelId: 'mock-chat', contextWindow: 128_000 },
+  { key: '1m', modelId: 'mock-chat-1m', contextWindow: 1_000_000 },
+];
 
 function readArgs(argv) {
   const args = {
@@ -161,22 +171,27 @@ async function main() {
     console.log(`Next 服务就绪：${baseUrl}（mode=${args.mode}）`);
 
     const stack = await ensureMockStack(baseUrl, { chatContextWindow: 128_000 });
-    await api(baseUrl, `/api/assistants/${stack.assistantId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        enabledTools: ['fetch_webpage'],
-        knowledgeBaseIds: [],
-        retrieveAlways: false,
-      }),
-    });
+    const tiers = await ensureWindowTiers(baseUrl, stack.providerId, WINDOW_TIERS);
+    console.log(
+      `窗口档位就绪：${Object.entries(tiers)
+        .map(([key, value]) => `${key}=${value.assistantId.slice(0, 8)}`)
+        .join(' ')}`,
+    );
 
     console.log(`\n开始验收：${CASES.length} 个场景\n`);
     const results = [];
     const selected = args.only ? CASES.filter((item) => item.id === args.only) : CASES;
     for (const testCase of selected) {
+      const tier = tiers[testCase.tier ?? '128k'];
       let result;
       try {
-        result = await runCase({ baseUrl, fixtureUrl, assistantId: stack.assistantId, testCase });
+        if (!tier) throw new Error(`用例 ${testCase.id} 指定的窗口档位不存在：${testCase.tier}`);
+        result = await runCase({
+          baseUrl,
+          fixtureUrl,
+          assistantId: tier.assistantId,
+          testCase,
+        });
       } catch (error) {
         result = {
           id: testCase.id,

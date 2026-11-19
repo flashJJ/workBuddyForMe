@@ -67,3 +67,57 @@ export async function ensureMockStack(baseUrl, options = {}) {
     assistantId: assistants[0].id,
   };
 }
+
+/**
+ * v4.11 P1-4：准备不同上下文窗口的模型与助手（8K / 128K / 1M 三档验收）。
+ *
+ * 同一供应商内 modelId 唯一，因此每档用独立 modelId；mock 供应商不区分模型，
+ * 差异只体现在模型记录的 contextWindow 上，由真实预算/折叠链路读取。
+ * @param {string} baseUrl
+ * @param {string} providerId `ensureMockStack` 返回的供应商记录 id
+ * @param {Array<{key:string, modelId:string, contextWindow:number}>} tiers
+ * @returns {Promise<Record<string, {modelRecordId:string, assistantId:string}>>}
+ */
+export async function ensureWindowTiers(baseUrl, providerId, tiers) {
+  const models = await api(baseUrl, `/api/providers/${providerId}/models`);
+  const modelsByModelId = new Map(models.map((item) => [item.modelId, item]));
+  const assistants = await api(baseUrl, '/api/assistants');
+  const assistantsByName = new Map(assistants.map((item) => [item.name, item]));
+
+  /** @type {Record<string, {modelRecordId:string, assistantId:string}>} */
+  const result = {};
+  for (const tier of tiers) {
+    let model = modelsByModelId.get(tier.modelId);
+    if (!model) {
+      model = await api(baseUrl, `/api/providers/${providerId}/models`, {
+        method: 'POST',
+        body: JSON.stringify({
+          modelId: tier.modelId,
+          capabilities: ['chat'],
+          contextWindow: tier.contextWindow,
+        }),
+      });
+      modelsByModelId.set(model.modelId, model);
+    }
+
+    // 每个窗口独立助手：避免用例之间互相改写绑定，且可并行观察不同预算
+    const name = `acceptance-${tier.key}`;
+    let assistant = assistantsByName.get(name);
+    if (!assistant) {
+      assistant = await api(baseUrl, '/api/assistants', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          modelId: model.id,
+          enabledTools: ['fetch_webpage'],
+          knowledgeBaseIds: [],
+          retrieveAlways: false,
+        }),
+      });
+      assistantsByName.set(name, assistant);
+    }
+
+    result[tier.key] = { modelRecordId: model.id, assistantId: assistant.id };
+  }
+  return result;
+}

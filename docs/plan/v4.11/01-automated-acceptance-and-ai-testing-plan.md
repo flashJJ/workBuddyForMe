@@ -453,7 +453,7 @@ R7（`read_fetched` 自动注入）在契约测试中显式断言：启用 `fetc
 - `fetch-fold` 需要 128K 窗口才能放行 6 页；验收脚本通过 `ensureMockStack({ chatContextWindow: 128000 })` 显式声明，未改动全局默认。
 - `WBFM_FETCH_ALLOW_PRIVATE=1` 是仅测试进程使用的放行开关，只跳过私网判定，协议白名单与重定向逐跳复检仍然生效。
 - Windows 下 Next 子进程退出后临时数据目录偶发占用，清理失败只告警、不影响用例结论。
-- P1（E2E 联网路径、MSW、Electron、promptfoo 工具评测）与 P2（trace 回放、MCP/Skill 巡检）尚未开始。
+- P1 已完成（记录见 §13–§17）；P2（trace 回放、MCP/Skill 巡检）尚未开始。
 
 ---
 
@@ -496,7 +496,7 @@ R7（`read_fetched` 自动注入）在契约测试中显式断言：启用 `fetc
 
 ### 13.4 尚未开始
 
-P1-4（三档窗口全链路）与 P2 未开始。
+P2 未开始（P1-4 三档窗口全链路见 §17）。
 
 ---
 
@@ -605,3 +605,39 @@ MSW 会重建 Request，`request.redirect` 固定为 `follow`，无法断言原�
 
 - mock 模式的工具选择由场景脚本决定，衡量的是系统对决策的反应与断言有效性；模型决策质量要看 real 模式。
 - real 模式需要未设置 `WBFM_MOCK_AI` 的服务、绑定 `fetch_webpage` 的助手；若使用夹具地址，还需 `WBFM_FETCH_ALLOW_PRIVATE=1` 并启动 Fake Web，否则改用公开 URL。
+
+---
+
+## 17. P1 落地记录：三档窗口全链路（P1-4）
+
+### 17.1 交付
+
+| 项 | 落点 |
+|---|---|
+| 多窗口 seed | `scripts/eval/lib/mock-seed.mjs` 新增 `ensureWindowTiers`：同供应商下按 `contextWindow` 建独立模型 + 助手（8K / 128K / 1M） |
+| 验收编排 | `scripts/acceptance/run.mjs` 增加 `WINDOW_TIERS`，按用例 `tier` 选择对应助手 |
+| 用例 | `scripts/acceptance/cases.mjs` 新增 `budget-8k`、`budget-1m`，并强化 `fetch-fold`（最新结果 ≥10K 字符） |
+
+三档使用同一剧本 `fetch-fold`（6 个 12K 首屏长页面），只改模型记录的 `contextWindow`，预算、折叠、硬保险丝全部走真实代码：
+
+| 档位 | 生效窗口 | 软预算 / 硬保险丝 | 观测结果 |
+|---|---|---|---|
+| 8K | 8,192 | 2,880 / 8,640 token | 前 3 页出网；第 4–6 个抓取被硬保险丝拒绝（3 次「本轮工具预算已用尽」）；前两条结果折叠，第三条完整（5,748 字符） |
+| 128K | 128,000 | 17,280 / 51,840 token | 6 页全部成功；最旧结果折叠、最新完整（12,321 字符） |
+| 1M | 1,000,000 | 135,000 / 405,000 token | 6 页全部成功；约 20K token 未达软预算，零折叠、每条 ≥10K 字符 |
+
+### 17.2 验证
+
+| 项 | 结果 |
+|---|---|
+| `node scripts/acceptance/run.mjs --mode=dev` | 6/6 通过 |
+| `pnpm build:web` + `node scripts/acceptance/run.mjs --mode=start` | 6/6 通过 |
+| `pnpm check` | 通过 |
+
+### 17.3 反向验证
+
+把 `resolveToolTurnLimits` 的窗口入参临时改成固定 `128_000`（模拟「预算不随窗口缩放」）后重跑：
+
+- `budget-8k` 失败：`/large` 请求数 6（期望 3）、预算拒绝 0 次（期望 3）、第二条未折叠；
+- `budget-1m` 失败：出现折叠，且工具结果被二次截断；
+- 128K 三条用例不受影响，证明断言定位到了窗口缩放差异而非环境抖动。
