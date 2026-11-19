@@ -1,0 +1,50 @@
+name: Visual Regression
+
+# 专用视觉巡检：只做构建 + 截图，绕开长链路验收。
+# 首次运行会生成 Linux 基线，之后用于比对；手工触发，避免日常 CI 成本。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm（读取 packageManager 字段）
+        uses: pnpm/action-setup@v4
+
+      - name: 安装 Node（读取 .nvmrc）
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建 Web
+        run: pnpm build:web
+
+      - name: 安装 Playwright Chromium
+        run: pnpm --filter @wbfm/web exec playwright install --with-deps chromium
+
+      - name: 视觉巡检 L1（首次运行写入基线）
+        run: pnpm test:e2e:visual
+        env:
+          WBFM_VISUAL: "1"
+
+      - name: 上传视觉产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff
+          path: |
+            tests/e2e/visual-v415.spec.ts-snapshots
+            apps/web/test-results
+          if-no-files-found: ignore
