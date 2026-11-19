@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import type { Tool, ToolResult } from './types';
 import { ToolArgError } from './types';
-import { safeFetchWebPage } from '../net/safe-web-fetch';
+import {
+  isJsonContentType,
+  safeFetchWebPage,
+  WEB_FETCH_ACCEPT_MIXED,
+} from '../net/safe-web-fetch';
 import { extractMainContent } from './html-extractor';
 
 // v0.6 M4：htmlToText 迁至 html-extractor.ts，这里再导出保持调用方兼容
@@ -38,6 +42,9 @@ export const fetchWebpageTool: Tool = {
       fetched = await safeFetchWebPage(parsed.data.url, ctx.signal, {
         ...(ctx.webFetchMaxBytes ? { maxBytes: ctx.webFetchMaxBytes } : {}),
         onOverflow: 'truncate',
+        // 公开 API（如 api.github.com）对仅含 text/html 的 Accept 回 415，需声明 JSON
+        accept: WEB_FETCH_ACCEPT_MIXED,
+        allowJson: true,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -55,7 +62,10 @@ export const fetchWebpageTool: Tool = {
       };
     }
     const { url, html, response, truncated } = fetched;
-    const text = extractMainContent(html);
+    const isJson = isJsonContentType(response.headers.get('content-type') ?? '');
+    // JSON 响应不做 HTML 正文抽取，直接回灌原文供模型阅读
+    const text = isJson ? html.trim() : extractMainContent(html);
+    const kind = isJson ? 'JSON 响应' : '正文';
     if (!text) {
       return {
         ok: false,
@@ -75,11 +85,13 @@ export const fetchWebpageTool: Tool = {
     if (text.length > OUTPUT_MAX_CHARS) limitations.push(`输出截断至 ${OUTPUT_MAX_CHARS} 字符`);
     return {
       ok: true,
-      output: `网页 ${parsed.data.url} 正文（来源 ${url.hostname}，约 ${text.length} 字符）：\n\n${clipped}`,
-      summary: `${url.hostname}（${text.length} 字符）`,
+      output: `网页 ${parsed.data.url} ${kind}（来源 ${url.hostname}，约 ${text.length} 字符）：\n\n${clipped}`,
+      summary: isJson
+        ? `${url.hostname} JSON（${text.length} 字符）`
+        : `${url.hostname}（${text.length} 字符）`,
       evidence: {
         source: url.href,
-        coverage: `HTTP ${response.status} · 正文 ${text.length} 字符`,
+        coverage: `HTTP ${response.status} · ${kind} ${text.length} 字符`,
         ...(limitations.length > 0 ? { limitations } : {}),
         capturedAt: new Date().toISOString(),
       },

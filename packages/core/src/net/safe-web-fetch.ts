@@ -13,6 +13,25 @@ export interface WebFetchOptions {
   maxBytes?: number;
   /** 超限策略：throw=直接失败（剪藏，避免入库半篇）；truncate=截取前 N 字节继续解析（对话工具） */
   onOverflow?: 'throw' | 'truncate';
+  /** Accept 头；默认只要网页文本。API 地址（如 GitHub REST）需要显式声明 application/json */
+  accept?: string;
+  /** 允许 JSON 响应体（仅对话抓取工具开启；剪藏保持只收 HTML/纯文本） */
+  allowJson?: boolean;
+}
+
+/** 网页抓取默认 Accept：只要 HTML/纯文本 */
+export const WEB_FETCH_ACCEPT_TEXT = 'text/html, text/plain';
+/**
+ * 对话工具用 Accept：额外声明 JSON。
+ * 部分 API（如 api.github.com）对仅含 text/html 的 Accept 直接回 415，
+ * 带上 application/json 后再按内容类型分支处理响应体。
+ */
+export const WEB_FETCH_ACCEPT_MIXED =
+  'text/html, application/xhtml+xml, application/json;q=0.9, text/plain;q=0.9, */*;q=0.5';
+
+/** 内容类型是否 JSON（含 application/vnd.github+json 这类 +json 后缀） */
+export function isJsonContentType(contentType: string): boolean {
+  return /[/+]json\b/i.test(contentType);
 }
 
 export interface BoundedReadResult {
@@ -42,6 +61,7 @@ export async function assertEveryHop(urlString: string): Promise<URL> {
 export async function followRedirects(
   initial: URL,
   signal: AbortSignal,
+  accept: string = WEB_FETCH_ACCEPT_TEXT,
 ): Promise<{ response: Response; finalUrl: URL }> {
   let current = initial;
   for (let hop = 0; hop <= WEB_FETCH_MAX_REDIRECTS; hop += 1) {
@@ -49,7 +69,7 @@ export async function followRedirects(
       method: 'GET',
       redirect: 'manual',
       signal,
-      headers: { accept: 'text/html, text/plain' },
+      headers: { accept },
     });
     if (response.status >= 300 && response.status < 400) {
       if (hop === WEB_FETCH_MAX_REDIRECTS) throw new Error('重定向超过 3 跳');
@@ -72,7 +92,9 @@ export async function readBoundedText(
   const maxBytes = options.maxBytes ?? WEB_FETCH_MAX_BYTES;
   const onOverflow = options.onOverflow ?? 'throw';
   const contentType = response.headers.get('content-type') ?? '';
-  if (contentType && !/text\/html|text\/plain|charset=/i.test(contentType)) {
+  const textual = /text\/html|text\/plain|charset=/i.test(contentType);
+  const json = options.allowJson === true && isJsonContentType(contentType);
+  if (contentType && !textual && !json) {
     throw new Error(`不支持的内容类型：${contentType.split(';')[0]}`);
   }
   const reader = response.body?.getReader();
@@ -116,7 +138,7 @@ export async function safeFetchWebPage(
   const initial = await assertEveryHop(urlString);
   const timeout = AbortSignal.timeout(WEB_FETCH_TIMEOUT_MS);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
-  const { response, finalUrl } = await followRedirects(initial, combined);
+  const { response, finalUrl } = await followRedirects(initial, combined, options.accept);
   if (!response.ok) throw new Error(`抓取失败：HTTP ${response.status}`);
   const { html, truncated } = await readBoundedText(response, combined, options);
   return { url: finalUrl, response, html, truncated };

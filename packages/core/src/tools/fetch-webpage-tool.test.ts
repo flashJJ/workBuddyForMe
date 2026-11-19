@@ -75,6 +75,28 @@ describe('fetch_webpage 工具', () => {
     expect(result.output).toContain('内容类型');
   });
 
+  it('API JSON 响应（vnd.github+json）：Accept 声明 application/json，原文回灌', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        htmlResponse(
+          '{"full_name":"infiniflow/ragflow","stargazers_count":123}',
+          'application/vnd.github+json',
+        ),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await executeToolCall(
+      fetchWebpageTool,
+      { url: 'http://8.8.8.8/repos/infiniflow/ragflow' },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.output).toContain('"full_name":"infiniflow/ragflow"');
+    expect(result.summary).toContain('JSON');
+    const init = fetchMock.mock.calls[0]![1] as RequestInit & { headers: Record<string, string> };
+    expect(init.headers.accept).toContain('application/json');
+  });
+
   it('HTTP 404 归一为失败结果', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(htmlResponse('nope', 'text/plain', 404)));
     const result = await executeToolCall(fetchWebpageTool, { url: 'http://8.8.8.8/missing' }, ctx);
