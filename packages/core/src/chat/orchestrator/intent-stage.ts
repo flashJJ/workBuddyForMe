@@ -3,9 +3,9 @@ import type { TurnIntent } from '@wbfm/shared/schemas';
 import { INTENT_CLASSIFIER_TIMEOUT_MS } from '@wbfm/shared/constants';
 import type { ServiceDeps } from '../../services/base/deps';
 import type { MemoryService } from '../../memory/memory-service';
-import { classifyTurnIntent } from '../context/turn-intent';
+import { classifyTurnIntent } from '../context/intent/turn-intent';
 import { buildIntentHintBlock } from '../context/context-plan';
-import { createIntentClassifier } from '../context/intent-classifier';
+import { createIntentClassifier } from '../context/intent/intent-classifier';
 import { applyMemoryIntent } from '../../memory/intent-memory';
 
 /**

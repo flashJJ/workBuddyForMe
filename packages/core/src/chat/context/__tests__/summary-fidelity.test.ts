@@ -5,7 +5,7 @@ import {
   collectSourceSnippets,
   extractNumericTokens,
   normalizeForFidelity,
-} from '../summary-fidelity';
+} from '../compression/summary-fidelity';
 import type { SummaryPayload } from '@wbfm/shared/schemas';
 
 const empty = (summary: string): SummaryPayload => ({

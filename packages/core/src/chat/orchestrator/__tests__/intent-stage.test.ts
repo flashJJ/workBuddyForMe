@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { runIntentStage } from '../intent-stage';
 
-vi.mock('../../context/intent-classifier', () => ({
+vi.mock('../../context/intent/intent-classifier', () => ({
   createIntentClassifier: () => null,
 }));
 

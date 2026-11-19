@@ -9,7 +9,7 @@ import {
   planCompaction,
   summarizeConversation,
   summarizeConversationStructured,
-} from '../summarizer';
+} from '../compression';
 
 /** 4 个 ASCII 字符 → 1 token，加每条消息固定开销 4 = 5 token */
 const MSG_COST = 5;

@@ -3,7 +3,7 @@ import type { ChatChunk, ChatParams } from '@wbfm/ai';
 import type { Message } from '@wbfm/shared/types';
 import type { MessageRole } from '@wbfm/shared/constants';
 import type { ResolvedChatTarget } from '../model-resolver';
-import { summarizeConversationStructured } from '../summarizer';
+import { summarizeConversationStructured } from '../compression';
 
 function domainMessage(role: MessageRole, content: string): Message {
   return {

@@ -14,14 +14,14 @@ import {
   type SummaryPayload,
 } from '@wbfm/shared/schemas';
 import { traceAsync, type ChatMessage, type TraceHandle } from '@wbfm/ai';
-import { estimateMessageTokens } from './context-budget';
+import { estimateMessageTokens } from '../context-budget';
 import {
   appendSnippets,
   checkSummaryFidelity,
   collectSourceSnippets,
 } from './summary-fidelity';
-import type { ResolvedChatTarget } from './model-resolver';
-import { resolveEffectiveContextWindow } from './window/effective-window';
+import type { ResolvedChatTarget } from '../model-resolver';
+import { resolveEffectiveContextWindow } from '../window/effective-window';
 
 export interface CompactionPlanInput {
   /** 未折叠历史（时间正序，含刚完成的本轮回答），已映射为 ChatMessage */

@@ -24,8 +24,8 @@ import type { ResolvedChatTarget } from './model-resolver';
 import { resolveEffectiveContextWindow } from './window/effective-window';
 import { buildImageMap } from './multimodal';
 import { toAiContent } from './multimodal';
-import { planCompaction, summarizeConversationStructured } from './summarizer';
-import { clipCondensedPayload } from './condensed-payload';
+import { planCompaction, summarizeConversationStructured } from './compression/summarizer';
+import { clipCondensedPayload } from './compression/condensed-payload';
 
 export interface TurnMessageParams {
   assistant: Assistant;

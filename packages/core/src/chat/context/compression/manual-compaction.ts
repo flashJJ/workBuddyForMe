@@ -1,9 +1,9 @@
 import { ApiError } from '@wbfm/shared/errors';
 import { createAssistantRepository } from '@wbfm/database';
-import type { ServiceDeps } from '../../services/base/deps';
-import { createConversationService } from '../../services/assistant/conversation-service';
-import { resolveChatTarget } from './model-resolver';
-import { compactIfNeeded } from './turn-context';
+import type { ServiceDeps } from '../../../services/base/deps';
+import { createConversationService } from '../../../services/assistant/conversation-service';
+import { resolveChatTarget } from '../model-resolver';
+import { compactIfNeeded } from '../turn-context';
 
 /**
  * v4.8 用户显式压缩：跳过水位阈值，折叠最旧约 60% 历史并写 context_condensed 事件。

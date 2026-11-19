@@ -1,7 +1,7 @@
 import { TURN_INTENT_KINDS, turnIntentSchema, type TurnIntent } from '@wbfm/shared/schemas';
-import { createSettingsService } from '../../services/settings/settings-service';
-import type { ServiceDeps } from '../../services/base/deps';
-import { resolveChatTargetForModelId, type ResolvedChatTarget } from './model-resolver';
+import { createSettingsService } from '../../../services/settings/settings-service';
+import type { ServiceDeps } from '../../../services/base/deps';
+import { resolveChatTargetForModelId, type ResolvedChatTarget } from '../model-resolver';
 import type { IntentClassifier } from './turn-intent';
 
 /**

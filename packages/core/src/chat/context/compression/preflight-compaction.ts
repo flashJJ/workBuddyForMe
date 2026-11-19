@@ -6,14 +6,14 @@ import {
 import type { Assistant, Conversation } from '@wbfm/shared/types';
 import type { TurnIntent } from '@wbfm/shared/schemas';
 import type { TraceHandle } from '@wbfm/ai';
-import type { ServiceDeps } from '../../services/base/deps';
-import type { AttachmentService } from '../../services/assistant/attachment-service';
-import type { ConversationService } from '../../services/assistant/conversation-service';
-import type { ResolvedChatTarget } from './model-resolver';
-import { resolveEffectiveContextWindow } from './window/effective-window';
-import { estimateTokens } from './context-budget';
+import type { ServiceDeps } from '../../../services/base/deps';
+import type { AttachmentService } from '../../../services/assistant/attachment-service';
+import type { ConversationService } from '../../../services/assistant/conversation-service';
+import type { ResolvedChatTarget } from '../model-resolver';
+import { resolveEffectiveContextWindow } from '../window/effective-window';
+import { estimateTokens } from '../context-budget';
 import { resolvePreflightTrigger } from './preflight-trigger';
-import { runPostTurnCompaction } from './turn-context';
+import { runPostTurnCompaction } from '../turn-context';
 
 export interface PreflightCompactionParams {
   deps: ServiceDeps;

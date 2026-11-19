@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionEventView } from '@wbfm/database';
-import type { SessionLogService } from '../../session-log/session-log-service';
+import type { SessionLogService } from '../../../session-log/session-log-service';
 import { resolvePreflightTrigger } from './preflight-trigger';
 
 function service(events: Array<Pick<SessionEventView, 'type' | 'payload'>>): SessionLogService {

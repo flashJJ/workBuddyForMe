@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Assistant, Conversation, Message } from '@wbfm/shared/types';
-import { runPostTurnCompaction } from './turn-context';
+import { runPostTurnCompaction } from '../turn-context';
 
 function history(count: number): Message[] {
   return Array.from({ length: count }, (_, index) => ({

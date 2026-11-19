@@ -25,7 +25,7 @@
     { "path": "packages/core/src/agent", "count": 18, "reason": "v4.10 冻结现状；任务循环与步骤压缩新增文件，到期 v4.11 复核" },
     { "path": "packages/core/src/agents/runner", "count": 19, "reason": "v4.10 冻结现状；检查点/续跑/计划门控拆到独立文件，到期 v4.11 复核" },
     { "path": "packages/core/src/agents/runtime", "count": 14, "reason": "v4.10 冻结现状；计划审查新增文件，到期 v4.11 复核" },
-    { "path": "packages/core/src/chat/context", "count": 26, "reason": "v4.10 冻结现状；意图/配额/压缩/预判按能力拆分，到期 v4.11 复核" },
+    { "path": "packages/core/src/chat/context", "count": 12, "reason": "v4.13 拆 intent/compression/assembly 子域后复核；直接文件 ≤12，到期 v4.15 复核" },
     { "path": "packages/core/src/memory", "count": 14, "reason": "v4.10 冻结现状；记忆意图与既有生命周期文件并列，到期 v4.11 复核" },
     { "path": "apps/web/src/components/ui", "count": 15, "reason": "v2.16 M5 冻结现状；UI 原子组件按需增长" },
     { "path": "apps/web/src/features/assistants", "count": 15, "reason": "v2.16 M5 冻结现状；表单字段已上移 components/ui" },

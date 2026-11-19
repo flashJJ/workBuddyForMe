@@ -1,43 +1,30 @@
-import {
-  CONTEXT_QUOTA_FACTS,
-  HISTORY_MESSAGE_SAFETY_CAP,
-  RESEARCH_DEPTH_DEFAULT,
-  type ResearchDepth,
-} from '@wbfm/shared/constants';
+import { RESEARCH_DEPTH_DEFAULT, type ResearchDepth } from '@wbfm/shared/constants';
 import type { Assistant, Citation, Conversation, ToolTraceEntry } from '@wbfm/shared/types';
-import type { ParsedCharacterCard } from '@wbfm/shared/character-card';
 import type { TurnIntent } from '@wbfm/shared/schemas';
 import type { ChatMessage, ToolDefinition, TraceHandle } from '@wbfm/ai';
-import { createCharacterCardRepository } from '@wbfm/database';
 import type { ServiceDeps } from '../../services/base/deps';
 import type { AttachmentService } from '../../services/assistant/attachment-service';
 import type { ConversationService } from '../../services/assistant/conversation-service';
 import type { MemoryService } from '../../memory/memory-service';
-import { formatConstraintBlock, formatMemoryBlock, safeRecallEvent } from '../../memory/turn-memory';
-import { buildConversationFactsBlock } from './conversation-facts-block';
-import { buildImageMap } from './multimodal';
-import { buildTurnMessages, recordBudgetSpan, applyContextMessageCap } from './turn-context';
-import { needsSkillTrim } from './context-budget';
-import { buildContextPlan, isLeanTurn } from './context-plan';
+import { safeRecallEvent } from '../../memory/turn-memory';
 import { resolveEffectiveContextWindow } from './window/effective-window';
-import { maybePreflightCompact } from './preflight-compaction';
+import { buildContextPlan } from './context-plan';
 import { resolveToolMessageBudget } from './context-budget';
 import { resolveToolTurnLimits } from '../../tools/budget/turn-budget';
 import type { OrchestratorEvent, RagContext } from '../base/types';
 import type { ResolvedChatTarget } from './model-resolver';
 import type { ToolRuntime } from '../../tools/tool-runtime';
-import { toToolDefinitions, type ToolContext, type ToolMap } from '../../tools/types';
-import { buildSkillPromptBlock, mergeSkillAllowedTools, pickAssistantSkills } from '../../skills/skill-assembly';
+import type { ToolContext, ToolMap } from '../../tools/types';
 import { createSettingsService, resolveGlobalAppendPrompt } from '../../services/settings/settings-service';
 import {
   buildEmotionStateBlock,
-  displayLevelOf,
   EMOTION_DIRECTIVE_BLOCK,
   type EmotionService,
 } from '../../emotion/index';
-import { resolveUnlockedNickname } from './persona-prompt';
-import { buildPlanPromptBlock } from '../../work-plan/plan-prompt';
-import { buildCheckpointPromptBlock } from '../../work-plan/task-checkpoint';
+import { loadTurnHistory } from './assembly/history';
+import { assemblePromptBlocks } from './assembly/prompt';
+import { assembleTurnMessages } from './assembly/tools';
+import { recordBudgetSpan } from './turn-context';
 
 export interface PrepareTurnContextParams {
   deps: ServiceDeps;
@@ -81,9 +68,8 @@ export interface PreparedTurnContext {
 }
 
 /**
- * 回合上下文装配（纯编排片段，逐字平移自 chat-orchestrator）：
- * 历史/图片 → 长期记忆召回（yield memories 事件）→ 技能注入 →
- * 工具声明/预算扣除 → 出站消息与工具结果预算。
+ * 回合上下文装配：历史/记忆召回（yield memories）→ 技能注入 → 工具声明/预算 → 出站消息。
+ * v4.13：历史、system 区块与工具/消息装配下沉到 assembly/ 子模块。
  */
 export async function* prepareTurnContext(
   params: PrepareTurnContextParams,
@@ -106,13 +92,12 @@ export async function* prepareTurnContext(
     emotion,
   } = params;
 
-  // v1.6：情绪功能双开关——app-settings.emotionEnabled（缺省 true）与
-  // 助手 expressionEnabled 同时为真，且情绪服务已注入时才注入情绪段。
-  // v1.8 M3：同一处读上下文条数与全局追加（管线参数与系统级追加）。
+  // v1.6：情绪双开关（app-settings + 助手表情开关）且服务已注入时才加情绪段。
   const appSettings = createSettingsService(deps).get();
   // v4.11：生效窗口与检索深度决定工具结果预算
   const contextWindow = resolveEffectiveContextWindow(target.model).effective;
-  const researchDepth: ResearchDepth = appSettings.searchSettings?.researchDepth ?? RESEARCH_DEPTH_DEFAULT;
+  const researchDepth: ResearchDepth =
+    appSettings.searchSettings?.researchDepth ?? RESEARCH_DEPTH_DEFAULT;
   const emotionEnabled =
     emotion !== undefined &&
     assistant.expressionEnabled &&
@@ -126,30 +111,21 @@ export async function* prepareTurnContext(
       : null;
   const globalAppendPrompt = resolveGlobalAppendPrompt(appSettings);
 
-  const conversation = conversations.get(conversationId);
-  // v4.8：预判压缩——历史超 85% 水位先折叠，避免本轮撞墙后只能硬截断
-  const preflight = await maybePreflightCompact({
+  const loaded = await loadTurnHistory({
     deps,
     conversations,
     attachments,
     assistant,
     target,
-    conversation,
     conversationId,
+    assistantMessageId,
     intent,
-    enabled: appSettings.contextPreflightCompactEnabled !== false,
+    contextMessageCount: appSettings.contextMessageCount,
+    preflightEnabled: appSettings.contextPreflightCompactEnabled !== false,
     signal,
     traceParent,
   });
-  const activeConversation = preflight.conversation;
-  const historyEstimate = preflight.historyEstimate;
-  const fetchedHistory = conversations
-    .recentMessagesAfter(conversationId, activeConversation.summaryTurns, HISTORY_MESSAGE_SAFETY_CAP)
-    .filter((m) => m.id !== assistantMessageId);
-  // v1.8 M3：先条数钳制（2–50，服务端为准），再交 token 预算双保险裁剪
-  const history = applyContextMessageCap(fetchedHistory, appSettings.contextMessageCount);
-  // 历史图片（含本轮新图与重生成旧图）解析为 data URL
-  const imageMap = buildImageMap(attachments, history);
+  const activeConversation = loaded.conversation;
 
   // v0.5 M3：长期记忆召回（按助手开关门控，失败静默，命中时下发 memories 事件）
   const recalledMemories = assistant.memoryEnabled
@@ -162,99 +138,51 @@ export async function* prepareTurnContext(
         traceParent,
       })
     : [];
-  const memoryBlock = formatMemoryBlock(
-    recalledMemories.filter((item) => item.kind !== 'constraint'),
-  );
-  // v2.26 P1：硬约束与结构化事实独立成块（事实先于摘要注入）
-  const constraintBlock = formatConstraintBlock(recalledMemories);
-  const checkpoint = deps.workPlans?.activeCheckpoint(conversationId) ?? null;
-  const checkpointBlock = checkpoint ? buildCheckpointPromptBlock(checkpoint) : null;
-  const factsBlock =
-    [
-      checkpointBlock,
-      buildConversationFactsBlock(
-        conversations.listFacts(conversationId),
-        Math.floor(
-          contextWindow * CONTEXT_QUOTA_FACTS,
-        ),
-      ),
-    ]
-      .filter((item): item is string => Boolean(item?.trim()))
-      .join('\n\n') || null;
 
-  // v0.6 M3：启用技能——提示词模板注入 system；预绑定工具与助手白名单取并集
-  // v2.4 M4：助手级勾选优先（空数组=跟随全局全部启用技能）
-  // 轻量回合（高置信寒暄/澄清）：不注入技能提示词与流程工具声明，降低首字前缀
-  const lean = isLeanTurn(intent);
-  const enabledSkills = lean
-    ? []
-    : pickAssistantSkills(deps.skills?.getEnabledSkills() ?? [], assistant.skillNames);
-  const skillBlock = lean ? null : buildSkillPromptBlock(enabledSkills);
-  // v2.8：当前目标 / 计划 / 待办折叠进 system（未批准计划标注待评审）
-  const planBlock = deps.workPlans ? buildPlanPromptBlock(deps.workPlans.activeContext(conversationId)) : '';
-  const combinedBlock =
-    [planBlock, skillBlock].filter((item): item is string => Boolean(item?.trim())).join('\n\n') ||
-    null;
-  const effectiveAssistant = mergeSkillAllowedTools(assistant, enabledSkills);
-
-  // v1.8：解析助手当前角色卡；悬挂引用（卡已删/旧档残缺）静默回落默认卡，不阻断对话
-  const card: ParsedCharacterCard | null = assistant.cardId
-    ? createCharacterCardRepository(deps.db).findById(assistant.cardId)?.parsed ?? null
-    : null;
-
-  // v2.0：等级称呼组装前闸门——关系功能开启且有已解锁称呼时才入 prompt，
-  // 未解锁内容（高等级称呼）永不进 system 段（03 契约 §7.3）。
-  const cardNickname =
-    relationshipEnabled && card && emotionState
-      ? resolveUnlockedNickname(
-          card.nicknameByLevel,
-          displayLevelOf(emotionState.relationship, emotionState.relation),
-        )
-      : null;
-
-  // v0.5：先备好工具声明（计入预算扣除），再按 token 预算装配出站消息
-  const toolMap = runtime.buildTools(effectiveAssistant, target.provider.supportsTools, {
-    includeFlows: !lean,
+  const blocks = assemblePromptBlocks({
+    deps,
+    assistant,
+    conversations,
+    emotionState,
+    recalledMemories,
+    contextWindow,
+    conversationId,
+    intent,
+    relationshipEnabled,
   });
-  const toolDefs = toToolDefinitions([...toolMap.values()]);
+
   // v4.8：意图 → 块配额（低置信度回落默认，保持旧行为）
   const plan = buildContextPlan({
     intent,
     contextWindow,
-    estimatedHistoryTokens: historyEstimate,
+    estimatedHistoryTokens: loaded.historyEstimate,
   });
-  const lastCompletionTokens = conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null;
-  const build = (map: ToolMap, defs: ToolDefinition[], skillPrompt: string | null) =>
-    buildTurnMessages({
-      assistant,
-      history,
-      rag: retrieved ?? null,
-      images: imageMap,
-      contextWindow,
-      toolDefs: defs,
-      lastCompletionTokens,
-      summary: activeConversation.summary,
-      memoryBlock,
-      constraintBlock,
-      factsBlock,
-      skillBlock: skillPrompt,
-      emotionBlock,
-      card,
-      globalAppendPrompt,
-      cardNickname,
-      plan,
-    });
-  let built = build(toolMap, toolDefs, combinedBlock);
-  let activeToolMap = toolMap;
-  // v4.8.1：小窗口下原文预算被技能块/技能工具挤到下限以下时，先裁技能再装一次
-  if (needsSkillTrim(built.stats)) {
-    const coreMap = runtime.buildTools(assistant, target.provider.supportsTools, {
-      includeFlows: !lean,
-    });
-    activeToolMap = coreMap;
-    built = build(coreMap, toToolDefinitions([...coreMap.values()]), planBlock || null);
-  }
-  const { messages: outgoing, stats: budgetStats } = built;
+  const lastCompletionTokens =
+    conversations.lastAssistantUsage(conversationId)?.completionTokens ?? null;
+  const assembled = assembleTurnMessages({
+    runtime,
+    assistant,
+    effectiveAssistant: blocks.effectiveAssistant,
+    lean: blocks.lean,
+    supportsTools: target.provider.supportsTools,
+    plan,
+    planBlock: blocks.planBlock,
+    history: loaded.history,
+    retrieved: retrieved ?? null,
+    imageMap: loaded.imageMap,
+    contextWindow,
+    lastCompletionTokens,
+    conversation: activeConversation,
+    memoryBlock: blocks.memoryBlock,
+    constraintBlock: blocks.constraintBlock,
+    factsBlock: blocks.factsBlock,
+    skillBlock: blocks.combinedBlock,
+    emotionBlock,
+    card: blocks.card,
+    globalAppendPrompt,
+    cardNickname: blocks.cardNickname,
+  });
+  const { outgoing, budgetStats } = assembled;
   if (budgetStats) {
     await recordBudgetSpan(budgetStats, traceParent);
     // v4.8：本地上下文快照（只存 token 统计，不存正文）
@@ -287,8 +215,8 @@ export async function* prepareTurnContext(
 
   return {
     conversation: activeConversation,
-    toolMap: activeToolMap,
-    toolDefs: toToolDefinitions([...activeToolMap.values()]),
+    toolMap: assembled.toolMap,
+    toolDefs: assembled.toolDefs,
     outgoing,
     toolCtx,
     emotionEnabled,
@@ -297,4 +225,5 @@ export async function* prepareTurnContext(
     contextWindow,
     trace,
     citations,
-  };}
+  };
+}

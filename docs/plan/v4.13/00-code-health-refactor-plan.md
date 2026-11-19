@@ -104,4 +104,5 @@
 |---|---|---|
 | Batch 0 | 独立 `context` 入口 + `check:exports` + CI | 完成 |
 | Batch 0 | `build:web` 构建告警消失；`next start` 健康检查 200；验收 6/6 | 完成 |
-| Batch 1–6 | 见上 | 待排期 |
+| Batch 1 | `turn-context-assembly` 289→220；`chat/context` 直接文件 26→12；拆 `assembly/`、`intent/`、`compression/` 子域 | 完成 |
+| Batch 2–6 | 见上 | 待排期 |

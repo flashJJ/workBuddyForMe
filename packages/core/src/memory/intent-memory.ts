@@ -1,6 +1,6 @@
 import type { MemoryNotice } from '@wbfm/shared/types';
 import type { MemoryService } from './memory-service';
-import { extractMemoryCommand } from '../chat/context/turn-intent';
+import { extractMemoryCommand } from '../chat/context/intent';
 
 /**
  * v4.8 记忆治理：把「记住 / 忘掉」从抽取器旁路升级为显式意图。

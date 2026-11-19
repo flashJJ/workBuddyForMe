@@ -1,5 +1,5 @@
 import type { CondensationTrigger } from '@wbfm/shared/schemas';
-import type { SessionLogService } from '../../session-log/session-log-service';
+import type { SessionLogService } from '../../../session-log/session-log-service';
 
 /**
  * v4.8 预判压缩触发归因：
