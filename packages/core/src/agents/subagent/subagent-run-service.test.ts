@@ -92,8 +92,36 @@ describe('v2.11 外部代理运行服务', () => {
     expect(completed).toEqual([run.id]);
   });
 
-  it('拒绝审批 → cancelled(approval_denied)，不启动 provider', async () => {
-    const run = service.start({ goal: '危险操作', cwd });
+  it('执行链未捕获异常（证据写入抛错）→ failed 且不产生未处理拒绝', async () => {
+    const broken = createSubagentRunService({
+      db,
+      providers: createSubagentProviderRegistry(),
+      approvals,
+      workSignals: { ingestSubagent: (signal) => signals.push(signal) },
+      sessionLog: {
+        record: (input) => {
+          // 审批通过后的 started 事件写入失败，模拟执行链未捕获异常
+          if (input.type === 'subagent_started') throw new Error('log boom');
+          events.push({ type: input.type, payload: input.payload });
+          return null;
+        },
+      },
+      completions: { completeSubagent: (run) => completed.push(run.id) },
+      settings: { get: () => settings },
+      dataRoot,
+      providerFactory: () => provider,
+      approvalTimeoutMs: 200,
+    });
+    const run = broken.start({ goal: '异常证据', cwd });
+    expect(approvals.resolve(run.id, { action: 'allow' })).toBe(true);
+
+    const settled = await broken.whenSettled(run.id);
+    expect(settled.status).toBe('failed');
+    expect(settled.errorCode).toBe('subagent_internal_error');
+    expect(providerRun).not.toHaveBeenCalled();
+  });
+
+  it('拒绝审批 → cancelled(approval_denied)，不启动 provider', async () => {    const run = service.start({ goal: '危险操作', cwd });
     expect(approvals.resolve(run.id, { action: 'deny' })).toBe(true);
     const settled = await service.whenSettled(run.id);
     expect(settled.status).toBe('cancelled');

@@ -44,3 +44,28 @@ export function recoverInterruptedBranches(
   }
   return active.length;
 }
+
+/**
+ * 运行/落账异常兜底：分支必须收敛到终态。
+ * 遗留 running 会永久占用并发名额与预留 token，finally 链还会变成未处理拒绝。
+ */
+export function markBranchRunFailure(
+  branchRepo: ConversationBranchRepository,
+  events: BranchEventRecorder,
+  branchId: string,
+  error: unknown,
+  now = new Date().toISOString(),
+): void {
+  const reason = error instanceof Error ? error.message : String(error);
+  try {
+    const failed = branchRepo.patch(branchId, {
+      status: 'failed',
+      statusReason: reason,
+      reservedTokens: 0,
+      endedAt: now,
+    });
+    if (failed) events.status(failed, 'failed', reason);
+  } catch {
+    /* 落库也失败：保留原状，但不再向外抛未处理拒绝 */
+  }
+}

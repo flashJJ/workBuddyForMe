@@ -41,6 +41,14 @@
 | B-21 | P2 | 语音下载 | 取消下载后卡片永久停在「下载中」，重启也无法重新下载 | AbortError 分支不落持久化状态，`status=downloading` 且无活动任务 | `markCancelled` 回 missing（保留字节续传）+ 前端防御映射 | `voice-model-repo` 单测 | `3e063f17` |
 | B-22 | P2 | MCP 进程 | MCP 子进程退出瞬间写 stdin 可能拖垮宿主；Windows 禁用/重载后 npx 下真实服务残留 | `child.stdin` 无 `error` 监听（EPIPE 属未处理事件）；`kill()` 只杀直接子进程 | stdin/stdout/stderr 补 error 监听；Windows 改 `taskkill /T /F` 整树终止 | `stdio-transport` + 真实子进程集成测试 | 本批 |
 
+## 四、生命周期（分支 / 子代理 / 工作流）
+
+| ID | 级别 | 领域 | 现象 | 根因 | 修复 | 回归 | 提交 |
+|---|---|---|---|---|---|---|---|
+| B-23 | P2 | 会话分支 | 终态落账异常时产生未处理拒绝，且分支永久停在 running，持续占用并发名额与预留 token | `.then(finalize)` 无 catch，`void promise.finally` 放大拒绝 | `markBranchRunFailure` 兜底收敛 failed 并释放预留 | `branch-service` 新增用例 | 本批 |
+| B-24 | P2 | 外部代理 | 审批/审计/证据写入抛错时运行永久停在 queued/running，`void execute` 变成未处理拒绝 | `start()` 未 catch 执行链 | `finalizeInternalFailure` 收敛 failed 并释放 pending | `subagent-run-service` 新增用例 | 本批 |
+| B-25 | P2 | 工作流运行 | 认领后编译或执行体异常 → run 永久 running（只能重启恢复），运行 override 泄漏 | `loadCompiledGraph` 在 try 外，异常只被队列记录日志 | 全流程 try/catch 落 `run_failed` + `finishRun`，finally 清 override | `run-service` 既有用例 | 本批 |
+
 ## 排查方法
 
 - **CI 侧**：从失败步骤日志与 Playwright 归档（`playwright-artifacts` 的 `error-context.md`）反推真实断言与页面快照。

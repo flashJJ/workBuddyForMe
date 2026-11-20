@@ -22,6 +22,7 @@ import { validateSubagentCwd } from '../cli/cli-command';
 import type { AuditService } from '../../governance/audit';
 import { authorizeSubagentRun } from './subagent-run-approval';
 import { recordSubagentPermission, recordSubagentPermissionRequested } from './subagent-audit';
+import { finalizeInternalFailure } from './subagent-internal-failure';
 
 /**
  * v2.11 外部代理运行服务：
@@ -244,7 +245,13 @@ export function createSubagentRunService(deps: SubagentRunServiceDeps) {
         cwd,
         conversationId: input.conversationId ?? null,
       });
-      void execute(run, provider, input, cwd);
+      void execute(run, provider, input, cwd).catch((error) =>
+        finalizeInternalFailure(
+          { repo, pending, notifySettled, workSignals: deps.workSignals, completions: deps.completions },
+          run,
+          error,
+        ),
+      );
       return run;
     },
 

@@ -19,7 +19,7 @@ import {
 import { createBranchEventRecorder } from './branch-events';
 import { buildBranchEvidence, collectBranchArtifacts } from './branch-evidence';
 import { readBranchLimits } from './branch-settings';
-import { recoverInterruptedBranches } from './branch-recovery';
+import { recoverInterruptedBranches, markBranchRunFailure } from './branch-recovery';
 import { readTreeUsage, resolveBranchTree } from './branch-limits';
 import { runBranchChat, type BranchRunResult, type BranchChatRunner } from './branch-runner';
 
@@ -46,9 +46,6 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
     if (!branch) throw ApiError.notFound('分支', id);
     return branch;
   };
-
-  const resolveTree = (parentConversationId: string) =>
-    resolveBranchTree(branchRepo, parentConversationId);
 
   const treeUsage = (rootConversationId: string) =>
     readTreeUsage(branchRepo, messagesRepo, rootConversationId);
@@ -128,7 +125,9 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
         content: branch.goal,
       },
       controller.signal,
-    ).then((result) => finalize(branch.id, result));
+    )
+      .then((result) => finalize(branch.id, result))
+      .catch((error: unknown) => markBranchRunFailure(branchRepo, events, branch.id, error));
     running.set(branch.id, { controller, promise });
     void promise.finally(() => running.delete(branch.id));
     return started;
@@ -163,7 +162,7 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
       const parsed = branchCreateSchema.parse(input);
       const parent = conversationsRepo.findById(parentConversationId);
       if (!parent) throw ApiError.notFound('会话', parentConversationId);
-      const tree = resolveTree(parentConversationId);
+      const tree = resolveBranchTree(branchRepo, parentConversationId);
       const limits = readLimits();
       const usage = treeUsage(tree.rootConversationId);
       const admission = evaluateBranchAdmission(
@@ -284,7 +283,7 @@ export function createBranchService(deps: ServiceDeps, options: BranchServiceOpt
 
     /** v2.21 M3：预算视图按会话树聚合（根会话 + 全部分支子会话） */
     budget(conversationId: string): BranchBudget {
-      const tree = resolveTree(conversationId);
+      const tree = resolveBranchTree(branchRepo, conversationId);
       const usage = treeUsage(tree.rootConversationId);
       return {
         rootConversationId: tree.rootConversationId,

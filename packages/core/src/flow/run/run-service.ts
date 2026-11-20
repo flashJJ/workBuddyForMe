@@ -83,19 +83,37 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
 
   /** 队列执行体：认领后的 run → 编译 → 执行 → 事件发布到总线 */
   async function runQueued(run: WorkflowRunView): Promise<void> {
-    const { compiled } = loadCompiledGraph(run.workflowId, run.trigger !== 'manual');
-    const overrides = runOverrides.get(run.id);
-    const generator = executor.execute(compiled, {
-      runId: run.id,
-      workflowId: run.workflowId,
-      version: run.version,
-      input: run.input ?? {},
-      trigger: run.trigger,
-      interactive: run.trigger === 'manual',
-      ...(overrides ?? {}),
-    });
     try {
+      const { compiled } = loadCompiledGraph(run.workflowId, run.trigger !== 'manual');
+      const overrides = runOverrides.get(run.id);
+      const generator = executor.execute(compiled, {
+        runId: run.id,
+        workflowId: run.workflowId,
+        version: run.version,
+        input: run.input ?? {},
+        trigger: run.trigger,
+        interactive: run.trigger === 'manual',
+        ...(overrides ?? {}),
+      });
       for await (const event of generator) bus.publish(run.id, event);
+    } catch (error) {
+      // 编译/执行体异常必须收敛终态：认领时 DB 已置 running，
+      // 不落终态会让运行永久停在 running（只能靠重启恢复扫描）。
+      const message = error instanceof Error ? error.message : String(error);
+      try {
+        runs.finishRun(run.id, 'failed', {
+          error: { code: 'flow/run-failed', message },
+        });
+        bus.publish(run.id, {
+          type: 'run_failed',
+          runId: run.id,
+          workflowId: run.workflowId,
+          message,
+        });
+      } catch {
+        /* 兜底落账/发布失败：不让队列 tick 变成未处理拒绝 */
+      }
+      throw error;
     } finally {
       runOverrides.delete(run.id);
     }
