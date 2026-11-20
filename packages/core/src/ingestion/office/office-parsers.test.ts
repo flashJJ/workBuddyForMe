@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { readDocx, docxHtmlToText } from './read-docx';
 import { readXlsx } from './read-xlsx';
 import { readPptx, slideXmlToText } from './read-pptx';
+import { assertZipUncompressedBudget } from './zip-budget';
 
 function zipEntry(path: string, content: string): Uint8Array {
   return zipSync({ [path]: new TextEncoder().encode(content) });
@@ -44,6 +45,13 @@ describe('Office 解析器（M2）', () => {
     await expect(readDocx(new TextEncoder().encode('not a zip'))).rejects.toThrowError(
       /docx 文档解析失败/,
     );
+  });
+
+  it('压缩炸弹：中央目录声明体积超限时拒绝，普通文档放行', () => {
+    const bomb = zipSync({ 'word/document.xml': new Uint8Array(256 * 1024) });
+    expect(() => assertZipUncompressedBudget(bomb, 64 * 1024)).toThrow(/解压后体积/);
+    const normal = zipEntry('word/document.xml', '<w:document/>');
+    expect(() => assertZipUncompressedBudget(normal, 1024 * 1024)).not.toThrow();
   });
 
   it('xlsx：多 sheet 分节、单元格按行 tab 拼接、空 sheet 跳过', () => {

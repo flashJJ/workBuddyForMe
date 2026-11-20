@@ -79,6 +79,7 @@
 | B-38 | P2 | 服务端调度 | 调度依赖（关系检查点/到期扫描）抛错时，10s tick 变成未处理拒绝，Node 直接退出，桌面端显示服务已停止 | `void runServerSchedulerTick().finally()` 没有 catch，拒绝沿 Promise 链逃逸 | 补 `.catch` 告警；单次失败不阻断下个周期 | `server-scheduler.test` 新增用例 | 本批 |
 | B-39 | P3 | 工作流事件 | 每次运行结束仍把完整事件数组留在进程内，长会话内存随运行次数增长 | `FlowEventBus.dispose` 只有测试调用，队列与对话触发路径都不回收 | 两条执行路径终态后 `dispose(runId)`；迟到观察者走落库回放 | `run-service.test` + `chat-invoke.test` 新增用例 | 本批 |
 | B-40 | P3 | 会议 | 已结束/跨进程会议打开 SSE 时新建永不关闭的总线：连接悬挂不结束，buses 随会议数泄漏 | `observe()` 未按契约判断 active；`finish/abort` 只 close 不 delete | 非 active 返回 null；结束后 close + delete，交给落库回放 | `meeting-service.test` 新增用例 | 本批 |
+| B-41 | P2 | 文档解析 | 上传 10MB 内的恶意 docx/xlsx/pptx 可解压出数 GB（压缩炸弹），解析时撑爆服务进程 | OOXML 解析直接在原始 buffer 上解包，没有解压后体积上限；pptx 直接 `unzipSync` 整包 | 解析前扫描 ZIP 中央目录，解压后总体积超 256MB 即拒绝；zip64 哨兵一律拒绝 | `office-parsers.test` 压缩炸弹用例 | 本批 |
 
 ## 排查方法
 

@@ -6,6 +6,7 @@ import { readDocx } from '../office/read-docx';
 import { readXlsx } from '../office/read-xlsx';
 import { readPptx } from '../office/read-pptx';
 import { LEGACY_OFFICE_EXTENSIONS, rejectLegacyOffice } from '../office/office-error';
+import { assertZipUncompressedBudget } from '../office/zip-budget';
 
 const EXTENSION_KIND: Record<string, DocumentKind> = {
   '.txt': 'txt',
@@ -147,6 +148,10 @@ export async function readDocumentText(
 ): Promise<string> {
   const kind = detectKind(filename);
   if (kind === 'pdf') return readPdf(data);
+  // OOXML 均为 ZIP 容器：解析前先核对中央目录总体积，防压缩炸弹撑爆内存
+  if (kind === 'docx' || kind === 'xlsx' || kind === 'pptx') {
+    assertZipUncompressedBudget(data);
+  }
   if (kind === 'docx') return readDocx(data);
   if (kind === 'xlsx') return readXlsx(data);
   if (kind === 'pptx') return readPptx(data);
