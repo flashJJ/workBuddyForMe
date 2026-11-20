@@ -74,9 +74,10 @@
 |---|---|---|
 | F1 | 每个长步骤有 `timeout-minutes` | 单步异常不会拖死整条流水线 |
 | F2 | 验收/评测结束 | 进程立即退出，日志先出现结论再退出，无端口残留 |
-| F3 | E2E 失败产物 | `playwright-artifacts` 含 trace/screenshot/error-context |
+| F3 | E2E 失败产物 | `playwright-artifacts` 含 trace/screenshot/error-context/junit；Job Summary 直接列出失败 spec 与首行错误 |
 | F4 | 串行 spec 重试 | 重试从组头开始且状态复位，不依赖上一次残留（含供应商/模型等命名实体） | B-47 |
 | F5 | 视觉巡检 | 非阻断观察期内失败可下载 `visual-diff` 对比 |
+| F6 | spec 文件级隔离 | 任意 spec 单独运行或 `--shuffle` 乱序运行均通过；失败重试不受其他文件残留影响 | B-48/B-49 |
 
 ## 记录模板
 

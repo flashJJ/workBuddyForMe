@@ -2,6 +2,13 @@ import { generateKeyPairSync } from 'node:crypto';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { expect, test, type Page } from '@playwright/test';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 type Envelope<T> = { data?: T };
 
 async function skipOnboardingIfShown(page: Page): Promise<void> {

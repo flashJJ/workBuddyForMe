@@ -4,6 +4,13 @@ import { chooseOption, waitForHydrated } from './utils';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * 关键路径 E2E（TR-34.1）：服务器以 WBFM_MOCK_AI=1 启动，
  * 供应商/模型调用全部命中进程内 mock，链路（含 RAG 检索）真实走数据库与 SSE。

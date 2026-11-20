@@ -96,7 +96,12 @@ jobs:
             apps/web/test-results
           if-no-files-found: ignore
 
-      - name: 上传 E2E 产物（失败时留存 trace/screenshot/报告）
+      - name: E2E 失败用例摘要（写入 Job Summary + 文件注解）
+        if: failure()
+        timeout-minutes: 2
+        run: node scripts/e2e/summarize-failures.mjs
+
+      - name: 上传 E2E 产物（失败时留存 trace/screenshot/报告/junit）
         if: failure()
         uses: actions/upload-artifact@v4
         with:

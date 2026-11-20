@@ -2,6 +2,13 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.6 M3 会议结论 UI 与闭环 e2e（WBFM_MOCK_AI=1）：
  * - 结束会议后生成结论（mock 确定性 JSON）→ 编辑保存 → 导出 Markdown；

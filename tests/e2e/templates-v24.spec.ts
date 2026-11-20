@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { revealSettingsSection, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.4 P0-2（M2）· 模板可触达 e2e。
  * 覆盖验收 A1（空态/入口露出模板卡）、A2（以此开始产出实例）、A3（内置来源徽标）、

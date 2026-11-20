@@ -18,6 +18,8 @@
 | B-29 | P0 | 工具评测 | promptfoo 3/3 通过后步骤仍挂到 15 分钟超时 | POSIX 上只 SIGTERM shell，pnpm/next 孙进程残留并占住管道；脚本只设 `exitCode` 不退出 | 子进程 `detached` + 进程组 SIGTERM/SIGKILL，结尾显式 `process.exit` | 本地 `tool-eval` 3/3、退出码 0、端口无残留 | 本批 |
 | B-30 | P3 | Eval 包装器 | `with-server` 在 POSIX 同样只杀 shell，next 孙进程变孤儿占端口 | 同 B-29 的进程树回收缺失 | 整组 kill + 显式退出 | 其他 eval 步骤既有通过记录 | 本批 |
 | B-47 | P2 | E2E | 免手 VAD ③ 失败后组内重试从 ① 开始，同名供应商叠加，标题断言命中 2/3 个元素，重试必失败 | ① 依赖全新数据根，未做幂等清理（同 B-04 类） | ① 创建前按名称清理残留供应商，组结束 `afterAll` 再清一次 | 重试可从 ① 干净重跑 | 本批 |
+| B-48 | P0 | E2E | 41 个 spec 共用一个数据根，跨文件残留造成顺序依赖与「重试必败」（B-03/04/47 同一病根），只能逐条打清理补丁 | 缺文件级隔离；E2E 串行执行让污染被字母序掩盖 | 新增仅 mock 模式挂载的 `POST /api/testing/reset`（停常驻定时器/丢弃语音运行时与编译队列单例→关库→清数据根→重建容器）；41 个 spec 统一 `beforeAll` 重置；原跨套件依赖改为 `tests/e2e/seed.ts` 自行播种 | 生产构建全量 150 例：147 通过 / 3 跳过 / 0 失败（19.1 分钟） | 本批 |
+| B-49 | P1 | 服务端容器 | 容器重建后旧路由 chunk 仍持旧实例，旧 SQLite 连接不释放（Windows 删数据根 EPERM），/api/voice/* 命中已关闭连接 | `container.ts` 模块级单例在 Next 多 chunk 打包下各自漂移；VoiceRuntime 等 globalThis 单例同样绑旧库 | 单例只保留 `globalThis` 一份；重置前停调度器/流程补偿定时器、丢弃 VoiceRuntime 单例并关闭容器 DB | reset 连续调用均 200，数据根可清理，语音路由正常 | 本批 |
 
 ## 二、运行时缺陷
 

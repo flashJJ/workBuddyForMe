@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { revealSettingsSection } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v1.6 情绪与互动设置（M4 面板 + M5 互动短句开关）。
  * 设置走真实 API；结束后恢复两个开关，避免污染同轮后续 spec。

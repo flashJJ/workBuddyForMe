@@ -1,6 +1,13 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * M4 免手持续聆听（VAD）E2E：
  * - /api/voice/* 拦截：模型恒就绪、ASR 恒返回固定文本（同 M2 策略）；

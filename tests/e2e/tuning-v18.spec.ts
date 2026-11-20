@@ -1,13 +1,23 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOption, revealSettingsSection, selectedText, waitForHydrated } from './utils';
+import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
+
+import { resetE2eData } from './reset';
+import { createPersonaCard, createSeededAssistant, ensureMockChatModel } from './seed';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+  const { modelId } = await ensureMockChatModel(request, { providerName: 'E2E 调优 Mock' });
+  await request.put('/api/settings', { data: { defaultChatModelId: modelId } });
+  const card = await createPersonaCard(request);
+  await createSeededAssistant(request, { name: '🤖 卡面助手', modelId, cardId: card.id });
+});
 
 /**
- * v1.8 M3 调优中心 e2e（依赖同数据根先执行的 critical-path/persona-cards：
+ * v1.8 M3 调优中心 e2e（文件级重置 + 自行播种，不依赖其他套件的残留数据）：
  * mock 对话模型、卡面助手与 E2E口令卡均已就绪）：
  * - 上下文条数滑杆：2/50 边界 PUT 落库；
  * - 全局追加：开启+写入后下一轮 system 段可见（append=hit），关闭后下一轮消失（append=miss）。
- *
- * 注意：persona-cards 末例把「卡面助手」切回了原文模式，这里探测前必须重新绑卡。
  */
 
 async function skipOnboardingIfShown(page: Page): Promise<void> {
@@ -23,23 +33,6 @@ async function gotoSettings(page: Page): Promise<void> {
   await skipOnboardingIfShown(page);
   await revealSettingsSection(page, 'tools');
   await expect(page.getByTestId('tuning-panel')).toBeVisible();
-}
-
-/** persona-cards 套件结束时卡面助手为原文模式；重新绑定 E2E口令卡（原文→卡无需二次确认） */
-async function ensureCardAssistant(page: Page): Promise<void> {
-  await page.goto('/assistants');
-  await waitForHydrated(page);
-  await skipOnboardingIfShown(page);
-  await page.getByRole('button', { name: '编辑' }).last().click();
-  const select = page.getByTestId('assistant-card-select');
-  await expect(select).toBeVisible();
-  if ((await selectedText(select)) === '默认卡（不使用角色卡）') {
-    await chooseOption(page, select, 'E2E口令卡');
-    await page.getByRole('button', { name: '保存', exact: true }).click();
-    await expect(page.getByText('助手已更新')).toBeVisible();
-  } else {
-    await page.getByRole('button', { name: '取消' }).click();
-  }
 }
 
 test.describe.serial('v1.8 调优中心', () => {
@@ -94,9 +87,6 @@ test.describe.serial('v1.8 调优中心', () => {
     );
     await text.blur();
     await textPut;
-
-    // persona-cards 末例把卡面助手切回了原文模式，探测前重新绑卡
-    await ensureCardAssistant(page);
 
     // 下一轮对话：身份卡（marker）+ 全局追加（append）同时入模
     await page.goto('/chat');

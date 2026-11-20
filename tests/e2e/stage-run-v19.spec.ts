@@ -1,6 +1,13 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v1.9 M2 舞台协作 run 适配器 e2e（WBFM_MOCK_AI=1）：
  * - owner SSE 由 APIRequestContext 持有（模拟主会话），舞台是只读第二客户端；

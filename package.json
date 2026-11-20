@@ -28,6 +28,7 @@
     "test:unit": "turbo run test:unit",
     "test:integration": "pnpm --filter @wbfm/web test:integration",
     "test:e2e": "pnpm --filter @wbfm/web test:e2e",
+    "test:e2e:failed": "pnpm --filter @wbfm/web exec playwright test --last-failed",
     "test:e2e:visual": "pnpm --filter @wbfm/web test:e2e:visual",
     "test:e2e:desktop": "pnpm --filter @wbfm/desktop test:e2e",
     "check:lines": "node scripts/check-file-lines.mjs",
@@ -45,6 +46,7 @@
     "check:assets": "node scripts/assets/check-assets.mjs",
     "check:surfaces": "node scripts/check-surfaces.mjs --check",
     "check:exports": "node scripts/check-package-exports.mjs",
+    "check:e2e-isolation": "node scripts/check-e2e-isolation.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "sync-version:check": "node scripts/sync-version.mjs --check",
     "eval:memory": "node scripts/eval/eval-memory.mjs",
@@ -57,7 +59,7 @@
     "eval:context": "node scripts/eval/eval-context.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
     "eval:tools": "node scripts/eval/tool-eval.mjs",
-    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:msw && pnpm check:ascii && pnpm check:assets && pnpm check:surfaces"
+    "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:msw && pnpm check:ascii && pnpm check:assets && pnpm check:surfaces && pnpm check:e2e-isolation"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

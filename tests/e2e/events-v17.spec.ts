@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chooseOptionByIndex, revealSettingsSection, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v1.7 M5 剧情演出设置抽测：
  * - 面板默认态（总开关/三档/20 剧本（v2.0：3 等级 + 6 里程碑 + 3 主动感知）/自定义区块/统计区）；

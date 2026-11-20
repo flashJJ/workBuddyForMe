@@ -1,6 +1,13 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 import { chooseOption } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * 服务端系统文案以 system-message 线格式（SOH + {k,vars} + STX）语言中立持久化。
  * e2e 运行时不打包 workspace 源码，这里只做最小 key 提取（断言系统模板身份），

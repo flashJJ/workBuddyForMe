@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v1.8 M1 外观（命名主题）e2e：
  * - 4 张主题卡渲染且为 radiogroup/radio 语义；

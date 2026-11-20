@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * 核心页面无障碍扫描（v1.2 M3）：
  * 门禁只卡 serious/critical（moderate 出报告人工收敛，避免一次性红灯淹没）。

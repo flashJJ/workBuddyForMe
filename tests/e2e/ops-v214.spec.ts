@@ -3,6 +3,13 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.14 可维护运维链路 e2e（契约 §10 五类）：
  * ① 技能升级后回退；② 工作流草稿不影响生产运行；③ 能力包降级确认与反向依赖拒绝；

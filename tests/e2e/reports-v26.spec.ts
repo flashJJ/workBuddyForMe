@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /** v2.6 M5 P1-2：运行报告页与导出链路（空窗口也应可导出）。 */
 test.describe.serial('v2.6 运行报告', () => {
   test('页面渲染、链路筛选与 Markdown 导出', async ({ page }) => {

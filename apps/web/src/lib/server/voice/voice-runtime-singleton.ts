@@ -18,3 +18,11 @@ export function getVoiceRuntime(): VoiceRuntime {
   globalHolder.__WBFM_VOICE_RUNTIME__ = runtime;
   return runtime;
 }
+
+/**
+ * 仅供 E2E 数据重置：单例绑定旧库，重建容器后必须丢弃，否则所有 /api/voice/*
+ * 都会命中已关闭的 SQLite 连接。E2E 未下载模型，运行时内无 worker 需要回收。
+ */
+export function resetVoiceRuntime(): void {
+  delete globalHolder.__WBFM_VOICE_RUNTIME__;
+}

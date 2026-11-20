@@ -1,6 +1,13 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 import { chooseOption, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.0 M1/M2 关系等级与共同里程碑 e2e（WBFM_MOCK_AI 数据根）。
  * 等级演算/日上限/检查点/里程碑评估由 core 单测保证，本规格锁 UI 契约 +

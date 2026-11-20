@@ -113,3 +113,17 @@ export function ensureServerScheduler(services: ServiceContainer): void {
   ensureMemoryEventRollup(services, holder);
   ensureMemoryConsolidate(services, holder);
 }
+
+/**
+ * 仅供 E2E 数据重置：停掉全部常驻定时器并释放 globalThis 占位。
+ * 容器会被重建，旧定时器仍闭包旧库（已 close）会持续报错，必须在删库前停掉；
+ * 重建后 getServices 会重新注册。
+ */
+export function stopServerScheduler(): void {
+  const holder = globalThis as SchedulerHolder;
+  for (const key of [HOLDER_KEY, ROLLUP_HOLDER_KEY, CONSOLIDATE_HOLDER_KEY] as const) {
+    const timer = holder[key];
+    if (timer) clearInterval(timer);
+    delete holder[key];
+  }
+}

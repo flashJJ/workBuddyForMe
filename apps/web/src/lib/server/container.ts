@@ -62,19 +62,19 @@ import { createAuditService } from '@wbfm/core/governance';
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
 
-let container: ServiceContainer | null = null;
 /**
  * dev 模式下 Next 按需编译/HMR 会重新求值本模块，模块级 container 会重置为 null，
  * 导致 SSE 长连接持有旧 flowRunner（含人工等待器）而 POST 路由拿到新实例。
- * 额外在 globalThis 上保留同一单例，使模块重载后仍复用原容器（生产模式无影响）。
+ * 因此单例只放在 globalThis 上，**不再保留模块级副本**：
+ * 同一进程里本文件可能被打进多个路由 chunk，各 chunk 的模块级变量会各自漂移，
+ * 重建容器后旧 chunk 仍拿旧实例（旧 SQLite 连接不释放，Windows 下数据根删不掉）。
  */
 const globalHolder = globalThis as { __WBFM_SERVICE_CONTAINER__?: ServiceContainer };
 function readContainer(): ServiceContainer | null {
-  return container ?? globalHolder.__WBFM_SERVICE_CONTAINER__ ?? null;
+  return globalHolder.__WBFM_SERVICE_CONTAINER__ ?? null;
 }
 
 function writeContainer(value: ServiceContainer | null): void {
-  container = value;
   if (value) globalHolder.__WBFM_SERVICE_CONTAINER__ = value;
   else delete globalHolder.__WBFM_SERVICE_CONTAINER__;
 }

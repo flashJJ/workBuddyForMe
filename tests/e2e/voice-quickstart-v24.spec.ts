@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.4 M3（P0-3）·「一键开启语音对话」e2e：覆盖验收 A1（体积/耗时预估 + 一键下载 + 可取消）、
  * A2（就绪后一次点击进入可说话的免手模式）、A3（默认两档 + 高级默认折叠）、A4（半双工边界文案）。

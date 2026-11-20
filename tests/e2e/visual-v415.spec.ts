@@ -1,6 +1,13 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import { revealSettingsSection, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v4.15 P2：视觉巡检 L1（只覆盖稳定的 2D 界面）。
  *

@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.4 M5 / P1-3：命令面板覆盖高频动作。
  * 导航（任务/工作流）+ 新建（知识库/工作流/助手/角色卡）必须可用；

@@ -224,6 +224,10 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     isActive(runId) {
       return active.has(runId);
     },
+    /** 容器重装（E2E 恢复出厂）时停补偿定时器：闭包持有旧库，关闭后会持续报错 */
+    dispose() {
+      clearInterval(rescueTimer);
+    },
     activeRunIds() {
       return [...active.keys()];
     },

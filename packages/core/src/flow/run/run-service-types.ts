@@ -66,6 +66,8 @@ export interface FlowRunService {
   cancel(runId: string): boolean;
   isActive(runId: string): boolean;
   activeRunIds(): string[];
+  /** 停掉 queued 补偿定时器（容器/数据库重装前调用，避免闭包持旧库） */
+  dispose(): void;
   resolveAsTool(workflowId: string): Tool | null;
   listPublishedTools(): Tool[];
 }

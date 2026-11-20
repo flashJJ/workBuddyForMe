@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { chooseOption } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 test.describe('i18n 语言切换（v1.2 M4）', () => {
   // 前序 spec 异常可能留下 en-US（如本用例中途失败），入口先复位为中文保证可重入
   test.beforeAll(async ({ request }) => {

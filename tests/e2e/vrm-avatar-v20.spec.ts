@@ -1,6 +1,13 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 import { revealSettingsSection, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.0 M4 VRM 导入 e2e。
  * 导入向导 UI + 服务端魔数/VRM 扩展双校验 + 已导入列表 + 形象选择器 VRM 分组。

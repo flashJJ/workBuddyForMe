@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /** 全新数据根首启必弹向导；跳过即写 hasOnboarded 标记 */
 async function skipOnboardingIfShown(page: Page): Promise<void> {
   const wizard = page.getByRole('dialog', { name: '首次使用向导' });

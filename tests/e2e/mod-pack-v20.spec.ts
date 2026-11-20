@@ -2,6 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { chooseOption, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.0 M5 收口 e2e：
  * - .wbfm-pack 导出 API → 预检（含同名冲突标记）→ 导入向导 UI 往返（副本策略）

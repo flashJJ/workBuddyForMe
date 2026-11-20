@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * M2 语音输入全链路 E2E（mock 语音引擎，真 mic 采集链路）：
  * - /api/voice/* 路由拦截：模型恒就绪、ASR 恒返回固定中文文本（引擎在真机/单测层验证）；

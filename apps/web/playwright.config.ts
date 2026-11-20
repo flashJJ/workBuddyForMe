@@ -38,6 +38,8 @@ export default defineConfig({
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    // CI 失败摘要与 flaky 统计读取 junit（scripts/e2e/summarize-failures.mjs）
+    ['junit', { outputFile: 'test-results/junit.xml' }],
   ],
   outputDir: 'test-results',
   use: {

@@ -2,6 +2,13 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 import { chooseOption, waitForHydrated } from './utils';
 import { FIXTURE_URL } from './network-fixture';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v4.11 P1：联网检索的浏览器端到端路径。
  *

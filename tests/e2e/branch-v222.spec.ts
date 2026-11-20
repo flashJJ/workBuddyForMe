@@ -1,5 +1,12 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v2.22 分支可靠性 e2e：
  * - 排队取消 → 终态回传（空结果、需核对）→ 图出现回传节点；

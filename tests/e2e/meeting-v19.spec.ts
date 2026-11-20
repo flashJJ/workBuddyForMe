@@ -1,6 +1,13 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v1.9 M3 多助手会议 e2e（WBFM_MOCK_AI=1）：
  * - manual：UI 发起会议；无 @ 只存用户消息不调模型；@ 两人按书写顺序串行发言；

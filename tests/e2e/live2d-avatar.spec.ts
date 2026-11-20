@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chooseOption, optionTexts, revealSettingsSection } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * M3 Live2D 形象 e2e：
  * - 形象关闭（默认）：/chat 不挂载形象栏，零 Live2D/Cubism/模型资源请求；

@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chooseOption, waitForHydrated } from './utils';
 
+import { resetE2eData } from './reset';
+
+// 文件级隔离：任何 spec 单独/乱序运行都从「刚安装」状态开始（见 reset.ts）
+test.beforeAll(async ({ request }) => {
+  await resetE2eData(request);
+});
+
 /**
  * v1.3 知识链路 E2E（TR-5.3）：WBFM_MOCK_AI=1，编译/静态引用/同名替换/治理全链路。
  * 场景串行依赖：前置（供应商+模型+助手+库）→ 上传编译 → 静态层引用坐标 →
