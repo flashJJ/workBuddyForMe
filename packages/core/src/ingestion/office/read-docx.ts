@@ -1,11 +1,14 @@
 import mammoth from 'mammoth';
 import { toOfficeReadError } from './office-error';
+import { assertZipUncompressedBudget } from './zip-budget';
 
 /**
  * docx → 结构化纯文本：段落保留换行；表格按行输出，单元格用 | 分隔。
  * mammoth 只产出受控的有限 HTML 标签，这里做轻量转换而非引入完整 DOM 依赖。
  */
-export async function readDocxHtml(data: Uint8Array): Promise<string> {
+export async function readDocxHtml(data: Uint8Array, maxUncompressedBytes?: number): Promise<string> {
+  // 结构解析与纯文本解析都经过这里：压缩炸弹必须在解压前拒绝
+  assertZipUncompressedBudget(data, maxUncompressedBytes);
   try {
     const { value: html } = await mammoth.convertToHtml({ buffer: Buffer.from(data) });
     return html;
@@ -14,8 +17,8 @@ export async function readDocxHtml(data: Uint8Array): Promise<string> {
   }
 }
 
-export async function readDocx(data: Uint8Array): Promise<string> {
-  return docxHtmlToText(await readDocxHtml(data));
+export async function readDocx(data: Uint8Array, maxUncompressedBytes?: number): Promise<string> {
+  return docxHtmlToText(await readDocxHtml(data, maxUncompressedBytes));
 }
 
 function unescapeHtml(value: string): string {

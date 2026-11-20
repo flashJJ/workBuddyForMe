@@ -1,6 +1,7 @@
 import { unzipSync } from 'fflate';
 import { ApiError } from '@wbfm/shared/errors';
 import { toOfficeReadError } from './office-error';
+import { assertZipUncompressedBudget } from './zip-budget';
 
 const SLIDE_PATH = /^ppt\/slides\/slide(\d+)\.xml$/;
 
@@ -33,7 +34,9 @@ export function slideXmlToText(xml: string): string {
  * pptx → Markdown 风格纯文本：OOXML zip 解包后读取 ppt/slides/slideN.xml，
  * 每页一节（## 第 N 页）。不引入重型 Office 库，fflate 纯 JS 解包。
  */
-export function readPptx(data: Uint8Array): string {
+export function readPptx(data: Uint8Array, maxUncompressedBytes?: number): string {
+  // 结构解析与纯文本解析都经过这里：压缩炸弹必须在解压前拒绝
+  assertZipUncompressedBudget(data, maxUncompressedBytes);
   let entries: Record<string, Uint8Array>;
   try {
     entries = unzipSync(data);

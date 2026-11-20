@@ -54,6 +54,13 @@ describe('Office 解析器（M2）', () => {
     expect(() => assertZipUncompressedBudget(normal, 1024 * 1024)).not.toThrow();
   });
 
+  it('压缩炸弹：解析器入口即拒绝（结构解析路径不绕过预算）', async () => {
+    const bomb = zipSync({ 'word/document.xml': new Uint8Array(256 * 1024) });
+    await expect(readDocx(bomb, 64 * 1024)).rejects.toThrow(/解压后体积/);
+    expect(() => readXlsx(bomb, 64 * 1024)).toThrow(/解压后体积/);
+    expect(() => readPptx(bomb, 64 * 1024)).toThrow(/解压后体积/);
+  });
+
   it('xlsx：多 sheet 分节、单元格按行 tab 拼接、空 sheet 跳过', () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(

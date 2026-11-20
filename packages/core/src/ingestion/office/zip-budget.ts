@@ -13,6 +13,7 @@ const CENTRAL_SIG = 0x02014b50;
 export function assertZipUncompressedBudget(
   data: Uint8Array,
   maxBytes: number = OFFICE_MAX_UNCOMPRESSED_BYTES,
+  label = '文档',
 ): void {
   if (data.length < 22) return;
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -34,13 +35,13 @@ export function assertZipUncompressedBudget(
     const uncompressed = view.getUint32(p + 24, true);
     // zip64 哨兵：真实体积无法在 32 位内表达，按超限处理
     if (uncompressed === 0xffffffff) {
-      throw new ApiError('VALIDATION_ERROR', '文档解压后体积超过上限，已停止解析');
+      throw new ApiError('VALIDATION_ERROR', `${label}解压后体积超过上限，已停止解析`);
     }
     total += uncompressed;
     if (total > maxBytes) {
       throw new ApiError(
         'VALIDATION_ERROR',
-        `文档解压后体积超过上限（${Math.round(maxBytes / 1024 / 1024)}MB），已停止解析`,
+        `${label}解压后体积超过上限（${Math.round(maxBytes / 1024 / 1024)}MB），已停止解析`,
       );
     }
     const nameLen = view.getUint16(p + 28, true);

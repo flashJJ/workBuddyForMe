@@ -9,10 +9,14 @@ import {
   type CapabilityKind,
   type CapabilityManifest,
 } from '@wbfm/shared/schemas';
+import { assertZipUncompressedBudget } from '../ingestion/office/zip-budget';
 
 /** v2.10 能力包 ZIP 解析与校验（纯函数，服务层只做落盘与 effect） */
 
 export const CAPABILITY_MANIFEST_FILE = 'wbfm-capability.json';
+
+/** 能力包解压后总体积上限：上传压缩包 ≤20MB，正常文本类包远低于此值 */
+export const CAPABILITY_MAX_UNCOMPRESSED_BYTES = 80 * 1024 * 1024;
 
 export interface ParsedCapability {
   manifest: CapabilityManifest;
@@ -35,7 +39,12 @@ function assertSafePath(path: string): void {
   }
 }
 
-export function parseCapabilityZip(buffer: Uint8Array): ParsedCapability {
+export function parseCapabilityZip(
+  buffer: Uint8Array,
+  maxUncompressedBytes: number = CAPABILITY_MAX_UNCOMPRESSED_BYTES,
+): ParsedCapability {
+  // 解压前先按中央目录核对总体积：能力包同样可能被做成压缩炸弹
+  assertZipUncompressedBudget(buffer, maxUncompressedBytes, '能力包');
   let files: Record<string, Uint8Array>;
   try {
     files = unzipSync(buffer);
