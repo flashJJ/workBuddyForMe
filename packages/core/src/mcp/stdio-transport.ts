@@ -148,6 +148,13 @@ export function spawnStdioTransport(options: StdioTransportOptions): StdioTransp
   child.stdout.on('end', () => {
     for (const line of decoder.end()) handleLine(line);
   });
+  // 子进程退出后写 stdin 会触发 EPIPE：没有 error 监听时属未处理事件，会拖垮宿主进程
+  child.stdin.on('error', (error) => {
+    if (!closed) failAllPending(`MCP stdin 写入失败：${error.message}`);
+  });
+  // 读端错误同理：只终止本轮读取，关闭事件会统一收尾
+  child.stdout.on('error', () => undefined);
+  child.stderr.on('error', () => undefined);
   child.stderr.on('data', (chunk: Buffer) => {
     for (const line of chunk.toString('utf8').split('\n')) {
       const trimmed = line.trim();
@@ -216,14 +223,30 @@ export function spawnStdioTransport(options: StdioTransportOptions): StdioTransp
       const childRef = child;
       await new Promise<void>((resolve) => {
         const killTimer = setTimeout(() => {
-          childRef.kill('SIGKILL');
+          if (process.platform === 'win32' && childRef.pid) {
+            // Windows 的 kill() 只终止直接子进程，npx/cmd 包装层下的真实服务会变孤儿
+            spawn('taskkill', ['/pid', String(childRef.pid), '/T', '/F'], {
+              stdio: 'ignore',
+              windowsHide: true,
+            }).on('error', () => childRef.kill('SIGKILL'));
+          } else {
+            childRef.kill('SIGKILL');
+          }
           resolve();
         }, MCP_EXIT_GRACE_MS);
         childRef.once('close', () => {
           clearTimeout(killTimer);
           resolve();
         });
-        childRef.kill();
+        if (process.platform === 'win32' && childRef.pid) {
+          // 进程树整杀（含 npx 拉起的孙进程），避免禁用/重载 MCP 后残留
+          spawn('taskkill', ['/pid', String(childRef.pid), '/T', '/F'], {
+            stdio: 'ignore',
+            windowsHide: true,
+          }).on('error', () => childRef.kill());
+        } else {
+          childRef.kill();
+        }
       });
     },
   };

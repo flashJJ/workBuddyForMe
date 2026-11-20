@@ -39,6 +39,7 @@
 | B-19 | P2 | 自动更新 | 更新事件可能发往已销毁窗口；`updater:set-channel` 接受任意字符串写坏状态文件 | 缺 `isDestroyed` 守卫；IPC 边界未校验 | 发送前判销毁；`isUpdateChannel` 拦截非法值 | `updater` 17 条单测 | `3e063f17` |
 | B-20 | P1 | 模型设置 | 删除模型/供应商后新对话报「对话模型不存在：<uuid>」 | 设置是 JSON 无外键，默认模型绑定不随删除清理 | `clearDefaultModelReferences` 清空三个默认模型键 | `model-reference-cleanup` 2 条 | `3e063f17` |
 | B-21 | P2 | 语音下载 | 取消下载后卡片永久停在「下载中」，重启也无法重新下载 | AbortError 分支不落持久化状态，`status=downloading` 且无活动任务 | `markCancelled` 回 missing（保留字节续传）+ 前端防御映射 | `voice-model-repo` 单测 | `3e063f17` |
+| B-22 | P2 | MCP 进程 | MCP 子进程退出瞬间写 stdin 可能拖垮宿主；Windows 禁用/重载后 npx 下真实服务残留 | `child.stdin` 无 `error` 监听（EPIPE 属未处理事件）；`kill()` 只杀直接子进程 | stdin/stdout/stderr 补 error 监听；Windows 改 `taskkill /T /F` 整树终止 | `stdio-transport` + 真实子进程集成测试 | 本批 |
 
 ## 排查方法
 
