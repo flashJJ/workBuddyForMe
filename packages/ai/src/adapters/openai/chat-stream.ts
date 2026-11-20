@@ -25,11 +25,17 @@ export async function* openAiChatStream(
 ): AsyncIterable<ChatChunk> {
   // 限定名转义为上游接受的字符集；回包工具调用再还原为内部名
   const codec = createWireToolNameCodec(params);
+  // 空闲看门狗必须走 AbortSignal 中止请求：parseSse 已用 reader 锁定 response.body，
+  // 对锁定流调用 body.cancel() 只会抛 TypeError（被吞掉），看门狗等于没有生效。
+  const idle = new AbortController();
+  const streamSignal = params.signal
+    ? AbortSignal.any([params.signal, idle.signal])
+    : idle.signal;
   const { response, dispose } = await openSseChannel(
     joinEndpoint(connection.baseUrl, OPENAI_ENDPOINTS.chatCompletions),
     {
       apiKey: connection.apiKey,
-      signal: params.signal,
+      signal: streamSignal,
       body: buildChatBody(params, codec),
       // 本地模型冷加载首字节慢，连接超时放宽到 180s（仅覆盖响应头到达前）
       timeoutMs: CHAT_CONNECT_TIMEOUT_MS,
@@ -53,7 +59,7 @@ export async function* openAiChatStream(
   try {
     const abortIdle = () => {
       clearIdle();
-      response.body?.cancel().catch(() => undefined);
+      idle.abort();
     };
     armIdle(abortIdle);
     for await (const event of parseSse(response.body!)) {
@@ -79,8 +85,8 @@ export async function* openAiChatStream(
       if (chunk.usage) yield { delta: '', usage: mapUsage(chunk.usage) };
     }
   } catch (error) {
-    // 空闲看门狗触发：body.cancel 会让底层读取抛 AbortError，且并非调用方主动取消
-    if (!params.signal?.aborted && isIdleAbort(error)) {
+    // 空闲看门狗触发：idle 中止会让底层读取抛 AbortError，且并非调用方主动取消
+    if (!params.signal?.aborted && idle.signal.aborted) {
       throw ProviderError.timeout(
         `SSE 流式读取 ${joinEndpoint(connection.baseUrl, OPENAI_ENDPOINTS.chatCompletions)}`,
         CHAT_STREAM_IDLE_TIMEOUT_MS,
@@ -93,15 +99,6 @@ export async function* openAiChatStream(
     await response.body?.cancel().catch(() => undefined);
     dispose();
   }
-}
-
-/** 空闲超时引起的中止：AbortError 且调用方 signal 未 abort（区别于用户主动停止） */
-function isIdleAbort(error: unknown): boolean {
-  return (
-    error instanceof DOMException
-      ? error.name === 'AbortError'
-      : error instanceof Error && error.name === 'AbortError'
-  );
 }
 
 function parseChunk(data: string): ChatCompletionChunk | null {

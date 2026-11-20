@@ -59,17 +59,16 @@ export function useChatStream() {
       const settle = () => {
         if (settled) return;
         settled = true;
+        // 已被新流接管：旧流收尾不得重置新一轮的 streaming
+        if (controllerRef.current !== controller) return;
         setStreaming(false);
         handlers.onStreamingChange?.(false);
       };
       /** 连接真正关闭时的资源清理（仅在未收到终态帧时补发一次流式结束通知） */
       const cleanup = () => {
+        // 先 settle（内部依赖 controllerRef 仍指向自己），再释放 ref
+        if (!settled) settle();
         if (controllerRef.current === controller) controllerRef.current = null;
-        if (!settled) {
-          settled = true;
-          setStreaming(false);
-          handlers.onStreamingChange?.(false);
-        }
       };
 
       try {

@@ -154,9 +154,14 @@ test.describe.serial('M3 Live2D 形象', () => {
     const select = page.getByTestId('avatar-model');
     await expect(select).toBeVisible();
     const options = await optionTexts(page, select);
-    expect(options).toHaveLength(5);
-    expect(options.join('|')).toContain('Hiyori');
-    expect(options.join('|')).toContain('Mark');
+    // v2.0 起选择器同时包含内置 VRM（雪团/冉卡露丽/菲比）；本用例只校验 5 套 Live2D 官方角色
+    const live2dPrefixes = ['Haru · ', 'Hiyori · ', 'Mark · ', 'Mao · ', 'Wanko · '];
+    const live2dOptions = options.filter((text) =>
+      live2dPrefixes.some((prefix) => text.startsWith(prefix)),
+    );
+    expect(live2dOptions).toHaveLength(5);
+    expect(live2dOptions.join('|')).toContain('Hiyori');
+    expect(live2dOptions.join('|')).toContain('Mark');
 
     // 切换到 Hiyori（选项文案来自 avatar-models.ts 的 avatar.models.hiyori，经 t() 渲染）：
     // 用请求体精确匹配切模型 PUT（开关 PUT 已在前面消费）

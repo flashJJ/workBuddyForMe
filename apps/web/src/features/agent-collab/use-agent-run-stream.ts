@@ -58,10 +58,10 @@ export function useAgentRunStream() {
       handlers.onStreamingChange?.(true);
 
       const finish = () => {
-        if (controllerRef.current === controller) {
-          controllerRef.current = null;
-          runIdRef.current = null;
-        }
+        // 已被新流接管：旧流只结束自己，不得把新一轮的 streaming 状态压回 false
+        if (controllerRef.current !== controller) return;
+        controllerRef.current = null;
+        runIdRef.current = null;
         setStreaming(false);
         handlers.onStreamingChange?.(false);
       };

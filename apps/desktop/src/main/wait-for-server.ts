@@ -38,12 +38,15 @@ export async function waitForServer(url: string, token: string, options: WaitOpt
 
   for (;;) {
     try {
+      // 单次探测限时：连接挂起（服务监听但不应答）时不能拖过整体 deadline
+      const remaining = Math.max(1, deadline - Date.now());
       const res = await doFetch(`${url}/api/health`, {
         headers: { 'x-wbfm-token': token },
+        signal: AbortSignal.timeout(Math.min(5_000, remaining)),
       });
       if (res.ok) return;
     } catch {
-      // 服务尚未监听，继续轮询
+      // 服务尚未监听/单次探测超时，继续轮询
     }
     if (Date.now() >= deadline) throw new Error(`托管服务在 ${timeoutMs}ms 内未就绪: ${url}`);
     await sleep(intervalMs);

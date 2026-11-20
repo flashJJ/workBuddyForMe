@@ -37,6 +37,15 @@ describe('waitForServer 端口探测（TR-30.2）', () => {
     });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
+
+  it('单次探测带超时信号（连接挂起不会拖过整体 deadline）', async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      return new Response('ok', { status: 200 });
+    });
+    await waitForServer('http://127.0.0.1:51003', 'tok', { fetchImpl, intervalMs: 1 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
 });
 
 type Handler = (...args: unknown[]) => void;

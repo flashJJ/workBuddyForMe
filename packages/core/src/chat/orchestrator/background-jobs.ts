@@ -12,8 +12,11 @@ export function createBackgroundJobRegistry(): BackgroundJobRegistry {
   const jobs = new Set<Promise<unknown>>();
   return {
     schedule(job: Promise<unknown>): void {
-      jobs.add(job);
-      void job.finally(() => jobs.delete(job));
+      // 登记时即吞掉拒绝：finally 链不会产生 unhandledRejection，
+      // wait 仍是 allSettled 语义，不改变调用方可见行为。
+      const tracked = job.catch(() => undefined);
+      jobs.add(tracked);
+      void tracked.finally(() => jobs.delete(tracked));
     },
     async wait(): Promise<void> {
       await Promise.allSettled([...jobs]);
