@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
 
 /**
@@ -11,6 +11,21 @@ import { chooseOption, revealSettingsSection, waitForHydrated } from './utils';
  */
 
 const ASR_TEXT = '这是免手模式自动发送的一句话';
+const PROVIDER_NAME = 'VAD Mock 供应商';
+
+/**
+ * 清掉本规格创建的供应商：串行组失败重试会从 ① 重新开始，
+ * 残留同名供应商会让标题断言命中多个元素（strict mode violation）并阻断重试。
+ */
+async function removeMockProviders(request: APIRequestContext): Promise<void> {
+  const providers = (await request.get('/api/providers').then((r) => r.json())).data as Array<{
+    id: string;
+    name: string;
+  }>;
+  for (const provider of providers.filter((item) => item.name === PROVIDER_NAME)) {
+    await request.delete(`/api/providers/${provider.id}`);
+  }
+}
 
 const DEFAULT_SETTINGS = {
   ttsEnabled: false,
@@ -157,19 +172,24 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
     await mockVoiceRoutes(page);
   });
 
+  test.afterAll(async ({ request }) => {
+    await removeMockProviders(request);
+  });
+
   test('① 准备对话模型（mock 供应商 + vad-chat）', async ({ page }) => {
+    await removeMockProviders(page.request);
     await page.goto('/settings');
     await waitForHydrated(page);
     await page.getByRole('button', { name: '新增供应商' }).click();
-    await page.getByLabel('名称').fill('VAD Mock 供应商');
+    await page.getByLabel('名称').fill(PROVIDER_NAME);
     await page.getByLabel('Base URL').fill('http://mock.local/v1');
     await page.getByLabel('API Key').fill('sk-vad-mock');
     await page.getByRole('button', { name: '保存', exact: true }).click();
-    await page.getByRole('heading', { name: 'VAD Mock 供应商' }).waitFor();
+    await page.getByRole('heading', { name: PROVIDER_NAME }).waitFor();
 
     const card = page
       .locator('[data-testid^="provider-card-"]')
-      .filter({ hasText: 'VAD Mock 供应商' })
+      .filter({ hasText: PROVIDER_NAME })
       .last();
     await card.locator('[id^="model-id-"]').fill('vad-chat');
     await card.getByRole('button', { name: '添加', exact: true }).click();

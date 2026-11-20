@@ -17,6 +17,7 @@
 | B-06 | P2 | E2E | Live2D ⑦ 断言选择器 5 项，实际 8 项 | v2.0 起选择器加入 3 套内置 VRM，用例未同步 | 只筛选 5 套 Live2D 角色再断言 | CI ⑦ 通过 | `13bcf58a` |
 | B-29 | P0 | 工具评测 | promptfoo 3/3 通过后步骤仍挂到 15 分钟超时 | POSIX 上只 SIGTERM shell，pnpm/next 孙进程残留并占住管道；脚本只设 `exitCode` 不退出 | 子进程 `detached` + 进程组 SIGTERM/SIGKILL，结尾显式 `process.exit` | 本地 `tool-eval` 3/3、退出码 0、端口无残留 | 本批 |
 | B-30 | P3 | Eval 包装器 | `with-server` 在 POSIX 同样只杀 shell，next 孙进程变孤儿占端口 | 同 B-29 的进程树回收缺失 | 整组 kill + 显式退出 | 其他 eval 步骤既有通过记录 | 本批 |
+| B-47 | P2 | E2E | 免手 VAD ③ 失败后组内重试从 ① 开始，同名供应商叠加，标题断言命中 2/3 个元素，重试必失败 | ① 依赖全新数据根，未做幂等清理（同 B-04 类） | ① 创建前按名称清理残留供应商，组结束 `afterAll` 再清一次 | 重试可从 ① 干净重跑 | 本批 |
 
 ## 二、运行时缺陷
 
