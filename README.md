@@ -202,6 +202,7 @@ v4.15.0 发布验证：`pnpm check` 全绿（类型、lint、行数、结构、�
 - 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
 - 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [方案与版本归档（按大版本）](docs/plan/README.md) ｜ [v4.15 方案](docs/plan/v4.15/spec.md) ｜ [v4.15.0 发布说明](docs/roadmap/v4.15.0-release-notes.md) ｜ [v4.15 博客](blog/v4.15/)
 - 视觉巡检：[Playwright MCP 人工巡检 Runbook](docs/plan/v4.14/visual-manual-runbook.md)
+- 缺陷归档：[Bug 记录表（v4.16 期）](docs/wiki/bug-registry.md)
 - 影视与 IP：[摸鱼事务所影视类方案](docs/film/README.md) ｜ [即梦循环背景视频](docs/film/01-jimeng-loop-background.md) ｜ [Master 固定卡通形象](docs/film/03-master-character.md) ｜ [开机动画选型](docs/film/08-boot-animation.md)
 - 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](docs/learn/desktop-pet-implementation.md)
 
