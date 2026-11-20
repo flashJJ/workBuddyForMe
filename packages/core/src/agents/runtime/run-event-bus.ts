@@ -80,6 +80,7 @@ export function createRunEventBus<T>(options: RunEventBusOptions = {}): RunEvent
   /** 游标可从任意位置开始（0=整场回放；length=只收新帧） */
   function makeIterator(startIndex: number): AsyncIterableIterator<T> {
     let index = startIndex;
+    let stopped = false;
     let resolver: (() => void) | null = null;
     const wake: WakeEntry = () => {
       const r = resolver;
@@ -97,15 +98,20 @@ export function createRunEventBus<T>(options: RunEventBusOptions = {}): RunEvent
       },
       async next() {
         // 被唤醒但本订阅者游标已到末尾（多观察者竞争）时继续等，不误报终态
-        while (index >= buffer.length) {
+        while (!stopped && index >= buffer.length) {
           if (closed) return { value: undefined, done: true };
           await waitForWake();
         }
+        if (stopped) return { value: undefined, done: true };
         return { value: buffer[index++]!, done: false };
       },
       return() {
+        // 先唤醒挂起中的 next()：SSE 断连时迭代器被 return 而不能留下永不落定的等待
+        stopped = true;
         waiters.delete(wake);
+        const r = resolver;
         resolver = null;
+        r?.();
         return Promise.resolve({ value: undefined, done: true });
       },
     };

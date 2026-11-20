@@ -16,19 +16,37 @@ export type SseStreamEvent = WebStreamSseEvent;
 /** 将编排器/任务事件流桥接为 SSE Response；客户端断开由 request.signal 传导中断 */
 export function sseResponse(events: AsyncIterable<SseStreamEvent>): Response {
   const encoder = new TextEncoder();
+  const iterator = events[Symbol.asyncIterator]();
+  let cancelled = false;
+
+  /** 取消/结束时释放上游生成器；失败只可能是上游自身的收尾异常，无需上抛 */
+  const stopIterator = () => {
+    try {
+      const result = iterator.return?.();
+      if (result) void result.catch(() => {});
+    } catch {
+      /* 同步收尾异常忽略 */
+    }
+  };
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      // 客户端断开后流已取消，enqueue/close 会抛 TypeError，需吞掉避免 unhandled rejection
-      const safeEnqueue = (chunk: Uint8Array) => {
+      // 客户端断开后流已取消，enqueue/close 会抛 TypeError；失败即停止拉取上游
+      const safeEnqueue = (chunk: Uint8Array): boolean => {
+        if (cancelled) return false;
         try {
           controller.enqueue(chunk);
+          return true;
         } catch {
-          /* 流已取消 */
+          cancelled = true;
+          return false;
         }
       };
       try {
-        for await (const event of events) {
-          safeEnqueue(encoder.encode(formatSse(event.event, event.data)));
+        for (;;) {
+          const { done, value } = await iterator.next();
+          if (done || cancelled) break;
+          if (!safeEnqueue(encoder.encode(formatSse(value.event, value.data)))) break;
         }
       } catch {
         safeEnqueue(
@@ -37,12 +55,18 @@ export function sseResponse(events: AsyncIterable<SseStreamEvent>): Response {
           ),
         );
       } finally {
+        cancelled = true;
+        stopIterator();
         try {
           controller.close();
         } catch {
           /* 流已取消或已关闭 */
         }
       }
+    },
+    cancel() {
+      cancelled = true;
+      stopIterator();
     },
   });
   return new Response(stream, { headers: SSE_HEADERS });

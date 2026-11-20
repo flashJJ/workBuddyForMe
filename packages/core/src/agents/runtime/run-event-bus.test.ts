@@ -52,6 +52,21 @@ describe('v1.9 M2 RunEventBus 观察总线', () => {
     bus.close();
   });
 
+  it('return() 唤醒挂起中的 next()（SSE 断连释放）', async () => {
+    const bus = createRunEventBus<number>();
+    const sub = bus.subscribe();
+    const pending = sub.next();
+    await Promise.resolve();
+
+    const ret = await sub.return!();
+    expect(ret.done).toBe(true);
+    expect((await pending).done).toBe(true);
+
+    // return 之后再 next 也直接结束，不会重新挂起
+    expect((await sub.next()).done).toBe(true);
+    bus.close();
+  });
+
   it('tapRunEvents：owner 消费帧被广播；终态关闭总线且返回值透传', async () => {
     async function* gen(): AsyncGenerator<string, number> {
       yield 'x';

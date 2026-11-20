@@ -33,6 +33,9 @@
 | B-12 | P2 | 对话流 | 急停后立即再发时，旧流的收尾把新一轮 `streaming` 置为 false | `finish/cleanup` 未校验自己是否仍是当前 controller | 收尾前校验 controller 身份 | `use-chat-stream` 竞态用例 | `13bcf58a` |
 | B-13 | P3 | 桌面启动 | 服务监听但不应答时，30s 健康检查 deadline 失效（最长可卡 5 分钟） | 单次 fetch 无超时 | 每轮 `AbortSignal.timeout(min(5s, 剩余))` | `wait-for-server` 单测 | `13bcf58a` |
 | B-14 | P3 | 对话旁路 | 后台任务拒绝时可能产生 unhandledRejection | `void job.finally(...)` 未吞拒绝 | 登记时 `catch` 后再跟踪 | `background-jobs` 单测 | `13bcf58a` |
+| B-50 | P2 | 任务事件流 | 展开已结束的任务时，每隔约 3 秒重连一次 `/api/tasks/:id/events`，服务端反复回放全部步骤 | `useTaskEvents` 收到 `run_finished` 后未关闭 `EventSource`；服务端正常关流触发浏览器自动重连 | 终态帧到达即 `es.close()` 并置状态 closed | `use-tasks.test.tsx` 2 条 | 本批 |
+| B-51 | P3 | 会议 / 舞台 | 会议 SSE 进行中切换页面或关窗，控制台出现 `AbortError` 未处理拒绝（dev 态弹错误覆盖层） | 流式段异步 IIFE 没有 try/catch，卸载 abort 的拒绝无人接收 | 流式段收敛异常并加 `stopped` 守卫，卸载后不再写状态 | `meeting-sse-unmount.test.tsx` 2 条（MSW 挂起请求） | 本批 |
+| B-52 | P3 | SSE 服务端 | 观察者断开后服务端仍持续消费事件生成器；总线迭代器 `return()` 也无法唤醒挂起的 `next()` | `sseResponse` 无 `cancel()` 且吞掉 enqueue 异常；`makeIterator.return()` 清空 resolver 但不唤醒 | `cancel()` 置位并在 enqueue 失败即停；`return()` 置 stopped 并唤醒等待者 | `sse-stream.test.ts` + `run-event-bus.test.ts` | 本批 |
 
 ## 三、数据与桌面（深度排查批次）
 

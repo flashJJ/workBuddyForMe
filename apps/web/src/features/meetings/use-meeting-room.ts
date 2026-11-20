@@ -77,59 +77,66 @@ export function useMeetingRoom(meetingId: string | null) {
         loading: false,
       });
 
-      const response = await fetch(API.meetingEvents(meetingId), {
-        ...withManagedHeaders(),
-        signal: signal.signal,
-      });
-      if (!response.ok || !response.body) return;
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      const parser = new SseReader();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        for (const raw of parser.feed(decoder.decode(value, { stream: true }))) {
-          if (!NAMES.has(raw.event)) continue;
-          if (raw.event === 'meeting_message') {
-            const data = (raw as unknown as { data: { message: MeetingMessageRecord } }).data;
-            publishGraph('meeting_message', data);
-            upsertMessage(data.message);
-            setState((s) => ({ ...s, speaking: null }));
-          } else if (raw.event === 'meeting_delta') {
-            const data = (raw as unknown as { data: { speakerId: string; content: string } }).data;
-            setState((s) => ({ ...s, speaking: { speakerId: data.speakerId, text: data.content } }));
-          } else if (raw.event === 'meeting_turn') {
-            const data = (raw as unknown as {
-              data: { speakerIds: string[]; mode: MeetingMode; autoRounds: number; turnIndex?: number };
-            }).data;
-            publishGraph('meeting_turn_start', data);
-            const first = data.speakerIds[0];
-            if (first) setState((s) => ({ ...s, speaking: { speakerId: first, text: '' } }));
-          } else if (raw.event === 'meeting_status') {
-            const data = (raw as unknown as {
-              data: { status: MeetingStatus; mode: MeetingMode; autoRounds: number };
-            }).data;
-            publishGraph('meeting_status', data);
-            setState((s) =>
-              s.meeting
-                ? {
-                    ...s,
-                    meeting: {
-                      ...s.meeting,
-                      status: data.status,
-                      mode: data.mode,
-                      autoRounds: data.autoRounds,
-                    },
-                    // 终态（结束/打断）清空可能悬挂的「发言中」气泡
-                    speaking: data.status === 'active' ? s.speaking : null,
-                  }
-                : s,
-            );
-          } else if (raw.event === 'error') {
-            const data = (raw as unknown as { data: { message: string } }).data;
-            toast.error(data.message || '会议发言失败');
+      // 流式段独立收敛：卸载时 abort 会让 fetch/read 以 AbortError 拒绝，
+      // 不能让这个拒绝逃逸成未处理异常；断线时保留已渲染的最后快照。
+      try {
+        const response = await fetch(API.meetingEvents(meetingId), {
+          ...withManagedHeaders(),
+          signal: signal.signal,
+        });
+        if (!response.ok || !response.body) return;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const parser = new SseReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done || stopped) break;
+          for (const raw of parser.feed(decoder.decode(value, { stream: true }))) {
+            if (stopped) break;
+            if (!NAMES.has(raw.event)) continue;
+            if (raw.event === 'meeting_message') {
+              const data = (raw as unknown as { data: { message: MeetingMessageRecord } }).data;
+              publishGraph('meeting_message', data);
+              upsertMessage(data.message);
+              setState((s) => ({ ...s, speaking: null }));
+            } else if (raw.event === 'meeting_delta') {
+              const data = (raw as unknown as { data: { speakerId: string; content: string } }).data;
+              setState((s) => ({ ...s, speaking: { speakerId: data.speakerId, text: data.content } }));
+            } else if (raw.event === 'meeting_turn') {
+              const data = (raw as unknown as {
+                data: { speakerIds: string[]; mode: MeetingMode; autoRounds: number; turnIndex?: number };
+              }).data;
+              publishGraph('meeting_turn_start', data);
+              const first = data.speakerIds[0];
+              if (first) setState((s) => ({ ...s, speaking: { speakerId: first, text: '' } }));
+            } else if (raw.event === 'meeting_status') {
+              const data = (raw as unknown as {
+                data: { status: MeetingStatus; mode: MeetingMode; autoRounds: number };
+              }).data;
+              publishGraph('meeting_status', data);
+              setState((s) =>
+                s.meeting
+                  ? {
+                      ...s,
+                      meeting: {
+                        ...s.meeting,
+                        status: data.status,
+                        mode: data.mode,
+                        autoRounds: data.autoRounds,
+                      },
+                      // 终态（结束/打断）清空可能悬挂的「发言中」气泡
+                      speaking: data.status === 'active' ? s.speaking : null,
+                    }
+                  : s,
+              );
+            } else if (raw.event === 'error') {
+              const data = (raw as unknown as { data: { message: string } }).data;
+              toast.error(data.message || '会议发言失败');
+            }
           }
         }
+      } catch {
+        // 卸载或网络中断：保持当前数据，重进会议室会重新拉详情并回放
       }
     })();
 

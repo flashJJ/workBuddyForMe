@@ -120,6 +120,11 @@ export function useTaskEvents(runId: string | null): TaskLiveState {
       try {
         const payload = JSON.parse((ev as MessageEvent).data) as TaskEventPayload;
         applyEvent(payload, setRun, setSteps);
+        // 终态后服务端会关闭流；不主动 close 会让 EventSource 自动重连→整场回放→风暴
+        if (payload.type === 'run_finished') {
+          setStatus('closed');
+          es.close();
+        }
       } catch {
         /* 忽略解析失败 */
       }

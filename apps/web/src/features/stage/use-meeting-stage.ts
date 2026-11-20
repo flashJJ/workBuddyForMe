@@ -80,35 +80,41 @@ export function useMeetingStage(
       });
 
       // 2) 事件流（服务端先回放落库，再 live）
-      const response = await fetch(API.meetingEvents(meetingId), {
-        ...withManagedHeaders(),
-        signal: signal.signal,
-      });
-      if (!response.ok || !response.body) {
-        setState((s) => ({ ...s, status: detail!.meeting.status }));
-        return;
-      }
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      const parser = new SseReader();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        for (const raw of parser.feed(decoder.decode(value, { stream: true }))) {
-          const frame = narrow(raw);
-          if (!frame || !adapterRef.current) continue;
-          if (frame.event === 'meeting_status') {
-            setState((s) => ({
-              ...s,
-              status: frame.data.status,
-              mode: frame.data.mode,
-              autoRounds: frame.data.autoRounds,
-            }));
-          }
-          for (const direction of adaptMeetingFrame(adapterRef.current, frame)) {
-            controller.applyDirection(direction);
+      // 卸载时 abort 会让 fetch/read 以 AbortError 拒绝：必须在此收敛，不能逃逸成未处理拒绝
+      try {
+        const response = await fetch(API.meetingEvents(meetingId), {
+          ...withManagedHeaders(),
+          signal: signal.signal,
+        });
+        if (!response.ok || !response.body) {
+          if (!stopped) setState((s) => ({ ...s, status: detail!.meeting.status }));
+          return;
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const parser = new SseReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done || stopped) break;
+          for (const raw of parser.feed(decoder.decode(value, { stream: true }))) {
+            if (stopped) break;
+            const frame = narrow(raw);
+            if (!frame || !adapterRef.current) continue;
+            if (frame.event === 'meeting_status') {
+              setState((s) => ({
+                ...s,
+                status: frame.data.status,
+                mode: frame.data.mode,
+                autoRounds: frame.data.autoRounds,
+              }));
+            }
+            for (const direction of adaptMeetingFrame(adapterRef.current, frame)) {
+              controller.applyDirection(direction);
+            }
           }
         }
+      } catch {
+        // 卸载或网络中断：保留舞台当前状态，后续由重进页面恢复
       }
     })();
 
