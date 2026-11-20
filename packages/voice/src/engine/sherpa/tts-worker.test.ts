@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
-import { WorkerTtsEngine } from './tts-worker';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+import { WorkerTtsEngine, type TtsWorkerLike } from './tts-worker';
 import { getVoiceModelSpec } from '../../models/manifest';
 
 const MELO_SPEC = getVoiceModelSpec('tts', 'melo');
@@ -94,5 +94,32 @@ describe('WorkerTtsEngine（真实 worker 线程 + 假原生模块）', () => {
         exists: existsAll,
       }),
     ).rejects.toMatchObject({ name: 'VoiceEngineError' });
+  });
+
+  it('就绪握手超时：终止 worker 并报错，不留下仍在加载模型的常驻线程', async () => {
+    vi.useFakeTimers();
+    try {
+      const terminate = vi.fn(async () => 0);
+      const fakeWorker = {
+        on: vi.fn(),
+        postMessage: vi.fn(),
+        terminate,
+        unref: vi.fn(),
+      } as unknown as TtsWorkerLike;
+
+      const pending = WorkerTtsEngine.create({
+        config: { modelDir: '/models/tts' },
+        spec: MELO_SPEC,
+        modulePath: '/fake/sherpa.cjs',
+        exists: existsAll,
+        workerFactory: () => fakeWorker,
+      });
+      const expectation = expect(pending).rejects.toMatchObject({ name: 'VoiceEngineError' });
+      await vi.advanceTimersByTimeAsync(30_000);
+      await expectation;
+      expect(terminate).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

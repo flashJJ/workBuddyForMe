@@ -1,6 +1,7 @@
 import {
   OCR_MAX_PAGES,
   OCR_PAGE_TIMEOUT_MS,
+  OCR_TESSERACT_MAX_PIXELS,
   OCR_TESSERACT_SCALE,
   OCR_TOTAL_TIMEOUT_MS,
   OCR_VISION_MAX_PIXELS,
@@ -122,8 +123,14 @@ async function runTesseractPages(
   rootSignal: AbortSignal,
   deadlineSignal: AbortSignal,
 ): Promise<{ ocrByPage: Map<number, string>; partial: boolean }> {
-  // 一次打开 PDF 渲染全部目标页（pdfjs 会 detach 输入缓冲，不能逐页重复打开）
-  const rendered = await renderPdfPagesToPng(params.data, targets, OCR_TESSERACT_SCALE);
+  // 一次打开 PDF 渲染全部目标页（pdfjs 会 detach 输入缓冲，不能逐页重复打开）；
+  // 超大画幅页按像素预算等比缩回，防单页位图把进程内存打爆
+  const rendered = await renderPdfPagesToPng(
+    params.data,
+    targets,
+    OCR_TESSERACT_SCALE,
+    OCR_TESSERACT_MAX_PIXELS,
+  );
   const pngByPage = new Map(rendered.map((page) => [page.pageNumber, page.png]));
 
   const session = await createTesseractSession();

@@ -33,6 +33,7 @@ import {
   OcrEngineUnavailableError,
   OcrFailedError,
 } from './ocr-errors';
+import { OCR_TESSERACT_MAX_PIXELS, OCR_TESSERACT_SCALE } from '@wbfm/shared/constants';
 
 /** 按调用次序逐页返回固定文本的假视觉供应商；hangs=true 时永不产出（测超时） */
 function makeVisionProvider(plan: Array<{ text?: string; hang?: boolean; throwOnce?: boolean }>): ChatProvider {
@@ -177,6 +178,13 @@ describe('runPdfOcr 编排', () => {
     });
     expect(result.engine).toBe('tesseract');
     expect(result.text).toBe('离线识别页');
+    // 渲染必须带像素预算：超大 MediaBox 页等比缩回，避免单页位图吃爆内存
+    expect(renderPdfPagesToPng).toHaveBeenCalledWith(
+      expect.anything(),
+      [1],
+      OCR_TESSERACT_SCALE,
+      OCR_TESSERACT_MAX_PIXELS,
+    );
   });
 
   it('tesseract 不可用且无视觉模型 → 抛 OcrEngineUnavailableError', async () => {

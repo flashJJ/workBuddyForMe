@@ -170,6 +170,21 @@ describe('VoiceRuntime 启动预热', () => {
 
     expect(h.create).toHaveBeenCalledTimes(2);
   });
+
+  it('并发首句只创建一个引擎：后到的调用复用正在进行的创建', async () => {
+    const { runtime } = makeRuntime('haru', 'kokoro');
+    await Promise.all([runtime.synthesize('并发第一句'), runtime.synthesize('并发第二句')]);
+
+    expect(h.create).toHaveBeenCalledTimes(1);
+    expect(h.synth).toHaveBeenCalledTimes(2);
+  });
+
+  it('预热与首句并发时也只创建一个引擎（启动期常见竞争）', async () => {
+    const { runtime } = makeRuntime('haru', 'kokoro');
+    await Promise.all([runtime.prewarmTts(), runtime.synthesize('启动首句')]);
+
+    expect(h.create).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('VoiceRuntime MeloTTS 单声引擎', () => {

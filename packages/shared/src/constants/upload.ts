@@ -43,6 +43,12 @@ export const OCR_MAX_PAGES = 50;
 export const OCR_VISION_SCALE = 2;
 export const OCR_TESSERACT_SCALE = 3;
 /**
+ * 送 tesseract 的单页像素上限：约 1600 万像素。
+ * 标准 A4 在 3x 下约 450 万像素不受影响；超大 MediaBox 的异常/恶意 PDF
+ * 按比例缩回，避免单页 RGBA 缓冲吃掉数 GB 内存。
+ */
+export const OCR_TESSERACT_MAX_PIXELS = 16_000_000;
+/**
  * 送视觉模型的单页像素上限：约 2M 像素。
  * 视觉模型按像素计 image token（qwen2.5-vl 约 784px/token，此预算 ≈2550 token），
  * 限制总量可避免本地模型默认 4096 上下文（如 Ollama）直接返回 400；

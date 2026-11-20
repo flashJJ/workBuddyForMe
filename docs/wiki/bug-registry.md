@@ -81,6 +81,14 @@
 | B-40 | P3 | 会议 | 已结束/跨进程会议打开 SSE 时新建永不关闭的总线：连接悬挂不结束，buses 随会议数泄漏 | `observe()` 未按契约判断 active；`finish/abort` 只 close 不 delete | 非 active 返回 null；结束后 close + delete，交给落库回放 | `meeting-service.test` 新增用例 | 本批 |
 | B-41 | P2 | 文档解析 | 上传 10MB 内的恶意 docx/xlsx/pptx 可解压出数 GB（压缩炸弹），解析时撑爆服务进程 | OOXML 解析直接在原始 buffer 上解包，没有解压后体积上限；pptx 直接 `unzipSync` 整包 | 解析前扫描 ZIP 中央目录，解压后总体积超 256MB 即拒绝；zip64 哨兵一律拒绝 | `office-parsers.test` 压缩炸弹用例 | 本批 |
 
+## 八、语音引擎与 OCR 资源边界
+
+| ID | 级别 | 领域 | 现象 | 根因 | 修复 | 回归 | 提交 |
+|---|---|---|---|---|---|---|---|
+| B-42 | P2 | 语音引擎 | 启动预热与首句朗读同时发生时加载出两个 TTS worker，被覆盖的那个连同模型内存常驻到进程结束 | `ensureTts` 无并发去重：两路同时看到「无引擎」各自创建，后完成者覆盖前者 | 进行中的创建共享 `ttsPending` Promise，落定后清理；创建期间配置切换则按最新设置重建 | `voice-runtime.test` 并发首句 / 预热并发 2 条 | 本批 |
+| B-43 | P3 | 语音 worker | worker 加载超过 30s 就绪超时后线程不终止；每次重试再建一个，内存持续增长 | `WorkerTtsEngine.create` 只在就绪成功后接管 worker，`waitReady` 失败路径没有 `terminate` | 就绪失败即终止 worker 并原样抛错 | `tts-worker.test` 假 worker + 假定时器用例 | 本批 |
+| B-44 | P2 | 文档 OCR | 无视觉模型时上传超大画幅（异常 MediaBox）的扫描 PDF，tesseract 渲染单页位图可达数 GB，服务进程 OOM | 视觉路径有 200 万像素预算，tesseract 路径渲染未传 `maxPixels`，且批量预渲染后整批 PNG 常驻 | 新增 `OCR_TESSERACT_MAX_PIXELS`（1600 万像素）等比缩回；标准 A4@3x（≈450 万像素）不受影响 | `ocr-runner.test` tesseract 渲染参数断言 | 本批 |
+
 ## 排查方法
 
 - **CI 侧**：从失败步骤日志与 Playwright 归档（`playwright-artifacts` 的 `error-context.md`）反推真实断言与页面快照。

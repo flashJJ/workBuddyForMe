@@ -47,6 +47,8 @@ const TTS_MODEL_SPECS: VoiceModelSpec[] = VOICE_MODELS.tts;
 export class VoiceRuntime {
   private ttsEngine: TtsEngine | null = null;
   private ttsConfigKey = '';
+  /** 正在创建的 TTS 引擎：并发预热/首句共用同一次创建，避免同时加载出两个 worker */
+  private ttsPending: Promise<TtsEngine> | null = null;
   private asrEngine: AsrEngine | null = null;
   private asrConfigKey = '';
   private prewarmJob: Promise<boolean> | null = null;
@@ -214,15 +216,27 @@ export class VoiceRuntime {
     // 引擎缓存键含模型（melo/kokoro 配置不同）；sid 逐句传入不进键
     const key = ttsConfigKey(spec, modelDir, s);
     if (this.ttsEngine && this.ttsConfigKey === key) return this.ttsEngine;
-    await this.ttsEngine?.dispose();
-    // 默认 worker 线程合成：原生推理同步执行，留在主线程会阻塞 SSE 与模型流
-    this.ttsEngine = await createSherpaTtsEngine({
-      spec,
-      config: buildTtsEngineConfig(spec, modelDir, s),
-    });
-    this.ttsConfigKey = key;
-    this.synthesisCache.clear();
-    return this.ttsEngine;
+
+    // 并发预热/首句共用同一次创建：否则会同时加载出两个 worker，被覆盖的那个永不释放
+    if (!this.ttsPending) {
+      this.ttsPending = (async () => {
+        await this.ttsEngine?.dispose();
+        // 默认 worker 线程合成：原生推理同步执行，留在主线程会阻塞 SSE 与模型流
+        const engine = await createSherpaTtsEngine({
+          spec,
+          config: buildTtsEngineConfig(spec, modelDir, s),
+        });
+        this.ttsEngine = engine;
+        this.ttsConfigKey = key;
+        this.synthesisCache.clear();
+        return engine;
+      })().finally(() => {
+        this.ttsPending = null;
+      });
+    }
+    const engine = await this.ttsPending;
+    // 创建期间设置已切到另一套配置：按最新设置重来（旧引擎留给下一次重建时释放）
+    return this.ttsConfigKey !== key ? this.ensureTts() : engine;
   }
 
   /**

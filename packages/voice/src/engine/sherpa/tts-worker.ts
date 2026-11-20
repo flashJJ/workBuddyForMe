@@ -77,7 +77,19 @@ export class WorkerTtsEngine implements TtsEngine {
     // 不阻止进程退出：worker 常驻但由引擎生命周期管理
     worker.unref();
 
-    const ready = await waitReady(worker);
+    let ready: ReadyInfo;
+    try {
+      ready = await waitReady(worker);
+    } catch (error) {
+      // 就绪失败（超时/初始化 fatal）时 worker 可能仍在加载模型：
+      // 不终止的话每次重试都会在进程里多留一个常驻线程与一份模型内存
+      try {
+        await worker.terminate();
+      } catch {
+        /* 已退出 */
+      }
+      throw error;
+    }
     const speakerCount = ready.numSpeakers;
     const requested = config.speakerId ?? 0;
     const speakerId = requested < speakerCount ? requested : 0;
