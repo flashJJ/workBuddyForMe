@@ -10,6 +10,7 @@ import {
 } from '@wbfm/ai';
 import type { ServiceDeps } from '../base/deps';
 import { buildProvider, toApiError } from './provider-adapter';
+import { clearDefaultModelReferences } from '../settings/model-reference-cleanup';
 
 export function createModelService({ db, cipher }: ServiceDeps) {
   const providers = createProviderRepository(db);
@@ -52,6 +53,7 @@ export function createModelService({ db, cipher }: ServiceDeps) {
 
     delete(id: string): void {
       if (!models.delete(id)) throw ApiError.notFound('模型', id);
+      clearDefaultModelReferences(db, [id]);
     },
 
     /** 从供应商远端实时拉取模型发现项（不落库，供前端选择后手工添加；v0.5 附带自动探测的上下文长度） */

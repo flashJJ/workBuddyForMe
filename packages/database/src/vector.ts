@@ -86,6 +86,9 @@ export function insertChunkVectors(db: DatabaseInstance, rows: ChunkVectorRow[])
 
 /** 删除某文档的全部分片向量（分片行本身由外键级联删除） */
 export function deleteVectorsByDocument(db: DatabaseInstance, documentId: string): void {
+  // 向量表按首次写入懒建：从未成功嵌入过的库没有 chunks_vec，
+  // 直接 DELETE 会抛 no such table（删除失败文档/空库时必现）。
+  if (getVectorDimension(db) === null) return;
   db.prepare(
     `DELETE FROM ${VECTOR_TABLE} WHERE rowid IN (
        SELECT id FROM document_chunks WHERE document_id = ?

@@ -7,6 +7,7 @@ import { type DocumentRecord } from '@wbfm/shared/types';
 import {
   createDocumentBlockRepository,
   createDocumentRepository,
+  createFtsChunkRepository,
   createKnowledgeRepository,
   deleteVectorsByDocument,
 } from '@wbfm/database';
@@ -217,9 +218,15 @@ export function createDocumentService(deps: ServiceDeps) {
     },
 
     delete(id: string): void {
-      requireDocument(id);
-      deleteVectorsByDocument(deps.db, id);
-      documents.delete(id);
+      const document = requireDocument(id);
+      // vec0 与 FTS 皆不随外键级联：必须在删除文档（触发 chunks 级联）前按 id 清掉
+      const fts = createFtsChunkRepository(deps.db);
+      const purge = deps.db.transaction(() => {
+        deleteVectorsByDocument(deps.db, id);
+        fts.deleteByDocument(document.knowledgeBaseId, id);
+        documents.delete(id);
+      });
+      purge();
       rmSync(sourcePath(id), { force: true });
     },
   };

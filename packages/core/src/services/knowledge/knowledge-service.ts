@@ -6,6 +6,7 @@ import type {
 } from '@wbfm/database';
 import {
   createDocumentRepository,
+  createFtsChunkRepository,
   createKnowledgeRepository,
   deleteVectorsByDocument,
 } from '@wbfm/database';
@@ -44,10 +45,13 @@ export function createKnowledgeService({ db }: ServiceDeps) {
     /** 删除知识库：先清向量（vec0 不随外键级联），文档/分片由 FK 级联删除 */
     delete(id: string): void {
       requireKnowledgeBase(id);
+      const fts = createFtsChunkRepository(db);
       const cleanup = db.transaction(() => {
         for (const document of documents.listByKnowledgeBase(id)) {
           deleteVectorsByDocument(db, document.id);
         }
+        // chunks_fts 是普通 FTS 表：chunks 级联删除不会带走索引行
+        fts.deleteByKnowledgeBase(id);
         knowledgeBases.delete(id);
       });
       cleanup();

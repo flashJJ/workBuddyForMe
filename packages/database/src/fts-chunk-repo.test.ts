@@ -66,6 +66,31 @@ describe('FTS 分片仓储（v1.3 M0）', () => {
     expect(fts.matchChunkIds('kb1', '香蕉', 10)).toEqual([2]);
   });
 
+  it('按知识库删除：整库 FTS 行清空，其他库保留', () => {
+    const db = new Database(':memory:');
+    applyMigrations(db);
+    db.prepare(
+      `INSERT INTO knowledge_bases(id,name,created_at,updated_at) VALUES('kb1','库1','t','t'),('kb2','库2','t','t')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO documents(id,knowledge_base_id,filename,file_type,byte_size,content_hash,created_at)
+       VALUES('d1','kb1','a.txt','txt',1,'h1','t'),('d2','kb2','b.txt','txt',1,'h2','t')`,
+    ).run();
+    const fts = createFtsChunkRepository(db);
+    db.prepare(
+      `INSERT INTO document_chunks(id,document_id,ordinal,content,created_at)
+       VALUES (1,'d1',0,'苹果内容','t'),(2,'d2',0,'香蕉内容','t')`,
+    ).run();
+    fts.bulkInsert([
+      { chunkId: 1, knowledgeBaseId: 'kb1', content: '苹果内容' },
+      { chunkId: 2, knowledgeBaseId: 'kb2', content: '香蕉内容' },
+    ]);
+
+    fts.deleteByKnowledgeBase('kb1');
+    expect(fts.matchChunkIds('kb1', '苹果', 10)).toEqual([]);
+    expect(fts.matchChunkIds('kb2', '香蕉', 10)).toEqual([2]);
+  });
+
   it('rebuild 全量重灌：清库后从 document_chunks 重建并返回索引条数', () => {
     const db = new Database(':memory:');
     applyMigrations(db);

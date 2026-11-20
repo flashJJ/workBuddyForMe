@@ -62,7 +62,8 @@ export function useVoiceModelDownloads() {
         return {
           ready: !!modelStatus?.asrReady,
           active: dl?.active ?? false,
-          status: dl?.status ?? 'missing',
+          // 持久化状态可能停留在旧版本取消后的 downloading（无活动任务），按 missing 处理
+          status: dl?.status === 'downloading' && !dl.active ? 'missing' : dl?.status ?? 'missing',
           bytesDone,
           bytesTotal,
           ratio: bytesTotal > 0 ? Math.min(1, bytesDone / bytesTotal) : 0,
@@ -80,7 +81,7 @@ export function useVoiceModelDownloads() {
       return {
         ready: fileInfo?.ready ?? (model === modelStatus?.activeTtsModel && !!modelStatus?.ttsReady),
         active: dl?.active ?? false,
-        status: dl?.status ?? 'missing',
+        status: dl?.status === 'downloading' && !dl.active ? 'missing' : dl?.status ?? 'missing',
         bytesDone,
         bytesTotal,
         ratio: bytesTotal > 0 ? Math.min(1, bytesDone / bytesTotal) : 0,

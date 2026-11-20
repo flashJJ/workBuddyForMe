@@ -34,6 +34,17 @@ describe('voice-model-repo（v014）', () => {
     expect(state).toMatchObject({ status: 'error', bytesDone: 0, error: 'network reset' });
   });
 
+  it('取消态回到 missing 且保留已下载字节（可续传）', () => {
+    repo.markDownloading('tts', 'melo', 100, 0);
+    repo.markProgress('tts', 'melo', 40, 100);
+    repo.markCancelled('tts', 'melo', 40, 100);
+    expect(repo.get('tts', 'melo')).toMatchObject({
+      status: 'missing',
+      bytesDone: 40,
+      error: null,
+    });
+  });
+
   it('asr/tts 同 modelId 不冲突（复合主键）', () => {
     repo.markReady('asr', 'x', 10);
     repo.markReady('tts', 'x', 20);

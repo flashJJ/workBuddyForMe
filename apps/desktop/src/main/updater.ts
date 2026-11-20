@@ -3,6 +3,7 @@ import type { BrowserWindow } from 'electron';
 import type { FullUpdaterStatus, UpdateChannel, UpdateStatus } from '@wbfm/shared/updater';
 import {
   bumpLastCheck,
+  isUpdateChannel,
   readUpdaterState,
   setChannel as persistChannel,
   type UpdaterState,
@@ -45,10 +46,12 @@ export class Updater {
     this.opts.autoUpdater.allowPrerelease = channel === 'beta';
   }
 
-  /** 向渲染进程转发事件（无窗口时静默丢弃，避免阻塞主进程） */
+  /** 向渲染进程转发事件（无窗口/窗口销毁中静默丢弃，避免主进程抛错） */
   private send(payload: UpdateStatus): void {
     this.status = payload;
-    this.opts.getMainWindow()?.webContents.send('updater:event', payload);
+    const win = this.opts.getMainWindow();
+    if (!win || win.isDestroyed()) return;
+    win.webContents.send('updater:event', payload);
   }
 
   /** 订阅 autoUpdater 事件并转发为 UpdateStatus */
@@ -86,7 +89,8 @@ export class Updater {
     ipcMainLike.handle('updater:download', async () => this.downloadUpdate());
     ipcMainLike.handle('updater:install', async () => this.quitAndInstall());
     ipcMainLike.handle('updater:set-channel', async (_e, channel: unknown) => {
-      this.setChannel(channel as UpdateChannel);
+      // IPC 是系统边界：非法通道值忽略（否则会把垃圾值写进 updater-state.json）
+      if (isUpdateChannel(channel)) this.setChannel(channel);
       return this.getFullStatus();
     });
   }

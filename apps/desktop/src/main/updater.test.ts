@@ -11,19 +11,34 @@ interface SentPayload {
   payload: unknown;
 }
 
-function makeWindow(): { window: { webContents: { send: (c: string, p: unknown) => void } }; sent: SentPayload[] } {
+function makeWindow(): { window: { webContents: { send: (c: string, p: unknown) => void }; isDestroyed: () => boolean }; sent: SentPayload[] } {
   const sent: SentPayload[] = [];
   return {
     sent,
-    window: { webContents: { send: (channel: string, payload: unknown) => sent.push({ channel, payload }) } },
+    window: {
+      isDestroyed: () => false,
+      webContents: { send: (channel: string, payload: unknown) => sent.push({ channel, payload }) },
+    },
   };
 }
 
-function makeIpc(): IpcMainLike & { calls: string[] } {
+function makeIpc(): IpcMainLike & {
+  calls: string[];
+  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
+} {
   const calls: string[] = [];
+  const handlers = new Map<string, (...args: unknown[]) => unknown>();
   return {
     calls,
-    handle: (channel: string) => calls.push(channel),
+    handle: (channel: string, handler: (...args: unknown[]) => unknown) => {
+      calls.push(channel);
+      handlers.set(channel, handler);
+    },
+    invoke: async (channel: string, ...args: unknown[]) => {
+      const handler = handlers.get(channel);
+      if (!handler) throw new Error(`未注册 handler：${channel}`);
+      return handler(...args);
+    },
   };
 }
 
@@ -131,6 +146,25 @@ describe('Updater', () => {
       updater.attachEvents();
       expect(() => auto.emit('checking-for-update')).not.toThrow();
     });
+
+    it('窗口销毁中不发送事件（避免 Object has been destroyed 崩溃）', () => {
+      const auto = new MockAutoUpdater();
+      const sent: SentPayload[] = [];
+      const updater = new Updater({
+        autoUpdater: auto,
+        getVersion: () => '0.4.0',
+        getMainWindow: () =>
+          ({
+            isDestroyed: () => true,
+            webContents: { send: (c: string, p: unknown) => sent.push({ channel: c, payload: p }) },
+          }) as never,
+        stateFile,
+        enabled: true,
+      });
+      updater.attachEvents();
+      expect(() => auto.emit('checking-for-update')).not.toThrow();
+      expect(sent).toHaveLength(0);
+    });
   });
 
   describe('checkForUpdates', () => {
@@ -184,6 +218,21 @@ describe('Updater', () => {
         'updater:install',
         'updater:set-channel',
       ]);
+    });
+
+    it('set-channel 合法值落盘，非法值忽略', async () => {
+      const { updater } = makeUpdater();
+      const ipc = makeIpc();
+      updater.registerIpc(ipc);
+
+      const beta = (await ipc.invoke('updater:set-channel', {}, 'beta')) as { channel: string };
+      expect(beta.channel).toBe('beta');
+
+      const garbage = (await ipc.invoke('updater:set-channel', {}, 'garbage')) as {
+        channel: string;
+      };
+      expect(garbage.channel).toBe('beta');
+      expect(readUpdaterState(stateFile).channel).toBe('beta');
     });
   });
 });

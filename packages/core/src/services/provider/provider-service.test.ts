@@ -28,8 +28,7 @@ describe('provider/model 服务（TR-12.2）', () => {
     vi.restoreAllMocks();
   });
 
-  it('CRUD 全程脱敏，数据库只存密文', () => {
-    const providers = createProviderService({ db, cipher });
+  it('CRUD 全程脱敏，数据库只存密文', () => {    const providers = createProviderService({ db, cipher });
     const created = providers.create({
       name: '厂商',
       protocol: 'openai-compatible',

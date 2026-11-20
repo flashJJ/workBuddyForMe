@@ -41,6 +41,11 @@ export function createFtsChunkRepository(db: DatabaseInstance) {
       ).run({ kbId: knowledgeBaseId, docId: documentId });
     },
 
+    /** 删除整库分片索引（删除知识库前调用：chunks 随 FK 级联，FTS 不会） */
+    deleteByKnowledgeBase(knowledgeBaseId: string): void {
+      db.prepare(`DELETE FROM chunks_fts WHERE kb_id = ?`).run(knowledgeBaseId);
+    },
+
     /** 清空全库 FTS（重建前用） */
     clear(): void {
       db.exec(`DELETE FROM chunks_fts`);

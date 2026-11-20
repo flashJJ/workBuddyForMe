@@ -12,6 +12,7 @@ import type { ServiceDeps } from '../base/deps';
 import { buildProvider, toApiError } from './provider-adapter';
 import { probeFirstToken } from '../ollama/first-token-probe';
 import { recordMilestone } from '../base/milestones';
+import { clearDefaultModelReferences } from '../settings/model-reference-cleanup';
 
 /** 首字延迟自检结果：measurable=false 表示该供应商尚无可用对话模型，无法自检 */
 export interface FirstTokenProbeReport {
@@ -90,7 +91,10 @@ export function createProviderService({ db, cipher }: ServiceDeps) {
     },
 
     delete(id: string): void {
+      // 先收集模型 id：供应商删除会级联删掉模型，之后无法再查
+      const modelIds = createModelRepository(db).listByProvider(id).map((model) => model.id);
       if (!repo.delete(id)) throw ApiError.notFound('供应商', id);
+      clearDefaultModelReferences(db, modelIds);
     },
 
     /** 连接测试：/models 成功或首字探活成功 → verified；可达但无对话模型 → reachable_unverified */

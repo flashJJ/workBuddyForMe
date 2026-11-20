@@ -150,9 +150,13 @@ export class VoiceRuntime {
         if (kind === 'tts') void this.prewarmTts(true);
       })
       .catch((error: unknown) => {
-        if ((error as Error).name !== 'AbortError') {
-          repo.markError(kind, spec.id, (error as Error).message, spec.totalBytes);
+        if ((error as Error).name === 'AbortError') {
+          // 用户取消：必须把持久化状态从 downloading 拉回 missing，
+          // 否则 UI 会永久停在「下载中」，且没有开始按钮可重新下载。
+          repo.markCancelled(kind, spec.id, job.lastProgress?.bytesDone ?? 0, spec.totalBytes);
+          return;
         }
+        repo.markError(kind, spec.id, (error as Error).message, spec.totalBytes);
       })
       .finally(() => {
         this.jobs.delete(kind);

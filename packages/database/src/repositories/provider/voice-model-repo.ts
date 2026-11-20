@@ -69,6 +69,10 @@ export function createVoiceModelRepository(db: DatabaseInstance) {
     markError(kind: 'asr' | 'tts', modelId: string, error: string, bytesTotal: number): void {
       upsert({ kind, modelId, status: 'error', bytesTotal, bytesDone: 0, error });
     },
+    /** 用户取消：回到 missing（保留已下载字节，续传可用） */
+    markCancelled(kind: 'asr' | 'tts', modelId: string, bytesDone: number, bytesTotal: number): void {
+      upsert({ kind, modelId, status: 'missing', bytesTotal, bytesDone, error: null });
+    },
   };
 }
 

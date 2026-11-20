@@ -2,7 +2,7 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDatabase, type DatabaseInstance } from '@wbfm/database';
+import { createDatabase, createFtsChunkRepository, type DatabaseInstance } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher, type SecretCipher } from '../../secrets/cipher';
 import { createKnowledgeRepository } from '@wbfm/database';
@@ -55,5 +55,30 @@ describe('document-service 上传去重与同名替换（v1.3 T3.5）', () => {
     const b = service.upload(kbId, { filename: 'b.txt', buffer: encoder.encode('正文二') });
     expect(a.id).not.toBe(b.id);
     expect(service.listByKnowledgeBase(kbId)).toHaveLength(2);
+  });
+
+  it('删除文档时同步清掉 chunks_fts（FTS 不随外键级联）', () => {
+    const service = createDocumentService({ db, cipher });
+    const doc = service.upload(kbId, {
+      filename: 'fts.txt',
+      buffer: encoder.encode('待删除正文'),
+    });
+    db.prepare(
+      `INSERT INTO document_chunks(id,document_id,ordinal,content,created_at)
+       VALUES (9001, ?, 0, '待删除正文', 't')`,
+    ).run(doc.id);
+    const fts = createFtsChunkRepository(db);
+    fts.bulkInsert([{ chunkId: 9001, knowledgeBaseId: kbId, content: '待删除正文' }]);
+    expect(fts.matchChunkIds(kbId, '删除正文', 10)).toEqual([9001]);
+
+    service.delete(doc.id);
+
+    expect(fts.matchChunkIds(kbId, '删除正文', 10)).toEqual([]);
+    const chunkCount = (
+      db.prepare(`SELECT COUNT(*) AS n FROM document_chunks WHERE document_id = ?`).get(doc.id) as {
+        n: number;
+      }
+    ).n;
+    expect(chunkCount).toBe(0);
   });
 });

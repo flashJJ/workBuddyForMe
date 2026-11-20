@@ -6,6 +6,7 @@
 import { BrowserWindow, screen } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { DEV_SERVER_URL, resolvePreloadPath } from '../config';
+import { ensureVisibleWindowState } from '../window-state';
 import type { WindowBootInfo } from '../window';
 import type { StageBounds } from './stage-state';
 
@@ -21,10 +22,18 @@ export function buildStageWindowOptions(
 ): BrowserWindowConstructorOptions {
   const primary = screen.getPrimaryDisplay();
   const workArea = primary.workArea;
-  const width = bounds?.width ?? Math.min(STAGE_DEFAULT_WIDTH, workArea.width);
-  const height = bounds?.height ?? Math.min(STAGE_DEFAULT_HEIGHT, workArea.height);
-  const x = bounds?.x ?? Math.round(workArea.x + (workArea.width - width) / 2);
-  const y = bounds?.y ?? Math.round(workArea.y + (workArea.height - height) / 2);
+  // 扩展屏移除后历史 bounds 可能完全离屏：丢弃坐标后回落主屏居中
+  const visible = bounds
+    ? ensureVisibleWindowState(
+        bounds,
+        screen.getAllDisplays().map((display) => display.workArea),
+      )
+    : null;
+  const usable = visible && visible.x !== undefined && visible.y !== undefined ? visible : null;
+  const width = usable?.width ?? Math.min(STAGE_DEFAULT_WIDTH, workArea.width);
+  const height = usable?.height ?? Math.min(STAGE_DEFAULT_HEIGHT, workArea.height);
+  const x = usable?.x ?? Math.round(workArea.x + (workArea.width - width) / 2);
+  const y = usable?.y ?? Math.round(workArea.y + (workArea.height - height) / 2);
 
   const additionalArguments: string[] = [];
   if (boot?.token) {

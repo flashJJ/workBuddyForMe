@@ -1,13 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, screen, shell } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { resolvePreloadPath } from './config';
 import { loadWithDevRetry } from './wait-for-server';
 import {
+  ensureVisibleWindowState,
   loadWindowState,
   MIN_WINDOW_HEIGHT,
   MIN_WINDOW_WIDTH,
+  type DisplayWorkArea,
   type WindowState,
 } from './window-state';
 
@@ -22,8 +24,10 @@ export interface WindowBootInfo {
 export function buildWindowOptions(
   userDataDir: string,
   boot: WindowBootInfo | null,
+  displays: readonly DisplayWorkArea[] = [],
 ): BrowserWindowConstructorOptions {
-  const state: WindowState = loadWindowState(userDataDir);
+  // 扩展屏被拔掉/分辨率变化时，历史坐标可能完全在可视区外 → 丢弃坐标让系统居中
+  const state: WindowState = ensureVisibleWindowState(loadWindowState(userDataDir), displays);
   const additionalArguments: string[] = [];
   if (boot?.token) {
     additionalArguments.push(`--wbfm-token=${boot.token}`);
@@ -80,7 +84,11 @@ export function createMainWindow(
   options: CreateMainWindowOptions = {},
 ): BrowserWindow {
   const win = new BrowserWindow({
-    ...buildWindowOptions(userDataDir, boot),
+    ...buildWindowOptions(
+      userDataDir,
+      boot,
+      screen.getAllDisplays().map((display) => display.workArea),
+    ),
     icon: resolveWindowIcon(app.isPackaged),
   });
 

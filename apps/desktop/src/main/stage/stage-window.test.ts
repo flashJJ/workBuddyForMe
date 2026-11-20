@@ -9,6 +9,7 @@ const m = vi.hoisted(() => ({
     cb();
   }),
   getPrimaryDisplay: vi.fn(),
+  getAllDisplays: vi.fn(),
 }));
 
 vi.mock('electron', () => ({
@@ -23,7 +24,7 @@ vi.mock('electron', () => ({
       on: vi.fn(),
     };
   }),
-  screen: { getPrimaryDisplay: m.getPrimaryDisplay },
+  screen: { getPrimaryDisplay: m.getPrimaryDisplay, getAllDisplays: m.getAllDisplays },
 }));
 
 import { buildStageUrl, buildStageWindowOptions, createStageWindow } from './stage-window';
@@ -37,6 +38,7 @@ beforeEach(() => {
     cb();
   });
   m.getPrimaryDisplay.mockReturnValue(primary);
+  m.getAllDisplays.mockReturnValue([primary]);
 });
 
 describe('v1.9 舞台窗选项', () => {
@@ -58,6 +60,17 @@ describe('v1.9 舞台窗选项', () => {
     const opts = buildStageWindowOptions(null, false, bounds);
     expect(opts.fullscreen).toBe(false);
     expect(opts).toMatchObject(bounds);
+  });
+
+  it('历史 bounds 落在已移除的扩展屏上时回落主屏居中', () => {
+    const opts = buildStageWindowOptions(null, false, {
+      x: 3000,
+      y: 100,
+      width: 1280,
+      height: 800,
+    });
+    expect(opts.x).toBe(Math.round((1920 - 1280) / 2));
+    expect(opts.y).toBe(Math.round((1040 - 800) / 2));
   });
 
   it('托管 boot 令牌经 additionalArguments 透传', () => {
