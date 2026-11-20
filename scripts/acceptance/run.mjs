@@ -78,7 +78,13 @@ async function waitForUrl(url, { timeoutMs = 180_000, label = url } = {}) {
 /** 子进程带环形日志，失败时可直接打印 */
 function spawnLogged(command, options, tag) {
   const buffers = [];
-  const child = spawn(command, { ...options, shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  // POSIX 下放入独立进程组：pnpm → next 的孙进程也随组终止，避免 CI 步骤被残留管道挂住
+  const child = spawn(command, {
+    ...options,
+    shell: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: process.platform !== 'win32',
+  });
   const push = (chunk) => {
     buffers.push(String(chunk));
     if (buffers.length > 400) buffers.shift();
@@ -98,7 +104,20 @@ function stopLogged(entry) {
     if (process.platform === 'win32') {
       spawnSync('taskkill', ['/pid', String(entry.child.pid), '/T', '/F'], { stdio: 'ignore' });
     } else {
-      entry.child.kill('SIGTERM');
+      try {
+        process.kill(-entry.child.pid, 'SIGTERM');
+      } catch {
+        entry.child.kill('SIGTERM');
+      }
+      // 给整组 2 秒收尾，随后强制清理，防止孙进程继续持有 stdout 管道
+      const killTimer = setTimeout(() => {
+        try {
+          process.kill(-entry.child.pid, 'SIGKILL');
+        } catch {
+          // 进程组已退出
+        }
+      }, 2_000);
+      killTimer.unref();
     }
     const timer = setTimeout(resolve, 5_000);
     entry.child.once('close', () => {
@@ -269,7 +288,12 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`\n验收中断：${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 2;
-});
+main()
+  .then(() => {
+    // 子进程已整组终止；显式退出，避免个别残留句柄让 CI 步骤长期停在 in_progress
+    process.exit(process.exitCode ?? 0);
+  })
+  .catch((error) => {
+    console.error(`\n验收中断：${error instanceof Error ? error.message : String(error)}`);
+    process.exit(2);
+  });

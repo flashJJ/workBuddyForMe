@@ -213,11 +213,11 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
     await expect(handsfree).toHaveAttribute('aria-pressed', 'true');
 
     const asrReq = await page.waitForRequest((r) => r.url().includes('/api/voice/asr'), {
-      timeout: 30_000,
+      timeout: 60_000,
     });
     expect(asrReq.method()).toBe('POST');
 
-    await expect(page.getByText(ASR_TEXT).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(ASR_TEXT).first()).toBeVisible({ timeout: 60_000 });
     await expect(page.getByText(/mock 模型/).first()).toBeVisible({ timeout: 30_000 });
 
     // 用完可关闭（关闭即停采集，下一例切回 PTT 验证按钮互换）

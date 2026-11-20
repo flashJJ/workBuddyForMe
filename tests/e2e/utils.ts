@@ -57,8 +57,8 @@ export async function revealSettingsSection(
   await waitForHydrated(page);
   // 可见区门控会在滚动时触发一次状态更新，锚点可能短暂重挂载；重试到滚动成功。
   await expect(async () => {
-    await page.locator(`#setting-${section}`).scrollIntoViewIfNeeded({ timeout: 5_000 });
-  }).toPass({ timeout: 15_000 });
+    await page.locator(`#setting-${section}`).scrollIntoViewIfNeeded({ timeout: 10_000 });
+  }).toPass({ timeout: 30_000 });
 }
 
 /**

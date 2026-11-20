@@ -5,9 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality-and-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -23,25 +28,32 @@ jobs:
 
       - name: 安装依赖
         run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
 
       - name: 质量门禁（typecheck + lint + 300 行约束）
         run: pnpm check
+        timeout-minutes: 15
 
       - name: RAG 基线评测（Promptfoo mock provider，8 个 fixture）
         run: pnpm eval:rag
+        timeout-minutes: 10
         env:
           PROMPTFOO_DISABLE_TELEMETRY: "1"
 
       - name: 单元测试（覆盖率分级门禁：core 70%+压缩模块 95%、web 关键域 60%）
         run: pnpm test:unit
+        timeout-minutes: 25
 
       - name: API 集成测试
         run: pnpm test:integration
+        timeout-minutes: 10
 
       - name: 构建 Web（next build，供 E2E playwright 用 next start 启动）
         run: pnpm build:web 2>&1 | tee build-web.log
+        timeout-minutes: 15
 
       - name: 构建告警门禁（Attempted import error 即失败）
+        timeout-minutes: 5
         run: |
           if grep -n "Attempted import error" build-web.log; then
             echo "::error::构建日志出现 Attempted import error，检查包 exports 与 barrel 聚合"
@@ -50,29 +62,24 @@ jobs:
 
       - name: 包导出冒烟（生产条件子路径符号）
         run: pnpm check:exports
+        timeout-minutes: 5
 
-      - name: 自动验收（Fake Web + 场景化 mock，离线全链路）
-        run: pnpm eval:acceptance
-        env:
-          WBFM_ACCEPTANCE_PORT: "42341"
-
-      - name: 工具链路评测（promptfoo + 场景化 mock）
-        run: pnpm eval:tools
-        env:
-          WBFM_TOOL_EVAL_PORT: "42342"
-
-      - name: 多智能体协作回归（eval:agent，自动起 mock 服务）
-        run: pnpm eval:agent:server
-        env:
-          WBFM_EVAL_PORT: "42340"
+      # E2E 与视觉放在长链路验收之前：即使验收卡住，界面产物也已生成
+      - name: 缓存 Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: 安装 Playwright Chromium 并执行 Web 关键路径 E2E
+        timeout-minutes: 35
         run: |
           pnpm --filter @wbfm/web exec playwright install --with-deps chromium
           pnpm test:e2e
 
       - name: 视觉巡检 L1（首月非阻断）
         continue-on-error: true
+        timeout-minutes: 10
         run: pnpm test:e2e:visual
         env:
           WBFM_VISUAL: "1"
@@ -96,3 +103,21 @@ jobs:
             apps/web/test-results
             apps/web/playwright-report
           if-no-files-found: ignore
+
+      - name: 自动验收（Fake Web + 场景化 mock，离线全链路）
+        run: pnpm eval:acceptance
+        timeout-minutes: 20
+        env:
+          WBFM_ACCEPTANCE_PORT: "42341"
+
+      - name: 工具链路评测（promptfoo + 场景化 mock）
+        run: pnpm eval:tools
+        timeout-minutes: 15
+        env:
+          WBFM_TOOL_EVAL_PORT: "42342"
+
+      - name: 多智能体协作回归（eval:agent，自动起 mock 服务）
+        run: pnpm eval:agent:server
+        timeout-minutes: 15
+        env:
+          WBFM_EVAL_PORT: "42340"

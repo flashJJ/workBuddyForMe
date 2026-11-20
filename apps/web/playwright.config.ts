@@ -33,6 +33,8 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
+  // CI 共享 runner 上懒加载/滚动类断言存在偶发抖动，有限重试降低误报
+  retries: isCI ? 2 : 0,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],

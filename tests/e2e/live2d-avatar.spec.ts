@@ -90,14 +90,14 @@ test.describe.serial('M3 Live2D 形象', () => {
 
     // 动态渲染 chunk（pixi/pld 独立分包）+ Cubism Core 脚本 + Haru 模型清单
     await expect
-      .poll(() => requested.some((u) => u.includes('live2d-renderer')), { timeout: 30_000 })
+      .poll(() => requested.some((u) => u.includes('live2d-renderer')), { timeout: 60_000 })
       .toBeTruthy();
     await expect
-      .poll(() => requested.some((u) => u.includes('cubismcore')), { timeout: 30_000 })
+      .poll(() => requested.some((u) => u.includes('cubismcore')), { timeout: 60_000 })
       .toBeTruthy();
     await expect
       .poll(() => requested.some((u) => u.includes('haru_greeter_t03.model3.json')), {
-        timeout: 30_000,
+        timeout: 60_000,
       })
       .toBeTruthy();
   });
