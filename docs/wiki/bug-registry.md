@@ -63,6 +63,12 @@
 | B-32 | P2 | MCP HTTP | HTTP 传输下工具名含 `.` 等字符时调用报 unknown tool；净化重名未消歧；重复 cursor 可无限翻页 | 仅 stdio 客户端做了安全名→原始名映射与游标去重，HTTP 传输未同步 | 复用 `uniqueToolName` + raw 名映射，游标去重与 stdio 对齐 | `http-transport.test` 新增用例 | 本批 |
 | B-33 | P3 | 工具审批 | 模型给 `capability_install` 传 `"null"` 参数时整轮对话中断 | `confirmationDetailsOf` 直接对 `JSON.parse('null')` 结果取属性 | 非对象参数直接返回 undefined，审批详情降级为空 | `chat/tools/__tests__/confirmation-details.test.ts` | 本批 |
 
+## 六、备份与导入边界
+
+| ID | 级别 | 领域 | 现象 | 根因 | 修复 | 回归 | 提交 |
+|---|---|---|---|---|---|---|---|
+| B-34 | P1 | 备份恢复 | 导入恶意/损坏备份可把文件写到数据根之外（如 `attachments/../../x`）；超大 gzip 条目可撑爆内存 | 恢复端不校验 tar 条目名，附件与技能落盘直接 `path.join`；解压无体积上限，导出侧 500MB 限制未覆盖恢复 | 条目名拒绝穿越/绝对路径/反斜杠/控制字符；单条 32MB、整包 1GB、10 万条目上限；技能名校验后落盘 | `backup/__tests__/archive-safety.test.ts` 5 条 | 本批 |
+
 ## 排查方法
 
 - **CI 侧**：从失败步骤日志与 Playwright 归档（`playwright-artifacts` 的 `error-context.md`）反推真实断言与页面快照。
