@@ -8,6 +8,8 @@ export function confirmationDetailsOf(
   args: unknown,
 ): ToolConfirmationDetails | undefined {
   if (name !== 'capability_install' || !toolCtx.listCapabilities) return undefined;
+  // 模型可传 "null"：JSON.parse 得到 null，直接取属性会抛错并中断整轮
+  if (!args || typeof args !== 'object') return undefined;
   const catalogId = (args as { catalogId?: unknown }).catalogId;
   if (typeof catalogId !== 'string') return undefined;
   const item = toolCtx.listCapabilities().find((candidate) => candidate.id === catalogId);

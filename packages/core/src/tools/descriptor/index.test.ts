@@ -33,20 +33,24 @@ describe('工具描述符适配（v4.3 M5）', () => {
     expect(descriptor.alwaysConfirm).toBe(false);
   });
 
-  it('MCP 工具映射为只读描述符', () => {
-    const descriptor = describeMcpTool({
+  it('MCP 工具权限取自服务器声明，未声明按 write 保守处理', () => {
+    const base = {
       serverName: 'fs',
       name: 'read_file',
       qualifiedName: 'mcp:fs:read_file',
       description: '',
       inputSchema: { type: 'object', properties: {} },
-    });
-    expect(descriptor).toMatchObject({
+    };
+    expect(describeMcpTool(base)).toMatchObject({
       name: 'mcp:fs:read_file',
       source: 'mcp:fs',
+      permissions: ['write'],
+      readOnly: false,
+      description: 'MCP 工具',
+    });
+    expect(describeMcpTool({ ...base, permission: 'read' })).toMatchObject({
       permissions: ['read'],
       readOnly: true,
-      description: 'MCP 工具',
     });
   });
 });

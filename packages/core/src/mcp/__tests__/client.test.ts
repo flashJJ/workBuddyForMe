@@ -52,4 +52,25 @@ describe('MCP 客户端协议边界', () => {
     expect(tools).toEqual([]);
     expect(requests).toHaveLength(2);
   });
+
+  it('按 annotations 推导权限，未声明按 write 保守处理', async () => {
+    const { transport } = fakeTransport(() => ({
+      tools: [
+        { name: 'read_file', annotations: { readOnlyHint: true, destructiveHint: false } },
+        { name: 'write_file', annotations: { readOnlyHint: false, destructiveHint: false } },
+        { name: 'remove_file', annotations: { destructiveHint: true } },
+        { name: 'unlabeled' },
+        { name: 'broken_annotations', annotations: 'readonly' },
+      ],
+    }));
+    const client = createMcpClient({ transport });
+    const tools = await client.listTools('srv');
+    expect(tools.map((tool) => tool.permission)).toEqual([
+      'read',
+      'write',
+      'danger',
+      'write',
+      'write',
+    ]);
+  });
 });

@@ -3,6 +3,7 @@
  */
 import type { McpServerStatus, McpTransport } from '../constants/index';
 import type { Timestamped } from './domain';
+import type { PermissionLevel } from './permission';
 
 /** v0.6 MCP 服务器配置（mcp_servers 表行；stdio/http 字段按 transport 取用） */
 export interface McpServerConfig extends Timestamped {
@@ -42,6 +43,11 @@ export interface McpToolInfo {
   description: string;
   /** MCP inputSchema（JSON Schema），透传为 function parameters */
   inputSchema: Record<string, unknown>;
+  /**
+   * 由服务器 annotations 推导的权限等级；未声明时按 write 保守处理，
+   * 避免外部服务器借 read 默认值绕过 HITL 与 plan_only 限制。
+   */
+  permission?: PermissionLevel;
 }
 
 /** v2.24：安装 MCP 服务器前的本机运行环境探测结果 */

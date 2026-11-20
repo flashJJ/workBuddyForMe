@@ -1,4 +1,4 @@
-import type { McpToolInfo } from '@wbfm/shared/types';
+import type { McpToolInfo, PermissionLevel } from '@wbfm/shared/types';
 import {
   MCP_CONNECT_TIMEOUT_MS,
   MCP_LIST_TIMEOUT_MS,
@@ -54,6 +54,7 @@ interface RawTool {
   name?: unknown;
   description?: unknown;
   inputSchema?: unknown;
+  annotations?: unknown;
 }
 
 /** 把工具原始名规整为标识符安全形式（与 shared MCP_TOOL_NAME_PATTERN 对齐） */
@@ -61,6 +62,32 @@ export function sanitizeToolName(raw: string): string {
   const cleaned = raw.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+/, '');
   const capped = (cleaned || 'tool').slice(0, 64);
   return /^[a-zA-Z0-9_-]{1,64}$/.test(capped) ? capped : `t_${capped}`;
+}
+
+/** 净化并在本服务器内取唯一安全名：不同原始名净化后重名时追加序号 */
+export function uniqueToolName(raw: string, used: Set<string>): string {
+  const base = sanitizeToolName(raw);
+  let safeName = base;
+  let seq = 2;
+  while (used.has(safeName)) {
+    const suffix = `_${seq}`;
+    safeName = `${base.slice(0, 64 - suffix.length)}${suffix}`;
+    seq += 1;
+  }
+  used.add(safeName);
+  return safeName;
+}
+
+/**
+ * 从 tools/list 的 annotations 推导权限等级（MCP 规范提示字段）。
+ * 未声明的外部工具按 write 保守处理：read 会跳过 HITL 与 plan_only 限制。
+ */
+export function deriveMcpToolPermission(annotations: unknown): PermissionLevel {
+  if (!annotations || typeof annotations !== 'object') return 'write';
+  const hints = annotations as Record<string, unknown>;
+  if (hints.readOnlyHint === true) return 'read';
+  if (hints.destructiveHint === true) return 'danger';
+  return 'write';
 }
 
 export function createMcpClient(options: McpClientOptions): McpClient {
@@ -133,15 +160,7 @@ export function createMcpClient(options: McpClientOptions): McpClient {
           if (typeof raw.name !== 'string' || raw.name === '') continue;
           if (tools.length >= MCP_MAX_TOOLS_PER_SERVER) break;
           // 不同原始名可能净化成同一安全名（fs.read / fs_read）：追加后缀保证唯一
-          const base = sanitizeToolName(raw.name);
-          let safeName = base;
-          let seq = 2;
-          while (usedSafe.has(safeName)) {
-            const suffix = `_${seq}`;
-            safeName = `${base.slice(0, 64 - suffix.length)}${suffix}`;
-            seq += 1;
-          }
-          usedSafe.add(safeName);
+          const safeName = uniqueToolName(raw.name, usedSafe);
           rawNameBySafe.set(safeName, raw.name);
           tools.push({
             serverName,
@@ -152,6 +171,7 @@ export function createMcpClient(options: McpClientOptions): McpClient {
               raw.inputSchema && typeof raw.inputSchema === 'object'
                 ? (raw.inputSchema as Record<string, unknown>)
                 : { type: 'object', properties: {} },
+            permission: deriveMcpToolPermission(raw.annotations),
           });
         }
         const next = typeof result.nextCursor === 'string' ? result.nextCursor : undefined;

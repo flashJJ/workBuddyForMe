@@ -91,6 +91,69 @@ describe('MCP HTTP transport', () => {
     await client.close();
   });
 
+  it('工具名含点号时调用还原原始名，重复游标终止翻页', async () => {
+    const calledNames: string[] = [];
+    let listCalls = 0;
+    server = createServer((request, response) => {
+      let body = '';
+      request.on('data', (chunk) => {
+        body += String(chunk);
+      });
+      request.on('end', () => {
+        if (request.method === 'DELETE') {
+          response.writeHead(200).end();
+          return;
+        }
+        const message = JSON.parse(body) as {
+          id: number;
+          method: string;
+          params?: { name?: string; cursor?: string };
+        };
+        response.writeHead(200, { 'content-type': 'application/json' });
+        if (message.method === 'tools/list') {
+          listCalls += 1;
+          response.end(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: {
+                tools: message.params?.cursor
+                  ? []
+                  : [{ name: 'git.status', annotations: { readOnlyHint: true } }],
+                // 不规范服务器：重复返回同一游标
+                nextCursor: 'same',
+              },
+            }),
+          );
+          return;
+        }
+        if (message.method === 'tools/call') {
+          calledNames.push(message.params?.name ?? '');
+          response.end(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: { content: [{ type: 'text', text: 'ok' }] },
+            }),
+          );
+          return;
+        }
+        response.end(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: {} }));
+      });
+    });
+
+    const port = await listen(server);
+    const client = createMcpHttpClient({ url: `http://127.0.0.1:${port}/mcp` });
+    const tools = await client.listTools('demo');
+    expect(tools.map((tool) => tool.name)).toEqual(['git_status']);
+    expect(tools[0]?.permission).toBe('read');
+    expect(listCalls).toBe(2);
+
+    await client.callTool('git_status', {}, 1000);
+    expect(calledNames).toEqual(['git.status']);
+    await client.close();
+  });
+
   it('401 时调用 OAuth refresh 并重试同一请求', async () => {
     let unauthorized = 0;
     let authorized = 0;

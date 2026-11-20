@@ -55,6 +55,14 @@
 | B-27 | P3 | MCP 工具 | 不规范服务器重复返回同一 `nextCursor` 时无限翻页 | 分页循环只判空、不判重复 | 记录已见游标，重复即终止 | `mcp/client.test` 新增用例 | 本批 |
 | B-28 | P2 | MCP 连接 | 修改配置重连时，旧进程迟到的 close 会清掉新 client 并误标 error | `onClose` 无条件清 entry，无连接代际判断 | 按 client 身份守卫 close/工具刷新；连接逻辑抽到 `registry-connection` | MCP 17 条测试 | 本批 |
 
+## 五、工具运行时与权限边界
+
+| ID | 级别 | 领域 | 现象 | 根因 | 修复 | 回归 | 提交 |
+|---|---|---|---|---|---|---|---|
+| B-31 | P1 | MCP 权限 | 外部 MCP 工具一律按 read 放行：`confirm_each` 下写操作不弹审批，`plan_only` 下也照常执行 | `createMcpTool` 硬编码 `permission:'read'`，`tools/list` 的 annotations 从未采集 | 按 `readOnlyHint`/`destructiveHint` 推导 read/write/danger，未声明按 write 保守处理；描述符同步 | `mcp/client.test` 权限用例 + `descriptor` 用例 | 本批 |
+| B-32 | P2 | MCP HTTP | HTTP 传输下工具名含 `.` 等字符时调用报 unknown tool；净化重名未消歧；重复 cursor 可无限翻页 | 仅 stdio 客户端做了安全名→原始名映射与游标去重，HTTP 传输未同步 | 复用 `uniqueToolName` + raw 名映射，游标去重与 stdio 对齐 | `http-transport.test` 新增用例 | 本批 |
+| B-33 | P3 | 工具审批 | 模型给 `capability_install` 传 `"null"` 参数时整轮对话中断 | `confirmationDetailsOf` 直接对 `JSON.parse('null')` 结果取属性 | 非对象参数直接返回 undefined，审批详情降级为空 | `chat/tools/__tests__/confirmation-details.test.ts` | 本批 |
+
 ## 排查方法
 
 - **CI 侧**：从失败步骤日志与 Playwright 归档（`playwright-artifacts` 的 `error-context.md`）反推真实断言与页面快照。

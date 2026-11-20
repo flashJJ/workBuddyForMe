@@ -20,13 +20,14 @@ export function describeTool(tool: Tool, source = 'builtin'): ToolDescriptor {
 }
 
 export function describeMcpTool(info: McpToolInfo): ToolDescriptor {
+  const permission = info.permission ?? 'write';
   return toolDescriptorSchema.parse({
     name: info.qualifiedName,
     description: info.description || 'MCP 工具',
     inputSchema: info.inputSchema,
     source: `mcp:${info.serverName}`,
-    permissions: ['read'],
-    readOnly: true,
+    permissions: [permission],
+    readOnly: permission === 'read',
     alwaysConfirm: false,
   });
 }

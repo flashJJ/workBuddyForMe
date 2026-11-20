@@ -8,7 +8,7 @@ import type { McpToolInfo } from '@wbfm/shared/types';
 import { APP_VERSION } from '@wbfm/shared/version';
 import { MCP_PROTOCOL_VERSION } from './jsonrpc';
 import type { McpClient, McpServerCapabilities } from './client';
-import { sanitizeToolName } from './client';
+import { deriveMcpToolPermission, uniqueToolName } from './client';
 
 export interface McpHttpClientOptions {
   url: string;
@@ -53,6 +53,8 @@ export function createMcpHttpClient(options: McpHttpClientOptions): McpClient {
   let seq = 0;
   let sessionId: string | null = null;
   let negotiatedVersion: string | null = null;
+  /** 展示/模型用的安全名 → 服务器真实工具名（含 '.' 等字符时必须还原） */
+  const rawNameBySafe = new Map<string, string>();
 
   async function requestHeaders(
     override?: Record<string, string> | null,
@@ -169,6 +171,8 @@ export function createMcpHttpClient(options: McpHttpClientOptions): McpClient {
 
     async listTools(serverName: string) {
       const tools: McpToolInfo[] = [];
+      const usedSafe = new Set<string>();
+      const seenCursors = new Set<string>();
       let cursor: string | undefined;
       do {
         const result = await post<{ tools?: unknown[]; nextCursor?: unknown }>(
@@ -181,7 +185,8 @@ export function createMcpHttpClient(options: McpHttpClientOptions): McpClient {
           const r = raw as Record<string, unknown>;
           if (typeof r.name !== 'string' || r.name === '') continue;
           if (tools.length >= MCP_MAX_TOOLS_PER_SERVER) break;
-          const safeName = sanitizeToolName(r.name);
+          const safeName = uniqueToolName(r.name, usedSafe);
+          rawNameBySafe.set(safeName, r.name);
           tools.push({
             serverName,
             name: safeName,
@@ -191,9 +196,14 @@ export function createMcpHttpClient(options: McpHttpClientOptions): McpClient {
               r.inputSchema && typeof r.inputSchema === 'object'
                 ? (r.inputSchema as Record<string, unknown>)
                 : { type: 'object', properties: {} },
+            permission: deriveMcpToolPermission(r.annotations),
           });
         }
-        cursor = typeof result.nextCursor === 'string' ? result.nextCursor : undefined;
+        const next = typeof result.nextCursor === 'string' ? result.nextCursor : undefined;
+        // 服务器重复返回同一游标（不规范实现）时终止，避免无限翻页
+        if (next && seenCursors.has(next)) break;
+        if (next) seenCursors.add(next);
+        cursor = next;
       } while (cursor && tools.length < MCP_MAX_TOOLS_PER_SERVER);
       return tools;
     },
@@ -201,7 +211,8 @@ export function createMcpHttpClient(options: McpHttpClientOptions): McpClient {
     async callTool(name, args, timeoutMs) {
       const result = await post<{ content?: unknown[]; isError?: unknown }>(
         'tools/call',
-        { name, arguments: args ?? {} },
+        // 模型侧看到的是安全名；真正发给服务器必须用原始名
+        { name: rawNameBySafe.get(name) ?? name, arguments: args ?? {} },
         timeoutMs,
       );
       const output = ((result.content ?? []) as Array<{ text?: unknown }>)

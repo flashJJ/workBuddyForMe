@@ -18,7 +18,8 @@ export function createMcpTool(info: McpToolInfo, registry: McpRegistry): Tool {
   return {
     name: info.qualifiedName,
     description: `${info.description || 'MCP 工具'}${describeSource(info)}`,
-    permission: 'read',
+    // 服务器未声明 annotations 时按 write 处理：read 会跳过 HITL 与 plan_only 限制
+    permission: info.permission ?? 'write',
     parameters: info.inputSchema,
     async run(rawArgs: unknown, _ctx: ToolContext): Promise<ToolResult> {
       const outcome = await registry.callTool(
