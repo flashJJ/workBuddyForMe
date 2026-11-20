@@ -178,13 +178,18 @@ export class EventDirector {
     reason?: string;
   }): void {
     const def = this.current?.def;
-    this.deps.usage.record({
-      eventId: result.eventId,
-      playedAt: this.deps.clock.now(),
-      outcome: result.outcome,
-      reason: result.reason,
-      priority: def?.priority ?? 1,
-    });
+    try {
+      this.deps.usage.record({
+        eventId: result.eventId,
+        playedAt: this.deps.clock.now(),
+        outcome: result.outcome,
+        reason: result.reason,
+        priority: def?.priority ?? 1,
+      });
+    } catch (error) {
+      // 用量写入失败不得卡住队列：仍要清理 current 并补位，避免永久 busy
+      console.warn('[event] 使用记录写入失败', error);
+    }
     this.current = null;
     this.pumpQueue();
   }

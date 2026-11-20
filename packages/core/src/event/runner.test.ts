@@ -109,6 +109,16 @@ describe('EventRunner', () => {
     expect(env.calls.filter((c) => c === 'release')).toHaveLength(1);
   });
 
+  it('sink.release 抛错不挂死：终态仍 resolve 一次', async () => {
+    const env = makeEnv();
+    env.sink.release = () => {
+      throw new Error('release boom');
+    };
+    const { result } = await run(env, defOf([{ kind: 'expression', tag: 'joy' }]));
+    expect(result.outcome).toBe('played');
+    expect(result.effectsFired).toBe(1);
+  });
+
   it('branch 命中前跳、未命中顺序、空 when 无条件跳转', async () => {
     const env = makeEnv();
     const def = defOf([

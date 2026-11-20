@@ -116,7 +116,12 @@ export class EventRunner {
       this.ac.abort();
     } finally {
       this.cancelWatchdog?.();
-      sink.release();
+      try {
+        sink.release();
+      } catch (error) {
+        // 释放失败不得中断终态：否则 settled 永不 resolve，director 队列永久 busy
+        console.warn('[event] sink.release 失败', error);
+      }
       this.finish({
         eventId: this.eventId,
         outcome: crashed || this.ac.signal.aborted

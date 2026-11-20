@@ -11,6 +11,18 @@ describe('EventDirector 准入闸门', () => {
     expect(h.usage.stats(0).played).toBe(1);
   });
 
+  it('用量记录写入失败不卡队列：仍清空 current 并可准入下一条', async () => {
+    const h = makeDirectorHarness();
+    h.usage.record = () => {
+      throw new Error('usage db down');
+    };
+    expect(h.director.trigger(makeDef({ id: 'ev.a' }), makeContext()).kind).toBe('admitted');
+    h.runners[0]!.settle('played');
+    await h.flush();
+    expect(h.director.isBusy()).toBe(false);
+    expect(h.director.trigger(makeDef({ id: 'ev.b' }), makeContext()).kind).toBe('admitted');
+  });
+
   it('CONV 占用 → blocked 且不记流水', () => {
     const h = makeDirectorHarness();
     h.gates.conv = true;
