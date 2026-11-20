@@ -119,7 +119,7 @@ v4.15 若确认要做，精确改动：
   - 仅 nightly `workflow_dispatch` + secret 存在时运行，非阻断。
   - 只做「语义存在性」断言，不做像素回归；优先本地 VLM（Ollama + 视觉模型），避免截图出网。
 - **L3 Playwright MCP 仅人工**：
-  - 写成人工 runbook，用于探索式复现，不进产品依赖、不进 CI。
+  - 写成人工 runbook：[visual-manual-runbook.md](./visual-manual-runbook.md)，用于探索式复现，不进产品依赖、不进 CI。
 
 ## 6. 决策 D4：`docs/plan` 按大版本归类
 

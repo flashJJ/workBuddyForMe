@@ -34,4 +34,5 @@
 - [x] `tests/e2e/visual-v415.spec.ts` 覆盖设置页 / 记忆面板 / 上下文洞察面板
 - [x] 明确排除 WebGL、VRM/Live2D、透明桌宠窗、会议舞台
 - [x] 新增 `test:e2e:visual` 脚本；CI 首月 `continue-on-error: true`
-- [ ] nightly 上传 diff 产物；稳定后转阻断（基线待 CI 生成，观察期后转正）
+- [ ] nightly 上传 diff 产物；稳定后转阻断（Linux 基线已提交，观察期后转正）
+- [x] L3 人工巡检 runbook：[visual-manual-runbook.md](./visual-manual-runbook.md)
