@@ -2,6 +2,7 @@ import { unzipSync } from 'fflate';
 import { parseCharacterCard } from '@wbfm/shared/character-card';
 import {
   WBFM_PACK_MAX_BYTES,
+  WBFM_PACK_MAX_UNCOMPRESSED_BYTES,
   PACK_CARD_MAX_BYTES,
   PACK_SCENE_MAX_BYTES,
   PACK_BACKGROUND_MAX_BYTES,
@@ -57,6 +58,15 @@ export function inspectPackBuffer(buf: Uint8Array, ctx: InspectContext): PackPre
   } catch (error) {
     const message = error instanceof ZipSafetyError ? error.message : 'ZIP 解析失败';
     return fatal(error instanceof ZipSafetyError ? 'unsafeZip' : 'notZip', message);
+  }
+
+  // 解压前先按中央目录核对总体积：压缩炸弹会在 unzipSync 阶段直接吃满内存
+  const totalUncompressed = central.reduce((sum, entry) => sum + entry.uncompressedSize, 0);
+  if (totalUncompressed > WBFM_PACK_MAX_UNCOMPRESSED_BYTES) {
+    return fatal(
+      'tooLarge',
+      `包解压后体积超过 ${WBFM_PACK_MAX_UNCOMPRESSED_BYTES / 1024 / 1024}MB 上限（疑似压缩炸弹）`,
+    );
   }
 
   let files: Record<string, Uint8Array>;

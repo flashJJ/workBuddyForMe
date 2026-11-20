@@ -226,6 +226,14 @@ describe('pack-inspect 负例 eval（04 §8）', () => {
     expect(preview.entries[0]?.name).toBe('测试卡');
   });
 
+  it('解压后总体积异常（压缩炸弹）：解压前拒绝', () => {
+    const huge = new Uint8Array(81 * 1024 * 1024); // 全零高压缩比，zip 后仅几十 KB
+    const buf = zipSync({ 'backgrounds/huge.png': huge }, { level: 6 });
+    const preview = inspectPackBuffer(buf, ctx);
+    expect(preview.fatal?.code).toBe('tooLarge');
+    expect(preview.fatal?.message).toMatch(/解压后体积/);
+  }, 30_000);
+
   it('卡片内容不合契约：条目标红但不报致命错误（聚合错误清单）', () => {
     const manifest = baseManifest({
       contents: {

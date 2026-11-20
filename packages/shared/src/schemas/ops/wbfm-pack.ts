@@ -15,6 +15,8 @@ export const WBFM_PACK_FORMAT = 'wbfm-pack' as const;
 export const WBFM_PACK_SCHEMA_VERSION = 1 as const;
 export const WBFM_PACK_MIME = 'application/x-wbfm-pack';
 export const WBFM_PACK_MAX_BYTES = 20 * 1024 * 1024;
+/** 解压后总体积上限：压缩率超过 4x 视为压缩炸弹，拒绝进入解压 */
+export const WBFM_PACK_MAX_UNCOMPRESSED_BYTES = WBFM_PACK_MAX_BYTES * 4;
 
 /** 单条目大小上限（04 §3.1） */
 export const PACK_CARD_MAX_BYTES = 16 * 1024;
