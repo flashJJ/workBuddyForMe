@@ -228,6 +228,8 @@ export function createMeetingService(deps: MeetingServiceDeps): MeetingService {
         },
       });
       buses.get(meetingId)?.close();
+      // 缓冲回收：已结束会议的观测一律回落落库回放，避免 buses 随会议数无限增长
+      buses.delete(meetingId);
     },
 
     abort(meetingId) {
@@ -246,6 +248,7 @@ export function createMeetingService(deps: MeetingServiceDeps): MeetingService {
           },
         });
         buses.get(meetingId)?.close();
+        buses.delete(meetingId);
       }
     },
 
@@ -254,7 +257,9 @@ export function createMeetingService(deps: MeetingServiceDeps): MeetingService {
     },
 
     observe(meetingId) {
-      if (!repo.findById(meetingId)) return null;
+      const meeting = repo.findById(meetingId);
+      // 契约：仅活跃会议返回实时流；结束/跨进程的会议由调用方落库回放后结束连接
+      if (!meeting || meeting.status !== 'active') return null;
       return busFor(meetingId).subscribeLive();
     },
 

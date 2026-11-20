@@ -72,6 +72,14 @@
 | B-36 | P2 | 事件引擎 | `sink.release` 或用量记账抛错时，演出终态永不落定，director 永久 busy，后续所有剧本卡死 | `EventRunner.run()` 的 finally 与 `onSettled` 未隔离异常，靠 Promise 链向上传递 | 两处捕获并告警，终态落定与队列补位照常执行 | `runner.test` / `director-gates.test` 新增用例 | 本批 |
 | B-37 | P2 | 内容包导入 | 恶意 `.wbfm-pack` 声明高压缩比条目时，预检在逐条大小校验前先整包解压，可耗尽内存 | 只有解压后的单条目大小校验，缺少中央目录层面的总体积上限 | 解压前按 `uncompressedSize` 求和，超过 4×包上限（80MB）直接判 `tooLarge` | `pack-inspect.test` 压缩炸弹用例 | 本批 |
 
+## 七、服务端常驻与内存回收
+
+| ID | 级别 | 领域 | 现象 | 根因 | 修复 | 回归 | 提交 |
+|---|---|---|---|---|---|---|---|
+| B-38 | P2 | 服务端调度 | 调度依赖（关系检查点/到期扫描）抛错时，10s tick 变成未处理拒绝，Node 直接退出，桌面端显示服务已停止 | `void runServerSchedulerTick().finally()` 没有 catch，拒绝沿 Promise 链逃逸 | 补 `.catch` 告警；单次失败不阻断下个周期 | `server-scheduler.test` 新增用例 | 本批 |
+| B-39 | P3 | 工作流事件 | 每次运行结束仍把完整事件数组留在进程内，长会话内存随运行次数增长 | `FlowEventBus.dispose` 只有测试调用，队列与对话触发路径都不回收 | 两条执行路径终态后 `dispose(runId)`；迟到观察者走落库回放 | `run-service.test` + `chat-invoke.test` 新增用例 | 本批 |
+| B-40 | P3 | 会议 | 已结束/跨进程会议打开 SSE 时新建永不关闭的总线：连接悬挂不结束，buses 随会议数泄漏 | `observe()` 未按契约判断 active；`finish/abort` 只 close 不 delete | 非 active 返回 null；结束后 close + delete，交给落库回放 | `meeting-service.test` 新增用例 | 本批 |
+
 ## 排查方法
 
 - **CI 侧**：从失败步骤日志与 Playwright 归档（`playwright-artifacts` 的 `error-context.md`）反推真实断言与页面快照。

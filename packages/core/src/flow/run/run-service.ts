@@ -116,6 +116,8 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
       throw error;
     } finally {
       runOverrides.delete(run.id);
+      // 终态后回收事件缓冲：否则本进程每跑一次流程就永久保留一份事件数组
+      bus.dispose(run.id);
     }
   }
 

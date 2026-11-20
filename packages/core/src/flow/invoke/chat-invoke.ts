@@ -37,21 +37,26 @@ export function createChatInvoker(deps: ChatInvokeDeps): FlowToolInvoker['invoke
       trigger: 'chat',
       interactive: false,
     });
-    for await (const event of generator) {
-      deps.bus.publish(runId, event);
-      const substep = collector.absorb(event);
-      if (substep) onSubstep?.(substep);
-      if (event.type === 'run_succeeded') {
-        return { ok: true, output: event.output, substeps: collector.list() };
+    try {
+      for await (const event of generator) {
+        deps.bus.publish(runId, event);
+        const substep = collector.absorb(event);
+        if (substep) onSubstep?.(substep);
+        if (event.type === 'run_succeeded') {
+          return { ok: true, output: event.output, substeps: collector.list() };
+        }
+        if (event.type === 'run_failed') {
+          return { ok: false, error: event.message, substeps: collector.list() };
+        }
+        if (event.type === 'run_cancelled') {
+          return { ok: false, error: '工作流执行被中断', substeps: collector.list() };
+        }
       }
-      if (event.type === 'run_failed') {
-        return { ok: false, error: event.message, substeps: collector.list() };
-      }
-      if (event.type === 'run_cancelled') {
-        return { ok: false, error: '工作流执行被中断', substeps: collector.list() };
-      }
+      return { ok: false, error: '工作流未产出结果（事件流意外结束）', substeps: collector.list() };
+    } finally {
+      // 对话触发的运行同样在终态后回收缓冲，避免长会话逐次累积事件数组
+      deps.bus.dispose(runId);
     }
-    return { ok: false, error: '工作流未产出结果（事件流意外结束）', substeps: collector.list() };
   };
 }
 

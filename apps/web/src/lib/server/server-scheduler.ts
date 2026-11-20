@@ -99,9 +99,14 @@ export function ensureServerScheduler(services: ServiceContainer): void {
   const timer = setInterval(() => {
     if (running) return;
     running = true;
-    void runServerSchedulerTick(services).finally(() => {
-      running = false;
-    });
+    void runServerSchedulerTick(services)
+      // tick 内任一依赖抛错都不能变成未处理拒绝（Node 会直接退出进程）
+      .catch((error: unknown) => {
+        console.warn('[scheduler] tick 失败', error);
+      })
+      .finally(() => {
+        running = false;
+      });
   }, INTERVAL_MS);
   (timer as { unref?: () => void }).unref?.();
   holder[HOLDER_KEY] = timer;

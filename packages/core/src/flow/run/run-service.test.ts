@@ -79,6 +79,15 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     expect(nodes.every((x) => x.durationMs >= 0)).toBe(true);
   });
 
+  it('运行终态后回收事件缓冲：再次订阅走落库回放（返回 null）', async () => {
+    const wf = workflows.createWorkflow({ name: '最简' });
+    workflows.addVersion(wf.id, graphStartEnd());
+    const { runId, events } = startManual(wf.id);
+    await drain(events);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(service.subscribeRunEvents(runId)).toBeNull();
+  });
+
   it('人工节点：事件挂起 → submitHuman 后继续；waiting_human 落库', async () => {
     const wf = workflows.createWorkflow({ name: '审核流' });
     workflows.addVersion(wf.id, graphHuman());

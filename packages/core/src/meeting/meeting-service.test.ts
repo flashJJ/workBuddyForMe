@@ -41,6 +41,18 @@ describe('v1.9 M3 meeting-service', () => {
     expect(m.memberIds).toEqual(['a', 'b', 'c']);
   });
 
+  it('observe：仅活跃会议返回实时流，结束后置 null 并推送终态帧', async () => {
+    const m = create('manual');
+    const iterator = h.service.observe(m.id)![Symbol.asyncIterator]();
+    const pending = iterator.next();
+    h.service.finish(m.id);
+    const first = await pending;
+    expect(first.done).toBe(false);
+    expect((first.value as { event: string }).event).toBe('meeting_status');
+    expect((await iterator.next()).done).toBe(true);
+    expect(h.service.observe(m.id)).toBeNull();
+  });
+
   it('manual：无 @ 只存用户消息、不调模型；@ 两人按书写顺序串行发言', async () => {
     const m = create('manual');
     const noMention = h.service.submitTurn(m.id, '大家随便聊聊');
