@@ -48,6 +48,9 @@
 | B-23 | P2 | 会话分支 | 终态落账异常时产生未处理拒绝，且分支永久停在 running，持续占用并发名额与预留 token | `.then(finalize)` 无 catch，`void promise.finally` 放大拒绝 | `markBranchRunFailure` 兜底收敛 failed 并释放预留 | `branch-service` 新增用例 | 本批 |
 | B-24 | P2 | 外部代理 | 审批/审计/证据写入抛错时运行永久停在 queued/running，`void execute` 变成未处理拒绝 | `start()` 未 catch 执行链 | `finalizeInternalFailure` 收敛 failed 并释放 pending | `subagent-run-service` 新增用例 | 本批 |
 | B-25 | P2 | 工作流运行 | 认领后编译或执行体异常 → run 永久 running（只能重启恢复），运行 override 泄漏 | `loadCompiledGraph` 在 try 外，异常只被队列记录日志 | 全流程 try/catch 落 `run_failed` + `finishRun`，finally 清 override | `run-service` 既有用例 | 本批 |
+| B-26 | P1 | MCP 工具 | 工具名含 `.` 等服务端调用报 unknown tool：净化后的名字被当成真实名发出 | `listTools` 只保留安全名，`callTool` 直接回传安全名 | 安全名→原始名映射，调用时还原；同名净化冲突追加后缀 | `mcp/client.test` 新增用例 | 本批 |
+| B-27 | P3 | MCP 工具 | 不规范服务器重复返回同一 `nextCursor` 时无限翻页 | 分页循环只判空、不判重复 | 记录已见游标，重复即终止 | `mcp/client.test` 新增用例 | 本批 |
+| B-28 | P2 | MCP 连接 | 修改配置重连时，旧进程迟到的 close 会清掉新 client 并误标 error | `onClose` 无条件清 entry，无连接代际判断 | 按 client 身份守卫 close/工具刷新；连接逻辑抽到 `registry-connection` | MCP 17 条测试 | 本批 |
 
 ## 排查方法
 

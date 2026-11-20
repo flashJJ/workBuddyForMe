@@ -16,9 +16,9 @@ import {
   collectConnectedTools,
   configSignature,
   createRegistryEntry,
-  statusAfterProcessExit,
   type RegistryEntry,
 } from './registry-entry';
+import { connectEntry, disconnectEntry } from './registry/connection';
 
 export interface McpRegistry {
   /** 按仓储现状对齐连接：新增/修改/删除/启停都收敛（异步连接，不阻塞） */
@@ -105,60 +105,8 @@ export function createMcpRegistry(
   const factory =
     options.clientFactory ??
     ((config, hooks) => defaultClientFactory(config, hooks, options.oauth));
-
-  async function refreshTools(entry: RegistryEntry): Promise<void> {
-    if (!entry.client) return;
-    const tools = await entry.client.listTools(entry.config.name);
-    entry.tools = tools;
-  }
-
-  async function connect(entry: RegistryEntry): Promise<void> {
-    entry.status = 'connecting';
-    entry.statusDetail = null;
-    try {
-      const client = factory(entry.config, {
-        onToolsChanged: () => {
-          void refreshTools(entry).catch(() => undefined);
-        },
-        onClose: (detail) => {
-          // 进程退出：意外退出标记 error（启停由 reconcile 管理，M1 不自动重启）
-          const nextStatus = statusAfterProcessExit(entry.status);
-          if (nextStatus) {
-            entry.status = nextStatus;
-            entry.statusDetail = `进程退出（code=${detail.code ?? 'null'}）`;
-          }
-          entry.client = null;
-          entry.transport = null;
-          entry.tools = [];
-        },
-      });
-      entry.client = client;
-      await client.initialize();
-      entry.tools = await client.listTools(entry.config.name);
-      entry.status = 'connected';
-      entry.statusDetail = null;
-    } catch (error) {
-      entry.status = 'error';
-      entry.statusDetail = error instanceof Error ? error.message : String(error);
-      const client = entry.client;
-      entry.client = null;
-      entry.transport = null;
-      entry.tools = [];
-      // 握手失败的进程直接回收，避免僵尸
-      void client?.close().catch(() => undefined);
-    }
-  }
-
-  async function disconnect(entry: RegistryEntry): Promise<void> {
-    const client = entry.client;
-    entry.client = null;
-    entry.transport = null;
-    entry.tools = [];
-    entry.status = 'disconnected';
-    entry.statusDetail = null;
-    entry.refreshing = null;
-    await client?.close().catch(() => undefined);
-  }
+  const connect = (entry: RegistryEntry) => connectEntry(entry, factory);
+  const disconnect = (entry: RegistryEntry) => disconnectEntry(entry);
 
   function reconcileAll(): void {
     const servers = repo.list();

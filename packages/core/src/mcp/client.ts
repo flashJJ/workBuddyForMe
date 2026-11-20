@@ -65,6 +65,8 @@ export function sanitizeToolName(raw: string): string {
 
 export function createMcpClient(options: McpClientOptions): McpClient {
   const { transport } = options;
+  /** 展示/模型用的安全名 → MCP 服务器上的真实工具名（含 '.' 等字符时必须还原） */
+  const rawNameBySafe = new Map<string, string>();
 
   const handleMessage = (message: JsonRpcMessage) => {
     if (isRequest(message)) {
@@ -114,6 +116,8 @@ export function createMcpClient(options: McpClientOptions): McpClient {
 
     async listTools(serverName: string) {
       const tools: McpToolInfo[] = [];
+      const usedSafe = new Set<string>();
+      const seenCursors = new Set<string>();
       let cursor: string | undefined;
       do {
         const response = await transport.request(
@@ -128,7 +132,17 @@ export function createMcpClient(options: McpClientOptions): McpClient {
         for (const raw of result.tools ?? []) {
           if (typeof raw.name !== 'string' || raw.name === '') continue;
           if (tools.length >= MCP_MAX_TOOLS_PER_SERVER) break;
-          const safeName = sanitizeToolName(raw.name);
+          // 不同原始名可能净化成同一安全名（fs.read / fs_read）：追加后缀保证唯一
+          const base = sanitizeToolName(raw.name);
+          let safeName = base;
+          let seq = 2;
+          while (usedSafe.has(safeName)) {
+            const suffix = `_${seq}`;
+            safeName = `${base.slice(0, 64 - suffix.length)}${suffix}`;
+            seq += 1;
+          }
+          usedSafe.add(safeName);
+          rawNameBySafe.set(safeName, raw.name);
           tools.push({
             serverName,
             name: safeName,
@@ -140,7 +154,11 @@ export function createMcpClient(options: McpClientOptions): McpClient {
                 : { type: 'object', properties: {} },
           });
         }
-        cursor = typeof result.nextCursor === 'string' ? result.nextCursor : undefined;
+        const next = typeof result.nextCursor === 'string' ? result.nextCursor : undefined;
+        // 服务器重复返回同一游标（不规范实现）时终止，避免无限翻页
+        if (next && seenCursors.has(next)) break;
+        if (next) seenCursors.add(next);
+        cursor = next;
       } while (cursor && tools.length < MCP_MAX_TOOLS_PER_SERVER);
       return tools;
     },
@@ -148,7 +166,8 @@ export function createMcpClient(options: McpClientOptions): McpClient {
     async callTool(name, args, timeoutMs) {
       const response = await transport.request(
         'tools/call',
-        { name, arguments: args ?? {} },
+        // 模型侧看到的是安全名；真正发给服务器必须用原始名
+        { name: rawNameBySafe.get(name) ?? name, arguments: args ?? {} },
         timeoutMs,
       );
       if (response.error) {
