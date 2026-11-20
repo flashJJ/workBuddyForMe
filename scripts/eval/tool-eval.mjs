@@ -62,7 +62,13 @@ async function waitForUrl(url, { timeoutMs = 240_000, label = url } = {}) {
 }
 
 function spawnLogged(command, options) {
-  const child = spawn(command, { ...options, shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(command, {
+    ...options,
+    shell: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // POSIX 下整组回收：pnpm → next 是孙进程，只杀 shell 会留下孤儿
+    detached: process.platform !== 'win32',
+  });
   let tail = '';
   const push = (chunk) => {
     tail = `${tail}${String(chunk)}`.slice(-8_000);
@@ -72,15 +78,32 @@ function spawnLogged(command, options) {
   return { child, log: () => tail };
 }
 
+function killTree(entry, signal) {
+  const pid = entry.child.pid;
+  if (process.platform === 'win32' || !pid) {
+    entry.child.kill(signal);
+    return;
+  }
+  try {
+    process.kill(-pid, signal);
+  } catch {
+    entry.child.kill(signal);
+  }
+}
+
 function stop(entry) {
   return new Promise((resolve) => {
     if (!entry || entry.child.exitCode !== null) return resolve();
     if (process.platform === 'win32') {
       spawnSync('taskkill', ['/pid', String(entry.child.pid), '/T', '/F'], { stdio: 'ignore' });
     } else {
-      entry.child.kill('SIGTERM');
+      killTree(entry, 'SIGTERM');
     }
-    const timer = setTimeout(resolve, 5_000);
+    const timer = setTimeout(() => {
+      // 优雅退出超时：整组强杀，避免 next 继续占端口并拖住事件循环
+      if (process.platform !== 'win32') killTree(entry, 'SIGKILL');
+      resolve();
+    }, 5_000);
     entry.child.once('close', () => {
       clearTimeout(timer);
       resolve();
@@ -181,11 +204,12 @@ function main() {
   }
   runMock(args)
     .then((code) => {
-      process.exitCode = code;
+      // 子进程/管道可能残留句柄：显式退出，避免「评测 3/3 通过但步骤挂到超时」
+      process.exit(code);
     })
     .catch((error) => {
       console.error(`工具评测中断：${error instanceof Error ? error.message : String(error)}`);
-      process.exitCode = 2;
+      process.exit(2);
     });
 }
 

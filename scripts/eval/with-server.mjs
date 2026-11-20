@@ -47,15 +47,32 @@ async function waitForHealth(baseUrl, timeoutMs) {
   }
 }
 
+function killTree(child, signal) {
+  const pid = child.pid;
+  if (process.platform === 'win32' || !pid) {
+    child.kill(signal);
+    return;
+  }
+  try {
+    process.kill(-pid, signal);
+  } catch {
+    child.kill(signal);
+  }
+}
+
 function stop(child) {
   return new Promise((resolve) => {
     if (!child || child.exitCode !== null) return resolve();
     if (process.platform === 'win32') {
       spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
     } else {
-      child.kill('SIGTERM');
+      killTree(child, 'SIGTERM');
     }
-    const timer = setTimeout(resolve, 5_000);
+    const timer = setTimeout(() => {
+      // 优雅退出超时：整组强杀，避免 next 孙进程残留占端口
+      if (process.platform !== 'win32') killTree(child, 'SIGKILL');
+      resolve();
+    }, 5_000);
     child.once('close', () => {
       clearTimeout(timer);
       resolve();
@@ -84,6 +101,8 @@ async function main() {
     shell: true,
     stdio: ['ignore', 'inherit', 'inherit'],
     env: { ...process.env, WBFM_MOCK_AI: '1', WBFM_DATA_ROOT: dataRoot },
+    // POSIX 下整组回收：pnpm → next 是孙进程，只杀 shell 会留下孤儿
+    detached: process.platform !== 'win32',
   });
 
   const cleanupServer = () => cleanup(server, dataRoot);
@@ -106,7 +125,12 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`eval 包装器失败：${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 2;
-});
+main()
+  .then(() => {
+    // 子进程/管道句柄可能残留：显式退出，避免包装器在清理完成后挂起
+    process.exit(process.exitCode ?? 0);
+  })
+  .catch((error) => {
+    console.error(`eval 包装器失败：${error instanceof Error ? error.message : String(error)}`);
+    process.exit(2);
+  });

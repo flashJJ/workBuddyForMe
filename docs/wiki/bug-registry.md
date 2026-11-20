@@ -14,6 +14,8 @@
 | B-04 | P1 | E2E | Live2D ② 在 serial 重试中必失败（形象栏数量 1≠0） | ⑤ 失败后 ④ 写入的 `avatarEnabled=true` 残留，重试从组头开始 | 同一 `beforeAll` 复位 `avatarEnabled=false` | 重试幂等 | `9d089357` |
 | B-05 | P2 | E2E | stage「场景保存/读取/删除」超过 120s 用例上限 | CI 软件渲染下 openStage 约 50s，多次下拉交互叠加 | 单用例 `setTimeout(210_000)` | CI 该用例通过 | `9d089357` |
 | B-06 | P2 | E2E | Live2D ⑦ 断言选择器 5 项，实际 8 项 | v2.0 起选择器加入 3 套内置 VRM，用例未同步 | 只筛选 5 套 Live2D 角色再断言 | CI ⑦ 通过 | `13bcf58a` |
+| B-29 | P0 | 工具评测 | promptfoo 3/3 通过后步骤仍挂到 15 分钟超时 | POSIX 上只 SIGTERM shell，pnpm/next 孙进程残留并占住管道；脚本只设 `exitCode` 不退出 | 子进程 `detached` + 进程组 SIGTERM/SIGKILL，结尾显式 `process.exit` | 本地 `tool-eval` 3/3、退出码 0、端口无残留 | 本批 |
+| B-30 | P3 | Eval 包装器 | `with-server` 在 POSIX 同样只杀 shell，next 孙进程变孤儿占端口 | 同 B-29 的进程树回收缺失 | 整组 kill + 显式退出 | 其他 eval 步骤既有通过记录 | 本批 |
 
 ## 二、运行时缺陷
 
