@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOption, optionTexts, revealSettingsSection, waitForHydrated } from './utils';
+import { chooseOption, optionTexts, revealSettingsSection } from './utils';
 
 /**
  * M3 Live2D 形象 e2e：
@@ -21,26 +21,39 @@ function collectLive2dRequests(page: Page): string[] {
 }
 
 test.describe.serial('M3 Live2D 形象', () => {
-  test('① 准备对话模型（mock 供应商 + l2d-chat 默认模型）', async ({ page }) => {
-    await page.goto('/settings');
-    await waitForHydrated(page);
-    await page.getByRole('button', { name: '新增供应商' }).click();
-    await page.getByLabel('名称').fill('形象 Mock 供应商');
-    await page.getByLabel('Base URL').fill('http://mock.local/v1');
-    await page.getByLabel('API Key').fill('sk-l2d-mock');
-    await page.getByRole('button', { name: '保存', exact: true }).click();
-    await page.getByRole('heading', { name: '形象 Mock 供应商' }).waitFor();
+  // 单独运行本 spec 时也要跳过首启向导；完整套件中该状态通常已由 00-onboarding 写入
+  test.beforeAll(async ({ request }) => {
+    await request.put('/api/settings', { data: { hasOnboarded: true, language: 'zh-CN' } });
+  });
 
-    const card = page
-      .locator('[data-testid^="provider-card-"]')
-      .filter({ hasText: '形象 Mock 供应商' })
-      .last();
-    await card.locator('[id^="model-id-"]').fill('l2d-chat');
-    await card.getByRole('button', { name: '添加', exact: true }).click();
-    await expect(page.getByText('已添加模型 l2d-chat')).toBeVisible();
+  test('① 准备对话模型（mock 供应商 + l2d-chat 默认模型）', async ({ request }) => {
+    // 直接用 API 播种：serial 重试幂等，也不依赖供应商表单的保存链路
+    const existingRes = await request.get('/api/providers');
+    const existing = ((await existingRes.json()) as {
+      data?: Array<{ id: string; name: string }>;
+    }).data ?? [];
+    for (const provider of existing.filter((item) => item.name === '形象 Mock 供应商')) {
+      await request.delete(`/api/providers/${provider.id}`);
+    }
 
-    await chooseOption(page, page.getByLabel('默认对话模型'), 'l2d-chat（l2d-chat）');
-    await expect(page.getByText('设置已保存').first()).toBeVisible();
+    const providerRes = await request.post('/api/providers', {
+      data: {
+        name: '形象 Mock 供应商',
+        protocol: 'openai-compatible',
+        baseUrl: 'http://mock.local/v1',
+        apiKey: 'sk-l2d-mock',
+      },
+    });
+    expect(providerRes.ok()).toBeTruthy();
+    const provider = ((await providerRes.json()) as { data: { id: string } }).data;
+
+    const modelRes = await request.post(`/api/providers/${provider.id}/models`, {
+      data: { modelId: 'l2d-chat', capabilities: ['chat'], contextWindow: 8_192 },
+    });
+    expect(modelRes.ok()).toBeTruthy();
+    const model = ((await modelRes.json()) as { data: { id: string } }).data;
+
+    await request.put('/api/settings', { data: { defaultChatModelId: model.id } });
   });
 
   test('② 形象默认关闭：对话页无形象栏且零形象资源请求', async ({ page }) => {
@@ -88,10 +101,7 @@ test.describe.serial('M3 Live2D 形象', () => {
     await expect(rail).toBeVisible({ timeout: 30_000 });
     await expect(rail).toContainText('本地形象');
 
-    // 动态渲染 chunk（pixi/pld 独立分包）+ Cubism Core 脚本 + Haru 模型清单
-    await expect
-      .poll(() => requested.some((u) => u.includes('live2d-renderer')), { timeout: 60_000 })
-      .toBeTruthy();
+    // Cubism Core 脚本 + Haru 模型清单（生产构建的 chunk 文件名带哈希，不能断言 webpackChunkName）
     await expect
       .poll(() => requested.some((u) => u.includes('cubismcore')), { timeout: 60_000 })
       .toBeTruthy();
