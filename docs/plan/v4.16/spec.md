@@ -1,6 +1,6 @@
 # v4.16 CI 稳定性与验收退出收口
 
-> 状态：执行中（2026-11-20）
+> 状态：已完成（2026-11-20，CI `44712778585` 全绿）
 > 关联：[ci.yml](../../../.github/workflows/ci.yml) · [visual.yml](../../../.github/workflows/visual.yml) · [playwright.config.ts](../../../apps/web/playwright.config.ts) · [acceptance/run.mjs](../../../scripts/acceptance/run.mjs)
 
 ## 背景
