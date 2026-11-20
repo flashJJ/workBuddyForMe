@@ -143,6 +143,29 @@ describe('检索与 RAG 编排（TR-17.1）', () => {
     ).toEqual([]);
   });
 
+  it('切换嵌入模型维度不一致：混合检索降级为关键词，纯向量路径返回空且不抛错', async () => {
+    const kbId = await seedIndex(); // 旧索引为 2 维向量
+    // 新嵌入模型返回 3 维查询向量
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ data: [{ index: 0, embedding: [1, 0, 0] }] }), {
+          status: 200,
+        }),
+    );
+    const retrieval = createRetrievalService({ db, cipher });
+
+    const hits = await retrieval.retrieve({ knowledgeBaseId: kbId, query: '苹果' });
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0]!.content).toContain('苹果');
+
+    expect(
+      await retrieval.retrieve(
+        { knowledgeBaseId: kbId, query: '苹果' },
+        { hybridEnabled: false },
+      ),
+    ).toEqual([]);
+  });
+
   it('retrieveMany：跨多库一次融合召回，空库数组零成本返回 []', async () => {
     const kb1 = await seedIndex();
     const kb2 = await seedSecondKb();

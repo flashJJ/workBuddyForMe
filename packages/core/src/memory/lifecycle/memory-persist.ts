@@ -1,6 +1,7 @@
 import type { Memory, MemoryScope, MemorySource } from '@wbfm/shared/types';
 import {
   ensureMemoryVectorTable,
+  getMemoryVectorDimension,
   nowIso,
   searchMemoryVectors,
   upsertMemoryFts,
@@ -43,10 +44,16 @@ export function createMemoryPersister(db: DatabaseInstance, repo: MemoryReposito
       assistantId: ctx.assistantId,
       conversationId: ctx.sourceConversationId,
     };
+    // 嵌入模型维度变化后旧向量表不可用：本条记忆降级为只写 FTS，避免整条写入失败
+    let effectiveVector = vector;
+    if (effectiveVector) {
+      const dimension = getMemoryVectorDimension(db);
+      if (dimension !== null && dimension !== effectiveVector.length) effectiveVector = null;
+    }
     let nearest: { id: string; distance: number } | null = null;
-    if (vector) {
-      ensureMemoryVectorTable(db, vector.length);
-      const hit = pickDuplicateTarget(searchMemoryVectors(db, { vector, k: 1 })[0]);
+    if (effectiveVector) {
+      ensureMemoryVectorTable(db, effectiveVector.length);
+      const hit = pickDuplicateTarget(searchMemoryVectors(db, { vector: effectiveVector, k: 1 })[0]);
       if (hit) nearest = { id: String(hit.id), distance: hit.distance };
     }
     const sameSubject = candidate.subjectKey
@@ -71,13 +78,13 @@ export function createMemoryPersister(db: DatabaseInstance, repo: MemoryReposito
 
     if (decision.action === 'merge' && decision.targetId) {
       const existing = repo.findById(decision.targetId);
-      if (existing) return merge(existing, fields, vector, actor);
+      if (existing) return merge(existing, fields, effectiveVector, actor);
     }
     if (decision.action === 'supersede' && decision.targetId) {
       const previous = repo.findById(decision.targetId);
-      if (previous) return supersede(previous, fields, vector, actor);
+      if (previous) return supersede(previous, fields, effectiveVector, actor);
     }
-    return create(fields, vector, actor);
+    return create(fields, effectiveVector, actor);
   }
 
   function create(fields: MemoryAddFields, vector: number[] | null, actor: string): PersistResult {

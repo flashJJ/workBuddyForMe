@@ -1,5 +1,6 @@
 import {
   createFtsChunkRepository,
+  getVectorDimension,
   listChunksByIds,
   listChunksByIdsGlobal,
   recallVectorCandidates,
@@ -109,13 +110,18 @@ export function createRetrievalService(deps: ServiceDeps) {
       .slice(0, topK);
   }
 
-  /** v1.3 混合路径：每库双通道召回 → 跨库 RRF → 多样性 → 规则重排 */
+  /**
+   * v1.3 混合路径：每库双通道召回 → 跨库 RRF → 多样性 → 规则重排。
+   * useVector=false（索引由旧嵌入模型建立，维度不一致）：跳过向量通道只走 FTS，
+   * 避免整轮对话因脏索引直接失败；纯向量路径则由调用方返回空结果。
+   */
   async function retrieveHybridMany(
     kbIds: string[],
     query: string,
     vector: number[],
     options: Required<Omit<RetrievalOptions, 'hybridEnabled' | 'topK'>>,
     signal?: AbortSignal,
+    useVector = true,
   ): Promise<RetrievedChunk[]> {
     // 各库向量候选（软下限策略在库内保持：强相关不足保底时回补次相关）
     const distanceById = new Map<number, number>();
@@ -123,15 +129,17 @@ export function createRetrievalService(deps: ServiceDeps) {
     const fts = createFtsChunkRepository(deps.db);
 
     for (const kb of kbIds) {
-      const allVec = recallVectorCandidates(deps.db, {
-        knowledgeBaseId: kb,
-        vector,
-        candidateN: options.candidateN,
-      });
-      const strongVec = allVec.filter((c) => c.similarity >= options.minVecSimilarity);
-      const vecHits = strongVec.length >= options.maxChunks ? strongVec : allVec;
-      for (const c of allVec) distanceById.set(c.chunkId, c.distance);
-      channels.push({ channel: 'vec', hits: vecHits.map((c) => c.chunkId) });
+      if (useVector) {
+        const allVec = recallVectorCandidates(deps.db, {
+          knowledgeBaseId: kb,
+          vector,
+          candidateN: options.candidateN,
+        });
+        const strongVec = allVec.filter((c) => c.similarity >= options.minVecSimilarity);
+        const vecHits = strongVec.length >= options.maxChunks ? strongVec : allVec;
+        for (const c of allVec) distanceById.set(c.chunkId, c.distance);
+        channels.push({ channel: 'vec', hits: vecHits.map((c) => c.chunkId) });
+      }
       channels.push({ channel: 'fts', hits: fts.recallChunkIds(kb, query, options.candidateN) });
     }
 
@@ -229,9 +237,12 @@ export function createRetrievalService(deps: ServiceDeps) {
       const vector = await embedQuery(trimmed, input.signal);
       if (!vector) return [];
       const topK = input.topK ?? DEFAULT_RETRIEVAL_TOP_K;
+      // 切换嵌入模型后旧索引维度不一致：会话不应因此整体失败，降级为关键词通道
+      const tableDimension = getVectorDimension(deps.db);
+      const vectorUsable = tableDimension === null || tableDimension === vector.length;
 
       if (options.hybridEnabled === false) {
-        return retrieveVectorOnlyMany(kbIds, vector, topK);
+        return vectorUsable ? retrieveVectorOnlyMany(kbIds, vector, topK) : [];
       }
       return retrieveHybridMany(
         kbIds,
@@ -244,6 +255,7 @@ export function createRetrievalService(deps: ServiceDeps) {
           maxChunks: options.maxChunks ?? DEFAULT_MAX_CHUNKS,
         },
         input.signal,
+        vectorUsable,
       );
     },
   };

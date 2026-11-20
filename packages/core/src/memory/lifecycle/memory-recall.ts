@@ -10,6 +10,7 @@ import {
   MEMORY_TOP_K,
 } from '@wbfm/shared/constants';
 import {
+  getMemoryVectorDimension,
   searchMemoryFts,
   searchMemoryVectors,
   type DatabaseInstance,
@@ -45,9 +46,15 @@ export function createMemoryRecall(
     const now = input.now ?? new Date();
     const nowIso = now.toISOString();
     const semanticScores = new Map<string, number>();
-    if (input.vector) {
+    // 切换嵌入模型后旧向量维度不一致：语义通道降级，不影响关键词召回与本轮对话
+    let vector = input.vector;
+    if (vector) {
+      const dimension = getMemoryVectorDimension(db);
+      if (dimension !== null && dimension !== vector.length) vector = null;
+    }
+    if (vector) {
       for (const hit of searchMemoryVectors(db, {
-        vector: input.vector,
+        vector,
         k: MEMORY_HYBRID_CANDIDATES,
       })) {
         if (hit.distance <= MEMORY_RECALL_MAX_DISTANCE) {
@@ -67,7 +74,7 @@ export function createMemoryRecall(
     });
 
     const ids = [...new Set([...semanticScores.keys(), ...lexicalScores.keys()])];
-    const weights = resolveRecallWeights(input.vector !== null);
+    const weights = resolveRecallWeights(vector !== null);
     const scored = repo
       .findActiveByIds(ids, input.scope, nowIso)
       .map((memory) => {

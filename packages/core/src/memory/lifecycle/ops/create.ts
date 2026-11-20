@@ -1,5 +1,6 @@
 import {
   ensureMemoryVectorTable,
+  getMemoryVectorDimension,
   upsertMemoryFts,
   upsertMemoryVector,
   type MemoryRepository,
@@ -33,8 +34,13 @@ export async function createManualMemory(
   repo.recordEvent(Number(memory.id), 'create', null, memory, 'user');
   const embedded = await embedTexts(deps, [input.content], signal);
   if (embedded) {
-    ensureMemoryVectorTable(deps.db, embedded.dimension);
-    upsertMemoryVector(deps.db, { id: Number(memory.id), vector: embedded.vectors[0]! });
+    const vector = embedded.vectors[0]!;
+    // 嵌入模型维度变化后旧向量表不可用：保留主表与 FTS，跳过向量写入
+    const dimension = getMemoryVectorDimension(deps.db);
+    if (dimension === null || dimension === vector.length) {
+      ensureMemoryVectorTable(deps.db, vector.length);
+      upsertMemoryVector(deps.db, { id: Number(memory.id), vector });
+    }
   }
   return memory;
 }
