@@ -24,6 +24,12 @@ test.describe.serial('M3 Live2D 形象', () => {
   // 单独运行本 spec 时也要跳过首启向导；完整套件中该状态通常已由 00-onboarding 写入
   test.beforeAll(async ({ request }) => {
     await request.put('/api/settings', { data: { hasOnboarded: true, language: 'zh-CN' } });
+    // 新用户默认形象是内置 VRM（vrm:builtin:xuetuan）：本 spec 校验 Live2D 资源按需加载，
+    // 必须显式固定 haru 并复位开关。否则 CI 全新数据根下 ⑤ 挂载的是 VrmCanvas（永远等不到
+    // cubismcore/haru 请求）；serial 重试也会被上一次失败残留的 avatarEnabled=true 污染。
+    await request.put('/api/voice/settings', {
+      data: { avatarEnabled: false, avatarModelId: 'haru' },
+    });
   });
 
   test('① 准备对话模型（mock 供应商 + l2d-chat 默认模型）', async ({ request }) => {

@@ -86,6 +86,26 @@ describe('server-manager 生命周期（TR-30.1）', () => {
     expect(bootstrap).toContain('cipher-tok');
   });
 
+  it('健康检查失败时回收已 fork 的服务子进程（不留孤儿）', async () => {
+    const userDataDir = makeDir();
+    const { child } = makeFakeChild();
+    const stopImpl = vi.fn(async () => undefined);
+    await expect(
+      startManagedServer({
+        userDataDir,
+        serverPath: '/fake/server.js',
+        cipher: { url: 'http://127.0.0.1:53000', token: 'cipher-tok' },
+        forkImpl: () => child,
+        waitImpl: async () => {
+          throw new Error('托管服务在 30000ms 内未就绪');
+        },
+        stopImpl,
+        portPicker: async () => 51999,
+      }),
+    ).rejects.toThrow('未就绪');
+    expect(stopImpl).toHaveBeenCalledWith(child);
+  });
+
   it('stop 先 SIGTERM 并在退出时 resolve（TR-30.1）', async () => {
     const { child } = makeFakeChild();
     await stopChild(child, { timeoutMs: 1000, platform: 'linux' });

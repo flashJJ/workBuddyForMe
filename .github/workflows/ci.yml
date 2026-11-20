@@ -12,7 +12,7 @@ concurrency:
 jobs:
   quality-and-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -72,7 +72,9 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: 安装 Playwright Chromium 并执行 Web 关键路径 E2E
-        timeout-minutes: 35
+        # 140+ 用例串行 + serial 组整组重试；stage/VRM 软件渲染单组约 6 分钟。
+        # 35 分钟会砍掉尾部用例，留足 70 分钟覆盖「全量 + 两组重试」的最坏情况
+        timeout-minutes: 70
         run: |
           pnpm --filter @wbfm/web exec playwright install --with-deps chromium
           pnpm test:e2e

@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import { WEB_FETCH_MAX_BYTES_DEFAULT } from '@wbfm/shared/constants';
 import { assertSafeUrlLiteral, resolveAndAssertHost, SsrfBlockedError } from '../tools/ssrf-guard';
 
@@ -114,7 +113,7 @@ export async function readBoundedText(
         if (allowed > 0) chunks.push(value.subarray(0, allowed));
         await reader.cancel().catch(() => undefined);
         return {
-          html: Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8'),
+          html: decodeBody(chunks, contentType),
           truncated: true,
         };
       }
@@ -124,9 +123,54 @@ export async function readBoundedText(
     if (signal.aborted) throw new Error('读取被中断');
   }
   return {
-    html: Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8'),
+    html: decodeBody(chunks, contentType),
     truncated: false,
   };
+}
+
+/** 拼接响应块（避免依赖 Buffer，浏览器/Node 同构） */
+function concatChunks(chunks: Uint8Array[]): Uint8Array {
+  const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return merged;
+}
+
+/**
+ * 响应体按声明字符集解码。
+ * 中文站点仍有大量 GBK/GB2312：content-type 缺省时嗅探头部 <meta charset>，
+ * 仅 UTF-8 无脑解码会把整页变成乱码喂给模型。
+ */
+function decodeBody(chunks: Uint8Array[], contentType: string): string {
+  const bytes = concatChunks(chunks);
+  const label = normalizeCharset(detectCharset(bytes, contentType));
+  if (label && label !== 'utf-8') {
+    try {
+      return new TextDecoder(label).decode(bytes);
+    } catch {
+      // 未知/不支持的 charset 回落 UTF-8
+    }
+  }
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+/** content-type 优先；否则嗅探前 2KB 的 <meta charset> */
+function detectCharset(bytes: Uint8Array, contentType: string): string | null {
+  const fromHeader = /charset\s*=\s*["']?([\w-]+)/i.exec(contentType)?.[1];
+  if (fromHeader) return fromHeader;
+  const head = new TextDecoder('latin1').decode(bytes.subarray(0, 2048));
+  return /<meta[^>]+charset\s*=\s*["']?([\w-]+)/i.exec(head)?.[1] ?? null;
+}
+
+/** 历史别名归一：gb2312/gbk 统一按 GBK（超集）解码 */
+function normalizeCharset(charset: string | null): string | null {
+  if (!charset) return null;
+  const label = charset.toLowerCase();
+  return label === 'gb2312' || label === 'gb_2312-80' ? 'gbk' : label;
 }
 
 /** 抓取入口：URL 校验 → 8s 超时 → 逐跳复检 → 有界读取，返回 HTML 文本 */

@@ -22,6 +22,8 @@ export class WebAudioPlayer implements AudioPlayer {
   private analyser: AnalyserNode | null = null;
   private levelData: Uint8Array<ArrayBuffer> | null = null;
   private active: Set<AudioBufferSourceNode> = new Set();
+  /** 在途 play() 的 resolve：cancelAll 必须显式兑现，否则播放泵永久悬挂 */
+  private pendingResolvers = new Map<AudioBufferSourceNode, () => void>();
   /** 取消代际：decodeAudioData 期间被 cancel 的帧不得再启动声源 */
   private epoch = 0;
   private readonly onLevel?: (level: number) => void;
@@ -94,7 +96,9 @@ export class WebAudioPlayer implements AudioPlayer {
     source.connect(this.analyser!);
     this.active.add(source);
     await new Promise<void>((resolve) => {
+      this.pendingResolvers.set(source, resolve);
       source.onended = () => {
+        this.pendingResolvers.delete(source);
         this.active.delete(source);
         resolve();
       };
@@ -130,8 +134,14 @@ export class WebAudioPlayer implements AudioPlayer {
       } catch {
         /* 已停止 */
       }
+      // stop() 后 onended 已被置空：必须显式 resolve 在途 play()，
+      // 否则 AudioPlaybackQueue.pump 会永久停在 await（每次 barge-in 泄漏一个泵）
+      const resolve = this.pendingResolvers.get(source);
+      this.pendingResolvers.delete(source);
+      resolve?.();
     }
     this.active.clear();
+    this.pendingResolvers.clear();
   }
 }
 

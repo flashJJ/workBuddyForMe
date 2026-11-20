@@ -110,6 +110,8 @@ test.describe.serial('v1.9 M1 舞台骨架（mock cast）', () => {
   });
 
   test('场景保存/读取/删除走真实 API', async ({ page, request }) => {
+    // CI 软件渲染下 openStage（VRM 加载）已占 ~50s，加上多次下拉/配色交互会超过默认 120s
+    test.setTimeout(210_000);
     await openStage(page);
     // 高级设置默认折叠，先展开背景/场景区
     await page.getByTestId('stage-advanced').locator('summary').click();

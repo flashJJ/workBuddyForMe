@@ -49,6 +49,8 @@ export function useVoiceRecorder(): VoiceRecorder {
   const sourceRef = React.useRef<MediaStreamAudioSourceNode | null>(null);
   const chunksRef = React.useRef<Float32Array[]>([]);
   const sampleRateRef = React.useRef(16000);
+  /** 启动代际：卸载/取消后 getUserMedia 晚到，不得再建 AudioContext 或遗留麦克风轨道 */
+  const startTokenRef = React.useRef(0);
 
   const cleanup = React.useCallback(() => {
     processorRef.current?.disconnect();
@@ -62,11 +64,19 @@ export function useVoiceRecorder(): VoiceRecorder {
     setLevel(0);
   }, []);
 
-  React.useEffect(() => cleanup, [cleanup]);
+  React.useEffect(
+    () => () => {
+      // 卸载即作废在途 start（权限弹窗未决时用户切走页面）
+      startTokenRef.current += 1;
+      cleanup();
+    },
+    [cleanup],
+  );
 
   const start = React.useCallback(async () => {
     setError(null);
     if (state === 'recording' || state === 'requesting') return;
+    const token = (startTokenRef.current += 1);
     setState('requesting');
     let stream: MediaStream;
     try {
@@ -86,6 +96,11 @@ export function useVoiceRecorder(): VoiceRecorder {
                 message: t('voice.micError.startFailed', { message: (err as Error).message }),
               },
       );
+      return;
+    }
+    // 等待期间被取消/卸载：立即归还麦克风，不建 AudioContext
+    if (token !== startTokenRef.current) {
+      stream.getTracks().forEach((track) => track.stop());
       return;
     }
 
@@ -155,6 +170,7 @@ export function useVoiceRecorder(): VoiceRecorder {
   }, [cleanup, state, t]);
 
   const cancel = React.useCallback(() => {
+    startTokenRef.current += 1;
     chunksRef.current = [];
     cleanup();
     setState('idle');

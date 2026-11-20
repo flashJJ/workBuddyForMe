@@ -26,6 +26,8 @@ export interface StartServerOptions {
   /** 测试注入 */
   forkImpl?: ForkFn;
   waitImpl?: typeof waitForServer;
+  /** 测试注入：健康检查失败时的子进程回收 */
+  stopImpl?: typeof stopChild;
   portPicker?: () => Promise<number>;
 }
 
@@ -46,6 +48,7 @@ export async function startManagedServer(options: StartServerOptions): Promise<M
   const { userDataDir, serverPath, cipher } = options;
   const doFork = (options.forkImpl ?? fork) as ForkFn;
   const doWait = options.waitImpl ?? waitForServer;
+  const doStop = options.stopImpl ?? stopChild;
   const pickPort = options.portPicker ?? (() => getFreePort());
 
   const port = await pickPort();
@@ -92,7 +95,14 @@ export async function startManagedServer(options: StartServerOptions): Promise<M
   });
 
   options.onForked?.();
-  await doWait(url, token, { timeoutMs: HEALTH_TIMEOUT_MS, intervalMs: HEALTH_INTERVAL_MS });
+  try {
+    await doWait(url, token, { timeoutMs: HEALTH_TIMEOUT_MS, intervalMs: HEALTH_INTERVAL_MS });
+  } catch (error) {
+    // 健康检查失败（超时/端口竞态/子进程异常）必须回收已 fork 的服务进程：
+    // 否则应用退出后它仍占着端口与数据目录，下次启动更容易继续失败。
+    await doStop(child);
+    throw error;
+  }
   options.onHealthy?.();
 
   return {
@@ -118,7 +128,7 @@ export interface StopChildOptions {
  */
 export function stopChild(child: ChildProcess, options: StopChildOptions = {}): Promise<void> {
   const timeoutMs = options.timeoutMs ?? STOP_TIMEOUT_MS;
-  if (child.killed || child.exitCode !== null) return Promise.resolve();
+  if (child.killed || child.exitCode !== null || !child.pid) return Promise.resolve();
   if ((options.platform ?? process.platform) === 'win32') {
     return new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
