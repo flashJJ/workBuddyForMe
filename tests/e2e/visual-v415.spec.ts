@@ -47,7 +47,7 @@ test.describe.serial('v4.15 视觉巡检 L1', () => {
     await page.goto('/settings');
     await waitForHydrated(page);
     await revealSettingsSection(page, 'base');
-    await expect(page.getByText('外观与语言').first()).toBeVisible();
+    await expect(page.getByText('基础设置').first()).toBeVisible();
     await expect(page).toHaveScreenshot('settings-base.png', SHOT);
   });
 
@@ -62,11 +62,14 @@ test.describe.serial('v4.15 视觉巡检 L1', () => {
   });
 
   test('上下文洞察抽屉', async ({ page }) => {
-    await page.goto(`/?conversation=${conversationId}`);
+    await page.goto(`/chat?conversation=${conversationId}`);
     await waitForHydrated(page);
+    await page.getByTestId('chat-header-more').click();
     await page.getByTestId('context-insights-open').click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
+    // 等查询结束并落到空状态，避免把「加载中」截图当成基线
+    await expect(dialog.getByText('还没有上下文记录，先聊一轮再看。')).toBeVisible();
     await expect(dialog).toHaveScreenshot('context-insights.png', SHOT);
   });
 });
