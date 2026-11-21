@@ -55,8 +55,8 @@
 - [x] T6.1 缺陷登记：本轮新发现写入 [Bug 记录表](../../wiki/bug-registry.md)
 - [x] T6.2 `pnpm check` 全绿；web 全量 304 文件 / 1515 用例通过
 - [x] T6.3 更新计划索引与路线图状态
-- [ ] T6.4 提交并推送 `tencent main` 与 `origin main`，监听 CI
-- [ ] T6.5 出安装包并归档到 `E:\builds\archive\`，附 SHA256 与 build-info
+- [x] T6.4 提交 `f13dd3d1` 并推送 `tencent main` 与 `origin main`；CI `44893721600` 运行中
+- [x] T6.5 安装包已归档 `E:\builds\archive\v4.17.0`（Setup 272.54 MB，附 SHA256SUMS 与 build-info）
 
 ## 实现偏差与取舍
 
