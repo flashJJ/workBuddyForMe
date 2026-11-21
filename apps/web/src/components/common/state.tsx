@@ -56,10 +56,13 @@ export function ErrorState({
   message,
   description,
   onRetry,
+  action,
 }: {
   message: string;
   description?: string;
   onRetry?: () => void;
+  /** v4.17：可恢复动作（去设置 / 启动服务 / 禁用等），优先于默认重试按钮 */
+  action?: React.ReactNode;
 }) {
   const { t } = useI18n();
   return (
@@ -75,11 +78,12 @@ export function ErrorState({
           </p>
         ) : null}
       </div>
-      {onRetry ? (
-        <Button type="button" size="sm" variant="outline" onClick={onRetry}>
-          {t('common.actions.retry')}
-        </Button>
-      ) : null}
+      {action ??
+        (onRetry ? (
+          <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+            {t('common.actions.retry')}
+          </Button>
+        ) : null)}
     </div>
   );
 }

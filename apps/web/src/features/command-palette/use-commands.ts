@@ -17,6 +17,9 @@ import {
 import type { Command } from '@wbfm/shared/command';
 import { useAssistants } from '@/lib/hooks/assistant';
 import { useConversationMutations } from '@/lib/hooks/chat';
+import { openMessageSearch } from '@/features/chat/search';
+import { createPetCommands } from './pet-commands';
+import { API } from '@/lib/api/endpoints';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useToast } from '@/components/common/toast';
 import { SETTINGS_SECTIONS, settingsPanelAnchor } from '@/lib/settings/catalog';
@@ -94,6 +97,7 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         keywords: ['assistant', '助手', '智能体'],
         action: () => navigate('/assistants'),
       },
+      ...createPetCommands(t),
       {
         id: 'nav:settings',
         label: t(`${ck}.navSettings.label`),
@@ -185,7 +189,7 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         description: t(`${ck}.convSearch.description`),
         group: 'conversation',
         keywords: ['search', '搜索', '历史', '对话', 'history'],
-        action: () => navigate('/chat'),
+        action: () => openMessageSearch(),
       },
       {
         id: 'conv:export',
@@ -194,8 +198,16 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         group: 'conversation',
         keywords: ['export', 'share', '导出', '分享'],
         action: () => {
-          navigate('/chat');
-          toast.info(t(`${ck}.convExportHint`));
+          const convId =
+            typeof window === 'undefined'
+              ? null
+              : new URLSearchParams(window.location.search).get('conversation');
+          if (!convId) {
+            navigate('/chat');
+            toast.info(t(`${ck}.convExportHint`));
+            return;
+          }
+          window.open(API.exportSession('chat', convId), '_blank');
         },
       },
 

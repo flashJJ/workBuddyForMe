@@ -112,6 +112,15 @@
 | B-45 | P2 | 能力包 | 上传 20MB 内的能力包 ZIP 可声明数百 MB～数 GB 解压体积，`unzipSync` 直接撑爆服务进程（安装与升级两个入口） | 能力包解析只做了路径/校验和/entry 大小校验，没有中央目录层面的解压总体积上限（与 B-37/B-41 同类） | `parseCapabilityZip` 解压前先按中央目录求和，超过 80MB 即拒绝；错误文案按「能力包」区分 | `capabilities/__tests__/capability-zip-bomb.test.ts` 2 条 | 本批 |
 | B-46 | P2 | 文档解析 | B-41 修完后，docx/xlsx/pptx 仍可经「结构解析」路径触发压缩炸弹：`extractDocumentText` 先走 `parseDocumentStructure`，该路径直接调用解析器 | 预算校验只加在纯文本入口 `readDocumentText`，`readDocxHtml`/`readXlsx`/`readPptx` 自身不校验，结构解析路径绕过 | 预算下沉到三个 Office 解析器入口（含可选预算参数供测试注入），结构/纯文本两条路径共用同一闸门 | `office-parsers.test` 解析器入口炸弹用例 | 本批 |
 
+## 九、易用性一致性（v4.17）
+
+| ID | 级别 | 领域 | 现象 | 根因 | 修复 | 回归 | 提交 |
+|---|---|---|---|---|---|---|---|
+| B-67 | P2 | 工具上限 | 达上限时未选项已禁用，但旧提示文案与实际上限/剩余额度不同步，用户不知道还能不能选 | 上限提示散落在各表单内联文案，未复用统一组件 | 统一 `LimitHint`（已达上限 / 还可选 N 项），助手工具选择接入；`repo-invariants` 增加保存路径无静默截断断言 | `limit-hint.test` 2 条 + `assistant-tools-field.test` 达上限断言 | 本批 |
+| B-68 | P3 | 能力状态 | 能力中心、MCP 目录、技能列表各自用不同徽标表达可用/已启用/异常，同一状态颜色语义不一致 | 每处手写 badge variant 与文案映射 | 新增 `CapabilityStatusBadge` 四态统一 variant 与 i18n 键，三处接入 | `capability-status-badge.test` 4 条 | 本批 |
+| B-69 | P3 | 结构门禁 | 新增通用组件使 `components/common` 直接文件 13 > 12；桌宠命令跨域深引用 `pet-bridge` 被拦截 | 新组件平铺在公共目录；跨域未走子域 barrel | 拆出 `common/limits`、`common/status` 子域 barrel；命令改引 `@/features/pet/bridge`；`use-ttfv` 移入 `chat/page` | `node scripts/check-structure.mjs` 通过 | 本批 |
+| B-70 | P3 | 测试门禁 | 检索弹层测试用 `stubGlobal('fetch')` 触发 MSW 收敛门禁 | 新增测试沿用了旧的 fetch stub 写法 | 测试改为 mock `use-message-search` 返回值，不再 stub fetch | `message-search-dialog.test` 2 条；`check:msw` 通过 | 本批 |
+
 ## 排查方法
 
 - **CI 侧**：从失败步骤日志与 Playwright 归档（`playwright-artifacts` 的 `error-context.md`）反推真实断言与页面快照。

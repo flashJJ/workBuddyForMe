@@ -3,6 +3,7 @@ import { zhCommon } from './messages/common';
 import { zhNav } from './messages/nav';
 import { zhCommandPalette } from './messages/command-palette';
 import { zhSettings } from './messages/settings';
+import { zhSettingsQuick } from './messages/settings-quick';
 import { zhSettingsProviders } from './messages/settings-providers';
 import { zhSettingsMcp } from './messages/settings-mcp';
 import { zhSettingsBackup } from './messages/settings-backup';
@@ -73,6 +74,7 @@ export const zhCN = {
   nav: zhNav,
   commandPalette: zhCommandPalette,
   settings: zhSettings,
+  settingsQuick: zhSettingsQuick,
   settingsProviders: zhSettingsProviders,
   settingsMcp: zhSettingsMcp,
   settingsBackup: zhSettingsBackup,

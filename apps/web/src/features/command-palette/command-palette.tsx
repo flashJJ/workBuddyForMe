@@ -7,6 +7,7 @@ import type { MessageKey } from '@wbfm/shared/i18n';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useCommands, COMMAND_ICONS } from './use-commands';
+import { readRecentCommands, recordRecentCommand } from './recent-commands';
 
 const GROUP_LABEL_KEYS: Record<CommandGroup, MessageKey> = {
   navigation: 'commandPalette.groups.navigation',
@@ -35,6 +36,7 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
   const { t } = useI18n();
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const [recent, setRecent] = React.useState<string[]>([]);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
 
@@ -43,11 +45,29 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
 
   const filtered = React.useMemo(() => filterCommands(commands, query), [commands, query]);
 
+  // v4.17：无搜索词时把最近 5 条置顶，其余命令按原分组展示
+  const recentCommands = React.useMemo(() => {
+    if (query.trim()) return [];
+    return recent
+      .map((id) => commands.find((cmd) => cmd.id === id))
+      .filter((cmd): cmd is Command => Boolean(cmd) && !cmd?.disabled);
+  }, [query, recent, commands]);
+
+  const run = React.useCallback(
+    (cmd: Command) => {
+      recordRecentCommand(cmd.id);
+      setRecent(readRecentCommands());
+      void cmd.action({ navigate, close, conversationId: null });
+    },
+    [navigate, close],
+  );
+
   // 打开时重置状态并聚焦输入框
   React.useEffect(() => {
     if (open) {
       setQuery('');
       setActiveIndex(0);
+      setRecent(readRecentCommands());
       // 下一帧聚焦，避免 Dialog 动画期间焦点抢占
       const t = setTimeout(() => inputRef.current?.focus(), 0);
       return () => clearTimeout(t);
@@ -63,15 +83,53 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
   const grouped = React.useMemo(() => {
     const map = new Map<CommandGroup, Command[]>();
     for (const cmd of filtered) {
+      // 无搜索词时最近使用单独置顶，避免重复出现
+      if (!query.trim() && recent.includes(cmd.id)) continue;
       const arr = map.get(cmd.group) ?? [];
       arr.push(cmd);
       map.set(cmd.group, arr);
     }
     return GROUP_ORDER.filter((g) => map.has(g)).map((g) => ({ group: g, items: map.get(g)! }));
-  }, [filtered]);
+  }, [filtered, query, recent]);
 
-  // 扁平化用于键盘索引
-  const flat = React.useMemo(() => grouped.flatMap((g) => g.items), [grouped]);
+  // 扁平化用于键盘索引（最近使用在最前）
+  const flat = React.useMemo(
+    () => [...recentCommands, ...grouped.flatMap((g) => g.items)],
+    [recentCommands, grouped],
+  );
+
+  const renderItem = (cmd: Command) => {
+    const globalIndex = flat.indexOf(cmd);
+    const active = globalIndex === activeIndex;
+    const Icon = COMMAND_ICONS[cmd.id];
+    return (
+      <button
+        key={cmd.id}
+        type="button"
+        role="option"
+        id={`command-option-${cmd.id}`}
+        aria-selected={active}
+        data-active={active}
+        data-testid={`command-item-${cmd.id}`}
+        disabled={cmd.disabled}
+        onMouseEnter={() => setActiveIndex(globalIndex)}
+        onClick={() => {
+          if (!cmd.disabled) run(cmd);
+        }}
+        className={cn(
+          'flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors',
+          active ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
+          cmd.disabled && 'cursor-not-allowed opacity-40',
+        )}
+      >
+        {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+        <span className="flex-1 truncate">{cmd.label}</span>
+        {cmd.description ? (
+          <span className="truncate text-xs text-muted-foreground">{cmd.description}</span>
+        ) : null}
+      </button>
+    );
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
@@ -84,7 +142,7 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
       e.preventDefault();
       const cmd = flat[activeIndex];
       if (cmd && !cmd.disabled) {
-        void cmd.action({ navigate, close, conversationId: null });
+        run(cmd);
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -142,45 +200,24 @@ export function CommandPalette({ open, onOpenChange, navigate }: CommandPaletteP
                 {t('commandPalette.empty', { query })}
               </div>
             ) : (
-              grouped.map(({ group, items }) => (
-                <div key={group} className="mb-1">
-                  <div className="px-4 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    {t(GROUP_LABEL_KEYS[group])}
+              <>
+                {recentCommands.length > 0 ? (
+                  <div className="mb-1" data-testid="command-recent">
+                    <div className="px-4 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {t('commandPalette.recent')}
+                    </div>
+                    {recentCommands.map(renderItem)}
                   </div>
-                  {items.map((cmd) => {
-                    const globalIndex = flat.indexOf(cmd);
-                    const active = globalIndex === activeIndex;
-                    const Icon = COMMAND_ICONS[cmd.id];
-                    return (
-                      <button
-                        key={cmd.id}
-                        type="button"
-                        role="option"
-                        id={`command-option-${cmd.id}`}
-                        aria-selected={active}
-                        data-active={active}
-                        data-testid={`command-item-${cmd.id}`}
-                        disabled={cmd.disabled}
-                        onMouseEnter={() => setActiveIndex(globalIndex)}
-                        onClick={() => {
-                          if (!cmd.disabled) void cmd.action({ navigate, close, conversationId: null });
-                        }}
-                        className={cn(
-                          'flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors',
-                          active ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
-                          cmd.disabled && 'cursor-not-allowed opacity-40',
-                        )}
-                      >
-                        {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
-                        <span className="flex-1 truncate">{cmd.label}</span>
-                        {cmd.description ? (
-                          <span className="truncate text-xs text-muted-foreground">{cmd.description}</span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))
+                ) : null}
+                {grouped.map(({ group, items }) => (
+                  <div key={group} className="mb-1">
+                    <div className="px-4 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {t(GROUP_LABEL_KEYS[group])}
+                    </div>
+                    {items.map(renderItem)}
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </DialogPrimitive.Content>

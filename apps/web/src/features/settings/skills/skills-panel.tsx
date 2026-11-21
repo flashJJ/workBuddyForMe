@@ -4,6 +4,7 @@ import * as React from 'react';
 import type { PermissionLevel, SkillInfo } from '@wbfm/shared/types';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Badge } from '@/components/ui/badge';
+import { CapabilityStatusBadge } from '@/components/common/status';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
@@ -89,6 +90,15 @@ function SkillRow({ skill }: { skill: SkillInfo }) {
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{skill.manifest?.description || skill.name}</span>
+            <CapabilityStatusBadge
+              status={
+                !skill.exists || skill.error
+                  ? 'error'
+                  : skill.enabled
+                    ? 'enabled'
+                    : 'available'
+              }
+            />
             <code className="rounded bg-muted px-1 text-xs text-muted-foreground">
               {skill.name}
             </code>

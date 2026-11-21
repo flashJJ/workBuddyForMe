@@ -1,11 +1,12 @@
 'use client';
 
-import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Plus, Search } from 'lucide-react';
 import type { Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useCollapsiblePanel } from '@/lib/hooks/use-collapsible-panel';
+import { openMessageSearch } from '../search';
 
 interface Props {
   conversations: Conversation[];
@@ -65,6 +66,18 @@ export function ConversationSidebar({
         >
           <Plus className="h-4 w-4" />
         </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          aria-label={t('chatMessages.search.title')}
+          title={t('chatMessages.search.title')}
+          data-testid="conversation-search-collapsed"
+          onClick={openMessageSearch}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
       </aside>
     );
   }
@@ -78,6 +91,18 @@ export function ConversationSidebar({
       <div className="flex items-center gap-1 p-3">
         <Button type="button" className="flex-1" size="sm" onClick={onNew} disabled={disabled}>
           + {t('chat.newConversationTitle')}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          aria-label={t('chatMessages.search.title')}
+          title={t('chatMessages.search.title')}
+          data-testid="conversation-search"
+          onClick={openMessageSearch}
+        >
+          <Search className="h-4 w-4" />
         </Button>
         <Button
           type="button"

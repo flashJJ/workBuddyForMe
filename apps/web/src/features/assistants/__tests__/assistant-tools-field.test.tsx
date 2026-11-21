@@ -85,6 +85,6 @@ describe('AssistantToolsField（MCP 分组全选）', () => {
   it('达到上限时禁用未勾选项并提示，避免提交时静默截断（B-61）', () => {
     renderField(['current_time'], () => undefined, 1);
     expect(screen.getByRole('checkbox', { name: /联网搜索/ })).toBeDisabled();
-    expect(screen.getByText(/最多选择 1 个工具/)).toBeInTheDocument();
+    expect(screen.getByTestId('limit-hint')).toHaveTextContent('已达上限 1');
   });
 });

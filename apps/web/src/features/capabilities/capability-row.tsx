@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { CapabilityHealth, CapabilityView } from '@wbfm/shared/schemas';
 import { Badge } from '@/components/ui/badge';
+import { CapabilityStatusBadge } from '@/components/common/status';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -34,11 +35,20 @@ export function CapabilityRow({
       className="space-y-2 rounded-lg border bg-ui-card p-4"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={capability.status === 'enabled' ? 'success' : 'outline'}>
-          {capability.status === 'enabled'
-            ? t('capabilities.statusEnabled')
-            : t('capabilities.statusDisabled')}
-        </Badge>
+        <CapabilityStatusBadge
+          status={
+            capability.status === 'enabled'
+              ? health?.status === 'broken'
+                ? 'error'
+                : 'enabled'
+              : 'disabled'
+          }
+          label={
+            capability.status === 'enabled'
+              ? t('capabilities.statusEnabled')
+              : t('capabilities.statusDisabled')
+          }
+        />
         <Badge variant="info">{t(`capabilities.kind.${capability.kind}`)}</Badge>
         <Badge
           variant={

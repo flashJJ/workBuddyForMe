@@ -11,6 +11,7 @@ export const zhSettings = {
   },
   addProvider: '新增供应商',
   loadError: '供应商加载失败',
+
   saving: '保存中…',
   empty: {
     title: '还没有模型供应商',
@@ -120,8 +121,7 @@ export const zhSettings = {
     moonwhiteDesc: '亮色素净，冷调低刺激。',
     sakura: '樱粉',
     sakuraDesc: '亮色柔粉，暖调陪伴感。',
-    fixedDark: '暗色主题',
-    fixedLight: '亮色主题',
+    fixedDark: '暗色主题', fixedLight: '亮色主题',
     modeHint: '星际蓝可在浅色、深色与跟随系统间切换；其他主题自带明暗。',
   },
   demoMode: {
@@ -154,6 +154,7 @@ export const enSettings = {
   },
   addProvider: 'Add provider',
   loadError: 'Failed to load providers',
+
   saving: 'Saving…',
   empty: {
     title: 'No model providers yet',

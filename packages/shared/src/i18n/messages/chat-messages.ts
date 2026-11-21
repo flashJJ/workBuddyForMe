@@ -53,6 +53,22 @@ export const zhChatMessages = {
     promptPlan: '帮我把一个想法拆成三步可执行的计划',
     promptSummary: '总结这次对话，并列出接下来的待办',
     promptSources: '检索知识库后给出带引用的回答',
+    /** v4.17：首启空态三条起步路径 */
+    firstRunHint: '还没有可用模型？三种方式都能马上开始。',
+    firstRunDemo: '用演示模式试一句',
+    firstRunConfigure: '配置我的模型',
+    firstRunTemplates: '从模板开始',
+  },
+  /** v4.17：会话/消息检索弹层 */
+  search: {
+    title: '搜索会话',
+    placeholder: '搜索对话内容…',
+    localOnly: '仅在本机检索',
+    empty: '没有找到匹配内容',
+    emptyHint: '换个关键词，或扩大检索范围',
+    failed: '检索失败，请重试',
+    open: '打开会话',
+    scopeAll: '全部',
   },
   image: {
     unavailable: '图片不可用',
@@ -110,6 +126,20 @@ export const enChatMessages = {
     promptPlan: 'Turn an idea into a three-step executable plan',
     promptSummary: 'Summarize this chat and list the follow-ups',
     promptSources: 'Answer with citations from my knowledge base',
+    firstRunHint: 'No model yet? Pick any of the three ways to start right away.',
+    firstRunDemo: 'Try demo mode',
+    firstRunConfigure: 'Configure my model',
+    firstRunTemplates: 'Start from a template',
+  },
+  search: {
+    title: 'Search conversations',
+    placeholder: 'Search messages…',
+    localOnly: 'Searches locally only',
+    empty: 'No matches',
+    emptyHint: 'Try another keyword or widen the scope',
+    failed: 'Search failed, please retry',
+    open: 'Open conversation',
+    scopeAll: 'All',
   },
   image: {
     unavailable: 'Image unavailable',

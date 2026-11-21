@@ -21,6 +21,7 @@ import {
   type SettingsSectionId,
 } from '@/lib/settings/catalog';
 import { createSettingsPanelEntries } from './settings-registry';
+import { SettingsQuickLinks } from './settings-quick-links';
 import {
   SettingsPinButton,
   SettingsShortcuts,
@@ -199,6 +200,9 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
 
           {!searching && shortcuts.ids.length > 0 && (
             <SettingsShortcuts ids={shortcuts.ids} onOpen={openPanel} />
+          )}
+          {!searching && shortcuts.ids.length === 0 && (
+            <SettingsQuickLinks onOpen={openPanel} />
           )}
 
           {SETTINGS_SECTIONS.map((section) => {

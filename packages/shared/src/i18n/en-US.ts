@@ -4,6 +4,7 @@ import { enCommon } from './messages/common';
 import { enNav } from './messages/nav';
 import { enCommandPalette } from './messages/command-palette';
 import { enSettings } from './messages/settings';
+import { enSettingsQuick } from './messages/settings-quick';
 import { enSettingsProviders } from './messages/settings-providers';
 import { enSettingsMcp } from './messages/settings-mcp';
 import { enSettingsBackup } from './messages/settings-backup';
@@ -73,6 +74,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   nav: enNav,
   commandPalette: enCommandPalette,
   settings: enSettings,
+  settingsQuick: enSettingsQuick,
   settingsProviders: enSettingsProviders,
   settingsMcp: enSettingsMcp,
   settingsBackup: enSettingsBackup,

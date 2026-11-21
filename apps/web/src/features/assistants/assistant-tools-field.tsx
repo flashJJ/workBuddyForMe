@@ -6,6 +6,7 @@ import type { ToolName } from '@wbfm/shared/constants';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { TOOL_NAMES } from '@wbfm/shared/constants';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { LimitHint } from '@/components/common/limits';
 
 const TOOL_LABEL_KEYS: Record<ToolName, MessageKey> = {
   current_time: 'assistants.tools.currentTime',
@@ -145,11 +146,7 @@ export function AssistantToolsField({
         </div>
         );
       })}
-      {atLimit && (
-        <p className="text-xs text-muted-foreground">
-          {t('assistants.tools.limitHint', { max: toolLimit })}
-        </p>
-      )}
+      <LimitHint current={enabledTools.length} limit={toolLimit} />
       {hasKnowledgeBases && (
         <label className="flex cursor-pointer items-center gap-2 border-t pt-2 text-sm">
           <input

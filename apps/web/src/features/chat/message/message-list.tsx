@@ -1,9 +1,11 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { ArrowDown, Sparkles } from 'lucide-react';
 import type { Message } from '@wbfm/shared/types';
 import { Skeleton } from '@/components/common/state';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { AgentCardEntry } from '@/features/agent-collab';
 import type { StreamTiming } from '../types/chat-session.types';
@@ -123,6 +125,9 @@ export function MessageList({
               </button>
             ))}
           </div>
+          <Button asChild variant="outline" size="sm" className="mt-4" data-testid="chat-empty-templates">
+            <Link href="/assistants">{t('chatMessages.list.firstRunTemplates')}</Link>
+          </Button>
         </div>
       </div>
     );

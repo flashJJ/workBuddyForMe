@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Archive, MoreHorizontal, Share2 } from 'lucide-react';
+import { Archive, MoreHorizontal, Search, Share2 } from 'lucide-react';
 import type { Assistant, Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -11,6 +11,7 @@ import { PlanChip } from '@/features/plans/chip';
 import { RunGraphLauncher } from '@/features/run-graph';
 import { ContextInsightsLauncher } from '../context-insights';
 import { BranchLauncher, BranchOriginBanner } from '@/features/branch';
+import { openMessageSearch } from '../search';
 
 interface Props {
   assistants: Assistant[];
@@ -108,6 +109,18 @@ function HeaderActions({
 
   return (
     <div className="flex shrink-0 items-center gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        aria-label={t('chatMessages.search.title')}
+        title={t('chatMessages.search.title')}
+        data-testid="chat-message-search"
+        onClick={openMessageSearch}
+      >
+        <Search className="h-4 w-4" />
+      </Button>
       <PlanChip conversationId={conversationId} />
       {conversation?.summaryTurns ? (
         <button

@@ -45,6 +45,17 @@ export const zhCommon = {
     saving: '保存中…',
     uploading: '上传中…',
   },
+  /** v4.17：数量上限与能力状态统一口径 */
+  limit: {
+    reached: '已达上限 {max}',
+    remaining: '还可选 {count} 项',
+  },
+  status: {
+    available: '可用',
+    enabled: '已启用',
+    disabled: '已停用',
+    error: '异常',
+  },
   words: {
     name: '名称',
     description: '描述',
@@ -131,6 +142,16 @@ export const enCommon = {
     share: 'Share',
     saving: 'Saving…',
     uploading: 'Uploading…',
+  },
+  limit: {
+    reached: 'Limit of {max} reached',
+    remaining: '{count} more allowed',
+  },
+  status: {
+    available: 'Available',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    error: 'Error',
   },
   words: {
     name: 'Name',

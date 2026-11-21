@@ -101,3 +101,37 @@ describe('用户可选上限单一来源', () => {
     expect(mcpForm).not.toMatch(/maxLength=\{40\}/);
   });
 });
+
+/**
+ * v4.17：用户多选字段禁止在保存路径静默截断（B-61 回归）。
+ * 超限必须是「可见提示 + 禁用」；slice 只允许出现在展示层（如摘要、预览）。
+ */
+describe('多选保存路径无静默截断', () => {
+  const FORM_DIRS = [
+    'apps/web/src/features/assistants',
+    'apps/web/src/features/flows',
+    'apps/web/src/features/settings',
+  ];
+  // 数组型多选字段的截断才是缺陷；字符串长度截断与展示摘要不在此列
+  const MULTI_SELECT_TRUNCATE =
+    /\b(skills|knowledgeBases|inputs|enabledTools|toolNames|trustedKeys|keys)\.slice\(0,\s*\d+\)/;
+  const ALLOWLIST = new Set<string>();
+
+  it('保存路径不直接截断用户选择', () => {
+    const offenders: string[] = [];
+    for (const relative of FORM_DIRS) {
+      for (const file of walk(join(REPO_ROOT, relative))) {
+        const normalized = file.replace(/\\/g, '/');
+        if (normalized.includes('.test.') || ALLOWLIST.has(normalized)) continue;
+        readFileSync(file, 'utf8')
+          .split('\n')
+          .forEach((line, index) => {
+            if (MULTI_SELECT_TRUNCATE.test(line)) {
+              offenders.push(`${normalized}:${index + 1}`);
+            }
+          });
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

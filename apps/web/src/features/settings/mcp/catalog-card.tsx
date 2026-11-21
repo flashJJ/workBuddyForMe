@@ -5,7 +5,7 @@ import type { McpCatalogTier, McpCatalogEntry } from '@wbfm/shared/constants';
 import type { McpOAuthStatus, McpRuntimeStatus, McpServerInfo } from '@wbfm/shared/types';
 import { missingCatalogFields } from '@wbfm/shared/constants';
 import { CheckCircle2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { CapabilityStatusBadge } from '@/components/common/status';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { missingRequirement, type CatalogInstallResult } from './use-catalog-install';
@@ -104,9 +104,18 @@ export function CatalogCard({
             </span>
             <span className="font-mono text-[11px] text-muted-foreground">{entry.name}</span>
             {existing && existingLabel && (
-              <Badge variant="outline" className="text-[11px]">
-                {existingLabel}
-              </Badge>
+              <CapabilityStatusBadge
+                status={
+                  !existingServer!.enabled
+                    ? 'disabled'
+                    : existingServer!.status === 'error'
+                      ? 'error'
+                      : existingServer!.status === 'connected'
+                        ? 'enabled'
+                        : 'available'
+                }
+                label={existingLabel}
+              />
             )}
           </div>
           <p className="text-xs text-muted-foreground">{entry.description}</p>

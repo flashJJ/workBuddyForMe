@@ -30,6 +30,7 @@ import { useFirstAsk } from '../hooks/use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
 import { RecalledMemoriesBar } from '../overlay/recalled-memories-bar';
 import { useChatDeepLink } from '../hooks/use-chat-deep-link';
+import { useTtfv } from './use-ttfv';
 import { ChatStageBar, useChatModelView } from '../stage';
 import { getPetBridge } from '@/features/pet/bridge';
 
@@ -102,6 +103,7 @@ export function ChatPage({
     hasChatModel,
   });
   const { session, voiceSettings, ttsEnabled, handleTtsToggle, handsfree, petOpen } = companion;
+  useTtfv(session.messages.some((m) => m.role === 'assistant' && m.content.trim().length > 0));
 
   // v1.7 剧情事件编排（情绪基线/舞台/触发器；桌宠打开时主窗仍承接 TTS 与中继）
   const { expression: avatarExpression, stage: eventStage } = useChatEvents({
