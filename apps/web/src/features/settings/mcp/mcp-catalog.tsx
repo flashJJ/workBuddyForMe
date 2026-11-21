@@ -51,12 +51,20 @@ export function McpCatalog({ servers, oauthStatuses, onManual, onAuthorize }: Pr
     () => new Set((servers ?? []).map((server) => server.name)),
     [servers],
   );
-  const selectedEntries = MCP_CATALOG.filter((entry) => selected.includes(entry.id));
+  const existingServers = React.useMemo(
+    () => new Map((servers ?? []).map((server) => [server.name, server])),
+    [servers],
+  );
+  const selectedEntries = MCP_CATALOG.filter(
+    (entry) => selected.includes(entry.id) && !existingNames.has(entry.name),
+  );
   const invalidEntries = selectedEntries.filter(
     (entry) => missingCatalogFields(entry, values[entry.id] ?? {}).length > 0,
   );
 
   const toggle = (entry: McpCatalogEntry) => {
+    // 已安装的同名服务器不允许再次勾选，避免“装过还要不要重选”的歧义
+    if (existingNames.has(entry.name)) return;
     setSelected((prev) =>
       prev.includes(entry.id) ? prev.filter((id) => id !== entry.id) : [...prev, entry.id],
     );
@@ -67,12 +75,23 @@ export function McpCatalog({ servers, oauthStatuses, onManual, onAuthorize }: Pr
   };
 
   const selectRecommended = () => {
-    setSelected(catalogByTier('recommended').map((entry) => entry.id));
+    setSelected(
+      catalogByTier('recommended')
+        .filter((entry) => !existingNames.has(entry.name))
+        .map((entry) => entry.id),
+    );
   };
 
   const runInstall = async () => {
     const names = await install(selectedEntries, values, existingNames);
     setInstalledNames(names);
+    const installed = new Set(names);
+    setSelected((prev) =>
+      prev.filter((id) => {
+        const entry = MCP_CATALOG.find((item) => item.id === id);
+        return !entry || !installed.has(entry.name);
+      }),
+    );
   };
 
   const runtimeSummary = runtime
@@ -121,11 +140,11 @@ export function McpCatalog({ servers, oauthStatuses, onManual, onAuthorize }: Pr
             type="button"
             size="sm"
             onClick={() => void runInstall()}
-            disabled={installing || selected.length === 0 || invalidEntries.length > 0}
+            disabled={installing || selectedEntries.length === 0 || invalidEntries.length > 0}
           >
             {installing
               ? t('settingsMcp.mcp.catalog.installing')
-              : t('settingsMcp.mcp.catalog.installSelected', { count: selected.length })}
+              : t('settingsMcp.mcp.catalog.installSelected', { count: selectedEntries.length })}
           </Button>
         </div>
       </div>
@@ -182,7 +201,7 @@ export function McpCatalog({ servers, oauthStatuses, onManual, onAuthorize }: Pr
                     result={results[entry.id]}
                     runtime={runtime}
                     oauthStatus={serverId ? oauthStatuses?.[serverId] : undefined}
-                    existing={existingNames.has(entry.name)}
+                    existingServer={existingServers.get(entry.name)}
                     disabled={installing}
                     onToggle={toggle}
                     onValueChange={setValue}

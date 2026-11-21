@@ -2,8 +2,9 @@
 
 import type { MessageKey } from '@wbfm/shared/i18n';
 import type { McpCatalogTier, McpCatalogEntry } from '@wbfm/shared/constants';
-import type { McpOAuthStatus, McpRuntimeStatus } from '@wbfm/shared/types';
+import type { McpOAuthStatus, McpRuntimeStatus, McpServerInfo } from '@wbfm/shared/types';
 import { missingCatalogFields } from '@wbfm/shared/constants';
+import { CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -28,7 +29,8 @@ interface Props {
   result: CatalogInstallResult | undefined;
   runtime: McpRuntimeStatus | null;
   oauthStatus?: McpOAuthStatus;
-  existing: boolean;
+  /** 已安装的同名服务器；存在时卡片只读，不再参与批量勾选 */
+  existingServer?: McpServerInfo;
   disabled: boolean;
   onToggle: (entry: McpCatalogEntry) => void;
   onValueChange: (entryId: string, token: string, value: string) => void;
@@ -44,7 +46,7 @@ export function CatalogCard({
   result,
   runtime,
   oauthStatus,
-  existing,
+  existingServer,
   disabled,
   onToggle,
   onValueChange,
@@ -52,6 +54,16 @@ export function CatalogCard({
   onAuthorize,
 }: Props) {
   const { t } = useI18n();
+  const existing = Boolean(existingServer);
+  const existingLabel = !existingServer
+    ? null
+    : !existingServer.enabled
+      ? t('settingsMcp.mcp.catalog.installedDisabled')
+      : existingServer.status === 'connected'
+        ? t('settingsMcp.mcp.catalog.installOk', { count: existingServer.toolCount })
+        : existingServer.status === 'error'
+          ? t('settingsMcp.mcp.catalog.installedError')
+          : t('settingsMcp.mcp.catalog.installedEnabled');
   const missing = selected ? missingCatalogFields(entry, values) : [];
   const runtimeIssue = runtime ? missingRequirement(entry, runtime) : null;
 
@@ -65,18 +77,25 @@ export function CatalogCard({
     <li
       data-testid={`mcp-catalog-${entry.id}`}
       className={`rounded-md border p-3 transition-colors ${
-        selected ? 'border-primary/50 bg-primary/5' : 'bg-ui-row'
+        selected && !existing ? 'border-primary/50 bg-primary/5' : 'bg-ui-row'
       }`}
     >
       <div className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          className="mt-1 h-4 w-4"
-          checked={selected}
-          disabled={disabled}
-          aria-label={t('settingsMcp.mcp.catalog.select', { name: entry.title })}
-          onChange={() => onToggle(entry)}
-        />
+        {existing ? (
+          <CheckCircle2
+            className="mt-1 h-4 w-4 shrink-0 text-success"
+            aria-hidden
+          />
+        ) : (
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4"
+            checked={selected}
+            disabled={disabled}
+            aria-label={t('settingsMcp.mcp.catalog.select', { name: entry.title })}
+            onChange={() => onToggle(entry)}
+          />
+        )}
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{entry.title}</span>
@@ -84,13 +103,18 @@ export function CatalogCard({
               {t(TIER_KEYS[entry.tier])}
             </span>
             <span className="font-mono text-[11px] text-muted-foreground">{entry.name}</span>
-            {existing && (
+            {existing && existingLabel && (
               <Badge variant="outline" className="text-[11px]">
-                {t('settingsMcp.mcp.catalog.installed')}
+                {existingLabel}
               </Badge>
             )}
           </div>
           <p className="text-xs text-muted-foreground">{entry.description}</p>
+          {existing && (
+            <p className="text-[11px] text-muted-foreground">
+              {t('settingsMcp.mcp.catalog.installedHint')}
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
             {entry.requires.includes('node') && (
               <span className="rounded border px-1.5 py-0.5">
@@ -125,7 +149,7 @@ export function CatalogCard({
           </div>
           {entry.note && <p className="text-[11px] text-muted-foreground">{entry.note}</p>}
 
-          {selected && (entry.fields?.length ?? 0) > 0 && (
+          {selected && !existing && (entry.fields?.length ?? 0) > 0 && (
             <div className="space-y-2 rounded-md border border-dashed bg-ui-row p-2">
               {entry.fields!.map((field) => (
                 <label
@@ -165,10 +189,10 @@ export function CatalogCard({
             </div>
           )}
 
-          {runtimeIssue && selected && (
+          {runtimeIssue && selected && !existing && (
             <p className="text-[11px] text-destructive">{runtimeIssue}</p>
           )}
-          {result && result.status !== 'idle' && (
+          {!existing && result && result.status !== 'idle' && (
             <div className="space-y-1">
               <p
                 className={`text-[11px] ${

@@ -48,6 +48,7 @@
 | B-61 | P2 | 助手工具 | 助手编辑里勾选 MCP 工具（如 filesystem 多个）并保存，重新打开后勾选消失，只剩前 20 个 | 工具上限 20 是仅有 19 个内置工具时代的约束：`enabledToolsSchema.max(20)` 与 `buildAssistantBody` 的 `uniqueStrings(...,20,...)` 会静默截断；MCP 工具追加在内置之后，超限时整组被丢弃 | 上限提为共享常量 `ASSISTANT_ENABLED_TOOLS_MAX=128`（容纳全部内置 + 一个 50 工具的 MCP 服务器），选择界面达到上限后禁用未勾选项并提示，避免提交时静默丢失 | 本地库实证 `enabled_tools` 恰为 20 且仅剩 1 个 MCP；`assistant-form-body.test.ts` 新增 23 项内置+MCP 不被截断；`assistant-tools-field.test.tsx` 覆盖上限禁用提示；schema 边界改为 128/129 | 本批 |
 | B-62 | P2 | 助手/流程配置 | 助手勾选第 21 个技能或第 11 个知识库后保存，勾选静默消失；流程 start 可添加第 21 个入参、agent 节点可勾选第 11 个知识库，保存出的流程调用时才校验失败 | 同 B-61：上限在 zod schema、前端提交体、画布表单三处各自写死字面量，UI 未拦截（技能 20、知识库 10、入参 20） | 上限抽为共享常量 `ASSISTANT_SKILL_NAMES_MAX`/`ASSISTANT_KNOWLEDGE_BASES_MAX`/`FLOW_INPUTS_MAX`/`FLOW_AGENT_KNOWLEDGE_BASES_MAX`，schema 与表单同源；UI 达上限禁用未选项并提示 | schema 边界用例（技能 20/21、知识库 10/11、流程 20/21、10/11）+ 表单兜底截断 + 技能字段上限禁用；`pnpm check` 全绿 | 本批 |
 | B-63 | P3 | 配置上限 | 能力信任公钥上限与 MCP 服务器名称长度在 UI 里仍是字面量（20 / 40），与 schema 常量重复；当前数值相同，但任一侧后续调整都会重新产生静默截断或保存失败 | P1 模式的残余：UI 未复用共享常量，仅靠人工保持一致 | 两处改为引用 `CAPABILITY_TRUSTED_KEYS_MAX` / `MCP_SERVER_NAME_MAX`；`repo-invariants` 新增断言，禁止字面量回潮 | 不变量测试覆盖两处引用与旧字面量；`pnpm check` 全绿 | 本批 |
+| B-64 | P2 | 能力中心 | 已安装的 MCP 服务器仍显示可勾选复选框，用户无法判断它已经可用还是需要重新选择；再次勾选安装只会得到“同名服务器已存在”并跳过 | 卡片仅用 `existing` 渲染“已存在”徽标，复选框、`selectRecommended` 与批量安装计数都未排除已安装项，选择状态与安装状态混在一起 | 已安装卡片改为只读：去掉复选框，显示连接状态徽标（已连接·N 个工具 / 已安装·未启用 / 已启用·连接异常）与“去下方服务器列表管理”提示；选择、全选、安装计数统一过滤已安装项，安装成功后从选中集合移除 | `mcp-panel.test.tsx` 新增用例：已安装 filesystem 无复选框且展示状态与指引、未安装项仍可勾选、安装按钮在无有效选择时禁用；`pnpm check` 全绿 | 本批 |
 
 ## 三、数据与桌面（深度排查批次）
 

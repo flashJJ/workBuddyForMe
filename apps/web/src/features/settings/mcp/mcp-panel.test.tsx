@@ -67,6 +67,23 @@ describe('MCP 服务器面板（v0.6 M1）', { timeout: 15_000 }, () => {
     expect(list.textContent).toContain('进程退出（code=1）');
   });
 
+  it('能力中心：已安装服务器不再可勾选，并提示去列表管理', async () => {
+    fetchMock.mockResolvedValue(
+      ok([makeServer({ id: '1', name: 'filesystem', status: 'connected', toolCount: 16 })]),
+    );
+    renderWithProviders(<McpPanel />);
+    await screen.findByTestId('mcp-server-list');
+
+    const catalog = screen.getByTestId('mcp-catalog');
+    // 已安装的 filesystem 不再渲染选择框，改为状态徽标与指引
+    expect(within(catalog).queryByRole('checkbox', { name: /本地文件/ })).toBeNull();
+    expect(catalog.textContent).toContain('已连接 · 16 个工具');
+    expect(catalog.textContent).toContain('无需重复勾选');
+    // 未安装的条目仍可批量勾选
+    expect(within(catalog).getByRole('checkbox', { name: /结构化记忆/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /安装选中/ })).toBeDisabled();
+  });
+
   it('空状态与添加入口', async () => {
     fetchMock.mockResolvedValue(ok([]));
     const user = userEvent.setup();
