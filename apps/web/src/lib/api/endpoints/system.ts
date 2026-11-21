@@ -1,6 +1,8 @@
 /** 模型/设置/助手/角色卡/舞台/能力包/MCP/技能/工具/语音相关路径（v4.13 从 endpoints.ts 拆出） */
 export const systemApi = {
   providers: '/api/providers',
+  /** v4.19：供应商健康度（只读，本机事件代理指标） */
+  providerHealth: '/api/providers/health',
   provider: (id: string) => `/api/providers/${id}`,
   providerTest: (id: string) => `/api/providers/${id}/test`,
   /** v2.17：联网搜索连接测试 */

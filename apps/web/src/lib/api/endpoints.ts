@@ -13,6 +13,7 @@ export const API = {
 
 export const QUERY_KEYS = {
   providers: ['providers'] as const,
+  providerHealth: (days: number) => ['provider-health', days] as const,
   models: (providerId: string) => ['models', providerId] as const,
   modelsAll: ['models', 'all'] as const,
   settings: ['settings'] as const,

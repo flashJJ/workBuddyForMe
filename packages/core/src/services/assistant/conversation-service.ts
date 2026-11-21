@@ -207,9 +207,10 @@ export function createConversationService(deps: ServiceDeps) {
       });
     },
 
-    markMessageError(id: string, code: string, message: string): void {
+    markMessageError(id: string, code: string, message: string, modelId?: string | null): void {
       messages.markError(id, code, message);
-      recordForMessage(id, 'message_error', { code, message });
+      // v4.19：补充目标模型 id，供供应商健康度归属；不含正文
+      recordForMessage(id, 'message_error', { code, message, ...(modelId ? { modelId } : {}) });
     },
 
     stopMessage(id: string, content: string): void {

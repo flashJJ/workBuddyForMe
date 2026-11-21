@@ -260,7 +260,12 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           }
           turnError = error;
           const failure = normalizeFailure(error);
-          conversations.markMessageError(assistantMessage.id, failure.code, failure.message);
+          conversations.markMessageError(
+            assistantMessage.id,
+            failure.code,
+            failure.message,
+            target.model.id,
+          );
           conversations.saveMessageToolTrace(assistantMessage.id, trace);
           yield { event: 'error', data: failure };
           return;

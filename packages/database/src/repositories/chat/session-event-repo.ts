@@ -147,6 +147,20 @@ export function createSessionEventRepository(db: DatabaseInstance) {
       return rows.map(mapEvent);
     },
 
+    /** v4.19：按类型 + 时间窗口查询（健康度聚合用，避免全量扫表） */
+    listByTypesSince(types: string[], sinceIso: string, limit = 5000): SessionEventView[] {
+      if (types.length === 0) return [];
+      const placeholders = types.map(() => '?').join(',');
+      const rows = db
+        .prepare(
+          `SELECT * FROM session_events
+           WHERE type IN (${placeholders}) AND created_at >= ?
+           ORDER BY created_at ASC LIMIT ?`,
+        )
+        .all(...types, sinceIso, Math.min(limit, 5000)) as SessionEventRow[];
+      return rows.map(mapEvent);
+    },
+
     /** 中文 2 字词全文检索（复用 uni-gram 分词） */
     search(
       query: string,

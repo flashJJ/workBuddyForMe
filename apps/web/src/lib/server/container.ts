@@ -20,6 +20,7 @@ import {
   createModPackService,
   createPendingConfirmations,
   createPermissionService,
+  createProviderHealthService,
   createProviderService,
   createSettingsService,
   createSearchService,
@@ -61,7 +62,6 @@ import { createCapabilityCatalog } from '@wbfm/core/capabilities';
 import { createAuditService } from '@wbfm/core/governance';
 import type { ServiceContainer } from './container-types';
 export type { ServiceContainer };
-
 /**
  * dev 模式下 Next 按需编译/HMR 会重新求值本模块，模块级 container 会重置为 null，
  * 导致 SSE 长连接持有旧 flowRunner（含人工等待器）而 POST 路由拿到新实例。
@@ -214,8 +214,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
   const stageScenes = createStageSceneService(deps);
-  const modPacks = createModPackService({ db, stageScenes });
-  const schedules = createSchedulesService(deps);
+  const modPacks = createModPackService({ db, stageScenes }); const schedules = createSchedulesService(deps);
   const meetingClosure = createMeetingClosureService({ db, workflows, flowRunner, schedules });
   const branches = createRecoveredBranchService(deps);
   return {
@@ -248,6 +247,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     runtime,
     flowRunner,
     providers: createProviderService(deps),
+    providerHealth: createProviderHealthService(deps),
     models: createModelService(deps),
     settings: settingsService,
     audit,

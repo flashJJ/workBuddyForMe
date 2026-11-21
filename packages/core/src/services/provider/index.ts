@@ -3,3 +3,4 @@ export * from './demo-provider';
 export * from './model-service';
 export * from './provider-adapter';
 export * from './provider-service';
+export * from './provider-health-service';

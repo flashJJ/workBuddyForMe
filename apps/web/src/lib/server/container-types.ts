@@ -13,6 +13,7 @@ import type {
   createMotionService,
   createPendingConfirmations,
   createPermissionService,
+  createProviderHealthService,
   createProviderService,
   createSettingsService,
   createSearchService,
@@ -62,6 +63,7 @@ export interface ServiceContainer {
   db: DatabaseInstance;
   cipher: SecretCipher;
   providers: ReturnType<typeof createProviderService>;
+  providerHealth: ReturnType<typeof createProviderHealthService>;
   models: ReturnType<typeof createModelService>;
   settings: ReturnType<typeof createSettingsService>;
   search: ReturnType<typeof createSearchService>;

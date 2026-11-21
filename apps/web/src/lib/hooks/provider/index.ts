@@ -2,4 +2,5 @@
 export * from './use-first-token-probe';
 export * from './use-ollama-probe';
 export * from './use-providers';
+export * from './use-provider-health';
 export * from './use-settings';

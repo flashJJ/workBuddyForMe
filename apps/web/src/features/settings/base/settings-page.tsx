@@ -12,6 +12,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
 import { ProviderCard } from '../providers/provider-card';
 import { ProviderFormDialog } from '../providers/provider-form-dialog';
+import { ProviderHealthPanel } from '../providers/provider-health-panel';
 import {
   SETTINGS_SECTIONS,
   matchesSettingsQuery,
@@ -87,6 +88,7 @@ export function SettingsPage({ autoCreateCard = false }: { autoCreateCard?: bool
           ))}
         </div>
       )}
+      {mounted && !isLoading && !isError && <ProviderHealthPanel />}
     </>
   );
 
