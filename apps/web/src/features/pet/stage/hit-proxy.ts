@@ -48,40 +48,41 @@ function uiPolygon(rect: PetUiRect, viewport: { width: number; height: number })
 
 /** 由模型包围盒生成贴合站姿的命中轮廓（头窄-肩宽-脚窄，四角切掉透明区） */
 export function buildPetHitProxy(
-  rect: AvatarScreenRect,
+  rect: AvatarScreenRect | null,
   viewport: { width: number; height: number },
   uiRect?: PetUiRect | readonly PetUiRect[] | null,
 ): PetHitProxy | null {
-  if (!(rect.width > 0) || !(rect.height > 0)) return null;
   if (!(viewport.width > 0) || !(viewport.height > 0)) return null;
   const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-  const left = clamp01(rect.x / viewport.width);
-  const right = clamp01((rect.x + rect.width) / viewport.width);
-  const top = clamp01(rect.y / viewport.height);
-  const bottom = clamp01((rect.y + rect.height) / viewport.height);
-  const width = right - left;
-  const height = bottom - top;
-  if (width < 0.02 || height < 0.02) return null;
-  const at = (fx: number, fy: number): [number, number] => [left + width * fx, top + height * fy];
-  const polygons: PetHitPolygon[] = [
-    {
-      id: 'body',
-      points: [
-        at(0.3, 0),
-        at(0.7, 0),
-        at(1, 0.08),
-        at(1, 0.3),
-        at(0.92, 0.46),
-        at(0.88, 0.78),
-        at(0.78, 1),
-        at(0.22, 1),
-        at(0.12, 0.78),
-        at(0.08, 0.46),
-        at(0, 0.3),
-        at(0, 0.08),
-      ],
-    },
-  ];
+  const polygons: PetHitPolygon[] = [];
+  if (rect && rect.width > 0 && rect.height > 0) {
+    const left = clamp01(rect.x / viewport.width);
+    const right = clamp01((rect.x + rect.width) / viewport.width);
+    const top = clamp01(rect.y / viewport.height);
+    const bottom = clamp01((rect.y + rect.height) / viewport.height);
+    const width = right - left;
+    const height = bottom - top;
+    if (width >= 0.02 && height >= 0.02) {
+      const at = (fx: number, fy: number): [number, number] => [left + width * fx, top + height * fy];
+      polygons.push({
+        id: 'body',
+        points: [
+          at(0.3, 0),
+          at(0.7, 0),
+          at(1, 0.08),
+          at(1, 0.3),
+          at(0.92, 0.46),
+          at(0.88, 0.78),
+          at(0.78, 1),
+          at(0.22, 1),
+          at(0.12, 0.78),
+          at(0.08, 0.46),
+          at(0, 0.3),
+          at(0, 0.08),
+        ],
+      });
+    }
+  }
   const uiRects: readonly PetUiRect[] =
     uiRect == null
       ? []
@@ -92,7 +93,21 @@ export function buildPetHitProxy(
     const ui = uiPolygon(rect, viewport);
     if (ui) polygons.push(ui);
   }
-  return { version: 1, polygons };
+  return polygons.length > 0 ? { version: 1, polygons } : null;
+}
+
+/**
+ * 桌宠有背景时整张画框都可见，应整体参与命中，否则点在角色上方的背景上会穿透到桌面。
+ * 与 PetBackground 的 inset-[7px] / rounded-[15px] 对齐，留出边缘透明区。
+ */
+export function petBackgroundHitRect(
+  viewport: { width: number; height: number },
+  padding = 7,
+): PetUiRect | null {
+  const width = viewport.width - padding * 2;
+  const height = viewport.height - padding * 2;
+  if (!(width > 0) || !(height > 0)) return null;
+  return { x: padding, y: padding, width, height };
 }
 
 /** 渲染层指针命中：有轮廓用轮廓，未上报回落固定矩形 */
@@ -107,13 +122,11 @@ export function isPetHitPointAt(x: number, y: number, width: number, height: num
 /** 模型/UI 区域任一变化时重算并上报（内容不变则跳过 IPC） */
 function pushProxy(bridge: WbfmPetBridge | null): void {
   if (!bridge) return;
-  const proxy = latestModelRect
-    ? buildPetHitProxy(
-        latestModelRect,
-        { width: window.innerWidth, height: window.innerHeight },
-        [...latestUiRects.values()],
-      )
-    : null;
+  const proxy = buildPetHitProxy(
+    latestModelRect,
+    { width: window.innerWidth, height: window.innerHeight },
+    [...latestUiRects.values()],
+  );
   const key = proxy ? JSON.stringify(proxy) : 'null';
   if (key === lastProxyKey) return;
   lastProxyKey = key;

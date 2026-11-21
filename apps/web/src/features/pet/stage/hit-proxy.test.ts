@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPetHitProxy } from './hit-proxy';
+import { buildPetHitProxy, petBackgroundHitRect } from './hit-proxy';
 
 describe('buildPetHitProxy（模型包围盒 → 命中轮廓）', () => {
   const viewport = { width: 260, height: 340 };
@@ -50,5 +50,20 @@ describe('buildPetHitProxy（模型包围盒 → 命中轮廓）', () => {
     expect(buildPetHitProxy({ x: 0, y: 0, width: 0, height: 0 }, viewport)).toBeNull();
     expect(buildPetHitProxy({ x: 0, y: 0, width: 1, height: 1 }, { width: 0, height: 0 })).toBeNull();
     expect(buildPetHitProxy({ x: 0, y: 0, width: 2, height: 200 }, viewport)).toBeNull();
+  });
+
+  it('有背景时整张画框并入命中区：无模型轮廓也能覆盖角色上方空白（B-65）', () => {
+    const rect = petBackgroundHitRect(viewport, 7);
+    expect(rect).toEqual({ x: 7, y: 7, width: viewport.width - 14, height: viewport.height - 14 });
+    const proxy = buildPetHitProxy(null, viewport, rect);
+    expect(proxy?.polygons.map((polygon) => polygon.id)).toEqual(['ui']);
+    const [left, top] = proxy!.polygons[0]!.points[0]!;
+    // 画框顶部与左侧都从 7px 开始，覆盖角色上方的可见背景
+    expect(left).toBeLessThan(0.1);
+    expect(top).toBeLessThan(0.05);
+  });
+
+  it('背景命中矩形在退化视口下返回 null', () => {
+    expect(petBackgroundHitRect({ width: 10, height: 10 }, 7)).toBeNull();
   });
 });

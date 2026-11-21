@@ -40,6 +40,7 @@ import { useWorkAlerts } from './use-work-alerts';
 import { usePetFrameMode } from './stage/use-pet-frame-mode';
 import { usePetSleep } from './stage/use-pet-sleep';
 import { reportPetUiRect, usePetHitProxy } from './stage/hit-proxy';
+import { usePetBackgroundHit } from './stage/settings/use-pet-background-hit';
 import { PetSubtitleBubble } from './stage/pet-subtitle-bubble';
 import { PetBackground, PetFrameOverlay } from '@/features/background';
 import { usePetAmbientTalk } from './stage/use-pet-ambient-talk';
@@ -85,7 +86,7 @@ export function PetStage({
   const chibi = useAvatarChibi();
   // 主窗保存设置后立即拉取新值：勿扰/互动短句等开关不再需要重开桌宠才生效
   useSettingsSync();
-  const bridge = getPetBridge();
+  const bridge = getPetBridge(); usePetBackgroundHit(bridge);
   const controllerRef = React.useRef<Live2dController | null>(null); usePetPropDebug(controllerRef);
   // v3.0 P0：帧率档位 + 模型命中轮廓上报；P1：10min 无交互入睡
   const frameMode = usePetFrameMode(voiceState);
@@ -93,8 +94,7 @@ export function PetStage({
   // v3.5：久无交互背对 / 点击或说话转回
   const faceAway = usePetFaceAway(voiceState);
   const onModelRect = usePetHitProxy(bridge); const generated = useGeneratedScripts(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId)); const scenePacks = useSceneContent(PET_SCRIPT_ENABLED && isVrmAvatarId(modelId)); const propContent = usePropContent();
-  const onScriptPanelRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect('script-panel', rect, bridge), [bridge]);
-  const onMotionMenuRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect('motion-menu', rect, bridge), [bridge]);
+  const onScriptPanelRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect('script-panel', rect, bridge), [bridge]); const onMotionMenuRect = React.useCallback((rect: { x: number; y: number; width: number; height: number } | null) => reportPetUiRect('motion-menu', rect, bridge), [bridge]);
   const [line, setLine] = React.useState<string>(''); const lineTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const showLine = React.useCallback((text: string, durationMs: number) => {
     setLine(text);
