@@ -20,6 +20,7 @@
 | B-47 | P2 | E2E | 免手 VAD ③ 失败后组内重试从 ① 开始，同名供应商叠加，标题断言命中 2/3 个元素，重试必失败 | ① 依赖全新数据根，未做幂等清理（同 B-04 类） | ① 创建前按名称清理残留供应商，组结束 `afterAll` 再清一次 | 重试可从 ① 干净重跑 | 本批 |
 | B-48 | P0 | E2E | 41 个 spec 共用一个数据根，跨文件残留造成顺序依赖与「重试必败」（B-03/04/47 同一病根），只能逐条打清理补丁 | 缺文件级隔离；E2E 串行执行让污染被字母序掩盖 | 新增仅 mock 模式挂载的 `POST /api/testing/reset`（停常驻定时器/丢弃语音运行时与编译队列单例→关库→清数据根→重建容器）；41 个 spec 统一 `beforeAll` 重置；原跨套件依赖改为 `tests/e2e/seed.ts` 自行播种 | 生产构建全量 150 例：147 通过 / 3 跳过 / 0 失败（19.1 分钟） | 本批 |
 | B-49 | P1 | 服务端容器 | 容器重建后旧路由 chunk 仍持旧实例，旧 SQLite 连接不释放（Windows 删数据根 EPERM），/api/voice/* 命中已关闭连接 | `container.ts` 模块级单例在 Next 多 chunk 打包下各自漂移；VoiceRuntime 等 globalThis 单例同样绑旧库 | 单例只保留 `globalThis` 一份；重置前停调度器/流程补偿定时器、丢弃 VoiceRuntime 单例并关闭容器 DB | reset 连续调用均 200，数据根可清理，语音路由正常 | 本批 |
+| B-53 | P1 | Nightly | 夜间验收在干净检出上构建 Web 必失败：`Can't resolve '@wbfm/shared/pet'`（另有 `@wbfm/shared/constants`） | 工作区包子路径 exports 的生产条件指向 gitignore 的 `dist/`；夜间直接 `build:web`，未先构建依赖。CI 因先跑 `typecheck`（turbo `^build`）顺带产出 dist 而幸免 | 根 `build:web` 改为 `turbo run build --filter=@wbfm/web`，由 `dependsOn: ["^build"]` 自动构建工作区依赖 | 清空 `packages/*/dist` 后 `pnpm build:web` 成功；`check:exports` 6/6；手动重跑夜间 `44851702148` 全绿 | `22f1711e` |
 
 ## 二、运行时缺陷
 
