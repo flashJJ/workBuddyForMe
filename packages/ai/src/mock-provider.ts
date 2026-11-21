@@ -12,6 +12,8 @@ import { mockAgentProtocol } from './mock-agent-protocol';
 import { mockMeetingConclusion } from './mock-meeting-conclusion';
 import { mockMeetingProtocol } from './mock-meeting-protocol';
 import { createScenarioRuntime, type MockScenarioFile } from './mock-scenario';
+import { runEvalToolProbe, runReplayProbe } from './mock/eval-probes';
+import { extractToolResult, messageText } from './mock/message-utils';
 
 /** mock 向量维度：64 维多热编码，共享 token 的文本相似度高，足以驱动真实 top-k 检索 */
 const EMBED_DIMENSION = 64;
@@ -20,12 +22,6 @@ const STREAM_CHUNK_DELAY_MS = 60;
 const LONG_ANSWER_TRIGGER = /长回答|详细说说/;
 /** 命中时 mock 模型发起 current_time 工具调用，用于工具链路测试 */
 const TIME_TOOL_TRIGGER = /现在.*(时间|几点)|今天.*(几号|日期)|current time/i;
-/**
- * v1.1 M5 eval 平台可控工具触发：消息形如 `[eval-tool:工具名] {可选参数JSON}`。
- * 首轮发起该工具调用；工具结果回灌后引用结果中的 anchor/itemCount 作答，
- * 且 promptTokens 按全部 messages 实际字符计（使工具结果压缩效果可在 usage 观察）。
- */
-const EVAL_TOOL_TRIGGER = /^\[eval-tool:([^\s\]]+)](?:\s+(\{[\s\S]*\}))?\s*$/;
 
 function hashToken(token: string): number {
   let hash = 0x811c9dc5;
@@ -75,17 +71,6 @@ function extractReference(systemContent: string): string | null {
   return lines.find((line) => !line.startsWith('来源') && !line.startsWith('[')) ?? lines[0] ?? null;
 }
 
-/** 取最近一条 role:tool 的工具结果 */
-function extractToolResult(messages: ChatMessage[], toolName: string): string | null {
-  for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const message = messages[i]!;
-    if (message.role === 'tool' && message.name === toolName) {
-      return typeof message.content === 'string' ? message.content : null;
-    }
-  }
-  return null;
-}
-
 function truncate(text: string, max: number): string {
   const clean = text.replace(/\s+/g, ' ').trim();
   return clean.length > max ? `${clean.slice(0, max)}…` : clean;
@@ -101,18 +86,6 @@ function splitChunks(text: string): string[] {
 
 function hasTool(params: { tools?: { function: { name: string } }[] }, name: string): boolean {
   return Boolean(params.tools?.some((tool) => tool.function.name === name));
-}
-
-/** v0.3：从 string | content parts 中取文本（视觉消息的图片片段不计入） */
-function messageText(content: ChatMessage['content']): string {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => (part.type === 'text' ? part.text : ''))
-      .join('\n')
-      .trim();
-  }
-  return '';
 }
 
 function countImages(content: ChatMessage['content']): number {
@@ -197,44 +170,16 @@ export function createMockProvider(options: { scenario?: MockScenarioFile } = {}
         return;
       }
 
-      // v1.1 M5 eval 可控工具：[eval-tool:名称] → 首轮调用/次轮引用结果
-      const evalMatch = userText.match(EVAL_TOOL_TRIGGER);
-      if (evalMatch) {
-        const evalToolName = evalMatch[1]!;
-        if (hasTool(params, evalToolName)) {
-          const evalToolResult = extractToolResult(params.messages, evalToolName);
-          if (!evalToolResult) {
-            let args: Record<string, unknown> = {};
-            if (evalMatch[2]) {
-              try {
-                args = JSON.parse(evalMatch[2]) as Record<string, unknown>;
-              } catch {
-                args = {};
-              }
-            }
-            yield toolCallChunk({
-              id: 'call-eval-tool',
-              type: 'function',
-              function: { name: evalToolName, arguments: JSON.stringify(args) },
-            });
-            return;
-          }
-          // 二次引用：答案必须从工具结果（压缩视图）取 anchor/itemCount，
-          // 读到即证明压缩保留了后续工具引用所需身份字段；promptTokens 按全部
-          // messages 实计，使入模压缩量直接反映在 done.usage 上。
-          const anchor = evalToolResult.match(/"id"\s*:\s*"([^"]+)"/)?.[1] ?? '?';
-          const omitted = evalToolResult.match(/"__omitted"\s*:\s*(\d+)/)?.[1] ?? '0';
-          const reply = `eval 引用完成：anchor=${anchor}，omitted=${omitted}`;
-          const promptTokens = Math.max(
-            5,
-            Math.ceil(params.messages.map((m) => messageText(m.content)).join('').length / 4),
-          );
-          yield {
-            delta: reply,
-            usage: { promptTokens, completionTokens: 12, totalTokens: promptTokens + 12 },
-          };
-          return;
-        }
+      // v1.1 M5 / v4.18 M5：eval 探针（工具触发、A/B 回放标记回报）
+      const evalProbe =
+        runEvalToolProbe({
+          messages: params.messages,
+          userText,
+          hasTool: (name) => hasTool(params, name),
+        }) ?? runReplayProbe(params.messages, userText);
+      if (evalProbe) {
+        for (const chunk of evalProbe) yield chunk;
+        return;
       }
 
       // 工具循环：首轮请求时间 → 发起 current_time 调用；工具结果回灌后 → 作答

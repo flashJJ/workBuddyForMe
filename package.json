@@ -36,6 +36,7 @@
     "check:cycles": "node scripts/check-cycles.mjs",
     "check:msw": "node scripts/check-msw.mjs",
     "test:contracts": "pnpm --filter @wbfm/core exec vitest run src/tools/contract",
+    "test:eval": "node --test scripts/eval/lib/replay-report.test.mjs",
     "check:family": "node scripts/avatar/validate-family.mjs",
     "check:scenes": "pnpm --filter @wbfm/web exec vitest run src/features/avatar/script/scenes",
     "props:build": "node scripts/avatar/generate-props.mjs",
@@ -57,10 +58,11 @@
     "eval:acceptance": "node scripts/acceptance/run.mjs",
     "eval:acceptance:report": "node scripts/acceptance/run.mjs --out=test-results/acceptance-v4.11.json",
     "eval:context": "node scripts/eval/eval-context.mjs",
+    "eval:replay": "node scripts/eval/with-server.mjs --script=scripts/eval/eval-replay.mjs",
     "eval:rag": "promptfoo eval -c tests/eval/promptfoo/rag.yaml",
     "eval:tools": "node scripts/eval/tool-eval.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm check:lines && pnpm check:structure && pnpm check:cycles && pnpm check:msw && pnpm check:ascii && pnpm check:assets && pnpm check:surfaces && pnpm check:e2e-isolation",
-    "verify:local": "pnpm check && pnpm test:unit && pnpm test:integration && pnpm build:web"
+    "verify:local": "pnpm check && pnpm test:eval && pnpm test:unit && pnpm test:integration && pnpm build:web"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -44,6 +44,12 @@ jobs:
         env:
           PROMPTFOO_DISABLE_TELEMETRY: "1"
 
+      - name: 离线 A/B 回放与上下文保真报告（非阻断）
+        continue-on-error: true
+        run: pnpm eval:replay
+        env:
+          WBFM_EVAL_PORT: "32343"
+
       - name: 视觉巡检 L1（基线比对，非阻断）
         continue-on-error: true
         run: |

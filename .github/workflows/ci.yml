@@ -44,6 +44,10 @@ jobs:
         run: pnpm test:unit
         timeout-minutes: 25
 
+      - name: 回放报告单测（确定性/退化阈值/隐私）
+        run: pnpm test:eval
+        timeout-minutes: 5
+
       - name: API 集成测试
         run: pnpm test:integration
         timeout-minutes: 10

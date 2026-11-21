@@ -89,3 +89,12 @@
 - 报告不得包含绝对路径、聊天正文、Bearer 令牌或 API Key；
 - 任一指标低于下限、相对退化超阈值或 `budgetUsage > 0.95` 时退出码非 0；
 - 首期接入 nightly 非阻断，稳定后转 PR 门禁。
+
+策略与探针：
+
+- 策略参数在 [context-golden.json](../../../scripts/eval/context-golden.json) 的 `replay.strategies` 中定义：
+  `contextWindow / contextMessageCount / preflightCompact`；`replay.defaults` 指定默认基线/候选；
+- 策略只切上下文预算参数，不切模型行为；同一次回放内两策略各建会话，避免互相污染；
+- 探针 `[eval-replay] memory=标记|标记;citation=…;constraint=…` 由 mock 供应商读取真实入模消息后
+  回报 0/1 矩阵；`citation/constraint` 只读 system 区块，`memory` 读 system 与历史但排除探针自身；
+- 引用保留使用知识库固定夹具（`replay-citation-v1.txt`），不包含真实文档内容。

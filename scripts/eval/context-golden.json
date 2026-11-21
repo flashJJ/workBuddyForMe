@@ -51,5 +51,52 @@
   "compaction": {
     "minFolded": 1,
     "maxHistoryRatio": 0.75
+  },
+  "replay": {
+    "note": "v4.18 M5：A/B 回放种子。复用本文件 longTurns；两个策略各自新建会话，先写记忆再灌历史，最后用 [eval-replay] 探针读取真实入模消息。",
+    "seedTurns": [
+      "记住：我的项目代号是青鸟计划",
+      "记住：所有对外接口都要在文档里标注版本号和变更日期"
+    ],
+    "fillerTurns": [
+      "补充一段背景：周一例会只讨论进度与风险，不临时加需求；会议纪要由轮值同学当天整理，第二天早会前发到群里，方便没参会的同学补齐上下文。",
+      "关于文档规范：每份文档开头写清适用范围与最近更新日期，正文按背景、方案、风险、待办四段组织；评审前至少一位同学预读并留下意见。",
+      "协作约定：遇到跨团队依赖先拉小群对齐接口人，再约时间评估工作量；需要改排期时提前一天同步，不在发布当天临时调整范围。",
+      "质量方面：提交前跑一遍本地检查，新增逻辑补上对应测试；错误日志只保留必要的定位信息，不记录用户原文与密钥。",
+      "发布节奏：先在内部环境验证一遍主流程，再灰度一小部分用户观察指标；发现异常优先回滚，定位清楚后再重新发布。",
+      "复盘要求：每个迭代结束写一页纸，记录做成了什么、哪里卡住、下次怎么改；结论落到具体动作和负责人，不写成口号。"
+    ],
+    "probe": {
+      "groups": {
+        "memory": ["青鸟计划", "10.0.8.21"],
+        "citation": ["REPLAY-CITATION-START-9F3", "REPLAY-CITATION-END-9F3"],
+        "constraint": ["所有对外接口都要在文档里标注版本号和变更日期"]
+      }
+    },
+    "citationDocument": {
+      "name": "replay-citation-v1.txt",
+      "content": "REPLAY-CITATION-START-9F3\n回放引用标记说明：本文档只用于离线 A/B 回放，验证检索证据在预算收缩时是否仍进入系统提示词。文档正文按固定段落描述版本记录、变更范围与回滚步骤，便于在报告中复算引用保留率。所有数字与名称均为夹具内容，不对应任何真实系统或环境。\nREPLAY-CITATION-END-9F3"
+    },
+    "strategies": {
+      "default-8k": {
+        "contextWindow": 8192,
+        "contextMessageCount": 50,
+        "preflightCompact": true
+      },
+      "roomy-128k": {
+        "contextWindow": 128000,
+        "contextMessageCount": 50,
+        "preflightCompact": true
+      },
+      "degraded-2k": {
+        "contextWindow": 2048,
+        "contextMessageCount": 50,
+        "preflightCompact": false
+      }
+    },
+    "defaults": {
+      "baseline": "default-8k",
+      "candidate": "roomy-128k"
+    }
   }
 }
