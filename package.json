@@ -13,7 +13,7 @@
     "dev:web": "pnpm --filter @wbfm/web dev",
     "dev:desktop": "pnpm --filter @wbfm/desktop dev",
     "build": "turbo run build",
-    "build:web": "pnpm --filter @wbfm/web build",
+    "build:web": "turbo run build --filter=@wbfm/web",
     "dist:win": "pnpm --filter @wbfm/desktop dist:win",
     "archive:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/archive-installer.ps1",
     "release:win": "pnpm dist:win && pnpm archive:win",
