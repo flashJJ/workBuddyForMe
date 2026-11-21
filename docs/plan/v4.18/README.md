@@ -1,7 +1,7 @@
 # v4.18 选题与备选方案对比（已立项）
 
 > 状态：已立项——A「稳」+ C「找得到」+ E「离线 A/B 回放与上下文保真评测」合并为一个大版本
-> 规格：[spec.md](./spec.md) · 任务：[tasks.md](./tasks.md)
+> 规格：[spec.md](./spec.md) · 任务：[tasks.md](./tasks.md) · 契约：[contracts.md](./contracts.md)
 > 上游：v4.17 已发布（`v4.17.0`）
 > 目的：记录选题依据、备选方案对比与 v4.19 留档清单
 

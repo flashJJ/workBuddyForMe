@@ -18,3 +18,4 @@ export * from './emotion';
 export * from './media';
 export * from './ops';
 export * from './branch';
+export * from './search';

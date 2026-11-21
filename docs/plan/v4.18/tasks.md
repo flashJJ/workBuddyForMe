@@ -1,14 +1,14 @@
 # v4.18 任务清单
 
-> 状态：已立项，待开工
-> 规格：[spec.md](./spec.md)
+> 状态：M0 契约已冻结（2026-11-22），M1 待开工
+> 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md)
 > 原则：三条线独立验收；零数据库迁移；不引入新运行时依赖
 
 ## M0 契约冻结
 
-- [ ] M0.1 错误分类契约：七类错误码、可自动切换判定、事件字段（`fromModelId/toModelId/reason/attempt`）
-- [ ] M0.2 检索结果契约：`{domain,id,title,snippet,timestamp,deepLink,action}`，五域枚举与单域上限
-- [ ] M0.3 回放报告契约：指标字段、绝对下限、相对退化阈值、报告路径与隐私约束
+- [x] M0.1 错误分类契约：七类错误码、可自动切换判定、事件字段（`fromModelId/toModelId/reason/attempt`）
+- [x] M0.2 检索结果契约：`{domain,id,title,snippet,timestamp,deepLink,action}`，五域枚举与单域上限
+- [x] M0.3 回放报告契约：指标字段、绝对下限、相对退化阈值、报告路径与隐私约束
 - [x] M0.4 冻结四个待决策：助手级备用模型、自动切换默认开启、token 预算 80/100、检索与命令面板共存（见 spec §11）
 
 ## M1 稳：失败分类与备用模型
