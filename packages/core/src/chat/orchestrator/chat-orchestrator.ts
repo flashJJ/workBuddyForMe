@@ -15,7 +15,7 @@ import { tryReminderTurn } from '../turns/reminder-turn';
 import { createEmotionGate } from '../turns/emotion-gate';
 import type { OrchestratorEvent, StreamChatInput } from '../base/types';
 import { createFetchDegradeTracker, buildDoneData, normalizeFailure } from './orchestrator-helpers';
-import { synthesizeFinalAnswer } from './round-synthesis';
+import { finishWithSynthesis } from './round-synthesis';
 import { createToolRuntime } from '../../tools/tool-runtime';
 import { createMemoryService } from '../../memory/memory-service';
 import { recordMilestone } from '../../services/base/milestones';
@@ -154,6 +154,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         let citations = prepared.citations;
         const fetchDegrade = createFetchDegradeTracker();
         const emotionEnabled = prepared.emotionEnabled;
+        let hitRoundLimit = false;
         try {
           for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
             // 手动迭代：delta 直接累积到 full，保证中途 abort 也能保留已产出片段
@@ -176,11 +177,13 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               yield step.value;
             }
             if (outcome.usage) usage = outcome.usage;
-
             const calls: ToolCall[] = outcome.toolCalls;
             if (calls.length === 0) break;
-            if (round === MAX_TOOL_ROUNDS) break;
-
+            if (round === MAX_TOOL_ROUNDS) {
+              // 最后一轮仍要调工具：没有下一轮可回灌，改走不带工具的收尾轮成文
+              hitRoundLimit = true;
+              break;
+            }
             outgoing.push({ role: 'assistant', content: outcome.content || null, toolCalls: calls });
 
             const loopOutcome = yield* runToolCallLoop({
@@ -220,13 +223,11 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               return;
             }
           }
-
-          if (!full.trim()) {
-            // 工具轮耗尽但正文为空：先做一次不带工具的收尾轮，把已有搜索结果转成回答
-            const answer = yield* synthesizeFinalAnswer({ target, assistant, outgoing, signal: input.signal, traceParent: turnTrace });
-            full = answer.content;
-            if (answer.usage) usage = answer.usage;
-          }
+          const finished = yield* finishWithSynthesis({
+            target, assistant, outgoing, full, hitRoundLimit, signal: input.signal, traceParent: turnTrace,
+          });
+          full = finished.content;
+          if (finished.usage) usage = finished.usage;
         } catch (error) {
           if (input.signal?.aborted) {
             // 中止不记录情绪；但持久化前剥离可能已流出的半截尾块
@@ -257,7 +258,6 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         conversations.saveMessageToolTrace(assistantMessage.id, trace);
         // v2.4 M1 T7：首次完整回答即记里程碑（首写优先；不含回答内容）
         recordMilestone(deps.db, 'firstAnswerAt');
-
         // v2.28 P1：实时约束在 done 前同步写入，本轮即可内联提示与撤销
         const memoryNotices = assistant.memoryEnabled
           ? await writeRealtimeConstraints({ memory, userContent, conversationId: conversation.id,

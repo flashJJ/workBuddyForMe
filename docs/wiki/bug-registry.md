@@ -43,6 +43,7 @@
 | B-57 | P1 | 打包 | 干净检出上 `pnpm dist:win` 打包必失败（`Can't resolve '@wbfm/shared/...'`），与 B-53 同源 | 桌面 `dist:win`/`pack:dir` 仍用 `pnpm --filter @wbfm/web build`，不触发 turbo 的 `^build`，工作区包 dist 缺失 | 两条脚本改为 `pnpm -w run build:web`，复用 turbo 依赖构建 | 干净 `packages/*/dist` 下执行 `pnpm dist:win` 成功出包 | 本批 |
 | B-58 | P2 | 测试稳定性 | 并行跑 `pnpm test:unit` 时 `repo-invariants` 偶发 20s 超时（单跑 182ms） | 扫描根包含 `apps/desktop/resources/server`——prepare-server 归集的 standalone 带了 1418 个 `apps/web/src` 副本，并行构建期磁盘争用放大耗时 | 不变量扫描忽略 `resources`（构建产物不是源码） | `pnpm test:unit` 全量通过；单测扫描恢复毫秒级 | 本批 |
 | B-59 | P0 | 桌面打包 | 安装版 4.15.0 打开后「供应商加载失败」「MCP 服务加载失败」，几乎所有数据面板报错重试 | v4.15 桌宠发起聊天让 preload 从 `@wbfm/shared/pet` 取运行时符号，依赖树把 zod 留成 `require("zod")`；`sandbox:true` 的 preload 只能 require('electron')，加载即失败 → `window.wbfm` 不存在 → 渲染层无托管 token → 全站 API 401 | preload 改为 type-only import + 内联常量/校验；新增构建门禁 `check-preload-bundle.mjs`（只允许 require electron，覆盖 index/splash） | Electron sandbox harness：修复前 `module not found: zod`、`window.wbfm` 缺失；修复后 token 正常注入；`build` 门禁双产物通过 | 本批 |
+| B-60 | P1 | 对话编排 | 搜索类回合「边解说边调工具」到轮数上限后静默结束：只有过程性旁白，没有最终回答，看起来像没跑完 | 工具轮耗尽只在 `full` 正文为空时才补收尾轮；模型前几轮已流出旁白，`full` 非空 → 跳过收尾，直接落库 | 记录 `hitRoundLimit`（最后一轮仍有未执行调用），无论是否有旁白都追加一次 `tools=[]` 收尾轮；旁白与结论用空行拼接 | `chat-orchestrator-tools.test.ts` 新增「工具轮耗尽但已有进度文本」用例（回退修复前稳定失败） | 本批 |
 
 ## 三、数据与桌面（深度排查批次）
 

@@ -9,6 +9,7 @@ import {
   type DatabaseInstance,
 } from '@wbfm/database';
 import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
+import { MAX_TOOL_ROUNDS } from '@wbfm/shared/constants';
 import { createWebCipher, type SecretCipher } from '../../../secrets/cipher';
 import { createAssistantsService } from '../../../services/assistant/assistant-service';
 import { createConversationService } from '../../../services/assistant/conversation-service';
@@ -46,6 +47,31 @@ function answerSse(text: string): string {
     usage: { prompt_tokens: 12, completion_tokens: 3, total_tokens: 15 },
   };
   return `data: ${JSON.stringify(delta)}\n\ndata: ${JSON.stringify(usage)}\n\ndata: [DONE]\n\n`;
+}
+
+/** 边解说边调工具：同一轮既有正文增量，又带一次工具调用 */
+function toolCallWithTextSse(text: string): string {
+  const textDelta = { choices: [{ delta: { content: text } }] };
+  const callHead = {
+    choices: [
+      {
+        delta: {
+          tool_calls: [
+            { index: 0, id: 'call-1', type: 'function', function: { name: 'current_time', arguments: '' } },
+          ],
+        },
+      },
+    ],
+  };
+  const tail = {
+    choices: [
+      {
+        delta: { tool_calls: [{ index: 0, function: { arguments: '{}' } }] },
+        finish_reason: 'tool_calls',
+      },
+    ],
+  };
+  return `data: ${JSON.stringify(textDelta)}\n\ndata: ${JSON.stringify(callHead)}\n\ndata: ${JSON.stringify(tail)}\n\ndata: [DONE]\n\n`;
 }
 
 async function drain(generator: AsyncGenerator<OrchestratorEvent>) {
@@ -180,6 +206,47 @@ describe('对话编排：工具调用循环（TR-15.2）', () => {
     const messages = createConversationService({ db, cipher }).listMessages(meta.conversationId);
     expect(messages[1]!.content).toBe('图中是红色。');
     expect(messages[1]!.errorCode).toBeNull();
+  });
+
+  it('工具轮耗尽但已有进度文本：仍走无工具收尾轮，产出最终回答', async () => {
+    const assistants = createAssistantsService({ db, cipher });
+    assistants.update(assistants.list()[0]!.id, { enabledTools: ['current_time'] });
+    const assistant = assistants.list()[0]!;
+    // round 0..MAX_TOOL_ROUNDS 共 MAX+1 次模型响应，全部「边解说边调工具」
+    const rounds = MAX_TOOL_ROUNDS + 1;
+    for (let i = 0; i < rounds; i += 1) {
+      fetchMock.mockImplementationOnce(
+        () =>
+          new Response(toolCallWithTextSse('我先确认一下时间。'), {
+            headers: { 'content-type': 'text/event-stream' },
+          }),
+      );
+    }
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Response(answerSse('结论：现在是上午。'), {
+          headers: { 'content-type': 'text/event-stream' },
+        }),
+    );
+
+    const events = await drain(
+      createChatOrchestrator({ db, cipher }).streamChat({
+        assistantId: assistant.id,
+        content: '现在几点',
+      }),
+    );
+
+    // 最后一轮的调用不执行（没有下一轮回灌），但必须追加一次 tools=[] 的收尾轮
+    expect(fetchMock).toHaveBeenCalledTimes(rounds + 1);
+    const synthesisBody = JSON.parse((fetchMock.mock.calls[rounds]![1] as RequestInit).body as string);
+    expect(synthesisBody.tools ?? []).toEqual([]);
+    expect(JSON.stringify(synthesisBody.messages)).toContain('工具调用轮数已用尽');
+
+    const meta = events[0]!.data as { conversationId: string };
+    const messages = createConversationService({ db, cipher }).listMessages(meta.conversationId);
+    expect(messages[1]!.content).toContain('我先确认一下时间。');
+    expect(messages[1]!.content).toContain('结论：现在是上午。');
+    expect(messages[1]!.toolTrace).toHaveLength(MAX_TOOL_ROUNDS);
   });
 
   it('regenerate：删除尾部助手消息后重答，用户消息不重复入库', async () => {
