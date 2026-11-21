@@ -31,7 +31,8 @@
 | `pnpm eval:tools` | 工具链路评测（promptfoo；mock 自动起服务，real 需指定 base-url/assistant-id） |
 | `pnpm eval:agent:server` | 多智能体协作回归（自动起 mock 服务） |
 
-> 端口约定：Web dev **42337**、Electron CDP **42338**、E2E **42339**（避开 3000 与 Windows 动态端口段）；可分别用 `WBFM_DEV_PORT` / `WBFM_DEBUG_PORT` / `WBFM_E2E_PORT` 覆盖。
+> 端口约定：Web dev **42337**、Electron CDP **42338**；可分别用 `WBFM_DEV_PORT` / `WBFM_DEBUG_PORT` 覆盖。
+> 测试类固定端口一律取 **32xxx**（E2E 32339、验收 32341、工具评测 32342、eval 包装器 32340、夹具 32101–32104），刻意低于 Linux 临时端口段（32768–60999）：该段内的固定端口会被出站连接随机占用，导致 CI 上 `bind EADDRINUSE`（B-54）。新增测试端口须遵守同一约定。
 > 剧本引擎（Director / 行为场戏 / `__petDebug`）需要构建期开关：`$env:WBFM_PET_SCRIPT='1'; pnpm dev:desktop`。
 > 舞台深链：`/stage?run=`（协作）、`/stage?meeting=`（会议）、`/stage?stage=play&ep=late-tea-break`（小剧场，M4）。
 > 小剧场硬化（M4）：语音按角色声线逐句合成，BGM 复用 4 首 CC0 曲目、说话时 duck 35%，开场/换句有合成短音效，右上角可静音；工具栏支持暂停/继续、上一句/下一句、重播；三席加载完成前有进度幕布；分享卡 PNG 仅桌面端可保存。内置 4 集（`late-tea-break` / `morning-drill` / `proposal-night` / `rainy-wait`），每集分幕并可切换背景/配乐/类型标签；英文界面走 `titleEn` / `textEn`；舞台角色按相对位置自动向内微转。剧场单测：`pnpm --filter @wbfm/web exec vitest run src/features/stage/theater/__tests__`。
@@ -48,7 +49,7 @@ Windows 下另有带环境自检的一键脚本：`./scripts/dev-web.ps1`、`./s
 | `WBFM_MOCK_SCENARIO` | 场景化 mock 剧本 JSON 路径（仅 `WBFM_MOCK_AI=1` 生效；消息含 `[scenario:名称]` 时按轮下发工具调用） |
 | `WBFM_FETCH_ALLOW_PRIVATE` | 置 `1` 放行回环/私网抓取（仅 Fake Web 验收进程使用；生产禁止设置） |
 | `WBFM_FIXTURE_PORT` / `WBFM_ACCEPTANCE_PORT` / `WBFM_EVAL_PORT` | Fake Web、自动验收、eval 包装器的端口覆盖 |
-| `WBFM_E2E_FIXTURE_PORT` | Playwright E2E 的 Fake Web 端口（默认 43102，配置与规格共用） |
+| `WBFM_E2E_FIXTURE_PORT` | Playwright E2E 的 Fake Web 端口（默认 32102，配置与规格共用） |
 | `WBFM_SERVER_MANAGED` | `1` 启用托管模式令牌守卫（Electron 主进程注入） |
 | `WBFM_TOKEN` | 托管模式访问令牌（启动时随机生成） |
 | `WBFM_SERVER_PATH` | 覆盖 standalone server.js 路径（Electron 冒烟降级场景使用） |
@@ -119,8 +120,8 @@ packages/shared, config → 不依赖任何业务包
 
 - **单元测试**（`pnpm test:unit`）：config/database/ai/core statements ≥70%（Vitest 阈值阻断）；mock 边界为 fetch（供应商）、时间、数据根；不允许真实出网。
 - **集成测试**（`apps/web/src/app/api/integration.test.ts`）：`mkdtempSync` 临时数据根 + 内存 SQLite + `__buildContainerForTest` 注入容器，路由 handler 直调 `new Request(...)`；覆盖级联删除、SSE 上游失败落库、错误码矩阵一致性等跨层行为。
-- **Web E2E**（`tests/e2e/critical-path.spec.ts`，`pnpm test:e2e`）：Playwright 启动 next dev（端口 42339，`WBFM_MOCK_AI=1` + 临时数据根，`reuseExistingServer: !CI`），5 个串行场景：供应商/模型配置 → 流式对话与中途停止 → 知识库上传索引 → RAG 带引用问答 → 四模块导航。
-- **Web E2E · 联网路径**（`tests/e2e/web-network-v411.spec.ts`）：Playwright 同时启动 Fake Web（端口 43102）并把场景剧本注入服务进程；覆盖三页并发抓取、零人工确认、工具时间线 3 次成功、请求到达跨度 <150ms。
+- **Web E2E**（`tests/e2e/critical-path.spec.ts`，`pnpm test:e2e`）：Playwright 启动 next dev（端口 32339，`WBFM_MOCK_AI=1` + 临时数据根，`reuseExistingServer: !CI`），5 个串行场景：供应商/模型配置 → 流式对话与中途停止 → 知识库上传索引 → RAG 带引用问答 → 四模块导航。
+- **Web E2E · 联网路径**（`tests/e2e/web-network-v411.spec.ts`）：Playwright 同时启动 Fake Web（端口 32102）并把场景剧本注入服务进程；覆盖三页并发抓取、零人工确认、工具时间线 3 次成功、请求到达跨度 <150ms。
 - **Electron 冒烟**（`apps/desktop/e2e/smoke.spec.ts`，`pnpm test:e2e:desktop`）：`run-e2e.mjs` 串行执行 web build → desktop build → prepare-server（归集 standalone）→ electron-builder --dir → Playwright `_electron.launch`；断言窗口渲染、四模块导航、webPreferences 安全基线（contextIsolation/sandbox/no nodeIntegration）、托管令牌 401/200。
 - **契约快照**（`pnpm test:contracts`）：`packages/core/src/tools/contract/tool-contracts.test.ts` 序列化每个内置工具的 `permission / alwaysConfirm / required`，并守护 `DEFAULT_AGENT_POLICY` 与 `RESEARCH_DEPTH_PRESETS`；权限或预算常量变更必须显式更新快照。
 - **离线自动验收**（`pnpm eval:acceptance`）：`scripts/acceptance/run.mjs` 起 Fake Web（`scripts/fixtures/web/server.mjs`）+ 真实 Next 服务（`WBFM_MOCK_AI=1` + `WBFM_MOCK_SCENARIO` + `WBFM_FETCH_ALLOW_PRIVATE=1`），按 `tests/scenarios/*.json` 剧本逐案跑真实对话链路；断言人工确认次数、工具并发、缓存命中、旧结果折叠、溢出重试，以及 8K / 128K / 1M 三档窗口的预算与硬保险丝。

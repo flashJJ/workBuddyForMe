@@ -9,7 +9,7 @@
  *   - 预期：工具顺序 / 失败工具 / 探针条数 / 启用工具，供 `run.mjs --replay` 直接断言。
  *
  * 用法：
- *   node scripts/acceptance/trace-to-scenario.mjs --base-url=http://127.0.0.1:42341 \
+ *   node scripts/acceptance/trace-to-scenario.mjs --base-url=http://127.0.0.1:32341 \
  *     --conversation-id=<id> [--message-id=<id>] [--name=trace-xxx] \
  *     [--out=tests/scenarios/trace-replay.json] [--tier=128k] [--print]
  *   node scripts/acceptance/trace-to-scenario.mjs --input=messages.json --name=... [--print]

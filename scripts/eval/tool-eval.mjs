@@ -9,7 +9,7 @@
  *   node scripts/eval/tool-eval.mjs --mode=real --base-url=http://127.0.0.1:3200 --assistant-id=<id>
  * 自然语言 prompt 由真实模型自行决定工具；断言会自动降级为「包含期望工具」。
  *
- * 用法：node scripts/eval/tool-eval.mjs [--mode=mock|real] [--port=42342] [--fixture-port=43104]
+ * 用法：node scripts/eval/tool-eval.mjs [--mode=mock|real] [--port=32342] [--fixture-port=32104]
  * 退出码：promptfoo 的退出码透传（断言失败非 0）。
  */
 import { spawn, spawnSync } from 'node:child_process';
@@ -28,8 +28,8 @@ const CONFIG = join(ROOT, 'tests', 'eval', 'promptfoo', 'tools.yaml');
 function readArgs(argv) {
   const args = {
     mode: 'mock',
-    port: Number(process.env.WBFM_TOOL_EVAL_PORT ?? 42342),
-    fixturePort: Number(process.env.WBFM_TOOL_EVAL_FIXTURE_PORT ?? 43104),
+    port: Number(process.env.WBFM_TOOL_EVAL_PORT ?? 32342),
+    fixturePort: Number(process.env.WBFM_TOOL_EVAL_FIXTURE_PORT ?? 32104),
     baseUrl: process.env.WBFM_TOOL_EVAL_BASE_URL ?? '',
     assistantId: process.env.WBFM_TOOL_EVAL_ASSISTANT_ID ?? '',
     keep: false,

@@ -8,7 +8,7 @@
  * 然后按 tests/scenarios/v4.11-tool-harness.json 的剧本逐案跑真实对话链路。
  *
  * 用法：
- *   node scripts/acceptance/run.mjs [--mode=dev|start] [--port=42341] [--fixture-port=43101] [--out=PATH] [--keep]
+ *   node scripts/acceptance/run.mjs [--mode=dev|start] [--port=32341] [--fixture-port=32101] [--out=PATH] [--keep]
  * 退出码：0 全过；1 断言失败；2 基础设施错误。
  */
 import { spawn, spawnSync } from 'node:child_process';
@@ -39,8 +39,8 @@ const WINDOW_TIERS = [
 function readArgs(argv) {
   const args = {
     mode: process.env.GITHUB_ACTIONS === 'true' ? 'start' : 'dev',
-    port: Number(process.env.WBFM_ACCEPTANCE_PORT ?? 42341),
-    fixturePort: Number(process.env.WBFM_FIXTURE_PORT ?? 43101),
+    port: Number(process.env.WBFM_ACCEPTANCE_PORT ?? 32341),
+    fixturePort: Number(process.env.WBFM_FIXTURE_PORT ?? 32101),
     out: '',
     only: '',
     replay: '',

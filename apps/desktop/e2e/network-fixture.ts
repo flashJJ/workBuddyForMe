@@ -4,9 +4,9 @@ import path from 'node:path';
 
 /**
  * v4.11 P1-3：Electron 联网冒烟的共享常量。
- * 端口与 Web E2E（43102）、离线验收（43101）错开。
+ * 端口与 Web E2E（32102）、离线验收（32101）错开，且均低于 Linux 临时端口段（32768+）。
  */
-export const FIXTURE_PORT = Number(process.env.WBFM_DESKTOP_FIXTURE_PORT ?? 43103);
+export const FIXTURE_PORT = Number(process.env.WBFM_DESKTOP_FIXTURE_PORT ?? 32103);
 export const FIXTURE_URL = `http://127.0.0.1:${FIXTURE_PORT}`;
 export const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 

@@ -3,9 +3,10 @@ import { dirname, join } from 'node:path';
 
 /**
  * v4.11 P1：E2E 联网夹具的共享常量（Playwright 配置与规格共用）。
- * 端口与验收脚本（43101）错开，避免同时运行冲突。
+ * 端口与验收脚本（32101）错开，且均低于 Linux 临时端口段（32768+），
+ * 避免固定端口被出站连接随机占用后 bind 失败。
  */
-export const FIXTURE_PORT = Number(process.env.WBFM_E2E_FIXTURE_PORT ?? 43102);
+export const FIXTURE_PORT = Number(process.env.WBFM_E2E_FIXTURE_PORT ?? 32102);
 export const FIXTURE_URL = `http://127.0.0.1:${FIXTURE_PORT}`;
 
 /**

@@ -13,13 +13,13 @@
  *   /__stats            请求记录（含到达时间，用于判断是否并发）
  *   /__reset            清空请求记录（POST）
  *
- * 用法：node scripts/fixtures/web/server.mjs [--port=43101]
+ * 用法：node scripts/fixtures/web/server.mjs [--port=32101]
  */
 import { createServer } from 'node:http';
 
 const argv = process.argv.slice(2);
 const portArg = argv.find((arg) => arg.startsWith('--port='))?.slice('--port='.length);
-const PORT = Number(portArg ?? process.env.WBFM_FIXTURE_PORT ?? 43101);
+const PORT = Number(portArg ?? process.env.WBFM_FIXTURE_PORT ?? 32101);
 
 /** @type {Array<{path:string, query:Record<string,string>, at:number}>} */
 let requests = [];

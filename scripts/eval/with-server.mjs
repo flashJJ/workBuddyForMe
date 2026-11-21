@@ -6,7 +6,7 @@
  * 因此无法直接进 CI。本包装器负责：临时数据根 → 起 Next 服务 → 等健康检查 →
  * 以 --base-url 运行目标脚本 → 退出后回收服务。
  *
- * 用法：node scripts/eval/with-server.mjs --script=scripts/eval/eval-agent.mjs [--port=42340] [--mode=dev|start]
+ * 用法：node scripts/eval/with-server.mjs --script=scripts/eval/eval-agent.mjs [--port=32340] [--mode=dev|start]
  */
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -20,7 +20,7 @@ const ROOT = join(HERE, '..', '..');
 function readArgs(argv) {
   const args = {
     script: '',
-    port: Number(process.env.WBFM_EVAL_PORT ?? 42340),
+    port: Number(process.env.WBFM_EVAL_PORT ?? 32340),
     mode: process.env.GITHUB_ACTIONS === 'true' ? 'start' : 'dev',
   };
   for (const arg of argv.slice(2)) {

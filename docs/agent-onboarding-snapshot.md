@@ -58,7 +58,7 @@ tests/          e2e（Playwright）与跨包测试夹具
 | `pnpm archive:win` | 把 `apps/desktop/release` 产物归档到 `<构建归档>\vX.Y.Z` |
 | `node scripts/release-manifest.mjs --check --dir <归档目录>` | 复算 3 个产物哈希 |
 
-端口：Web dev 42337、Electron CDP 42338、E2E 42339。
+端口：Web dev 42337、Electron CDP 42338；测试类固定端口取 32xxx（E2E 32339、验收 32341、工具评测 32342、夹具 32101–32104），低于 Linux 临时端口段以避免 `bind EADDRINUSE`。
 
 ## 5. 打包与归档（Windows 本地）
 
