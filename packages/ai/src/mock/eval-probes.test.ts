@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage } from '../types';
-import { runEvalToolProbe, runReplayProbe } from './eval-probes';
+import { runEvalToolProbe, runFaultProbe, runReplayProbe } from './eval-probes';
 
 function texts(chunks: ReturnType<typeof runReplayProbe>): string {
   return (chunks ?? []).map((chunk) => chunk.delta).join('');
@@ -44,6 +44,16 @@ describe('runReplayProbe（v4.18 M5 A/B 回放探针）', () => {
 
   it('未命中触发前缀返回 null', () => {
     expect(runReplayProbe(messages, '普通消息')).toBeNull();
+  });
+});
+
+describe('runFaultProbe（v4.18 M6 故障注入）', () => {
+  it('只对指定模型返回 429，备用模型不重复失败', () => {
+    const fault = runFaultProbe('mock-chat', '请回答 [eval-fail:mock-chat:429]');
+    expect(fault?.status).toBe(429);
+    expect(fault?.retriable).toBe(true);
+    expect(runFaultProbe('mock-chat-fallback', '请回答 [eval-fail:mock-chat:429]')).toBeNull();
+    expect(runFaultProbe('mock-chat', '普通消息')).toBeNull();
   });
 });
 

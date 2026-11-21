@@ -1,4 +1,5 @@
 import type { ChatChunk, ChatMessage } from '../types';
+import { ProviderError } from '../errors/provider-error';
 import { extractToolResult, messageText } from './message-utils';
 
 /**
@@ -11,6 +12,8 @@ import { extractToolResult, messageText } from './message-utils';
 
 const EVAL_TOOL_TRIGGER = /^\[eval-tool:([^\s\]]+)](?:\s+(\{[\s\S]*\}))?\s*$/;
 const EVAL_REPLAY_TRIGGER = /^\[eval-replay]\s*(.+)$/;
+/** v4.18 M6：E2E 故障注入，形如 `[eval-fail:mock-chat:429]`，仅对指定 modelId 生效 */
+const EVAL_FAIL_TRIGGER = /\[eval-fail:([^:\]\s]+):(\d{3})]/;
 
 /** 回放探针的分组作用域：记忆允许出现在历史，引用/约束只认 system 区块 */
 const REPLAY_GROUP_SCOPE: Record<string, 'system' | 'any'> = {
@@ -78,6 +81,23 @@ export function runEvalToolProbe(input: EvalToolProbeInput): ChatChunk[] | null 
     { delta: reply },
     { delta: '', usage: { promptTokens, completionTokens: 12, totalTokens: promptTokens + 12 } },
   ];
+}
+
+/**
+ * `[eval-fail:模型ID:HTTP状态]`：只对指定模型注入一次上游失败，供 E2E 验证自动切换。
+ * 未命中或 modelId 不匹配返回 null；备用模型看到同一消息不会再次失败。
+ */
+export function runFaultProbe(model: string, userText: string): ProviderError | null {
+  const match = userText.match(EVAL_FAIL_TRIGGER);
+  if (!match || match[1] !== model) return null;
+  const status = Number(match[2]);
+  return new ProviderError({
+    code: 'PROVIDER_ERROR',
+    status,
+    providerMessage: `eval-fail injected HTTP ${status}`,
+    message: `mock 供应商按 eval 指令返回 HTTP ${status}`,
+    retriable: status === 429 || status >= 500,
+  });
 }
 
 interface ReplayGroup {

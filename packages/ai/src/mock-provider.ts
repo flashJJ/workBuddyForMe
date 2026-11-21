@@ -12,7 +12,7 @@ import { mockAgentProtocol } from './mock-agent-protocol';
 import { mockMeetingConclusion } from './mock-meeting-conclusion';
 import { mockMeetingProtocol } from './mock-meeting-protocol';
 import { createScenarioRuntime, type MockScenarioFile } from './mock-scenario';
-import { runEvalToolProbe, runReplayProbe } from './mock/eval-probes';
+import { runEvalToolProbe, runFaultProbe, runReplayProbe } from './mock/eval-probes';
 import { extractToolResult, messageText } from './mock/message-utils';
 
 /** mock 向量维度：64 维多热编码，共享 token 的文本相似度高，足以驱动真实 top-k 检索 */
@@ -125,6 +125,10 @@ export function createMockProvider(options: { scenario?: MockScenarioFile } = {}
       const userText = messageText(user?.content ?? '');
       const imageCount = countImages(user?.content ?? '');
       const reference = extractReference(messageText(system?.content ?? ''));
+
+      // v4.18 M6：E2E 故障注入（只对指定模型生效，供自动切换验收）
+      const injected = runFaultProbe(params.model, userText);
+      if (injected) throw injected;
 
       // v4.11 P0：场景脚本（[scenario:名称]）优先于其它剧本，未命中时返回 false 继续
       if (scenario && (yield* scenario.reply(params, userText))) return;
