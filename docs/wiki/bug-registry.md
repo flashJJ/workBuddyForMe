@@ -21,6 +21,7 @@
 | B-48 | P0 | E2E | 41 个 spec 共用一个数据根，跨文件残留造成顺序依赖与「重试必败」（B-03/04/47 同一病根），只能逐条打清理补丁 | 缺文件级隔离；E2E 串行执行让污染被字母序掩盖 | 新增仅 mock 模式挂载的 `POST /api/testing/reset`（停常驻定时器/丢弃语音运行时与编译队列单例→关库→清数据根→重建容器）；41 个 spec 统一 `beforeAll` 重置；原跨套件依赖改为 `tests/e2e/seed.ts` 自行播种 | 生产构建全量 150 例：147 通过 / 3 跳过 / 0 失败（19.1 分钟） | 本批 |
 | B-49 | P1 | 服务端容器 | 容器重建后旧路由 chunk 仍持旧实例，旧 SQLite 连接不释放（Windows 删数据根 EPERM），/api/voice/* 命中已关闭连接 | `container.ts` 模块级单例在 Next 多 chunk 打包下各自漂移；VoiceRuntime 等 globalThis 单例同样绑旧库 | 单例只保留 `globalThis` 一份；重置前停调度器/流程补偿定时器、丢弃 VoiceRuntime 单例并关闭容器 DB | reset 连续调用均 200，数据根可清理，语音路由正常 | 本批 |
 | B-53 | P1 | Nightly | 夜间验收在干净检出上构建 Web 必失败：`Can't resolve '@wbfm/shared/pet'`（另有 `@wbfm/shared/constants`） | 工作区包子路径 exports 的生产条件指向 gitignore 的 `dist/`；夜间直接 `build:web`，未先构建依赖。CI 因先跑 `typecheck`（turbo `^build`）顺带产出 dist 而幸免 | 根 `build:web` 改为 `turbo run build --filter=@wbfm/web`，由 `dependsOn: ["^build"]` 自动构建工作区依赖 | 清空 `packages/*/dist` 后 `pnpm build:web` 成功；`check:exports` 6/6；手动重跑夜间 `44851702148` 全绿 | `22f1711e` |
+| B-54 | P2 | Nightly | 视觉巡检每晚以 `EADDRINUSE 127.0.0.1:43102` 启动失败（非阻断但恒红），基线比对实际从未在 CI 生效 | 测试类固定端口取 42339–42342 / 43101–43104，全部落在 Linux 临时端口段（32768–60999）；前序步骤的出站连接随机占用该端口后，显式 bind 即失败 | 测试端口整体下移到 32xxx（E2E 32339、验收 32341、工具评测 32342、eval 32340、夹具 32101–32104），并在 `development.md` 固化约定 | `grep` 全仓无残留旧端口；`pnpm check` 全绿；下一次夜间运行视觉步骤可正常启动 | 本次 |
 
 ## 二、运行时缺陷
 
@@ -37,6 +38,7 @@
 | B-50 | P2 | 任务事件流 | 展开已结束的任务时，每隔约 3 秒重连一次 `/api/tasks/:id/events`，服务端反复回放全部步骤 | `useTaskEvents` 收到 `run_finished` 后未关闭 `EventSource`；服务端正常关流触发浏览器自动重连 | 终态帧到达即 `es.close()` 并置状态 closed | `use-tasks.test.tsx` 2 条 | 本批 |
 | B-51 | P3 | 会议 / 舞台 | 会议 SSE 进行中切换页面或关窗，控制台出现 `AbortError` 未处理拒绝（dev 态弹错误覆盖层） | 流式段异步 IIFE 没有 try/catch，卸载 abort 的拒绝无人接收 | 流式段收敛异常并加 `stopped` 守卫，卸载后不再写状态 | `meeting-sse-unmount.test.tsx` 2 条（MSW 挂起请求） | 本批 |
 | B-52 | P3 | SSE 服务端 | 观察者断开后服务端仍持续消费事件生成器；总线迭代器 `return()` 也无法唤醒挂起的 `next()` | `sseResponse` 无 `cancel()` 且吞掉 enqueue 异常；`makeIterator.return()` 清空 resolver 但不唤醒 | `cancel()` 置位并在 enqueue 失败即停；`return()` 置 stopped 并唤醒等待者 | `sse-stream.test.ts` + `run-event-bus.test.ts` | 本批 |
+| B-55 | P3 | 工作流运行 | 长会话里每次把流程当工具调用一次，进程内就跑一次 override 内存累积（B-25 只修了队列路径） | `runOverrides` 在 createRun 时对所有触发器写入，但 chat 运行由 `invokeFromChat` 直接执行，不经过队列的 `finally` | `createChatInvoker` 增加 `releaseRun` 钩子，在 finally 回收 override；抛错路径同样回收 | `chat-invoke.test.ts` 覆盖成功/抛错两条路径 | 本批 |
 
 ## 三、数据与桌面（深度排查批次）
 

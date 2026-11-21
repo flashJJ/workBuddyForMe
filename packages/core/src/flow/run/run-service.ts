@@ -187,6 +187,10 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     createChatRun: ({ workflowId, input }) => createRun({ workflowId, input, trigger: 'chat' }),
     executor,
     bus,
+    // chat 路径不经队列：override 必须在此回收，否则按调用次数无界累积
+    releaseRun: (runId) => {
+      runOverrides.delete(runId);
+    },
   });
 
   function resolveAsTool(workflowId: string): Tool | null {

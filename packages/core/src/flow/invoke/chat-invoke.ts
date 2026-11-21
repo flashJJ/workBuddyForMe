@@ -18,6 +18,8 @@ export interface ChatInvokeDeps {
   createChatRun: (params: { workflowId: string; input: Record<string, unknown> }) => string;
   executor: FlowExecutor;
   bus: FlowEventBus;
+  /** run 终态回收运行期附加参数（chat 路径不经队列，队列的 finally 覆盖不到） */
+  releaseRun?: (runId: string) => void;
 }
 
 export function createChatInvoker(deps: ChatInvokeDeps): FlowToolInvoker['invokeFromChat'] {
@@ -54,8 +56,10 @@ export function createChatInvoker(deps: ChatInvokeDeps): FlowToolInvoker['invoke
       }
       return { ok: false, error: '工作流未产出结果（事件流意外结束）', substeps: collector.list() };
     } finally {
-      // 对话触发的运行同样在终态后回收缓冲，避免长会话逐次累积事件数组
+      // 对话触发的运行同样在终态后回收缓冲与运行期附加参数，
+      // 否则长会话里每次把流程当工具调一次就永久留下一条 override
       deps.bus.dispose(runId);
+      deps.releaseRun?.(runId);
     }
   };
 }
