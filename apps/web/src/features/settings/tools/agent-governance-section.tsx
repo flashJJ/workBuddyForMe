@@ -16,6 +16,43 @@ import { ListField } from './list-field';
 
 const INPUT = 'h-9 w-full rounded-md border bg-ui-control px-2 text-sm';
 
+/** 与 agentPolicySchema.limits 的区间保持一致；输入即钳制，避免提交被 400 拒绝 */
+const LIMIT_RANGES = {
+  maxSteps: { min: 1, max: 50 },
+  maxRuntimeMinutes: { min: 1, max: 60 },
+  maxWritesPerRun: { min: 1, max: 1000 },
+  maxExternalCallsPerRun: { min: 1, max: 200 },
+} as const;
+
+function clampInt(value: string, min: number, max: number): number {
+  const parsed = Math.round(Number(value));
+  if (!Number.isFinite(parsed)) return min;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+/** 数值型限额输入：输入即钳制到合法区间，保证提交的策略能通过 schema 校验 */
+function LimitField(props: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {props.label}
+      <input
+        className={INPUT}
+        type="number"
+        min={props.min}
+        max={props.max}
+        value={props.value}
+        onChange={(event) => props.onChange(clampInt(event.target.value, props.min, props.max))}
+      />
+    </label>
+  );
+}
+
 const MODE_KEYS: Record<AgentPermissionMode, MessageKey> = {
   confirm_each: 'tasks.governance.modes.confirm_each',
   auto_edits: 'tasks.governance.modes.auto_edits',
@@ -221,56 +258,30 @@ export function AgentGovernanceSection() {
       <div className="space-y-2">
         <h4 className="text-xs font-semibold">{t('tasks.governance.policy.limits')}</h4>
         <div className="grid gap-3 md:grid-cols-4">
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            {t('tasks.governance.policy.maxSteps')}
-            <input
-              className={INPUT}
-              type="number"
-              min={1}
-              max={50}
-              value={policy.limits.maxSteps}
-              onChange={(event) => patchLimits({ maxSteps: Number(event.target.value) || 0 })}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            {t('tasks.governance.policy.maxRuntimeMinutes')}
-            <input
-              className={INPUT}
-              type="number"
-              min={1}
-              max={60}
-              value={Math.round(policy.limits.maxRuntimeMs / 60_000)}
-              onChange={(event) =>
-                patchLimits({ maxRuntimeMs: (Number(event.target.value) || 0) * 60_000 })
-              }
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            {t('tasks.governance.policy.maxWrites')}
-            <input
-              className={INPUT}
-              type="number"
-              min={1}
-              max={1000}
-              value={policy.limits.maxWritesPerRun}
-              onChange={(event) =>
-                patchLimits({ maxWritesPerRun: Number(event.target.value) || 0 })
-              }
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            {t('tasks.governance.policy.maxExternalCalls')}
-            <input
-              className={INPUT}
-              type="number"
-              min={1}
-              max={200}
-              value={policy.limits.maxExternalCallsPerRun}
-              onChange={(event) =>
-                patchLimits({ maxExternalCallsPerRun: Number(event.target.value) || 0 })
-              }
-            />
-          </label>
+          <LimitField
+            label={t('tasks.governance.policy.maxSteps')}
+            {...LIMIT_RANGES.maxSteps}
+            value={policy.limits.maxSteps}
+            onChange={(maxSteps) => patchLimits({ maxSteps })}
+          />
+          <LimitField
+            label={t('tasks.governance.policy.maxRuntimeMinutes')}
+            {...LIMIT_RANGES.maxRuntimeMinutes}
+            value={Math.round(policy.limits.maxRuntimeMs / 60_000)}
+            onChange={(minutes) => patchLimits({ maxRuntimeMs: minutes * 60_000 })}
+          />
+          <LimitField
+            label={t('tasks.governance.policy.maxWrites')}
+            {...LIMIT_RANGES.maxWritesPerRun}
+            value={policy.limits.maxWritesPerRun}
+            onChange={(maxWritesPerRun) => patchLimits({ maxWritesPerRun })}
+          />
+          <LimitField
+            label={t('tasks.governance.policy.maxExternalCalls')}
+            {...LIMIT_RANGES.maxExternalCallsPerRun}
+            value={policy.limits.maxExternalCallsPerRun}
+            onChange={(maxExternalCallsPerRun) => patchLimits({ maxExternalCallsPerRun })}
+          />
         </div>
       </div>
 
