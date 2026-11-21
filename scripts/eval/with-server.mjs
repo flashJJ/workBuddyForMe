@@ -22,11 +22,14 @@ function readArgs(argv) {
     script: '',
     port: Number(process.env.WBFM_EVAL_PORT ?? 32340),
     mode: process.env.GITHUB_ACTIONS === 'true' ? 'start' : 'dev',
+    /** 未识别的参数原样转给目标脚本（如 eval-replay 的 --compare=last） */
+    forward: [],
   };
   for (const arg of argv.slice(2)) {
     if (arg.startsWith('--script=')) args.script = arg.slice('--script='.length);
     else if (arg.startsWith('--port=')) args.port = Number(arg.slice('--port='.length));
     else if (arg.startsWith('--mode=')) args.mode = arg.slice('--mode='.length);
+    else args.forward.push(arg);
   }
   return args;
 }
@@ -111,11 +114,15 @@ async function main() {
     await waitForHealth(baseUrl, 240_000);
     console.log(`服务就绪：${baseUrl}（mode=${args.mode}）\n`);
     const code = await new Promise((resolve, reject) => {
-      const child = spawn(process.execPath, [args.script, `--base-url=${baseUrl}`], {
-        cwd: ROOT,
-        shell: false,
-        stdio: 'inherit',
-      });
+      const child = spawn(
+        process.execPath,
+        [args.script, `--base-url=${baseUrl}`, ...args.forward],
+        {
+          cwd: ROOT,
+          shell: false,
+          stdio: 'inherit',
+        },
+      );
       child.on('error', reject);
       child.on('close', resolve);
     });

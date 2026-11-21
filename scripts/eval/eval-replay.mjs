@@ -8,9 +8,10 @@
  *
  * 指标固定五项（replay-contract.mjs）：预算占用、截断率、记忆保留、引用保留、约束保留。
  * 报告固定落 test-results/eval-replay/report.json 与 report.md；不含绝对路径、正文与密钥。
+ * v4.19：每次成功报告额外归档到 history/（保留 20 份）；`--compare=last` 追加「与上次对比」小节。
  *
  * 前置：WBFM_MOCK_AI=1 的 server（pnpm eval:replay 会经 with-server 自动起临时服务）。
- * 用法：node scripts/eval/eval-replay.mjs [--base-url=URL] [--baseline=名称] [--candidate=名称] [--out-dir=PATH]
+ * 用法：node scripts/eval/eval-replay.mjs [--base-url=URL] [--baseline=名称] [--candidate=名称] [--out-dir=PATH] [--compare=last]
  * 退出码：0 通过；1 阈值/隐私/确定性失败；2 基础设施错误。
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -27,6 +28,14 @@ import {
   evaluateReplayReport,
   findSensitiveContent,
 } from './lib/replay-contract.mjs';
+import {
+  REPLAY_COMPARE_LAST,
+  REPLAY_HISTORY_DIR,
+  compareReplayMetrics,
+  readLatestReplayReport,
+  recordReplayHistory,
+  replayHistoryFileName,
+} from './lib/replay-history.mjs';
 import {
   computeReplayMetrics,
   renderReplayMarkdown,
@@ -54,12 +63,17 @@ function readArgs(argv) {
     baseline: process.env.WBFM_REPLAY_BASELINE ?? '',
     candidate: process.env.WBFM_REPLAY_CANDIDATE ?? '',
     outDir: '',
+    compare: '',
   };
   for (const arg of argv.slice(2)) {
     if (arg.startsWith('--base-url=')) args.baseUrl = arg.slice('--base-url='.length);
     else if (arg.startsWith('--baseline=')) args.baseline = arg.slice('--baseline='.length);
     else if (arg.startsWith('--candidate=')) args.candidate = arg.slice('--candidate='.length);
     else if (arg.startsWith('--out-dir=')) args.outDir = arg.slice('--out-dir='.length);
+    else if (arg.startsWith('--compare=')) args.compare = arg.slice('--compare='.length);
+  }
+  if (args.compare && args.compare !== REPLAY_COMPARE_LAST) {
+    throw new Error(`未知的对比模式：${args.compare}（仅支持 ${REPLAY_COMPARE_LAST}）`);
   }
   return args;
 }
@@ -347,11 +361,22 @@ async function main() {
   assertStable(report);
 
   const outDir = resolveOutDir(args.outDir);
+  const historyDir = join(outDir, REPLAY_HISTORY_DIR);
+  const historyName = replayHistoryFileName(report.at);
+  const previous =
+    args.compare === REPLAY_COMPARE_LAST
+      ? await readLatestReplayReport(historyDir, historyName)
+      : null;
+  if (args.compare === REPLAY_COMPARE_LAST && !previous) {
+    console.log('\n--compare=last：暂无历史报告，本次跳过对比');
+  }
+  const comparison = previous ? compareReplayMetrics(previous, report) : null;
+
   await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, REPLAY_REPORT_JSON), `${JSON.stringify(report, null, 2)}\n`, 'utf-8');
   await writeFile(
     join(outDir, REPLAY_REPORT_MARKDOWN),
-    `${renderReplayMarkdown(report, verdict)}\n`,
+    `${renderReplayMarkdown(report, verdict, comparison)}\n`,
     'utf-8',
   );
 
@@ -360,7 +385,27 @@ async function main() {
       `  ${metric.padEnd(20)} 基线 ${report.metrics.baseline[metric]}  候选 ${report.metrics.candidate[metric]}`,
     );
   }
+  if (comparison) {
+    console.log('\n与上次对比（本次候选 − 上次候选）：');
+    for (const row of comparison.rows) {
+      const delta =
+        row.delta === null ? '—' : `${row.delta > 0 ? '+' : ''}${row.delta}`;
+      console.log(
+        `  ${row.metric.padEnd(20)} ${row.previous ?? '—'} → ${row.current ?? '—'}  ${delta}`,
+      );
+    }
+  }
   console.log(`\n报告：${join(outDir, REPLAY_REPORT_JSON)} / ${join(outDir, REPLAY_REPORT_MARKDOWN)}`);
+  if (sensitive.length === 0) {
+    const recorded = await recordReplayHistory({ dir: historyDir, report });
+    console.log(
+      `历史：${join(historyDir, recorded.name)}${
+        recorded.pruned.length > 0 ? `（清理 ${recorded.pruned.length} 份旧报告）` : ''
+      }`,
+    );
+  } else {
+    console.warn('隐私检查未通过，已跳过历史归档');
+  }
   if (verdict.pass) {
     console.log(`eval-replay：PASS（${baselineStrategy.name} → ${candidateStrategy.name}）`);
     process.exit(0);

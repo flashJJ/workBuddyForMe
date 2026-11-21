@@ -61,6 +61,36 @@ function formatNumber(value) {
   return typeof value === 'number' ? value.toFixed(3).replace(/0+$/, '').replace(/\.$/, '') : '—';
 }
 
+function formatDelta(value) {
+  if (typeof value !== 'number') return '—';
+  return value > 0 ? `+${formatNumber(value)}` : formatNumber(value);
+}
+
+/** 「与上次对比」小节：只展示差值，不参与阈值判定 */
+function renderComparisonSection(comparison) {
+  if (!comparison?.rows?.length) return [];
+  const lines = [
+    '## 与上次对比',
+    '',
+    `- 上次报告：${comparison.at ?? '—'}`,
+    '- 差值口径：本次候选 − 上次候选（不参与阈值判定）',
+    '',
+    '| 指标 | 上次 | 本次 | 变化 | 方向 |',
+    '| --- | --- | --- | --- | --- |',
+  ];
+  for (const row of comparison.rows) {
+    lines.push(
+      `| ${METRIC_LABELS[row.metric] ?? row.metric} (\`${row.metric}\`) | ${formatNumber(
+        row.previous,
+      )} | ${formatNumber(row.current)} | ${formatDelta(row.delta)} | ${
+        REPLAY_HIGHER_IS_BETTER[row.metric] ? '越高越好' : '越低越好'
+      } |`,
+    );
+  }
+  lines.push('');
+  return lines;
+}
+
 /** 阈值说明：绝对下限 / 相对退化上限 */
 function formatThreshold(metric, thresholds) {
   const floor = thresholds?.floors?.[metric];
@@ -77,8 +107,9 @@ function formatThreshold(metric, thresholds) {
  * 生成 Markdown 报告：指标对比、阈值与失败项。
  * @param {ReturnType<import('./replay-contract.mjs').createReplayReport>} report
  * @param {{pass:boolean, failures:string[]}} verdict
+ * @param {ReturnType<import('./replay-history.mjs').compareReplayMetrics> | null} [comparison]
  */
-export function renderReplayMarkdown(report, verdict) {
+export function renderReplayMarkdown(report, verdict, comparison = null) {
   const thresholds = report?.thresholds ?? REPLAY_THRESHOLDS;
   const baseline = report?.metrics?.baseline ?? {};
   const candidate = report?.metrics?.candidate ?? {};
@@ -105,6 +136,7 @@ export function renderReplayMarkdown(report, verdict) {
     );
   }
   lines.push('');
+  lines.push(...renderComparisonSection(comparison));
   if (verdict?.failures?.length) {
     lines.push('## 失败项', '');
     for (const failure of verdict.failures) lines.push(`- ${failure}`);
