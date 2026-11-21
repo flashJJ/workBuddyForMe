@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import {
+  FLOW_AGENT_KNOWLEDGE_BASES_MAX,
   FLOW_DESCRIPTION_MAX,
+  FLOW_INPUTS_MAX,
   FLOW_MAX_EDGES,
   FLOW_MAX_NODES,
   FLOW_NAME_MAX,
@@ -51,7 +53,7 @@ export type FlowInputField = z.infer<typeof flowInputFieldSchema>;
 
 /** start 节点 config：声明流程入参（发布为 flow 工具时据此生成 JSON Schema） */
 export const flowStartConfigSchema = z.object({
-  inputs: z.array(flowInputFieldSchema).max(20).default([]),
+  inputs: z.array(flowInputFieldSchema).max(FLOW_INPUTS_MAX).default([]),
 });
 export type FlowStartConfig = z.infer<typeof flowStartConfigSchema>;
 
@@ -68,7 +70,7 @@ export const flowAgentConfigSchema = z.object({
   /** 工具域（knowledge / desktop / mcp:<服务器> / flow:<id> 等）；缺省纯推理 */
   toolScopes: z.array(z.string().trim().min(1).max(80)).max(30).optional(),
   /** 指定知识库（优先于助手绑定，支持多库联合检索）；缺省/空数组回落助手绑定 */
-  knowledgeBaseIds: z.array(z.string().trim().min(1)).max(10).optional(),
+  knowledgeBaseIds: z.array(z.string().trim().min(1)).max(FLOW_AGENT_KNOWLEDGE_BASES_MAX).optional(),
   /** 三角色模型覆盖（models.id；空串视同未设置） */
   plannerModelId: z.string().trim().min(1).nullable().optional(),
   executorModelId: z.string().trim().min(1).nullable().optional(),

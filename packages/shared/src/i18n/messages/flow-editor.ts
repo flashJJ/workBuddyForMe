@@ -182,6 +182,7 @@ export const zhFlowEditor = {
       required: '必填',
       descPlaceholder: '参数说明（可选）',
       addInput: '添加入参',
+      inputsLimit: '最多 {max} 个入参；达到上限后需先删除部分入参',
     },
     human: {
       promptLabel: '审核说明',
@@ -255,6 +256,7 @@ export const zhFlowEditor = {
       kbLabel: '知识库（可多选）',
       kbDefault: '跟随助手绑定 / 不指定',
       kbMultiHint: '可多选；不选时回落助手绑定；跨库结果统一融合',
+      kbLimitHint: '最多选择 {max} 个知识库；达到上限后需先取消部分勾选',
       kbEmpty: '暂无知识库',
       scopesLabel: '工具域',
       scopesHint: 'Executor 仅允许调用声明域内的工具（白名单强制）',

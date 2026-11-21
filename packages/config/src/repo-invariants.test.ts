@@ -60,5 +60,44 @@ describe('集中式数据根不变量', () => {
       }
     }
     expect(offenders).toEqual([]);
+  }, 60_000);
+});
+
+/**
+ * B-61/B-62 回归（P1 上限多源）：
+ * 用户可多选配置的上限必须来自 @wbfm/shared/constants，schema 与前端提交体
+ * 不得再各写一份数字字面量——历史上三处不一致时，用户勾选会被静默截断。
+ */
+describe('用户可选上限单一来源', () => {
+  const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), 'utf8');
+
+  it('助手与流程的 schema 引用共享常量', () => {
+    const assistant = read('packages/shared/src/schemas/chat/assistant.ts');
+    expect(assistant).toContain('ASSISTANT_ENABLED_TOOLS_MAX');
+    expect(assistant).toContain('ASSISTANT_SKILL_NAMES_MAX');
+    expect(assistant).toContain('ASSISTANT_KNOWLEDGE_BASES_MAX');
+    expect(assistant).not.toMatch(/\.max\(20,\s*'技能数量超限'\)/);
+
+    const flow = read('packages/shared/src/schemas/flow/flow.ts');
+    expect(flow).toContain('FLOW_INPUTS_MAX');
+    expect(flow).toContain('FLOW_AGENT_KNOWLEDGE_BASES_MAX');
+  });
+
+  it('助手提交体不写死技能与知识库上限', () => {
+    const body = read('apps/web/src/features/assistants/assistant-form-body.ts');
+    expect(body).toContain('ASSISTANT_SKILL_NAMES_MAX');
+    expect(body).toContain('ASSISTANT_KNOWLEDGE_BASES_MAX');
+    expect(body).not.toMatch(/,\s*10,\s*200\)/);
+    expect(body).not.toMatch(/,\s*20,\s*64\)/);
+  });
+
+  it('能力信任与 MCP 名称上限引用共享常量', () => {
+    const trust = read('apps/web/src/features/settings/tools/capability-trust-section.tsx');
+    expect(trust).toContain('CAPABILITY_TRUSTED_KEYS_MAX');
+    expect(trust).not.toMatch(/keys\.length\s*>=\s*20/);
+
+    const mcpForm = read('apps/web/src/features/settings/mcp/mcp-server-form-dialog.tsx');
+    expect(mcpForm).toContain('MCP_SERVER_NAME_MAX');
+    expect(mcpForm).not.toMatch(/maxLength=\{40\}/);
   });
 });

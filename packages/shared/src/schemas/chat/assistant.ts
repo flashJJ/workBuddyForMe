@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { QUALIFIED_TOOL_NAME_PATTERN } from '../../constants/index';
-import { ASSISTANT_ENABLED_TOOLS_MAX } from '../../constants/tools';
+import {
+  ASSISTANT_ENABLED_TOOLS_MAX,
+  ASSISTANT_KNOWLEDGE_BASES_MAX,
+  ASSISTANT_SKILL_NAMES_MAX,
+} from '../../constants/tools';
 import { stagePlanSchema } from '../work/stage-plan';
 
 const nameSchema = z.string().trim().min(1, '助手名称不能为空').max(60);
@@ -14,7 +18,7 @@ const retrieveAlwaysSchema = z.boolean().default(true);
 /** v2.4 M4（P1-2）：助手级技能勾选（技能 name；空数组=跟随全局启用技能） */
 const skillNamesSchema = z
   .array(z.string().trim().min(1).max(64))
-  .max(20, '技能数量超限')
+  .max(ASSISTANT_SKILL_NAMES_MAX, '技能数量超限')
   .default([]);
 /** v0.5：长期记忆开关默认开启 */
 const memoryEnabledSchema = z.boolean().default(true);
@@ -40,7 +44,7 @@ const samplingFields = {
   plannerModelId: z.string().trim().min(1).nullable().default(null),
   executorModelId: z.string().trim().min(1).nullable().default(null),
   reviewerModelId: z.string().trim().min(1).nullable().default(null),
-  knowledgeBaseIds: z.array(z.string().trim().min(1)).max(10).default([]),
+  knowledgeBaseIds: z.array(z.string().trim().min(1)).max(ASSISTANT_KNOWLEDGE_BASES_MAX).default([]),
   enabledTools: enabledToolsSchema,
   skillNames: skillNamesSchema,
   retrieveAlways: retrieveAlwaysSchema,

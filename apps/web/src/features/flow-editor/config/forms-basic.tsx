@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { FlowInputField, FlowInputValueType } from '@wbfm/shared/schemas';
+import { FLOW_INPUTS_MAX } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { Field, Input, RefTextarea, SimpleSelect, str, type NodeConfigFormProps } from './form-primitives';
@@ -17,17 +18,20 @@ export function StartForm({ config, patch }: NodeConfigFormProps) {
     [config.inputs],
   );
 
+  const atLimit = inputs.length >= FLOW_INPUTS_MAX;
   const update = (index: number, partial: Partial<FlowInputField>) => {
     const next = inputs.map((item, i) => (i === index ? { ...item, ...partial } : item));
     patch({ inputs: next });
   };
-  const add = () =>
+  const add = () => {
+    if (atLimit) return;
     patch({
       inputs: [
         ...inputs,
         { name: `arg${inputs.length + 1}`, type: 'string' as const, required: true },
       ],
     });
+  };
   const remove = (index: number) =>
     patch({ inputs: inputs.filter((_, i) => i !== index) });
 
@@ -83,10 +87,15 @@ export function StartForm({ config, patch }: NodeConfigFormProps) {
               />
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" onClick={add} className="w-full">
+          <Button type="button" variant="outline" size="sm" onClick={add} disabled={atLimit} className="w-full">
             <Plus className="h-3.5 w-3.5" />
             {t('flowEditor.form.start.addInput')}
           </Button>
+          {atLimit && (
+            <p className="text-[11px] text-muted-foreground">
+              {t('flowEditor.form.start.inputsLimit', { max: FLOW_INPUTS_MAX })}
+            </p>
+          )}
         </div>
       </Field>
     </div>

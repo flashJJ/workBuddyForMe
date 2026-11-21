@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   ASSISTANT_ENABLED_TOOLS_MAX,
+  ASSISTANT_KNOWLEDGE_BASES_MAX,
+  ASSISTANT_SKILL_NAMES_MAX,
   assistantCreateSchema,
   buildMcpToolName,
   chatRequestSchema,
@@ -66,6 +68,28 @@ describe('model / assistant / settings schemas', () => {
   it('设置仅接受 zh-CN 与枚举主题', () => {
     expect(settingsUpdateSchema.safeParse({ theme: 'purple' }).success).toBe(false);
     expect(settingsUpdateSchema.parse({ theme: 'dark' }).theme).toBe('dark');
+  });
+
+  it('助手技能与知识库上限来自共享常量（B-62）', () => {
+    const skills = (n: number) => Array.from({ length: n }, (_, i) => `skill-${i}`);
+    expect(
+      assistantCreateSchema.safeParse({ name: 'a', skillNames: skills(ASSISTANT_SKILL_NAMES_MAX) }).success,
+    ).toBe(true);
+    expect(
+      assistantCreateSchema.safeParse({ name: 'a', skillNames: skills(ASSISTANT_SKILL_NAMES_MAX + 1) })
+        .success,
+    ).toBe(false);
+    const kbs = (n: number) => Array.from({ length: n }, (_, i) => `kb-${i}`);
+    expect(
+      assistantCreateSchema.safeParse({ name: 'a', knowledgeBaseIds: kbs(ASSISTANT_KNOWLEDGE_BASES_MAX) })
+        .success,
+    ).toBe(true);
+    expect(
+      assistantCreateSchema.safeParse({
+        name: 'a',
+        knowledgeBaseIds: kbs(ASSISTANT_KNOWLEDGE_BASES_MAX + 1),
+      }).success,
+    ).toBe(false);
   });
 });
 

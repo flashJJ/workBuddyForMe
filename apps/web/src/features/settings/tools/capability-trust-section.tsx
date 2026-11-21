@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { CAPABILITY_TRUSTED_KEYS_MAX } from '@wbfm/shared/schemas';
 import type {
   CapabilitySignaturePolicy,
   CapabilityTrustedKey,
@@ -43,7 +44,7 @@ export function CapabilityTrustSection() {
       setError(t('settings.capabilityTrust.invalid'));
       return;
     }
-    if (keys.length >= 20) {
+    if (keys.length >= CAPABILITY_TRUSTED_KEYS_MAX) {
       setError(t('settings.capabilityTrust.limit'));
       return;
     }

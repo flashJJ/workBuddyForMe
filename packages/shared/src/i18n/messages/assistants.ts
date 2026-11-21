@@ -35,6 +35,7 @@ export const zhAssistants = {
     empty: '设置页还没有已启用的技能',
     followGlobal: '当前：跟随全局（使用设置页全部已启用技能）',
     selected: '当前：已勾选 {count} 个技能',
+    limitHint: '最多选择 {max} 个技能；达到上限后需先取消部分勾选',
   },
   /** v2.4 M4：对话页头部能力摘要 */
   capability: {
@@ -70,6 +71,7 @@ export const zhAssistants = {
     kbLabel: '关联知识库（可多选，自动跨库联合 RAG）',
     kbNone: '不关联',
     kbMultiHint: '可多选；提问时将在全部已选知识库中联合检索',
+    kbLimitHint: '最多关联 {max} 个知识库；达到上限后需先取消部分勾选',
     kbEmpty: '暂无知识库，请先到知识库页面创建',
     saving: '保存中…',
     updated: '助手已更新',
@@ -159,6 +161,7 @@ export const enAssistants = {
     empty: 'No skills are enabled in Settings yet',
     followGlobal: 'Now: following global (all skills enabled in Settings)',
     selected: 'Now: {count} skill(s) selected',
+    limitHint: 'Up to {max} skills; uncheck some before selecting more',
   },
   /** v2.4 M4: capability summary in the chat header */
   capability: {
@@ -195,6 +198,7 @@ export const enAssistants = {
     kbLabel: 'Linked knowledge bases (multi-select, cross-KB RAG)',
     kbNone: 'None',
     kbMultiHint: 'Select multiple; questions run a unified retrieval across all selected bases',
+    kbLimitHint: 'Up to {max} knowledge bases; uncheck some before selecting more',
     kbEmpty: 'No knowledge base yet — create one on the Knowledge page',
     saving: 'Saving…',
     updated: 'Assistant updated',

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { McpServerInfo } from '@wbfm/shared/types';
-import type { McpCatalogEntry } from '@wbfm/shared/constants';
+import { MCP_SERVER_NAME_MAX, type McpCatalogEntry } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -196,7 +196,7 @@ export function McpServerFormDialog({ open, onOpenChange, server, preset }: Prop
               onChange={(e) => update({ name: e.target.value })}
               placeholder={t('settingsMcp.mcp.form.namePlaceholder')}
               required
-              maxLength={40}
+              maxLength={MCP_SERVER_NAME_MAX}
               pattern="[a-zA-Z0-9][a-zA-Z0-9_-]*"
               title={t('settingsMcp.mcp.form.namePatternTitle')}
             />

@@ -182,6 +182,7 @@ export const enFlowEditor = {
       required: 'Required',
       descPlaceholder: 'Parameter description (optional)',
       addInput: 'Add input',
+      inputsLimit: 'Up to {max} inputs; remove some before adding more',
     },
     human: {
       promptLabel: 'Review instructions',
@@ -258,6 +259,7 @@ export const enFlowEditor = {
       kbLabel: 'Knowledge bases (multi-select)',
       kbDefault: 'Follow assistant / none',
       kbMultiHint: 'Multi-select; empty falls back to assistant bindings; cross-KB results are fused',
+      kbLimitHint: 'Up to {max} knowledge bases; uncheck some before selecting more',
       kbEmpty: 'No knowledge base yet',
       scopesLabel: 'Tool scopes',
       scopesHint: 'Executor can only call tools within the declared scopes (whitelist enforced)',

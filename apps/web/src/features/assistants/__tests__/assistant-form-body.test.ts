@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ASSISTANT_KNOWLEDGE_BASES_MAX, ASSISTANT_SKILL_NAMES_MAX } from '@wbfm/shared/constants';
 import { buildAssistantBody, type AssistantFormShape } from '../assistant-form-body';
 import { emptyAssistantForm } from '../assistant-form-state';
 
@@ -102,6 +103,20 @@ describe('buildAssistantBody（表单 → API 契约收敛）', () => {
     );
     expect(body.skillNames).toEqual(['meeting-notes']);
     expect(body.knowledgeBaseIds).toEqual(['kb-1', 'kb-2']);
+  });
+
+  it('技能与知识库超出上限时按共享常量截断（B-62）', () => {
+    const body = buildAssistantBody(
+      form({
+        skillNames: Array.from({ length: ASSISTANT_SKILL_NAMES_MAX + 3 }, (_, i) => `skill-${i}`),
+        knowledgeBaseIds: Array.from(
+          { length: ASSISTANT_KNOWLEDGE_BASES_MAX + 2 },
+          (_, i) => `kb-${i}`,
+        ),
+      }),
+    );
+    expect(body.skillNames).toHaveLength(ASSISTANT_SKILL_NAMES_MAX);
+    expect(body.knowledgeBaseIds).toHaveLength(ASSISTANT_KNOWLEDGE_BASES_MAX);
   });
 
   it('未选卡且提示词为空时显式回默认卡', () => {

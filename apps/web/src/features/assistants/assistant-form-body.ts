@@ -1,4 +1,9 @@
-import { ASSISTANT_ENABLED_TOOLS_MAX, QUALIFIED_TOOL_NAME_PATTERN } from '@wbfm/shared/constants';
+import {
+  ASSISTANT_ENABLED_TOOLS_MAX,
+  ASSISTANT_KNOWLEDGE_BASES_MAX,
+  ASSISTANT_SKILL_NAMES_MAX,
+  QUALIFIED_TOOL_NAME_PATTERN,
+} from '@wbfm/shared/constants';
 import type { AssistantBody } from '@/lib/hooks/assistant';
 
 /** 助手表单状态（与 AssistantFormDialog 内部表单结构一致） */
@@ -56,7 +61,7 @@ function uniqueStrings(values: string[], limit: number, maxLength: number): stri
  * 数值与文本按服务端契约收敛，避免输入框中间态（'-'、'.'、超长）触发整单校验失败。
  */
 export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
-  const knowledgeBaseIds = uniqueStrings(form.knowledgeBaseIds, 10, 200);
+  const knowledgeBaseIds = uniqueStrings(form.knowledgeBaseIds, ASSISTANT_KNOWLEDGE_BASES_MAX, 200);
   const enabledTools = uniqueStrings(
     form.enabledTools.filter((tool) => QUALIFIED_TOOL_NAME_PATTERN.test(tool)),
     ASSISTANT_ENABLED_TOOLS_MAX,
@@ -77,7 +82,7 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
     modelId: form.modelId || null,
     knowledgeBaseIds,
     enabledTools,
-    skillNames: uniqueStrings(form.skillNames, 20, 64),
+    skillNames: uniqueStrings(form.skillNames, ASSISTANT_SKILL_NAMES_MAX, 64),
     retrieveAlways: form.retrieveAlways,
     memoryEnabled: form.memoryEnabled,
     expressionEnabled: form.expressionEnabled,

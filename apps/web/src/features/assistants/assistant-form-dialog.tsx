@@ -2,7 +2,11 @@
 
 import * as React from 'react';
 import type { Assistant } from '@wbfm/shared/types';
-import { ASSISTANT_ENABLED_TOOLS_MAX } from '@wbfm/shared/constants';
+import {
+  ASSISTANT_ENABLED_TOOLS_MAX,
+  ASSISTANT_KNOWLEDGE_BASES_MAX,
+  ASSISTANT_SKILL_NAMES_MAX,
+} from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -61,6 +65,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
 
   const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }));
   const chatModels = (models ?? []).filter((model) => model.capabilities.includes('chat'));
+  const kbAtLimit = form.knowledgeBaseIds.length >= ASSISTANT_KNOWLEDGE_BASES_MAX;
 
   const toggleTool = (tool: string) => {
     setForm((prev) => {
@@ -197,24 +202,36 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
                 role="group"
                 aria-label={t('assistants.form.kbLabel')}
               >
-                {knowledgeBases.map((kb) => (
-                  <label
-                    key={kb.id}
-                    className="flex cursor-pointer items-center gap-2 text-sm"
-                    data-testid={`assistant-kb-option-${kb.id}`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      checked={form.knowledgeBaseIds.includes(kb.id)}
-                      onChange={() => toggleKnowledgeBase(kb.id)}
-                    />
-                    <span>{kb.name}</span>
-                  </label>
-                ))}
+                {knowledgeBases.map((kb) => {
+                  const checked = form.knowledgeBaseIds.includes(kb.id);
+                  const disabled = kbAtLimit && !checked;
+                  return (
+                    <label
+                      key={kb.id}
+                      className={`flex items-center gap-2 text-sm ${
+                        disabled ? 'cursor-not-allowed text-muted-foreground' : 'cursor-pointer'
+                      }`}
+                      data-testid={`assistant-kb-option-${kb.id}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggleKnowledgeBase(kb.id)}
+                      />
+                      <span>{kb.name}</span>
+                    </label>
+                  );
+                })}
                 <p className="pt-0.5 text-[11px] text-muted-foreground">
                   {t('assistants.form.kbMultiHint')}
                 </p>
+                {kbAtLimit && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('assistants.form.kbLimitHint', { max: ASSISTANT_KNOWLEDGE_BASES_MAX })}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">{t('assistants.form.kbEmpty')}</p>
@@ -233,6 +250,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
 
           <AssistantSkillsField
             value={form.skillNames}
+            limit={ASSISTANT_SKILL_NAMES_MAX}
             onChange={(skillNames) => update({ skillNames })}
           />
 

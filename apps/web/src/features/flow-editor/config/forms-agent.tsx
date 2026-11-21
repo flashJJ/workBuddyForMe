@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Monitor, LibraryBig } from 'lucide-react';
 import { AGENT_BUDGET_BOUNDS } from '@wbfm/shared/schemas';
+import { FLOW_AGENT_KNOWLEDGE_BASES_MAX } from '@wbfm/shared/constants';
 import { useKnowledgeBases } from '@/lib/hooks/knowledge';
 import { useAssistants } from '@/lib/hooks/assistant';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -37,9 +38,11 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
   };
 
   const toggleKb = (kbId: string) => {
-    const next = kbIds.includes(kbId) ? kbIds.filter((id) => id !== kbId) : [...kbIds, kbId];
-    patch({ knowledgeBaseIds: next });
+    const has = kbIds.includes(kbId);
+    if (!has && kbIds.length >= FLOW_AGENT_KNOWLEDGE_BASES_MAX) return;
+    patch({ knowledgeBaseIds: has ? kbIds.filter((id) => id !== kbId) : [...kbIds, kbId] });
   };
+  const kbAtLimit = kbIds.length >= FLOW_AGENT_KNOWLEDGE_BASES_MAX;
 
   const budgetField = (
     key: 'maxRounds' | 'maxSteps' | 'maxTotalTokens',
@@ -104,6 +107,7 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
               <ScopeChip
                 key={kb.id}
                 active={kbIds.includes(kb.id)}
+                disabled={kbAtLimit && !kbIds.includes(kb.id)}
                 icon={<LibraryBig className="h-3.5 w-3.5" />}
                 label={kb.name}
                 onClick={() => toggleKb(kb.id)}
@@ -112,6 +116,11 @@ export function AgentForm({ nodeId, config, nodes, patch }: NodeConfigFormProps)
             <p className="text-[11px] leading-tight text-muted-foreground">
               {t('flowEditor.form.agent.kbMultiHint')}
             </p>
+            {kbAtLimit && (
+              <p className="text-[11px] leading-tight text-muted-foreground">
+                {t('flowEditor.form.agent.kbLimitHint', { max: FLOW_AGENT_KNOWLEDGE_BASES_MAX })}
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-[11px] text-muted-foreground">{t('flowEditor.form.agent.kbEmpty')}</p>
@@ -161,22 +170,26 @@ function ScopeChip({
   icon,
   label,
   onClick,
+  disabled = false,
 }: {
   active: boolean;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-pressed={active}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
         'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
         active
           ? 'border-teal-500/60 bg-teal-500/10 text-teal-700 dark:text-teal-300'
           : 'bg-ui-control text-muted-foreground hover:border-primary/50',
+        disabled && 'cursor-not-allowed opacity-50 hover:border-inherit',
       )}
     >
       {icon}

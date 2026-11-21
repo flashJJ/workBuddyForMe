@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { FLOW_AGENT_KNOWLEDGE_BASES_MAX, FLOW_INPUTS_MAX } from '../../constants';
 import {
   buildFlowInputJsonSchema,
   buildFlowToolName,
+  flowAgentConfigSchema,
   flowGraphSchema,
   flowStartConfigSchema,
   isFlowToolName,
@@ -81,6 +83,33 @@ describe('start 节点入参契约', () => {
   it('非法参数名被拒', () => {
     expect(
       flowStartConfigSchema.safeParse({ inputs: [{ name: '1bad', type: 'string' }] }).success,
+    ).toBe(false);
+  });
+
+  it('入参数量上限来自共享常量（B-62）', () => {
+    const inputs = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ name: `arg${i}`, type: 'string' as const }));
+    expect(flowStartConfigSchema.safeParse({ inputs: inputs(FLOW_INPUTS_MAX) }).success).toBe(true);
+    expect(flowStartConfigSchema.safeParse({ inputs: inputs(FLOW_INPUTS_MAX + 1) }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('agent 节点配置契约', () => {
+  it('知识库数量上限来自共享常量（B-62）', () => {
+    const kbs = (n: number) => Array.from({ length: n }, (_, i) => `kb-${i}`);
+    expect(
+      flowAgentConfigSchema.safeParse({
+        goal: '整理资料',
+        knowledgeBaseIds: kbs(FLOW_AGENT_KNOWLEDGE_BASES_MAX),
+      }).success,
+    ).toBe(true);
+    expect(
+      flowAgentConfigSchema.safeParse({
+        goal: '整理资料',
+        knowledgeBaseIds: kbs(FLOW_AGENT_KNOWLEDGE_BASES_MAX + 1),
+      }).success,
     ).toBe(false);
   });
 });

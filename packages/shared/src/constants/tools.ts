@@ -89,6 +89,12 @@ export const QUALIFIED_TOOL_NAME_PATTERN =
  * 旧上限 20 在启用 MCP 后会把后勾选的工具静默截断（B-61）。
  */
 export const ASSISTANT_ENABLED_TOOLS_MAX = 128;
+/**
+ * 助手「技能（能力包）」选择上限与「关联知识库」上限：schema、表单提交体、UI 共用，
+ * 避免只在一层写死导致勾选被静默丢弃（B-62，同 B-61 的失效模式）。
+ */
+export const ASSISTANT_SKILL_NAMES_MAX = 20;
+export const ASSISTANT_KNOWLEDGE_BASES_MAX = 10;
 
 /**
  * v0.6 M3 本地技能包（声明式 Skill）：
