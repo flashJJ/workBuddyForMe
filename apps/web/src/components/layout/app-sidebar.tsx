@@ -28,6 +28,7 @@ export function AppSidebar() {
               key={item.href}
               href={item.href}
               title={t(item.labelKey)}
+              draggable={false}
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex items-center justify-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors md:justify-start md:px-3',

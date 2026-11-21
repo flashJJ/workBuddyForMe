@@ -46,6 +46,8 @@ describe('应用外壳（TR-23.1）', () => {
     // v2.4 M1：侧栏含演示模式徽标（读 settings），需 QueryClient 上下文
     const { rerender } = renderWithProviders(<AppSidebar />);
     expect(screen.getAllByRole('link')).toHaveLength(13);
+    // B-66：导航链接不允许原生拖拽，否则拖动时会弹出本地 URL 预览浮层
+    expect(screen.getByRole('link', { name: /对话/ })).toHaveAttribute('draggable', 'false');
     expect(screen.getByRole('link', { name: /对话/ })).toHaveAttribute(
       'aria-current',
       'page',

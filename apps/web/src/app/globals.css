@@ -923,3 +923,10 @@
     backdrop-filter: none;
   }
 }
+
+/* B-66：应用内链接/按钮禁止浏览器原生拖拽：避免拖动侧栏或按钮时弹出本地 URL 预览浮层 */
+a,
+button,
+[role='button'] {
+  -webkit-user-drag: none;
+}
