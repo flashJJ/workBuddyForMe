@@ -144,6 +144,11 @@ const FAKE_WORKLET_ENV = `(() => {
         configurable: true,
         value: { addModule: () => Promise.resolve() },
       });
+      // headless 环境没有音频输出，AudioContext 可能长期停在 suspended；
+      // resume() 在部分负载下不返回，会卡住整条采集管线。桩成 running。
+      Object.defineProperty(ctx, 'state', { configurable: true, get: () => 'running' });
+      ctx.resume = () => Promise.resolve();
+      ctx.close = () => Promise.resolve();
       ctx.createMediaStreamSource = () => ({ connect() {}, disconnect() {} });
       return ctx;
     };
@@ -243,13 +248,17 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
     await expect(handsfree).toBeEnabled();
     await expect(handsfree).toHaveAttribute('data-state', 'off');
 
+    // 先挂请求监听再武装：假帧序列会在点击后极短时间内走完并发出 ASR，
+    // 点击后再 waitForRequest 会错过已经发生的请求（本地与 CI 均复现）。
+    const asrReqPromise = page.waitForRequest((r) => r.url().includes('/api/voice/asr'), {
+      timeout: 60_000,
+    });
+
     // 武装即触发麦克风/worklet，假帧序列自动完成「聆听→识别→发送」
     await handsfree.click();
     await expect(handsfree).toHaveAttribute('aria-pressed', 'true');
 
-    const asrReq = await page.waitForRequest((r) => r.url().includes('/api/voice/asr'), {
-      timeout: 60_000,
-    });
+    const asrReq = await asrReqPromise;
     expect(asrReq.method()).toBe('POST');
 
     await expect(page.getByText(ASR_TEXT).first()).toBeVisible({ timeout: 60_000 });

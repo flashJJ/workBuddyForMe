@@ -205,8 +205,8 @@ Invoke-WebRequest -UseBasicParsing -Uri 'https://npmmirror.com/mirrors/electron-
 
 发版前：
 
-1. `pnpm check` → `pnpm test:unit` → `pnpm test:integration` → `pnpm build`。
-2. `pnpm test:e2e`；Windows 机器执行 `pnpm test:e2e:desktop`。
+1. `pnpm verify:local`（等价于 `pnpm check` + `pnpm test:unit` + `pnpm test:integration` + `pnpm build:web`）。
+2. `pnpm test:e2e`；Windows 机器执行 `pnpm test:e2e:desktop`。改到语音、检索、空态等交互时，至少先跑对应 spec（如 `pnpm --filter @wbfm/web exec playwright test tests/e2e/voice-vad.spec.ts`）；本机无法跑浏览器时需在提交说明里注明「E2E 交给 CI」，不能默认静态门禁已覆盖。
 3. 数据兼容检查：`data/` 下 SQLite 迁移幂等；发布前用旧版本数据目录启动验证「读兼容」。
 4. 升版只改 root package.json 的 version，执行 `pnpm sync-version`（同步 apps/web、apps/desktop 的 package.json 与 `packages/shared/src/version.ts`），提交。
 
