@@ -12,10 +12,18 @@ export const conversationUpdateSchema = z
     title: z.string().trim().min(1, '标题不能为空').max(120).optional(),
     /** v4.18：会话 token 预算；null=不限制。范围 1k–100M，避免误填 */
     tokenBudget: z.number().int().min(1_000).max(100_000_000).nullable().optional(),
+    /** v4.19：会话级备用模型覆盖；null=清除覆盖（跟随助手） */
+    fallbackModelId: z.string().trim().min(1).nullable().optional(),
   })
-  .refine((value) => value.title !== undefined || value.tokenBudget !== undefined, {
-    message: '至少提供一个更新字段',
-  });
+  .refine(
+    (value) =>
+      value.title !== undefined ||
+      value.tokenBudget !== undefined ||
+      value.fallbackModelId !== undefined,
+    {
+      message: '至少提供一个更新字段',
+    },
+  );
 export type ConversationUpdateInput = z.infer<typeof conversationUpdateSchema>;
 
 /**

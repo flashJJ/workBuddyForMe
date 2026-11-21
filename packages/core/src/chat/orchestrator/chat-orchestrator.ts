@@ -5,7 +5,7 @@ import type { ServiceDeps } from '../../services/base/deps';
 import { createAssistantsService } from '../../services/assistant/assistant-service';
 import { createAttachmentService } from '../../services/assistant/attachment-service';
 import { createConversationService } from '../../services/assistant/conversation-service';
-import { resolveChatTarget, resolveFallbackChatTarget, resolveForcedFallbackTarget, type ResolvedChatTarget } from '../context/model-resolver';
+import { resolveChatTarget, resolveFallbackChatTargets, resolveForcedFallbackTarget, type ResolvedChatTarget } from '../context/model-resolver';
 import { runAlwaysRetrieval } from '../turns/retrieve-turn';
 import { prepareUserTurn } from '../context/turn-preparation';
 import { runProviderTurnWithModelFallback, buildModelSwitchNotice, type ModelFallbackTurnResult } from '../tools/model-fallback';
@@ -51,7 +51,9 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         const existing = input.conversationId ? conversations.get(input.conversationId) : null;
         // 新建会话先按助手/系统默认校验，避免无模型时留下空会话
         target = resolveChatTarget(deps, assistant, existing?.modelId ?? null);
-        if (input.forceFallback) target = resolveForcedFallbackTarget(deps, assistant, target.model);
+        if (input.forceFallback) {
+          target = resolveForcedFallbackTarget(deps, assistant, target.model, existing?.id ?? null);
+        }
         conversationId = existing?.id ?? conversations.create(assistant.id).id;
         if (!existing) target = resolveChatTarget(deps, assistant, conversations.get(conversationId).modelId);
         ({ userContent } = prepareUserTurn({
@@ -160,7 +162,9 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           target,
         });
         const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace, researchDepth, contextWindow } = prepared;
-        const fallbackTarget = input.forceFallback ? null : resolveFallbackChatTarget(deps, assistant, target.model);
+        const fallbackTargets = input.forceFallback
+          ? []
+          : resolveFallbackChatTargets(deps, assistant, target.model, conversationId);
         let citations = prepared.citations;
         const fetchDegrade = createFetchDegradeTracker();
         const emotionEnabled = prepared.emotionEnabled;
@@ -168,7 +172,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
             const turn = runProviderTurnWithModelFallback({
               target,
-              fallback: fallbackTarget,
+              fallbacks: fallbackTargets,
               assistant,
               messages: outgoing,
               tools: toolDefs,

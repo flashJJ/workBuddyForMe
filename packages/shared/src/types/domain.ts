@@ -58,6 +58,7 @@ export interface Assistant extends Timestamped {
   /** 绑定 models.id；null 表示跟随系统默认对话模型 */
   modelId: string | null;
   fallbackModelId?: string | null; // v4.18 A 线：助手级备用模型（null/缺省=不自动切换）
+  /** v4.19：备用模型链（顺序即切换顺序；缺省时回落到 fallbackModelId） */ fallbackModelIds?: string[];
   /** v1.4：协作三角色模型覆盖（null=逐级回落：角色覆盖→助手 modelId→系统默认） */
   plannerModelId: string | null; executorModelId: string | null; reviewerModelId: string | null;
   /** v1.5：绑定 knowledge_bases.id（支持多库联合检索）；空数组=纯对话 */
@@ -93,6 +94,8 @@ export interface Conversation extends Timestamped {
   summaryTurns: number;
   modelId: string | null;
   tokenBudget?: number | null; // v4.18：会话 token 预算（null/缺省=不限制）
+  /** v4.19：会话级备用模型覆盖（null/缺省=跟随助手） */
+  fallbackModelId?: string | null;
 }
 export interface Citation {
   documentId: string;

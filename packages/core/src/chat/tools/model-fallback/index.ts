@@ -20,7 +20,8 @@ import { runProviderTurnWithToolFallback, type ProviderTurn } from '../tool-runn
  */
 export interface ModelFallbackTurnParams {
   target: ResolvedChatTarget;
-  fallback: ResolvedChatTarget | null;
+  /** v4.19：按顺序尝试的备用模型候选（最多 3 个；已尝试的不重复） */
+  fallbacks?: ResolvedChatTarget[];
   assistant: Assistant;
   messages: ChatMessage[];
   tools: ToolDefinition[];
@@ -67,6 +68,7 @@ export async function* runProviderTurnWithModelFallback(  params: ModelFallbackT
 ): AsyncGenerator<OrchestratorEvent, ModelFallbackTurnResult> {
   let active = params.target;
   const switches: ModelSwitchEvent[] = [];
+  const attempted = new Set<string>([active.model.id]);
   let emitted = params.hasOutput;
 
   for (;;) {
@@ -100,27 +102,27 @@ export async function* runProviderTurnWithModelFallback(  params: ModelFallbackT
         error,
         emitted ? 'after_first_token' : 'before_first_token',
       );
-      const fallback = params.fallback;
+      const next = (params.fallbacks ?? []).find((item) => !attempted.has(item.model.id));
       if (
         !failure ||
         !canAutoSwitchModel(failure) ||
-        !fallback ||
-        active.model.id === fallback.model.id ||
+        !next ||
         switches.length >= MAX_MODEL_SWITCH_ATTEMPTS
       ) {
         throw error;
       }
+      attempted.add(next.model.id);
       const event: ModelSwitchEvent = {
         fromModelId: active.model.id,
-        toModelId: fallback.model.id,
+        toModelId: next.model.id,
         reason: failure.code,
         attempt: switches.length + 1,
       };
       switches.push(event);
       params.onSwitch?.(event);
-      const notice = params.buildSwitchNotice?.(event, active, fallback);
+      const notice = params.buildSwitchNotice?.(event, active, next);
       if (notice) yield { event: 'model_switched', data: notice };
-      active = fallback;
+      active = next;
     }
   }
 }

@@ -94,13 +94,17 @@ async function drain(gen: AsyncGenerator<OrchestratorEvent, ModelFallbackTurnRes
   }
 }
 
-function params(primary: ResolvedChatTarget, fallback: ResolvedChatTarget | null) {
+function params(
+  primary: ResolvedChatTarget,
+  fallback: ResolvedChatTarget | ResolvedChatTarget[] | null,
+) {
   const onSwitch = vi.fn();
+  const fallbacks = fallback ? (Array.isArray(fallback) ? fallback : [fallback]) : [];
   return {
     onSwitch,
     input: {
       target: primary,
-      fallback,
+      fallbacks,
       assistant,
       messages: [{ role: 'user' as const, content: '你好' }],
       tools: [],
@@ -166,5 +170,31 @@ describe('v4.18 模型备用切换', () => {
     );
     await expect(drain(runProviderTurnWithModelFallback(input))).rejects.toThrow('x');
     expect(onSwitch).not.toHaveBeenCalled();
+  });
+
+  it('v4.19：按链顺序切换，第一个失败后使用第二个', async () => {
+    const { input, onSwitch } = params(
+      target('primary', failing(new ProviderError({ code: 'PROVIDER_ERROR', message: 'p', status: 429 }))),
+      [
+        target('f1', failing(new ProviderError({ code: 'PROVIDER_ERROR', message: 'f1', status: 503 }))),
+        target('f2', ok('第二个备用回答')),
+      ],
+    );
+    const { result } = await drain(runProviderTurnWithModelFallback(input));
+    expect(result.target.model.id).toBe('f2');
+    expect(result.switches.map((item) => item.toModelId)).toEqual(['f1', 'f2']);
+    expect(onSwitch).toHaveBeenCalledTimes(2);
+  });
+
+  it('v4.19：单轮最多两次切换，第三个备用不再尝试', async () => {
+    const failure = () =>
+      failing(new ProviderError({ code: 'PROVIDER_ERROR', message: 'boom', status: 503 }));
+    const { input, onSwitch } = params(target('primary', failure()), [
+      target('f1', failure()),
+      target('f2', failure()),
+      target('f3', ok('不应到达')),
+    ]);
+    await expect(drain(runProviderTurnWithModelFallback(input))).rejects.toThrow('boom');
+    expect(onSwitch).toHaveBeenCalledTimes(2);
   });
 });

@@ -35,6 +35,7 @@ import { buildAssistantBody, type AssistantFormShape } from './assistant-form-bo
 import { toForm, presetToForm, type AssistantPreset } from './assistant-form-state';
 import { AssistantIdentityFields } from './assistant-identity-fields';
 import { AssistantCardField } from './assistant-card-field';
+import { AssistantFallbackField } from './fields/assistant-fallback-field';
 import { NumberField } from '@/components/ui/number-field';
 
 interface Props {
@@ -192,6 +193,12 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
                 ))}
               </SimpleSelect>
             </div>
+            <AssistantFallbackField
+              models={chatModels}
+              primaryModelId={form.modelId}
+              value={form.fallbackModelIds}
+              onChange={(fallbackModelIds) => update({ fallbackModelIds })}
+            />
           </div>
 
           <div className="space-y-1.5">

@@ -16,6 +16,7 @@ import {
   createConversationFactRepository,
   createConversationRepository,
   createMessageRepository,
+  createModelRepository,
   createSettingsRepository,
   createStagePlanRepository,
   createTaskCheckpointRepository,
@@ -23,6 +24,7 @@ import {
 import type { MessageUsage } from '@wbfm/database';
 import type { ServiceDeps } from '../base/deps';
 import type { ToolTraceEntry as SharedToolTraceEntry } from '@wbfm/shared';
+import { createConversationOverrides } from './overrides/conversation-overrides';
 
 const DEFAULT_TITLE = '新会话';
 const TITLE_MAX_LENGTH = 30;
@@ -48,19 +50,11 @@ export function createConversationService(deps: ServiceDeps) {
   const conversationFacts = createConversationFactRepository(db);
   const checkpoints = createTaskCheckpointRepository(db);
   const settings = createSettingsRepository(db);
+  const models = createModelRepository(db);
+  const overridesStore = createConversationOverrides(settings, models);
+  const { withOverrides, writeFallbackOverride, validateFallbackOverride, readBudgets } =
+    overridesStore;
 
-  /** v4.18：会话 token 预算存 settings_kv（零迁移），键为会话 id */
-  const BUDGET_KEY = 'conversation-token-budgets';
-
-  const readBudgets = (): Record<string, number> => {
-    const raw = settings.getJson<unknown>(BUDGET_KEY, {});
-    if (!raw || typeof raw !== 'object') return {};
-    const map: Record<string, number> = {};
-    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-      if (typeof value === 'number' && Number.isFinite(value) && value > 0) map[key] = value;
-    }
-    return map;
-  };
   /** v2.9：按消息反查会话后写事件；日志失败不影响对话主链路 */
   const recordForMessage = (id: string, type: string, payload: Record<string, unknown>): void => {
     const message = messages.findById(id);
@@ -95,27 +89,28 @@ export function createConversationService(deps: ServiceDeps) {
     },
 
     list(assistantId?: string, limit?: number): Conversation[] {
-      const budgets = readBudgets();
+      const fallbacks = overridesStore.readFallbackOverrides();
       return conversations
         .list(assistantId, limit)
-        .map((conversation) => ({ ...conversation, tokenBudget: budgets[conversation.id] ?? null }));
+        .map((conversation) => withOverrides(conversation, readBudgets(), fallbacks));
     },
 
     get(id: string): Conversation {
-      return { ...requireConversation(id), tokenBudget: readBudgets()[id] ?? null };
+      return withOverrides(requireConversation(id));
     },
 
-    /** v4.18：标题与 token 预算合并更新；预算 null 表示取消限制 */
+    /** v4.18：标题与 token 预算合并更新；v4.19：会话级备用模型覆盖（null=清除） */
     update(id: string, input: ConversationUpdateInput): Conversation {
       requireConversation(id);
       if (input.title !== undefined) conversations.rename(id, input.title);
       if (input.tokenBudget !== undefined) {
-        const budgets = readBudgets();
-        if (input.tokenBudget === null) delete budgets[id];
-        else budgets[id] = input.tokenBudget;
-        settings.setJson(BUDGET_KEY, budgets);
+        overridesStore.setBudget(id, input.tokenBudget);
       }
-      return { ...conversations.findById(id)!, tokenBudget: readBudgets()[id] ?? null };
+      if (input.fallbackModelId !== undefined) {
+        validateFallbackOverride(input.fallbackModelId);
+        writeFallbackOverride(id, input.fallbackModelId);
+      }
+      return withOverrides(conversations.findById(id)!);
     },
 
     tokenBudget(id: string): number | null {
@@ -139,6 +134,8 @@ export function createConversationService(deps: ServiceDeps) {
       // v2.26 P1：会话删除时清理结构化事实与工作记忆，避免孤儿数据
       conversationFacts.deleteByConversation(id);
       checkpoints.deleteByConversation(id);
+      // v4.19：清理会话级备用模型覆盖
+      writeFallbackOverride(id, null);
     },
 
     listMessages(conversationId: string, limit?: number): Message[] {

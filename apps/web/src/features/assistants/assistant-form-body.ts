@@ -1,5 +1,6 @@
 import {
   ASSISTANT_ENABLED_TOOLS_MAX,
+  ASSISTANT_FALLBACK_MODELS_MAX,
   ASSISTANT_KNOWLEDGE_BASES_MAX,
   ASSISTANT_SKILL_NAMES_MAX,
   QUALIFIED_TOOL_NAME_PATTERN,
@@ -18,6 +19,8 @@ export interface AssistantFormShape {
   topP: string;
   maxTokens: string;
   modelId: string;
+  /** v4.19：备用模型链（顺序即切换顺序，最多 3 个） */
+  fallbackModelIds: string[];
   /** v1.5：多选知识库 id */
   knowledgeBaseIds: string[];
   enabledTools: string[];
@@ -80,6 +83,11 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
         ? clamp(Math.round(maxTokensValue), 1, 1_000_000)
         : null,
     modelId: form.modelId || null,
+    fallbackModelIds: uniqueStrings(
+      form.fallbackModelIds.filter((id) => id !== form.modelId),
+      ASSISTANT_FALLBACK_MODELS_MAX,
+      200,
+    ),
     knowledgeBaseIds,
     enabledTools,
     skillNames: uniqueStrings(form.skillNames, ASSISTANT_SKILL_NAMES_MAX, 64),

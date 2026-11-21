@@ -15,6 +15,10 @@ export interface AssistantBody {
   topP?: number;
   maxTokens?: number | null;
   modelId?: string | null;
+  /** v4.18：助手级备用模型（兼容旧单值） */
+  fallbackModelId?: string | null;
+  /** v4.19：备用模型链（顺序即切换顺序） */
+  fallbackModelIds?: string[];
   /** v1.4：协作三角色模型覆盖（v1.8 M3 调优中心矩阵可改） */
   plannerModelId?: string | null;
   executorModelId?: string | null;

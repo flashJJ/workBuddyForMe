@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ASSISTANT_KNOWLEDGE_BASES_MAX, ASSISTANT_SKILL_NAMES_MAX } from '@wbfm/shared/constants';
+import {
+  ASSISTANT_FALLBACK_MODELS_MAX,
+  ASSISTANT_KNOWLEDGE_BASES_MAX,
+  ASSISTANT_SKILL_NAMES_MAX,
+} from '@wbfm/shared/constants';
 import { buildAssistantBody, type AssistantFormShape } from '../assistant-form-body';
 import { emptyAssistantForm } from '../assistant-form-state';
 
@@ -15,6 +19,18 @@ describe('buildAssistantBody（表单 → API 契约收敛）', () => {
     expect(body.temperature).toBe(1);
     expect(body.topP).toBe(1);
     expect(body.maxTokens).toBeNull();
+  });
+
+  it('v4.19：备用模型链剔除主模型、去重并限制上限', () => {
+    const body = buildAssistantBody(
+      form({
+        modelId: 'm-primary',
+        fallbackModelIds: ['m-primary', 'm-1', 'm-1', 'm-2', 'm-3', 'm-4'],
+      }),
+    );
+    expect(body.fallbackModelIds).toEqual(
+      ['m-1', 'm-2', 'm-3'].slice(0, ASSISTANT_FALLBACK_MODELS_MAX),
+    );
   });
 
   it('数值钳制在服务端允许区间内', () => {

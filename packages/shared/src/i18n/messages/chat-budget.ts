@@ -10,6 +10,11 @@ export const zhChatBudget = {
   warning: '会话预算已使用 {ratio}（{used}/{limit} tokens）',
   warningAction: '调整预算',
   dismiss: '知道了',
+  fallbackLabel: '备用模型覆盖（仅当前会话）',
+  fallbackFollow: '跟随助手配置',
+  fallbackSourceOverride: '当前来源：会话覆盖',
+  fallbackSourceAssistant: '当前来源：助手配置（{count} 个备用模型）',
+  fallbackSourceNone: '当前来源：未配置备用模型',
 };
 
 export const enChatBudget = {
@@ -24,4 +29,9 @@ export const enChatBudget = {
   warning: 'Conversation budget used: {ratio} ({used}/{limit} tokens)',
   warningAction: 'Adjust budget',
   dismiss: 'Dismiss',
+  fallbackLabel: 'Fallback model override (this conversation only)',
+  fallbackFollow: 'Follow assistant settings',
+  fallbackSourceOverride: 'Source: conversation override',
+  fallbackSourceAssistant: 'Source: assistant settings ({count} fallbacks)',
+  fallbackSourceNone: 'Source: no fallback configured',
 };

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { QUALIFIED_TOOL_NAME_PATTERN } from '../../constants/index';
 import {
   ASSISTANT_ENABLED_TOOLS_MAX,
+  ASSISTANT_FALLBACK_MODELS_MAX,
   ASSISTANT_KNOWLEDGE_BASES_MAX,
   ASSISTANT_SKILL_NAMES_MAX,
 } from '../../constants/tools';
@@ -42,6 +43,11 @@ const samplingFields = {
   modelId: z.string().trim().min(1).nullable().default(null),
   /** v4.18 A 线：备用模型（null=不启用自动切换；仅助手级） */
   fallbackModelId: z.string().trim().min(1).nullable().default(null),
+  /** v4.19：备用模型链（顺序即切换顺序；≤3，重复项服务端去重） */
+  fallbackModelIds: z
+    .array(z.string().trim().min(1))
+    .max(ASSISTANT_FALLBACK_MODELS_MAX, '备用模型最多 3 个')
+    .optional(),
   /** v1.4：协作三角色模型覆盖；留空=跟随助手默认/系统默认 */
   plannerModelId: z.string().trim().min(1).nullable().default(null),
   executorModelId: z.string().trim().min(1).nullable().default(null),
@@ -81,6 +87,7 @@ export const assistantUpdateSchema = z
     maxTokens: samplingFields.maxTokens.optional(),
     modelId: samplingFields.modelId.optional(),
     fallbackModelId: samplingFields.fallbackModelId.optional(),
+    fallbackModelIds: samplingFields.fallbackModelIds,
     // v1.8 M3：三角色模型覆盖可在调优中心矩阵中改（创建期字段，PATCH 同步开放）
     plannerModelId: samplingFields.plannerModelId.optional(),
     executorModelId: samplingFields.executorModelId.optional(),

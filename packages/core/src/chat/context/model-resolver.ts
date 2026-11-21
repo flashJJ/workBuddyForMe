@@ -66,23 +66,42 @@ export function resolveChatTarget(
 }
 
 /**
- * v4.18 A 线：解析助手级备用模型。
- * - 未配置或与主模型相同 → null；
- * - 配置失效（模型/供应商被删或停用）→ null，由调用方在出错时给出原始错误。
+ * v4.19：备用模型候选链。
+ * 优先级：会话覆盖 → 助手链 → 旧单值；跳过主模型、重复项与不可用模型。
  */
-export function resolveFallbackChatTarget(
+export function resolveFallbackChatTargets(
   deps: ServiceDeps,
   assistant: Assistant,
   primary: ResolvedChatTarget['model'],
-): ResolvedChatTarget | null {
-  const fallbackId = assistant.fallbackModelId ?? null;
-  if (!fallbackId || fallbackId === primary.id) return null;
-  try {
-    return resolveChatTargetForModelId(deps, fallbackId);
-  } catch (error) {
-    console.warn('[chat] 备用模型不可用', fallbackId, error);
-    return null;
+  conversationId: string | null = null,
+): ResolvedChatTarget[] {
+  const settings = createSettingsRepository(deps.db);
+  const overrides = settings.getJson<Record<string, string>>(
+    'conversation-fallback-models',
+    {},
+  );
+  const override = conversationId && overrides ? overrides[conversationId] : null;
+  const ids = override
+    ? [override]
+    : assistant.fallbackModelIds && assistant.fallbackModelIds.length > 0
+      ? assistant.fallbackModelIds
+      : assistant.fallbackModelId
+        ? [assistant.fallbackModelId]
+        : [];
+
+  const seen = new Set<string>([primary.id]);
+  const targets: ResolvedChatTarget[] = [];
+  for (const id of ids) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    try {
+      targets.push(resolveChatTargetForModelId(deps, id));
+    } catch (error) {
+      console.warn('[chat] 备用模型不可用', id, error);
+    }
+    if (targets.length >= 3) break;
   }
+  return targets;
 }
 
 /** v4.18：错误态「换备用模型」——强制解析；未配置时给出可读错误 */
@@ -90,8 +109,9 @@ export function resolveForcedFallbackTarget(
   deps: ServiceDeps,
   assistant: Assistant,
   primary: ResolvedChatTarget['model'],
+  conversationId: string | null = null,
 ): ResolvedChatTarget {
-  const forced = resolveFallbackChatTarget(deps, assistant, primary);
+  const forced = resolveFallbackChatTargets(deps, assistant, primary, conversationId)[0];
   if (!forced) throw ApiError.validation('未配置可用的备用模型，请先在助手设置中选择');
   return forced;
 }

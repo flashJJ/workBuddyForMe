@@ -12,6 +12,7 @@ import type { ServiceDeps } from '../base/deps';
 import { ensureSeedData } from '../base/seed';
 import { validateStagePlanBindings } from '../../work-plan/stage-plan-service';
 import { buildIdentityCardMarkdown, parseWrappedPrompt } from './persona-card';
+import { createAssistantFallbackStore } from './overrides/assistant-fallback-store';
 
 export function createAssistantsService(deps: ServiceDeps) {
   const { db } = deps;
@@ -21,32 +22,8 @@ export function createAssistantsService(deps: ServiceDeps) {
   const knowledgeBases = createKnowledgeRepository(db);
   const cards = createCharacterCardRepository(db);
   const settings = createSettingsRepository(db);
-
-  /** v4.18：备用模型存 settings_kv（零迁移），键为助手 id */
-  const FALLBACK_KEY = 'assistant-fallback-models';
-  type FallbackMap = Record<string, string>;
-
-  const readFallbacks = (): FallbackMap => {
-    const raw = settings.getJson<unknown>(FALLBACK_KEY, {});
-    if (!raw || typeof raw !== 'object') return {};
-    const map: FallbackMap = {};
-    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-      if (typeof value === 'string' && value) map[key] = value;
-    }
-    return map;
-  };
-
-  const writeFallback = (assistantId: string, modelId: string | null): void => {
-    const map = readFallbacks();
-    if (modelId) map[assistantId] = modelId;
-    else delete map[assistantId];
-    settings.setJson(FALLBACK_KEY, map);
-  };
-
-  const withFallback = (assistant: Assistant, map = readFallbacks()): Assistant => ({
-    ...assistant,
-    fallbackModelId: map[assistant.id] ?? null,
-  });
+  const fallbackStore = createAssistantFallbackStore(settings, models);
+  const { withFallback, sanitizeChain, persist: persistFallbacks } = fallbackStore;
 
   const validateBindings = (modelId: string | null, knowledgeBaseIds: string[]) => {
     if (modelId !== null && !models.findById(modelId)) {
@@ -110,8 +87,7 @@ export function createAssistantsService(deps: ServiceDeps) {
 
   return {
     list(): Assistant[] {
-      const fallbacks = readFallbacks();
-      return assistants.list().map((assistant) => withFallback(assistant, fallbacks));
+      return assistants.list().map((assistant) => withFallback(assistant));
     },
 
     get(id: string): Assistant {
@@ -122,6 +98,7 @@ export function createAssistantsService(deps: ServiceDeps) {
       validateBindings(input.modelId, input.knowledgeBaseIds);
       validateTools(input.enabledTools, input.knowledgeBaseIds);
       validateFallback(input.fallbackModelId, input.modelId);
+      const chain = sanitizeChain(input.fallbackModelIds, input.modelId);
       if (input.stagePlan) validateStagePlanBindings(deps, input.stagePlan);
       const sortOrder =
         input.sortOrder || assistants.list().length;
@@ -157,16 +134,29 @@ export function createAssistantsService(deps: ServiceDeps) {
         isBuiltin: false,
         sortOrder,
       });
-      writeFallback(created.id, input.fallbackModelId);
-      return { ...created, fallbackModelId: input.fallbackModelId };
+      persistFallbacks(created.id, input, input.fallbackModelId, chain);
+      return {
+        ...created,
+        fallbackModelId: chain[0] ?? input.fallbackModelId,
+        fallbackModelIds: chain.length > 0 ? chain : input.fallbackModelId ? [input.fallbackModelId] : [],
+      };
     },
 
     update(id: string, input: AssistantUpdateInput): Assistant {
       const existing = withFallback(requireExisting(id));
-      const { fallbackModelId: nextFallbackInput, ...rest } = input;
+      const {
+        fallbackModelId: nextFallbackInput,
+        fallbackModelIds: nextChainInput,
+        ...rest
+      } = input;
       const nextModelId = input.modelId !== undefined ? input.modelId : existing.modelId;
+      const chain = nextChainInput !== undefined ? sanitizeChain(nextChainInput, nextModelId) : [];
       const nextFallback =
-        nextFallbackInput !== undefined ? nextFallbackInput : existing.fallbackModelId ?? null;
+        nextChainInput !== undefined
+          ? chain[0] ?? null
+          : nextFallbackInput !== undefined
+            ? nextFallbackInput
+            : existing.fallbackModelId ?? null;
       const nextKbIds =
         input.knowledgeBaseIds !== undefined ? input.knowledgeBaseIds : existing.knowledgeBaseIds;
       const nextTools = input.enabledTools ?? existing.enabledTools;
@@ -196,8 +186,19 @@ export function createAssistantsService(deps: ServiceDeps) {
           : null;
       }
       const updated = assistants.update(id, patch)!;
-      if (nextFallbackInput !== undefined) writeFallback(id, nextFallbackInput);
-      return { ...updated, fallbackModelId: nextFallback };
+      if (nextChainInput !== undefined || nextFallbackInput !== undefined) {
+        persistFallbacks(id, input, nextFallback, chain);
+      }
+      return {
+        ...updated,
+        fallbackModelId: nextFallback,
+        fallbackModelIds:
+          nextChainInput !== undefined
+            ? chain
+            : nextFallback
+              ? [nextFallback]
+              : [],
+      };
     },
 
     delete(id: string): void {
@@ -206,7 +207,8 @@ export function createAssistantsService(deps: ServiceDeps) {
         throw new ApiError('FORBIDDEN', '内置助手不可删除');
       }
       assistants.delete(id);
-      writeFallback(id, null);
+      fallbackStore.writeFallback(id, null);
+      fallbackStore.writeChain(id, null);
     },
 
     /** 全量排序：orderedIds 必须与现有助手集合完全一致 */
