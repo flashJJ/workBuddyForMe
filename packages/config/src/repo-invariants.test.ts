@@ -15,7 +15,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, '..', '..', '..');
 const SCAN_ROOTS = ['packages', 'apps'];
 const SOURCE_EXT = new Set(['.ts', '.tsx']);
-const IGNORED_DIRS = new Set(['node_modules', 'dist', '.next', 'release', '.turbo']);
+const IGNORED_DIRS = new Set([
+  'node_modules',
+  'dist',
+  '.next',
+  'release',
+  '.turbo',
+  // prepare-server 会把 standalone（含 apps/web/src 副本）归集到 resources/server，
+  // 扫描它既让用例在并行构建下超时，也会把打包副本误判为源码
+  'resources',
+]);
 
 const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /\bhomedir\s*\(/g, label: 'homedir()' },

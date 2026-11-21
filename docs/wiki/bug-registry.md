@@ -40,6 +40,8 @@
 | B-52 | P3 | SSE 服务端 | 观察者断开后服务端仍持续消费事件生成器；总线迭代器 `return()` 也无法唤醒挂起的 `next()` | `sseResponse` 无 `cancel()` 且吞掉 enqueue 异常；`makeIterator.return()` 清空 resolver 但不唤醒 | `cancel()` 置位并在 enqueue 失败即停；`return()` 置 stopped 并唤醒等待者 | `sse-stream.test.ts` + `run-event-bus.test.ts` | 本批 |
 | B-55 | P3 | 工作流运行 | 长会话里每次把流程当工具调用一次，进程内就跑一次 override 内存累积（B-25 只修了队列路径） | `runOverrides` 在 createRun 时对所有触发器写入，但 chat 运行由 `invokeFromChat` 直接执行，不经过队列的 `finally` | `createChatInvoker` 增加 `releaseRun` 钩子，在 finally 回收 override；抛错路径同样回收 | `chat-invoke.test.ts` 覆盖成功/抛错两条路径 | 本批 |
 | B-56 | P2 | MCP | MCP 服务器「禁用 → 再启用」后永久停在 disconnected，必须改配置或重启应用才恢复 | `reconcileAll` 禁用分支只断开连接、不删 registry 条目；`configSignature` 刻意忽略 `enabled`，重新启用时命中「签名相同」分支直接跳过 | 禁用时 `entries.delete(server.id)`，重新启用按全新条目连接 | `registry.test.ts` 新增「禁用后再启用会重新连接」（修复前稳定失败） | 本批 |
+| B-57 | P1 | 打包 | 干净检出上 `pnpm dist:win` 打包必失败（`Can't resolve '@wbfm/shared/...'`），与 B-53 同源 | 桌面 `dist:win`/`pack:dir` 仍用 `pnpm --filter @wbfm/web build`，不触发 turbo 的 `^build`，工作区包 dist 缺失 | 两条脚本改为 `pnpm -w run build:web`，复用 turbo 依赖构建 | 干净 `packages/*/dist` 下执行 `pnpm dist:win` 成功出包 | 本批 |
+| B-58 | P2 | 测试稳定性 | 并行跑 `pnpm test:unit` 时 `repo-invariants` 偶发 20s 超时（单跑 182ms） | 扫描根包含 `apps/desktop/resources/server`——prepare-server 归集的 standalone 带了 1418 个 `apps/web/src` 副本，并行构建期磁盘争用放大耗时 | 不变量扫描忽略 `resources`（构建产物不是源码） | `pnpm test:unit` 全量通过；单测扫描恢复毫秒级 | 本批 |
 
 ## 三、数据与桌面（深度排查批次）
 
