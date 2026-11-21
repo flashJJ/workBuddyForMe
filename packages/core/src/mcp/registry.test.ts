@@ -88,6 +88,27 @@ describe('MCP 注册表（注入客户端）', () => {
     expect(client.close).toHaveBeenCalled();
   });
 
+  it('禁用后再启用会重新连接，无需改配置或重启', async () => {
+    const client = makeFakeClient();
+    const { registry, repo } = await setupRegistry([createStdioServer('fs')], client);
+    repo.update('id-fs', { enabled: false });
+    registry.reconcile();
+    await vi.waitFor(() => {
+      if (registry.getServerInfos()[0]?.status !== 'disconnected') {
+        throw new Error('not disconnected yet');
+      }
+    });
+
+    repo.update('id-fs', { enabled: true });
+    registry.reconcile();
+    await vi.waitFor(() => {
+      if (registry.getServerInfos()[0]?.status !== 'connected') {
+        throw new Error('not reconnected after re-enable');
+      }
+    });
+    expect(registry.getTools()).toHaveLength(1);
+  });
+
   it('握手失败标记 error 并携带原因；callTool 对未连接服务器返回 null', async () => {
     const client = makeFakeClient({
       initialize: vi.fn(async () => {

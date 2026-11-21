@@ -39,6 +39,7 @@
 | B-51 | P3 | 会议 / 舞台 | 会议 SSE 进行中切换页面或关窗，控制台出现 `AbortError` 未处理拒绝（dev 态弹错误覆盖层） | 流式段异步 IIFE 没有 try/catch，卸载 abort 的拒绝无人接收 | 流式段收敛异常并加 `stopped` 守卫，卸载后不再写状态 | `meeting-sse-unmount.test.tsx` 2 条（MSW 挂起请求） | 本批 |
 | B-52 | P3 | SSE 服务端 | 观察者断开后服务端仍持续消费事件生成器；总线迭代器 `return()` 也无法唤醒挂起的 `next()` | `sseResponse` 无 `cancel()` 且吞掉 enqueue 异常；`makeIterator.return()` 清空 resolver 但不唤醒 | `cancel()` 置位并在 enqueue 失败即停；`return()` 置 stopped 并唤醒等待者 | `sse-stream.test.ts` + `run-event-bus.test.ts` | 本批 |
 | B-55 | P3 | 工作流运行 | 长会话里每次把流程当工具调用一次，进程内就跑一次 override 内存累积（B-25 只修了队列路径） | `runOverrides` 在 createRun 时对所有触发器写入，但 chat 运行由 `invokeFromChat` 直接执行，不经过队列的 `finally` | `createChatInvoker` 增加 `releaseRun` 钩子，在 finally 回收 override；抛错路径同样回收 | `chat-invoke.test.ts` 覆盖成功/抛错两条路径 | 本批 |
+| B-56 | P2 | MCP | MCP 服务器「禁用 → 再启用」后永久停在 disconnected，必须改配置或重启应用才恢复 | `reconcileAll` 禁用分支只断开连接、不删 registry 条目；`configSignature` 刻意忽略 `enabled`，重新启用时命中「签名相同」分支直接跳过 | 禁用时 `entries.delete(server.id)`，重新启用按全新条目连接 | `registry.test.ts` 新增「禁用后再启用会重新连接」（修复前稳定失败） | 本批 |
 
 ## 三、数据与桌面（深度排查批次）
 

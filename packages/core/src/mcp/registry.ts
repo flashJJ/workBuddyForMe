@@ -116,7 +116,12 @@ export function createMcpRegistry(
       seen.add(server.id);
       if (!server.enabled) {
         const existing = entries.get(server.id);
-        if (existing) void disconnect(existing);
+        if (existing) {
+          void disconnect(existing);
+          // 必须移除条目：configSignature 刻意忽略 enabled，
+          // 留着旧条目会让「禁用→再启用」命中签名相同分支而永不重连
+          entries.delete(server.id);
+        }
         continue;
       }
       const existing = entries.get(server.id);
