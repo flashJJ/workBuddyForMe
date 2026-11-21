@@ -1,9 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import {
-  isPetChatPromptKey,
-  PET_CHAT_REQUEST_CHANNEL,
-  type WbfmPetBridge,
-} from '@wbfm/shared/pet';
+import type { WbfmPetBridge } from '@wbfm/shared/pet';
 import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
@@ -15,6 +11,20 @@ import type {
   WbfmBackgroundPickResult,
 } from '@wbfm/shared/background';
 import type { WbfmSearchBridge } from '@wbfm/shared/search';
+
+/**
+ * sandbox:true 的 preload 只能 require('electron')（外加 events/timers/url 等最小内置），
+ * 任何第三方依赖都会在加载阶段抛 `module not found`，preload 整体失效 →
+ * window.wbfm 不存在 → 渲染层拿不到托管 token → 所有 API 401（B-59）。
+ * 因此这里不能从 @wbfm/shared/pet 取运行时符号（其依赖树含 zod），
+ * 常量与校验内联，事实源仍是 packages/shared/src/schemas/pet/commands.ts。
+ */
+const PET_CHAT_REQUEST_CHANNEL = 'pet:chat-request';
+const PET_CHAT_PROMPT_KEYS = ['greet', 'comfort', 'play'] as const;
+
+function isPetChatPromptKey(value: unknown): value is (typeof PET_CHAT_PROMPT_KEYS)[number] {
+  return typeof value === 'string' && (PET_CHAT_PROMPT_KEYS as readonly string[]).includes(value);
+}
 
 /**
  * 最小 preload：

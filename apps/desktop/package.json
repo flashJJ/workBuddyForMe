@@ -7,8 +7,8 @@
   "packageManager": "pnpm@11.24.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup && node scripts/dev.mjs",
+    "build": "tsup && node scripts/check-preload-bundle.mjs",
+    "dev": "tsup && node scripts/check-preload-bundle.mjs && node scripts/dev.mjs",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p e2e/tsconfig.json",
     "test": "vitest run",
