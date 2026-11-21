@@ -120,6 +120,7 @@
 | B-68 | P3 | 能力状态 | 能力中心、MCP 目录、技能列表各自用不同徽标表达可用/已启用/异常，同一状态颜色语义不一致 | 每处手写 badge variant 与文案映射 | 新增 `CapabilityStatusBadge` 四态统一 variant 与 i18n 键，三处接入 | `capability-status-badge.test` 4 条 | 本批 |
 | B-69 | P3 | 结构门禁 | 新增通用组件使 `components/common` 直接文件 13 > 12；桌宠命令跨域深引用 `pet-bridge` 被拦截 | 新组件平铺在公共目录；跨域未走子域 barrel | 拆出 `common/limits`、`common/status` 子域 barrel；命令改引 `@/features/pet/bridge`；`use-ttfv` 移入 `chat/page` | `node scripts/check-structure.mjs` 通过 | 本批 |
 | B-70 | P3 | 测试门禁 | 检索弹层测试用 `stubGlobal('fetch')` 触发 MSW 收敛门禁 | 新增测试沿用了旧的 fetch stub 写法 | 测试改为 mock `use-message-search` 返回值，不再 stub fetch | `message-search-dialog.test` 2 条；`check:msw` 通过 | 本批 |
+| B-71 | P3 | E2E 稳定性 | `voice-vad.spec` ③ 免手武装后 60s 内未收到 `/api/voice/asr` 请求，连续两次重试失败；同日重跑 CI 通过 | headless Chromium 下合成音频与 VAD 时序抖动，与业务改动无关 | 暂按已知抖动处理，CI 失败后优先重跑；后续改为事件驱动等待或放宽音频注入时序 | CI `44895790974` 重跑全绿 | 本批 |
 
 ## 排查方法
 
