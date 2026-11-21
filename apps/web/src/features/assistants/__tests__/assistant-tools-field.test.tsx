@@ -23,7 +23,11 @@ const mcpTools: McpToolInfo[] = [
   },
 ];
 
-function renderField(enabledTools: string[], onToggleTool: (tool: string) => void) {
+function renderField(
+  enabledTools: string[],
+  onToggleTool: (tool: string) => void,
+  toolLimit = 128,
+) {
   return render(
     <I18nProvider skipHydration>
       <AssistantToolsField
@@ -31,6 +35,7 @@ function renderField(enabledTools: string[], onToggleTool: (tool: string) => voi
         hasKnowledgeBases={false}
         retrieveAlways={false}
         mcpTools={mcpTools}
+        toolLimit={toolLimit}
         onToggleTool={onToggleTool}
         onRetrieveAlwaysChange={() => undefined}
       />
@@ -75,5 +80,11 @@ describe('AssistantToolsField（MCP 分组全选）', () => {
     expect(onToggleTool).toHaveBeenCalledTimes(2);
     expect(onToggleTool).toHaveBeenCalledWith('mcp:filesystem:read_file');
     expect(onToggleTool).toHaveBeenCalledWith('mcp:filesystem:list_directory');
+  });
+
+  it('达到上限时禁用未勾选项并提示，避免提交时静默截断（B-61）', () => {
+    renderField(['current_time'], () => undefined, 1);
+    expect(screen.getByRole('checkbox', { name: /联网搜索/ })).toBeDisabled();
+    expect(screen.getByText(/最多选择 1 个工具/)).toBeInTheDocument();
   });
 });

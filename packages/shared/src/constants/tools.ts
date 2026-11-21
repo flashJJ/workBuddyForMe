@@ -84,6 +84,11 @@ export const MCP_TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 /** 助手 enabledTools 合法值：内置名（无冒号）或完整 mcp:<server>:<tool> */
 export const QUALIFIED_TOOL_NAME_PATTERN =
   /^(?:[a-zA-Z0-9_-]{1,64}|mcp:[a-zA-Z0-9_-]{1,64}:[a-zA-Z0-9_-]{1,64})$/;
+/**
+ * 助手 enabledTools 上限：需容纳全部内置工具（19）+ 至少一个 MCP 服务器（50）并留余量。
+ * 旧上限 20 在启用 MCP 后会把后勾选的工具静默截断（B-61）。
+ */
+export const ASSISTANT_ENABLED_TOOLS_MAX = 128;
 
 /**
  * v0.6 M3 本地技能包（声明式 Skill）：

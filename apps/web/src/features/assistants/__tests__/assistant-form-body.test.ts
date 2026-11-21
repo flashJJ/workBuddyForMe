@@ -63,6 +63,36 @@ describe('buildAssistantBody（表单 → API 契约收敛）', () => {
     expect(body.enabledTools).toEqual(['current_time', 'knowledge_search']);
   });
 
+  it('内置工具 + 多个 MCP 工具超过旧的 20 上限时不被截断（B-61）', () => {
+    const enabledTools = [
+      'current_time',
+      'web_search',
+      'fetch_webpage',
+      'screen_snapshot',
+      'mouse_move',
+      'mouse_click',
+      'mouse_scroll',
+      'keyboard_type',
+      'keyboard_press',
+      'window_list',
+      'uia_list',
+      'window_focus',
+      'app_launch',
+      'artifact_write',
+      'diagram_render',
+      'capability_search',
+      'capability_install',
+      'capability_list',
+      'mcp:filesystem:read_file',
+      'mcp:filesystem:read_text_file',
+      'mcp:filesystem:read_media_file',
+      'mcp:filesystem:write_file',
+      'mcp:filesystem:append_file',
+    ];
+    const body = buildAssistantBody(form({ enabledTools }));
+    expect(body.enabledTools).toEqual(enabledTools);
+  });
+
   it('技能与知识库去重、裁剪长度和数量', () => {
     const body = buildAssistantBody(
       form({

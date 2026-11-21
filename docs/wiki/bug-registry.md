@@ -44,6 +44,7 @@
 | B-58 | P2 | 测试稳定性 | 并行跑 `pnpm test:unit` 时 `repo-invariants` 偶发 20s 超时（单跑 182ms） | 扫描根包含 `apps/desktop/resources/server`——prepare-server 归集的 standalone 带了 1418 个 `apps/web/src` 副本，并行构建期磁盘争用放大耗时 | 不变量扫描忽略 `resources`（构建产物不是源码） | `pnpm test:unit` 全量通过；单测扫描恢复毫秒级 | 本批 |
 | B-59 | P0 | 桌面打包 | 安装版 4.15.0 打开后「供应商加载失败」「MCP 服务加载失败」，几乎所有数据面板报错重试 | v4.15 桌宠发起聊天让 preload 从 `@wbfm/shared/pet` 取运行时符号，依赖树把 zod 留成 `require("zod")`；`sandbox:true` 的 preload 只能 require('electron')，加载即失败 → `window.wbfm` 不存在 → 渲染层无托管 token → 全站 API 401 | preload 改为 type-only import + 内联常量/校验；新增构建门禁 `check-preload-bundle.mjs`（只允许 require electron，覆盖 index/splash） | Electron sandbox harness：修复前 `module not found: zod`、`window.wbfm` 缺失；修复后 token 正常注入；`build` 门禁双产物通过 | 本批 |
 | B-60 | P1 | 对话编排 | 搜索类回合「边解说边调工具」到轮数上限后静默结束：只有过程性旁白，没有最终回答，看起来像没跑完 | 工具轮耗尽只在 `full` 正文为空时才补收尾轮；模型前几轮已流出旁白，`full` 非空 → 跳过收尾，直接落库 | 记录 `hitRoundLimit`（最后一轮仍有未执行调用），无论是否有旁白都追加一次 `tools=[]` 收尾轮；旁白与结论用空行拼接 | `chat-orchestrator-tools.test.ts` 新增「工具轮耗尽但已有进度文本」用例（回退修复前稳定失败） | 本批 |
+| B-61 | P2 | 助手工具 | 助手编辑里勾选 MCP 工具（如 filesystem 多个）并保存，重新打开后勾选消失，只剩前 20 个 | 工具上限 20 是仅有 19 个内置工具时代的约束：`enabledToolsSchema.max(20)` 与 `buildAssistantBody` 的 `uniqueStrings(...,20,...)` 会静默截断；MCP 工具追加在内置之后，超限时整组被丢弃 | 上限提为共享常量 `ASSISTANT_ENABLED_TOOLS_MAX=128`（容纳全部内置 + 一个 50 工具的 MCP 服务器），选择界面达到上限后禁用未勾选项并提示，避免提交时静默丢失 | 本地库实证 `enabled_tools` 恰为 20 且仅剩 1 个 MCP；`assistant-form-body.test.ts` 新增 23 项内置+MCP 不被截断；`assistant-tools-field.test.tsx` 覆盖上限禁用提示；schema 边界改为 128/129 | 本批 |
 
 ## 三、数据与桌面（深度排查批次）
 

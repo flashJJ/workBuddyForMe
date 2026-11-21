@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QUALIFIED_TOOL_NAME_PATTERN } from '../../constants/index';
+import { ASSISTANT_ENABLED_TOOLS_MAX } from '../../constants/tools';
 import { stagePlanSchema } from '../work/stage-plan';
 
 const nameSchema = z.string().trim().min(1, '助手名称不能为空').max(60);
@@ -7,7 +8,7 @@ const nameSchema = z.string().trim().min(1, '助手名称不能为空').max(60);
 /** v0.6：元素为内置工具名或 mcp:<server>:<tool>，白名单上限不变 */
 const enabledToolsSchema = z
   .array(z.string().regex(QUALIFIED_TOOL_NAME_PATTERN, '工具名格式不合法'))
-  .max(20, '工具数量超限')
+  .max(ASSISTANT_ENABLED_TOOLS_MAX, '工具数量超限')
   .default(['current_time']);
 const retrieveAlwaysSchema = z.boolean().default(true);
 /** v2.4 M4（P1-2）：助手级技能勾选（技能 name；空数组=跟随全局启用技能） */

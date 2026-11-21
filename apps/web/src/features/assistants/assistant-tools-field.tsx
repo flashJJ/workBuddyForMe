@@ -37,6 +37,8 @@ interface Props {
   retrieveAlways: boolean;
   /** 已连接 MCP 服务器的工具（按服务器分组展示） */
   mcpTools: McpToolInfo[];
+  /** 工具选择上限（内置 + MCP 合计），达到后禁用未勾选项 */
+  toolLimit: number;
   onToggleTool: (tool: string) => void;
   onRetrieveAlwaysChange: (value: boolean) => void;
 }
@@ -47,10 +49,12 @@ export function AssistantToolsField({
   hasKnowledgeBases,
   retrieveAlways,
   mcpTools,
+  toolLimit,
   onToggleTool,
   onRetrieveAlwaysChange,
 }: Props) {
   const { t } = useI18n();
+  const atLimit = enabledTools.length >= toolLimit;
   const mcpGroups = React.useMemo(() => {
     const groups = new Map<string, McpToolInfo[]>();
     for (const tool of mcpTools) {
@@ -68,18 +72,21 @@ export function AssistantToolsField({
       </legend>
       {TOOL_NAMES.map((tool) => {
         const disabled = tool === 'knowledge_search' && !hasKnowledgeBases;
+        const checked = enabledTools.includes(tool);
         return (
           <label
             key={tool}
             className={`flex items-center gap-2 text-sm ${
-              disabled ? 'cursor-not-allowed text-muted-foreground' : 'cursor-pointer'
+              disabled || (atLimit && !checked)
+                ? 'cursor-not-allowed text-muted-foreground'
+                : 'cursor-pointer'
             }`}
           >
             <input
               type="checkbox"
               className="h-4 w-4"
-              checked={enabledTools.includes(tool)}
-              disabled={disabled}
+              checked={checked}
+              disabled={disabled || (atLimit && !checked)}
               onChange={() => onToggleTool(tool)}
             />
             <span>{t(TOOL_LABEL_KEYS[tool])}</span>
@@ -105,6 +112,7 @@ export function AssistantToolsField({
               type="checkbox"
               className="h-4 w-4"
               checked={allSelected}
+              disabled={atLimit && !allSelected}
               onChange={toggleAll}
               aria-label={t('assistants.tools.mcpSelectAll', { name: serverName })}
               data-testid={`mcp-select-all-${serverName}`}
@@ -123,6 +131,7 @@ export function AssistantToolsField({
                 type="checkbox"
                 className="mt-0.5 h-4 w-4"
                 checked={enabledTools.includes(tool.qualifiedName)}
+                disabled={atLimit && !enabledTools.includes(tool.qualifiedName)}
                 onChange={() => onToggleTool(tool.qualifiedName)}
               />
               <span>
@@ -136,6 +145,11 @@ export function AssistantToolsField({
         </div>
         );
       })}
+      {atLimit && (
+        <p className="text-xs text-muted-foreground">
+          {t('assistants.tools.limitHint', { max: toolLimit })}
+        </p>
+      )}
       {hasKnowledgeBases && (
         <label className="flex cursor-pointer items-center gap-2 border-t pt-2 text-sm">
           <input

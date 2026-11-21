@@ -1,4 +1,4 @@
-import { QUALIFIED_TOOL_NAME_PATTERN } from '@wbfm/shared/constants';
+import { ASSISTANT_ENABLED_TOOLS_MAX, QUALIFIED_TOOL_NAME_PATTERN } from '@wbfm/shared/constants';
 import type { AssistantBody } from '@/lib/hooks/assistant';
 
 /** 助手表单状态（与 AssistantFormDialog 内部表单结构一致） */
@@ -59,7 +59,7 @@ export function buildAssistantBody(form: AssistantFormShape): AssistantBody {
   const knowledgeBaseIds = uniqueStrings(form.knowledgeBaseIds, 10, 200);
   const enabledTools = uniqueStrings(
     form.enabledTools.filter((tool) => QUALIFIED_TOOL_NAME_PATTERN.test(tool)),
-    20,
+    ASSISTANT_ENABLED_TOOLS_MAX,
     200,
   ).filter((tool) => knowledgeBaseIds.length > 0 || tool !== 'knowledge_search');
   const maxTokensValue = finiteNumber(form.maxTokens, 0);

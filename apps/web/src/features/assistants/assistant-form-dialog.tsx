@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { Assistant } from '@wbfm/shared/types';
+import { ASSISTANT_ENABLED_TOOLS_MAX } from '@wbfm/shared/constants';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -225,6 +226,7 @@ export function AssistantFormDialog({ open, onOpenChange, assistant, preset }: P
             hasKnowledgeBases={form.knowledgeBaseIds.length > 0}
             retrieveAlways={form.retrieveAlways}
             mcpTools={mcpTools ?? []}
+            toolLimit={ASSISTANT_ENABLED_TOOLS_MAX}
             onToggleTool={toggleTool}
             onRetrieveAlwaysChange={(value) => update({ retrieveAlways: value })}
           />
