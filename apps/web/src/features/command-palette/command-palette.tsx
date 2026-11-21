@@ -10,6 +10,7 @@ import { useCommands, COMMAND_ICONS } from './use-commands';
 import { readRecentCommands, recordRecentCommand } from './recent-commands';
 
 const GROUP_LABEL_KEYS: Record<CommandGroup, MessageKey> = {
+  help: 'commandPalette.groups.help',
   navigation: 'commandPalette.groups.navigation',
   create: 'commandPalette.groups.create',
   conversation: 'commandPalette.groups.conversation',
@@ -18,7 +19,7 @@ const GROUP_LABEL_KEYS: Record<CommandGroup, MessageKey> = {
   update: 'commandPalette.groups.update',
 };
 
-const GROUP_ORDER: CommandGroup[] = ['navigation', 'create', 'conversation', 'assistant', 'settings', 'update'];
+const GROUP_ORDER: CommandGroup[] = ['help', 'navigation', 'create', 'conversation', 'assistant', 'settings', 'update'];
 
 interface CommandPaletteProps {
   open: boolean;

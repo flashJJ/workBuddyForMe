@@ -25,6 +25,7 @@ export const KEYBOARD_SHORTCUTS: readonly ShortcutGroup[] = [
     titleKey: 'shortcuts.groups.global',
     items: [
       { labelKey: 'shortcuts.items.commandPalette', keys: 'Ctrl + K' },
+      { labelKey: 'shortcuts.items.globalSearch', keys: 'Ctrl + Shift + F' },
       { labelKey: 'shortcuts.items.shortcutsOverlay', keys: 'Ctrl + /' },
       { labelKey: 'shortcuts.items.emergencyStop', keys: 'Ctrl + Alt + Esc' },
     ],

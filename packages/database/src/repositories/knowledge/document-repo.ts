@@ -97,13 +97,31 @@ export function createDocumentRepository(db: DatabaseInstance) {
       return row ? mapDocument(row) : null;
     },
 
-    listByKnowledgeBase(knowledgeBaseId: string): DocumentRecord[] {
+    /** v4.18：q 只匹配文件名/来源/摘要，不读取正文、不触发解析 */
+    listByKnowledgeBase(knowledgeBaseId: string, q?: string): DocumentRecord[] {
+      const keyword = q?.trim();
+      if (!keyword) {
+        return (
+          db
+            .prepare(
+              `SELECT * FROM documents WHERE knowledge_base_id = ? ORDER BY created_at DESC`,
+            )
+            .all(knowledgeBaseId) as DocumentRow[]
+        ).map(mapDocument);
+      }
+      const pattern = `%${keyword.replace(/[\\%_]/g, '\\$&')}%`;
       return (
         db
           .prepare(
-            `SELECT * FROM documents WHERE knowledge_base_id = ? ORDER BY created_at DESC`,
+            `SELECT d.* FROM documents d
+             LEFT JOIN document_summaries s ON s.document_id = d.id
+             WHERE d.knowledge_base_id = ?
+               AND (d.filename LIKE ? ESCAPE '\\'
+                 OR d.source_url LIKE ? ESCAPE '\\'
+                 OR s.tldr LIKE ? ESCAPE '\\')
+             ORDER BY d.created_at DESC`,
           )
-          .all(knowledgeBaseId) as DocumentRow[]
+          .all(knowledgeBaseId, pattern, pattern, pattern) as DocumentRow[]
       ).map(mapDocument);
     },
 

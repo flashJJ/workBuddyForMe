@@ -17,6 +17,10 @@ describe('KEYBOARD_SHORTCUTS 快捷键单一真源', () => {
               "labelKey": "shortcuts.items.commandPalette",
             },
             {
+              "keys": "Ctrl + Shift + F",
+              "labelKey": "shortcuts.items.globalSearch",
+            },
+            {
               "keys": "Ctrl + /",
               "labelKey": "shortcuts.items.shortcutsOverlay",
             },

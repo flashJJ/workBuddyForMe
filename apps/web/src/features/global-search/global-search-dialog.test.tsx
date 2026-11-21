@@ -5,7 +5,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { I18nProvider } from '@/lib/i18n/i18n-context';
 import { GlobalSearchDialog } from './global-search-dialog';
 
-const { chatHit, taskHit, groups } = vi.hoisted(() => {
+const { chatHit, taskHit, groups, setQuery } = vi.hoisted(() => {
+  const setQuery = () => undefined;
   const chatHit = {
     domain: 'chat' as const,
     id: 'm1',
@@ -27,6 +28,7 @@ const { chatHit, taskHit, groups } = vi.hoisted(() => {
   return {
     chatHit,
     taskHit,
+    setQuery,
     groups: [
       { domain: 'chat' as const, hits: [chatHit] },
       { domain: 'task' as const, hits: [taskHit] },
@@ -37,7 +39,7 @@ const { chatHit, taskHit, groups } = vi.hoisted(() => {
 vi.mock('./use-global-search', () => ({
   useGlobalSearch: () => ({
     query: '青鸟',
-    setQuery: vi.fn(),
+    setQuery,
     groups,
     failedDomains: ['meeting'],
     loading: false,

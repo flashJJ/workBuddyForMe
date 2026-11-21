@@ -8,6 +8,7 @@ export const zhCommandPalette = {
   recent: '最近使用',
   firstUseHint: '按 {shortcut} 打开命令面板，快速跳转与新建',
   groups: {
+    help: '快捷键与用法',
     navigation: '导航',
     create: '新建',
     conversation: '会话',
@@ -16,6 +17,14 @@ export const zhCommandPalette = {
     update: '更新',
   },
   commands: {
+    shortcuts: { label: '查看快捷键', description: '打开快捷键清单（Ctrl + /）' },
+    globalSearch: { label: '全局检索', description: '搜索会话、任务、流程、会议与知识文档' },
+    usageVoice: { label: '会话朗读', description: '到「设置 → 语音」开启朗读与输入模式' },
+    usageAt: { label: '使用 @ 引用', description: '在对话输入框输入 @ 选择助手或引用' },
+    usageSlash: { label: '使用 / 命令', description: '在对话输入框输入 / 调用快捷命令' },
+    usagePet: { label: '桌宠开关', description: '到「设置 → 外观」显示或隐藏桌面伙伴' },
+    usageAtHint: '在对话输入框输入 @ 即可选择助手或引用内容',
+    usageSlashHint: '在对话输入框输入 / 即可查看可用快捷命令',
     navChat: { label: '前往对话', description: '进入对话页面' },
     navTasks: { label: '前往任务', description: '桌面任务与协作运行记录' },
     navFlows: { label: '前往工作流', description: '编排与试运行工作流' },
@@ -54,6 +63,7 @@ export const enCommandPalette = {
   recent: 'Recently used',
   firstUseHint: 'Press {shortcut} to open the command palette',
   groups: {
+    help: 'Shortcuts & usage',
     navigation: 'Navigation',
     create: 'Create',
     conversation: 'Conversation',
@@ -62,6 +72,29 @@ export const enCommandPalette = {
     update: 'Update',
   },
   commands: {
+    shortcuts: { label: 'Show shortcuts', description: 'Open the shortcut list (Ctrl + /)' },
+    globalSearch: {
+      label: 'Global search',
+      description: 'Search chats, tasks, flows, meetings and documents',
+    },
+    usageVoice: {
+      label: 'Conversation read-aloud',
+      description: 'Enable read-aloud and input mode in Settings → Voice',
+    },
+    usageAt: {
+      label: 'Use @ mentions',
+      description: 'Type @ in the composer to pick an assistant or quote',
+    },
+    usageSlash: {
+      label: 'Use / commands',
+      description: 'Type / in the composer to invoke quick commands',
+    },
+    usagePet: {
+      label: 'Pet toggle',
+      description: 'Show or hide the desktop companion in Settings → Appearance',
+    },
+    usageAtHint: 'Type @ in the composer to pick an assistant or quote content',
+    usageSlashHint: 'Type / in the composer to see available quick commands',
     navChat: { label: 'Go to Chat', description: 'Open the chat page' },
     navTasks: { label: 'Go to Tasks', description: 'Desktop tasks and collaboration runs' },
     navFlows: { label: 'Go to Flows', description: 'Build and test workflows' },

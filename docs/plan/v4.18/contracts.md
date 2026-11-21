@@ -48,9 +48,10 @@
 上限与并发：
 
 - 单域最多 `perDomain = 10` 条，总计最多 `total = 50` 条；
-- 知识库单库最多 5 条，并发 4；
-- 查询至少 2 个字符；`knowledge` 不走 `session_events`，只查文档标题/来源/摘要；
-- 单域失败时该组 `failed=true`，其他域照常返回。
+- 知识库单库最多 5 条，并发 4；`q` 只匹配文档标题/来源/摘要，不读取正文；
+- 查询至少 2 个字符；`knowledge` 不走 `session_events`，只查文档表；
+- 单域失败时该组 `failed=true`，其他域照常返回；
+- 知识结果深链 `/knowledge?kb=<knowledgeBaseId>`；最近搜索仅存本机 localStorage（最多 5 条）。
 
 ## 3. 离线 A/B 回放报告（E 线）
 

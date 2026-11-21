@@ -1,5 +1,5 @@
 import { SEARCH_LIMITS, type SearchDomain } from '@wbfm/shared/schemas';
-import type { GlobalSearchGroup, GlobalSearchHit } from './types';
+import type { GlobalSearchGroup, GlobalSearchHit } from '../types';
 
 /** 事件日志四域（knowledge 在 M4 接文档表） */
 export const GLOBAL_SEARCH_SCOPES = ['chat', 'task', 'flow', 'meeting'] as const;
@@ -145,7 +145,7 @@ export function isGlobalSearchScope(value: string): value is GlobalSearchEventSc
 
 /** 纯函数：四域 settled 结果 → 分组 + 失败域（单域失败不影响其他域） */
 export function assembleGroups(
-  scopes: readonly GlobalSearchEventScope[],
+  scopes: readonly SearchDomain[],
   results: readonly PromiseSettledResult<GlobalSearchHit[]>[],
 ): { groups: GlobalSearchGroup[]; failedDomains: SearchDomain[] } {
   const groups: GlobalSearchGroup[] = [];

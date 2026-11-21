@@ -61,6 +61,35 @@ describe('knowledge/document/chunk 仓储', () => {
     expect(docs.listByKnowledgeBase(kb.id)).toHaveLength(1);
   });
 
+  it('文档级检索支持文件名与来源匹配（v4.18）', () => {
+    const kbs = createKnowledgeRepository(db);
+    const docs = createDocumentRepository(db);
+    const kb = kbs.create({ name: 'kb', chunkSize: 500, chunkOverlap: 80 });
+    docs.create({
+      knowledgeBaseId: kb.id,
+      filename: '青鸟计划.md',
+      fileType: '.md',
+      byteSize: 10,
+      contentHash: 'q1',
+    });
+    docs.create({
+      knowledgeBaseId: kb.id,
+      filename: '周报.md',
+      fileType: '.md',
+      byteSize: 10,
+      contentHash: 'q2',
+      source: 'webpage',
+      sourceUrl: 'https://example.com/qingniao',
+    });
+    expect(docs.listByKnowledgeBase(kb.id, '青鸟').map((doc) => doc.filename)).toEqual([
+      '青鸟计划.md',
+    ]);
+    expect(docs.listByKnowledgeBase(kb.id, 'qingniao').map((doc) => doc.filename)).toEqual([
+      '周报.md',
+    ]);
+    expect(docs.listByKnowledgeBase(kb.id, '%')).toHaveLength(0);
+  });
+
   it('分片批量写入返回自增 id 并按序读取', () => {
     const kbs = createKnowledgeRepository(db);
     const docs = createDocumentRepository(db);

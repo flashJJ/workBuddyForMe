@@ -11,8 +11,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/common/state';
+import { SEARCH_DOMAINS, type SearchDomain } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useGlobalSearch } from './use-global-search';
+import {
+  clearRecentSearches,
+  readRecentSearches,
+  rememberSearch,
+} from './lib';
 import type { GlobalSearchHit } from './types';
 
 interface Props {
@@ -21,10 +27,12 @@ interface Props {
   onOpenHit: (hit: GlobalSearchHit) => void;
 }
 
-/** v4.18：四域全局检索弹层（会话 / 任务 / 流程 / 会议） */
+/** v4.18：全局检索弹层（五域、过滤器、最近搜索与键盘操作） */
 export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
   const { t } = useI18n();
-  const { query, setQuery, groups, failedDomains, loading } = useGlobalSearch(open);
+  const [domain, setDomain] = React.useState<SearchDomain | 'all'>('all');
+  const [recent, setRecent] = React.useState<string[]>([]);
+  const { query, setQuery, groups, failedDomains, loading } = useGlobalSearch(open, domain);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [active, setActive] = React.useState(0);
 
@@ -34,20 +42,24 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
     if (!open) {
       setQuery('');
       setActive(0);
+      setDomain('all');
       return;
     }
+    setRecent(readRecentSearches(window.localStorage));
     const timer = setTimeout(() => inputRef.current?.focus(), 60);
     return () => clearTimeout(timer);
   }, [open, setQuery]);
 
   React.useEffect(() => {
     setActive(0);
-  }, [query, groups]);
+  }, [query, groups, domain]);
 
   const trimmed = query.trim();
   const showEmpty = !loading && trimmed.length >= 2 && flat.length === 0;
+  const showRecent = !trimmed && recent.length > 0;
 
   const openHit = (hit: GlobalSearchHit, newPanel = false) => {
+    setRecent(rememberSearch(window.localStorage, trimmed));
     onOpenChange(false);
     if (newPanel) {
       window.open(hit.deepLink, '_blank', 'noopener');
@@ -73,6 +85,8 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
     }
   };
 
+  const filters: Array<SearchDomain | 'all'> = ['all', ...SEARCH_DOMAINS];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl" data-testid="global-search-dialog" onKeyDown={onKeyDown}>
@@ -93,13 +107,70 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
               data-testid="global-search-input"
             />
           </div>
+          <div
+            className="flex flex-wrap gap-1"
+            role="group"
+            aria-label={t('chatMessages.search.filterLabel')}
+          >
+            {filters.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                  domain === item
+                    ? 'border-primary/50 bg-accent text-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+                aria-pressed={domain === item}
+                data-testid={`global-search-filter-${item}`}
+                onClick={() => setDomain(item)}
+              >
+                {item === 'all'
+                  ? t('chatMessages.search.scopeAll')
+                  : t(`chatMessages.search.domains.${item}`)}
+              </button>
+            ))}
+          </div>
           <div className="max-h-96 min-h-16 overflow-y-auto" data-testid="global-search-results">
             {loading ? <Spinner /> : null}
+            {showRecent ? (
+              <div className="py-2" data-testid="global-search-recent">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t('chatMessages.search.recentTitle')}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      clearRecentSearches(window.localStorage);
+                      setRecent([]);
+                    }}
+                  >
+                    {t('chatMessages.search.recentClear')}
+                  </button>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1 px-1">
+                  {recent.map((term) => (
+                    <button
+                      key={term}
+                      type="button"
+                      className="rounded-full border px-2.5 py-0.5 text-xs hover:bg-accent"
+                      onClick={() => setQuery(term)}
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {showEmpty ? (
               <div className="py-6 text-center">
                 <p className="text-sm">{t('chatMessages.search.empty')}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {t('chatMessages.search.emptyHint')}
+                  {domain === 'all'
+                    ? t('chatMessages.search.emptyHint')
+                    : t('chatMessages.search.emptyCurrentDomain')}
                 </p>
               </div>
             ) : null}
@@ -142,7 +213,7 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
             {failedDomains.length > 0 ? (
               <p className="px-1 py-1 text-xs text-destructive" data-testid="global-search-failed">
                 {failedDomains
-                  .map((domain) => t(`chatMessages.search.domains.${domain}`))
+                  .map((item) => t(`chatMessages.search.domains.${item}`))
                   .join(' / ')}
                 ：{t('chatMessages.search.failed')}
               </p>

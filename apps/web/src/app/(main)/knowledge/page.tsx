@@ -7,5 +7,6 @@ export default async function Page({
 }) {
   const params = await searchParams;
   const autoCreate = params?.new === '1';
-  return <KnowledgePage autoCreate={autoCreate} />;
+  const kb = typeof params?.kb === 'string' ? params.kb : null;
+  return <KnowledgePage autoCreate={autoCreate} initialKbId={kb} />;
 }

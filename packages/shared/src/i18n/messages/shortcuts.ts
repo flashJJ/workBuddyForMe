@@ -2,6 +2,11 @@
 export const zhShortcuts = {
   title: '键盘快捷键',
   close: '关闭',
+  hint: {
+    text: 'Ctrl+K 命令面板 · Ctrl+/ 快捷键',
+    view: '查看',
+    dismiss: '不再提示',
+  },
   groups: {
     global: '全局',
     chat: '对话',
@@ -10,6 +15,7 @@ export const zhShortcuts = {
   },
   items: {
     commandPalette: '打开命令面板',
+    globalSearch: '打开全局检索',
     shortcutsOverlay: '查看快捷键',
     emergencyStop: '急停全部桌面任务',
     send: '发送消息',
@@ -29,6 +35,11 @@ export const zhShortcuts = {
 export const enShortcuts = {
   title: 'Keyboard shortcuts',
   close: 'Close',
+  hint: {
+    text: 'Ctrl+K command palette · Ctrl+/ shortcuts',
+    view: 'View',
+    dismiss: 'Do not show again',
+  },
   groups: {
     global: 'General',
     chat: 'Chat',
@@ -37,6 +48,7 @@ export const enShortcuts = {
   },
   items: {
     commandPalette: 'Open command palette',
+    globalSearch: 'Open global search',
     shortcutsOverlay: 'Show shortcuts',
     emergencyStop: 'Emergency-stop all desktop tasks',
     send: 'Send message',

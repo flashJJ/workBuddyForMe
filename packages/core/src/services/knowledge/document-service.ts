@@ -68,11 +68,11 @@ export function createDocumentService(deps: ServiceDeps) {
   };
 
   return {
-    listByKnowledgeBase(knowledgeBaseId: string): DocumentRecord[] {
+    listByKnowledgeBase(knowledgeBaseId: string, q?: string): DocumentRecord[] {
       if (!knowledgeBases.findById(knowledgeBaseId)) {
         throw ApiError.notFound('知识库', knowledgeBaseId);
       }
-      return documents.listByKnowledgeBase(knowledgeBaseId);
+      return documents.listByKnowledgeBase(knowledgeBaseId, q);
     },
 
     get(id: string): DocumentRecord {

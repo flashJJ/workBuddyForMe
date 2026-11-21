@@ -1,14 +1,21 @@
+import { z } from 'zod';
 import { idParamSchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
-import { parseParams } from '@/lib/server/validation';
+import { parseParams, parseSearch } from '@/lib/server/validation';
 import { readUploadPart } from '@/lib/server/multipart';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = defineRoute(({ params, services }) => {
+/** v4.18：文档级检索只查标题/来源/摘要 */
+const listQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+});
+
+export const GET = defineRoute(({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
-  return jsonOk(services.documents.listByKnowledgeBase(id));
+  const query = parseSearch(listQuerySchema, new URL(request.url));
+  return jsonOk(services.documents.listByKnowledgeBase(id, query.q));
 });
 
 /**

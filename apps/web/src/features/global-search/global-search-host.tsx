@@ -12,8 +12,18 @@ export function GlobalSearchHost() {
 
   React.useEffect(() => {
     const onOpen = () => setOpen(true);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        setOpen(true);
+      }
+    };
     window.addEventListener(GLOBAL_SEARCH_EVENT, onOpen);
-    return () => window.removeEventListener(GLOBAL_SEARCH_EVENT, onOpen);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener(GLOBAL_SEARCH_EVENT, onOpen);
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, []);
 
   return (

@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useCollapsiblePanel } from '@/lib/hooks/use-collapsible-panel';
 import { openGlobalSearch } from '@/features/global-search';
+import { ShortcutHint } from '@/features/shortcuts';
 
 interface Props {
   conversations: Conversation[];
@@ -162,6 +163,7 @@ export function ConversationSidebar({
           </ul>
         )}
       </div>
+      <ShortcutHint />
     </aside>
   );
 }

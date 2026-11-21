@@ -17,6 +17,7 @@ import {
 import type { Command } from '@wbfm/shared/command';
 import { useAssistants } from '@/lib/hooks/assistant';
 import { useConversationMutations } from '@/lib/hooks/chat';
+import { createHelpCommands } from './help-commands';
 import { openGlobalSearch } from '@/features/global-search';
 import { createPetCommands } from './pet-commands';
 import { API } from '@/lib/api/endpoints';
@@ -56,6 +57,13 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
     };
 
     const commands: Command[] = [
+      // ── 快捷键与用法（v4.18：首组，避免能力只存在于文档） ──
+      ...createHelpCommands({
+        t,
+        navigate,
+        openSettings,
+        notify: (message) => toast.info(message),
+      }),
       // ── 导航 ──
       {
         id: 'nav:chat',

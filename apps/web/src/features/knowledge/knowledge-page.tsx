@@ -96,7 +96,13 @@ function KnowledgeBaseNav({
   );
 }
 
-export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) {
+export function KnowledgePage({
+  autoCreate = false,
+  initialKbId = null,
+}: {
+  autoCreate?: boolean;
+  initialKbId?: string | null;
+}) {
   const { t } = useI18n();
   const { data: knowledgeBases, isLoading, isError, refetch } = useKnowledgeBases();
   const mutations = useKnowledgeMutations();
@@ -117,6 +123,11 @@ export function KnowledgePage({ autoCreate = false }: { autoCreate?: boolean }) 
 
   React.useEffect(() => {
     if (!knowledgeBases) return;
+    // v4.18：全局检索深链优先选中指定知识库
+    if (initialKbId && knowledgeBases.some((kb) => kb.id === initialKbId)) {
+      setActiveId(initialKbId);
+      return;
+    }
     if (!activeId || !knowledgeBases.some((kb) => kb.id === activeId)) {
       setActiveId(knowledgeBases[0]?.id ?? null);
     }

@@ -7,6 +7,7 @@
 
 /** 命令分组，用于面板内分组展示与快捷键提示 */
 export type CommandGroup =
+  | 'help'
   | 'navigation'
   | 'create'
   | 'conversation'
