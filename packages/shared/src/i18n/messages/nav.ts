@@ -17,6 +17,7 @@ export const zhNav = {
   assistants: { label: '助手', description: '智能体与提示词预设' },
   journal: { label: '日常回顾', description: '她今天做了什么：生成剧情与播放记录' },
   settings: { label: '设置', description: '供应商、模型与偏好' },
+  pet: { label: '桌宠', description: '打开桌面伙伴窗口' },
 };
 
 export const enNav = {
@@ -37,4 +38,5 @@ export const enNav = {
   assistants: { label: 'Assistants', description: 'Agents and prompt presets' },
   journal: { label: 'Journal', description: 'What she did today: generated scenes and playback' },
   settings: { label: 'Settings', description: 'Providers, models and preferences' },
+  pet: { label: 'Desktop pet', description: 'Open the desktop companion window' },
 };

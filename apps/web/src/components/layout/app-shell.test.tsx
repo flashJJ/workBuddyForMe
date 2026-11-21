@@ -40,6 +40,7 @@ describe('应用外壳（TR-23.1）', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    delete (window as unknown as { wbfm?: unknown }).wbfm;
   });
 
   it('侧边栏：十三个模块导航，当前路由高亮，切换路径更新高亮', () => {
@@ -52,6 +53,8 @@ describe('应用外壳（TR-23.1）', () => {
       'aria-current',
       'page',
     );
+    // 纯浏览器无 pet 桥：不显示桌宠入口
+    expect(screen.queryByTestId('sidebar-pet-entry')).toBeNull();
 
     usePathname.mockReturnValue('/knowledge');
     rerender(<AppSidebar />);
@@ -59,6 +62,18 @@ describe('应用外壳（TR-23.1）', () => {
       'aria-current',
       'page',
     );
+  });
+
+  it('桌面端侧栏显示桌宠入口，点击复用 pet 桥接', async () => {
+    const open = vi.fn().mockResolvedValue(true);
+    (window as unknown as { wbfm?: unknown }).wbfm = { pet: { open } };
+
+    renderWithProviders(<AppSidebar />);
+    const entry = await screen.findByTestId('sidebar-pet-entry');
+    expect(entry).toHaveAccessibleName('桌宠');
+
+    fireEvent.click(entry);
+    expect(open).toHaveBeenCalledTimes(1);
   });
 
   it('主题切换：点击后 html 挂 dark 类并可切回', () => {
