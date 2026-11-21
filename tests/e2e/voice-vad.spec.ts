@@ -129,6 +129,12 @@ const FAKE_WORKLET_ENV = `(() => {
     addEventListener() {}
   }
   window.AudioWorkletNode = FakeWorkletNode;
+  // 音频图全部由桩接管，麦克风轨道不参与断言：避免 CI 上假设备初始化慢/权限
+  // 竞争导致整条管线不启动（该用例只验证 VAD 段到自动发送的接线）。
+  if (navigator.mediaDevices) {
+    navigator.mediaDevices.getUserMedia = () =>
+      Promise.resolve({ getTracks: () => [], getAudioTracks: () => [] });
+  }
   const RealAudioContext = window.AudioContext || window.webkitAudioContext;
   if (RealAudioContext) {
     // 包装构造器：实例级覆盖（原型方法赋值在部分环境被原生描述符吞掉）
@@ -228,11 +234,13 @@ test.describe.serial('M4 免手持续聆听（VAD）', () => {
 
   test('③ 免手武装后自动聆听：VAD 段→ASR→消息自动发送并收到回复', async ({ page }) => {
     await page.goto('/chat');
+    await waitForHydrated(page);
     await expect(page.getByLabel('消息输入框')).toBeVisible();
 
     // 免手开关渲染且默认未武装
     const handsfree = page.getByTestId('handsfree-button');
     await expect(handsfree).toBeVisible();
+    await expect(handsfree).toBeEnabled();
     await expect(handsfree).toHaveAttribute('data-state', 'off');
 
     // 武装即触发麦克风/worklet，假帧序列自动完成「聆听→识别→发送」
