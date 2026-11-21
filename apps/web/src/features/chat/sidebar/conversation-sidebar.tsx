@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/state';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useCollapsiblePanel } from '@/lib/hooks/use-collapsible-panel';
-import { openMessageSearch } from '../search';
+import { openGlobalSearch } from '@/features/global-search';
 
 interface Props {
   conversations: Conversation[];
@@ -74,7 +74,7 @@ export function ConversationSidebar({
           aria-label={t('chatMessages.search.title')}
           title={t('chatMessages.search.title')}
           data-testid="conversation-search-collapsed"
-          onClick={openMessageSearch}
+          onClick={openGlobalSearch}
         >
           <Search className="h-4 w-4" />
         </Button>
@@ -100,7 +100,7 @@ export function ConversationSidebar({
           aria-label={t('chatMessages.search.title')}
           title={t('chatMessages.search.title')}
           data-testid="conversation-search"
-          onClick={openMessageSearch}
+          onClick={openGlobalSearch}
         >
           <Search className="h-4 w-4" />
         </Button>

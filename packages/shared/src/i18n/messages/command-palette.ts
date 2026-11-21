@@ -34,7 +34,7 @@ export const zhCommandPalette = {
       description: '在当前助手下创建新对话',
       disabled: '暂无可用助手',
     },
-    convSearch: { label: '搜索会话', description: '按标题查找历史对话' },
+    convSearch: { label: '全局检索', description: '搜索会话、任务、流程与会议' },
     convExport: { label: '导出当前会话', description: '导出为 Markdown / HTML 快照' },
     convExportHint: '请在对话页点击右上角「分享」按钮导出',
     asstSwitch: { label: '切换助手', description: '选择不同的智能体' },
@@ -80,7 +80,7 @@ export const enCommandPalette = {
       description: 'Start a new conversation with the current assistant',
       disabled: 'No assistant available',
     },
-    convSearch: { label: 'Search conversations', description: 'Find past chats by title' },
+    convSearch: { label: 'Global search', description: 'Search conversations, tasks, flows and meetings' },
     convExport: {
       label: 'Export current conversation',
       description: 'Export as a Markdown / HTML snapshot',

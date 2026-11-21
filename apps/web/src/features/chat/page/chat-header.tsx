@@ -11,7 +11,7 @@ import { PlanChip } from '@/features/plans/chip';
 import { RunGraphLauncher } from '@/features/run-graph';
 import { ContextInsightsLauncher } from '../context-insights';
 import { BranchLauncher, BranchOriginBanner } from '@/features/branch';
-import { openMessageSearch } from '../search';
+import { openGlobalSearch } from '@/features/global-search';
 
 interface Props {
   assistants: Assistant[];
@@ -121,7 +121,7 @@ function HeaderActions({
         aria-label={t('chatMessages.search.title')}
         title={t('chatMessages.search.title')}
         data-testid="chat-message-search"
-        onClick={openMessageSearch}
+        onClick={openGlobalSearch}
       >
         <Search className="h-4 w-4" />
       </Button>

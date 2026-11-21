@@ -1,7 +1,7 @@
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SkipLink } from '@/components/layout/skip-link';
 import { CommandPaletteHost } from '@/features/command-palette';
-import { MessageSearchHost } from '@/features/chat/search';
+import { GlobalSearchHost } from '@/features/global-search';
 import { ShortcutsHost } from '@/features/shortcuts';
 import { OnboardingHost } from '@/features/onboarding';
 import { ReunionSignalHost } from '@/features/avatar';
@@ -24,7 +24,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <CommandPaletteHost />
-          <MessageSearchHost />
+          <GlobalSearchHost />
           <ShortcutsHost />
           <OnboardingHost />
           <ReunionSignalHost />

@@ -17,7 +17,7 @@ import {
 import type { Command } from '@wbfm/shared/command';
 import { useAssistants } from '@/lib/hooks/assistant';
 import { useConversationMutations } from '@/lib/hooks/chat';
-import { openMessageSearch } from '@/features/chat/search';
+import { openGlobalSearch } from '@/features/global-search';
 import { createPetCommands } from './pet-commands';
 import { API } from '@/lib/api/endpoints';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -189,7 +189,7 @@ export function useCommands({ navigate, close }: UseCommandsOptions): Command[] 
         description: t(`${ck}.convSearch.description`),
         group: 'conversation',
         keywords: ['search', '搜索', '历史', '对话', 'history'],
-        action: () => openMessageSearch(),
+        action: () => openGlobalSearch(),
       },
       {
         id: 'conv:export',
