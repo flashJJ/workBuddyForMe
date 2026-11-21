@@ -6,7 +6,7 @@ export type ProviderErrorCode = Extract<
 >;
 
 /** 供应商错误的可识别原因（不扩展 API 错误码，只用于内部分支判断） */
-export type ProviderErrorReason = 'models_unsupported';
+export type ProviderErrorReason = 'models_unsupported' | 'stream_interrupted';
 
 /** 归一化后的供应商错误：携带领域错误码、上游 HTTP 状态与原始消息 */
 export class ProviderError extends Error {

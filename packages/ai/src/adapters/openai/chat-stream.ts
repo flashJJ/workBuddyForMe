@@ -92,6 +92,16 @@ export async function* openAiChatStream(
         CHAT_STREAM_IDLE_TIMEOUT_MS,
       );
     }
+    // v4.18：头已到达后的未知读取错误统一视为断流，供上层判定是否可切换模型
+    const aborted = error instanceof Error && error.name === 'AbortError';
+    if (!params.signal?.aborted && !aborted && !(error instanceof ProviderError)) {
+      throw new ProviderError({
+        code: 'PROVIDER_ERROR',
+        message: `SSE 流式读取中断：${error instanceof Error ? error.message : String(error)}`,
+        retriable: true,
+        reason: 'stream_interrupted',
+      });
+    }
     throw error;
   } finally {
     clearIdle();

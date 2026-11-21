@@ -64,3 +64,23 @@ export function resolveChatTarget(
     conversationModelId ?? assistant.modelId ?? null,
   );
 }
+
+/**
+ * v4.18 A 线：解析助手级备用模型。
+ * - 未配置或与主模型相同 → null；
+ * - 配置失效（模型/供应商被删或停用）→ null，由调用方在出错时给出原始错误。
+ */
+export function resolveFallbackChatTarget(
+  deps: ServiceDeps,
+  assistant: Assistant,
+  primary: ResolvedChatTarget['model'],
+): ResolvedChatTarget | null {
+  const fallbackId = assistant.fallbackModelId ?? null;
+  if (!fallbackId || fallbackId === primary.id) return null;
+  try {
+    return resolveChatTargetForModelId(deps, fallbackId);
+  } catch (error) {
+    console.warn('[chat] 备用模型不可用', fallbackId, error);
+    return null;
+  }
+}

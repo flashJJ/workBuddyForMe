@@ -5,10 +5,10 @@ import type { ServiceDeps } from '../../services/base/deps';
 import { createAssistantsService } from '../../services/assistant/assistant-service';
 import { createAttachmentService } from '../../services/assistant/attachment-service';
 import { createConversationService } from '../../services/assistant/conversation-service';
-import { resolveChatTarget, type ResolvedChatTarget } from '../context/model-resolver';
+import { resolveChatTarget, resolveFallbackChatTarget, type ResolvedChatTarget } from '../context/model-resolver';
 import { runAlwaysRetrieval } from '../turns/retrieve-turn';
 import { prepareUserTurn } from '../context/turn-preparation';
-import { runProviderTurnWithToolFallback, type ProviderTurn } from '../tools/tool-runner';
+import { runProviderTurnWithModelFallback, type ModelFallbackTurnResult } from '../tools/model-fallback';
 import { runToolCallLoop } from '../tools/tool-call-loop';
 import { createProactiveTurn } from '../turns/proactive-turn';
 import { tryReminderTurn } from '../turns/reminder-turn';
@@ -151,22 +151,24 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           target,
         });
         const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace, researchDepth, contextWindow } = prepared;
+        const fallbackTarget = resolveFallbackChatTarget(deps, assistant, target.model);
         let citations = prepared.citations;
         const fetchDegrade = createFetchDegradeTracker();
         const emotionEnabled = prepared.emotionEnabled;
-        let hitRoundLimit = false;
-        try {
+        let hitRoundLimit = false;        try {
           for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
-            // 手动迭代：delta 直接累积到 full，保证中途 abort 也能保留已产出片段
-            const turn = runProviderTurnWithToolFallback({
+            const turn = runProviderTurnWithModelFallback({
               target,
+              fallback: fallbackTarget,
               assistant,
               messages: outgoing,
               tools: toolDefs,
               signal: input.signal,
               traceParent: turnTrace,
+              hasOutput: full.length > 0,
+              onSwitch: (event) => deps.events?.recordChat(conversationId, 'model_switched', event),
             });
-            let outcome: ProviderTurn;
+            let outcome: ModelFallbackTurnResult;
             while (true) {
               const step = await turn.next();
               if (step.done) {
@@ -177,6 +179,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               yield step.value;
             }
             if (outcome.usage) usage = outcome.usage;
+            target = outcome.target;
             const calls: ToolCall[] = outcome.toolCalls;
             if (calls.length === 0) break;
             if (round === MAX_TOOL_ROUNDS) {
@@ -194,10 +197,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               runtime,
               assistantId: assistant.id,
               taskScope: conversationId,
-              approvalContext: {
-                conversationId,
-                deepLink: `/chat?conversation=${conversationId}`,
-              },
+              approvalContext: { conversationId, deepLink: `/chat?conversation=${conversationId}` },
               turnTrace,
               trace,
               outgoing,

@@ -1,5 +1,6 @@
 export * from './types';
 export { ProviderError, type ProviderErrorCode } from './errors/provider-error';
+export { classifyModelFailure } from './errors/classify-failure';
 export {
   fetchJson,
   buildHeaders,

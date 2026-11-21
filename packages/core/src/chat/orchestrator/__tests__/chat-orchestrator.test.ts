@@ -148,6 +148,37 @@ describe('对话编排（TR-15.1）', () => {
     expect(messages[1]!.errorCode).toBeTruthy();
   });
 
+  it('429 首字前自动切换备用模型并正常回答（v4.18）', async () => {
+    const primary = seedProvider();
+    const fallback = createModelRepository(db).create({
+      providerId: primary.providerId,
+      modelId: 'gpt-backup',
+      displayName: '备用模型',
+      capabilities: ['chat'],
+      contextWindow: 4096,
+    });
+    const assistants = createAssistantsService({ db, cipher });
+    const assistant = assistants.list()[0]!;
+    assistants.update(assistant.id, { fallbackModelId: fallback.id });
+
+    fetchMock
+      .mockResolvedValueOnce(new Response('rate limited', { status: 429 }))
+      .mockResolvedValueOnce(
+        new Response(SSE_BODY, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+      );
+
+    const events = await drain(
+      makeOrchestrator().streamChat({ assistantId: assistant.id, content: '你好' }),
+    );
+
+    expect(events.at(-1)).toMatchObject({ event: 'done', data: { content: '你好' } });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const secondBody = JSON.parse(
+      (fetchMock.mock.calls[1]![1] as RequestInit).body as string,
+    ) as { model: string };
+    expect(secondBody.model).toBe('gpt-backup');
+  });
+
   it('中途 abort：消息置 stopped 保留片段，不产生 error 事件', async () => {
     seedProvider();
     const assistant = createAssistantsService({ db, cipher }).list()[0]!;

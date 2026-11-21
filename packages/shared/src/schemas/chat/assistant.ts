@@ -40,6 +40,8 @@ const samplingFields = {
   topP: z.number().min(0).max(1).default(1),
   maxTokens: z.number().int().positive().max(1_000_000).nullable().default(null),
   modelId: z.string().trim().min(1).nullable().default(null),
+  /** v4.18 A 线：备用模型（null=不启用自动切换；仅助手级） */
+  fallbackModelId: z.string().trim().min(1).nullable().default(null),
   /** v1.4：协作三角色模型覆盖；留空=跟随助手默认/系统默认 */
   plannerModelId: z.string().trim().min(1).nullable().default(null),
   executorModelId: z.string().trim().min(1).nullable().default(null),
@@ -78,6 +80,7 @@ export const assistantUpdateSchema = z
     topP: samplingFields.topP.optional(),
     maxTokens: samplingFields.maxTokens.optional(),
     modelId: samplingFields.modelId.optional(),
+    fallbackModelId: samplingFields.fallbackModelId.optional(),
     // v1.8 M3：三角色模型覆盖可在调优中心矩阵中改（创建期字段，PATCH 同步开放）
     plannerModelId: samplingFields.plannerModelId.optional(),
     executorModelId: samplingFields.executorModelId.optional(),

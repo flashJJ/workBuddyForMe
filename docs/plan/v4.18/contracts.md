@@ -23,7 +23,8 @@
 - 首字后一律不自动切换（`canAutoSwitchModel` 返回 false），避免重复输出；
 - 单轮最多自动切换 `MAX_MODEL_SWITCH_ATTEMPTS = 2` 次；
 - 切换事件固定四字段：`fromModelId / toModelId / reason / attempt`，不记录正文；
-- UI 只消费 `code`，不解析供应商原始报文。
+- UI 只消费 `code`，不解析供应商原始报文；
+- 助手级 `fallbackModelId` 存 `settings_kv` 的 `assistant-fallback-models`（助手 id → 模型 id），零数据库迁移。
 
 ## 2. 跨域检索结果（C 线）
 

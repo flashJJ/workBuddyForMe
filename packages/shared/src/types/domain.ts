@@ -63,6 +63,7 @@ export interface Assistant extends Timestamped {
   maxTokens: number | null;
   /** 绑定 models.id；null 表示跟随系统默认对话模型 */
   modelId: string | null;
+  fallbackModelId?: string | null; // v4.18 A 线：助手级备用模型（null/缺省=不自动切换）
   /** v1.4：协作三角色模型覆盖（null=逐级回落：角色覆盖→助手 modelId→系统默认） */
   plannerModelId: string | null; executorModelId: string | null; reviewerModelId: string | null;
   /** v1.5：绑定 knowledge_bases.id（支持多库联合检索）；空数组=纯对话 */
@@ -80,8 +81,7 @@ export interface Assistant extends Timestamped {
   /** v1.7：人格四权重 0..1（v024 列，老库默认 0.5；驱动剧情 branch 支线） */
   personalityFrankness: number;
   personalityTsundere: number;
-  personalityShy: number;
-  personalityTolerance: number;
+  personalityShy: number; personalityTolerance: number;
   /** v1.8：当前选用的角色卡 id（v026 列；null=默认卡） */
   cardId: string | null;
   stagePlan: StagePlan | null;
