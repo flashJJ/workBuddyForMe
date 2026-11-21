@@ -13,8 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/common/state';
 import { SEARCH_DOMAINS, type SearchDomain } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { copyText } from '@/lib/utils/clipboard';
 import { useGlobalSearch } from './use-global-search';
 import {
+  buildHitCitation,
   clearRecentSearches,
   readRecentSearches,
   rememberSearch,
@@ -35,6 +37,7 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
   const { query, setQuery, groups, failedDomains, loading } = useGlobalSearch(open, domain);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [active, setActive] = React.useState(0);
+  const [copyStatus, setCopyStatus] = React.useState<'copied' | 'failed' | null>(null);
 
   const flat = React.useMemo(() => groups.flatMap((group) => group.hits), [groups]);
 
@@ -54,6 +57,16 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
     setActive(0);
   }, [query, groups, domain]);
 
+  React.useEffect(() => {
+    setCopyStatus(null);
+  }, [query, domain, open]);
+
+  React.useEffect(() => {
+    if (!copyStatus) return;
+    const timer = setTimeout(() => setCopyStatus(null), 2000);
+    return () => clearTimeout(timer);
+  }, [copyStatus]);
+
   const trimmed = query.trim();
   const showEmpty = !loading && trimmed.length >= 2 && flat.length === 0;
   const showRecent = !trimmed && recent.length > 0;
@@ -66,6 +79,16 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
       return;
     }
     onOpenHit(hit);
+  };
+
+  /** 复制引用：只复制标题与深链，不关闭弹层；失败仅内联提示 */
+  const copyHit = async (hit: GlobalSearchHit) => {
+    try {
+      await copyText(buildHitCitation(hit));
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('failed');
+    }
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -183,10 +206,10 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
                   {group.hits.map((hit) => {
                     const index = flat.indexOf(hit);
                     return (
-                      <li key={`${hit.domain}:${hit.id}`}>
+                      <li key={`${hit.domain}:${hit.id}`} className="flex items-start gap-1">
                         <button
                           type="button"
-                          className={`w-full rounded-md border px-3 py-2 text-left transition-colors ${
+                          className={`min-w-0 flex-1 rounded-md border px-3 py-2 text-left transition-colors ${
                             index === active
                               ? 'border-primary/50 bg-accent/60'
                               : 'bg-ui-row hover:border-primary/40 hover:bg-accent/40'
@@ -204,6 +227,17 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
                             {hit.timestamp ? new Date(hit.timestamp).toLocaleString() : '—'}
                           </span>
                         </button>
+                        {hit.domain === 'knowledge' ? (
+                          <button
+                            type="button"
+                            className="mt-0.5 shrink-0 rounded border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            aria-label={`${t('chatMessages.search.copyCitation')}：${hit.title}`}
+                            data-testid="global-search-copy-knowledge"
+                            onClick={() => void copyHit(hit)}
+                          >
+                            {t('chatMessages.search.copyCitation')}
+                          </button>
+                        ) : null}
                       </li>
                     );
                   })}
@@ -219,6 +253,21 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
               </p>
             ) : null}
           </div>
+          {copyStatus ? (
+            <p
+              className={`text-[11px] ${
+                copyStatus === 'copied' ? 'text-muted-foreground' : 'text-destructive'
+              }`}
+              role="status"
+              data-testid="global-search-copy-status"
+            >
+              {t(
+                copyStatus === 'copied'
+                  ? 'chatMessages.search.copiedCitation'
+                  : 'chatMessages.search.copyCitationFailed',
+              )}
+            </p>
+          ) : null}
           <p className="text-[11px] text-muted-foreground">
             {t('chatMessages.search.keyboardHint')}
           </p>

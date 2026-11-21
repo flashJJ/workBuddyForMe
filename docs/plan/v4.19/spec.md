@@ -1,6 +1,6 @@
 # v4.19 规格：补完
 
-> 状态：M1–M3 已完成（2026-11-22），M4 待开工
+> 状态：M1–M4 已完成（2026-11-22），M5 待开工
 > 契约：[contracts.md](./contracts.md)
 > 选题与范围：[README.md](./README.md)
 > 任务清单：[tasks.md](./tasks.md)

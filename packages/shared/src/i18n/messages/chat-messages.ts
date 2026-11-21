@@ -76,6 +76,9 @@ export const zhChatMessages = {
     filterLabel: '检索范围',
     failed: '检索失败，请重试',
     open: '打开会话',
+    copyCitation: '复制引用',
+    copiedCitation: '已复制引用',
+    copyCitationFailed: '复制失败，请手动选择文本',
     scopeAll: '全部',
     keyboardHint: '↑↓ 选择 · Enter 打开 · Ctrl+Enter 新面板',
     domains: {
@@ -163,6 +166,9 @@ export const enChatMessages = {
     filterLabel: 'Search scope',
     failed: 'Search failed, please retry',
     open: 'Open conversation',
+    copyCitation: 'Copy citation',
+    copiedCitation: 'Citation copied',
+    copyCitationFailed: 'Copy failed. Select the text manually.',
     scopeAll: 'All',
     keyboardHint: '↑↓ select · Enter open · Ctrl+Enter new panel',
     domains: {
