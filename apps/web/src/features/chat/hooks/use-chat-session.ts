@@ -10,10 +10,11 @@ import { useChatStream } from '@/lib/hooks/chat';
 import { useAgentTaskTurn } from './use-agent-task-turn';
 import type { AgentCardEntry } from '@/features/agent-collab';
 import { patchLastAssistantMessage } from '../base/live-message-utils';
-import type { ChatSession, ChatSessionVoice, PendingToolConfirmation } from '../types/chat-session.types';
+import type { ChatSession, ChatSessionVoice, PendingLocalSearchStart, PendingToolConfirmation } from '../types/chat-session.types';
 import { useStreamFrame } from './use-stream-frame';
 import { useChatLiveGraph } from './use-chat-live-graph';
 import { useChatTurn } from './stream';
+import { useLocalSearchStart } from './local-search/use-local-search-start';
 
 import {
   appendAssistantDelta,
@@ -23,7 +24,7 @@ import {
   useToolConfirmation,
 } from './use-chat-session-helpers';
 
-export type { ChatSession, ChatSessionVoice, PendingToolConfirmation } from '../types/chat-session.types';
+export type { ChatSession, ChatSessionVoice, PendingLocalSearchStart, PendingToolConfirmation } from '../types/chat-session.types';
 
 /** v1.4 任务模式：助手消息 id → 协作泳道卡（live only，历史在任务中心查看） */
 export type { AgentCardEntry };
@@ -45,6 +46,7 @@ export function useChatSession(
   const [live, setLive] = React.useState<Message[] | null>(null);
   const [recalledMemories, setRecalledMemories] = React.useState<RecalledMemoryPayload[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = React.useState<PendingToolConfirmation | null>(null);
+  const [pendingLocalSearch, setPendingLocalSearch] = React.useState<PendingLocalSearchStart | null>(null);
   const liveGraph = useChatLiveGraph(conversationId);
 
   // v2.4 M5 / P1-4：delta 按 rAF 合帧 + 本轮计时（协作者外迁，行为不变）
@@ -75,6 +77,7 @@ export function useChatSession(
     pushTurn: (content, regenerate = false) => {
       setRecalledMemories([]);
       setPendingConfirmation(null);
+      setPendingLocalSearch(null);
       // 任务消息不入 messages 表，需本地唯一 id 挂接泳道卡（pendingMessage 默认空 id，
       // 多轮任务会同挂 '' 键串卡，并使失败重试的任务卡判据失效）
       const assistantMessage: Message = {
@@ -108,6 +111,7 @@ export function useChatSession(
     setLive(null);
     setRecalledMemories([]);
     setPendingConfirmation(null);
+    setPendingLocalSearch(null);
     voice?.cancelPlayback?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voice, taskTurn, resetStream]);
@@ -122,6 +126,7 @@ export function useChatSession(
     setLive,
     setRecalledMemories,
     setPendingConfirmation,
+    setPendingLocalSearch,
     onConversationCreated,
     queryClient,
     streamSend,
@@ -162,6 +167,10 @@ export function useChatSession(
     clearPending: () => setPendingConfirmation(null),
     clearTaskGate: taskTurn.clearGate,
   });
+  const localSearchStart = useLocalSearchStart({
+    pending: pendingLocalSearch,
+    clearPending: () => setPendingLocalSearch(null),
+  });
 
   return {
     messages: baseMessages,
@@ -169,6 +178,13 @@ export function useChatSession(
     streamTiming,
     recalledMemories,
     pendingConfirmation,
+    localSearchStart: {
+      pending: pendingLocalSearch,
+      running: localSearchStart.running,
+      canAutoStart: localSearchStart.canAutoStart,
+      start: localSearchStart.start,
+      cancel: localSearchStart.cancel,
+    },
     agentCards: taskTurn.agentCards,
     send,
     sendTask,

@@ -10,8 +10,8 @@ import {
  * v1.1 M4 编排器事件契约一致性：
  * 1. 编译期穷尽 switch：漏掉任一 OrchestratorEventName 分支，never 赋值报 tsc 错；
  * 2. 运行时：ORCHESTRATOR_EVENT_NAMES 是线上事件集合的真子集（每个都在 SSE_EVENT 注册），
- *    且恰好 8 个（编排器边界：task/flow/voice_audio/voice_state 不在其中）；
- * 3. wire 录制兜底：编排器实际 yield 的事件名只能是这 8 个（由 SseEvent<> 类型 +
+ *    且恰好 9 个（编排器边界：task/flow/voice_audio/voice_state 不在其中）；
+ * 3. wire 录制兜底：编排器实际 yield 的事件名只能是这 9 个（由 SseEvent<> 类型 +
  *    yield 点编译保证；此处再对常量集做运行时锁定）。
  */
 
@@ -28,6 +28,8 @@ function exhaustiveDispatch(event: OrchestratorEvent): string {
     case 'tool':
       return event.data.callId;
     case 'tool_confirmation_required':
+      return event.data.callId;
+    case 'search_local_start_required':
       return event.data.callId;
     case 'done':
       return event.data.content;
@@ -52,8 +54,8 @@ const _taskExcluded: TaskIsNotOrchestrator = true;
 void _taskExcluded;
 
 describe('编排器事件契约', () => {
-  it('ORCHESTRATOR_EVENT_NAMES 恰好 8 个且全部注册在 SSE_EVENT', () => {
-    expect(ORCHESTRATOR_EVENT_NAMES).toHaveLength(8);
+  it('ORCHESTRATOR_EVENT_NAMES 恰好 9 个且全部注册在 SSE_EVENT', () => {
+    expect(ORCHESTRATOR_EVENT_NAMES).toHaveLength(9);
     for (const name of ORCHESTRATOR_EVENT_NAMES) {
       expect(Object.values(SSE_EVENT)).toContain(name);
     }

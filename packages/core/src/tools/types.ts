@@ -66,6 +66,8 @@ export interface ToolContext {
   }) => void;
   /** v2.17：联网搜索回调（未配置时 web_search 返回可执行错误） */
   searchWeb?: (input: WebSearchInput, signal?: AbortSignal) => Promise<WebSearchResponse>;
+  /** v4.16：本机 SearXNG 端点（仅在 provider=searxng 且指向本机时下发） */
+  localSearchEndpoint?: string;
   /** v2.17：当前助手 id（能力安装后回写白名单用） */
   assistantId?: string;
   /** v2.17：能力目录检索（未提供时 capability_search 明确返回不可用） */
@@ -118,6 +120,8 @@ export interface ToolResult {
    * 目前仅 fetch_webpage 的网络/超时/过大类失败使用。
    */
   degraded?: boolean;
+  /** v4.16：本机搜索服务未运行，编排器可询问用户一键启动后重试 */
+  needsLocalSearchStart?: { endpoint: string };
 }
 
 /** 工具统一接口（v0.6：内置与 MCP 工具同构；name 为全局限定名） */

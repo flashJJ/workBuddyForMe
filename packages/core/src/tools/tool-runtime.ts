@@ -9,6 +9,7 @@ import { currentTimeTool } from './current-time-tool';
 import { todoWriteTool } from './todo-write-tool';
 import { knowledgeSearchTool } from './knowledge-search-tool';
 import { webSearchTool } from './web/web-search-tool';
+import { localSearchEndpointOf } from './web/local-search';
 import {
   capabilityInstallTool,
   capabilityListTool,
@@ -226,6 +227,9 @@ export function createToolRuntime(deps: ServiceDeps): ToolRuntime {
         ...(conversationId ? { conversationId } : {}),
         ...(deps.agentPolicy ? { policyDomains: deps.agentPolicy().domains } : {}),
         ...(deps.search ? { searchWeb: deps.search.search } : {}),
+        ...(deps.search
+          ? { localSearchEndpoint: localSearchEndpointOf(deps.search.getSettings()) }
+          : {}),
         ...(writeArtifact ? { writeArtifact } : {}),
         ...(catalog
           ? {

@@ -15,6 +15,7 @@ export type OrchestratorEventName =
   | 'memories'
   | 'tool'
   | 'tool_confirmation_required'
+  | 'search_local_start_required'
   | 'done'
   | 'error';
 
@@ -26,6 +27,7 @@ export const ORCHESTRATOR_EVENT_NAMES = [
   'memories',
   'tool',
   'tool_confirmation_required',
+  'search_local_start_required',
   'done',
   'error',
 ] as const satisfies readonly OrchestratorEventName[];

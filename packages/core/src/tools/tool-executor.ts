@@ -41,6 +41,9 @@ export async function executeToolCall(
       ...(result.substeps?.length ? { substeps: result.substeps } : {}),
       ...(result.artifacts?.length ? { artifacts: result.artifacts } : {}),
       ...(result.evidence ? { evidence: result.evidence } : {}),
+      ...(result.needsLocalSearchStart
+        ? { needsLocalSearchStart: result.needsLocalSearchStart }
+        : {}),
     };
   } catch (error) {
     const durationMs = Date.now() - start;

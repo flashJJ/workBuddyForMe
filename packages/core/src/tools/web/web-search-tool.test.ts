@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { SearchError } from '@wbfm/ai';
 import type { ToolContext } from '../types';
 import { webSearchTool } from './web-search-tool';
 
@@ -58,5 +59,45 @@ describe('web_search tool', () => {
     expect(result.ok).toBe(false);
     expect(result.summary).toBe('mock · 0 条');
     expect(result.evidence?.limitations).toEqual(['未检索到相关结果']);
+  });
+
+  it('本机 SearXNG 不可达：标记可一键启动', async () => {
+    const result = await webSearchTool.run(
+      { query: '时事' },
+      {
+        ...CTX,
+        localSearchEndpoint: 'http://127.0.0.1:8080',
+        searchWeb: vi.fn().mockRejectedValue(new SearchError('unreachable', '无法连接搜索服务')),
+      } as ToolContext,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.summary).toBe('本地搜索未运行');
+    expect(result.output).toContain('本地搜索服务（SearXNG）未运行');
+    expect(result.needsLocalSearchStart).toEqual({ endpoint: 'http://127.0.0.1:8080' });
+  });
+
+  it('非本机端点不可达：不标记一键启动', async () => {
+    const result = await webSearchTool.run(
+      { query: '时事' },
+      {
+        ...CTX,
+        localSearchEndpoint: undefined,
+        searchWeb: vi.fn().mockRejectedValue(new SearchError('unreachable', '无法连接搜索服务')),
+      } as ToolContext,
+    );
+    expect(result.needsLocalSearchStart).toBeUndefined();
+    expect(result.summary).toBe('搜索失败');
+  });
+
+  it('未配置搜索：不标记一键启动', async () => {
+    const result = await webSearchTool.run(
+      { query: '时事' },
+      {
+        ...CTX,
+        localSearchEndpoint: 'http://localhost:8080',
+        searchWeb: vi.fn().mockRejectedValue(new SearchError('not_configured', '未启用')),
+      } as ToolContext,
+    );
+    expect(result.needsLocalSearchStart).toBeUndefined();
   });
 });

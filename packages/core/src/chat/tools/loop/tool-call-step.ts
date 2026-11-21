@@ -52,6 +52,8 @@ export interface ToolStepContext {
   fetchFailures: Map<string, number>;
   degradedFetchUrls: string[];
   budget: ToolTurnBudget;
+  /** v4.16：本轮是否已提示并启动过本地搜索（多个并发搜索只弹一次） */
+  localSearchStarted: boolean;
 }
 
 /** 已通过门控、可以执行的调用（immediate 存在时无需真正执行） */

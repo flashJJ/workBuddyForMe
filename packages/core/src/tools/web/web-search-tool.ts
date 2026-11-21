@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SearchError } from '@wbfm/ai';
 import type { Tool, ToolResult } from '../types';
 import { ToolArgError } from '../types';
 
@@ -117,16 +118,25 @@ export const webSearchTool: Tool = {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      // v4.16：本机 SearXNG 不可达 → 标记可一键启动，由编排器询问并重试
+      const localEndpoint =
+        error instanceof SearchError && error.reason === 'unreachable'
+          ? ctx.localSearchEndpoint
+          : undefined;
+      const output = localEndpoint
+        ? `本地搜索服务（SearXNG）未运行：${localEndpoint}。可一键启动后继续搜索。`
+        : `搜索失败：${message}`;
       return {
         ok: false,
-        output: `搜索失败：${message}`,
-        summary: '搜索失败',
+        output,
+        summary: localEndpoint ? '本地搜索未运行' : '搜索失败',
         evidence: {
           source: '联网搜索',
           coverage: '0 条结果',
-          limitations: [`搜索失败：${message}`],
+          limitations: [localEndpoint ? output : `搜索失败：${message}`],
           capturedAt: new Date().toISOString(),
         },
+        ...(localEndpoint ? { needsLocalSearchStart: { endpoint: localEndpoint } } : {}),
       };
     }
   },

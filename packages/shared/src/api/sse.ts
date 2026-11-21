@@ -44,6 +44,8 @@ export const SSE_EVENT = {
   TOOL: 'tool',
   /** v0.6 M2：write/danger 工具执行前需用户授权（HITL） */
   TOOL_CONFIRMATION_REQUIRED: 'tool_confirmation_required',
+  /** v4.16：本地 SearXNG 未运行，询问是否一键启动后继续搜索（决策回 POST /api/tools/confirm） */
+  SEARCH_LOCAL_START_REQUIRED: 'search_local_start_required',
   /** v0.7 M3：任务 Agent 循环（运行/步骤时间线） */
   TASK: 'task',
   /** v0.8 Flow Studio：工作流运行/节点时间线 */
@@ -132,6 +134,15 @@ export type SsePayloadMap = {
       effects: string[];
       toolNames: string[];
     };
+  };
+  /**
+   * v4.16：本地搜索未运行。客户端确认启动（或手动启动）后
+   * POST /api/tools/confirm（callId + tool=web_search + action）恢复本次调用。
+   */
+  search_local_start_required: {
+    callId: string;
+    endpoint: string;
+    query: string;
   };
   /** v0.7 M3：任务运行/步骤事件 */
   task: TaskEventPayload;

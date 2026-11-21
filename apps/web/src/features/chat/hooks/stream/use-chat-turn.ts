@@ -6,7 +6,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { Message } from '@wbfm/shared/types';
 import type { RecalledMemoryPayload } from '@wbfm/shared/api';
 import type { useChatStream } from '@/lib/hooks/chat';
-import type { ChatSessionVoice, PendingToolConfirmation } from '../../types/chat-session.types';
+import type { ChatSessionVoice, PendingLocalSearchStart, PendingToolConfirmation } from '../../types/chat-session.types';
 import type { useAgentTaskTurn } from '../use-agent-task-turn';
 import type { useChatLiveGraph } from '../use-chat-live-graph';
 import {
@@ -35,6 +35,7 @@ export interface UseChatTurnParams {
   setLive: Dispatch<SetStateAction<Message[] | null>>;
   setRecalledMemories: Dispatch<SetStateAction<RecalledMemoryPayload[]>>;
   setPendingConfirmation: Dispatch<SetStateAction<PendingToolConfirmation | null>>;
+  setPendingLocalSearch: Dispatch<SetStateAction<PendingLocalSearchStart | null>>;
   onConversationCreated: (id: string) => void;
   queryClient: QueryClient;
   streamSend: ReturnType<typeof useChatStream>['send'];
@@ -60,6 +61,7 @@ export function useChatTurn(params: UseChatTurnParams) {
     setLive,
     setRecalledMemories,
     setPendingConfirmation,
+    setPendingLocalSearch,
     onConversationCreated,
     queryClient,
     streamSend,
@@ -86,6 +88,7 @@ export function useChatTurn(params: UseChatTurnParams) {
       startTiming();
       setRecalledMemories([]);
       setPendingConfirmation(null);
+      setPendingLocalSearch(null);
       const assistantMessage: Message = {
         ...pendingMessage('assistant', ''),
         status: 'streaming',
@@ -112,6 +115,7 @@ export function useChatTurn(params: UseChatTurnParams) {
         setLive,
         setRecalledMemories,
         setPendingConfirmation,
+        setPendingLocalSearch,
         voice,
         queryClient,
       });
@@ -177,6 +181,7 @@ export function useChatTurn(params: UseChatTurnParams) {
     settleTiming();
     voice?.cancelPlayback?.();
     setPendingConfirmation(null);
+    setPendingLocalSearch(null);
     setLive((prev) => markStreamingAssistantStopped(prev));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamStop, taskTurn, voice, flushPendingDelta, settleTiming]);

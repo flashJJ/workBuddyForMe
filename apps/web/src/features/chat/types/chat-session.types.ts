@@ -18,6 +18,13 @@ export interface PendingToolConfirmation {
   taskScope?: string;
 }
 
+/** v4.16：本地搜索未运行时，询问是否一键启动（决策回 POST /api/tools/confirm） */
+export interface PendingLocalSearchStart {
+  callId: string;
+  endpoint: string;
+  query: string;
+}
+
 /** v1.0：语音接线（朗读开关 + 音频帧/状态回调），由对话页注入播放队列 */
 export interface ChatSessionVoice {
   ttsEnabled: boolean;
@@ -44,6 +51,16 @@ export interface ChatSession {
   recalledMemories: RecalledMemoryPayload[];
   /** v0.6 M2：当前待确认的工具调用（null=无弹窗） */
   pendingConfirmation: PendingToolConfirmation | null;
+  /** v4.16：本地搜索启动询问（null=无弹窗） */
+  localSearchStart: {
+    pending: PendingLocalSearchStart | null;
+    running: boolean;
+    /** 桌面端才可自动拉起本机容器 */
+    canAutoStart: boolean;
+    /** 返回 false 时 error 为可展示文案（部署失败）或 reason=confirm_timeout */
+    start: () => Promise<{ ok: boolean; error?: string; reason?: 'confirm_timeout' }>;
+    cancel: () => Promise<void>;
+  };
   /** v1.4 任务模式：消息内协作泳道卡（live only） */
   agentCards: Record<string, AgentCardEntry>;
   send: (content: string, attachmentIds?: string[]) => void;

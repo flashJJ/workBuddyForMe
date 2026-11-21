@@ -18,6 +18,7 @@ import { ChatHeader } from './chat-header';
 import { MessageList } from '../message/message-list';
 import { Composer } from '../composer/composer';
 import { ToolConfirmDialog } from '../overlay/tool-confirm-dialog';
+import { LocalSearchStartHost } from '../overlay/local-search/local-search-start-host';
 import { useChatVoiceCompanion } from '../hooks/use-chat-voice-companion';
 import { useConversationActions } from './use-conversation-actions';
 import { ChatVoiceControls } from '../composer/chat-voice-controls';
@@ -200,6 +201,7 @@ export function ChatPage({
         }}
         onSubmit={submitToolConfirm}
       />
+      <LocalSearchStartHost state={session.localSearchStart} />
       <div className="flex min-w-0 flex-1 flex-col">
         <ChatHeader
           assistants={assistants ?? []}

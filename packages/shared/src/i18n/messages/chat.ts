@@ -1,4 +1,6 @@
 /** chat 命名空间：对话框架（不含模型生成内容）；M4 随抽离扩充 */
+import { enLocalSearchStart, zhLocalSearchStart } from './chat-local-search';
+
 export const zhChat = {
   newConversationTitle: '新对话',
   /** 助手名为空时的兜底称呼 */
@@ -102,7 +104,7 @@ export const zhChat = {
     allowTaskTitle: '本对话内该工具后续调用不再询问',
     taskUnavailableTitle: '对话建立后可用',
   },
-  proactive: {
+  localSearchStart: zhLocalSearchStart,  proactive: {
     label: '{name} 主动搭话',
     dismissAria: '收起主动搭话',
   },
@@ -252,6 +254,7 @@ export const enChat = {
     allowTaskTitle: 'Do not ask again for this tool in this conversation',
     taskUnavailableTitle: 'Available once the conversation is created',
   },
+  localSearchStart: enLocalSearchStart,
   proactive: {
     label: '{name} reached out proactively',
     dismissAria: 'Dismiss proactive message',

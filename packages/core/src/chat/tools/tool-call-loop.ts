@@ -13,6 +13,7 @@ import {
   type ReadyToolCall,
   type ToolStepContext,
 } from './loop/tool-call-step';
+import { maybeStartLocalSearch } from './loop/local-search-start';
 
 export type { ToolCallLoopOutcome, ToolCallLoopParams } from './tool-call-loop-types';
 
@@ -67,7 +68,16 @@ async function* runSingleCall(
     yield { event: 'tool', data: { phase: 'substep', callId: prepared.call.id, substeps: item.value } };
   }
   const result = await execution;
-  return yield* finalizeToolCall({ ...ctx, prepared, result, substeps, citations });
+  const finalResult = yield* maybeStartLocalSearch({
+    ctx,
+    prepared,
+    result,
+    alreadyStarted: () => ctx.localSearchStarted,
+    markStarted: () => {
+      ctx.localSearchStarted = true;
+    },
+  });
+  return yield* finalizeToolCall({ ...ctx, prepared, result: finalResult, substeps, citations });
 }
 
 /** 同轮联网批量：逐个门控后并发执行，再按原顺序收尾回灌（模型看到的顺序不变） */
@@ -90,10 +100,19 @@ async function* runParallelBatch(
     ),
   );
   for (let index = 0; index < ready.length; index += 1) {
+    const finalResult = yield* maybeStartLocalSearch({
+      ctx,
+      prepared: ready[index]!,
+      result: results[index]!,
+      alreadyStarted: () => ctx.localSearchStarted,
+      markStarted: () => {
+        ctx.localSearchStarted = true;
+      },
+    });
     const outcome = yield* finalizeToolCall({
       ...ctx,
       prepared: ready[index]!,
-      result: results[index]!,
+      result: finalResult,
       substeps: [],
       citations,
     });
@@ -130,6 +149,7 @@ export async function* runToolCallLoop(
     fetchFailures: params.fetchFailures ?? new Map<string, number>(),
     degradedFetchUrls: [],
     budget,
+    localSearchStarted: false,
     ...(params.signal ? { signal: params.signal } : {}),
     ...(params.taskScope ? { taskScope: params.taskScope } : {}),
     ...(params.approvalContext ? { approvalContext: params.approvalContext } : {}),

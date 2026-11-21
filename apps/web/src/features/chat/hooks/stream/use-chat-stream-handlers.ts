@@ -11,7 +11,7 @@ import {
   applyToolTraceStart,
 } from '../../base/live-message-utils';
 import { applyMemoryNotices, completedPatch, confirmationFromPayload } from '../use-chat-session-helpers';
-import type { ChatSessionVoice, PendingToolConfirmation } from '../../types/chat-session.types';
+import type { ChatSessionVoice, PendingLocalSearchStart, PendingToolConfirmation } from '../../types/chat-session.types';
 import type { useChatLiveGraph } from '../use-chat-live-graph';
 
 export interface StreamHandlerContext {
@@ -27,6 +27,7 @@ export interface StreamHandlerContext {
   setLive: Dispatch<SetStateAction<Message[] | null>>;
   setRecalledMemories: Dispatch<SetStateAction<RecalledMemoryPayload[]>>;
   setPendingConfirmation: Dispatch<SetStateAction<PendingToolConfirmation | null>>;
+  setPendingLocalSearch: Dispatch<SetStateAction<PendingLocalSearchStart | null>>;
   voice?: ChatSessionVoice;
   queryClient: QueryClient;
 }
@@ -49,6 +50,7 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
     setLive,
     setRecalledMemories,
     setPendingConfirmation,
+    setPendingLocalSearch,
     voice,
     queryClient,
   } = ctx;
@@ -88,6 +90,10 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
       // 编排器已挂起等待决策；弹窗由页面渲染
       setPendingConfirmation(confirmationFromPayload(data));
     },
+    onSearchLocalStartRequired: (data: SsePayloadMap['search_local_start_required']) => {
+      // 编排器已挂起本次搜索，等待启动/取消决策
+      setPendingLocalSearch(data);
+    },
     onVoiceAudio: (data: SsePayloadMap['voice_audio']) => voice?.onAudio?.(data),
     onVoiceState: (data: SsePayloadMap['voice_state']) => voice?.onVoiceState?.(data),
     onDone: (data: SsePayloadMap['done']) => {
@@ -95,6 +101,7 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
       flushPendingDelta();
       settleTiming();
       setPendingConfirmation(null);
+      setPendingLocalSearch(null);
       patchLastAssistant(completedPatch(data));
       setLive((prev) => applyMemoryNotices(prev, data.memoryNotices));
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
@@ -107,6 +114,7 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
       flushPendingDelta();
       settleTiming();
       setPendingConfirmation(null);
+      setPendingLocalSearch(null);
       patchLastAssistant({ status: 'error', errorCode: data.code, errorMessage: data.message });
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
       void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'messages' });
