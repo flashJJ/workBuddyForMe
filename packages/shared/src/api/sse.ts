@@ -15,6 +15,7 @@ import type {
   SubtaskSpec,
 } from '../schemas/agent/agent';
 import type { SceneContextSnapshotPayload } from '../schemas/chat/context-intelligence';
+import type { ModelFailureCode } from '../errors/model-failure';
 
 /**
  * v0.5：命中的长期记忆轻提示载荷（回答上方「参考了 X 条记忆」）。
@@ -75,6 +76,10 @@ export const SSE_EVENT = {
   MEETING_STATUS: 'meeting_status',
   /** v2.7：工作信号快照（桌宠/审批页独立订阅） */
   WORK_SIGNAL: 'work_signal',
+  /** v4.18：首字前自动切换备用模型（可见提示，不静默降级） */
+  MODEL_SWITCHED: 'model_switched',
+  /** v4.18：会话 token 预算达到 80% 提示 */
+  BUDGET_WARNING: 'budget_warning',
   DONE: 'done',
   ERROR: 'error',
 } as const;
@@ -239,6 +244,19 @@ export type SsePayloadMap = {
     emotion?: EmotionSignal;
     /** v2.28：本轮实时约束写入提示（旧客户端忽略；无命中不附带） */
     memoryNotices?: MemoryNotice[];
+  };
+  /** v4.18：会话 token 预算达到 80% 提示（100% 走 error TOKEN_BUDGET_EXCEEDED） */
+  budget_warning: { usedTokens: number; limitTokens: number; ratio: number };
+  /** v4.18：首字前自动切换备用模型；含展示名，正文不进入事件 */
+  model_switched: {
+    conversationId: string;
+    messageId: string;
+    fromModelId: string;
+    toModelId: string;
+    fromModelName: string;
+    toModelName: string;
+    reason: ModelFailureCode;
+    attempt: number;
   };
   /** v2.7：工作信号快照（桌宠/审批页独立订阅） */
   work_signal: WorkSignalSnapshot;

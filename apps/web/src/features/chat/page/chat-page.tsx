@@ -13,11 +13,12 @@ import { useAllModels, useSettings } from '@/lib/hooks/provider';
 import { ConversationRenameDialog } from '../sidebar/conversation-rename-dialog';
 import { ConversationShareDialog } from '../sidebar/conversation-share-dialog';
 import { ConversationSummaryDialog } from '../sidebar/conversation-summary-dialog';
+import { ConversationBudgetHost } from '../sidebar/conversation-budget-host';
 import { ConversationSidebar } from '../sidebar/conversation-sidebar';
 import { ChatHeader } from './chat-header';
 import { MessageList } from '../message/message-list';
 import { Composer } from '../composer/composer';
-import { ToolConfirmDialog } from '../overlay/tool-confirm-dialog';
+import { ToolConfirmHost } from '../overlay/tool-confirm';
 import { LocalSearchStartHost } from '../overlay/local-search/local-search-start-host';
 import { useChatVoiceCompanion } from '../hooks/use-chat-voice-companion';
 import { useConversationActions } from './use-conversation-actions';
@@ -29,6 +30,7 @@ import { useChatEvents } from '../hooks/use-chat-events';
 import { useFirstAsk } from '../hooks/use-first-ask';
 import { ChatSetupGuide } from './chat-setup-guide';
 import { RecalledMemoriesBar } from '../overlay/recalled-memories-bar';
+import { BudgetWarningBar } from '../overlay/budget';
 import { useChatDeepLink } from '../hooks/use-chat-deep-link';
 import { useTtfv } from './use-ttfv';
 import { ChatStageBar, useChatModelView } from '../stage';
@@ -59,7 +61,7 @@ export function ChatPage({
   const [renaming, setRenaming] = React.useState<Conversation | null>(null);
   const [shareOpen, setShareOpen] = React.useState(false);
   const [summaryOpen, setSummaryOpen] = React.useState(false);
-  const [confirmSubmitting, setConfirmSubmitting] = React.useState(false);
+  const [budgetOpen, setBudgetOpen] = React.useState(false);
   // v1.4：任务模式会话级开关（默认关，不跨会话/助手持久化；切换即复位）
   const [taskMode, setTaskMode] = React.useState(false);
   const [draft, setDraft] = React.useState('');
@@ -146,21 +148,7 @@ export function ChatPage({
     setConversationId(null),
   );
 
-  /** HITL 工具确认：提交失败（超时已被服务端自动拒绝等）提示并保持弹窗 */
-  const submitToolConfirm = async (action: 'allow' | 'deny', remember?: 'assistant' | 'all' | 'task') => {
-    if (confirmSubmitting) return false;
-    setConfirmSubmitting(true);
-    try {
-      const ok = await session.confirmTool(action, remember);
-      if (!ok) {
-        toast.error(t('toast.toolConfirmSubmitFailed'));
-        return false;
-      }
-      return true;
-    } finally {
-      setConfirmSubmitting(false);
-    }
-  };
+  /** HITL 工具确认与预算弹窗由独立容器承接，页面只保留开关状态 */
 
   if (assistantsLoading) return <Spinner />;
 
@@ -188,21 +176,12 @@ export function ChatPage({
         onOpenChange={setShareOpen}
       />
       <ConversationSummaryDialog conversation={currentConversation} open={summaryOpen} onOpenChange={setSummaryOpen} />
-      <ToolConfirmDialog
-        open={Boolean(session.pendingConfirmation)}
-        tool={session.pendingConfirmation?.tool ?? ''}
-        permission={session.pendingConfirmation?.permission ?? 'write'}
-        argsSummary={session.pendingConfirmation?.argsSummary ?? ''}
-        details={session.pendingConfirmation?.details}
-        submitting={confirmSubmitting}
-        taskScopeAvailable={Boolean(conversationId || session.pendingConfirmation?.taskScope)}
-        origin={session.pendingConfirmation?.taskScope ? 'agent' : undefined}
-        onOpenChange={(open) => {
-          // 不允许点遮罩/ESC 直接关闭而不做决策——必须显式拒绝
-          if (!open && !confirmSubmitting) void submitToolConfirm('deny');
-        }}
-        onSubmit={submitToolConfirm}
+      <ConversationBudgetHost
+        conversation={currentConversation}
+        open={budgetOpen}
+        onOpenChange={setBudgetOpen}
       />
+      <ToolConfirmHost session={session} conversationId={conversationId} />
       <LocalSearchStartHost state={session.localSearchStart} />
       <div className="flex min-w-0 flex-1 flex-col">
         <ChatHeader
@@ -213,6 +192,7 @@ export function ChatPage({
           onAssistantChange={switchAssistant}
           onShowSummary={() => setSummaryOpen(true)}
           onShare={() => setShareOpen(true)}
+          onShowBudget={() => setBudgetOpen(true)}
         />
 
         {hasChatModel ? (
@@ -229,6 +209,13 @@ export function ChatPage({
               />
             )}
             <RecalledMemoriesBar memories={session.recalledMemories} />
+            {session.budgetWarning && (
+              <BudgetWarningBar
+                warning={session.budgetWarning}
+                onAdjust={() => setBudgetOpen(true)}
+                onDismiss={session.dismissBudgetWarning}
+              />
+            )}
             <MessageList
               messages={session.messages}
               conversationId={conversationId}
@@ -236,6 +223,13 @@ export function ChatPage({
               streaming={session.streaming}
               agentCards={session.agentCards}
               onRetry={session.retry}
+              onRetryWithFallback={
+                currentAssistant?.fallbackModelId ? session.retryWithFallback : undefined
+              }
+              onRestoreInput={(text) => {
+                setDraft(text);
+                setComposerFocus((value) => value + 1);
+              }}
               onResend={session.send}
               onFeedback={session.applyFeedback}
               streamTiming={session.streamTiming}

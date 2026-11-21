@@ -17,6 +17,9 @@ export interface ChatStreamHandlers {
   onToolConfirmationRequired?: (data: SsePayloadMap['tool_confirmation_required']) => void;
   /** v4.16：本地搜索未运行，询问是否一键启动后继续 */
   onSearchLocalStartRequired?: (data: SsePayloadMap['search_local_start_required']) => void;
+  /** v4.18：自动切换备用模型与预算提示 */
+  onModelSwitched?: (data: SsePayloadMap['model_switched']) => void;
+  onBudgetWarning?: (data: SsePayloadMap['budget_warning']) => void;
   /** v1.0：语音朗读帧（base64 wav，按序）与语音状态 */
   onVoiceAudio?: (data: SsePayloadMap['voice_audio']) => void;
   onVoiceState?: (data: SsePayloadMap['voice_state']) => void;
@@ -127,6 +130,12 @@ export function useChatStream() {
                 break;
               case 'search_local_start_required':
                 handlers.onSearchLocalStartRequired?.(event.data);
+                break;
+              case 'model_switched':
+                handlers.onModelSwitched?.(event.data);
+                break;
+              case 'budget_warning':
+                handlers.onBudgetWarning?.(event.data);
                 break;
               case 'voice_audio':
                 handlers.onVoiceAudio?.(event.data);

@@ -47,6 +47,11 @@ export function useChatSession(
   const [recalledMemories, setRecalledMemories] = React.useState<RecalledMemoryPayload[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = React.useState<PendingToolConfirmation | null>(null);
   const [pendingLocalSearch, setPendingLocalSearch] = React.useState<PendingLocalSearchStart | null>(null);
+  const [budgetWarning, setBudgetWarning] = React.useState<{
+    usedTokens: number;
+    limitTokens: number;
+    ratio: number;
+  } | null>(null);
   const liveGraph = useChatLiveGraph(conversationId);
 
   // v2.4 M5 / P1-4：delta 按 rAF 合帧 + 本轮计时（协作者外迁，行为不变）
@@ -112,13 +117,14 @@ export function useChatSession(
     setRecalledMemories([]);
     setPendingConfirmation(null);
     setPendingLocalSearch(null);
+    setBudgetWarning(null);
     voice?.cancelPlayback?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voice, taskTurn, resetStream]);
 
   const baseMessages = live ?? historyQuery.data ?? [];
 
-  const { send, retry, stop } = useChatTurn({
+  const { send, retry, retryWithFallback, stop } = useChatTurn({
     assistantId,
     conversationId,
     historyMessages: historyQuery.data ?? [],
@@ -127,6 +133,7 @@ export function useChatSession(
     setRecalledMemories,
     setPendingConfirmation,
     setPendingLocalSearch,
+    setBudgetWarning,
     onConversationCreated,
     queryClient,
     streamSend,
@@ -177,6 +184,8 @@ export function useChatSession(
     streaming,
     streamTiming,
     recalledMemories,
+    budgetWarning,
+    dismissBudgetWarning: () => setBudgetWarning(null),
     pendingConfirmation,
     localSearchStart: {
       pending: pendingLocalSearch,
@@ -189,6 +198,7 @@ export function useChatSession(
     send,
     sendTask,
     retry,
+    retryWithFallback,
     stop,
     reset,
     applyFeedback,

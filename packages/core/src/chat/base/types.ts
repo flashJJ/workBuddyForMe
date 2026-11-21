@@ -16,6 +16,8 @@ export type OrchestratorEventName =
   | 'tool'
   | 'tool_confirmation_required'
   | 'search_local_start_required'
+  | 'model_switched'
+  | 'budget_warning'
   | 'done'
   | 'error';
 
@@ -28,6 +30,8 @@ export const ORCHESTRATOR_EVENT_NAMES = [
   'tool',
   'tool_confirmation_required',
   'search_local_start_required',
+  'model_switched',
+  'budget_warning',
   'done',
   'error',
 ] as const satisfies readonly OrchestratorEventName[];
@@ -48,6 +52,8 @@ export interface StreamChatInput {
   retrieve?: RagRetriever;
   /** v0.2：重新生成上一条用户消息（conversationId 必填，content 被忽略） */
   regenerate?: boolean;
+  /** v4.18：强制使用助手备用模型（错误态手动切换） */
+  forceFallback?: boolean;
 }
 
 /** 注入系统提示词前的轻量 RAG 片段（仅保留装配资料块需要的字段） */

@@ -4,6 +4,7 @@ import {
   type ModelSwitchEvent,
 } from '@wbfm/shared/errors';
 import { classifyModelFailure, type ChatMessage, type ToolDefinition, type TraceHandle } from '@wbfm/ai';
+import type { SsePayloadMap } from '@wbfm/shared/api';
 import type { Assistant } from '@wbfm/shared/types';
 import type { OrchestratorEvent } from '../../base/types';
 import type { ResolvedChatTarget } from '../../context/model-resolver';
@@ -28,6 +29,12 @@ export interface ModelFallbackTurnParams {
   /** 进入本轮前是否已有正文（工具轮之间为空；跨轮累计由调用方传入） */
   hasOutput: boolean;
   onSwitch?: (event: ModelSwitchEvent) => void;
+  /** 可选的 SSE 可见提示（由编排器补会话/消息 id 与展示名） */
+  buildSwitchNotice?: (
+    event: ModelSwitchEvent,
+    from: ResolvedChatTarget,
+    to: ResolvedChatTarget,
+  ) => SsePayloadMap['model_switched'];
 }
 
 export interface ModelFallbackTurnResult extends ProviderTurn {
@@ -36,8 +43,27 @@ export interface ModelFallbackTurnResult extends ProviderTurn {
   switches: ModelSwitchEvent[];
 }
 
-export async function* runProviderTurnWithModelFallback(
-  params: ModelFallbackTurnParams,
+/** v4.18：SSE 可见提示（补会话/消息 id 与展示名，不含正文） */
+export function buildModelSwitchNotice(input: {
+  event: ModelSwitchEvent;
+  from: ResolvedChatTarget;
+  to: ResolvedChatTarget;
+  conversationId: string;
+  messageId: string;
+}): SsePayloadMap['model_switched'] {
+  return {
+    conversationId: input.conversationId,
+    messageId: input.messageId,
+    fromModelId: input.event.fromModelId,
+    toModelId: input.event.toModelId,
+    fromModelName: input.from.model.displayName,
+    toModelName: input.to.model.displayName,
+    reason: input.event.reason,
+    attempt: input.event.attempt,
+  };
+}
+
+export async function* runProviderTurnWithModelFallback(  params: ModelFallbackTurnParams,
 ): AsyncGenerator<OrchestratorEvent, ModelFallbackTurnResult> {
   let active = params.target;
   const switches: ModelSwitchEvent[] = [];
@@ -92,6 +118,8 @@ export async function* runProviderTurnWithModelFallback(
       };
       switches.push(event);
       params.onSwitch?.(event);
+      const notice = params.buildSwitchNotice?.(event, active, fallback);
+      if (notice) yield { event: 'model_switched', data: notice };
       active = fallback;
     }
   }

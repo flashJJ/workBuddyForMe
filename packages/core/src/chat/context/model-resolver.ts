@@ -84,3 +84,14 @@ export function resolveFallbackChatTarget(
     return null;
   }
 }
+
+/** v4.18：错误态「换备用模型」——强制解析；未配置时给出可读错误 */
+export function resolveForcedFallbackTarget(
+  deps: ServiceDeps,
+  assistant: Assistant,
+  primary: ResolvedChatTarget['model'],
+): ResolvedChatTarget {
+  const forced = resolveFallbackChatTarget(deps, assistant, primary);
+  if (!forced) throw ApiError.validation('未配置可用的备用模型，请先在助手设置中选择');
+  return forced;
+}

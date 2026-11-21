@@ -11,6 +11,15 @@ import type { AgentCardEntry } from '@/features/agent-collab';
 import type { StreamTiming } from '../types/chat-session.types';
 import { MessageItem } from './message-item';
 
+/** v4.18：错误态「保留输入」取最近一条用户消息（纯函数） */
+function previousUserContent(messages: Message[], index: number): string | null {
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const message = messages[i]!;
+    if (message.role === 'user' && message.content.trim()) return message.content;
+  }
+  return null;
+}
+
 interface Props {
   messages: Message[];
   /** v2.21：消息底部「从此分支」入口需要父会话 id */
@@ -21,6 +30,10 @@ interface Props {
   agentCards?: Record<string, AgentCardEntry>;
   /** 重新生成最后一条助手回复 */
   onRetry: () => void;
+  /** v4.18：换备用模型重试最后一条助手回复 */
+  onRetryWithFallback?: () => void;
+  /** v4.18：把本轮用户输入恢复到输入框 */
+  onRestoreInput?: (content: string) => void;
   /** 用户消息编辑后重新发送 */
   onResend: (content: string) => void;
   /** v0.5 P1-2：消息反馈同步本地视图 */
@@ -35,13 +48,14 @@ interface Props {
   onUsePrompt?: (text: string) => void;
 }
 
-export function MessageList({
-  messages,
+export function MessageList({ messages,
   conversationId,
   assistantName,
   streaming,
   agentCards,
   onRetry,
+  onRetryWithFallback,
+  onRestoreInput,
   onResend,
   onFeedback,
   streamTiming,
@@ -152,21 +166,32 @@ export function MessageList({
         data-testid="message-list"
       >
         <div className="mx-auto w-full max-w-3xl py-2">
-          {messages.map((message, index) => (
-            <MessageItem
-              key={message.id || `pending-${index}`}
-              message={message}
-              conversationId={conversationId}
-              highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
-              assistantName={assistantName}
-              disabled={streaming}
-              agentCard={agentCards?.[message.id]}
-              onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
-              onResend={message.role === 'user' && !streaming ? onResend : undefined}
-              onFeedback={onFeedback}
-              streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
-            />
-          ))}
+          {messages.map((message, index) => {
+            const restore = previousUserContent(messages, index);
+            return (
+              <MessageItem
+                key={message.id || `pending-${index}`}
+                message={message}
+                conversationId={conversationId}
+                highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
+                assistantName={assistantName}
+                disabled={streaming}
+                agentCard={agentCards?.[message.id]}
+                onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
+                onRetryWithFallback={
+                  index === lastAssistantIndex && !streaming ? onRetryWithFallback : undefined
+                }
+                onRestoreInput={
+                  message.status === 'error' && restore && onRestoreInput
+                    ? () => onRestoreInput(restore)
+                    : undefined
+                }
+                onResend={message.role === 'user' && !streaming ? onResend : undefined}
+                onFeedback={onFeedback}
+                streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
+              />
+            );
+          })}
         </div>
         <div ref={bottomRef} />
       </div>

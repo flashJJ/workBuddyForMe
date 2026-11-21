@@ -7,7 +7,7 @@ import type { RawSseEvent } from './sse-reader';
  * 不再手写 {event,data} 联合。
  */
 
-/** /api/chat/stream 对话流：编排器 8 事件 + 语音桥追加 2 事件 */
+/** /api/chat/stream 对话流：编排器事件 + 语音桥追加 2 事件 */
 export type WebChatEventName = OrchestratorEventName | 'voice_audio' | 'voice_state';
 export type WebChatSseEvent = SseEvent<WebChatEventName>;
 
@@ -45,6 +45,8 @@ const CHAT_EVENT_NAMES = [
   SSE_EVENT.TOOL,
   SSE_EVENT.TOOL_CONFIRMATION_REQUIRED,
   SSE_EVENT.SEARCH_LOCAL_START_REQUIRED,
+  SSE_EVENT.MODEL_SWITCHED,
+  SSE_EVENT.BUDGET_WARNING,
   SSE_EVENT.VOICE_AUDIO,
   SSE_EVENT.VOICE_STATE,
   SSE_EVENT.DONE,

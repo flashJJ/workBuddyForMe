@@ -36,6 +36,7 @@ export interface UseChatTurnParams {
   setRecalledMemories: Dispatch<SetStateAction<RecalledMemoryPayload[]>>;
   setPendingConfirmation: Dispatch<SetStateAction<PendingToolConfirmation | null>>;
   setPendingLocalSearch: Dispatch<SetStateAction<PendingLocalSearchStart | null>>;
+  setBudgetWarning: Dispatch<SetStateAction<{ usedTokens: number; limitTokens: number; ratio: number } | null>>;
   onConversationCreated: (id: string) => void;
   queryClient: QueryClient;
   streamSend: ReturnType<typeof useChatStream>['send'];
@@ -62,6 +63,7 @@ export function useChatTurn(params: UseChatTurnParams) {
     setRecalledMemories,
     setPendingConfirmation,
     setPendingLocalSearch,
+    setBudgetWarning,
     onConversationCreated,
     queryClient,
     streamSend,
@@ -83,12 +85,13 @@ export function useChatTurn(params: UseChatTurnParams) {
   } = timing;
 
   const runTurn = React.useCallback(
-    (options: { content: string; regenerate: boolean; attachments?: string[] }) => {
-      const { content, regenerate, attachments = [] } = options;
+    (options: { content: string; regenerate: boolean; attachments?: string[]; forceFallback?: boolean }) => {
+      const { content, regenerate, attachments = [], forceFallback = false } = options;
       startTiming();
       setRecalledMemories([]);
       setPendingConfirmation(null);
       setPendingLocalSearch(null);
+      setBudgetWarning(null);
       const assistantMessage: Message = {
         ...pendingMessage('assistant', ''),
         status: 'streaming',
@@ -116,6 +119,7 @@ export function useChatTurn(params: UseChatTurnParams) {
         setRecalledMemories,
         setPendingConfirmation,
         setPendingLocalSearch,
+        setBudgetWarning,
         voice,
         queryClient,
       });
@@ -127,6 +131,7 @@ export function useChatTurn(params: UseChatTurnParams) {
           content,
           attachments,
           regenerate,
+          forceFallback,
           ttsEnabled: voice?.ttsEnabled ?? false,
         }),
         handlers,
@@ -155,22 +160,29 @@ export function useChatTurn(params: UseChatTurnParams) {
     [runTurn],
   );
 
-  const retry = React.useCallback(() => {
-    if (streaming) return;
-    const source = live ?? historyMessages;
-    const lastUser = [...source].reverse().find((m) => m.role === 'user');
-    if (!lastUser || !conversationId) return;
-    const lastAssistant = [...source].reverse().find((m) => m.role === 'assistant');
-    // v1.4 任务模式：用户消息不落 messages 表（仅 live+agent_runs），普通 regenerate
-    // 会报「没有可重新生成的用户消息」；挂着协作卡的失败回复直接重新发起协作
-    if (lastAssistant && taskTurn.agentCards[lastAssistant.id]) {
-      resetStream();
-      void taskTurn.start(lastUser.content, { regenerate: true });
-      return;
-    }
-    runTurn({ content: lastUser.content, regenerate: true });
+  const retryTurn = React.useCallback(
+    (forceFallback: boolean) => {
+      if (streaming) return;
+      const source = live ?? historyMessages;
+      const lastUser = [...source].reverse().find((m) => m.role === 'user');
+      if (!lastUser || !conversationId) return;
+      const lastAssistant = [...source].reverse().find((m) => m.role === 'assistant');
+      // v1.4 任务模式：用户消息不落 messages 表（仅 live+agent_runs），普通 regenerate
+      // 会报「没有可重新生成的用户消息」；挂着协作卡的失败回复直接重新发起协作
+      if (lastAssistant && taskTurn.agentCards[lastAssistant.id]) {
+        resetStream();
+        void taskTurn.start(lastUser.content, { regenerate: true });
+        return;
+      }
+      runTurn({ content: lastUser.content, regenerate: true, forceFallback });
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runTurn, streaming, live, historyMessages, conversationId, taskTurn, resetStream]);
+    [runTurn, streaming, live, historyMessages, conversationId, taskTurn, resetStream],
+  );
+
+  const retry = React.useCallback(() => retryTurn(false), [retryTurn]);
+  /** v4.18：错误态「换备用模型」——强制下一轮使用助手备用模型 */
+  const retryWithFallback = React.useCallback(() => retryTurn(true), [retryTurn]);
 
   /** 主动停止：中断请求，并把本地仍在流式的助手消息标记为已停止 */
   const stop = React.useCallback(() => {
@@ -186,5 +198,5 @@ export function useChatTurn(params: UseChatTurnParams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamStop, taskTurn, voice, flushPendingDelta, settleTiming]);
 
-  return { runTurn, send, retry, stop };
+  return { runTurn, send, retry, retryWithFallback, stop };
 }

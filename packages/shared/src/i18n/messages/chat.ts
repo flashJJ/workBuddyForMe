@@ -1,5 +1,7 @@
 /** chat 命名空间：对话框架（不含模型生成内容）；M4 随抽离扩充 */
 import { enLocalSearchStart, zhLocalSearchStart } from './chat-local-search';
+import { enChatBudget, zhChatBudget } from './chat-budget';
+import { enChatDialogs, zhChatDialogs } from './chat-dialogs';
 
 export const zhChat = {
   newConversationTitle: '新对话',
@@ -64,19 +66,9 @@ export const zhChat = {
     phaseTool: '正在执行工具…',
     phaseOrganizing: '正在整理结果…',
   },
-  rename: {
-    title: '重命名对话',
-    description: '给这个对话起一个更容易识别的标题。',
-    titleLabel: '对话标题',
-    titlePlaceholder: '输入新的对话标题',
-  },
-  share: {
-    title: '分享对话',
-    description: '选择导出格式。导出内容已自动脱敏 API Key、访问令牌与本地路径。',
-    markdownHint: '.md，适合粘贴到文档 / GitHub',
-    htmlLabel: 'HTML 网页',
-    htmlHint: '.html 单文件，浏览器直接打开',
-    generating: '生成中…',
+  ...zhChatDialogs,
+  budget: {
+    ...zhChatBudget,
   },
   summary: {
     title: '早期对话摘要',
@@ -212,20 +204,9 @@ export const enChat = {
     phaseTool: 'Running a tool…',
     phaseOrganizing: 'Organizing results…',
   },
-  rename: {
-    title: 'Rename conversation',
-    description: 'Give this conversation a more recognizable title.',
-    titleLabel: 'Conversation title',
-    titlePlaceholder: 'Enter a new conversation title',
-  },
-  share: {
-    title: 'Share conversation',
-    description:
-      'Choose an export format. Exports are automatically sanitized of API keys, access tokens and local paths.',
-    markdownHint: '.md, ideal for pasting into docs / GitHub',
-    htmlLabel: 'HTML page',
-    htmlHint: '.html single file, opens directly in a browser',
-    generating: 'Generating…',
+  ...enChatDialogs,
+  budget: {
+    ...enChatBudget,
   },
   summary: {
     title: 'Earlier conversation summary',

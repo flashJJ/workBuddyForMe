@@ -192,14 +192,16 @@ export function buildStreamInput(options: {
   attachments: string[];
   regenerate: boolean;
   ttsEnabled: boolean;
+  forceFallback?: boolean;
 }): ChatStreamInput {
-  const { assistantId, conversationId, content, attachments, regenerate, ttsEnabled } = options;
+  const { assistantId, conversationId, content, attachments, regenerate, ttsEnabled, forceFallback } = options;
   return {
     assistantId,
     ...(conversationId ? { conversationId } : {}),
     content,
     ...(attachments.length > 0 ? { attachments } : {}),
     ...(regenerate ? { regenerate: true } : {}),
+    ...(forceFallback ? { forceFallback: true } : {}),
     ...(ttsEnabled ? { voice: { tts: true } } : {}),
   };
 }

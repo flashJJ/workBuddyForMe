@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Archive, MoreHorizontal, Search, Share2 } from 'lucide-react';
+import { Archive, MoreHorizontal, Search, Share2, Wallet } from 'lucide-react';
 import type { Assistant, Conversation } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -21,6 +21,8 @@ interface Props {
   onAssistantChange: (id: string) => void;
   onShowSummary: () => void;
   onShare: () => void;
+  /** v4.18：打开会话预算设置 */
+  onShowBudget: () => void;
 }
 
 /**
@@ -76,10 +78,12 @@ function HeaderActions({
   conversation,
   onShowSummary,
   onShare,
+  onShowBudget,
 }: {
   conversation: Conversation | null;
   onShowSummary: () => void;
   onShare: () => void;
+  onShowBudget: () => void;
 }) {
   const { t } = useI18n();
   const [moreOpen, setMoreOpen] = React.useState(false);
@@ -173,6 +177,19 @@ function HeaderActions({
               <RunGraphLauncher kind="conversation" id={conversationId} menuItem />
               <ContextInsightsLauncher conversationId={conversationId} menuItem />
               <BranchLauncher conversationId={conversationId} menuItem />
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="chat-header-budget"
+                onClick={() => {
+                  setMoreOpen(false);
+                  onShowBudget();
+                }}
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+              >
+                <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+                {t('chat.budget.action')}
+              </button>
               <p className="mt-1 border-t px-2 pb-1 pt-2 text-[10px] leading-snug text-muted-foreground">
                 {t('chat.localPrivateStreaming')}
               </p>
@@ -193,6 +210,7 @@ export function ChatHeader({
   onAssistantChange,
   onShowSummary,
   onShare,
+  onShowBudget,
 }: Props) {
   return (
     <>
@@ -209,6 +227,7 @@ export function ChatHeader({
           conversation={currentConversation}
           onShowSummary={onShowSummary}
           onShare={onShare}
+          onShowBudget={onShowBudget}
         />
       </header>
       <BranchOriginBanner conversationId={currentConversation?.id ?? null} />

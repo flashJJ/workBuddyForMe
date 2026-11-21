@@ -5,25 +5,24 @@ import type { ServiceDeps } from '../../services/base/deps';
 import { createAssistantsService } from '../../services/assistant/assistant-service';
 import { createAttachmentService } from '../../services/assistant/attachment-service';
 import { createConversationService } from '../../services/assistant/conversation-service';
-import { resolveChatTarget, resolveFallbackChatTarget, type ResolvedChatTarget } from '../context/model-resolver';
+import { resolveChatTarget, resolveFallbackChatTarget, resolveForcedFallbackTarget, type ResolvedChatTarget } from '../context/model-resolver';
 import { runAlwaysRetrieval } from '../turns/retrieve-turn';
 import { prepareUserTurn } from '../context/turn-preparation';
-import { runProviderTurnWithModelFallback, type ModelFallbackTurnResult } from '../tools/model-fallback';
+import { runProviderTurnWithModelFallback, buildModelSwitchNotice, type ModelFallbackTurnResult } from '../tools/model-fallback';
 import { runToolCallLoop } from '../tools/tool-call-loop';
 import { createProactiveTurn } from '../turns/proactive-turn';
 import { tryReminderTurn } from '../turns/reminder-turn';
 import { createEmotionGate } from '../turns/emotion-gate';
 import type { OrchestratorEvent, StreamChatInput } from '../base/types';
-import { createFetchDegradeTracker, buildDoneData, normalizeFailure } from './orchestrator-helpers';
+import { createFetchDegradeTracker, normalizeFailure } from './orchestrator-helpers';
+import { checkConversationBudget } from './budget';
+import { finalizeSuccessfulTurn } from './finalize';
 import { finishWithSynthesis } from './round-synthesis';
 import { createToolRuntime } from '../../tools/tool-runtime';
 import { createMemoryService } from '../../memory/memory-service';
-import { recordMilestone } from '../../services/base/milestones';
-import { createEmotionService, recordTurnEmotion } from '../../emotion/index';
-import { stripEmotionSignalBlock, type EmotionSignal } from '@wbfm/shared/schemas';
+import { createEmotionService } from '../../emotion/index';
+import { stripEmotionSignalBlock } from '@wbfm/shared/schemas';
 import { prepareTurnContext, type PreparedTurnContext } from '../context/turn-context-assembly';
-import { schedulePostTurnJobs } from '../turns/post-turn-schedule';
-import { writeRealtimeConstraints } from '../../memory/turn-memory';
 import { runIntentStage } from './intent-stage';
 import { createBackgroundJobRegistry } from './background-jobs';
 
@@ -52,6 +51,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         const existing = input.conversationId ? conversations.get(input.conversationId) : null;
         // 新建会话先按助手/系统默认校验，避免无模型时留下空会话
         target = resolveChatTarget(deps, assistant, existing?.modelId ?? null);
+        if (input.forceFallback) target = resolveForcedFallbackTarget(deps, assistant, target.model);
         conversationId = existing?.id ?? conversations.create(assistant.id).id;
         if (!existing) target = resolveChatTarget(deps, assistant, conversations.get(conversationId).modelId);
         ({ userContent } = prepareUserTurn({
@@ -76,6 +76,15 @@ export function createChatOrchestrator(deps: ServiceDeps) {
         event: 'meta',
         data: { messageId: assistantMessage.id, conversationId },
       };
+
+      // v4.18：会话 token 预算（80% 提示，100% 拦截；不计本轮尚未产生的用量）
+      const budget = checkConversationBudget(conversations, conversationId);
+      if (budget.exceeded) {
+        conversations.markMessageError(assistantMessage.id, budget.exceeded.code, budget.exceeded.message);
+        yield { event: 'error', data: budget.exceeded };
+        return;
+      }
+      if (budget.warning) yield { event: 'budget_warning', data: budget.warning };
 
       // v1.7 M5：「提醒我/叫我…」本地解析短路——建提醒或追问，零模型调用
       const reminderEvents = await tryReminderTurn({
@@ -151,7 +160,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           target,
         });
         const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace, researchDepth, contextWindow } = prepared;
-        const fallbackTarget = resolveFallbackChatTarget(deps, assistant, target.model);
+        const fallbackTarget = input.forceFallback ? null : resolveFallbackChatTarget(deps, assistant, target.model);
         let citations = prepared.citations;
         const fetchDegrade = createFetchDegradeTracker();
         const emotionEnabled = prepared.emotionEnabled;
@@ -167,6 +176,14 @@ export function createChatOrchestrator(deps: ServiceDeps) {
               traceParent: turnTrace,
               hasOutput: full.length > 0,
               onSwitch: (event) => deps.events?.recordChat(conversationId, 'model_switched', event),
+              buildSwitchNotice: (event, from, to) =>
+                buildModelSwitchNotice({
+                  event,
+                  from,
+                  to,
+                  conversationId,
+                  messageId: assistantMessage.id,
+                }),
             });
             let outcome: ModelFallbackTurnResult;
             while (true) {
@@ -245,45 +262,17 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           return;
         }
 
-        // v1.6：成功回合的情绪解析（尾块剥离/弱模型保底/写状态与流水），异常不影响正文
-        const recordedEmotion = recordTurnEmotion({
-          enabled: emotionEnabled, rawContent: full, userContent, assistantId: assistant.id,
-          messageId: assistantMessage.id, record: emotion.record,
+        // v4.18：情绪解析、落库、done 与后台任务收口到独立 helper（保持主流程可读）
+        const finalState = { full, usage };
+        yield* finalizeSuccessfulTurn({
+          deps, conversations, attachments, assistant, conversation,
+          target, toolDefs, memory, emotion, emotionEnabled,
+          assistantMessageId: assistantMessage.id, userContent,
+          citations, intentNotices, trace, signal: input.signal,
+          state: finalState, schedule: backgroundJobs.schedule,
         });
-        if (recordedEmotion) full = recordedEmotion.content;
-        const resolvedEmotion: EmotionSignal | undefined = recordedEmotion?.signal;
-
-        // 持久化最终引用（含开流前 RAG 与工具循环 knowledge_search 两路合并后的全集）
-        conversations.completeMessage(assistantMessage.id, full, usage, citations);
-        conversations.saveMessageToolTrace(assistantMessage.id, trace);
-        // v2.4 M1 T7：首次完整回答即记里程碑（首写优先；不含回答内容）
-        recordMilestone(deps.db, 'firstAnswerAt');
-        // v2.28 P1：实时约束在 done 前同步写入，本轮即可内联提示与撤销
-        const memoryNotices = assistant.memoryEnabled
-          ? await writeRealtimeConstraints({ memory, userContent, conversationId: conversation.id,
-            assistantId: assistant.id, sourceMessageId: assistantMessage.id })
-          : [];
-
-        // 先把 done 交给用户：回答已完整落库，旁路任务（摘要/记忆抽取）绝不阻塞 done。
-        yield {
-          event: 'done',
-          data: buildDoneData({
-            content: full, usage, notices: [...intentNotices, ...memoryNotices],
-            ...(resolvedEmotion ? { emotion: resolvedEmotion } : {}),
-          }),
-        };
-
-        // 后台任务 fire-and-forget：独立 signal，超时兜底；失败内部均已静默。
-        schedulePostTurnJobs({
-          schedule: backgroundJobs.schedule,
-          aborted: Boolean(input.signal?.aborted),
-          jobs: {
-            conversations, attachments, conversation, assistant, target, toolDefs,
-            lastCompletionTokens: usage?.completionTokens ?? null, memory, userContent,
-            assistantContent: full, sourceMessageId: assistantMessage.id,
-            workPlans: deps.workPlans, toolTrace: trace, events: deps.events,
-          },
-        });
+        full = finalState.full;
+        usage = finalState.usage;
       } finally {
         await turnTrace?.end(
           { content: full, usage, aborted: Boolean(input.signal?.aborted) },

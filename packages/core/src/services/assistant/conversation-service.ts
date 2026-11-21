@@ -9,12 +9,14 @@ import {
 import { type MessageFeedback, type MessageRole, type MessageStatus } from '@wbfm/shared/constants';
 import { CONVERSATION_FACT_MAX_ITEMS } from '@wbfm/shared/constants';
 import type { SummaryPayload } from '@wbfm/shared/schemas';
+import type { ConversationUpdateInput } from '@wbfm/shared/schemas';
 import {
   createAssistantRepository,
   createCharacterCardRepository,
   createConversationFactRepository,
   createConversationRepository,
   createMessageRepository,
+  createSettingsRepository,
   createStagePlanRepository,
   createTaskCheckpointRepository,
 } from '@wbfm/database';
@@ -45,6 +47,20 @@ export function createConversationService(deps: ServiceDeps) {
   const stagePlans = createStagePlanRepository(db);
   const conversationFacts = createConversationFactRepository(db);
   const checkpoints = createTaskCheckpointRepository(db);
+  const settings = createSettingsRepository(db);
+
+  /** v4.18：会话 token 预算存 settings_kv（零迁移），键为会话 id */
+  const BUDGET_KEY = 'conversation-token-budgets';
+
+  const readBudgets = (): Record<string, number> => {
+    const raw = settings.getJson<unknown>(BUDGET_KEY, {});
+    if (!raw || typeof raw !== 'object') return {};
+    const map: Record<string, number> = {};
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof value === 'number' && Number.isFinite(value) && value > 0) map[key] = value;
+    }
+    return map;
+  };
   /** v2.9：按消息反查会话后写事件；日志失败不影响对话主链路 */
   const recordForMessage = (id: string, type: string, payload: Record<string, unknown>): void => {
     const message = messages.findById(id);
@@ -79,11 +95,37 @@ export function createConversationService(deps: ServiceDeps) {
     },
 
     list(assistantId?: string, limit?: number): Conversation[] {
-      return conversations.list(assistantId, limit);
+      const budgets = readBudgets();
+      return conversations
+        .list(assistantId, limit)
+        .map((conversation) => ({ ...conversation, tokenBudget: budgets[conversation.id] ?? null }));
     },
 
     get(id: string): Conversation {
-      return requireConversation(id);
+      return { ...requireConversation(id), tokenBudget: readBudgets()[id] ?? null };
+    },
+
+    /** v4.18：标题与 token 预算合并更新；预算 null 表示取消限制 */
+    update(id: string, input: ConversationUpdateInput): Conversation {
+      requireConversation(id);
+      if (input.title !== undefined) conversations.rename(id, input.title);
+      if (input.tokenBudget !== undefined) {
+        const budgets = readBudgets();
+        if (input.tokenBudget === null) delete budgets[id];
+        else budgets[id] = input.tokenBudget;
+        settings.setJson(BUDGET_KEY, budgets);
+      }
+      return { ...conversations.findById(id)!, tokenBudget: readBudgets()[id] ?? null };
+    },
+
+    tokenBudget(id: string): number | null {
+      requireConversation(id);
+      return readBudgets()[id] ?? null;
+    },
+
+    usedTokens(id: string): number {
+      requireConversation(id);
+      return messages.sumTokensForConversations([id]);
     },
 
     rename(id: string, title: string): Conversation {

@@ -7,9 +7,15 @@ export const conversationCreateSchema = z.object({
 });
 export type ConversationCreateInput = z.infer<typeof conversationCreateSchema>;
 
-export const conversationUpdateSchema = z.object({
-  title: z.string().trim().min(1, '标题不能为空').max(120),
-});
+export const conversationUpdateSchema = z
+  .object({
+    title: z.string().trim().min(1, '标题不能为空').max(120).optional(),
+    /** v4.18：会话 token 预算；null=不限制。范围 1k–100M，避免误填 */
+    tokenBudget: z.number().int().min(1_000).max(100_000_000).nullable().optional(),
+  })
+  .refine((value) => value.title !== undefined || value.tokenBudget !== undefined, {
+    message: '至少提供一个更新字段',
+  });
 export type ConversationUpdateInput = z.infer<typeof conversationUpdateSchema>;
 
 /**
@@ -28,6 +34,8 @@ export const chatRequestSchema = z
       .optional(),
     /** v0.2：重新生成——沿用上一条用户消息重跑（需已有会话） */
     regenerate: z.boolean().optional(),
+    /** v4.18：强制使用助手备用模型（错误态「换备用模型」动作） */
+    forceFallback: z.boolean().optional(),
     /** v1.0：语音选项。缺省/tts=false 时行为与 v0.9 完全一致（纯文字） */
     voice: z
       .object({

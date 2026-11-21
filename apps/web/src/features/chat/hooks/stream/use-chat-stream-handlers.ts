@@ -28,6 +28,7 @@ export interface StreamHandlerContext {
   setRecalledMemories: Dispatch<SetStateAction<RecalledMemoryPayload[]>>;
   setPendingConfirmation: Dispatch<SetStateAction<PendingToolConfirmation | null>>;
   setPendingLocalSearch: Dispatch<SetStateAction<PendingLocalSearchStart | null>>;
+  setBudgetWarning: Dispatch<SetStateAction<{ usedTokens: number; limitTokens: number; ratio: number } | null>>;
   voice?: ChatSessionVoice;
   queryClient: QueryClient;
 }
@@ -51,6 +52,7 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
     setRecalledMemories,
     setPendingConfirmation,
     setPendingLocalSearch,
+    setBudgetWarning,
     voice,
     queryClient,
   } = ctx;
@@ -93,6 +95,21 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
     onSearchLocalStartRequired: (data: SsePayloadMap['search_local_start_required']) => {
       // 编排器已挂起本次搜索，等待启动/取消决策
       setPendingLocalSearch(data);
+    },
+    /** v4.18：自动切换备用模型，消息内展示可见提示 */
+    onModelSwitched: (data: SsePayloadMap['model_switched']) => {
+      patchLastAssistant({
+        modelSwitch: {
+          fromModelName: data.fromModelName,
+          toModelName: data.toModelName,
+          reason: data.reason,
+          attempt: data.attempt,
+        },
+      });
+    },
+    /** v4.18：会话预算达到 80%，由对话页提示条展示 */
+    onBudgetWarning: (data: SsePayloadMap['budget_warning']) => {
+      setBudgetWarning(data);
     },
     onVoiceAudio: (data: SsePayloadMap['voice_audio']) => voice?.onAudio?.(data),
     onVoiceState: (data: SsePayloadMap['voice_state']) => voice?.onVoiceState?.(data),

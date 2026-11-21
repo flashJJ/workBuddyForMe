@@ -2,7 +2,7 @@ import { ApiError } from '@wbfm/shared/errors';
 import { type Citation, type MemoryNotice } from '@wbfm/shared/types';
 import type { EmotionSignal } from '@wbfm/shared/schemas';
 import type { SsePayloadMap, TokenUsage } from '@wbfm/shared/api';
-import { ProviderError, type ChatMessage, type ToolCall } from '@wbfm/ai';
+import { ProviderError, isContextOverflowError, type ChatMessage, type ToolCall } from '@wbfm/ai';
 import { parseToolArgs } from '../../tools/tool-executor';
 import type { ToolResult } from '../../tools/types';
 
@@ -12,9 +12,22 @@ export const ROUND_LIMIT_FALLBACK =
 /** RAG trace 输出的摘要片段上限 */
 export const RAG_SNIPPET_LIMIT = 160;
 
+/** v4.18：供应商错误对用户只暴露统一文案，原始报文仅留日志 */
+function providerFailureMessage(error: ProviderError): string {
+  if (error.code === 'PROVIDER_TIMEOUT') return '模型响应超时，请重试或换备用模型';
+  if (error.code === 'UNSUPPORTED_PROVIDER') return '当前供应商协议暂不支持';
+  if (error.status === 401 || error.status === 403) return '供应商鉴权失败，请检查密钥';
+  if (error.status === 429) return '供应商限流，请稍后重试或换备用模型';
+  if (isContextOverflowError(error)) return '上下文超出模型窗口，请压缩历史或换更大窗口的模型';
+  if (error.status && error.status >= 500) return '供应商服务异常，请稍后重试或换备用模型';
+  return '模型调用失败，请重试或换备用模型';
+}
+
 export function normalizeFailure(error: unknown): { code: string; message: string } {
   if (error instanceof ApiError) return { code: error.code, message: error.message };
-  if (error instanceof ProviderError) return { code: error.code, message: error.message };
+  if (error instanceof ProviderError) {
+    return { code: error.code, message: providerFailureMessage(error) };
+  }
   return { code: 'INTERNAL_ERROR', message: '对话生成失败，请稍后重试' };
 }
 

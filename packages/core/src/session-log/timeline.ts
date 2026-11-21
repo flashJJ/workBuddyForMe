@@ -73,6 +73,8 @@ function labelFor(event: SessionEventView): string {
       return '上下文快照';
     case 'context_scene_snapshot':
       return `上下文快照：${String(field(payload, 'scene') ?? '')}`;
+    case 'model_switched':
+      return `模型切换：${String(field(payload, 'reason') ?? '')}`;
     default:
       return event.type;
   }
@@ -112,6 +114,12 @@ function detailFor(event: SessionEventView): string {
     return compact(
       `window=${String(field(payload, 'contextWindow') ?? '')}, kept=${String(field(payload, 'keptMessages') ?? '')}, ` +
         `dropped=${String(field(payload, 'droppedMessages') ?? '')}`,
+    );
+  }
+  if (event.type === 'model_switched') {
+    return compact(
+      `${String(field(payload, 'fromModelId') ?? '')} → ${String(field(payload, 'toModelId') ?? '')} ` +
+        `attempt=${String(field(payload, 'attempt') ?? '')}`,
     );
   }
   if (event.type === 'context_scene_snapshot') {

@@ -15,6 +15,7 @@ import { CitationsList } from './citations-list';
 import { MemoryNoticeInline } from './memory-notice/memory-notice-inline';
 import { MarkdownContent } from './markdown';
 import { MessageActions } from './message-actions';
+import { MessageError } from './error';
 import { TurnSummary } from './turn-summary/turn-summary';
 import { FirstTokenMetric, StreamingProgress } from '../page/streaming-progress';
 import type { StreamTiming } from '../types/chat-session.types';
@@ -30,6 +31,10 @@ interface Props {
   agentCard?: AgentCardEntry;
   /** 重新生成该助手回复（仅最后一条助手消息会传入） */
   onRetry?: () => void;
+  /** v4.18：换备用模型重试（仅最后一条助手消息且助手配置了备用模型） */
+  onRetryWithFallback?: () => void;
+  /** v4.18：把本轮用户输入恢复到输入框 */
+  onRestoreInput?: () => void;
   /** 用户消息编辑后作为新一轮重新发送 */
   onResend?: (content: string) => void;
   /** v0.5 P1-2：反馈落库成功后同步本地视图 */
@@ -122,6 +127,8 @@ export function MessageItem({
   assistantName,
   agentCard,
   onRetry,
+  onRetryWithFallback,
+  onRestoreInput,
   onResend,
   onFeedback,
   disabled,
@@ -133,10 +140,7 @@ export function MessageItem({
   const isUser = message.role === 'user';
   const [branchOpen, setBranchOpen] = React.useState(false);
   const canBranch = Boolean(conversationId && message.content.trim());
-  const openBranch = (): void => {
-    if (disabled || !canBranch) return;
-    setBranchOpen(true);
-  };
+  const openBranch = (): void => { if (disabled || !canBranch) return; setBranchOpen(true); };
   const canRegenerate =
     !isUser &&
     !disabled &&
@@ -210,6 +214,18 @@ export function MessageItem({
 
         {!isUser && agentCard && <AgentRunCard state={agentCard.state} runId={agentCard.runId} />}
 
+        {!isUser && message.modelSwitch && (
+          <p
+            className="mb-1 text-[11px] text-muted-foreground"
+            data-testid="model-switch-notice"
+          >
+            {t('chatMessages.modelSwitched', {
+              from: message.modelSwitch.fromModelName,
+              to: message.modelSwitch.toModelName,
+            })}
+          </p>
+        )}
+
         {isUser ? (
           <UserBody message={message} onResend={onResend} disabled={disabled} />
         ) : (
@@ -225,16 +241,12 @@ export function MessageItem({
         )}
 
         {message.status === 'error' && (
-          <div
-            className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive"
-            data-testid="message-error"
-          >
-            <p>
-              {t('chatMessages.generateFailed', {
-                reason: sys(message.errorMessage) || sys(message.errorCode) || t('chatMessages.unknownError'),
-              })}
-            </p>
-          </div>
+          <MessageError
+            message={message}
+            onRetry={onRetry}
+            onRetryWithFallback={onRetryWithFallback}
+            onRestoreInput={onRestoreInput}
+          />
         )}
 
         {(showCopy || canRegenerate || canFeedback || canBranch) && (

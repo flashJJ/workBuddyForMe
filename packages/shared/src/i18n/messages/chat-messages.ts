@@ -8,6 +8,10 @@ export const zhChatMessages = {
   stopped: '已停止',
   unknownError: '未知错误',
   generateFailed: '生成失败：{reason}',
+  /** v4.18：自动切换备用模型的可见提示与错误态动作 */
+  modelSwitched: '当前模型不可用，已从 {from} 切换到 {to}',
+  switchFallback: '换备用模型',
+  keepInput: '保留输入',
   copied: '已复制',
   regenerate: '重新生成',
   /** v2.23：滚离底部时的回到底部浮标 */
@@ -85,6 +89,10 @@ export const enChatMessages = {
   stopped: 'Stopped',
   unknownError: 'Unknown error',
   generateFailed: 'Generation failed: {reason}',
+  /** v4.18: visible fallback switch notice + error actions */
+  modelSwitched: 'Current model unavailable; switched from {from} to {to}',
+  switchFallback: 'Use fallback model',
+  keepInput: 'Keep input',
   copied: 'Copied',
   regenerate: 'Regenerate',
   /** v2.23: back-to-bottom pill shown when scrolled away from the end */

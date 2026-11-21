@@ -53,6 +53,8 @@ export const ERROR_CODES = {
   BACKUP_CHAIN_INCOMPLETE: 422,
   /** v2.34：链 id 不一致、父指针或序号不连续 */
   BACKUP_CHAIN_MISMATCH: 422,
+  /** v4.18：会话 token 预算已用尽，需提高预算或新建会话 */
+  TOKEN_BUDGET_EXCEEDED: 422,
   INTERNAL_ERROR: 500,
 } as const;
 

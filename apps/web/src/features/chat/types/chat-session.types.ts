@@ -49,6 +49,9 @@ export interface ChatSession {
   streamTiming: StreamTiming | null;
   /** 本轮召回的长期记忆（回答上方「参考了 N 条记忆」提示），下轮开始时清空 */
   recalledMemories: RecalledMemoryPayload[];
+  /** v4.18：会话预算达到 80% 的提示（null=无）；下轮开始时清空 */
+  budgetWarning: { usedTokens: number; limitTokens: number; ratio: number } | null;
+  dismissBudgetWarning: () => void;
   /** v0.6 M2：当前待确认的工具调用（null=无弹窗） */
   pendingConfirmation: PendingToolConfirmation | null;
   /** v4.16：本地搜索启动询问（null=无弹窗） */
@@ -68,6 +71,8 @@ export interface ChatSession {
   sendTask: (content: string, options?: { regenerate?: boolean }) => Promise<void>;
   /** 重新生成最后一条助手回复（沿用上一条用户消息） */
   retry: () => void;
+  /** v4.18：错误态换备用模型重试 */
+  retryWithFallback: () => void;
   stop: () => void;
   /** 切换会话/助手时清空本地流式视图，回到服务端历史 */
   reset: () => void;

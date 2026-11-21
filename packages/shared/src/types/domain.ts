@@ -24,10 +24,7 @@ import type { InteractionGraphEntry } from '../schemas/interaction/interaction-g
 import type { ToolTraceEntry } from './tool';
 import type { StagePlan } from './stage-plan';
 import type { SearchSettings } from './search';
-export interface Timestamped {
-  createdAt: string;
-  updatedAt: string;
-}
+export interface Timestamped { createdAt: string; updatedAt: string; }
 export interface Provider extends Timestamped {
   id: string;
   name: string;
@@ -48,10 +45,7 @@ export interface ProviderModel {
   createdAt: string;
 }
 /** 供应商远端模型发现项（v0.5）：contextLength 为自动探测的上下文长度，无法探测时为 null。 */
-export interface DiscoveredModel {
-  id: string;
-  contextLength: number | null;
-}
+export interface DiscoveredModel { id: string; contextLength: number | null; }
 export interface Assistant extends Timestamped {
   id: string;
   name: string;
@@ -98,6 +92,7 @@ export interface Conversation extends Timestamped {
   /** v0.5：已折叠进摘要的最早消息条数（累计） */
   summaryTurns: number;
   modelId: string | null;
+  tokenBudget?: number | null; // v4.18：会话 token 预算（null/缺省=不限制）
 }
 export interface Citation {
   documentId: string;
@@ -149,6 +144,8 @@ export interface Message {
   errorMessage: string | null;
   /** v2.28：本轮新记住的硬约束提示（仅前端 live 态，不落库） */
   memoryNotices?: MemoryNotice[];
+  /** v4.18：首字前自动切换模型的可见提示（仅前端 live 态；刷新后看时间线事件） */
+  modelSwitch?: { fromModelName: string; toModelName: string; reason: string; attempt: number };
   createdAt: string;
 }
 

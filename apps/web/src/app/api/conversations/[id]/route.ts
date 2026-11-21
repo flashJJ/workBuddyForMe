@@ -13,7 +13,7 @@ export const GET = defineRoute(({ params, services }) => {
 export const PATCH = defineRoute(async ({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
   const input = parseBody(conversationUpdateSchema, await readJsonBody(request));
-  return jsonOk(services.conversations.rename(id, input.title));
+  return jsonOk(services.conversations.update(id, input));
 });
 
 export const DELETE = defineRoute(({ params, services }) => {

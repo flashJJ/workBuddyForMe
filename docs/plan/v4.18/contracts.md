@@ -24,7 +24,10 @@
 - 单轮最多自动切换 `MAX_MODEL_SWITCH_ATTEMPTS = 2` 次；
 - 切换事件固定四字段：`fromModelId / toModelId / reason / attempt`，不记录正文；
 - UI 只消费 `code`，不解析供应商原始报文；
-- 助手级 `fallbackModelId` 存 `settings_kv` 的 `assistant-fallback-models`（助手 id → 模型 id），零数据库迁移。
+- 助手级 `fallbackModelId` 存 `settings_kv` 的 `assistant-fallback-models`（助手 id → 模型 id），零数据库迁移；
+- 会话级 `tokenBudget` 存 `settings_kv` 的 `conversation-token-budgets`（会话 id → token 上限），`null` 表示取消限制；
+- 可见切换走 SSE `model_switched`（含展示名，不含正文）；80% 提示走 `budget_warning`；
+- 100% 拦截错误码 `TOKEN_BUDGET_EXCEEDED`（HTTP 422），与七类模型失败码互不混用。
 
 ## 2. 跨域检索结果（C 线）
 

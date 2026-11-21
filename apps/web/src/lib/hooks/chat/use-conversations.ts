@@ -37,6 +37,12 @@ export function useConversationMutations() {
         apiPatch<Conversation>(API.conversation(id), { title }),
       onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEYS.conversations }),
     }),
+    /** v4.18：会话 token 预算（null=不限制） */
+    setTokenBudget: useMutation({
+      mutationFn: ({ id, tokenBudget }: { id: string; tokenBudget: number | null }) =>
+        apiPatch<Conversation>(API.conversation(id), { tokenBudget }),
+      onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEYS.conversations }),
+    }),
     remove: useMutation({
       mutationFn: (id: string) => apiDelete<{ id: string }>(API.conversation(id)),
       onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEYS.conversations }),
