@@ -13,6 +13,7 @@ import {
   memorySourceHref,
   recallLevelKey,
 } from '@/features/memory/labels';
+import { CHAT_CONTENT_MAX_WIDTH } from '../chat-layout';
 
 /**
  * v2.6 M4：本轮召回的长期记忆 chips。
@@ -26,7 +27,7 @@ export function RecalledMemoriesBar({ memories }: { memories: RecalledMemoryPayl
   return (
     <div
       data-testid="recalled-memories"
-      className="mx-auto mt-2 w-full max-w-3xl rounded-lg border bg-muted/40 text-xs"
+      className={`mx-auto mt-2 w-full ${CHAT_CONTENT_MAX_WIDTH} rounded-lg border bg-muted/40 text-xs`}
     >
       <button
         type="button"

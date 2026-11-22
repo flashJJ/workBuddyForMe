@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { AgentCardEntry } from '@/features/agent-collab';
 import type { StreamTiming } from '../types/chat-session.types';
+import { CHAT_CONTENT_MAX_WIDTH } from '../chat-layout';
 import { MessageItem } from './message-item';
 
 /** v4.18：错误态「保留输入」取最近一条用户消息（纯函数） */
@@ -101,7 +102,7 @@ export function MessageList({ messages,
     if (streaming) {
       return (
         <div className="flex flex-1 items-center justify-center p-6">
-          <div className="w-full max-w-3xl space-y-3" data-testid="message-skeleton">
+          <div className={`w-full ${CHAT_CONTENT_MAX_WIDTH} space-y-3`} data-testid="message-skeleton">
             <Skeleton className="h-4 w-1/3" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-11/12" />
@@ -112,7 +113,7 @@ export function MessageList({ messages,
     }
     return (
       <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
-        <div className="w-full max-w-3xl text-center" data-testid="chat-empty-state">
+        <div className={`w-full ${CHAT_CONTENT_MAX_WIDTH} text-center`} data-testid="chat-empty-state">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Sparkles className="h-6 w-6" aria-hidden="true" />
           </div>
@@ -165,7 +166,7 @@ export function MessageList({ messages,
         className="scroll-fade-y flex-1 overflow-y-auto"
         data-testid="message-list"
       >
-        <div className="mx-auto w-full max-w-3xl py-2">
+        <div className={`mx-auto w-full ${CHAT_CONTENT_MAX_WIDTH} py-2`}>
           {messages.map((message, index) => {
             const restore = previousUserContent(messages, index);
             return (

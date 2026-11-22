@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
+import { CHAT_CONTENT_MAX_WIDTH } from '../chat-layout';
 import { useAttachmentUpload } from '../hooks/use-attachment-upload';
 
 interface Props {
@@ -155,7 +156,7 @@ export function Composer({
   if (streaming) {
     return (
       <div className="border-t px-3 py-3" data-testid="composer">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className={`mx-auto w-full ${CHAT_CONTENT_MAX_WIDTH}`}>
           <Button type="button" variant="outline" className="w-full" onClick={onStop}>
             ■ {t('chat.composer.stopGenerating')}
           </Button>
@@ -176,13 +177,13 @@ export function Composer({
       onDrop={handleDrop}
     >
       {attachments.items.length > 0 && (
-        <div className="mx-auto w-full max-w-3xl">
+        <div className={`mx-auto w-full ${CHAT_CONTENT_MAX_WIDTH}`}>
           <AttachmentPreviews items={attachments.items} onRemove={attachments.remove} />
         </div>
       )}
       {suggestTaskMode && onTaskModeChange ? (
         <p
-          className="mx-auto w-full max-w-3xl pb-1 text-[11px] text-muted-foreground"
+          className={`mx-auto w-full ${CHAT_CONTENT_MAX_WIDTH} pb-1 text-[11px] text-muted-foreground`}
           data-testid="task-mode-suggestion"
         >
           {t('chat.composer.taskModeSuggestion')}{' '}
@@ -197,13 +198,13 @@ export function Composer({
       ) : null}
       {taskMode && (
         <p
-          className="mx-auto w-full max-w-3xl pb-1 text-[11px] text-teal-600 dark:text-teal-400"
+          className={`mx-auto w-full ${CHAT_CONTENT_MAX_WIDTH} pb-1 text-[11px] text-teal-600 dark:text-teal-400`}
           data-testid="task-mode-hint"
         >
           {t('agents.entry.hint')}
         </p>
       )}
-      <div className="mx-auto flex w-full max-w-3xl items-end gap-2">
+      <div className={`mx-auto flex w-full ${CHAT_CONTENT_MAX_WIDTH} items-end gap-2`}>
         {onTaskModeChange && (
           <button
             type="button"

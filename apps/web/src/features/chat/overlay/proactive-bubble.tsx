@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { stripExpressionDirectives } from '@wbfm/shared/schemas';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { CHAT_CONTENT_MAX_WIDTH } from '../chat-layout';
 import type { ProactiveBubble } from '../hooks/use-proactive-chat';
 
 interface Props {
@@ -21,7 +22,7 @@ export function ProactiveBubbleBar({ bubble, assistantName, onDismiss }: Props) 
   const text = stripExpressionDirectives(bubble.content).trim();
   return (
     <div
-      className="mx-auto flex w-full max-w-3xl items-start gap-2 px-4 pb-1"
+      className={`mx-auto flex w-full ${CHAT_CONTENT_MAX_WIDTH} items-start gap-2 px-4 pb-1`}
       data-testid="proactive-bubble"
       data-status={bubble.status}
     >
