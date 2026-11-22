@@ -1,7 +1,21 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { PetCloseReason } from '@wbfm/shared/pet';
 import { OPEN_CHANGED_CHANNEL } from '../pet-constants';
 import { savePetState, type PetState } from '../pet-state';
 import type { MainWindowLike, PetWindowLike } from '../pet-types';
+
+/** 渲染进程崩溃：控制台 + userData/pet-crash.log 留痕，供下次定位 */
+export function logPetRendererGone(userDataDir: string, details: unknown): void {
+  const info = details as { reason?: string; exitCode?: number } | undefined;
+  const line = `[${new Date().toISOString()}] reason=${info?.reason ?? 'unknown'} exitCode=${info?.exitCode ?? 'unknown'}`;
+  console.error(`[pet] 渲染进程退出：${line}`);
+  try {
+    fs.appendFileSync(path.join(userDataDir, 'pet-crash.log'), `${line}\n`, 'utf8');
+  } catch {
+    /* 日志写入失败不影响关窗 */
+  }
+}
 
 /** 记住最后展示的模型（托盘/命令面板无 modelId 时恢复用） */
 export function rememberPetModel(

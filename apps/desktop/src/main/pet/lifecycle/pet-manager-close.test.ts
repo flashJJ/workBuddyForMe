@@ -38,8 +38,8 @@ afterEach(() => {
 });
 
 describe('PetManager 关闭原因与模型记忆', () => {
-  it('渲染进程崩溃：广播 crash 原因并记录 reason/exitCode', async () => {
-    const { main, manager, getPet } = setup();
+  it('渲染进程崩溃：广播 crash 原因并记录 reason/exitCode 到日志', async () => {
+    const { dir, main, manager, getPet } = setup();
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
       await manager.open('haru');
@@ -54,6 +54,9 @@ describe('PetManager 关闭原因与模型记忆', () => {
         reason: 'crash',
       });
       expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('reason=crashed'));
+      expect(fs.readFileSync(path.join(dir, 'pet-crash.log'), 'utf8')).toContain(
+        'reason=crashed',
+      );
     } finally {
       errorSpy.mockRestore();
     }

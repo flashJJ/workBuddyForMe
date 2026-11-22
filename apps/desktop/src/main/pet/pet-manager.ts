@@ -30,6 +30,7 @@ import { createPetMotionControllers } from './motion/pet-motion';
 import {
   broadcastPetOpen,
   focusMainWindow,
+  logPetRendererGone,
   persistPetBounds,
   rememberPetModel,
 } from './lifecycle/pet-lifecycle-helpers';
@@ -162,8 +163,7 @@ export class PetManager {
     });
     // 渲染进程崩溃会留下点不动的透明残留窗（旧事件名 renderer-process-crashed 在 Electron 45 已移除）
     win.webContents.on('render-process-gone', (_event, details) => {
-      const info = details as { reason?: string; exitCode?: number } | undefined;
-      console.error(`[pet] 渲染进程退出：reason=${info?.reason ?? 'unknown'} exitCode=${info?.exitCode ?? 'unknown'}`);
+      logPetRendererGone(this.deps.userDataDir, details);
       void this.close('crash');
     });
     win.on('closed', () => this.handleClosed(win));
