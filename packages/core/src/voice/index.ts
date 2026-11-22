@@ -13,11 +13,14 @@ export {
   buildTencentAuthorization,
   mapTencentSpeed,
   decodePcm16,
+  EdgeTtsEngine,
+  generateEdgeSecMsGec,
 } from './cloud';
 export type {
   CloudTtsCredentials,
   VoiceCloudCredentialStore,
   VoiceCloudCredentialStoreOptions,
   TencentTtsEngineOptions,
+  EdgeTtsEngineOptions,
 } from './cloud';
 export type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime-types';

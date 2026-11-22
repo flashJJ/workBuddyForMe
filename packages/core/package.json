@@ -240,18 +240,21 @@
         "@wbfm/motion": "workspace:*",
         "@wbfm/shared": "workspace:*",
         "@wbfm/voice": "workspace:*",
-        "zod": "^3.25.0",
         "fflate": "^0.8.3",
         "linkedom": "^0.18.13",
         "mammoth": "^1.12.3",
+        "mpg123-decoder": "^1.0.3",
         "pdfjs-dist": "^4.10.38",
         "tar-stream": "^3.2.1",
-        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+        "ws": "^8.23.0",
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+        "zod": "^3.25.0"
     },
     "optionalDependencies": {
         "tesseract.js": "^5.1.1"
     },
     "devDependencies": {
-        "@types/tar-stream": "^3.1.4"
+        "@types/tar-stream": "^3.1.4",
+        "@types/ws": "^8.18.2"
     }
 }

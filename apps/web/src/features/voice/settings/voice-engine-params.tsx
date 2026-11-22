@@ -12,6 +12,7 @@ import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { TtsPreview } from './tts-preview';
 import { CloudTtsSection } from './cloud';
+import { EdgeTtsSection } from './cloud/edge-tts-section';
 
 interface Props {
   settings: VoiceSettings;
@@ -126,6 +127,8 @@ export function ToggleRow(props: {
 /** TTS/ASR 引擎参数：开关、语速、线程数、试听（即时保存） */
 export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Props) {
   const { t } = useI18n();
+  /** 本地引擎专属项（引擎卡片/线程/音色说明）仅在本地离线模式展示，避免与在线配置混淆 */
+  const localTts = settings.ttsEngine === 'sherpa_onnx' || settings.ttsEngine === 'none';
   return (
     <div className="space-y-4" data-testid="voice-engine-params">
       <div className="space-y-3 rounded-md border bg-ui-row p-3">
@@ -165,11 +168,16 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
                 name: t('voice.engine.modeTencent'),
                 hint: t('voice.engine.modeTencentHint'),
               },
+              {
+                value: 'edge' as const,
+                name: t('voice.engine.modeEdge'),
+                hint: t('voice.engine.modeEdgeHint'),
+              },
             ].map((option) => {
               const selected =
-                option.value === 'tencent'
-                  ? settings.ttsEngine === 'tencent'
-                  : settings.ttsEngine !== 'tencent';
+                option.value === 'sherpa_onnx'
+                  ? localTts
+                  : settings.ttsEngine === option.value;
               return (
                 <label
                   key={option.value}
@@ -197,8 +205,11 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         {settings.ttsEngine === 'tencent' && (
           <CloudTtsSection settings={settings} onPatch={onPatch} />
         )}
-        <TtsModelSelector value={settings.ttsModel} onPatch={onPatch} />
-        <div className="grid gap-3 sm:grid-cols-2">
+        {settings.ttsEngine === 'edge' && (
+          <EdgeTtsSection settings={settings} onPatch={onPatch} />
+        )}
+        {localTts && <TtsModelSelector value={settings.ttsModel} onPatch={onPatch} />}
+        <div className={`grid gap-3 ${localTts ? 'sm:grid-cols-2' : ''}`}>
           <div className="space-y-1.5">
             <Label htmlFor="tts-speed">{t('voice.engine.speedLabel')}</Label>
             <SimpleSelect
@@ -213,32 +224,36 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
               ))}
             </SimpleSelect>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tts-threads">{t('voice.engine.threadsLabel')}</Label>
-            <SimpleSelect
-              id="tts-threads"
-              value={String(settings.ttsNumThreads)}
-              onValueChange={(v) => void onPatch({ ttsNumThreads: Number(v) })}
-            >
-              {THREAD_OPTIONS.map((v) => (
-                <option key={v} value={v}>
-                  {t('voice.engine.threadsOption', { count: v })}
-                </option>
-              ))}
-            </SimpleSelect>
-          </div>
+          {localTts && (
+            <div className="space-y-1.5">
+              <Label htmlFor="tts-threads">{t('voice.engine.threadsLabel')}</Label>
+              <SimpleSelect
+                id="tts-threads"
+                value={String(settings.ttsNumThreads)}
+                onValueChange={(v) => void onPatch({ ttsNumThreads: Number(v) })}
+              >
+                {THREAD_OPTIONS.map((v) => (
+                  <option key={v} value={v}>
+                    {t('voice.engine.threadsOption', { count: v })}
+                  </option>
+                ))}
+              </SimpleSelect>
+            </div>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {settings.ttsModel === 'melo'
-            ? t('voice.engine.meloNote')
-            : settings.ttsModel === 'matcha'
-              ? t('voice.engine.matchaNote')
-              : t('voice.engine.kokoroNote')}
-        </p>
+        {localTts && (
+          <p className="text-xs text-muted-foreground">
+            {settings.ttsModel === 'melo'
+              ? t('voice.engine.meloNote')
+              : settings.ttsModel === 'matcha'
+                ? t('voice.engine.matchaNote')
+                : t('voice.engine.kokoroNote')}
+          </p>
+        )}
         <TtsPreview
           ready={ttsReady}
           speakerId={
-            settings.ttsModel === 'melo' || settings.ttsModel === 'matcha'
+            !localTts || settings.ttsModel === 'melo' || settings.ttsModel === 'matcha'
               ? 0
               : getAvatarSpeakerId(settings.avatarModelId)
           }

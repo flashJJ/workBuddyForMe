@@ -3,11 +3,12 @@ import type { DatabaseInstance } from '@wbfm/database';
 import type { VoiceSettings } from '@wbfm/shared/schemas';
 import { createVoiceCloudCredentialStore } from './voice-cloud-credentials';
 import { TencentTtsEngine } from './tencent-tts-engine';
+import { EdgeTtsEngine } from './edge-tts-engine';
 import type { SecretCipher } from '../../secrets/cipher';
 
 /**
  * 在线 TTS 引擎管理（从 VoiceRuntime 拆出，保持单文件行数上限）。
- * 凭据缺失时返回 null；配置变化时惰性重建；无长驻资源，invalidate 直接丢弃。
+ * 腾讯云看凭据、微软 Edge 免密钥；配置变化时惰性重建，无长驻资源。
  */
 export class VoiceCloudTts {
   private engine: TtsEngine | null = null;
@@ -18,17 +19,34 @@ export class VoiceCloudTts {
     this.store = cipher ? createVoiceCloudCredentialStore({ db, cipher }) : null;
   }
 
-  /** 是否已配置可用的在线凭据（GET models/status 的 ttsReady 判定） */
-  hasCredentials(): boolean {
-    return Boolean(this.store?.get());
+  /** 当前在线引擎是否配置就绪（GET models/status 的 ttsReady 判定） */
+  isReady(settings: VoiceSettings): boolean {
+    if (settings.ttsEngine === 'edge') return true;
+    if (settings.ttsEngine === 'tencent') return Boolean(this.store?.get());
+    return false;
   }
 
-  /** 按凭据 + 音色/采样率/地域复用在线引擎；未配置返回 null */
+  /** 按引擎配置复用实例；非在线引擎/腾讯云缺凭据返回 null */
   ensure(settings: VoiceSettings): TtsEngine | null {
-    if (settings.ttsEngine !== 'tencent') return null;
+    if (settings.ttsEngine === 'edge') return this.ensureEdge(settings);
+    if (settings.ttsEngine === 'tencent') return this.ensureTencent(settings);
+    return null;
+  }
+
+  private ensureEdge(settings: VoiceSettings): TtsEngine {
+    const key = `edge|${settings.edgeVoice}`;
+    if (this.engine && this.configKey === key) return this.engine;
+    void this.engine?.dispose();
+    this.engine = new EdgeTtsEngine({ voice: settings.edgeVoice });
+    this.configKey = key;
+    return this.engine;
+  }
+
+  private ensureTencent(settings: VoiceSettings): TtsEngine | null {
     const credentials = this.store?.get();
     if (!credentials) return null;
     const key = [
+      'tencent',
       credentials.secretId,
       credentials.secretKey,
       credentials.region,

@@ -56,6 +56,8 @@ const nextConfig = {
     'tesseract.js',
     // v1.0：sherpa-onnx-node 含 .node 原生绑定与 DLL，必须外部 require
     'sherpa-onnx-node',
+    // v4.19：微软在线朗读走 ws（含可选原生加速依赖），保持外部 require
+    'ws',
   ],
   // 运行时数据根（~/.workbuddy-for-me：语音模型/espeak 数据/附件）绝不能被追踪进
   // standalone：nft 会把模型清单里的字面量路径与 homedir() 静态求值误解析到磁盘上已下载的

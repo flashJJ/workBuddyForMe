@@ -47,10 +47,14 @@ export function useVoiceSettings() {
         queryClient.setQueryData(QUERY_KEYS.voiceSettings, context.previous);
       }
     },
-    onSuccess: (next) => {
+    onSuccess: (next, patch) => {
       queryClient.setQueryData(QUERY_KEYS.voiceSettings, next);
       // 桌宠等独立窗口需要即时跟随（大小、待机动作等）
       broadcastSettingsChanged();
+      // 切换引擎后 ttsReady（本地模型/腾讯云凭据/微软免密钥）会变化，立即重取
+      if (patch.ttsEngine !== undefined) {
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.voiceModelStatus });
+      }
     },
   });
 

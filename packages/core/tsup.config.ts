@@ -22,12 +22,14 @@ export default defineConfig({
   dts: false,
   outExtension: ({ format }) => ({ js: format === 'cjs' ? '.cjs' : '.mjs' }),
   // @napi-rs/canvas（原生 .node）与 tesseract.js（worker/wasm）必须保持外部 require，
-  // 不能打进 bundle：内部相对路径与 worker 引导依赖真实包目录结构
+  // 不能打进 bundle：内部相对路径与 worker 引导依赖真实包目录结构；
+  // ws 含可选原生加速依赖，外部化交给 Node 解析（mpg123-decoder 为纯 JS+内联 wasm，可打包）
   external: [
     /^@wbfm\//,
     'better-sqlite3',
     'sqlite-vec',
     /^@napi-rs\/canvas$/,
     /^tesseract\.js$/,
+    'ws',
   ],
 });

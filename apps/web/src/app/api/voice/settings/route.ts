@@ -28,7 +28,8 @@ export const PUT = defineRoute(async ({ request, services }) => {
     patch.tencentRegion !== undefined ||
     patch.tencentVoiceType !== undefined ||
     patch.tencentModelType !== undefined ||
-    patch.tencentSampleRate !== undefined
+    patch.tencentSampleRate !== undefined ||
+    patch.edgeVoice !== undefined
   ) {
     runtime.invalidateTts();
     // 本地引擎变更后后台重新预热；在线引擎切换不加载本地模型

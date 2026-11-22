@@ -74,9 +74,9 @@ export class VoiceRuntime {
   async getModelStatus(): Promise<VoiceModelFileStatus> {
     const settings = this.settings;
     const status = await this.downloads.getModelStatus();
-    // 在线引擎不依赖本地模型：只要凭据存在即可朗读；关闭朗读则恒为未就绪
-    if (settings.ttsEngine === 'tencent') {
-      status.ttsReady = this.cloud.hasCredentials();
+    // 在线引擎不依赖本地模型：腾讯云看凭据、微软 Edge 免密钥；关闭朗读则恒为未就绪
+    if (settings.ttsEngine === 'tencent' || settings.ttsEngine === 'edge') {
+      status.ttsReady = this.cloud.isReady(settings);
       status.ttsMissing = [];
     } else if (settings.ttsEngine === 'none') {
       status.ttsReady = false;
@@ -243,7 +243,9 @@ export class VoiceRuntime {
   private async doPrewarmTts(): Promise<boolean> {
     try {
       // 在线引擎不加载本地模型；切回本地时设置路由会 force 预热
-      if (this.settings.ttsEngine === 'tencent') return true;
+      if (this.settings.ttsEngine === 'tencent' || this.settings.ttsEngine === 'edge') {
+        return true;
+      }
       const status = await this.getModelStatus();
       if (!status.ttsReady) {
         console.warn('[voice:tts] 模型未就绪，跳过启动预热');

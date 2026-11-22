@@ -5,6 +5,7 @@ import {
   MOTION_ROTATION_SECONDS_MAX,
   MOTION_ROTATION_SECONDS_MIN,
 } from '../../constants/index';
+import { DEFAULT_EDGE_VOICE } from './voice/edge';
 
 /**
  * v1.0 语音/形象/桌宠契约（zod）。
@@ -15,8 +16,8 @@ import {
 
 /** ASR 引擎：目前仅 sherpa-onnx 本地推理；none=关闭识别 */
 export const VOICE_ASR_ENGINES = ['sherpa_onnx', 'none'] as const;
-/** TTS 引擎：sherpa-onnx 本地推理 / tencent 腾讯云在线 / none=关闭朗读 */
-export const VOICE_TTS_ENGINES = ['sherpa_onnx', 'tencent', 'none'] as const;
+/** TTS 引擎：sherpa-onnx 本地推理 / tencent 腾讯云在线 / edge 微软 Edge 在线（免密钥）/ none=关闭朗读 */
+export const VOICE_TTS_ENGINES = ['sherpa_onnx', 'tencent', 'edge', 'none'] as const;
 /** 朗读模型：melo=单声低延迟（VITS 中英）；kokoro=多角色声线；matcha=快速单声 */
 export const VOICE_TTS_MODELS = ['melo', 'kokoro', 'matcha'] as const;
 /** 语音输入模式：ptt=按住说话；vad=免手持续聆听（半双工） */
@@ -66,6 +67,8 @@ export const voiceSettingsUpdateSchema = z
     tencentModelType: z.number().int().min(1).max(1).optional(),
     /** 腾讯云返回采样率（部分音色支持 24k，默认 16k） */
     tencentSampleRate: z.union([z.literal(8000), z.literal(16000), z.literal(24000)]).optional(),
+    /** 微软 Edge 在线朗读音色 ShortName（免密钥，默认晓晓） */
+    edgeVoice: z.string().min(1).max(128).optional(),
     /** 语音输入开关（麦克风） */
     asrEnabled: z.boolean().optional(),
     asrEngine: voiceAsrEngineSchema.optional(),
@@ -124,6 +127,7 @@ export const voiceSettingsSchema = voiceSettingsUpdateSchema.required({
   tencentVoiceType: true,
   tencentModelType: true,
   tencentSampleRate: true,
+  edgeVoice: true,
   asrEnabled: true,
   asrEngine: true,
   asrNumThreads: true,
@@ -181,6 +185,7 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   tencentVoiceType: 101001,
   tencentModelType: 1,
   tencentSampleRate: 16000,
+  edgeVoice: DEFAULT_EDGE_VOICE,
   asrEnabled: false,
   asrEngine: 'sherpa_onnx',
   asrNumThreads: 4,
@@ -277,23 +282,9 @@ export type VoiceModelStatus = z.infer<typeof voiceModelStatusSchema>;
 
 // ---------- 在线 TTS 凭据（write-only；读接口只返回脱敏状态） ----------
 
-export const voiceCloudCredentialsUpdateSchema = z
-  .object({
-    secretId: z.string().min(1).max(256).optional(),
-    secretKey: z.string().min(1).max(512).optional(),
-    region: z.string().min(1).max(64).optional(),
-    /** 清除已保存凭据（优先于本次提交的字段） */
-    clear: z.boolean().optional(),
-  })
-  .strict();
-export type VoiceCloudCredentialsUpdateInput = z.infer<typeof voiceCloudCredentialsUpdateSchema>;
-
-export const voiceCloudCredentialsViewSchema = z.object({
-  hasCredentials: z.boolean(),
-  maskedSecretId: z.string().nullable(),
-  region: z.string(),
-});
-export type VoiceCloudCredentialsView = z.infer<typeof voiceCloudCredentialsViewSchema>;
+export * from './voice/cloud';
+// 微软 Edge 在线朗读音色快捷项
+export { DEFAULT_EDGE_VOICE, EDGE_TTS_VOICES } from './voice/edge';
 
 // v2.25：PTT 识别文本润色（独立子域，避免语音设置 schema 持续膨胀）
 export * from './polish';

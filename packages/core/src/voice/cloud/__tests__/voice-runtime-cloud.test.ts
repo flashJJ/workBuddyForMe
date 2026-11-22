@@ -9,6 +9,8 @@ const h = vi.hoisted(() => ({
   cloudGet: vi.fn(),
   cloudSynth: vi.fn(),
   cloudOptions: [] as unknown[],
+  edgeSynth: vi.fn(),
+  edgeOptions: [] as unknown[],
 }));
 
 vi.mock('../../voice-model-files', () => ({
@@ -33,6 +35,16 @@ vi.mock('../tencent-tts-engine', () => ({
   },
 }));
 
+vi.mock('../edge-tts-engine', () => ({
+  EdgeTtsEngine: class {
+    constructor(options: unknown) {
+      h.edgeOptions.push(options);
+    }
+    synthesize = h.edgeSynth;
+    dispose = vi.fn();
+  },
+}));
+
 vi.mock('@wbfm/voice', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@wbfm/voice')>()),
   createSherpaTtsEngine: h.createLocal,
@@ -40,7 +52,7 @@ vi.mock('@wbfm/voice', async (importOriginal) => ({
 
 import { VoiceRuntime } from '../../voice-runtime';
 
-function makeRuntime(engine: 'sherpa_onnx' | 'tencent') {
+function makeRuntime(engine: 'sherpa_onnx' | 'tencent' | 'edge') {
   const settings = {
     ...DEFAULT_VOICE_SETTINGS,
     ttsEngine: engine,
@@ -97,5 +109,22 @@ describe('VoiceRuntime 在线 TTS 选择与回退', () => {
     const result = await runtime.synthesize('你好');
     expect(Array.from(result.samples)).toEqual([0.75]);
     expect(h.cloudSynth).not.toHaveBeenCalled();
+  });
+
+  it('ttsEngine=edge：免凭据走微软在线引擎，模型状态恒就绪', async () => {
+    h.cloudGet.mockReturnValue(null);
+    h.edgeSynth.mockResolvedValue({ samples: new Float32Array([0.4]), sampleRate: 24000 });
+    const { runtime } = makeRuntime('edge');
+
+    const result = await runtime.synthesize('你好');
+
+    expect(result.samples[0]).toBeCloseTo(0.4);
+    expect(h.edgeOptions[0]).toMatchObject({ voice: DEFAULT_VOICE_SETTINGS.edgeVoice });
+    expect(h.cloudSynth).not.toHaveBeenCalled();
+    expect(h.createLocal).not.toHaveBeenCalled();
+    await expect(runtime.getModelStatus()).resolves.toMatchObject({
+      ttsReady: true,
+      ttsMissing: [],
+    });
   });
 });
