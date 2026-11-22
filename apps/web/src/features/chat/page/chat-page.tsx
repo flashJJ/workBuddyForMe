@@ -34,6 +34,8 @@ import { BudgetWarningBar } from '../overlay/budget';
 import { useChatDeepLink } from '../hooks/use-chat-deep-link';
 import { useTtfv } from './use-ttfv';
 import { ChatStageBar, useChatModelView } from '../stage';
+import { FirstTokenBudgetHost } from '../perf/first-token-budget-host';
+import { useFirstTokenBudget } from '../perf/use-first-token-budget';
 import { getPetBridge } from '@/features/pet/bridge';
 
 /** v4.15：桌宠「聊两句」语义键 → 草稿文案（只预填，不发送） */
@@ -105,6 +107,7 @@ export function ChatPage({
     hasChatModel,
   });
   const { session, voiceSettings, ttsEnabled, handleTtsToggle, handsfree, petOpen } = companion;
+  const firstTokenBudget = useFirstTokenBudget(session.streamTiming);
   useTtfv(session.messages.some((m) => m.role === 'assistant' && m.content.trim().length > 0));
 
   // v1.7 剧情事件编排（情绪基线/舞台/触发器；桌宠打开时主窗仍承接 TTS 与中继）
@@ -244,6 +247,11 @@ export function ChatPage({
                 onDismiss={companion.dismissProactive}
               />
             )}
+            <FirstTokenBudgetHost
+              budget={firstTokenBudget}
+              onStop={session.stop}
+              onReduceContext={() => setBudgetOpen(true)}
+            />
             <Composer
               streaming={session.streaming}
               visionEnabled={visionEnabled && !taskMode}

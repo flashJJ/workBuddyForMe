@@ -38,7 +38,11 @@ export interface ChatSessionVoice {
 export interface StreamTiming {
   startedAt: number;
   firstTokenAt: number | null;
+  /** v4.20：首段可见（含换行或累计 ≥80 字符） */
+  firstParagraphAt?: number | null;
   settledAt: number | null;
+  /** v4.20：本轮是否正常完成；错误/停止为 false */
+  ok?: boolean | null;
 }
 
 /** 对话会话对外契约（use-chat-session 的实现返回此接口） */

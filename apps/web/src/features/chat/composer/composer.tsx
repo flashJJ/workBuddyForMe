@@ -9,6 +9,7 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
 import { CHAT_CONTENT_MAX_WIDTH } from '../chat-layout';
+import { PERF_MARK, markPerf } from '../perf/marks';
 import { useAttachmentUpload } from '../hooks/use-attachment-upload';
 
 interface Props {
@@ -75,6 +76,10 @@ export function Composer({
   onStop,
 }: Props) {
   const { t } = useI18n();
+  // v4.20：输入区首次可交互作为冷启动终点
+  React.useEffect(() => {
+    markPerf(PERF_MARK.appReady);
+  }, []);
   const [innerValue, setInnerValue] = React.useState('');
   // v2.20 M5：可选受控；不传 draftValue 时与旧行为一致
   const value = draftValue ?? innerValue;

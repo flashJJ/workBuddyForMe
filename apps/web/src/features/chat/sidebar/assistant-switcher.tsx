@@ -18,6 +18,7 @@ export function AssistantSwitcher({ assistants, value, disabled, onChange }: Pro
       <span className="shrink-0 text-sm text-muted-foreground">{t('chat.currentAssistant')}</span>
       <SimpleSelect
         aria-label={t('chat.switchAssistantAria')}
+        data-testid="assistant-switcher"
         className="h-8 w-full min-w-0 max-w-[12rem]"
         value={value}
         disabled={disabled || assistants.length === 0}

@@ -89,6 +89,15 @@ export const zhChatMessages = {
       knowledge: '知识',
     },
   },
+  /** v4.20：首字预算提示 */
+  perf: {
+    firstTokenSlow: '首字已等待 {ms}ms，超过本机基线',
+    stop: '停止',
+    switchModel: '换更小模型',
+    switchModelHint: '请在顶部助手切换器中选择更小的模型',
+    reduceContext: '缩减上下文',
+    dismiss: '关闭提示',
+  },
   image: {
     unavailable: '图片不可用',
     loading: '图片加载中',
@@ -178,6 +187,15 @@ export const enChatMessages = {
       meeting: 'Meeting',
       knowledge: 'Knowledge',
     },
+  },
+  /** v4.20: first-token budget notice */
+  perf: {
+    firstTokenSlow: 'First token took {ms}ms, longer than this device baseline',
+    stop: 'Stop',
+    switchModel: 'Use a smaller model',
+    switchModelHint: 'Pick a smaller model in the assistant switcher at the top',
+    reduceContext: 'Reduce context',
+    dismiss: 'Dismiss notice',
   },
   image: {
     unavailable: 'Image unavailable',

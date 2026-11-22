@@ -49,14 +49,56 @@ describe('useStreamFrame（v2.4 P1-4 合帧与计时）', () => {
 
     act(() => {
       result.current.markFirstToken();
-      result.current.settleTiming();
+      result.current.settleTiming(true);
     });
     expect(result.current.timing?.firstTokenAt).toBeTypeOf('number');
     expect(result.current.timing?.settledAt).toBeTypeOf('number');
+    expect(result.current.timing?.ok).toBe(true);
 
     act(() => {
       result.current.resetStream();
     });
     expect(result.current.timing).toBeNull();
+  });
+
+  it('v4.20：首段按换行或 80 字符判定，并写 Performance 打点', () => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const mark = vi.spyOn(performance, 'mark').mockImplementation(() => ({}) as PerformanceMark);
+    const append = vi.fn();
+    const { result } = renderHook(() => useStreamFrame(append));
+
+    act(() => {
+      result.current.startTiming();
+      result.current.markFirstToken();
+      result.current.queueDelta('第一段还没有换行');
+    });
+    expect(result.current.timing?.firstParagraphAt).toBeNull();
+
+    act(() => {
+      result.current.queueDelta('\n第二段');
+    });
+    expect(result.current.timing?.firstParagraphAt).toBeTypeOf('number');
+    expect(mark.mock.calls.map(([name]) => name)).toEqual(
+      expect.arrayContaining(['wbfm:send', 'wbfm:first-token', 'wbfm:first-paragraph']),
+    );
+  });
+
+  it('v4.20：错误/停止落定为 ok=false，只有正常完成才进入基线', () => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const { result } = renderHook(() => useStreamFrame(vi.fn()));
+
+    act(() => {
+      result.current.startTiming();
+      result.current.settleTiming();
+    });
+    expect(result.current.timing?.ok).toBe(false);
+
+    act(() => {
+      result.current.startTiming();
+      result.current.settleTiming(true);
+    });
+    expect(result.current.timing?.ok).toBe(true);
   });
 });

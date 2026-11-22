@@ -23,7 +23,7 @@ export interface StreamHandlerContext {
   markFirstToken: () => void;
   queueDelta: (content: string) => void;
   flushPendingDelta: () => void;
-  settleTiming: () => void;
+  settleTiming: (ok?: boolean) => void;
   setLive: Dispatch<SetStateAction<Message[] | null>>;
   setRecalledMemories: Dispatch<SetStateAction<RecalledMemoryPayload[]>>;
   setPendingConfirmation: Dispatch<SetStateAction<PendingToolConfirmation | null>>;
@@ -116,7 +116,7 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
     onDone: (data: SsePayloadMap['done']) => {
       liveGraph.complete(data);
       flushPendingDelta();
-      settleTiming();
+      settleTiming(true);
       setPendingConfirmation(null);
       setPendingLocalSearch(null);
       patchLastAssistant(completedPatch(data));
@@ -129,7 +129,7 @@ export function createStreamHandlers(ctx: StreamHandlerContext) {
     onError: (data: SsePayloadMap['error']) => {
       liveGraph.fail(data);
       flushPendingDelta();
-      settleTiming();
+      settleTiming(false);
       setPendingConfirmation(null);
       setPendingLocalSearch(null);
       patchLastAssistant({ status: 'error', errorCode: data.code, errorMessage: data.message });
