@@ -2,6 +2,8 @@
 
 > 版本：4.22.0（2026-11-23 发布）
 > 状态：✅ 已发布（tag `v4.22.0`，GitHub Release 最新版）
+> 安装包：`WorkBuddyForMe-Setup-4.22.0.exe`（274.28 MiB，SHA256 `df626fa1…a1599cf`）
+> Release：https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.22.0
 > 主题：Controller Pipeline 与 Flow 并行调度——上下文从「顺序拼装」到「采集/装包」，流程从「按序遍历」到「就绪集合」
 > 迁移：零数据库迁移；备份格式不变；无新增运行时依赖；`parallelism` 仅存在于图 JSON
 > 博客：[blog/v4.22](../../blog/v4.22/) 7 篇

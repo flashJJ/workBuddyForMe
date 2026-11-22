@@ -1,6 +1,6 @@
 # v4.22 选题与范围（已立项）
 
-> 状态：M0 契约已冻结（2026-11-23）——主题「会编排」：Controller Pipeline 与 Flow 并行调度
+> 状态：✅ 已发布（2026-11-23，`v4.22.0`）——主题「会编排」：Controller Pipeline 与 Flow 并行调度
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 任务：[tasks.md](./tasks.md)
 > 上游：v4.21 已发布（`v4.21.0`，2026-11-23）
 > 约束：零迁移；并行默认关闭，关闭时行为与 v4.21 逐字一致；不新增无法随 standalone 打包的依赖

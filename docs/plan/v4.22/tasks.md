@@ -1,6 +1,6 @@
 ﻿# v4.22 任务清单
 
-> 状态：进行中（M1–M5 已实现并验证，2026-11-23）
+> 状态：已完成（M0–M6，2026-11-23 发布 v4.22.0）
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 选题：[README.md](./README.md)
 > 原则：默认关闭；`parallelism=1` 逐字等价；零迁移
 
