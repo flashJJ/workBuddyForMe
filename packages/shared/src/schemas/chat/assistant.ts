@@ -43,10 +43,10 @@ const samplingFields = {
   modelId: z.string().trim().min(1).nullable().default(null),
   /** v4.18 A 线：备用模型（null=不启用自动切换；仅助手级） */
   fallbackModelId: z.string().trim().min(1).nullable().default(null),
-  /** v4.19：备用模型链（顺序即切换顺序；≤3，重复项服务端去重） */
+  /** v4.19：备用模型链（顺序即切换顺序；≤5，重复项服务端去重） */
   fallbackModelIds: z
     .array(z.string().trim().min(1))
-    .max(ASSISTANT_FALLBACK_MODELS_MAX, '备用模型最多 3 个')
+    .max(ASSISTANT_FALLBACK_MODELS_MAX, `备用模型最多 ${ASSISTANT_FALLBACK_MODELS_MAX} 个`)
     .optional(),
   /** v1.4：协作三角色模型覆盖；留空=跟随助手默认/系统默认 */
   plannerModelId: z.string().trim().min(1).nullable().default(null),

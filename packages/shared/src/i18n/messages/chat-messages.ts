@@ -80,6 +80,7 @@ export const zhChatMessages = {
     copyCitation: '复制引用',
     copiedCitation: '已复制引用',
     copyCitationFailed: '复制失败，请手动选择文本',
+    newTask: '新建任务',
     scopeAll: '全部',
     keyboardHint: '↑↓ 选择 · Enter 打开 · Ctrl+Enter 新面板',
     domains: {
@@ -180,6 +181,7 @@ export const enChatMessages = {
     copyCitation: 'Copy citation',
     copiedCitation: 'Citation copied',
     copyCitationFailed: 'Copy failed. Select the text manually.',
+    newTask: 'New task',
     scopeAll: 'All',
     keyboardHint: '↑↓ select · Enter open · Ctrl+Enter new panel',
     domains: {

@@ -44,6 +44,8 @@ interface Props {
   conversationId: string;
   onConversationChange: (id: string) => void;
   onCreated: (runId: string) => void;
+  /** v4.20：知识「新建任务」预填目标（只预填，不提交） */
+  initialGoal?: string;
 }
 
 /** v2.13 M1：任务启动表单（模式 / 工作目录 / 目标 / 步数） */
@@ -52,6 +54,7 @@ export function TaskStartForm({
   conversationId,
   onConversationChange,
   onCreated,
+  initialGoal = '',
 }: Props) {
   const { t } = useI18n();
   const toast = useToast();
@@ -63,6 +66,14 @@ export function TaskStartForm({
   const [workspacePath, setWorkspacePath] = React.useState('');
   const [fullAccessAck, setFullAccessAck] = React.useState(false);
   const modeInitialized = React.useRef(false);
+  const goalInitialized = React.useRef(false);
+
+  // v4.20：预填草稿只应用一次（水合后 searchParams 才可用，故用 effect 而非初始值）
+  React.useEffect(() => {
+    if (goalInitialized.current) return;
+    goalInitialized.current = true;
+    if (initialGoal) setGoal((prev) => prev || initialGoal);
+  }, [initialGoal]);
 
   React.useEffect(() => {
     if (modeInitialized.current) return;
@@ -149,6 +160,7 @@ export function TaskStartForm({
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">{t('tasks.goalLabel')}</label>
           <Textarea
+            data-testid="task-goal-input"
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             placeholder={t('tasks.goalPlaceholder')}

@@ -131,15 +131,25 @@ export class VoiceRuntime {
     // 在线引擎优先：逐句 HTTPS 合成，失败自动回退本地（离线兜底）
     const online = this.cloud.ensure(settings);
     if (online) {
+      // v4.20：在线引擎支持流式时边收边下发；已下发过分片则不回退，避免重复朗读
+      let emitted = false;
+      const onlineSink: TtsChunkSink = (chunk) => {
+        emitted = true;
+        sink?.(chunk);
+      };
       try {
-        const result = await online.synthesize(text, {
+        const opts = {
           speed: speed ?? settings.ttsSpeed,
           ...(signal ? { signal } : {}),
-        });
-        sink?.(result);
-        return result;
+        };
+        return online.synthesizeStream
+          ? await online.synthesizeStream(text, opts, onlineSink)
+          : await online.synthesize(text, opts).then((result) => {
+              onlineSink(result);
+              return result;
+            });
       } catch (error) {
-        if (signal?.aborted) throw error;
+        if (signal?.aborted || emitted) throw error;
         console.warn(
           '[voice:tts] 在线合成失败，回退本地引擎：',
           (error as Error).message,

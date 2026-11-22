@@ -22,15 +22,17 @@ describe('buildAssistantBody（表单 → API 契约收敛）', () => {
   });
 
   it('v4.19：备用模型链剔除主模型、去重并限制上限', () => {
+    const extras = ['m-1', 'm-2', 'm-3', 'm-4', 'm-5', 'm-6'];
     const body = buildAssistantBody(
       form({
         modelId: 'm-primary',
-        fallbackModelIds: ['m-primary', 'm-1', 'm-1', 'm-2', 'm-3', 'm-4'],
+        fallbackModelIds: ['m-primary', 'm-1', 'm-1', ...extras.slice(1)],
       }),
     );
     expect(body.fallbackModelIds).toEqual(
-      ['m-1', 'm-2', 'm-3'].slice(0, ASSISTANT_FALLBACK_MODELS_MAX),
+      extras.slice(0, ASSISTANT_FALLBACK_MODELS_MAX),
     );
+    expect(body.fallbackModelIds).toHaveLength(5);
   });
 
   it('数值钳制在服务端允许区间内', () => {

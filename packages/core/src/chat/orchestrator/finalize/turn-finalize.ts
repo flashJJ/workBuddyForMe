@@ -41,6 +41,8 @@ export interface TurnFinalizeParams {
   citations: Citation[];
   intentNotices: MemoryNotice[];
   trace: ToolTraceEntry[];
+  /** v4.20：寒暄快路径跳过回合后记忆提取 */
+  fastChitchat: boolean;
   signal?: AbortSignal;
   state: TurnFinalizeState;
   schedule: Parameters<typeof schedulePostTurnJobs>[0]['schedule'];
@@ -65,6 +67,7 @@ export async function* finalizeSuccessfulTurn(
     citations,
     intentNotices,
     trace,
+    fastChitchat,
     signal,
     state,
     schedule,
@@ -127,6 +130,7 @@ export async function* finalizeSuccessfulTurn(
       sourceMessageId: assistantMessageId,
       workPlans: deps.workPlans,
       toolTrace: trace,
+      fastChitchat,
       events: deps.events,
     },
   });

@@ -96,8 +96,8 @@ export const ASSISTANT_ENABLED_TOOLS_MAX = 128;
 export const ASSISTANT_SKILL_NAMES_MAX = 20;
 export const ASSISTANT_KNOWLEDGE_BASES_MAX = 10;
 
-/** v4.19：助手级备用模型链上限（顺序即切换顺序） */
-export const ASSISTANT_FALLBACK_MODELS_MAX = 3;
+/** v4.19：助手级备用模型链上限（顺序即切换顺序）；v4.20 由 3 放宽到 5 */
+export const ASSISTANT_FALLBACK_MODELS_MAX = 5;
 
 /**
  * v0.6 M3 本地技能包（声明式 Skill）：

@@ -20,7 +20,7 @@ import { runProviderTurnWithToolFallback, type ProviderTurn } from '../tool-runn
  */
 export interface ModelFallbackTurnParams {
   target: ResolvedChatTarget;
-  /** v4.19：按顺序尝试的备用模型候选（最多 3 个；已尝试的不重复） */
+  /** v4.19：按顺序尝试的备用模型候选（最多 5 个；已尝试的不重复） */
   fallbacks?: ResolvedChatTarget[];
   assistant: Assistant;
   messages: ChatMessage[];

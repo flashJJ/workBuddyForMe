@@ -189,6 +189,14 @@ describe('M3 对话编排 × 长期记忆（端到端）', () => {
     expect(second.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
     await orchestrator.waitForBackgroundJobs();
 
+    // v4.20 M4.1：寒暄轮不创建回合后记忆提取任务，记忆条数不变
+    const extractRequests = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).endsWith('/chat/completions') &&
+      String(JSON.parse(String(call[1].body)).messages?.[0]?.content).includes('记忆提取助手'),
+    );
+    expect(extractRequests).toHaveLength(1);
+    expect(createMemoryService({ db, cipher }).list()).toHaveLength(1);
+
     const chatBodies = fetchMock.mock.calls
       .map((call) => JSON.parse(String(call[1].body)))
       .filter((b) => Array.isArray(b.messages) && !String(b.messages[0]?.content).includes('记忆提取助手'));

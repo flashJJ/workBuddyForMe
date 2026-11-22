@@ -72,6 +72,34 @@ describe('v4.19 备用模型链与会话覆盖', () => {
       assistantCreateSchema.parse(input) as AssistantCreateInput,
     );
 
+  it('v4.20 备用链上限放宽到 5：第六条被 schema 拒绝', () => {
+    const models = createModelRepository(db);
+    const addModel = (modelId: string) =>
+      models.create({
+        providerId,
+        modelId,
+        displayName: modelId,
+        capabilities: ['chat'],
+        contextWindow: 8192,
+      }).id;
+    const five = [f1, f2, f3, addModel('mock-f4'), addModel('mock-f5')];
+
+    const created = createAssistant({
+      name: '五链助手',
+      modelId: primaryId,
+      fallbackModelIds: five,
+    });
+    expect(created.fallbackModelIds).toEqual(five);
+
+    expect(() =>
+      assistantCreateSchema.parse({
+        name: '六链助手',
+        modelId: primaryId,
+        fallbackModelIds: [...five, addModel('mock-f6')],
+      }),
+    ).toThrow(/最多 5/);
+  });
+
   it('链写入去重、剔除主模型，旧单值键同步为首项', () => {
     const assistants = createAssistantsService({ db, cipher });
     const created = createAssistant({
