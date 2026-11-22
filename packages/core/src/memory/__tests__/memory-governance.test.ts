@@ -91,4 +91,37 @@ describe('v4.21 记忆治理动作', () => {
     expect(actions(target.id)).toEqual(['create', 'merge']);
     expect(memory.getStats().mergedTotal).toBe(1);
   });
+
+  it('固定后召回置顶，取消固定回落，降权后分数下降', async () => {
+    const memory = createMemoryService({ db, cipher });
+    const common = await memory.createManual({
+      kind: 'fact',
+      content: '用户喜欢猫',
+      importance: 0.8,
+    });
+    const pinTarget = await memory.createManual({
+      kind: 'fact',
+      content: '用户喜欢狗',
+      importance: 0.2,
+    });
+    const baseScore = (await memory.recall({ query: '喜欢' })).find(
+      (item) => item.id === common.id,
+    )!.score;
+
+    await memory.update(pinTarget.id, { pinned: true });
+    const afterPin = await memory.recall({ query: '喜欢' });
+    expect(afterPin[0]).toMatchObject({ id: pinTarget.id, reason: 'pinned' });
+
+    await memory.update(pinTarget.id, { pinned: false });
+    const unpinned = (await memory.recall({ query: '喜欢' })).find(
+      (item) => item.id === pinTarget.id,
+    );
+    expect(unpinned?.reason).not.toBe('pinned');
+
+    await memory.update(common.id, { weight: 'down' });
+    const afterDown = (await memory.recall({ query: '喜欢' })).find(
+      (item) => item.id === common.id,
+    );
+    expect(afterDown!.score).toBeLessThan(baseScore);
+  });
 });
