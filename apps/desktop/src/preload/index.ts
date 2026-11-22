@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { WbfmPetBridge } from '@wbfm/shared/pet';
+import type {
+  PetCloseReason,
+  PetOpenChange,
+  WbfmPetBridge,
+} from '@wbfm/shared/pet';
 import type { WbfmStageBridge } from '@wbfm/shared/stage';
 import type { WbfmUpdaterBridge } from '@wbfm/shared/updater';
 import type { WbfmNotifyBridge } from '@wbfm/shared/notify';
@@ -21,9 +25,29 @@ import type { WbfmSearchBridge } from '@wbfm/shared/search';
  */
 const PET_CHAT_REQUEST_CHANNEL = 'pet:chat-request';
 const PET_CHAT_PROMPT_KEYS = ['greet', 'comfort', 'play'] as const;
+const PET_CLOSE_REASONS = ['user', 'crash', 'quit', 'unknown'] as const;
 
 function isPetChatPromptKey(value: unknown): value is (typeof PET_CHAT_PROMPT_KEYS)[number] {
   return typeof value === 'string' && (PET_CHAT_PROMPT_KEYS as readonly string[]).includes(value);
+}
+
+/** 兼容旧主进程的 boolean 广播；新格式带上关闭原因供前端区分用户隐藏与崩溃 */
+function toPetOpenChange(payload: unknown): PetOpenChange | null {
+  if (typeof payload === 'boolean') {
+    return { open: payload, reason: payload ? null : 'unknown' };
+  }
+  if (payload && typeof payload === 'object' && 'open' in payload) {
+    const value = payload as { open?: unknown; reason?: unknown };
+    return {
+      open: Boolean(value.open),
+      reason:
+        typeof value.reason === 'string' &&
+        (PET_CLOSE_REASONS as readonly string[]).includes(value.reason)
+          ? (value.reason as PetCloseReason)
+          : null,
+    };
+  }
+  return null;
 }
 
 /**
@@ -107,7 +131,11 @@ const pet: WbfmPetBridge = {
     subscribe('pet:quick-action', (payload) => cb(payload as Parameters<typeof cb>[0])),
   onPerformance: (cb) =>
     subscribe('pet:performance', (payload) => cb(payload as Parameters<typeof cb>[0])),
-  onOpenChange: (cb) => subscribe('pet:open-changed', (payload) => cb(Boolean(payload))),
+  onOpenChange: (cb) =>
+    subscribe('pet:open-changed', (payload) => {
+      const change = toPetOpenChange(payload);
+      if (change) cb(change);
+    }),
   onChatRequest: (cb) =>
     subscribe(PET_CHAT_REQUEST_CHANNEL, (payload) => {
       if (isPetChatPromptKey(payload)) cb(payload);

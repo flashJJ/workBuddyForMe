@@ -129,8 +129,8 @@ export function usePetOpenState(): boolean {
         if (alive) setOpen(value);
       })
       .catch(() => undefined);
-    const off = bridge.onOpenChange((value) => {
-      if (alive) setOpen(value);
+    const off = bridge.onOpenChange((change) => {
+      if (alive) setOpen(change.open);
     });
     return () => {
       alive = false;

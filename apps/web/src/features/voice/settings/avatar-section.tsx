@@ -65,8 +65,9 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
   // 桌宠自身右键「隐藏」会广播 open=false（onOpenChange），同步回本地态并落库
   React.useEffect(() => {
     if (!petBridge) return;
-    const off = petBridge.onOpenChange((open) => {
-      if (!open) void onPatch({ petEnabled: false });
+    const off = petBridge.onOpenChange((change) => {
+      // 只有用户主动隐藏/关闭才落库；渲染进程崩溃/应用退出不应改掉用户偏好
+      if (!change.open && change.reason === 'user') void onPatch({ petEnabled: false });
     });
     return off;
   }, [petBridge, onPatch]);

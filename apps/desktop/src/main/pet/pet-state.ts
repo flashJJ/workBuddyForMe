@@ -7,12 +7,15 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { normalizeAvatarModelId } from '@wbfm/shared/pet';
 
 export interface PetState {
   x?: number;
   y?: number;
   /** 持久化的穿透偏好（默认 true：仅角色本体可交互）；悬停滞回的运行期翻转由控制器另管 */
   clickThrough: boolean;
+  /** 最后一次展示的模型：托盘/命令面板等无 modelId 的入口据此恢复，而不是回落 haru */
+  modelId?: string;
 }
 
 export const DEFAULT_PET_STATE: PetState = { clickThrough: true };
@@ -45,6 +48,10 @@ export function loadPetState(userDataDir: string): PetState {
       x: finiteInt(parsed.x),
       y: finiteInt(parsed.y),
       clickThrough: typeof parsed.clickThrough === 'boolean' ? parsed.clickThrough : true,
+      modelId:
+        typeof parsed.modelId === 'string' && parsed.modelId.length > 0
+          ? normalizeAvatarModelId(parsed.modelId)
+          : undefined,
     };
   } catch {
     return { ...DEFAULT_PET_STATE };

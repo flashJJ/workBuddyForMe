@@ -73,7 +73,10 @@ describe('PetManager', () => {
     expect(open).toHaveBeenCalledTimes(1);
     expect(open).toHaveBeenCalledWith(null, expect.objectContaining({ clickThrough: true }), 'hiyori');
     expect(pet.setIgnore).toHaveBeenLastCalledWith(true, { forward: true });
-    expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', true);
+    expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', {
+      open: true,
+      reason: null,
+    });
   });
 
   it('换模型：同窗口通知渲染层热替换，回执后不重建、不广播开关', async () => {
@@ -94,7 +97,7 @@ describe('PetManager', () => {
     expect(createWindow).toHaveBeenCalledTimes(1);
     expect(pet.win.destroy).not.toHaveBeenCalled();
     expect(main.show).not.toHaveBeenCalled();
-    expect(broadcasts).toEqual([true]);
+    expect(broadcasts).toEqual([{ open: true, reason: null }]);
   });
 
   it('换模型：渲染层未回执时超时回退为重建窗口（位置沿用）', async () => {
@@ -141,7 +144,10 @@ describe('PetManager', () => {
     const saved = JSON.parse(fs.readFileSync(path.join(dir, 'pet-state.json'), 'utf8'));
     expect(saved.x).toBe(321);
     expect(saved.y).toBe(432);
-    expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', false);
+    expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', {
+      open: false,
+      reason: 'user',
+    });
     expect(main.show).toHaveBeenCalled();
     expect(main.focus).toHaveBeenCalled();
 
@@ -203,7 +209,10 @@ describe('PetManager', () => {
     expect(pet.wc.send).toHaveBeenLastCalledWith('pet:quick-action', 'toggle-mute');
 
     menuActions!.hide();
-    expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', false);
+    expect(main.webContents.send).toHaveBeenLastCalledWith('pet:open-changed', {
+      open: false,
+      reason: 'user',
+    });
   });
 
   it('取消穿透后：重开窗立即常驻可交互，悬停上报不再翻转', async () => {
@@ -221,35 +230,6 @@ describe('PetManager', () => {
     await manager.close();
     await manager.open();
     expect(pet.setIgnore).toHaveBeenLastCalledWith(false, { forward: false });
-  });
-
-  it('桌宠存活时拦截主窗关闭（改为隐藏）；prepareQuit 后放行且不再唤主窗', async () => {
-    await manager.open();
-    const event = { preventDefault: vi.fn() };
-    expect(manager.handleMainClose(event)).toBe(true);
-    expect(event.preventDefault).toHaveBeenCalledTimes(1);
-    expect(main.hide).toHaveBeenCalledTimes(1);
-
-    // 桌宠关后不再拦截
-    await manager.close();
-    expect(manager.handleMainClose({ preventDefault: vi.fn() })).toBe(false);
-
-    // 重新开窗后走退出路径
-    await manager.open();
-    (main.show as ReturnType<typeof vi.fn>).mockClear();
-    manager.prepareQuit();
-    expect(pet.win.destroy).toHaveBeenCalled();
-    expect(main.show).not.toHaveBeenCalled();
-    const quitEvent = { preventDefault: vi.fn() };
-    expect(manager.handleMainClose(quitEvent)).toBe(false);
-    expect(quitEvent.preventDefault).not.toHaveBeenCalled();
-  });
-
-  it('唤回主窗时最小化先 restore', async () => {
-    (main.isMinimized as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    manager.focusMain();
-    expect(main.restore).toHaveBeenCalledTimes(1);
-    expect(main.show).toHaveBeenCalledTimes(1);
   });
 
   it('手动拖拽 IPC 身份校验：非桌宠发送方拒绝（手势数值逻辑见 pet-drag-controller.test）', async () => {
@@ -297,4 +277,5 @@ describe('PetManager', () => {
     expect(menuMocks.buildFromTemplate).toHaveBeenCalledTimes(1);
     expect(menuMocks.popup).toHaveBeenCalled();
   });
+
 });

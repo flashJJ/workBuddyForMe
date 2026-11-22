@@ -172,8 +172,8 @@ describe('usePetOpenState', () => {
   it('桥存在：初始值来自 isOpen，随后跟随 onOpenChange 广播', async () => {
     const bridge = makeBridge();
     bridge.isOpen = vi.fn(async () => true);
-    let emit: (open: boolean) => void = () => undefined;
-    bridge.onOpenChange = vi.fn((cb: (open: boolean) => void) => {
+    let emit: (change: { open: boolean; reason: 'user' | null }) => void = () => undefined;
+    bridge.onOpenChange = vi.fn((cb: typeof emit) => {
       emit = cb;
       return () => undefined;
     });
@@ -181,7 +181,7 @@ describe('usePetOpenState', () => {
 
     const h = renderHook(() => usePetOpenState());
     await vi.waitFor(() => expect(h.result.current).toBe(true));
-    act(() => emit(false));
+    act(() => emit({ open: false, reason: 'user' }));
     expect(h.result.current).toBe(false);
   });
 });

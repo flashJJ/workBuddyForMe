@@ -8,6 +8,7 @@
  *
  * 仅类型 + 一个纯函数，无运行时依赖（模型白名单为 voice schema 的 const 数组）。
  */
+import type { PetOpenChange } from './pet/close-reason';
 import { EXPRESSION_TAGS, type ExpressionTag } from './schemas/emotion/expression';
 import { MOTION_MOODS, type MotionMood } from './schemas/media/motion-asset';
 import {
@@ -81,6 +82,9 @@ const HIT_POLYGON_IDS = new Set<string>(['head', 'body', 'tail', 'ui']);
 
 /** 桌宠窗上报的伴身设置（右键菜单勾选态；主进程只缓存） */
 export interface PetCompanionSettings { muted: boolean; proactive: boolean }
+
+export type { PetCloseReason, PetOpenChange } from './pet/close-reason';
+export { isPetCloseReason } from './pet/close-reason';
 /**
  * preload 通过 contextBridge 暴露的桌宠桥（window.wbfm.pet）。
  * 主窗调用 open/close/isOpen/relayPerformance/onOpenChange；
@@ -124,8 +128,8 @@ export interface WbfmPetBridge {
   onQuickAction(cb: (action: PetQuickAction) => void): () => void;
   /** 桌宠窗：订阅表现事件，返回取消订阅 */
   onPerformance(cb: (event: PetPerformanceEvent) => void): () => void;
-  /** 主窗：订阅桌宠开关状态（用于主窗形象栏让位），返回取消订阅 */
-  onOpenChange(cb: (open: boolean) => void): () => void;
+  /** 主窗：订阅桌宠开关状态（用于主窗形象栏让位/偏好落库），返回取消订阅 */
+  onOpenChange(cb: (change: PetOpenChange) => void): () => void;
   /** 主窗：订阅桌宠「聊两句」语义键（只预填草稿，不自动发送），返回取消订阅 */
   onChatRequest(cb: (key: PetChatPromptKey) => void): () => void;
 }

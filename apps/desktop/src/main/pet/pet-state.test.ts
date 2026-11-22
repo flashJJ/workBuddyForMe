@@ -35,6 +35,19 @@ describe('pet-state 持久化', () => {
     expect(loadPetState(dir)).toEqual({ x: 100, y: 200, clickThrough: false });
   });
 
+  it('保存/回读最后模型：未知值归一为 haru', () => {
+    savePetState(dir, {
+      x: 1,
+      y: 2,
+      clickThrough: true,
+      modelId: 'vrm:builtin:xuetuan',
+    });
+    expect(loadPetState(dir).modelId).toBe('vrm:builtin:xuetuan');
+
+    savePetState(dir, { x: 1, y: 2, clickThrough: true, modelId: 'unknown-model' });
+    expect(loadPetState(dir).modelId).toBe('haru');
+  });
+
   it('损坏 JSON / 非法字段回落默认', () => {
     fs.writeFileSync(path.join(dir, 'pet-state.json'), '{not-json', 'utf8');
     expect(loadPetState(dir).clickThrough).toBe(true);
