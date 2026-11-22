@@ -47,6 +47,22 @@ describe('flow 图契约（v0.8）', () => {
     expect(badId.success).toBe(false);
   });
 
+  it('v4.22 并行度：缺省省略，1–4 整数合法，越界拒绝', () => {
+    const base = {
+      nodes: [
+        { id: 'start', type: 'start', position: { x: 0, y: 0 } },
+        { id: 'end', type: 'end', position: { x: 1, y: 2 } },
+      ],
+      edges: [{ id: 'e1', source: 'start', target: 'end' }],
+    };
+    expect(flowGraphSchema.parse(base).parallelism).toBeUndefined();
+    expect(flowGraphSchema.safeParse({ ...base, parallelism: 1 }).success).toBe(true);
+    expect(flowGraphSchema.safeParse({ ...base, parallelism: 4 }).success).toBe(true);
+    expect(flowGraphSchema.safeParse({ ...base, parallelism: 0 }).success).toBe(false);
+    expect(flowGraphSchema.safeParse({ ...base, parallelism: 5 }).success).toBe(false);
+    expect(flowGraphSchema.safeParse({ ...base, parallelism: 1.5 }).success).toBe(false);
+  });
+
   it('工作流创建请求：名称必填，描述默认空串', () => {
     const wf = workflowCreateSchema.parse({ name: '研究助手' });
     expect(wf.description).toBe('');

@@ -1,6 +1,6 @@
-# v4.22 任务清单
+﻿# v4.22 任务清单
 
-> 状态：进行中（M0 已冻结，2026-11-23）
+> 状态：进行中（M1–M5 已实现并验证，2026-11-23）
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 选题：[README.md](./README.md)
 > 原则：默认关闭；`parallelism=1` 逐字等价；零迁移
 
@@ -14,38 +14,38 @@
 
 ## M1 Controller Pipeline
 
-- [ ] M1.1 `core/context/pipeline` 的 types / collector / packer 纯函数与单测
-- [ ] M1.2 五个内置来源（摘要 / 事实 / 计划 / 近期 / 记忆）与注册顺序
-- [ ] M1.3 `buildTaskContextBlock` 接入 collector + packer
-- [ ] M1.4 等价验证：固定夹具与 v4.21 快照逐字一致
+- [x] M1.1 `core/context/pipeline` 的 types / collector / packer 纯函数与单测
+- [x] M1.2 五个内置来源（摘要 / 事实 / 计划 / 近期 / 记忆）与注册顺序
+- [x] M1.3 `buildTaskContextBlock` 接入 collector + packer
+- [x] M1.4 等价验证：固定夹具与 v4.21 快照逐字一致
 
 ## M2 Flow 并行调度
 
-- [ ] M2.1 图契约增加 `parallelism`（1–4，默认 1）与校验单测
-- [ ] M2.2 编译/引擎读取并行度并 clamp
-- [ ] M2.3 就绪集合调度器：并发上限、可并行类型白名单
-- [ ] M2.4 `parallelism=1` 走原串行路径，现有引擎测试不改断言即通过
-- [ ] M2.5 扇出图测试：双分支都执行、并发度不超限
+- [x] M2.1 图契约增加 `parallelism`（1–4，默认 1）与校验单测
+- [x] M2.2 编译/引擎读取并行度并 clamp
+- [x] M2.3 就绪集合调度器：并发上限、可并行类型白名单
+- [x] M2.4 `parallelism=1` 走原串行路径，现有引擎测试不改断言即通过
+- [x] M2.5 扇出图测试：双分支都执行、并发度不超限
 
 ## M3 并行语义
 
-- [ ] M3.1 流程级工具预算在并行分支共享，超限分支返回拒绝结果
-- [ ] M3.2 节点幂等键 `${runId}:${nodeId}` 与运行期 memo
-- [ ] M3.3 失败隔离：失败节点后代 skipped，无关分支继续
-- [ ] M3.4 结果收敛：多个成功 end 取拓扑序首个，其余仅事件
+- [x] M3.1 流程级工具预算在并行分支共享，超限分支返回拒绝结果
+- [x] M3.2 节点幂等键 `${runId}:${nodeId}` 与运行期 memo
+- [x] M3.3 失败隔离：失败节点后代 skipped，无关分支继续
+- [x] M3.4 结果收敛：多个成功 end 取拓扑序首个，其余仅事件
 
 ## M4 观测与体验
 
-- [ ] M4.1 `run_started` 增加 `parallelism`
-- [ ] M4.2 节点事件补齐 `durationMs`（并行下仍为自身耗时）
-- [ ] M4.3 画布/试运行面板对并行度只读展示（最小改动；无设置页）
-- [ ] M4.4 v4.21 并入项：治理动作使用观察、解释轨迹落盘评估（只评估，不默认落库）
+- [x] M4.1 `run_started` 增加 `parallelism`
+- [x] M4.2 节点事件补齐 `durationMs`（并行下仍为自身耗时）
+- [x] M4.3 画布/试运行面板对并行度只读展示（最小改动；无设置页）
+- [x] M4.4 v4.21 并入项：治理动作使用观察、解释轨迹落盘评估（只评估，不默认落库）
 
 ## M5 验证
 
-- [ ] M5.1 定向单测：collector / packer / task-context 等价 / engine-parallel
-- [ ] M5.2 定向 E2E 或集成：扇出流程并行与失败隔离
-- [ ] M5.3 `pnpm check` 与 `pnpm verify:local` 全绿
+- [x] M5.1 定向单测：collector / packer / task-context 等价 / engine-parallel
+- [x] M5.2 定向 E2E 或集成：扇出流程并行与失败隔离
+- [x] M5.3 `pnpm check` 与 `pnpm verify:local` 全绿
 
 ## M6 收口
 

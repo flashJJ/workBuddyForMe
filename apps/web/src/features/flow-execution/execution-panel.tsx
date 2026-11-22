@@ -104,6 +104,11 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
         <p className="text-sm font-semibold">{t('flowExecution.title')}</p>
         <RunStatusBadge kind="flow" status={live.phase} />
         <span className="font-mono text-[10px] text-muted-foreground">{runId.slice(0, 8)}</span>
+        {live.parallelism > 1 && (
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {t('flowExecution.parallelism', { n: live.parallelism })}
+          </span>
+        )}
         {live.connection === 'error' && !terminal && (
           <span className="flex items-center gap-1 text-[11px] text-warning">
             <AlertTriangle className="h-3 w-3" />
