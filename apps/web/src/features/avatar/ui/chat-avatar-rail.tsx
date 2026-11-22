@@ -9,7 +9,7 @@ import type { EventStage } from '@/features/events/hooks';
 import { AvatarHost } from './avatar-host';
 import type { Live2dController } from '../live2d/live2d-controller';
 
-interface Props {
+export interface Props {
   modelId: string;
   /** 当前生效表情（chat 页统一计算） */
   expression: ExpressionTag;

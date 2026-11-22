@@ -39,6 +39,7 @@
     "test:eval": "node --test scripts/eval/lib/replay-report.test.mjs scripts/eval/lib/replay-history.test.mjs",
     "test:perf": "node --test scripts/perf/lib/chat-perf-report.test.mjs",
     "perf:chat-report": "node scripts/perf/chat-report.mjs",
+    "perf:chat-samples": "node scripts/perf/chat-samples.mjs",
     "check:family": "node scripts/avatar/validate-family.mjs",
     "check:scenes": "pnpm --filter @wbfm/web exec vitest run src/features/avatar/script/scenes",
     "props:build": "node scripts/avatar/generate-props.mjs",
