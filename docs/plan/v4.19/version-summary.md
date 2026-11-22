@@ -1,6 +1,6 @@
 # v4.19 版本总结：补完
 
-> 版本：4.19.0（2026-11-22 打 tag `v4.19.0`）
+> 版本：4.19.0（2026-11-22 打 tag `v4.19.0`，Release 已转正并设为 Latest）
 > 主题：把 v4.18 五项顺延与 v4.17 两项遗留一次做完
 > 迁移：无数据库迁移；备份格式不变；新增 `ws`、`mpg123-decoder` 两个运行时依赖（语音追加）
 > 博客：[blog/v4.19](../../blog/v4.19/) 7 篇
@@ -75,7 +75,10 @@ v4.18 发布时主动顺延了五项，v4.17 还有两项小遗留。它们不�
 - 回放脚本单测：12 条通过（历史清理、对比数值、隐私扫描、确定性、阈值）；
 - 定向 E2E（生产模式）：会话覆盖 1/1、知识复制 1/1、桌宠入口 × 三档窄窗 3/3、对话列宽 1/1，合计 6/6；
 - `pnpm eval:replay`：默认策略 PASS，`--compare=last` 正常输出五项差值；
-- `pnpm verify:local` 全绿（含 Web 生产构建）。
+- `pnpm verify:local` 全绿（含 Web 生产构建）；
+- CI `45003447133` 全绿，Release 已转正并设为 Latest；
+- 本机归档 `E:\builds\archive\v4.19.0`（274.49 MB），含安装包、blockmap、`latest.yml`、`SHA256SUMS.txt` 与 `build-info.json`；
+- 安装包 `WorkBuddyForMe-Setup-4.19.0.exe` SHA256 `0dbc4a8714d0d12f4d2ad69c9b140e0c78053a0d5aa16b3c9fb21c7910cae9d1`。
 
 ## 5. 已知限制
 
