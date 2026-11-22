@@ -37,6 +37,7 @@ import { toExtractedMemory } from './memory-match';
 import type {
   ManualMemoryInput,
   MemoryRecallRequest,
+  MemoryRecallTrace,
   RecalledMemory,
   RememberOneInput,
   RememberOptions,
@@ -48,6 +49,7 @@ export type {
   MemoryRecallBudget,
   MemoryRecallRequest,
   MemoryRecallScene,
+  MemoryRecallTrace,
   RecalledMemory,
   RememberOneInput,
   RememberOptions,
@@ -68,6 +70,8 @@ export function createMemoryService(deps: ServiceDeps) {
   const persister = createMemoryPersister(deps.db, repo);
   const recaller = createMemoryRecall(deps.db, repo, edgeRepo);
   const stats = createMemoryStats(deps.db, repo);
+  /** v4.21：最近召回解释轨迹（内存环形缓冲，不落库、不上报） */
+  const traceBuffer: MemoryRecallTrace[] = [];
 
   async function rememberCandidates(
     candidates: ExtractedMemory[],
@@ -143,12 +147,13 @@ export function createMemoryService(deps: ServiceDeps) {
         inputs: { queryLength: trimmed.length, scene, budget },
       },
       async () => {
+        const startedAt = Date.now();
         let vector: number[] | null = null;
         if (getMemoryVectorDimension(deps.db) !== null) {
           const embedded = await embedTexts(deps, [trimmed], request.signal);
           vector = embedded?.vectors[0] ?? null;
         }
-        const { memories } = recaller.collect({
+        const result = recaller.collect({
           query: trimmed,
           vector,
           scope: {
@@ -158,10 +163,29 @@ export function createMemoryService(deps: ServiceDeps) {
           budget,
         });
         stats.recordRecall(
-          memories.length,
-          memories.filter((memory) => memory.reason === 'neighbor').length,
+          result.memories.length,
+          result.memories.filter((memory) => memory.reason === 'neighbor').length,
         );
-        return memories;
+        traceBuffer.push({
+          scene,
+          at: new Date().toISOString(),
+          queryLength: trimmed.length,
+          durationMs: Math.max(0, Date.now() - startedAt),
+          candidates: result.candidates,
+          selected: result.memories.length,
+          dropped: {
+            byScore: result.droppedByScore,
+            byBudget: result.droppedByBudget,
+            byConflict: result.candidates - result.memories.length - result.droppedByBudget,
+          },
+          channels: result.channels,
+          resolutions: result.conflicts.map((conflict) => ({
+            memoryId: conflict.winnerId,
+            reason: conflict.reason,
+          })),
+        });
+        if (traceBuffer.length > 5) traceBuffer.shift();
+        return result.memories;
       },
       (memories) => ({ recalled: memories.length }),
     );
@@ -208,6 +232,11 @@ export function createMemoryService(deps: ServiceDeps) {
   const consolidate = (options: { now?: Date; limit?: number } = {}): MemoryConsolidateSummary =>
     runMemoryConsolidation(deps.db, repo, edgeRepo, options);
 
+  /** v4.21：最近召回解释轨迹（只读元数据，最近 5 次） */
+  function getRecallTraces(limit = 5): MemoryRecallTrace[] {
+    return traceBuffer.slice(-Math.max(1, limit)).reverse();
+  }
+
   return {
     rememberCandidates,
     rememberOne,
@@ -221,6 +250,7 @@ export function createMemoryService(deps: ServiceDeps) {
     runEventRollup,
     consolidate,
     getStats,
+    getRecallTraces,
     list,
     get,
   };

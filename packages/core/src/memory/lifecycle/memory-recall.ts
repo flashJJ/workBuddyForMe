@@ -35,6 +35,14 @@ export interface RecallCollectResult {
   memories: RecalledMemory[];
   conflicts: MemoryConflictResolution[];
   droppedByBudget: number;
+  droppedByScore: number;
+  candidates: number;
+  channels: {
+    semantic: number;
+    lexical: number;
+    pinned: number;
+    neighbor: number;
+  };
 }
 
 export interface RecallCollectInput {
@@ -85,7 +93,7 @@ export function createMemoryRecall(
 
     const ids = [...new Set([...semanticScores.keys(), ...lexicalScores.keys()])];
     const weights = resolveRecallWeights(vector !== null);
-    const scored = repo
+    const scoredAll = repo
       .findActiveByIds(ids, input.scope, nowIso)
       .map((memory) => {
         const semantic = semanticScores.get(memory.id) ?? 0;
@@ -105,9 +113,11 @@ export function createMemoryRecall(
           score,
           reason: recallReason({ semantic, lexical, pinned: memory.pinned }),
         };
-      })
+      });
+    const scored = scoredAll
       .filter((memory) => memory.pinned || memory.score >= MEMORY_RECALL_MIN_SCORE)
       .sort((a, b) => b.score - a.score || b.importance - a.importance);
+    const droppedByScore = scoredAll.length - scored.length;
 
     // v2.31：对最高分种子沿来源边扩一跳；邻居分数 = 种子分 × 边权，总数仍受 MEMORY_TOP_K 约束
     const seeds = scored.slice(0, MEMORY_NEIGHBOR_SEED_LIMIT);
@@ -174,7 +184,20 @@ export function createMemoryRecall(
     // v4.21：统一按场景预算裁剪；置顶不计 token，其余按分数补位
     const { selected, droppedByBudget } = applyRecallBudget(kept, input.budget);
     repo.touchAccessed(selected.map((memory) => memory.id));
-    return { memories: selected, conflicts: resolutions, droppedByBudget };
+    const channels = {
+      semantic: selected.filter((memory) => memory.reason === 'semantic' || memory.reason === 'hybrid').length,
+      lexical: selected.filter((memory) => memory.reason === 'keyword' || memory.reason === 'hybrid').length,
+      pinned: selected.filter((memory) => memory.pinned).length,
+      neighbor: selected.filter((memory) => memory.reason === 'neighbor').length,
+    };
+    return {
+      memories: selected,
+      conflicts: resolutions,
+      droppedByBudget,
+      droppedByScore,
+      candidates: final.length,
+      channels,
+    };
   }
 
   return { collect };

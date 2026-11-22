@@ -40,6 +40,7 @@ export const knowledgeApi = {
   memoryClear: '/api/memories/clear',
   /** v2.28：记忆线上计数（设置页统计卡） */
   memoryStats: '/api/memories/stats',
+  memoryExplain: '/api/memories/explain',
   /** v2.31：手动触发记忆空闲整理 */
   memoryConsolidate: '/api/memories/consolidate',
 } as const;

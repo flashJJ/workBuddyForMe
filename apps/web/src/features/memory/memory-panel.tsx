@@ -17,6 +17,8 @@ import { MemoryFormDialog } from './memory-form-dialog';
 import { MemoryMergeDialog } from './memory-merge-dialog';
 import { MemoryStatsCard } from './memory-stats-card';
 import { MemoryRow } from './memory-row';
+import { MemoryExportMenu } from './tools/memory-export-menu';
+import { MemoryRecallTrace } from './tools/memory-recall-trace';
 
 type StatusFilter = '' | MemoryStatus;
 
@@ -51,7 +53,6 @@ export function MemoryPanel() {
   // 筛选栏是本地状态派生（两帧一致），无需门控。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
-
   const openCreate = () => {
     setEditing(null);
     setDialogOpen(true);
@@ -89,7 +90,6 @@ export function MemoryPanel() {
     );
     if (ok) setMergeTarget(null);
   };
-
   const remove = async (memory: Memory) => {
     if (
       !(await confirm({
@@ -108,7 +108,6 @@ export function MemoryPanel() {
       toast.error(t('memory.deleteFailed'));
     }
   };
-
   const clearAll = async () => {
     if (
       !(await confirm({
@@ -127,7 +126,6 @@ export function MemoryPanel() {
       toast.error(t('memory.clearFailed'));
     }
   };
-
   const clearArchived = async () => {
     if (
       !(await confirm({
@@ -146,7 +144,6 @@ export function MemoryPanel() {
       toast.error(t('memory.clearFailed'));
     }
   };
-
   return (
     <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="memory-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -156,7 +153,8 @@ export function MemoryPanel() {
             {t('memory.description')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <MemoryExportMenu memories={memories ?? []} />
           <Button type="button" variant="outline" size="sm" onClick={openCreate}>
             {t('memory.add')}
           </Button>
@@ -185,6 +183,7 @@ export function MemoryPanel() {
       </div>
 
       <MemoryStatsCard />
+      <MemoryRecallTrace />
 
       <div className="flex flex-wrap gap-2">
         <Input

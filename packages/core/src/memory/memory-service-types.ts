@@ -65,6 +65,31 @@ export interface MemoryRecallRequest extends RecallOptions {
   budget?: Partial<MemoryRecallBudget>;
 }
 
+/** v4.21：召回解释轨迹（只含元数据，不含正文与 query 原文） */
+export interface MemoryRecallTrace {
+  scene: MemoryRecallScene;
+  at: string;
+  queryLength: number;
+  durationMs: number;
+  candidates: number;
+  selected: number;
+  dropped: {
+    byScore: number;
+    byBudget: number;
+    byConflict: number;
+  };
+  channels: {
+    semantic: number;
+    lexical: number;
+    pinned: number;
+    neighbor: number;
+  };
+  resolutions: Array<{
+    memoryId: string;
+    reason: 'pinned' | 'fresher' | 'higher-confidence' | 'stable-order';
+  }>;
+}
+
 export interface ManualMemoryInput {
   kind: MemoryKind;
   content: string;

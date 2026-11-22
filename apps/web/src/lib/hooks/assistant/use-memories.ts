@@ -9,6 +9,7 @@ import type {
   MemoryLifecycleStats,
   MemoryStatus,
 } from '@wbfm/shared/types';
+import type { MemoryRecallTrace } from '@wbfm/core';
 import type { MemoryListQuery } from '@wbfm/shared/schemas';
 import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
@@ -55,8 +56,15 @@ export function useMemoryStats() {
   });
 }
 
-export function useMemoryConsolidate() {
-  const qc = useQueryClient();
+/** v4.21：最近召回解释轨迹（只读元数据） */
+export function useMemoryExplain() {
+  return useVisibleQuery({
+    queryKey: QUERY_KEYS.memoryExplain,
+    queryFn: () => apiGet<{ traces: MemoryRecallTrace[] }>(API.memoryExplain),
+  });
+}
+
+export function useMemoryConsolidate() {  const qc = useQueryClient();
   return useMutation({
     mutationFn: () => apiPost<MemoryConsolidateSummary>(API.memoryConsolidate, {}),
     onSuccess: () => {
@@ -68,7 +76,11 @@ export function useMemoryConsolidate() {
 
 export function useMemoryMutations() {
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: QUERY_KEYS.memories });
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: QUERY_KEYS.memories });
+    void qc.invalidateQueries({ queryKey: QUERY_KEYS.memoryStats });
+    void qc.invalidateQueries({ queryKey: QUERY_KEYS.memoryExplain });
+  };
 
   return {
     create: useMutation({

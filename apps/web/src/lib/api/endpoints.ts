@@ -34,6 +34,7 @@ export const QUERY_KEYS = {
   attachment: (id: string) => ['attachment', id] as const,
   memories: ['memories'] as const,
   memoryStats: ['memories', 'stats'] as const,
+  memoryExplain: ['memories', 'explain'] as const,
   mcpServers: ['mcp-servers'] as const,
   mcpTools: ['mcp-tools'] as const,
   mcpRuntime: ['mcp-runtime'] as const,

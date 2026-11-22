@@ -41,4 +41,24 @@ describe('v4.21 统一召回入口', () => {
     const all = await memory.recall({ query: '喜欢什么' });
     expect(all).toHaveLength(2);
   });
+
+  it('解释轨迹只保留元数据，最近 5 次且不含正文/查询原文', async () => {
+    const memory = createMemoryService({ db, cipher });
+    await memory.rememberCandidates([fact('用户喜欢猫')]);
+
+    for (let index = 0; index < 7; index += 1) {
+      await memory.recall({ query: '喜欢什么', scene: 'intent-forget' });
+    }
+    const traces = memory.getRecallTraces();
+    expect(traces).toHaveLength(5);
+    expect(traces[0]).toMatchObject({
+      scene: 'intent-forget',
+      queryLength: 4,
+      selected: 1,
+    });
+    const keys = Object.keys(traces[0]!);
+    expect(keys).not.toContain('query');
+    expect(keys).not.toContain('content');
+    expect(JSON.stringify(traces)).not.toContain('用户喜欢猫');
+  });
 });
