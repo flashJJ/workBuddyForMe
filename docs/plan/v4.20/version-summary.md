@@ -3,7 +3,7 @@
 > 版本：4.20.0（计划 2026-11-22 发布）
 > 主题：首答与长会话体感——先量出来，再让它变快
 > 迁移：零数据库迁移；备份格式不变；无新增运行时依赖
-> 博客：[blog/v4.20](../../blog/v4.20/)（待补）
+> 博客：[blog/v4.20](../../blog/v4.20/) 7 篇
 > 发行说明：[v4.20.0-release-notes.md](../../roadmap/v4.20.0-release-notes.md)
 > 性能基线：[perf-baseline.md](./perf-baseline.md)
 
