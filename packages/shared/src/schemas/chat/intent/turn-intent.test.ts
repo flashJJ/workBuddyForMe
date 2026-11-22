@@ -16,6 +16,20 @@ describe('shared 规则意图（v4.12 下沉）', () => {
     expect(intent.suggestedTaskMode).toBe(false);
   });
 
+  it('纯寒暄高置信识别为 chitchat（v4.19 快路径前置）', () => {
+    for (const text of ['你好', '在吗', '谢谢', 'hello', '好的']) {
+      const intent = detectTurnIntent({ text });
+      expect(intent.kind).toBe('chitchat');
+      expect(intent.source).toBe('rule');
+      expect(intent.confidence).toBeGreaterThanOrEqual(0.8);
+    }
+  });
+
+  it('含任务的句子不判纯寒暄', () => {
+    expect(detectTurnIntent({ text: '好的，帮我打开设置' }).kind).not.toBe('chitchat');
+    expect(detectTurnIntent({ text: '谢谢，什么是 RAG' }).kind).not.toBe('chitchat');
+  });
+
   it('记忆命令只匹配句首命令式', () => {
     expect(extractMemoryCommand('记住我喜欢冰美式')).toEqual({
       action: 'remember',

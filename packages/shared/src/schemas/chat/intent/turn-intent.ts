@@ -29,6 +29,9 @@ const FOLLOW_UP_RE = /^(?:那|这个|那个|它|继续|接着|然后|上面|刚�
 const TOOL_TASK_RE = /帮我|请帮|整理|生成|创建|修改|导出|转换|打开|搜索|查一下|总结|写一份|写个|做个|分析/;
 const KNOWLEDGE_RE = /什么是|是什么|为什么|为何|怎么|如何|多少|哪些|哪个|谁|是否|介绍|解释|区别|对比|原理|定义/;
 const MULTI_STEP_RE = /然后|并且|同时|分别|先.+再/;
+/** 纯寒暄/致谢/确认：整句只有这些内容才判高置信 chitchat（v4.19 寒暄快路径的前置条件） */
+const CHITCHAT_RE =
+  /^(?:(?:你|您)好(?:呀|啊|哇)?|嗨|哈喽|hi|hello|hey|早上好|上午好|中午好|下午好|晚上好|早安|晚安|在吗|在不在|谢谢|多谢|感谢|thanks?|thank\s+you|辛苦了|好的?|好滴|收到|明白了?|ok|okay)[\s!！。,.，~～]*$/i;
 
 function clipCommandContent(raw: string): string {
   return raw
@@ -63,6 +66,9 @@ interface Candidate {
 function pickCandidates(text: string, input: TurnIntentInput): Candidate[] {
   const candidates: Candidate[] = [];
   if (REMINDER_RE.test(text)) candidates.push({ kind: 'reminder', confidence: 0.9, signal: 'reminder-keyword' });
+  if (CHITCHAT_RE.test(text)) {
+    candidates.push({ kind: 'chitchat', confidence: 0.85, signal: 'chitchat-greeting' });
+  }
   const memory = extractMemoryCommand(text);
   if (memory) {
     candidates.push({

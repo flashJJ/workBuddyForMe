@@ -8,7 +8,7 @@ import type { ConversationService } from '../../services/assistant/conversation-
 import type { MemoryService } from '../../memory/memory-service';
 import { safeRecallEvent } from '../../memory/turn-memory';
 import { resolveEffectiveContextWindow } from './window/effective-window';
-import { buildContextPlan } from './context-plan';
+import { buildContextPlan, isChitchatFastPath } from './context-plan';
 import { resolveToolMessageBudget } from './context-budget';
 import { resolveToolTurnLimits } from '../../tools/budget/turn-budget';
 import type { OrchestratorEvent, RagContext } from '../base/types';
@@ -126,9 +126,11 @@ export async function* prepareTurnContext(
     traceParent,
   });
   const activeConversation = loaded.conversation;
+  // v4.19：高置信寒暄 + 短文本 + 无附件走快路径，跳过工具声明与记忆召回
+  const fastChitchat = isChitchatFastPath(userContent, intent, loaded.imageMap.size > 0);
 
   // v0.5 M3：长期记忆召回（按助手开关门控，失败静默，命中时下发 memories 事件）
-  const recalledMemories = assistant.memoryEnabled
+  const recalledMemories = assistant.memoryEnabled && !fastChitchat
     ? yield* safeRecallEvent({
         memory,
         query: userContent,
@@ -164,7 +166,7 @@ export async function* prepareTurnContext(
     assistant,
     effectiveAssistant: blocks.effectiveAssistant,
     lean: blocks.lean,
-    supportsTools: target.provider.supportsTools,
+    supportsTools: target.provider.supportsTools && !fastChitchat,
     plan,
     planBlock: blocks.planBlock,
     history: loaded.history,
@@ -188,6 +190,7 @@ export async function* prepareTurnContext(
     // v4.8：本地上下文快照（只存 token 统计，不存正文）
     deps.events?.recordChat(conversationId, 'context_snapshot', {
       intent,
+      fastChitchat,
       contextWindow,
       usableWindow: budgetStats.contextWindow,
       systemTokens: budgetStats.systemTokens,

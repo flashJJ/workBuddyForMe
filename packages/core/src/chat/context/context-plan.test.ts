@@ -3,8 +3,10 @@ import type { TurnIntent } from '@wbfm/shared/schemas';
 import {
   buildContextPlan,
   buildIntentHintBlock,
+  CHITCHAT_FAST_PATH_MAX_CHARS,
   hasEvidenceCap,
   INTENT_HINT_MIN_CONFIDENCE,
+  isChitchatFastPath,
   isLeanTurn,
   splitMiddleQuota,
 } from './context-plan';
@@ -76,6 +78,37 @@ describe('isLeanTurn（轻量回合裁剪）', () => {
     expect(isLeanTurn(intent({ kind: 'knowledge', confidence: 0.9 }))).toBe(false);
     expect(isLeanTurn(intent({ kind: 'tool_task', confidence: 0.9 }))).toBe(false);
     expect(isLeanTurn(intent({ kind: 'follow_up', confidence: 0.9 }))).toBe(false);
+  });
+});
+
+describe('isChitchatFastPath（v4.19 寒暄快路径）', () => {
+  const chitchat = intent({ kind: 'chitchat', confidence: 0.85 });
+
+  it('高置信短寒暄走快路径', () => {
+    for (const text of ['你好', '在吗', '谢谢', 'hello', '早上好呀']) {
+      expect(isChitchatFastPath(text, chitchat)).toBe(true);
+    }
+  });
+
+  it('任务关键词回落完整链路', () => {
+    for (const text of ['帮我查天气', '打开设置', 'search files', 'translate this']) {
+      expect(isChitchatFastPath(text, chitchat)).toBe(false);
+    }
+  });
+
+  it('链接/图片/长文本不触发快路径', () => {
+    expect(isChitchatFastPath('看下 https://example.com', chitchat)).toBe(false);
+    expect(isChitchatFastPath('你好', chitchat, true)).toBe(false);
+    expect(isChitchatFastPath('你'.repeat(CHITCHAT_FAST_PATH_MAX_CHARS + 1), chitchat)).toBe(false);
+  });
+
+  it('非寒暄、低置信度、fallback 不触发快路径', () => {
+    expect(isChitchatFastPath('你好', intent({ kind: 'knowledge' }))).toBe(false);
+    expect(isChitchatFastPath('你好', intent({ kind: 'chitchat', confidence: 0.5 }))).toBe(false);
+    expect(
+      isChitchatFastPath('你好', intent({ kind: 'chitchat', source: 'fallback', confidence: 0.9 })),
+    ).toBe(false);
+    expect(isChitchatFastPath('   ', chitchat)).toBe(false);
   });
 });
 

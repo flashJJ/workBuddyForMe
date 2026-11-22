@@ -169,6 +169,35 @@ describe('M3 对话编排 × 长期记忆（端到端）', () => {
     expect(turnTwoSystem).toContain('用户偏好中文回复');
   });
 
+  it('v4.19 寒暄快路径：不带工具声明、不召回长期记忆', async () => {
+    const service = createAssistantsService({ db, cipher });
+    const assistant = service.list()[0]!;
+    service.update(assistant.id, { enabledTools: ['current_time'] });
+
+    const orchestrator = createChatOrchestrator({ db, cipher });
+    const first = await drain(
+      orchestrator.streamChat({ assistantId: assistant.id, content: '以后请用中文回复我' }),
+    );
+    expect(first.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
+    await orchestrator.waitForBackgroundJobs();
+    const conversationId = (first[0]!.data as { conversationId: string }).conversationId;
+
+    const second = await drain(
+      orchestrator.streamChat({ assistantId: assistant.id, conversationId, content: '你好' }),
+    );
+    // 快路径跳过记忆召回：没有 memories 事件
+    expect(second.map((e) => e.event)).toEqual(['meta', 'delta', 'done']);
+    await orchestrator.waitForBackgroundJobs();
+
+    const chatBodies = fetchMock.mock.calls
+      .map((call) => JSON.parse(String(call[1].body)))
+      .filter((b) => Array.isArray(b.messages) && !String(b.messages[0]?.content).includes('记忆提取助手'));
+    // 首轮常规链路带工具声明；次轮寒暄快路径不带
+    expect(chatBodies[0]!.tools).toBeDefined();
+    expect(chatBodies[1]!.tools).toBeUndefined();
+    expect(chatBodies[1]!.messages[0]!.content).not.toContain('【长期记忆】');
+  });
+
   it('助手关闭记忆：不召回、不提取，也不发起嵌入请求', async () => {
     const service = createAssistantsService({ db, cipher });
     service.update(service.list()[0]!.id, { memoryEnabled: false });

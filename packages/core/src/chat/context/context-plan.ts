@@ -64,6 +64,34 @@ export function isLeanTurn(intent: TurnIntent): boolean {
   return intent.kind === 'chitchat' || intent.kind === 'clarify';
 }
 
+/** 快路径最长文本：再长就可能包含隐含任务，保守交给完整链路 */
+export const CHITCHAT_FAST_PATH_MAX_CHARS = 40;
+
+/** 任务/工具意图关键词：出现即不走快路径（宁可多花 token，也不误判丢能力） */
+const TASK_HINT_RE =
+  /(帮|查|搜|找|打开|关闭|启动|运行|文件|目录|网页|链接|天气|时间|几点|日期|提醒|日程|翻译|总结|对比|分析|生成|写|改|发|邮件|截图|操作|安装|下载|播放|暂停)|(?:^|\s)(help|search|find|open|close|file|folder|web|link|weather|time|date|remind|translate|summari[sz]e|write|send|email|screenshot|install|download|play|pause)(?:\s|$)/i;
+
+/**
+ * v4.19 chitchat 快路径：高置信寒暄 + 短文本 + 无图片/链接/任务关键词时，
+ * 本轮不注入任何工具声明、不召回长期记忆，直接用轻量上下文回答。
+ *
+ * 与 isLeanTurn 的区别：lean 只裁技能/流程提示；快路径额外裁掉工具与记忆，
+ * 把 122 个 MCP 工具 schema 这类固定成本从寒暄轮里去掉。
+ */
+export function isChitchatFastPath(
+  text: string,
+  intent: TurnIntent,
+  hasImages = false,
+): boolean {
+  if (hasImages) return false;
+  if (intent.kind !== 'chitchat') return false;
+  if (intent.source === 'fallback' || intent.confidence < LEAN_INTENT_MIN_CONFIDENCE) return false;
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > CHITCHAT_FAST_PATH_MAX_CHARS) return false;
+  if (/https?:\/\/|www\./i.test(trimmed)) return false;
+  return !TASK_HINT_RE.test(trimmed);
+}
+
 /** 中段配额拆分：摘要约 71%，结构化事实约 29%（与旧 25/10 同源） */
 export function splitMiddleQuota(middle: number): { summary: number; facts: number } {
   return { summary: middle * 0.71, facts: middle * 0.29 };
