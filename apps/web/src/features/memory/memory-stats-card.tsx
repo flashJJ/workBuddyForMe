@@ -95,7 +95,7 @@ export function MemoryStatsCard() {
 
       {mounted && isLoading && (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {Array.from({ length: 9 }, (_, index) => (
+          {Array.from({ length: 12 }, (_, index) => (
             <Skeleton key={index} className="h-12" />
           ))}
         </div>
@@ -169,6 +169,21 @@ function StatsBody({
       key: 'neighborRecallTotal',
       label: t('memory.stats.neighborRecallTotal'),
       value: formatNumber(stats.neighborRecallTotal ?? 0, locale),
+    },
+    {
+      key: 'pinnedActive',
+      label: t('memory.stats.pinnedActive'),
+      value: formatNumber(stats.pinnedActive ?? 0, locale),
+    },
+    {
+      key: 'downweightedTotal',
+      label: t('memory.stats.downweightedTotal'),
+      value: formatNumber(stats.downweightedTotal ?? 0, locale),
+    },
+    {
+      key: 'mergedTotal',
+      label: t('memory.stats.mergedTotal'),
+      value: formatNumber(stats.mergedTotal ?? 0, locale),
     },
   ];
   const recent = stats.recentEvents ?? [];

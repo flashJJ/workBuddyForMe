@@ -1,6 +1,6 @@
 {
   "version": "v2.31",
-  "at": "2026-11-09T01:15:42.825Z",
+  "at": "2026-11-22T15:45:04.533Z",
   "channel": "keyword",
   "topK": 3,
   "cases": 16,
@@ -11,8 +11,8 @@
   "zeroRecallRate": 0,
   "recallTotal": 16,
   "edgeTotal": 2,
-  "avgRecallMs": 0.48,
-  "maxRecallMs": 1.8,
+  "avgRecallMs": 1.46,
+  "maxRecallMs": 4.43,
   "results": [
     {
       "id": "recall-name",
@@ -27,7 +27,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 1.8
+      "elapsedMs": 4.43
     },
     {
       "id": "recall-exam",
@@ -44,7 +44,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.67
+      "elapsedMs": 1.83
     },
     {
       "id": "recall-city",
@@ -61,7 +61,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.36
+      "elapsedMs": 2.61
     },
     {
       "id": "recall-job",
@@ -78,7 +78,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.32
+      "elapsedMs": 1.36
     },
     {
       "id": "recall-language",
@@ -95,7 +95,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.34
+      "elapsedMs": 1.38
     },
     {
       "id": "recall-style",
@@ -112,7 +112,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.32
+      "elapsedMs": 0.99
     },
     {
       "id": "recall-pet",
@@ -129,7 +129,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.47
+      "elapsedMs": 0.98
     },
     {
       "id": "recall-food",
@@ -146,7 +146,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.43
+      "elapsedMs": 1.88
     },
     {
       "id": "recall-event-timeline",
@@ -163,7 +163,7 @@
         "keyword",
         "neighbor"
       ],
-      "elapsedMs": 0.61
+      "elapsedMs": 1.73
     },
     {
       "id": "recall-sideproject",
@@ -180,7 +180,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.37
+      "elapsedMs": 0.92
     },
     {
       "id": "recall-sport",
@@ -197,7 +197,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.34
+      "elapsedMs": 0.84
     },
     {
       "id": "recall-synthesize-gift",
@@ -214,7 +214,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.35
+      "elapsedMs": 0.94
     },
     {
       "id": "recall-neighbor-move-1",
@@ -231,7 +231,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.27
+      "elapsedMs": 0.74
     },
     {
       "id": "recall-neighbor-move-2",
@@ -248,7 +248,7 @@
         "neighbor",
         "keyword"
       ],
-      "elapsedMs": 0.31
+      "elapsedMs": 0.9
     },
     {
       "id": "recall-neighbor-cat-1",
@@ -265,7 +265,7 @@
         "keyword",
         "neighbor"
       ],
-      "elapsedMs": 0.3
+      "elapsedMs": 0.87
     },
     {
       "id": "recall-neighbor-cat-2",
@@ -282,7 +282,7 @@
         "keyword",
         "neighbor"
       ],
-      "elapsedMs": 0.43
+      "elapsedMs": 0.91
     }
   ]
 }

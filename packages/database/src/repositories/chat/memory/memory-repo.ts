@@ -137,6 +137,19 @@ export function createMemoryRepository(db: DatabaseInstance) {
       return events.countUserCorrections();
     },
 
+    /** v4.21：当前生效的固定记忆数（统计卡） */
+    countPinned(): number {
+      const row = db
+        .prepare(`SELECT COUNT(*) AS n FROM memories WHERE status = 'active' AND pinned = 1`)
+        .get() as { n: number };
+      return row.n;
+    },
+
+    /** v4.21：治理动作次数（在线事件 + 已轮转聚合） */
+    countGovernance(action: 'merge' | 'downweight'): number {
+      return events.countByAction(action, 'user');
+    },
+
     /** 召回命中后刷新访问时间并累加召回次数（LRU/P1 衰减与溯源使用） */
     touchAccessed(ids: string[]): void {
       if (ids.length === 0) return;

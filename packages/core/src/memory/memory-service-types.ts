@@ -48,6 +48,48 @@ export interface RecallOptions {
   conversationId?: string | null;
 }
 
+/** v4.21：召回场景——决定默认预算 */
+export type MemoryRecallScene = 'chat' | 'task' | 'intent-forget';
+
+export interface MemoryRecallBudget {
+  maxItems: number;
+  /** 字符近似：1 token ≈ 2 字符，向上取整 */
+  maxTokens: number;
+}
+
+/** v4.21：统一召回入口请求 */
+export interface MemoryRecallRequest extends RecallOptions {
+  query: string;
+  scene?: MemoryRecallScene;
+  /** 覆盖场景预设（只允许调小/调大单个维度） */
+  budget?: Partial<MemoryRecallBudget>;
+}
+
+/** v4.21：召回解释轨迹（只含元数据，不含正文与 query 原文） */
+export interface MemoryRecallTrace {
+  scene: MemoryRecallScene;
+  at: string;
+  queryLength: number;
+  durationMs: number;
+  candidates: number;
+  selected: number;
+  dropped: {
+    byScore: number;
+    byBudget: number;
+    byConflict: number;
+  };
+  channels: {
+    semantic: number;
+    lexical: number;
+    pinned: number;
+    neighbor: number;
+  };
+  resolutions: Array<{
+    memoryId: string;
+    reason: 'pinned' | 'fresher' | 'higher-confidence' | 'stable-order';
+  }>;
+}
+
 export interface ManualMemoryInput {
   kind: MemoryKind;
   content: string;

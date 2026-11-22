@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { Download } from 'lucide-react';
-import { MODEL_FAILURE_CODES } from '@wbfm/shared/errors';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useProviderHealth } from '@/lib/hooks/provider';
 import {

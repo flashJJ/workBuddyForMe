@@ -79,13 +79,13 @@ describe('P2 生命周期与评测', () => {
 
     let hits = 0;
     for (const item of POSITIVES) {
-      const recalled = await memory.recall(item.query);
+      const recalled = await memory.recall({ query: item.query });
       if (recalled.slice(0, 3).some((m) => m.content.includes(item.expected))) hits += 1;
     }
     const negatives = ['zzzz', 'qqqq'];
     let falseRecalls = 0;
     for (const query of negatives) {
-      if ((await memory.recall(query)).length > 0) falseRecalls += 1;
+      if ((await memory.recall({ query })).length > 0) falseRecalls += 1;
     }
     expect(hits / POSITIVES.length).toBeGreaterThanOrEqual(0.8);
     expect(falseRecalls / negatives.length).toBeLessThanOrEqual(0.1);
@@ -97,7 +97,7 @@ describe('P2 生命周期与评测', () => {
     await memory.rememberCandidates(POSITIVES.map(toCandidate));
     let hits = 0;
     for (const item of POSITIVES) {
-      const recalled = await memory.recall(item.query);
+      const recalled = await memory.recall({ query: item.query });
       if (recalled.slice(0, 3).some((m) => m.content.includes(item.expected))) hits += 1;
     }
     expect(hits / POSITIVES.length).toBeGreaterThanOrEqual(0.75);
@@ -116,7 +116,7 @@ describe('P2 生命周期与评测', () => {
     await memory.rememberCandidates([
       { kind: 'fact', content: '用户住在上海', importance: 0.7, subjectKey: 'residence:city' },
     ]);
-    const recalled = await memory.recall('我现在住在哪个城市？');
+    const recalled = await memory.recall({ query: '我现在住在哪个城市？' });
     const solved =
       recalled.some((m) => m.content === '用户住在上海') &&
       !recalled.some((m) => m.content === '用户住在北京');
@@ -144,7 +144,7 @@ describe('P2 生命周期与评测', () => {
     );
     memory.runDecay({ now: new Date(), force: true });
 
-    const recalled = await memory.recall('我搬家的事怎么样了？');
+    const recalled = await memory.recall({ query: '我搬家的事怎么样了？' });
     expect(memory.get(stale.memories[0]!.id)!.status).toBe('archived');
     expect(recalled.some((m) => m.content === '用户计划下周六搬家')).toBe(false);
     expect(recalled.some((m) => m.content === '用户已经搬到西湖区新家')).toBe(true);
@@ -157,8 +157,8 @@ describe('P2 生命周期与评测', () => {
       scope: 'assistant',
       assistantId: 'a1',
     });
-    const own = await memory.recall('我喜欢什么宠物？', { assistantId: 'a1' });
-    const other = await memory.recall('我喜欢什么宠物？', { assistantId: 'a2' });
+    const own = await memory.recall({ query: '我喜欢什么宠物？', assistantId: 'a1' });
+    const other = await memory.recall({ query: '我喜欢什么宠物？', assistantId: 'a2' });
     expect(own.some((m) => m.content === '用户喜欢猫')).toBe(true);
     expect(other.some((m) => m.content === '用户喜欢猫')).toBe(false);
   });
@@ -186,8 +186,8 @@ describe('P2 生命周期与评测', () => {
     await memory.rememberCandidates([
       { kind: 'fact', content: '用户住在上海', importance: 0.7, subjectKey: 'residence:city' },
     ]);
-    await memory.recall('住在上海');
-    await memory.recall('zzzz');
+    await memory.recall({ query: '住在上海' });
+    await memory.recall({ query: 'zzzz' });
     expect(memory.getStats()).toMatchObject({
       total: 2,
       superseded: 1,

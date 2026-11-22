@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import type { Memory, MemoryKind, MemoryStatus } from '@wbfm/shared/types';
+import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/simple-select';
@@ -9,11 +10,15 @@ import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { useMemories, useMemoryMutations, useMemoryStats } from '@/lib/hooks/assistant';
+import { errorText } from '@/lib/i18n/resolve-error';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { MEMORY_KIND_OPTIONS, MEMORY_STATUS_LABELS } from './memory-labels';
 import { MemoryFormDialog } from './memory-form-dialog';
+import { MemoryMergeDialog } from './memory-merge-dialog';
 import { MemoryStatsCard } from './memory-stats-card';
 import { MemoryRow } from './memory-row';
+import { MemoryExportMenu } from './tools/memory-export-menu';
+import { MemoryRecallTrace } from './tools/memory-recall-trace';
 
 type StatusFilter = '' | MemoryStatus;
 
@@ -27,6 +32,8 @@ export function MemoryPanel() {
   const [to, setTo] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Memory | null>(null);
+  const [mergeTarget, setMergeTarget] = React.useState<Memory | null>(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
 
   const filter = {
     limit: 200,
@@ -46,7 +53,6 @@ export function MemoryPanel() {
   // 筛选栏是本地状态派生（两帧一致），无需门控。
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
-
   const openCreate = () => {
     setEditing(null);
     setDialogOpen(true);
@@ -56,6 +62,34 @@ export function MemoryPanel() {
     setDialogOpen(true);
   };
 
+  // v4.21：治理动作统一走 PATCH；失败内联提示，不阻断列表
+  const govern = async (
+    memory: Memory,
+    body: { pinned?: boolean; weight?: 'up' | 'down'; mergeIds?: string[] },
+    fallback: MessageKey,
+    success: string,
+  ) => {
+    setActionError(null);
+    try {
+      await mutations.update.mutateAsync({ id: memory.id, body });
+      toast.success(success);
+      return true;
+    } catch (error) {
+      setActionError(errorText(error, t, { fallback, withDetail: true }));
+      return false;
+    }
+  };
+
+  const mergeMemories = async (ids: string[]) => {
+    if (!mergeTarget) return;
+    const ok = await govern(
+      mergeTarget,
+      { mergeIds: ids },
+      'memory.mergeFailed',
+      t('memory.merged', { count: ids.length }),
+    );
+    if (ok) setMergeTarget(null);
+  };
   const remove = async (memory: Memory) => {
     if (
       !(await confirm({
@@ -74,7 +108,6 @@ export function MemoryPanel() {
       toast.error(t('memory.deleteFailed'));
     }
   };
-
   const clearAll = async () => {
     if (
       !(await confirm({
@@ -93,7 +126,6 @@ export function MemoryPanel() {
       toast.error(t('memory.clearFailed'));
     }
   };
-
   const clearArchived = async () => {
     if (
       !(await confirm({
@@ -112,7 +144,6 @@ export function MemoryPanel() {
       toast.error(t('memory.clearFailed'));
     }
   };
-
   return (
     <section className="space-y-3 rounded-lg border bg-ui-card p-4" data-testid="memory-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -122,7 +153,8 @@ export function MemoryPanel() {
             {t('memory.description')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <MemoryExportMenu memories={memories ?? []} />
           <Button type="button" variant="outline" size="sm" onClick={openCreate}>
             {t('memory.add')}
           </Button>
@@ -151,6 +183,7 @@ export function MemoryPanel() {
       </div>
 
       <MemoryStatsCard />
+      <MemoryRecallTrace />
 
       <div className="flex flex-wrap gap-2">
         <Input
@@ -201,6 +234,12 @@ export function MemoryPanel() {
         />
       </div>
 
+      {actionError ? (
+        <p className="text-xs text-destructive" role="alert" data-testid="memory-action-error">
+          {actionError}
+        </p>
+      ) : null}
+
       {mounted && isLoading && <Spinner />}
       {mounted && isError && (
         <ErrorState message={t('memory.loadError')} onRetry={() => void refetch()} />
@@ -219,7 +258,25 @@ export function MemoryPanel() {
                 memory={memory}
                 onEdit={() => openEdit(memory)}
                 onDelete={() => void remove(memory)}
+                onPin={() =>
+                  void govern(
+                    memory,
+                    { pinned: !memory.pinned },
+                    'memory.pinFailed',
+                    t(memory.pinned ? 'memory.unpin' : 'memory.pin'),
+                  )
+                }
+                onWeight={(direction) =>
+                  void govern(
+                    memory,
+                    { weight: direction },
+                    'memory.weightFailed',
+                    t(direction === 'up' ? 'memory.upweight' : 'memory.downweight'),
+                  )
+                }
+                onMerge={() => setMergeTarget(memory)}
                 deleting={mutations.remove.isPending}
+                busy={mutations.update.isPending}
               />
             ))
           )}
@@ -227,6 +284,16 @@ export function MemoryPanel() {
       )}
 
       <MemoryFormDialog open={dialogOpen} onOpenChange={setDialogOpen} memory={editing} />
+      <MemoryMergeDialog
+        open={mergeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setMergeTarget(null);
+        }}
+        target={mergeTarget}
+        candidates={memories ?? []}
+        onConfirm={mergeMemories}
+        busy={mutations.update.isPending}
+      />
     </section>
   );
 }

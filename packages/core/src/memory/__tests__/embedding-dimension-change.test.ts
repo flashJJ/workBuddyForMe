@@ -48,7 +48,7 @@ describe('记忆向量维度变化（v4.16）', () => {
 
     // 新嵌入模型返回 2 维向量，与旧向量表不一致
     mockEmbedding([[[1, 0]], [[0, 1]], [[0.5, 0.5]], [[0.2, 0.8]]]);
-    const recalled = await memory.recall('杭州');
+    const recalled = await memory.recall({ query: '杭州' });
     expect(recalled.map((item) => item.id)).toContain(created.id);
 
     const manual = await memory.createManual({

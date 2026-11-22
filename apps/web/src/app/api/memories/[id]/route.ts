@@ -1,4 +1,5 @@
 import { ApiError } from '@wbfm/shared/errors';
+import { MemoryGovernanceError } from '@wbfm/core';
 import { memoryUpdateSchema, idParamSchema } from '@wbfm/shared/schemas';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { jsonOk } from '@/lib/server/api-response';
@@ -16,9 +17,14 @@ export const GET = defineRoute(({ params, services }) => {
 export const PATCH = defineRoute(async ({ request, params, services }) => {
   const { id } = parseParams(idParamSchema, params);
   const input = parseBody(memoryUpdateSchema, await readJsonBody(request));
-  const memory = await services.memories.update(id, input);
-  if (!memory) throw ApiError.notFound('记忆', id);
-  return jsonOk(memory);
+  try {
+    const memory = await services.memories.update(id, input);
+    if (!memory) throw ApiError.notFound('记忆', id);
+    return jsonOk(memory);
+  } catch (error) {
+    if (error instanceof MemoryGovernanceError) throw ApiError.conflict(error.message);
+    throw error;
+  }
 });
 
 export const DELETE = defineRoute(({ params, services }) => {

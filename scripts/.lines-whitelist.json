@@ -7,6 +7,10 @@
     {
       "path": "packages/database/src/migrations/runner.ts",
       "reason": "顺序迁移注册表，每个版本一行 import + 一项元数据，纯声明式配置；拆分不影响单文件规模。v2.31 起登记，v2.32 复核是否改为目录扫描"
+    },
+    {
+      "path": "packages/shared/src/i18n/messages/memory.ts",
+      "reason": "中英文记忆文案字典（纯数据，每种语言一份），随治理与解释功能键增长；拆分会破坏 messages 聚合与 en-coverage 单文件对照。v4.21 登记，v4.22 复核按 namespace 拆分"
     }
   ]
 }

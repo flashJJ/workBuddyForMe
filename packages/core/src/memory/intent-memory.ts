@@ -55,7 +55,9 @@ async function remember(params: MemoryIntentParams, content: string): Promise<Me
 
 async function forget(params: MemoryIntentParams, query: string): Promise<MemoryNotice[]> {
   try {
-    const recalled = await params.memory.recall(query, {
+    const recalled = await params.memory.recall({
+      query,
+      scene: 'intent-forget',
       assistantId: params.assistantId,
       conversationId: params.conversationId,
       signal: params.signal,

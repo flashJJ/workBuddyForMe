@@ -55,19 +55,25 @@ export function createMemoryEventRepository(db: DatabaseInstance) {
 
     /** v2.26 P2 线上计数：用户主动纠正（编辑/归档/恢复/删除）的审计条数 */
     countUserCorrections(): number {
+      return this.countByAction(['update', 'archive', 'restore', 'delete'], 'user');
+    },
+
+    /** v4.21：按动作计数（在线事件 + 已轮转聚合），支持单动作或动作组 */
+    countByAction(action: string | string[], actor = 'user'): number {
+      const actions = Array.isArray(action) ? action : [action];
+      const placeholders = actions.map(() => '?').join(', ');
       const live = db
         .prepare(
           `SELECT COUNT(*) AS n FROM memory_events
-            WHERE actor = 'user' AND action IN ('update', 'archive', 'restore', 'delete')`,
+            WHERE actor = ? AND action IN (${placeholders})`,
         )
-        .get() as { n: number };
-      // v2.28：轮转后的过期事件已聚合，计数需加上存量聚合值，轮转前后数字不下降
+        .get(actor, ...actions) as { n: number };
       const rolled = db
         .prepare(
           `SELECT COALESCE(SUM(count), 0) AS n FROM memory_event_rollups
-            WHERE actor = 'user' AND action IN ('update', 'archive', 'restore', 'delete')`,
+            WHERE actor = ? AND action IN (${placeholders})`,
         )
-        .get() as { n: number };
+        .get(actor, ...actions) as { n: number };
       return live.n + rolled.n;
     },
 

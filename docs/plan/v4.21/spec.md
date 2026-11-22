@@ -1,7 +1,7 @@
 # v4.21 规格：记得住、管得住
 
-> 状态：草案（2026-11-22），待 M0 契约冻结
-> 选题：[README.md](./README.md) · 任务：[tasks.md](./tasks.md) · 契约：M0 产出
+> 状态：M0 契约已冻结（2026-11-22）
+> 选题：[README.md](./README.md) · 契约：[contracts.md](./contracts.md) · 任务：[tasks.md](./tasks.md)
 > 上游：v4.20 已发布（`v4.20.0`）
 > 原则：零迁移优先；迁移必须可回滚并带备份校验；解释与导出不泄露正文
 

@@ -82,7 +82,7 @@ async function main() {
   const results = [];
   for (const testCase of golden.cases) {
     const started = performance.now();
-    const recalled = await memory.recall(testCase.question);
+    const recalled = await memory.recall({ query: testCase.question });
     const elapsedMs = performance.now() - started;
     const top = recalled.slice(0, TOP_K);
     results.push({

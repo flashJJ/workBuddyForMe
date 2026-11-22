@@ -59,7 +59,7 @@ describe('M3 长期记忆服务', () => {
     expect(result.created).toBe(2);
     expect(getMemoryVectorDimension(db)).toBeNull();
     expect(memory.list()).toHaveLength(2);
-    const recalled = await memory.recall('喜欢什么宠物');
+    const recalled = await memory.recall({ query: '喜欢什么宠物' });
     expect(recalled.map((m) => m.content)).toContain('用户喜欢猫');
     expect(recalled[0]!.reason).toBe('keyword');
   });
@@ -92,7 +92,7 @@ describe('M3 长期记忆服务', () => {
     const memory = createMemoryService({ db, cipher });
     await memory.rememberCandidates([fact('用户偏好中文回复', 0.8)]);
 
-    const hit = await memory.recall('该用什么语言');
+    const hit = await memory.recall({ query: '该用什么语言' });
     expect(hit).toHaveLength(1);
     expect(hit[0]!.content).toBe('用户偏好中文回复');
     expect(['semantic', 'hybrid']).toContain(hit[0]!.reason);
@@ -100,7 +100,7 @@ describe('M3 长期记忆服务', () => {
     expect(memory.get(hit[0]!.id)!.lastAccessedAt).toBeTruthy();
     expect(memory.get(hit[0]!.id)!.recallCount).toBe(1);
 
-    const miss = await memory.recall('完全无关的问题');
+    const miss = await memory.recall({ query: '完全无关的问题' });
     expect(miss).toEqual([]);
   });
 
@@ -118,8 +118,8 @@ describe('M3 长期记忆服务', () => {
       recallCount: 0,
     });
 
-    await memory.recall('该用什么语言');
-    await memory.recall('中文怎么回复');
+    await memory.recall({ query: '该用什么语言' });
+    await memory.recall({ query: '中文怎么回复' });
     expect(memory.get(stored.id)!.recallCount).toBe(2);
     expect(memory.get(stored.id)!.sourceMessageId).toBe('msg-9');
   });
@@ -135,7 +135,7 @@ describe('M3 长期记忆服务', () => {
     expect(created.sourceConversationId).toBeNull();
     expect(created.sourceMessageId).toBeNull();
     expect(created.recallCount).toBe(0);
-    expect((await memory.recall('住在哪里'))[0]!.id).toBe(created.id);
+    expect((await memory.recall({ query: '住在哪里' }))[0]!.id).toBe(created.id);
 
     expect(memory.remove(created.id)).toBe(true);
     expect(memory.get(created.id)).toBeNull();
@@ -161,7 +161,7 @@ describe('M3 长期记忆服务', () => {
     const memory = createMemoryService({ db, cipher });
     const created = await memory.createManual({ kind: 'event', content: '去年参加过展会', importance: 0.4 });
     memory.update(created.id, { status: 'archived' });
-    expect(await memory.recall('展会')).toEqual([]);
+    expect(await memory.recall({ query: '展会' })).toEqual([]);
     expect(memory.list({ status: 'archived' })).toHaveLength(1);
   });
 
@@ -225,7 +225,7 @@ describe('M3 长期记忆服务', () => {
       ],
       { scope: 'assistant', assistantId: 'a1', source: 'realtime' },
     );
-    const hit = await memory.recall('今天天气怎么样', { assistantId: 'a1' });
+    const hit = await memory.recall({ query: '今天天气怎么样', assistantId: 'a1' });
     expect(hit.map((m) => m.content)).toContain('用户对花生过敏');
     expect(hit[0]!.reason).toBe('pinned');
     expect(hit[0]!.score).toBeGreaterThanOrEqual(0.9);
@@ -240,11 +240,11 @@ describe('M3 长期记忆服务', () => {
     });
     await memory.createManual({ kind: 'fact', content: '用户叫小林', importance: 0.9 });
 
-    const other = await memory.recall('喜欢猫', { assistantId: 'a2' });
+    const other = await memory.recall({ query: '喜欢猫', assistantId: 'a2' });
     expect(other.map((m) => m.content)).not.toContain('用户喜欢猫');
-    const own = await memory.recall('喜欢猫', { assistantId: 'a1' });
+    const own = await memory.recall({ query: '喜欢猫', assistantId: 'a1' });
     expect(own.map((m) => m.content)).toContain('用户喜欢猫');
-    const global = await memory.recall('小林', { assistantId: 'a2' });
+    const global = await memory.recall({ query: '小林', assistantId: 'a2' });
     expect(global.map((m) => m.content)).toContain('用户叫小林');
   });
 

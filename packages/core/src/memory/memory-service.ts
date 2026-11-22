@@ -1,12 +1,9 @@
-import { MEMORY_TOP_K } from '@wbfm/shared/constants';
 import {
   type Memory,
   type MemoryConsolidateSummary,
-  type MemoryKind,
   type MemoryLifecycleStats,
   type MemoryStatus,
-} from '@wbfm/shared/types';
-import {
+} from '@wbfm/shared/types';import {
   createMemoryEdgeRepository,
   createMemoryRepository,
   getMemoryVectorDimension,
@@ -16,7 +13,7 @@ import {
 import { traceAsync } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/base/deps';
 import type { ExtractedMemory } from './extractor';
-import { createMemoryPersister, createMemoryRecall } from './lifecycle';
+import { createMemoryPersister, createMemoryRecall, resolveRecallBudget } from './lifecycle';
 import {
   clearAllMemories,
   clearMemoriesByStatus,
@@ -25,6 +22,7 @@ import {
   removeMemory,
   runLifecycleEventRollup,
   updateMemory,
+  type MemoryGovernanceFields,
 } from './lifecycle/ops';
 import type {
   MemoryEventRollupOptions,
@@ -38,8 +36,9 @@ import { buildSameSourceEdges } from './graph';
 import { toExtractedMemory } from './memory-match';
 import type {
   ManualMemoryInput,
+  MemoryRecallRequest,
+  MemoryRecallTrace,
   RecalledMemory,
-  RecallOptions,
   RememberOneInput,
   RememberOptions,
   RememberResult,
@@ -47,8 +46,11 @@ import type {
 
 export type {
   ManualMemoryInput,
+  MemoryRecallBudget,
+  MemoryRecallRequest,
+  MemoryRecallScene,
+  MemoryRecallTrace,
   RecalledMemory,
-  RecallOptions,
   RememberOneInput,
   RememberOptions,
   RememberResult,
@@ -68,6 +70,8 @@ export function createMemoryService(deps: ServiceDeps) {
   const persister = createMemoryPersister(deps.db, repo);
   const recaller = createMemoryRecall(deps.db, repo, edgeRepo);
   const stats = createMemoryStats(deps.db, repo);
+  /** v4.21：最近召回解释轨迹（内存环形缓冲，不落库、不上报） */
+  const traceBuffer: MemoryRecallTrace[] = [];
 
   async function rememberCandidates(
     candidates: ExtractedMemory[],
@@ -129,35 +133,59 @@ export function createMemoryService(deps: ServiceDeps) {
     return tx().memory;
   }
 
-  async function recall(query: string, options: RecallOptions = {}): Promise<RecalledMemory[]> {
-    const trimmed = query.trim();
+  /** v4.21：统一召回入口——场景决定预算，返回仍为 RecalledMemory[] */
+  async function recall(request: MemoryRecallRequest): Promise<RecalledMemory[]> {
+    const trimmed = request.query.trim();
     if (!trimmed) return [];
+    const scene = request.scene ?? 'chat';
+    const budget = resolveRecallBudget(scene, request.budget);
     return traceAsync(
       {
         name: 'memory_recall',
         runType: 'retriever',
-        parent: options.traceParent ?? null,
-        inputs: { queryLength: trimmed.length, topK: MEMORY_TOP_K },
+        parent: request.traceParent ?? null,
+        inputs: { queryLength: trimmed.length, scene, budget },
       },
       async () => {
+        const startedAt = Date.now();
         let vector: number[] | null = null;
         if (getMemoryVectorDimension(deps.db) !== null) {
-          const embedded = await embedTexts(deps, [trimmed], options.signal);
+          const embedded = await embedTexts(deps, [trimmed], request.signal);
           vector = embedded?.vectors[0] ?? null;
         }
-        const memories = recaller.collect({
+        const result = recaller.collect({
           query: trimmed,
           vector,
           scope: {
-            assistantId: options.assistantId ?? null,
-            conversationId: options.conversationId ?? null,
+            assistantId: request.assistantId ?? null,
+            conversationId: request.conversationId ?? null,
           },
+          budget,
         });
         stats.recordRecall(
-          memories.length,
-          memories.filter((memory) => memory.reason === 'neighbor').length,
+          result.memories.length,
+          result.memories.filter((memory) => memory.reason === 'neighbor').length,
         );
-        return memories;
+        traceBuffer.push({
+          scene,
+          at: new Date().toISOString(),
+          queryLength: trimmed.length,
+          durationMs: Math.max(0, Date.now() - startedAt),
+          candidates: result.candidates,
+          selected: result.memories.length,
+          dropped: {
+            byScore: result.droppedByScore,
+            byBudget: result.droppedByBudget,
+            byConflict: result.candidates - result.memories.length - result.droppedByBudget,
+          },
+          channels: result.channels,
+          resolutions: result.conflicts.map((conflict) => ({
+            memoryId: conflict.winnerId,
+            reason: conflict.reason,
+          })),
+        });
+        if (traceBuffer.length > 5) traceBuffer.shift();
+        return result.memories;
       },
       (memories) => ({ recalled: memories.length }),
     );
@@ -169,7 +197,7 @@ export function createMemoryService(deps: ServiceDeps) {
 
   const update = (
     id: string,
-    fields: { kind?: MemoryKind; content?: string; importance?: number; status?: MemoryStatus },
+    fields: MemoryGovernanceFields,
     signal?: AbortSignal,
   ): Promise<Memory | null> => updateMemory({ deps, repo }, id, fields, signal);
 
@@ -204,6 +232,11 @@ export function createMemoryService(deps: ServiceDeps) {
   const consolidate = (options: { now?: Date; limit?: number } = {}): MemoryConsolidateSummary =>
     runMemoryConsolidation(deps.db, repo, edgeRepo, options);
 
+  /** v4.21：最近召回解释轨迹（只读元数据，最近 5 次） */
+  function getRecallTraces(limit = 5): MemoryRecallTrace[] {
+    return traceBuffer.slice(-Math.max(1, limit)).reverse();
+  }
+
   return {
     rememberCandidates,
     rememberOne,
@@ -217,6 +250,7 @@ export function createMemoryService(deps: ServiceDeps) {
     runEventRollup,
     consolidate,
     getStats,
+    getRecallTraces,
     list,
     get,
   };

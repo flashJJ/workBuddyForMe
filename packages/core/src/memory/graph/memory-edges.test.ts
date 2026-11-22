@@ -82,7 +82,7 @@ describe('记忆服务建边（v2.31）', () => {
       [fact('用户喜欢猫'), fact('用户住在杭州')],
       { sourceMessageId: 'm-1' },
     );
-    const recalled = await service.recall('喜欢什么宠物');
+    const recalled = await service.recall({ query: '喜欢什么宠物' });
     const neighbor = recalled.find((memory) => memory.content === '用户住在杭州');
     expect(neighbor?.reason).toBe('neighbor');
     expect(neighbor?.neighborOf).toBe(
@@ -94,7 +94,7 @@ describe('记忆服务建边（v2.31）', () => {
   it('无来源消息时邻居不出现，召回退化为单跳', async () => {
     const service = createMemoryService({ db, cipher });
     await service.rememberCandidates([fact('用户喜欢猫'), fact('用户住在杭州')]);
-    const recalled = await service.recall('喜欢什么宠物');
+    const recalled = await service.recall({ query: '喜欢什么宠物' });
     expect(recalled.map((memory) => memory.content)).toEqual(['用户喜欢猫']);
   });
 
