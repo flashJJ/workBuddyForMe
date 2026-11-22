@@ -1,6 +1,6 @@
 # v4.19 选题与范围（已立项）
 
-> 状态：已立项——主题「补完」：v4.18 五项顺延 + v4.17 两项小遗留
+> 状态：M6 收尾中——主题「补完」：v4.18 五项顺延 + v4.17 两项小遗留；验证与文档已完成，待 tag 与安装包归档
 > 规格：[spec.md](./spec.md) · 任务：[tasks.md](./tasks.md) · 契约：[contracts.md](./contracts.md)
 > 上游：v4.18 已发布（`v4.18.0`）
 > 计划外追加：[voice-and-chitchat.md](./voice-and-chitchat.md)（语音链路与寒暄快路径）
@@ -55,6 +55,8 @@ v4.18 上线后，A/C/E 三条线都已闭环，但留下五处「能用但不�
 - 不做记忆治理、Controller Pipeline、DAG 并行、视觉巡检 L2/L3；
 - 不改数据库 schema、不新增运行时依赖；
 - 不重做视觉风格，只修遮挡与溢出。
+
+> 实现期偏离：语音链路追加（流式 TTS / Matcha / 腾讯云 / 微软 Edge）引入 `ws` 与 `mpg123-decoder` 两个纯 JS/WASM 依赖，详见 [voice-and-chitchat.md](./voice-and-chitchat.md)。
 
 ## 4. 风险与回退
 
