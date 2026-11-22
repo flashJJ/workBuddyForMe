@@ -1,43 +1,22 @@
 import type { ServiceDeps } from '../../services/base/deps';
-import { resolveClampedBudget } from '@wbfm/shared/constants';
 import { createConversationService } from '../../services/assistant/conversation-service';
-import { createMemoryService } from '../../memory/memory-service';
-import { formatConstraintBlock, formatMemoryBlock } from '../../memory/turn-memory';
-import { buildConversationFactsBlock } from '../../chat/context/conversation-facts-block';
-import { truncateToTokens } from '../../chat/context/context-budget';
-import { buildPlanPromptBlock } from '../../work-plan/plan-prompt';
-import { buildCheckpointPromptBlock } from '../../work-plan/task-checkpoint';
-import { toModelText } from '../../i18n/system-text';
+import { collectContext, packContext } from '../../context/pipeline';
+import { createTaskContextSources } from './task-context-sources';
+import { resolveTaskContextBudget } from './task-context-budget';
 
 /**
- * v4.7 任务上下文装配：
+ * 任务上下文装配（v4.22 起为 Controller Pipeline）：
  * 任务模式此前只拿 goal，Planner/Executor 完全不知道会话刚才在聊什么。
  * 本模块按「摘要 > 事实 > 计划 > 近期对话 > 长期记忆」优先级装配一个上下文块，
  * 由协作入口一次性计算、每个决策回合复用（不在循环内重复查询/检索）。
  *
- * 预算独立于子任务单与工具目录：超限时从尾部（记忆 → 近期对话）开始截断，
+ * v4.22：装配流程拆成 `collectContext`（并发采集、单来源失败隔离）与
+ * `packContext`（优先级排序、去重、预算裁剪）两段纯能力；来源见 task-context-sources。
+ * 预算独立于子任务单与工具目录：超限时从尾部（记忆 → 近期对话）开始丢弃，
  * 保证摘要/事实这类高密度信息优先保留。
  */
 
-/** 注入的任务上下文 token 预算上限（字符粗估）；保留导出供旧调用方引用 */
-export const TASK_CONTEXT_BUDGET_TOKENS = 2_000;
-/** 小窗口模型下的任务上下文下限 */
-export const TASK_CONTEXT_MIN_TOKENS = 320;
-/** 任务上下文占模型上下文窗口的比例（已收敛到 CONTEXT_BUDGET_PRESETS） */
-export const TASK_CONTEXT_WINDOW_RATIO = 0.15;
-/** 近期对话注入条数（含用户与助手消息） */
-export const TASK_CONTEXT_RECENT_MESSAGES = 6;
-/** 单条消息在上下文块内的最大字符数 */
-const MESSAGE_CLIP_CHARS = 400;
-
-/**
- * 按模型窗口解析任务上下文预算：
- * v4.9 起统一走场景预算预设（contextBlock 15% / 320–2000），
- * 避免任务上下文与步骤历史各自维护一套比例。
- */
-export function resolveTaskContextBudget(contextWindow: number | null | undefined): number {
-  return resolveClampedBudget(contextWindow, 'contextBlock');
-}
+export * from './task-context-budget';
 
 export interface BuildTaskContextParams {
   conversationId: string | null;
@@ -51,88 +30,44 @@ export interface BuildTaskContextParams {
   signal?: AbortSignal;
 }
 
-function formatRecent(messages: Array<{ role: string; content: string }>): string | null {
-  const lines: string[] = [];
-  for (const message of messages) {
-    if (message.role !== 'user' && message.role !== 'assistant') continue;
-    const text = toModelText(message.content ?? '').trim();
-    if (!text) continue;
-    const clipped = text.length > MESSAGE_CLIP_CHARS ? `${text.slice(0, MESSAGE_CLIP_CHARS)}…` : text;
-    lines.push(`${message.role === 'user' ? '用户' : '助手'}：${clipped}`);
-  }
-  return lines.length > 0 ? lines.join('\n') : null;
-}
-
 /**
  * 装配任务上下文块；无会话或内容为空时返回 null（调用方按「无上下文」处理）。
- * 单次查询失败不阻断任务：各来源独立 try/catch，最差返回 null。
+ * 单来源失败不阻断任务：Collector 逐来源容错，整体异常按「无上下文」降级。
  */
 export async function buildTaskContextBlock(
   deps: ServiceDeps,
   params: BuildTaskContextParams,
 ): Promise<string | null> {
   if (!params.conversationId) return null;
-  const conversations = createConversationService(deps);
   let conversation;
   try {
-    conversation = conversations.get(params.conversationId);
+    conversation = createConversationService(deps).get(params.conversationId);
   } catch {
     return null;
   }
 
-  const blocks: string[] = [];
   const budget = params.budgetTokens ?? resolveTaskContextBudget(params.contextWindow);
-
-  // 1) 会话递归摘要（最高密度）
-  const summary = conversation.summary?.trim();
-  if (summary) blocks.push(`【会话摘要】\n${toModelText(summary)}`);
-
-  // 2) 结构化事实（含当前计划检查点，先于摘要之外的原文）
-  const checkpoint = deps.workPlans?.activeCheckpoint(params.conversationId) ?? null;
-  const facts = [
-    checkpoint ? buildCheckpointPromptBlock(checkpoint) : null,
-    buildConversationFactsBlock(conversations.listFacts(params.conversationId), Math.floor(budget * 0.25)),
-  ]
-    .filter((item): item is string => Boolean(item?.trim()))
-    .join('\n\n');
-  if (facts) blocks.push(`【已知事实】\n${facts}`);
-
-  // 3) 当前计划/待办（未批准计划会标注待评审）
-  const plan = deps.workPlans ? buildPlanPromptBlock(deps.workPlans.activeContext(params.conversationId)) : '';
-  if (plan?.trim()) blocks.push(`【当前计划】\n${plan.trim()}`);
-
-  // 4) 近期对话原文（跳过已折叠进摘要的轮次）
   try {
-    const recent = conversations.recentMessagesAfter(
-      params.conversationId,
-      conversation.summaryTurns,
-      TASK_CONTEXT_RECENT_MESSAGES,
-    );
-    const formatted = formatRecent(recent);
-    if (formatted) blocks.push(`【近期对话】\n${formatted}`);
-  } catch {
-    /* 历史读取失败不阻断任务 */
-  }
-
-  // 5) 与目标相关的长期记忆（助手开启时）
-  if (params.memoryEnabled) {
-    try {
-      const recalled = await createMemoryService(deps).recall({
-        query: params.goal,
-        scene: 'task',
-        ...(params.assistantId ? { assistantId: params.assistantId } : {}),
+    const collected = await collectContext(
+      createTaskContextSources(deps, {
+        conversation,
+        goal: params.goal,
+        assistantId: params.assistantId,
+        memoryEnabled: params.memoryEnabled,
+        budgetTokens: budget,
+        signal: params.signal,
+      }),
+      {
         conversationId: params.conversationId,
-        ...(params.signal ? { signal: params.signal } : {}),
-      });
-      const memoryBlock = formatMemoryBlock(recalled.filter((item) => item.kind !== 'constraint'));
-      const constraintBlock = formatConstraintBlock(recalled);
-      const merged = [constraintBlock, memoryBlock].filter((item) => item?.trim()).join('\n\n');
-      if (merged) blocks.push(`【相关长期记忆】\n${merged}`);
-    } catch {
-      /* 记忆召回失败不阻断任务 */
-    }
+        goal: params.goal,
+        assistantId: params.assistantId,
+        contextWindow: params.contextWindow,
+        budgetTokens: budget,
+        signal: params.signal,
+      },
+    );
+    return packContext(collected.fragments, { budgetTokens: budget }).text;
+  } catch {
+    return null;
   }
-
-  if (blocks.length === 0) return null;
-  return truncateToTokens(blocks.join('\n\n'), budget);
 }

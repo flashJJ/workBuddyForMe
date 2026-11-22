@@ -220,7 +220,13 @@ interface FlowRunEventBase {
 
 /** SSE flow 事件载荷（判别联合；节点事件必带 nodeId） */
 export type FlowEventPayload =
-  | (FlowRunEventBase & { type: 'run_started'; version: number; trigger: FlowTrigger })
+  | (FlowRunEventBase & {
+      type: 'run_started';
+      version: number;
+      trigger: FlowTrigger;
+      /** v4.22：本次运行实际生效的并行度（缺省 1；旧读取方忽略即可） */
+      parallelism?: number;
+    })
   | (FlowRunEventBase & {
       type: 'node_started';
       nodeId: string;

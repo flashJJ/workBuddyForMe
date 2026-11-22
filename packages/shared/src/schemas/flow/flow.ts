@@ -140,6 +140,8 @@ export const flowGraphSchema = z.object({
   viewport: z
     .object({ x: z.number(), y: z.number(), zoom: z.number().positive() })
     .optional(),
+  /** v4.22：并行度；缺省 1 = 串行（与旧图完全等价），上限 4 */
+  parallelism: z.number().int().min(1).max(4).optional(),
 });
 export type FlowGraph = z.infer<typeof flowGraphSchema>;
 

@@ -175,6 +175,8 @@ export interface RunFlowOptions {
   onlyNodeIds?: ReadonlySet<string>;
   /** v0.9 节点重放：该节点执行完成后直接 run_succeeded（整体重跑不传） */
   replayTargetId?: string;
+  /** v4.22：本次运行并发上限；缺省取 compiled.graph.parallelism ?? 1 */
+  maxConcurrency?: number;
   signal?: AbortSignal;
 }
 

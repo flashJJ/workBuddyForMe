@@ -203,3 +203,62 @@ describe('v0.9 M4 重放（祖先闭包）', () => {
     expect(run?.resumedFromNode).toBe('end');
   });
 });
+
+describe('v4.22 并行编排（图 parallelism）', () => {
+  it('扇出两分支都执行、终态 succeeded 且 run_started 带并发度', async () => {
+    const db = createDatabase(':memory:');
+    const workflows = createWorkflowRepository(db);
+    const runs = createWorkflowRunRepository(db);
+    const deps: ServiceDeps = {
+      db,
+      cipher: {} as SecretCipher,
+      permissions: createPermissionService({ db, cipher: {} as SecretCipher }),
+      taskGrants: createTaskGrantRegistry(),
+    };
+    const slowTool: Tool = {
+      name: 'slow_tool',
+      description: '只读慢工具',
+      parameters: { type: 'object' },
+      permission: 'read',
+      async run() {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return { ok: true, output: 'X', summary: 'ok' };
+      },
+    };
+    const runtime = {
+      resolveTool: (name: string) =>
+        name === 'slow_tool' ? { tool: slowTool, source: 'builtin' } : null,
+    } as unknown as ToolRuntime;
+    const wf = workflows.createWorkflow({ name: '扇出并行' });
+    const graph: FlowGraph = {
+      nodes: [
+        { id: 'start', type: 'start', position: { x: 0, y: 0 }, config: {} },
+        { id: 't1', type: 'tool', position: { x: 200, y: 0 }, config: { toolName: 'slow_tool' } },
+        { id: 't2', type: 'tool', position: { x: 200, y: 120 }, config: { toolName: 'slow_tool' } },
+        { id: 'endA', type: 'end', position: { x: 400, y: 0 }, config: { output: '{{$nodes.t1.outputs.output}}' } },
+        { id: 'endB', type: 'end', position: { x: 400, y: 120 }, config: { output: '{{$nodes.t2.outputs.output}}' } },
+      ],
+      edges: [
+        { id: 'e1', source: 'start', target: 't1' },
+        { id: 'e2', source: 'start', target: 't2' },
+        { id: 'e3', source: 't1', target: 'endA' },
+        { id: 'e4', source: 't2', target: 'endB' },
+      ],
+      parallelism: 2,
+    };
+    workflows.addVersion(wf.id, graph);
+
+    const svc = createFlowRunService({ deps, runtime, workflows, runs });
+    const runId = svc.createRun({ workflowId: wf.id, trigger: 'manual' });
+    const events = (await drain(svc.subscribeRunEvents(runId)!)) as Array<{ type: string; parallelism?: number }>;
+
+    expect(events.at(-1)?.type).toBe('run_succeeded');
+    expect(events.find((e) => e.type === 'run_started')?.parallelism).toBe(2);
+    const succeeded = runs
+      .listNodeExecutions(runId)
+      .filter((n) => n.status === 'succeeded')
+      .map((n) => n.nodeId);
+    expect(succeeded).toEqual(expect.arrayContaining(['t1', 't2', 'endA', 'endB']));
+    expect(runs.getRun(runId)?.status).toBe('succeeded');
+  });
+});

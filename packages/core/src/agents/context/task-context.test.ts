@@ -101,6 +101,34 @@ describe('buildTaskContextBlock（v4.7 任务上下文装配）', () => {
     expect(block).toContain('关键结论');
   });
 
+  it('v4.22 等价：固定夹具输出与 v4.21 快照逐字一致', async () => {
+    // v4.21 手写实现下同一夹具的产物快照（五段顺序、\n\n 分隔、标题原样）
+    const conversations = createConversationRepository(testDb.db);
+    const conversation = conversations.create({ assistantId: 'a1', title: '等价夹具' });
+    conversations.updateSummary(conversation.id, '关键结论：预算是 8MB。', 0);
+    const messages = createMessageRepository(testDb.db);
+    messages.add({ conversationId: conversation.id, role: 'user', status: 'completed', content: '我最近在准备转岗' });
+    messages.add({
+      conversationId: conversation.id,
+      role: 'assistant',
+      status: 'completed',
+      content: '可以，先从简历梳理开始。',
+    });
+
+    const block = await buildTaskContextBlock(deps, {
+      conversationId: conversation.id,
+      goal: '帮我规划接下来三个月',
+      assistantId: 'a1',
+    });
+
+    expect(block).toBe(
+      [
+        '【会话摘要】\n关键结论：预算是 8MB。',
+        '【近期对话】\n用户：我最近在准备转岗\n助手：可以，先从简历梳理开始。',
+      ].join('\n\n'),
+    );
+  });
+
   it('按执行模型窗口收敛：本地 4096 装配结果短于长上下文模型', async () => {
     const conversations = createConversationRepository(testDb.db);
     const conversation = conversations.create({ assistantId: 'a1', title: 't' });

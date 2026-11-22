@@ -1,11 +1,9 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
-import type { FlowNodeType } from '@wbfm/shared/schemas';
 import { resolveFlowRefs } from '../graph/refs';
 import { createDefaultHandlers } from '../handlers/index';
-import { toolNodeHandler, type ToolNodeConfig } from '../handlers/tool';
-import { runAgentNode } from './engine-agent';
 import { buildIncomingIndex, isNodeLive } from './engine-live';
-import { policyDenyText, type PolicyDecisionReason } from '../policy/policy-gate';
+import { runNodeBody } from './engine-node';
+import { runFlowParallel } from './engine-parallel';
 import type {
   CompiledFlow,
   FlowExecutionContext,
@@ -15,24 +13,28 @@ import type {
   RunFlowOptions,
 } from '../graph/types';
 
-function deniedToolOutput(toolName: string, permission: string, reason?: string): Record<string, unknown> {
-  // v0.9 无人值守拒绝时 reason 携带 policy_* 说明（节点记录即审计轨迹）
-  if (reason) {
-    return { ok: false, output: reason, summary: '无人值守策略拒绝' };
-  }
-  return {
-    ok: false,
-    output: `工具 ${toolName} 未获得用户授权（权限级别：${permission}），已跳过执行。`,
-    summary: '用户拒绝授权',
-  };
+/** 并行度上限（v4.22 契约：1–4） */
+const MAX_PARALLELISM = 4;
+
+/** 解析本次运行的实际并发：显式覆盖 > 图字段 > 1，并钳到 1–4 */
+export function resolveMaxConcurrency(
+  compiled: CompiledFlow,
+  override?: number,
+): number {
+  const raw = override ?? compiled.graph.parallelism ?? 1;
+  if (!Number.isFinite(raw)) return 1;
+  return Math.min(MAX_PARALLELISM, Math.max(1, Math.trunc(raw)));
 }
 
 /**
- * 工作流执行引擎（M1）：
- * - 按拓扑序顺序执行；condition 输出决定 true/false 分支边，未命中分支节点全部 skipped；
+ * 工作流执行引擎：
+ * - `parallelism=1`（默认）走 v4.21 原串行路径：按拓扑序执行，首个成功 end 即收尾，
+ *   首个失败即 run_failed；事件序列与旧版逐字一致。
+ * - `parallelism>1` 走就绪集合调度（见 engine-parallel）：扇出分支并发执行，
+ *   并发上限、失败隔离与结果收敛按 v4.22 契约；
  * - human 节点内联挂起（先注册等待 → 发 node_waiting_human → await）；
  * - tool 节点统一解析 + write/danger 门控（同样的先注册/后发事件/再 await 时序）；
- * - 纯内存 AsyncGenerator；首个成功 end 决定 run_succeeded，全程支持 abort。
+ * - 纯内存 AsyncGenerator；全程支持 abort（重放仍走串行路径）。
  */
 export async function* runFlow(
   compiled: CompiledFlow,
@@ -57,8 +59,31 @@ export async function* runFlow(
     ...options.context,
   };
   const aborted = () => options.signal?.aborted === true;
+  const parallelism = resolveMaxConcurrency(compiled, options.maxConcurrency);
 
-  yield { type: 'run_started', ...base, version: options.version, trigger: ctx.trigger };
+  yield {
+    type: 'run_started',
+    ...base,
+    version: options.version,
+    trigger: ctx.trigger,
+    parallelism,
+  };
+
+  // 重放沿用 v0.9 串行语义；并发仅在显式开启的图上生效
+  if (parallelism > 1 && !options.onlyNodeIds && !options.replayTargetId) {
+    yield* runFlowParallel({
+      compiled,
+      ctx,
+      handlers,
+      base,
+      state,
+      liveEdges,
+      incoming: incomingById,
+      maxConcurrency: parallelism,
+      aborted,
+    });
+    return;
+  }
 
   for (const nodeId of compiled.order) {
     if (aborted()) {
@@ -100,18 +125,10 @@ export async function* runFlow(
     }
 
     yield { type: 'node_started', ...base, nodeId, nodeType: node.type, inputs: resolvedConfig };
+    const startedAt = Date.now();
 
     try {
-      let outputs: Record<string, unknown>;
-      if (node.type === 'human') {
-        outputs = yield* runHumanNode(nodeId, resolvedConfig, ctx, base);
-      } else if (node.type === 'tool') {
-        outputs = yield* runToolNodeWithGate(nodeId, resolvedConfig, ctx, base);
-      } else if (node.type === 'agent') {
-        outputs = yield* runAgentNode(nodeId, resolvedConfig, ctx, base);
-      } else {
-        outputs = await runPlainNode(node.type, resolvedConfig, ctx, handlers);
-      }
+      const outputs = yield* runNodeBody(nodeId, node.type, resolvedConfig, ctx, handlers, base);
       if (aborted()) {
         yield { type: 'run_cancelled', ...base };
         return;
@@ -133,7 +150,7 @@ export async function* runFlow(
         if (selected) liveEdges.add(selected.edgeId);
       }
 
-      yield { type: 'node_succeeded', ...base, nodeId, outputs };
+      yield { type: 'node_succeeded', ...base, nodeId, outputs, durationMs: Date.now() - startedAt };
       // v0.9 节点重放：目标节点执行完成即收尾（输出取目标节点，不要求连通到 end）
       if (options.replayTargetId && nodeId === options.replayTargetId && node.type !== 'end') {
         yield { type: 'run_succeeded', ...base, output: outputs.output ?? outputs ?? null };
@@ -176,87 +193,4 @@ export async function* runFlow(
     ...base,
     message: '执行结束但未经过任何 end 节点（条件分支未连通到结束节点）',
   };
-}
-
-type EventBase = { runId: string; workflowId: string };
-
-async function runPlainNode(
-  type: FlowNodeType,
-  config: Record<string, unknown>,
-  ctx: FlowExecutionContext,
-  handlers: FlowHandlerRegistry,
-): Promise<Record<string, unknown>> {
-  const handler = handlers[type];
-  if (!handler) throw new Error(`节点类型「${type}」的处理器尚未注册`);
-  const result = await handler.run(config, ctx);
-  return (result ?? {}) as Record<string, unknown>;
-}
-
-/** human 节点：先注册等待（回调内同步入表）→ 发事件 → await；非交互环境自动 approved:false */
-async function* runHumanNode(
-  nodeId: string,
-  config: Record<string, unknown>,
-  ctx: FlowExecutionContext,
-  base: EventBase,
-): AsyncGenerator<FlowEventPayload, Record<string, unknown>> {
-  void config;
-  // 关键时序：Promise 必须在 yield 事件前创建（run-service 在调用时同步注册挂起项），
-  // 否则消费者收到事件立刻提交会落空。
-  const pending =
-    ctx.interactive && ctx.requestHuman ? ctx.requestHuman(nodeId, config) : null;
-  yield { type: 'node_waiting_human', ...base, nodeId };
-  const decision = pending
-          ? await pending
-          : { approved: false, values: {} as Record<string, unknown> };
-      return { approved: decision.approved, values: decision.values };
-}
-
-/** tool 节点：解析 → write/danger 门控（挂起确认）→ 执行；拒绝时产出 ok:false 不中断流程 */
-async function* runToolNodeWithGate(
-  nodeId: string,
-  config: Record<string, unknown>,
-  ctx: FlowExecutionContext,
-  base: EventBase,
-): AsyncGenerator<FlowEventPayload, Record<string, unknown>> {
-  const toolConfig = config as ToolNodeConfig;
-  const toolName = toolConfig.toolName?.trim() ?? '';
-  if (!toolName) throw new Error('tool 节点未配置工具名');
-  const tool = ctx.resolveTool ? await ctx.resolveTool(toolName) : null;
-  if (!tool) throw new Error(`工具不存在或当前不可用：${toolName}`);
-
-  const permission = tool.permission ?? 'read';
-  let allowed = true;
-  let denyReason: string | undefined;
-  const unattended = ctx.trigger === 'api' || ctx.trigger === 'mcp';
-  if (permission !== 'read') {
-    if (unattended && ctx.evaluateUnattended) {
-      // v0.9 无人值守：端点策略快照裁决，永不挂起等待人工
-      const decision = ctx.evaluateUnattended(toolName, permission);
-      allowed = decision.allowed;
-      if (!allowed) denyReason = policyDenyText(decision.reason as PolicyDecisionReason, toolName);
-    } else {
-      allowed = (await ctx.checkToolAllowed?.(toolName, permission)) ?? false;
-      if (!allowed) {
-        // 同样遵循「先注册等待 → 发事件 → await」时序
-        const pending =
-          ctx.interactive && ctx.requestToolConfirmation
-            ? ctx.requestToolConfirmation({
-                nodeId,
-                toolName,
-                permission,
-                argsSummary: JSON.stringify(toolConfig.args ?? {}).slice(0, 200),
-              })
-            : null;
-        yield { type: 'node_waiting_human', ...base, nodeId };
-        allowed = pending ? await pending : false;
-      }
-    }
-  }
-  if (!allowed) return deniedToolOutput(toolName, permission, denyReason);
-
-  const result = await toolNodeHandler.run(
-    config as unknown as ToolNodeConfig,
-    { ...ctx, activeTool: tool },
-  );
-  return result as Record<string, unknown>;
 }

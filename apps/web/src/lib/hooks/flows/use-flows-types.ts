@@ -18,4 +18,6 @@ export interface FlowLiveState {
   output: unknown;
   errorMessage: string | null;
   errorNodeId: string | null;
+  /** v4.22：本次运行实际并行度（只读展示；缺省 1） */
+  parallelism: number;
 }

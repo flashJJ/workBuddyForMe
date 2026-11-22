@@ -660,6 +660,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v4.19 | 补完：备用模型链、供应商健康度、回放对比、知识复制、桌宠入口与对话自适应宽度 | ✅ 已发布（2026-11-22，`v4.19.0`） | [选题](../plan/v4.19/README.md) · [规格](../plan/v4.19/spec.md) · [契约](../plan/v4.19/contracts.md) · [任务](../plan/v4.19/tasks.md) · [总结](../plan/v4.19/version-summary.md) | [发行说明](v4.19.0-release-notes.md) | [blog/v4.19](../../blog/v4.19/) 7 篇 | `v4.19.0` |
 | v4.20 | 快：首答与长会话体感（并入语音后续、回放 PR、知识动作、备用链与健康度导出） | ✅ 已发布（2026-11-22，`v4.20.0`） | [选题](../plan/v4.20/README.md) · [规格](../plan/v4.20/spec.md) · [契约](../plan/v4.20/contracts.md) · [任务](../plan/v4.20/tasks.md) · [总结](../plan/v4.20/version-summary.md) · [性能基线](../plan/v4.20/perf-baseline.md) | [发行说明](v4.20.0-release-notes.md) | [blog/v4.20](../../blog/v4.20/) 7 篇 | `v4.20.0` |
 | v4.21 | 记得住、管得住：统一召回、冲突裁决与用户治理 | ✅ 已发布（2026-11-23，`v4.21.0`） | [选题](../plan/v4.21/README.md) · [规格](../plan/v4.21/spec.md) · [契约](../plan/v4.21/contracts.md) · [任务](../plan/v4.21/tasks.md) · [总结](../plan/v4.21/version-summary.md) | [发行说明](v4.21.0-release-notes.md) | [blog/v4.21](../../blog/v4.21/) 7 篇 | [`v4.21.0`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.21.0) |
+| v4.22 | 会编排：Controller Pipeline 三段装配与 Flow 就绪集合并行调度 | ✅ 已发布（2026-11-23，`v4.22.0`） | [选题](../plan/v4.22/README.md) · [规格](../plan/v4.22/spec.md) · [契约](../plan/v4.22/contracts.md) · [任务](../plan/v4.22/tasks.md) · [总结](../plan/v4.22/version-summary.md) | [发行说明](v4.22.0-release-notes.md) | [blog/v4.22](../../blog/v4.22/) 7 篇 | [`v4.22.0`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.22.0) |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
