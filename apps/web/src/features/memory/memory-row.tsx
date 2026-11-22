@@ -18,15 +18,24 @@ export function MemoryRow({
   memory,
   onEdit,
   onDelete,
+  onPin,
+  onWeight,
+  onMerge,
   deleting,
+  busy,
 }: {
   memory: Memory;
   onEdit: () => void;
   onDelete: () => void;
+  onPin: () => void;
+  onWeight: (direction: 'up' | 'down') => void;
+  onMerge: () => void;
   deleting: boolean;
+  busy: boolean;
 }) {
   const { t, locale } = useI18n();
   const sourceHref = memorySourceHref(memory);
+  const unpinBlocked = memory.kind === 'constraint' && memory.pinned;
   return (
     <div
       data-testid="memory-item"
@@ -49,8 +58,7 @@ export function MemoryRow({
           </span>
         </div>
         <p className="break-words text-sm">{memory.content}</p>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">          <span>
             {memory.recallCount > 0
               ? t('memory.recallCount', { count: memory.recallCount })
               : t('memory.neverRecalled')}
@@ -75,6 +83,54 @@ export function MemoryRow({
           ) : (
             <span data-testid="memory-source-unknown">{t('memory.sourceUnknown')}</span>
           )}
+        </div>
+        {/* v4.21：用户治理——固定 / 升降权 / 合并（不自动执行其他动作） */}
+        <div className="flex flex-wrap items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            data-testid="memory-pin"
+            disabled={busy || unpinBlocked}
+            title={unpinBlocked ? t('memory.constraintPinned') : undefined}
+            onClick={onPin}
+          >
+            {memory.pinned ? t('memory.unpin') : t('memory.pin')}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            data-testid="memory-upweight"
+            disabled={busy || memory.importance >= 1}
+            onClick={() => onWeight('up')}
+          >
+            {t('memory.upweight')}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            data-testid="memory-downweight"
+            disabled={busy || memory.importance <= 0}
+            onClick={() => onWeight('down')}
+          >
+            {t('memory.downweight')}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            data-testid="memory-merge"
+            disabled={busy}
+            onClick={onMerge}
+          >
+            {t('memory.merge')}
+          </Button>
         </div>
       </div>
       <div className="flex shrink-0 gap-1">

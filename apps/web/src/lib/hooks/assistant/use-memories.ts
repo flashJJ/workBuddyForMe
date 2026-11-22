@@ -24,6 +24,9 @@ export type MemoryUpdateBody = Partial<{
   content: string;
   importance: number;
   status: MemoryStatus;
+  pinned: boolean;
+  weight: 'up' | 'down';
+  mergeIds: string[];
 }>;
 
 function toQueryString(filter: MemoryListQuery): string {

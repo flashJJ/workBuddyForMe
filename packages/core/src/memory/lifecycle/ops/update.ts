@@ -14,26 +14,87 @@ export interface MemoryUpdateScope {
   repo: MemoryRepository;
 }
 
+/** v4.21：治理动作——固定、升降权、合并；与原有编辑字段共用一次 PATCH */
+export interface MemoryGovernanceFields {
+  kind?: MemoryKind;
+  content?: string;
+  importance?: number;
+  status?: MemoryStatus;
+  pinned?: boolean;
+  weight?: 'up' | 'down';
+  mergeIds?: string[];
+}
+
+/** v4.21：治理失败（如取消固定硬约束），由 API 映射为 409 */
+export class MemoryGovernanceError extends Error {
+  constructor(
+    public readonly code: 'constraint_pinned',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'MemoryGovernanceError';
+  }
+}
+
+function clampImportance(value: number): number {
+  return Math.round(Math.min(1, Math.max(0, value)) * 1000) / 1000;
+}
+
 /**
- * 管理页编辑：内容变更时重建 FTS/向量，状态变更写对应审计动作。
- * 未命中返回 null；嵌入失败保留主表更新（降级为纯关键词召回）。
+ * 管理页编辑与治理：内容变更时重建 FTS/向量，状态/固定/权重/合并写对应审计动作。
+ * 幂等的治理动作（重复固定、权重不变、来源已归档）不写审计。
  */
 export async function updateMemory(
   { deps, repo }: MemoryUpdateScope,
   id: string,
-  fields: { kind?: MemoryKind; content?: string; importance?: number; status?: MemoryStatus },
+  fields: MemoryGovernanceFields,
   signal?: AbortSignal,
 ): Promise<Memory | null> {
   const existing = repo.findById(id);
   if (!existing) return null;
-  const memory = repo.update(id, fields);
+
+  if (fields.pinned === false && existing.kind === 'constraint') {
+    throw new MemoryGovernanceError('constraint_pinned', '硬约束不支持取消固定，请归档或删除');
+  }
+
+  const mergedFrom: string[] = [];
+  for (const sourceId of new Set(fields.mergeIds ?? [])) {
+    if (sourceId === id) continue;
+    const source = repo.findById(sourceId);
+    if (!source || source.status === 'archived') continue;
+    repo.update(sourceId, { status: 'archived' });
+    mergedFrom.push(sourceId);
+  }
+
+  const patch: MemoryGovernanceFields = {};
+  if (fields.kind && fields.kind !== existing.kind) patch.kind = fields.kind;
+  if (fields.content && fields.content !== existing.content) patch.content = fields.content;
+  if (fields.status && fields.status !== existing.status) patch.status = fields.status;
+  if (fields.pinned !== undefined && fields.pinned !== existing.pinned) patch.pinned = fields.pinned;
+  if (fields.importance !== undefined && fields.importance !== existing.importance) {
+    patch.importance = fields.importance;
+  }
+  let weightAction: 'downweight' | 'upweight' | null = null;
+  if (fields.weight) {
+    const delta = fields.weight === 'up' ? 0.1 : -0.1;
+    const next = clampImportance(existing.importance + delta);
+    if (next !== existing.importance) {
+      patch.importance = next;
+      weightAction = fields.weight === 'up' ? 'upweight' : 'downweight';
+    }
+  }
+
+  if (Object.keys(patch).length === 0 && mergedFrom.length === 0) {
+    return existing;
+  }
+
+  const memory = repo.update(id, patch);
   if (!memory) return null;
-  if (fields.content && fields.content !== existing.content) {
+  if (patch.content) {
     upsertMemoryFts(deps.db, { id: Number(id), content: memory.content });
-    const embedded = await embedTexts(deps, [fields.content], signal);
+    const embedded = await embedTexts(deps, [patch.content], signal);
     if (embedded) {
       const vector = embedded.vectors[0]!;
-      // 嵌入模型维度变化后旧向量表不可用：保留主表与 FTS，跳过向量写入
       const dimension = getMemoryVectorDimension(deps.db);
       if (dimension === null || dimension === vector.length) {
         ensureMemoryVectorTable(deps.db, vector.length);
@@ -41,16 +102,20 @@ export async function updateMemory(
       }
     }
   }
-  if (fields.status && fields.status !== existing.status) {
-    repo.recordEvent(
-      Number(id),
-      fields.status === 'archived' ? 'archive' : 'restore',
-      existing,
-      memory,
-      'user',
-    );
-  } else {
-    repo.recordEvent(Number(id), 'update', existing, memory, 'user');
-  }
+
+  let action: string | null = null;
+  if (mergedFrom.length > 0) action = 'merge';
+  else if (patch.status) action = patch.status === 'archived' ? 'archive' : 'restore';
+  else if (patch.pinned !== undefined) action = patch.pinned ? 'pin' : 'unpin';
+  else if (weightAction) action = weightAction;
+  else action = 'update';
+
+  repo.recordEvent(
+    Number(id),
+    action,
+    existing,
+    mergedFrom.length > 0 ? { ...memory, mergedFrom } : memory,
+    'user',
+  );
   return memory;
 }

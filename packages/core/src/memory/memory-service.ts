@@ -1,7 +1,6 @@
 import {
   type Memory,
   type MemoryConsolidateSummary,
-  type MemoryKind,
   type MemoryLifecycleStats,
   type MemoryStatus,
 } from '@wbfm/shared/types';import {
@@ -23,6 +22,7 @@ import {
   removeMemory,
   runLifecycleEventRollup,
   updateMemory,
+  type MemoryGovernanceFields,
 } from './lifecycle/ops';
 import type {
   MemoryEventRollupOptions,
@@ -173,7 +173,7 @@ export function createMemoryService(deps: ServiceDeps) {
 
   const update = (
     id: string,
-    fields: { kind?: MemoryKind; content?: string; importance?: number; status?: MemoryStatus },
+    fields: MemoryGovernanceFields,
     signal?: AbortSignal,
   ): Promise<Memory | null> => updateMemory({ deps, repo }, id, fields, signal);
 

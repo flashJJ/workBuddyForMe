@@ -1,6 +1,6 @@
 # v4.21 任务清单
 
-> 状态：M2 已完成（2026-11-22），M3 待开工
+> 状态：M3 已完成（2026-11-22），M4 待开工
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 选题：[README.md](./README.md)
 > 原则：每项可独立验收；零迁移；解释与导出不泄露正文
 
@@ -22,10 +22,10 @@
 
 ## M2 冲突与解释
 
-- [ ] M2.1 同实体多值候选集合与裁决纯函数
-- [ ] M2.2 裁决理由结构（pinned / fresher / higher-confidence / stable-order）
-- [ ] M2.3 落选值可查询但不注入
-- [ ] M2.4 golden 用例：冲突、过期、固定、降权、合并
+- [x] M2.1 同实体多值候选集合与裁决纯函数
+- [x] M2.2 裁决理由结构（pinned / fresher / higher-confidence / stable-order）
+- [x] M2.3 落选值可查询但不注入
+- [x] M2.4 golden 用例：冲突、过期、固定、降权、合并
 
 ## M3 用户治理
 

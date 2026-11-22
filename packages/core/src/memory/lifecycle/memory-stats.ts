@@ -75,6 +75,9 @@ export function createMemoryStats(db: DatabaseInstance, repo: MemoryRepository) 
       edgeTotal: edges.count(),
       neighborRecallTotal: readCounter(MEMORY_NEIGHBOR_META_KEY),
       lastConsolidate: readConsolidate(),
+      pinnedActive: repo.countPinned(),
+      downweightedTotal: repo.countGovernance('downweight'),
+      mergedTotal: repo.countGovernance('merge'),
     };
   }
 

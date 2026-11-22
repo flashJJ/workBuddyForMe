@@ -173,4 +173,10 @@ export interface MemoryLifecycleStats {
   neighborRecallTotal?: number;
   /** v2.31：最近一次空闲整理摘要（尚未整理为 null） */
   lastConsolidate?: MemoryConsolidateSummary | null;
+  /** v4.21：当前生效的固定记忆数 */
+  pinnedActive?: number;
+  /** v4.21：用户降权动作累计（在线 + 轮转聚合） */
+  downweightedTotal?: number;
+  /** v4.21：用户合并动作累计（在线 + 轮转聚合） */
+  mergedTotal?: number;
 }

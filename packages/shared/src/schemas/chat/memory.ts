@@ -15,13 +15,19 @@ export const memoryCreateSchema = z.object({
 });
 export type MemoryCreateInput = z.infer<typeof memoryCreateSchema>;
 
-/** 管理 UI 编辑记忆（内容/类别/重要性/归档状态） */
+/** 管理 UI 编辑记忆（内容/类别/重要性/归档状态）与 v4.21 治理动作 */
 export const memoryUpdateSchema = z
   .object({
     kind: kindSchema.optional(),
     content: contentSchema.optional(),
     importance: importanceSchema.optional(),
     status: statusSchema.optional(),
+    /** v4.21：固定/取消固定（硬约束不允许取消） */
+    pinned: z.boolean().optional(),
+    /** v4.21：升权/降权 0.1（落在 importance，不新增字段） */
+    weight: z.enum(['up', 'down']).optional(),
+    /** v4.21：把这些记忆合并到当前条目（来源归档） */
+    mergeIds: z.array(z.string().trim().min(1)).max(20).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, '至少提供一个更新字段');
 export type MemoryUpdateInput = z.infer<typeof memoryUpdateSchema>;
