@@ -148,7 +148,7 @@ export function createMemoryService(deps: ServiceDeps) {
           const embedded = await embedTexts(deps, [trimmed], request.signal);
           vector = embedded?.vectors[0] ?? null;
         }
-        const memories = recaller.collect({
+        const { memories } = recaller.collect({
           query: trimmed,
           vector,
           scope: {

@@ -134,6 +134,98 @@ export interface RecallBudgetResult<T> {
   droppedByBudget: number;
 }
 
+/** v4.21：冲突裁决理由——固定 > 新鲜度 > 置信度 > 稳定顺序 */
+export type MemoryConflictReason = 'pinned' | 'fresher' | 'higher-confidence' | 'stable-order';
+
+export interface ConflictCandidate {
+  id: string;
+  subjectKey: string | null;
+  pinned: boolean;
+  confidence: number;
+  version: number;
+  createdAt: string;
+  lastConfirmedAt: string | null;
+}
+
+export interface MemoryConflictResolution {
+  winnerId: string;
+  reason: MemoryConflictReason;
+  loserIds: string[];
+}
+
+export interface ConflictResolveResult<T> {
+  kept: T[];
+  resolutions: MemoryConflictResolution[];
+}
+
+function timeOf(value: string | null): number {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function compareIdDesc(a: string, b: string): number {
+  return b.localeCompare(a, 'en', { numeric: true });
+}
+
+function compareConflict(a: ConflictCandidate, b: ConflictCandidate): number {
+  const pinned = Number(b.pinned) - Number(a.pinned);
+  if (pinned !== 0) return pinned;
+  const fresh = timeOf(b.lastConfirmedAt ?? b.createdAt) - timeOf(a.lastConfirmedAt ?? a.createdAt);
+  if (fresh !== 0) return fresh;
+  if (b.confidence !== a.confidence) return b.confidence - a.confidence;
+  if (b.version !== a.version) return b.version - a.version;
+  return compareIdDesc(a.id, b.id);
+}
+
+function conflictReason<T extends ConflictCandidate>(
+  winner: T,
+  losers: readonly T[],
+): MemoryConflictReason {
+  if (winner.pinned && losers.some((loser) => !loser.pinned)) return 'pinned';
+  const winnerTime = timeOf(winner.lastConfirmedAt ?? winner.createdAt);
+  if (winnerTime > Math.max(...losers.map((loser) => timeOf(loser.lastConfirmedAt ?? loser.createdAt)))) {
+    return 'fresher';
+  }
+  if (winner.confidence > Math.max(...losers.map((loser) => loser.confidence))) {
+    return 'higher-confidence';
+  }
+  return 'stable-order';
+}
+
+/**
+ * v4.21：同主体冲突裁决。
+ *
+ * 同一 `subjectKey` 只保留 1 条，落选值不删除（调用方可继续查询）；
+ * 无 subjectKey 的条目原样通过；返回值保持入参顺序，避免改变召回展示顺序。
+ */
+export function resolveMemoryConflicts<T extends ConflictCandidate>(
+  entries: readonly T[],
+): ConflictResolveResult<T> {
+  const groups = new Map<string, T[]>();
+  for (const entry of entries) {
+    const key = entry.subjectKey?.trim();
+    if (!key) continue;
+    const group = groups.get(key);
+    if (group) group.push(entry);
+    else groups.set(key, [entry]);
+  }
+  const losers = new Set<string>();
+  const resolutions: MemoryConflictResolution[] = [];
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    const [winner] = [...group].sort(compareConflict);
+    const dropped = group.filter((entry) => entry.id !== winner!.id);
+    dropped.forEach((entry) => losers.add(entry.id));
+    resolutions.push({
+      winnerId: winner!.id,
+      reason: conflictReason(winner!, dropped),
+      loserIds: dropped.map((entry) => entry.id),
+    });
+  }
+  return { kept: entries.filter((entry) => !losers.has(entry.id)), resolutions };
+}
+
 function compareId(a: string, b: string): number {
   return a.localeCompare(b, 'en', { numeric: true });
 }

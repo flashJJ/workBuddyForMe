@@ -24,10 +24,18 @@ import {
   normalizeFtsRank,
   recallReason,
   recencyScore,
+  resolveMemoryConflicts,
   resolveRecallWeights,
+  type MemoryConflictResolution,
 } from './memory-retriever';
 
-/** v2.26 召回编排：向量 + FTS 候选 → 融合打分 → 作用域/TTL 过滤 → 置顶补充。 */
+/** v2.26 召回编排：向量 + FTS 候选 → 融合打分 → 冲突裁决 → 作用域/TTL 过滤 → 置顶补充。 */
+
+export interface RecallCollectResult {
+  memories: RecalledMemory[];
+  conflicts: MemoryConflictResolution[];
+  droppedByBudget: number;
+}
 
 export interface RecallCollectInput {
   query: string;
@@ -44,7 +52,7 @@ export function createMemoryRecall(
   repo: MemoryRepository,
   edgeRepo: MemoryEdgeRepository,
 ) {
-  function collect(input: RecallCollectInput): RecalledMemory[] {
+  function collect(input: RecallCollectInput): RecallCollectResult {
     const now = input.now ?? new Date();
     const nowIso = now.toISOString();
     const semanticScores = new Map<string, number>();
@@ -161,10 +169,12 @@ export function createMemoryRecall(
       seen.add(memory.id);
       final.push(memory);
     }
+    // v4.21：同主体冲突裁决——只注入胜者，落选值保留在库中
+    const { kept, resolutions } = resolveMemoryConflicts(final);
     // v4.21：统一按场景预算裁剪；置顶不计 token，其余按分数补位
-    const { selected } = applyRecallBudget(final, input.budget);
+    const { selected, droppedByBudget } = applyRecallBudget(kept, input.budget);
     repo.touchAccessed(selected.map((memory) => memory.id));
-    return selected;
+    return { memories: selected, conflicts: resolutions, droppedByBudget };
   }
 
   return { collect };

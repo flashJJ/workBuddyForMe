@@ -8,6 +8,7 @@ import {
   normalizeFtsRank,
   recallReason,
   recencyScore,
+  resolveMemoryConflicts,
   resolveRecallBudget,
   resolveRecallWeights,
 } from './memory-retriever';
@@ -140,5 +141,74 @@ describe('v4.21 召回预算', () => {
       selected: [],
       droppedByBudget: 0,
     });
+  });
+});
+
+describe('v4.21 冲突裁决', () => {
+  interface Candidate {
+    id: string;
+    subjectKey: string | null;
+    pinned: boolean;
+    confidence: number;
+    version: number;
+    createdAt: string;
+    lastConfirmedAt: string | null;
+  }
+  const candidate = (id: string, overrides: Partial<Candidate> = {}): Candidate => ({
+    id,
+    subjectKey: 'residence:city',
+    pinned: false,
+    confidence: 1,
+    version: 1,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    lastConfirmedAt: null,
+    ...overrides,
+  });
+
+  it('固定优先：旧但置顶的一条胜出，理由为 pinned', () => {
+    const old = candidate('1', { pinned: true, createdAt: '2024-01-01T00:00:00.000Z' });
+    const fresh = candidate('2', { createdAt: '2026-06-01T00:00:00.000Z' });
+    const { kept, resolutions } = resolveMemoryConflicts([fresh, old]);
+    expect(kept.map((entry) => entry.id)).toEqual(['1']);
+    expect(resolutions[0]).toMatchObject({ winnerId: '1', reason: 'pinned', loserIds: ['2'] });
+  });
+
+  it('新鲜度优先：同固定状态时最新确认的一条胜出', () => {
+    const old = candidate('1', { lastConfirmedAt: '2025-01-01T00:00:00.000Z' });
+    const fresh = candidate('2', { lastConfirmedAt: '2026-06-01T00:00:00.000Z' });
+    expect(resolveMemoryConflicts([old, fresh]).resolutions[0]).toMatchObject({
+      winnerId: '2',
+      reason: 'fresher',
+    });
+  });
+
+  it('置信度优先：固定与新鲜度相同时取高置信度', () => {
+    const low = candidate('1', { confidence: 0.6 });
+    const high = candidate('2', { confidence: 0.95 });
+    expect(resolveMemoryConflicts([low, high]).resolutions[0]).toMatchObject({
+      winnerId: '2',
+      reason: 'higher-confidence',
+    });
+  });
+
+  it('稳定顺序：全部相同时按 version、id 降序', () => {
+    const v1 = candidate('1', { version: 1 });
+    const v2 = candidate('2', { version: 2 });
+    expect(resolveMemoryConflicts([v1, v2]).resolutions[0]).toMatchObject({
+      winnerId: '2',
+      reason: 'stable-order',
+    });
+    const a = candidate('9', { version: 2 });
+    const b = candidate('10', { version: 2 });
+    expect(resolveMemoryConflicts([a, b]).resolutions[0]!.winnerId).toBe('10');
+  });
+
+  it('无主体键不参与裁决，落选值仅从注入集合移除', () => {
+    const plain = candidate('1', { subjectKey: null });
+    const other = candidate('2', { subjectKey: 'job:city' });
+    const duplicate = candidate('3');
+    const result = resolveMemoryConflicts([plain, other, duplicate]);
+    expect(result.kept.map((entry) => entry.id)).toEqual(['1', '2', '3']);
+    expect(result.resolutions).toEqual([]);
   });
 });

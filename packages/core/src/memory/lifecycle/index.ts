@@ -10,8 +10,13 @@ export {
   normalizeFtsRank,
   recallReason,
   recencyScore,
+  resolveMemoryConflicts,
   resolveRecallBudget,
   resolveRecallWeights,
+  type ConflictCandidate,
+  type ConflictResolveResult,
+  type MemoryConflictReason,
+  type MemoryConflictResolution,
   type RecallBudgetEntry,
   type RecallBudgetResult,
   type RecallWeights,
@@ -27,6 +32,7 @@ export {
   createMemoryRecall,
   type MemoryRecall,
   type RecallCollectInput,
+  type RecallCollectResult,
 } from './memory-recall';
 export { createMemoryStats, type MemoryStats } from './memory-stats';
 export {
