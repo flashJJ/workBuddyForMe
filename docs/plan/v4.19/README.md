@@ -3,6 +3,7 @@
 > 状态：已立项——主题「补完」：v4.18 五项顺延 + v4.17 两项小遗留
 > 规格：[spec.md](./spec.md) · 任务：[tasks.md](./tasks.md) · 契约：[contracts.md](./contracts.md)
 > 上游：v4.18 已发布（`v4.18.0`）
+> 计划外追加：[voice-and-chitchat.md](./voice-and-chitchat.md)（语音链路与寒暄快路径）
 > 原则：零数据库迁移、不引入新运行时依赖、每项可独立验收
 
 ## 0. 范围决策
