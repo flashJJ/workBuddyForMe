@@ -35,6 +35,11 @@ test('首字超过本机基线时提示一次，可关闭且不自动切换模�
   await page.addInitScript(() => {
     localStorage.setItem('wbfm:perf:first-token-samples', JSON.stringify([1, 1, 1]));
   });
+  // 人为延迟首字：CI 本机回环可能在一帧内完成，阈值 2ms 来不及触发
+  await page.route('**/api/chat/stream', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2_500));
+    await route.continue();
+  });
   await page.goto(`/chat?conversation=${conversationId}`);
   await waitForHydrated(page);
   await expect(page.getByTestId('composer')).toBeVisible({ timeout: 30_000 });
