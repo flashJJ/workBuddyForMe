@@ -1,5 +1,6 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
-import type { FlowNodeType } from '@wbfm/shared/schemas';
+import type { FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
+import { resolveFlowNodePolicy } from '@wbfm/shared/schemas';
 import { toolNodeHandler, type ToolNodeConfig } from '../handlers/tool';
 import { runAgentNode } from './engine-agent';
 import { policyDenyText, type PolicyDecisionReason } from '../policy/policy-gate';
@@ -11,6 +12,13 @@ import type { FlowExecutionContext, FlowHandlerRegistry } from '../graph/types';
  */
 
 export type EventBase = { runId: string; workflowId: string };
+
+/** v4.23：确定性错误（配置/资源缺失），重试无意义 */
+export class NonRetryableNodeError extends Error {}
+
+export function isRetryableNodeError(error: unknown): boolean {
+  return !(error instanceof NonRetryableNodeError);
+}
 
 function deniedToolOutput(toolName: string, permission: string, reason?: string): Record<string, unknown> {
   // v0.9 无人值守拒绝时 reason 携带 policy_* 说明（节点记录即审计轨迹）
@@ -31,7 +39,7 @@ async function runPlainNode(
   handlers: FlowHandlerRegistry,
 ): Promise<Record<string, unknown>> {
   const handler = handlers[type];
-  if (!handler) throw new Error(`节点类型「${type}」的处理器尚未注册`);
+  if (!handler) throw new NonRetryableNodeError(`节点类型「${type}」的处理器尚未注册`);
   const result = await handler.run(config, ctx);
   return (result ?? {}) as Record<string, unknown>;
 }
@@ -60,9 +68,9 @@ async function* runToolNodeWithGate(
 ): AsyncGenerator<FlowEventPayload, Record<string, unknown>> {
   const toolConfig = config as ToolNodeConfig;
   const toolName = toolConfig.toolName?.trim() ?? '';
-  if (!toolName) throw new Error('tool 节点未配置工具名');
+  if (!toolName) throw new NonRetryableNodeError('tool 节点未配置工具名');
   const tool = ctx.resolveTool ? await ctx.resolveTool(toolName) : null;
-  if (!tool) throw new Error(`工具不存在或当前不可用：${toolName}`);
+  if (!tool) throw new NonRetryableNodeError(`工具不存在或当前不可用：${toolName}`);
 
   const permission = tool.permission ?? 'read';
   let allowed = true;
@@ -114,4 +122,125 @@ export async function* runNodeBody(
   if (type === 'tool') return yield* runToolNodeWithGate(nodeId, config, ctx, base);
   if (type === 'agent') return yield* runAgentNode(nodeId, config, ctx, base);
   return runPlainNode(type, config, ctx, handlers);
+}
+
+/* ───────────────── v4.23 节点尝试：重试与超时（串行/并行共用） ───────────────── */
+
+export interface NodeAttemptArgs {
+  nodeId: string;
+  node: FlowNode;
+  config: Record<string, unknown>;
+  ctx: FlowExecutionContext;
+  handlers: FlowHandlerRegistry;
+  base: EventBase;
+}
+
+export type NodeAttemptResult =
+  | { ok: true; outputs: Record<string, unknown>; attempt: number; durationMs: number }
+  | { ok: false; attempt: number; message: string; aborted: boolean };
+
+const DEFAULT_BACKOFF_MS = 1_000;
+const DEFAULT_MAX_BACKOFF_MS = 30_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, nodeId: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`节点 ${nodeId} 执行超时（${ms}ms）`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const finish = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, ms);
+    signal?.addEventListener('abort', finish, { once: true });
+  });
+}
+
+/** 超时只对非交互节点生效；写/危险 tool 与 human/agent 不设超时 */
+async function resolveTimeoutMs(
+  args: NodeAttemptArgs,
+  timeoutMs: number | undefined,
+): Promise<number | null> {
+  if (!timeoutMs) return null;
+  const { node, config, ctx } = args;
+  if (node.type === 'human' || node.type === 'agent' || node.type === 'start') return null;
+  if (node.type !== 'tool') return timeoutMs;
+  const toolName = String((config as { toolName?: unknown }).toolName ?? '').trim();
+  if (!toolName || !ctx.resolveTool) return null;
+  try {
+    const tool = await ctx.resolveTool(toolName);
+    return (tool?.permission ?? 'read') === 'read' ? timeoutMs : null;
+  } catch {
+    return null;
+  }
+}
+
+async function* runAttempt(
+  args: NodeAttemptArgs,
+  timeoutMs: number | null,
+): AsyncGenerator<FlowEventPayload, Record<string, unknown>> {
+  const iterator = runNodeBody(args.nodeId, args.node.type, args.config, args.ctx, args.handlers, args.base);
+  for (;;) {
+    const step =
+      timeoutMs === null
+        ? await iterator.next()
+        : await withTimeout(iterator.next(), timeoutMs, args.nodeId);
+    if (step.done) return step.value;
+    yield step.value;
+  }
+}
+
+/**
+ * 按节点策略执行：每次尝试发 node_started（重试带 attempt）；
+ * 仅对执行体抛出的可重试错误按指数退避重试，不抛错而是返回结果。
+ */
+export async function* runNodeWithPolicy(
+  args: NodeAttemptArgs,
+): AsyncGenerator<FlowEventPayload, NodeAttemptResult> {
+  const policy = resolveFlowNodePolicy(args.config);
+  const maxAttempts = policy.retry?.maxAttempts ?? 1;
+  const backoffMs = policy.retry?.backoffMs ?? DEFAULT_BACKOFF_MS;
+  const maxBackoffMs = policy.retry?.maxBackoffMs ?? DEFAULT_MAX_BACKOFF_MS;
+  const timeoutMs = await resolveTimeoutMs(args, policy.timeoutMs);
+
+  let attempt = 0;
+  for (;;) {
+    attempt += 1;
+    const startedAt = Date.now();
+    yield {
+      type: 'node_started',
+      ...args.base,
+      nodeId: args.nodeId,
+      nodeType: args.node.type,
+      inputs: args.config,
+      ...(attempt > 1 ? { attempt } : {}),
+    };
+    try {
+      const outputs = yield* runAttempt(args, timeoutMs);
+      return { ok: true, outputs, attempt, durationMs: Date.now() - startedAt };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const aborted = args.ctx.signal?.aborted === true;
+      if (aborted || attempt >= maxAttempts || !isRetryableNodeError(error)) {
+        return { ok: false, attempt, message, aborted };
+      }
+      const waitMs = Math.min(backoffMs * 2 ** (attempt - 1), maxBackoffMs);
+      await sleepWithAbort(waitMs, args.ctx.signal);
+      if (args.ctx.signal?.aborted) return { ok: false, attempt, message, aborted: true };
+    }
+  }
 }

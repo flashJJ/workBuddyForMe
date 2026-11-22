@@ -226,6 +226,10 @@ export type FlowEventPayload =
       trigger: FlowTrigger;
       /** v4.22：本次运行实际生效的并行度（缺省 1；旧读取方忽略即可） */
       parallelism?: number;
+      /** v4.23：是否从 checkpoint 续跑 */
+      resumed?: boolean;
+      /** v4.23：续跑原因（waiting_human / safe_in_flight / empty_checkpoint） */
+      resumeReason?: string;
     })
   | (FlowRunEventBase & {
       type: 'node_started';
@@ -233,6 +237,8 @@ export type FlowEventPayload =
       nodeType: string;
       /** 引用解析后的实际入参（试运行面板/落库用，M1 起携带） */
       inputs?: unknown;
+      /** v4.23：尝试序号（1 起；首次可省略） */
+      attempt?: number;
     })
   | (FlowRunEventBase & {
       type: 'node_succeeded';
@@ -251,7 +257,13 @@ export type FlowEventPayload =
       /** 内部协作帧（phase/handoff/review/budget/done/error） */
       event: AgentNodeInnerEvent;
     })
-  | (FlowRunEventBase & { type: 'node_failed'; nodeId: string; message: string })
+  | (FlowRunEventBase & {
+      type: 'node_failed';
+      nodeId: string;
+      message: string;
+      /** v4.23：最终失败的尝试序号 */
+      attempt?: number;
+    })
   | (FlowRunEventBase & { type: 'run_succeeded'; output: unknown })
   | (FlowRunEventBase & { type: 'run_failed'; message: string; nodeId?: string })
   | (FlowRunEventBase & { type: 'run_cancelled' });

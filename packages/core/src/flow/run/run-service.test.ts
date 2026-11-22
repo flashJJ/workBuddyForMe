@@ -5,8 +5,7 @@ import {
   createWorkflowRunRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
-import { beforeEach, describe, expect, it } from 'vitest';
-import type { SecretCipher } from '../../secrets/cipher';
+import { beforeEach, describe, expect, it } from 'vitest';import type { SecretCipher } from '../../secrets/cipher';
 import { createPermissionService } from '../../services/permission/permission-service';
 import { createTaskGrantRegistry } from '../../services/task/task-grants';
 import type { ToolRuntime } from '../../tools/tool-runtime';
@@ -256,23 +255,21 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     expect(second.isActive(runId)).toBe(false);
   });
 
-  it('v0.9 启动恢复：上一进程 running 行收敛 interrupted，queued 行自动续跑成功', async () => {
+  it('v4.23 启动恢复：queued 与空检查点在途运行自动续跑', async () => {
     const done = workflows.createWorkflow({ name: '已完成图' });
     workflows.addVersion(done.id, graphStartEnd());
-    // 模拟上一进程残留：一条 queued、一条 running（无 active 执行者）
+    // 模拟上一进程残留：一条 queued、一条 running（无任何节点进度）
     const queuedId = runs.createRun({ workflowId: done.id, version: 1, trigger: 'manual' }).id;
     const stuckId = runs.createRun({ workflowId: done.id, version: 1, trigger: 'manual' }).id;
     runs.claimQueued(stuckId);
-    expect(runs.getRun(stuckId)?.status).toBe('running');
 
-    // 新服务构造时执行恢复扫描：stuck 收敛 interrupted，queued 重新入队续跑
     const recovered = createFlowRunService({ deps, runtime, workflows, runs });
 
-    expect(runs.getRun(stuckId)?.status).toBe('interrupted');
-    expect(runs.getRun(stuckId)?.interruptReason).toBe('process_restart');
-    // setImmediate 队列链在慢速 CI 上可能超过固定等待；轮询到终态，避免时序抖动
     await expect
       .poll(() => runs.getRun(queuedId)?.status, { timeout: 5_000, interval: 25 })
+      .toBe('succeeded');
+    await expect
+      .poll(() => runs.getRun(stuckId)?.status, { timeout: 5_000, interval: 25 })
       .toBe('succeeded');
     expect(recovered.isActive(stuckId)).toBe(false);
   });

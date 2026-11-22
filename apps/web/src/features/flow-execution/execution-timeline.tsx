@@ -160,6 +160,11 @@ function TimelineRow({ event, nodes }: { event: FlowEventPayload; nodes: FlowCan
           {'durationMs' in event && typeof event.durationMs === 'number' && (
             <span className="shrink-0 text-[10px] text-muted-foreground">{event.durationMs}ms</span>
           )}
+          {'attempt' in event && typeof event.attempt === 'number' && event.attempt > 1 && (
+            <span className="shrink-0 text-[10px] text-warning">
+              {t('flowExecution.retryCount', { n: event.attempt })}
+            </span>
+          )}
           {hasDetail && (
             <ChevronRight className={cn('ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground', open && 'rotate-90')} />
           )}

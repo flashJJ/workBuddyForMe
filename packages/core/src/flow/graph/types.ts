@@ -48,6 +48,19 @@ export type FlowScope = Map<string, Record<string, unknown>>;
 /** 引擎内部节点终态（节点失败即终止整个运行） */
 export type FlowNodeState = 'succeeded' | 'skipped' | 'failed';
 
+/** v4.23 续跑检查点：已落库的节点终态 */
+export interface CheckpointNode {
+  nodeId: string;
+  status: 'succeeded' | 'skipped';
+  outputs?: Record<string, unknown>;
+}
+
+export interface FlowCheckpoint {
+  runId: string;
+  nodes: CheckpointNode[];
+  lastSucceededNodeId: string | null;
+}
+
 /** 人工节点等待结果 */
 export interface FlowHumanDecision {
   approved: boolean;
@@ -177,6 +190,10 @@ export interface RunFlowOptions {
   replayTargetId?: string;
   /** v4.22：本次运行并发上限；缺省取 compiled.graph.parallelism ?? 1 */
   maxConcurrency?: number;
+  /** v4.23：续跑检查点；缺省表示全新运行 */
+  checkpoint?: FlowCheckpoint;
+  /** v4.23：续跑原因（写入 run_started） */
+  resumeReason?: string;
   signal?: AbortSignal;
 }
 

@@ -10,6 +10,8 @@ import { createChatInvoker } from '../invoke/chat-invoke';
 import { createFlowEventBus, type FlowEventBus } from '../queue/event-bus';
 import { createFlowRunQueue } from '../queue/run-queue';
 import { recoverInterruptedRuns } from '../queue/recovery-scanner';
+import { decideResume } from '../queue/resume-policy';
+import { loadCheckpoint } from '../queue/checkpoint';
 import { waitForRunTerminal } from '../queue/terminal-wait';
 import { createFlowExecutor, type FlowExecutor } from './flow-execution';
 import { resolveRunRuntimeOverrides, type RunRuntimeOverrides } from './run-options';
@@ -127,9 +129,43 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     onError: (runId, error) => console.error(`[flow] run ${runId} 队列执行异常：`, error),
   });
 
-  // 启动恢复：上一进程在途运行收敛 + queued 重新入队
-  const recovery = recoverInterruptedRuns(runs, new Set(active.keys()));
-  for (const runId of recovery.requeued) queue.enqueue(runId);
+  // v4.23 启动恢复：queued 重新入队；在途运行按安全矩阵续跑或保持 interrupted
+  const startupActiveIds = new Set(active.keys());
+  const recovery = recoverInterruptedRuns(runs, startupActiveIds, (runId) => {
+    try {
+      const run = runs.getRun(runId);
+      if (!run) return 'interrupt';
+      const loaded = loadCompiledGraph(run.workflowId, run.trigger !== 'manual');
+      const decision = decideResume({
+        run,
+        nodes: runs.listNodeExecutions(runId),
+        compiled: loaded.compiled,
+        compiledVersion: loaded.version,
+        activeRunIds: startupActiveIds,
+        resolveTool: (name) => runtime.resolveTool(name)?.tool ?? null,
+      });
+      if (!decision.eligible) return 'interrupt';
+
+      const checkpoint = loadCheckpoint(runs, runId);
+      const overrides = resolveRunRuntimeOverrides({
+        trigger: run.trigger,
+        endpointId: run.endpointId,
+        compiled: loaded.compiled,
+        endpoints,
+      });
+      runOverrides.set(runId, {
+        ...overrides,
+        ...(checkpoint ? { checkpoint } : {}),
+        resumeReason: decision.reason,
+      });
+      return 'resume';
+    } catch (error) {
+      // 版本缺失/删除/编译失败等：保持 interrupted，等人工重放
+      console.warn('[flow] 续跑判定失败，保持 interrupted：', error);
+      return 'interrupt';
+    }
+  });
+  for (const runId of [...recovery.requeued, ...recovery.resumed]) queue.enqueue(runId);
 
   // 定时补偿：纯 setImmediate 边缘触发在极端时序（如 dev 冷编译窗口模块重载）
   // 下可能丢失首个信号；周期把 DB 中仍是 queued 且本进程未在执行的 run 重新入队。

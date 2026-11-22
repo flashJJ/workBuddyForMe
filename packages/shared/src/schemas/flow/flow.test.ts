@@ -39,6 +39,35 @@ describe('flow 图契约（v0.8）', () => {
     expect(good.success).toBe(false);
   });
 
+  it('v4.23 节点重试/超时策略：合法值通过，越界拒绝', () => {
+    const base = {
+      nodes: [
+        { id: 'start', type: 'start', position: { x: 0, y: 0 } },
+        {
+          id: 'end',
+          type: 'end',
+          position: { x: 1, y: 2 },
+          config: { retry: { maxAttempts: 3, backoffMs: 500 }, timeoutMs: 5_000 },
+        },
+      ],
+      edges: [{ id: 'e1', source: 'start', target: 'end' }],
+    };
+    expect(flowGraphSchema.safeParse(base).success).toBe(true);
+    const withRetry = (retry: unknown) => ({
+      ...base,
+      nodes: [base.nodes[0], { ...base.nodes[1], config: { retry } }],
+    });
+    expect(flowGraphSchema.safeParse(withRetry({ maxAttempts: 0 })).success).toBe(false);
+    expect(flowGraphSchema.safeParse(withRetry({ maxAttempts: 6 })).success).toBe(false);
+    expect(flowGraphSchema.safeParse(withRetry({ backoffMs: 50 })).success).toBe(false);
+    const withTimeout = (timeoutMs: unknown) => ({
+      ...base,
+      nodes: [base.nodes[0], { ...base.nodes[1], config: { timeoutMs } }],
+    });
+    expect(flowGraphSchema.safeParse(withTimeout(500)).success).toBe(false);
+    expect(flowGraphSchema.safeParse(withTimeout(1_000)).success).toBe(true);
+  });
+
   it('节点 id 必须标识符安全，节点数少于 2 拒绝', () => {
     const badId = flowGraphSchema.safeParse({
       nodes: [{ id: 'bad id', type: 'start', position: { x: 0, y: 0 } }],

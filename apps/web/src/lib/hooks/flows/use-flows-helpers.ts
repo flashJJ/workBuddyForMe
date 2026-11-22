@@ -12,6 +12,9 @@ export const INITIAL_LIVE: FlowLiveState = {
   errorMessage: null,
   errorNodeId: null,
   parallelism: 1,
+  resumed: false,
+  resumeReason: null,
+  nodeAttempts: {},
 };
 
 /** SSE 事件归一到 live 状态（纯 reducer 片段） */
@@ -20,14 +23,18 @@ export function applyFlowEvent(prev: FlowLiveState, e: FlowEventPayload): FlowLi
     ...prev,
     events: [...prev.events, e],
     nodeStatus: { ...prev.nodeStatus },
+    nodeAttempts: { ...prev.nodeAttempts },
   };
   switch (e.type) {
     case 'run_started':
       next.phase = 'running';
       next.parallelism = e.parallelism ?? 1;
+      next.resumed = e.resumed === true;
+      next.resumeReason = e.resumeReason ?? null;
       break;
     case 'node_started':
       next.nodeStatus[e.nodeId] = 'running';
+      if (e.attempt && e.attempt > 1) next.nodeAttempts[e.nodeId] = e.attempt;
       if (prev.waitingNodeId === e.nodeId) next.waitingNodeId = null;
       break;
     case 'node_succeeded':

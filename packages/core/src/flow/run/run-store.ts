@@ -10,8 +10,11 @@ export interface FlowRunStore {
   persist(event: FlowEventPayload): void;
 }
 
-export function createFlowRunStore(runs: WorkflowRunRepository): FlowRunStore {
-  const nodeExecIds = new Map<string, string>();
+export function createFlowRunStore(
+  runs: WorkflowRunRepository,
+  initialNodeExecIds?: ReadonlyMap<string, string>,
+): FlowRunStore {
+  const nodeExecIds = new Map<string, string>(initialNodeExecIds ?? []);
 
   function ensureNodeExecution(runId: string, nodeId: string, inputs?: unknown): string {
     const existing = nodeExecIds.get(nodeId);

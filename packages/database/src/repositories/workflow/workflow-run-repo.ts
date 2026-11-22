@@ -152,6 +152,18 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return result.changes === 0 ? null : mapRun(this.getRunRow(id)!);
     },
 
+    /** v4.23：可续跑的 interrupted 运行重新入队（清中断原因与终态时间） */
+    requeueInterrupted(id: string): WorkflowRunView | null {
+      const result = db
+        .prepare(
+          `UPDATE workflow_runs
+           SET status = 'queued', interrupt_reason = NULL, finished_at = NULL, wait_node_id = NULL
+           WHERE id = @id AND status = 'interrupted'`,
+        )
+        .run({ id });
+      return result.changes === 0 ? null : mapRun(this.getRunRow(id)!);
+    },
+
     /** 终态推进：succeeded/failed/cancelled/interrupted，写 finished_at 与输出/错误 */
     finishRun(
       id: string,

@@ -2,7 +2,7 @@ import type { FlowEventPayload } from '@wbfm/shared/types';
 import type { FlowNode } from '@wbfm/shared/schemas';
 import { resolveFlowRefs } from '../graph/refs';
 import { isNodeLive, type IncomingEdge } from './engine-live';
-import { runNodeBody, type EventBase } from './engine-node';
+import { runNodeWithPolicy, type EventBase, type NodeAttemptResult } from './engine-node';
 import type {
   CompiledFlow,
   FlowExecutionContext,
@@ -37,7 +37,8 @@ const PARALLEL_SAFE = new Set(['llm', 'knowledgeSearch', 'condition', 'end']);
 
 export async function* runFlowParallel(input: ParallelRunInput): AsyncGenerator<FlowEventPayload> {
   const { compiled, ctx, handlers, base, state, liveEdges, incoming, maxConcurrency, aborted } = input;
-  const pending = new Set(compiled.order);
+  // 续跑：已落定节点不再进入待执行集合
+  const pending = new Set(compiled.order.filter((nodeId) => !state.has(nodeId)));
   const running = new Set<string>();
   const skipReasons = new Map<string, string>();
   const queue: FlowEventPayload[] = [];
@@ -92,22 +93,44 @@ export async function* runFlowParallel(input: ParallelRunInput): AsyncGenerator<
     pending.delete(nodeId);
     running.add(nodeId);
     void (async () => {
-      const startedAt = Date.now();
       try {
         const resolvedConfig = resolveFlowRefs(node.config, ctx.scope) as Record<string, unknown>;
-        push({ type: 'node_started', ...base, nodeId, nodeType: node.type, inputs: resolvedConfig });
-
-        const iterator = runNodeBody(nodeId, node.type, resolvedConfig, ctx, handlers, base);
-        let outputs: Record<string, unknown> | undefined;
+        const iterator = runNodeWithPolicy({
+          nodeId,
+          node,
+          config: resolvedConfig,
+          ctx,
+          handlers,
+          base,
+        });
+        let result: NodeAttemptResult = { ok: false, attempt: 1, message: '节点未执行', aborted: false };
         for (;;) {
           const step = await iterator.next();
           if (step.done) {
-            outputs = step.value;
+            result = step.value;
             break;
           }
           push(step.value);
         }
 
+        if (!result.ok) {
+          if (result.aborted || aborted()) {
+            state.set(nodeId, 'skipped');
+            return;
+          }
+          state.set(nodeId, 'failed');
+          push({
+            type: 'node_failed',
+            ...base,
+            nodeId,
+            message: result.message,
+            ...(result.attempt > 1 ? { attempt: result.attempt } : {}),
+          });
+          failures.push({ nodeId, message: result.message });
+          return;
+        }
+
+        const outputs = result.outputs;
         if (aborted()) {
           state.set(nodeId, 'skipped');
           return;
@@ -131,7 +154,7 @@ export async function* runFlowParallel(input: ParallelRunInput): AsyncGenerator<
           ...base,
           nodeId,
           outputs,
-          durationMs: Date.now() - startedAt,
+          durationMs: result.durationMs,
         });
       } catch (err) {
         if (aborted()) {
