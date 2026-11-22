@@ -658,7 +658,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v4.17 | 用得顺：限制可视化、错误可恢复、首启三选一与检索复用 | ✅ 已发布（2026-11-21，`v4.17.0`） | [规格](../plan/v4.17/spec.md) · [任务](../plan/v4.17/tasks.md) | [发行说明](v4.17.0-release-notes.md) | [blog/v4.17](../../blog/v4.17/) 7 篇 | `v4.17.0` |
 | v4.18 | 稳、找得到、可评测：模型故障恢复、跨域检索与离线 A/B 回放 | ✅ 已发布（2026-11-22，`v4.18.0`） | [选题](../plan/v4.18/README.md) · [规格](../plan/v4.18/spec.md) · [契约](../plan/v4.18/contracts.md) · [任务](../plan/v4.18/tasks.md) · [总结](../plan/v4.18/version-summary.md) | [发行说明](v4.18.0-release-notes.md) | [blog/v4.18](../../blog/v4.18/) 7 篇 | `v4.18.0` |
 | v4.19 | 补完：备用模型链、供应商健康度、回放对比、知识复制、桌宠入口与对话自适应宽度 | ✅ 已发布（2026-11-22，`v4.19.0`） | [选题](../plan/v4.19/README.md) · [规格](../plan/v4.19/spec.md) · [契约](../plan/v4.19/contracts.md) · [任务](../plan/v4.19/tasks.md) · [总结](../plan/v4.19/version-summary.md) | [发行说明](v4.19.0-release-notes.md) | [blog/v4.19](../../blog/v4.19/) 7 篇 | `v4.19.0` |
-| v4.20 | 快：首答与长会话体感（并入语音后续、回放 PR、知识动作、备用链与健康度导出） | 🛠 M4 已完成（并入项收口），M5 验证进行中 | [选题](../plan/v4.20/README.md) · [规格](../plan/v4.20/spec.md) · [契约](../plan/v4.20/contracts.md) · [任务](../plan/v4.20/tasks.md) · [性能基线](../plan/v4.20/perf-baseline.md) | — | — | — |
+| v4.20 | 快：首答与长会话体感（并入语音后续、回放 PR、知识动作、备用链与健康度导出） | 🛠 M5 已完成（E2E、性能基线与全量验证），M6 收口待发布 | [选题](../plan/v4.20/README.md) · [规格](../plan/v4.20/spec.md) · [契约](../plan/v4.20/contracts.md) · [任务](../plan/v4.20/tasks.md) · [总结](../plan/v4.20/version-summary.md) · [性能基线](../plan/v4.20/perf-baseline.md) | [发行说明](v4.20.0-release-notes.md) | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
