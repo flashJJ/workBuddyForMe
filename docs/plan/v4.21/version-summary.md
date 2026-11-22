@@ -1,7 +1,9 @@
 # v4.21 版本总结：记得住、管得住
 
 > 版本：4.21.0（2026-11-23 发布）
-> 状态：🛠 收口中（待 tag `v4.21.0` 与 Release）
+> 状态：✅ 已发布（tag `v4.21.0`，GitHub Release 最新版）
+> 安装包：`WorkBuddyForMe-Setup-4.21.0.exe`（258.17 MiB，SHA256 `9566cd89d28b4d65…c5c7a33cb`）
+> Release：https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.21.0
 > 主题：统一召回、冲突裁决与用户治理——记忆从「能召回」到「可解释、可治理」
 > 迁移：零数据库迁移；备份格式不变；无新增运行时依赖
 > 博客：[blog/v4.21](../../blog/v4.21/) 7 篇
