@@ -1,25 +1,24 @@
 import { Worker } from 'node:worker_threads';
-import type { TtsEngine, TtsResult, TtsSynthOptions } from '../types';
+import type { TtsChunkSink, TtsEngine, TtsResult, TtsSynthOptions } from '../types';
 import { VoiceEngineError } from '../types';
 import { isSpeakableText } from '../../text/sentence-splitter';
 import type { SherpaTtsOptions } from './tts-engine';
 import { buildNativeTtsConfig } from './tts-native-config';
 import { TTS_WORKER_SOURCE } from './tts-worker-source';
+import {
+  concatChunks,
+  waitReady,
+  type PendingSynth,
+  type ReadyInfo,
+  type TtsWorkerLike,
+} from './tts-worker-support';
+
+export type { TtsWorkerLike } from './tts-worker-support';
 
 /** 首帧就绪等待上限：Kokoro 冷加载在低配机可达十余秒 */
 const READY_TIMEOUT_MS = 30_000;
 /** dispose 等待 worker 自行退出的上限，超时直接 terminate */
 const EXIT_TIMEOUT_MS = 3_000;
-
-/** Worker 的最小结构面（测试可注入假实现） */
-export interface TtsWorkerLike {
-  on(event: 'message', listener: (msg: unknown) => void): unknown;
-  on(event: 'error', listener: (err: Error) => void): unknown;
-  on(event: 'exit', listener: (code: number) => void): unknown;
-  postMessage(value: unknown, transferList?: readonly ArrayBuffer[]): void;
-  terminate(): Promise<number> | number;
-  unref(): void;
-}
 
 export interface WorkerTtsOptions extends SherpaTtsOptions {
   /** sherpa-onnx-node 的绝对入口，由 resolveSherpaModulePath 解析 */
@@ -31,8 +30,6 @@ export interface WorkerTtsOptions extends SherpaTtsOptions {
   ) => TtsWorkerLike;
 }
 
-type ReadyInfo = { sampleRate: number; numSpeakers: number };
-
 /**
  * 把 sherpa-onnx 合成搬进 worker 线程的 TtsEngine 实现。
  *
@@ -42,10 +39,7 @@ type ReadyInfo = { sampleRate: number; numSpeakers: number };
 export class WorkerTtsEngine implements TtsEngine {
   private nextId = 1;
   private disposed = false;
-  private readonly pending = new Map<
-    number,
-    { resolve: (r: TtsResult) => void; reject: (e: Error) => void }
-  >();
+  private readonly pending = new Map<number, PendingSynth>();
 
   private constructor(
     private readonly worker: TtsWorkerLike,
@@ -79,7 +73,7 @@ export class WorkerTtsEngine implements TtsEngine {
 
     let ready: ReadyInfo;
     try {
-      ready = await waitReady(worker);
+      ready = await waitReady(worker, READY_TIMEOUT_MS);
     } catch (error) {
       // 就绪失败（超时/初始化 fatal）时 worker 可能仍在加载模型：
       // 不终止的话每次重试都会在进程里多留一个常驻线程与一份模型内存
@@ -114,13 +108,45 @@ export class WorkerTtsEngine implements TtsEngine {
       if (typeof msg.id !== 'number') return;
       const pending = this.pending.get(msg.id);
       if (!pending) return;
-      this.pending.delete(msg.id);
+      const sampleRate = msg.sampleRate ?? this.ready.sampleRate;
+      if (msg.type === 'audio_chunk') {
+        const samples = msg.samples ?? new Float32Array(0);
+        if (samples.length === 0) return;
+        pending.chunks.push(samples);
+        try {
+          if (pending.sink?.({ samples, sampleRate }) === false) {
+            // 消费端主动要求停止：通知 worker 在下一个块边界退出
+            this.worker.postMessage({ type: 'abort', id: msg.id });
+            this.finish(msg.id, pending);
+            pending.reject(new VoiceEngineError('tts', '合成已取消'));
+          }
+        } catch {
+          /* sink 异常不阻断合成 */
+        }
+        return;
+      }
       if (msg.type === 'audio') {
-        pending.resolve({
-          samples: msg.samples ?? new Float32Array(0),
-          sampleRate: msg.sampleRate ?? this.ready.sampleRate,
-        });
-      } else if (msg.type === 'error') {
+        // 兼容旧 worker 消息（整段回传）
+        const samples = msg.samples ?? new Float32Array(0);
+        if (samples.length > 0) pending.chunks.push(samples);
+        this.finish(msg.id, pending, samples, sampleRate);
+        return;
+      }
+      if (msg.type === 'audio_done') {
+        const tail = msg.samples ?? new Float32Array(0);
+        if (tail.length > 0) {
+          pending.chunks.push(tail);
+          try {
+            pending.sink?.({ samples: tail, sampleRate });
+          } catch {
+            /* sink 异常不阻断合成 */
+          }
+        }
+        this.finish(msg.id, pending, tail, sampleRate);
+        return;
+      }
+      if (msg.type === 'error') {
+        this.finish(msg.id, pending);
         pending.reject(new VoiceEngineError('tts', `TTS 合成失败：${msg.message}`));
       }
     });
@@ -134,34 +160,75 @@ export class WorkerTtsEngine implements TtsEngine {
     return this;
   }
 
-  async synthesize(text: string, opts?: TtsSynthOptions): Promise<TtsResult> {
+  synthesize(text: string, opts?: TtsSynthOptions): Promise<TtsResult> {
+    return this.synthesizeStream(text, opts, () => undefined);
+  }
+
+  async synthesizeStream(
+    text: string,
+    opts: TtsSynthOptions | undefined,
+    sink: TtsChunkSink,
+  ): Promise<TtsResult> {
     const trimmed = text.trim();
     // 与 inline 引擎同规：空串/纯标点不进原生层（MeloTTS 会硬失败）
     if (!trimmed || !isSpeakableText(trimmed)) {
-      return { samples: new Float32Array(0), sampleRate: this.ready.sampleRate };
+      const empty = { samples: new Float32Array(0), sampleRate: this.ready.sampleRate };
+      sink(empty);
+      return empty;
     }
     if (this.disposed) {
       throw new VoiceEngineError('tts', 'TTS worker 已释放', '重新打开朗读或重启应用');
+    }
+    if (opts?.signal?.aborted) {
+      throw new VoiceEngineError('tts', '合成已取消');
     }
     const requested = opts?.speakerId ?? this.speakerId;
     const sid = requested < this.ready.numSpeakers ? requested : this.speakerId;
     const id = this.nextId++;
 
     return new Promise<TtsResult>((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const pending: PendingSynth = { resolve, reject, chunks: [], sink };
+      this.pending.set(id, pending);
+      if (opts?.signal) {
+        const onAbort = () => {
+          try {
+            this.worker.postMessage({ type: 'abort', id });
+          } catch {
+            /* worker 已退出 */
+          }
+          if (this.pending.get(id) === pending) {
+            this.finish(id, pending);
+            reject(new VoiceEngineError('tts', '合成已取消'));
+          }
+        };
+        opts.signal.addEventListener('abort', onAbort, { once: true });
+        pending.cleanup = () => opts.signal?.removeEventListener('abort', onAbort);
+      }
       try {
         this.worker.postMessage({
-        type: 'synth',
-        id,
-        text: trimmed,
-        sid,
-        speed: opts?.speed ?? this.speed,
-      });
+          type: 'synth',
+          id,
+          text: trimmed,
+          sid,
+          speed: opts?.speed ?? this.speed,
+        });
       } catch (error) {
-        this.pending.delete(id);
+        this.finish(id, pending);
         reject(new VoiceEngineError('tts', `TTS worker 通信失败：${(error as Error).message}`));
       }
     });
+  }
+
+  /** 清掉 pending 并解除 signal 监听（resolve/reject 由调用点决定） */
+  private finish(id: number, pending: PendingSynth, tail?: Float32Array, sampleRate?: number): void {
+    this.pending.delete(id);
+    pending.cleanup?.();
+    if (tail !== undefined) {
+      pending.resolve({
+        samples: concatChunks(pending.chunks),
+        sampleRate: sampleRate ?? this.ready.sampleRate,
+      });
+    }
   }
 
   async dispose(): Promise<void> {
@@ -193,42 +260,12 @@ export class WorkerTtsEngine implements TtsEngine {
   }
 
   private rejectAll(error: Error): void {
-    for (const { reject } of this.pending.values()) reject(error);
+    for (const pending of this.pending.values()) {
+      pending.cleanup?.();
+      pending.reject(error);
+    }
     this.pending.clear();
   }
-}
-
-/** 等待 worker 报就绪；超时、致命错误或提前退出都转为可读的 VoiceEngineError */
-function waitReady(worker: TtsWorkerLike): Promise<ReadyInfo> {
-  return new Promise<ReadyInfo>((resolve, reject) => {
-    let settled = false;
-    const finish = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      fn();
-    };
-    const timer = setTimeout(
-      () => finish(() => reject(new VoiceEngineError('tts', 'TTS worker 启动超时'))),
-      READY_TIMEOUT_MS,
-    );
-    worker.on('message', (raw) => {
-      const msg = raw as { type?: string; message?: string; sampleRate?: number; numSpeakers?: number };
-      if (msg.type === 'ready') {
-        finish(() =>
-          resolve({ sampleRate: msg.sampleRate ?? 24_000, numSpeakers: msg.numSpeakers ?? 1 }),
-        );
-      } else if (msg.type === 'fatal') {
-        finish(() => reject(new VoiceEngineError('tts', `TTS worker 初始化失败：${msg.message}`)));
-      }
-    });
-    worker.on('error', (error) =>
-      finish(() => reject(new VoiceEngineError('tts', `TTS worker 崩溃：${error.message}`))),
-    );
-    worker.on('exit', (code) =>
-      finish(() => reject(new VoiceEngineError('tts', `TTS worker 提前退出（code=${code}）`))),
-    );
-  });
 }
 
 /**

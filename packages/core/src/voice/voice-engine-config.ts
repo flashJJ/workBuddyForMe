@@ -32,33 +32,50 @@ export function buildTtsEngineConfig(
   modelDir: string,
   s: VoiceSettings,
 ): TtsEngineConfig {
-  return spec.engine === 'melo'
-    ? {
-        // VITS 路径由 SherpaTtsEngine 按 modelDir 自行拼出（model/lexicon/tokens/dict）
-        modelDir,
-        speakerId: 0,
-        speed: s.ttsSpeed,
-        numThreads: s.ttsNumThreads,
-        provider: 'cpu',
-      }
-    : {
-        modelDir,
-        speakerId: s.ttsSpeakerId,
-        speed: s.ttsSpeed,
-        numThreads: s.ttsNumThreads,
-        provider: 'cpu',
-        kokoro: {
-          voices: path.join(modelDir, 'voices.bin'),
-          dataDir: path.join(modelDir, 'espeak-ng-data'),
-          lexicon: [
-            path.join(modelDir, 'lexicon-us-en.txt'),
-            path.join(modelDir, 'lexicon-zh.txt'),
-          ].join(','),
-          ruleFsts: ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst']
-            .map((f) => path.join(modelDir, f))
-            .join(','),
-        },
-      };
+  if (spec.engine === 'melo') {
+    return {
+      // VITS 路径由 SherpaTtsEngine 按 modelDir 自行拼出（model/lexicon/tokens/dict）
+      modelDir,
+      speakerId: 0,
+      speed: s.ttsSpeed,
+      numThreads: s.ttsNumThreads,
+      provider: 'cpu',
+    };
+  }
+  if (spec.engine === 'matcha') {
+    return {
+      modelDir,
+      speakerId: 0,
+      speed: s.ttsSpeed,
+      numThreads: s.ttsNumThreads,
+      provider: 'cpu',
+      matcha: {
+        acousticModel: path.join(modelDir, 'model-steps-3.onnx'),
+        vocoder: path.join(modelDir, 'vocos-22khz-univ.onnx'),
+        lexicon: path.join(modelDir, 'lexicon.txt'),
+        tokens: path.join(modelDir, 'tokens.txt'),
+        dictDir: path.join(modelDir, 'dict'),
+      },
+    };
+  }
+  return {
+    modelDir,
+    speakerId: s.ttsSpeakerId,
+    speed: s.ttsSpeed,
+    numThreads: s.ttsNumThreads,
+    provider: 'cpu',
+    kokoro: {
+      voices: path.join(modelDir, 'voices.bin'),
+      dataDir: path.join(modelDir, 'espeak-ng-data'),
+      lexicon: [
+        path.join(modelDir, 'lexicon-us-en.txt'),
+        path.join(modelDir, 'lexicon-zh.txt'),
+      ].join(','),
+      ruleFsts: ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst']
+        .map((f) => path.join(modelDir, f))
+        .join(','),
+    },
+  };
 }
 
 /** ASR（SenseVoice 16k）引擎配置：模型目录 + 推理线程数，CPU 推理 */

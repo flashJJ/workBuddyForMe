@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { TtsPreview } from './tts-preview';
+import { CloudTtsSection } from './cloud';
 
 interface Props {
   settings: VoiceSettings;
@@ -38,6 +39,11 @@ function TtsModelSelector(props: {
       value: 'melo',
       name: t('voice.engine.meloName'),
       hint: t('voice.engine.meloHint'),
+    },
+    {
+      value: 'matcha',
+      name: t('voice.engine.matchaName'),
+      hint: t('voice.engine.matchaHint'),
     },
     {
       value: 'kokoro',
@@ -130,14 +136,67 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
           hint={
             ttsReady
               ? t('voice.engine.ttsToggleHintReady')
-              : t('voice.engine.ttsToggleHintNoModel', {
-                  engine: settings.ttsModel === 'melo' ? 'MeloTTS' : 'Kokoro',
-                })
+              : settings.ttsEngine === 'tencent'
+                ? t('voice.cloud.statusMissing')
+                : t('voice.engine.ttsToggleHintNoModel', {
+                    engine:
+                      settings.ttsModel === 'melo'
+                        ? 'MeloTTS'
+                        : settings.ttsModel === 'matcha'
+                          ? 'Matcha'
+                          : 'Kokoro',
+                  })
           }
           checked={settings.ttsEnabled}
           disabled={!ttsReady}
           onChange={(next) => void onPatch({ ttsEnabled: next })}
         />
+        <div className="space-y-1.5">
+          <Label>{t('voice.engine.modeLabel')}</Label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {[
+              {
+                value: 'sherpa_onnx' as const,
+                name: t('voice.engine.modeLocal'),
+                hint: t('voice.engine.modeLocalHint'),
+              },
+              {
+                value: 'tencent' as const,
+                name: t('voice.engine.modeTencent'),
+                hint: t('voice.engine.modeTencentHint'),
+              },
+            ].map((option) => {
+              const selected =
+                option.value === 'tencent'
+                  ? settings.ttsEngine === 'tencent'
+                  : settings.ttsEngine !== 'tencent';
+              return (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer items-start gap-2 rounded-md border p-2.5 ${
+                    selected ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30' : ''
+                  }`}
+                  data-testid={`tts-engine-mode-${option.value}`}
+                >
+                  <input
+                    type="radio"
+                    name="tts-engine-mode"
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    checked={selected}
+                    onChange={() => void onPatch({ ttsEngine: option.value })}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium">{option.name}</span>
+                    <span className="block text-xs text-muted-foreground">{option.hint}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        {settings.ttsEngine === 'tencent' && (
+          <CloudTtsSection settings={settings} onPatch={onPatch} />
+        )}
         <TtsModelSelector value={settings.ttsModel} onPatch={onPatch} />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -172,12 +231,16 @@ export function VoiceEngineParams({ settings, ttsReady, asrReady, onPatch }: Pro
         <p className="text-xs text-muted-foreground">
           {settings.ttsModel === 'melo'
             ? t('voice.engine.meloNote')
-            : t('voice.engine.kokoroNote')}
+            : settings.ttsModel === 'matcha'
+              ? t('voice.engine.matchaNote')
+              : t('voice.engine.kokoroNote')}
         </p>
         <TtsPreview
           ready={ttsReady}
           speakerId={
-            settings.ttsModel === 'melo' ? 0 : getAvatarSpeakerId(settings.avatarModelId)
+            settings.ttsModel === 'melo' || settings.ttsModel === 'matcha'
+              ? 0
+              : getAvatarSpeakerId(settings.avatarModelId)
           }
         />
       </div>

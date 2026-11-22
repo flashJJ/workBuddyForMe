@@ -1,4 +1,5 @@
 import { chatRequestSchema } from '@wbfm/shared/schemas';
+import type { TtsChunkSink, TtsSynthOptions } from '@wbfm/voice';
 import { createRagRetriever } from '@wbfm/core/retrieval';
 import { defineRoute } from '@/lib/server/with-api-handler';
 import { parseBody, readJsonBody } from '@/lib/server/validation';
@@ -28,7 +29,13 @@ export const POST = defineRoute(async ({ request, services }) => {
       withVoice(events, {
         // 未显式带 sid 时，runtime 按当前 avatarModelId 的角色绑定声线合成
         tts: {
-          synthesize: (text: string) => runtime.synthesize(text, input.voice?.speakerId),
+          synthesize: (text: string, opts?: TtsSynthOptions) =>
+            runtime.synthesize(text, opts?.speakerId ?? input.voice?.speakerId, opts?.speed),
+          synthesizeStream: (
+            text: string,
+            opts: TtsSynthOptions | undefined,
+            sink: TtsChunkSink,
+          ) => runtime.synthesizeStream(text, opts, sink),
         },
         signal: request.signal,
       }),

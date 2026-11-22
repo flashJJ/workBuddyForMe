@@ -1,4 +1,10 @@
-import type { TtsEngine, TtsEngineConfig, TtsResult, TtsSynthOptions } from '../types';
+import type {
+  TtsChunkSink,
+  TtsEngine,
+  TtsEngineConfig,
+  TtsResult,
+  TtsSynthOptions,
+} from '../types';
 import { VoiceEngineError } from '../types';
 import type { VoiceModelSpec } from '../../models/manifest';
 import { isSpeakableText } from '../../text/sentence-splitter';
@@ -16,6 +22,17 @@ export interface SherpaTtsNative {
     sid: number;
     speed: number;
   }): { samples: Float32Array; sampleRate: number };
+  /** 可选：增量合成（sherpa-onnx-node >= 1.13 的 generateAsync） */
+  generateAsync?(req: {
+    text: string;
+    sid: number;
+    speed: number;
+    onProgress?: (info: {
+      samples: Float32Array;
+      sampleRate?: number;
+      progress?: number;
+    }) => number | void;
+  }): Promise<{ samples: Float32Array; sampleRate: number }>;
   free?(): void;
 }
 
@@ -128,6 +145,49 @@ export class SherpaTtsEngine implements TtsEngine {
       speed: opts?.speed ?? this.speed,
     });
     return { samples: audio.samples, sampleRate: audio.sampleRate ?? this.native.sampleRate };
+  }
+
+  async synthesizeStream(
+    text: string,
+    opts: TtsSynthOptions | undefined,
+    sink: TtsChunkSink,
+  ): Promise<TtsResult> {
+    if (opts?.signal?.aborted) throw new VoiceEngineError('tts', '合成已取消');
+    const trimmed = text.trim();
+    if (!trimmed || !isSpeakableText(trimmed)) {
+      const empty = { samples: new Float32Array(0), sampleRate: this.native.sampleRate };
+      sink(empty);
+      return empty;
+    }
+    const requested = opts?.speakerId ?? this.speakerId;
+    const sid = requested < this.speakerCount ? requested : this.speakerId;
+    const speed = opts?.speed ?? this.speed;
+    if (!this.native.generateAsync) {
+      const result = await this.synthesize(trimmed, opts);
+      sink(result);
+      return result;
+    }
+    let emitted = 0;
+    const result = await this.native.generateAsync({
+      text: trimmed,
+      sid,
+      speed,
+      onProgress: (info) => {
+        if (opts?.signal?.aborted) return 0;
+        const src = info.samples;
+        const samples = new Float32Array(src.length);
+        samples.set(src);
+        emitted += samples.length;
+        sink({ samples, sampleRate: info.sampleRate ?? this.native.sampleRate });
+        return 1;
+      },
+    });
+    const sampleRate = result.sampleRate ?? this.native.sampleRate;
+    // 原生实现未回调 onProgress 时补发整段，保证消费端至少拿到一次音频
+    if (emitted === 0 && result.samples.length > 0) {
+      sink({ samples: result.samples, sampleRate });
+    }
+    return { samples: result.samples, sampleRate };
   }
 
   async dispose(): Promise<void> {

@@ -85,4 +85,6 @@ export const systemApi = {
   voicePolish: '/api/voice/polish',
   voiceModelStatus: '/api/voice/models/status',
   voiceModelDownload: '/api/voice/models/download',
+  /** 在线 TTS 凭据（GET 脱敏状态 / PUT 密文保存） */
+  voiceCloudCredentials: '/api/voice/cloud-credentials',
 } as const;

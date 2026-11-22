@@ -50,7 +50,13 @@ export function VoiceDownloadGuide() {
     { key: 'asr', label: t('voice.model.asr.name'), bytes: modelStatus.asrTotalBytes, ready: modelStatus.asrReady },
     {
       key: ttsModel,
-      label: t(ttsModel === 'melo' ? 'voice.model.tts.melo.name' : 'voice.model.tts.kokoro.name'),
+      label: t(
+        ttsModel === 'melo'
+          ? 'voice.model.tts.melo.name'
+          : ttsModel === 'matcha'
+            ? 'voice.model.tts.matcha.name'
+            : 'voice.model.tts.kokoro.name',
+      ),
       bytes: ttsInfo?.totalBytes ?? 0,
       ready: ttsInfo?.ready ?? false,
     },

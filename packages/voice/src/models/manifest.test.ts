@@ -20,9 +20,9 @@ describe('VOICE_MODELS 清单', () => {
     expect(VOICE_MODELS.asr.totalBytes).toBeGreaterThan(200_000_000);
   });
 
-  it('TTS 提供两套引擎：melo + kokoro，且各带 engine 标记', () => {
-    expect(ttsList).toHaveLength(2);
-    expect(ttsList.map((m) => m.engine).sort()).toEqual(['kokoro', 'melo']);
+  it('TTS 提供三套引擎：melo + kokoro + matcha，且各带 engine 标记', () => {
+    expect(ttsList).toHaveLength(3);
+    expect(ttsList.map((m) => m.engine).sort()).toEqual(['kokoro', 'matcha', 'melo']);
     for (const spec of ttsList) {
       const expected = spec.files.reduce((s, f) => s + f.size, 0);
       expect(spec.totalBytes).toBe(expected);

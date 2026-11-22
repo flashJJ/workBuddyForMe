@@ -129,6 +129,56 @@ describe('withVoice 语音桥', () => {
     expect(synth).toHaveBeenCalledTimes(2);
   });
 
+  it('流式合成 + 上游停顿：音频帧不等下一个文本事件，wake 即时下发', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    async function* source(): AsyncGenerator<OrchestratorEvent> {
+      yield { event: 'delta', data: { content: '你好呀，' } };
+      // 模拟模型/工具停顿：上游 next() 长时间不返回
+      await gate;
+      yield { event: 'done', data: { content: '你好呀，', usage: null } };
+    }
+    const tts = {
+      synthesize: async () => ({ samples: new Float32Array([0.1]), sampleRate: 16000 }),
+      synthesizeStream: async (
+        _text: string,
+        _opts: unknown,
+        sink: (chunk: { samples: Float32Array; sampleRate: number }) => void,
+      ) => {
+        sink({ samples: new Float32Array([0.2]), sampleRate: 16000 });
+        return { samples: new Float32Array([0.2]), sampleRate: 16000 };
+      },
+    };
+    const iterator = withVoice(source(), { tts })[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    expect(first.value?.event).toBe('delta');
+
+    const winner = await Promise.race([
+      iterator.next().then((step) => ({ kind: 'next' as const, step })),
+      new Promise<{ kind: 'timeout' }>((resolve) =>
+        setTimeout(() => resolve({ kind: 'timeout' }), 200),
+      ),
+    ]);
+    expect(winner.kind).toBe('next');
+    if (winner.kind === 'next') {
+      // 先 speaking 再音频，且两帧都在上游 gate 未放行时到达
+      if (winner.step.value?.event === 'voice_state') {
+        const audio = await iterator.next();
+        expect(audio.value?.event).toBe('voice_audio');
+      } else {
+        expect(winner.step.value?.event).toBe('voice_audio');
+      }
+    }
+
+    release();
+    for (;;) {
+      const step = await iterator.next();
+      if (step.done) break;
+    }
+  });
+
   it('超长无标点片段按块合成：多帧音频保序，仅首块携带原字幕片段', async () => {
     const long = `${'甲'.repeat(45)}。`;
     async function* source(): AsyncGenerator<OrchestratorEvent> {

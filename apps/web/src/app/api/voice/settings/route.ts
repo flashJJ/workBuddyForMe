@@ -20,14 +20,21 @@ export const PUT = defineRoute(async ({ request, services }) => {
   const runtime = getVoiceRuntime();
   // ttsSpeed 是逐句参数：不使引擎失效，下一次合成直接生效
   if (
+    patch.ttsEngine !== undefined ||
     patch.ttsModel !== undefined ||
     patch.ttsSpeakerId !== undefined ||
     patch.ttsNumThreads !== undefined ||
-    patch.modelsDir !== undefined
+    patch.modelsDir !== undefined ||
+    patch.tencentRegion !== undefined ||
+    patch.tencentVoiceType !== undefined ||
+    patch.tencentModelType !== undefined ||
+    patch.tencentSampleRate !== undefined
   ) {
     runtime.invalidateTts();
-    // 模型/线程/目录变化后后台重新预热；失败静默，首次朗读仍会重试
-    void runtime.prewarmTts(true);
+    // 本地引擎变更后后台重新预热；在线引擎切换不加载本地模型
+    if (next.ttsEngine === 'sherpa_onnx') {
+      void runtime.prewarmTts(true);
+    }
   }
   if (patch.asrNumThreads !== undefined || patch.modelsDir !== undefined) {
     getVoiceRuntime().invalidateAsr();

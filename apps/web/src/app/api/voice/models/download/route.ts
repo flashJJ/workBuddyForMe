@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const requestSchema = z.object({
   kind: z.enum(['asr', 'tts']),
   /** TTS 模型（melo/kokoro）；asr 忽略 */
-  model: z.enum(['melo', 'kokoro']).optional(),
+  model: z.enum(['melo', 'kokoro', 'matcha']).optional(),
   /** start=开始/重试下载；cancel=取消 */
   action: z.enum(['start', 'cancel']).default('start'),
 });

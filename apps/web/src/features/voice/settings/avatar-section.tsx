@@ -157,7 +157,7 @@ export function AvatarSection({ settings, ttsReady, onPatch }: Props) {
             className="flex items-center justify-between gap-2"
             data-testid="avatar-voice-row"
           >
-            {settings.ttsModel === 'melo' ? (
+            {settings.ttsModel !== 'kokoro' ? (
               <>
                 <p className="text-xs text-muted-foreground">
                   {t('voice.avatar.meloNote')}

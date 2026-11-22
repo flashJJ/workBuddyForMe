@@ -23,6 +23,12 @@ class OfflineTts {
     if (text === 'boom') throw new Error('native failure');
     return { samples: new Float32Array([sid, speed, text.length]), sampleRate: 24000 };
   }
+  async generateAsync({ text, sid, speed, onProgress }) {
+    if (text === 'boom') throw new Error('native failure');
+    onProgress({ samples: new Float32Array([sid]), sampleRate: 24000, progress: 0.5 });
+    onProgress({ samples: new Float32Array([speed, text.length]), sampleRate: 24000, progress: 1 });
+    return { samples: new Float32Array([sid, speed, text.length]), sampleRate: 24000 };
+  }
   free() {}
 }
 module.exports = { OfflineTts };
@@ -58,6 +64,17 @@ describe('WorkerTtsEngine（真实 worker 线程 + 假原生模块）', () => {
     expect(fasterSamples[0]).toBe(2);
     expect(fasterSamples[1]).toBeCloseTo(0.8);
     expect(fasterSamples[2]).toBe(3);
+    await engine.dispose();
+  });
+
+  it('synthesizeStream：增量块按序回调，返回值等于块拼接', async () => {
+    const engine = await makeEngine();
+    const chunks: number[][] = [];
+    const result = await engine.synthesizeStream('你好', { speakerId: 2 }, (chunk) => {
+      chunks.push(Array.from(chunk.samples));
+    });
+    expect(chunks).toEqual([[2], [1, 2]]);
+    expect(Array.from(result.samples)).toEqual([2, 1, 2]);
     await engine.dispose();
   });
 

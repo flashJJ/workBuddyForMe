@@ -7,4 +7,17 @@
 export { VoiceRuntime } from './voice-runtime';
 export { readVoiceSettings, patchVoiceSettings } from './voice-settings';
 export { getVoiceModelsRoot, getModelDir } from './model-paths';
+export {
+  createVoiceCloudCredentialStore,
+  TencentTtsEngine,
+  buildTencentAuthorization,
+  mapTencentSpeed,
+  decodePcm16,
+} from './cloud';
+export type {
+  CloudTtsCredentials,
+  VoiceCloudCredentialStore,
+  VoiceCloudCredentialStoreOptions,
+  TencentTtsEngineOptions,
+} from './cloud';
 export type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime-types';

@@ -1,33 +1,25 @@
-import fs from 'node:fs';
 import {
   SherpaAsrEngine,
   createSherpaTtsEngine,
   VOICE_MODELS,
-  getVoiceModelSpec,
-  downloadVoiceModel,
-  findFileIssues,
-  HF_MIRROR_BASE,
   decodePcm16Wav,
   resampleLinear,
   ASR_SAMPLE_RATE,
+  VoiceEngineError,
   type AsrEngine,
+  type TtsChunkSink,
   type TtsEngine,
+  type TtsSynthOptions,
   type VoiceModelKind,
-  type VoiceModelSpec,
 } from '@wbfm/voice';
-import {
-  createVoiceModelRepository,
-  type DatabaseInstance,
-  type SettingsRepository,
-} from '@wbfm/database';
+import type { DatabaseInstance, SettingsRepository } from '@wbfm/database';
 import {
   getAvatarSpeakerId,
   type VoiceModelFileStatus,
   type VoiceSettings,
 } from '@wbfm/shared/schemas';
 import { readVoiceSettings } from './voice-settings';
-import { getModelDir, getVoiceModelsRoot } from './model-paths';
-import { readModelStatus } from './voice-model-status';
+import { getModelDir } from './model-paths';
 import {
   asrConfigKey,
   buildAsrEngineConfig,
@@ -36,13 +28,15 @@ import {
 } from './voice-engine-config';
 import { readVrmVoiceOverride } from './voice-avatar-override';
 import { SynthesisCache, synthesisCacheKey } from './synthesis-cache';
-import type { DownloadJob, SynthResult, TranscribeResult } from './voice-runtime-types';
-
-const TTS_MODEL_SPECS: VoiceModelSpec[] = VOICE_MODELS.tts;
+import { VoiceModelDownloads } from './downloads/voice-model-downloads';
+import { VoiceCloudTts } from './cloud/voice-cloud-tts';
+import type { SecretCipher } from '../secrets/cipher';
+import type { SynthResult, TranscribeResult } from './voice-runtime-types';
 
 /**
  * 进程内语音运行时：模型状态、下载任务、TTS/ASR 引擎单例与短句缓存。
  * 引擎长驻；模型/目录/线程变化时重建，sid 与语速逐句传入。
+ * 模型下载与在线引擎分别下沉到 VoiceModelDownloads / VoiceCloudTts。
  */
 export class VoiceRuntime {
   private ttsEngine: TtsEngine | null = null;
@@ -53,133 +47,110 @@ export class VoiceRuntime {
   private asrConfigKey = '';
   private prewarmJob: Promise<boolean> | null = null;
   private readonly synthesisCache = new SynthesisCache();
-  private readonly jobs = new Map<VoiceModelKind, DownloadJob>();
+  private readonly downloads: VoiceModelDownloads;
+  private readonly cloud: VoiceCloudTts;
 
   constructor(
     private readonly db: DatabaseInstance,
     private readonly settingsRepo: SettingsRepository,
-  ) {}
+    cipher?: SecretCipher | null,
+  ) {
+    this.downloads = new VoiceModelDownloads(db, settingsRepo, () => {
+      void this.prewarmTts(true);
+    });
+    // 在线 TTS 凭据复用 SecretCipher；测试/无加密环境缺省时在线引擎视为未配置
+    this.cloud = new VoiceCloudTts(db, cipher);
+  }
 
   private get settings(): VoiceSettings {
     return readVoiceSettings(this.settingsRepo);
   }
 
-  private voiceModels() {
-    return createVoiceModelRepository(this.db);
-  }
-
-  /** 磁盘已齐备时清掉旧的 error/downloading 持久状态；DB 未就绪时静默跳过 */
-  private syncReadyStatus(kind: VoiceModelKind, spec: VoiceModelSpec, missing: string[]): void {
-    if (missing.length > 0 || this.jobs.has(kind)) return;
-    try {
-      const repo = this.voiceModels();
-      const persisted = repo.get(kind, spec.id);
-      if (persisted && persisted.status !== 'ready') {
-        repo.markReady(kind, spec.id, spec.totalBytes);
-      }
-    } catch {
-      // 测试或启动早期 DB 未就绪：磁盘状态仍可返回，不阻塞状态接口
-    }
-  }
-
-  /** 当前设置选中的 TTS 模型规格（melo 单声低延迟 / kokoro 多角色）；可显式指定 */
-  private ttsSpec(ttsModel?: VoiceSettings['ttsModel']): VoiceModelSpec {
-    return getVoiceModelSpec('tts', ttsModel ?? this.settings.ttsModel);
+  private ttsSpec(ttsModel?: VoiceSettings['ttsModel']) {
+    return this.downloads.ttsSpec(ttsModel);
   }
 
   /** 检查模型文件齐备性（以磁盘为准，DB 状态仅作展示补充）；路由 GET models/status 调用 */
   async getModelStatus(): Promise<VoiceModelFileStatus> {
-    return readModelStatus({
-      settings: this.settings,
-      ttsSpecs: TTS_MODEL_SPECS,
-      activeSpec: this.ttsSpec(),
-      syncReady: (kind, spec, missing) => this.syncReadyStatus(kind, spec, missing),
-    });
+    const settings = this.settings;
+    const status = await this.downloads.getModelStatus();
+    // 在线引擎不依赖本地模型：只要凭据存在即可朗读；关闭朗读则恒为未就绪
+    if (settings.ttsEngine === 'tencent') {
+      status.ttsReady = this.cloud.hasCredentials();
+      status.ttsMissing = [];
+    } else if (settings.ttsEngine === 'none') {
+      status.ttsReady = false;
+    }
+    return status;
   }
 
   /** 下载进度（含 DB 持久状态与当前任务实时进度）；tts 可指定模型 */
   getDownloadInfo(kind: VoiceModelKind, ttsModel?: VoiceSettings['ttsModel']) {
-    const spec = kind === 'tts' ? this.ttsSpec(ttsModel) : VOICE_MODELS[kind];
-    const persisted = this.voiceModels().get(kind, spec.id);
-    // 同 kind 的活动任务可能属于另一套 TTS 引擎：规格不匹配时不计入本模型状态
-    const job = this.jobs.get(kind);
-    const ownJob = job?.specId === spec.id ? job : null;
-    return {
-      active: Boolean(ownJob),
-      status: persisted?.status ?? 'missing',
-      bytesTotal: persisted?.bytesTotal ?? spec.totalBytes,
-      bytesDone: ownJob?.lastProgress?.bytesDone ?? persisted?.bytesDone ?? 0,
-      error: persisted?.error ?? null,
-    };
+    return this.downloads.getDownloadInfo(kind, ttsModel);
   }
 
   /** 启动后台下载；已有同 kind 任务（含另一套 TTS）时返回 false。tts 可指定模型 */
   startDownload(kind: VoiceModelKind, ttsModel?: VoiceSettings['ttsModel']): boolean {
-    if (this.jobs.has(kind)) return false;
-    const settings = this.settings;
-    const spec = kind === 'tts' ? this.ttsSpec(ttsModel) : VOICE_MODELS[kind];
-    const repo = this.voiceModels();
-    const controller = new AbortController();
-    repo.markDownloading(kind, spec.id, spec.totalBytes, 0);
-
-    const job: DownloadJob = { kind, specId: spec.id, controller, lastProgress: null };
-    this.jobs.set(kind, job);
-
-    void downloadVoiceModel({
-      spec,
-      targetRoot: getVoiceModelsRoot(settings),
-      mirrorBase: settings.modelMirrorBase || HF_MIRROR_BASE,
-      signal: controller.signal,
-      onProgress: (p) => {
-        job.lastProgress = p;
-        repo.markProgress(kind, spec.id, p.bytesDone, p.bytesTotal);
-      },
-    })
-      .then(async () => {
-        const issues = await findFileIssues(spec, async (rel) => {
-          try {
-            return fs.statSync(`${getModelDir(settings, kind, spec.id)}/${rel}`).size;
-          } catch {
-            return null;
-          }
-        });
-        const details: string[] = [];
-        if (issues.missing.length > 0) details.push(`缺失: ${issues.missing.join(', ')}`);
-        if (issues.sizeMismatch.length > 0) details.push(`大小不符: ${issues.sizeMismatch.join(', ')}`);
-        if (details.length > 0) throw new Error(`下载后校验失败：${details.join('；')}`);
-        repo.markReady(kind, spec.id, spec.totalBytes);
-        // 下载完成立即后台预热；失败静默，不阻塞下载任务收尾
-        if (kind === 'tts') void this.prewarmTts(true);
-      })
-      .catch((error: unknown) => {
-        if ((error as Error).name === 'AbortError') {
-          // 用户取消：必须把持久化状态从 downloading 拉回 missing，
-          // 否则 UI 会永久停在「下载中」，且没有开始按钮可重新下载。
-          repo.markCancelled(kind, spec.id, job.lastProgress?.bytesDone ?? 0, spec.totalBytes);
-          return;
-        }
-        repo.markError(kind, spec.id, (error as Error).message, spec.totalBytes);
-      })
-      .finally(() => {
-        this.jobs.delete(kind);
-      });
-    return true;
+    return this.downloads.startDownload(kind, ttsModel);
   }
 
   /** 取消下载（tts 可指定模型；只中止规格匹配的活动任务） */
   cancelDownload(kind: VoiceModelKind, ttsModel?: VoiceSettings['ttsModel']): void {
-    const spec = kind === 'tts' ? this.ttsSpec(ttsModel) : VOICE_MODELS[kind];
-    const job = this.jobs.get(kind);
-    if (job?.specId === spec.id) job.controller.abort();
+    this.downloads.cancelDownload(kind, ttsModel);
   }
 
   /** 单句合成：显式 sid → 角色绑定（含导入 VRM）→ 默认；短句命中缓存。 */
   async synthesize(text: string, speakerId?: number, speed?: number): Promise<SynthResult> {
+    return this.synthesizeInternal(text, speakerId, speed);
+  }
+
+  /**
+   * 流式单句合成：增量 PCM 通过 sink 回传，返回值仍为完整结果（供缓存/兜底）。
+   * 引擎未实现流式时退化为一次性回传；signal 在块边界生效。
+   */
+  async synthesizeStream(
+    text: string,
+    opts: TtsSynthOptions | undefined,
+    sink: TtsChunkSink,
+  ): Promise<SynthResult> {
+    return this.synthesizeInternal(text, opts?.speakerId, opts?.speed, sink, opts?.signal);
+  }
+
+  private async synthesizeInternal(
+    text: string,
+    speakerId?: number,
+    speed?: number,
+    sink?: TtsChunkSink,
+    signal?: AbortSignal,
+  ): Promise<SynthResult> {
+    if (signal?.aborted) throw new VoiceEngineError('tts', '合成已取消');
     const settings = this.settings;
+    if (settings.ttsEngine === 'none') {
+      throw new VoiceEngineError('tts', '朗读已关闭', '在语音设置中开启朗读或选择本地引擎');
+    }
+    // 在线引擎优先：逐句 HTTPS 合成，失败自动回退本地（离线兜底）
+    const online = this.cloud.ensure(settings);
+    if (online) {
+      try {
+        const result = await online.synthesize(text, {
+          speed: speed ?? settings.ttsSpeed,
+          ...(signal ? { signal } : {}),
+        });
+        sink?.(result);
+        return result;
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        console.warn(
+          '[voice:tts] 在线合成失败，回退本地引擎：',
+          (error as Error).message,
+        );
+      }
+    }
     const spec = this.ttsSpec(settings.ttsModel);
     const avatarModelId = settings.avatarModelId;
+    // 单声模型（Melo/Matcha）固定 sid=0；Kokoro 按角色绑定
     const sid =
-      spec.engine === 'melo'
+      spec.engine === 'melo' || spec.engine === 'matcha'
         ? 0
         : speakerId ?? getAvatarSpeakerId(avatarModelId, readVrmVoiceOverride(this.db, avatarModelId));
     const synthSpeed = speed ?? settings.ttsSpeed;
@@ -187,10 +158,24 @@ export class VoiceRuntime {
     // 短句优先命中缓存：与引擎加载无关，试听/问候/剧场重复句可零合成返回
     const cacheKey = synthesisCacheKey(spec.id, sid, synthSpeed, text);
     const cached = this.synthesisCache.get(cacheKey);
-    if (cached) return cached;
+    if (cached) {
+      sink?.(cached);
+      return cached;
+    }
 
     const engine = await this.ensureTts();
-    const result = await engine.synthesize(text, { speakerId: sid, speed: synthSpeed });
+    if (signal?.aborted) throw new VoiceEngineError('tts', '合成已取消');
+    const synthOpts: TtsSynthOptions = {
+      speakerId: sid,
+      speed: synthSpeed,
+      ...(signal ? { signal } : {}),
+    };
+    const result = engine.synthesizeStream
+      ? await engine.synthesizeStream(text, synthOpts, sink ?? (() => undefined))
+      : await engine.synthesize(text, synthOpts).then((r) => {
+          sink?.(r);
+          return r;
+        });
     this.synthesisCache.set(cacheKey, result, text);
     return result;
   }
@@ -257,6 +242,8 @@ export class VoiceRuntime {
 
   private async doPrewarmTts(): Promise<boolean> {
     try {
+      // 在线引擎不加载本地模型；切回本地时设置路由会 force 预热
+      if (this.settings.ttsEngine === 'tencent') return true;
       const status = await this.getModelStatus();
       if (!status.ttsReady) {
         console.warn('[voice:tts] 模型未就绪，跳过启动预热');
@@ -276,6 +263,7 @@ export class VoiceRuntime {
   invalidateTts(): void {
     this.ttsConfigKey = '';
     this.prewarmJob = null;
+    this.cloud.invalidate();
     this.synthesisCache.clear();
   }
 

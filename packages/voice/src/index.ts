@@ -17,6 +17,8 @@ export type {
   TtsEngineFactory,
   AsrResult,
   TtsResult,
+  TtsChunkSink,
+  TtsSynthOptions,
 } from './engine/types';
 export { VoiceEngineError } from './engine/types';
 

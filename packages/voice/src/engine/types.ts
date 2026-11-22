@@ -54,6 +54,15 @@ export interface TtsEngineConfig {
     /** 逗号分隔的文本规整 FST（日期/数字/拼音） */
     ruleFsts?: string;
   };
+  /** Matcha 中文模型（单说话人，声学模型 + 独立 vocoder） */
+  matcha?: {
+    acousticModel: string;
+    vocoder: string;
+    lexicon: string;
+    tokens: string;
+    /** jieba 分词词典目录（缺省模型目录下 dict） */
+    dictDir: string;
+  };
 }
 
 /** 单次合成选项：可逐句切换说话人与语速（多说话人 TTS 按角色配音） */
@@ -61,7 +70,12 @@ export interface TtsSynthOptions {
   speakerId?: number;
   /** 逐句语速；缺省用引擎构造时的默认值 */
   speed?: number;
+  /** 取消信号：在线请求可中断；本地推理在块边界停止 */
+  signal?: AbortSignal;
 }
+
+/** 流式合成回调：按生成顺序回传增量 PCM；返回 false 可请求提前停止 */
+export type TtsChunkSink = (chunk: TtsResult) => boolean | void;
 
 /** 语音识别引擎接口（离线/在线实现共同遵守）。 */
 export interface AsrEngine {
@@ -78,6 +92,15 @@ export interface AsrEngine {
 export interface TtsEngine {
   /** 合成一句/一段文本为 PCM；opts.speakerId 可逐句切换说话人 */
   synthesize(text: string, opts?: TtsSynthOptions): Promise<TtsResult>;
+  /**
+   * 可选：边合成边回传增量 PCM（返回值仍为完整结果）。
+   * 未实现的引擎由上层退回 synthesize（一次性回传）。
+   */
+  synthesizeStream?(
+    text: string,
+    opts: TtsSynthOptions | undefined,
+    sink: TtsChunkSink,
+  ): Promise<TtsResult>;
   dispose(): Promise<void>;
 }
 

@@ -7,6 +7,8 @@ import type { VoiceModelSpec } from '../../models/manifest';
 export const MELO_RULE_FSTS = ['number.fst', 'phone.fst', 'date.fst', 'new_heteronym.fst'] as const;
 /** Kokoro 中文规整三件套 */
 export const KOKORO_ZH_FSTS = ['date-zh.fst', 'number-zh.fst', 'phone-zh.fst'] as const;
+/** Matcha 中文规整三件套 */
+export const MATCHA_ZH_FSTS = ['date.fst', 'number.fst', 'phone.fst'] as const;
 const MODEL_FILE = 'model.onnx';
 
 export interface BuildNativeTtsConfigOptions {
@@ -35,10 +37,13 @@ export function buildNativeTtsConfig(options: BuildNativeTtsConfigOptions): Buil
   const { config, spec, exists } = options;
   const modelDir = config.modelDir;
   const isKokoro = Boolean(config.kokoro);
+  const isMatcha = Boolean(config.matcha);
 
-  const required = isKokoro
-    ? ['model.onnx', 'tokens.txt', 'voices.bin', path.join('espeak-ng-data', 'phontab'), 'lexicon-zh.txt']
-    : [MODEL_FILE, 'tokens.txt', 'lexicon.txt'];
+  const required = isMatcha
+    ? ['model-steps-3.onnx', 'vocos-22khz-univ.onnx', 'tokens.txt', 'lexicon.txt']
+    : isKokoro
+      ? ['model.onnx', 'tokens.txt', 'voices.bin', path.join('espeak-ng-data', 'phontab'), 'lexicon-zh.txt']
+      : [MODEL_FILE, 'tokens.txt', 'lexicon.txt'];
   for (const rel of required) {
     if (!exists(path.join(modelDir, rel))) {
       throw new VoiceEngineError(
@@ -60,29 +65,45 @@ export function buildNativeTtsConfig(options: BuildNativeTtsConfigOptions): Buil
         .filter((f) => exists(f))
         .join(','))
     : '';
-  const ruleFsts = isKokoro ? kokoroFsts : meloFsts;
+  const matchaFsts = isMatcha
+    ? MATCHA_ZH_FSTS.map((f) => path.join(modelDir, f))
+        .filter((f) => exists(f))
+        .join(',')
+    : '';
+  const ruleFsts = isMatcha ? matchaFsts : isKokoro ? kokoroFsts : meloFsts;
 
   // Kokoro：model.kokoro（多说话人，voices.bin + espeak 数据 + 中英词典）；
+  // Matcha：model.matcha（声学模型 + 独立 vocoder + jieba 词典）；
   // MeloTTS：model.vits（单说话人，jieba dict 内联配置）。
-  const model = isKokoro
+  const model = isMatcha
     ? {
-        kokoro: {
-          model: path.join(modelDir, MODEL_FILE),
-          voices: config.kokoro!.voices,
-          tokens: path.join(modelDir, 'tokens.txt'),
-          dataDir: config.kokoro!.dataDir,
-          lexicon: config.kokoro!.lexicon,
+        matcha: {
+          acousticModel: config.matcha!.acousticModel,
+          vocoder: config.matcha!.vocoder,
+          lexicon: config.matcha!.lexicon,
+          tokens: config.matcha!.tokens,
+          dictDir: config.matcha!.dictDir,
         },
       }
-    : {
-        vits: {
-          model: path.join(modelDir, MODEL_FILE),
-          lexicon: path.join(modelDir, 'lexicon.txt'),
-          tokens: path.join(modelDir, 'tokens.txt'),
-          dataDir: '',
-          dictDir,
-        },
-      };
+    : isKokoro
+      ? {
+          kokoro: {
+            model: path.join(modelDir, MODEL_FILE),
+            voices: config.kokoro!.voices,
+            tokens: path.join(modelDir, 'tokens.txt'),
+            dataDir: config.kokoro!.dataDir,
+            lexicon: config.kokoro!.lexicon,
+          },
+        }
+      : {
+          vits: {
+            model: path.join(modelDir, MODEL_FILE),
+            lexicon: path.join(modelDir, 'lexicon.txt'),
+            tokens: path.join(modelDir, 'tokens.txt'),
+            dataDir: '',
+            dictDir,
+          },
+        };
 
   return {
     isKokoro,

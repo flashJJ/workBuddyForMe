@@ -32,7 +32,7 @@ export const stageCastMemberSchema = z.object({
   actionLabelKey: z.string().trim().max(80).optional(),
   voicePreference: z
     .object({
-      ttsModel: z.enum(['kokoro', 'melo']),
+      ttsModel: z.enum(['kokoro', 'melo', 'matcha']),
       speakerSid: z.number().int().min(0).max(102).nullable(),
     })
     .optional(),

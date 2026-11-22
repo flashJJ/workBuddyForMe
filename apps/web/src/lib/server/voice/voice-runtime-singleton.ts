@@ -13,8 +13,8 @@ const globalHolder = globalThis as { __WBFM_VOICE_RUNTIME__?: VoiceRuntime };
 export function getVoiceRuntime(): VoiceRuntime {
   const existing = globalHolder.__WBFM_VOICE_RUNTIME__;
   if (existing) return existing;
-  const { db } = getServices();
-  const runtime = new VoiceRuntime(db, createSettingsRepository(db));
+  const { db, cipher } = getServices();
+  const runtime = new VoiceRuntime(db, createSettingsRepository(db), cipher);
   globalHolder.__WBFM_VOICE_RUNTIME__ = runtime;
   return runtime;
 }

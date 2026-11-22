@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { HF_MIRROR_BASE, modelFileUrl } from './manifest';
+import { HF_MIRROR_BASE, modelFileUrls } from './manifest';
 import { defaultFs } from './downloader-fs';
 import { downloadFileWithRetry, hashFile } from './downloader-http';
 import {
@@ -89,18 +89,34 @@ export async function downloadVoiceModel(options: DownloadModelOptions): Promise
     }
 
     emit(bytesDone + start, file.path);
-    const bytes = await downloadFileWithRetry({
-      file,
-      url: modelFileUrl(spec, file, mirrorBase),
-      tmp,
-      start,
-      fs,
-      fetchImpl,
-      signal,
-      retry,
-      timeout,
-      onBytes: (n) => emit(bytesDone + n, file.path),
-    });
+    const urls = modelFileUrls(spec, file, mirrorBase);
+    let bytes = 0;
+    let lastError: unknown = null;
+    for (const url of urls) {
+      // 上一个地址可能已写入部分 .part：切地址前重新取续传起点，避免重复追加
+      const partNow = await fs.stat(tmp).catch(() => null);
+      const resumeFrom = partNow?.size ?? 0;
+      try {
+        bytes = await downloadFileWithRetry({
+          file,
+          url,
+          tmp,
+          start: resumeFrom,
+          fs,
+          fetchImpl,
+          signal,
+          retry,
+          timeout,
+          onBytes: (n) => emit(bytesDone + n, file.path),
+        });
+        lastError = null;
+        break;
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        lastError = error;
+      }
+    }
+    if (lastError) throw lastError;
     await fs.rename(tmp, dest);
     bytesDone += bytes;
     emit(bytesDone, file.path);

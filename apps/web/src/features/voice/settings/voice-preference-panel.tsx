@@ -22,8 +22,8 @@ import { apiGet } from '@/lib/api/client';
 const HF_MIRROR = 'https://hf-mirror.com';
 const HF_OFFICIAL = 'https://huggingface.co';
 
-/** 展示顺序：默认引擎（MeloTTS，D9）在前 */
-const TTS_DISPLAY_ORDER = ['melo', 'kokoro'] as const;
+/** 展示顺序：默认引擎（MeloTTS，D9）在前，快速单声 Matcha 次之 */
+const TTS_DISPLAY_ORDER = ['melo', 'matcha', 'kokoro'] as const;
 
 /** 模型下载管理（ASR 一张 + TTS 每引擎一张） */
 function ModelDownloadSection() {
@@ -37,8 +37,8 @@ function ModelDownloadSection() {
     name: t('voice.model.asr.name'),
     description: t('voice.model.asr.description'),
   };
-  /** v1.1 两套 TTS 引擎的展示文案（顺序即设置页展示顺序：默认引擎在前） */
-  const ttsMeta: Record<'melo' | 'kokoro', { name: string; description: string }> = {
+  /** TTS 引擎的展示文案（顺序即设置页展示顺序：默认引擎在前） */
+  const ttsMeta: Record<'melo' | 'matcha' | 'kokoro', { name: string; description: string }> = {
     kokoro: {
       name: t('voice.model.tts.kokoro.name'),
       description: t('voice.model.tts.kokoro.description'),
@@ -46,6 +46,10 @@ function ModelDownloadSection() {
     melo: {
       name: t('voice.model.tts.melo.name'),
       description: t('voice.model.tts.melo.description'),
+    },
+    matcha: {
+      name: t('voice.model.tts.matcha.name'),
+      description: t('voice.model.tts.matcha.description'),
     },
   };
 
