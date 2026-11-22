@@ -47,9 +47,15 @@ export function useVirtualWindow({ active, count, itemKey, containerRef }: Param
     if (!el) return;
     const syncViewport = () => setViewport(el.clientHeight || 600);
     syncViewport();
+    // v4.20：滚动更新合并到每帧一次，避免高频 scroll 事件重复渲染窗口
+    let scrollFrame = 0;
     const onScroll = () => {
-      setScrollTop(el.scrollTop);
-      setInitialized(true);
+      if (scrollFrame) return;
+      scrollFrame = requestAnimationFrame(() => {
+        scrollFrame = 0;
+        setScrollTop(el.scrollTop);
+        setInitialized(true);
+      });
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     let observer: ResizeObserver | null = null;
@@ -68,6 +74,7 @@ export function useVirtualWindow({ active, count, itemKey, containerRef }: Param
       el.removeEventListener('scroll', onScroll);
       observer?.disconnect();
       cancelAnimationFrame(frame);
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
     };
   }, [active, containerRef]);
 

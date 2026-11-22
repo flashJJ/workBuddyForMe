@@ -1,6 +1,6 @@
 # v4.20 任务清单
 
-> 状态：M3 已完成（2026-11-22），M4 待开工
+> 状态：M4 已完成（2026-11-22），M5 验证进行中
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md)
 > 原则：每项可独立验收；迁移必须可回滚；报告与导出遵循同一隐私约束
 
@@ -36,18 +36,18 @@
 
 ## M4 并入项
 
-- [ ] M4.1 寒暄快路径跳过回合后记忆提取，且不产生 `memories` 事件
-- [ ] M4.2 Edge TTS 增量解码（条件项；不支持则记录原因）
-- [ ] M4.3 CI `replay-compare`：PR 非阻断、历史缓存、Job Summary
-- [ ] M4.4 知识「以引用新建任务」与 `/tasks?draft=` 预填
-- [ ] M4.5 备用链上限 3 → 5，单轮切换仍最多 2 次
-- [ ] M4.6 健康度导出 Markdown / CSV
+- [x] M4.1 寒暄快路径跳过回合后记忆提取，且不产生 `memories` 事件
+- [x] M4.2 Edge TTS 增量解码（mpg123 分片解码经 sink 下发）
+- [x] M4.3 CI `replay-compare`：PR 非阻断、历史缓存、Job Summary
+- [x] M4.4 知识「以引用新建任务」与 `/tasks?draft=` 预填
+- [x] M4.5 备用链上限 3 → 5，单轮切换仍最多 2 次
+- [x] M4.6 健康度导出 Markdown / CSV
 
 ## M5 验证
 
-- [ ] M5.1 定向 E2E：虚拟化开关、深链高亮、首字提示、知识新建任务
-- [ ] M5.2 性能基线与 v4.19 相对对比报告
-- [ ] M5.3 `pnpm check` 与 `pnpm verify:local` 全绿
+- [x] M5.1 定向 E2E：虚拟化开关、深链高亮、首字提示、知识新建任务
+- [x] M5.2 性能基线与 v4.19 相对对比报告（[perf-baseline.md](./perf-baseline.md)）
+- [x] M5.3 `pnpm check` 与 `pnpm verify:local` 全绿
 
 ## M6 收口
 
