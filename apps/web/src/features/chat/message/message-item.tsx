@@ -94,7 +94,7 @@ function UserBody({ message, onResend, disabled }: Pick<Props, 'message' | 'onRe
   return (
     <div className="group/user flex max-w-[80%] flex-col items-end gap-1">
       {message.content && (
-        <div className="rounded-2xl rounded-tr-md bg-muted px-3.5 py-2 text-sm leading-relaxed">
+        <div className="rounded-2xl rounded-tr-md bg-muted px-3.5 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
       )}
@@ -229,7 +229,9 @@ export function MessageItem({
         {isUser ? (
           <UserBody message={message} onResend={onResend} disabled={disabled} />
         ) : (
-          <MarkdownContent content={displayContent} citations={canCite ? citationIndexes : undefined} />
+          <div className="min-w-0 break-words [overflow-wrap:anywhere]">
+            <MarkdownContent content={displayContent} citations={canCite ? citationIndexes : undefined} />
+          </div>
         )}
 
         {!isUser && message.status === 'streaming' && streamTiming && (

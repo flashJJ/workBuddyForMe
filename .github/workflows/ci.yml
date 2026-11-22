@@ -10,6 +10,66 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # v4.20 M4.3：回放对比非阻断任务——PR 恢复主分支历史，只写 Job Summary，不影响合并
+  replay-compare:
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm（读取 packageManager 字段）
+        uses: pnpm/action-setup@v4
+
+      - name: 安装 Node（读取 .nvmrc）
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
+      - name: 恢复回放历史（PR 复用主分支缓存）
+        uses: actions/cache/restore@v4
+        with:
+          path: test-results/eval-replay/history
+          key: eval-replay-history-${{ github.sha }}
+          restore-keys: |
+            eval-replay-history-
+
+      - name: 构建 Web（回放包装器以 start 模式起服务）
+        run: pnpm build:web
+        timeout-minutes: 20
+
+      - name: 运行回放对比（--compare=last，非阻断）
+        run: pnpm eval:replay --compare=last
+        timeout-minutes: 20
+
+      - name: 写入 Job Summary
+        if: always()
+        run: |
+          {
+            echo '## 回放对比（replay-compare）'
+            echo ''
+            echo '> 非阻断任务：失败不影响合并，也不改变现有阈值门禁。'
+            echo ''
+            if [ -f test-results/eval-replay/report.md ]; then
+              cat test-results/eval-replay/report.md
+            else
+              echo '本次未生成回放报告（服务或脚本失败，请查看日志）。'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 保存回放历史（仅主分支写入）
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: test-results/eval-replay/history
+          key: eval-replay-history-${{ github.sha }}
+
   quality-and-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 150

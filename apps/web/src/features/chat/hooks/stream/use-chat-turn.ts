@@ -22,7 +22,7 @@ export interface TurnTiming {
   markFirstToken: () => void;
   queueDelta: (text: string) => void;
   flushPendingDelta: () => void;
-  settleTiming: () => void;
+  settleTiming: (ok?: boolean) => void;
   resetStream: () => void;
 }
 
@@ -190,7 +190,7 @@ export function useChatTurn(params: UseChatTurnParams) {
     streamStop();
     taskTurn.stop();
     flushPendingDelta();
-    settleTiming();
+    settleTiming(false);
     voice?.cancelPlayback?.();
     setPendingConfirmation(null);
     setPendingLocalSearch(null);

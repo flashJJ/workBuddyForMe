@@ -62,6 +62,7 @@ export const zhChatMessages = {
     firstRunDemo: '用演示模式试一句',
     firstRunConfigure: '配置我的模型',
     firstRunTemplates: '从模板开始',
+    loadEarlier: '加载更早的 {count} 条',
   },
   /** v4.17：会话/消息检索弹层 */
   search: {
@@ -79,6 +80,7 @@ export const zhChatMessages = {
     copyCitation: '复制引用',
     copiedCitation: '已复制引用',
     copyCitationFailed: '复制失败，请手动选择文本',
+    newTask: '新建任务',
     scopeAll: '全部',
     keyboardHint: '↑↓ 选择 · Enter 打开 · Ctrl+Enter 新面板',
     domains: {
@@ -88,6 +90,15 @@ export const zhChatMessages = {
       meeting: '会议',
       knowledge: '知识',
     },
+  },
+  /** v4.20：首字预算提示 */
+  perf: {
+    firstTokenSlow: '首字已等待 {ms}ms，超过本机基线',
+    stop: '停止',
+    switchModel: '换更小模型',
+    switchModelHint: '请在顶部助手切换器中选择更小的模型',
+    reduceContext: '缩减上下文',
+    dismiss: '关闭提示',
   },
   image: {
     unavailable: '图片不可用',
@@ -153,6 +164,7 @@ export const enChatMessages = {
     firstRunDemo: 'Try demo mode',
     firstRunConfigure: 'Configure my model',
     firstRunTemplates: 'Start from a template',
+    loadEarlier: 'Load {count} earlier messages',
   },
   search: {
     title: 'Global search',
@@ -169,6 +181,7 @@ export const enChatMessages = {
     copyCitation: 'Copy citation',
     copiedCitation: 'Citation copied',
     copyCitationFailed: 'Copy failed. Select the text manually.',
+    newTask: 'New task',
     scopeAll: 'All',
     keyboardHint: '↑↓ select · Enter open · Ctrl+Enter new panel',
     domains: {
@@ -178,6 +191,15 @@ export const enChatMessages = {
       meeting: 'Meeting',
       knowledge: 'Knowledge',
     },
+  },
+  /** v4.20: first-token budget notice */
+  perf: {
+    firstTokenSlow: 'First token took {ms}ms, longer than this device baseline',
+    stop: 'Stop',
+    switchModel: 'Use a smaller model',
+    switchModelHint: 'Pick a smaller model in the assistant switcher at the top',
+    reduceContext: 'Reduce context',
+    dismiss: 'Dismiss notice',
   },
   image: {
     unavailable: 'Image unavailable',

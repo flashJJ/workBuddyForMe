@@ -46,7 +46,13 @@ function textFrame(path: string): Buffer {
 
 function makeEngine(
   run: (socket: FakeSocket) => void,
-  options: { decode?: () => Promise<{ samples: Float32Array; sampleRate: number }> } = {},
+  options: {
+    decode?: () => Promise<{ samples: Float32Array; sampleRate: number }>;
+    streamDecoder?: () => {
+      decode: (mp3: Uint8Array) => { samples: Float32Array; sampleRate: number };
+      free: () => void;
+    };
+  } = {},
 ) {
   const sockets: FakeSocket[] = [];
   const urls: string[] = [];
@@ -64,9 +70,27 @@ function makeEngine(
     voice: 'zh-CN-XiaoxiaoNeural',
     timeoutMs: 2000,
     socketFactory: factory,
-    decodeMp3: options.decode ?? (async () => ({ samples: new Float32Array([0.5, -0.5]), sampleRate: 24_000 })),
+    ...(options.streamDecoder
+      ? {}
+      : {
+          decodeMp3:
+            options.decode ??
+            (async () => ({ samples: new Float32Array([0.5, -0.5]), sampleRate: 24_000 })),
+        }),
+    ...(options.streamDecoder ? { createStreamDecoder: async () => options.streamDecoder!() } : {}),
   });
   return { engine, sockets, urls };
+}
+
+/** 把每个字节当作 0.1 的样本，便于验证分片边界 */
+function byteStreamDecoder(onFree?: () => void) {
+  return {
+    decode: (mp3: Uint8Array) => ({
+      samples: Float32Array.from(Array.from(mp3, (byte) => byte / 10)),
+      sampleRate: 24_000,
+    }),
+    free: () => onFree?.(),
+  };
 }
 
 describe('EdgeTtsEngine（微软在线朗读）', () => {
@@ -125,5 +149,53 @@ describe('EdgeTtsEngine（微软在线朗读）', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     controller.abort();
     await expect(pending).rejects.toThrow(/合成已取消/);
+  });
+
+  it('v4.20 增量解码：音频分片边收边经 sink 下发并释放解码器', async () => {
+    let freed = 0;
+    const received: number[][] = [];
+    const { engine } = makeEngine(
+      (socket) => {
+        socket.emit('message', audioFrame(Buffer.from([1, 2, 3])), true);
+        socket.emit('message', audioFrame(Buffer.from([4, 5])), true);
+        socket.emit('message', textFrame('turn.end'), false);
+      },
+      { streamDecoder: () => byteStreamDecoder(() => freed++) },
+    );
+
+    const result = await engine.synthesizeStream('你好', undefined, (chunk) => {
+      received.push(Array.from(chunk.samples));
+    });
+
+    // Float32 精度：按 5 位小数比较
+    const rounded = (values: number[]) => values.map((value) => Number(value.toFixed(5)));
+    expect(received.map(rounded)).toEqual([
+      [0.1, 0.2, 0.3],
+      [0.4, 0.5],
+    ]);
+    expect(rounded(Array.from(result.samples))).toEqual([0.1, 0.2, 0.3, 0.4, 0.5]);
+    expect(result.sampleRate).toBe(24_000);
+    expect(freed).toBe(1);
+  });
+
+  it('v4.20 增量解码失败时抛解码错误', async () => {
+    const { engine } = makeEngine(
+      (socket) => {
+        socket.emit('message', audioFrame(Buffer.from([1])), true);
+        socket.emit('message', textFrame('turn.end'), false);
+      },
+      {
+        streamDecoder: () => ({
+          decode: () => {
+            throw new Error('bad frame');
+          },
+          free: () => undefined,
+        }),
+      },
+    );
+
+    await expect(engine.synthesizeStream('你好', undefined, () => undefined)).rejects.toThrow(
+      /解码失败：bad frame/,
+    );
   });
 });

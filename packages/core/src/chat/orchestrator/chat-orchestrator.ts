@@ -161,7 +161,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           traceParent: turnTrace,
           target,
         });
-        const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace, researchDepth, contextWindow } = prepared;
+        const { conversation, toolMap, toolDefs, outgoing, toolCtx, toolMessageBudgetTokens, trace, researchDepth, contextWindow, fastChitchat } = prepared;
         const fallbackTargets = input.forceFallback
           ? []
           : resolveFallbackChatTargets(deps, assistant, target.model, conversationId);
@@ -277,7 +277,7 @@ export function createChatOrchestrator(deps: ServiceDeps) {
           deps, conversations, attachments, assistant, conversation,
           target, toolDefs, memory, emotion, emotionEnabled,
           assistantMessageId: assistantMessage.id, userContent,
-          citations, intentNotices, trace, signal: input.signal,
+          citations, intentNotices, trace, fastChitchat, signal: input.signal,
           state: finalState, schedule: backgroundJobs.schedule,
         });
         full = finalState.full;

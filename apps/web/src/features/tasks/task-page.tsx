@@ -13,6 +13,12 @@ import { AgentTasksSection } from './agent-tasks-section';
 
 export function TaskPage() {
   const { t } = useI18n();
+  // v4.20：知识「新建任务」只读取一次 draft 预填目标，不自动提交
+  const [initialGoal] = React.useState(() =>
+    typeof window === 'undefined'
+      ? ''
+      : (new URLSearchParams(window.location.search).get('draft') ?? '').slice(0, 500),
+  );
   const tasksQuery = useTasks();
   const conversationsQuery = useConversations();
   const assistantsQuery = useAssistants();
@@ -48,6 +54,7 @@ export function TaskPage() {
         conversationId={conversationId}
         onConversationChange={setConversationId}
         onCreated={setExpandedId}
+        initialGoal={initialGoal}
       />
 
       <PageBody>

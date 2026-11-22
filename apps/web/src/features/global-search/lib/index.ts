@@ -7,7 +7,13 @@ export {
   type RawSearchEvent,
 } from './map-events';
 export { mapDocumentHit, searchKnowledge } from './knowledge-search';
-export { CITATION_MAX_LENGTH, buildHitCitation } from './citation';
+export {
+  CITATION_MAX_LENGTH,
+  TASK_DRAFT_MAX_LENGTH,
+  buildHitCitation,
+  buildHitTaskDraft,
+  buildHitTaskHref,
+} from './citation';
 export {
   MAX_RECENT_SEARCHES,
   RECENT_SEARCH_KEY,

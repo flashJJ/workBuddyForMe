@@ -104,6 +104,28 @@ describe('v4.18 全局检索弹层', () => {
     expect(screen.getByTestId('global-search-dialog')).toBeInTheDocument();
   });
 
+  it('知识结果「新建任务」跳转 /tasks?draft= 并关闭弹层', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <I18nProvider skipHydration>
+        <GlobalSearchDialog open onOpenChange={onOpenChange} onOpenHit={vi.fn()} />
+      </I18nProvider>,
+    );
+
+    const link = screen.getByTestId('global-search-new-task');
+    const href = link.getAttribute('href') ?? '';
+    expect(href.startsWith('/tasks?draft=')).toBe(true);
+    expect(new URL(href, 'http://localhost').searchParams.get('draft')).toBe(
+      '请基于文档《青鸟计划.md》继续处理：/knowledge?kb=kb1',
+    );
+    // 阻止 jsdom 真实导航，只验证点击后的关闭回调
+    const preventNavigation = (event: MouseEvent) => event.preventDefault();
+    document.addEventListener('click', preventNavigation, true);
+    fireEvent.click(link);
+    document.removeEventListener('click', preventNavigation, true);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it('复制失败只做内联提示，不阻断弹层', async () => {
     copyText.mockRejectedValueOnce(new Error('denied'));
     render(

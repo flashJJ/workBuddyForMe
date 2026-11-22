@@ -24,7 +24,6 @@ import { useChatVoiceCompanion } from '../hooks/use-chat-voice-companion';
 import { useConversationActions } from './use-conversation-actions';
 import { ChatVoiceControls } from '../composer/chat-voice-controls';
 import { ProactiveBubbleBar } from '../overlay/proactive-bubble';
-import { ChatAvatarRail } from '@/features/avatar/ui';
 import { useVoiceDraft } from '@/features/voice/draft';
 import { useChatEvents } from '../hooks/use-chat-events';
 import { useFirstAsk } from '../hooks/use-first-ask';
@@ -34,7 +33,10 @@ import { BudgetWarningBar } from '../overlay/budget';
 import { useChatDeepLink } from '../hooks/use-chat-deep-link';
 import { useTtfv } from './use-ttfv';
 import { ChatStageBar, useChatModelView } from '../stage';
+import { FirstTokenBudgetHost } from '../perf/first-token-budget-host';
+import { useFirstTokenBudget } from '../perf/use-first-token-budget';
 import { getPetBridge } from '@/features/pet/bridge';
+import { LazyChatAvatarRail } from './chat-avatar-rail-lazy';
 
 /** v4.15：桌宠「聊两句」语义键 → 草稿文案（只预填，不发送） */
 const PET_CHAT_PROMPT_MESSAGE: Record<PetChatPromptKey, MessageKey> = {
@@ -105,6 +107,7 @@ export function ChatPage({
     hasChatModel,
   });
   const { session, voiceSettings, ttsEnabled, handleTtsToggle, handsfree, petOpen } = companion;
+  const firstTokenBudget = useFirstTokenBudget(session.streamTiming);
   useTtfv(session.messages.some((m) => m.role === 'assistant' && m.content.trim().length > 0));
 
   // v1.7 剧情事件编排（情绪基线/舞台/触发器；桌宠打开时主窗仍承接 TTS 与中继）
@@ -236,6 +239,7 @@ export function ChatPage({
               highlightMessageId={deepLinkMessageId}
               onHighlightMissing={warnMissingMessage}
               onUsePrompt={(text) => { setDraft(text); setComposerFocus((value) => value + 1); }}
+              virtualizationEnabled={settings?.chatVirtualizationEnabled !== false}
             />
             {companion.proactiveBubble && (
               <ProactiveBubbleBar
@@ -244,6 +248,11 @@ export function ChatPage({
                 onDismiss={companion.dismissProactive}
               />
             )}
+            <FirstTokenBudgetHost
+              budget={firstTokenBudget}
+              onStop={session.stop}
+              onReduceContext={() => setBudgetOpen(true)}
+            />
             <Composer
               streaming={session.streaming}
               visionEnabled={visionEnabled && !taskMode}
@@ -277,7 +286,7 @@ export function ChatPage({
         )}
       </div>
       {voiceSettings?.avatarEnabled && hasChatModel && !petOpen && (
-        <ChatAvatarRail
+        <LazyChatAvatarRail
           modelId={voiceSettings.avatarModelId || 'haru'}
           expression={avatarExpression}
           eventStage={eventStage}

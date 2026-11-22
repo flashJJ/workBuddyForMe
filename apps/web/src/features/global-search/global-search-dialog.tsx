@@ -17,6 +17,7 @@ import { copyText } from '@/lib/utils/clipboard';
 import { useGlobalSearch } from './use-global-search';
 import {
   buildHitCitation,
+  buildHitTaskHref,
   clearRecentSearches,
   readRecentSearches,
   rememberSearch,
@@ -228,15 +229,27 @@ export function GlobalSearchDialog({ open, onOpenChange, onOpenHit }: Props) {
                           </span>
                         </button>
                         {hit.domain === 'knowledge' ? (
-                          <button
-                            type="button"
-                            className="mt-0.5 shrink-0 rounded border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                            aria-label={`${t('chatMessages.search.copyCitation')}：${hit.title}`}
-                            data-testid="global-search-copy-knowledge"
-                            onClick={() => void copyHit(hit)}
-                          >
-                            {t('chatMessages.search.copyCitation')}
-                          </button>
+                          <div className="mt-0.5 flex shrink-0 flex-col gap-1">
+                            <button
+                              type="button"
+                              className="rounded border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                              aria-label={`${t('chatMessages.search.copyCitation')}：${hit.title}`}
+                              data-testid="global-search-copy-knowledge"
+                              onClick={() => void copyHit(hit)}
+                            >
+                              {t('chatMessages.search.copyCitation')}
+                            </button>
+                            {/* v4.20：以引用新建任务——只预填 /tasks 目标，不自动提交 */}
+                            <a
+                              className="rounded border px-2 py-1 text-center text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                              aria-label={`${t('chatMessages.search.newTask')}：${hit.title}`}
+                              data-testid="global-search-new-task"
+                              href={buildHitTaskHref(hit)}
+                              onClick={() => onOpenChange(false)}
+                            >
+                              {t('chatMessages.search.newTask')}
+                            </a>
+                          </div>
                         ) : null}
                       </li>
                     );

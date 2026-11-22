@@ -1,8 +1,26 @@
 'use client';
 
+import * as React from 'react';
+import { Download } from 'lucide-react';
 import { MODEL_FAILURE_CODES } from '@wbfm/shared/errors';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useProviderHealth } from '@/lib/hooks/provider';
+import {
+  buildHealthCsv,
+  buildHealthMarkdown,
+  healthExportFilename,
+  type HealthExportFormat,
+  type HealthExportLabels,
+} from './provider-health-export';
+
+function saveText(content: string, filename: string, mime: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type: mime }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 /**
  * v4.19：供应商健康度（只读）。数字全部可由本机会话事件复算，
@@ -13,6 +31,7 @@ export function ProviderHealthPanel() {
   const { data, isLoading, isError } = useProviderHealth(7);
   const rows = data?.rows ?? [];
   const active = rows.filter((row) => row.failureTotal > 0 || row.switches > 0);
+  const [exportFailed, setExportFailed] = React.useState(false);
 
   const codeLabel = (code: string): string => {
     switch (code) {
@@ -35,18 +54,82 @@ export function ProviderHealthPanel() {
     }
   };
 
+  const exportHealth = (format: HealthExportFormat) => {
+    setExportFailed(false);
+    try {
+      const labels: HealthExportLabels = {
+        title: t('settingsProviders.health.title'),
+        provider: t('settingsProviders.health.exportProvider'),
+        status: t('settingsProviders.health.exportStatus'),
+        failures: t('settingsProviders.health.exportFailures'),
+        codes: t('settingsProviders.health.exportCodes'),
+        switches: t('settingsProviders.health.exportSwitches'),
+        lastFailure: t('settingsProviders.health.exportLastFailure'),
+        enabled: t('settingsProviders.health.exportEnabled'),
+        disabled: t('settingsProviders.health.disabled'),
+        unknown: t('settingsProviders.health.unknownProvider'),
+        none: '—',
+      };
+      const content =
+        format === 'md'
+          ? buildHealthMarkdown(rows, labels, codeLabel)
+          : buildHealthCsv(rows, labels, codeLabel);
+      saveText(
+        content,
+        healthExportFilename(format),
+        format === 'md' ? 'text/markdown;charset=utf-8' : 'text/csv;charset=utf-8',
+      );
+    } catch {
+      setExportFailed(true);
+    }
+  };
+
   return (
     <section
       className="space-y-2 rounded-md border bg-ui-row p-3"
       data-testid="provider-health-panel"
       aria-label={t('settingsProviders.health.title')}
     >
-      <div>
-        <h3 className="text-sm font-medium">{t('settingsProviders.health.title')}</h3>
-        <p className="text-xs text-muted-foreground">
-          {t('settingsProviders.health.description')}
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-medium">{t('settingsProviders.health.title')}</h3>
+          <p className="text-xs text-muted-foreground">
+            {t('settingsProviders.health.description')}
+          </p>
+        </div>
+        {rows.length > 0 ? (
+          // v4.20：导出菜单（Markdown / CSV），只导出当前面板报告数据
+          <details className="relative shrink-0" data-testid="provider-health-export">
+            <summary className="flex cursor-pointer list-none items-center gap-1 rounded border px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">
+              <Download className="h-3.5 w-3.5" />
+              {t('settingsProviders.health.export')}
+            </summary>
+            <div className="absolute right-0 z-10 mt-1 flex w-32 flex-col rounded-md border bg-ui-card p-1 shadow-md">
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-left text-xs hover:bg-accent"
+                data-testid="provider-health-export-markdown"
+                onClick={() => exportHealth('md')}
+              >
+                {t('settingsProviders.health.exportMarkdown')}
+              </button>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-left text-xs hover:bg-accent"
+                data-testid="provider-health-export-csv"
+                onClick={() => exportHealth('csv')}
+              >
+                {t('settingsProviders.health.exportCsv')}
+              </button>
+            </div>
+          </details>
+        ) : null}
       </div>
+      {exportFailed ? (
+        <p className="text-xs text-destructive" role="alert" data-testid="provider-health-export-error">
+          {t('settingsProviders.health.exportFailed')}
+        </p>
+      ) : null}
       {isLoading && <p className="text-xs text-muted-foreground">{t('common.actions.loading')}</p>}
       {isError && (
         <p className="text-xs text-destructive">{t('settingsProviders.health.loadFailed')}</p>

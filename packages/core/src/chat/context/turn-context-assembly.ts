@@ -65,6 +65,8 @@ export interface PreparedTurnContext {
   /** 工具调用追踪（交由工具循环 push 条目） */
   trace: ToolTraceEntry[];
   citations: Citation[];
+  /** v4.20：本轮是否命中寒暄快路径（收尾据此跳过回合后记忆提取） */
+  fastChitchat: boolean;
 }
 
 /**
@@ -228,5 +230,6 @@ export async function* prepareTurnContext(
     contextWindow,
     trace,
     citations,
+    fastChitchat,
   };
 }

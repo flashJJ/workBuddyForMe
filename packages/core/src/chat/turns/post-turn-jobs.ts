@@ -30,6 +30,8 @@ export interface PostTurnJobsParams {
   workPlans?: WorkPlanService;
   /** v2.26 P1：本轮工具执行轨迹（检查点记录最近工具结果摘要） */
   toolTrace?: readonly ToolTraceEntry[];
+  /** v4.20：寒暄快路径跳过回合后记忆提取（压缩与检查点不受影响） */
+  fastChitchat?: boolean;
   /** v4.8：压缩事件落库（缺省不落） */
   events?: SessionLogService;
   signal?: AbortSignal;
@@ -94,17 +96,20 @@ export async function runPostTurnJobs(params: PostTurnJobsParams): Promise<void>
     }
   }
   if (!params.assistant.memoryEnabled) return;
-  if (compaction?.summary) await rememberSummaryEvent(params, compaction.summary);
-  await runPostTurnMemory({
-    memory: params.memory,
-    target: params.target,
-    userContent: params.userContent,
-    assistantContent: params.assistantContent,
-    conversationId: params.conversation.id,
-    assistantId: params.assistant.id,
-    sourceMessageId: params.sourceMessageId,
-    signal: params.signal,
-    traceParent: params.traceParent,
-  });
+  // v4.20：寒暄快路径不创建回合后记忆提取任务，也不写摘要记忆
+  if (!params.fastChitchat) {
+    if (compaction?.summary) await rememberSummaryEvent(params, compaction.summary);
+    await runPostTurnMemory({
+      memory: params.memory,
+      target: params.target,
+      userContent: params.userContent,
+      assistantContent: params.assistantContent,
+      conversationId: params.conversation.id,
+      assistantId: params.assistant.id,
+      sourceMessageId: params.sourceMessageId,
+      signal: params.signal,
+      traceParent: params.traceParent,
+    });
+  }
   runDecaySafely(params);
 }
