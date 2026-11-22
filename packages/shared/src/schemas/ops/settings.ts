@@ -165,6 +165,8 @@ export const settingsUpdateSchema = z.object({
   contextMessageCount: z.number().int().min(CONTEXT_MESSAGES_MIN).max(CONTEXT_MESSAGES_MAX).optional(),
   // v4.8：装配前预判压缩（历史超水位先压缩；缺省 true）
   contextPreflightCompactEnabled: z.boolean().optional(),
+  // v4.20：长会话分块/虚拟化渲染（缺省 true；关闭后与 v4.19 一致）
+  chatVirtualizationEnabled: z.boolean().optional(),
   // v4.8：小模型意图识别（缺省 false；modelId=null 跟随默认对话模型）
   intentClassifierEnabled: z.boolean().optional(),
   intentClassifierModelId: z.string().trim().min(1).nullable().optional(),

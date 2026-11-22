@@ -10,6 +10,7 @@ import { useI18n } from '@/lib/i18n/use-i18n';
 import type { AgentCardEntry } from '@/features/agent-collab';
 import type { StreamTiming } from '../types/chat-session.types';
 import { CHAT_CONTENT_MAX_WIDTH } from '../chat-layout';
+import { MessageRows } from './long-session/message-rows';
 import { MessageItem } from './message-item';
 
 /** v4.18：错误态「保留输入」取最近一条用户消息（纯函数） */
@@ -47,6 +48,8 @@ interface Props {
   onHighlightMissing?: () => void;
   /** v2.23 空态示例 prompt：点击只填入输入框，不自动发送 */
   onUsePrompt?: (text: string) => void;
+  /** v4.20：长会话虚拟化开关（false 时与 v4.19 一致） */
+  virtualizationEnabled?: boolean;
 }
 
 export function MessageList({ messages,
@@ -63,19 +66,41 @@ export function MessageList({ messages,
   highlightMessageId,
   onHighlightMissing,
   onUsePrompt,
+  virtualizationEnabled = true,
 }: Props) {
   const { t } = useI18n();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const warnedRef = React.useRef<string | null>(null);
+  const atBottomRef = React.useRef(true);
   // v2.23：滚离底部超过 200px 时浮出「回到底部」
   const [atBottom, setAtBottom] = React.useState(true);
+
+  React.useEffect(() => {
+    atBottomRef.current = true;
+    setAtBottom(true);
+  }, [conversationId]);
 
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
-    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 200);
+    const next = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+    atBottomRef.current = next;
+    setAtBottom(next);
   };
+
+  /** 虚拟化会在滚动中增删节点，单次 smooth scrollIntoView 可能被打断；连续对齐底部 */
+  const scrollToBottom = React.useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let attempts = 0;
+    const step = () => {
+      el.scrollTop = el.scrollHeight;
+      attempts += 1;
+      if (attempts < 4) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, []);
 
   React.useEffect(() => {
     const target = highlightMessageId
@@ -94,8 +119,11 @@ export function MessageList({ messages,
       warnedRef.current = highlightMessageId;
       onHighlightMissing?.();
     }
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages, highlightMessageId, onHighlightMissing]);
+    // v4.20：用户离开底部后不强制吸底；新发送的用户消息仍滚到底部
+    const last = messages[messages.length - 1];
+    if (!atBottomRef.current && last?.role !== 'user') return;
+    scrollToBottom();
+  }, [messages, highlightMessageId, onHighlightMissing, scrollToBottom]);
 
   if (messages.length === 0) {
     // v2.23：首轮生成中给骨架屏，避免空态先闪一下；平时是品牌区 + 示例 prompt 卡
@@ -167,39 +195,50 @@ export function MessageList({ messages,
         data-testid="message-list"
       >
         <div className={`mx-auto w-full ${CHAT_CONTENT_MAX_WIDTH} py-2`}>
-          {messages.map((message, index) => {
-            const restore = previousUserContent(messages, index);
-            return (
-              <MessageItem
-                key={message.id || `pending-${index}`}
-                message={message}
-                conversationId={conversationId}
-                highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
-                assistantName={assistantName}
-                disabled={streaming}
-                agentCard={agentCards?.[message.id]}
-                onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
-                onRetryWithFallback={
-                  index === lastAssistantIndex && !streaming ? onRetryWithFallback : undefined
-                }
-                onRestoreInput={
-                  message.status === 'error' && restore && onRestoreInput
-                    ? () => onRestoreInput(restore)
-                    : undefined
-                }
-                onResend={message.role === 'user' && !streaming ? onResend : undefined}
-                onFeedback={onFeedback}
-                streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
-              />
-            );
-          })}
+          <MessageRows
+            count={messages.length}
+            enabled={virtualizationEnabled}
+            forceAll={Boolean(
+              highlightMessageId && messages.some((message) => message.id === highlightMessageId),
+            )}
+            containerRef={containerRef}
+            resetKey={conversationId ?? null}
+            itemKey={(index) => messages[index]?.id || `pending-${index}`}
+            renderItem={(index) => {
+              const message = messages[index]!;
+              const restore = previousUserContent(messages, index);
+              return (
+                <MessageItem
+                  key={message.id || `pending-${index}`}
+                  message={message}
+                  conversationId={conversationId}
+                  highlighted={Boolean(highlightMessageId && message.id === highlightMessageId)}
+                  assistantName={assistantName}
+                  disabled={streaming}
+                  agentCard={agentCards?.[message.id]}
+                  onRetry={index === lastAssistantIndex && !streaming ? onRetry : undefined}
+                  onRetryWithFallback={
+                    index === lastAssistantIndex && !streaming ? onRetryWithFallback : undefined
+                  }
+                  onRestoreInput={
+                    message.status === 'error' && restore && onRestoreInput
+                      ? () => onRestoreInput(restore)
+                      : undefined
+                  }
+                  onResend={message.role === 'user' && !streaming ? onResend : undefined}
+                  onFeedback={onFeedback}
+                  streamTiming={index === lastAssistantIndex ? streamTiming : undefined}
+                />
+              );
+            }}
+          />
         </div>
         <div ref={bottomRef} />
       </div>
       {!atBottom && (
         <button
           type="button"
-          onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
+          onClick={scrollToBottom}
           className="absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border bg-ui-overlay px-3 py-1.5 text-xs text-muted-foreground shadow-2 transition-colors duration-fast ease-out-quint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           data-testid="scroll-to-bottom"
         >

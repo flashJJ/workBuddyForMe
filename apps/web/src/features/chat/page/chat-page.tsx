@@ -239,6 +239,7 @@ export function ChatPage({
               highlightMessageId={deepLinkMessageId}
               onHighlightMissing={warnMissingMessage}
               onUsePrompt={(text) => { setDraft(text); setComposerFocus((value) => value + 1); }}
+              virtualizationEnabled={settings?.chatVirtualizationEnabled !== false}
             />
             {companion.proactiveBubble && (
               <ProactiveBubbleBar

@@ -9,4 +9,6 @@ export interface ChatContextSettingsFields {
   intentClassifierEnabled?: boolean;
   /** 意图识别模型（null=跟随默认对话模型） */
   intentClassifierModelId?: string | null;
+  /** v4.20：长会话分块/虚拟化渲染（缺省 true；关闭后与 v4.19 一致） */
+  chatVirtualizationEnabled?: boolean;
 }

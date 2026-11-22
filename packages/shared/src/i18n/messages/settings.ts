@@ -11,7 +11,6 @@ export const zhSettings = {
   },
   addProvider: '新增供应商',
   loadError: '供应商加载失败',
-
   saving: '保存中…',
   empty: {
     title: '还没有模型供应商',
@@ -24,13 +23,13 @@ export const zhSettings = {
     embeddingModel: '默认向量模型（知识库）',
     notSelected: '未选择',
     theme: '主题',
-    themeLight: '浅色',
-    themeDark: '深色',
-    themeSystem: '跟随系统',
+    themeLight: '浅色', themeDark: '深色', themeSystem: '跟随系统',
     modelOptionLabel: '{displayName}（{modelId}）',
     dataDir: '本地数据目录',
     dataDirCopied: '数据目录已复制',
     settingsSaved: '设置已保存',
+    chatVirtualization: '长会话按需渲染',
+    chatVirtualizationHint: '消息超过 200 条时只渲染可见区域；关闭后回到旧版全量渲染。',
     hint: '助手可单独指定模型；未指定时使用上方默认对话模型。设置项即时保存。',
   },
   // v1.3 知识检索
@@ -154,7 +153,6 @@ export const enSettings = {
   },
   addProvider: 'Add provider',
   loadError: 'Failed to load providers',
-
   saving: 'Saving…',
   empty: {
     title: 'No model providers yet',
@@ -174,6 +172,8 @@ export const enSettings = {
     dataDir: 'Local data directory',
     dataDirCopied: 'Data directory copied',
     settingsSaved: 'Settings saved',
+    chatVirtualization: 'Render long chats on demand',
+    chatVirtualizationHint: 'Only the visible range is rendered above 200 messages. Turn off to return to full rendering.',
     hint: 'Assistants can override the model; otherwise the default chat model above is used. Changes save instantly.',
   },
   retrieval: {

@@ -62,6 +62,7 @@ export const zhChatMessages = {
     firstRunDemo: '用演示模式试一句',
     firstRunConfigure: '配置我的模型',
     firstRunTemplates: '从模板开始',
+    loadEarlier: '加载更早的 {count} 条',
   },
   /** v4.17：会话/消息检索弹层 */
   search: {
@@ -162,6 +163,7 @@ export const enChatMessages = {
     firstRunDemo: 'Try demo mode',
     firstRunConfigure: 'Configure my model',
     firstRunTemplates: 'Start from a template',
+    loadEarlier: 'Load {count} earlier messages',
   },
   search: {
     title: 'Global search',

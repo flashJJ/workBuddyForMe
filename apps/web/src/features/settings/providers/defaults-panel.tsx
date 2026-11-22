@@ -130,6 +130,22 @@ export function DefaultsPanel() {
           </SimpleSelect>
         </div>
       </div>
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            id="chat-virtualization"
+            type="checkbox"
+            checked={draft.chatVirtualizationEnabled !== false}
+            onChange={(event) =>
+              void save({ chatVirtualizationEnabled: event.target.checked })
+            }
+          />
+          {t('settings.defaults.chatVirtualization')}
+        </label>
+        <p className="text-xs text-muted-foreground">
+          {t('settings.defaults.chatVirtualizationHint')}
+        </p>
+      </div>
       <DataDirField />
       <p className="text-xs text-muted-foreground">{t('settings.defaults.hint')}</p>
     </section>
