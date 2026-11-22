@@ -90,7 +90,9 @@ export interface RecallTurnParams {
 
 /** 回合前召回；服务内部已对未配置嵌入模型等场景退化为关键词召回 */
 export async function recallTurnMemories(params: RecallTurnParams): Promise<RecalledMemory[]> {
-  return params.memory.recall(params.query, {
+  return params.memory.recall({
+    query: params.query,
+    scene: 'chat',
     signal: params.signal,
     traceParent: params.traceParent,
     assistantId: params.assistantId ?? null,

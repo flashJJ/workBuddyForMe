@@ -48,6 +48,23 @@ export interface RecallOptions {
   conversationId?: string | null;
 }
 
+/** v4.21：召回场景——决定默认预算 */
+export type MemoryRecallScene = 'chat' | 'task' | 'intent-forget';
+
+export interface MemoryRecallBudget {
+  maxItems: number;
+  /** 字符近似：1 token ≈ 2 字符，向上取整 */
+  maxTokens: number;
+}
+
+/** v4.21：统一召回入口请求 */
+export interface MemoryRecallRequest extends RecallOptions {
+  query: string;
+  scene?: MemoryRecallScene;
+  /** 覆盖场景预设（只允许调小/调大单个维度） */
+  budget?: Partial<MemoryRecallBudget>;
+}
+
 export interface ManualMemoryInput {
   kind: MemoryKind;
   content: string;

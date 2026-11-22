@@ -1,12 +1,10 @@
-import { MEMORY_TOP_K } from '@wbfm/shared/constants';
 import {
   type Memory,
   type MemoryConsolidateSummary,
   type MemoryKind,
   type MemoryLifecycleStats,
   type MemoryStatus,
-} from '@wbfm/shared/types';
-import {
+} from '@wbfm/shared/types';import {
   createMemoryEdgeRepository,
   createMemoryRepository,
   getMemoryVectorDimension,
@@ -16,7 +14,7 @@ import {
 import { traceAsync } from '@wbfm/ai';
 import type { ServiceDeps } from '../services/base/deps';
 import type { ExtractedMemory } from './extractor';
-import { createMemoryPersister, createMemoryRecall } from './lifecycle';
+import { createMemoryPersister, createMemoryRecall, resolveRecallBudget } from './lifecycle';
 import {
   clearAllMemories,
   clearMemoriesByStatus,
@@ -38,8 +36,8 @@ import { buildSameSourceEdges } from './graph';
 import { toExtractedMemory } from './memory-match';
 import type {
   ManualMemoryInput,
+  MemoryRecallRequest,
   RecalledMemory,
-  RecallOptions,
   RememberOneInput,
   RememberOptions,
   RememberResult,
@@ -47,8 +45,10 @@ import type {
 
 export type {
   ManualMemoryInput,
+  MemoryRecallBudget,
+  MemoryRecallRequest,
+  MemoryRecallScene,
   RecalledMemory,
-  RecallOptions,
   RememberOneInput,
   RememberOptions,
   RememberResult,
@@ -129,29 +129,33 @@ export function createMemoryService(deps: ServiceDeps) {
     return tx().memory;
   }
 
-  async function recall(query: string, options: RecallOptions = {}): Promise<RecalledMemory[]> {
-    const trimmed = query.trim();
+  /** v4.21：统一召回入口——场景决定预算，返回仍为 RecalledMemory[] */
+  async function recall(request: MemoryRecallRequest): Promise<RecalledMemory[]> {
+    const trimmed = request.query.trim();
     if (!trimmed) return [];
+    const scene = request.scene ?? 'chat';
+    const budget = resolveRecallBudget(scene, request.budget);
     return traceAsync(
       {
         name: 'memory_recall',
         runType: 'retriever',
-        parent: options.traceParent ?? null,
-        inputs: { queryLength: trimmed.length, topK: MEMORY_TOP_K },
+        parent: request.traceParent ?? null,
+        inputs: { queryLength: trimmed.length, scene, budget },
       },
       async () => {
         let vector: number[] | null = null;
         if (getMemoryVectorDimension(deps.db) !== null) {
-          const embedded = await embedTexts(deps, [trimmed], options.signal);
+          const embedded = await embedTexts(deps, [trimmed], request.signal);
           vector = embedded?.vectors[0] ?? null;
         }
         const memories = recaller.collect({
           query: trimmed,
           vector,
           scope: {
-            assistantId: options.assistantId ?? null,
-            conversationId: options.conversationId ?? null,
+            assistantId: request.assistantId ?? null,
+            conversationId: request.conversationId ?? null,
           },
+          budget,
         });
         stats.recordRecall(
           memories.length,

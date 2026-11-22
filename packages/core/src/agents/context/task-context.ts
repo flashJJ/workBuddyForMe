@@ -117,7 +117,9 @@ export async function buildTaskContextBlock(
   // 5) 与目标相关的长期记忆（助手开启时）
   if (params.memoryEnabled) {
     try {
-      const recalled = await createMemoryService(deps).recall(params.goal, {
+      const recalled = await createMemoryService(deps).recall({
+        query: params.goal,
+        scene: 'task',
         ...(params.assistantId ? { assistantId: params.assistantId } : {}),
         conversationId: params.conversationId,
         ...(params.signal ? { signal: params.signal } : {}),

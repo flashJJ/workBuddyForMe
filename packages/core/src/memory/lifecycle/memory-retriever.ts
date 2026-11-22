@@ -7,6 +7,7 @@ import {
   MEMORY_SEMANTIC_WEIGHT,
 } from '@wbfm/shared/constants';
 import type { Memory, MemoryRecallReason } from '@wbfm/shared/types';
+import type { MemoryRecallBudget, MemoryRecallScene } from '../memory-service-types';
 
 /**
  * v2.26 混合召回打分（纯函数，便于单测）：
@@ -88,4 +89,85 @@ export function recallReason(input: {
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
+}
+
+/**
+ * v4.21：召回场景与预算。
+ *
+ * - chat / task 保持 v4.20 的 3 条上限，token 预算只裁非置顶候选；
+ * - intent-forget 只用于定位目标，允许 5 条，最终仍由调用方截断；
+ * - token 用字符近似（1 token ≈ 2 字符），不引入 tokenizer。
+ */
+export const MEMORY_RECALL_SCENES = ['chat', 'task', 'intent-forget'] as const;
+
+export const MEMORY_RECALL_SCENE_PRESETS: Record<MemoryRecallScene, MemoryRecallBudget> = {
+  chat: { maxItems: 3, maxTokens: 600 },
+  task: { maxItems: 3, maxTokens: 600 },
+  'intent-forget': { maxItems: 5, maxTokens: 750 },
+};
+
+export function resolveRecallBudget(
+  scene: MemoryRecallScene = 'chat',
+  override?: Partial<MemoryRecallBudget>,
+): MemoryRecallBudget {
+  const preset = MEMORY_RECALL_SCENE_PRESETS[scene] ?? MEMORY_RECALL_SCENE_PRESETS.chat;
+  return {
+    maxItems: Math.max(1, Math.floor(override?.maxItems ?? preset.maxItems)),
+    maxTokens: Math.max(0, Math.floor(override?.maxTokens ?? preset.maxTokens)),
+  };
+}
+
+export function estimateMemoryTokens(content: string): number {
+  if (!content) return 0;
+  return Math.ceil(content.length / 2);
+}
+
+export interface RecallBudgetEntry {
+  id: string;
+  content: string;
+  score: number;
+  pinned: boolean;
+}
+
+export interface RecallBudgetResult<T> {
+  selected: T[];
+  droppedByBudget: number;
+}
+
+function compareId(a: string, b: string): number {
+  return a.localeCompare(b, 'en', { numeric: true });
+}
+
+/**
+ * 按预算选条目：置顶优先且不计 token；其余按分数降序、id 升序补齐，
+ * 超出条数或 token 预算的条目被丢弃。入参顺序不参与最终排序，便于复算。
+ */
+export function applyRecallBudget<T extends RecallBudgetEntry>(
+  entries: readonly T[],
+  budget: MemoryRecallBudget,
+): RecallBudgetResult<T> {
+  const pinned = entries.filter((entry) => entry.pinned);
+  const rest = entries
+    .filter((entry) => !entry.pinned)
+    .sort((a, b) => b.score - a.score || compareId(a.id, b.id));
+  const selected: T[] = [];
+  let tokens = 0;
+  let droppedByBudget = 0;
+
+  for (const entry of [...pinned, ...rest]) {
+    if (selected.length >= budget.maxItems) {
+      droppedByBudget += 1;
+      continue;
+    }
+    if (!entry.pinned) {
+      const cost = estimateMemoryTokens(entry.content);
+      if (tokens + cost > budget.maxTokens) {
+        droppedByBudget += 1;
+        continue;
+      }
+      tokens += cost;
+    }
+    selected.push(entry);
+  }
+  return { selected, droppedByBudget };
 }

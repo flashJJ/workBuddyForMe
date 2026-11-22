@@ -2,11 +2,18 @@
 export { extractRealtimeConstraints } from './memory-constraint';
 export { decideWrite, type MemoryWriteAction, type MemoryWriteDecision } from './memory-write';
 export {
+  MEMORY_RECALL_SCENES,
+  MEMORY_RECALL_SCENE_PRESETS,
+  applyRecallBudget,
+  estimateMemoryTokens,
   fuseMemoryScore,
   normalizeFtsRank,
   recallReason,
   recencyScore,
+  resolveRecallBudget,
   resolveRecallWeights,
+  type RecallBudgetEntry,
+  type RecallBudgetResult,
   type RecallWeights,
   type ScoredMemoryInput,
 } from './memory-retriever';

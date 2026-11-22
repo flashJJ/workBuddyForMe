@@ -1,4 +1,4 @@
-import type { RecalledMemory } from '../memory-service-types';
+import type { MemoryRecallBudget, RecalledMemory } from '../memory-service-types';
 import {
   MEMORY_HYBRID_CANDIDATES,
   MEMORY_NEIGHBOR_LIMIT,
@@ -7,7 +7,6 @@ import {
   MEMORY_PINNED_MIN_SCORE,
   MEMORY_RECALL_MAX_DISTANCE,
   MEMORY_RECALL_MIN_SCORE,
-  MEMORY_TOP_K,
 } from '@wbfm/shared/constants';
 import {
   getMemoryVectorDimension,
@@ -20,6 +19,7 @@ import {
 } from '@wbfm/database';
 import { recallScore } from '../memory-match';
 import {
+  applyRecallBudget,
   fuseMemoryScore,
   normalizeFtsRank,
   recallReason,
@@ -34,6 +34,8 @@ export interface RecallCollectInput {
   /** 查询向量；null=无嵌入模型或嵌入失败（走纯关键词） */
   vector: number[] | null;
   scope: MemoryScopeFilter;
+  /** v4.21：场景预算（条数 + token） */
+  budget: MemoryRecallBudget;
   now?: Date;
 }
 
@@ -155,13 +157,14 @@ export function createMemoryRecall(
     const final: RecalledMemory[] = [];
     const seen = new Set<string>();
     for (const memory of [...pinned, ...candidates]) {
-      if (final.length >= MEMORY_TOP_K) break;
       if (seen.has(memory.id)) continue;
       seen.add(memory.id);
       final.push(memory);
     }
-    repo.touchAccessed(final.map((memory) => memory.id));
-    return final;
+    // v4.21：统一按场景预算裁剪；置顶不计 token，其余按分数补位
+    const { selected } = applyRecallBudget(final, input.budget);
+    repo.touchAccessed(selected.map((memory) => memory.id));
+    return selected;
   }
 
   return { collect };
