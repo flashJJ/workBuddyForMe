@@ -2,3 +2,4 @@
 export * from './flow';
 export * from './flow-diff';
 export * from './flow-serving';
+export * from './policy';

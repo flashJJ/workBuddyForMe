@@ -9,6 +9,7 @@ import {
   FLOW_NODE_ID_PATTERN,
 } from '../../constants/index';
 import { AGENT_BUDGET_BOUNDS } from '../agent/agent';
+import { flowNodePolicySchema } from './policy';
 
 /**
  * v0.8 Flow Studio 图结构与 API 请求契约（zod）。
@@ -142,6 +143,19 @@ export const flowGraphSchema = z.object({
     .optional(),
   /** v4.22：并行度；缺省 1 = 串行（与旧图完全等价），上限 4 */
   parallelism: z.number().int().min(1).max(4).optional(),
+}).superRefine((graph, ctx) => {
+  graph.nodes.forEach((node, index) => {
+    const config = node.config ?? {};
+    if (!('retry' in config) && !('timeoutMs' in config)) return;
+    const parsed = flowNodePolicySchema.safeParse({ retry: config.retry, timeoutMs: config.timeoutMs });
+    if (!parsed.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `节点 ${node.id} 的重试/超时配置不合法`,
+        path: ['nodes', index, 'config'],
+      });
+    }
+  });
 });
 export type FlowGraph = z.infer<typeof flowGraphSchema>;
 

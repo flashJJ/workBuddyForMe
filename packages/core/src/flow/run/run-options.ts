@@ -10,7 +10,7 @@ import { computeReplayClosure } from '../policy/replay';
  */
 export type RunRuntimeOverrides = Pick<
   import('./flow-execution').FlowExecutionParams,
-  'unattendedPolicy' | 'onlyNodeIds' | 'replayTargetId'
+  'unattendedPolicy' | 'onlyNodeIds' | 'replayTargetId' | 'checkpoint' | 'resumeReason'
 >;
 
 export interface ResolveOverridesParams {

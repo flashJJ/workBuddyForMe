@@ -7,7 +7,7 @@
 ## 1. checkpoint 契约
 
 ```ts
-// packages/core/src/flow/run/checkpoint.ts
+// packages/core/src/flow/queue/checkpoint.ts
 
 export interface CheckpointNode {
   nodeId: string;

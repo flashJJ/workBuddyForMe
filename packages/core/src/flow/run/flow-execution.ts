@@ -20,7 +20,7 @@ import { createSettingsService } from '../../services/settings/settings-service'
 import { DEFAULT_CONTEXT_TOKEN_BUDGET, RESEARCH_DEPTH_DEFAULT, type ResearchDepth } from '@wbfm/shared/constants';
 import type { CachedWebPage } from '../../tools/types';
 import type { AgentRunService } from '../../agents/index';
-import type { CompiledFlow, FlowExecutionContext } from '../graph/types';
+import type { CompiledFlow, FlowCheckpoint, FlowExecutionContext } from '../graph/types';
 import { runFlow } from '../engine/engine';
 import { createFlowRunStore } from './run-store';
 import { evaluateUnattendedPolicy } from '../policy/policy-gate';
@@ -40,6 +40,10 @@ export interface FlowExecutionParams {
   onlyNodeIds?: ReadonlySet<string>;
   /** v0.9 节点重放目标（跑到该节点即收尾） */
   replayTargetId?: string;
+  /** v4.23：续跑检查点（启动恢复时注入） */
+  checkpoint?: FlowCheckpoint;
+  /** v4.23：续跑原因（写入 run_started） */
+  resumeReason?: string;
 }
 
 interface ActiveEntry {
@@ -122,6 +126,8 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
       signal,
       onlyNodeIds: params.onlyNodeIds,
       replayTargetId: params.replayTargetId,
+      ...(params.checkpoint ? { checkpoint: params.checkpoint } : {}),
+      ...(params.resumeReason ? { resumeReason: params.resumeReason } : {}),
       context: {
         resolveChatTarget: ({ modelId }) => resolveChatTargetForModelId(deps, modelId ?? null),
         recordContextSnapshot: (payload) => {
@@ -212,7 +218,11 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
       },
     });
 
-    const store = createFlowRunStore(runs);
+    // 续跑：复用已落库的节点执行行，避免同一节点产生重复记录
+    const initialNodeExecIds = params.checkpoint
+      ? new Map(runs.listNodeExecutions(runId).map((node) => [node.nodeId, node.id]))
+      : undefined;
+    const store = createFlowRunStore(runs, initialNodeExecIds);
     return (async function* wrapped() {
       try {
         for await (const event of inner) {

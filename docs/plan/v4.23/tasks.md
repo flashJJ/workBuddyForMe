@@ -1,4 +1,4 @@
-# v4.23 任务清单
+﻿# v4.23 任务清单
 
 > 状态：进行中（M0 已冻结，2026-11-23）
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 选题：[README.md](./README.md)
@@ -14,36 +14,36 @@
 
 ## M1 checkpoint 重建
 
-- [ ] M1.1 `flow/run/checkpoint.ts`：读取运行与节点执行记录，重建 `FlowCheckpoint`
-- [ ] M1.2 引擎支持 `checkpoint`：预置 state/scope/liveEdges，静默跳过已落定节点
-- [ ] M1.3 `run-store` 预加载 nodeId → executionId 映射，续跑不产生重复行
-- [ ] M1.4 单测：succeeded / skipped / condition 三类重建形态
+- [x] M1.1 `flow/queue/checkpoint.ts`：读取运行与节点执行记录，重建 `FlowCheckpoint`
+- [x] M1.2 引擎支持 `checkpoint`：预置 state/scope/liveEdges，静默跳过已落定节点
+- [x] M1.3 `run-store` 预加载 nodeId → executionId 映射，续跑不产生重复行
+- [x] M1.4 单测：succeeded / skipped / condition 三类重建形态
 
 ## M2 启动恢复
 
-- [ ] M2.1 `flow/queue/resume-policy.ts`：安全矩阵与原因码
-- [ ] M2.2 恢复扫描分流：可续跑 → `interrupted → queued` 并入队；风险 → 保持 interrupted
-- [ ] M2.3 续跑传入 checkpoint 与 `resumeReason`
-- [ ] M2.4 集成测试：模拟重启后续跑、写工具在途保持 interrupted
+- [x] M2.1 `flow/queue/resume-policy.ts`：安全矩阵与原因码
+- [x] M2.2 恢复扫描分流：可续跑 → `interrupted → queued` 并入队；风险 → 保持 interrupted
+- [x] M2.3 续跑传入 checkpoint 与 `resumeReason`
+- [x] M2.4 集成测试：模拟重启后续跑、写工具在途保持 interrupted
 
 ## M3 重试与超时
 
-- [ ] M3.1 图保存校验：`config.retry` / `config.timeoutMs` 边界
-- [ ] M3.2 串行与并行路径统一重试执行器（次数、指数退避、可重试判定）
-- [ ] M3.3 非交互节点超时；交互节点忽略
-- [ ] M3.4 单测：重试次数、退避序列、不可重试错误、超时与忽略
+- [x] M3.1 图保存校验：`config.retry` / `config.timeoutMs` 边界
+- [x] M3.2 串行与并行路径统一重试执行器（次数、指数退避、可重试判定）
+- [x] M3.3 非交互节点超时；交互节点忽略
+- [x] M3.4 单测：重试次数、退避序列、不可重试错误、超时与忽略
 
 ## M4 观测与体验
 
-- [ ] M4.1 `run_started.resumed` / `resumeReason`
-- [ ] M4.2 `node_started.attempt` 与 `node_failed.attempt`
-- [ ] M4.3 运行详情只读展示：续跑标记与重试次数（最小改动）
+- [x] M4.1 `run_started.resumed` / `resumeReason`
+- [x] M4.2 `node_started.attempt` 与 `node_failed.attempt`
+- [x] M4.3 运行详情只读展示：续跑标记与重试次数（最小改动）
 
 ## M5 验证
 
-- [ ] M5.1 定向单测全绿
-- [ ] M5.2 重启续跑集成测试通过
-- [ ] M5.3 `pnpm check` 与 `pnpm verify:local` 全绿
+- [x] M5.1 定向单测全绿
+- [x] M5.2 重启续跑集成测试通过
+- [x] M5.3 `pnpm check` 与 `pnpm verify:local` 全绿
 
 ## M6 收口
 

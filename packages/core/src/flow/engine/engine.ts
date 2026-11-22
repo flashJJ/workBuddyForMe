@@ -2,7 +2,7 @@ import type { FlowEventPayload } from '@wbfm/shared/types';
 import { resolveFlowRefs } from '../graph/refs';
 import { createDefaultHandlers } from '../handlers/index';
 import { buildIncomingIndex, isNodeLive } from './engine-live';
-import { runNodeBody } from './engine-node';
+import { runNodeWithPolicy } from './engine-node';
 import { runFlowParallel } from './engine-parallel';
 import type {
   CompiledFlow,
@@ -29,11 +29,10 @@ export function resolveMaxConcurrency(
 /**
  * 工作流执行引擎：
  * - `parallelism=1`（默认）走 v4.21 原串行路径：按拓扑序执行，首个成功 end 即收尾，
- *   首个失败即 run_failed；事件序列与旧版逐字一致。
+ *   首个失败即 run_failed；未配置策略时事件序列与旧版一致。
  * - `parallelism>1` 走就绪集合调度（见 engine-parallel）：扇出分支并发执行，
  *   并发上限、失败隔离与结果收敛按 v4.22 契约；
- * - human 节点内联挂起（先注册等待 → 发 node_waiting_human → await）；
- * - tool 节点统一解析 + write/danger 门控（同样的先注册/后发事件/再 await 时序）；
+ * - v4.23：checkpoint 预置作用域与节点状态，已落定节点静默跳过；节点尝试统一走重试/超时策略；
  * - 纯内存 AsyncGenerator；全程支持 abort（重放仍走串行路径）。
  */
 export async function* runFlow(
@@ -61,13 +60,40 @@ export async function* runFlow(
   const aborted = () => options.signal?.aborted === true;
   const parallelism = resolveMaxConcurrency(compiled, options.maxConcurrency);
 
+  // v4.23：从检查点恢复已落定节点（不补发事件）
+  for (const settled of options.checkpoint?.nodes ?? []) {
+    const node = compiled.nodesById.get(settled.nodeId);
+    if (!node) continue;
+    state.set(settled.nodeId, settled.status);
+    if (settled.status !== 'succeeded') continue;
+    const outputs = settled.outputs ?? {};
+    scope.set(settled.nodeId, node.type === 'start' ? { params: ctx.input, outputs } : { outputs });
+    if (node.type === 'condition') {
+      const branch = outputs.result === true ? 'true' : 'false';
+      const selected = (compiled.successors.get(settled.nodeId) ?? []).find((s) => s.handle === branch);
+      if (selected) liveEdges.add(selected.edgeId);
+    }
+  }
+
   yield {
     type: 'run_started',
     ...base,
     version: options.version,
     trigger: ctx.trigger,
     parallelism,
+    ...(options.checkpoint
+      ? { resumed: true, ...(options.resumeReason ? { resumeReason: options.resumeReason } : {}) }
+      : {}),
   };
+
+  // v4.23：检查点里已有成功 end 时直接收尾（崩溃发生在 end 落库与运行终态之间）
+  const settledEnd = (options.checkpoint?.nodes ?? [])
+    .filter((settled) => settled.status === 'succeeded' && compiled.nodesById.get(settled.nodeId)?.type === 'end')
+    .sort((a, b) => compiled.order.indexOf(a.nodeId) - compiled.order.indexOf(b.nodeId))[0];
+  if (settledEnd) {
+    yield { type: 'run_succeeded', ...base, output: settledEnd.outputs?.output ?? null };
+    return;
+  }
 
   // 重放沿用 v0.9 串行语义；并发仅在显式开启的图上生效
   if (parallelism > 1 && !options.onlyNodeIds && !options.replayTargetId) {
@@ -97,6 +123,9 @@ export async function* runFlow(
       return;
     }
 
+    // ── v4.23 续跑：已落定节点静默跳过 ──
+    if (state.has(nodeId)) continue;
+
     // ── v0.9 重放：祖先闭包之外的节点不执行（补发 skipped 观测事件） ──
     if (options.onlyNodeIds && !options.onlyNodeIds.has(nodeId)) {
       state.set(nodeId, 'skipped');
@@ -124,66 +153,73 @@ export async function* runFlow(
       return;
     }
 
-    yield { type: 'node_started', ...base, nodeId, nodeType: node.type, inputs: resolvedConfig };
-    const startedAt = Date.now();
-
-    try {
-      const outputs = yield* runNodeBody(nodeId, node.type, resolvedConfig, ctx, handlers, base);
-      if (aborted()) {
+    const result = yield* runNodeWithPolicy({
+      nodeId,
+      node,
+      config: resolvedConfig,
+      ctx,
+      handlers,
+      base,
+    });
+    if (!result.ok) {
+      if (result.aborted) {
         yield { type: 'run_cancelled', ...base };
         return;
       }
-
-      // 作用域统一形态：{ outputs: 节点产出 }；start 额外挂 params
-      // （nodes.<id>.outputs.<字段> 引用约定；start 另有 nodes.start.params.<字段>）
-      if (node.type === 'start') {
-        scope.set(nodeId, { params: ctx.input, outputs: outputs ?? {} });
-      } else {
-        scope.set(nodeId, { outputs: outputs ?? {} });
-      }
-      state.set(nodeId, 'succeeded');
-
-      // condition：激活命中分支边
-      if (node.type === 'condition') {
-        const branch = outputs.result === true ? 'true' : 'false';
-        const selected = (compiled.successors.get(nodeId) ?? []).find((s) => s.handle === branch);
-        if (selected) liveEdges.add(selected.edgeId);
-      }
-
-      yield { type: 'node_succeeded', ...base, nodeId, outputs, durationMs: Date.now() - startedAt };
-      // v0.9 节点重放：目标节点执行完成即收尾（输出取目标节点，不要求连通到 end）
-      if (options.replayTargetId && nodeId === options.replayTargetId && node.type !== 'end') {
-        yield { type: 'run_succeeded', ...base, output: outputs.output ?? outputs ?? null };
-        return;
-      }
-      if (node.type === 'end') {
-        // 首个成功 end 收尾：其余未访问且不再导通的节点补发 skipped（观测完整性）
-        for (const restId of compiled.order.slice(compiled.order.indexOf(nodeId) + 1)) {
-          if (state.has(restId)) continue;
-          if (
-            !isNodeLive(restId, compiled.startNodeId, incomingById, state, liveEdges, compiled)
-          ) {
-            state.set(restId, 'skipped');
-            yield {
-              type: 'node_skipped',
-              ...base,
-              nodeId: restId,
-              reason: '所在分支未被条件命中',
-            };
-          }
-        }
-        yield { type: 'run_succeeded', ...base, output: outputs.output ?? null };
-        return;
-      }
-    } catch (err) {
-      if (aborted()) {
-        yield { type: 'run_cancelled', ...base };
-        return;
-      }
-      const message = err instanceof Error ? err.message : String(err);
       state.set(nodeId, 'failed');
-      yield { type: 'node_failed', ...base, nodeId, message };
-      yield { type: 'run_failed', ...base, nodeId, message };
+      yield {
+        type: 'node_failed',
+        ...base,
+        nodeId,
+        message: result.message,
+        ...(result.attempt > 1 ? { attempt: result.attempt } : {}),
+      };
+      yield { type: 'run_failed', ...base, nodeId, message: result.message };
+      return;
+    }
+    const outputs = result.outputs;
+    if (aborted()) {
+      yield { type: 'run_cancelled', ...base };
+      return;
+    }
+
+    // 作用域统一形态：{ outputs: 节点产出 }；start 额外挂 params
+    // （nodes.<id>.outputs.<字段> 引用约定；start 另有 nodes.start.params.<字段>）
+    if (node.type === 'start') {
+      scope.set(nodeId, { params: ctx.input, outputs: outputs ?? {} });
+    } else {
+      scope.set(nodeId, { outputs: outputs ?? {} });
+    }
+    state.set(nodeId, 'succeeded');
+
+    // condition：激活命中分支边
+    if (node.type === 'condition') {
+      const branch = outputs.result === true ? 'true' : 'false';
+      const selected = (compiled.successors.get(nodeId) ?? []).find((s) => s.handle === branch);
+      if (selected) liveEdges.add(selected.edgeId);
+    }
+
+    yield { type: 'node_succeeded', ...base, nodeId, outputs, durationMs: result.durationMs };
+    // v0.9 节点重放：目标节点执行完成即收尾（输出取目标节点，不要求连通到 end）
+    if (options.replayTargetId && nodeId === options.replayTargetId && node.type !== 'end') {
+      yield { type: 'run_succeeded', ...base, output: outputs.output ?? outputs ?? null };
+      return;
+    }
+    if (node.type === 'end') {
+      // 首个成功 end 收尾：其余未访问且不再导通的节点补发 skipped（观测完整性）
+      for (const restId of compiled.order.slice(compiled.order.indexOf(nodeId) + 1)) {
+        if (state.has(restId)) continue;
+        if (!isNodeLive(restId, compiled.startNodeId, incomingById, state, liveEdges, compiled)) {
+          state.set(restId, 'skipped');
+          yield {
+            type: 'node_skipped',
+            ...base,
+            nodeId: restId,
+            reason: '所在分支未被条件命中',
+          };
+        }
+      }
+      yield { type: 'run_succeeded', ...base, output: outputs.output ?? null };
       return;
     }
   }
