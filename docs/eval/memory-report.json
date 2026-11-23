@@ -1,6 +1,6 @@
 {
   "version": "v2.31",
-  "at": "2026-11-22T15:45:04.533Z",
+  "at": "2026-11-23T12:48:20.137Z",
   "channel": "keyword",
   "topK": 3,
   "cases": 16,
@@ -11,8 +11,8 @@
   "zeroRecallRate": 0,
   "recallTotal": 16,
   "edgeTotal": 2,
-  "avgRecallMs": 1.46,
-  "maxRecallMs": 4.43,
+  "avgRecallMs": 0.53,
+  "maxRecallMs": 1.78,
   "results": [
     {
       "id": "recall-name",
@@ -27,7 +27,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 4.43
+      "elapsedMs": 1.78
     },
     {
       "id": "recall-exam",
@@ -44,7 +44,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 1.83
+      "elapsedMs": 0.43
     },
     {
       "id": "recall-city",
@@ -54,14 +54,14 @@
       "topContents": [
         "用户在杭州未来科技城工作，是一名后端工程师",
         "用户每周三和周五晚上去跑步，每次五公里",
-        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手"
+        "用户的副业项目是 WorkBuddyForMe，一个本地优先的私人 AI 助手"
       ],
       "topReasons": [
         "keyword",
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 2.61
+      "elapsedMs": 0.44
     },
     {
       "id": "recall-job",
@@ -71,14 +71,14 @@
       "topContents": [
         "用户在杭州未来科技城工作，是一名后端工程师",
         "用户用的主力编程语言是 TypeScript",
-        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手"
+        "用户的副业项目是 WorkBuddyForMe，一个本地优先的私人 AI 助手"
       ],
       "topReasons": [
         "keyword",
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 1.36
+      "elapsedMs": 0.41
     },
     {
       "id": "recall-language",
@@ -95,7 +95,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 1.38
+      "elapsedMs": 0.43
     },
     {
       "id": "recall-style",
@@ -112,7 +112,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.99
+      "elapsedMs": 0.5
     },
     {
       "id": "recall-pet",
@@ -129,7 +129,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.98
+      "elapsedMs": 0.36
     },
     {
       "id": "recall-food",
@@ -146,7 +146,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 1.88
+      "elapsedMs": 0.36
     },
     {
       "id": "recall-event-timeline",
@@ -163,7 +163,7 @@
         "keyword",
         "neighbor"
       ],
-      "elapsedMs": 1.73
+      "elapsedMs": 0.53
     },
     {
       "id": "recall-sideproject",
@@ -171,7 +171,7 @@
       "hit": true,
       "neighborHit": false,
       "topContents": [
-        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手",
+        "用户的副业项目是 WorkBuddyForMe，一个本地优先的私人 AI 助手",
         "用户不吃香菜，点餐时都会特别说明不要香菜",
         "用户下周六搬家，从余杭搬到西湖区，已经约好了搬家公司"
       ],
@@ -180,7 +180,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.92
+      "elapsedMs": 0.46
     },
     {
       "id": "recall-sport",
@@ -189,7 +189,7 @@
       "neighborHit": false,
       "topContents": [
         "用户用的主力编程语言是 TypeScript",
-        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手",
+        "用户的副业项目是 WorkBuddyForMe，一个本地优先的私人 AI 助手",
         "用户下周六搬家，搬家箱里最贵重的是手冲咖啡壶"
       ],
       "topReasons": [
@@ -197,7 +197,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.84
+      "elapsedMs": 0.38
     },
     {
       "id": "recall-synthesize-gift",
@@ -205,7 +205,7 @@
       "hit": false,
       "neighborHit": false,
       "topContents": [
-        "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手",
+        "用户的副业项目是 WorkBuddyForMe，一个本地优先的私人 AI 助手",
         "用户喜欢先给结论再展开理由的回答结构",
         "用户养了一只橘猫，名字叫橙子"
       ],
@@ -214,7 +214,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.94
+      "elapsedMs": 0.47
     },
     {
       "id": "recall-neighbor-move-1",
@@ -231,7 +231,7 @@
         "keyword",
         "keyword"
       ],
-      "elapsedMs": 0.74
+      "elapsedMs": 0.34
     },
     {
       "id": "recall-neighbor-move-2",
@@ -248,7 +248,7 @@
         "neighbor",
         "keyword"
       ],
-      "elapsedMs": 0.9
+      "elapsedMs": 0.61
     },
     {
       "id": "recall-neighbor-cat-1",
@@ -265,7 +265,7 @@
         "keyword",
         "neighbor"
       ],
-      "elapsedMs": 0.87
+      "elapsedMs": 0.46
     },
     {
       "id": "recall-neighbor-cat-2",
@@ -282,7 +282,7 @@
         "keyword",
         "neighbor"
       ],
-      "elapsedMs": 0.91
+      "elapsedMs": 0.48
     }
   ]
 }

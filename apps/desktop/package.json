@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/desktop",
-  "version": "4.25.0",
+  "version": "4.25.1",
   "private": true,
   "description": "WorkBuddyForMe Electron 桌面壳",
   "author": "WorkBuddyForMe",
