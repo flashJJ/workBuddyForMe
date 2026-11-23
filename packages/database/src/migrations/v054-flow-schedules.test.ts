@@ -1,14 +1,20 @@
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
-import { createDatabase } from '../client';
 import { createWorkflowRepository } from '../repositories/workflow/workflow-repo';
-import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
+import { applyMigrations, getSchemaVersion } from './runner';
 
-describe('v054 流程定时配置', () => {
-  it('迁移后存在 workflow_schedules 与到期索引', () => {
-    const db = createDatabase(':memory:');
-    const result = applyMigrations(db);
-    expect(result.to).toBe(LATEST_SCHEMA_VERSION);
-    expect(getSchemaVersion(db)).toBe(55);
+/** 停在 v54 的历史库（迁移只前向，直接按目标版本构建） */
+function createV54Database(): Database.Database {
+  const db = new Database(':memory:');
+  db.pragma('foreign_keys = ON');
+  applyMigrations(db, 54);
+  return db;
+}
+
+describe('v054 流程定时配置（历史版本）', () => {
+  it('迁移到 54 后存在 workflow_schedules 与到期索引', () => {
+    const db = createV54Database();
+    expect(getSchemaVersion(db)).toBe(54);
 
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='workflow_schedules'")
@@ -24,9 +30,8 @@ describe('v054 流程定时配置', () => {
     );
   });
 
-  it('一个流程只允许一条定时（workflow_id 唯一）', () => {
-    const db = createDatabase(':memory:');
-    applyMigrations(db);
+  it('v054 阶段一个流程只允许一条定时（v056 已放开）', () => {
+    const db = createV54Database();
     const wf = createWorkflowRepository(db).createWorkflow({ name: '定时' });
     const insert = db.prepare(
       `INSERT INTO workflow_schedules

@@ -52,6 +52,20 @@ describe('workflow trigger 仓储', () => {
     expect(repo.listEnabledByKind('file')).toHaveLength(0);
   });
 
+  it('轮换 Webhook Secret：只替换哈希，文件触发器返回 null', () => {
+    const { wf, repo } = setup();
+    const webhook = repo.create({ workflowId: wf.id, kind: 'webhook', name: '', config: null, secretHash: 'old' });
+    expect(repo.getSecretHash(webhook.id)).toBe('old');
+
+    const rotated = repo.rotateSecret(webhook.id, 'new');
+    expect(rotated).toMatchObject({ id: webhook.id, kind: 'webhook' });
+    expect(repo.getSecretHash(webhook.id)).toBe('new');
+
+    const file = repo.create({ workflowId: wf.id, kind: 'file', name: '', config: { path: 'E:\\x', extensions: ['md'] } });
+    expect(repo.rotateSecret(file.id, 'new')).toBeNull();
+    expect(repo.rotateSecret('missing', 'new')).toBeNull();
+  });
+
   it('按流程统计与列举，记录触发结果', () => {
     const { wf, repo } = setup();
     const webhook = repo.create({ workflowId: wf.id, kind: 'webhook', name: '', config: null, secretHash: 'h' });

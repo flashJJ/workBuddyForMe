@@ -111,7 +111,7 @@ export interface WorkflowRunView {
   interruptReason: string | null;
 }
 
-/** v4.24 定时触发配置（一个流程至多一条） */
+/** v4.26 定时触发配置（一个流程至多 5 条） */
 export const FLOW_SCHEDULE_LAST_STATUSES = [
   'created',
   'skipped_busy',
@@ -123,7 +123,11 @@ export type FlowScheduleLastStatus = (typeof FLOW_SCHEDULE_LAST_STATUSES)[number
 export interface FlowScheduleView {
   id: string;
   workflowId: string;
+  /** 用户可读名称；空串时 UI 显示 cron */
+  name: string;
   cron: string;
+  /** IANA 时区，如 Asia/Shanghai */
+  timezone: string;
   enabled: boolean;
   /** 调度触发时传给 start 节点的入参（不含 scheduledAt / scheduleId） */
   input: Record<string, unknown> | null;

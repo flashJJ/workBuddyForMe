@@ -19,6 +19,32 @@ export interface CronSpec {
   dowRestricted: boolean;
 }
 
+/** 与日期对象解耦的墙钟分量；时区换算与本地匹配共用 */
+export interface CronTimeParts {
+  /** 1–12 */
+  month: number;
+  day: number;
+  /** 0–6，0=周日 */
+  weekday: number;
+  hour: number;
+  minute: number;
+}
+
+export const FLOW_SCHEDULE_LIMIT = 5;
+export const DEFAULT_FLOW_SCHEDULE_TIMEZONE = 'Asia/Shanghai';
+
+/** IANA 时区是否可被 Intl 识别（Node/Electron 内置完整 ICU） */
+export function isValidTimeZone(timeZone: string): boolean {
+  const value = timeZone.trim();
+  if (!value || value.length > 64) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const FIELD_BOUNDS: ReadonlyArray<readonly [number, number, string]> = [
   [0, 59, '分钟'],
   [0, 23, '小时'],
@@ -81,23 +107,40 @@ export function parseCron(expression: string): CronSpec {
   };
 }
 
-function dayMatches(spec: CronSpec, date: Date): boolean {
-  const dom = spec.daysOfMonth.has(date.getDate());
-  const dow = spec.daysOfWeek.has(date.getDay());
-  if (spec.domRestricted && spec.dowRestricted) return dom || dow;
-  if (spec.domRestricted) return dom;
-  if (spec.dowRestricted) return dow;
+/** 日/周 OR 语义：两者都受限时任一匹配 */
+export function cronDayMatches(
+  spec: CronSpec,
+  month: number,
+  day: number,
+  weekday: number,
+): boolean {
+  if (!spec.months.has(month)) return false;
+  if (spec.domRestricted && spec.dowRestricted) {
+    return spec.daysOfMonth.has(day) || spec.daysOfWeek.has(weekday);
+  }
+  if (spec.domRestricted) return spec.daysOfMonth.has(day);
+  if (spec.dowRestricted) return spec.daysOfWeek.has(weekday);
   return true;
 }
 
-/** 给定时刻是否恰好命中（秒被忽略，按分钟粒度） */
-export function cronMatches(spec: CronSpec, date: Date): boolean {
+/** 分量级匹配；供本地与时区两条路径复用 */
+export function cronMatchesParts(spec: CronSpec, parts: CronTimeParts): boolean {
   return (
-    spec.months.has(date.getMonth() + 1) &&
-    dayMatches(spec, date) &&
-    spec.hours.has(date.getHours()) &&
-    spec.minutes.has(date.getMinutes())
+    cronDayMatches(spec, parts.month, parts.day, parts.weekday) &&
+    spec.hours.has(parts.hour) &&
+    spec.minutes.has(parts.minute)
   );
+}
+
+/** 给定本地时刻是否恰好命中（秒被忽略，按分钟粒度） */
+export function cronMatches(spec: CronSpec, date: Date): boolean {
+  return cronMatchesParts(spec, {
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    weekday: date.getDay(),
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+  });
 }
 
 const MAX_SEARCH_YEARS = 5;
@@ -115,7 +158,7 @@ export function nextCronTime(spec: CronSpec, from: Date): Date {
       cursor.setHours(0, 0, 0, 0);
       continue;
     }
-    if (!dayMatches(spec, cursor)) {
+    if (!cronDayMatches(spec, cursor.getMonth() + 1, cursor.getDate(), cursor.getDay())) {
       cursor.setDate(cursor.getDate() + 1);
       cursor.setHours(0, 0, 0, 0);
       continue;
@@ -139,22 +182,70 @@ export function validateCron(expression: string): string {
   return expression.trim().replace(/\s+/g, ' ');
 }
 
-export const flowScheduleUpsertSchema = z
+const cronFieldSchema = z.string().trim().min(1, 'cron 不能为空').max(120);
+
+function refineCron(value: { cron?: string }, ctx: z.RefinementCtx): void {
+  if (value.cron === undefined) return;
+  try {
+    validateCron(value.cron);
+  } catch (error) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: error instanceof Error ? error.message : 'cron 表达式不合法',
+      path: ['cron'],
+    });
+  }
+}
+
+function refineTimeZone(value: { timezone?: string }, ctx: z.RefinementCtx): void {
+  if (value.timezone === undefined) return;
+  if (!isValidTimeZone(value.timezone)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `未知时区：${value.timezone}`,
+      path: ['timezone'],
+    });
+  }
+}
+
+/** 新建定时：流程已发布、条数上限由服务层校验 */
+export const flowScheduleCreateSchema = z
   .object({
-    cron: z.string().trim().min(1, 'cron 不能为空').max(120),
+    name: z.string().trim().max(40).optional(),
+    cron: cronFieldSchema,
+    timezone: z
+      .string()
+      .trim()
+      .min(1)
+      .max(64)
+      .default(DEFAULT_FLOW_SCHEDULE_TIMEZONE),
     enabled: z.boolean().default(true),
     input: z.record(z.string(), z.unknown()).optional(),
   })
   .superRefine((value, ctx) => {
-    try {
-      validateCron(value.cron);
-    } catch (error) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: error instanceof Error ? error.message : 'cron 表达式不合法',
-        path: ['cron'],
-      });
-    }
+    refineCron(value, ctx);
+    refineTimeZone(value, ctx);
   });
 
-export type FlowScheduleUpsertInput = z.infer<typeof flowScheduleUpsertSchema>;
+/** 更新定时：至少一个字段；input=null 表示清空 */
+export const flowScheduleUpdateSchema = z
+  .object({
+    name: z.string().trim().max(40).optional(),
+    cron: cronFieldSchema.optional(),
+    timezone: z.string().trim().min(1).max(64).optional(),
+    enabled: z.boolean().optional(),
+    input: z.record(z.string(), z.unknown()).nullable().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, '至少提供一个更新字段')
+  .superRefine((value, ctx) => {
+    refineCron(value, ctx);
+    refineTimeZone(value, ctx);
+  });
+
+export const flowScheduleRunSchema = z.object({
+  scheduleId: z.string().min(1).optional(),
+});
+
+export type FlowScheduleCreateInput = z.infer<typeof flowScheduleCreateSchema>;
+export type FlowScheduleUpdateInput = z.infer<typeof flowScheduleUpdateSchema>;
+export type FlowScheduleRunInput = z.infer<typeof flowScheduleRunSchema>;

@@ -71,6 +71,8 @@ export interface FlowTriggerService {
     patch: { name?: string; enabled?: boolean; config?: FlowFileTriggerConfig },
   ): FlowTriggerView;
   remove(workflowId: string, triggerId: string): boolean;
+  /** v4.26：轮换 Webhook Secret；新明文仅本次返回 */
+  rotateSecret(workflowId: string, triggerId: string): { trigger: FlowTriggerView; secret: string };
   authenticateWebhook(triggerId: string, authorization: string | null): WebhookAuthResult;
   fireWebhook(
     trigger: FlowTriggerView,
@@ -238,6 +240,17 @@ export function createFlowTriggerService(deps: FlowTriggerServiceDeps): FlowTrig
       const removed = deps.triggers.remove(triggerId);
       if (removed) deps.onChange?.();
       return removed;
+    },
+
+    rotateSecret(workflowId, triggerId) {
+      const trigger = triggerOf(workflowId, triggerId);
+      if (trigger.kind !== 'webhook') {
+        throw ApiError.validation('仅 Webhook 触发器支持轮换 Secret');
+      }
+      const secret = generateWebhookSecret();
+      const updated = deps.triggers.rotateSecret(triggerId, hashTriggerSecret(secret));
+      if (!updated) throw ApiError.notFound('触发器', triggerId);
+      return { trigger: updated, secret };
     },
 
     authenticateWebhook(triggerId, authorization) {

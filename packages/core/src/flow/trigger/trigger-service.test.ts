@@ -63,6 +63,36 @@ describe('v4.25 触发执行服务', () => {
     });
   });
 
+  it('轮换 Webhook Secret：旧钥立即失效，新钥可用且只返回一次', () => {
+    const { wf, triggers, service } = setup();
+    const { trigger, secret: oldSecret } = service.create(wf.id, { kind: 'webhook' });
+    const rotated = service.rotateSecret(wf.id, trigger.id);
+    expect(rotated.secret).toMatch(/^wft_/);
+    expect(rotated.secret).not.toBe(oldSecret);
+    expect(rotated.trigger.webhookPath).toBe(trigger.webhookPath);
+    expect(triggers.getSecretHash(trigger.id)).toBe(hashTriggerSecret(rotated.secret));
+
+    expect(service.authenticateWebhook(trigger.id, `Bearer ${oldSecret}`)).toMatchObject({
+      ok: false,
+      reason: 'unauthorized',
+    });
+    expect(service.authenticateWebhook(trigger.id, `Bearer ${rotated.secret}`)).toMatchObject({
+      ok: true,
+    });
+  });
+
+  it('文件触发器不支持轮换，跨流程轮换返回 404', () => {
+    const { wf, service } = setup();
+    const file = service.create(wf.id, {
+      kind: 'file',
+      config: { path: 'E:\\notes', extensions: ['md'] },
+    });
+    expect(() => service.rotateSecret(wf.id, file.trigger.id)).toThrow(/Webhook/);
+
+    const webhook = service.create(wf.id, { kind: 'webhook' });
+    expect(() => service.rotateSecret('other-workflow', webhook.trigger.id)).toThrow(/触发器/);
+  });
+
   it('Webhook 触发：body 顶层合并 + payload + 保留键不可覆盖', () => {
     const { wf, service, calls } = setup();
     const { trigger } = service.create(wf.id, { kind: 'webhook' });

@@ -17,7 +17,8 @@ describe('v030 vrm_avatars', () => {
 
   it('v29 库增量迁移', () => {
     const db = new Database(':memory:');
-    db.pragma('user_version = 29');
+    applyMigrations(db, 29);
+    expect(getSchemaVersion(db)).toBe(29);
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const cols = db.prepare('PRAGMA table_info(vrm_avatars)').all() as Array<{ name: string }>;

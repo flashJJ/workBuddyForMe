@@ -8,6 +8,7 @@ import { resetDataRootForTest, setDataRootForTest } from '@wbfm/config';
 import { createWebCipher } from '@wbfm/core/secrets';
 import { __buildContainerForTest, __setContainerForTest } from '@/lib/server/container';
 import { DELETE, PATCH } from './[triggerId]/route';
+import { POST as ROTATE } from './[triggerId]/rotate/route';
 import { GET, POST } from './route';
 
 const graph: FlowGraph = {
@@ -80,6 +81,34 @@ describe('触发器管理 API（v4.25）', () => {
       { params: Promise.resolve({ id: workflowId, triggerId }) },
     );
     expect((await removed.json()).data.removed).toBe(true);
+  });
+
+  it('轮换 Webhook Secret：返回新 Secret 且库内哈希更新', async () => {
+    const created = await post({ kind: 'webhook' });
+    const payload = await created.json();
+    const triggerId = payload.data.trigger.id as string;
+    const oldHash = (
+      db.prepare('SELECT secret_hash FROM workflow_triggers WHERE id = ?').get(triggerId) as {
+        secret_hash: string;
+      }
+    ).secret_hash;
+
+    const res = await ROTATE(
+      new Request(`http://127.0.0.1/api/flows/${workflowId}/triggers/${triggerId}/rotate`, {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ id: workflowId, triggerId }) },
+    );
+    expect(res.status).toBe(200);
+    const rotated = await res.json();
+    expect(rotated.data.secret).toMatch(/^wft_/);
+    expect(rotated.data.secret).not.toBe(payload.data.secret);
+    const newHash = (
+      db.prepare('SELECT secret_hash FROM workflow_triggers WHERE id = ?').get(triggerId) as {
+        secret_hash: string;
+      }
+    ).secret_hash;
+    expect(newHash).not.toBe(oldHash);
   });
 
   it('未发布流程拒绝创建（409）', async () => {

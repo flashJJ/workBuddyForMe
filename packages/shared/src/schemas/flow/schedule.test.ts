@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { CronError, cronMatches, nextCronTime, parseCron, validateCron } from './schedule';
+import {
+  CronError,
+  FLOW_SCHEDULE_LIMIT,
+  cronMatches,
+  flowScheduleCreateSchema,
+  flowScheduleUpdateSchema,
+  nextCronTime,
+  parseCron,
+  validateCron,
+} from './schedule';
 
 describe('parseCron（5 字段 cron）', () => {
   it('通配与列表', () => {
@@ -81,3 +90,26 @@ describe('nextCronTime / cronMatches（本地时区）', () => {
 function dayMatches(spec: ReturnType<typeof parseCron>, date: Date): boolean {
   return cronMatches(spec, date);
 }
+
+describe('flowSchedule schemas（v4.26）', () => {
+  it('创建默认时区为 Asia/Shanghai、默认启用', () => {
+    const parsed = flowScheduleCreateSchema.parse({ cron: '0 9 * * *' });
+    expect(parsed.timezone).toBe('Asia/Shanghai');
+    expect(parsed.enabled).toBe(true);
+    expect(FLOW_SCHEDULE_LIMIT).toBe(5);
+  });
+
+  it('拒绝非法 cron 与未知时区', () => {
+    expect(flowScheduleCreateSchema.safeParse({ cron: '60 * * * *' }).success).toBe(false);
+    expect(
+      flowScheduleCreateSchema.safeParse({ cron: '0 9 * * *', timezone: 'Mars/Olympus' }).success,
+    ).toBe(false);
+  });
+
+  it('更新至少一个字段，允许 input=null 清空', () => {
+    expect(flowScheduleUpdateSchema.safeParse({}).success).toBe(false);
+    const parsed = flowScheduleUpdateSchema.parse({ input: null });
+    expect(parsed.input).toBeNull();
+    expect(flowScheduleUpdateSchema.safeParse({ timezone: 'Mars/Olympus' }).success).toBe(false);
+  });
+});

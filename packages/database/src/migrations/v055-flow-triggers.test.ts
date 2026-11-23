@@ -9,7 +9,7 @@ describe('v055 流程事件触发配置', () => {
     const db = createDatabase(':memory:');
     const result = applyMigrations(db);
     expect(result.to).toBe(LATEST_SCHEMA_VERSION);
-    expect(getSchemaVersion(db)).toBe(55);
+    expect(getSchemaVersion(db)).toBe(56);
 
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='workflow_triggers'")

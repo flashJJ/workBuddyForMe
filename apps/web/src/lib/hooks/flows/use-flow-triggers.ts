@@ -48,8 +48,14 @@ export function useFlowTriggerMutations(workflowId: string) {
       apiDelete<{ removed: boolean }>(API.flowTrigger(workflowId, triggerId)),
     onSuccess: invalidate,
   });
+  /** v4.26：轮换 Webhook Secret；新明文仅本次响应返回 */
+  const rotate = useMutation({
+    mutationFn: (triggerId: string) =>
+      apiPost<FlowTriggerCreateResult>(API.flowTriggerRotate(workflowId, triggerId)),
+    onSuccess: invalidate,
+  });
 
-  return { create, update, remove };
+  return { create, update, remove, rotate };
 }
 
 export type { FlowFileTriggerConfig };

@@ -17,7 +17,8 @@ describe('v031 mod_installs', () => {
 
   it('v30 库增量迁移', () => {
     const db = new Database(':memory:');
-    db.pragma('user_version = 30');
+    applyMigrations(db, 30);
+    expect(getSchemaVersion(db)).toBe(30);
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const cols = db.prepare('PRAGMA table_info(mod_installs)').all() as Array<{ name: string }>;

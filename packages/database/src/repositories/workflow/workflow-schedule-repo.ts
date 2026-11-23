@@ -3,14 +3,16 @@ import type { DatabaseInstance } from '../../client';
 import { newId, nowIso } from '../ops/mappers';
 
 /**
- * v4.24：流程定时配置仓储。
- * 一个流程至多一行；到期扫描与原子认领都走 (enabled, next_run_at) 索引。
+ * v4.26：流程定时配置仓储。
+ * 一个流程可有多行；到期扫描与原子认领仍走 (enabled, next_run_at) 索引。
  */
 
 export interface WorkflowScheduleRow {
   id: string;
   workflow_id: string;
+  name: string;
   cron: string;
+  timezone: string;
   enabled: number;
   input_json: string | null;
   next_run_at: string;
@@ -21,12 +23,24 @@ export interface WorkflowScheduleRow {
   updated_at: string;
 }
 
-export interface ScheduleUpsertFields {
+export interface ScheduleCreateFields {
   workflowId: string;
+  name: string;
   cron: string;
+  timezone: string;
   enabled: boolean;
   input?: Record<string, unknown> | null;
   nextRunAt: string;
+}
+
+export interface ScheduleUpdateFields {
+  name?: string;
+  cron?: string;
+  timezone?: string;
+  enabled?: boolean;
+  /** null 表示清空 */
+  input?: Record<string, unknown> | null;
+  nextRunAt?: string;
 }
 
 export interface ScheduleOutcome {
@@ -48,7 +62,9 @@ function mapSchedule(row: WorkflowScheduleRow): FlowScheduleView {
   return {
     id: row.id,
     workflowId: row.workflow_id,
+    name: row.name,
     cron: row.cron,
+    timezone: row.timezone,
     enabled: row.enabled === 1,
     input: parseJson<Record<string, unknown> | null>(row.input_json, null),
     nextRunAt: row.next_run_at,
@@ -61,18 +77,87 @@ function mapSchedule(row: WorkflowScheduleRow): FlowScheduleView {
 }
 
 export function createWorkflowScheduleRepository(db: DatabaseInstance) {
-  function getRowByWorkflow(workflowId: string): WorkflowScheduleRow | null {
+  function getRow(id: string): WorkflowScheduleRow | null {
     return (
-      (db.prepare('SELECT * FROM workflow_schedules WHERE workflow_id = ?').get(workflowId) as
+      (db.prepare('SELECT * FROM workflow_schedules WHERE id = ?').get(id) as
         | WorkflowScheduleRow
         | undefined) ?? null
     );
   }
 
   return {
-    getByWorkflow(workflowId: string): FlowScheduleView | null {
-      const row = getRowByWorkflow(workflowId);
+    listByWorkflow(workflowId: string): FlowScheduleView[] {
+      const rows = db
+        .prepare('SELECT * FROM workflow_schedules WHERE workflow_id = ? ORDER BY created_at ASC')
+        .all(workflowId) as WorkflowScheduleRow[];
+      return rows.map(mapSchedule);
+    },
+
+    getById(id: string): FlowScheduleView | null {
+      const row = getRow(id);
       return row ? mapSchedule(row) : null;
+    },
+
+    countByWorkflow(workflowId: string): number {
+      const row = db
+        .prepare('SELECT COUNT(*) AS n FROM workflow_schedules WHERE workflow_id = ?')
+        .get(workflowId) as { n: number };
+      return row.n;
+    },
+
+    create(fields: ScheduleCreateFields): FlowScheduleView {
+      const id = newId();
+      const ts = nowIso();
+      db.prepare(
+        `INSERT INTO workflow_schedules
+           (id, workflow_id, name, cron, timezone, enabled, input_json, next_run_at,
+            last_run_at, last_run_id, last_status, created_at, updated_at)
+         VALUES
+           (@id, @workflowId, @name, @cron, @timezone, @enabled, @inputJson, @nextRunAt,
+            NULL, NULL, NULL, @ts, @ts)`,
+      ).run({
+        id,
+        workflowId: fields.workflowId,
+        name: fields.name,
+        cron: fields.cron,
+        timezone: fields.timezone,
+        enabled: fields.enabled ? 1 : 0,
+        inputJson:
+          fields.input === undefined || fields.input === null ? null : JSON.stringify(fields.input),
+        nextRunAt: fields.nextRunAt,
+        ts,
+      });
+      return mapSchedule(getRow(id)!);
+    },
+
+    update(id: string, fields: ScheduleUpdateFields): FlowScheduleView | null {
+      const row = getRow(id);
+      if (!row) return null;
+      db.prepare(
+        `UPDATE workflow_schedules
+         SET name = @name, cron = @cron, timezone = @timezone, enabled = @enabled,
+             input_json = @inputJson, next_run_at = @nextRunAt, updated_at = @ts
+         WHERE id = @id`,
+      ).run({
+        id,
+        name: fields.name ?? row.name,
+        cron: fields.cron ?? row.cron,
+        timezone: fields.timezone ?? row.timezone,
+        enabled: fields.enabled === undefined ? row.enabled : fields.enabled ? 1 : 0,
+        inputJson:
+          fields.input === undefined
+            ? row.input_json
+            : fields.input === null
+              ? null
+              : JSON.stringify(fields.input),
+        nextRunAt: fields.nextRunAt ?? row.next_run_at,
+        ts: nowIso(),
+      });
+      return mapSchedule(getRow(id)!);
+    },
+
+    remove(id: string): boolean {
+      return db.prepare('DELETE FROM workflow_schedules WHERE id = ?').run(id).changes > 0;
     },
 
     /** 到期调度：enabled=1 且 next_run_at <= now，按时间升序 */
@@ -85,49 +170,6 @@ export function createWorkflowScheduleRepository(db: DatabaseInstance) {
         )
         .all(nowIsoValue, limit) as WorkflowScheduleRow[];
       return rows.map(mapSchedule);
-    },
-
-    upsert(fields: ScheduleUpsertFields): FlowScheduleView {
-      const existing = getRowByWorkflow(fields.workflowId);
-      const ts = nowIso();
-      const inputJson = fields.input === undefined || fields.input === null ? null : JSON.stringify(fields.input);
-      if (existing) {
-        db.prepare(
-          `UPDATE workflow_schedules
-           SET cron = @cron, enabled = @enabled, input_json = @inputJson,
-               next_run_at = @nextRunAt, updated_at = @ts
-           WHERE id = @id`,
-        ).run({
-          id: existing.id,
-          cron: fields.cron,
-          enabled: fields.enabled ? 1 : 0,
-          inputJson,
-          nextRunAt: fields.nextRunAt,
-          ts,
-        });
-      } else {
-        db.prepare(
-          `INSERT INTO workflow_schedules
-             (id, workflow_id, cron, enabled, input_json, next_run_at,
-              last_run_at, last_run_id, last_status, created_at, updated_at)
-           VALUES
-             (@id, @workflowId, @cron, @enabled, @inputJson, @nextRunAt,
-              NULL, NULL, NULL, @ts, @ts)`,
-        ).run({
-          id: newId(),
-          workflowId: fields.workflowId,
-          cron: fields.cron,
-          enabled: fields.enabled ? 1 : 0,
-          inputJson,
-          nextRunAt: fields.nextRunAt,
-          ts,
-        });
-      }
-      return mapSchedule(getRowByWorkflow(fields.workflowId)!);
-    },
-
-    removeByWorkflow(workflowId: string): boolean {
-      return db.prepare('DELETE FROM workflow_schedules WHERE workflow_id = ?').run(workflowId).changes > 0;
     },
 
     /** 原子认领：只有 next_run_at 仍是 expected 且启用时才推进 */

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Copy, FolderOpen, Plus, Trash2, Webhook } from 'lucide-react';
+import { Copy, FolderOpen, Plus, Webhook } from 'lucide-react';
 import type { FlowTriggerView } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,8 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { ApiClientError } from '@/lib/api/client';
 import { useFlowTriggerMutations, useFlowTriggers } from '@/lib/hooks/flows';
-import { buildWebhookUrl, formatTriggerTime, parseExtensions } from './trigger-dialog-helpers';
+import { TriggerList } from './trigger-list';
+import { buildWebhookUrl, parseExtensions } from './trigger-dialog-helpers';
 
 export interface TriggerDialogProps {
   open: boolean;
@@ -41,11 +42,13 @@ export function TriggerDialog({ open, workflowId, published, onClose }: TriggerD
   const [recursive, setRecursive] = React.useState(true);
   const [secretInfo, setSecretInfo] = React.useState<{ url: string; secret: string } | null>(null);
   const [confirmId, setConfirmId] = React.useState<string | null>(null);
+  const [rotateConfirmId, setRotateConfirmId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!open) {
       setSecretInfo(null);
       setConfirmId(null);
+      setRotateConfirmId(null);
     }
   }, [open]);
 
@@ -116,6 +119,28 @@ export function TriggerDialog({ open, workflowId, published, onClose }: TriggerD
     }
   };
 
+  const rotate = async (trigger: FlowTriggerView) => {
+    if (rotateConfirmId !== trigger.id) {
+      setRotateConfirmId(trigger.id);
+      return;
+    }
+    try {
+      const result = await mutations.rotate.mutateAsync(trigger.id);
+      if (result.secret && trigger.webhookPath) {
+        setSecretInfo({
+          url: buildWebhookUrl(trigger.webhookPath, window.location.origin),
+          secret: result.secret,
+        });
+      }
+      toast.success(t('flowEditor.trigger.rotated'));
+      setRotateConfirmId(null);
+    } catch (error) {
+      toast.error(
+        error instanceof ApiClientError ? error.message : t('flowEditor.trigger.rotateFailed'),
+      );
+    }
+  };
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -164,50 +189,15 @@ export function TriggerDialog({ open, workflowId, published, onClose }: TriggerD
           </div>
         )}
 
-        <div className="max-h-48 space-y-1 overflow-auto">
-          {triggers.length === 0 && (
-            <p className="py-2 text-xs text-muted-foreground">{t('flowEditor.trigger.empty')}</p>
-          )}
-          {triggers.map((trigger) => (
-            <div
-              key={trigger.id}
-              className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs"
-            >
-              {trigger.kind === 'webhook' ? (
-                <Webhook className="h-3.5 w-3.5 text-muted-foreground" />
-              ) : (
-                <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-              )}
-              <span className="min-w-0 flex-1 truncate">{trigger.name}</span>
-              <span className="text-[11px] text-muted-foreground">
-                {trigger.lastFiredAt
-                  ? t('flowEditor.trigger.lastFired', {
-                      time: formatTriggerTime(trigger.lastFiredAt),
-                    })
-                  : t('flowEditor.trigger.lastNever')}
-              </span>
-              <label className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={trigger.enabled}
-                  onChange={() => void toggle(trigger)}
-                />
-                {t('flowEditor.trigger.enabled')}
-              </label>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2"
-                onClick={() => void remove(trigger)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                {confirmId === trigger.id
-                  ? t('flowEditor.trigger.removeConfirm')
-                  : t('flowEditor.trigger.remove')}
-              </Button>
-            </div>
-          ))}
-        </div>
+        <TriggerList
+          triggers={triggers}
+          confirmRemoveId={confirmId}
+          rotateConfirmId={rotateConfirmId}
+          rotating={mutations.rotate.isPending}
+          onToggle={(trigger) => void toggle(trigger)}
+          onRemove={(trigger) => void remove(trigger)}
+          onRotate={(trigger) => void rotate(trigger)}
+        />
 
         <div className="space-y-2 rounded border p-3">
           <div className="flex gap-2">

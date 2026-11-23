@@ -83,12 +83,15 @@ export const workApi = {
   // v0.9 对外服务端点（内部管理面）
   flowEndpoint: (id: string) => `/api/flows/${id}/endpoint`,
   flowEndpointRotate: (id: string) => `/api/flows/${id}/endpoint/rotate`,
-  /** v4.24：定时触发配置与立即运行 */
-  flowSchedule: (id: string) => `/api/flows/${id}/schedule`,
-  flowScheduleRun: (id: string) => `/api/flows/${id}/schedule/run`,
+  /** v4.26：一流程多定时（集合 / 单项 / 立即运行） */
+  flowSchedules: (id: string) => `/api/flows/${id}/schedules`,
+  flowSchedule: (id: string, scheduleId: string) => `/api/flows/${id}/schedules/${scheduleId}`,
+  flowSchedulesRun: (id: string) => `/api/flows/${id}/schedules/run`,
   /** v4.25：事件触发器管理 */
   flowTriggers: (id: string) => `/api/flows/${id}/triggers`,
   flowTrigger: (id: string, triggerId: string) => `/api/flows/${id}/triggers/${triggerId}`,
+  flowTriggerRotate: (id: string, triggerId: string) =>
+    `/api/flows/${id}/triggers/${triggerId}/rotate`,
   // v0.9 M4 运行记录与重放
   flowRunsCenter: '/api/flow-runs',
   flowRunReplay: (runId: string) => `/api/flows/runs/${runId}/replay`,

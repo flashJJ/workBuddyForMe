@@ -164,6 +164,19 @@ export function createWorkflowTriggerRepository(db: DatabaseInstance) {
       return db.prepare('DELETE FROM workflow_triggers WHERE id = ?').run(id).changes > 0;
     },
 
+    /** v4.26：只替换哈希，触发器 id / URL 不变 */
+    rotateSecret(id: string, secretHash: string): FlowTriggerView | null {
+      const result = db
+        .prepare(
+          `UPDATE workflow_triggers
+           SET secret_hash = @secretHash, updated_at = @ts
+           WHERE id = @id AND kind = 'webhook'`,
+        )
+        .run({ id, secretHash, ts: nowIso() });
+      if (result.changes !== 1) return null;
+      return mapTrigger(getRow(id)!);
+    },
+
     recordOutcome(id: string, outcome: TriggerOutcome): void {
       db.prepare(
         `UPDATE workflow_triggers

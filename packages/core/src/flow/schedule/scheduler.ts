@@ -1,11 +1,11 @@
-import { nextCronTime, parseCron } from '@wbfm/shared/schemas';
+import { nextCronTimeInZone, parseCron } from '@wbfm/shared/schemas';
 import type { WorkflowScheduleRepository, WorkflowRepository, WorkflowRunRepository } from '@wbfm/database';
 import type { FlowScheduleLastStatus } from '@wbfm/shared/types';
 import type { FlowScheduleRunner } from './schedule-service';
 
 /**
- * v4.24 进程内调度器：
- * - 每 30 秒扫描到期调度，原子认领后推进 next_run_at；
+ * v4.26 进程内调度器：
+ * - 每 30 秒扫描到期调度，原子认领后按该条时区推进 next_run_at；
  * - 启动立即 tick 一次，覆盖应用关闭期间错过的执行（只补一次）；
  * - 同流程在途运行时跳过并记录 skipped_busy。
  */
@@ -59,9 +59,11 @@ export function createFlowScheduleScheduler(deps: FlowScheduleSchedulerDeps): Fl
       for (const schedule of due) {
         let nextRunAt: string;
         try {
-          nextRunAt = nextCronTime(parseCron(schedule.cron), at).toISOString();
+          nextRunAt = nextCronTimeInZone(parseCron(schedule.cron), at, schedule.timezone).toISOString();
         } catch {
+          // 配置永久无效（cron/时区）：记录错误并停用，避免每 30 秒重复失败
           record(schedule.id, at, 'error');
+          deps.schedules.update(schedule.id, { enabled: false });
           result.errored += 1;
           continue;
         }

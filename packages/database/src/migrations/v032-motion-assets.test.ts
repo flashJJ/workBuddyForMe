@@ -17,7 +17,8 @@ describe('v032 motion_assets', () => {
 
   it('v31 库增量迁移', () => {
     const db = new Database(':memory:');
-    db.pragma('user_version = 31');
+    applyMigrations(db, 31);
+    expect(getSchemaVersion(db)).toBe(31);
     applyMigrations(db);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const cols = db.prepare('PRAGMA table_info(motion_assets)').all() as Array<{ name: string }>;

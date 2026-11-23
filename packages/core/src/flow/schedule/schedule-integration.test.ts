@@ -34,9 +34,11 @@ describe('v4.24 定时触发集成', () => {
     const flowRunner = createFlowRunService({ deps, runtime, workflows, runs });
 
     const at = new Date(2026, 10, 23, 10, 30, 0, 0);
-    schedules.upsert({
+    schedules.create({
       workflowId: wf.id,
+      name: '',
       cron: '0 9 * * *',
+      timezone: 'Asia/Shanghai',
       enabled: true,
       input: { topic: '资讯' },
       nextRunAt: new Date(2026, 10, 23, 9, 0).toISOString(),
@@ -59,6 +61,6 @@ describe('v4.24 定时触发集成', () => {
     expect(events[0]).toMatchObject({ type: 'run_started', trigger: 'schedule' });
     expect(events.at(-1)?.type).toBe('run_succeeded');
     expect(runs.getRun(run.id)?.status).toBe('succeeded');
-    expect(schedules.getByWorkflow(wf.id)?.lastStatus).toBe('created');
+    expect(schedules.listByWorkflow(wf.id)[0]?.lastStatus).toBe('created');
   });
 });

@@ -1,7 +1,6 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
-import { migrateV032 } from './v032-motion-assets';
 
 describe('v033 motion_assets 动作段与档位', () => {
   it('空库迁移到最新版本', () => {
@@ -14,16 +13,15 @@ describe('v033 motion_assets 动作段与档位', () => {
 
   it('v32 库增量迁移：四列就位，且已存在的旧行降级为 single + normal + 无门槛', () => {
     const db = new Database(':memory:');
-    // 先造出 v032 形状的表并写入一行「旧数据」（这一段在 v033 之前就存在）
-    migrateV032(db);
+    // 先造出 v032 形状的库并写入一行「旧数据」（这一段在 v033 之前就存在）
+    applyMigrations(db, 32);
     db.prepare(
       `INSERT INTO motion_assets (id, name, file_ref, byte_length)
        VALUES ('m-old', '旧动作', 'motion-old.vrma', 1024)`,
     ).run();
-    db.pragma('user_version = 32');
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]);
+    expect(result.applied).toEqual([33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
 
     const cols = db.prepare('PRAGMA table_info(motion_assets)').all() as Array<{ name: string }>;
