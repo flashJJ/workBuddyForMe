@@ -92,7 +92,7 @@ describe('v4.25 触发执行服务', () => {
     const { wf, service } = setup();
     const file = service.create(wf.id, {
       kind: 'file',
-      config: { path: 'E:\\notes', extensions: ['md'] },
+      config: { path: join(parse(process.cwd()).root, 'notes'), extensions: ['md'] },
     });
     expect(() => service.rotateSecret(wf.id, file.trigger.id)).toThrow(/Webhook/);
 
