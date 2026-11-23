@@ -1,10 +1,11 @@
 # v4.26 版本总结：会排班
 
-> 版本：4.26.0（2026-11-23）
+> 版本：4.26.0（2026-11-24）
 > 主题：一流程多定时（独立时区）与 Webhook Secret 轮换
-> 状态：🚧 待发布
+> 状态：✅ 已发布（tag `v4.26.0`，GitHub Release 最新版）
+> 安装包：`WorkBuddyForMe-Setup-4.26.0.exe`（258.48 MB，SHA256 `1f7b3190…77e106`）
 > 方案：[README](./README.md) · [规格](./spec.md) · [契约](./contracts.md) · [任务](./tasks.md)
-> 发行说明：[v4.26.0-release-notes.md](../../roadmap/v4.26.0-release-notes.md)
+> 发行说明：[v4.26.0-release-notes.md](../../roadmap/v4.26.0-release-notes.md) · Release：https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.26.0
 
 ## 1. 交付结论
 
@@ -56,6 +57,7 @@ v4.26 把触发配置层从「一个流程一只闹钟」升级为「一张班�
 
 - `pnpm check` 通过（typecheck/lint/行数/结构/循环/MSW/ASCII/资产/surface/E2E 隔离）；
 - `pnpm verify:local` 通过；
+- Release workflow `45205327733` 成功；
 - `pnpm test` 全绿：shared 42（flow schema）、database v056/v054/仓储、core 28（schedule/trigger）、web 6（路由）+ 3（helper）；
 - 迁移版本断言全部同步到 56。
 

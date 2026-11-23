@@ -4,7 +4,7 @@
  * 用法：
  *   node scripts/assets/check-assets.mjs
  *   node scripts/assets/check-assets.mjs --write-snapshot
- *   node scripts/assets/check-assets.mjs --archive-dir E:\builds\archive --json .tmp\assets.json
+ *   node scripts/assets/check-assets.mjs --archive-dir J:\builds\archive --json .tmp\assets.json
  *
  * 退出码：0 通过（允许警告）；1 有超限或快照不一致。
  */
@@ -20,7 +20,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const DEFAULT_MODELS = path.join(ROOT, 'apps/web/public/vrm/models');
 const DEFAULT_BUDGET = path.join(ROOT, 'scripts/assets/asset-budget.json');
 const DEFAULT_SNAPSHOT = path.join(ROOT, 'scripts/assets/morph-snapshots.json');
-const DEFAULT_ARCHIVE = process.env.WBFM_ARCHIVE_DIR ?? 'E:\\builds\\archive';
+const DEFAULT_ARCHIVE = process.env.WBFM_ARCHIVE_DIR ?? 'J:\\builds\\archive';
 const MB = 1024 * 1024;
 
 function parseArgs(argv) {

@@ -54,5 +54,5 @@
 
 - [x] M6.1 `pnpm check`
 - [x] M6.2 `pnpm verify:local`
-- [ ] M6.3 版本总结、发行说明、博客、版本号 4.26.0
+- [x] M6.3 版本总结、发行说明、博客、版本号 4.26.0
 - [ ] M6.4 合并 main、tag、安装包与 Release

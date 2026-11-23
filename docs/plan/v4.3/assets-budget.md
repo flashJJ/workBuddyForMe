@@ -47,7 +47,7 @@ pnpm check:assets
 ## 4. 报告与边界
 
 - `node scripts/assets/check-assets.mjs --json .tmp/assets-report.json` 输出机器可读报告。
-- 安装包检查默认读取 `E:\builds\archive`，可用 `--archive-dir` 或 `WBFM_ARCHIVE_DIR` 覆盖；目录不存在时跳过，不影响干净检出。
+- 安装包检查默认读取 `J:\builds\archive`，可用 `--archive-dir` 或 `WBFM_ARCHIVE_DIR` 覆盖；目录不存在时跳过，不影响干净检出。
 - 贴图分类按图片名启发式判断，未命名图片按颜色贴图处理；后续可在 B 阶段补材质级分类。
 - 本阶段只做扫描与门槛，不自动压缩、不重排 morph、不修改 VRM 文件。
 

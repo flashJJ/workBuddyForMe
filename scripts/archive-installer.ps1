@@ -6,14 +6,14 @@
 #
 # 用法：
 #   powershell -NoProfile -ExecutionPolicy Bypass -File scripts/archive-installer.ps1
-#   powershell -File scripts/archive-installer.ps1 -Source E:\builds\wbfm-v160-fix1
+#   powershell -File scripts/archive-installer.ps1 -Source J:\builds\wbfm-v160-fix1
 #   powershell -File scripts/archive-installer.ps1 -Copy              # 复制而非移动
 #   powershell -File scripts/archive-installer.ps1 -KeepIntermediate  # 保留 win-unpacked（只清最终目录）
 #   powershell -File scripts/archive-installer.ps1 -SkipClean         # 归档后**不清** Source 目录（等价 v1.9 行为）
 #
 # 可覆盖项（参数优先）：
 #   -Source       默认 <repo>\apps\desktop\release（dist:win 的默认输出目录）
-#   -ArchiveRoot  默认 $env:WBFM_DIST_ARCHIVE，再缺省 E:\builds\archive
+#   -ArchiveRoot  默认 $env:WBFM_DIST_ARCHIVE，再缺省 J:\builds\archive
 #   -Version      默认根 package.json 的 version
 param(
     [string]$Source,
@@ -31,7 +31,7 @@ if (-not $Source) {
     $Source = Join-Path $repoRoot 'apps\desktop\release'
 }
 if (-not $ArchiveRoot) {
-    $ArchiveRoot = if ($env:WBFM_DIST_ARCHIVE) { $env:WBFM_DIST_ARCHIVE } else { 'E:\builds\archive' }
+    $ArchiveRoot = if ($env:WBFM_DIST_ARCHIVE) { $env:WBFM_DIST_ARCHIVE } else { 'J:\builds\archive' }
 }
 if (-not $Version) {
     $rootPkg = Get-Content (Join-Path $repoRoot 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
