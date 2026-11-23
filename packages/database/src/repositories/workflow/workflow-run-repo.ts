@@ -189,6 +189,18 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return mapRun(this.getRunRow(id)!);
     },
 
+    /** v4.24：流程是否有在途运行（定时单飞保护） */
+    hasActiveRun(workflowId: string): boolean {
+      const row = db
+        .prepare(
+          `SELECT 1 AS hit FROM workflow_runs
+           WHERE workflow_id = ? AND status IN ('queued','running','waiting_human')
+           LIMIT 1`,
+        )
+        .get(workflowId) as { hit: number } | undefined;
+      return Boolean(row);
+    },
+
     /** v0.9：启动恢复扫描；activeIds 为当前进程内存里仍有执行者的 run（不收敛） */
     findRecoverableRuns(activeIds: ReadonlySet<string>): RecoverableRuns {
       const rows = db

@@ -61,6 +61,7 @@ function EditorInner({ flowId }: { flowId: string }) {
   const [runId, setRunId] = React.useState<string | null>(searchParams.get('run'));
   const [runDialogOpen, setRunDialogOpen] = React.useState(false);
   const [servingOpen, setServingOpen] = React.useState(false);
+  const [scheduleOpen, setScheduleOpen] = React.useState(false);
   const [lastRunInput, setLastRunInput] = React.useState<Record<string, unknown>>({});
   const live = useFlowRunEvents(runId);
   const centerRef = React.useRef<HTMLDivElement>(null);
@@ -211,11 +212,13 @@ function EditorInner({ flowId }: { flowId: string }) {
       startFields={startFields}
       lastRunInput={lastRunInput}
       servingOpen={servingOpen}
+      scheduleOpen={scheduleOpen}
       published={data.workflow.status === 'published'}
       onSave={save}
       onValidate={validate}
       onPublish={publish}
       onServing={() => setServingOpen(true)}
+      onSchedule={() => setScheduleOpen(true)}
       onRun={() => setRunDialogOpen(true)}
       onAddNode={addNode}
       onNodesChange={onNodesChange}
@@ -232,6 +235,7 @@ function EditorInner({ flowId }: { flowId: string }) {
       onCloseRun={() => setRunId(null)}
       onRerun={() => setRunDialogOpen(true)}
       onCloseEndpoint={() => setServingOpen(false)}
+      onCloseSchedule={() => setScheduleOpen(false)}
     />
   );
 }

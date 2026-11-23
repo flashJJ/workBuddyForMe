@@ -120,6 +120,7 @@ export {
   FLOW_UNATTENDED_POLICY_MODES,
   FLOW_DIAGNOSTIC_SEVERITIES,
   FLOW_EVENT_TYPES,
+  FLOW_SCHEDULE_LAST_STATUSES,
 } from './flow';
 export type {
   FlowStatus,
@@ -140,6 +141,8 @@ export type {
   FlowUnattendedPolicy,
   WorkflowEndpointView,
   WorkflowEndpointSecretView,
+  FlowScheduleLastStatus,
+  FlowScheduleView,
 } from './flow';
 export type { PermissionLevel, PermissionAction, ToolPermission } from './permission';
 export type { StageSceneRecord } from './stage';

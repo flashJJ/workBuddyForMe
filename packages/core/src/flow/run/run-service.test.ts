@@ -1,4 +1,4 @@
-﻿import type { FlowHumanSubmitInput } from '@wbfm/shared/schemas';
+import type { FlowHumanSubmitInput } from '@wbfm/shared/schemas';
 import { createDatabase } from '@wbfm/database';
 import {
   createWorkflowRepository,

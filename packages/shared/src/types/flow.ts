@@ -111,6 +111,31 @@ export interface WorkflowRunView {
   interruptReason: string | null;
 }
 
+/** v4.24 定时触发配置（一个流程至多一条） */
+export const FLOW_SCHEDULE_LAST_STATUSES = [
+  'created',
+  'skipped_busy',
+  'error',
+  'disabled',
+] as const;
+export type FlowScheduleLastStatus = (typeof FLOW_SCHEDULE_LAST_STATUSES)[number];
+
+export interface FlowScheduleView {
+  id: string;
+  workflowId: string;
+  cron: string;
+  enabled: boolean;
+  /** 调度触发时传给 start 节点的入参（不含 scheduledAt / scheduleId） */
+  input: Record<string, unknown> | null;
+  /** 下次执行时间（ISO） */
+  nextRunAt: string;
+  lastRunAt: string | null;
+  lastRunId: string | null;
+  lastStatus: FlowScheduleLastStatus | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ──────────────────────── v0.9 服务化（端点/策略） ──────────────────────── */
 
 export const FLOW_ENDPOINT_STATUSES = ['enabled', 'disabled'] as const;

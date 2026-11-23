@@ -12,5 +12,6 @@ export * from './queue/event-bus';
 export * from './queue/run-queue';
 export * from './queue/terminal-wait';
 export * from './queue/recovery-scanner';
+export * from './schedule';
 export * from './starters/starters';
 export * from './starters/seed-starter-flows';

@@ -1,5 +1,6 @@
 /** flowEditor 命名空间：流程画布编辑器（编辑器骨架/工具栏/节点面板/节点元数据/配置表单/试运行；endpoint 子域拆分至 flow-editor-endpoint） */
 import { zhFlowEditorEndpoint } from './flow-editor-endpoint';
+import { zhFlowEditorSchedule } from './flow-editor-schedule';
 
 export const zhFlowEditor = {
   editor: {
@@ -287,4 +288,5 @@ export const zhFlowEditor = {
     close: '关闭',
   },
   endpoint: zhFlowEditorEndpoint,
+  schedule: zhFlowEditorSchedule,
 };

@@ -52,6 +52,7 @@ import { migrateV050 } from './v050-memory-edges';
 import { migrateV051 } from './v051-attachment-refs';
 import { migrateV052 } from './v052-vrm-voice';
 import { migrateV053 } from './v053-task-run-checkpoints';
+import { migrateV054 } from './v054-flow-schedules';
 
 interface Migration {
   version: number;
@@ -283,6 +284,11 @@ const MIGRATIONS: Migration[] = [
     version: 53,
     description: 'v4.7 P1: task_run_checkpoints + agent_runs.resumed_from_run_id（续跑检查点）',
     up: migrateV053,
+  },
+  {
+    version: 54,
+    description: 'v4.24 P1: workflow_schedules 定时触发配置（纯加法）',
+    up: migrateV054,
   },
 ];
 
