@@ -48,6 +48,8 @@ export const POST = defineRoute(({ request, services }) => {
   if (process.env.WBFM_MOCK_AI !== '1') throw ApiError.notFound('测试重置接口');
   // 顺序重要：先停定时器与数据库连接，避免删除目录时仍有句柄（Windows 会 EPERM）
   stopServerScheduler();
+  // v4.24：定时调度器与数据库生命周期绑定，重置前必须停止，避免残留 tick 访问已关闭连接
+  services.flowSchedules.scheduler.dispose();
   services.flowRunner.dispose();
   resetVoiceRuntime();
   // 编译队列是 core 模块级单例（绑定首次 deps），不重置会继续用旧库：上传后永远「待编译」
