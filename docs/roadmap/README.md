@@ -663,6 +663,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v4.22 | 会编排：Controller Pipeline 三段装配与 Flow 就绪集合并行调度 | ✅ 已发布（2026-11-23，`v4.22.0`） | [选题](../plan/v4.22/README.md) · [规格](../plan/v4.22/spec.md) · [契约](../plan/v4.22/contracts.md) · [任务](../plan/v4.22/tasks.md) · [总结](../plan/v4.22/version-summary.md) | [发行说明](v4.22.0-release-notes.md) | [blog/v4.22](../../blog/v4.22/) 7 篇 | [`v4.22.0`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.22.0) |
 | v4.23 | 会扛事：Flow 持久化执行、自动续跑、重试退避与节点超时 | ✅ 已发布（2026-11-23，`v4.23.0`） | [选题](../plan/v4.23/README.md) · [规格](../plan/v4.23/spec.md) · [契约](../plan/v4.23/contracts.md) · [任务](../plan/v4.23/tasks.md) · [总结](../plan/v4.23/version-summary.md) | [发行说明](v4.23.0-release-notes.md) | [blog/v4.23](../../blog/v4.23/) 7 篇 | [`v4.23.0`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.23.0) |
 | v4.24 | 会守时：cron 定时触发、持久化调度、单飞与错过补偿 | ✅ 已发布（2026-11-23，`v4.24.0`） | [选题](../plan/v4.24/README.md) · [规格](../plan/v4.24/spec.md) · [契约](../plan/v4.24/contracts.md) · [任务](../plan/v4.24/tasks.md) · [总结](../plan/v4.24/version-summary.md) | [发行说明](v4.24.0-release-notes.md) | [blog/v4.24](../../blog/v4.24/) 7 篇 | [`v4.24.0`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.24.0) |
+| v4.25 | 会来事：Webhook 与本地文件监听触发 | 📋 规划中（`feat/v4.25-planning`） | [选题](../plan/v4.25/README.md) · [规格](../plan/v4.25/spec.md) · [契约](../plan/v4.25/contracts.md) · [任务](../plan/v4.25/tasks.md) | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
 
