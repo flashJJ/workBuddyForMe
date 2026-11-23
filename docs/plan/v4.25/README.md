@@ -1,6 +1,6 @@
 # v4.25 选题：会来事
 
-> 状态：📋 规划中（分支 `feat/v4.25-planning`）
+> 状态：✅ 已发布（2026-11-23，`v4.25.0`）
 > 主题：**会来事**——Webhook 与本地文件监听触发 Flow
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 任务：[tasks.md](./tasks.md)
 > 原则：默认关闭；仅本机可达；每流程可配多条触发器；事件触发一律按无人值守处理
