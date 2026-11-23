@@ -93,6 +93,7 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
     const { runId, events } = startManual(wf.id);
 
     let submitted = false;
+    let resumedAfterApprove = false;
     for await (const ev of events) {
       if (ev.type === 'node_waiting_human' && ev.nodeId === 'review') {
         expect(runs.getRun(runId)?.status).toBe('waiting_human');
@@ -100,8 +101,14 @@ describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
         expect(service.submitHuman(runId, 'review', body)).toBe(true);
         submitted = true;
       }
+      // v4.24 修复：批准后继续执行的下一个节点开始时，运行状态应回到 running
+      if (ev.type === 'node_started' && ev.nodeId === 'end') {
+        expect(runs.getRun(runId)?.status).toBe('running');
+        resumedAfterApprove = true;
+      }
     }
     expect(submitted).toBe(true);
+    expect(resumedAfterApprove).toBe(true);
     expect(runs.getRun(runId)?.status).toBe('succeeded');
     expect(runs.getRun(runId)?.output).toBe(true);
   });

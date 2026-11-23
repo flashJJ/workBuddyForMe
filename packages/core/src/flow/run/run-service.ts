@@ -250,10 +250,15 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
         approved: body.approved,
         values: body.values ?? {},
       };
-      return waiters.resolve(humanKey(runId, nodeId), decision);
+      const resolved = waiters.resolve(humanKey(runId, nodeId), decision);
+      // v4.24 修复：批准即恢复执行，状态先回 running；否则审批后写操作在途崩溃会被误判为纯等待
+      if (resolved) runs.clearWaitingHuman(runId, nodeId);
+      return resolved;
     },
     submitToolConfirmation(runId, nodeId, allowed) {
-      return waiters.resolve(toolKey(runId, nodeId), allowed);
+      const resolved = waiters.resolve(toolKey(runId, nodeId), allowed);
+      if (resolved) runs.clearWaitingHuman(runId, nodeId);
+      return resolved;
     },
     cancel(runId) {
       const entry = active.get(runId);

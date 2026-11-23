@@ -139,6 +139,17 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       return mapRun(this.getRunRow(id)!);
     },
 
+    /**
+     * v4.24 修复：等待节点落定后状态回到 running。
+     * 只清对应节点的挂起，避免并行分支 Started 时误清真正等待中的人工节点。
+     */
+    clearWaitingHuman(id: string, nodeId: string): void {
+      db.prepare(
+        `UPDATE workflow_runs SET status = 'running', wait_node_id = NULL
+         WHERE id = @id AND status = 'waiting_human' AND wait_node_id = @nodeId`,
+      ).run({ id, nodeId });
+    },
+
     /** v0.9：进程重启时把在途运行收敛为 interrupted（终态）；非在途状态返回 null */
     markInterrupted(id: string, reason: string): WorkflowRunView | null {
       const result = db

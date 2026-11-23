@@ -115,6 +115,14 @@ describe('workflow-run-repo：运行状态机与节点记录', () => {
     expect(run.status).toBe('queued');
     expect(runs.startRun(run.id)?.status).toBe('running');
     expect(runs.markWaitingHuman(run.id, 'review')?.waitNodeId).toBe('review');
+    // v4.24 修复：等待节点落定后回到 running，供崩溃恢复区分「真等待」与「继续执行中」
+    runs.clearWaitingHuman(run.id, 'other'); // 非等待节点：幂等空操作
+    expect(runs.getRun(run.id)?.status).toBe('waiting_human');
+    runs.clearWaitingHuman(run.id, 'review');
+    expect(runs.getRun(run.id)?.status).toBe('running');
+    expect(runs.getRun(run.id)?.waitNodeId).toBeNull();
+    runs.clearWaitingHuman(run.id, 'review'); // 已解除：幂等空操作
+    expect(runs.getRun(run.id)?.status).toBe('running');
 
     const node = runs.addNodeExecution(run.id, 'start', { topic: '周报' });
     expect(node.status).toBe('running');

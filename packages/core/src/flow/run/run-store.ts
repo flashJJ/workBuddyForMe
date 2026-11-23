@@ -36,17 +36,21 @@ export function createFlowRunStore(
           runs.finishNodeExecution(id, 'succeeded', {
             outputs: event.outputs,
           });
+          // 等待节点已落定（人工提交或非交互自动拒绝）：状态回 running
+          runs.clearWaitingHuman(runId, event.nodeId);
           break;
         }
         case 'node_failed': {
           // 引用解析失败等场景可能没有前置 node_started，这里补一条记录
           const id = ensureNodeExecution(runId, event.nodeId);
           runs.finishNodeExecution(id, 'failed', { error: event.message });
+          runs.clearWaitingHuman(runId, event.nodeId);
           break;
         }
         case 'node_skipped': {
           const id = ensureNodeExecution(runId, event.nodeId);
           runs.finishNodeExecution(id, 'skipped', {});
+          runs.clearWaitingHuman(runId, event.nodeId);
           break;
         }
         case 'node_waiting_human':
