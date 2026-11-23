@@ -22,8 +22,8 @@ describe('v048 迁移：记忆审计轮转', () => {
   it('全新库：版本 49，聚合表与 created_at 索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(54);
-    expect(LATEST_SCHEMA_VERSION).toBe(54);
+    expect(getSchemaVersion(db)).toBe(55);
+    expect(LATEST_SCHEMA_VERSION).toBe(55);
 
     expect(tables(db).has('memory_event_rollups')).toBe(true);
     const columns = new Set(
@@ -45,8 +45,8 @@ describe('v048 迁移：记忆审计轮转', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([48, 49, 50, 51, 52, 53, 54]);
-    expect(getSchemaVersion(db)).toBe(54);
+    expect(result.applied).toEqual([48, 49, 50, 51, 52, 53, 54, 55]);
+    expect(getSchemaVersion(db)).toBe(55);
     expect(
       (db.prepare(`SELECT COUNT(*) AS n FROM memory_events`).get() as { n: number }).n,
     ).toBe(1);

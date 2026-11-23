@@ -1,6 +1,7 @@
 /** flowEditor namespace: flow canvas editor (en; endpoint subgroup split into flow-editor-endpoint) */
 import { enFlowEditorEndpoint } from './flow-editor-endpoint';
 import { enFlowEditorSchedule } from './flow-editor-schedule-en';
+import { enFlowEditorTrigger } from './flow-editor-trigger-en';
 
 export const enFlowEditor = {
   editor: {
@@ -293,4 +294,5 @@ export const enFlowEditor = {
   },
   endpoint: enFlowEditorEndpoint,
   schedule: enFlowEditorSchedule,
+  trigger: enFlowEditorTrigger,
 };

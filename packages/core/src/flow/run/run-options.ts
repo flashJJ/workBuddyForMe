@@ -1,4 +1,5 @@
 import type { FlowTrigger, FlowUnattendedPolicy } from '@wbfm/shared/types';
+import { isUnattendedFlowTrigger } from '@wbfm/shared/types';
 import type { WorkflowEndpointRepository } from '@wbfm/database';
 import type { CompiledFlow } from '../graph/types';
 import { computeReplayClosure } from '../policy/replay';
@@ -37,7 +38,8 @@ export function resolveRunRuntimeOverrides(params: ResolveOverridesParams): RunR
     const policy: FlowUnattendedPolicy =
       params.endpoints?.getById(params.endpointId)?.policy ?? { mode: 'deny_all' };
     overrides.unattendedPolicy = policy;
-  } else if (params.trigger === 'schedule') {
+  } else if (isUnattendedFlowTrigger(params.trigger)) {
+    // 定时/Webhook/文件触发无端点配置：安全兜底全拒绝
     overrides.unattendedPolicy = { mode: 'deny_all' };
   }
   return overrides;

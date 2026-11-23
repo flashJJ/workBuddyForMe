@@ -2,6 +2,7 @@ import { PublicEndpointError, StartInputValidationError } from '@wbfm/core/servi
 import { getServices, type ServiceContainer } from './container';
 import type { EndpointTransport } from '@wbfm/core/serving';
 import type { WorkflowEndpointView } from '@wbfm/shared/types';
+import type { FlowTriggerView } from '@wbfm/shared/types';
 
 /**
  * v0.9 公开路由组（/api/public/**）：
@@ -151,4 +152,70 @@ export function definePublicRoute<P extends Record<string, string> = Record<stri
     }
   };
   return endpoint as PublicEndpoint<P>;
+}
+
+/* ───────────── v4.25 事件触发公开面：Host → Secret → 限流 → handler ───────────── */
+
+export interface PublicTriggerRouteContext<P extends Record<string, string> = Record<string, string>> {
+  request: Request;
+  params: P;
+  services: ServiceContainer;
+  trigger: FlowTriggerView;
+}
+
+export type PublicTriggerRouteHandler<P extends Record<string, string> = Record<string, string>> = (
+  context: PublicTriggerRouteContext<P>,
+) => Promise<Response> | Response;
+
+const TRIGGER_RATE_LIMIT_PER_MIN = 30;
+
+/**
+ * Webhook 触发公开路由：
+ * - 与端点公开面共用回环 Host 守卫与统一错误包络；
+ * - 鉴权走触发器一次性 Secret（Bearer），不复用端点密钥。
+ */
+export function definePublicTriggerRoute<P extends Record<string, string> = Record<string, string>>(
+  handler: PublicTriggerRouteHandler<P>,
+): PublicEndpoint<P> {
+  const route = async (
+    request: Request,
+    context: { params?: P | Promise<P> } = {},
+  ): Promise<Response> => {
+    try {
+      assertLoopbackHost(request);
+      const services = getServices();
+      const rawParams = context.params;
+      const params: P = rawParams ? await rawParams : ({} as P);
+      const triggerId = params.triggerId;
+      if (!triggerId) return publicJsonError('not_found', 404, '触发器不存在');
+
+      const auth = services.flowTriggers.service.authenticateWebhook(
+        triggerId,
+        request.headers.get('authorization'),
+      );
+      if (!auth.ok) {
+        return auth.reason === 'not_found'
+          ? publicJsonError('not_found', 404, '触发器不存在或已禁用')
+          : publicJsonError('unauthorized', 401, 'Secret 无效');
+      }
+      const decision = services.rateLimiter.check(
+        `flow-trigger:${triggerId}`,
+        TRIGGER_RATE_LIMIT_PER_MIN,
+      );
+      if (!decision.allowed) {
+        return publicJsonError('rate_limited', 429, '调用过于频繁，请稍后再试', undefined, {
+          headers: { 'retry-after': String(decision.retryAfterSec) },
+        });
+      }
+      return await handler({ request, params, services, trigger: auth.trigger });
+    } catch (error) {
+      const publicError = asPublicEndpointError(error);
+      if (publicError) {
+        return publicJsonError(publicError.code, publicError.status, publicError.message);
+      }
+      console.error('[flow-trigger] 未处理错误：', error);
+      return publicJsonError('internal_error', 500, '服务器内部错误');
+    }
+  };
+  return route as PublicEndpoint<P>;
 }

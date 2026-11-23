@@ -8,7 +8,7 @@ describe('v054 流程定时配置', () => {
     const db = createDatabase(':memory:');
     const result = applyMigrations(db);
     expect(result.to).toBe(LATEST_SCHEMA_VERSION);
-    expect(getSchemaVersion(db)).toBe(54);
+    expect(getSchemaVersion(db)).toBe(55);
 
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='workflow_schedules'")

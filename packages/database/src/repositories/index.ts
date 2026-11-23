@@ -7,6 +7,7 @@ export * from './mcp';
 export * from './work';
 export * from './meeting';
 export * from './workflow';
+export * from './trigger';
 export * from './provider';
 export * from './emotion';
 export * from './ops';

@@ -44,8 +44,8 @@ export const FLOW_NODE_EXEC_STATUSES = [
 ] as const;
 export type FlowNodeExecStatus = (typeof FLOW_NODE_EXEC_STATUSES)[number];
 
-/** 运行触发方式：v0.8 仅 manual/chat 有人在场；api/mcp/schedule 为 v0.9/v0.10 预留 */
-export const FLOW_TRIGGERS = ['manual', 'chat', 'api', 'mcp', 'schedule'] as const;
+/** 运行触发方式：manual/chat 有人在场；api/mcp/schedule/webhook/file 为无人值守触发 */
+export const FLOW_TRIGGERS = ['manual', 'chat', 'api', 'mcp', 'schedule', 'webhook', 'file'] as const;
 export type FlowTrigger = (typeof FLOW_TRIGGERS)[number];
 
 /** 工作流视图（列表/详情） */

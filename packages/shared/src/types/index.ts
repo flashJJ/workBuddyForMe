@@ -144,6 +144,18 @@ export type {
   FlowScheduleLastStatus,
   FlowScheduleView,
 } from './flow';
+export {
+  FLOW_TRIGGER_KINDS,
+  FLOW_TRIGGER_LAST_STATUSES,
+  UNATTENDED_FLOW_TRIGGERS,
+  isUnattendedFlowTrigger,
+} from './trigger';
+export type {
+  FlowTriggerKind,
+  FlowTriggerLastStatus,
+  FlowFileTriggerConfig,
+  FlowTriggerView,
+} from './trigger';
 export type { PermissionLevel, PermissionAction, ToolPermission } from './permission';
 export type { StageSceneRecord } from './stage';
 export type {

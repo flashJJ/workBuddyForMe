@@ -1,4 +1,5 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
+import { isUnattendedFlowTrigger } from '@wbfm/shared/types';
 import type { FlowNode, FlowNodeType } from '@wbfm/shared/schemas';
 import { resolveFlowNodePolicy } from '@wbfm/shared/schemas';
 import { toolNodeHandler, type ToolNodeConfig } from '../handlers/tool';
@@ -75,9 +76,8 @@ async function* runToolNodeWithGate(
   const permission = tool.permission ?? 'read';
   let allowed = true;
   let denyReason: string | undefined;
-  // v4.24：定时触发与 api/mcp 同属无人值守，写/危险工具默认拒绝
-  const unattended =
-    ctx.trigger === 'api' || ctx.trigger === 'mcp' || ctx.trigger === 'schedule';
+  // v4.24/v4.25：api/mcp/定时/事件触发同属无人值守，写/危险工具默认拒绝
+  const unattended = isUnattendedFlowTrigger(ctx.trigger);
   if (permission !== 'read') {
     if (unattended && ctx.evaluateUnattended) {
       // v0.9 无人值守：端点策略快照裁决，永不挂起等待人工

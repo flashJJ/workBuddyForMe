@@ -20,6 +20,7 @@ import { DiagnosticsBar } from '../panels/diagnostics-bar';
 import { RunInputDialog } from '../panels/run-input-dialog';
 import { EndpointDialog } from '../endpoint/endpoint-dialog';
 import { ScheduleDialog } from '../schedule';
+import { TriggerDialog } from '../trigger';
 import { ExecutionPanel } from '@/features/flow-execution';
 import type { FlowStatusContextValue } from '../panels/flow-status-context';
 import type { FlowCanvasEdge, FlowCanvasNode } from '../canvas/graph-utils';
@@ -61,12 +62,14 @@ export interface EditorShellProps {
   lastRunInput: Record<string, unknown>;
   servingOpen: boolean;
   scheduleOpen: boolean;
+  triggersOpen: boolean;
   published: boolean;
   onSave: () => void;
   onValidate: () => void;
   onPublish: () => void;
   onServing: () => void;
   onSchedule: () => void;
+  onTriggers: () => void;
   onRun: () => void;
   onAddNode: (type: FlowNodeType, position?: { x: number; y: number }) => void;
   onNodesChange: (changes: NodeChange<FlowCanvasNode>[]) => void;
@@ -84,6 +87,7 @@ export interface EditorShellProps {
   onRerun: () => void;
   onCloseEndpoint: () => void;
   onCloseSchedule: () => void;
+  onCloseTriggers: () => void;
 }
 
 export function EditorShell({
@@ -109,12 +113,14 @@ export function EditorShell({
   lastRunInput,
   servingOpen,
   scheduleOpen,
+  triggersOpen,
   published,
   onSave,
   onValidate,
   onPublish,
   onServing,
   onSchedule,
+  onTriggers,
   onRun,
   onAddNode,
   onNodesChange,
@@ -132,6 +138,7 @@ export function EditorShell({
   onRerun,
   onCloseEndpoint,
   onCloseSchedule,
+  onCloseTriggers,
 }: EditorShellProps) {
   return (
     <div className="flex h-screen flex-col">
@@ -148,6 +155,7 @@ export function EditorShell({
         onPublish={onPublish}
         onServing={onServing}
         onSchedule={onSchedule}
+        onTriggers={onTriggers}
         onRun={onRun}
       />
       <div className="flex min-h-0 flex-1">
@@ -213,6 +221,12 @@ export function EditorShell({
         workflowId={workflowId}
         published={published}
         onClose={onCloseSchedule}
+      />
+      <TriggerDialog
+        open={triggersOpen}
+        workflowId={workflowId}
+        published={published}
+        onClose={onCloseTriggers}
       />
     </div>
   );

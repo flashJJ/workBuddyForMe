@@ -26,9 +26,11 @@ export const PATCH = defineRoute(async ({ request, params, services }) => {
   return jsonOk(wf);
 });
 
-/** DELETE /api/flows/:id：级联删除版本/运行/节点执行 */
+/** DELETE /api/flows/:id：级联删除版本/运行/节点执行与触发器 */
 export const DELETE = defineRoute(({ params, services }) => {
   const { id } = parseParams(idParamSchema, params);
   createWorkflowRepository(services.db).deleteWorkflow(id);
+  // v4.25：触发器随流程级联删除，立即释放文件监听句柄
+  services.flowTriggers.watcher.reconcile();
   return jsonOk({ id });
 });

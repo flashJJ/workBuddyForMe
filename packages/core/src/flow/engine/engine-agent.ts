@@ -1,4 +1,5 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
+import { isUnattendedFlowTrigger } from '@wbfm/shared/types';
 import {
   AGENT_DESKTOP_SCOPE,
   readAgentBudget,
@@ -31,9 +32,8 @@ export async function* runAgentNode(
   if (!goal) throw new Error('agent 节点目标为空（编译期应已拦截）');
 
   const toolScopes = readAgentToolScopes(config);
-  // v4.24：定时触发同属无人值守，桌面工具域同样禁单
-  const unattended =
-    ctx.trigger === 'api' || ctx.trigger === 'mcp' || ctx.trigger === 'schedule';
+  // v4.24/v4.25：定时与事件触发同属无人值守，桌面工具域同样禁单
+  const unattended = isUnattendedFlowTrigger(ctx.trigger);
   if (unattended && toolScopes.includes(AGENT_DESKTOP_SCOPE)) {
     throw new Error(policyDenyText('desktop_control_banned', 'mouse_click'));
   }

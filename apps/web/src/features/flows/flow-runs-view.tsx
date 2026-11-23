@@ -30,6 +30,9 @@ const TRIGGER_KEYS: Record<string, MessageKey> = {
   chat: 'flows.runs.trigger.chat',
   api: 'flows.runs.trigger.api',
   mcp: 'flows.runs.trigger.mcp',
+  schedule: 'flows.runs.trigger.schedule',
+  webhook: 'flows.runs.trigger.webhook',
+  file: 'flows.runs.trigger.file',
 };
 
 const STATUS_OPTIONS = [
