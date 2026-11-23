@@ -2,7 +2,7 @@
 /**
  * v1.4 M2 协作通道手工冒烟脚本（不计 CI 门禁）。
  *
- * 用途：对已启动的本地 workBuddy web 服务发一次真实协作运行，
+ * 用途：对已启动的本地 WorkBuddyForMe web 服务发一次真实协作运行，
  * 端到端验证 三级模型回落 + Planner/Executor/Reviewer 真模型通道：
  *   1. POST /api/agent/runs 建行；
  *   2. GET  /api/agent/runs/:id/events 订阅 SSE，收 agent_* 帧到 done/error；

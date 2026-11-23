@@ -1,5 +1,5 @@
 /**
- * WorkBuddy 数据库查看工具（零额外依赖）。
+ * WorkBuddyForMe 数据库查看工具（零额外依赖）。
  *
  * 用法：
  *   node scripts/wbfm-db show-docs                    # 所有文档概览

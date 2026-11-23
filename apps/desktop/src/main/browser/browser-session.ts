@@ -82,7 +82,7 @@ export function createBrowserSessionManager(): BrowserSessionManager {
       show: true,
       width: 1000,
       height: 720,
-      title: 'WorkBuddy 隔离网页',
+      title: 'WorkBuddyForMe 隔离网页',
       webPreferences: {
         session: ses,
         nodeIntegration: false,

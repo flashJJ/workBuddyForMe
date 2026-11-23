@@ -56,7 +56,7 @@ export async function startComputerControl(deps: {
     });
     overlay = createClickOverlay();
     const handlers: ComputerChannelHandlers = {
-      // 截图前最小化主窗口，避免把 WorkBuddy 自身截进画面干扰模型定位
+      // 截图前最小化主窗口，避免把 WorkBuddyForMe 自身截进画面干扰模型定位
       snapshot: async (args) => {
         const win = deps.getMainWindow();
         const wasVisible = win?.isVisible() ?? false;

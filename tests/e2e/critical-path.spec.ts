@@ -28,7 +28,7 @@ const TINY_PNG = Buffer.from(
   'base64',
 );
 
-test.describe.serial('WorkBuddy 关键路径', () => {
+test.describe.serial('WorkBuddyForMe 关键路径', () => {
   test('① 配置供应商与模型，连接测试成功', async ({ page }) => {
     await page.goto('/settings');
     await waitForHydrated(page);

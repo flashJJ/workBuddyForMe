@@ -6,7 +6,7 @@ export const zhTasks = {
   conversationAria: '选择会话',
   unnamedConversation: '(未命名会话)',
   goalLabel: '任务目标',
-  goalPlaceholder: '描述要完成的桌面任务，例如：打开记事本，写一句「你好 WorkBuddy」并保存到桌面。',
+  goalPlaceholder: '描述要完成的桌面任务，例如：打开记事本，写一句「你好 WorkBuddyForMe」并保存到桌面。',
   maxStepsLabel: '步数上限',
   start: '开始',
   conversationRequired: '请先选择会话',
@@ -130,7 +130,7 @@ export const enTasks = {
   unnamedConversation: '(Untitled conversation)',
   goalLabel: 'Task goal',
   goalPlaceholder:
-    'Describe the desktop task, e.g. open Notepad, write “Hello WorkBuddy” and save it to the desktop.',
+    'Describe the desktop task, e.g. open Notepad, write “Hello WorkBuddyForMe” and save it to the desktop.',
   maxStepsLabel: 'Max steps',
   start: 'Start',
   conversationRequired: 'Please select a conversation first',

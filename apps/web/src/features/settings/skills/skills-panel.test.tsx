@@ -20,7 +20,7 @@ function makeSkill(partial: Partial<SkillInfo> & { id: string; name: string }): 
       promptTemplates: [{ name: 't', order: 0, content: '内容' }],
       allowedTools: ['knowledge_search'],
       examples: [],
-      author: 'WorkBuddy 内置',
+      author: 'WorkBuddyForMe 内置',
     },
     error: partial.error ?? null,
     exists: partial.exists ?? true,

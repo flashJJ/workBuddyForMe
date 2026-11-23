@@ -9,7 +9,7 @@
     { "kind": "preference", "content": "用户不吃香菜，点餐时都会特别说明不要香菜", "importance": 0.75 },
     { "kind": "fact", "content": "用户养了一只橘猫，名字叫橙子", "importance": 0.8 },
     { "kind": "event", "content": "用户下周六搬家，从余杭搬到西湖区，已经约好了搬家公司", "importance": 0.7 },
-    { "kind": "fact", "content": "用户的副业项目是 WorkBuddy，一个本地优先的私人 AI 助手", "importance": 0.85 },
+    { "kind": "fact", "content": "用户的副业项目是 WorkBuddyForMe，一个本地优先的私人 AI 助手", "importance": 0.85 },
     { "kind": "event", "content": "用户每周三和周五晚上去跑步，每次五公里", "importance": 0.6 },
     { "kind": "preference", "content": "用户喜欢手冲咖啡，最近在练 V60 注水手法", "importance": 0.65 },
     { "kind": "fact", "content": "用户用的主力编程语言是 TypeScript", "importance": 0.7 },
@@ -67,7 +67,7 @@
     {
       "id": "recall-sideproject",
       "question": "我业余时间在做什么项目？",
-      "anyOf": ["WorkBuddy", "workbuddy", "私人 AI", "AI 助手"]
+      "anyOf": ["WorkBuddyForMe", "私人 AI", "AI 助手"]
     },
     {
       "id": "recall-sport",

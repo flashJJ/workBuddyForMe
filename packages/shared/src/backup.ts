@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * WorkBuddy 备份归档格式（.wbfm-backup，实际是 tar.gz）。
+ * WorkBuddyForMe 备份归档格式（.wbfm-backup，实际是 tar.gz）。
  * 归档根目录包含 manifest.json（下述 schema） + 四轨道 JSON 文件 + 可选附件二进制。
  *
  * 版本演进：backup_schema_version 单调递增；恢复端按版本探测走迁移适配器链。

@@ -8,7 +8,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'WorkBuddyForMe',
-  description: '类 WorkBuddy 的私人 AI 平台：多模型对话、知识库 RAG 与助手预设',
+  description: 'WorkBuddyForMe：本地优先的私人 AI 工作台，支持多模型对话、知识库 RAG 与助手预设',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

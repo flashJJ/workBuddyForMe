@@ -27,7 +27,7 @@ const POSITIVES: Scenario[] = [
   { content: '用户养了一只橘猫叫橙子', query: '我养的猫叫什么名字？', expected: '橙子' },
   { content: '用户不吃香菜，忌口是香菜', query: '我有什么忌口？', expected: '香菜' },
   { content: '用户下周六搬家到西湖区', query: '我什么时候搬家？', expected: '搬家' },
-  { content: '用户的副业项目是 WorkBuddy', query: '我的副业项目叫什么？', expected: 'WorkBuddy' },
+  { content: '用户的副业项目是 WorkBuddyForMe', query: '我的副业项目叫什么？', expected: 'WorkBuddyForMe' },
 ];
 
 function axis(index: number): number[] {
