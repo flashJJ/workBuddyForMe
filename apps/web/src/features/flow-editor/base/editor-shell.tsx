@@ -19,6 +19,7 @@ import { ConfigPanel } from '../panels/config-panel';
 import { DiagnosticsBar } from '../panels/diagnostics-bar';
 import { RunInputDialog } from '../panels/run-input-dialog';
 import { EndpointDialog } from '../endpoint/endpoint-dialog';
+import { ScheduleDialog } from '../schedule';
 import { ExecutionPanel } from '@/features/flow-execution';
 import type { FlowStatusContextValue } from '../panels/flow-status-context';
 import type { FlowCanvasEdge, FlowCanvasNode } from '../canvas/graph-utils';
@@ -59,11 +60,13 @@ export interface EditorShellProps {
   startFields: FlowInputField[];
   lastRunInput: Record<string, unknown>;
   servingOpen: boolean;
+  scheduleOpen: boolean;
   published: boolean;
   onSave: () => void;
   onValidate: () => void;
   onPublish: () => void;
   onServing: () => void;
+  onSchedule: () => void;
   onRun: () => void;
   onAddNode: (type: FlowNodeType, position?: { x: number; y: number }) => void;
   onNodesChange: (changes: NodeChange<FlowCanvasNode>[]) => void;
@@ -80,6 +83,7 @@ export interface EditorShellProps {
   onCloseRun: () => void;
   onRerun: () => void;
   onCloseEndpoint: () => void;
+  onCloseSchedule: () => void;
 }
 
 export function EditorShell({
@@ -104,11 +108,13 @@ export function EditorShell({
   startFields,
   lastRunInput,
   servingOpen,
+  scheduleOpen,
   published,
   onSave,
   onValidate,
   onPublish,
   onServing,
+  onSchedule,
   onRun,
   onAddNode,
   onNodesChange,
@@ -125,6 +131,7 @@ export function EditorShell({
   onCloseRun,
   onRerun,
   onCloseEndpoint,
+  onCloseSchedule,
 }: EditorShellProps) {
   return (
     <div className="flex h-screen flex-col">
@@ -140,6 +147,7 @@ export function EditorShell({
         onValidate={onValidate}
         onPublish={onPublish}
         onServing={onServing}
+        onSchedule={onSchedule}
         onRun={onRun}
       />
       <div className="flex min-h-0 flex-1">
@@ -199,6 +207,12 @@ export function EditorShell({
         workflowId={workflowId}
         published={published}
         onClose={onCloseEndpoint}
+      />
+      <ScheduleDialog
+        open={scheduleOpen}
+        workflowId={workflowId}
+        published={published}
+        onClose={onCloseSchedule}
       />
     </div>
   );

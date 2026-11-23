@@ -112,6 +112,7 @@ export interface ServiceContainer {
   meetingClosure: ReturnType<typeof createMeetingClosureService>;
   runtime: ReturnType<typeof createToolRuntime>;
   flowRunner: ReturnType<typeof createFlowRunService>;
+  flowSchedules: import('./flows/flow-schedule-wiring').FlowScheduleWiring;
   endpoints: ReturnType<typeof createEndpointService>;
   rateLimiter: ReturnType<typeof createRateLimiter>;
   vrmAvatars: ReturnType<typeof createVrmAvatarService>;

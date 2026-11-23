@@ -39,6 +39,7 @@ import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver, createAgentTaskContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
+import { createFlowScheduleWiring } from './flows/flow-schedule-wiring';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
 import { createCompileRunnerService, createKnowledgeGovernanceService, ensureStarterKnowledgeBases } from '@wbfm/core/knowledge';
 import { createMcpOAuthService, createMcpRegistry } from '@wbfm/core/mcp';
@@ -177,11 +178,12 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   deps.capabilityCatalog = createCapabilityCatalog({ capabilities });
   // v0.9：端点仓储同时供 flowRunner（策略快照）与端点服务（管理/鉴权）使用，必须同一实例
   const endpointRepo = createWorkflowEndpointRepository(db);
+  const flowRuns = createWorkflowRunRepository(db);
   const flowRunner = createFlowRunService({
     deps,
     runtime,
     workflows,
-    runs: createWorkflowRunRepository(db),
+    runs: flowRuns,
     endpoints: endpointRepo,
     agentRuns,
     onEvent: (run, event, title) => {
@@ -202,15 +204,12 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   if (kbStarterCount > 0) console.info(`[knowledge] 已播种 ${kbStarterCount} 个内置知识库模板`);
   // v1.7：清理 90 天前的事件演出流水（小表，不无限增长；失败不阻断启动）
   try {
-    const purged = createEventUsageRepository(deps.db).purgeBefore(
-      Date.now() - 90 * 24 * 3600_000,
-    );
+    const purged = createEventUsageRepository(deps.db).purgeBefore(Date.now() - 90 * 24 * 3600_000);
     if (purged > 0) console.info(`[event] 已清理 ${purged} 条过期演出流水`);
   } catch (error) {
     console.warn('[event] 演出流水清理失败', error);
   }
-  deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId);
-  deps.flowToolLister = () => flowRunner.listPublishedTools();
+  deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId); deps.flowToolLister = () => flowRunner.listPublishedTools();
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
   const stageScenes = createStageSceneService(deps);
@@ -246,6 +245,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     meetingClosure,
     runtime,
     flowRunner,
+    flowSchedules: createFlowScheduleWiring({ db, workflows, runs: flowRuns, flowRunner }),
     providers: createProviderService(deps),
     providerHealth: createProviderHealthService(deps),
     models: createModelService(deps),

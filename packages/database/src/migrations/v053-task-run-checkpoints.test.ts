@@ -9,9 +9,9 @@ describe('v053 迁移：协作运行检查点', () => {
     applyMigrations(db, 52);
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([53]);
+    expect(result.applied).toEqual([53, 54]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(53);
+    expect(LATEST_SCHEMA_VERSION).toBe(54);
 
     const table = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='task_run_checkpoints'")

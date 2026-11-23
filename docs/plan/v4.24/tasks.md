@@ -1,4 +1,4 @@
-# v4.24 任务清单
+﻿# v4.24 任务清单
 
 > 状态：进行中（M0 已冻结，2026-11-23）
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 选题：[README.md](./README.md)
@@ -14,33 +14,33 @@
 
 ## M1 cron 解析
 
-- [ ] M1.1 `shared/schemas/flow/schedule.ts`：解析、匹配、下次时间
-- [ ] M1.2 单测：通配/列表/范围/步长/dom-dow OR/非法/无解
-- [ ] M1.3 保存校验与错误文案
+- [x] M1.1 `shared/schemas/flow/schedule.ts`：解析、匹配、下次时间
+- [x] M1.2 单测：通配/列表/范围/步长/dom-dow OR/非法/无解
+- [x] M1.3 保存校验与错误文案
 
 ## M2 存储与服务
 
-- [ ] M2.1 迁移 v054 + 仓储实现与单测
-- [ ] M2.2 `workflow-schedule-repo`：到期查询、原子认领、结果记录
-- [ ] M2.3 `flow/schedule/schedule-service.ts`：查询/保存/删除/立即运行
+- [x] M2.1 迁移 v054 + 仓储实现与单测
+- [x] M2.2 `workflow-schedule-repo`：到期查询、原子认领、结果记录
+- [x] M2.3 `flow/schedule/schedule-service.ts`：查询/保存/删除/立即运行
 
 ## M3 调度器与 API
 
-- [ ] M3.1 `flow/schedule/scheduler.ts`：tick、单飞、补偿、错误记录
-- [ ] M3.2 容器接线：启动调度器、dispose 停止
-- [ ] M3.3 API：GET/PUT/DELETE `/api/flows/:id/schedule` 与 `run`
-- [ ] M3.4 集成测试：到期创建、重启补偿一次、单飞跳过、禁用不触发
+- [x] M3.1 `flow/schedule/scheduler.ts`：tick、单飞、补偿、错误记录
+- [x] M3.2 容器接线：启动调度器、dispose 停止
+- [x] M3.3 API：GET/PUT/DELETE `/api/flows/:id/schedule` 与 `run`
+- [x] M3.4 集成测试：到期创建、重启补偿一次、单飞跳过、禁用不触发
 
 ## M4 UI
 
-- [ ] M4.1 工具栏「定时」入口（仅已发布可开启）
-- [ ] M4.2 定时对话框：cron、启用、下次/上次、立即运行、删除
-- [ ] M4.3 i18n 中英文案
+- [x] M4.1 工具栏「定时」入口（仅已发布可开启）
+- [x] M4.2 定时对话框：cron、启用、下次/上次、立即运行、删除
+- [x] M4.3 i18n 中英文案
 
 ## M5 验证
 
-- [ ] M5.1 定向单测与集成测试全绿
-- [ ] M5.2 `pnpm check` 与 `pnpm verify:local` 全绿
+- [x] M5.1 定向单测与集成测试全绿
+- [x] M5.2 `pnpm check` 与 `pnpm verify:local` 全绿
 
 ## M6 收口
 

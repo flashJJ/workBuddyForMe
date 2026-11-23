@@ -5,3 +5,4 @@ export * from './workflow-repo';
 export * from './workflow-run-mapper';
 export * from './workflow-run-repo';
 export * from './workflow-run-types';
+export * from './workflow-schedule-repo';

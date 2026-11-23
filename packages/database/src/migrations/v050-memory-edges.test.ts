@@ -1,4 +1,4 @@
-﻿import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 
@@ -16,8 +16,8 @@ describe('v050 迁移：记忆关系边', () => {
   it('全新库：版本 50，边表与双向索引就位', () => {
     const db = new Database(':memory:');
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(53);
-    expect(LATEST_SCHEMA_VERSION).toBe(53);
+    expect(getSchemaVersion(db)).toBe(54);
+    expect(LATEST_SCHEMA_VERSION).toBe(54);
 
     expect(names(db, 'table').has('memory_edges')).toBe(true);
     const columns = new Set(
@@ -46,8 +46,8 @@ describe('v050 迁移：记忆关系边', () => {
     ).run();
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([50, 51, 52, 53]);
-    expect(getSchemaVersion(db)).toBe(53);
+    expect(result.applied).toEqual([50, 51, 52, 53, 54]);
+    expect(getSchemaVersion(db)).toBe(54);
     expect((db.prepare(`SELECT COUNT(*) AS n FROM memories`).get() as { n: number }).n).toBe(1);
     expect((db.prepare(`SELECT COUNT(*) AS n FROM memory_edges`).get() as { n: number }).n).toBe(0);
     db.close();
