@@ -54,7 +54,7 @@
 
 | 目录 | 主题 |
 |---|---|
-| [v5.0](./v5.0/) | 大版本调研：竞品矩阵、痛点地图与主题评分（待评审）· [竞品矩阵](./v5.0/competitor-matrix.md) · [痛点地图](./v5.0/pain-point-map.md) · [主题卡](./v5.0/theme-shortlist.md) |
+| [v5.0](./v5.0/) | 大版本：**会兜底**（可靠与安全，v4.26 后启动）· [竞品矩阵](./v5.0/competitor-matrix.md) · [痛点地图](./v5.0/pain-point-map.md) · [主题卡](./v5.0/theme-shortlist.md) |
 
 ## 跨版本专题
 
