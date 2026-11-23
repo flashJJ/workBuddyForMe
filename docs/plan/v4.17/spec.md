@@ -1,7 +1,7 @@
 # v4.17 用得顺——关键路径的感知、恢复与复用
 
 > 状态：已实现（T5.1 真机视觉基线待补）
-> 关联：[v4.16 CI 稳定性](../v4.16/spec.md) · [竞品差距诊断](../../plan/v2.4-product-comparison/01-竞品体验对比与差距诊断.md) · [缺陷预防手册](../../wiki/bug-prevention-playbook.md) · [Bug 记录表](../../wiki/bug-registry.md)
+> 关联：[v4.16 CI 稳定性](../v4.16/spec.md) · [竞品差距诊断](../archive/v2/v2.4-product-comparison/01-竞品体验对比与差距诊断.md) · [缺陷预防手册](../../wiki/bug-prevention-playbook.md) · [Bug 记录表](../../wiki/bug-registry.md)
 
 ## 1. 背景
 
@@ -36,7 +36,7 @@ v4.16 把 CI 与验收的可靠性收口后，v4.15.0 安装包已可稳定真�
 
 ## 4. 竞品对照与取舍
 
-> 口径：豆包 / Trae 的结论沿用 [v2.4 竞品诊断](../v2.4-product-comparison/01-竞品体验对比与差距诊断.md)（2026-10-19 采集）；本地优先同类（Cherry Studio / Chatbox / LobeChat）为公开产品形态对照。**排期前需用 30 分钟实测复核一次**，避免照抄过时结论。
+> 口径：豆包 / Trae 的结论沿用 [v2.4 竞品诊断](../archive/v2/v2.4-product-comparison/01-竞品体验对比与差距诊断.md)（2026-10-19 采集）；本地优先同类（Cherry Studio / Chatbox / LobeChat）为公开产品形态对照。**排期前需用 30 分钟实测复核一次**，避免照抄过时结论。
 
 | 体验点 | 竞品通行做法 | 本产品现状（已核验） | v4.17 动作 |
 |---|---|---|---|

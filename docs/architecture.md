@@ -1,7 +1,7 @@
 # WorkBuddy For Me 架构设计文档
 
 > 版本：2.0（基线 v3.0.0；v4.15.0 未改动分层）｜ 状态：定稿（v3.0.0 复核）
-> 配套：[接口文档](./api.md) ｜ [开发指南](./development.md) ｜ [模块设计](./modules/) ｜ [v3.0 方案](./plan/v3.0/README.md)
+> 配套：[接口文档](./api.md) ｜ [开发指南](./development.md) ｜ [模块设计](./modules/) ｜ [v3.0 方案](./plan/archive/v3/v3.0/README.md)
 
 ## 1. 总体分层架构
 

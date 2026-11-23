@@ -1,6 +1,6 @@
 # v4.5 Spec：启动画面与开机动画
 
-> 契约文档。实现以本文件为准；与 [README](README.md)、[调研与选型](00-开机动画调研与技术选型.md) 冲突时，先改本文件再改代码。
+> 契约文档。实现以本文件为准；与 [README](./README.md)、[调研与选型](./00-开机动画调研与技术选型.md) 冲突时，先改本文件再改代码。
 
 ## 1. 范围
 
@@ -155,4 +155,4 @@ preload 仅暴露 `onMode` / `onPhase` / `onDone` / `onFail` / `notifyExited` / 
 - 单测：`boot-phases.test.ts`、`splash-window.test.ts`、`splash-timing.test.ts`。
 - e2e：`splash.spec.ts`；`smoke.spec.ts` / `pet-window.spec.ts` / `perf-baseline.mjs` 改用 `waitForMainWindow`。
 - e2e 专用 `WBFM_SPLASH_DELAY_MS=800`：让 Playwright 先 attach，避免首个窗口创建早于调试连接。
-- 手测矩阵见 [00 文档 §10.4](00-开机动画调研与技术选型.md)。
+- 手测矩阵见 [00 文档 §10.4](./00-开机动画调研与技术选型.md)。

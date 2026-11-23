@@ -1,7 +1,7 @@
 # 动效库 Wiki（Motion Library Wiki）
 
 > 独立记录桌宠动效库的版本、变化、问题修复心得、改造方案与避坑点，供后续开发直接查阅。
-> 主方案文档：[10-motion-library.md](../../plan/v3.0/pet-engine/10-motion-library.md)；逐日流水见 [progress-log.md](../../plan/v3.0/progress-log.md)。
+> 主方案文档：[10-motion-library.md](../../plan/archive/v3/v3.0/pet-engine/10-motion-library.md)；逐日流水见 [progress-log.md](../../plan/archive/v3/v3.0/progress-log.md)。
 
 ## 当前版本
 

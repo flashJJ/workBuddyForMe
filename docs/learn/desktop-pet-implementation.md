@@ -7,7 +7,7 @@
 >
 > 读完后你应当能独立完成：改一条内置行为、在设置里覆盖行为、增加一种新的触发源，并知道该改哪些文件、跑哪些测试。
 >
-> v3.0 增量：剧本引擎（Scene / `ScriptDirector`）、Utility 决策、小剧场 `/stage?stage=play` 与分享卡复用本文描述的窗口、渲染与行为配置链路，不改变命中测试、拖拽与动画调度；新增内容见 [v3.0 方案](../plan/v3.0/README.md) 与 [14-utility-decision](../plan/v3.0/pet-engine/14-utility-decision.md)。
+> v3.0 增量：剧本引擎（Scene / `ScriptDirector`）、Utility 决策、小剧场 `/stage?stage=play` 与分享卡复用本文描述的窗口、渲染与行为配置链路，不改变命中测试、拖拽与动画调度；新增内容见 [v3.0 方案](../plan/archive/v3/v3.0/README.md) 与 [14-utility-decision](../plan/archive/v3/v3.0/pet-engine/14-utility-decision.md)。
 
 ---
 

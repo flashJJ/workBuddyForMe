@@ -1,7 +1,7 @@
 # 动效库与剧情生成器：运行原理与联动
 
 > 定位：知识文档，解释「怎么动」「怎么生成剧本」「两者如何对接」。
-> 关联：[README](./README.md)、[plans.md](./plans.md)、[执行路线](../../plan/v3.0/execution-roadmap.md)、[P8 规划](../../plan/v3.0/execution-roadmap.md#p8-ai-剧情推进器p3p6-之后启动)。
+> 关联：[README](./README.md)、[plans.md](./plans.md)、[执行路线](../../plan/archive/v3/v3.0/execution-roadmap.md)、[P8 规划](../../plan/archive/v3/v3.0/execution-roadmap.md#p8-ai-剧情推进器p3p6-之后启动)。
 > 记录日期：2026-11-13。
 
 ## 0. 一句话

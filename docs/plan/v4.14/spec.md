@@ -2,7 +2,7 @@
 
 > 状态：已批准（2026-11-19）
 > 上游：[v4.13 代码健康度重构计划](../v4.13/00-code-health-refactor-plan.md)
-> 关联：[开发与测试指南](../../development.md)、[v0.7 playwright-mcp 评估](../../roadmap/v0.7-playwright-mcp-eval.md)
+> 关联：[开发与测试指南](../../development.md)、[v0.7 playwright-mcp 评估](../../roadmap/archive/v0/v0.7-playwright-mcp-eval.md)
 
 ## 1. 结论摘要
 

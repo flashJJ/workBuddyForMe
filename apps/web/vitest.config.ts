@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 
 /**
- * v1.1 M5（docs/plan/v1.1/02 §6 覆盖率分级门禁）：
+ * v1.1 M5（docs/plan/archive/v1/v1.1/02 §6 覆盖率分级门禁）：
  * web 不设全局门槛（整体水位 56%），仅对三个关键域卡 60% statements/lines。
  * 设门槛时实测水位：lib/server 64% / features/voice 67% / features/chat 80%。
  * 其余包与其余目录只出报告不阻断。

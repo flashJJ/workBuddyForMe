@@ -2,7 +2,7 @@
 
 > 状态：可用（2026-11-20）
 > 定位：L3 探索式巡检，仅人工触发；不进入产品依赖、不进入 CI、不替代 L1 截图基线。
-> 关联：[v4.14 视觉巡检分层](./spec.md#5-决策-d3视觉巡检分层) · [v4.15 视觉基线](../v4.15/spec.md) · [v0.7 playwright-mcp 评估](../../roadmap/v0.7-playwright-mcp-eval.md)
+> 关联：[v4.14 视觉巡检分层](./spec.md#5-决策-d3视觉巡检分层) · [v4.15 视觉基线](../v4.15/spec.md) · [v0.7 playwright-mcp 评估](../../roadmap/archive/v0/v0.7-playwright-mcp-eval.md)
 
 ## 1. 什么时候用
 

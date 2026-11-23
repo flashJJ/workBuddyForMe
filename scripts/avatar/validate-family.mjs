@@ -1,7 +1,7 @@
 /**
  * AnimeArt 家族校验：确认模型仍可共用 `animeart-v1` binding。
  *
- * 校验项（与 docs/plan/v3.0/pet-engine/bindings/README.md 同口径）：
+ * 校验项（与 docs/plan/archive/v3/v3.0/pet-engine/bindings/README.md 同口径）：
  * - 49 根 humanoid 骨骼，骨骼集合与基线一致；
  * - 骨骼父级关系与基线一致；
  * - 每根骨骼的 rest 四元数与基线夹角 ≤ 0.5°；

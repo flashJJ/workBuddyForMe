@@ -1,7 +1,7 @@
 /* 根 ESLint 配置（classic config，供 packages 与脚本使用；apps/web 另行继承 next 配置） */
 
 /**
- * v1.1 M0 分层边界（docs/plan/v1.1/02 §1）：
+ * v1.1 M0 分层边界（docs/plan/archive/v1/v1.1/02 §1）：
  * - 方向 zone：下层包不得依赖上层包；packages 不得依赖 apps；desktop 壳不碰业务包
  * - internal zone：跨包/跨应用引用任何包的 src/**\/internal/** 均违规（同包与测试放行）
  * M0 阶段一律 warn，M5 翻 error；规则只防未来，现状核实零违例。
