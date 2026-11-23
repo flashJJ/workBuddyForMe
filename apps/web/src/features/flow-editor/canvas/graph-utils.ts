@@ -74,6 +74,8 @@ function edgeTypeFor(sourceNode: FlowCanvasNode, sourceHandle?: string | null): 
 export function fromDomain(graph: FlowGraph): {
   nodes: FlowCanvasNode[];
   edges: FlowCanvasEdge[];
+  /** v4.24 修复：并行度随画布一起载入，避免保存时丢失 */
+  parallelism: number;
 } {
   const nodes: FlowCanvasNode[] = graph.nodes.map((n: FlowNode) => ({
     id: n.id,
@@ -91,14 +93,15 @@ export function fromDomain(graph: FlowGraph): {
       ? { type: edgeTypeFor(nodeMap.get(e.source)!, e.sourceHandle) }
       : {}),
   }));
-  return { nodes, edges };
+  return { nodes, edges, parallelism: graph.parallelism ?? 1 };
 }
 
-/** 画布元素 → 领域图（保存/校验用） */
+/** 画布元素 → 领域图（保存/校验用）；parallelism<=1 不写键，保持旧图字节不变 */
 export function toDomain(
   nodes: FlowCanvasNode[],
   edges: FlowCanvasEdge[],
   viewport?: { x: number; y: number; zoom: number },
+  parallelism?: number,
 ): FlowGraph {
   return {
     nodes: nodes.map((n) => ({
@@ -116,6 +119,7 @@ export function toDomain(
         : {}),
     })),
     ...(viewport ? { viewport } : {}),
+    ...(parallelism !== undefined && parallelism > 1 ? { parallelism } : {}),
   };
 }
 

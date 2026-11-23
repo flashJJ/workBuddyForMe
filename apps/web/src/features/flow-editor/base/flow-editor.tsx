@@ -62,6 +62,8 @@ function EditorInner({ flowId }: { flowId: string }) {
   const [runDialogOpen, setRunDialogOpen] = React.useState(false);
   const [servingOpen, setServingOpen] = React.useState(false);
   const [scheduleOpen, setScheduleOpen] = React.useState(false);
+  // v4.24 修复：并行度参与画布↔领域图映射，保存时不再丢失
+  const [parallelism, setParallelism] = React.useState(1);
   const [lastRunInput, setLastRunInput] = React.useState<Record<string, unknown>>({});
   const live = useFlowRunEvents(runId);
   const centerRef = React.useRef<HTMLDivElement>(null);
@@ -74,11 +76,13 @@ function EditorInner({ flowId }: { flowId: string }) {
       const canvas = fromDomain(data.graph);
       setNodes(canvas.nodes);
       setEdges(canvas.edges);
+      setParallelism(canvas.parallelism);
       setViewport(data.graph.viewport);
     } else {
       const initial = emptyCanvas();
       setNodes(initial.nodes);
       setEdges(initial.edges);
+      setParallelism(1);
     }
     setLoadedVersion(data.version);
     setDirty(false);
@@ -136,7 +140,7 @@ function EditorInner({ flowId }: { flowId: string }) {
   };
 
   // ── 保存 / 校验 / 发布 ──
-  const buildGraph = () => toDomain(nodes, edges, viewport);
+  const buildGraph = () => toDomain(nodes, edges, viewport, parallelism);
   const save = async () => {
     try {
       await mutations.saveVersion.mutateAsync({ id: flowId, graph: buildGraph() });
