@@ -83,9 +83,12 @@ export function buildFlowRunEventsUrl(runId: string, token: string | undefined):
   return `${API.flowRunEvents(runId)}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 }
 
-/** 同一订阅内去重键：节点事件按 type+nodeId，run 级事件按 type */
+/** 同一订阅内去重键：run 级按 type；节点级含 attempt，避免 v4.23 重试事件被误去重 */
 export function flowEventDedupeKey(payload: FlowEventPayload): string {
-  return 'nodeId' in payload ? `${payload.type}:${payload.nodeId}` : payload.type;
+  if (!('nodeId' in payload)) return payload.type;
+  const attempt =
+    'attempt' in payload && typeof payload.attempt === 'number' ? `#${payload.attempt}` : '';
+  return `${payload.type}:${payload.nodeId}${attempt}`;
 }
 
 /** 终态事件后服务端会关闭流，客户端须主动 close，否则浏览器自动重连→重放→风暴 */
