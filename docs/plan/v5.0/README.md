@@ -1,6 +1,6 @@
 # v5.0 选题：会兜底
 
-> 状态：🚧 已实现，待发布（5.0.0，2026-11-24）；M1–M8 代码与门禁完成
+> 状态：✅ 已发布（5.0.0，2026-11-24；tag `v5.0.0`）
 > 主题：**会兜底**——跑得住、错了能收、危险能拦、事后能查
 > 规格：[spec.md](./spec.md) · 契约：[contracts.md](./contracts.md) · 任务：[tasks.md](./tasks.md) · 总结：[version-summary.md](./version-summary.md)
 > 调研档案：[竞品矩阵](./competitor-matrix.md) · [痛点地图](./pain-point-map.md) · [主题卡](./theme-shortlist.md) · [遗漏项盘点](./backlog-inventory.md)

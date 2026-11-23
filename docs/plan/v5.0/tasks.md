@@ -95,4 +95,4 @@
 - [x] M8.2 `pnpm verify:local`
 - [x] M8.3 版本总结、发行说明、博客、版本号 5.0.0
 - [x] M8.4 更新 `docs/plan/README.md`、`docs/roadmap/README.md`、`docs/roadmap/scheduled/README.md`
-- [ ] M8.5 合并 main、tag、安装包归档与 Release
+- [x] M8.5 合并 main、tag、安装包归档与 Release

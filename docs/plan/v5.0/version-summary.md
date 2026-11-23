@@ -2,9 +2,10 @@
 
 > 版本：5.0.0（2026-11-24）
 > 主题：**会兜底**——跑得住、错了能收、危险能拦、事后能查
-> 状态：🚧 代码与门禁已完成，待合并发布（M8.5）
+> 状态：✅ 已发布（tag `v5.0.0`，GitHub Release 最新版）
+> 安装包：`WorkBuddyForMe-Setup-5.0.0.exe`（258.65 MB，SHA256 `ca1cf21a…edff23`）
 > 方案：[README](./README.md) · [规格](./spec.md) · [契约](./contracts.md) · [任务](./tasks.md)
-> 发行说明：[v5.0.0-release-notes.md](../../roadmap/v5.0.0-release-notes.md)
+> 发行说明：[v5.0.0-release-notes.md](../../roadmap/v5.0.0-release-notes.md) · Release：https://github.com/flashJJ/workBuddyForMe/releases/tag/v5.0.0
 
 ## 1. 交付结论
 
@@ -81,6 +82,7 @@ v5.0 把 Flow 从「能跑、能定时、能被事件唤醒」推进到「跑得
 
 - `pnpm check` 通过（typecheck/lint/行数/结构/循环/MSW/ASCII/资产/surface/E2E 隔离）；
 - `pnpm verify:local` 通过；
+- Release workflow `45251220220` 成功；
 - 单测覆盖：错误分类、canonical 哈希、快照优先/版本回退/缺失阻断、补偿退避与耗尽、批量部分失败、保留边界与 dry-run、健康阈值与 missed、Agent 门控、HMAC 合法/错误/过期/轮换；
 - 迁移 v057 测试覆盖旧行兼容与索引，版本断言 57。
 
