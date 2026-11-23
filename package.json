@@ -1,6 +1,6 @@
 {
   "name": "workbuddy-for-me",
-  "version": "4.25.1",
+  "version": "4.26.0",
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "description": "WorkBuddyForMe：本地优先的私人 AI 工作台（Next.js 全栈 + Electron）",

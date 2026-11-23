@@ -665,6 +665,7 @@ v1.3 知识层封版后的能力版本，主题：**会分工——规划/执行
 | v4.24 | 会守时：cron 定时触发、持久化调度、单飞与错过补偿 | ✅ 已发布（2026-11-23，`v4.24.0`） | [选题](../plan/v4.24/README.md) · [规格](../plan/v4.24/spec.md) · [契约](../plan/v4.24/contracts.md) · [任务](../plan/v4.24/tasks.md) · [总结](../plan/v4.24/version-summary.md) | [发行说明](v4.24.0-release-notes.md) | [blog/v4.24](../../blog/v4.24/) 7 篇 | [`v4.24.0`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.24.0) |
 | v4.25 | 会来事：Webhook 与本地文件监听触发 | ✅ 已发布（2026-11-23，`v4.25.0`） | [选题](../plan/v4.25/README.md) · [规格](../plan/v4.25/spec.md) · [契约](../plan/v4.25/contracts.md) · [任务](../plan/v4.25/tasks.md) · [总结](../plan/v4.25/version-summary.md) | [发行说明](v4.25.0-release-notes.md) | [blog/v4.25](../../blog/v4.25/) 7 篇 | [`v4.25.0`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.25.0) |
 | v4.25.1 | 品牌一致性补丁：安装包与文档统一 WorkBuddyForMe | ✅ 已发布（2026-11-23，`v4.25.1`） | [v4.25 方案](../plan/v4.25/README.md) | [发行说明](v4.25.1-release-notes.md) | — | [`v4.25.1`](https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.25.1) |
+| v4.26 | 会排班：一流程多定时（≤5，独立时区）与 Webhook Secret 轮换 | 🚧 开发中 | [选题](../plan/v4.26/README.md) · [规格](../plan/v4.26/spec.md) · [契约](../plan/v4.26/contracts.md) · [任务](../plan/v4.26/tasks.md) | — | — | — |
 | v5.0 | 会兜底：可靠与安全的本地自动化（v4.26 后启动） | 🧭 主题已定 | [调研计划](../plan/v5.0/README.md) · [竞品矩阵](../plan/v5.0/competitor-matrix.md) · [痛点地图](../plan/v5.0/pain-point-map.md) · [主题卡](../plan/v5.0/theme-shortlist.md) · [遗漏项盘点](../plan/v5.0/backlog-inventory.md) | — | — | — |
 
 ## 远期版本展望（粗颗粒，每个版本启动前再细化）
