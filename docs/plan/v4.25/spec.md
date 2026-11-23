@@ -253,3 +253,14 @@ createFlowFileWatcher({
 - 回滚：回退代码后 `workflow_triggers` 表可保留不用，不影响 v4.24 行为；
 - 观测：触发状态四值 + 最近运行 id；运行中心可按 trigger 过滤；
 - 文档：M6 产出 `version-summary.md`、`v4.25.0-release-notes.md`、`blog/v4.25/` 7 篇，并更新 `docs/plan/README.md` 与 `docs/roadmap/README.md`。
+
+## 13. 决策记录（2026-11-23）
+
+| 决策项 | 结论 |
+|---|---|
+| Webhook 鉴权 | Bearer Secret；每触发器独立，仅存 SHA-256，创建时返回一次；不做 HMAC |
+| Webhook 入参 | body 顶层合并进 Flow 入参 + 原始 `payload`；保留键 `source/triggerId/receivedAt/payload` 不可覆盖 |
+| 文件监听范围 | 指定目录 + 扩展名白名单 + 递归（平台支持时）；800ms 防抖 |
+| 触发器上限 | 每流程 10 条：Webhook ≤5、文件 ≤5 |
+
+以上决策为 M0 冻结项；变更需同步 spec 与 contracts 并重新评审。

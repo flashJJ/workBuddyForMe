@@ -9,7 +9,7 @@
 - [x] `docs/plan/v4.25/spec.md` 规格与里程碑
 - [x] `docs/plan/v4.25/contracts.md` 类型/DB/HTTP/上限契约
 - [x] `docs/roadmap/scheduled/v4.25-01-event-triggers.md` 来源方案
-- [ ] 评审确认（Non-Goals、Secret 方案、入参约定）
+- [x] 评审确认（Non-Goals、Secret 方案、入参约定）——2026-11-23，四项均按推荐方案冻结，记录见 spec §13
 
 ## M1 shared 契约与数据层
 
