@@ -231,6 +231,31 @@ describe('runFlow：v1.4 agent 节点', () => {
     expect(onStart).not.toHaveBeenCalled();
   });
 
+  it('v4.24 定时触发（schedule）+ desktop 域：同样按无人值守拒绝', async () => {
+    const onStart = vi.fn();
+    const { cb } = mockCollab({ onStart });
+    const graph: FlowGraph = {
+      nodes: [
+        node('start', 'start'),
+        node('ag', 'agent', { goal: 'g', toolScopes: ['desktop'] }),
+        node('end', 'end', {}),
+      ],
+      edges: [edge('start', 'ag'), edge('ag', 'end')],
+    };
+    const events = await collect(
+      runFlow(compiledOf(graph), {
+        workflowId: 'wf1',
+        version: 1,
+        runId: 'run1',
+        trigger: 'schedule',
+        context: { startAgentCollab: cb },
+      }),
+    );
+    const failed = events.find((e) => e.type === 'node_failed');
+    expect((failed as { message: string }).message).toContain('desktop_control_banned');
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
   it('画布人工试运行（manual）含 desktop 域可正常发起；取消信号透传给协作', async () => {
     let capturedSignal: AbortSignal | undefined;
     const { cb } = mockCollab({ onStart: (input) => void (capturedSignal = input.signal) });

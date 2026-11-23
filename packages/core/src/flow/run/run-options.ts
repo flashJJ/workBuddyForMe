@@ -24,7 +24,8 @@ export interface ResolveOverridesParams {
 /**
  * 计算一次运行的附加参数：
  * - 节点重放 → 目标节点祖先闭包 + replayTargetId；
- * - api/mcp → 固化端点当前策略；端点/仓储缺失时安全兜底 deny_all。
+ * - api/mcp → 固化端点当前策略；端点/仓储缺失时安全兜底 deny_all；
+ * - v4.24 定时触发无端点，直接注入 deny_all：写/危险工具默认拒绝。
  */
 export function resolveRunRuntimeOverrides(params: ResolveOverridesParams): RunRuntimeOverrides {
   const overrides: RunRuntimeOverrides = {};
@@ -36,6 +37,8 @@ export function resolveRunRuntimeOverrides(params: ResolveOverridesParams): RunR
     const policy: FlowUnattendedPolicy =
       params.endpoints?.getById(params.endpointId)?.policy ?? { mode: 'deny_all' };
     overrides.unattendedPolicy = policy;
+  } else if (params.trigger === 'schedule') {
+    overrides.unattendedPolicy = { mode: 'deny_all' };
   }
   return overrides;
 }

@@ -75,7 +75,9 @@ async function* runToolNodeWithGate(
   const permission = tool.permission ?? 'read';
   let allowed = true;
   let denyReason: string | undefined;
-  const unattended = ctx.trigger === 'api' || ctx.trigger === 'mcp';
+  // v4.24：定时触发与 api/mcp 同属无人值守，写/危险工具默认拒绝
+  const unattended =
+    ctx.trigger === 'api' || ctx.trigger === 'mcp' || ctx.trigger === 'schedule';
   if (permission !== 'read') {
     if (unattended && ctx.evaluateUnattended) {
       // v0.9 无人值守：端点策略快照裁决，永不挂起等待人工

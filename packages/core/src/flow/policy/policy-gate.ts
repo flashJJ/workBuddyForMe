@@ -5,7 +5,7 @@ import { type FlowUnattendedPolicy, type PermissionLevel } from '@wbfm/shared/ty
 const DESKTOP_BAN_LIST: readonly string[] = FLOW_DESKTOP_CONTROL_TOOLS;
 
 /**
- * v0.9 无人值守（API/MCP）工具授权门控（纯函数，零外部依赖）：
+ * v0.9 无人值守（API/MCP/定时）工具授权门控（纯函数，零外部依赖）：
  * - read 工具直接放行；
  * - 桌面控制类（鼠标/键盘/窗口/UIA）在任何策略下都不可由无人值守链路调用；
  * - write/danger 仅当策略为 allowlist 且工具名在白名单内放行；
@@ -45,7 +45,7 @@ export function evaluateUnattendedPolicy(
  */
 export function policyDenyText(reason: PolicyDecisionReason, toolName: string): string {
   if (reason === 'desktop_control_banned') {
-    return `无人值守策略拒绝：工具 ${toolName} 属于桌面控制类（鼠标/键盘/窗口），API/MCP 调用永久禁止，请改用画布人工试运行。[policy_deny:desktop_control_banned]`;
+    return `无人值守策略拒绝：工具 ${toolName} 属于桌面控制类（鼠标/键盘/窗口），无人值守调用（API/MCP/定时）永久禁止，请改用画布人工试运行。[policy_deny:desktop_control_banned]`;
   }
-  return `无人值守策略拒绝：工具 ${toolName} 不在端点白名单中（默认拒绝写入/高危操作），请在端点设置中加入允许列表。[policy_deny:not_allowlisted]`;
+  return `无人值守策略拒绝：工具 ${toolName} 不在允许列表中（默认拒绝写入/高危操作）；API/MCP 可在端点设置中加入白名单。[policy_deny:not_allowlisted]`;
 }
