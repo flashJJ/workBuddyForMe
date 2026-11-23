@@ -2,8 +2,8 @@
 
 本地优先的**私人 AI 工作台 + 桌面陪伴角色**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v4.26.0**（2026-11-23）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
-> 本版主线：一流程多定时（独立 IANA 时区）与 Webhook Secret 轮换，详见 [v4.26.0 发布说明](docs/roadmap/v4.26.0-release-notes.md)。
+> 当前版本：**v4.26.0**（2026-11-24）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 本版主线：一流程多定时（独立 IANA 时区）与 Webhook Secret 轮换，详见 [v4.26.0 发布说明](./docs/roadmap/v4.26.0-release-notes.md)。
 
 ## v4.26 会排班：多定时与密钥轮换
 
@@ -185,7 +185,7 @@ pnpm test:e2e:visual      # 视觉巡检截图（默认跳过，需显式开关�
 pnpm test:e2e:desktop     # Electron 冒烟：构建 → 归集 → pack:dir → 启动断言
 ```
 
-v4.15.0 发布验证：`pnpm check` 全绿（类型、lint、行数、结构、循环、MSW、ASCII、资产与 surface 门禁），shared / web / desktop 全量单测通过；Release workflow 构建 Windows NSIS 安装包并产出可更新元数据。详见 [v4.15.0 发布说明](docs/roadmap/v4.15.0-release-notes.md)。
+v4.15.0 发布验证：`pnpm check` 全绿（类型、lint、行数、结构、循环、MSW、ASCII、资产与 surface 门禁），shared / web / desktop 全量单测通过；Release workflow 构建 Windows NSIS 安装包并产出可更新元数据。详见 [v4.15.0 发布说明](./docs/roadmap/v4.15.0-release-notes.md)。
 
 ## 数据与隐私
 
@@ -197,22 +197,22 @@ v4.15.0 发布验证：`pnpm check` 全绿（类型、lint、行数、结构、�
 
 ## 文档
 
-- [架构设计](docs/architecture.md)
-- [接口文档](docs/api.md)
-- [开发与测试指南](docs/development.md)
-- [Electron 桌面外壳](docs/modules/electron-shell.md)
-- 模块设计：[设置](docs/modules/settings.md) ｜ [助手](docs/modules/assistants.md) ｜ [对话](docs/modules/chat.md) ｜ [知识库](docs/modules/knowledge.md)
-- 版本路线：[产品路线图](docs/roadmap/README.md) ｜ [方案与版本归档（按大版本）](docs/plan/README.md) ｜ [v4.15 方案](docs/plan/v4.15/spec.md) ｜ [v4.15.0 发布说明](docs/roadmap/v4.15.0-release-notes.md) ｜ [v4.15 博客](blog/v4.15/)
-- 视觉巡检：[Playwright MCP 人工巡检 Runbook](docs/plan/v4.14/visual-manual-runbook.md)
-- 缺陷归档：[Bug 记录表（v4.16 期）](docs/wiki/bug-registry.md)
-- 验收清单：[失败路径与边界场景](docs/wiki/acceptance-checklist.md)
-- 影视与 IP：[摸鱼事务所影视类方案](docs/film/README.md) ｜ [即梦循环背景视频](docs/film/01-jimeng-loop-background.md) ｜ [Master 固定卡通形象](docs/film/03-master-character.md) ｜ [开机动画选型](docs/film/08-boot-animation.md)
-- 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](docs/learn/desktop-pet-implementation.md)
+- [架构设计](./docs/architecture.md)
+- [接口文档](./docs/api.md)
+- [开发与测试指南](./docs/development.md)
+- [Electron 桌面外壳](./docs/modules/electron-shell.md)
+- 模块设计：[设置](./docs/modules/settings.md) ｜ [助手](./docs/modules/assistants.md) ｜ [对话](./docs/modules/chat.md) ｜ [知识库](./docs/modules/knowledge.md)
+- 版本路线：[产品路线图](./docs/roadmap/README.md) ｜ [方案与版本归档（按大版本）](./docs/plan/README.md) ｜ [v4.15 方案](./docs/plan/v4.15/spec.md) ｜ [v4.15.0 发布说明](./docs/roadmap/v4.15.0-release-notes.md) ｜ [v4.15 博客](./blog/v4.15/)
+- 视觉巡检：[Playwright MCP 人工巡检 Runbook](./docs/plan/v4.14/visual-manual-runbook.md)
+- 缺陷归档：[Bug 记录表（v4.16 期）](./docs/wiki/bug-registry.md)
+- 验收清单：[失败路径与边界场景](./docs/wiki/acceptance-checklist.md)
+- 影视与 IP：[摸鱼事务所影视类方案](./docs/film/README.md) ｜ [即梦循环背景视频](./docs/film/01-jimeng-loop-background.md) ｜ [Master 固定卡通形象](./docs/film/03-master-character.md) ｜ [开机动画选型](./docs/film/08-boot-animation.md)
+- 桌宠实现教学：[Electron 透明窗、Live2D / VRM 渲染与可配置行为](./docs/learn/desktop-pet-implementation.md)
 
 ## 许可
 
 代码采用 **PolyForm Noncommercial License 1.0.0**（见根 `LICENSE`），仅限非商业用途，不提供任何担保。
 
-内置角色 VRM 模型「鲸鱼娘-雪团」（`apps/web/public/vrm/models/xuetuan.vrm`）、「运动健将-冉卡露丽」（`apps/web/public/vrm/models/rankaluli.vrm`）与「兔耳娘-菲比」（`apps/web/public/vrm/models/feibi.vrm`）单独采用 **CC BY-NC-SA 4.0**，不适用上述代码许可，详见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
+内置角色 VRM 模型「鲸鱼娘-雪团」（`apps/web/public/vrm/models/xuetuan.vrm`）、「运动健将-冉卡露丽」（`apps/web/public/vrm/models/rankaluli.vrm`）与「兔耳娘-菲比」（`apps/web/public/vrm/models/feibi.vrm`）单独采用 **CC BY-NC-SA 4.0**，不适用上述代码许可，详见 [ASSETS-LICENSE.md](./ASSETS-LICENSE.md)。
 
-内置背景音乐全部来自 OpenGameArt 的 **CC0 1.0** 素材（11 首，可商用、可修改、可随项目分发，无需署名）；逐曲作者、来源页与处理方式见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。此前用于本机试听的豆包 App 生成曲目已移出发布目录，仅本地留档。
+内置背景音乐全部来自 OpenGameArt 的 **CC0 1.0** 素材（11 首，可商用、可修改、可随项目分发，无需署名）；逐曲作者、来源页与处理方式见 [ASSETS-LICENSE.md](./ASSETS-LICENSE.md)。此前用于本机试听的豆包 App 生成曲目已移出发布目录，仅本地留档。
