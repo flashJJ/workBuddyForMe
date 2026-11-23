@@ -39,7 +39,7 @@ import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver, createAgentTaskContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
-import { createFlowScheduleWiring } from './flows/flow-schedule-wiring';
+import { createFlowScheduleWiring } from './flows/flow-schedule-wiring'; import { createFlowTriggerWiring } from './flows/flow-trigger-wiring';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
 import { createCompileRunnerService, createKnowledgeGovernanceService, ensureStarterKnowledgeBases } from '@wbfm/core/knowledge';
 import { createMcpOAuthService, createMcpRegistry } from '@wbfm/core/mcp';
@@ -245,7 +245,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     meetingClosure,
     runtime,
     flowRunner,
-    flowSchedules: createFlowScheduleWiring({ db, workflows, runs: flowRuns, flowRunner }),
+    flowSchedules: createFlowScheduleWiring({ db, workflows, runs: flowRuns, flowRunner }), flowTriggers: createFlowTriggerWiring({ db, workflows, runs: flowRuns, flowRunner }),
     providers: createProviderService(deps),
     providerHealth: createProviderHealthService(deps),
     models: createModelService(deps),

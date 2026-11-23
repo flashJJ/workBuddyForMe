@@ -79,6 +79,7 @@ export const QUERY_KEYS = {
   flowRun: (id: string) => ['flow-run', id] as const,
   flowEndpoint: (id: string) => ['flow-endpoint', id] as const,
   flowSchedule: (id: string) => ['flow-schedule', id] as const,
+  flowTriggers: (id: string) => ['flow-triggers', id] as const,
   voiceSettings: ['voice-settings'] as const,
   voiceModelStatus: ['voice-model-status'] as const,
 };

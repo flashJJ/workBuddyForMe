@@ -62,6 +62,7 @@ function EditorInner({ flowId }: { flowId: string }) {
   const [runDialogOpen, setRunDialogOpen] = React.useState(false);
   const [servingOpen, setServingOpen] = React.useState(false);
   const [scheduleOpen, setScheduleOpen] = React.useState(false);
+  const [triggersOpen, setTriggersOpen] = React.useState(false);
   // v4.24 修复：并行度参与画布↔领域图映射，保存时不再丢失
   const [parallelism, setParallelism] = React.useState(1);
   const [lastRunInput, setLastRunInput] = React.useState<Record<string, unknown>>({});
@@ -217,12 +218,14 @@ function EditorInner({ flowId }: { flowId: string }) {
       lastRunInput={lastRunInput}
       servingOpen={servingOpen}
       scheduleOpen={scheduleOpen}
+      triggersOpen={triggersOpen}
       published={data.workflow.status === 'published'}
       onSave={save}
       onValidate={validate}
       onPublish={publish}
       onServing={() => setServingOpen(true)}
       onSchedule={() => setScheduleOpen(true)}
+      onTriggers={() => setTriggersOpen(true)}
       onRun={() => setRunDialogOpen(true)}
       onAddNode={addNode}
       onNodesChange={onNodesChange}
@@ -240,6 +243,7 @@ function EditorInner({ flowId }: { flowId: string }) {
       onRerun={() => setRunDialogOpen(true)}
       onCloseEndpoint={() => setServingOpen(false)}
       onCloseSchedule={() => setScheduleOpen(false)}
+      onCloseTriggers={() => setTriggersOpen(false)}
     />
   );
 }

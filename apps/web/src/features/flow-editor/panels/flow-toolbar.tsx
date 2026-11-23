@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, CalendarClock, Globe, Play, Save, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CalendarClock, Globe, Play, Save, ShieldCheck, Zap } from 'lucide-react';
 import type { FlowStatus, WorkflowView } from '@wbfm/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ interface FlowToolbarProps {
   onPublish: () => void;
   onServing: () => void;
   onSchedule: () => void;
+  onTriggers: () => void;
   onRun: () => void;
 }
 
@@ -44,6 +45,7 @@ export function FlowToolbar({
   onPublish,
   onServing,
   onSchedule,
+  onTriggers,
   onRun,
 }: FlowToolbarProps) {
   const { t } = useI18n();
@@ -138,6 +140,20 @@ export function FlowToolbar({
         >
           <CalendarClock className="h-3.5 w-3.5" />
           {t('flowEditor.schedule.button')}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onTriggers}
+          disabled={workflow.status !== 'published'}
+          title={
+            workflow.status === 'published'
+              ? t('flowEditor.trigger.button')
+              : t('flowEditor.trigger.unpublished')
+          }
+        >
+          <Zap className="h-3.5 w-3.5" />
+          {t('flowEditor.trigger.button')}
         </Button>
         <Button size="sm" onClick={onRun} disabled={running || version === 0 || dirty}>
           <Play className="h-3.5 w-3.5" />
