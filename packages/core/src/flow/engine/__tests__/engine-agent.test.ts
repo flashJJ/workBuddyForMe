@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AgentNodeInnerEvent, FlowEventPayload } from '@wbfm/shared/types';
 import type { AgentRunView, FlowGraph, FlowNodeType } from '@wbfm/shared/schemas';
-import { compileFlow } from '../compiler/compiler';
-import { runFlow } from './engine';
-import type { AgentCollabStartInput, FlowExecutionContext } from '../graph/types';
+import { compileFlow } from '../../compiler/compiler';
+import { runFlow } from '../engine';
+import type { AgentCollabStartInput, FlowExecutionContext } from '../../graph/types';
 
 async function collect(gen: AsyncGenerator<FlowEventPayload>): Promise<FlowEventPayload[]> {
   const events: FlowEventPayload[] = [];

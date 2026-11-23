@@ -1,4 +1,4 @@
-import type { FlowTrigger } from '../flow';
+import type { FlowTrigger, FlowWebhookAuthMode } from '../flow';
 
 /** @子域 barrel types/trigger：v4.25 事件触发（Webhook / 文件监听）领域类型 */
 
@@ -32,6 +32,10 @@ export interface FlowTriggerView {
   config: FlowFileTriggerConfig | null;
   /** Webhook 展示路径；Secret 本身永不返回 */
   webhookPath: string | null;
+  /** v5.0：Webhook 鉴权方式；文件触发器为 null */
+  authMode: FlowWebhookAuthMode | null;
+  /** v5.0：是否已保存 HMAC 密钥密文（旧触发器需先轮换） */
+  hasSigningSecret: boolean;
   lastFiredAt: string | null;
   lastRunId: string | null;
   lastStatus: FlowTriggerLastStatus | null;

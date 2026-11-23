@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { createDatabase } from '../client';
 import { createWorkflowRepository } from '../repositories/workflow/workflow-repo';
 import { createWorkflowTriggerRepository } from '../repositories/trigger/workflow-trigger-repo';
@@ -9,7 +9,7 @@ describe('v055 流程事件触发配置', () => {
     const db = createDatabase(':memory:');
     const result = applyMigrations(db);
     expect(result.to).toBe(LATEST_SCHEMA_VERSION);
-    expect(getSchemaVersion(db)).toBe(56);
+    expect(getSchemaVersion(db)).toBe(57);
 
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='workflow_triggers'")

@@ -1,10 +1,10 @@
 ﻿import type { PermissionLevel } from '@wbfm/shared/types';
 import type { FlowGraph } from '@wbfm/shared/schemas';
 import { describe, expect, it } from 'vitest';
-import { runFlow } from './engine';
-import { collect, compiledOf, e, n, types } from './engine-branch.helpers';
-import type { FlowExecutionContext, FlowNodeHandler } from '../graph/types';
-import type { Tool } from '../../tools/types';
+import { runFlow } from '../engine';
+import { collect, compiledOf, e, n, types } from '../engine-branch.helpers';
+import type { FlowExecutionContext, FlowNodeHandler } from '../../graph/types';
+import type { Tool } from '../../../tools/types';
 
 /** start→cond→(true/false)→两个 end，condition 规则用字面量确定性求值 */
 function branchGraph(result: boolean): FlowGraph {

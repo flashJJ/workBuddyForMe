@@ -4,5 +4,6 @@ export * from './flow-diff';
 export * from './flow-serving';
 export * from './policy';
 export * from './schedule';
+export * from './run-reliability';
 export * from './timezone';
 export * from './trigger';

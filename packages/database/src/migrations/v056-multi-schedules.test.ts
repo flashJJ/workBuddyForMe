@@ -8,8 +8,7 @@ import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runn
 describe('v056 一流程多定时', () => {
   it('迁移后表含 name/timezone，UNIQUE 消失，双索引存在', () => {
     const db = createDatabase(':memory:');
-    expect(LATEST_SCHEMA_VERSION).toBe(56);
-    expect(getSchemaVersion(db)).toBe(56);
+    expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(56);
 
     const columns = db.prepare('PRAGMA table_info(workflow_schedules)').all() as Array<{ name: string }>;
     expect(columns.map((c) => c.name)).toEqual(
@@ -44,7 +43,7 @@ describe('v056 一流程多定时', () => {
                '2026-11-23T01:00:00.000Z', 'run-1', 'created', 't0', 't1')`,
     ).run({ id: 's-old', workflowId: wf.id });
 
-    applyMigrations(db);
+    applyMigrations(db, 56);
     expect(getSchemaVersion(db)).toBe(56);
     const row = db.prepare('SELECT * FROM workflow_schedules WHERE id = ?').get('s-old') as Record<
       string,

@@ -118,6 +118,14 @@ export interface FlowExecutionContext {
   ): { allowed: boolean; reason: string };
   /** 交互式工具授权（挂起等待；非交互环境直接返回 false） */
   requestToolConfirmation?(req: FlowToolConfirmationRequest): Promise<boolean>;
+  /** v5.0：agent 内部工具被无人值守策略拒绝时写审计 */
+  auditToolDenied?(input: {
+    nodeId: string;
+    agentRunId: string;
+    toolName: string;
+    permission: PermissionLevel;
+    reason: string;
+  }): void;
   /** 人工节点挂起等待（非交互环境返回 approved:false） */
   requestHuman?(nodeId: string, config: Record<string, unknown>): Promise<FlowHumanDecision>;
 
@@ -153,6 +161,11 @@ export interface AgentCollabStartInput {
   nodeExecutionId: string;
   /** 流程级取消信号（协作随流程一并取消） */
   signal?: AbortSignal;
+  /** v5.0：流程级无人值守工具门控（仅无人值守触发时注入） */
+  toolGate?: (
+    toolName: string,
+    permission: PermissionLevel,
+  ) => { allowed: boolean; reason?: string };
 }
 
 export interface FlowNodeHandler<

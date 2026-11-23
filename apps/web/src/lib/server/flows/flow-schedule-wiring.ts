@@ -35,7 +35,7 @@ export function createFlowScheduleWiring(params: {
     flowRunner: params.flowRunner,
   });
   if (params.start ?? process.env.NODE_ENV !== 'test') scheduler.start();
-  return { service, scheduler };
+  return { service, scheduler, schedules };
 }
 
 export type FlowScheduleWiring = ReturnType<typeof createFlowScheduleWiring>;

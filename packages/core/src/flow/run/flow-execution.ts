@@ -159,6 +159,14 @@ export function createFlowExecutor(executorDeps: FlowExecutorDeps): FlowExecutor
                 evaluateUnattendedPolicy(unattendedPolicy, toolName, permission),
             }
           : {}),
+        auditToolDenied: (input) =>
+          deps.audit?.safeAppend({
+            kind: 'flow_agent_tool_denied',
+            actor: 'system',
+            runId,
+            reasonCode: input.reason,
+            outcome: JSON.stringify(input),
+          }),
         checkToolAllowed: (toolName, permission) =>
           Boolean(deps.permissions?.isAllowed(toolName, permission, 'all')) ||
           Boolean(deps.taskGrants?.isGranted(toolName, runId)),

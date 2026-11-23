@@ -189,9 +189,20 @@ export function definePublicTriggerRoute<P extends Record<string, string> = Reco
       const triggerId = params.triggerId;
       if (!triggerId) return publicJsonError('not_found', 404, '触发器不存在');
 
+      const declared = Number(request.headers.get('content-length') ?? '0');
+      if (Number.isFinite(declared) && declared > 256 * 1024) {
+        return publicJsonError('payload_too_large', 413, '请求体超过 256KB');
+      }
+      // v5.0：HMAC 验签需要原始 body；clone 后读取，不消耗下游 handler 的请求体
+      const rawBody = await request.clone().text();
       const auth = services.flowTriggers.service.authenticateWebhook(
         triggerId,
         request.headers.get('authorization'),
+        {
+          rawBody,
+          timestamp: request.headers.get('x-wbfm-timestamp'),
+          signature: request.headers.get('x-wbfm-signature'),
+        },
       );
       if (!auth.ok) {
         return auth.reason === 'not_found'

@@ -1,7 +1,7 @@
 import type { DatabaseInstance } from '@wbfm/database';
 import type { AgentBudget, AgentPlanDecision, AgentRunView } from '@wbfm/shared/schemas';
 import type { AgentNodeInnerEvent } from '@wbfm/shared/types';
-import type { AgentClients } from './runner-types';
+import type { AgentClients, AgentToolGate } from './runner-types';
 import type { AgentRunEvent } from './agent-runner';
 import type { AgentRoleKey } from '../clients/role-models';
 
@@ -11,6 +11,8 @@ import type { AgentRoleKey } from '../clients/role-models';
 export interface AgentClientOverrides {
   roleModelIds?: Partial<Record<AgentRoleKey, string | null>>;
   knowledgeBaseIds?: string[] | null;
+  /** v5.0：Flow 无人物工具门控（仅 agent 节点无人值守时注入） */
+  toolGate?: AgentToolGate;
 }
 
 /** 角色客户端解析端口（按运行配置 + 可选节点覆盖解析三级模型回落与 executor 通道） */
@@ -58,6 +60,8 @@ export interface FlowNodeStartParams {
   nodeExecutionId: string;
   /** 节点显式绑定的知识库（多库）；空数组=回落助手绑定 */
   knowledgeBaseIds: string[];
+  /** v5.0：流程级无人值守工具门控 */
+  toolGate?: AgentToolGate;
   signal?: AbortSignal;
 }
 

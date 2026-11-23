@@ -103,6 +103,19 @@ export function TriggerDialog({ open, workflowId, published, onClose }: TriggerD
     }
   };
 
+  const changeAuth = async (trigger: FlowTriggerView, authMode: 'bearer' | 'hmac' | 'both') => {
+    try {
+      await mutations.update.mutateAsync({
+        triggerId: trigger.id,
+        patch: { auth: { authMode } },
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof ApiClientError ? error.message : t('flowEditor.trigger.authMode.failed'),
+      );
+    }
+  };
+
   const remove = async (trigger: FlowTriggerView) => {
     if (confirmId !== trigger.id) {
       setConfirmId(trigger.id);
@@ -194,9 +207,11 @@ export function TriggerDialog({ open, workflowId, published, onClose }: TriggerD
           confirmRemoveId={confirmId}
           rotateConfirmId={rotateConfirmId}
           rotating={mutations.rotate.isPending}
+          authUpdating={mutations.update.isPending}
           onToggle={(trigger) => void toggle(trigger)}
           onRemove={(trigger) => void remove(trigger)}
           onRotate={(trigger) => void rotate(trigger)}
+          onAuthChange={(trigger, authMode) => void changeAuth(trigger, authMode)}
         />
 
         <div className="space-y-2 rounded border p-3">

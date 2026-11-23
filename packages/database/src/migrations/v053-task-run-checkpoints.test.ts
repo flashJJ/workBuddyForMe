@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+﻿import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runner';
 import { migrateV053 } from './v053-task-run-checkpoints';
@@ -9,9 +9,9 @@ describe('v053 迁移：协作运行检查点', () => {
     applyMigrations(db, 52);
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([53, 54, 55, 56]);
+    expect(result.applied).toEqual([53, 54, 55, 56, 57]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(56);
+    expect(LATEST_SCHEMA_VERSION).toBe(57);
 
     const table = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='task_run_checkpoints'")

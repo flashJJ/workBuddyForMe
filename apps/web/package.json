@@ -1,6 +1,6 @@
 {
   "name": "@wbfm/web",
-  "version": "4.26.0",
+  "version": "5.0.0",
   "private": true,
   "type": "module",
   "scripts": {

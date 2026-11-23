@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { flowWebhookAuthSchema } from './run-reliability';
 
 /**
  * v4.25 事件触发：Webhook 与本地文件监听。
@@ -20,6 +21,8 @@ export const flowTriggerCreateSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('webhook'),
     name: z.string().trim().max(80).optional(),
+    /** v5.0：bearer（默认）/hmac/both */
+    auth: flowWebhookAuthSchema.optional(),
   }),
   z.object({
     kind: z.literal('file'),
@@ -33,6 +36,8 @@ export const flowTriggerUpdateSchema = z
     name: z.string().trim().max(80).optional(),
     enabled: z.boolean().optional(),
     config: flowFileTriggerConfigSchema.optional(),
+    /** v5.0：Webhook 鉴权方式 */
+    auth: flowWebhookAuthSchema.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, '至少提供一个字段');
 

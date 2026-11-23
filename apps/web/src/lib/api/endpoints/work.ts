@@ -94,5 +94,9 @@ export const workApi = {
     `/api/flows/${id}/triggers/${triggerId}/rotate`,
   // v0.9 M4 运行记录与重放
   flowRunsCenter: '/api/flow-runs',
+  flowRunsReplayBatch: '/api/flow-runs/replay-batch',
+  flowRunsHealth: '/api/flow-runs/health',
+  flowRunsCleanup: '/api/flow-runs/cleanup',
+  flowRunsRetention: '/api/flow-runs/retention',
   flowRunReplay: (runId: string) => `/api/flows/runs/${runId}/replay`,
 } as const;

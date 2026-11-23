@@ -8,7 +8,8 @@ import {
 } from '@wbfm/database';
 import { describe, expect, it } from 'vitest';
 import type { CreateRunParams } from '../run/run-service-types';
-import { hashTriggerSecret } from './trigger-auth';
+import type { SecretCipher } from '../../secrets/cipher';
+import { hashTriggerSecret, signWebhookPayload } from './trigger-auth';
 import { createFlowTriggerService } from './trigger-service';
 
 const graph: FlowGraph = {
@@ -19,7 +20,7 @@ const graph: FlowGraph = {
   edges: [{ id: 'e1', source: 'start', target: 'end' }],
 };
 
-function setup() {
+function setup(cipher?: SecretCipher) {
   const db = createDatabase(':memory:');
   const workflows = createWorkflowRepository(db);
   const runs = createWorkflowRunRepository(db);
@@ -40,9 +41,15 @@ function setup() {
     },
     isDirectory: () => true,
     now: () => new Date('2026-11-23T10:00:00.000Z'),
+    ...(cipher ? { cipher } : {}),
   });
   return { db, wf, runs, triggers, service, calls };
 }
+
+const fakeCipher: SecretCipher = {
+  encrypt: (plaintext) => `enc:${plaintext}`,
+  decrypt: (ciphertext) => (ciphertext.startsWith('enc:') ? ciphertext.slice(4) : null),
+};
 
 describe('v4.25 触发执行服务', () => {
   it('创建 Webhook：一次性 Secret、只存哈希、鉴权可用', () => {
@@ -184,5 +191,63 @@ describe('v4.25 触发执行服务', () => {
     expect(() =>
       service.create(wf.id, { kind: 'file', config: { path: root, extensions: ['md'] } }),
     ).toThrow(/根目录/);
+  });
+
+  it('HMAC：签名可用、错误签名/过期窗口 401、轮换后旧签名失效', () => {
+    const { wf, triggers, service } = setup(fakeCipher);
+    const { trigger, secret } = service.create(wf.id, {
+      kind: 'webhook',
+      auth: { authMode: 'hmac' },
+    });
+    expect(trigger.authMode).toBe('hmac');
+    expect(trigger.hasSigningSecret).toBe(true);
+    expect(triggers.getSecretCipher(trigger.id)).toBe(`enc:${secret}`);
+
+    const rawBody = '{"hello":"world"}';
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = signWebhookPayload(secret!, timestamp, rawBody);
+    expect(
+      service.authenticateWebhook(trigger.id, null, { rawBody, timestamp, signature }),
+    ).toMatchObject({ ok: true });
+    expect(
+      service.authenticateWebhook(trigger.id, null, {
+        rawBody,
+        timestamp,
+        signature: signature.replace(/^./, '0'),
+      }),
+    ).toMatchObject({ ok: false, reason: 'unauthorized' });
+    const oldTimestamp = '1000000000';
+    const oldSignature = signWebhookPayload(secret!, oldTimestamp, rawBody);
+    expect(
+      service.authenticateWebhook(trigger.id, null, {
+        rawBody,
+        timestamp: oldTimestamp,
+        signature: oldSignature,
+      }),
+    ).toMatchObject({ ok: false, reason: 'unauthorized' });
+    expect(
+      service.authenticateWebhook(trigger.id, `Bearer ${secret}`),
+    ).toMatchObject({ ok: false, reason: 'unauthorized' });
+
+    const rotated = service.rotateSecret(wf.id, trigger.id);
+    expect(
+      service.authenticateWebhook(trigger.id, null, { rawBody, timestamp, signature }),
+    ).toMatchObject({ ok: false, reason: 'unauthorized' });
+    const nextSignature = signWebhookPayload(rotated.secret, timestamp, rawBody);
+    expect(
+      service.authenticateWebhook(trigger.id, null, {
+        rawBody,
+        timestamp,
+        signature: nextSignature,
+      }),
+    ).toMatchObject({ ok: true });
+  });
+
+  it('旧触发器无密文时启用 HMAC 被拒绝', () => {
+    const { wf, service } = setup();
+    const { trigger } = service.create(wf.id, { kind: 'webhook' });
+    expect(() =>
+      service.update(wf.id, trigger.id, { auth: { authMode: 'hmac' } }),
+    ).toThrow(/flow\/hmac-secret-unavailable/);
   });
 });

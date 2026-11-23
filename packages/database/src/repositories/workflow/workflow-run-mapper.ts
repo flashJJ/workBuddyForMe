@@ -33,5 +33,7 @@ export function mapRun(row: WorkflowRunRow): WorkflowRunView {
     parentRunId: row.parent_run_id,
     resumedFromNode: row.resumed_from_node,
     interruptReason: row.interrupt_reason,
+    graphHash: row.graph_hash ?? null,
+    replayBatchId: row.replay_batch_id ?? null,
   };
 }

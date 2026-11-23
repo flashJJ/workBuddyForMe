@@ -1,9 +1,7 @@
 import {
   initDatabase, createEventUsageRepository,
-  createKnowledgeRepository,
   createWorkflowRepository,
   createWorkflowEndpointRepository,
-  createWorkflowRunRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
 import {
@@ -38,10 +36,11 @@ import { createMeetingClosureService, createMeetingService } from '@wbfm/core/me
 import { createMeetingDeps } from './meeting-provider';
 import { createAgentClientsProvider, createAgentPlanContextResolver, createAgentTaskContextResolver } from './agent-clients-provider';
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
-import { createFlowRunService, ensureStarterFlows } from '@wbfm/core/flow';
-import { createFlowScheduleWiring } from './flows/flow-schedule-wiring'; import { createFlowTriggerWiring } from './flows/flow-trigger-wiring';
+import { createFlowRuntimeWiring } from './flows/flow-runtime-wiring';
+import { createFlowRunnerWiring } from './flows/flow-runner-wiring';
+import { seedFlowDefaults } from './flows/seed-flow-defaults';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
-import { createCompileRunnerService, createKnowledgeGovernanceService, ensureStarterKnowledgeBases } from '@wbfm/core/knowledge';
+import { createCompileRunnerService, createKnowledgeGovernanceService } from '@wbfm/core/knowledge';
 import { createMcpOAuthService, createMcpRegistry } from '@wbfm/core/mcp';
 import { createMemoryService } from '@wbfm/core/memory';
 import { createSchedulesService } from '@wbfm/core/scheduler';
@@ -138,9 +137,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   // 必须在 flowRunner 前构造——agent 节点执行经 startFlowNode 发起协作。
   const assistants = createAssistantsService(deps);
   // v2.17 M4：能力安装成功后回写助手白名单（下一轮 buildTools 生效）
-  deps.bindAssistantTools = (assistantId, enabledTools) => {
-    assistants.update(assistantId, { enabledTools });
-  };
+  deps.bindAssistantTools = (assistantId, enabledTools) => assistants.update(assistantId, { enabledTools });
   const knowledgeBases = createKnowledgeService(deps);
   const agentClientsFactory = { deps, runtime, assistants, knowledgeBases };
   const agentRuns = createAgentRunService({
@@ -167,25 +164,19 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const workflows = createWorkflowRepository(db);
   // v2.11：能力包 effect 需要动作服务；同一实例供容器返回
   const motionsService = createMotionService(db);
-  const capabilities = createCapabilityServiceForApp({
-    deps,
-    skills,
-    mcp,
-    workflows,
-    motions: motionsService,
-  });
+  const capabilities = createCapabilityServiceForApp({ deps, skills, mcp, workflows, motions: motionsService });
   // v2.17 M4：能力目录复用同一能力服务（同一份安装/验签/回滚语义）
   deps.capabilityCatalog = createCapabilityCatalog({ capabilities });
   // v0.9：端点仓储同时供 flowRunner（策略快照）与端点服务（管理/鉴权）使用，必须同一实例
   const endpointRepo = createWorkflowEndpointRepository(db);
-  const flowRuns = createWorkflowRunRepository(db);
-  const flowRunner = createFlowRunService({
+  let flowRuntime: ReturnType<typeof createFlowRuntimeWiring> | null = null;
+  const { runs: flowRuns, flowRunner } = createFlowRunnerWiring({
+    db,
     deps,
     runtime,
     workflows,
-    runs: flowRuns,
     endpoints: endpointRepo,
-    agentRuns,
+    ...(agentRuns ? { agentRuns } : {}),
     onEvent: (run, event, title) => {
       workSignals.ingestFlow(run, event, title);
       sessionLog.record({
@@ -194,21 +185,13 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
         type: event.type,
         payload: event,
       });
+      if (event.type === 'run_succeeded' || event.type === 'run_failed' || event.type === 'run_cancelled') {
+        const latest = flowRuns.getRun(run.id);
+        if (latest) flowRuntime?.reliability.service.onRunTerminal(latest);
+      }
     },
   });
-  // v0.8 M3：启动播种 3 个内置 starter flows（幂等，播种即发布）
-  const starterCount = ensureStarterFlows(workflows);
-  if (starterCount > 0) console.info(`[flow] 已播种 ${starterCount} 个内置工作流模板`);
-  // v2.3：启动播种内置知识库模板（幂等，固定 id，只增不改）
-  const kbStarterCount = ensureStarterKnowledgeBases(createKnowledgeRepository(db));
-  if (kbStarterCount > 0) console.info(`[knowledge] 已播种 ${kbStarterCount} 个内置知识库模板`);
-  // v1.7：清理 90 天前的事件演出流水（小表，不无限增长；失败不阻断启动）
-  try {
-    const purged = createEventUsageRepository(deps.db).purgeBefore(Date.now() - 90 * 24 * 3600_000);
-    if (purged > 0) console.info(`[event] 已清理 ${purged} 条过期演出流水`);
-  } catch (error) {
-    console.warn('[event] 演出流水清理失败', error);
-  }
+  seedFlowDefaults(db, workflows);
   deps.flowToolResolver = (workflowId) => flowRunner.resolveAsTool(workflowId); deps.flowToolLister = () => flowRunner.listPublishedTools();
   const endpoints = createEndpointService({ endpoints: endpointRepo, workflows });
   const rateLimiter = createRateLimiter();
@@ -216,6 +199,16 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
   const modPacks = createModPackService({ db, stageScenes }); const schedules = createSchedulesService(deps);
   const meetingClosure = createMeetingClosureService({ db, workflows, flowRunner, schedules });
   const branches = createRecoveredBranchService(deps);
+  const runtimeWiring = createFlowRuntimeWiring({
+    db,
+    workflows,
+    runs: flowRuns,
+    flowRunner,
+    endpoints: endpointRepo,
+    cipher,
+    audit,
+  });
+  flowRuntime = runtimeWiring;
   return {
     endpoints, rateLimiter,
     db,
@@ -245,7 +238,8 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     meetingClosure,
     runtime,
     flowRunner,
-    flowSchedules: createFlowScheduleWiring({ db, workflows, runs: flowRuns, flowRunner }), flowTriggers: createFlowTriggerWiring({ db, workflows, runs: flowRuns, flowRunner }),
+    flowReliability: runtimeWiring.reliability,
+    flowSchedules: runtimeWiring.schedules, flowTriggers: runtimeWiring.triggers,
     providers: createProviderService(deps),
     providerHealth: createProviderHealthService(deps),
     models: createModelService(deps),

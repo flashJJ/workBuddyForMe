@@ -121,6 +121,8 @@ export {
   FLOW_DIAGNOSTIC_SEVERITIES,
   FLOW_EVENT_TYPES,
   FLOW_SCHEDULE_LAST_STATUSES,
+  FLOW_RUN_FAILURE_CATEGORIES,
+  FLOW_COMPENSATION_STATES,
 } from './flow';
 export type {
   FlowStatus,
@@ -143,6 +145,20 @@ export type {
   WorkflowEndpointSecretView,
   FlowScheduleLastStatus,
   FlowScheduleView,
+  FlowRunFailureCategory,
+  FlowRunError,
+  FlowRunVersionReason,
+  FlowRunVersionCheck,
+  FlowCompensationState,
+  FlowRunCompensationView,
+  FlowReplayMode,
+  FlowReplayNodeMode,
+  FlowRunBatchReplayInput,
+  FlowRunBatchReplayItem,
+  FlowRunBatchReplayResult,
+  FlowRuntimeHealthView,
+  FlowWebhookAuthMode,
+  FlowWebhookAuthConfig,
 } from './flow';
 export {
   FLOW_TRIGGER_KINDS,

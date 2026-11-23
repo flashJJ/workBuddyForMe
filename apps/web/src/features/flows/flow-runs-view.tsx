@@ -1,29 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { History, RefreshCw, RotateCcw } from 'lucide-react';
+import { History, RefreshCw } from 'lucide-react';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import { Button } from '@/components/ui/button';
 import { SimpleSelect } from '@/components/ui/simple-select';
 import { PageBody, PageHeader, PageShell } from '@/components/layout/page-header';
-import { FailureHint } from '@/components/common/failure-hint';
-import { RunStatusBadge } from '@/components/common/run-status-badge';
 import { EmptyState, ErrorState, Spinner } from '@/components/common/state';
 import { useToast } from '@/components/common/toast';
 import { errorText } from '@/lib/i18n/resolve-error';
-import {
-  formatDurationMs,
-  isLiveOutcome,
-  RUN_OUTCOME_LABEL_KEYS,
-  runDurationMs,
-  runElapsedMs,
-  toOutcome,
-} from '@/lib/runs/run-outcome';
-import { useFlowRuns, useReplayRun, type FlowRunSummary } from '@/lib/hooks/flows';
+import { RUN_OUTCOME_LABEL_KEYS, toOutcome } from '@/lib/runs/run-outcome';
+import { useFlowRuns, useFlowRunsHealth, useReplayRun, useReplayRunsBatch, type FlowRunSummary } from '@/lib/hooks/flows';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { useIntl } from '@/lib/i18n/use-intl';
+import { FlowRunRow } from './flow-run-row';
+import { FlowRunsBatchBar } from './flow-runs-batch-bar';
+import { FlowRunsHealth } from './flow-runs-health';
 
 const TRIGGER_KEYS: Record<string, MessageKey> = {
   manual: 'flows.runs.trigger.manual',
@@ -45,18 +37,56 @@ const STATUS_OPTIONS = [
   'interrupted',
 ] as const;
 
+const RESUMABLE = new Set(['failed', 'cancelled', 'interrupted']);
+
 export function FlowRunsView() {
   const { t } = useI18n();
-  const intl = useIntl();
   const [trigger, setTrigger] = React.useState('');
   const [status, setStatus] = React.useState('');
+  const [selected, setSelected] = React.useState<ReadonlySet<string>>(new Set());
+  const [batchMode, setBatchMode] = React.useState<'snapshot' | 'latest'>('snapshot');
+  const [nodeMode, setNodeMode] = React.useState<'whole' | 'failed_node'>('failed_node');
+  const [batchSummary, setBatchSummary] = React.useState<string | null>(null);
   const runsQuery = useFlowRuns({ trigger: trigger || undefined, status: status || undefined });
+  const health = useFlowRunsHealth();
   const replay = useReplayRun();
+  const batch = useReplayRunsBatch();
   const toast = useToast();
   const router = useRouter();
 
   const runs = runsQuery.data?.runs ?? [];
   const nowMs = Date.now();
+  const pendingFailures = runs.filter((run) => run.status === 'failed').length;
+  const resumableCount = runs.filter((run) => RESUMABLE.has(run.status)).length;
+
+  const toggleSelected = (runId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(runId)) next.delete(runId);
+      else if (next.size < 20) next.add(runId);
+      return next;
+    });
+  };
+
+  const replaySelected = async () => {
+    const runIds = [...selected];
+    if (runIds.length === 0) return;
+    try {
+      const result = await batch.mutateAsync({ runIds, mode: batchMode, nodeMode });
+      setBatchSummary(
+        t('flowRuns.batch.result', {
+          started: result.summary.started,
+          skipped: result.summary.skipped,
+          failed: result.summary.failed,
+        }),
+      );
+      setSelected(new Set());
+      toast.success(t('flowRuns.batch.done', { count: result.summary.started }));
+      void runsQuery.refetch();
+    } catch (error) {
+      toast.error(errorText(error, t, { fallback: 'flowRuns.batch.failed' }));
+    }
+  };
 
   const doReplay = async (run: FlowRunSummary, nodeId?: string) => {
     try {
@@ -110,6 +140,41 @@ export function FlowRunsView() {
         </SimpleSelect>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 border-b bg-ui-card px-6 py-2 text-[11px] text-muted-foreground">
+        <span>{t('flowRuns.stats.running', { count: runs.filter((r) => r.status === 'running').length })}</span>
+        <span>{t('flowRuns.stats.failed', { count: pendingFailures })}</span>
+        <span>{t('flowRuns.stats.resumable', { count: resumableCount })}</span>
+        <span>
+          {t('flowRuns.compensation.pending')}: {health.data?.compensation.pending ?? 0} ·{' '}
+          {t('flowRuns.compensation.exhausted')}: {health.data?.compensation.exhausted ?? 0}
+        </span>
+      </div>
+
+      <details className="border-b bg-ui-card">
+        <summary className="cursor-pointer px-6 py-2 text-[11px] text-muted-foreground">
+          {t('flowRuns.health.title')}
+        </summary>
+        <FlowRunsHealth health={health.data} />
+      </details>
+
+      {selected.size > 0 && (
+        <FlowRunsBatchBar
+          selectedCount={selected.size}
+          mode={batchMode}
+          nodeMode={nodeMode}
+          pending={batch.isPending}
+          onModeChange={setBatchMode}
+          onNodeModeChange={setNodeMode}
+          onReplay={() => void replaySelected()}
+          onClear={() => setSelected(new Set())}
+        />
+      )}
+      {batchSummary && (
+        <div className="border-b bg-muted/30 px-6 py-1.5 text-[11px] text-muted-foreground">
+          {batchSummary}
+        </div>
+      )}
+
       <PageBody>
         {runsQuery.isLoading ? (
           <Spinner label={t('flows.runs.loading')} />
@@ -127,6 +192,7 @@ export function FlowRunsView() {
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left text-muted-foreground">
+                <th className="w-8 px-2 py-2" />
                 <th className="px-2 py-2 font-medium">{t('common.words.status')}</th>
                 <th className="px-2 py-2 font-medium">{t('flows.runs.workflowColumn')}</th>
                 <th className="px-2 py-2 font-medium">{t('flows.runs.source')}</th>
@@ -138,91 +204,20 @@ export function FlowRunsView() {
               </tr>
             </thead>
             <tbody>
-              {runs.map((run) => {
-                const outcome = toOutcome('flow', run.status);
-                const start = run.startedAt ?? run.createdAt;
-                const duration = formatDurationMs(
-                  isLiveOutcome(outcome)
-                    ? runElapsedMs(start, run.finishedAt, nowMs)
-                    : runDurationMs(start, run.finishedAt),
-                );
-                return (
-                <tr key={run.runId} className="border-b last:border-0 hover:bg-muted/40">
-                  <td className="px-2 py-2">
-                    <RunStatusBadge kind="flow" status={run.status} />
-                  </td>
-                  <td className="px-2 py-2">
-                    <Link href={`/flows/${run.workflowId}?run=${run.runId}`} className="hover:text-primary">
-                      {run.workflowName}
-                    </Link>
-                    <FailureHint
-                      compact
-                      className="mt-0.5 max-w-[360px]"
-                      outcome={outcome}
-                      rawError={run.error?.message}
-                      code={run.error?.code}
-                    />
-                  </td>
-                  <td className="px-2 py-2">
-                    {TRIGGER_KEYS[run.trigger] ? t(TRIGGER_KEYS[run.trigger]!) : run.trigger}
-                  </td>
-                  <td className="px-2 py-2 text-muted-foreground">v{run.version}</td>
-                  <td className="px-2 py-2 text-muted-foreground">
-                    {run.createdAt
-                      ? intl.formatDateTime(run.createdAt, {
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })
-                      : ''}
-                  </td>
-                  <td className="px-2 py-2 text-muted-foreground" title={t('runs.durationHint')}>
-                    {duration ?? t('runs.durationUnavailable')}
-                  </td>
-                  <td className="px-2 py-2 text-[10px] text-muted-foreground">
-                    {run.resumedFromNode ? (
-                      <span title={run.parentRunId ?? ''}>
-                        {t('flows.runs.replayFromNode', { node: run.resumedFromNode })}
-                      </span>
-                    ) : run.parentRunId ? (
-                      <span title={run.parentRunId}>{t('flows.runs.replayWhole')}</span>
-                    ) : (
-                      ''
-                    )}
-                  </td>
-                  <td className="px-2 py-2">
-                    <div className="flex justify-end gap-1">
-                      {run.replayNodeId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-[11px]"
-                          disabled={replay.isPending}
-                          onClick={() => doReplay(run, run.replayNodeId ?? undefined)}
-                          title={t('flows.runs.replayNodeTitle', { node: run.replayNodeId })}
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          {t('flows.runs.replayNodeButton')}
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-[11px]"
-                        disabled={replay.isPending}
-                        onClick={() => doReplay(run)}
-                        title={t('flows.runs.replayTitle')}
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        {t('flows.runs.replay')}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-                );
-              })}
+              {runs.map((run) => (
+                <FlowRunRow
+                  key={run.runId}
+                  run={run}
+                  nowMs={nowMs}
+                  selected={selected.has(run.runId)}
+                  selectDisabled={
+                    !RESUMABLE.has(run.status) || (selected.size >= 20 && !selected.has(run.runId))
+                  }
+                  replayPending={replay.isPending}
+                  onToggle={() => toggleSelected(run.runId)}
+                  onReplay={(nodeId) => void doReplay(run, nodeId)}
+                />
+              ))}
             </tbody>
           </table>
         )}

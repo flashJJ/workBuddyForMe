@@ -5,15 +5,15 @@ import {
   createWorkflowRunRepository,
   type DatabaseInstance,
 } from '@wbfm/database';
-import { beforeEach, describe, expect, it } from 'vitest';import type { SecretCipher } from '../../secrets/cipher';
-import { createPermissionService } from '../../services/permission/permission-service';
-import { createTaskGrantRegistry } from '../../services/task/task-grants';
-import type { ToolRuntime } from '../../tools/tool-runtime';
-import type { Tool } from '../../tools/types';
-import type { ServiceDeps } from '../../services/base/deps';
-import { createFlowRunService, type FlowRunService } from './run-service';
-import { drain, graphDangerTool, graphHuman, graphStartEnd } from './run-service.helpers';
-import type { FlowEventPayload } from '../graph/types';
+import { beforeEach, describe, expect, it } from 'vitest';import type { SecretCipher } from '../../../secrets/cipher';
+import { createPermissionService } from '../../../services/permission/permission-service';
+import { createTaskGrantRegistry } from '../../../services/task/task-grants';
+import type { ToolRuntime } from '../../../tools/tool-runtime';
+import type { Tool } from '../../../tools/types';
+import type { ServiceDeps } from '../../../services/base/deps';
+import { createFlowRunService, type FlowRunService } from '../run-service';
+import { drain, graphDangerTool, graphHuman, graphStartEnd } from '../run-service.helpers';
+import type { FlowEventPayload } from '../../graph/types';
 
 describe('FlowRunService（M1 集成：落库/挂起/flow 工具）', () => {
   let db: DatabaseInstance;

@@ -7,13 +7,13 @@ import {
   createWorkflowRunRepository,
 } from '@wbfm/database';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { SecretCipher } from '../../secrets/cipher';
-import { createPermissionService } from '../../services/permission/permission-service';
-import { createTaskGrantRegistry } from '../../services/task/task-grants';
-import type { ServiceDeps } from '../../services/base/deps';
-import { createToolRuntime, type ToolRuntime } from '../../tools/tool-runtime';
-import type { Tool } from '../../tools/types';
-import { createFlowRunService, type FlowRunService } from './run-service';
+import type { SecretCipher } from '../../../secrets/cipher';
+import { createPermissionService } from '../../../services/permission/permission-service';
+import { createTaskGrantRegistry } from '../../../services/task/task-grants';
+import type { ServiceDeps } from '../../../services/base/deps';
+import { createToolRuntime, type ToolRuntime } from '../../../tools/tool-runtime';
+import type { Tool } from '../../../tools/types';
+import { createFlowRunService, type FlowRunService } from '../run-service';
 
 function graphDangerTool(toolName: string): FlowGraph {
   return {

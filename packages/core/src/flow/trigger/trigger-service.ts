@@ -1,12 +1,12 @@
 import { ApiError } from '@wbfm/shared/errors';
-import type { FlowFileTriggerConfig, FlowTriggerView } from '@wbfm/shared/types';
+import type { FlowTriggerView } from '@wbfm/shared/types';
+import { generateWebhookSecret, hashTriggerSecret } from './trigger-auth';
+import { authenticateWebhookTrigger } from './trigger-webhook-auth';
 import type {
-  WorkflowRepository,
-  WorkflowRunRepository,
-  WorkflowTriggerRepository,
-} from '@wbfm/database';
-import type { CreateRunParams } from '../run/run-service-types';
-import { generateWebhookSecret, hashTriggerSecret, verifyTriggerSecret } from './trigger-auth';
+  FireResult,
+  FlowTriggerService,
+  FlowTriggerServiceDeps,
+} from './trigger-service-types';
 import {
   buildWebhookInput,
   defaultIsDirectory,
@@ -27,62 +27,16 @@ import {
  * 运行入参约定见 docs/plan/v4.25/contracts.md。
  */
 
-export interface FlowTriggerRunner {
-  createRun(params: CreateRunParams): string;
-}
+export type {
+  FileTriggerEvent,
+  FireResult,
+  FlowTriggerRunner,
+  FlowTriggerService,
+  FlowTriggerServiceDeps,
+} from './trigger-service-types';
+export type { WebhookAuthResult } from './trigger-webhook-auth';
 
-export type FireResult =
-  | { ok: true; runId: string }
-  | { ok: false; reason: 'busy' | 'not_published' | 'duplicate' | 'disabled' | 'error' };
-
-export type WebhookAuthResult =
-  | { ok: true; trigger: FlowTriggerView }
-  | { ok: false; reason: 'not_found' | 'unauthorized' };
-
-export interface FileTriggerEvent {
-  path: string;
-  name: string;
-  ext: string;
-  eventType: 'add' | 'change';
-  changedAt: string;
-}
-
-export interface FlowTriggerServiceDeps {
-  triggers: WorkflowTriggerRepository;
-  workflows: WorkflowRepository;
-  runs: WorkflowRunRepository;
-  flowRunner: FlowTriggerRunner;
-  now?: () => Date;
-  onChange?: () => void;
-  isDirectory?: (path: string) => boolean;
-}
-
-export interface FlowTriggerService {
-  list(workflowId: string): FlowTriggerView[];
-  create(
-    workflowId: string,
-    input:
-      | { kind: 'webhook'; name?: string }
-      | { kind: 'file'; name?: string; config: FlowFileTriggerConfig },
-  ): { trigger: FlowTriggerView; secret?: string };
-  update(
-    workflowId: string,
-    triggerId: string,
-    patch: { name?: string; enabled?: boolean; config?: FlowFileTriggerConfig },
-  ): FlowTriggerView;
-  remove(workflowId: string, triggerId: string): boolean;
-  /** v4.26：轮换 Webhook Secret；新明文仅本次返回 */
-  rotateSecret(workflowId: string, triggerId: string): { trigger: FlowTriggerView; secret: string };
-  authenticateWebhook(triggerId: string, authorization: string | null): WebhookAuthResult;
-  fireWebhook(
-    trigger: FlowTriggerView,
-    payload: Record<string, unknown>,
-    idempotencyKey?: string,
-  ): FireResult;
-  fireFile(trigger: FlowTriggerView, file: FileTriggerEvent): FireResult;
-  /** 监听器无法建立时的状态回写 */
-  markError(triggerId: string): void;
-}
+/* v5.0：服务契约见 ./trigger-service-types（此处仅 re-export） */
 
 export function createFlowTriggerService(deps: FlowTriggerServiceDeps): FlowTriggerService {
   const now = deps.now ?? (() => new Date());
@@ -199,6 +153,8 @@ export function createFlowTriggerService(deps: FlowTriggerServiceDeps): FlowTrig
           name,
           config: null,
           secretHash: hashTriggerSecret(secret),
+          ...(deps.cipher ? { secretCipher: deps.cipher.encrypt(secret) } : {}),
+          ...(input.auth ? { authMode: input.auth.authMode } : {}),
         });
         deps.onChange?.();
         return { trigger, secret };
@@ -220,6 +176,17 @@ export function createFlowTriggerService(deps: FlowTriggerServiceDeps): FlowTrig
       if (trigger.kind === 'webhook' && patch.config !== undefined) {
         throw ApiError.validation('Webhook 触发器不支持修改文件配置');
       }
+      if (trigger.kind === 'file' && patch.auth !== undefined) {
+        throw ApiError.validation('文件触发器不支持配置鉴权方式');
+      }
+      if (
+        trigger.kind === 'webhook' &&
+        patch.auth &&
+        patch.auth.authMode !== 'bearer' &&
+        !deps.triggers.getSecretCipher(triggerId)
+      ) {
+        throw ApiError.conflict('启用 HMAC 前需先轮换 Secret 以生成加密密钥 [flow/hmac-secret-unavailable]');
+      }
       if (patch.enabled === true) {
         ensurePublished(requireWorkflow(deps.workflows, workflowId));
       }
@@ -229,6 +196,7 @@ export function createFlowTriggerService(deps: FlowTriggerServiceDeps): FlowTrig
         ...(patch.name === undefined ? {} : { name: patch.name.trim() || trigger.name }),
         ...(patch.enabled === undefined ? {} : { enabled: patch.enabled }),
         ...(config === undefined ? {} : { config }),
+        ...(patch.auth ? { authMode: patch.auth.authMode } : {}),
       });
       if (!updated) throw ApiError.notFound('触发器', triggerId);
       deps.onChange?.();
@@ -248,23 +216,24 @@ export function createFlowTriggerService(deps: FlowTriggerServiceDeps): FlowTrig
         throw ApiError.validation('仅 Webhook 触发器支持轮换 Secret');
       }
       const secret = generateWebhookSecret();
-      const updated = deps.triggers.rotateSecret(triggerId, hashTriggerSecret(secret));
+      const updated = deps.cipher
+        ? deps.triggers.setSecret(triggerId, {
+            secretHash: hashTriggerSecret(secret),
+            secretCipher: deps.cipher.encrypt(secret),
+          })
+        : deps.triggers.rotateSecret(triggerId, hashTriggerSecret(secret));
       if (!updated) throw ApiError.notFound('触发器', triggerId);
       return { trigger: updated, secret };
     },
 
-    authenticateWebhook(triggerId, authorization) {
-      const trigger = deps.triggers.getById(triggerId);
-      if (!trigger || trigger.kind !== 'webhook' || !trigger.enabled) {
-        return { ok: false, reason: 'not_found' };
-      }
-      const match = /^Bearer\s+(.+)$/i.exec(authorization?.trim() ?? '');
-      if (!match) return { ok: false, reason: 'unauthorized' };
-      const hash = deps.triggers.getSecretHash(triggerId);
-      if (!hash || !verifyTriggerSecret(match[1]!, hash)) {
-        return { ok: false, reason: 'unauthorized' };
-      }
-      return { ok: true, trigger };
+    authenticateWebhook(triggerId, authorization, options) {
+      return authenticateWebhookTrigger({
+        triggers: deps.triggers,
+        ...(deps.cipher ? { cipher: deps.cipher } : {}),
+        triggerId,
+        authorization,
+        ...(options ? { options } : {}),
+      });
     },
 
     fireWebhook(trigger, payload, idempotencyKey) {

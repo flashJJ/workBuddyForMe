@@ -1,5 +1,6 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
 import type { WorkflowRunRepository } from '@wbfm/database';
+import { classifyFlowRunError } from '../reliability/failure-classifier';
 
 /**
  * 把引擎 SSE 事件同步为 workflow_runs / node_executions 落库。
@@ -61,11 +62,11 @@ export function createFlowRunStore(
           break;
         case 'run_failed':
           runs.finishRun(runId, 'failed', {
-            error: {
+            error: classifyFlowRunError({
               code: 'flow/run-failed',
               message: event.message,
               ...(event.nodeId ? { nodeId: event.nodeId } : {}),
-            },
+            }),
           });
           break;
         case 'run_cancelled':

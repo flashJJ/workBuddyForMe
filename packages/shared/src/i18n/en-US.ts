@@ -22,6 +22,7 @@ import { enDocumentViewer } from './messages/document-viewer';
 import { enMemory } from './messages/memory';
 import { enTasks } from './messages/tasks';
 import { enFlows } from './messages/flows';
+import { enFlowRuns } from './messages/flow-runs';
 import { enShare } from './messages/share';
 import { enShortcuts } from './messages/shortcuts';
 import { enOnboarding } from './messages/onboarding';
@@ -99,6 +100,7 @@ export const enUS: DeepPartialMessages<ZhDictionary> = {
   memory: enMemory,
   tasks: enTasks,
   flows: enFlows,
+  flowRuns: enFlowRuns,
   share: enShare,
   shortcuts: enShortcuts,
   onboarding: enOnboarding,

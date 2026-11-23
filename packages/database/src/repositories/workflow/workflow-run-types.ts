@@ -1,4 +1,4 @@
-import type { FlowRunStatus, FlowTrigger } from '@wbfm/shared/types';
+import type { FlowRunError, FlowRunStatus, FlowTrigger } from '@wbfm/shared/types';
 
 export interface WorkflowRunRow {
   id: string;
@@ -18,6 +18,10 @@ export interface WorkflowRunRow {
   parent_run_id: string | null;
   resumed_from_node: string | null;
   interrupt_reason: string | null;
+  /** v5.0 */
+  graph_snapshot_json: string | null;
+  graph_hash: string | null;
+  replay_batch_id: string | null;
 }
 
 export interface NodeExecutionRow {
@@ -45,6 +49,11 @@ export interface WorkflowRunCreateFields {
   /** v0.9：重放关联 */
   parentRunId?: string | null;
   resumedFromNode?: string | null;
+  /** v5.0：运行图快照与哈希 */
+  graphSnapshotJson?: string | null;
+  graphHash?: string | null;
+  /** v5.0：批量重放批次 */
+  replayBatchId?: string | null;
 }
 
 export type RunTerminalStatus = Extract<
@@ -54,7 +63,7 @@ export type RunTerminalStatus = Extract<
 
 export interface RunFinishFields {
   output?: unknown;
-  error?: { code: string; message: string; nodeId?: string };
+  error?: FlowRunError;
 }
 
 export interface RunListFilter {

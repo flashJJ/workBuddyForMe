@@ -1,4 +1,4 @@
-import type { FlowEventPayload } from '@wbfm/shared/types';
+import type { FlowEventPayload, PermissionLevel } from '@wbfm/shared/types';
 import { isUnattendedFlowTrigger } from '@wbfm/shared/types';
 import {
   AGENT_DESKTOP_SCOPE,
@@ -40,6 +40,24 @@ export async function* runAgentNode(
 
   const strOrNull = (v: unknown): string | null =>
     typeof v === 'string' && v.trim() ? v.trim() : null;
+  let agentRunId = '';
+  const toolGate =
+    unattended && ctx.evaluateUnattended
+      ? (toolName: string, permission: PermissionLevel) => {
+          if (permission === 'read') return { allowed: true };
+          const verdict = ctx.evaluateUnattended!(toolName, permission);
+          if (!verdict.allowed) {
+            ctx.auditToolDenied?.({
+              nodeId,
+              agentRunId,
+              toolName,
+              permission,
+              reason: verdict.reason,
+            });
+          }
+          return { allowed: verdict.allowed, reason: verdict.reason };
+        }
+      : undefined;
   const { runId, events } = await ctx.startAgentCollab({
     goal,
     assistantId: strOrNull(config.assistantId),
@@ -50,7 +68,9 @@ export async function* runAgentNode(
     flowRunId: base.runId,
     nodeExecutionId: nodeId,
     ...(ctx.signal ? { signal: ctx.signal } : {}),
+    ...(toolGate ? { toolGate } : {}),
   });
+  agentRunId = runId;
 
   let final;
   for (;;) {

@@ -3,20 +3,24 @@ import { ApiError } from '@wbfm/shared/errors';
 import { type FlowHumanSubmitInput } from '@wbfm/shared/schemas';
 import type { Tool } from '../../tools/types';
 import { createRetrievalService } from '../../retrieval/retrieval-service';
-import { compileFlow } from '../compiler/compiler';
 import { createFlowWaitRegistry } from './wait-registry';
 import { buildFlowTool } from '../invoke/flow-tool';
 import { createChatInvoker } from '../invoke/chat-invoke';
 import { createFlowEventBus, type FlowEventBus } from '../queue/event-bus';
 import { createFlowRunQueue } from '../queue/run-queue';
-import { recoverInterruptedRuns } from '../queue/recovery-scanner';
-import { decideResume } from '../queue/resume-policy';
-import { loadCheckpoint } from '../queue/checkpoint';
 import { waitForRunTerminal } from '../queue/terminal-wait';
 import { createFlowExecutor, type FlowExecutor } from './flow-execution';
 import { resolveRunRuntimeOverrides, type RunRuntimeOverrides } from './run-options';
+import { recoverFlowRuns } from './run-recovery';
 import { streamRunEvents } from './run-event-stream';
-import type { CreateRunParams, FlowRunService, FlowRunServiceDeps } from './run-service-types';
+import { compileGraph, loadCompiledGraph } from './run-graph-loader';
+import { loadRunGraph, serializeRunGraph } from '../reliability/run-snapshot';
+import type {
+  CreateRunFromGraphParams,
+  CreateRunParams,
+  FlowRunService,
+  FlowRunServiceDeps,
+} from './run-service-types';
 
 export type { CreateRunParams, FlowRunService, FlowRunServiceDeps } from './run-service-types';
 
@@ -56,21 +60,8 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
   /** 运行期附加参数（策略快照/重放闭包，见 run-options.ts），执行结束即删除 */
   const runOverrides = new Map<string, RunRuntimeOverrides>();
 
-  function loadCompiledGraph(workflowId: string, requirePublished: boolean) {
-    const wf = workflows.getWorkflow(workflowId);
-    if (!wf) throw ApiError.notFound('工作流不存在');
-    // v2.14：有生产版本时，保存草稿不影响对外运行
-    if (requirePublished && wf.publishedVersion === null && wf.status !== 'published') {
-      throw ApiError.validation('工作流尚未发布');
-    }
-    const versionView = workflows.getProductionVersion(workflowId);
-    if (!versionView) throw ApiError.validation('工作流还没有已保存的版本');
-    const result = compileFlow(versionView.graph);
-    if (!result.compiled) {
-      const detail = result.diagnostics.map((d) => `[${d.severity}] ${d.message}`).join('；');
-      throw ApiError.validation(`工作流图校验未通过：${detail}`);
-    }
-    return { version: versionView.version, compiled: result.compiled, graph: versionView.graph };
+  function loadCompiledFor(workflowId: string, requirePublished: boolean) {
+    return loadCompiledGraph(workflows, workflowId, requirePublished);
   }
 
   const executor: FlowExecutor = createFlowExecutor({
@@ -83,10 +74,11 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
     ...(serviceDeps.agentRuns ? { agentRuns: serviceDeps.agentRuns } : {}),
   });
 
-  /** 队列执行体：认领后的 run → 编译 → 执行 → 事件发布到总线 */
+  /** 队列执行体：认领后的 run → 载图（快照优先）→ 编译 → 执行 → 事件发布到总线 */
   async function runQueued(run: WorkflowRunView): Promise<void> {
     try {
-      const { compiled } = loadCompiledGraph(run.workflowId, run.trigger !== 'manual');
+      const loaded = loadRunGraph({ run, workflows, runs });
+      const compiled = compileGraph(loaded.graph);
       const overrides = runOverrides.get(run.id);
       const generator = executor.execute(compiled, {
         runId: run.id,
@@ -102,9 +94,13 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
       // 编译/执行体异常必须收敛终态：认领时 DB 已置 running，
       // 不落终态会让运行永久停在 running（只能靠重启恢复扫描）。
       const message = error instanceof Error ? error.message : String(error);
+      const graphUnavailable = message.includes('flow/run-graph-unavailable');
       try {
-        runs.finishRun(run.id, 'failed', {
-          error: { code: 'flow/run-failed', message },
+        runs.finishRun(run.id, graphUnavailable ? 'interrupted' : 'failed', {
+          error: {
+            code: graphUnavailable ? 'flow/run-graph-unavailable' : 'flow/run-failed',
+            message,
+          },
         });
         bus.publish(run.id, {
           type: 'run_failed',
@@ -131,39 +127,13 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
 
   // v4.23 启动恢复：queued 重新入队；在途运行按安全矩阵续跑或保持 interrupted
   const startupActiveIds = new Set(active.keys());
-  const recovery = recoverInterruptedRuns(runs, startupActiveIds, (runId) => {
-    try {
-      const run = runs.getRun(runId);
-      if (!run) return 'interrupt';
-      const loaded = loadCompiledGraph(run.workflowId, run.trigger !== 'manual');
-      const decision = decideResume({
-        run,
-        nodes: runs.listNodeExecutions(runId),
-        compiled: loaded.compiled,
-        compiledVersion: loaded.version,
-        activeRunIds: startupActiveIds,
-        resolveTool: (name) => runtime.resolveTool(name)?.tool ?? null,
-      });
-      if (!decision.eligible) return 'interrupt';
-
-      const checkpoint = loadCheckpoint(runs, runId);
-      const overrides = resolveRunRuntimeOverrides({
-        trigger: run.trigger,
-        endpointId: run.endpointId,
-        compiled: loaded.compiled,
-        endpoints,
-      });
-      runOverrides.set(runId, {
-        ...overrides,
-        ...(checkpoint ? { checkpoint } : {}),
-        resumeReason: decision.reason,
-      });
-      return 'resume';
-    } catch (error) {
-      // 版本缺失/删除/编译失败等：保持 interrupted，等人工重放
-      console.warn('[flow] 续跑判定失败，保持 interrupted：', error);
-      return 'interrupt';
-    }
+  const recovery = recoverFlowRuns({
+    workflows,
+    runs,
+    endpoints,
+    startupActiveIds,
+    resolveTool: (name) => runtime.resolveTool(name)?.tool ?? null,
+    onResumed: (runId, overrides) => runOverrides.set(runId, overrides),
   });
   for (const runId of [...recovery.requeued, ...recovery.resumed]) queue.enqueue(runId);
 
@@ -183,24 +153,51 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
 
   function createRun(params: CreateRunParams): string {
     const trigger = params.trigger ?? 'manual';
-    const { version, compiled } = loadCompiledGraph(params.workflowId, trigger === 'chat');
+    if (params.replay) {
+      const parent = runs.getRun(params.replay.parentRunId);
+      if (!parent) throw ApiError.notFound('工作流运行', params.replay.parentRunId);
+      const loaded = loadRunGraph({ run: parent, workflows, runs });
+      return createRunFromGraph({
+        ...params,
+        graph: loaded.graph,
+        version: loaded.version,
+        parentRunId: parent.id,
+        resumedFromNode: params.replay.resumedFromNode ?? null,
+      });
+    }
+    const { version, graph } = loadCompiledFor(params.workflowId, trigger === 'chat');
+    return createRunFromGraph({ ...params, graph, version });
+  }
+
+  function createRunFromGraph(params: CreateRunFromGraphParams): string {
+    const trigger = params.trigger ?? 'manual';
+    const compiled = compileGraph(params.graph);
     const overrides = resolveRunRuntimeOverrides({
       trigger,
       endpointId: params.endpointId,
-      replay: params.replay,
+      replay: params.parentRunId
+        ? {
+            parentRunId: params.parentRunId,
+            ...(params.resumedFromNode ? { resumedFromNode: params.resumedFromNode } : {}),
+          }
+        : undefined,
       compiled,
       endpoints,
     });
+    const snapshot = serializeRunGraph(params.graph);
 
     const run = runs.createRun({
       workflowId: params.workflowId,
-      version,
+      version: params.version,
       trigger,
       input: params.input ?? {},
       conversationId: params.conversationId ?? null,
       endpointId: params.endpointId ?? null,
-      parentRunId: params.replay?.parentRunId ?? null,
-      resumedFromNode: params.replay?.resumedFromNode ?? null,
+      parentRunId: params.parentRunId ?? null,
+      resumedFromNode: params.resumedFromNode ?? null,
+      replayBatchId: params.replayBatchId ?? null,
+      graphSnapshotJson: snapshot.json,
+      graphHash: snapshot.hash,
     });
     runOverrides.set(run.id, overrides);
     // chat 路径由 invokeFromChat 在调用协程内直接执行；其余触发器入队
@@ -219,7 +216,7 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
 
   const invokeFromChat = createChatInvoker({
     // 对话要求已发布；createRun 内部仍会再次校验
-    loadCompiledPublished: (workflowId) => loadCompiledGraph(workflowId, true),
+    loadCompiledPublished: (workflowId) => loadCompiledFor(workflowId, true),
     createChatRun: ({ workflowId, input }) => createRun({ workflowId, input, trigger: 'chat' }),
     executor,
     bus,
@@ -240,6 +237,7 @@ export function createFlowRunService(serviceDeps: FlowRunServiceDeps): FlowRunSe
 
   return {
     createRun,
+    createRunFromGraph,
     enqueueRun: (runId) => queue.enqueue(runId),
     subscribeRunEvents,
     waitForTerminal: (runId, timeoutMs) =>

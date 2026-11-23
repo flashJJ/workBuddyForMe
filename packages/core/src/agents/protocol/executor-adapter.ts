@@ -9,6 +9,7 @@ import { createRetrievalService } from '../../retrieval/retrieval-service';
 import { sys } from '../../i18n/system-text';
 import { buildExecutorOutcome } from './executor-outcome';
 import type { ExecutorClient } from '../runner/runner-types';
+import type { AgentToolGate } from '../runner/runner-types';
 
 /**
  * v1.4 M2 Executor 适配器：把子任务单交给执行通道并收敛为 ExecutorOutcome。
@@ -51,6 +52,8 @@ export interface CreateExecutorAdapterParams {
   assistantKnowledgeBaseIds: string[];
   /** 按观察模式取得决策器（生产侧完成角色模型三级回落；测试注入脚本） */
   resolvePlanner: (mode: ObserveMode) => ExecutorPlannerResolution;
+  /** v5.0：Flow 无人值守下对每次工具执行做流程级裁决 */
+  toolGate?: AgentToolGate;
 }
 
 /**
@@ -114,6 +117,17 @@ function terminalNoteFor(
   return undefined;
 }
 
+function filterTools(
+  names: string[],
+  gate: AgentToolGate,
+  runtime: ToolRuntime,
+): string[] {
+  return names.filter((name) => {
+    const permission = runtime.resolveTool(name)?.tool.permission ?? 'read';
+    return gate(name, permission).allowed;
+  });
+}
+
 export function createExecutorAdapter(params: CreateExecutorAdapterParams): ExecutorClient {
   const { deps, runtime } = params;
   const retrieval = createRetrievalService(deps);
@@ -135,7 +149,10 @@ export function createExecutorAdapter(params: CreateExecutorAdapterParams): Exec
       const knowledgeBaseNames = knowledgeBaseIds
         .map((id) => knowledgeRepo.findById(id)?.name ?? '')
         .filter(Boolean);
-      const allowedTools = resolveAllowedTools(subtask.toolScopes, deps);
+      const allowedNames = resolveAllowedTools(subtask.toolScopes, deps);
+      const allowedTools = params.toolGate
+        ? filterTools(allowedNames, params.toolGate, runtime)
+        : allowedNames;
       const repo = createTaskRunRepository(deps.db);
       const taskRun = repo.createRun({
         // Flow/无会话入口 v020 起 task_runs.conversation_id 可空

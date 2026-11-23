@@ -28,11 +28,13 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
         `INSERT INTO workflow_runs
            (id, workflow_id, version, trigger, status, input_json, output_json, error_json,
             conversation_id, wait_node_id, started_at, finished_at, created_at,
-            endpoint_id, parent_run_id, resumed_from_node, interrupt_reason)
+            endpoint_id, parent_run_id, resumed_from_node, interrupt_reason,
+            graph_snapshot_json, graph_hash, replay_batch_id)
          VALUES
            (@id, @workflowId, @version, @trigger, 'queued', @inputJson, NULL, NULL,
             @conversationId, NULL, NULL, NULL, @ts,
-            @endpointId, @parentRunId, @resumedFromNode, NULL)`,
+            @endpointId, @parentRunId, @resumedFromNode, NULL,
+            @graphSnapshotJson, @graphHash, @replayBatchId)`,
       ).run({
         id,
         workflowId: fields.workflowId,
@@ -43,17 +45,17 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
         endpointId: fields.endpointId ?? null,
         parentRunId: fields.parentRunId ?? null,
         resumedFromNode: fields.resumedFromNode ?? null,
+        graphSnapshotJson: fields.graphSnapshotJson ?? null,
+        graphHash: fields.graphHash ?? null,
+        replayBatchId: fields.replayBatchId ?? null,
         ts,
       });
       return mapRun(this.getRunRow(id)!);
     },
 
     getRunRow(id: string): WorkflowRunRow | null {
-      return (
-        (db.prepare('SELECT * FROM workflow_runs WHERE id = ?').get(id) as
-          | WorkflowRunRow
-          | undefined) ?? null
-      );
+      const row = db.prepare('SELECT * FROM workflow_runs WHERE id = ?').get(id) as WorkflowRunRow | undefined;
+      return row ?? null;
     },
 
     getRun(id: string): WorkflowRunView | null {
@@ -198,6 +200,62 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
         id,
       });
       return mapRun(this.getRunRow(id)!);
+    },
+
+    /** v5.0：运行图快照（续跑/重放用） */
+    getGraphSnapshot(runId: string): { graphJson: string; hash: string | null } | null {
+      const row = db
+        .prepare('SELECT graph_snapshot_json, graph_hash FROM workflow_runs WHERE id = ?')
+        .get(runId) as { graph_snapshot_json: string | null; graph_hash: string | null } | undefined;
+      if (!row?.graph_snapshot_json) return null;
+      return { graphJson: row.graph_snapshot_json, hash: row.graph_hash ?? null };
+    },
+
+    /** v5.0：批量重放批次追溯 */
+    setReplayBatch(runId: string, batchId: string): void {
+      db.prepare('UPDATE workflow_runs SET replay_batch_id = ? WHERE id = ?').run(batchId, runId);
+    },
+
+    /** v5.0：清理候选（终态且创建时间早于截止） */
+    listTerminalBefore(cutoffIso: string, limit = 200): WorkflowRunView[] {
+      const rows = db
+        .prepare(
+          `SELECT * FROM workflow_runs
+           WHERE status IN ('succeeded','failed','cancelled','interrupted')
+             AND created_at < ?
+           ORDER BY created_at ASC LIMIT ?`,
+        )
+        .all(cutoffIso, limit) as WorkflowRunRow[];
+      return rows.map(mapRun);
+    },
+
+    /** v5.0：每流程保留 N 条终态运行，返回超出的最旧行 */
+    listTerminalBeyondPerWorkflow(workflowId: string, keep: number): WorkflowRunView[] {
+      const rows = db
+        .prepare(
+          `SELECT * FROM workflow_runs
+           WHERE workflow_id = ?
+             AND status IN ('succeeded','failed','cancelled','interrupted')
+           ORDER BY created_at DESC
+           LIMIT -1 OFFSET ?`,
+        )
+        .all(workflowId, Math.max(0, keep)) as WorkflowRunRow[];
+      return rows.map(mapRun);
+    },
+
+    /** v5.0：删除终态运行（node_executions 级联），返回删除数 */
+    deleteRuns(runIds: string[]): number {
+      if (runIds.length === 0) return 0;
+      const stmt = db.prepare(
+        `DELETE FROM workflow_runs
+         WHERE id = ? AND status IN ('succeeded','failed','cancelled','interrupted')`,
+      );
+      let removed = 0;
+      const tx = db.transaction((ids: string[]) => {
+        for (const id of ids) removed += stmt.run(id).changes;
+      });
+      tx(runIds);
+      return removed;
     },
 
     /** v4.24：流程是否有在途运行（定时单飞保护） */

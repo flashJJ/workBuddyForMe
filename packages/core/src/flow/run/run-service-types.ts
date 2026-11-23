@@ -3,7 +3,7 @@ import {
   type FlowTrigger,
   type WorkflowRunView,
 } from '@wbfm/shared/types';
-import { type FlowHumanSubmitInput } from '@wbfm/shared/schemas';
+import { type FlowGraph, type FlowHumanSubmitInput } from '@wbfm/shared/schemas';
 import type {
   WorkflowEndpointRepository,
   WorkflowRepository,
@@ -39,9 +39,20 @@ export interface CreateRunParams {
   replay?: { parentRunId: string; resumedFromNode?: string };
 }
 
+/** v5.0：重放/补偿显式固定图与版本，避免再次读取当前生产版本 */
+export interface CreateRunFromGraphParams extends Omit<CreateRunParams, 'replay'> {
+  graph: FlowGraph;
+  version: number;
+  parentRunId?: string | null;
+  resumedFromNode?: string | null;
+  replayBatchId?: string | null;
+}
+
 export interface FlowRunService {
   /** 登记 queued 运行（校验图 + 建记录）；manual/api/mcp 自动入队，chat 由 invokeFromChat 直接执行 */
   createRun(params: CreateRunParams): string;
+  /** v5.0：以显式图/版本创建运行（单条/批量/补偿重放共用） */
+  createRunFromGraph(params: CreateRunFromGraphParams): string;
   /** 显式入队（恢复扫描等内部场景；重复调用幂等） */
   enqueueRun(runId: string): void;
   /**

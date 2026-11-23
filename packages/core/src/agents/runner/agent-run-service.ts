@@ -1,7 +1,4 @@
-﻿import {
-  createAgentRunRepository,
-  createTaskRunCheckpointRepository,
-} from '@wbfm/database';
+﻿import { createAgentRunRepository, createTaskRunCheckpointRepository } from '@wbfm/database';
 import { ApiError } from '@wbfm/shared/errors';
 import { AGENT_BUDGET_DEFAULTS, type AgentRunView } from '@wbfm/shared/schemas';
 import { createAgentRunner } from './agent-runner';
@@ -102,9 +99,7 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       pendingObservers.fail(params.run.id);
       throw error;
     }
-    const signal = params.clientSignal
-      ? AbortSignal.any([params.clientSignal, abort.signal])
-      : abort.signal;
+    const signal = params.clientSignal ? AbortSignal.any([params.clientSignal, abort.signal]) : abort.signal;
     return { signal, clients, bus };
   }
 
@@ -221,7 +216,11 @@ export function createAgentRunService(deps: AgentRunServiceDeps): AgentRunServic
       });
       const prepared = await prepare({
         run,
-        overrides: { roleModelIds: params.roleModelIds, knowledgeBaseIds: params.knowledgeBaseIds },
+        overrides: {
+          roleModelIds: params.roleModelIds,
+          knowledgeBaseIds: params.knowledgeBaseIds,
+          ...(params.toolGate ? { toolGate: params.toolGate } : {}),
+        },
         clientSignal: params.signal,
       });
       const events = launch(run, prepared, {

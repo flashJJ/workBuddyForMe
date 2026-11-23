@@ -2,6 +2,7 @@
 export * from './compiler';
 export * from './engine';
 export * from './run';
+export * from './reliability';
 export * from './invoke';
 export * from './substeps';
 export * from './graph';

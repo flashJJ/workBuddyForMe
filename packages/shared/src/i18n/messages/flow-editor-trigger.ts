@@ -37,6 +37,14 @@ export const zhFlowEditorTrigger = {
   urlLabel: 'Webhook 地址',
   copy: '复制',
   copied: '已复制',
+  authMode: {
+    label: '鉴权方式',
+    bearer: 'Bearer',
+    hmac: 'HMAC',
+    both: '两者',
+    rotateFirst: '启用 HMAC 前需先轮换 Secret',
+    failed: '鉴权方式更新失败',
+  },
   status: {
     created: '已创建运行',
     skipped_busy: '有在途运行，已跳过',

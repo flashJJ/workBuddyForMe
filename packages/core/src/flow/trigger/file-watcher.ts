@@ -60,6 +60,12 @@ export interface FlowFileWatcher {
   reconcile(): void;
   dispose(): void;
   activeCount(): number;
+  stats(): {
+    active: boolean;
+    watchingCount: number;
+    lastEventAt: string | null;
+    lastError: string | null;
+  };
 }
 
 const DEFAULT_DEBOUNCE_MS = 800;
@@ -86,8 +92,12 @@ export function createFlowFileWatcher(deps: FlowFileWatcherDeps): FlowFileWatche
     { trigger: FlowTriggerView; file: FileTriggerEvent; timer: ReturnType<typeof setTimeout> }
   >();
   const lastFired = new Map<string, number>();
+  let started = false;
+  let lastEventAt: string | null = null;
+  let lastError: string | null = null;
 
   function reportError(triggerId: string, message: string): void {
+    lastError = message;
     console.warn(`[flow-trigger] ${message}`);
     deps.onError?.(triggerId, message);
   }
@@ -105,6 +115,7 @@ export function createFlowFileWatcher(deps: FlowFileWatcherDeps): FlowFileWatche
     const key = `${trigger.id}:${file.path}`;
     const existing = pending.get(key);
     if (existing) clearTimeout(existing.timer);
+    lastEventAt = now().toISOString();
     const timer = setTimeout(() => {
       pending.delete(key);
       fire(trigger, file);
@@ -199,10 +210,12 @@ export function createFlowFileWatcher(deps: FlowFileWatcherDeps): FlowFileWatche
 
   return {
     start() {
+      started = true;
       reconcile();
     },
     reconcile,
     dispose() {
+      started = false;
       for (const id of [...entries.keys()]) closeTrigger(id);
       for (const item of pending.values()) clearTimeout(item.timer);
       pending.clear();
@@ -211,5 +224,11 @@ export function createFlowFileWatcher(deps: FlowFileWatcherDeps): FlowFileWatche
     activeCount() {
       return entries.size;
     },
+    stats: () => ({
+      active: started,
+      watchingCount: entries.size,
+      lastEventAt,
+      lastError,
+    }),
   };
 }

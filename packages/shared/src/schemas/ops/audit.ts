@@ -24,6 +24,10 @@ export const AUDIT_EVENT_KINDS = [
   'skill_version_deleted',
   'secrets_rotated',
   'audit_verified',
+  'flow_compensation_scheduled',
+  'flow_compensation_exhausted',
+  'flow_retention_cleanup',
+  'flow_agent_tool_denied',
 ] as const;
 
 export type AuditEventKind = (typeof AUDIT_EVENT_KINDS)[number];

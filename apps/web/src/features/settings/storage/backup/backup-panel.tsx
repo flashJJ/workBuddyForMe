@@ -17,6 +17,7 @@ import {
 import { BACKUP_TRACK_KEYS as TRACK_KEYS, BACKUP_TRACK_ORDER as TRACK_ORDER } from './backup-tracks';
 import { BackupHistoryCard } from './backup-history-card';
 import { BackupRestoreSection } from './backup-restore-section';
+import { RunRetentionPanel } from '../retention/run-retention-panel';
 
 function parseReportHeader(raw: string | null): BackupExportReport | null {
   if (!raw) return null;
@@ -262,6 +263,8 @@ export function BackupPanel() {
       <BackupHistoryCard history={history} report={report} />
 
       <BackupRestoreSection />
+
+      <RunRetentionPanel />
     </section>
   );
 }

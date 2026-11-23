@@ -130,6 +130,7 @@ export function createAgentClientsProvider(factory: AgentClientsFactoryDeps): Ag
       runtime: factory.runtime,
       run,
       assistantKnowledgeBaseIds: knowledgeBaseIds,
+      ...(overrides?.toolGate ? { toolGate: overrides.toolGate } : {}),
       resolvePlanner: () => {
         // 用量对象由 planner onUsage 就地累计，适配器在本轮结束时读账
         const usage = { promptTokens: 0, completionTokens: 0 };

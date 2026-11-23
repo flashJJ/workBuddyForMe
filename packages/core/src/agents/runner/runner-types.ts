@@ -81,6 +81,14 @@ export interface PlannerRoundHistory {
   review: ReviewVerdictPayload;
 }
 
+import type { PermissionLevel } from '@wbfm/shared/types';
+
+/** v5.0：Flow 无人值守下对 agent 内部工具的流程级裁决 */
+export type AgentToolGate = (
+  toolName: string,
+  permission: PermissionLevel,
+) => { allowed: boolean; reason?: string };
+
 export interface StartAgentRunInput {
   /** 预建运行 id（POST /api/agent/runs 先行建行，events 订阅时启动）；缺省由 runner 建行 */
   runId?: string;

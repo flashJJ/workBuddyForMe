@@ -1,9 +1,9 @@
 import type { FlowEventPayload } from '@wbfm/shared/types';
 import type { FlowGraph, FlowNodeType } from '@wbfm/shared/schemas';
 import { describe, expect, it } from 'vitest';
-import { compileFlow } from '../compiler/compiler';
-import { runFlow } from './engine';
-import type { FlowNodeHandler } from '../graph/types';
+import { compileFlow } from '../../compiler/compiler';
+import { runFlow } from '../engine';
+import type { FlowNodeHandler } from '../../graph/types';
 
 async function collect(gen: AsyncGenerator<FlowEventPayload>): Promise<FlowEventPayload[]> {
   const events: FlowEventPayload[] = [];

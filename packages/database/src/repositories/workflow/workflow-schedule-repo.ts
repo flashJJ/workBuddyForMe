@@ -19,6 +19,8 @@ export interface WorkflowScheduleRow {
   last_run_at: string | null;
   last_run_id: string | null;
   last_status: string | null;
+  missed_count: number;
+  last_missed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +73,8 @@ function mapSchedule(row: WorkflowScheduleRow): FlowScheduleView {
     lastRunAt: row.last_run_at,
     lastRunId: row.last_run_id,
     lastStatus: (row.last_status as FlowScheduleLastStatus | null) ?? null,
+    missedCount: row.missed_count ?? 0,
+    lastMissedAt: row.last_missed_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -90,6 +94,14 @@ export function createWorkflowScheduleRepository(db: DatabaseInstance) {
       const rows = db
         .prepare('SELECT * FROM workflow_schedules WHERE workflow_id = ? ORDER BY created_at ASC')
         .all(workflowId) as WorkflowScheduleRow[];
+      return rows.map(mapSchedule);
+    },
+
+    /** v5.0：健康面板跨流程列出 */
+    listAll(limit = 200): FlowScheduleView[] {
+      const rows = db
+        .prepare('SELECT * FROM workflow_schedules ORDER BY created_at DESC LIMIT ?')
+        .all(limit) as WorkflowScheduleRow[];
       return rows.map(mapSchedule);
     },
 
@@ -197,6 +209,16 @@ export function createWorkflowScheduleRepository(db: DatabaseInstance) {
         lastStatus: outcome.lastStatus,
         ts: nowIso(),
       });
+    },
+
+    /** v5.0：累计错过次数（跨启动保留） */
+    recordMissed(id: string, missedCount: number, atIso: string): void {
+      db.prepare(
+        `UPDATE workflow_schedules
+         SET missed_count = missed_count + @missedCount,
+             last_missed_at = @at, updated_at = @ts
+         WHERE id = @id`,
+      ).run({ id, missedCount: Math.max(0, missedCount), at: atIso, ts: nowIso() });
     },
   };
 }

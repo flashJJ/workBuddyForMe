@@ -67,6 +67,10 @@ export const zhAudit = {
     skill_version_deleted: '技能版本删除',
     secrets_rotated: '凭证轮换',
     audit_verified: '完整性校验',
+    flow_compensation_scheduled: '补偿已排期',
+    flow_compensation_exhausted: '补偿已耗尽',
+    flow_retention_cleanup: '运行清理',
+    flow_agent_tool_denied: 'Agent 工具拒绝',
   },
   actors: {
     user: '用户',
@@ -148,6 +152,10 @@ export const enAudit = {
     skill_version_deleted: 'Skill version deleted',
     secrets_rotated: 'Credentials rotated',
     audit_verified: 'Integrity verified',
+    flow_compensation_scheduled: 'Compensation scheduled',
+    flow_compensation_exhausted: 'Compensation exhausted',
+    flow_retention_cleanup: 'Run retention cleanup',
+    flow_agent_tool_denied: 'Agent tool denied',
   },
   actors: {
     user: 'User',

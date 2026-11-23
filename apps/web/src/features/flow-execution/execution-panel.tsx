@@ -9,7 +9,7 @@ import { useToast } from '@/components/common/toast';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { ApiClientError, apiPost } from '@/lib/api/client';
 import { API } from '@/lib/api/endpoints';
-import { useFlowRunAction, type FlowLiveState } from '@/lib/hooks/flows';
+import { useFlowRunAction, useFlowRunDetail, type FlowLiveState } from '@/lib/hooks/flows';
 import type { SsePayloadMap } from '@wbfm/shared/api';
 import { ToolConfirmDialog } from '@/features/chat/overlay';
 import { SceneSnapshotPanel, useSceneSnapshots } from '@/features/context-snapshots';
@@ -34,6 +34,8 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
   const contextSnapshots = useSceneSnapshots('flow', runId, {
     refetchInterval: terminal ? false : 5_000,
   });
+  const detail = useFlowRunDetail(runId);
+  const versionCheck = detail.data?.versionCheck;
 
   // v1.4：agent 节点内 Executor 的桌面工具门控帧（最新一条未决策且运行未结束时弹窗）
   const [resolvedGates, setResolvedGates] = React.useState<ReadonlySet<string>>(new Set());
@@ -140,6 +142,23 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
       </header>
 
       <div className="flex-1 overflow-y-auto py-2">
+        {versionCheck && versionCheck.reason !== 'same' && (
+          <div className="mx-4 mb-2 rounded-md border border-warning/30 bg-warning-background p-2.5 text-[11px]">
+            <p className="flex items-center gap-1.5 font-medium text-warning">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {versionCheck.reason === 'graph_unavailable'
+                ? t('flowRuns.version.unavailable')
+                : versionCheck.reason === 'node_removed'
+                  ? t('flowRuns.version.nodeRemoved')
+                  : t('flowRuns.version.changed', { from: versionCheck.runVersion, to: versionCheck.currentVersion ?? '—' })}
+            </p>
+            {versionCheck.removedNodeIds.length > 0 && (
+              <p className="mt-1 text-muted-foreground">
+                {t('flowRuns.version.removed', { nodes: versionCheck.removedNodeIds.join(', ') })}
+              </p>
+            )}
+          </div>
+        )}
         {waitingNode && (
           <WaitingCard
             node={waitingNode}

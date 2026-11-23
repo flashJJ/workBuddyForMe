@@ -1,13 +1,13 @@
 import { createDatabase, createWorkflowRepository, createWorkflowRunRepository, type DatabaseInstance } from '@wbfm/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SecretCipher } from '../../secrets/cipher';
-import { createPermissionService } from '../../services/permission/permission-service';
-import { createTaskGrantRegistry } from '../../services/task/task-grants';
-import type { ToolRuntime } from '../../tools/tool-runtime';
-import type { Tool } from '../../tools/types';
-import type { ServiceDeps } from '../../services/base/deps';
-import { createFlowRunService } from './run-service';
-import { drain, graphDangerTool } from './run-service.helpers';
+import type { SecretCipher } from '../../../secrets/cipher';
+import { createPermissionService } from '../../../services/permission/permission-service';
+import { createTaskGrantRegistry } from '../../../services/task/task-grants';
+import type { ToolRuntime } from '../../../tools/tool-runtime';
+import type { Tool } from '../../../tools/types';
+import type { ServiceDeps } from '../../../services/base/deps';
+import { createFlowRunService } from '../run-service';
+import { drain, graphDangerTool } from '../run-service.helpers';
 
 describe('FlowRunService v4.23 持久化执行', () => {
   let db: DatabaseInstance;

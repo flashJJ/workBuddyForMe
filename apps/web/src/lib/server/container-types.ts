@@ -112,6 +112,7 @@ export interface ServiceContainer {
   meetingClosure: ReturnType<typeof createMeetingClosureService>;
   runtime: ReturnType<typeof createToolRuntime>;
   flowRunner: ReturnType<typeof createFlowRunService>;
+  flowReliability: import('./flows/flow-reliability-wiring').FlowReliabilityWiring | null;
   flowSchedules: import('./flows/flow-schedule-wiring').FlowScheduleWiring;
   flowTriggers: import('./flows/flow-trigger-wiring').FlowTriggerWiring;
   endpoints: ReturnType<typeof createEndpointService>;

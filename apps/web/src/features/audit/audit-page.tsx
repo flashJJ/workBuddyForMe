@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import type { MessageKey } from '@wbfm/shared/i18n';
 import {
   AUDIT_EVENT_KINDS,
-  type AuditEventKind,
   type AuditEventView,
   type AuditVerifyResult,
   type AuditActor,
@@ -22,29 +21,12 @@ import { apiGet, apiPost } from '@/lib/api/client';
 import { API, QUERY_KEYS } from '@/lib/api/endpoints';
 import { AuditArchiveActions } from './audit-archive-actions';
 import { AuditExportButton } from './audit-export-button';
+import { AUDIT_KIND_KEYS } from './audit-kind-keys';
 
 /**
  * v2.13 M3 审计页：链状态 + 过滤 + 详情 + JSONL 导出。
  * 账本只读，页面不提供任何删除 / 修改入口。
  */
-
-const KIND_KEYS: Record<AuditEventKind, MessageKey> = {
-  policy_updated: 'audit.kinds.policy_updated',
-  policy_denied: 'audit.kinds.policy_denied',
-  approval_requested: 'audit.kinds.approval_requested',
-  approval_granted: 'audit.kinds.approval_granted',
-  approval_denied: 'audit.kinds.approval_denied',
-  approval_timeout: 'audit.kinds.approval_timeout',
-  binding_drift: 'audit.kinds.binding_drift',
-  run_started: 'audit.kinds.run_started',
-  run_finished: 'audit.kinds.run_finished',
-  scheduled_run_started: 'audit.kinds.scheduled_run_started',
-  scheduled_run_finished: 'audit.kinds.scheduled_run_finished',
-  unattended_blocked: 'audit.kinds.unattended_blocked',
-  skill_version_deleted: 'audit.kinds.skill_version_deleted',
-  secrets_rotated: 'audit.kinds.secrets_rotated',
-  audit_verified: 'audit.kinds.audit_verified',
-};
 
 const ACTOR_KEYS: Record<AuditActor, MessageKey> = {
   user: 'audit.actors.user',
@@ -101,7 +83,7 @@ function EventRow({ event }: { event: AuditEventView }) {
         <Badge variant={event.actor === 'system' ? 'default' : 'info'}>
           {t(ACTOR_KEYS[event.actor])}
         </Badge>
-        <span className="text-sm font-medium">{t(KIND_KEYS[event.kind])}</span>
+        <span className="text-sm font-medium">{t(AUDIT_KIND_KEYS[event.kind])}</span>
         {event.decision && (
           <Badge variant={DECISION_VARIANT[event.decision]}>
             {t(DECISION_KEYS[event.decision])}
@@ -239,7 +221,7 @@ export function AuditPage() {
             <option value="">{t('audit.filters.allKinds')}</option>
             {AUDIT_EVENT_KINDS.map((kind) => (
               <option key={kind} value={kind}>
-                {t(KIND_KEYS[kind])}
+                {t(AUDIT_KIND_KEYS[kind])}
               </option>
             ))}
           </SimpleSelect>

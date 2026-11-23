@@ -21,6 +21,8 @@ function runView(id: string): WorkflowRunView {
     parentRunId: null,
     resumedFromNode: null,
     interruptReason: null,
+    graphHash: null,
+    replayBatchId: null,
   };
 }
 

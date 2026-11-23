@@ -158,6 +158,8 @@ export interface RunDetail {
     durationMs: number;
   }>;
   active: boolean;
+  /** v5.0：快照与当前生产版本差异 */
+  versionCheck?: import('@wbfm/shared/types').FlowRunVersionCheck;
 }
 
 export function useFlowRunDetail(runId: string | null) {

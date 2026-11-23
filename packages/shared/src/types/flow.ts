@@ -1,9 +1,12 @@
-/**
+﻿/**
  * v0.8 Flow Studio 可视化工作流契约（视图模型 + SSE 事件）。
  * 图结构的 zod 校验契约见 schemas/flow.ts。
  */
 
 import type { SseEvent } from '../api/index';
+import type { FlowRunError } from './flow-reliability';
+
+export * from './flow-reliability';
 
 export const FLOW_STATUSES = ['draft', 'published', 'disabled'] as const;
 export type FlowStatus = (typeof FLOW_STATUSES)[number];
@@ -21,19 +24,10 @@ export const FLOW_RUN_STATUSES = [
 export type FlowRunStatus = (typeof FLOW_RUN_STATUSES)[number];
 
 /** 终态：不会再发生状态迁移 */
-export const FLOW_RUN_TERMINAL_STATUSES: ReadonlyArray<FlowRunStatus> = [
-  'succeeded',
-  'failed',
-  'cancelled',
-  'interrupted',
-];
+export const FLOW_RUN_TERMINAL_STATUSES: ReadonlyArray<FlowRunStatus> = ['succeeded', 'failed', 'cancelled', 'interrupted'];
 
 /** 可重跑的终态（失败/取消/中断；成功运行也可手动再跑但走新建对话或 API） */
-export const FLOW_RUN_RESUMABLE_STATUSES: ReadonlyArray<FlowRunStatus> = [
-  'failed',
-  'cancelled',
-  'interrupted',
-];
+export const FLOW_RUN_RESUMABLE_STATUSES: ReadonlyArray<FlowRunStatus> = ['failed', 'cancelled', 'interrupted'];
 
 export const FLOW_NODE_EXEC_STATUSES = [
   'running',
@@ -93,7 +87,7 @@ export interface WorkflowRunView {
   input: Record<string, unknown> | null;
   /** end 节点最终输出（反序列化） */
   output: unknown;
-  error: { code: string; message: string; nodeId?: string } | null;
+  error: FlowRunError | null;
   /** chat 触发时关联的会话，其余触发为 null */
   conversationId: string | null;
   /** 当前挂起的人工节点 id（waiting_human 时非空） */
@@ -109,15 +103,14 @@ export interface WorkflowRunView {
   resumedFromNode: string | null;
   /** v0.9：中断原因（当前仅 process_restart） */
   interruptReason: string | null;
+  /** v5.0：运行图快照哈希（旧行/null 表示无快照） */
+  graphHash: string | null;
+  /** v5.0：批量重放批次 id */
+  replayBatchId: string | null;
 }
 
 /** v4.26 定时触发配置（一个流程至多 5 条） */
-export const FLOW_SCHEDULE_LAST_STATUSES = [
-  'created',
-  'skipped_busy',
-  'error',
-  'disabled',
-] as const;
+export const FLOW_SCHEDULE_LAST_STATUSES = ['created', 'skipped_busy', 'error', 'disabled'] as const;
 export type FlowScheduleLastStatus = (typeof FLOW_SCHEDULE_LAST_STATUSES)[number];
 
 export interface FlowScheduleView {
@@ -136,6 +129,10 @@ export interface FlowScheduleView {
   lastRunAt: string | null;
   lastRunId: string | null;
   lastStatus: FlowScheduleLastStatus | null;
+  /** v5.0：累计错过次数 */
+  missedCount: number;
+  /** v5.0：最近一次发现错过的时间 */
+  lastMissedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -296,3 +293,4 @@ export type FlowEventPayload =
   | (FlowRunEventBase & { type: 'run_succeeded'; output: unknown })
   | (FlowRunEventBase & { type: 'run_failed'; message: string; nodeId?: string })
   | (FlowRunEventBase & { type: 'run_cancelled' });
+

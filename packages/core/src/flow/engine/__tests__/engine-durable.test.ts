@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FlowGraph } from '@wbfm/shared/schemas';
-import type { FlowNodeHandler } from '../graph/types';
-import { runFlow } from './engine';
-import { collect, compiledOf, e, n } from './engine-branch.helpers';
-import type { FlowCheckpoint } from '../graph/types';
+import type { FlowNodeHandler } from '../../graph/types';
+import { runFlow } from '../engine';
+import { collect, compiledOf, e, n } from '../engine-branch.helpers';
+import type { FlowCheckpoint } from '../../graph/types';
 
 const opts = { workflowId: 'w', version: 1, runId: 'r1' };
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

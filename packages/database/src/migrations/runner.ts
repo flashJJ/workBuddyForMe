@@ -55,6 +55,7 @@ import { migrateV053 } from './v053-task-run-checkpoints';
 import { migrateV054 } from './v054-flow-schedules';
 import { migrateV055 } from './v055-flow-triggers';
 import { migrateV056 } from './v056-multi-schedules';
+import { migrateV057 } from './v057-run-reliability';
 
 interface Migration {
   version: number;
@@ -301,6 +302,11 @@ const MIGRATIONS: Migration[] = [
     version: 56,
     description: 'v4.26 P1: 一流程多定时（去 UNIQUE，加 name/timezone，重建表）',
     up: migrateV056,
+  },
+  {
+    version: 57,
+    description: 'v5.0: 运行图快照/补偿队列/定时错过计数/触发器密钥密文（纯加法）',
+    up: migrateV057,
   },
 ];
 

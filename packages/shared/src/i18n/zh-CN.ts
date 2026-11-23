@@ -21,6 +21,7 @@ import { zhDocumentViewer } from './messages/document-viewer';
 import { zhMemory } from './messages/memory';
 import { zhTasks } from './messages/tasks';
 import { zhFlows } from './messages/flows';
+import { zhFlowRuns } from './messages/flow-runs';
 import { zhShare } from './messages/share';
 import { zhShortcuts } from './messages/shortcuts';
 import { zhOnboarding } from './messages/onboarding';
@@ -99,6 +100,7 @@ export const zhCN = {
   memory: zhMemory,
   tasks: zhTasks,
   flows: zhFlows,
+  flowRuns: zhFlowRuns,
   share: zhShare,
   shortcuts: zhShortcuts,
   onboarding: zhOnboarding,

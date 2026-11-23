@@ -42,6 +42,8 @@ const flowRun: WorkflowRunView = {
   parentRunId: null,
   resumedFromNode: null,
   interruptReason: null,
+  graphHash: null,
+  replayBatchId: null,
 };
 
 const agentRun: AgentRunView = {

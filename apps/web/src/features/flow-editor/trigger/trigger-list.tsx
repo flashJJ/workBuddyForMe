@@ -1,8 +1,9 @@
 'use client';
 
 import { FolderOpen, RefreshCw, Trash2, Webhook } from 'lucide-react';
-import type { FlowTriggerView } from '@wbfm/shared/types';
+import type { FlowTriggerView, FlowWebhookAuthMode } from '@wbfm/shared/types';
 import { Button } from '@/components/ui/button';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { formatTriggerTime } from './trigger-dialog-helpers';
 
@@ -11,9 +12,11 @@ export interface TriggerListProps {
   confirmRemoveId: string | null;
   rotateConfirmId: string | null;
   rotating: boolean;
+  authUpdating: boolean;
   onToggle: (trigger: FlowTriggerView) => void;
   onRemove: (trigger: FlowTriggerView) => void;
   onRotate: (trigger: FlowTriggerView) => void;
+  onAuthChange: (trigger: FlowTriggerView, authMode: FlowWebhookAuthMode) => void;
 }
 
 /** v4.26 触发器列表；Webhook 行提供 Secret 轮换入口 */
@@ -22,9 +25,11 @@ export function TriggerList({
   confirmRemoveId,
   rotateConfirmId,
   rotating,
+  authUpdating,
   onToggle,
   onRemove,
   onRotate,
+  onAuthChange,
 }: TriggerListProps) {
   const { t } = useI18n();
 
@@ -57,18 +62,32 @@ export function TriggerList({
             {t('flowEditor.trigger.enabled')}
           </label>
           {trigger.kind === 'webhook' && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2"
-              onClick={() => onRotate(trigger)}
-              disabled={rotating}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              {rotateConfirmId === trigger.id
-                ? t('flowEditor.trigger.rotateConfirm')
-                : t('flowEditor.trigger.rotate')}
-            </Button>
+            <>
+              <SimpleSelect
+                className="h-7 rounded-md border bg-ui-control px-1 text-[11px]"
+                value={trigger.authMode ?? 'bearer'}
+                disabled={authUpdating || (!trigger.hasSigningSecret && (trigger.authMode ?? 'bearer') !== 'bearer')}
+                onValueChange={(value) =>
+                  onAuthChange(trigger, value as FlowWebhookAuthMode)
+                }
+              >
+                <option value="bearer">{t('flowEditor.trigger.authMode.bearer')}</option>
+                <option value="hmac">{t('flowEditor.trigger.authMode.hmac')}</option>
+                <option value="both">{t('flowEditor.trigger.authMode.both')}</option>
+              </SimpleSelect>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2"
+                onClick={() => onRotate(trigger)}
+                disabled={rotating}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                {rotateConfirmId === trigger.id
+                  ? t('flowEditor.trigger.rotateConfirm')
+                  : t('flowEditor.trigger.rotate')}
+              </Button>
+            </>
           )}
           <Button
             size="sm"

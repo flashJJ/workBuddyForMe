@@ -37,6 +37,14 @@ export const enFlowEditorTrigger = {
   urlLabel: 'Webhook URL',
   copy: 'Copy',
   copied: 'Copied',
+  authMode: {
+    label: 'Auth mode',
+    bearer: 'Bearer',
+    hmac: 'HMAC',
+    both: 'Both',
+    rotateFirst: 'Rotate the secret before enabling HMAC',
+    failed: 'Failed to update auth mode',
+  },
   status: {
     created: 'Run created',
     skipped_busy: 'Skipped: run in progress',

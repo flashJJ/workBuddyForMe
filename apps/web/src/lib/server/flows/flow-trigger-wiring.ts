@@ -10,6 +10,7 @@ import {
   type FlowFileWatcher,
   type FlowTriggerRunner,
 } from '@wbfm/core/flow';
+import type { SecretCipher } from '@wbfm/core/secrets';
 
 /**
  * v4.25：事件触发装配。
@@ -22,6 +23,7 @@ export function createFlowTriggerWiring(params: {
   workflows: WorkflowRepository;
   runs: WorkflowRunRepository;
   flowRunner: FlowTriggerRunner;
+  cipher?: SecretCipher;
   start?: boolean;
 }) {
   const triggers = createWorkflowTriggerRepository(params.db);
@@ -32,6 +34,7 @@ export function createFlowTriggerWiring(params: {
     runs: params.runs,
     flowRunner: params.flowRunner,
     onChange: () => watcher?.reconcile(),
+    ...(params.cipher ? { cipher: params.cipher } : {}),
   });
   watcher = createFlowFileWatcher({
     triggers,
