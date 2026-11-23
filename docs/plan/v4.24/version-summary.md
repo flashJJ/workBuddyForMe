@@ -2,6 +2,7 @@
 
 > 版本：4.24.0（2026-11-23 发布）
 > 状态：✅ 已发布（tag `v4.24.0`，GitHub Release 最新版）
+> 安装包：`WorkBuddyForMe-Setup-4.24.0.exe`（274.37 MiB，SHA256 `b4bba27b…b1387902`）
 > 主题：Flow 定时触发——cron 解析、持久化调度、错过补一次与单飞保护
 > 迁移：v054 纯加法（`workflow_schedules`）；备份格式不变；无新增运行时依赖
 > 博客：[blog/v4.24](../../blog/v4.24/) 7 篇
