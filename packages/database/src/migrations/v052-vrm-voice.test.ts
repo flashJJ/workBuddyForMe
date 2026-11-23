@@ -18,9 +18,9 @@ describe('v052 vrm_avatars.voice_sid', () => {
     const db = createV51Database();
     const result = applyMigrations(db);
 
-    expect(result.applied).toEqual([52, 53, 54]);
+    expect(result.applied).toEqual([52, 53, 54, 55]);
     expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    expect(LATEST_SCHEMA_VERSION).toBe(54);
+    expect(LATEST_SCHEMA_VERSION).toBe(55);
 
     const columns = db.prepare('PRAGMA table_info(vrm_avatars)').all() as Array<{ name: string }>;
     expect(columns.map((column) => column.name)).toContain('voice_sid');

@@ -53,6 +53,7 @@ import { migrateV051 } from './v051-attachment-refs';
 import { migrateV052 } from './v052-vrm-voice';
 import { migrateV053 } from './v053-task-run-checkpoints';
 import { migrateV054 } from './v054-flow-schedules';
+import { migrateV055 } from './v055-flow-triggers';
 
 interface Migration {
   version: number;
@@ -289,6 +290,11 @@ const MIGRATIONS: Migration[] = [
     version: 54,
     description: 'v4.24 P1: workflow_schedules 定时触发配置（纯加法）',
     up: migrateV054,
+  },
+  {
+    version: 55,
+    description: 'v4.25 P1: workflow_triggers 事件触发配置（纯加法）',
+    up: migrateV055,
   },
 ];
 
