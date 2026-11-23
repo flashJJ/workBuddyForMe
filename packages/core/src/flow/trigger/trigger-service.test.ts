@@ -1,5 +1,5 @@
 import type { FlowGraph } from '@wbfm/shared/schemas';
-import { parse } from 'node:path';
+import { join, parse } from 'node:path';
 import {
   createDatabase,
   createWorkflowRepository,
@@ -107,14 +107,16 @@ describe('v4.25 触发执行服务', () => {
 
   it('文件触发器：配置校验、入参形态与启停', () => {
     const { wf, triggers, service, calls } = setup();
+    const dir = join(process.cwd(), 'notes-test');
     const { trigger } = service.create(wf.id, {
       kind: 'file',
-      config: { path: 'E:\\notes', extensions: ['MD', '.txt'] },
+      config: { path: dir, extensions: ['MD', '.txt'] },
     });
-    expect(trigger.config).toEqual({ path: 'E:\\notes', extensions: ['md', 'txt'], recursive: true });
+    expect(trigger.config).toEqual({ path: dir, extensions: ['md', 'txt'], recursive: true });
 
+    const filePath = join(dir, 'a.md');
     const result = service.fireFile(trigger, {
-      path: 'E:\\notes\\a.md',
+      path: filePath,
       name: 'a.md',
       ext: 'md',
       eventType: 'add',
@@ -123,7 +125,7 @@ describe('v4.25 触发执行服务', () => {
     expect(result).toMatchObject({ ok: true });
     expect(calls[0]).toMatchObject({ trigger: 'file' });
     expect(calls[0]!.input).toMatchObject({
-      path: 'E:\\notes\\a.md',
+      path: filePath,
       name: 'a.md',
       ext: 'md',
       eventType: 'add',
