@@ -2,8 +2,10 @@
 
 > 版本：4.25.0（2026-11-23）
 > 主题：Webhook 与本地文件监听触发
+> 状态：✅ 已发布（tag `v4.25.0`，GitHub Release 最新版）
+> 安装包：`WorkBuddyForMe-Setup-4.25.0.exe`（274.52 MB，SHA256 `20e125b2…ee6ed27c`）
 > 方案：[README](./README.md) · [规格](./spec.md) · [契约](./contracts.md) · [任务](./tasks.md)
-> 发行说明：[v4.25.0-release-notes.md](../../roadmap/v4.25.0-release-notes.md)
+> 发行说明：[v4.25.0-release-notes.md](../../roadmap/v4.25.0-release-notes.md) · Release：https://github.com/flashJJ/workBuddyForMe/releases/tag/v4.25.0
 
 ## 1. 交付结论
 

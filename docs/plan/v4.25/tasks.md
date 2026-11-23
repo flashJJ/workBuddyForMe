@@ -84,6 +84,6 @@
 - [x] `docs/roadmap/v4.25.0-release-notes.md`
 - [x] `blog/v4.25/` 7 篇 + `blog/README.md`
 - [x] 版本号 4.25.0（root/web/desktop/shared version.ts）
-- [ ] 合并 main、tag `v4.25.0`、双远端推送
-- [ ] 安装包构建与归档、GitHub Release
-- [ ] 更新 `docs/plan/README.md`、`docs/roadmap/README.md`、`docs/roadmap/scheduled/README.md` 状态
+- [x] 合并 main、tag `v4.25.0`、双远端推送
+- [x] 安装包构建与归档、GitHub Release
+- [x] 更新 `docs/plan/README.md`、`docs/roadmap/README.md`、`docs/roadmap/scheduled/README.md` 状态
