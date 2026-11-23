@@ -53,6 +53,8 @@ export const POST = defineRoute(({ request, services }) => {
   // v4.25：文件监听持有目录句柄，同样必须先释放
   services.flowTriggers.watcher.dispose();
   services.flowRunner.dispose();
+  // v5.0：补偿/保留定时器绑定旧库，不停止会在重建后持续访问已关闭连接
+  services.flowReliability?.dispose();
   resetVoiceRuntime();
   // 编译队列是 core 模块级单例（绑定首次 deps），不重置会继续用旧库：上传后永远「待编译」
   resetCompileQueueServiceForTest();
