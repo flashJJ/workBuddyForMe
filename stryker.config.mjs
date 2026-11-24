@@ -23,7 +23,7 @@ export default {
   coverageAnalysis: 'perTest',
   concurrency: 2,
   timeoutMS: 60_000,
-  thresholds: { high: 80, low: 40, break: null },
+  thresholds: { high: 80, low: 40, break: 40 },
   // 沙箱只保留运行可靠性测试所需源码：apps/docs/blog/tests 与依赖目录一律不复制
   ignorePatterns: [
     '**/node_modules',

@@ -55,6 +55,7 @@
 | 目录 | 主题 |
 |---|---|
 | [v5.0](./v5.0/) | 大版本：**会兜底**（可靠与安全，✅ 已发布 5.0.1）· [选题](./v5.0/README.md) · [规格](./v5.0/spec.md) · [契约](./v5.0/contracts.md) · [任务](./v5.0/tasks.md) · [总结](./v5.0/version-summary.md) · [补丁说明](../roadmap/v5.0.1-release-notes.md) · [竞品矩阵](./v5.0/competitor-matrix.md) · [痛点地图](./v5.0/pain-point-map.md) · [主题卡](./v5.0/theme-shortlist.md) |
+| [v5.1](./v5.1/) | 大版本：**会设防**（OS 级目录边界、危险动作快照与一键回滚，📐 草案待评审）· [选题](./v5.1/README.md) |
 
 ## 跨版本专题
 

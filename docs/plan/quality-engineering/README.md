@@ -148,10 +148,11 @@
 | 2026-11-24 | E | 接入 Nightly 变异测试：StrykerJS 10.1.1 + vitest runner，只覆盖 reliability 6 个文件；Nightly 非阻断并写 Job Summary；新增 `mutation-summary.mjs` 与报告上传 | `--dryRunOnly` 通过（611 变异体 / 36 用例）；依赖净增约 10MB，沙箱自动清理 |
 | 2026-11-24 | C | 新增 `compensation-service.failpoint.test.ts`（2 用例）：claim 后崩溃由 `recover()` 回到 pending；`markRetrying` 写库失败收敛为 exhausted，不残留 retrying | 2/2 通过 |
 | 2026-11-24 | F | bug-registry 补 v5.0.1 九条（B-72…B-80）并引用回归文件 | 引用覆盖 14/71 → 23/80，`check:bug-regression` 通过 |
+| 2026-11-24 | E | 首份 Nightly 变异报告：611 变异体、击杀 434、得分 71.0%（compensation 77.2 / snapshot 82.8 / retention 59.4）；据此把 `break` 从 `null` 调到 40 | Nightly run `45378061165` 两个 job 均成功，变异耗时约 3 分钟 |
 
 **下一步**：
 
-1. 观察首份 Nightly 变异报告（run `45378061165`）的得分，再调整 `stryker.config.mjs` 阈值与范围；
+1. 连续观察 2–3 次 Nightly，稳定后把 `break` 从 40 上调到 60；
 2. 状态机底座剩余：`transition(state,event)` 纯函数 + fast-check 属性测试；
 3. 真库矩阵扩展：`EXPLAIN QUERY PLAN` 断言、迁移兼容矩阵、统一临时文件库 helper；
 4. M5 流程收口：验收清单/发布流程加入「`pnpm selftest` 通过」。
