@@ -141,4 +141,22 @@ describe('v5.1 文件快照仓储', () => {
     expect(detail).toContain('idx_file_snapshots_run');
     expect(detail).not.toMatch(/SCAN file_snapshots(?! USING)/);
   });
+
+  it('listExpired 预览与 setWrittenSha256 更新', () => {
+    const { snapshots, run, wf } = setup();
+    const old = snapshots.createSnapshot({
+      runId: run.id,
+      workflowId: wf.id,
+      toolName: 'write_file',
+      action: 'write_new',
+      path: 'D:/workspace/a.txt',
+      existedBefore: false,
+      createdAt: '2026-10-01T00:00:00.000Z',
+    });
+    snapshots.setWrittenSha256(old.id, 'e'.repeat(64));
+    expect(snapshots.listByRun(run.id)[0]?.sha256).toBeNull();
+    expect(
+      (snapshots.listExpired('2026-11-01T00:00:00.000Z', 10)).map((item) => item.id),
+    ).toEqual([old.id]);
+  });
 });

@@ -72,6 +72,8 @@ export const fileSnapshotViewSchema = z.object({
   existedBefore: z.boolean(),
   byteSize: z.number().int().nonnegative(),
   sha256: z.string().nullable(),
+  writtenSha256: z.string().nullable(),
+  blobPath: z.string().nullable(),
   truncated: z.boolean(),
   truncationReason: z.enum(FILE_SNAPSHOT_TRUNCATION_REASONS).nullable(),
   createdAt: z.string(),

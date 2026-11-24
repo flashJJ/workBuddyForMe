@@ -29,12 +29,11 @@
 
 - [x] `workspace/file-guard.ts`：根列表、系统目录拒绝、`..`/符号链接/大小写/UNC/盘根规范化
 - [x] 守卫测试：越界矩阵、误配根仍拒绝、根被移除后回滚 `path_not_allowed`
-- [ ] `workspace/snapshot-service.ts`：beforeWrite/beforeDelete/beforeMove、afterWrite、内容寻址 blob、原子写
-- [ ] 快照测试：新建/覆盖/删除/移动、超大文件（人工 vs 无人值守）、配额与清理、去重
-- [ ] `workspace/rollback-service.ts`：按运行倒序、同路径去重、冲突检测、强制覆盖、部分失败
-- [ ] 回滚测试：恢复内容、删除新建、move 还原、哈希冲突、blob 缺失、路径不再授权
-- [ ] `ToolContext` 增加 `fileGuard/snapshots/runId/nodeId`，文件工具接入守卫与快照
-- [ ] 契约测试：write/danger 文件工具必须引用守卫；`artifact_write` 例外
+- [x] `workspace/snapshot-service.ts`：beforeWrite/beforeDelete/beforeMove、afterWrite、内容寻址 blob、原子写
+- [x] 快照测试：新建/覆盖/删除/移动、超大文件（人工 vs 无人值守）、配额与清理、去重
+- [x] `workspace/rollback-service.ts`：按运行倒序、同路径去重、冲突检测、强制覆盖、部分失败
+- [x] 回滚测试：恢复内容、删除新建、move 还原、哈希冲突、blob 缺失、路径不再授权
+- [x] 契约测试：tools 目录直接写盘必须接入 FileGuard（artifact_write/spill 例外；当前无通用文件工具）
 
 验收：core 定向测试通过；`pnpm audit:patterns` 无新增；reliability 变异得分不下降。
 

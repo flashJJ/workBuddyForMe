@@ -73,6 +73,8 @@ describe('v5.1 回滚契约', () => {
       existedBefore: true,
       byteSize: 12,
       sha256: 'a'.repeat(64),
+      writtenSha256: null,
+      blobPath: 'a'.repeat(64),
       truncated: false,
       truncationReason: null,
       createdAt: '2026-11-24T00:00:00.000Z',

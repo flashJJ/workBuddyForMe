@@ -39,6 +39,8 @@ function mapSnapshot(row: FileSnapshotRow): FileSnapshotView {
     existedBefore: row.existed_before === 1,
     byteSize: row.byte_size,
     sha256: row.sha256,
+    writtenSha256: row.written_sha256,
+    blobPath: row.blob_path,
     truncated: row.truncated === 1,
     truncationReason: row.truncation_reason as FileSnapshotTruncationReason | null,
     createdAt: row.created_at,
@@ -154,6 +156,23 @@ export function createFileSnapshotRepository(db: DatabaseInstance) {
         )
         .all() as Array<{ blob_path: string }>;
       return rows.map((row) => row.blob_path);
+    },
+
+    listExpired(cutoffIso: string, limit: number): FileSnapshotView[] {
+      const rows = db
+        .prepare(
+          `SELECT * FROM file_snapshots WHERE created_at < ?
+           ORDER BY created_at ASC LIMIT ?`,
+        )
+        .all(cutoffIso, limit) as FileSnapshotRow[];
+      return rows.map(mapSnapshot);
+    },
+
+    setWrittenSha256(id: string, writtenSha256: string): void {
+      db.prepare('UPDATE file_snapshots SET written_sha256 = ? WHERE id = ?').run(
+        writtenSha256,
+        id,
+      );
     },
 
     deleteBefore(cutoffIso: string, limit: number): FileSnapshotDeleteResult {
