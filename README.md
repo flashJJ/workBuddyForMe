@@ -2,8 +2,8 @@
 
 本地优先的**私人 AI 工作台 + 桌面陪伴角色**：用 Next.js 全栈 + Electron，把多模型对话、知识库 RAG、可视化工作流、对外服务、桌面 Agent、多智能体会议与长期陪伴角色装进一台电脑。默认不需要云账号，数据、密钥与向量索引留在本机。
 
-> 当前版本：**v5.0.0**（2026-11-24）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
-> 本版主线：失败补偿与批量重放、运行快照与跨版本续跑、运行治理与触发器健康、Agent 门控与 Webhook HMAC，详见 [v5.0.0 发布说明](./docs/roadmap/v5.0.0-release-notes.md) 与 [Release](https://github.com/flashJJ/workBuddyForMe/releases/tag/v5.0.0)。
+> 当前版本：**v5.0.1**（2026-11-24）｜桌面端：Windows 10/11 x64｜Web 模式可跨平台
+> 本版主线：失败补偿与批量重放、运行快照与跨版本续跑、运行治理与触发器健康、Agent 门控与 Webhook HMAC；5.0.1 修复补偿恢复与无人值守语义，详见 [v5.0.1 发行说明](./docs/roadmap/v5.0.1-release-notes.md)。
 
 ## v5.0 会兜底：可靠与安全的本地自动化
 

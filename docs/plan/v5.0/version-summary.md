@@ -4,6 +4,7 @@
 > 主题：**会兜底**——跑得住、错了能收、危险能拦、事后能查
 > 状态：✅ 已发布（tag `v5.0.0`，GitHub Release 最新版）
 > 安装包：`WorkBuddyForMe-Setup-5.0.0.exe`（258.65 MB，SHA256 `ca1cf21a…edff23`）
+> 补丁：**5.0.1**（补偿重启恢复、无人值守语义、中文错误分类与运行中心修复）· [补丁说明](../../roadmap/v5.0.1-release-notes.md)
 > 方案：[README](./README.md) · [规格](./spec.md) · [契约](./contracts.md) · [任务](./tasks.md)
 > 发行说明：[v5.0.0-release-notes.md](../../roadmap/v5.0.0-release-notes.md) · Release：https://github.com/flashJJ/workBuddyForMe/releases/tag/v5.0.0
 
