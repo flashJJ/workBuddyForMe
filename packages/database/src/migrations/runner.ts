@@ -56,6 +56,7 @@ import { migrateV054 } from './v054-flow-schedules';
 import { migrateV055 } from './v055-flow-triggers';
 import { migrateV056 } from './v056-multi-schedules';
 import { migrateV057 } from './v057-run-reliability';
+import { migrateV058 } from './v058-file-snapshots';
 
 interface Migration {
   version: number;
@@ -307,6 +308,11 @@ const MIGRATIONS: Migration[] = [
     version: 57,
     description: 'v5.0: 运行图快照/补偿队列/定时错过计数/触发器密钥密文（纯加法）',
     up: migrateV057,
+  },
+  {
+    version: 58,
+    description: 'v5.1: 文件快照元数据表（纯加法）',
+    up: migrateV058,
   },
 ];
 

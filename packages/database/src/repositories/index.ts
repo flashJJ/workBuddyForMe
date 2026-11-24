@@ -8,6 +8,7 @@ export * from './work';
 export * from './meeting';
 export * from './workflow';
 export * from './compensation';
+export * from './workspace';
 export * from './trigger';
 export * from './provider';
 export * from './emotion';

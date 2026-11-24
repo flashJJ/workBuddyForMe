@@ -35,8 +35,8 @@ function addImageMessage(db: Database.Database, attachmentIds: string[]): string
 describe('v051 迁移：附件引用计数', () => {
   it('全新库：版本 51，引用表/owner 索引/消息删除触发器就位', () => {
     const db = createDatabase(':memory:');
-    expect(getSchemaVersion(db)).toBe(57);
-    expect(LATEST_SCHEMA_VERSION).toBe(57);
+    expect(getSchemaVersion(db)).toBe(58);
+    expect(LATEST_SCHEMA_VERSION).toBe(58);
 
     const names = new Set(
       (db.prepare(`SELECT name FROM sqlite_master`).all() as Array<{ name: string }>).map(
@@ -92,8 +92,8 @@ describe('v051 迁移：附件引用计数', () => {
     insertAttachment(db, 'att1');
 
     const result = applyMigrations(db);
-    expect(result.applied).toEqual([51, 52, 53, 54, 55, 56, 57]);
-    expect(getSchemaVersion(db)).toBe(57);
+    expect(result.applied).toEqual([51, 52, 53, 54, 55, 56, 57, 58]);
+    expect(getSchemaVersion(db)).toBe(58);
     expect((db.prepare(`SELECT COUNT(*) AS n FROM attachments`).get() as { n: number }).n).toBe(1);
     expect((db.prepare(`SELECT COUNT(*) AS n FROM attachment_refs`).get() as { n: number }).n).toBe(0);
     db.close();

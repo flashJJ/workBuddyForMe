@@ -17,11 +17,11 @@
 
 ## M2 database：v058 与快照仓储
 
-- [ ] 迁移 `v058-file-snapshots.ts`（纯加法，`LATEST_SCHEMA_VERSION` 57 → 58）
-- [ ] 迁移测试：升级后表/索引存在、断言版本 58、旧库回滚不受影响
-- [ ] `repositories/workspace/file-snapshot-repo.ts`：create / listByRun / getUsage / deleteBefore / deleteByRun / listExpiredBlobs
-- [ ] 仓储测试：按运行/节点过滤、排序、级联删除、批清理、引用计数
-- [ ] `repositories/index.ts` 导出子域 barrel
+- [x] 迁移 `v058-file-snapshots.ts`（纯加法，`LATEST_SCHEMA_VERSION` 57 → 58）
+- [x] 迁移测试：升级后表/索引存在、断言版本 58、旧库回滚不受影响
+- [x] `repositories/workspace/file-snapshot-repo.ts`：create / listByRun / getUsage / deleteBefore / deleteByRun / listReferencedBlobs
+- [x] 仓储测试：按运行/节点过滤、排序、级联删除、批清理、引用计数
+- [x] `repositories/index.ts` 导出子域 barrel
 
 验收：`pnpm --filter @wbfm/database test` 通过；`EXPLAIN QUERY PLAN` 断言 `run_id` 查询走索引。
 

@@ -8,8 +8,8 @@ import { applyMigrations, getSchemaVersion, LATEST_SCHEMA_VERSION } from './runn
 describe('v057 运行兜底', () => {
   it('迁移后版本 57，运行/定时/触发器新列与补偿表/索引存在', () => {
     const db = createDatabase(':memory:');
-    expect(LATEST_SCHEMA_VERSION).toBe(57);
-    expect(getSchemaVersion(db)).toBe(57);
+    expect(LATEST_SCHEMA_VERSION).toBe(58);
+    expect(getSchemaVersion(db)).toBe(58);
 
     const runCols = db.prepare('PRAGMA table_info(workflow_runs)').all() as Array<{ name: string }>;
     expect(runCols.map((c) => c.name)).toEqual(
@@ -67,7 +67,7 @@ describe('v057 运行兜底', () => {
     ).run(wf.id);
 
     applyMigrations(db);
-    expect(getSchemaVersion(db)).toBe(57);
+    expect(getSchemaVersion(db)).toBe(58);
 
     const runRow = db.prepare('SELECT * FROM workflow_runs WHERE id = ?').get('run-old') as Record<
       string,

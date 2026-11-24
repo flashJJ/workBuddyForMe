@@ -141,10 +141,13 @@ CREATE INDEX idx_file_snapshots_path ON file_snapshots(path);
 createFileSnapshot(input: FileSnapshotCreateFields): FileSnapshotView
 listByRun(runId: string, options?: { nodeId?: string }): FileSnapshotView[]
 getUsage(): { bytes: number; count: number }
-deleteBefore(cutoffIso: string, limit: number): number
-deleteByRun(runId: string): number
-listExpiredBlobs(limit: number): string[]
+listReferencedBlobs(): string[]
+deleteBefore(cutoffIso: string, limit: number): FileSnapshotDeleteResult
+deleteByRun(runId: string): FileSnapshotDeleteResult
 ```
+
+`FileSnapshotDeleteResult = { removed: number; freedBytes: number; blobPaths: string[] }`；
+`blobPaths` 已按去重返回，服务层据此删除不再被引用的内容文件。
 
 ## 4. 核心服务
 
