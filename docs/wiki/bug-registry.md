@@ -123,6 +123,20 @@
 | B-70 | P3 | 测试门禁 | 检索弹层测试用 `stubGlobal('fetch')` 触发 MSW 收敛门禁 | 新增测试沿用了旧的 fetch stub 写法 | 测试改为 mock `use-message-search` 返回值，不再 stub fetch | `message-search-dialog.test` 2 条；`check:msw` 通过 | 本批 |
 | B-71 | P3 | E2E 稳定性 | `voice-vad.spec` ③ 免手武装后 60s 内未等到 `/api/voice/asr` 请求，多次重试失败 | 假帧序列在点击后瞬间走完并发出 ASR，而用例先点击再注册 `waitForRequest`，请求已发生导致监听错过；超时截图里消息与回复其实都已出现。此外采集管线还依赖假麦克风与音频上下文自动播放状态 | 先注册请求监听再点击；假环境同时桩掉 `getUserMedia` 与 `AudioContext.state/resume/close`，去掉环境依赖 | 本地生产模式 `playwright test tests/e2e/voice-vad.spec.ts` 4/4 通过 | 本批 |
 
+## 十、v5.0.1 封版后排查（质量工程回归）
+
+| ID | 级别 | 领域 | 现象 | 根因 | 修复 | 回归 | 提交 |
+|---|---|---|---|---|---|---|---|
+| B-72 | P1 | 失败补偿 | 无人值守流程补偿重放后触发方式退化为 `manual`，停用/权限语义随之漂移 | `sweep` 调用 `replayOne` 时未传根运行的 `trigger` | 补偿重放显式沿用根运行触发方式 | `compensation-service.matrix.test.ts` | `3769e68d` |
+| B-73 | P0 | 失败补偿 | 进程重启后停留在 `retrying` 的补偿没有 `next_retry_at`，永久卡死 | `recover()` 未覆盖 claim 后崩溃、重放被中断与 lastRun 缺失 | `recover()` 按 lastRun 状态收敛：回到 pending / 耗尽 / 恢复 / 取消 | `compensation-service.failpoint.test.ts`、`compensation-service.matrix.test.ts` | `3769e68d`、`5583447e` |
+| B-74 | P1 | 失败分类 | 中文错误与 429 限流被误判为不可重试，补偿直接放弃 | 分类器只覆盖英文关键词与少数状态码 | 补齐中英关键词与限流优先级 | `failure-classifier.test.ts` | `3769e68d` |
+| B-75 | P2 | 运行列表 | 按流程筛选时 `workflowId` 未下推 SQL，小 `limit` 下会被其他流程挤掉 | 先全局查询再内存过滤 | `workflowId/trigger/status` 全部下推 SQL | `workflow-run-repo.test.ts` | `37552523` |
+| B-76 | P2 | 运行列表 | 列表与保留清理读取 `graph_snapshot_json`，轮询反复搬运大字段 | 投影包含快照列 | 列表/清理投影排除快照，详情按需读取 | `workflow-run-repo.test.ts` | `37552523` |
+| B-77 | P1 | 保留清理 | 长跑运行刚结束就被保留策略删除 | 过期判断用 `created_at` 而非 `finished_at` | 按 `finished_at` 判定并回退 `created_at` | `workflow-run-repo.test.ts` | `37552523` |
+| B-78 | P1 | 重放与调度 | 停用流程仍可重放、批量重放重复执行、`missed_count` 不封顶 | 缺少前置状态校验、去重与上限 | 重放校验流程状态、批量去重并限 20 条、错过次数封顶 | `run-replay-service.test.ts`、`scheduler-missed.test.ts` | `3769e68d` |
+| B-79 | P2 | 运行中心 | 触发器筛选缺 `schedule/webhook/file`；Webhook HMAC 配置无法切回 | UI 枚举与策略选项未覆盖全量触发方式 | 筛选选项对齐 `FLOW_TRIGGERS`，策略可逆 | `repo-invariants.test.ts`、`trigger-service.test.ts` | `3769e68d`、`37552523` |
+| B-80 | P1 | 运行详情 | 多个失败节点时取第一个，版本差异与续跑定位错误 | 失败节点选择未取最后一个 | `failedNodeId` 取最后一个 failed 节点 | `route.test.ts` | `3769e68d`、`5583447e` |
+
 ## 排查方法
 
 - **CI 侧**：从失败步骤日志与 Playwright 归档（`playwright-artifacts` 的 `error-context.md`）反推真实断言与页面快照。

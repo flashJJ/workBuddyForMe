@@ -146,9 +146,12 @@
 | 2026-11-24 | E | 新增 `scripts/test-impact.mjs`（`pnpm test:impact`）：git diff + 未跟踪文件 → 工作区包 → 反向依赖扩散，输出最小测试命令；无新增依赖 | 本次 23 个改动文件映射出 8 个包与 `pnpm check` |
 | 2026-11-24 | M3 | 新增运行详情路由用例：两个失败节点 + 当前生产图只删其一，锁定 `failedNodeId` 取最后一个（删最后 → `node_removed`；删第一 → 仍可续跑） | 2/2 通过 |
 | 2026-11-24 | E | 接入 Nightly 变异测试：StrykerJS 10.1.1 + vitest runner，只覆盖 reliability 6 个文件；Nightly 非阻断并写 Job Summary；新增 `mutation-summary.mjs` 与报告上传 | `--dryRunOnly` 通过（611 变异体 / 36 用例）；依赖净增约 10MB，沙箱自动清理 |
+| 2026-11-24 | C | 新增 `compensation-service.failpoint.test.ts`（2 用例）：claim 后崩溃由 `recover()` 回到 pending；`markRetrying` 写库失败收敛为 exhausted，不残留 retrying | 2/2 通过 |
+| 2026-11-24 | F | bug-registry 补 v5.0.1 九条（B-72…B-80）并引用回归文件 | 引用覆盖 14/71 → 23/80，`check:bug-regression` 通过 |
 
 **下一步**：
 
-1. 观察首份 Nightly 报告的变异得分（目标 ≥40%）后，再调整 `stryker.config.mjs` 阈值与变异范围；
-2. `safer-sweep` 的 failpoint：在仓储写入/事务边界注入抛错，补「claim 后崩溃」的进程内用例（重启演练已由 selftest 覆盖）；
-3. 补 bug-registry 的 v5.0.1 条目并引用本批回归用例，提升引用覆盖率。
+1. 观察首份 Nightly 变异报告（run `45378061165`）的得分，再调整 `stryker.config.mjs` 阈值与范围；
+2. 状态机底座剩余：`transition(state,event)` 纯函数 + fast-check 属性测试；
+3. 真库矩阵扩展：`EXPLAIN QUERY PLAN` 断言、迁移兼容矩阵、统一临时文件库 helper；
+4. M5 流程收口：验收清单/发布流程加入「`pnpm selftest` 通过」。
