@@ -9,7 +9,6 @@ export * from './memory';
 export * from './tools';
 export * from './task';
 export * from './flow';
-export * from './workspace';
 export * from './upload';
 export * from './emotion';
 export * from './relationship';

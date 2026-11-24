@@ -38,6 +38,7 @@ import { createAgentClientsProvider, createAgentPlanContextResolver, createAgent
 import { createEndpointService, createRateLimiter } from '@wbfm/core/serving';
 import { createFlowRuntimeWiring } from './flows/flow-runtime-wiring';
 import { createFlowRunnerWiring } from './flows/flow-runner-wiring';
+import { createFileSafetyWiring } from './flows/file-safety-wiring';
 import { seedFlowDefaults } from './flows/seed-flow-defaults';
 import { createIngestionPipeline } from '@wbfm/core/ingestion';
 import { createCompileRunnerService, createKnowledgeGovernanceService } from '@wbfm/core/knowledge';
@@ -240,6 +241,7 @@ function build(db: DatabaseInstance, cipher: SecretCipher): ServiceContainer {
     flowRunner,
     flowReliability: runtimeWiring.reliability,
     flowSchedules: runtimeWiring.schedules, flowTriggers: runtimeWiring.triggers,
+    fileSafety: createFileSafetyWiring(db),
     providers: createProviderService(deps),
     providerHealth: createProviderHealthService(deps),
     models: createModelService(deps),

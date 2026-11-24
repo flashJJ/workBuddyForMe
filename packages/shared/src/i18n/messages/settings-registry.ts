@@ -51,6 +51,7 @@ export const zhSettingsRegistry = {
       knowledgeRetrieval: { label: '知识检索', description: '混合检索与引用片段设置' },
       modPack: { label: '模组包', description: '导入与管理模组包' },
       memory: { label: '记忆', description: '长期记忆与召回设置' },
+      workspaceRoots: { label: '工作区与快照', description: '授权根、文件快照占用与回滚清理' },
       backup: { label: '备份与恢复', description: '本地备份、恢复与导出' },
       artifactPack: { label: '产出打包', description: '把产出整理为可分享的包' },
       storageCleanup: { label: '存储清理', description: '清理缓存与占用空间' },
@@ -112,6 +113,10 @@ export const enSettingsRegistry = {
       knowledgeRetrieval: { label: 'Knowledge retrieval', description: 'Hybrid retrieval and snippet limits' },
       modPack: { label: 'Mod packs', description: 'Import and manage mod packs' },
       memory: { label: 'Memory', description: 'Long-term memory and recall settings' },
+      workspaceRoots: {
+        label: 'Workspace and snapshots',
+        description: 'Allowed roots, snapshot usage and rollback cleanup',
+      },
       backup: { label: 'Backup & restore', description: 'Local backup, restore and export' },
       artifactPack: { label: 'Artifact packs', description: 'Bundle artifacts into shareable packs' },
       storageCleanup: { label: 'Storage cleanup', description: 'Clear caches and reclaim space' },

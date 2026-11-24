@@ -28,6 +28,9 @@ const KEYS = {
   retentionDays: 'flows.fileSnapshots.retentionDays',
 } as const;
 
+/** 设置页与服务共用的键名（单一来源） */
+export const FILE_SNAPSHOT_SETTING_KEYS = KEYS;
+
 export interface SnapshotServiceDeps {
   dataRoot: string;
   guard: FileGuard;

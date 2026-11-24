@@ -6,7 +6,7 @@ import {
   FILE_SNAPSHOT_QUOTA_BYTES,
   FILE_SNAPSHOT_RETENTION_DAYS,
   WORKSPACE_ROOTS_MAX,
-} from '../../../constants/workspace';
+} from '../../../constants/tools';
 import {
   fileSnapshotSettingsSchema,
   fileSnapshotViewSchema,

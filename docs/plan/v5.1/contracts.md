@@ -6,7 +6,7 @@
 
 ## 1. 常量
 
-新增 `packages/shared/src/constants/workspace.ts`：
+新增 `packages/shared/src/constants/tools.ts` 的 v5.1 区块：
 
 | 常量 | 值 | 用途 |
 |---|---|---|
@@ -215,6 +215,8 @@ interface ToolContext {
 |---|---|---|---|
 | GET | `/api/workspace/roots` | — | `{ roots: string[]; defaultRoot: string; maxRoots: number }` |
 | PUT | `/api/workspace/roots` | `{ roots: string[] }` | 同上；写审计 `workspace_roots_updated` |
+| GET | `/api/workspace/snapshot-settings` | — | `{ enabled, maxBytes, quotaBytes, retentionDays }` |
+| PUT | `/api/workspace/snapshot-settings` | 同上 | 保存并回显 |
 | GET | `/api/flow-runs/[id]/snapshots` | `?nodeId=` | `{ snapshots: FileSnapshotView[]; usage }` |
 | POST | `/api/flow-runs/[id]/rollback` | `RollbackRequest` | `RollbackResult` |
 | GET | `/api/flow-runs/snapshots/cleanup` | — | `{ usage }` |

@@ -6,8 +6,8 @@
 
 ## M1 shared：常量、schema、错误码
 
-- [x] `constants/workspace.ts`：6 个常量与默认值
-- [x] `schemas/flow/file-guard.ts`：动作枚举、快照视图、回滚请求/结果、设置 schema
+- [x] `constants/tools.ts` v5.1 区块：6 个常量与默认值
+- [x] `schemas/flow/file-guard/`：动作枚举、快照视图、回滚请求/结果、设置 schema
 - [x] `schemas/ops/audit.ts`：追加 5 个审计事件 kind
 - [x] `errors/error-codes.ts`：追加 7 个文件安全错误码
 - [x] 单测：schema 边界（根数量、路径数量、默认 dryRun）、常量引用一致性
@@ -39,14 +39,15 @@
 
 ## M4 web：API 与 UI
 
-- [ ] `GET/PUT /api/workspace/roots` +路由测试（校验、上限、审计）
-- [ ] `GET /api/flow-runs/[id]/snapshots` + 路由测试（空列表、节点过滤）
-- [ ] `POST /api/flow-runs/[id]/rollback` + 路由测试（dryRun、冲突 409、部分失败）
-- [ ] `GET/POST /api/flow-runs/snapshots/cleanup` + 路由测试
-- [ ] 设置页：授权根编辑、占用展示、清理按钮、快照开关
-- [ ] 运行详情：快照清单、回滚预览弹窗、冲突逐文件确认
-- [ ] i18n：zh-CN / en-US 文案
-- [ ] 前端单测：hooks、面板、弹窗状态
+- [x] `GET/PUT /api/workspace/roots` + 路由测试（校验、上限、审计）
+- [x] `GET/PUT /api/workspace/snapshot-settings`（开关、单文件上限、配额、保留天数）
+- [x] `GET /api/flow-runs/[id]/snapshots` + 路由测试（空列表、节点过滤）
+- [x] `POST /api/flow-runs/[id]/rollback` + 路由测试（dryRun、冲突 409、部分失败）
+- [x] `GET/POST /api/flow-runs/snapshots/cleanup` + 路由测试
+- [x] 设置页：授权根编辑、占用展示、清理按钮、快照开关
+- [x] 运行详情：快照清单、回滚预览弹窗、冲突逐文件确认
+- [x] i18n：zh-CN / en-US 文案
+- [x] 前端单测：回滚面板冲突与强制回滚
 
 验收：`pnpm --filter @wbfm/web test:unit` 通过；手工验收越界拒绝与回滚主路径。
 

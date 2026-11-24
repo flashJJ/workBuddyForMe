@@ -20,6 +20,7 @@ import { MemoryPanel } from '@/features/memory';
 import { BackupPanel } from '../storage/backup';
 import { ArtifactPackPanel } from '../storage/artifact-pack-panel';
 import { StorageCleanupPanel } from '../storage/storage-cleanup-panel';
+import { WorkspaceRootsPanel } from '../storage/workspace-roots';
 import { AboutPanel } from '../storage/about-panel';
 import { HelpCenterPanel } from '@/features/help-center';
 import { VoicePreferencePanel } from '@/features/voice';
@@ -90,6 +91,7 @@ const PANEL_RENDERERS: Record<SettingsPanelId, PanelRenderer> = {
   'knowledge-retrieval': () => <KnowledgeRetrievalPanel />,
   'mod-pack': () => <ModPackPanel />,
   memory: () => <MemoryPanel />,
+  'workspace-roots': () => <WorkspaceRootsPanel />,
   backup: () => <BackupPanel />,
   'artifact-pack': () => <ArtifactPackPanel />,
   'storage-cleanup': () => <StorageCleanupPanel />,

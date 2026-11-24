@@ -98,5 +98,10 @@ export const workApi = {
   flowRunsHealth: '/api/flow-runs/health',
   flowRunsCleanup: '/api/flow-runs/cleanup',
   flowRunsRetention: '/api/flow-runs/retention',
+  flowRunSnapshots: (id: string) => `/api/flow-runs/${id}/snapshots`,
+  flowRunRollback: (id: string) => `/api/flow-runs/${id}/rollback`,
+  flowSnapshotsCleanup: '/api/flow-runs/snapshots/cleanup',
+  workspaceRoots: '/api/workspace/roots',
+  workspaceSnapshotSettings: '/api/workspace/snapshot-settings',
   flowRunReplay: (runId: string) => `/api/flows/runs/${runId}/replay`,
 } as const;

@@ -5,7 +5,7 @@ import {
   FILE_SNAPSHOT_MAX_BYTES,
   FILE_SNAPSHOT_QUOTA_BYTES,
   WORKSPACE_ROOTS_MAX,
-} from '../../constants/workspace';
+} from '../../../constants/tools';
 
 /**
  * v5.1 文件边界与快照契约：

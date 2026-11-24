@@ -98,6 +98,7 @@ const PANEL_LIST = [
   p('knowledge-retrieval', 'data', 'knowledgeRetrieval', ['knowledge', '知识', '检索', 'rag', '向量', '引用']),
   p('mod-pack', 'data', 'modPack', ['mod', '模组', '扩展', 'pack']),
   p('memory', 'data', 'memory', ['memory', '记忆', '召回', '长期记忆']),
+  p('workspace-roots', 'data', 'workspaceRoots', ['workspace', '工作区', '根目录', '白名单', '快照', 'snapshot', 'rollback', '回滚']),
   p('backup', 'data', 'backup', ['backup', '备份', '恢复', 'restore', '导出', 'export']),
   p('artifact-pack', 'data', 'artifactPack', ['artifact', '产出', '打包', '分享']),
   p('storage-cleanup', 'data', 'storageCleanup', ['storage', '存储', '清理', '缓存', '空间']),

@@ -14,6 +14,7 @@ import type { SsePayloadMap } from '@wbfm/shared/api';
 import { ToolConfirmDialog } from '@/features/chat/overlay';
 import { SceneSnapshotPanel, useSceneSnapshots } from '@/features/context-snapshots';
 import type { FlowCanvasNode } from '@/features/flow-editor/canvas';
+import { RunSnapshotsPanel } from './run-snapshots-panel';
 import { ExecutionTimeline } from './execution-timeline';
 import { WaitingCard } from './waiting-card';
 
@@ -159,6 +160,7 @@ export function ExecutionPanel({ runId, nodes, live, onClose, onRerun }: Executi
             )}
           </div>
         )}
+        <RunSnapshotsPanel runId={runId} />
         {waitingNode && (
           <WaitingCard
             node={waitingNode}

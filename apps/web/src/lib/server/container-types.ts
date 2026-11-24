@@ -115,6 +115,7 @@ export interface ServiceContainer {
   flowReliability: import('./flows/flow-reliability-wiring').FlowReliabilityWiring | null;
   flowSchedules: import('./flows/flow-schedule-wiring').FlowScheduleWiring;
   flowTriggers: import('./flows/flow-trigger-wiring').FlowTriggerWiring;
+  fileSafety: import('./flows/file-safety-wiring').FileSafetyWiring;
   endpoints: ReturnType<typeof createEndpointService>;
   rateLimiter: ReturnType<typeof createRateLimiter>;
   vrmAvatars: ReturnType<typeof createVrmAvatarService>;
