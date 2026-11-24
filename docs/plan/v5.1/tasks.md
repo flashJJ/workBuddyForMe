@@ -27,8 +27,8 @@
 
 ## M3 core：守卫、快照、回滚
 
-- [ ] `workspace/file-guard.ts`：根列表、系统目录拒绝、`..`/符号链接/大小写/UNC/盘根规范化
-- [ ] 守卫测试：越界矩阵、误配根仍拒绝、根被移除后回滚 `path_not_allowed`
+- [x] `workspace/file-guard.ts`：根列表、系统目录拒绝、`..`/符号链接/大小写/UNC/盘根规范化
+- [x] 守卫测试：越界矩阵、误配根仍拒绝、根被移除后回滚 `path_not_allowed`
 - [ ] `workspace/snapshot-service.ts`：beforeWrite/beforeDelete/beforeMove、afterWrite、内容寻址 blob、原子写
 - [ ] 快照测试：新建/覆盖/删除/移动、超大文件（人工 vs 无人值守）、配额与清理、去重
 - [ ] `workspace/rollback-service.ts`：按运行倒序、同路径去重、冲突检测、强制覆盖、部分失败

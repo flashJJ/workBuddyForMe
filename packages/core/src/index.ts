@@ -36,6 +36,7 @@ export * from './session-log/index';
 export * from './branch/index';
 export * from './capabilities/index';
 export * from './governance/index';
+export * from './workspace/index';
 export * from './diagnostics/index';
 // v4.13：context 不聚合进根 barrel（会与 chat/context 形成运行期循环，next start 健康检查 500）；
 // 生产条件改由独立入口 dist/context.* 提供，见 package.json exports['./context']。

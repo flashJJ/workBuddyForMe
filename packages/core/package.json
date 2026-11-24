@@ -121,6 +121,12 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
+        "./workspace": {
+            "types": "./src/workspace/index.ts",
+            "development": "./src/workspace/index.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./session-log": {
             "types": "./src/session-log/index.ts",
             "development": "./src/session-log/index.ts",
