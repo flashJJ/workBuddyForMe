@@ -62,3 +62,4 @@
 |---|---|
 | [v1.6-v2.0](./archive/v1/v1.6-v2.0/) | 情感闭环与 mod 生态（跨 v1.6–v2.0） |
 | [v2.7-v2.10](./archive/v2/v2.7-v2.10/) | 跨 v2.7–v2.10 专题 |
+| [quality-engineering](./quality-engineering/) | 质量工程专项：自测试与开发辅助测试体系（跨版本，不占版本号） |

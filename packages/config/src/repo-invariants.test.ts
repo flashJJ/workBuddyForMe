@@ -135,3 +135,49 @@ describe('多选保存路径无静默截断', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * v5.0.1 回归（质量工程专项 A/F）：
+ * 把已发生过的逃逸缺陷变成可执行不变量，防止同类问题再次进入门禁盲区。
+ */
+describe('越界缺陷的静态不变量', () => {
+  const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), 'utf8');
+
+  it('运行中心触发器筛选覆盖 FLOW_TRIGGERS 全部取值', () => {
+    const shared = read('packages/shared/src/types/flow.ts');
+    const declaration = shared.match(/export const FLOW_TRIGGERS = \[([^\]]+)\]/);
+    expect(declaration).not.toBeNull();
+    const triggers = [...declaration![1]!.matchAll(/'([a-z_]+)'/g)].map((hit) => hit[1]!);
+    expect(triggers.length).toBeGreaterThan(0);
+
+    const view = read('apps/web/src/features/flows/flow-runs-view.tsx');
+    const missing = triggers.filter((trigger) => !view.includes(`value="${trigger}"`));
+    expect(missing).toEqual([]);
+  });
+
+  it('可靠性服务不直接调用 Date.now()，必须走注入的时钟', () => {
+    const offenders: string[] = [];
+    for (const file of walk(join(REPO_ROOT, 'packages/core/src/flow/reliability'))) {
+      const normalized = file.replace(/\\/g, '/');
+      if (normalized.includes('.test.')) continue;
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .forEach((line, index) => {
+          if (/\bDate\.now\s*\(/.test(line)) offenders.push(`${normalized}:${index + 1}`);
+        });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('新增 EventSource 的同文件必须显式 close', () => {
+    const offenders: string[] = [];
+    for (const file of walk(join(REPO_ROOT, 'apps/web/src'))) {
+      const normalized = file.replace(/\\/g, '/');
+      if (normalized.includes('.test.')) continue;
+      const content = readFileSync(file, 'utf8');
+      if (!content.includes('new EventSource(')) continue;
+      if (!content.includes('.close(')) offenders.push(normalized);
+    }
+    expect(offenders).toEqual([]);
+  });
+});

@@ -2,6 +2,7 @@ name: Nightly Acceptance
 
 # v4.11 P2-3：夜间全链路巡检（非阻断）。
 # 只跑确定性验收：L2 离线全链路 + 工具链路评测；MCP/Midscene 视觉巡检仍需人工执行。
+# v5.1 质量工程：新增可靠性域变异测试（StrykerJS），阈值观察期不阻断。
 on:
   schedule:
     # 每天 18:00 UTC（Asia/Shanghai 02:00）
@@ -74,4 +75,40 @@ jobs:
         with:
           name: acceptance-nightly
           path: test-results
+          if-no-files-found: ignore
+
+  mutation-nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm（读取 packageManager 字段）
+        uses: pnpm/action-setup@v4
+
+      - name: 安装 Node（读取 .nvmrc）
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      # 观察期：变异得分先写 Summary，不阻断 Nightly（stryker.config.mjs 中 break: null）
+      - name: 可靠性域变异测试
+        continue-on-error: true
+        run: pnpm mutate:reliability
+
+      - name: 写入变异测试 Job Summary
+        if: always()
+        run: node scripts/mutation-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 上传变异报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-nightly
+          path: reports/mutation
           if-no-files-found: ignore
