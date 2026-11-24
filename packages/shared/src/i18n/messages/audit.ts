@@ -71,6 +71,11 @@ export const zhAudit = {
     flow_compensation_exhausted: '补偿已耗尽',
     flow_retention_cleanup: '运行清理',
     flow_agent_tool_denied: 'Agent 工具拒绝',
+    workspace_roots_updated: '授权根更新',
+    file_path_denied: '文件越界拒绝',
+    file_snapshot_created: '文件快照生成',
+    file_rollback_applied: '文件回滚',
+    file_snapshot_cleanup: '快照清理',
   },
   actors: {
     user: '用户',
@@ -156,6 +161,11 @@ export const enAudit = {
     flow_compensation_exhausted: 'Compensation exhausted',
     flow_retention_cleanup: 'Run retention cleanup',
     flow_agent_tool_denied: 'Agent tool denied',
+    workspace_roots_updated: 'Workspace roots updated',
+    file_path_denied: 'File path denied',
+    file_snapshot_created: 'File snapshot created',
+    file_rollback_applied: 'File rollback applied',
+    file_snapshot_cleanup: 'Snapshot cleanup',
   },
   actors: {
     user: 'User',

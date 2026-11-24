@@ -55,6 +55,20 @@ export const ERROR_CODES = {
   BACKUP_CHAIN_MISMATCH: 422,
   /** v4.18：会话 token 预算已用尽，需提高预算或新建会话 */
   TOKEN_BUDGET_EXCEEDED: 422,
+  /** v5.1：写入/删除/移动路径不在授权根内，或命中系统目录 */
+  FILE_PATH_OUTSIDE_WORKSPACE: 422,
+  /** v5.1：路径无法规范化（非绝对路径、UNC、链接环等） */
+  FILE_PATH_INVALID: 422,
+  /** v5.1：单文件超过快照内容上限且无人值守 */
+  FILE_SNAPSHOT_TOO_LARGE: 422,
+  /** v5.1：快照库总配额不足 */
+  FILE_SNAPSHOT_QUOTA_EXCEEDED: 422,
+  /** v5.1：快照库不可写 */
+  FILE_SNAPSHOT_UNAVAILABLE: 503,
+  /** v5.1：回滚存在冲突且未强制 */
+  FILE_ROLLBACK_CONFLICT: 409,
+  /** v5.1：回滚写盘失败 */
+  FILE_ROLLBACK_FAILED: 500,
   INTERNAL_ERROR: 500,
 } as const;
 

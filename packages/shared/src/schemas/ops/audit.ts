@@ -28,6 +28,11 @@ export const AUDIT_EVENT_KINDS = [
   'flow_compensation_exhausted',
   'flow_retention_cleanup',
   'flow_agent_tool_denied',
+  'workspace_roots_updated',
+  'file_path_denied',
+  'file_snapshot_created',
+  'file_rollback_applied',
+  'file_snapshot_cleanup',
 ] as const;
 
 export type AuditEventKind = (typeof AUDIT_EVENT_KINDS)[number];

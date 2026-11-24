@@ -6,12 +6,12 @@
 
 ## M1 shared：常量、schema、错误码
 
-- [ ] `constants/workspace.ts`：6 个常量与默认值
-- [ ] `schemas/flow/file-guard.ts`：动作枚举、快照视图、回滚请求/结果、设置 schema
-- [ ] `schemas/ops/audit.ts`：追加 5 个审计事件 kind
-- [ ] `errors/error-codes.ts`：追加 7 个文件安全错误码
-- [ ] 单测：schema 边界（根数量、路径数量、默认 dryRun）、常量引用一致性
-- [ ] 导出：`schemas/index.ts`、`types/index.ts`
+- [x] `constants/workspace.ts`：6 个常量与默认值
+- [x] `schemas/flow/file-guard.ts`：动作枚举、快照视图、回滚请求/结果、设置 schema
+- [x] `schemas/ops/audit.ts`：追加 5 个审计事件 kind
+- [x] `errors/error-codes.ts`：追加 7 个文件安全错误码
+- [x] 单测：schema 边界（根数量、路径数量、默认 dryRun）、常量引用一致性
+- [x] 导出：`schemas/index.ts`、`types/index.ts`
 
 验收：`pnpm --filter @wbfm/shared test` 通过；schema 与常量无重复字面量（repo-invariants）。
 

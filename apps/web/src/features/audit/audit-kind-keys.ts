@@ -22,4 +22,9 @@ export const AUDIT_KIND_KEYS: Record<AuditEventKind, MessageKey> = {
   flow_compensation_exhausted: 'audit.kinds.flow_compensation_exhausted',
   flow_retention_cleanup: 'audit.kinds.flow_retention_cleanup',
   flow_agent_tool_denied: 'audit.kinds.flow_agent_tool_denied',
+  workspace_roots_updated: 'audit.kinds.workspace_roots_updated',
+  file_path_denied: 'audit.kinds.file_path_denied',
+  file_snapshot_created: 'audit.kinds.file_snapshot_created',
+  file_rollback_applied: 'audit.kinds.file_rollback_applied',
+  file_snapshot_cleanup: 'audit.kinds.file_snapshot_cleanup',
 };
