@@ -144,10 +144,11 @@
 | 2026-11-24 | M4 | `pnpm selftest` 最小版：`selftest-scenarios.test.ts` + `scripts/selftest.mjs`，真实文件库跑补偿重启恢复、能力包验签、保留 dry-run，按场景输出 PASS/FAIL | 3/3 通过 |
 | 2026-11-24 | A | 新增 `scripts/check-patterns.mjs`（P1/P2/P3/P6/P7/P8 代码信号）与 `.patterns-baseline.json`，只阻止新增；接入 `pnpm check`（`pnpm audit:patterns`） | 75 处历史命中入基线，门禁通过 |
 | 2026-11-24 | E | 新增 `scripts/test-impact.mjs`（`pnpm test:impact`）：git diff + 未跟踪文件 → 工作区包 → 反向依赖扩散，输出最小测试命令；无新增依赖 | 本次 23 个改动文件映射出 8 个包与 `pnpm check` |
+| 2026-11-24 | M3 | 新增运行详情路由用例：两个失败节点 + 当前生产图只删其一，锁定 `failedNodeId` 取最后一个（删最后 → `node_removed`；删第一 → 仍可续跑） | 2/2 通过 |
 | 2026-11-24 | E | 接入 Nightly 变异测试：StrykerJS 10.1.1 + vitest runner，只覆盖 reliability 6 个文件；Nightly 非阻断并写 Job Summary；新增 `mutation-summary.mjs` 与报告上传 | `--dryRunOnly` 通过（611 变异体 / 36 用例）；依赖净增约 10MB，沙箱自动清理 |
 
 **下一步**：
 
 1. 观察首份 Nightly 报告的变异得分（目标 ≥40%）后，再调整 `stryker.config.mjs` 阈值与变异范围；
-2. 运行详情 `failedNodeId` 取最后一个失败的用例（需路由测试夹具）；
-3. `safer-sweep` 的 failpoint：在仓储写入/事务边界注入抛错，补「claim 后崩溃」的进程内用例（重启演练已由 selftest 覆盖）。
+2. `safer-sweep` 的 failpoint：在仓储写入/事务边界注入抛错，补「claim 后崩溃」的进程内用例（重启演练已由 selftest 覆盖）；
+3. 补 bug-registry 的 v5.0.1 条目并引用本批回归用例，提升引用覆盖率。
