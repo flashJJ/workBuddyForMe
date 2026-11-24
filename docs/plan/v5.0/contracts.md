@@ -192,7 +192,7 @@ createRun(fields: CreateRunFields & {
 }): WorkflowRunView;
 getGraphSnapshot(runId: string): { graphJson: string; hash: string | null } | null;
 setReplayBatch(runId: string, batchId: string): void;
-listTerminalBefore(cutoffIso: string, limit?: number): WorkflowRunView[];
+listTerminalBefore(cutoffIso: string, limit?: number): WorkflowRunView[]; // 按 finished_at（缺省 created_at）
 listTerminalBeyondPerWorkflow(workflowId: string, keep: number): WorkflowRunView[];
 deleteRuns(runIds: string[]): number; // 级联 node_executions
 
@@ -201,6 +201,7 @@ getByRootRun(rootRunId: string): FlowRunCompensationView | null;
 getByLastRun(lastRunId: string): FlowRunCompensationView | null;
 listDue(nowIso: string, limit?: number): FlowRunCompensationView[];
 listByWorkflow(workflowId: string): FlowRunCompensationView[];
+listRetrying(): FlowRunCompensationView[]; // 重启恢复：claim 后崩溃/重放中断
 listActive(): FlowRunCompensationView[]; // pending/retrying，清理保护用
 countsByState(): { pending: number; exhausted: number };
 create(fields: { rootRunId; workflowId; attempt; nextRetryAt; lastErrorJson }): FlowRunCompensationView;
@@ -248,6 +249,9 @@ export function diffRunGraph(params: {
 export interface FlowCompensationService {
   onRunTerminal(run: WorkflowRunView): void;
   sweep(now?: Date): { claimed: number; started: number; deferred: number; cancelled: number };
+  recover(): {
+    recovered: number; requeued: number; exhausted: number; cancelled: number; skipped: number;
+  };
   list(workflowId: string): FlowRunCompensationView[];
   lastSweepAt(): string | null;
 }
@@ -260,6 +264,7 @@ export interface FlowRunReplayService {
     nodeMode?: FlowReplayNodeMode;
     nodeId?: string; // 显式起点，优先于 nodeMode
     batchId?: string;
+    trigger?: FlowTrigger; // 补偿重放沿用原触发方式；缺省 manual
   }): { runId: string; parentRunId: string };
   replayBatch(input: FlowRunBatchReplayInput): FlowRunBatchReplayResult;
 }

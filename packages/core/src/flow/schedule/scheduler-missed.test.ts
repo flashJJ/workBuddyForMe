@@ -52,5 +52,9 @@ describe('v5.0 定时错过计数', () => {
     expect(created).toBe(1);
     expect(schedules.getById(schedule.id)?.missedCount).toBe(2);
     expect(schedules.getById(schedule.id)?.lastMissedAt).toBe('2026-11-24T02:00:00.000Z');
+
+    schedules.recordMissed(schedule.id, 99, '2026-11-24T03:00:00.000Z');
+    schedules.recordMissed(schedule.id, 99, '2026-11-24T04:00:00.000Z');
+    expect(schedules.getById(schedule.id)?.missedCount).toBe(100);
   });
 });

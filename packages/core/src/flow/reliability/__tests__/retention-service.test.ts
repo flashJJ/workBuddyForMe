@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDatabase } from '@wbfm/database';
+import { createDatabase, type DatabaseInstance } from '@wbfm/database';
 import {
   createFlowRunCompensationRepository,
   createSettingsRepository,
@@ -31,6 +31,15 @@ function oldRun(
   return run.id;
 }
 
+/** 同时回拨创建与完成时间，保留清理按完成时间判断 */
+function setAge(db: DatabaseInstance, id: string, iso: string): void {
+  db.prepare('UPDATE workflow_runs SET created_at = ?, finished_at = ? WHERE id = ?').run(
+    iso,
+    iso,
+    id,
+  );
+}
+
 describe('v5.0 运行保留清理', () => {
   it('默认策略 + 成功 30 天/失败 90 天/每流程 500', () => {
     const { service } = setup();
@@ -47,15 +56,9 @@ describe('v5.0 运行保留清理', () => {
     const oldSuccess = oldRun(runs, wf.id, 'succeeded');
     const recentFailed = oldRun(runs, wf.id, 'failed');
     const oldFailed = oldRun(runs, wf.id, 'failed');
-    db.prepare("UPDATE workflow_runs SET created_at = '2026-01-01T00:00:00.000Z' WHERE id = ?").run(
-      oldSuccess,
-    );
-    db.prepare("UPDATE workflow_runs SET created_at = '2026-10-01T00:00:00.000Z' WHERE id = ?").run(
-      recentFailed,
-    );
-    db.prepare("UPDATE workflow_runs SET created_at = '2025-01-01T00:00:00.000Z' WHERE id = ?").run(
-      oldFailed,
-    );
+    setAge(db, oldSuccess, '2026-01-01T00:00:00.000Z');
+    setAge(db, recentFailed, '2026-10-01T00:00:00.000Z');
+    setAge(db, oldFailed, '2025-01-01T00:00:00.000Z');
 
     const dry = service.cleanup({ dryRun: true, now: new Date('2026-11-24T00:00:00.000Z') });
     expect(dry.removed).toBe(2);
@@ -71,9 +74,7 @@ describe('v5.0 运行保留清理', () => {
   it('待补偿运行不被清理', () => {
     const { db, runs, compensations, service, wf } = setup();
     const runId = oldRun(runs, wf.id, 'failed');
-    db.prepare("UPDATE workflow_runs SET created_at = '2025-01-01T00:00:00.000Z' WHERE id = ?").run(
-      runId,
-    );
+    setAge(db, runId, '2025-01-01T00:00:00.000Z');
     compensations.create({
       rootRunId: runId,
       workflowId: wf.id,
@@ -93,9 +94,7 @@ describe('v5.0 运行保留清理', () => {
       const id = oldRun(runs, wf.id, 'succeeded');
       const day = String((i % 28) + 1).padStart(2, '0');
       const month = String((Math.floor(i / 28) % 12) + 1).padStart(2, '0');
-      db.prepare(
-        `UPDATE workflow_runs SET created_at = ? WHERE id = ?`,
-      ).run(`2026-${month}-${day}T00:00:00.000Z`, id);
+      setAge(db, id, `2026-${month}-${day}T00:00:00.000Z`);
     }
     const result = service.cleanup({ now: new Date('2026-11-24T00:00:00.000Z') });
     expect(result.removed).toBe(2);

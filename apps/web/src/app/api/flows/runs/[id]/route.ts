@@ -21,7 +21,10 @@ export const GET = defineRoute(({ params, services }) => {
     services.workflows.getVersion(run.workflowId, run.version)?.graph ??
     null;
   const current = services.workflows.getProductionVersion(run.workflowId);
-  const failedNodeId = nodes.find((node) => node.status === 'failed')?.nodeId ?? null;
+  const failedNodeId =
+    nodes
+      .filter((node) => node.status === 'failed')
+      .at(-1)?.nodeId ?? null;
   const versionCheck: FlowRunVersionCheck = snapshot
     ? diffRunGraph({
         snapshot,

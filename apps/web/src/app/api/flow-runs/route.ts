@@ -35,20 +35,19 @@ export const GET = defineRoute(({ request, services }) => {
   const runs = repo.listRuns({
     trigger: filter.trigger as FlowTrigger | undefined,
     status: filter.status as FlowRunStatus | undefined,
+    workflowId: filter.workflowId,
     limit: filter.limit,
   });
-  const filtered = filter.workflowId
-    ? runs.filter((run) => run.workflowId === filter.workflowId)
-    : runs;
 
-  const items = filtered.map((run) => {
+  const items = runs.map((run) => {
     const wf = workflows.getWorkflow(run.workflowId);
     // 失败/中断运行给出可重放的节点（失败节点优先；无失败记录时不暴露节点重放）
     let replayNodeId: string | null = null;
     if (FLOW_RUN_RESUMABLE_STATUSES.includes(run.status)) {
       const failed = repo
         .listNodeExecutions(run.id)
-        .find((node) => node.status === 'failed');
+        .filter((node) => node.status === 'failed')
+        .at(-1);
       replayNodeId = failed?.nodeId ?? null;
     }
     return {

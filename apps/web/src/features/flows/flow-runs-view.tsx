@@ -47,6 +47,7 @@ export function FlowRunsView() {
   const [batchMode, setBatchMode] = React.useState<'snapshot' | 'latest'>('snapshot');
   const [nodeMode, setNodeMode] = React.useState<'whole' | 'failed_node'>('failed_node');
   const [batchSummary, setBatchSummary] = React.useState<string | null>(null);
+  const [batchIssues, setBatchIssues] = React.useState<Array<{ runId: string; reason: string }>>([]);
   const runsQuery = useFlowRuns({ trigger: trigger || undefined, status: status || undefined });
   const health = useFlowRunsHealth();
   const replay = useReplayRun();
@@ -79,6 +80,11 @@ export function FlowRunsView() {
           skipped: result.summary.skipped,
           failed: result.summary.failed,
         }),
+      );
+      setBatchIssues(
+        result.results
+          .filter((item) => !item.ok)
+          .map((item) => ({ runId: item.runId, reason: item.reason ?? '' })),
       );
       setSelected(new Set());
       toast.success(t('flowRuns.batch.done', { count: result.summary.started }));
@@ -124,6 +130,9 @@ export function FlowRunsView() {
           <option value="chat">{t(TRIGGER_KEYS.chat!)}</option>
           <option value="api">{t(TRIGGER_KEYS.api!)}</option>
           <option value="mcp">{t(TRIGGER_KEYS.mcp!)}</option>
+          <option value="schedule">{t(TRIGGER_KEYS.schedule!)}</option>
+          <option value="webhook">{t(TRIGGER_KEYS.webhook!)}</option>
+          <option value="file">{t(TRIGGER_KEYS.file!)}</option>
         </SimpleSelect>
         <span className="ml-2 text-muted-foreground">{t('common.words.status')}</span>
         <SimpleSelect
@@ -172,6 +181,18 @@ export function FlowRunsView() {
       {batchSummary && (
         <div className="border-b bg-muted/30 px-6 py-1.5 text-[11px] text-muted-foreground">
           {batchSummary}
+          {batchIssues.length > 0 && (
+            <>
+              <p className="mt-1">{t('flowRuns.batch.issues', { count: batchIssues.length })}</p>
+              <ul className="space-y-0.5">
+                {batchIssues.slice(0, 8).map((issue) => (
+                  <li key={issue.runId} className="truncate">
+                    {t('flowRuns.batch.issue', { runId: issue.runId, reason: issue.reason })}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
 

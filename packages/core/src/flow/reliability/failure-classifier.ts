@@ -31,14 +31,32 @@ interface Rule {
 }
 
 const CODE_RULES: Rule[] = [
-  { category: 'auth', pattern: /auth|unauthor|forbidden|credential|api.?key|token|permission|401|403/ },
-  { category: 'timeout', pattern: /timeout|timed.?out|etimedout|deadline/ },
-  { category: 'rate_limit', pattern: /rate.?limit|too.?many|429|quota|budget/ },
-  { category: 'network', pattern: /network|econn|enotfound|eai_again|socket|dns|offline|fetch/ },
-  { category: 'version', pattern: /version|migration|schema.?version/ },
-  { category: 'data', pattern: /parse|json|decode|encoding|format|corrupt/ },
-  { category: 'tool', pattern: /tool|mcp|skill/ },
-  { category: 'config', pattern: /config|validation|invalid|missing|required|not.?found|404|schema/ },
+  { category: 'timeout', pattern: /timeout|timed.?out|etimedout|deadline|超时/ },
+  {
+    category: 'rate_limit',
+    pattern:
+      /rate.?limit|too.?many|429|quota|budget|token.*(limit|quota)|限流|限速|请求过于频繁|请求过多|额度不足|配额/,
+  },
+  {
+    category: 'network',
+    pattern: /network|econn|enotfound|eai_again|socket|dns|offline|fetch|网络|断网|无法连接|连接失败|连接中断/,
+  },
+  {
+    category: 'auth',
+    pattern:
+      /auth|unauthor|forbidden|credential|api.?key|permission|401|403|token.*(invalid|expired|missing)|(invalid|expired|missing).*token|鉴权|未授权|密钥|权限不足|凭证/,
+  },
+  { category: 'version', pattern: /version|migration|schema.?version|版本|迁移/ },
+  {
+    category: 'data',
+    pattern: /parse|json|decode|encoding|format|corrupt|解析|格式|编码|损坏/,
+  },
+  { category: 'tool', pattern: /tool|mcp|skill|工具|技能/ },
+  {
+    category: 'config',
+    pattern:
+      /config|validation|invalid|missing|required|not.?found|404|schema|配置|参数|必填|校验未通过|缺失|不存在/,
+  },
 ];
 
 const NODE_TYPE_RULES: Array<{ category: FlowRunFailureCategory; types: ReadonlySet<string> }> = [

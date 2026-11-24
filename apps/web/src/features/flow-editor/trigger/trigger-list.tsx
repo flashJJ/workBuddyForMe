@@ -66,7 +66,7 @@ export function TriggerList({
               <SimpleSelect
                 className="h-7 rounded-md border bg-ui-control px-1 text-[11px]"
                 value={trigger.authMode ?? 'bearer'}
-                disabled={authUpdating || (!trigger.hasSigningSecret && (trigger.authMode ?? 'bearer') !== 'bearer')}
+                disabled={authUpdating}
                 onValueChange={(value) =>
                   onAuthChange(trigger, value as FlowWebhookAuthMode)
                 }

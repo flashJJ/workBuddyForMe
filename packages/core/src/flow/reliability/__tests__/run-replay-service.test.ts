@@ -47,6 +47,7 @@ describe('v5.0 单条/批量重放', () => {
       expect.objectContaining({
         workflowId: wf.id,
         version: 2,
+        trigger: 'manual',
         parentRunId: parent.id,
         resumedFromNode: null,
         graph: expect.objectContaining({ nodes: expect.any(Array) }),
@@ -65,6 +66,15 @@ describe('v5.0 单条/批量重放', () => {
     service.replayOne({ runId: parent.id, mode: 'snapshot', nodeMode: 'failed_node' });
     expect(flowRunner.createRunFromGraph).toHaveBeenCalledWith(
       expect.objectContaining({ resumedFromNode: 'end' }),
+    );
+  });
+
+  it('补偿重放可指定原触发方式，保持无人值守语义', () => {
+    const { runs, flowRunner, service, wf } = setup();
+    const parent = failedRun(runs, wf.id);
+    service.replayOne({ runId: parent.id, mode: 'snapshot', trigger: 'schedule' });
+    expect(flowRunner.createRunFromGraph).toHaveBeenCalledWith(
+      expect.objectContaining({ trigger: 'schedule' }),
     );
   });
 
@@ -88,8 +98,16 @@ describe('v5.0 单条/批量重放', () => {
       nodeMode: 'whole',
     });
     expect(result.results).toHaveLength(2); // 去重
+    expect(result.summary.requested).toBe(2);
     expect(result.summary.started).toBe(1);
     expect(result.summary.failed).toBe(1);
+  });
+
+  it('工作流停用后拒绝重放', () => {
+    const { workflows, runs, service, wf } = setup();
+    const parent = failedRun(runs, wf.id);
+    workflows.setStatus(wf.id, 'disabled');
+    expect(() => service.replayOne({ runId: parent.id })).toThrow(/停用/);
   });
 
   it('批量超过 20 条拒绝', () => {

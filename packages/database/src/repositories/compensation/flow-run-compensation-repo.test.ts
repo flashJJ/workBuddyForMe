@@ -32,9 +32,11 @@ describe('v5.0 补偿仓储', () => {
     runs.createRun({ workflowId: wf.id, version: 1, id: 'retry-run' });
     compensations.markRetrying(item.id, 'retry-run');
     expect(compensations.getByLastRun('retry-run')?.state).toBe('retrying');
+    expect(compensations.listRetrying().map((row) => row.id)).toEqual([item.id]);
 
     compensations.markPending(item.id, 2, '2026-11-24T00:02:00.000Z', '{"code":"net2"}');
     expect(compensations.getByRootRun(run.id)).toMatchObject({ attempt: 2, state: 'pending' });
+    expect(compensations.listRetrying()).toHaveLength(0);
 
     compensations.markRecovered(item.id);
     expect(compensations.getByRootRun(run.id)?.state).toBe('recovered');
@@ -73,10 +75,14 @@ describe('v5.0 运行仓储扩展', () => {
     const third = runs.createRun({ workflowId: wf.id, version: 1 });
     runs.finishRun(second.id, 'succeeded');
     runs.finishRun(third.id, 'failed', { error: { code: 'x', message: 'x' } });
-    db.prepare("UPDATE workflow_runs SET created_at = '2020-01-01T00:00:00.000Z' WHERE id = ?")
-      .run(second.id);
-    db.prepare("UPDATE workflow_runs SET created_at = '2020-01-02T00:00:00.000Z' WHERE id = ?")
-      .run(third.id);
+    db.prepare(
+      `UPDATE workflow_runs SET created_at = '2020-01-01T00:00:00.000Z',
+         finished_at = '2020-01-01T00:00:00.000Z' WHERE id = ?`,
+    ).run(second.id);
+    db.prepare(
+      `UPDATE workflow_runs SET created_at = '2020-01-02T00:00:00.000Z',
+         finished_at = '2020-01-02T00:00:00.000Z' WHERE id = ?`,
+    ).run(third.id);
 
     const old = runs.listTerminalBefore('2021-01-01T00:00:00.000Z');
     expect(old.map((run) => run.id).sort()).toEqual([second.id, third.id].sort());
@@ -88,5 +94,16 @@ describe('v5.0 运行仓储扩展', () => {
     expect(runs.deleteRuns([first.id])).toBe(0); // queued 不删
     expect(runs.deleteRuns([second.id, third.id])).toBe(2);
     expect(runs.getRun(second.id)).toBeNull();
+  });
+
+  it('listRuns 在 SQL 内按 workflowId 过滤，不受全局 limit 影响', () => {
+    const { runs, workflows, wf } = setup();
+    const other = workflows.createWorkflow({ name: '另一个流程' });
+    for (let i = 0; i < 3; i += 1) {
+      runs.createRun({ workflowId: wf.id, version: 1 });
+    }
+    const target = runs.createRun({ workflowId: other.id, version: 1 });
+    const result = runs.listRuns({ workflowId: other.id });
+    expect(result.map((run) => run.id)).toEqual([target.id]);
   });
 });

@@ -2,6 +2,7 @@ import type { WorkflowRunView } from '@wbfm/shared/types';
 import type { DatabaseInstance } from '../../client';
 import { newId, nowIso } from '../ops/mappers';
 import { createNodeExecutionStore } from './node-execution-repo';
+import { createWorkflowRunRetentionStore } from './workflow-run-retention-store';
 import { mapRun } from './workflow-run-mapper';
 import type {
   RecoverableRuns,
@@ -12,12 +13,21 @@ import type {
   WorkflowRunRow,
 } from './workflow-run-types';
 
+/** 列表/详情默认投影：排除 graph_snapshot_json，避免每次轮询搬运大字段 */
+const RUN_COLUMNS = `id, workflow_id, version, trigger, status, input_json, output_json,
+  error_json, conversation_id, wait_node_id, started_at, finished_at, created_at,
+  endpoint_id, parent_run_id, resumed_from_node, interrupt_reason,
+  graph_hash, replay_batch_id`;
+
 export function createWorkflowRunRepository(db: DatabaseInstance) {
   const nodeStore = createNodeExecutionStore(db);
+  const retentionStore = createWorkflowRunRetentionStore(db, RUN_COLUMNS);
 
   return {
     /* ---------------- 节点执行（组合自 node-execution-repo） ---------------- */
     ...nodeStore,
+    /* ---------------- 终态清理（组合自 workflow-run-retention-store） ---------------- */
+    ...retentionStore,
 
     /* ---------------- runs ---------------- */
 
@@ -54,7 +64,9 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
     },
 
     getRunRow(id: string): WorkflowRunRow | null {
-      const row = db.prepare('SELECT * FROM workflow_runs WHERE id = ?').get(id) as WorkflowRunRow | undefined;
+      const row = db
+        .prepare(`SELECT ${RUN_COLUMNS} FROM workflow_runs WHERE id = ?`)
+        .get(id) as WorkflowRunRow | undefined;
       return row ?? null;
     },
 
@@ -65,7 +77,10 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
 
     listRunsByWorkflow(workflowId: string, limit = 50): WorkflowRunView[] {
       const rows = db
-        .prepare('SELECT * FROM workflow_runs WHERE workflow_id = ? ORDER BY created_at DESC LIMIT ?')
+        .prepare(
+          `SELECT ${RUN_COLUMNS} FROM workflow_runs
+           WHERE workflow_id = ? ORDER BY created_at DESC LIMIT ?`,
+        )
         .all(workflowId, limit) as WorkflowRunRow[];
       return rows.map(mapRun);
     },
@@ -82,6 +97,10 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
         where.push('status = @status');
         params.status = filter.status;
       }
+      if (filter.workflowId) {
+        where.push('workflow_id = @workflowId');
+        params.workflowId = filter.workflowId;
+      }
       if (filter.endpointId) {
         where.push('endpoint_id = @endpointId');
         params.endpointId = filter.endpointId;
@@ -89,7 +108,9 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
       const clause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
       const limit = Math.min(filter.limit ?? 100, 200);
       const rows = db
-        .prepare(`SELECT * FROM workflow_runs ${clause} ORDER BY created_at DESC LIMIT ${limit}`)
+        .prepare(
+          `SELECT ${RUN_COLUMNS} FROM workflow_runs ${clause} ORDER BY created_at DESC LIMIT ${limit}`,
+        )
         .all(params) as WorkflowRunRow[];
       return rows.map(mapRun);
     },
@@ -214,48 +235,6 @@ export function createWorkflowRunRepository(db: DatabaseInstance) {
     /** v5.0：批量重放批次追溯 */
     setReplayBatch(runId: string, batchId: string): void {
       db.prepare('UPDATE workflow_runs SET replay_batch_id = ? WHERE id = ?').run(batchId, runId);
-    },
-
-    /** v5.0：清理候选（终态且创建时间早于截止） */
-    listTerminalBefore(cutoffIso: string, limit = 200): WorkflowRunView[] {
-      const rows = db
-        .prepare(
-          `SELECT * FROM workflow_runs
-           WHERE status IN ('succeeded','failed','cancelled','interrupted')
-             AND created_at < ?
-           ORDER BY created_at ASC LIMIT ?`,
-        )
-        .all(cutoffIso, limit) as WorkflowRunRow[];
-      return rows.map(mapRun);
-    },
-
-    /** v5.0：每流程保留 N 条终态运行，返回超出的最旧行 */
-    listTerminalBeyondPerWorkflow(workflowId: string, keep: number): WorkflowRunView[] {
-      const rows = db
-        .prepare(
-          `SELECT * FROM workflow_runs
-           WHERE workflow_id = ?
-             AND status IN ('succeeded','failed','cancelled','interrupted')
-           ORDER BY created_at DESC
-           LIMIT -1 OFFSET ?`,
-        )
-        .all(workflowId, Math.max(0, keep)) as WorkflowRunRow[];
-      return rows.map(mapRun);
-    },
-
-    /** v5.0：删除终态运行（node_executions 级联），返回删除数 */
-    deleteRuns(runIds: string[]): number {
-      if (runIds.length === 0) return 0;
-      const stmt = db.prepare(
-        `DELETE FROM workflow_runs
-         WHERE id = ? AND status IN ('succeeded','failed','cancelled','interrupted')`,
-      );
-      let removed = 0;
-      const tx = db.transaction((ids: string[]) => {
-        for (const id of ids) removed += stmt.run(id).changes;
-      });
-      tx(runIds);
-      return removed;
     },
 
     /** v4.24：流程是否有在途运行（定时单飞保护） */

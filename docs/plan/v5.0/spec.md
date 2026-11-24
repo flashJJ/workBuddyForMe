@@ -213,8 +213,10 @@ stateDiagram-v2
 - 退避阶梯固定 `[30s, 2m, 10m]`，第 3 次失败不再排期；
 - sweep 每 60s 一次，启动后立即一次；
 - 原子认领：`UPDATE ... WHERE id=? AND state='pending' AND next_retry_at=?`；
+- 启动时先 `recover()` 收敛 `retrying`：claim 后崩溃（无 last_run_id）→ 立即回 `pending`；重放已成功/取消/失败 → 按结果推进；重放被重启收敛为 `interrupted` → 计一次尝试并续排；重放仍在排队/执行 → 留给终态事件；
 - 同流程在途运行 → 顺延 60s，保持 `pending`（不消耗 attempt）；
 - 重放运行成功/失败由 `run-service` 的终态回调通知补偿服务；补偿重放走 `run-replay-service` 的快照模式，不直接 `createRun`；
+- 补偿重放沿用原运行的 `trigger`，保持无人值守策略与 `interactive=false` 语义；
 - 流程停用/删除 → `cancelled`，不自动重跑。
 
 ### 6.4 批量重放
@@ -277,7 +279,7 @@ Webhook 无法推断上游节奏，只显示「最近接收」，不做「过期
 调度 tick 发现 `next_run_at` 已过期时：
 
 1. 从 `next_run_at` 起按该条 cron/时区数到 `now`，得到应触发次数 `n`（上限 100）；
-2. `missed_count += max(0, n - 1)`（本次补跑 1 次）；
+2. `missed_count = min(missed_count + max(0, n - 1), 100)`（本次补跑 1 次，累计封顶 100）；
 3. 有错过时写 `last_missed_at = now`；
 4. 仍只创建 1 个补跑运行，然后推进到下一个未来时刻；
 5. 不改变 `last_status` 枚举，UI 同时展示「错过 N 次 / 补跑 1 次」。

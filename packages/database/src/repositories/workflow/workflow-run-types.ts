@@ -69,6 +69,7 @@ export interface RunFinishFields {
 export interface RunListFilter {
   trigger?: FlowTrigger;
   status?: FlowRunStatus;
+  workflowId?: string;
   endpointId?: string;
   limit?: number;
 }

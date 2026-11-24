@@ -5,6 +5,7 @@ import {
 import {
   isUnattendedFlowTrigger,
   type FlowRunCompensationView,
+  type FlowRunError,
   type WorkflowRunView,
 } from '@wbfm/shared/types';
 import type {
@@ -33,9 +34,19 @@ export interface FlowCompensationDeps {
   now?: () => Date;
 }
 
+export interface FlowCompensationRecoverResult {
+  recovered: number;
+  requeued: number;
+  exhausted: number;
+  cancelled: number;
+  skipped: number;
+}
+
 export interface FlowCompensationService {
   onRunTerminal(run: WorkflowRunView): void;
   sweep(now?: Date): { claimed: number; started: number; deferred: number; cancelled: number };
+  /** v5.0：进程重启后收敛停留在 retrying 的补偿（claim 后崩溃或重放被中断） */
+  recover(): FlowCompensationRecoverResult;
   list(workflowId: string): FlowRunCompensationView[];
   lastSweepAt(): string | null;
 }
@@ -86,9 +97,30 @@ export function createFlowCompensationService(
       deps.compensations.markCancelled(item.id);
       return;
     }
+    if (run.status === 'interrupted') {
+      retryOrExhaust(item, run, {
+        code: 'flow/compensation-interrupted',
+        message: '补偿重放运行被中断',
+        retryable: true,
+        hint: '补偿重放被中断；将自动重试。',
+      });
+      return;
+    }
     if (run.status !== 'failed') return;
-    const error = classifyFlowRunError(run.error ?? { code: 'flow/run-failed', message: '未知错误' });
-    if (error.retryable && item.attempt < FLOW_COMPENSATION_MAX_ATTEMPTS) {
+    retryOrExhaust(
+      item,
+      run,
+      classifyFlowRunError(run.error ?? { code: 'flow/run-failed', message: '未知错误' }),
+    );
+  }
+
+  /** 可重试且未满 3 次 → 排下一次；否则耗尽并审计 */
+  function retryOrExhaust(
+    item: FlowRunCompensationView,
+    run: WorkflowRunView,
+    error: FlowRunError,
+  ): 'scheduled' | 'exhausted' {
+    if (error.retryable === true && item.attempt < FLOW_COMPENSATION_MAX_ATTEMPTS) {
       const nextAttempt = item.attempt + 1;
       const delay = FLOW_COMPENSATION_BACKOFF_MS[nextAttempt - 1] ?? FLOW_COMPENSATION_BACKOFF_MS[2];
       deps.compensations.markPending(
@@ -97,16 +129,92 @@ export function createFlowCompensationService(
         new Date(now().getTime() + delay).toISOString(),
         JSON.stringify(error),
       );
-      return;
+      return 'scheduled';
     }
-    const errorJson = JSON.stringify(error);
-    deps.compensations.markExhausted(item.id, errorJson);
+    deps.compensations.markExhausted(item.id, JSON.stringify(error));
     appendAudit('flow_compensation_exhausted', run, {
       rootRunId: item.rootRunId,
       workflowId: item.workflowId,
       attempt: item.attempt,
       lastRunId: run.id,
     });
+    return 'exhausted';
+  }
+
+  /**
+   * 进程重启恢复：retrying 记录没有 next_retry_at，listDue 不会再扫到。
+   * - claim 后崩溃（无 lastRunId）→ 立即回到 pending；
+   * - 重放已终态 → 按成功/失败/取消推进；
+   * - 重放被重启收敛为 interrupted → 计一次尝试并排下一次；
+   * - 重放仍在排队/执行 → 交给终态事件。
+   */
+  function recover(): FlowCompensationRecoverResult {
+    const result: FlowCompensationRecoverResult = {
+      recovered: 0,
+      requeued: 0,
+      exhausted: 0,
+      cancelled: 0,
+      skipped: 0,
+    };
+    for (const item of deps.compensations.listRetrying()) {
+      const last = item.lastRunId ? deps.runs.getRun(item.lastRunId) : null;
+      if (!last) {
+        if (item.lastRunId) {
+          deps.compensations.markExhausted(
+            item.id,
+            JSON.stringify({
+              code: 'flow/compensation-run-missing',
+              message: '补偿重放运行已被删除，无法判定结果',
+            }),
+          );
+          result.exhausted += 1;
+        } else {
+          deps.compensations.markPending(
+            item.id,
+            item.attempt,
+            now().toISOString(),
+            JSON.stringify(
+              item.lastError ?? { code: 'flow/compensation-recover', message: '补偿认领后进程中断' },
+            ),
+          );
+          result.requeued += 1;
+        }
+        continue;
+      }
+      if (last.status === 'succeeded') {
+        deps.compensations.markRecovered(item.id);
+        result.recovered += 1;
+        continue;
+      }
+      if (last.status === 'cancelled') {
+        deps.compensations.markCancelled(item.id);
+        result.cancelled += 1;
+        continue;
+      }
+      if (last.status === 'failed') {
+        const outcome = retryOrExhaust(
+          item,
+          last,
+          classifyFlowRunError(last.error ?? { code: 'flow/run-failed', message: '未知错误' }),
+        );
+        if (outcome === 'scheduled') result.requeued += 1;
+        else result.exhausted += 1;
+        continue;
+      }
+      if (last.status === 'interrupted') {
+        const outcome = retryOrExhaust(item, last, {
+          code: 'flow/compensation-interrupted',
+          message: '补偿重放在进程重启时中断',
+          retryable: true,
+          hint: '进程重启导致补偿中断；将自动重试。',
+        });
+        if (outcome === 'scheduled') result.requeued += 1;
+        else result.exhausted += 1;
+        continue;
+      }
+      result.skipped += 1;
+    }
+    return result;
   }
 
   function sweep(at = now()) {
@@ -140,10 +248,13 @@ export function createFlowCompensationService(
         continue;
       }
       try {
+        // 补偿是系统自动重试：沿用原运行的触发方式，保持无人值守策略与交互语义
+        const root = deps.runs.getRun(item.rootRunId);
         const replay = deps.replay.replayOne({
           runId: item.lastRunId ?? item.rootRunId,
           mode: 'snapshot',
           nodeMode: 'failed_node',
+          trigger: root?.trigger ?? 'manual',
         });
         deps.compensations.markRetrying(item.id, replay.runId);
         result.started += 1;
@@ -178,6 +289,7 @@ export function createFlowCompensationService(
   return {
     onRunTerminal,
     sweep,
+    recover,
     list: (workflowId) => deps.compensations.listByWorkflow(workflowId),
     lastSweepAt: () => lastSweep,
   };

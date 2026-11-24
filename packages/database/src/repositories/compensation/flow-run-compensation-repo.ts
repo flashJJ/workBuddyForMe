@@ -104,6 +104,17 @@ export function createFlowRunCompensationRepository(db: DatabaseInstance) {
       return rows.map(mapCompensation);
     },
 
+    /** v5.0：重启恢复——claim 后崩溃/重放中断会停留在 retrying */
+    listRetrying(): FlowRunCompensationView[] {
+      const rows = db
+        .prepare(
+          `SELECT * FROM flow_run_compensations
+           WHERE state = 'retrying' ORDER BY updated_at ASC`,
+        )
+        .all() as FlowRunCompensationRow[];
+      return rows.map(mapCompensation);
+    },
+
     /** v5.0：清理保护——pending/retrying 的 root/last 运行不可删 */
     listActive(): FlowRunCompensationView[] {
       const rows = db

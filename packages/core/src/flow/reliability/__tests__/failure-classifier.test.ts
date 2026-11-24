@@ -12,16 +12,32 @@ describe('classifyFlowRunError（v5.0）', () => {
     expect(out.hint).toContain('密钥');
   });
 
-  it('消息关键词识别网络/超时/限流并可重试', () => {
+  it('消息关键词识别网络/超时/限流并可重试（中英）', () => {
     for (const [message, category] of [
       ['connect ECONNREFUSED', 'network'],
       ['request timeout after 30s', 'timeout'],
       ['429 too many requests', 'rate_limit'],
+      ['节点 n1 执行超时（30000ms）', 'timeout'],
+      ['请求过于频繁，请稍后再试', 'rate_limit'],
+      ['网络连接失败', 'network'],
+      ['token rate limit exceeded', 'rate_limit'],
+      ['额度不足', 'rate_limit'],
     ] as const) {
       const out = classifyFlowRunError({ ...base, message });
       expect(out.category).toBe(category);
       expect(out.retryable).toBe(true);
     }
+  });
+
+  it('中文鉴权/配置错误不自动补偿', () => {
+    expect(classifyFlowRunError({ ...base, message: '密钥无效' })).toMatchObject({
+      category: 'auth',
+      retryable: false,
+    });
+    expect(classifyFlowRunError({ ...base, message: '配置缺失：必填参数' })).toMatchObject({
+      category: 'config',
+      retryable: false,
+    });
   });
 
   it('配置/数据/版本错误不可重试', () => {

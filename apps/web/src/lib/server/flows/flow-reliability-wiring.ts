@@ -79,6 +79,22 @@ export function createFlowReliabilityWiring(params: {
   let cleanupTimer: ReturnType<typeof setInterval> | null = null;
   if (params.start ?? process.env.NODE_ENV !== 'test') {
     try {
+      // 先收敛上次进程遗留的 retrying（claim 后崩溃/重放被中断），再扫到期补偿
+      const recovered = service.recover();
+      if (
+        recovered.recovered > 0 ||
+        recovered.requeued > 0 ||
+        recovered.exhausted > 0 ||
+        recovered.cancelled > 0
+      ) {
+        console.info(
+          `[flow] 补偿队列恢复：恢复 ${recovered.recovered}，续跑 ${recovered.requeued}，耗尽 ${recovered.exhausted}，取消 ${recovered.cancelled}`,
+        );
+      }
+    } catch (error) {
+      console.warn('[flow] 补偿队列恢复失败', error);
+    }
+    try {
       service.sweep();
     } catch (error) {
       console.warn('[flow] 补偿队列首次扫描失败', error);

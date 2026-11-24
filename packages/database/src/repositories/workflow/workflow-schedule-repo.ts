@@ -215,7 +215,7 @@ export function createWorkflowScheduleRepository(db: DatabaseInstance) {
     recordMissed(id: string, missedCount: number, atIso: string): void {
       db.prepare(
         `UPDATE workflow_schedules
-         SET missed_count = missed_count + @missedCount,
+         SET missed_count = MIN(missed_count + @missedCount, 100),
              last_missed_at = @at, updated_at = @ts
          WHERE id = @id`,
       ).run({ id, missedCount: Math.max(0, missedCount), at: atIso, ts: nowIso() });

@@ -48,6 +48,7 @@ describe('v5.0 补偿队列', () => {
       runId: run.id,
       mode: 'snapshot',
       nodeMode: 'failed_node',
+      trigger: 'schedule',
     });
     expect(compensations.getByRootRun(run.id)?.state).toBe('retrying');
   });
@@ -102,5 +103,72 @@ describe('v5.0 补偿队列', () => {
     const after = compensations.getByRootRun(root.id)!;
     expect(after).toMatchObject({ state: 'pending', attempt: 1 });
     expect(Date.parse(after.nextRetryAt!)).toBeGreaterThan(Date.parse(item.nextRetryAt!) + 50_000);
+  });
+
+  it('recover：claim 后崩溃（无 lastRun）立即回到 pending', () => {
+    const { runs, compensations, service, wf } = setup();
+    const root = failRun(runs, wf.id);
+    service.onRunTerminal(root);
+    const item = compensations.getByRootRun(root.id)!;
+    expect(compensations.claim(item.id, item.nextRetryAt!)).toBe(true);
+
+    const result = service.recover();
+    expect(result.requeued).toBe(1);
+    const after = compensations.getByRootRun(root.id)!;
+    expect(after).toMatchObject({ state: 'pending', attempt: 1 });
+    expect(Date.parse(after.nextRetryAt!)).toBeLessThanOrEqual(Date.now() + 1_000);
+  });
+
+  it('recover：重放被中断计一次尝试；后续成功则 recovered', () => {
+    const { runs, compensations, service, wf } = setup();
+    const root = failRun(runs, wf.id);
+    service.onRunTerminal(root);
+    const item = compensations.getByRootRun(root.id)!;
+    expect(compensations.claim(item.id, item.nextRetryAt!)).toBe(true);
+    const retry = runs.createRun({ workflowId: wf.id, version: 1, trigger: 'schedule' });
+    compensations.markRetrying(item.id, retry.id);
+    runs.finishRun(retry.id, 'interrupted');
+
+    const first = service.recover();
+    expect(first.requeued).toBe(1);
+    const after = compensations.getByRootRun(root.id)!;
+    expect(after).toMatchObject({ state: 'pending', attempt: 2 });
+
+    expect(compensations.claim(after.id, after.nextRetryAt!)).toBe(true);
+    const retry2 = runs.createRun({ workflowId: wf.id, version: 1, trigger: 'schedule' });
+    compensations.markRetrying(after.id, retry2.id);
+    runs.finishRun(retry2.id, 'succeeded');
+    const second = service.recover();
+    expect(second.recovered).toBe(1);
+    expect(compensations.getByRootRun(root.id)?.state).toBe('recovered');
+  });
+
+  it('recover：重放仍在排队时保持 retrying，交给终态事件', () => {
+    const { runs, compensations, service, wf } = setup();
+    const root = failRun(runs, wf.id);
+    service.onRunTerminal(root);
+    const item = compensations.getByRootRun(root.id)!;
+    expect(compensations.claim(item.id, item.nextRetryAt!)).toBe(true);
+    const retry = runs.createRun({ workflowId: wf.id, version: 1, trigger: 'schedule' });
+    compensations.markRetrying(item.id, retry.id);
+
+    expect(service.recover()).toMatchObject({ skipped: 1 });
+    expect(compensations.getByRootRun(root.id)?.state).toBe('retrying');
+  });
+
+  it('运行期补偿重放被中断：终态回调直接排下一次', () => {
+    const { runs, compensations, service, wf } = setup();
+    const root = failRun(runs, wf.id);
+    service.onRunTerminal(root);
+    const item = compensations.getByRootRun(root.id)!;
+    expect(compensations.claim(item.id, item.nextRetryAt!)).toBe(true);
+    const retry = runs.createRun({ workflowId: wf.id, version: 1, trigger: 'schedule' });
+    compensations.markRetrying(item.id, retry.id);
+    runs.finishRun(retry.id, 'interrupted');
+
+    service.onRunTerminal(runs.getRun(retry.id)!);
+    const after = compensations.getByRootRun(root.id)!;
+    expect(after).toMatchObject({ state: 'pending', attempt: 2 });
+    expect(after.nextRetryAt).not.toBeNull();
   });
 });

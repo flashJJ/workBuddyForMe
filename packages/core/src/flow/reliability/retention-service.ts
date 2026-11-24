@@ -83,7 +83,8 @@ export function createFlowRetentionService(deps: FlowRetentionDeps): FlowRetenti
     const scannedRuns = deps.runs.listTerminalBefore(successCutoff, 200);
     const candidates = new Map<string, { workflowId: string }>();
     for (const run of scannedRuns) {
-      const expired = run.status === 'failed' ? run.createdAt < failureCutoff : true;
+      const finishedAt = run.finishedAt ?? run.createdAt;
+      const expired = run.status === 'failed' ? finishedAt < failureCutoff : true;
       if (expired) candidates.set(run.id, { workflowId: run.workflowId });
     }
 

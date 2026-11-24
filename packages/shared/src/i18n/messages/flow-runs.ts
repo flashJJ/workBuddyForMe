@@ -38,6 +38,8 @@ export const zhFlowRuns = {
     result: '批量完成：启动 {started}，跳过 {skipped}，失败 {failed}',
     done: '已启动 {count} 个重放',
     failed: '批量重放失败',
+    issues: '未启动 {count} 条：',
+    issue: '{runId}：{reason}',
   },
   version: {
     changed: '工作流已从 v{from} 升级到 v{to}；本运行仍按原快照续跑。',
@@ -109,6 +111,8 @@ export const enFlowRuns = {
     result: 'Batch finished: started {started}, skipped {skipped}, failed {failed}',
     done: 'Started {count} replays',
     failed: 'Batch replay failed',
+    issues: '{count} not started:',
+    issue: '{runId}: {reason}',
   },
   version: {
     changed: 'Workflow upgraded from v{from} to v{to}; this run keeps its snapshot.',
